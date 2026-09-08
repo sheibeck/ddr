@@ -46,8 +46,8 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: controlScheme defaults to 'tap' and diceMode defaults to 'on tap'", () => {
-  assert.equal(SETTINGS_DEFAULTS.controlScheme, "tap");
+test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad' and diceMode defaults to 'on tap'", () => {
+  assert.equal(SETTINGS_DEFAULTS.controlScheme, "dpad");
   assert.equal(SETTINGS_DEFAULTS.diceMode, "on tap");
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
@@ -107,7 +107,7 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
 
     await writeSetting("controlScheme", "keyboard"); // not in {tap,dpad}
     await flushStorage();
-    assert.equal((await readSettings()).controlScheme, "tap");
+    assert.equal((await readSettings()).controlScheme, "dpad");
 
     await writeSetting("diceMode", "sometimes"); // not in {on tap,always,never}
     await flushStorage();

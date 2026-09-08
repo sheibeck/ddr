@@ -30,7 +30,13 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
   haptics: true,
   textSize: "M",
-  controlScheme: "tap",
+  // Device-review revision (04-CONTEXT.md "Device-review revisions
+  // (2026-09-08)" #2): the on-screen D-pad is now the sole, always-visible
+  // control (REVERSES the earlier tap-to-move-default decision). "tap"
+  // stays a valid stored value (controls.js's tap->cell code stays
+  // importable/dormant) but is no longer wired to movement in the crawl
+  // screen regardless of this setting.
+  controlScheme: "dpad",
   confirmBeforeQuit: true,
   diceMode: "on tap",
 });
