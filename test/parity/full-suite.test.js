@@ -1,15 +1,21 @@
 // ENG-05 phase gate: the aggregate parity + round-trip pass across the
 // ENTIRE ruleset extracted in this phase — chargen, movement, combat, magic,
-// economy, encounters, and (new in 01-10) the win path itself. Every
-// per-domain parity test (chargen-parity/movement-parity/combat-parity/
-// magic-parity/economy-parity) already proves its own slice in isolation;
-// this file's job is the single aggregate assertion the phase's success
-// criteria point to — "the entire prototype ruleset runs behind the pure,
-// deterministic, serializable applyAction contract with zero regressions" —
-// plus closing the win-path gap the 01-07 plan-checker flagged and 01-09
-// deferred here: a full run that reaches the floor-5 Gate and wins,
-// diffState-compared against the frozen prototype the whole way, including
-// the `winGame` event/state itself.
+// economy, and encounters. Every per-domain parity test (chargen-parity/
+// movement-parity/combat-parity/magic-parity/economy-parity) already proves
+// its own slice in isolation; this file's job is the single aggregate
+// assertion the phase's success criteria point to — "the entire prototype
+// ruleset runs behind the pure, deterministic, serializable applyAction
+// contract with zero regressions."
+//
+// The win path (a full run to the floor-5 Gate, diffState-compared against
+// the frozen prototype including the `winGame` event/state itself) was
+// closed here in 01-10 and DELIBERATELY RETIRED in 03-02 (endless descent,
+// RUN-02/RUN-04): the frozen prototype still wins at the floor-5 Gate, but
+// the endless engine now descends past it (genFloor never emits "gate"
+// anymore), so a byte-for-byte win-parity comparison against the frozen
+// prototype no longer applies — this is the phase's one intentional,
+// documented divergence from the prototype. Endless-descent behavior is
+// proven instead by test/unit/endless-descent.test.js.
 //
 // Reuses test/parity/harness/comparables.js's shared comparable()/
 // internal-action-dispatch helpers (the same single source of truth every
@@ -24,8 +30,6 @@ import path from "node:path";
 import url from "node:url";
 
 import { newRun, applyAction } from "../../engine/engine.js";
-import { makeRng } from "../../engine/rng.js";
-import { descend } from "../../engine/movement.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
 import {
@@ -46,7 +50,7 @@ const COMBAT_FIXTURE = readFixture("action-script.combat.json");
 const MAGIC_FIXTURE = readFixture("action-script.magic.json");
 const ECONOMY_FIXTURE = readFixture("action-script.economy.json");
 const ENCOUNTERS_FIXTURE = readFixture("action-script.encounters.json");
-const WIN_FIXTURE = readFixture("action-script.win.json");
+// action-script.win.json was DELIBERATELY RETIRED in 03-02 — see header comment.
 
 const CHARACTER_FIELDS = [
   "cls", "sub", "race", "intel", "level", "sp", "maxWP", "wp", "skills", "vp",
@@ -57,19 +61,7 @@ const CHARACTER_FIELDS = [
   "foresight", "name",
 ];
 
-/** applyDescend(state) — the internal (non-validated) descend() call, same
- * clone/rng-rehydrate/persist shape every other internal fixture action in
- * this directory uses. */
-function applyDescend(state) {
-  const next = structuredClone(state);
-  const rng = makeRng(next.rngState);
-  const events = [];
-  descend(next, rng, events);
-  next.rngState = rng.getState();
-  return { state: next, events };
-}
-
-test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/economy/encounters/win", async (t) => {
+test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/economy/encounters", async (t) => {
   const start = Date.now();
 
   await t.test("chargen: every fixture seed matches the frozen prototype", () => {
@@ -167,39 +159,12 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
     }
   });
 
-  await t.test("win: a full run to the floor-5 Gate matches the frozen prototype, including winGame", () => {
-    const ctx = loadPrototypeSandbox({ seed: WIN_FIXTURE.seed });
-    let engineState = newRun(WIN_FIXTURE.seed);
-    assert.equal(diffState(movementComparable(ctx.S), movementComparable(engineState)), null);
-
-    const allEventTypes = [];
-    WIN_FIXTURE.actions.forEach((action, i) => {
-      if (action.type === "descend") {
-        ctx.descend();
-        const { state, events } = applyDescend(engineState);
-        engineState = state;
-        allEventTypes.push(...events.map((e) => e.type));
-      } else if (action.type === "move") {
-        ctx.move(action.dir);
-        const { state, events } = applyAction(engineState, action);
-        engineState = state;
-        allEventTypes.push(...events.map((e) => e.type));
-      } else {
-        assert.fail(`unhandled win fixture action type: ${action.type}`);
-      }
-      const d = diffState(movementComparable(ctx.S), movementComparable(engineState));
-      assert.equal(d, null, `win-path action ${i} (${JSON.stringify(action)}): diverged at ${d}`);
-    });
-
-    assert.ok(allEventTypes.includes("won"), "the engine's event stream must record the win");
-    assert.equal(engineState.won, true);
-    assert.equal(engineState.floor.depth, 5);
-    assert.equal(ctx.S.won, true, "the prototype side won too");
-    // winGame() itself, byte-for-byte: won/dead/deathNote/epitaph (deathAt is
-    // volatile and already stripped by diffState/comparable on both sides).
-    assert.equal(engineState.deathNote, ctx.S.deathNote);
-    assert.equal(engineState.epitaph, ctx.S.epitaph);
-  });
+  // "win" sub-test DELIBERATELY RETIRED in 03-02 (endless descent): the
+  // frozen prototype still wins at the floor-5 Gate; the endless engine now
+  // descends past it instead, so this byte-for-byte win-parity comparison no
+  // longer applies. See the file header comment for the full rationale.
+  // Endless-descent behavior is proven instead by
+  // test/unit/endless-descent.test.js.
 
   const elapsedMs = Date.now() - start;
   assert.ok(elapsedMs < 15000, `full-suite gate should stay within the ~15s budget target (took ${elapsedMs}ms)`);

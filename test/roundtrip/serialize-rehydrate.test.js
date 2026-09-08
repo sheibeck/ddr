@@ -26,12 +26,17 @@
 // 01-10 (ENG-05's phase gate) extends it a final time with the economy
 // fixture (test/parity/fixtures/action-script.economy.json — an OPEN store,
 // the exact sub-state the prototype itself flagged as unsaveable, now plain
-// data), the encounters fixture (test/parity/fixtures/
+// data) and the encounters fixture (test/parity/fixtures/
 // action-script.encounters.json — a trap-set affliction, a chest, a
-// faerie), and the win fixture (test/parity/fixtures/action-script.win.json
-// — a full run through won/deathNote/epitaph). Every fixture this phase
-// authored now has round-trip coverage, closing ENG-04 across the entire
-// extracted ruleset.
+// faerie). It also originally added the win fixture (a full run through
+// won/deathNote/epitaph) — that fixture and its round-trip test were
+// DELIBERATELY RETIRED in 03-02 (endless descent, RUN-02/RUN-04): winGame()
+// is no longer a reachable run terminator (genFloor never emits "gate"
+// anymore, and move() routes any legacy "gate" tile to descend() instead).
+// ENG-04 round-trip coverage remains complete via the movement/combat/magic/
+// economy/encounters fixtures above; `descend` stays imported below — it is
+// still exercised via ECONOMY_INTERNAL_FNS in the economy/encounters
+// round-trip scenarios.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -63,9 +68,7 @@ const ECONOMY_FIXTURE = JSON.parse(
 const ENCOUNTERS_FIXTURE = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.encounters.json"), "utf8"),
 );
-const WIN_FIXTURE = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.win.json"), "utf8"),
-);
+// action-script.win.json was DELIBERATELY RETIRED in 03-02 — see header comment.
 
 /** applyStartCombat(state, wandering, forced) — the same non-validated-action
  * shape test/parity/combat-parity.test.js uses: `startCombat` is not in
@@ -241,21 +244,7 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
   });
 }
 
-test("state survives a JSON round-trip through the win fixture, including the final won/deathNote/epitaph state", () => {
-  let state = newRun(WIN_FIXTURE.seed);
-
-  WIN_FIXTURE.actions.forEach((action, i) => {
-    const result = action.type === "descend" ? applyInternal(state, descend) : applyAction(state, action);
-    state = result.state;
-
-    const stripped = stripVolatileFields(state);
-    const rehydrated = JSON.parse(JSON.stringify(stripped));
-    assert.deepStrictEqual(
-      rehydrated,
-      stripped,
-      `win-path action ${i} (${JSON.stringify(action)}) must round-trip losslessly`,
-    );
-  });
-
-  assert.equal(state.won, true, "the fixture must have actually won");
-});
+// "win fixture round-trip" test DELIBERATELY RETIRED in 03-02 (endless
+// descent): winGame() is no longer a reachable run terminator, so there is
+// no won/deathNote/epitaph win-path state left to prove round-trips. See the
+// file header comment for the full rationale.
