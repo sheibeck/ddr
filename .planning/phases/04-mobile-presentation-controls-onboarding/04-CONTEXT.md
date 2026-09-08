@@ -55,8 +55,17 @@ OUT OF SCOPE:
 ### Engine routing completion (deferred Phase 1/3 item)
 - Route the live page's combat, economy/store, new-run, and camp inputs through the engine adapter (`applyAction`), replacing the remaining original-prototype code paths, and complete `formatEvents()` coverage of the engine's event types so the mobile UI is fully engine-driven and deterministic.
 
-### Game name (branding)
-- **Keep "Mazeworld" as a single CENTRALIZED name constant/config** for this phase's title/home screen. The final name decision + app-ID change is deferred to Phase 6 (likely trademark/Play-search collision with an existing "Maze World"; research captured in STATE.md). Centralizing makes a later rename a one-line change.
+### Game name (branding) — UPDATED 2026-09-08
+- **The product name is LOCKED to "Delve, Die, Repeat"** (user decision 2026-09-08, superseding the earlier "keep Mazeworld placeholder" note). A parallel `/gsd-quick` already renamed the app identity + visible chrome and committed it (`f81942f`): `appId com.darktierstudios.delvedierepeat`, launcher/name "Delve, Die, Repeat", `package.json` name `delve-die-repeat`, MainActivity package moved, `mazeworld.html` chrome updated.
+- Phase 4 UI must reference the display name from a **single centralized constant** (in modular `src/`), never hardcoded across files. Point that constant at "Delve, Die, Repeat".
+- **"Mazeworld" survives as the in-fiction WORLD/setting name** (the Maze Master, Wilmsry, wilmst currency, the lore) — rename the product, not the universe.
+
+### Folded-in rename scope (user decision 2026-09-08 — Phase 4 owns this)
+The rename's deferred deep work is folded INTO Phase 4 (it's the natural home — Phase 4 rebuilds the UI onto modular sources + touches storage):
+- **Persistence-key rename `mazeworld.*.v1 → ddr.*.v1`** (the ~3 keys `delve`/`graveyard`/`best`) — do it in the modular `src/browser/*` (storage.js + engineAdapter.js call sites), update the ~8 test files that assert the keys, and keep it verified. Greenfield/pre-launch → NO migration shim needed (user confirmed no save-orphaning concern).
+- **Content-string cleanup**: remove residual product-name "Mazeworld" from user-facing modular sources where it means the PRODUCT (keep it where it means the in-fiction world). Canonical content lives in `content/*.js` / `engine/` / `src/`, not the prototype's inline tables.
+- **`test:quick` fixed** (commit `c5dcaf7` — Node 22 needs `**/*.test.js` globs, not bare dir args). Both `npm test` (372) and `npm run test:quick` (283) green.
+- Note: the build still ships the prototype (`build-www.mjs` makes `www/index.html` = `mazeworld.html` + import map); moving the real UI off the prototype onto modular sources IS the core Phase 4 move — so the deep renames land once, on the real sources.
 
 ### Claude's Discretion
 - Exact module/file layout for the mobile presentation layer, the canvas viewport/pan implementation, coach-mark mechanism, settings persistence schema, icon downscaling pipeline, and how screens are structured as views/components — all at Claude's discretion, grounded in the design file and existing `src/browser/` patterns.
