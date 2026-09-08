@@ -5,14 +5,14 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: android-packaging-native-persistence
 status: verifying
-stopped_at: "Completed 02-04-PLAN.md (native chrome + self-hosted fonts + final green build gate: assembleDebug + bundleDebug BUILD SUCCESSFUL) -- Phase 02 complete, 4/4 plans"
-last_updated: "2026-09-08T16:36:40.200Z"
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-09-08T18:49:34.275Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 02 execution started
 progress:
-  total_phases: 3
+  total_phases: 5
   completed_phases: 3
-  total_plans: 17
+  total_plans: 20
   completed_plans: 17
 ---
 
@@ -169,9 +169,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T16:36:40.178Z
-Stopped at: Completed 02-04-PLAN.md (native chrome + self-hosted fonts + final green build gate: assembleDebug + bundleDebug BUILD SUCCESSFUL) -- Phase 02 complete, 4/4 plans
-Resume file: None
+Last session: 2026-09-08T18:49:34.245Z
+Stopped at: Phase 4 UI-SPEC approved
+Resume file: .planning/phases/04-mobile-presentation-controls-onboarding/04-UI-SPEC.md
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
 
@@ -190,6 +190,7 @@ Resume file: None
 **Google Play account:** user ALREADY HAS a Google Play developer account (confirmed 2026-09-08) — Phase 6's main $25 gate is cleared; release signing + Data Safety/IARC + submission remain.
 
 **Open follow-ups (non-blocking):**
+
 - [Phase 2, optional] Intermittent early-boot `TypeError: reading 'triggerEvent'` (Capacitor native bridge firing an event before ESM core wires `window.Capacitor`); non-fatal, didn't recur on cold boot; documented in `02-HOTFIX.md`. Small early-boot ordering tweak if we want it squashed.
 - Test count is 372 (green). Emulator note: user's Pixel_10a AVD uses an unstable preview image (android-37.1 / 16KB page size) that crashes — user switched to a physical Pixel 7 instead (works). AVD was set to software GPU as a mitigation (config backup at `~/.android/avd/Pixel_10a.avd/config.ini.bak.mzworld`).
 
