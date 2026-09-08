@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-09-08T02:56:44.593Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-09-08T03:54:25.093Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [████░░░░░░] 40%
 | Phase 01 P02 | 6min | 3 tasks | 21 files |
 | Phase 01 P03 | 45min | 3 tasks | 7 files |
 | Phase 01-engine-extraction-determinism P04 | 2min | 2 tasks | 3 files |
+| Phase 01 P05 | 7min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Renamed test/parity/prototype-master.js to .js.txt to avoid node --test's blanket directory-based auto-discovery sweep crashing the suite (Rule 3 fix).
 - [Phase ?]: seedableMathRandom.js duplicates engine/rng.js's mulberry32 bit-mixing inline (verified byte-identical via sequence comparison) rather than importing it, per plan's either/or guidance.
 - [Phase ?]: engine/maze.js reveal(floor,radius=2) takes radius as an explicit param (default 2) since character skills/effects aren't yet extracted; corrected plan's inaccurate reveal() description against the true prototype source (radius-based square reveal, not 4-neighbor)
+- [Phase ?]: [Phase 01-05]: applyAction(state,action)->{state,events} is the single pure engine seam — validate at chokepoint, structuredClone (no try/catch, fail-fast), rehydrate rng from state.rngState, dispatch by type, persist rngState; malformed/unknown actions are no-ops (never throw).
+- [Phase ?]: [Phase 01-05]: derived numbers take an explicit c (character-only) or state (needs combat/floor) param, never a global S; character object-literal property order IS the RNG draw order, giving byte-identical chargen parity with the frozen prototype.
+- [Phase ?]: [Phase 01-05]: Executed Task 2 (character/derived, TDD) before Task 1 (state/engine) — natural dependency order since state.js imports rollCharacter; events.js created in the character GREEN commit.
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -112,6 +116,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T02:56:44.573Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-09-08T03:54:13.277Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
