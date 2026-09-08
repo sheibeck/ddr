@@ -67,6 +67,14 @@ The rename's deferred deep work is folded INTO Phase 4 (it's the natural home �
 - **`test:quick` fixed** (commit `c5dcaf7` — Node 22 needs `**/*.test.js` globs, not bare dir args). Both `npm test` (372) and `npm run test:quick` (283) green.
 - Note: the build still ships the prototype (`build-www.mjs` makes `www/index.html` = `mazeworld.html` + import map); moving the real UI off the prototype onto modular sources IS the core Phase 4 move — so the deep renames land once, on the real sources.
 
+### Device-review revisions (2026-09-08 — user feedback on the on-device build, SUPERSEDES conflicting earlier decisions)
+After seeing the Wave-4 build on the Pixel 7, the user directed these changes:
+1. **Bigger map cells/icons.** The maze squares + PNG icons render too small — increase the cell size substantially (icons scale with `CELL`). The map pans (viewport crops the full grid) so fewer, larger cells around the player is the intended feel — matches the design mock's big zoomed-in maze.
+2. **D-pad movement buttons ONLY — remove tap-to-move as the control.** This REVERSES the earlier "tap-to-move default + D-pad alternate" decision and amends UX-01: the on-screen D-pad is the sole, always-visible control. Keep the tap→cell code (`controls.js`) dormant/available but NOT wired to movement by default; `controlScheme` defaults to `dpad`. (Pan/CENTRE to look around stays.)
+3. **Rename "MAZE" → "MAP"** everywhere in the UI: the bottom-tab label and the section heading. (Product/UI term only; in-fiction "maze"/world lore unaffected.)
+4. **No permanent panel beneath the map.** The map viewport is the dominant element and fills the space between the HUD and the bottom control bar. The old status/"ENCOUNTER" panel must NOT sit permanently under the map.
+5. **Encounter/events as an OVERLAY over the map.** Stepping onto ANY feature tile (encounter dot, trap, teleport, chest/box, one-way door, descent, crevice) pops a panel OVER the map describing what happened (via the engine's events / `formatEvents`), dismissed by a **MOVE ON** button that returns to the map. This shapes how 04-07 (engine routing) and 04-08 (combat/encounter screen) build the combat/encounter surface — it is a modal-over-map triggered by feature tiles, not a persistent panel. Combat (encounter dot → foe) keeps its STRIKE/POTION/RUN AWAY actions inside that overlay (04-08).
+
 ### Claude's Discretion
 - Exact module/file layout for the mobile presentation layer, the canvas viewport/pan implementation, coach-mark mechanism, settings persistence schema, icon downscaling pipeline, and how screens are structured as views/components — all at Claude's discretion, grounded in the design file and existing `src/browser/` patterns.
 
