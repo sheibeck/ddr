@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-crawler for iOS and Android, adapting a fantasy tabletop RPG the author designed in 1994. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
+Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
 
 **Tone & voice:** heavy sarcasm and dark humor — self-aware, deadpan, poking fun at fantasy-RPG tropes and at the player's own doomed adventurers — but kept **family-friendly** (no profanity, gore, or adult content; the darkness is in the wit, not the shock). Sarcasm is the through-line of every screen: death epitaphs, the "Oracle" log, item flavor, the tutorial. This voice is a core identity, not decoration.
 
@@ -25,7 +25,7 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 
 ### Active
 
-- [ ] Package the game as a native, store-installable app for **both iOS and Android**
+- [ ] Package the game as a native, store-installable **Android app (Google Play)**
 - [ ] Preserve the prototype's **full ruleset** as canon (3 classes / 24 subclasses / 6 races / 31 spells / ~45 creatures / dozens of items / combat / magic / economy / procedural mazes)
 - [ ] **100%-dice-rolled character creation** — no player choices (faithful to the game's identity)
 - [ ] **Endless descent** — infinite floors with scaling difficulty, replacing the prototype's fixed 5-floor Gate ending
@@ -36,10 +36,11 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 - [ ] Adapt the **Claude Design "Mazeworld Mobile" UX** as the visual/UX target
 - [ ] Mobile-first controls, readable UI, and player **onboarding/tutorial** (the prototype assumes rules knowledge)
 - [ ] **Robust local save/resume** and persistent graveyard of past runs
-- [ ] **Publish to both stores** (store listings, signing, submission) — the project isn't done until it's live
+- [ ] **Publish to Google Play** (store listing, signing, submission) — the project isn't done until it's live on Google Play
 
 ### Out of Scope
 
+- **iOS / Apple App Store** — deliberately out of scope. Android/Google Play only. Avoids the Apple Developer account, Mac/Xcode toolchain, and Apple's review process. May be reconsidered post-launch, but the tech path should not be compromised to accommodate it now.
 - **Multiplayer / "play with friends"** — explicitly deferred to a post-MVP add-on; MVP is solo-only.
 - **Accounts, logins, cloud save, servers** — go simple; use platform identity (Game Center / Google Play Games) later if/when multiplayer needs it.
 - **Ads and in-app purchases** — v1 is paid-upfront only.
@@ -57,7 +58,7 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 
 ## Constraints
 
-- **Platforms**: Must ship to **Apple App Store and Google Play**. Requires native packaging, code signing, store listings, and compliance (age rating, privacy) — new territory for the author.
+- **Platforms**: Must ship to **Google Play (Android only)**. Requires native packaging (Android App Bundle), Play app signing, a store listing, and compliance (content rating, Data safety form, target-API level) — new territory for the author. iOS is explicitly excluded.
 - **Offline**: v1 must run with **no network**, no accounts, no backend.
 - **Monetization**: **Paid upfront**, no ads/IAP — keep the build free of monetization SDKs.
 - **Fidelity**: The prototype's rules are **canon**; deviations must be deliberate design decisions, not accidental regressions.
@@ -68,6 +69,7 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Android / Google Play only; no iOS | Avoid Apple's account/Mac/Xcode/review overhead; author's explicit choice | — Pending |
 | Solo-only MVP; multiplayer post-MVP add-on | Ship value fast; multiplayer is a large, separable layer | — Pending |
 | Endless descent replaces fixed 5-floor Gate | "Descend forever + chase depth" fits roguelike + quick sessions | — Pending |
 | Permadeath, no meta-progression in v1 | Author chose pure roguelike; local high-score is the hook | — Pending |
