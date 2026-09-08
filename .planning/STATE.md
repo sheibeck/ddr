@@ -171,3 +171,25 @@ Items acknowledged and carried forward from previous milestone close:
 Last session: 2026-09-08T16:36:40.178Z
 Stopped at: Completed 02-04-PLAN.md (native chrome + self-hosted fonts + final green build gate: assembleDebug + bundleDebug BUILD SUCCESSFUL) -- Phase 02 complete, 4/4 plans
 Resume file: None
+
+## Session Snapshot — 2026-09-08 (pre-compact)
+
+**Milestone status:** Phases 1, 2, 3 COMPLETE (verified). Phase 5 PLANNED + plan-checked (PASS), NOT executed. Phases 4 & 6 not yet planned.
+
+**Re-sequenced execution order (user choice):** 1✓ → 3✓ → 2✓ → **4 (Mobile UX — NEXT)** → 5 (Voice — deferred, already planned/checked) → 6 (Play launch — last).
+
+**App is LIVE on a real device.** Native Android app boots past splash into fully playable gameplay on the user's **Pixel 7 (wireless adb, model `panther`)**. Engine (movement/endless/permadeath/new-run) + native `@capacitor/preferences` persistence + back-button all working on-device. Debug APK+AAB build green.
+
+**What the app looks like now:** the PROTOTYPE's original 1990s dossier/typewriter look running in the WebView with the new engine underneath. NO mobile UX yet — that's Phase 4.
+
+**Phase 4 (NEXT) must deliver:** the Claude Design "Mazeworld Mobile" UX (design URL in PROJECT.md — NOT yet imported; needs the `design` skill / DesignSync or user-provided files), the 9 user-provided map icons in `icons/` (replace prototype's procedural glyphs), tap-to-move touch controls, readable/accessible UI, DPI/safe-area, in-context tutorial/onboarding, AND finish routing ALL game domains through the engine in the live page + complete event narration (Phase 1 deferred). UX-01..08. Needs device iteration (user has one).
+
+**Build env (durable):** JDK 21 at `C:/Users/Dell/.jdk/jdk-21.0.12.1+1` (pinned via `android/gradle.properties org.gradle.java.home`; `npx cap sync` WIPES it → run `node tools/pin-jdk.mjs` after every sync). ANDROID_HOME=`%LOCALAPPDATA%\Android\Sdk`. Platforms android-36 + android-37; build-tools 36.0.0. AGP 8.13.0 / Gradle 8.14.3 (do NOT let Android Studio upgrade AGP). adb at `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`. appId `com.darktierstudios.mazeworld`. Build chain: `npm run build:www` → `npx cap sync android` → `node tools/pin-jdk.mjs` → `cd android && gradlew.bat assembleDebug`. Capacitor plugin ESM loaded via import-map with `.js` extension rewriting in `tools/build-www.mjs` (do NOT regress).
+
+**Google Play account:** user ALREADY HAS a Google Play developer account (confirmed 2026-09-08) — Phase 6's main $25 gate is cleared; release signing + Data Safety/IARC + submission remain.
+
+**Open follow-ups (non-blocking):**
+- [Phase 2, optional] Intermittent early-boot `TypeError: reading 'triggerEvent'` (Capacitor native bridge firing an event before ESM core wires `window.Capacitor`); non-fatal, didn't recur on cold boot; documented in `02-HOTFIX.md`. Small early-boot ordering tweak if we want it squashed.
+- Test count is 372 (green). Emulator note: user's Pixel_10a AVD uses an unstable preview image (android-37.1 / 16KB page size) that crashes — user switched to a physical Pixel 7 instead (works). AVD was set to software GPU as a mitigation (config backup at `~/.android/avd/Pixel_10a.avd/config.ini.bak.mzworld`).
+
+**Deferred UAT (device/human) accumulated:** see the Deferred Verification table above — Phase 2 (on-device install/splash/back/lifecycle/durability — now largely CONFIRMED working via the hotfix device test; visual polish still Phase 4), Phase 3 (difficulty feel-tuning to floor 30-50+), Phase 1 (browser playthrough). Voice "is it funny" is a Phase 5 UAT.
