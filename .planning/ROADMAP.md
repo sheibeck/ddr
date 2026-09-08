@@ -124,7 +124,13 @@ Plans:
   2. A batch-generated sample of procedural flavor-text combinations has been reviewed and confirmed family-friendly (no profanity or gore) before the content is treated as final.
   3. The player can open a graveyard/run-history screen showing past adventurers, how they died, and their sarcastic epitaphs, and this history persists across app restarts.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Voice generator foundation: category-keyed event→copy map (all ~158 engine types, coverage-guarded), presentation-local RNG, first-pass banks + tone guide (VOX-01)
+- [ ] 05-02-PLAN.md — Variant breadth + narrate() wired into the live Oracle log + exhaustive family-friendly safety scan + vendored wordlist + human-review sample (VOX-01, VOX-02)
+- [ ] 05-03-PLAN.md — Graveyard/run-history screen: re-fetch-on-open fix + all-causes persistence round-trip + ship presentation/ to the build (VOX-03)
+
 **UI hint**: yes
 
 ### Phase 6: Google Play Compliance & Launch
@@ -154,7 +160,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Android Packaging & Native Persistence | 4/4 | Complete ✓ | 2026-09-08 |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device visual test | - |
-| 5. Voice, Content & Graveyard | 0/TBD | Next (code-only) | - |
+| 5. Voice, Content & Graveyard | 0/3 | Planned — ready to execute | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
 
 > **Execution order (re-adjusted 2026-09-08 — user installed Android Studio):** 1 ✓ → 3 ✓ → **2 (now unblocked)** → 5 → then 4 & 6 when a device/emulator visual test and Google Play account are ready. Phase 2's code + a headless debug build are automatable; the emulator/device visual test and release signing are UAT/user steps.
