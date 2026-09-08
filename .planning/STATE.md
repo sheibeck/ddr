@@ -137,6 +137,8 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 |-------|------|--------|
 | 1 | Full playthrough in a browser matches the prototype (manual feel/observation) — per 01-VALIDATION.md, deferred to end-of-milestone UAT | /gsd-verify-work 1 |
 | 1 | Live browser page currently routes only movement/camp through the engine; combat/economy still run original prototype code, and `formatEvents()` narrates only a subset of the ~26 engine event types. Intentional Phase-1 scope boundary — **Phase 4 must route ALL domains through the engine adapter and complete event narration.** | (addressed in Phase 4) |
+| 3 | Difficulty **feel-tuning**: play to floor 30–50+, confirm ~5–10 min runs, never trivial or unfairly unwinnable; tune `engine/difficulty.js` named constants (note: fairness darkness ceiling currently measured-calibrated to 0.8) and re-run `node tools/tune-difficulty.mjs`. The mechanical bounds are tested; the *feel* is human. | playtest + tune constants |
+| 3 | Death-card "Roll another delver" button click-through in a real browser (engine-level new-run loop is test-verified; only the DOM click is manual). | open mazeworld.html, die, click |
 
 ## Deferred Items
 
