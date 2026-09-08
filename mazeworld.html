@@ -264,17 +264,6 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-overlay h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ditto)}
 
 .mazefoot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-top:10px}
-.legend{display:none;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase}
-.legend.mw-legend-open{display:flex}
-.legend i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px;border-radius:50%}
-.legend .k-dot{background:var(--stamp)}
-.legend .k-tel{background:var(--ditto);border-radius:0;transform:rotate(45deg)}
-.legend .k-one{background:var(--moss);border-radius:0;clip-path:polygon(50% 0,100% 100%,0 100%)}
-.legend .k-trap{background:var(--stamp);border-radius:0;clip-path:polygon(20% 0,50% 30%,80% 0,100% 20%,70% 50%,100% 80%,80% 100%,50% 70%,20% 100%,0 80%,30% 50%,0 20%)}
-.legend .k-chest{background:var(--moss);border-radius:0;height:7px}
-.legend .k-climb{background:repeating-linear-gradient(var(--ink) 0 2px,transparent 2px 4px);border-radius:0}
-.legend .k-gorge{background:var(--ink);border-radius:0;clip-path:polygon(0 0,45% 50%,5% 100%,100% 100%,55% 50%,95% 0)}
-.legend .k-exit{background:var(--ink);border-radius:0;clip-path:polygon(50% 100%,0 0,100% 0)}
 
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
    48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
@@ -664,6 +653,47 @@ html,body{height:100%}
    or touched by the animation itself. */
 @keyframes mwflick{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes mwfade{from{opacity:0}to{opacity:1}}
+/* DR4 group 2 ("MARKS legend bottom-sheet"): the mock's own rise-in
+   keyframe (design/Mazeworld Mobile.dc.html's `@keyframes mwrise`), reused
+   for the MARKS legend panel below. */
+@keyframes mwrise{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ---------- MARKS legend bottom sheet (DR4 group 2) ----------
+   Replaces the prototype's inline .legend strip under the map with the
+   mock's "WHAT THE MARKS MEAN" full-screen scrim + rising panel
+   (design/Mazeworld Mobile.dc.html's legendOpen block) — a dark panel
+   sliding up over the WHOLE app (not just the map viewport), listing every
+   one of the 9 FEATURE_ICONS PNGs (icons/optimized/*.png) with its name and
+   a short deadpan description. Opened by the MARKS chip, dismissed by
+   tapping the scrim or the close affordance — see the classic script's
+   openMarksLegend()/closeMarksLegend(). */
+.mw-legend-sheet{position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end}
+.mw-legend-sheet[hidden]{display:none}
+.mw-legend-scrim{position:absolute;inset:0;background:rgba(8,7,5,.8);animation:mwfade .16s ease}
+.mw-legend-panel{
+  position:relative;width:100%;max-height:78vh;overflow-y:auto;
+  background:#1b170f;border-top:3px solid #6b5c3c;
+  padding:18px 18px calc(28px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  animation:mwrise .2s ease;
+}
+.mw-legend-head{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  font-family:var(--disp);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+  color:#c9bda0;border-bottom:3px solid #3a3226;padding-bottom:10px;
+}
+.mw-legend-close{
+  min-height:40px;min-width:40px;padding:8px 12px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;border:2px solid #4a4032;color:#e8c97a;box-shadow:none;
+}
+.mw-legend-close:hover:not(:disabled),.mw-legend-close:active:not(:disabled){background:transparent;color:#e8c97a}
+.mw-legend-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:2px solid #241f16}
+.mw-legend-row img{width:34px;height:34px;object-fit:contain;flex:none}
+.mw-legend-row-name{
+  font-family:var(--disp);font-size:7px;width:104px;flex:none;
+  color:#e6ddc6;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;
+}
+.mw-legend-row-desc{flex:1;font-family:var(--mono);font-size:12.5px;font-weight:700;color:#a89c82;line-height:1.35}
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
   background:var(--paper);color:var(--ink);
@@ -738,6 +768,25 @@ html,body{height:100%}
   </div>
 </div>
 
+<!-- ============ MARKS LEGEND BOTTOM SHEET (DR4 group 2) ============
+     Full-screen scrim + rising panel matching design/Mazeworld
+     Mobile.dc.html's "WHAT THE MARKS MEAN" legendOpen block — replaces the
+     prototype's inline .legend strip that used to live under the map.
+     Opened by the MARKS chip (mw-chip-marks), rows populated once by
+     renderMarksLegend() (classic script, below) from the same
+     icons/optimized/*.png set preloadIcons() already loads. Dismissed by
+     tapping the scrim or the Close button. -->
+<div id="mw-legend-sheet" class="mw-legend-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-legend-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-label="What the marks mean">
+    <div class="mw-legend-head">
+      <span>What the marks mean</span>
+      <button type="button" class="mw-legend-close" id="mw-legend-close" aria-label="Close">Close</button>
+    </div>
+    <div class="mw-legend-rows" id="mw-legend-rows"></div>
+  </div>
+</div>
+
 <div id="app" class="mw-app">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
@@ -791,24 +840,10 @@ html,body{height:100%}
           </section>
         </div>
         <div class="mazefoot">
-          <div class="legend" id="mw-legend">
-            <span><i class="k-dot"></i>Encounter dot</span>
-            <span><i class="k-tel"></i>Teleport</span>
-            <span><i class="k-one"></i>One-way door</span>
-            <span><i class="k-trap"></i>Trap</span>
-            <span><i class="k-chest"></i>Locked box</span>
-            <span><i class="k-climb"></i>Wall</span>
-            <span><i class="k-gorge"></i>Crevice</span>
-            <span><i class="k-exit"></i>Descent</span>
-          </div>
-          <!-- DR4 "D-pad shifted right": camp + dpad are now separate direct
-               .mazefoot flex children (previously shared one wrapper div),
-               so .mazefoot's existing justify-content:space-between actually
-               spreads them apart — MAKE CAMP left, D-pad right, matching the
-               mock's bottom bar. With #mw-legend hidden (the normal case)
-               these two are the only visible flex children, so
-               space-between pins camp to the left edge and the d-pad to the
-               right edge instead of both huddling together on the left. -->
+          <!-- DR4 "D-pad shifted right": camp + dpad are the two direct
+               .mazefoot flex children, so .mazefoot's existing
+               justify-content:space-between spreads them apart — MAKE CAMP
+               left, D-pad right, matching the mock's bottom bar. -->
           <button class="small" id="btn-camp">Make camp</button>
           <!-- Device-review revision #2: the D-pad is now the SOLE,
                ALWAYS-VISIBLE movement control (see .dpad CSS — no more
@@ -3946,12 +3981,49 @@ function flashMessage(text) {
   flashTimer = setTimeout(() => el.classList.remove("mw-flash-show"), 1400);
 }
 
-// MARKS toggles the existing feature legend (mazefoot) as a compact overlay
-// reveal; CENTRE snaps the camera pan back onto the player — both are >=48dp
-// chips per the 48dp Corrections table.
-document.getElementById("mw-chip-marks").addEventListener("click", () => {
-  document.getElementById("mw-legend").classList.toggle("mw-legend-open");
-});
+// DR4 group 2: MARKS opens the mock's "WHAT THE MARKS MEAN" bottom sheet
+// (design/Mazeworld Mobile.dc.html's legendOpen block) — replaces the
+// prototype's inline .legend strip toggle. CENTRE still just snaps the
+// camera pan back onto the player. Both remain >=48dp chips per the 48dp
+// Corrections table.
+//
+// One row per FEATURE_ICONS PNG key (src/browser/icons.js — the same 9
+// icons/optimized/*.png the map itself draws), each with its display name
+// and a short description in the game's own deadpan voice. Descriptions for
+// the 7 feature-tile marks echo design/Mazeworld Mobile.dc.html's own FEATS
+// table; WALL (the "climb" feat) and the YOU/party marker have no FEATS
+// entry in the mock (it treats them as maze structure / the player, not a
+// rollable feature) so their copy is new but matches the same voice.
+const MARKS_LEGEND = [
+  { icon: "encounter",  name: "ENCOUNTER DOT", desc: "Something gets rolled for you the moment you touch it." },
+  { icon: "teleport",   name: "TELEPORT",      desc: "Thrown a d20 of squares somewhere you did not choose." },
+  { icon: "onewaydoor", name: "ONE-WAY DOOR",  desc: "Go where the arrow points. There is no coming back." },
+  { icon: "trap",       name: "TRAP",          desc: "A d6 out of you, before you knew it was there." },
+  { icon: "chest",      name: "LOCKED BOX",    desc: "1–5 on a d10 opens it. The rest costs you a pick." },
+  { icon: "crevice",    name: "CREVICE",       desc: "Climb it, or fall, and be grateful for half the fall." },
+  { icon: "descent",    name: "DESCENT",       desc: "The floor below, which is worse in every way." },
+  { icon: "wall",       name: "WALL",          desc: "Climb it on a d10 under your class's number, or fall and eat the difference." },
+  { icon: "party",      name: "YOU",           desc: "The party marker. Whatever is nearby has already noticed you." },
+];
+function renderMarksLegend() {
+  const rows = document.getElementById("mw-legend-rows");
+  if (!rows || rows.childElementCount) return; // build once, reused on every open
+  rows.innerHTML = MARKS_LEGEND.map(m =>
+    `<div class="mw-legend-row"><img src="./icons/optimized/${m.icon}.png" alt="" aria-hidden="true">` +
+    `<span class="mw-legend-row-name">${m.name}</span>` +
+    `<span class="mw-legend-row-desc">${m.desc}</span></div>`
+  ).join("");
+}
+function openMarksLegend() {
+  renderMarksLegend();
+  document.getElementById("mw-legend-sheet").hidden = false;
+}
+function closeMarksLegend() {
+  document.getElementById("mw-legend-sheet").hidden = true;
+}
+document.getElementById("mw-chip-marks").addEventListener("click", openMarksLegend);
+document.getElementById("mw-legend-scrim").addEventListener("click", closeMarksLegend);
+document.getElementById("mw-legend-close").addEventListener("click", closeMarksLegend);
 document.getElementById("mw-chip-centre").addEventListener("click", () => {
   pan = { x: 0, y: 0 };
   positionCanvas();
