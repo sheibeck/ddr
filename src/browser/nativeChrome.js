@@ -206,11 +206,18 @@ export async function registerNativeChrome({
   }
   try {
     const StatusBar = injectedStatusBar || (await import("@capacitor/status-bar")).StatusBar;
-    // Style.Light = "dark text for light backgrounds" (StatusBar's own naming
-    // is inverted from what it sounds like) — matches mazeworld.html's
-    // --paper (#EFE7D6) parchment theme extending under the status bar.
-    await StatusBar?.setStyle?.({ style: "LIGHT" });
-    await StatusBar?.setBackgroundColor?.({ color: "#EFE7D6" });
+    // 04-05: recolored for the dark "torch-lit ledger" theme (04-CONTEXT.md
+    // "Visual theme & fidelity" — supersedes 02-04's light-parchment
+    // #EFE7D6 setup). Style.Dark = "light text/icons for dark backgrounds"
+    // (StatusBar's own naming is inverted from what it sounds like) — matches
+    // mazeworld.html's --paper-2 (#1b170f) dark ground now extending under
+    // the status bar. setBackgroundColor is treated as best-effort only
+    // (04-RESEARCH.md Pitfall 3 — Android 15+ edge-to-edge can silently
+    // ignore it): the real guarantee is mazeworld.html's own dark HUD band
+    // extending to y=0 with safe-area-aware padding on its CONTENT, not this
+    // call succeeding.
+    await StatusBar?.setStyle?.({ style: "DARK" });
+    await StatusBar?.setBackgroundColor?.({ color: "#1b170f" });
   } catch {
     /* status-bar plugin unavailable/not yet configured — non-fatal */
   }
