@@ -2,81 +2,89 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Delve, Die, Repeat — a solo roguelike dungeon-crawler from Dark Tier Studios. Random hero. Random dungeon. Random death.">
 <meta property="og:title" content="Delve, Die, Repeat">
 <meta property="og:description" content="A solo roguelike dungeon-crawler. Random hero. Random dungeon. Random death.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
-<style>*{box-sizing:border-box}html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
+<style>*{box-sizing:border-box}html{color-scheme:dark}body{margin:0}[hidden]{display:none!important}</style>
 <title>Delve, Die, Repeat</title>
 <style>
-/* Self-hosted fonts (02-04) — a paid, fully-offline app must issue zero
+/* Self-hosted fonts (04-05) — a paid, fully-offline app must issue zero
    network requests, including for fonts. These files are fetched once at
    BUILD time on a networked build machine into ./fonts/, then shipped in
    the app bundle; the running app never makes a font network call.
-   Faces/weights: Special Elite 400; Crimson Pro 400/600 normal + 400
-   italic; IBM Plex Mono 400/500/600. See 02-04-SUMMARY.md for the source. */
+   Faces/weights for the dark "torch-lit ledger" theme: Press Start 2P 400
+   (Micro-label/Display roles) + Courier Prime 400/700 (Body/Data roles),
+   both latin-subset/OFL-licensed. Retires the light-theme's Special
+   Elite/Crimson Pro/IBM Plex Mono faces (02-04) from the LIVE theme — those
+   three .woff2 files stay on disk, unreferenced, for any future light-mode
+   use, but are no longer declared here so the browser never fetches them. */
 @font-face{
-  font-family:"Special Elite";
+  font-family:"Press Start 2P";
   font-style:normal;
   font-weight:400;
   font-display:swap;
-  src:url("./fonts/special-elite-400.woff2") format("woff2");
+  src:url("./fonts/press-start-2p-400.woff2") format("woff2");
 }
 @font-face{
-  font-family:"Crimson Pro";
-  font-style:normal;
-  font-weight:400 600;
-  font-display:swap;
-  src:url("./fonts/crimson-pro-normal.woff2") format("woff2");
-}
-@font-face{
-  font-family:"Crimson Pro";
-  font-style:italic;
-  font-weight:400;
-  font-display:swap;
-  src:url("./fonts/crimson-pro-italic-400.woff2") format("woff2");
-}
-@font-face{
-  font-family:"IBM Plex Mono";
+  font-family:"Courier Prime";
   font-style:normal;
   font-weight:400;
   font-display:swap;
-  src:url("./fonts/ibm-plex-mono-400.woff2") format("woff2");
+  src:url("./fonts/courier-prime-400.woff2") format("woff2");
 }
 @font-face{
-  font-family:"IBM Plex Mono";
+  font-family:"Courier Prime";
   font-style:normal;
-  font-weight:500;
+  font-weight:700;
   font-display:swap;
-  src:url("./fonts/ibm-plex-mono-500.woff2") format("woff2");
-}
-@font-face{
-  font-family:"IBM Plex Mono";
-  font-style:normal;
-  font-weight:600;
-  font-display:swap;
-  src:url("./fonts/ibm-plex-mono-600.woff2") format("woff2");
+  src:url("./fonts/courier-prime-700.woff2") format("woff2");
 }
 </style>
 <style>
 :root{
-  --paper:#EFE7D6;
-  --paper-2:#E6DCC5;
-  --paper-3:#DCD0B5;
-  --ink:#2A2521;
-  --ink-soft:#5D544A;
-  --ditto:#4A3B8C;
-  --ditto-2:#6E5FB0;
-  --stamp:#B03A2C;
-  --moss:#4C6B46;
-  --rule:#C7B9A0;
+  /* 04-05: dark "torch-lit ledger" theme (04-CONTEXT.md/04-UI-SPEC.md) —
+     replaces the light-parchment prototype palette in place. Every existing
+     selector below already reads these SAME custom-property NAMES (button
+     box-shadows, panel backgrounds, log tones via `var(--${tone})` string
+     interpolation, etc.) — repointing the values here reskins the whole app
+     without a full per-selector rewrite. The ONE exception is the maze
+     <canvas> renderer (draw(), ~line 1345), which is deliberately frozen to
+     literal hex matching the OLD values so the still-light maze floor
+     (#F4EEDF, untouched — canvas recoloring is 04-06's job) keeps legible
+     contrast regardless of what these variables become. */
+  --paper:#14110c;
+  --paper-2:#1b170f;
+  --paper-3:#241d12;
+  --ink:#e6ddc6;
+  --ink-soft:#a89c82;
+  --ditto:#e8c97a;
+  --ditto-2:#f6e0a2;
+  --stamp:#e07260;
+  --moss:#8fae6a;
+  --rule:#3a3226;
   --grid:#9FBDB4;
-  --shadow:0 1px 0 #FFFBF0, 0 2px 6px rgba(42,37,33,.12);
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --disp:"Special Elite","Courier New",monospace;
-  --body:"Crimson Pro",Georgia,serif;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.45);
+  --mono:"Courier Prime",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:"Press Start 2P","Courier New",monospace;
+  --body:"Courier Prime",ui-monospace,monospace;
+
+  /* Danger family beyond --stamp (04-UI-SPEC.md Color) — border/deep-fill/
+     panel-fill for destructive buttons and low-rations/trap treatments. */
+  --mw-danger-border:#a63a2c;
+  --mw-danger-fill:#6b2c22;
+  --mw-danger-panel:#2a1512;
+
+  /* UX-08 text scaling — ONE root multiplier every rem-based typography
+     token below multiplies by; src/browser/settings.js#effectiveTextScale
+     sets this on #app at boot (S=0.85 / M=1.0 / L=1.25, OS-scale-clamped). */
+  --mw-text-scale:1;
+  --mw-font-micro:calc(0.5rem * var(--mw-text-scale));     /* Press Start 2P — HUD tags, tab labels, section headers */
+  --mw-font-body:calc(0.9375rem * var(--mw-text-scale));   /* Courier Prime Bold — running/flavor text */
+  --mw-font-data:calc(1rem * var(--mw-text-scale));        /* Courier Prime Bold — numeric HUD/stat values */
+  --mw-font-display:calc(0.8125rem * var(--mw-text-scale)); /* Press Start 2P — names, screen identity headers */
 }
 *{box-sizing:border-box}
 body{
@@ -204,7 +212,7 @@ button:hover:not(:disabled){background:#F7F1E2}
 button:active:not(:disabled){transform:translate(2px,2px);box-shadow:0 0 0 var(--rule)}
 button:focus-visible{outline:2px solid var(--ditto);outline-offset:2px}
 button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-button.primary{background:var(--ditto);color:#F6F1E4;border-color:var(--ditto)}
+button.primary{background:var(--ditto);color:var(--paper);border-color:var(--ditto)}
 button.primary:hover:not(:disabled){background:var(--ditto-2)}
 button.danger{border-color:var(--stamp);color:var(--stamp)}
 button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px}
@@ -359,75 +367,98 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+<style>
+/* ============================================================
+   04-05: dark torch-lit shell — 5-tab bottom nav, top HUD, and the
+   safe-area-aware fixed chrome around the untouched <canvas id="maze">.
+   The legacy .panel/.stats/.kit/.skills/etc selectors above are REUSED
+   unchanged inside the tab screens below (they already read the dark
+   palette custom properties redefined at :root); this block only adds the
+   new structural chrome (#app/.mw-hud/.mw-tabbar/.mw-screens) plus a few
+   small additions (rations bar, empty/error states) the light-theme
+   desktop layout never needed.
+   ============================================================ */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+html,body{height:100%}
+#app.mw-app{display:flex;flex-direction:column;min-height:100vh;background:var(--paper)}
+
+.mw-hud{
+  position:sticky;top:0;z-index:5;
+  background:var(--paper-2);
+  border-bottom:1px solid var(--rule);
+  padding:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 10px;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;
+}
+.mw-hud-row{display:flex;gap:6px 16px;flex-wrap:wrap}
+.mw-hud-item{
+  font-family:var(--mono);font-size:var(--mw-font-micro);letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-soft);
+  display:flex;align-items:baseline;gap:5px;
+}
+.mw-hud-item b{
+  font-family:var(--mono);font-size:var(--mw-font-data);letter-spacing:0;
+  color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;
+}
+.mw-hud-rations{flex-direction:column;align-items:flex-end;gap:2px}
+.mw-hud-rations.warn b{color:var(--stamp)}
+.mw-bar{width:78px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09;overflow:hidden}
+.mw-bar i{display:block;height:100%;background:var(--ditto);font-style:normal}
+.mw-hud-rations.warn .mw-bar i{background:var(--stamp)}
+.mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
+.mw-wilmst b{color:var(--ink);font-weight:600}
+
+.mw-screens{flex:1;overflow-y:auto;padding:14px 14px calc(88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
+.mw-screen{display:block}
+
+.mw-tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:6;
+  display:flex;background:var(--paper-2);
+  border-top:2px solid var(--rule);
+  padding-bottom:calc(8px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+.mw-tab{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  min-height:48px;padding:15px 0 13px;
+  font-family:var(--disp);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;
+  background:transparent;color:#8f856f;
+  border:0;border-top:3px solid transparent;border-radius:0;box-shadow:none;
+  cursor:pointer;
+}
+.mw-tab:active:not(:disabled){transform:none;box-shadow:none}
+.mw-tab.active{color:var(--ditto);background:#241d12;border-top-color:var(--ditto)}
+
+.mw-empty{padding:22px 6px;text-align:center}
+.mw-empty-head{display:block;font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--ink);margin:0 0 8px}
+.mw-empty-body{display:block;font-family:var(--body);font-style:italic;font-size:13px;color:var(--ink-soft)}
+.mw-error .mw-empty-head{color:var(--stamp)}
+.yard-loading{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;text-align:center}
+</style>
 </head>
 <body>
 
 
-<div class="wrap">
-  <header class="masthead">
-    <h1>Delve, Die, Repeat</h1>
-    <div class="meta">
-      <div class="m">Floor<b id="m-floor">1</b></div>
-      <div class="m">Day<b id="m-day">1</b></div>
-      <div class="m">Squares<b id="m-steps">0</b></div>
-      <div class="m" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
-      <div class="m">Wilmst<b id="m-gold">0</b></div>
+<div id="app" class="mw-app">
+  <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
+
+  <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
+  <header class="mw-hud" id="mw-hud">
+    <div class="mw-hud-row">
+      <div class="mw-hud-item">Floor<b id="m-floor">1</b></div>
+      <div class="mw-hud-item">Day<b id="m-day">1</b></div>
+      <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
+    </div>
+    <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">
+      Rations<b id="m-rations">5</b>
+      <div class="mw-bar"><i id="m-rations-fill" style="width:100%"></i></div>
     </div>
   </header>
 
-  <div class="desk">
-    <!-- ============ CHARACTER SHEET ============ -->
-    <div class="col-sheet">
-      <section class="panel">
-        <h2>Character sheet <span id="s-level">Lvl I</span></h2>
-        <p class="name" id="s-name">—</p>
-        <p class="tagline" id="s-tag">—</p>
+  <!-- ============ 5 TAB SCREENS ============ -->
+  <main class="mw-screens" id="mw-screens">
 
-        <div class="wpbar">
-          <div class="lab"><span>Win Potential</span><b><span id="s-wp">0</span> / <span id="s-wpmax">0</span></b></div>
-          <div class="track"><div class="fill" id="s-wpfill" style="width:100%"></div></div>
-        </div>
-
-        <dl class="stats">
-          <dt>To strike</dt><dd class="em" id="s-die">d20</dd>
-          <dt>To hit</dt><dd class="em" id="s-hit">1–5</dd>
-          <dt>Damage</dt><dd id="s-dmg">—</dd>
-          <dt>Armor</dt><dd id="s-arm">—</dd>
-          <dt>Intelligence</dt><dd id="s-int">—</dd>
-          <dt>Skill points</dt><dd id="s-sp">0</dd>
-          <dt>Next level</dt><dd id="s-next">201</dd>
-          <dt>Upkeep</dt><dd id="s-cost">4 wp/day</dd>
-        </dl>
-
-        <p class="trait" id="s-trait">—</p>
-      </section>
-
-      <section class="panel">
-        <h2>Kit</h2>
-        <ul class="kit" id="s-kit"></ul>
-      </section>
-
-      <section class="panel">
-        <h2>Special skills <span id="s-vp"></span></h2>
-        <ul class="skills" id="s-skills"></ul>
-      </section>
-
-      <section class="panel" id="carry-panel">
-        <h2>Carried <span id="s-carry-n"></span></h2>
-        <ul class="skills" id="s-carry"></ul>
-      </section>
-
-      <section class="panel">
-        <h2>Delve</h2>
-        <div class="actions">
-          <button class="small" id="btn-new">Roll new character</button>
-          <button class="small" id="btn-wipe">Clear save</button>
-        </div>
-      </section>
-    </div>
-
-    <!-- ============ MAZE ============ -->
-    <div class="col-maze">
+    <!-- MAZE (default landing screen; canvas UNCHANGED, id="maze" preserved) -->
+    <section class="mw-screen" id="screen-maze" data-screen="maze">
       <div class="mazebox">
         <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
         <div class="mazefoot">
@@ -453,86 +484,185 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
         </div>
       </div>
 
-    </div>
-
-    <!-- ============ ENCOUNTER + ORACLE ============ -->
-    <div class="col-right">
+      <!-- Combat/death/win overlay lives on the MAZE tab (it's where a run
+           happens); a dedicated full-screen combat/death-card treatment is a
+           later slice's job (04-UI-SPEC.md screens 9-10) — this shell keeps
+           the existing enc-panel functional and dark-themed. -->
       <section class="panel" id="enc-panel">
         <h2>Encounter <span id="enc-round"></span></h2>
         <div id="enc-body"></div>
       </section>
+    </section>
+
+    <!-- HERO — "THE DOOMED" character sheet (shell; 04-UI-SPEC.md Screen 2) -->
+    <section class="mw-screen" id="screen-hero" data-screen="hero" hidden>
+      <section class="panel">
+        <h2>Character sheet <span id="s-level">Lvl I</span></h2>
+        <p class="name" id="s-name">—</p>
+        <p class="tagline" id="s-tag">—</p>
+
+        <div class="wpbar">
+          <div class="lab"><span>Win Potential</span><b><span id="s-wp">0</span> / <span id="s-wpmax">0</span></b></div>
+          <div class="track"><div class="fill" id="s-wpfill" style="width:100%"></div></div>
+        </div>
+
+        <dl class="stats">
+          <dt>To strike</dt><dd class="em" id="s-die">d20</dd>
+          <dt>To hit</dt><dd class="em" id="s-hit">1–5</dd>
+          <dt>Damage</dt><dd id="s-dmg">—</dd>
+          <dt>Armor</dt><dd id="s-arm">—</dd>
+          <dt>Intelligence</dt><dd id="s-int">—</dd>
+          <dt>Skill points</dt><dd id="s-sp">0</dd>
+          <dt>Next level</dt><dd id="s-next">201</dd>
+          <dt>Upkeep</dt><dd id="s-cost">4 wp/day</dd>
+        </dl>
+
+        <p class="trait" id="s-trait">—</p>
+      </section>
+
+      <section class="panel">
+        <h2>Special skills <span id="s-vp"></span></h2>
+        <ul class="skills" id="s-skills"></ul>
+      </section>
+
+      <section class="panel dossier">
+        <h2>The Maze Master's notes <span id="doss-who"></span></h2>
+        <div class="doss" id="doss"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Delve</h2>
+        <div class="actions">
+          <button class="small" id="btn-new">Roll new character</button>
+          <button class="small" id="btn-wipe">Clear save</button>
+        </div>
+      </section>
+    </section>
+
+    <!-- GEAR (shell; 04-UI-SPEC.md Screen 3 — Kit rows + CARRIED section) -->
+    <section class="mw-screen" id="screen-gear" data-screen="gear" hidden>
+      <section class="panel">
+        <h2>Gear</h2>
+        <div class="mw-wilmst">Wilmst <b id="m-gold">0</b></div>
+        <ul class="kit" id="s-kit"></ul>
+      </section>
+
+      <section class="panel" id="carry-panel">
+        <h2>Carried <span id="s-carry-n"></span></h2>
+        <ul class="skills" id="s-carry"></ul>
+      </section>
+    </section>
+
+    <!-- ORACLE — "THE ORACLE" message/combat log (shell; UX-05) -->
+    <section class="mw-screen" id="screen-oracle" data-screen="oracle" hidden>
       <section class="panel" id="log-panel">
         <h2>The Oracle <span id="log-count"></span></h2>
         <div class="log" id="log"></div>
       </section>
-    </div>
+    </section>
 
-    <!-- ============ DOSSIER ============ -->
-    <div class="col-doss">
-      <section class="panel dossier">
-        <h2>The Dungeon Master's notes <span id="doss-who"></span></h2>
-        <div class="doss" id="doss"></div>
+    <!-- DEAD — graveyard presentation shell (data wiring is Phase 5) -->
+    <section class="mw-screen" id="screen-dead" data-screen="dead" hidden>
+      <section class="yard-wrap">
+        <div class="yard-head">
+          <h2>The graveyard <span id="yard-count"></span></h2>
+          <button class="small" id="btn-clearyard">Clear the graveyard</button>
+        </div>
+        <div class="yard" id="yard"><p class="yard-loading">Consulting the ledger…</p></div>
       </section>
+    </section>
+
+  </main>
+
+  <!-- ============ 5-TAB BOTTOM NAV (UX; fixed, safe-area-padded) ============ -->
+  <nav class="mw-tabbar" id="mw-tabbar">
+    <button type="button" class="mw-tab active" data-tab="maze" aria-current="true">MAZE</button>
+    <button type="button" class="mw-tab" data-tab="hero" aria-current="false">HERO</button>
+    <button type="button" class="mw-tab" data-tab="gear" aria-current="false">GEAR</button>
+    <button type="button" class="mw-tab" data-tab="oracle" aria-current="false">ORACLE</button>
+    <button type="button" class="mw-tab" data-tab="dead" aria-current="false">DEAD</button>
+  </nav>
+</div>
+
+<!-- Desktop-only "departs from the rulebook" credits/documentation section —
+     not part of any 04-UI-SPEC.md mobile screen; kept in the DOM (content
+     preserved, nothing deleted) but hidden from the mobile shell. -->
+<section class="notes" hidden>
+  <h2>Where this prototype departs from the rulebook</h2>
+  <p class="notes-lede">Every weapon, armour value, creature, spell, potion, trap, encounter, climb and leap now comes from the rulebook itself. This page lists only the places the prototype knowingly departs from it — the list to reconcile if you ever revise the PDF.</p>
+  <div class="notecols">
+    <div>
+      <h3>Made for one player</h3>
+      <ul>
+        <li><b>No Dungeon Master, no party.</b> Encounters roll themselves and "who gets it" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.</li>
+        <li><b>Sleep mends you</b> — <code>d10 + 2×level</code> for a ration and eight hours, and camping is a button. The book has no natural healing because it assumes a Cleric in the party. Without this a solo delver has no way back up.</li>
+        <li><b>Skill points ×5.</b> <code>(d6 × creature level) ÷ party</code> is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.</li>
+        <li><b>Spells run on <code>2×level + 2</code> charges</b>, one returning every 20 squares, instead of once per 100 squares. The book's cadence is a party's pace, not one caster's.</li>
+        <li><b>Magic Users start at 25 + d10 wp</b> rather than a flat 25. Twenty-five with no armour is one bad round, every time.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Balance decisions</h3>
+      <ul>
+        <li><b>Elves keep 0.6 of their Win Potential</b>, not half. A flat half on a 25-wp caster was a death sentence; the other elven rules are as written.</li>
+        <li><b>Trolls eat two rations a night</b> on top of the 15 wp cost of living. Otherwise 75 wp and +9 damage carried no real price.</li>
+        <li><b>Every Thief opens with a backstab</b> (doubled damage) and breaks away on <code>d20+5</code>. The class description is three-quarters stealth and back-stabbing, and the rules gave it no mechanic.</li>
+        <li><b>At most two creatures until skill level III.</b> Three level-one creatures on a fresh character is not a fight, it is a formality.</li>
+        <li><b>Forcing a locked box is 8-in-20</b>, and a failed attempt lets you smash it for half the coin and none of the glass. Lockpicks exist as an item so a non-thief has a route in.</li>
+        <li><b>Sewing patches any armour</b>, not only cloth and leather. The restriction mostly punished the one class that can take the skill.</li>
+        <li><b>Poison and disease stop at 1 wp</b> and clear with a night's rest. As written they run at up to 2d6 a square with only a Cure spell to stop them — which no solo delver has. They still take everything you had.</li>
+        <li><b>Two traps a floor, dodged on 1–5</b> (better if you are nimble), and the Spike pit does d10×5 rather than d10×10. The trap table is written for a party that can absorb one; at full strength it was killing a third of all characters outright.</li>
+        <li><b>Level V has only Beasts and a Vampire</b> in the book — the other four type headings on p.43 are empty. Floor five falls back to the level IV roster for those types.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Rulings on ambiguities</h3>
+      <ul>
+        <li><b>"Roll one die lower to strike"</b> for dwarves is read as the creature getting the better die, per the book's own worked example (a level 1 creature rolls d12 instead of d20).</li>
+        <li><b>Armour AR is a d20 soak roll</b> exactly as written on p.44, with damage going to the armour's WP when it exceeds the Min. Armour is therefore consumable, and store repair at a tenth of cost per point is the main money sink.</li>
+        <li><b>Creature damage</b> is <code>level² + d6</code> where a creature's description gives no weapon, and <code>level² + its own damage</code> where it does.</li>
+        <li><b>Level V creatures</b> for Demons, Humans, Lair Beasts and Magical fall back to the level IV roster, because those four headings on p.43 are empty in the book.</li>
+        <li><b>Win condition:</b> the book states none. Five floors and a Gate.</li>
+        <li><b>Skills are rolled, not chosen</b> — the game spends your value points at random, to match the rest of character creation. The book says only that you receive them.</li>
+      </ul>
     </div>
   </div>
-
-  <section class="yard-wrap">
-    <div class="yard-head">
-      <h2>The graveyard <span id="yard-count"></span></h2>
-      <button class="small" id="btn-clearyard">Clear the graveyard</button>
-    </div>
-    <div class="yard" id="yard"></div>
-  </section>
-
-  <section class="notes">
-    <h2>Where this prototype departs from the rulebook</h2>
-    <p class="notes-lede">Every weapon, armour value, creature, spell, potion, trap, encounter, climb and leap now comes from the rulebook itself. This page lists only the places the prototype knowingly departs from it — the list to reconcile if you ever revise the PDF.</p>
-    <div class="notecols">
-      <div>
-        <h3>Made for one player</h3>
-        <ul>
-          <li><b>No Dungeon Master, no party.</b> Encounters roll themselves and "who gets it" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.</li>
-          <li><b>Sleep mends you</b> — <code>d10 + 2×level</code> for a ration and eight hours, and camping is a button. The book has no natural healing because it assumes a Cleric in the party. Without this a solo delver has no way back up.</li>
-          <li><b>Skill points ×5.</b> <code>(d6 × creature level) ÷ party</code> is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.</li>
-          <li><b>Spells run on <code>2×level + 2</code> charges</b>, one returning every 20 squares, instead of once per 100 squares. The book's cadence is a party's pace, not one caster's.</li>
-          <li><b>Magic Users start at 25 + d10 wp</b> rather than a flat 25. Twenty-five with no armour is one bad round, every time.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Balance decisions</h3>
-        <ul>
-          <li><b>Elves keep 0.6 of their Win Potential</b>, not half. A flat half on a 25-wp caster was a death sentence; the other elven rules are as written.</li>
-          <li><b>Trolls eat two rations a night</b> on top of the 15 wp cost of living. Otherwise 75 wp and +9 damage carried no real price.</li>
-          <li><b>Every Thief opens with a backstab</b> (doubled damage) and breaks away on <code>d20+5</code>. The class description is three-quarters stealth and back-stabbing, and the rules gave it no mechanic.</li>
-          <li><b>At most two creatures until skill level III.</b> Three level-one creatures on a fresh character is not a fight, it is a formality.</li>
-          <li><b>Forcing a locked box is 8-in-20</b>, and a failed attempt lets you smash it for half the coin and none of the glass. Lockpicks exist as an item so a non-thief has a route in.</li>
-          <li><b>Sewing patches any armour</b>, not only cloth and leather. The restriction mostly punished the one class that can take the skill.</li>
-          <li><b>Poison and disease stop at 1 wp</b> and clear with a night's rest. As written they run at up to 2d6 a square with only a Cure spell to stop them — which no solo delver has. They still take everything you had.</li>
-          <li><b>Two traps a floor, dodged on 1–5</b> (better if you are nimble), and the Spike pit does d10×5 rather than d10×10. The trap table is written for a party that can absorb one; at full strength it was killing a third of all characters outright.</li>
-          <li><b>Level V has only Beasts and a Vampire</b> in the book — the other four type headings on p.43 are empty. Floor five falls back to the level IV roster for those types.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Rulings on ambiguities</h3>
-        <ul>
-          <li><b>"Roll one die lower to strike"</b> for dwarves is read as the creature getting the better die, per the book's own worked example (a level 1 creature rolls d12 instead of d20).</li>
-          <li><b>Armour AR is a d20 soak roll</b> exactly as written on p.44, with damage going to the armour's WP when it exceeds the Min. Armour is therefore consumable, and store repair at a tenth of cost per point is the main money sink.</li>
-          <li><b>Creature damage</b> is <code>level² + d6</code> where a creature's description gives no weapon, and <code>level² + its own damage</code> where it does.</li>
-          <li><b>Level V creatures</b> for Demons, Humans, Lair Beasts and Magical fall back to the level IV roster, because those four headings on p.43 are empty in the book.</li>
-          <li><b>Win condition:</b> the book states none. Five floors and a Gate.</li>
-          <li><b>Skills are rolled, not chosen</b> — the game spends your value points at random, to match the rest of character creation. The book says only that you receive them.</li>
-        </ul>
-      </div>
-    </div>
-    <p class="credit">Built from the Mazeworld rulebook — <a href="https://darktierstudios.com/pdfs/mazeworld.pdf" target="_blank" rel="noopener">darktierstudios.com/pdfs/mazeworld.pdf</a>. Dark Tier Studios.</p>
-  </section>
-</div>
+  <p class="credit">Built from the Mazeworld rulebook — <a href="https://darktierstudios.com/pdfs/mazeworld.pdf" target="_blank" rel="noopener">darktierstudios.com/pdfs/mazeworld.pdf</a>. Dark Tier Studios.</p>
+</section>
 
 <script>
 "use strict";
 /* ============================================================
    DELVE, DIE, REPEAT — solo delve prototype
    ============================================================ */
+
+/* ---------------- 04-05: 5-tab bottom nav ---------------- */
+/* Pure DOM show/hide — MAZE is the default landing screen (04-UI-SPEC.md).
+   Nothing here touches game state; it only toggles which screen container
+   is visible. Exposed as window.__mzShowTab so a later slice (e.g. the
+   death card's "THE GRAVEYARD" link) can jump tabs programmatically. */
+(function initTabs() {
+  const tabs = Array.from(document.querySelectorAll(".mw-tab"));
+  const screens = {
+    maze: document.getElementById("screen-maze"),
+    hero: document.getElementById("screen-hero"),
+    gear: document.getElementById("screen-gear"),
+    oracle: document.getElementById("screen-oracle"),
+    dead: document.getElementById("screen-dead"),
+  };
+  function showTab(name) {
+    if (!screens[name]) return;
+    for (const key of Object.keys(screens)) screens[key].hidden = key !== name;
+    for (const btn of tabs) {
+      const on = btn.dataset.tab === name;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-current", on ? "true" : "false");
+    }
+  }
+  for (const btn of tabs) btn.addEventListener("click", () => showTab(btn.dataset.tab));
+  showTab("maze");
+  window.__mzShowTab = showTab;
+})();
 
 const SAVE_KEY = "ddr.delve.v1";
 const D = n => 1 + Math.floor(Math.random() * n);
@@ -1342,12 +1472,29 @@ function reveal() {
       if (g[y] && g[y][x]) g[y][x].seen = true;
 }
 
+// 04-05: the maze <canvas> itself is UNCHANGED by the dark-theme reskin
+// (04-06 owns recoloring/re-iconing the actual render — this plan only
+// rebuilds the DOM/CSS chrome AROUND it). draw() used to read its palette
+// live via getComputedStyle(document.documentElement) against the SAME
+// --grid/--ink/--stamp/--ditto/--moss custom properties the rest of the app
+// used — now that :root repoints those to the dark palette (04-05), reading
+// them here would draw near-invisible low-contrast marks against the
+// canvas's own still-light #F4EEDF floor fill. Freezing this lookup table to
+// the ORIGINAL light-theme literals keeps the maze's rendered output
+// byte-for-byte identical to before the reskin, regardless of what the CSS
+// custom properties become.
+const MAZE_CANVAS_COLORS = {
+  "--grid": "#9FBDB4",
+  "--ink": "#2A2521",
+  "--stamp": "#B03A2C",
+  "--ditto": "#4A3B8C",
+  "--moss": "#4C6B46",
+};
 function draw() {
   if (!S) return;
   const { g, px, py } = S.floor;
   const size = CELL * GW;
-  const css = getComputedStyle(document.documentElement);
-  const C = n => css.getPropertyValue(n).trim();
+  const C = n => MAZE_CANVAS_COLORS[n] || "#000";
 
   ctx.fillStyle = "#F4EEDF"; ctx.fillRect(0, 0, size, size);
 
@@ -1560,7 +1707,17 @@ function paint() {
   document.getElementById("m-day").textContent = S.day;
   document.getElementById("m-steps").textContent = S.steps;
   document.getElementById("m-rations").textContent = c.rations;
-  document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations === 0);
+  // 04-UI-SPEC.md Color contract: rations read "low" (red bar+text, still
+  // paired with the numeric label — colorblind-safe, never color-only) at
+  // <=2 remaining, not only at exactly zero.
+  document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations <= 2);
+  // RATIONS_BAR_MAX: the engine has no fixed ration ceiling (starting count
+  // is 4-6 by class, engine/character.js#153, and cooking/economy events can
+  // add more) — this is a visual depletion-bar ceiling only, not a game
+  // rule; clamped so the bar never overflows past a full-looking track.
+  const RATIONS_BAR_MAX = 8;
+  document.getElementById("m-rations-fill").style.width =
+    clamp((c.rations / RATIONS_BAR_MAX) * 100, 0, 100) + "%";
   document.getElementById("m-gold").textContent = c.gold.toLocaleString();
 
   document.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
@@ -1632,8 +1789,10 @@ function paint() {
   document.getElementById("s-carry-n").textContent = items.length ? `${items.length}` : "";
   carry.innerHTML = "";
   if (!items.length) {
+    // 04-UI-SPEC.md Copywriting Contract — GEAR tab's CARRIED empty state.
     const li = document.createElement("li");
-    li.className = "none"; li.textContent = "Nothing but the kit.";
+    li.className = "none mw-empty";
+    li.innerHTML = `<b class="mw-empty-head">NOTHING LEFT TO CARRY</b><i class="mw-empty-body">You used it all. That was the plan, technically.</i>`;
     carry.appendChild(li);
   } else items.forEach((it, i) => {
     const li = document.createElement("li");
@@ -3006,16 +3165,39 @@ function epitaphCtx(detail) {
 // write queue still orders it correctly.
 const GRAVE_KEY = "ddr.graveyard.v1";
 let graves = [];
+// 04-05: tracked separately from `graves.length === 0` so a genuine storage
+// read failure renders the distinct "THE LEDGER WON'T OPEN" fallback
+// (04-UI-SPEC.md Copywriting Contract / UI Considerations backstop) rather
+// than being silently indistinguishable from a real empty graveyard.
+let gravesLoadError = false;
 
 async function loadGraves() {
-  try { const r = await window.mzStorage.getItem(GRAVE_KEY); graves = r ? JSON.parse(r) || [] : []; }
-  catch (e) { graves = []; }
+  try {
+    const r = await window.mzStorage.getItem(GRAVE_KEY);
+    graves = r ? JSON.parse(r) || [] : [];
+    gravesLoadError = false;
+  } catch (e) {
+    graves = [];
+    gravesLoadError = true;
+  }
   if (!Array.isArray(graves)) graves = [];
 }
 async function saveGraves() {
   try { await window.mzStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
 }
 /* @gsd:dual-write-convergence-extract:graves:end */
+// 04-05: a brief loading placeholder shown while mzStorage resolves the
+// graveyard read, before renderGraves() replaces it with ranked stones, the
+// empty state, or the error fallback (04-UI-SPEC.md UI Considerations
+// backstop — "Graveyard (list-collection), loading"). Deliberately kept
+// OUTSIDE the sentinel-marked block above (test/persistence/harness/
+// sandboxClassicPersistence.js extracts that block into a DOM-less node:vm
+// context — a `document` reference inside it would be a latent trap even
+// though this function is never called by that sandbox).
+function renderGravesLoading() {
+  document.getElementById("yard").innerHTML =
+    `<p class="yard-loading">Consulting the ledger…</p>`;
+}
 function bury(cause, detail) {
   graves.unshift({
     name: S.c.name, race: S.c.race, sub: S.c.sub, cls: S.c.cls,
@@ -3032,9 +3214,21 @@ function bury(cause, detail) {
 function renderGraves() {
   const wrap = document.getElementById("yard");
   const count = document.getElementById("yard-count");
+  if (gravesLoadError) {
+    count.textContent = "";
+    wrap.innerHTML = `<div class="mw-empty mw-error">
+      <p class="mw-empty-head">THE LEDGER WON'T OPEN</p>
+      <p class="mw-empty-body">Something's stuck. Try again, or close and reopen the app.</p>
+    </div>`;
+    return;
+  }
   count.textContent = graves.length ? `${graves.length} interred` : "";
   if (!graves.length) {
-    wrap.innerHTML = `<p class="yard-empty">Nobody is buried here yet. Give it a floor or two.</p>`;
+    // 04-UI-SPEC.md Copywriting Contract — DEAD tab's zero-grave empty state.
+    wrap.innerHTML = `<div class="mw-empty">
+      <p class="mw-empty-head">NOBODY'S DOWN THERE YET</p>
+      <p class="mw-empty-body">The ledger is empty. Go make it worse.</p>
+    </div>`;
     return;
   }
   wrap.innerHTML = "";
@@ -3342,6 +3536,7 @@ addEventListener("resize", () => { fit(); renderEncounter(); });
 // call in this sequence runs, closing the parse-order half of the dual-write
 // hazard (02-RESEARCH.md "The dual-write hazard").
 window.__mzClassicBoot = async function classicBoot() {
+  renderGravesLoading();
   await loadGraves();
   renderGraves();
 
@@ -3392,6 +3587,34 @@ window.__mzClassicBoot = async function classicBoot() {
   import "./src/browser/storage.js";
   import { boot, dispatch, startNewRun, waitForPending } from "./src/browser/engineAdapter.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
+  import { GAME_NAME } from "./src/browser/gameName.js";
+  import { readSettings, effectiveTextScale } from "./src/browser/settings.js";
+
+  // 04-05: GAME_NAME is the single centralized source of the product's
+  // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
+  // text already matches it (needed for a correct first paint before any
+  // module runs), but wiring them from the constant here means a future
+  // rename only ever needs to change gameName.js.
+  document.title = GAME_NAME;
+  const titleEl = document.getElementById("mw-title");
+  if (titleEl) titleEl.textContent = GAME_NAME;
+
+  // UX-08 key_link: the shell's #app root sets --mw-text-scale from
+  // settings.js's textScaleForSize(readSettings().textSize) (via
+  // effectiveTextScale, which also clamps any OS font-scale input) so every
+  // --mw-font-* rem token defined at :root scales together. No OS-scale
+  // signal is read yet in this slice (no window.matchMedia/env text-scale
+  // source is wired this early) — effectiveTextScale(size, undefined) falls
+  // back to a neutral 1.0 OS factor, matching the "not yet OS-aware" default
+  // until a later plan wires the real OS signal.
+  try {
+    const settings = await readSettings();
+    const appEl = document.getElementById("app");
+    if (appEl) appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
+  } catch {
+    /* fail-open: settings.js itself never throws, but defend anyway — a
+       text-scale read failure must never block boot */
+  }
 
   // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —
   // src/browser/storage.js#migrateLegacyKeys). boot() below also runs this
