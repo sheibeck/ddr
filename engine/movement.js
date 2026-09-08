@@ -11,13 +11,14 @@
 // applyAction clone) and mutates it directly, matching the applyAction seam.
 //
 // Feature-tile dispatch on the destination cell ("dot"/"trap"/"chest"/
-// "tele"/"exit"/"gate") is only PARTIALLY complete in this plan:
-// "tele" (teleport) and "exit"/"gate" (descend/winGame) are fully ported;
-// "dot"/"trap"/"chest" are event-emitting stubs (encounterDot/springTrap/
-// openChest) that mark the feature consumed and push a "pending*" event —
-// full encounter/trap/chest resolution lands in 01-09/01-10, matching the
-// same "consequence primitives extracted ahead of their slice" pattern
-// engine/items.js established for useItem's foe-targeting effects.
+// "tele"/"exit"/"gate") is fully wired as of 01-10: "dot"/"trap"/"chest" now
+// call the real encounterDot/springTrap/openChest handlers from
+// engine/encounters.js (the 01-07/01-09 stubs that only pushed a "pending*"
+// event are gone), alongside the already-complete "tele" (teleport) and
+// "exit"/"gate" (descend/winGame) paths. Circular import with
+// engine/encounters.js (encounterDot/springTrap/openChest call back into
+// teleport() here; move()/teleport() call them) is safe — see
+// engine/encounters.js's header comment for why.
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
 import { skill, skillTier, upkeep, eff } from "./derived.js";
@@ -25,6 +26,7 @@ import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
+import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged, won } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES } from "../content/index.js";
 
@@ -37,32 +39,6 @@ const leapBonus = (c) => (skill(c, "Leaping") ? 2 : 0);
 
 /** maxCharges(c) — a Magic User's spell charges. Ports mazeworld.html line 914. */
 export const maxCharges = (c) => 2 * c.level + 2 + eff(c, "charges");
-
-/* ---------------- feature-tile stubs (dot/trap/chest) ---------------- */
-// These three are deliberately NOT ported this plan (encounters/traps/chests
-// are their own rule domains, owned by 01-09/01-10). The caller (move/
-// teleport) already clears the tile's `feat` before calling the stub, so the
-// feature is consumed exactly once, matching the prototype's behavior; the
-// stub's only job is to signal "something should have happened here" via a
-// structured event a later slice's real handler will replace.
-
-/** encounterDot(state, rng, events) — stub; ports mazeworld.html encounterDot() (line 2107+). */
-export function encounterDot(state, rng, events = []) {
-  events.push({ type: "pendingEncounter" });
-  return events;
-}
-
-/** springTrap(state, rng, events) — stub; ports mazeworld.html springTrap() (line 2058+). */
-export function springTrap(state, rng, events = []) {
-  events.push({ type: "pendingTrap" });
-  return events;
-}
-
-/** openChest(state, rng, events) — stub; ports mazeworld.html openChest() (line 2075+). */
-export function openChest(state, rng, events = []) {
-  events.push({ type: "pendingChest" });
-  return events;
-}
 
 /* ---------------- movement ---------------- */
 

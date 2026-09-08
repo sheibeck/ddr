@@ -275,13 +275,36 @@ test("move: stepping onto the floor-5 gate wins the run without killing it", () 
   assert.ok(events.some((e) => e.type === "won" && e.level === state.c.level && e.day === state.day));
 });
 
-test("move: dot/trap/chest feature tiles are consumed and emit a pending* stub event", () => {
-  for (const [feat, expected] of [["dot", "pendingEncounter"], ["trap", "pendingTrap"], ["chest", "pendingChest"]]) {
+test("move: dot/trap/chest feature tiles are consumed and dispatch to the real encounter/trap/chest handlers (01-10)", () => {
+  // dot: d8=4 -> ENCOUNTER_TABLES[3] ("+10 WP".."-All armour"), d10=1 -> "+10 WP"
+  // (a plain tableFour row; no further rolls, so a 2-entry fakeRng suffices).
+  {
     const state = fixedState();
-    open(state.floor.g, 5, 4, { feat });
-    const events = move(state, "N", fakeRng([]), []);
-    assert.equal(state.floor.g[4][5].feat, null, `${feat} is consumed`);
-    assert.ok(events.some((e) => e.type === expected));
+    open(state.floor.g, 5, 4, { feat: "dot" });
+    const events = move(state, "N", fakeRng([4, 1]), []);
+    assert.equal(state.floor.g[4][5].feat, null, "dot is consumed");
+    assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 WP"));
+    assert.ok(events.some((e) => e.type === "tableFour" && e.result === "+10 WP"));
+    assert.equal(state.c.wp, 55, "the +10 WP row healed toward the cap (already at max)");
+  }
+  // trap: nimble = 5 (no Agility/Leaping skill, not an Acrobat); a dodge roll
+  // of 5 <= nimble avoids the trap outright, so no further rolls are drawn.
+  {
+    const state = fixedState();
+    open(state.floor.g, 5, 4, { feat: "trap" });
+    const events = move(state, "N", fakeRng([5]), []);
+    assert.equal(state.floor.g[4][5].feat, null, "trap is consumed");
+    assert.ok(events.some((e) => e.type === "trapAvoided" && e.roll === 5 && e.need === 5));
+  }
+  // chest: no Locks skill and no lockpicks -> tier 0 -> the bare d20 branch;
+  // a roll of 9 (> 8) leaves it locked, so no further rolls are drawn.
+  {
+    const state = fixedState();
+    open(state.floor.g, 5, 4, { feat: "chest" });
+    const events = move(state, "N", fakeRng([9]), []);
+    assert.equal(state.floor.g[4][5].feat, null, "chest is consumed");
+    assert.ok(events.some((e) => e.type === "chestLockRolled" && e.opened === false));
+    assert.ok(events.some((e) => e.type === "chestLocked"));
   }
 });
 
