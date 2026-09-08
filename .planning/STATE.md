@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
-status: executing
-stopped_at: Completed 01-09-PLAN.md
-last_updated: "2026-09-08T05:25:42.664Z"
+status: verifying
+stopped_at: Completed 01-10-PLAN.md
+last_updated: "2026-09-08T06:05:56.369Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [█████████░] 90%
 | Phase 01 P07 | 32min | 3 tasks | 10 files |
 | Phase 01 P08 | 30min | 3 tasks | 10 files |
 | Phase 01-engine-extraction-determinism P09 | 25min | 2 tasks | 7 files |
+| Phase 01 P10 | 50min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 01-07]: Browser adapter (src/browser/engineAdapter.js) owns its own localStorage read/write via engine/saveState.js, independent of mazeworld.html's own save()/load(); movement input is rerouted by overwriting the global move() function rather than touching dpad/keydown handlers.
 - [Phase ?]: Tasks 1+2 combined into one commit; closed 01-06/01-07's flagged gaps (useItem stone/fire -> real killFoe; newDay wandering-monster -> real startCombat) via a verified-safe circular ESM import; combat fixture uses 4 independent seed+forced-type scenarios; startCombat kept out of ACTION_TYPES (internal call, not a player action)
 - [Phase ?]: 01-09: castSpell/drinkPotion/readScroll landed as one commit (readScroll calls castSpell directly, same file); magic-parity fixture passed diffState-null on the first run for all 4 scenarios.
+- [Phase ?]: 01-10: Store closures eliminated via plain-data stock {n,sub,cost,effectId,effectParams} + engine-side STORE_EFFECTS lookup (ENG-03/ENG-04) — the prototype's last non-serializable pattern, fixed.
+- [Phase ?]: 01-10: Encounters/traps/chests ported into engine/encounters.js and wired into movement's dot/trap/chest feature tiles, replacing the 01-07/01-09 pending-event stubs.
+- [Phase ?]: 01-10: Win-path parity fixture (action-script.win.json) skips floors 1-4 via direct descend() calls and BFS-walks only the final floor-5-to-Gate leg, closing the winGame parity gap the 01-07 plan-checker flagged.
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -111,7 +115,7 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 
 ### Pending Todos
 
-- [Phase 1 execution — closed pragmatically in 01-07]: The `winGame` (floor-5 Gate) coverage gap flagged by the plan-checker is now unit-tested directly (`test/unit/movement.test.js`, a hand-placed depth-5 gate cell) rather than via full prototype-parity (a real 5-floor traversal to a generated Gate tile was impractical within one fixture). Full golden-master parity for winGame remains available to 01-10's full-suite aggregation if ever wanted. Low long-term value either way (Phase 3 removes the Gate for endless descent).
+- [Phase 1 execution — CLOSED in 01-10]: The `winGame` (floor-5 Gate) coverage gap flagged by the plan-checker (unit-tested only since 01-07) now has full golden-master parity: `test/parity/fixtures/action-script.win.json` + `test/parity/full-suite.test.js` drive a real run to the floor-5 Gate and diff every action against the frozen prototype, including `winGame` itself.
 - [Phase 1 execution — minor, new in 01-07]: mazeworld.html's New Delve/Wipe/camp buttons still call the OLD (non-engine) `newGame()`/`makeCamp()` — only dpad/keydown movement was rerouted through the engine per 01-07's scoped wiring. Playable but not engine-routed for those inputs; whichever later plan unifies all UI entry points behind the engine (likely the Phase 4/5 presentation rewrite) should reroute them too.
 
 ### Blockers/Concerns
@@ -129,6 +133,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T05:25:42.644Z
-Stopped at: Completed 01-09-PLAN.md
+Last session: 2026-09-08T06:05:56.348Z
+Stopped at: Completed 01-10-PLAN.md
 Resume file: None
