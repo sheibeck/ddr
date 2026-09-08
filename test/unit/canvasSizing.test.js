@@ -7,7 +7,9 @@
 // Proves: computeCanvasBacking preserves the fit() invariant (backing store
 // = CSS px * devicePixelRatio) for integer and fractional DPR
 // (04-RESEARCH.md Code Example #1); cellSizeForTextScale maps S/M/L to the
-// UI-SPEC's locked 28/34/40 CSS-px values, defaulting unknown input to M.
+// device-review-revised 48/60/72 CSS-px values (04-CONTEXT.md "Device-review
+// revisions" #1, supersedes the original UI-SPEC 28/34/40), defaulting
+// unknown input to M.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -40,23 +42,23 @@ test("computeCanvasBacking: backing === style * dpr for fractional dpr=2.625 (Pi
   assert.equal(result.backing, cssPx * dpr);
 });
 
-test("cellSizeForTextScale: S -> 28", () => {
-  assert.equal(cellSizeForTextScale("S"), 28);
+test("cellSizeForTextScale: S -> 48", () => {
+  assert.equal(cellSizeForTextScale("S"), 48);
 });
 
-test("cellSizeForTextScale: M -> 34", () => {
-  assert.equal(cellSizeForTextScale("M"), 34);
+test("cellSizeForTextScale: M -> 60", () => {
+  assert.equal(cellSizeForTextScale("M"), 60);
 });
 
-test("cellSizeForTextScale: L -> 40", () => {
-  assert.equal(cellSizeForTextScale("L"), 40);
+test("cellSizeForTextScale: L -> 72", () => {
+  assert.equal(cellSizeForTextScale("L"), 72);
 });
 
-test("cellSizeForTextScale: unknown size defaults to M (34)", () => {
-  assert.equal(cellSizeForTextScale("XL"), 34);
-  assert.equal(cellSizeForTextScale(undefined), 34);
-  assert.equal(cellSizeForTextScale(null), 34);
-  assert.equal(cellSizeForTextScale(""), 34);
+test("cellSizeForTextScale: unknown size defaults to M (60)", () => {
+  assert.equal(cellSizeForTextScale("XL"), 60);
+  assert.equal(cellSizeForTextScale(undefined), 60);
+  assert.equal(cellSizeForTextScale(null), 60);
+  assert.equal(cellSizeForTextScale(""), 60);
 });
 
 test("canvasSizing.js has no document/window references", async () => {
