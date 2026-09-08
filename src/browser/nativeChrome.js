@@ -103,6 +103,30 @@ export async function flushOnBackground(storage, waitForPending) {
 }
 
 /**
+ * loadApp(injectedApp) — resolves the `@capacitor/app` App object. Checks a
+ * test-only override hook (`globalThis.__mzAppImportOverride`) BEFORE
+ * attempting the real dynamic import, mirroring src/browser/storage.js's
+ * `window.__mzPreferencesOverride` pattern — this lets CR-03's "the
+ * '@capacitor/app' import fails" regression tests force a deterministic
+ * rejection without depending on whether the real package happens to be
+ * resolvable in the environment `node --test` runs in (unlike
+ * `@capacitor/splash-screen`/`@capacitor/status-bar`/
+ * `@capacitor/screen-orientation`, the real `@capacitor/app` web
+ * implementation touches `document` during its own module evaluation/setup,
+ * which throws unpredictably depending on whether node_modules has it
+ * installed — this hook sidesteps that entirely). Production code never
+ * sets this hook, so a real native launch always falls through to the real
+ * import.
+ */
+async function loadApp(injectedApp) {
+  if (injectedApp) return injectedApp;
+  if (globalThis.__mzAppImportOverride) {
+    return await globalThis.__mzAppImportOverride();
+  }
+  return (await import("@capacitor/app")).App;
+}
+
+/**
  * registerNativeChrome({ App, SplashScreen, StatusBar, ScreenOrientation,
  * storage, getGameContext }) — wires the Android back button and app
  * lifecycle listeners (PLT-02/PLT-03), plus (stubbed here, finalized in
@@ -196,7 +220,7 @@ export async function registerNativeChrome({
   // splash screen because of it.
   let App;
   try {
-    App = injectedApp || (await import("@capacitor/app")).App;
+    App = await loadApp(injectedApp);
   } catch {
     return;
   }
