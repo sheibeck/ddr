@@ -109,7 +109,20 @@ Plans:
   4. The player can open a character/stat sheet (class, race, stats, kit, skills) and a scrollable message/combat log at any point during a run.
   5. A first-run, in-context tutorial teaches move/fight/descend/survive without a wall of text, the player can adjust sound, haptics, text size, control scheme, and confirm-before-quit in settings, and status indicators are colorblind-safe with scalable UI text throughout.
 
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Touch-control + canvas-sizing math (controls.js, canvasSizing.js) [UX-01, UX-03]
+- [ ] 04-02-PLAN.md — Settings/text-scale/confirm-quit module (settings.js) [UX-07, UX-08, UX-01]
+- [ ] 04-03-PLAN.md — Screen view-models + tutorial sequencer + icon loader [UX-04, UX-05, UX-06]
+- [ ] 04-04-PLAN.md — formatEvents full-coverage data table + coverage guard [UX-05, engine-routing prereq]
+- [ ] 04-05-PLAN.md — Dark torch-lit shell: fonts + 5-tab nav + real-state HUD + safe-area + dark status bar + centralized game name [UX-03, UX-08]
+- [ ] 04-06-PLAN.md — DPR canvas viewport + 9 PNG icons + tap-to-move + D-pad [UX-01, UX-02, UX-03]
+- [ ] 04-07-PLAN.md — Engine-routing completion: combat/economy/camp/new-run through applyAction [UX-05, deferred Phase-1/3 item]
+- [ ] 04-08-PLAN.md — Character sheet + Oracle log + full-screen combat, dice transparency [UX-04, UX-05, UX-02]
+- [ ] 04-09-PLAN.md — Settings screen + @capacitor/haptics + confirm-quit gating + live text-scale [UX-07, UX-08, UX-02]
+- [ ] 04-10-PLAN.md — First-run coach-mark tutorial overlay [UX-06]
+
 **UI hint**: yes
 
 ### Phase 5: Voice, Content & Graveyard
