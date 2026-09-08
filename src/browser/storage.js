@@ -54,9 +54,9 @@ import { validateSave } from "../../engine/saveState.js";
 // mazeworld.html's own duplicated SAVE_KEY/GRAVE_KEY literals). Defined once
 // here so migrateLegacyKeys() below has a single source of truth for which
 // keys are in scope for the one-time migration.
-const RUN_SAVE_KEY = "mazeworld.delve.v1";
-const BEST_KEY = "mazeworld.best.v1";
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const RUN_SAVE_KEY = "ddr.delve.v1";
+const BEST_KEY = "ddr.best.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 const LEGACY_KEYS = [RUN_SAVE_KEY, BEST_KEY, GRAVE_KEY];
 
 // key -> a promise chain of already-queued (and always-settled) writes/

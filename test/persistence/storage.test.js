@@ -22,9 +22,9 @@ import {
   installFakeLocalStorage,
 } from "./harness/fakePreferences.js";
 
-const SAVE_KEY = "mazeworld.delve.v1";
-const BEST_KEY = "mazeworld.best.v1";
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const SAVE_KEY = "ddr.delve.v1";
+const BEST_KEY = "ddr.best.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 
 test("getItem/setItem/removeItem round-trip a value through the NATIVE branch (fake Preferences, isNativePlatform()=true)", async () => {
   const preferences = makeFakePreferences();

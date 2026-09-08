@@ -23,7 +23,7 @@
 import { getItem, setItem } from "./storage.js";
 
 /** Single versioned key all six settings fields are persisted under. */
-export const SETTINGS_STORAGE_KEY = "mazeworld.settings.v1";
+export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /** The six UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
 export const SETTINGS_DEFAULTS = Object.freeze({

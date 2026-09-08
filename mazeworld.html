@@ -534,7 +534,7 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
    DELVE, DIE, REPEAT — solo delve prototype
    ============================================================ */
 
-const SAVE_KEY = "mazeworld.delve.v1";
+const SAVE_KEY = "ddr.delve.v1";
 const D = n => 1 + Math.floor(Math.random() * n);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -3004,7 +3004,7 @@ function epitaphCtx(detail) {
 // (bury()/btn-clearyard) still calls saveGraves() fire-and-forget, matching
 // this abstraction's own fire-and-enqueue posture — storage.js's per-key
 // write queue still orders it correctly.
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 let graves = [];
 
 async function loadGraves() {

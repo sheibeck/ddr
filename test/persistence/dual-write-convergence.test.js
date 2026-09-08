@@ -2,7 +2,7 @@
 //
 // 02-RESEARCH.md "The dual-write hazard": mazeworld.html's classic
 // (non-module) <script> and src/browser/engineAdapter.js's ES module BOTH
-// currently read/write mazeworld.delve.v1 / mazeworld.graveyard.v1
+// currently read/write ddr.delve.v1 / ddr.graveyard.v1
 // independently via raw localStorage (a duplicated-literal, no shared
 // backend). This file proves the 02-03 fix: BOTH paths converge on the SAME
 // `window.mzStorage` instance — literally the SAME storage.js module-level
@@ -19,8 +19,8 @@ import { rehydrate } from "../../engine/saveState.js";
 import { installFakeCapacitor, installFakeLocalStorage } from "./harness/fakePreferences.js";
 import { loadClassicPersistenceSandbox } from "./harness/sandboxClassicPersistence.js";
 
-const SAVE_KEY = "mazeworld.delve.v1";
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const SAVE_KEY = "ddr.delve.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 
 /**
  * withConvergedStorage(fn) — installs a fake browser backend (isNative:
@@ -57,7 +57,7 @@ test("engineAdapter's boot()/dispatch() persist the run save through the storage
     await storage.flush();
 
     const raw = store.get(SAVE_KEY);
-    assert.ok(raw, "dispatch()'s persist landed in the shared backend under mazeworld.delve.v1");
+    assert.ok(raw, "dispatch()'s persist landed in the shared backend under ddr.delve.v1");
 
     const rehydrated = rehydrate(JSON.parse(raw));
     assert.deepStrictEqual(rehydrated.c, state.c, "the save read back through the abstraction rehydrates to an equal GameState");
@@ -122,7 +122,7 @@ test("dual-write convergence: engineAdapter's write and the classic script's wri
   });
 });
 
-test("the classic script's OWN extracted loadGraves()/saveGraves() also route through window.mzStorage under mazeworld.graveyard.v1", async () => {
+test("the classic script's OWN extracted loadGraves()/saveGraves() also route through window.mzStorage under ddr.graveyard.v1", async () => {
   await withConvergedStorage(async (store) => {
     const classic = loadClassicPersistenceSandbox({ mzStorage: window.mzStorage });
     classic.graves = [{ name: "Bones", cause: "starve" }];

@@ -78,7 +78,7 @@ export function loadClassicPersistenceSandbox({ mzStorage }) {
     "/* @gsd:dual-write-convergence-extract:save:end */",
   );
 
-  const sandbox = { console, S: null, SAVE_KEY: "mazeworld.delve.v1" };
+  const sandbox = { console, S: null, SAVE_KEY: "ddr.delve.v1" };
   sandbox.window = sandbox;
   sandbox.window.mzStorage = mzStorage;
 

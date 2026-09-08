@@ -36,12 +36,12 @@ import { EVENT_NARRATION } from "./eventNarration.js";
 // converge on this one module's exported get/set/remove/migrate surface.
 import * as storage from "./storage.js";
 
-// Mirrors mazeworld.html's `const SAVE_KEY = "mazeworld.delve.v1";` (line
+// Mirrors mazeworld.html's `const SAVE_KEY = "ddr.delve.v1";` (line
 // ~488). Deliberately duplicated as a literal rather than imported — the
 // classic <script> that owns SAVE_KEY is not a module and exports nothing;
 // keeping the string in sync here is a documented, temporary coupling this
 // adapter's replacement will resolve.
-const SAVE_KEY = "mazeworld.delve.v1";
+const SAVE_KEY = "ddr.delve.v1";
 
 // The durable best-depth high score (RUN-05 / 03-CONTEXT.md "score = deepest
 // floor reached"). Deliberately a SEPARATE storage key from SAVE_KEY, and
@@ -49,9 +49,9 @@ const SAVE_KEY = "mazeworld.delve.v1";
 // the save round-trip/parity comparables this phase's difficulty work
 // depends on staying stable. 02-03 routes this key through storage.js (SAV-04
 // — durable Capacitor Preferences on native, localStorage in the dev loop).
-const BEST_KEY = "mazeworld.best.v1";
+const BEST_KEY = "ddr.best.v1";
 
-// CR-01: matches mazeworld.html's own `const GRAVE_KEY = "mazeworld.graveyard.v1";`
+// CR-01: matches mazeworld.html's own `const GRAVE_KEY = "ddr.graveyard.v1";`
 // (mazeworld.html line ~2946) so both the classic combat/store code path
 // (still un-ported, per 03-CONTEXT.md/03-REVIEW.md) and this engine-routed
 // path accumulate tombstones into ONE persistent graveyard, both now via the
@@ -59,7 +59,7 @@ const BEST_KEY = "mazeworld.best.v1";
 // SEPARATE storage key from SAVE_KEY/BEST_KEY, and deliberately NOT part of
 // GameState — 03-CONTEXT.md locks the graveyard as adapter-side cross-run
 // accumulation (SAV-05 — durable Capacitor Preferences, mirroring BEST_KEY).
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 
 let currentState = null;
 

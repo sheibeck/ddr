@@ -28,8 +28,8 @@ import { initRun, getState, dispatch, waitForPending } from "../../src/browser/e
 import { flushOnBackground } from "../../src/browser/nativeChrome.js";
 import { installFakeCapacitor } from "./harness/fakePreferences.js";
 
-const SAVE_KEY = "mazeworld.delve.v1";
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const SAVE_KEY = "ddr.delve.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 
 /** waitUntil(predicate) — polls `predicate()` across microtask ticks rather
  * than hard-coding an exact tick count, so these tests aren't brittle

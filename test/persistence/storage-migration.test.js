@@ -3,8 +3,8 @@
 // Wave-0 coverage for src/browser/storage.js's migrateLegacyKeys() (02-01
 // Task 1, RED until Task 3). Covers the one-time, idempotent,
 // non-destructive localStorage->Preferences copy-if-empty for the three
-// legacy keys (mazeworld.delve.v1 / mazeworld.best.v1 /
-// mazeworld.graveyard.v1), including fail-closed validation of a migrated
+// legacy keys (ddr.delve.v1 / ddr.best.v1 /
+// ddr.graveyard.v1), including fail-closed validation of a migrated
 // run save via engine/saveState.js's validateSave. Never imports
 // `@capacitor/preferences` — the native backend is the same injected fake
 // Preferences used by storage.test.js.
@@ -21,9 +21,9 @@ import {
   installFakeLocalStorage,
 } from "./harness/fakePreferences.js";
 
-const SAVE_KEY = "mazeworld.delve.v1";
-const BEST_KEY = "mazeworld.best.v1";
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const SAVE_KEY = "ddr.delve.v1";
+const BEST_KEY = "ddr.best.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 
 test("migrateLegacyKeys copies all three legacy localStorage keys into Preferences when Preferences is empty", async () => {
   const preferences = makeFakePreferences();

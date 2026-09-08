@@ -43,7 +43,7 @@ import { serializeRun } from "../../engine/saveState.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
-const SAVE_KEY = "mazeworld.delve.v1";
+const SAVE_KEY = "ddr.delve.v1";
 
 async function withFakeLocalStorage(fn) {
   const store = new Map();
@@ -202,7 +202,7 @@ test("getBest() returns 0 when nothing is stored and never throws when storage i
   }
 });
 
-const GRAVE_KEY = "mazeworld.graveyard.v1";
+const GRAVE_KEY = "ddr.graveyard.v1";
 
 // firstOpenPlainDir(state) — the first cardinal direction from the player's
 // current position that leads onto an open, feature-free cell (no
