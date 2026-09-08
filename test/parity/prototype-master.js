@@ -1,0 +1,2799 @@
+// test/parity/prototype-master.js
+//
+// FROZEN GOLDEN MASTER (ENG-05) — DO NOT EDIT.
+//
+// This is a byte-verbatim extraction of the pristine mazeworld.html <script>
+// body, taken from the ORIGINAL prototype BEFORE any engine-extraction edits
+// (see 01-01-PLAN.md / 01-02-PLAN.md / 01-RESEARCH.md). It is the reference
+// implementation the prototype-parity harness (test/parity/harness/) replays
+// seeded action scripts against, so every later extraction slice can be
+// diffed against known-good behavior.
+//
+// Frozen so that later plans in this phase (e.g. 01-07, the browser-adapter
+// edits to the live mazeworld.html) cannot silently drift the parity
+// reference out from under the regression harness (threat T-01-03a).
+//
+// This file is NOT an ES module — it is the prototype's original inline
+// <script> body (top-level function declarations, no import/export), read
+// as plain text via node:fs and executed with vm.runInContext() by
+// test/parity/harness/sandboxPrototype.js. Do not add import/export syntax
+// here; doing so would no longer be a faithful extraction of the original.
+//
+// Regenerate ONLY if the prototype's actual game rules change (never for
+// refactors elsewhere in the repo): re-run the extraction that pulled the
+// text between mazeworld.html's <script> and </script> tags verbatim.
+
+"use strict";
+/* ============================================================
+   MAZEWORLD — solo delve prototype
+   ============================================================ */
+
+const SAVE_KEY = "mazeworld.delve.v1";
+const D = n => 1 + Math.floor(Math.random() * n);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/* ---------------- rules tables ---------------- */
+
+const STRIKE_DICE = [20, 12, 10, 8, 6];              // skill level I..V
+const THRESHOLDS  = [0, 201, 501, 901, 1501];
+const ROMAN       = ["I", "II", "III", "IV", "V"];
+
+const CLASSES = {
+  "Magic User": {
+    toHit: 3, baseWP: () => 25 + D(10), armorCap: 0,
+    subs: ["Wizard","Warlock","Sorcerer","Summoner","Cleric","Illusionist","Court Mage","Apprentice"],
+    gain: [null, () => D(8), () => D(8), () => D(8)+2, () => D(8)+3]
+  },
+  "Fighter": {
+    toHit: 5, baseWP: () => 50 + D(8), armorCap: 2,
+    subs: ["Knight","Guard","Woodsman","Soldier","Barbarian","Master of Arms","Samurai","Bard"],
+    gain: [null, () => D(8), () => D(6), () => D(6), () => D(6)]
+  },
+  "Thief": {
+    toHit: 4, baseWP: () => 40, armorCap: 1,
+    subs: ["Pickpocket","Pilfer","Cat Burglar","Cutthroat","Cloaker","Ninja","Con Artist","Acrobat"],
+    gain: [null, () => D(8), () => D(6), () => D(6), () => D(6)+2]
+  }
+};
+
+const WEAPONS = {
+  // Cutting
+  "Axe":          {d:()=>D(6),        lab:"d6",     cost:50,  cls:"FTM"},
+  "Bastard Sword":{d:()=>D(6)+D(6),   lab:"2d6",    cost:675, cls:"F"},
+  "Battle Axe":   {d:()=>D(6)+1,      lab:"d6+1",   cost:250, cls:"F"},
+  "Broadsword":   {d:()=>D(10)+2,     lab:"d10+2",  cost:500, cls:"F"},
+  "Claymore":     {d:()=>D(12),       lab:"d12",    cost:800, cls:"F"},
+  "Dagger":       {d:()=>Math.ceil(D(6)/2), lab:"d6/2", cost:75, cls:"FTM"},
+  "Katana":       {d:()=>D(10),       lab:"d10",    cost:525, cls:"FT"},
+  "Kopesh Sword": {d:()=>D(10),       lab:"d10",    cost:525, cls:"F"},
+  "Long Sword":   {d:()=>D(8),        lab:"d8",     cost:500, cls:"FT"},
+  "Ninja-to":     {d:()=>D(8)+1,      lab:"d8+1",   cost:450, cls:"FT"},
+  "Rapier":       {d:()=>D(6),        lab:"d6",     cost:200, cls:"FTM"},
+  "Short Sword":  {d:()=>D(6)+1,      lab:"d6+1",   cost:250, cls:"FTM"},
+  "Wakazashi":    {d:()=>D(6)+1,      lab:"d6+1",   cost:300, cls:"FT"},
+  // Bludgeoning
+  "Club":         {d:()=>D(6),        lab:"d6",     cost:25,  cls:"FTM"},
+  "Flail":        {d:()=>D(8)+2,      lab:"d8+2",   cost:175, cls:"FT"},
+  "Mace":         {d:()=>D(6)+2,      lab:"d6+2",   cost:125, cls:"FT"},
+  "Morning Star": {d:()=>D(8)+1,      lab:"d8+1",   cost:150, cls:"FT"},
+  "Quarter Staff":{d:()=>D(6),        lab:"d6",     cost:25,  cls:"FTM"},
+  "Spiked Staff": {d:()=>D(8),        lab:"d8",     cost:150, cls:"FTM"},
+  "Whip":         {d:()=>Math.ceil(D(6)/2), lab:"d6/2", cost:35, cls:"FT"},
+  // Pole arms
+  "Awl Pike":     {d:()=>D(8)+2,      lab:"d8+2",   cost:400, cls:"FT"},
+  "Bardiche":     {d:()=>D(8)+D(8),   lab:"2d8",    cost:900, cls:"F"},
+  "Naganita":     {d:()=>D(6)+D(6)+1, lab:"2d6+1",  cost:600, cls:"F"},
+  "Spear":        {d:()=>D(8),        lab:"d8",     cost:150, cls:"FTM"}
+};
+const WEAPON_MAX = {
+  "Axe":6,"Bastard Sword":12,"Battle Axe":7,"Broadsword":12,"Claymore":12,"Dagger":3,
+  "Katana":10,"Kopesh Sword":10,"Long Sword":8,"Ninja-to":9,"Rapier":6,"Short Sword":7,
+  "Wakazashi":7,"Club":6,"Flail":10,"Mace":8,"Morning Star":9,"Quarter Staff":6,
+  "Spiked Staff":8,"Whip":3,"Awl Pike":10,"Bardiche":16,"Naganita":13,"Spear":8
+};
+const WEAPON_TYPE_TABLE = ["Pole Arm","Bludgeoning","Cutting","Cutting","Thrown","Explosive"];
+const WEAPON_BONUS_TABLE = [()=>D(6), ()=>2, ()=>1, ()=>1, ()=>4, ()=>D(10)];   // d6 on the bonus table
+
+const ARMORS = [
+  {name:"Cloth",   cost:300,  wp:12, ar:3,  cls:"FTM", min:1},
+  {name:"Leather", cost:500,  wp:15, ar:6,  cls:"FT",  min:1},
+  {name:"Studded", cost:750,  wp:18, ar:10, cls:"FT",  min:2},
+  {name:"Mail",    cost:1000, wp:30, ar:12, cls:"F",   min:3},
+  {name:"Plate",   cost:2000, wp:45, ar:15, cls:"F",   min:4}
+];
+const MAGIC_ARMOR_TABLE = [{ar:4,wp:30},{ar:2,wp:20},{ar:1,wp:10},{ar:1,wp:10},{ar:2,wp:15},{ar:1,wp:5}];
+// "Costs are triple for trolls, and half for elves or dwarves."
+function priceFor(base, race) {
+  if (race === "Troll") return base * 3;
+  if (race === "Elven" || race === "Dwarven") return Math.round(base / 2);
+  return base;
+}
+
+// subclass -> starting weapon + proficiency bonus
+const KIT = {
+  "Knight":["Awl Pike",2], "Guard":["Spear",2], "Woodsman":["Quarter Staff",3],
+  "Soldier":["Long Sword",1], "Barbarian":["Battle Axe",2], "Master of Arms":["Broadsword",2],
+  "Samurai":["Katana",3], "Bard":["Short Sword",1],
+  "Pickpocket":["Dagger",0],"Pilfer":["Dagger",0],"Cat Burglar":["Dagger",0],
+  "Cutthroat":["Short Sword",0],"Cloaker":["Dagger",0],"Ninja":["Wakazashi",1],
+  "Con Artist":["Dagger",0],"Acrobat":["Dagger",1],
+  "Wizard":["Quarter Staff",0],"Warlock":["Quarter Staff",0],"Sorcerer":["Quarter Staff",0],
+  "Summoner":["Quarter Staff",0],"Cleric":["Club",1],"Illusionist":["Quarter Staff",0],
+  "Court Mage":["Quarter Staff",0],"Apprentice":["Quarter Staff",0]
+};
+
+/* Special skills, bought at creation: Fighters get 8 value points, Thieves 12,
+   Magic Users none — they have spells instead. */
+const FIGHTER_SKILLS = {
+  "Kata":         {cost:4, txt:"+level damage and 1–6 accuracy with your first weapon"},
+  "Stealth":      {cost:3, txt:"critical on a 2 when you open a fight; never in plate"},
+  "Death-touch":  {cost:4, txt:"a 1 doubles, and kills outright under 15 wp"},
+  "Agility":      {cost:5, txt:"every enemy needs one better to land on you"},
+  "Hardiness":    {cost:6, txt:"−3 to all damage taken; phobias halved"},
+  "Ambidextrous": {cost:4, txt:"a second weapon at the end of every round"},
+  "Cooking":      {cost:3, txt:"eat any beast for a quarter of its wp"},
+  "Language":     {cost:1, txt:"parley with anything that talks"},
+  "Runes/Signs":  {cost:2, txt:"read scrolls; without it they are waste paper"},
+  "Tracking":     {cost:4, txt:"1–5 on d20 to read an encounter, and walk away from it"},
+  "Climbing":     {cost:2, txt:"+4 to climbing rolls"},
+  "Leaping":      {cost:2, txt:"+2 to leaping rolls"}
+};
+const THIEF_SKILLS = {
+  "Kata":          {cost:5, txt:"strike as a fighter, +level damage"},
+  "Locks":         {cost:2, up:1, txt:"1–5 on d10 to open a lock", txt2:"1–7 on d10 to open a lock"},
+  "Sewing":        {cost:4, up:2, txt:"patch any armour, d6 back, 4 times", txt2:"patch any armour, d6+3 back, 6 times"},
+  "Night Vision":  {cost:3, txt:"darkness costs you nothing"},
+  "Heft":          {cost:5, txt:"+2 damage, mail armour, half upkeep"},
+  "Acute Hearing": {cost:5, txt:"never surprised; 3 to hit the unseen"},
+  "Climbing":      {cost:3, txt:"+4 to climbing, and half of any fall"},
+  "Leaping":       {cost:4, txt:"+2 to leaping rolls"},
+  "Silence":       {cost:6, txt:"sneak attacks are automatic criticals"}
+};
+const FREE_SKILL = { "Cat Burglar":"Climbing", "Acrobat":"Leaping", "Ninja":"Silence" };
+
+function skillTable(cls) { return cls === "Fighter" ? FIGHTER_SKILLS : cls === "Thief" ? THIEF_SKILLS : null; }
+function rollSkills(c) {
+  c.skills = {};
+  const table = skillTable(c.cls);
+  if (FREE_SKILL[c.sub] && table && table[FREE_SKILL[c.sub]]) c.skills[FREE_SKILL[c.sub]] = 1;
+  if (!table) { c.vp = 0; return; }
+  let vp = c.cls === "Fighter" ? 8 : 12;
+  const pool = Object.keys(table).filter(k => !c.skills[k]);
+  shuffle(pool);
+  for (const n of pool) if (table[n].cost <= vp) { c.skills[n] = 1; vp -= table[n].cost; }
+  for (const n of Object.keys(c.skills)) {
+    const sk = table[n];
+    if (sk && sk.up && sk.up <= vp && c.skills[n] === 1) { c.skills[n] = 2; vp -= sk.up; }
+  }
+  c.vp = vp;
+}
+const skill = n => !!(S.c.skills && S.c.skills[n]);
+const skillTier = n => (S.c.skills && S.c.skills[n]) || 0;
+
+/* ------------------------------------------------------------------
+   The book's charts and tables, pp. 44-49, transcribed.
+   ------------------------------------------------------------------ */
+const BLADE_NAMES = ["Whisper","Grave Mark","The Long Argument","Tithe","Old Patience",
+                     "Nine Teeth","Casket","Hush","Wilmst-Bite","Second Thoughts","Last Tuesday"];
+const JEWELRY = [   // Jewelry Table, d8, p.47
+  {n:"Ring of Power",        eff:{dmg:1},       txt:"+1 damage to all attacks"},
+  {n:"Gauntlet of the Giant",eff:{size:1},      txt:"one size larger"},
+  {n:"Amulet of Light",      eff:{sight:1, light:1}, txt:"a standing light spell; dispels darkness"},
+  {n:"Pendant of Fortitude", eff:{},  use:"half", every:100, txt:"half damage from one attack, once every 100 squares"},
+  {n:"Anklet of Invisibility",eff:{foeToHit:-2},txt:"unseen; foes need two better to land"},
+  {n:"Helm of Knowledge",    eff:{tongue:1},    txt:"perfect fluency in one language"},
+  {n:"Bracelet of Flight",   eff:{fly:1},       txt:"flight — walls and crevices are nothing"},
+  {n:"Amulet of Stone",      eff:{}, use:"stone", every:200, txt:"turns up to 4 squares of opponents to stone, once every 200 squares"}
+];
+const CLOAKS = [    // Magic Cloaks Table, d8, p.46 — every thief begins with one
+  {n:"Cloak of Healing",     eff:{cloakHeal:1},  txt:"heals up to 10 wp every 20 squares"},
+  {n:"Cloak of Strength",    eff:{noCrit:1},     txt:"no critical damage ever lands on you"},
+  {n:"Cloak of Invisibility",eff:{},  use:"invis", every:100, txt:"invisible, once every 100 squares"},
+  {n:"Cloak of Speed",       eff:{},  use:"haste", every:50,  txt:"double attacks, once every 50 squares"},
+  {n:"Cloak of Regeneration",eff:{cloakRegen:1}, txt:"d6 wp back every 20 squares"},
+  {n:"Cloak of Armor",       eff:{cloakArmor:1}, txt:"a full suit of plate that weighs nothing"},
+  {n:"Cloak of Flying",      eff:{fly:1},        txt:"flight for 20 squares, once every 50"},
+  {n:"Cloak of Ether",       eff:{},  use:"ether", every:100, txt:"walk through walls, once every 100 squares"}
+];
+const STAVES = [    // Magic Staves Table, d8, p.46 — one use every 250 squares
+  {n:"Rowan Staff",  use:"dome",   txt:"a protective dome of 100 wp"},
+  {n:"Birch Staff",  use:"freeze", txt:"freezes up to 2 squares of opponents indefinitely"},
+  {n:"Walnut Staff", use:"weaken", txt:"all hits on the weakened do double damage"},
+  {n:"Oak Staff",    use:"stone",  txt:"turns 2 squares of opponents to stone"},
+  {n:"Crystal Staff",use:"invis",  txt:"party invisible d10+5 squares; enemies need a 1"},
+  {n:"Poplar Staff", use:"heal",   txt:"1d20+10 wp to up to 6"},
+  {n:"Pine Staff",   use:"fire",   txt:"d6 fireballs, automatic hits, 1d10+4 each"},
+  {n:"Cedar Staff",  use:"gas",    txt:"knocks out 3 squares of enemies for a day"}
+];
+const POTIONS = [   // Potions Table, d10, p.47
+  {n:"Healing",     col:"Blue",   uses:()=>D(8), price:150, eff:"heal",    txt:"+d10+2 wp"},
+  {n:"Cure Poison", col:"Green",  uses:()=>D(6), price:100, eff:"poison",  txt:"cures poison"},
+  {n:"Speed",       col:"Yellow", uses:()=>D(6), price:500, eff:"speed",   txt:"double attacks, 50 squares"},
+  {n:"Xtra Healing",col:"Blue",   uses:()=>D(2), price:500, eff:"full",    txt:"heal to maximum"},
+  {n:"Strength",    col:"Red",    uses:()=>D(4), price:100, eff:"strength",txt:"+8 damage, 25 squares"},
+  {n:"Cure Disease",col:"Aqua",   uses:()=>D(6), price:100, eff:"disease", txt:"cures disease"},
+  {n:"Enlarge",     col:"Brown",  uses:()=>D(6), price:75,  eff:"enlarge", txt:"one size up, +4 damage, 50 squares"},
+  {n:"Acuteness",   col:"White",  uses:()=>D(4), price:800, eff:"acute",   txt:"strike on a d6 for d8 rounds"},
+  {n:"Death",       col:"??",     uses:()=>D(4), price:50,  eff:"death",   txt:"your dead!"},
+  {n:"Invisible",   col:"Clear",  uses:()=>D(4), price:250, eff:"invis",   txt:"invisible for a day"}
+];
+const FOODS = [     // Food Table, d6, p.48
+  {n:"Chicken", cost:20, wp:12}, {n:"Bread", cost:15, wp:5},
+  {n:"Water",   cost:5,  wp:2},  {n:"Water", cost:5, wp:2},
+  {n:"Ale",     cost:10, wp:8},  {n:"Meat",  cost:25, wp:15}
+];
+const TRAPS = [     // Traps, d8, p.48 — avoided on 1-5 with a d20
+  {n:"Poison Arrow", dmg:()=>D(8),        poison:true},
+  {n:"Falling Rocks",dmg:()=>D(20)},
+  {n:"Darts",        dmg:()=>D(6)},
+  {n:"Darts",        dmg:()=>D(6)},
+  {n:"Arrows",       dmg:()=>D(10)},
+  {n:"Arrows",       dmg:()=>D(10)},
+  {n:"Pit",          dmg:()=>D(20)},
+  {n:"Spike",        dmg:()=>D(10)*5}
+];
+const AFFLICTIONS = [  // Poison/Disease Table, d8, p.48
+  {dur:"d20 squares", loss:()=>2*D(6), per:1,  kind:"Poison"},
+  {dur:"100 squares", loss:()=>D(6),   per:10, kind:"Disease"},
+  {dur:"d20 squares", loss:()=>D(6),   per:2,  kind:"Poison"},
+  {dur:"d20 squares", loss:()=>D(6),   per:2,  kind:"Poison"},
+  {dur:"permanent",   loss:null,       phobia:true, kind:"Disease"},
+  {dur:"permanent",   loss:null,       phobia:true, kind:"Disease"},
+  {dur:"80 squares",  loss:()=>D(10),  per:20, kind:"Poison"},
+  {dur:"1 day",       loss:()=>2*D(20),per:10, kind:"Disease"}
+];
+const FAERIE = [    // Faerie Table, d8, p.48
+  "+1 Level", "+d20 Base WP", "Magic Weapon", "-d10 Base WP",
+  "Miscellaneous Magic", "d10 x 100 WM", "Magic Armor", "+2 Level"
+];
+const MISC_MAGIC = ["Cloak","Potion","Scroll","Grimoire","Potion","Staff","Cloak","Jewelry","Potion","Scroll"];
+const SPELL_LEVEL_TABLE = [1,1,2,2,3,3,4,4,5,5];   // Level Table, d10, p.46
+const CLIMB_TABLE = {                               // Climbing, p.49, per 10 feet on a d10
+  "rope": {success:7, fall:()=>D(6)},
+  "rock": {success:6, fall:()=>D(8)},
+  "wood": {success:7, fall:()=>D(6)}
+};
+const LEAP_TABLE = [   // Leaps, p.49 — success on a d10 by distance and class
+  {ft:"3-4 feet",   F:10, T:10, M:9},
+  {ft:"5-8 feet",   F:8,  T:7,  M:6},
+  {ft:"8-12 feet",  F:6,  T:5,  M:4},
+  {ft:"12-15 feet", F:4,  T:3,  M:1}
+];
+const DIRECTION_TABLE = ["N","N","E","E","S","S","W","W"];   // Random Directions, 2d8, p.49
+
+
+const RACES = {
+  "Human":   {size:"Human", upkeep:4,  note:"No advantages, no penalties. The maze's default."},
+  "Elven":   {size:"Small", upkeep:4,  wpMul:0.6, strikeStep:1, foeToHit:-1, toHit:5,
+              note:"Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit."},
+  "Dwarven": {size:"Small", upkeep:1,  dmg:2, foeStrikeStep:1,
+              note:"+2 damage and 1 wp/day upkeep; foes strike at a better die."},
+  "Wilmsry": {size:"Human", upkeep:4,  heal2x:true, spMul:0.5,
+              note:"Heals twice as fast, learns half as quickly. Magic Users despise them."},
+  "Fridgian":{size:"Human", upkeep:4,  noArmor:true, frenzy:true, slow:true,
+              note:"Never wears armor, strikes last, frenzies into a second wild swing."},
+  "Troll":   {size:"Large", upkeep:15, flatWP:75, dmg:6, wpnBonus:3, eats:2,
+              note:"75 wp regardless of class and +9 damage, but eats two rations a night."}
+};
+const RACE_D8 = ["Elven","Dwarven","Wilmsry","Human","Fridgian","Troll","Human","Human"];
+
+const TEMPERAMENTS = ["Lazy","Patient","Joyous","Angry","Wary","Leader","Edgy","Zealous","Greedy","Thoughtful","Reckless","Sensitive"];
+const MOTIVES = ["Adventure","Status","Love","Blood","Power","Money","Fame","A grudge","Experience","Skill","Knowledge","Adventure"];
+const PHOBIAS = [
+  {n:"Darkness", t:null}, {n:"Death", t:null}, {n:"Being trapped", t:null},
+  {n:"Bodies of water", t:null}, {n:"Bats and rats", t:"Beasts"},
+  {n:"Vampires and the undead", t:"Walking Dead"}, {n:"Heights", t:null},
+  {n:"Fire", t:"Demons"}, {n:"Sorcery", t:"Magical"}, {n:"Crowds", t:"Humans"}
+];
+
+/* Creatures Described, pp.36-43. Size, Int and WP are the book's;
+   `sp` carries the special rules that matter in a fight. */
+const BESTIARY = {
+  "Beasts": [
+    [{n:"Bat/Rat", sz:"T", i:1, wp:1,  sp:{atk:2, dmg:()=>1, note:"two attacks, 1 wp each"}},
+     {n:"Shriek",  sz:"T", i:1, wp:3,  sp:{shriek:true, note:"a scream deafens; half damage after"}},
+     {n:"Viper",   sz:"S", i:1, wp:3,  sp:{poison:true, note:"venom: 2 wp a round for d10 rounds"}}],
+    [{n:"Cave Bear", sz:"L", i:4, wp:25, sp:{dmg:()=>D(8), disease:true, note:"rabid — d8, and the bite carries it"}},
+     {n:"Zit",       sz:"T", i:6, wp:4,  sp:{acid:true, toHit:4, note:"acid; hittable only on a 4"}}],
+    [{n:"Drat",     sz:"L", i:10, wp:26, sp:{ar:12, toHit:5, breaks:true, note:"natural mail; may break your weapon"}},
+     {n:"Flube",    sz:"S", i:3,  wp:7,  sp:{noArmor:true, blind:true, note:"armour-piercing, and poison that blinds"}},
+     {n:"Rast",     sz:"H", i:6,  wp:12, sp:{dmg:()=>D(8)+4, note:"+4 with any weapon it has picked up"}},
+     {n:"Sterling", sz:"H", i:2,  wp:35, sp:{halfDmg:true, dmg:()=>D(12), note:"two hearts: takes half damage from everything"}},
+     {n:"Wolf",     sz:"S", i:4,  wp:6,  sp:{dmg:()=>D(6)+2, note:"+2 damage"}}],
+    [{n:"Drake",    sz:"B", i:15, wp:135, sp:{dmg:()=>2*D(10)+4, every:4, note:"breathes fire every four rounds"}},
+     {n:"Stink Bug",sz:"S", i:1,  wp:4,   sp:{toHit:2, phobia:true, note:"small: strike as one level lower, 2 to hit"}}],
+    [{n:"Dread Lock",  sz:"XL", i:4,  wp:40},
+     {n:"Stalka Beast",sz:"XL", i:15, wp:125, sp:{atk:2, note:"sees the invisible, hears the silenced"}}]
+  ],
+  "Demons": [
+    [{n:"Gremlin", sz:"S", i:6, wp:8, sp:{dmg:()=>D(6)+3, note:"+3 damage and quick with it"}}],
+    [{n:"Poltergeist", sz:"S", i:4, wp:10, sp:{atk:2, noArmor:true, note:"armour is no use against it"}}],
+    [{n:"Rinkle", sz:"L", i:1, wp:16, sp:{age:true, note:"its toxin convinces you that you are old"}}],
+    [{n:"Djinni",  sz:"G", i:16, wp:86, sp:{caster:true, note:"casts every spell of levels 1 to 4"}},
+     {n:"Ghost",   sz:"H", i:3,  wp:28, sp:{magicOnly:true, noArmor:true, phobia:true, note:"only magic touches it"}},
+     {n:"Spectre", sz:"H", i:5,  wp:32, sp:{magicOnly:true, noArmor:true, pursues:true, note:"only magic touches it, and it follows"}}],
+    [{n:"Djinni",  sz:"G", i:16, wp:86, sp:{caster:true, note:"casts every spell of levels 1 to 4"}}]
+  ],
+  "Humans": [
+    [{n:"Dante", sz:"H", i:12, wp:20, sp:{atk:3, note:"twins, four arms: three strikes a round"}}],
+    [{n:"China Wolf", sz:"H", i:5, wp:16, sp:{atk:2, dmg:()=>D(6), note:"hunts in pairs, two attacks"}},
+     {n:"Krupke",     sz:"H", i:8, wp:23, sp:{caster:true, ar:12, dmg:()=>D(8)+2, note:"a sorcerer in mail with a long sword"}}],
+    [{n:"Frank", sz:"H", i:10, wp:20, sp:{steals:true, dmg:()=>D(8)+6, note:"a con-man; may take everything and vanish"}},
+     {n:"Primp", sz:"H", i:7,  wp:18, sp:{enthrall:true, dmg:()=>D(8)+2, note:"beautiful, and counting on it"}}],
+    [{n:"Craig",  sz:"H", i:6, wp:24, sp:{dmg:()=>D(12), ar:15, note:"two-handed sword, chitin plate, home ground"}},
+     {n:"Herman", sz:"H", i:9, wp:36, sp:{invis:true, ar:15, dmg:()=>25, note:"turns invisible; strikes as a level five"}}],
+    [{n:"Herman", sz:"H", i:9, wp:36, sp:{invis:true, ar:15, dmg:()=>25, note:"turns invisible; strikes as a level five"}}]
+  ],
+  "Lair Beasts": [
+    [{n:"Dog Face", sz:"S", i:8, wp:6, sp:{dmg:()=>D(6), note:"packs; the leader carries a d8 sword"}},
+     {n:"Goblin",   sz:"S", i:5, wp:4, sp:{note:"never retreats, and carries wilmst"}},
+     {n:"Hobgoblin",sz:"S", i:7, wp:5, sp:{dmg:()=>D(6)+1, loot:true, note:"always has something magical in its lair"}},
+     {n:"M&M",      sz:"S", i:6, wp:3, sp:{critOn:1, note:"deaf; criticals on a 1"}},
+     {n:"Pogo",     sz:"S", i:1, wp:4, sp:{dmg:()=>D(6)+4, fast:true, note:"+4 damage, and fast — strike one higher"}}],
+    [{n:"Hair",    sz:"H", i:2, wp:12, sp:{dmg:()=>D(6), note:"clubs, and a great deal of hair"}},
+     {n:"Trachea", sz:"S", i:5, wp:8,  sp:{poison:true, dmg:()=>D(10), note:"+4 on its first hit; fighters do double to it"}}],
+    [{n:"Blumble", sz:"S", i:4, wp:16, sp:{quills:true, dmg:()=>D(12), note:"quills; cutting it only makes more of them"}}],
+    [{n:"Drarl",   sz:"L", i:9, wp:19, sp:{acid:true, noArmor:true, note:"acid: mail and plate make it worse"}}],
+    [{n:"Drarl",   sz:"L", i:9, wp:19, sp:{acid:true, noArmor:true, note:"acid: mail and plate make it worse"}}]
+  ],
+  "Magical": [
+    [{n:"Drekk", sz:"T", i:4, wp:7, sp:{song:true, note:"sings; you may simply fall asleep"}}],
+    [{n:"Shadow", sz:"S", i:2, wp:4, sp:{daggerOnly:true, dark:true, note:"only a dagger or magic touches it"}}],
+    [{n:"Werebeast", sz:"L", i:6, wp:32, sp:{atk:2, dmg:()=>D(10)+5, note:"two attacks at d10+5"}}],
+    [{n:"Drudge", sz:"H", i:5, wp:12, sp:{caster:true, never_melee:true, note:"casts every offensive spell, 1 to 4, without limit"}}],
+    [{n:"Drudge", sz:"H", i:5, wp:12, sp:{caster:true, never_melee:true, note:"casts every offensive spell, 1 to 4, without limit"}}]
+  ],
+  "Walking Dead": [
+    [{n:"Philly", sz:"H", i:3, wp:5, sp:{twice:true, slow:true, dmg:()=>D(4)+2, note:"you have to kill it twice"}}],
+    [{n:"Google",  sz:"H", i:2, wp:19, sp:{ar:15, dmg:()=>D(8), note:"rusted plate and a long sword"}},
+     {n:"Skeleton",sz:"H", i:2, wp:6,  sp:{twice:true, toHit:4, critOn:1, note:"kill it twice; a 1 shatters it"}}],
+    [{n:"Ghoul",  sz:"H", i:2, wp:15, sp:{raise:true, dmg:()=>D(6), note:"raises the ghouls you have already killed"}},
+     {n:"Zombie", sz:"H", i:3, wp:12, sp:{grapple:true, disease:true, note:"grapples, and carries leprosy"}}],
+    [{n:"Bones",  sz:"S", i:2, wp:14, sp:{pack:true, note:"a pack: they all pick one of you"}},
+     {n:"Floater",sz:"H", i:3, wp:8,  sp:{entangle:true, note:"lifts you off the floor and suffocates you"}},
+     {n:"Undead", sz:"H", i:3, wp:18, sp:{possess:true, note:"its spirit may take you over when it dies"}}],
+    [{n:"Vampire",sz:"H", i:12, wp:95, sp:{atk:2, awe:true, caster:true, seesInvis:true, noTurn:true, note:"awe on a d12; two attacks; master of every offensive spell"}}]
+  ]
+};
+const ENC_TYPES = ["Beasts","Demons","Humans","Lair Beasts","Magical","Walking Dead"];
+
+/* Encounters, p.45: roll a d8 for the table, then a d10 on that table. */
+const ENCOUNTER_TABLES = [
+  ["Lair Beast","Magical","Beasts","Food","Humans","Magical","Walking Dead","Beasts","Lair Beast","Demons"],
+  ["Lair Beast","Misc Magic","Beasts","Walking Dead","Joiner","Demons","Store","Humans","Magical","Weapon"],
+  ["Demons","Walking Dead","Lair Beast","Misc Magic","Beasts","Teleport","Disease","Magical","Humans","Magic Armor"],
+  ["+10 WP","-10 WP","Teleport","+10 SP","+25 WP","+25 SP","-15 WP","Teleport","+3000 WM","-All armour"],
+  ["Magic Weapon","Lair Beast","Misc Magic","Humans","Food","Misc Magic","Demons","Walking Dead","Beasts","Magic Armor"],
+  ["Beasts","Grimoire","Lair Beast","Humans","Demons","Disease","Store","Misc Magic","Magical","Joiner"],
+  ["Humans","Faerie","Demons","Beasts","Insanity","Phobia","Lair Beast","Darkness","Walking Dead","Magical"],
+  ["Misc Magic","Beasts","Faerie","Magic Armor","Walking Dead","Lair Beast","Demons","Humans","Magical","Food"]
+];
+const ENC_ALIAS = {"Lair Beast":"Lair Beasts","Beasts":"Beasts","Demons":"Demons","Humans":"Humans","Magical":"Magical","Walking Dead":"Walking Dead"};
+
+const SPELLS = [
+  {n:"Heal",        lvl:1, s:"healing",    kind:"heal",   dmg:()=>D(10),             txt:"d10 wp"},
+  {n:"Shield",      lvl:1, s:"protection", kind:"ward",   pool:50,  rounds:5,        txt:"soaks 50 wp, 5 rounds"},
+  {n:"Strength",    lvl:1, s:"offense",    kind:"might",  dmg:()=>D(10),             txt:"+d10 damage till tomorrow"},
+  {n:"Doze",        lvl:1, s:"offense",    kind:"status", txt:"sleep d4 rounds"},
+  {n:"Freeze",      lvl:1, s:"offense",    kind:"thrown", dmg:()=>D(6),              txt:"d6, thrown"},
+  {n:"Detect Magic",lvl:1, s:"divination", kind:"reveal", txt:"the floor lays itself out"},
+  {n:"Mirror Self", lvl:1, s:"illusion",   kind:"mirror", txt:"foes need a 1 for d6 rounds"},
+  {n:"Stun",        lvl:1, s:"offense",    kind:"stun",   txt:"d6 creatures stunned d4 rounds"},
+  {n:"Weaken",      lvl:1, s:"offense",    kind:"weaken", txt:"they hit on a 3 and do half"},
+  {n:"Acid",        lvl:2, s:"offense",    kind:"acid",   dmg:()=>2*D(6)+2,          txt:"2d6+2 a round for d6 rounds"},
+  {n:"Stupidity",   lvl:2, s:"offense",    kind:"stupid", txt:"intelligence to 1; it can do nothing"},
+  {n:"Blind",       lvl:3, s:"offense",    kind:"blind",  txt:"blind for life, thrown"},
+  {n:"Shrink",      lvl:3, s:"offense",    kind:"shrink", txt:"two sizes down, half wp and damage"},
+  {n:"Ice",         lvl:3, s:"offense",    kind:"thrown", dmg:()=>D(6),              txt:"d6 a round, then frozen"},
+  {n:"Earthquake",  lvl:4, s:"offense",    kind:"quake",  dmg:()=>3*D(10)+8,         txt:"3d10+8 to everything, you included"},
+  {n:"Noxious Vapor",lvl:4,s:"offense",    kind:"vapor",  txt:"a d6 of very bad outcomes"},
+  {n:"Fireballs",   lvl:4, s:"offense",    kind:"volley", dmg:()=>D(10)+2,           txt:"d8 balls at d10+2 each"},
+  {n:"Petrify",     lvl:5, s:"offense",    kind:"petrify",txt:"encased in stone for five days"},
+  {n:"Insane",      lvl:2, s:"offense",    kind:"insane", txt:"one foe rolls on the madness table"},
+  {n:"Summon",      lvl:2, s:"special",    kind:"summon", txt:"something fights beside you"},
+  {n:"Fireball",    lvl:3, s:"offense",    kind:"thrown", dmg:()=>D(10)+D(10)+4,     txt:"2d10+4"},
+  {n:"Major Heal",  lvl:3, s:"healing",    kind:"heal",   dmg:()=>D(10)+D(10)+D(10), txt:"3d10 wp"},
+  {n:"Bubble",      lvl:3, s:"protection", kind:"ward",   pool:100, rounds:12, reflect:true, txt:"soaks 100 wp and reflects"},
+  {n:"Sense Danger",lvl:3, s:"divination", kind:"foresee",txt:"read the next encounter"},
+  {n:"Turn Walking Dead",lvl:2,s:"protection",kind:"turn",txt:"the dead of your level or lower are sent back"},
+  {n:"Plane Gate",  lvl:3, s:"protection", kind:"gate",   txt:"d6 demons or dead vanquished to The Planes"},
+  {n:"Sense Presence",lvl:2,s:"protection",kind:"senses", txt:"see in the dark; never surprised"},
+  {n:"Phantom Host",lvl:3, s:"illusion",   kind:"summon", txt:"a host that isn't there"},
+  {n:"Lightning",   lvl:4, s:"offense",    kind:"thrown", dmg:()=>D(10)+6,           txt:"d10+6, every foe"},
+  {n:"Regeneration",lvl:4, s:"healing",    kind:"regen",  txt:"d8 wp a round this fight"},
+  {n:"Mangle",      lvl:5, s:"offense",    kind:"thrown", dmg:()=>2*D(20)+15,        txt:"2d20+15"},
+  {n:"Death",       lvl:5, s:"offense",    kind:"death",  txt:"one foe dies, costs 25 wp"}
+];
+
+/* The Magic User bonus table, p.18. A number is the bonus to thrown spells of
+   that school; 3 and 4 mean the school cannot be learned until that skill level;
+   null means the subclass may never have it at all. */
+const MU_CHART = {
+  "Wizard":     {offense:3, protection:0, healing:0, divination:0, special:0,    illusion:0},
+  "Warlock":    {offense:4, protection:0, healing:0, divination:2, special:null, illusion:null, gate:{protection:4, healing:3}},
+  "Sorcerer":   {offense:4, protection:1, healing:0, divination:3, special:1,    illusion:null, gate:{healing:4}},
+  "Court Mage": {offense:2, protection:2, healing:1, divination:0, special:null, illusion:null, gate:{divination:4}},
+  "Illusionist":{offense:0, protection:0, healing:null, divination:1, special:4, illusion:0,    gate:{protection:3}},
+  "Cleric":     {offense:0, protection:3, healing:4, divination:0, special:null, illusion:null, gate:{divination:3}},
+  "Summoner":   {offense:0, protection:2, healing:0, divination:4, special:1,    illusion:null, gate:{offense:3}},
+  "Apprentice": {offense:0, protection:0, healing:0, divination:0, special:0,    illusion:0,    gate:{divination:3}}
+};
+function schoolAllowed(sub, school) { const c = MU_CHART[sub]; return !!c && c[school] !== null && c[school] !== undefined; }
+function schoolGate(sub, school)    { const c = MU_CHART[sub]; return (c && c.gate && c.gate[school]) || 1; }
+function schoolBonus(sub, school)   { const c = MU_CHART[sub]; return (c && typeof c[school] === "number") ? c[school] : 0; }
+function canLearn(sub, sp)          { return schoolAllowed(sub, sp.s); }
+function canCast(sp) {
+  if (!S.c.grimoire || !S.c.grimoire.includes(sp.n)) return false;
+  if (sp.lvl > S.c.level) return false;
+  return S.c.level >= schoolGate(S.c.sub, sp.s);
+}
+
+/* d10 spells, minimum 4, chosen from what the subclass may ever learn. */
+function rollGrimoire(sub) {
+  const pool = SPELLS.filter(sp => canLearn(sub, sp));
+  const low = pool.filter(sp => sp.lvl <= 2), high = pool.filter(sp => sp.lvl > 2);
+  shuffle(low); shuffle(high);
+  const n = Math.max(4, D(10));
+  const book = [];
+  for (const sp of low)  { if (book.length < Math.min(n, 6)) book.push(sp.n); }
+  for (const sp of high) { if (book.length < n) book.push(sp.n); }
+  if (sub === "Cleric")      for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
+  if (sub === "Illusionist") for (const n2 of ["Mirror Self", "Phantom Host"]) if (!book.includes(n2)) book.push(n2);
+  if (sub === "Summoner" && !book.includes("Summon")) book.push("Summon");
+  if (sub === "Sorcerer")    for (const n2 of ["Freeze", "Fireball"]) if (!book.includes(n2)) book.push(n2);
+  // you must be able to actually do something on your first day
+  const usableNow = sp => sp.lvl === 1 && schoolGate(sub, sp.s) <= 1;
+  const ready = () => book.filter(n2 => usableNow(SPELLS.find(sp => sp.n === n2))).length;
+  const spare = pool.filter(usableNow);
+  shuffle(spare);
+  for (const sp of spare) { if (ready() >= 2) break; if (!book.includes(sp.n)) book.push(sp.n); }
+  return book;
+}
+const INSANITY = [
+  "turns the blade on itself", "strikes the nearest of its own",
+  "bolts into the dark", "stands perfectly still", "froths and swings twice", "kneels and surrenders"
+];
+const maxCharges = () => 2 * S.c.level + 2 + eff("charges");
+
+/* ---------------- epitaphs ---------------- */
+const EPITAPHS = {
+  combat: [
+    "Killed by a {foe}. The {foe} has since been promoted.",
+    "Died as {name} lived: needing a 5, and getting whatever that was.",
+    "The {foe} was not the strongest thing in the room. It is now.",
+    "Fought to the last breath, which arrived punctually in round four.",
+    "A {sub} of skill level {lvl}, undone by something called a {foe}. Put it on the stone. All of it.",
+    "{name} had {gold} wilmst and no plan. The {foe} had a plan.",
+    "Last recorded thought: “it’s nearly dead.” It was nearer than {name}.",
+    "Died on floor {floor} doing what {name} loved, which was evidently standing very still.",
+    "The Maze Master notes that running was, throughout, an option.",
+    "Survived {day} days and spent the final nine seconds of them badly.",
+    "Came in for {motive}. The {foe} came in for lunch.",
+    "It took {sp} skill points to get here and one honest d20 to leave.",
+    "Not the worst delver on floor {floor}. Merely the most finished.",
+    "The {foe} would like to thank the dice, the Maze Master, and above all {name}.",
+    "Cause of death: a {foe}, some arithmetic, and a firm refusal to withdraw.",
+    "Went toe to toe with a {foe} and lost by roughly one toe."
+  ],
+  starve: [
+    "Packed a grimoire, three potions and a good cloak. Packed no lunch.",
+    "Cost of living: 4 wp a day. {name} fell behind on the payments.",
+    "The maze did not kill {name}. The maze simply outlasted a stomach.",
+    "Died on day {day} holding {gold} wilmst and absolutely nothing to spend it on.",
+    "There was food two corridors away. There is always food two corridors away.",
+    "Starved to death carrying a weapon worth more than most farms.",
+    "Final act: counting the rations. The count was zero. It had been for some time.",
+    "A troll’s appetite in a maze with no kitchen. This was always the ending.",
+    "Not eaten — merely unfed. {name} learned the difference slowly.",
+    "Death by budgeting."
+  ],
+  trap: [
+    "Stepped on the one flagstone in the corridor with an opinion.",
+    "The trap had waited four hundred years for precisely this level of confidence.",
+    "1–5 on a d20 avoids it. {name} rolled the way {name} always rolled.",
+    "A {sub} with no eye for traps, in a maze assembled chiefly out of traps.",
+    "Located the trap using the traditional method.",
+    "The Maze Master did not even look up.",
+    "Whoever built this floor was clearly paid by the corpse.",
+    "It was well marked. In a language. Somewhere. Probably."
+  ],
+  fall: [
+    "Climbing is a 2vp skill. {name} bought Cooking.",
+    "Went up the wall beautifully. Came down it considerably faster.",
+    "Gravity remains undefeated on floor {floor}.",
+    "Needed a 6 on a d10, three separate times. Managed two.",
+    "The wall is still standing. {name} is being scraped off it.",
+    "A short climb and an even shorter career."
+  ],
+  gorge: [
+    "Cleared eleven feet of a twelve-foot gap. So very nearly.",
+    "Leaping is a d10 roll. {name} treated it as a formality.",
+    "The crevice is not deep. It is simply deeper than {name} was tall.",
+    "Jumped on day {day}. Landed shortly afterwards, and at length.",
+    "The gap did not move. This was checked. Twice."
+  ],
+  teleport: [
+    "Teleported d20 squares. Required d20 minus four.",
+    "Arrived somewhere. Arrived inside it.",
+    "The maze does not check its destinations, and neither did {name}."
+  ],
+  maze: [
+    "Table four giveth. Table four overwhelmingly taketh.",
+    "No monster, no trap, no fall. A red dot and a bad attitude.",
+    "The maze deducted {name} the way a bank deducts a service charge.",
+    "Killed by a d8, a d10, and an indifferent universe.",
+    "Some floors have creatures. This one had paperwork.",
+    "{name} walked onto a dot, and the dot walked back."
+  ],
+  quake: [
+    "Cast an earthquake indoors. Reader, the ceiling was also indoors.",
+    "3d10+8 does not stop to ask whose side anyone is on.",
+    "The rules say cast it from behind a shield. The rules are right there.",
+    "Brought the house down, and then the house returned the favour."
+  ],
+  potion: [
+    "The colour was listed as “??”. {name} was thirsty.",
+    "Fifty wilmst — the cheapest item on the table and the priciest decision on it.",
+    "One bottle in ten is Death. {name} tested this thoroughly. Once.",
+    "Drank an unlabelled potion on floor {floor}. The reviews are in."
+  ],
+  insanity: [
+    "Rolled a 1 on the madness table and won the argument with themselves.",
+    "The corridor whispered something. {name} took it entirely on board.",
+    "Nothing attacked {name}. Nothing needed to.",
+    "Cause of death: one d6, honestly interpreted."
+  ],
+  poison: [
+    "Poison is patient. {name} was merely available.",
+    "There was a cure. It cost 100 wilmst. {name} had {gold} and no store in sight.",
+    "Died on an instalment plan, two wp per square.",
+    "Not a dramatic death — but a beautifully documented one."
+  ],
+  backfire: [
+    "One spell in eight goes wrong for an Apprentice. This was the eighth.",
+    "Held the incantation slightly wrong, and then very briefly.",
+    "The grimoire is fine. The grimoire is always fine.",
+    "Killed by their own homework."
+  ],
+  summon: [
+    "Called something up. It arrived. It had questions.",
+    "One time in eight the summoning turns around. {name} beat the odds in the wrong direction.",
+    "Read the opening paragraph of the ritual with tremendous conviction.",
+    "The Summoner’s own notes cover this outcome. On the following page."
+  ],
+  won: [
+    "Walked out through the Gate on day {day}. The Maze Master has requested a recount.",
+    "Reached the Gate with {sp} skill points and a limp, and retired to lie about both.",
+    "Went in for {motive}. Came out with {motive} and a permanent flinch.",
+    "Survived all five floors and will now be insufferable at parties for life.",
+    "Escaped. Statistically speaking, this did not occur."
+  ]
+};
+function epitaphFor(cause, ctx) {
+  const bank = EPITAPHS[cause] || EPITAPHS.maze;
+  return pick(bank).replace(/\{(\w+)\}/g, (_, k) => ctx[k] !== undefined ? ctx[k] : "");
+}
+
+/* ---------------- state ---------------- */
+let S = null;                 // full game state
+const cv = document.getElementById("maze");
+const ctx = cv.getContext("2d");
+const GW = 21, GH = 21;
+
+/* ---------------- character creation ---------------- */
+function rollCharacter(log) {
+  const cd = D(6);
+  const cls = cd <= 2 ? "Magic User" : cd <= 4 ? "Fighter" : "Thief";
+  let sd = D(8);
+  let sub = CLASSES[cls].subs[sd - 1];
+  const rd = D(8);
+  const race = RACE_D8[rd - 1];
+  // "You cannot be a Fridgian Samurai because Fridges don't wear any armor."
+  while (race === "Fridgian" && sub === "Samurai") { sd = D(8); sub = CLASSES[cls].subs[sd - 1]; }
+  const R = RACES[race];
+  const intel = D(20);
+
+  let maxWP = R.flatWP ? R.flatWP : CLASSES[cls].baseWP();
+  if (R.wpMul) maxWP = Math.round(maxWP * R.wpMul);
+
+  const [wpn, prof] = KIT[sub];
+  const draft = { cls, sub };
+  rollSkills(draft);
+
+  // Starting armour is issued with the kit, not bought — everyone leaves the
+  // surface with the same 50 wilmst, so the purse can't decide what you wear.
+  let armor = { name:"Nothing", ar:0, wp:0, min:0, cost:0, cls:"FTM" };
+  if (!R.noArmor) {
+    const byName = n => ARMORS.find(a => a.name === n);
+    if (sub === "Samurai")       armor = byName("Plate");      // "automatic plate armor equivalent"
+    else if (sub === "Cleric")   armor = byName("Mail");       // clerics may wear chain
+    else if (sub === "Woodsman") armor = byName("Leather");    // no mail, no plate
+    else if (cls === "Fighter")  armor = byName("Studded");
+    else if (cls === "Thief")    armor = byName("Leather");
+    else                         armor = byName("Cloth");
+  }
+
+  const ph = PHOBIAS[D(10) - 1];
+  const c = {
+    cls, sub, race, intel, level: 1, sp: 0,
+    maxWP, wp: maxWP,
+    skills: draft.skills, vp: draft.vp,
+    weapon: wpn, prof, magicWpn: sub === "Samurai" ? 2 : 0,
+    armor: armor.name, ar: armor.ar, armorMin: armor.min,
+    armorWP: armor.wp, armorMax: armor.wp, patches: 0,
+    temperament: TEMPERAMENTS[D(12) - 1],
+    motive: MOTIVES[D(12) - 1],
+    phobia: ph.n, phobiaType: ph.t,
+    potions: cls === "Magic User" ? D(6) : cls === "Thief" ? 2 : 1,
+    rations: cls === "Fighter" ? 6 : cls === "Thief" ? 5 : 4,
+    gold: 50,
+    scrolls: cls === "Magic User" ? 1 : 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
+    items: cls === "Thief" ? [Object.assign({kind:"cloak"}, CLOAKS[D(8) - 1])] : [],
+    grimoire: cls === "Magic User" ? rollGrimoire(sub) : [],
+    spellsUsed: 0, kills: 0, might: 0, ward: null, regen: false, mirror: 0, foresight: false
+  };
+  c.name = nameFor(race);
+
+  if (log) {
+    logLine(`<span class="banner">A new delver rolls up.</span>`);
+    say(`Class on d6: <span class="roll">${cd}</span> → ${cls}. Subclass on d8: <span class="roll">${sd}</span> → ${sub}.`);
+    say(`Race on d8: <span class="roll">${rd}</span> → ${race}. Intelligence on d20: <span class="roll">${intel}</span>.`);
+    say(`Win Potential: <span class="roll">${maxWP}</span>. ${c.name} carries a ${wpn}${prof ? ` (+${prof} proficiency)` : ""} and wears ${armor.name.toLowerCase()}.`);
+    const names = Object.keys(c.skills);
+    if (names.length) {
+      const vpTotal = cls === "Fighter" ? 8 : 12;
+      say(`Special skills, ${vpTotal - (c.vp || 0)} of ${vpTotal} value points spent: <span class="roll">${names.map(n => n + (c.skills[n] === 2 ? " (raised)" : "")).join(", ")}</span>.`);
+    } else if (cls === "Magic User") {
+      say(`No special skills — a Magic User has spells instead.`);
+      say(`Grimoire (d10, minimum 4): <span class="roll">${c.grimoire.join(", ")}</span>.`);
+    }
+  }
+  return c;
+}
+
+/* ---------------- the Maze Master's opinion of you ---------------- */
+const RACE_NOTE = {
+  "Human":   "No advantages, no penalties, no excuses. The maze keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Maze Master considers statistically unremarkable.",
+  "Elven":   "Thin-boned, easy to hit, and carrying not much more than half a person's Win Potential — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+  "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising. Built low, built cheap, built to be hit. Dwarves call this a fair trade. Dwarves are rarely asked.",
+  "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, which most Wilmsry take as proof they are doing something right.",
+  "Fridgian":"You will not wear armour. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest, occasionally something already dead. The Maze Master has notes about you.",
+  "Troll":   "Seventy-five Win Potential, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple."
+};
+const CLASS_NOTE = {
+  "Fighter":    "The best Win Potential in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
+  "Thief":      "Forty Win Potential, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
+  "Magic User": "Twenty-five Win Potential plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough."
+};
+const SUB_NOTE = {
+  "Knight":        "Nothing under 5 wp will come near you and everything over 20 comes straight at you. You have been made important by the only creatures whose vote counts: the large ones.",
+  "Guard":         "No critical strike, ever, and three damage off the top until level four. You are a professional. The profession is standing there.",
+  "Woodsman":      "No mail, no plate, no shield, and a quarter staff you are genuinely superb with. You speak to every animal in here except dragons — a pity, as it is mostly dragons that want a word.",
+  "Soldier":       "You take criticals on a 2 and deal them never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
+  "Barbarian":     "Two attacks a round and half the skill points, on the sound principle that a man swinging twice is learning nothing either time.",
+  "Master of Arms":"Plus two with every weapon ever forged, plus three with anything you have repaired yourself. You attack creatures without question. The book files this under abilities.",
+  "Samurai":       "A magical katana, armour like plate, and enough clatter that you never win the first roll of anything. You never run. The book uses the word suicidal and does not soften it.",
+  "Bard":          "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Creatures too stupid to know better come for you first — which, down here, is most of them.",
+
+  "Pickpocket":    "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught. You have never been thanked either.",
+  "Pilfer":        "Traps disarm themselves in your presence and no sealed room has ever held you. You cannot use a single magic item that doesn't heal, which the maze finds hilarious and stocks accordingly.",
+  "Cat Burglar":   "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
+  "Cutthroat":     "Double damage on your first landed blow, and one member of every party dies by your hand before the dungeon is done. Delving alone has simplified this enormously.",
+  "Cloaker":       "You can always vanish, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
+  "Ninja":         "You never speak. Your opening strike lands for maximum damage and after that a 1 or a 2 opens something up. The silence isn't a vow, it's a tactic.",
+  "Con Artist":    "You talk first, and anything with wit of 6 or under simply declines to fight you. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+  "Acrobat":       "Everything needs a 3 to lay a hand on you and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
+
+  "Wizard":        "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand until the last spell is spent. Two wizards in a party fight each other; there is only one of you, which helps.",
+  "Warlock":       "Evil, and productive with it — a potion copied every week and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
+  "Sorcerer":      "Two dozen spells to start and two more each level, nearly all of it fire, with a one-in-eight chance per level of simply forgetting the ones that aren't. Your arm caps out at 9 damage. Nobody hired the arm.",
+  "Court Mage":    "You talk. Through encounters, through corridors, through other people's turns. One creature in twelve dies of boredom before the fighting starts, and the book counts that as a kill.",
+  "Illusionist":   "You choose where the teleport squares put you, which in a maze is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
+  "Cleric":        "Healing, turning the dead, chain mail and a shield: the one Magic User the maze cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
+  "Summoner":      "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
+  "Apprentice":    "Double skill points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there."
+};
+
+const NAMES = {
+  Human:["Aldric Vane","Sera Coll","Bertram Hask","Ivy Corrin","Owen Trask"],
+  Elven:["Faelin Shear","Ysolde Nim","Aeryth Vale"],
+  Dwarven:["Borin Stonecut","Hilda Ferrow","Durn Blackkettle"],
+  Wilmsry:["Pell of Ninth Row","Marta Quen","Osk the Patient"],
+  Fridgian:["Skalgrim","Hrafn the Loud","Vott Icebound"],
+  Troll:["Grommash Nine-Teeth","Ulba the Wide","Skeg"]
+};
+const nameFor = r => pick(NAMES[r] || NAMES.Human);
+
+/* ---------------- maze generation ---------------- */
+function genFloor(depth) {
+  const g = [];
+  for (let y = 0; y < GH; y++) { g.push([]); for (let x = 0; x < GW; x++) g[y].push({ wall: true, seen: false, feat: null }); }
+
+  // recursive backtracker
+  const stack = [[1, 1]];
+  g[1][1].wall = false;
+  const dirs = [[0,-2],[0,2],[-2,0],[2,0]];
+  while (stack.length) {
+    const [x, y] = stack[stack.length - 1];
+    const opts = [];
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx, ny = y + dy;
+      if (nx > 0 && ny > 0 && nx < GW - 1 && ny < GH - 1 && g[ny][nx].wall) opts.push([nx, ny, dx, dy]);
+    }
+    if (!opts.length) { stack.pop(); continue; }
+    const [nx, ny, dx, dy] = pick(opts);
+    g[y + dy / 2][x + dx / 2].wall = false;
+    g[ny][nx].wall = false;
+    stack.push([nx, ny]);
+  }
+  // a few loops so it isn't a pure tree
+  for (let i = 0; i < 10; i++) {
+    const x = 1 + 2 * Math.floor(Math.random() * ((GW - 1) / 2)) + (Math.random() < .5 ? 1 : -1);
+    const y = 1 + 2 * Math.floor(Math.random() * ((GH - 1) / 2));
+    if (x > 0 && x < GW - 1 && g[y] && g[y][x] && g[y][x].wall) g[y][x].wall = false;
+  }
+
+  const open = [];
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (!g[y][x].wall) open.push([x, y]);
+
+  // farthest open cell from the start becomes the descent
+  const dist = bfs(g, 1, 1);
+  let best = [1, 1], bd = -1;
+  for (const [x, y] of open) if (dist[y][x] > bd) { bd = dist[y][x]; best = [x, y]; }
+  g[best[1]][best[0]].feat = depth >= 5 ? "gate" : "exit";
+
+  // features
+  const far = open.filter(([x, y]) => dist[y][x] > 4 && !g[y][x].feat);
+  shuffle(far);
+  let i = 0;
+  const nDots = 9 + depth;
+  for (let k = 0; k < nDots && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "dot"; }
+  for (let k = 0; k < 2 && i < far.length; k++, i++)     { const [x, y] = far[i]; g[y][x].feat = "tele"; }
+  for (let k = 0; k < 2 && i < far.length; k++, i++)     { const [x, y] = far[i]; g[y][x].feat = "chest"; }
+  for (let k = 0; k < 2 && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "trap"; }
+  for (let k = 0; k < 2 && i < far.length; k++, i++)     { const [x, y] = far[i]; g[y][x].feat = "climb"; }
+  for (let k = 0; k < 2 && i < far.length; k++, i++)     { const [x, y] = far[i]; g[y][x].feat = "gorge"; }
+
+  // unlit stretches: the deeper you go the more of the floor has no light at all
+  if (depth >= 2) {
+    const blobs = depth - 1;
+    for (let bIdx = 0; bIdx < blobs && open.length; bIdx++) {
+      const [sx, sy] = pick(open);
+      const d2 = bfs(g, sx, sy);
+      for (const [x, y] of open) if (d2[y][x] >= 0 && d2[y][x] <= 3 + depth) g[y][x].dark = true;
+    }
+    g[1][1].dark = false;
+  }
+
+  // one-way doors are cut THROUGH a wall: a wall square with open corridor on
+  // both sides of it, opened in one direction only so it joins two passages.
+  const spots = [];
+  for (let y = 1; y < GH - 1; y++) for (let x = 1; x < GW - 1; x++) {
+    if (!g[y][x].wall) continue;
+    const n = g[y-1][x].wall, s = g[y+1][x].wall, e = g[y][x+1].wall, w = g[y][x-1].wall;
+    if (!n && !s && e && w) spots.push([x, y, ["N","S"]]);
+    else if (!e && !w && n && s) spots.push([x, y, ["E","W"]]);
+  }
+  shuffle(spots);
+  const doors = [];
+  for (const [x, y, axis] of spots) {
+    if (doors.length >= 3) break;
+    if (doors.some(([dx, dy]) => Math.abs(dx - x) + Math.abs(dy - y) < 4)) continue;
+    g[y][x].wall = false;
+    g[y][x].feat = "one";
+    g[y][x].dir = pick(axis);
+    doors.push([x, y]);
+  }
+
+  return { g, px: 1, py: 1, depth };
+}
+
+function bfs(g, sx, sy) {
+  const d = g.map(r => r.map(() => -1));
+  d[sy][sx] = 0;
+  const q = [[sx, sy]];
+  while (q.length) {
+    const [x, y] = q.shift();
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
+      if (g[ny][nx].wall || d[ny][nx] !== -1) continue;
+      d[ny][nx] = d[y][x] + 1; q.push([nx, ny]);
+    }
+  }
+  return d;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+
+/* ---------------- rendering ---------------- */
+let CELL = 28;
+function fit() {
+  const w = cv.parentElement.clientWidth - 26;
+  const h = Math.max(300, window.innerHeight - 260);
+  CELL = clamp(Math.floor(Math.min(w, h) / GW), 14, 34);
+  const px = CELL * GW;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = px * dpr; cv.height = px * dpr;
+  cv.style.width = px + "px"; cv.style.height = px + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+
+function reveal() {
+  const { g, px, py } = S.floor;
+  const r = ((g[py][px].dark && !skill("Night Vision")) ? 1 : 2) + eff("sight");
+  for (let y = py - r; y <= py + r; y++)
+    for (let x = px - r; x <= px + r; x++)
+      if (g[y] && g[y][x]) g[y][x].seen = true;
+}
+
+function draw() {
+  if (!S) return;
+  const { g, px, py } = S.floor;
+  const size = CELL * GW;
+  const css = getComputedStyle(document.documentElement);
+  const C = n => css.getPropertyValue(n).trim();
+
+  ctx.fillStyle = "#F4EEDF"; ctx.fillRect(0, 0, size, size);
+
+  // graph paper
+  ctx.strokeStyle = C("--grid"); ctx.globalAlpha = .30; ctx.lineWidth = 1;
+  for (let i = 0; i <= GW; i++) {
+    ctx.beginPath(); ctx.moveTo(i*CELL+.5, 0); ctx.lineTo(i*CELL+.5, size); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*CELL+.5); ctx.lineTo(size, i*CELL+.5); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // unexplored haze over wall cells / unseen cells
+  ctx.fillStyle = "rgba(199,185,160,.42)";
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++)
+    if (!g[y][x].seen) ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+
+  // explored floor, with unlit stretches shaded
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    if (!g[y][x].seen || g[y][x].wall) continue;
+    ctx.fillStyle = g[y][x].dark ? "#DED3BC" : "#FBF6E9";
+    ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+  }
+
+  // ink walls: draw an edge wherever an explored floor cell meets a wall
+  ctx.strokeStyle = C("--ink"); ctx.lineWidth = Math.max(2, CELL * .10); ctx.lineCap = "square";
+  const edge = (x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();};
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    const c = g[y][x];
+    if (!c.seen || c.wall) continue;
+    const X = x*CELL, Y = y*CELL;
+    const solid = (nx,ny)=> !g[ny] || !g[ny][nx] || g[ny][nx].wall;
+    if (solid(x, y-1)) edge(X, Y, X+CELL, Y);
+    if (solid(x, y+1)) edge(X, Y+CELL, X+CELL, Y+CELL);
+    if (solid(x-1, y)) edge(X, Y, X, Y+CELL);
+    if (solid(x+1, y)) edge(X+CELL, Y, X+CELL, Y+CELL);
+  }
+
+  // features
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    const c = g[y][x];
+    if (!c.seen || !c.feat) continue;
+    const cx = x*CELL + CELL/2, cy = y*CELL + CELL/2, r = CELL*.22;
+    if (c.feat === "dot") {
+      ctx.fillStyle = C("--stamp"); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+    } else if (c.feat === "tele") {
+      ctx.fillStyle = C("--ditto");
+      ctx.beginPath(); ctx.moveTo(cx, cy-r*1.3); ctx.lineTo(cx+r*1.3, cy); ctx.lineTo(cx, cy+r*1.3); ctx.lineTo(cx-r*1.3, cy); ctx.closePath(); ctx.fill();
+    } else if (c.feat === "one") {
+      ctx.save();
+      ctx.globalAlpha = .18; ctx.fillStyle = C("--moss");
+      ctx.fillRect(x*CELL+1, y*CELL+1, CELL-2, CELL-2);
+      ctx.globalAlpha = 1;
+      ctx.translate(cx, cy);
+      ctx.rotate({N:0,E:Math.PI/2,S:Math.PI,W:-Math.PI/2}[c.dir]);
+      ctx.fillStyle = C("--moss");
+      ctx.beginPath(); ctx.moveTo(0,-r*1.5); ctx.lineTo(r*1.1,r*.5); ctx.lineTo(0,r*.1); ctx.lineTo(-r*1.1,r*.5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else if (c.feat === "trap") {
+      ctx.strokeStyle = C("--stamp"); ctx.lineWidth = Math.max(2, CELL*.09);
+      ctx.beginPath(); ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
+      ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r); ctx.stroke();
+    } else if (c.feat === "chest") {
+      ctx.fillStyle = C("--moss");
+      ctx.fillRect(cx - r, cy - r*.75, r*2, r*1.5);
+      ctx.fillStyle = "#F4EEDF";
+      ctx.fillRect(cx - r*.18, cy - r*.75, r*.36, r*1.5);
+    } else if (c.feat === "climb") {
+      ctx.strokeStyle = C("--ink"); ctx.lineWidth = Math.max(2, CELL*.09);
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(cx - r*1.2, cy + k*r*.7); ctx.lineTo(cx + r*1.2, cy + k*r*.7); ctx.stroke(); }
+    } else if (c.feat === "gorge") {
+      ctx.fillStyle = C("--ink");
+      ctx.beginPath();
+      ctx.moveTo(cx - r*1.3, cy - r); ctx.lineTo(cx - r*.2, cy); ctx.lineTo(cx - r*1.1, cy + r);
+      ctx.lineTo(cx + r*1.3, cy + r); ctx.lineTo(cx + r*.2, cy); ctx.lineTo(cx + r*1.1, cy - r);
+      ctx.closePath(); ctx.fill();
+    } else if (c.feat === "exit" || c.feat === "gate") {
+      ctx.fillStyle = c.feat === "gate" ? C("--ditto") : C("--ink");
+      ctx.beginPath(); ctx.moveTo(cx-r*1.3, cy-r); ctx.lineTo(cx+r*1.3, cy-r); ctx.lineTo(cx, cy+r*1.3); ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // the party marker, P, as the rules draw it
+  const cx = px*CELL + CELL/2, cy = py*CELL + CELL/2;
+  ctx.fillStyle = C("--ditto");
+  ctx.beginPath(); ctx.arc(cx, cy, CELL*.36, 0, 7); ctx.fill();
+  ctx.fillStyle = "#F6F1E4";
+  ctx.font = `${Math.round(CELL*.5)}px "Special Elite", monospace`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("P", cx, cy + CELL*.03);
+}
+
+/* ---------------- log ---------------- */
+/* Beats. Everything that happens — every icon, every roll, every exchange —
+   is captured as a list of beats and shown in the encounter panel. On a phone
+   they are stepped through one at a time; on a wide screen they are stacked.
+   The Oracle keeps the whole running log either way. */
+let CAPTURE = null;
+
+/* A beat is one moment — a whole combat exchange, or one thing the maze did.
+   Its lines are shown together; Next moves to the next moment. */
+function newBeat(title, tone) {
+  if (!S.beats) S.beats = { groups: [], i: 0, action: null };
+  S.beats.groups.push({ title: title || "", tone: tone || "", lines: [] });
+  CAPTURE = S.beats.groups[S.beats.groups.length - 1].lines;
+}
+function beginEvent(title, tone) { newBeat(title, tone); }
+function evt(html) { say(html); }
+function stepping() {
+  try { return window.matchMedia("(max-width:1080px)").matches; } catch (e) { return false; }
+}
+/* Out of combat, an action is reported as a beat card. In a fight nothing is
+   gated — the panel keeps its creatures and its buttons, and the blow-by-blow
+   goes to the Oracle. */
+function act(fn) {
+  if (S.combat) {
+    const lines = [];
+    CAPTURE = lines;
+    try { fn(); } finally { CAPTURE = null; }
+    if (!S.combat && !S.dead && !S.won && !S.store && lines.length) {
+      // parleyed, fled, or killed the last of them — say so, don't just go quiet
+      S.beats = { groups: [{ title: "", tone: "", lines }], i: 0, action: null };
+      S.lastExchange = null;
+    } else {
+      S.lastExchange = lines;
+      S.exchangeN = (S.exchangeN || 0) + 1;
+    }
+    renderEncounter();
+    return;
+  }
+  S.beats = null;
+  newBeat("", "");
+  try { fn(); } finally { CAPTURE = null; }
+  if (S.beats) S.beats.groups = S.beats.groups.filter(g => g.lines.length);
+  if (!S.beats || !S.beats.groups.length) S.beats = null;
+  renderEncounter();
+}
+
+const logEl = document.getElementById("log");
+function logLine(html) {
+  if (CAPTURE) CAPTURE.push(html);
+  const p = document.createElement("p");
+  p.innerHTML = html;
+  logEl.insertBefore(p, logEl.firstChild);
+  while (logEl.children.length > 160) logEl.removeChild(logEl.lastChild);
+  document.getElementById("log-count").textContent = S && S.floor ? `floor ${S.floor.depth}` : "";
+}
+const say = logLine;
+
+/* ---------------- derived character numbers ---------------- */
+const R_ = () => RACES[S.c.race];
+function strikeDie() {
+  let idx = S.c.level - 1;
+  if (R_().strikeStep) idx = Math.min(4, idx + R_().strikeStep);
+  if (S.c.sub === "Illusionist" && S.c.level < 3) idx = 0;   // d20 until level three
+  if (S.c.acute > 0) idx = 4;                                // Potion of Acuteness: strike on a d6
+  return STRIKE_DICE[idx];
+}
+function toHit() {
+  let h = CLASSES[S.c.cls].toHit;
+  if (R_().toHit) h = Math.max(h, R_().toHit);  // Elves strike at 5 whatever their class
+  if (S.c.sub === "Acrobat") h = 5;             // strikes as a fighter with the dagger
+  if (S.c.sub === "Cleric") h = Math.max(h, 4); // Clerics roll 4, not 3
+  if (skill("Kata")) h = Math.max(h, S.c.cls === "Fighter" ? 6 : 5);
+  if (S.combat && S.combat.inspired) h += S.combat.inspired;
+  h += eff("toHit");
+  if (inDark() && !skill("Night Vision") && !S.c.senses) h = Math.min(h, 2);
+  return h;
+}
+function inDark() {
+  const f = S.floor;
+  return !!(f && f.g[f.py] && f.g[f.py][f.px] && f.g[f.py][f.px].dark);
+}
+function climbBonus() { return skill("Climbing") ? 4 : 0; }
+function leapBonus()  { return skill("Leaping") ? 2 : 0; }
+function foeDie(f) {   // p.24: never lower than a d8, whatever the level
+  const step = R_().foeStrikeStep || 0;
+  return Math.max(8, STRIKE_DICE[clamp(f.lvl - 1 + step, 0, 4)]);
+}
+function foeToHitVs() {                          // what a creature needs to land on you
+  let h = 5;
+  if (R_().foeToHit) h += R_().foeToHit;
+  if (S.c.sub === "Acrobat") h = 3;
+  if (skill("Agility")) h -= 1;                  // 1–4 instead of 1–5, or 1–3 instead of 1–4
+  h += eff("foeToHit");
+  if (inDark() && skill("Silence")) h = 1;       // in the dark a silent thief is barely there
+  if (S.c.mirror > 0) h = 1;                     // Mirror Self
+  if (S.c.invis > 0) h = 1;                      // invisible
+  return Math.max(1, h);
+}
+function weaponDamage() {
+  const w = WEAPONS[S.c.weapon] || WEAPONS["Club"];
+  let d = S.c.level * S.c.level + w.d() + S.c.prof + S.c.magicWpn;
+  if (R_().dmg) d += R_().dmg;
+  if (R_().wpnBonus) d += R_().wpnBonus;
+  if (S.c.might) d += S.c.might;
+  if (skill("Kata")) d += S.c.level;
+  if (skill("Heft")) d += 2;
+  d += eff("dmg");
+  if (S.c.sub === "Guard" && S.c.level < 4) d -= (4 - S.c.level);
+  if (S.c.sub === "Sorcerer") d = Math.min(d, 9);   // a Sorcerer's arm is not the point
+  return Math.max(1, d);
+}
+function upkeep() { return Math.max(1, Math.round(R_().upkeep * (skill("Heft") ? 0.5 : 1)) + eff("upkeep")); }
+function levelFromSP(sp) { let l = 1; for (let i = 4; i >= 0; i--) if (sp >= THRESHOLDS[i]) { l = i + 1; break; } return l; }
+
+/* ---------------- UI paint ---------------- */
+function paint() {
+  const c = S.c;
+  document.getElementById("m-floor").textContent = S.floor.depth;
+  document.getElementById("m-day").textContent = S.day;
+  document.getElementById("m-steps").textContent = S.steps;
+  document.getElementById("m-rations").textContent = c.rations;
+  document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations === 0);
+  document.getElementById("m-gold").textContent = c.gold.toLocaleString();
+
+  document.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
+  document.getElementById("s-name").textContent = c.name;
+  document.getElementById("s-tag").textContent = `${c.race} ${c.sub} · ${c.cls}`;
+  document.getElementById("s-wp").textContent = Math.max(0, c.wp);
+  document.getElementById("s-wpmax").textContent = c.maxWP;
+  const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
+  const fill = document.getElementById("s-wpfill");
+  fill.style.width = pct + "%";
+  fill.classList.toggle("low", pct < 34);
+
+  document.getElementById("s-die").textContent = "d" + strikeDie();
+  document.getElementById("s-hit").textContent = "1–" + toHit();
+  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
+  const bonus = c.prof + c.magicWpn + (R_().dmg || 0) + (R_().wpnBonus || 0) + eff("dmg");
+  document.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
+  document.getElementById("s-arm").textContent = c.armor + (c.ar ? ` (AR ${c.ar})` : "");
+  document.getElementById("s-int").textContent = c.intel;
+  document.getElementById("s-sp").textContent = Math.round(c.sp);
+  document.getElementById("s-next").textContent = c.level >= 5 ? "—" : THRESHOLDS[c.level];
+  document.getElementById("s-cost").textContent = upkeep() + " wp/day";
+
+  document.getElementById("s-trait").innerHTML =
+    `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>. ${R_().note}`;
+
+  const kit = document.getElementById("s-kit");
+  kit.innerHTML = "";
+  const rows = [
+    [c.weapon, `${w.lab}${c.prof ? ` +${c.prof}` : ""}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`],
+    [c.armor, c.armorWP > 0 ? `AR ${c.ar} · ${c.armorWP}/${c.armorMax} wp` : "destroyed"],
+    ["Potions", c.potions],
+    ...(c.scrolls ? [["Scrolls", `${c.scrolls}${canRead() ? "" : " (unreadable)"}`]] : []),
+    ["Rations", `${c.rations} days`],
+    ["Wilmst", c.gold.toLocaleString()]
+  ];
+  if (c.cls === "Magic User") rows.push(["Spell charges", `${maxCharges() - c.spellsUsed} / ${maxCharges()}`]);
+  if (c.ward) rows.push([c.ward.name, `${c.ward.pool} wp left`]);
+  if (c.might) rows.push(["Strength", `+${c.might} damage`]);
+  if (c.regen) rows.push(["Regeneration", "d8 a round"]);
+  rows.push(["Kills", c.kills || 0]);
+  for (const [a, b] of rows) {
+    const li = document.createElement("li");
+    li.innerHTML = `${a}<span>${b}</span>`;
+    kit.appendChild(li);
+  }
+  // special skills
+  const sk = document.getElementById("s-skills");
+  const table = skillTable(c.cls);
+  const owned = Object.keys(c.skills || {});
+  document.getElementById("s-vp").textContent =
+    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)}/${c.cls === "Fighter" ? 8 : 12} vp` : "none";
+  sk.innerHTML = "";
+  if (!owned.length) {
+    const li = document.createElement("li");
+    li.className = "none";
+    li.textContent = c.cls === "Magic User" ? "A Magic User has spells instead." : "No skills bought.";
+    sk.appendChild(li);
+  } else for (const n of owned) {
+    const s = table && table[n];
+    const li = document.createElement("li");
+    li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : ""}</i>`;
+    sk.appendChild(li);
+  }
+
+  // carried treasure
+  const carry = document.getElementById("s-carry");
+  const items = c.items || [];
+  document.getElementById("s-carry-n").textContent = items.length ? `${items.length}` : "";
+  carry.innerHTML = "";
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.className = "none"; li.textContent = "Nothing but the kit.";
+    carry.appendChild(li);
+  } else items.forEach((it, i) => {
+    const li = document.createElement("li");
+    const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
+    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${it.txt}</i>`;
+    if (itemReady(it)) {
+      const bt = document.createElement("button");
+      bt.className = "small"; bt.textContent = "Use";
+      bt.style.marginTop = "4px"; bt.style.alignSelf = "flex-start";
+      bt.onclick = () => act(() => useItem(i));
+      li.appendChild(bt);
+    }
+    carry.appendChild(li);
+  });
+
+  // the Maze Master's notes on whoever is currently walking around down there
+  document.getElementById("doss-who").textContent = `${c.race} ${c.sub}`;
+  const doss = document.getElementById("doss");
+  doss.innerHTML = "";
+  for (const [label, who, text] of [
+    ["Race", c.race, RACE_NOTE[c.race]],
+    ["Class", c.cls, CLASS_NOTE[c.cls]],
+    ["Subclass", c.sub, SUB_NOTE[c.sub]]
+  ]) {
+    const sec = document.createElement("section");
+    sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
+    doss.appendChild(sec);
+  }
+
+  renderEncounter();
+  draw();
+}
+
+/* ---------------- movement ---------------- */
+const DIRV = { N:[0,-1], S:[0,1], E:[1,0], W:[-1,0] };
+const OPP  = { N:"S", S:"N", E:"W", W:"E" };
+
+function move(dir) {
+  if (!S || S.combat || S.store || S.dead || S.won) return;
+  const f = S.floor, [dx, dy] = DIRV[dir];
+  const nx = f.px + dx, ny = f.py + dy;
+  if (!f.g[ny] || !f.g[ny][nx] || f.g[ny][nx].wall) return;
+
+  const here = f.g[f.py][f.px], there = f.g[ny][nx];
+  if (there.feat === "one" && there.dir !== dir) {
+    beginEvent("A one-way door", "moss");
+    evt(`The arrow points the other way. <span class="miss">It will not open from this side.</span>`);
+    CAPTURE = null; paint(); return;
+  }
+  if (here.feat === "one" && here.dir !== dir) {
+    beginEvent("A one-way door", "moss");
+    evt(`<span class="miss">You came through it. There is no coming back.</span>`);
+    CAPTURE = null; paint(); return;
+  }
+
+  // p.49: climbing is a d10 per ten feet by wall type; leaping is a d10 by distance and class
+  if (there.feat === "climb" || there.feat === "gorge") {
+    const climbing = there.feat === "climb";
+    beginEvent(climbing ? "A wall" : "A crevice", "ink");
+    let ok = true, hurt = 0;
+    if (climbing) {
+      const kind = pick(["rope", "rock", "wood"]);
+      const tbl = CLIMB_TABLE[kind];
+      const feet = 10 * (1 + D(2));
+      evt(`${feet} feet of ${kind}. A d10 for every ten feet, ${tbl.success} or under.`);
+      for (let ft = 0; ft < feet && ok; ft += 10) {
+        const r = D(10) - climbBonus();
+        if (r <= tbl.success) continue;
+        ok = false;
+        for (let g = 0; g <= ft; g += 10) if (D(20) > 2) hurt += tbl.fall();
+        if (skill("Climbing")) hurt = Math.ceil(hurt / 2);
+        evt(`d10 → <span class="roll">${r}</span> at ${ft + 10} feet. <span class="hurt">You come off — ${hurt} wp.</span>`);
+      }
+    } else {
+      const row = LEAP_TABLE[D(4) - 1];
+      const need = S.c.cls === "Fighter" ? row.F : S.c.cls === "Thief" ? row.T : row.M;
+      const r = D(10) - leapBonus();
+      evt(`${row.ft} across. A ${S.c.cls} clears that on ${need} or under: d10 → <span class="roll">${r}</span>.`);
+      if (r > need) {
+        ok = false;
+        hurt = D(6) + D(6);
+        if (skill("Climbing")) hurt = Math.ceil(hurt / 2);
+        evt(`<span class="hurt">Short. ${hurt} wp on the way down.</span>`);
+      }
+    }
+    if (!ok) {
+      S.c.wp -= hurt;
+      paint(); save();
+      if (S.c.wp <= 0) die(climbing ? "fall" : "gorge");
+      return;
+    }
+    evt(`<span class="hit">Over.</span>`);
+    there.feat = null;
+  }
+
+  S.beats = null;
+  f.px = nx; f.py = ny;
+  S.steps++;
+  reveal();
+
+  if (S.c.affliction) {
+    const af = S.c.affliction;
+    if (S.steps % af.per === 0) {
+      const l = Math.min(af.loss(), Math.max(0, S.c.wp - 1));
+      S.c.wp -= l;
+      if (l > 0) say(`<span class="hurt">${af.kind}: −${l} wp.</span>`);
+      else say(`<span class="hurt">${af.kind} has taken everything it can. You are on one wp.</span>`);
+      if (--af.left <= 0) { S.c.affliction = null; say(`<span class="hit">It passes.</span>`); }
+    }
+  }
+  if (S.c.haste > 0) S.c.haste--;
+  if (S.c.invis > 0) S.c.invis--;
+  if (S.c.ether > 0) S.c.ether--;
+
+  // the book recharges a Magic User every hundred squares; a solo caster needs it oftener
+  if (S.c.cls === "Magic User" && S.steps % 20 === 0 && S.c.spellsUsed > 0) {
+    S.c.spellsUsed--;
+    say(`<span class="beat">Twenty quiet squares. A charge comes back (${maxCharges() - S.c.spellsUsed} of ${maxCharges()}).</span>`);
+  }
+
+  if (S.steps % 100 === 0) newDay();
+  if (S.dead) { paint(); return; }
+
+  const cell = f.g[ny][nx];
+  if (S.combat) { paint(); save(); return; }     // a wandering monster already found you
+  if (cell.feat === "dot")  { cell.feat = null; beginEvent("Encounter dot", "stamp"); encounterDot(); }
+  else if (cell.feat === "trap")  { cell.feat = null; springTrap(); }
+  else if (cell.feat === "chest") { cell.feat = null; openChest(); }
+  else if (cell.feat === "tele") { cell.feat = null; teleport(); }
+  else if (cell.feat === "exit") { descend(); }
+  else if (cell.feat === "gate") { winGame(); }
+
+  CAPTURE = null;
+  paint(); save();
+}
+
+function newDay(camped) {
+  beginEvent(camped ? "You make camp" : `Day ${S.day + 1}`, "moss");
+  S.day++;
+  S.c.spellsUsed = 0;
+  S.c.might = 0;
+  if (S.c.strengthBoost) { S.c.maxWP -= S.c.strengthBoost; S.c.wp = Math.min(S.c.wp, S.c.maxWP); S.c.strengthBoost = 0; }
+  const cost = upkeep(), eats = R_().eats || 1;
+  evt(`<span class="banner">Day ${S.day}.</span>`);
+  if (S.c.rations >= eats) {
+    S.c.rations -= eats;
+    evt(`${camped ? "You make camp" : "A hundred squares walked"}. You eat, sleep eight hours, and pay <span class="roll">${cost} wp</span> of upkeep from your rations.`);
+    // eight hours' rest mends you
+    let heal = D(10) + 2 * S.c.level;
+    if (R_().heal2x || S.c.sub === "Soldier") heal *= 2;
+    const before = S.c.wp;
+    S.c.wp = Math.min(S.c.maxWP, S.c.wp + heal);
+    if (S.c.wp > before) evt(`Rest restores <span class="hit">+${S.c.wp - before} wp</span>.`);
+
+    if (S.c.affliction) { S.c.affliction = null; evt(`You sweat the ${S.c.affliction ? "" : ""}sickness out overnight. <span class="hit">Cured.</span>`); }
+    // patching armour by the fire: Sewing for thieves, Master of Arms for fighters
+    if (S.c.armorWP < S.c.armorMax && S.c.dr > 0) {
+      const tier = skillTier("Sewing");
+      const maxPatch = tier === 2 ? 6 : 4;
+      if (tier && S.c.patches < maxPatch) {
+        const amt = tier === 2 ? D(6) + 3 : D(6);
+        S.c.armorWP = Math.min(S.c.armorMax, S.c.armorWP + amt);
+        S.c.patches++;
+        evt(`Sewing: <span class="hit">+${amt}</span> back into your ${S.c.armor.toLowerCase()} (${maxPatch - S.c.patches} repairs left in it).`);
+      } else if (S.c.sub === "Master of Arms") {
+        const amt = D(6) + 3;
+        S.c.armorWP = Math.min(S.c.armorMax, S.c.armorWP + amt);
+        evt(`A Master of Arms works on his own kit: <span class="hit">+${amt}</span> to the ${S.c.armor.toLowerCase()}.`);
+      } else {
+        const amt = D(4);
+        S.c.armorWP = Math.min(S.c.armorMax, S.c.armorWP + amt);
+        evt(`You knock the worst of the dents out: <span class="hit">+${amt}</span> armour.`);
+      }
+    }
+    // a Warlock can copy a potion once a week
+    if (S.c.sub === "Warlock" && S.day - (S.c.dupAt || 0) >= 7 && S.c.potions > 0) {
+      S.c.dupAt = S.day; S.c.potions++;
+      evt(`The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`);
+    }
+  } else {
+    S.c.wp -= cost;
+    evt(`<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${cost} wp</span> straight out of you, and you wake no better than you lay down.`);
+    if (S.c.wp <= 0) return die("starve");
+  }
+  // wandering monsters: d20 per hour slept, a 1 wakes you
+  let woke = 0;
+  for (let h = 0; h < 8; h++) if (D(20) === 1) woke++;
+  if (woke) {
+    evt(`Wandering monster check: <span class="roll">${woke}</span> of 8 hours disturbed.`);
+    startCombat(true);
+  }
+}
+
+function makeCamp() {
+  if (!S || S.combat || S.store || S.dead || S.won) return;
+  S.beats = null;
+  if (S.c.rations < (R_().eats || 1)) {
+    beginEvent("No camp tonight", "stamp");
+    evt(`<span class="miss">Not enough food to make camp.</span> Find rations first.`);
+    CAPTURE = null; paint(); return;
+  }
+  newDay(true);
+  CAPTURE = null;
+  paint(); save();
+}
+
+function teleport() {
+  beginEvent("Teleport square", "ditto");
+  // p.49: roll 2d8, reading each separately, for the direction; then a d20 for distance
+  const illusionist = S.c.sub === "Illusionist";
+  let dir, note, other = null;
+  if (illusionist) { dir = bestTeleportDir(); note = `An Illusionist chooses: ${dir}.`; }
+  else {
+    const a = DIRECTION_TABLE[D(8) - 1], b = DIRECTION_TABLE[D(8) - 1];
+    dir = a; other = b;
+    note = a === b ? `2d8 for direction: ${a} twice.` : `2d8 for direction: ${a} and ${b} — contradictory, so the first roll carries it: ${a}.`;
+  }
+  const dist = illusionist ? 12 : D(20);
+  evt(`${note} Distance d20 → <span class="roll">${dist}</span>.`);
+  const [dx, dy] = DIRV[dir];
+  const f = S.floor;
+  // a teleport passes straight through stone. Take the full distance if the
+  // square is on the map and open; otherwise fall back the nearest open one.
+  let x = f.px, y = f.py, travelled = 0, used = dir;
+  const tryDir = (dd) => {
+    const [ax, ay] = DIRV[dd];
+    for (let d = dist; d >= 1; d--) {
+      const nx = f.px + ax * d, ny = f.py + ay * d;
+      if (nx < 1 || ny < 1 || nx > GW - 2 || ny > GH - 2) continue;   // never off the map
+      if (f.g[ny][nx].wall) continue;                                 // land on floor, not in stone
+      return [nx, ny, d];
+    }
+    return null;
+  };
+  // the rolled direction first, then the second roll, then whatever the maze allows —
+  // a teleport square always moves you somewhere.
+  const order = [dir, other, "N", "S", "E", "W"].filter((d, i, a) => d && a.indexOf(d) === i);
+  let hit = null;
+  for (const d of order) { hit = tryDir(d); if (hit) { used = d; break; } }
+  if (hit) { x = hit[0]; y = hit[1]; travelled = hit[2]; }
+  f.px = x; f.py = y; reveal();
+
+  const swapped = used !== dir ? ` ${dir} ran straight off the map, so it threw you ${used} instead.` : "";
+  evt(travelled === 0
+    ? `<span class="miss">The square fizzles. There is nowhere on this floor it can put you.</span>`
+    : travelled === dist
+      ? `You pass through ${travelled} squares of solid rock and come out somewhere else entirely.${swapped}`
+      : `The full ${dist} would put you outside the maze, so it sets you down at <span class="roll">${travelled}</span> — still straight through the wall.${swapped}`);
+  const cell = f.g[y][x];
+  if (cell.feat === "dot")   { cell.feat = null; encounterDot(); }
+  if (cell.feat === "trap")  { cell.feat = null; springTrap(); }
+}
+
+function bestTeleportDir() {   // the longest clear run from where you stand
+  const f = S.floor;
+  let best = "N", bestRun = -1;
+  for (const d of ["N","S","E","W"]) {
+    const [dx, dy] = DIRV[d];
+    let x = f.px, y = f.py, run = 0;
+    while (run < 12) { const nx = x + dx, ny = y + dy; if (!f.g[ny] || !f.g[ny][nx] || f.g[ny][nx].wall) break; x = nx; y = ny; run++; }
+    if (run > bestRun) { bestRun = run; best = d; }
+  }
+  return best;
+}
+
+function descend() {
+  beginEvent("The stair down", "ditto");
+  const bonus = 40 + 30 * S.floor.depth;
+  S.c.sp += bonus;
+  evt(`<span class="banner">You find the stair down.</span>`);
+  evt(`Surviving floor ${S.floor.depth} is worth <span class="roll">${bonus}</span> skill points.`);
+  checkLevel();
+  S.floor = genFloor(S.floor.depth + 1);
+  reveal();
+  evt(`<span class="banner">Floor ${S.floor.depth}.</span> The air gets worse.`);
+}
+
+function winGame() {
+  S.won = true;
+  S.deathAt = Date.now();
+  S.deathNote = "walked out";
+  S.epitaph = epitaphFor("won", epitaphCtx());
+  bury("won");
+  say(`<span class="banner">The Gate.</span>`);
+  say(`${S.c.name} steps through on day ${S.day}, after ${S.steps} squares, at skill level ${ROMAN[S.c.level - 1]}.`);
+  say(`<span class="beat">${S.epitaph}</span>`);
+  renderEncounter();
+}
+
+/* ---------------- encounters ---------------- */
+/* ---------------- carried treasure ---------------- */
+function eff(key) {
+  let t = 0;
+  for (const it of (S.c.items || [])) if (it.eff && it.eff[key]) t += it.eff[key];
+  return t;
+}
+function giveItem(it, quiet) {
+  S.c.items = S.c.items || [];
+  S.c.items.push(it);
+  if (it.eff && it.eff.wp) { S.c.maxWP += it.eff.wp; S.c.wp += it.eff.wp; }
+  if (!quiet) evt(`<span class="hit">${it.n}</span> — ${it.txt}.`);
+}
+/* The book's prices are modest (a long sword 500, leather 500, a healing potion
+   150) and its starting purses match them. The loot numbers were mine and ran ten
+   times too rich, so found coin is divided by ten. Amounts the book states
+   outright — table four's +3000 WM, a faerie's d10x100 — are left alone. */
+const LOOT_DIVISOR = 10;
+function gainWilmst(n, why) {
+  let amt = Math.round(n * (1 + 0.5 * eff("greed")));
+  if (S.c.sub === "Pickpocket") {
+    const extra = Math.round((D(10) + D(10)) * 10 * S.floor.depth / LOOT_DIVISOR) + D(4);
+    amt += extra;
+    evt(`A Pickpocket's hands find the seams: <span class="hit">+${extra.toLocaleString()} extra</span>.`);
+  }
+  S.c.gold += amt;
+  evt(`<span class="hit">+${amt.toLocaleString()} wilmst</span>${why ? " " + why : ""}.`);
+  return amt;
+}
+function hasPicks() { return (S.c.items || []).some(i => i.kind === "picks"); }
+
+function rollJewel()    { return Object.assign({ kind:"jewel" }, JEWELRY[D(8) - 1]); }
+function rollCloak()    { return Object.assign({ kind:"cloak" }, CLOAKS[D(8) - 1]); }
+function rollStaff()    { return Object.assign({ kind:"staff", every:250 }, STAVES[D(8) - 1]); }
+
+/* Magical Weapons, p.48: the weapon table, then d6 on the bonus table. */
+function rollBlade(depth, magical) {
+  const base = pick(Object.keys(WEAPONS));
+  if (!magical) return { kind:"weapon", n:base, base, bonus:0, txt:WEAPONS[base].lab };
+  const b = WEAPON_BONUS_TABLE[D(6) - 1]();
+  return { kind:"weapon", n:`${pick(BLADE_NAMES)}, a ${base.toLowerCase()}`, base, bonus:b, txt:`${WEAPONS[base].lab} +${b}` };
+}
+/* Magic Armor, p.48: the armour table, then d6 for the AR and WP bonus. */
+function rollMailPiece() {
+  const a = pick(ARMORS);
+  const m = MAGIC_ARMOR_TABLE[D(6) - 1];
+  return { kind:"armor", n:`Warded ${a.name.toLowerCase()}`, armor:a.name,
+           ar:a.ar + m.ar, wp:a.wp + m.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar + m.ar}, ${a.wp + m.wp} wp` };
+}
+function rollTreasureItem(depth) {
+  if (!hasPicks() && D(12) === 1) return { kind:"picks", n:"Lockpicks", txt:"1–5 on d10 against any lock" };
+  const r = D(10);
+  if (r <= 3) return rollBlade(depth, true);
+  if (r <= 5) return rollMailPiece();
+  if (r <= 7) return rollJewel();
+  if (r <= 9) return rollCloak();
+  return rollStaff();
+}
+
+function takeItem(it) {
+  if (it.kind === "weapon") {
+    const letter = S.c.cls === "Fighter" ? "F" : S.c.cls === "Thief" ? "T" : "M";
+    const legal = WEAPONS[it.base] && WEAPONS[it.base].cls.includes(letter)
+               && (S.c.sub !== "Acrobat" || it.base === "Dagger");
+    const now  = (WEAPON_MAX[S.c.weapon] || 0) + S.c.prof + S.c.magicWpn;
+    const then = (WEAPON_MAX[it.base] || 0) + it.bonus;
+    if (!legal)      { evt(`${it.n}, ${it.txt}. <span class="miss">Not a weapon a ${S.c.cls} may carry.</span>`); return; }
+    if (then <= now) { evt(`${it.n}, ${it.txt}. <span class="miss">No better than your ${S.c.weapon.toLowerCase()}.</span>`); return; }
+    evt(`<span class="hit">${it.n}</span> — ${it.txt}. You take it.`);
+    S.c.weapon = it.base; S.c.prof = 0; S.c.magicWpn = it.bonus;
+    return;
+  }
+  if (it.kind === "armor") {
+    if (RACES[S.c.race].noArmor) { evt(`${it.n}. <span class="miss">A Fridgian wears nothing.</span>`); return; }
+    const letter = S.c.cls === "Fighter" ? "F" : S.c.cls === "Thief" ? "T" : "M";
+    const allowed = it.cls.includes(letter) || (S.c.cls === "Thief" && skill("Heft") && it.ar <= 12);
+    if (!allowed)        { evt(`${it.n}, ${it.txt}. <span class="miss">Too heavy for a ${S.c.cls}.</span>`); return; }
+    if (it.ar <= S.c.ar) { evt(`${it.n}, ${it.txt}. <span class="miss">Yours is better.</span>`); return; }
+    evt(`<span class="hit">${it.n}</span> — ${it.txt}.`);
+    S.c.armor = it.armor; S.c.ar = it.ar; S.c.armorMin = it.min;
+    S.c.armorMax = it.wp; S.c.armorWP = it.wp; S.c.patches = 0;
+    return;
+  }
+  if (it.kind === "staff" && S.c.cls !== "Magic User") { evt(`${it.n}. <span class="miss">A stick, to anyone who cannot use it.</span>`); return; }
+  giveItem(it);
+}
+
+/* Anything with a `use` can be triggered; staves and cloaks have a square-count cooldown. */
+function itemReady(it) {
+  if (!it.use && it.kind !== "potion") return false;
+  if (!it.every) return true;
+  return (S.steps - (it.usedAt ?? -99999)) >= it.every;
+}
+function useItem(i) {
+  const it = (S.c.items || [])[i];
+  if (!it || !itemReady(it)) return;
+  const C = S.combat;
+  it.usedAt = S.steps;
+  say(`<span class="banner">${it.n}.</span>`);
+  const kind = it.kind === "potion" ? it.eff2 : it.use;
+  const foes = C ? liveFoes() : [];
+  switch (kind) {
+    case "heal":     { const a = D(10) + 2; S.c.wp = Math.min(S.c.maxWP, S.c.wp + a); say(`<span class="hit">+${a} wp.</span>`); break; }
+    case "full":     { S.c.wp = S.c.maxWP; say(`<span class="hit">Back to ${S.c.maxWP}.</span>`); break; }
+    case "poison":
+    case "disease":  { S.c.affliction = null; say(`<span class="hit">Whatever was in you is gone.</span>`); break; }
+    case "strength": { S.c.might = (S.c.might || 0) + 8; say(`<span class="hit">+8 damage.</span>`); break; }
+    case "enlarge":  { S.c.might = (S.c.might || 0) + 4; say(`<span class="hit">One size larger, +4 damage.</span>`); break; }
+    case "speed":
+    case "haste":    { S.c.haste = 50; say(`<span class="hit">Double attacks for fifty squares.</span>`); break; }
+    case "acute":    { S.c.acute = D(8); say(`<span class="hit">You strike on a d6 for ${S.c.acute} rounds.</span>`); break; }
+    case "invis":    { S.c.invis = 100; say(`<span class="hit">Unseen. They need a 1.</span>`); break; }
+    case "ether":    { S.c.ether = 20; say(`<span class="hit">Twenty squares of walking through stone.</span>`); break; }
+    case "half":     { S.c.halfNext = true; say(`<span class="hit">The next blow lands at half.</span>`); break; }
+    case "death":    { say(`<span class="hurt">"??" was the colour. Your dead!</span>`); S.c.wp = 0; die("potion"); return; }
+    case "dome":     { S.c.ward = { pool:100, rounds:99, reflect:false, name:it.n }; say(`<span class="hit">A dome of 100 wp.</span>`); break; }
+    case "freeze":   { foes.slice(0, 2).forEach(f => f.asleep = 99); say(`<span class="hit">Frozen where they stand.</span>`); break; }
+    case "weaken":   { if (C) C.weakened = true; say(`<span class="hit">Every hit on them lands double now.</span>`); break; }
+    case "stone":    { foes.slice(0, 2).forEach(f => { f.wp = 0; killFoe(f); }); break; }
+    case "fire":     { const n = D(6); let tot = 0; for (let k = 0; k < n && foes.length; k++) { const t = foes[k % foes.length]; if (!t.alive) continue; const d = D(10) + 4; t.wp -= d; tot += d; if (t.wp <= 0) killFoe(t); } say(`<span class="hit">${n} fireballs, ${tot} damage.</span>`); break; }
+    case "gas":      { foes.forEach(f => f.asleep = 99); say(`<span class="hit">All of them, out cold.</span>`); break; }
+    default:         say(`Nothing you can put a name to happens.`);
+  }
+  if (it.kind === "potion" || it.uses === 1) { S.c.items.splice(i, 1); say(`<span class="miss">${it.n} is used up.</span>`); }
+  if (S.combat) afterPlayerAction(); else (paint(), save());
+}
+
+/* ---------------- the store ---------------- */
+function openStore() {
+  const stock = [], d = S.floor.depth, race = S.c.race;
+  const letter = S.c.cls === "Fighter" ? "F" : S.c.cls === "Thief" ? "T" : "M";
+  const add = (n, cost, buy, sub) => stock.push({ n, sub, cost: Math.max(1, Math.round(cost)), buy });
+
+  for (const f of [FOODS[0], FOODS[1], FOODS[5]])
+    add(`${f.n} (+${f.wp} wp)`, f.cost, () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + f.wp); S.c.rations++; });
+  for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]])
+    add(`${p.n} potion`, p.price, () => giveItem({ kind:"potion", n:`${p.n} potion`, txt:p.txt, eff2:p.eff, uses:1 }), p.txt);
+  if (!hasPicks()) add("Set of lockpicks", 450, () => giveItem({ kind:"picks", n:"Lockpicks", txt:"1–5 on d10 against any lock" }), "opens boxes on 1–5");
+
+  // "The stores will all repair armor for 1/10 of the cost of your armor per point repaired."
+  if (S.c.armorWP > 0 && S.c.armorWP < S.c.armorMax) {
+    const base = (ARMORS.find(a => a.name === S.c.armor) || ARMORS[0]).cost;
+    const pts = S.c.armorMax - S.c.armorWP;
+    add(`Repair your ${S.c.armor.toLowerCase()}`, priceFor(base, race) / 10 * pts, () => { S.c.armorWP = S.c.armorMax; },
+        `${pts} points at a tenth of its cost each`);
+  }
+  const arms = Object.keys(WEAPONS).filter(w => WEAPONS[w].cls.includes(letter));
+  shuffle(arms);
+  for (const w of arms.slice(0, 2))
+    add(w, priceFor(WEAPONS[w].cost, race) * (race === "Troll" ? 2 : 1),
+        () => takeItem({ kind:"weapon", n:w, base:w, bonus:0, txt:WEAPONS[w].lab }), WEAPONS[w].lab);
+  const mails = ARMORS.filter(a => a.cls.includes(letter) && a.ar > S.c.ar);
+  if (mails.length && !RACES[race].noArmor) {
+    const a = mails[0];
+    add(a.name, priceFor(a.cost, race), () => takeItem({ kind:"armor", n:a.name, armor:a.name, ar:a.ar, wp:a.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar}` }), `AR ${a.ar}, ${a.wp} wp`);
+  }
+  if (S.c.cls === "Magic User") add("Sealed scroll", 900, () => { S.c.scrolls = (S.c.scrolls || 0) + 1; });
+  // one thing on the shelf you cannot simply buy
+  const premium = D(2) === 1 ? rollBlade(d, true) : rollMailPiece();
+  const pCost = premium.kind === "weapon"
+    ? priceFor((WEAPONS[premium.base] || {cost:500}).cost, race) * (2 + premium.bonus)
+    : priceFor((ARMORS.find(a => a.name === premium.armor) || ARMORS[0]).cost, race) * 2;
+  add(premium.n, pCost, () => takeItem(premium), premium.txt + " · enchanted");
+
+  const haggle = race === "Wilmsry" ? 0.7 : 1;
+  if (haggle < 1) stock.forEach(x => x.cost = Math.round(x.cost * haggle));
+  S.store = { stock, haggle, race };
+  S.beats = null;
+  say(`<span class="banner">A store.</span>`);
+  say(`Somebody has set up a counter on floor ${d} and does not want to talk about how.`);
+  if (race === "Troll") say(`Armour is treble for a troll, weapons double.`);
+  if (race === "Elven" || race === "Dwarven") say(`Elves and dwarves are charged half. Nobody has ever explained why.`);
+  if (haggle < 1) say(`A Wilmsry does not pay list price. Thirty per cent comes off before you speak.`);
+}
+function buyFrom(i) {
+  const st = S.store; if (!st) return;
+  const item = st.stock[i];
+  if (!item || item.sold) return;
+  if (S.c.gold < item.cost) { say(`<span class="miss">You are ${(item.cost - S.c.gold).toLocaleString()} wilmst short.</span>`); paint(); return; }
+  S.c.gold -= item.cost;
+  item.sold = true;
+  say(`Bought <span class="hit">${item.n}</span> for ${item.cost.toLocaleString()} wilmst.`);
+  item.buy();
+  paint(); save();
+}
+function leaveStore() { S.store = null; say(`You leave the shopkeeper to it.`); paint(); save(); }
+
+/* ---------------- traps, p.48 ---------------- */
+function springTrap() {
+  beginEvent("A trap", "stamp");
+  const nimble = 5 + (skill("Agility") ? 2 : 0) + (skill("Leaping") ? 1 : 0) + (S.c.sub === "Acrobat" ? 3 : 0);
+  const dodge = D(20);
+  if (dodge <= nimble) { evt(`Something clicks. d20 → <span class="roll">${dodge}</span>: 1–${nimble} avoids it, and you are already moving.`); return; }
+  if (S.c.sub === "Pilfer") { evt(`A trap — and a Pilfer disarms it without breaking stride.`); return; }
+  const r = D(8), tr = TRAPS[r - 1];
+  let dmg = tr.dmg();
+  if (S.c.sub === "Cat Burglar") { dmg *= 2; evt(`A Cat Burglar goes through first and takes the whole of it.`); }
+  if (skill("Hardiness")) dmg = Math.max(1, dmg - 3);
+  S.c.wp -= dmg;
+  evt(`d8 → <span class="roll">${r}</span>: ${tr.n}. <span class="hurt">−${dmg} wp.</span>`);
+  if (tr.poison) { S.c.affliction = { kind:"Poison", loss:()=>2*D(6), per:1, left:10 }; evt(`<span class="hurt">And the arrow was poisoned.</span>`); }
+  if (S.c.wp <= 0) return die("trap");
+}
+
+/* ---------------- locked boxes ---------------- */
+function openChest() {
+  beginEvent("A locked box", "moss");
+  const tier = skillTier("Locks") + (hasPicks() ? 1 : 0);
+  let opened = false;
+  if (S.c.sub === "Pilfer") { evt(`A Pilfer does not really believe in locks. <span class="hit">Open.</span>`); opened = true; }
+  else if (tier) {
+    const need = [0, 5, 7, 8][Math.min(tier, 3)];
+    const roll = D(10);
+    evt(`Locks${hasPicks() ? " with picks" : ""}: d10 → <span class="roll">${roll}</span>, need ${need} or under.`);
+    opened = roll <= need;
+    if (!opened) evt(`<span class="miss">The wards are better than you are.</span>`);
+  } else {
+    const roll = D(20);
+    evt(`No lockpicking to speak of. You work at it: d20 → <span class="roll">${roll}</span>, need 8 or under.`);
+    opened = roll <= 8;
+    if (!opened) evt(`<span class="miss">It will not give.</span>`);
+  }
+  if (!opened) {
+    S.beats.action = { label: "Smash it open", fn: () => {
+      beginEvent("A smashed box", "stamp");
+      evt(`The hinges give. Whatever was in there besides coin is now in pieces on the floor.`);
+      gainWilmst(Math.round((D(10) + 6) * 100 * S.floor.depth / 2 / LOOT_DIVISOR));
+      paint(); save();
+    }};
+    return;
+  }
+  evt(`Inside the box:`);
+  gainWilmst(Math.round((D(10) + 6) * 100 * S.floor.depth / LOOT_DIVISOR));
+  if (D(6) >= 3) { S.c.scrolls = (S.c.scrolls || 0) + 1; evt(`And a sealed scroll. <span class="hit">+1 scroll.</span>`); }
+  takeItem(rollTreasureItem(S.floor.depth));
+}
+
+function encounterDot() {
+  const t = D(8), r = D(10);
+  const result = ENCOUNTER_TABLES[t - 1][r - 1];
+  say(`<span class="roll">Encounter dot.</span> Table d8 → <span class="roll">${t}</span>, then d10 → <span class="roll">${r}</span>: ${result}.`);
+
+  if (ENC_ALIAS[result]) return startCombat(false, ENC_ALIAS[result]);
+
+  switch (result) {
+    case "Store":     return openStore();
+    case "Teleport":  return teleport();
+    case "Joiner":    return meetJoiner();
+    case "Faerie":    return meetFaerie();
+    case "Food":      return findFood();
+    case "Disease":   return catchAffliction();
+    case "Insanity":  return goInsane();
+    case "Phobia":    return newPhobia();
+    case "Darkness":  return fallDark();
+    case "Grimoire":  return findGrimoire();
+    case "Weapon":       return findGear("weapon");
+    case "Magic Weapon": return findGear("magicweapon");
+    case "Magic Armor":  return findGear("magicarmor");
+    case "Misc Magic":   return findMisc();
+    default:          return tableFour(result);
+  }
+}
+
+/* Table 4 on p.45 is a straight list of things that happen to you. */
+function tableFour(result) {
+  beginEvent("The maze takes an interest", "ditto");
+  const apply = {
+    "+10 WP":  () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + 10); evt(`<span class="hit">+10 wp.</span>`); },
+    "-10 WP":  () => { S.c.wp -= 10; evt(`<span class="hurt">−10 wp.</span> No reason given.`); },
+    "+10 SP":  () => { S.c.sp += 10; evt(`<span class="hit">+10 skill points.</span>`); checkLevel(); },
+    "+25 WP":  () => { S.c.maxWP += 25; S.c.wp += 25; evt(`<span class="hit">+25 to your base Win Potential.</span>`); },
+    "+25 SP":  () => { S.c.sp += 25; evt(`<span class="hit">+25 skill points.</span>`); checkLevel(); },
+    "-15 WP":  () => { S.c.wp -= 15; evt(`<span class="hurt">−15 wp.</span>`); },
+    "+3000 WM":() => { evt(`Just lying there:`); gainWilmst(3000); },
+    "-All armour": () => { S.c.armor = "Nothing"; S.c.ar = 0; S.c.armorWP = 0; S.c.armorMax = 0; evt(`<span class="hurt">Every piece of armour you own is gone.</span>`); }
+  }[result];
+  if (apply) apply(); else evt(`Nothing you can put a name to.`);
+  if (S.c.wp <= 0) die("maze");
+}
+
+function findFood() {
+  beginEvent("Food", "moss");
+  const f = FOODS[D(6) - 1];
+  S.c.wp = Math.min(S.c.maxWP, S.c.wp + f.wp);
+  S.c.rations++;
+  evt(`${f.n}. <span class="hit">+${f.wp} wp</span> and a day's food.`);
+}
+
+function findGrimoire() {
+  beginEvent("A grimoire", "ditto");
+  if (S.c.cls !== "Magic User") { evt(`A spell book. <span class="miss">The marks mean nothing to you</span>, but it will sell.`); gainWilmst(150); return; }
+  const learnable = SPELLS.filter(sp => canLearn(S.c.sub, sp) && !S.c.grimoire.includes(sp.n));
+  shuffle(learnable);
+  const got = learnable.slice(0, Math.max(1, D(4))).map(sp => sp.n);
+  S.c.grimoire.push(...got);
+  evt(got.length ? `Somebody else's book. You copy out <span class="hit">${got.join(", ")}</span>.` : `A grimoire with nothing in it you don't already know.`);
+}
+
+function findGear(kind) {
+  beginEvent(kind === "weapon" ? "A weapon" : kind === "magicweapon" ? "A magical weapon" : "Magical armour", "moss");
+  if (kind === "weapon") { takeItem(rollBlade(S.floor.depth, false)); return; }
+  if (kind === "magicweapon") { takeItem(rollBlade(S.floor.depth, true)); return; }
+  takeItem(rollMailPiece(S.floor.depth));
+}
+
+function findMisc() {
+  beginEvent("Miscellaneous magic", "ditto");
+  const what = MISC_MAGIC[D(10) - 1];
+  evt(`d10 on the miscellaneous table: <span class="roll">${what}</span>.`);
+  if (what === "Potion") { const p = POTIONS[D(10) - 1]; giveItem({kind:"potion", n:`${p.n} potion (${p.col.toLowerCase()})`, txt:p.txt, eff2:p.eff, uses:1}); }
+  else if (what === "Scroll") { S.c.scrolls = (S.c.scrolls||0)+1; evt(`<span class="hit">+1 scroll.</span>`); }
+  else if (what === "Grimoire") findGrimoire();
+  else if (what === "Cloak") takeItem(Object.assign({kind:"cloak"}, CLOAKS[D(8)-1]));
+  else if (what === "Staff") takeItem(Object.assign({kind:"staff", every:250}, STAVES[D(8)-1]));
+  else if (what === "Jewelry") takeItem(Object.assign({kind:"jewel"}, JEWELRY[D(8)-1]));
+}
+
+function meetFaerie() {
+  beginEvent("A faerie", "ditto");
+  const r = D(8), gift = FAERIE[r - 1];
+  evt(`A winged thing, and a wish. d8 → <span class="roll">${r}</span>: ${gift}.`);
+  if (gift === "+1 Level" || gift === "+2 Level") {
+    const n = gift === "+2 Level" ? 2 : 1;
+    S.c.sp = Math.max(S.c.sp, THRESHOLDS[Math.min(4, S.c.level - 1 + n)]);
+    checkLevel();
+  } else if (gift === "+d20 Base WP") { const a = D(20); S.c.maxWP += a; S.c.wp += a; evt(`<span class="hit">+${a} to your base.</span>`); }
+  else if (gift === "-d10 Base WP")   { const a = D(10); S.c.maxWP = Math.max(5, S.c.maxWP - a); S.c.wp = Math.min(S.c.wp, S.c.maxWP); evt(`<span class="hurt">−${a} from your base.</span> Faeries are not all nice.`); }
+  else if (gift === "Magic Weapon")   takeItem(rollBlade(S.floor.depth, true));
+  else if (gift === "Magic Armor")    takeItem(rollMailPiece(S.floor.depth));
+  else if (gift === "Miscellaneous Magic") findMisc();
+  else if (gift === "d10 x 100 WM")   gainWilmst(D(10) * 100);
+}
+
+function meetJoiner() {
+  beginEvent("A joiner", "ditto");
+  const lvl = SPELL_LEVEL_TABLE[D(10) - 1];
+  const c = rollCharacter(false);
+  S.c.joiner = { name: c.name, race: c.race, sub: c.sub, cls: c.cls, lvl, wp: 20 * lvl + D(20), maxWP: 20 * lvl + D(20) };
+  S.c.joiner.maxWP = S.c.joiner.wp;
+  evt(`<span class="hit">${c.name}</span>, a ${c.race} ${c.sub} of skill level ${ROMAN[lvl-1]}, falls in beside you. They fight until they drop.`);
+}
+
+function catchAffliction() {
+  beginEvent("Disease and poison", "stamp");
+  const r = D(8), a = AFFLICTIONS[r - 1];
+  evt(`d8 → <span class="roll">${r}</span>: ${a.kind.toLowerCase()}, ${a.dur}.`);
+  if (a.phobia) { const ph = PHOBIAS[D(10) - 1]; S.c.phobia = ph.n; S.c.phobiaType = ph.t; evt(`It leaves you with a permanent fear of <span class="hurt">${ph.n.toLowerCase()}</span>.`); return; }
+  S.c.affliction = { kind: a.kind, loss: a.loss, per: a.per, left: D(20) };
+  const first = Math.min(a.loss(), Math.max(0, S.c.wp - 1));
+  S.c.wp -= first;
+  evt(`<span class="hurt">−${first} wp</span>, and it keeps taking more until it is cured or slept off.`);
+}
+
+function goInsane() {
+  beginEvent("Insanity", "stamp");
+  const r = D(6);
+  evt(`Something in the corridor gets into your head. d6 → <span class="roll">${r}</span>: you ${INSANITY[r - 1]}.`);
+  if (r === 1) { S.c.wp = Math.ceil(S.c.wp / 2); evt(`<span class="hurt">You turn the blade on yourself. Half your Win Potential.</span>`); }
+  else if (r === 3) { teleport(); }
+  else if (r === 5) { S.c.might = D(10); evt(`<span class="hit">A frothing rage: +${S.c.might} damage until you sleep.</span>`); }
+  if (S.c.wp <= 0) die("insanity");
+}
+
+function newPhobia() {
+  beginEvent("A phobia", "stamp");
+  const ph = PHOBIAS[D(10) - 1];
+  S.c.phobia = ph.n; S.c.phobiaType = ph.t;
+  evt(`Whatever was down that corridor, you are now afraid of <span class="hurt">${ph.n.toLowerCase()}</span>.`);
+}
+
+function fallDark() {
+  beginEvent("Darkness", "ink");
+  const f = S.floor, r = 4;
+  for (let y = f.py - r; y <= f.py + r; y++) for (let x = f.px - r; x <= f.px + r; x++)
+    if (f.g[y] && f.g[y][x] && !f.g[y][x].wall) f.g[y][x].dark = true;
+  evt(skill("Night Vision")
+    ? `The lights go out for four squares in every direction. <span class="hit">You have night vision; it changes nothing.</span>`
+    : `The lights go out for four squares in every direction. <span class="hurt">2 to hit, and no criticals.</span>`);
+}
+
+function startCombat(wandering, forced) {
+  const type = forced || ENC_TYPES[D(6) - 1];
+  let tracked = false;
+  if (skill("Tracking")) {
+    const r = D(20);
+    tracked = r <= 5;
+    say(`Tracking: d20 → <span class="roll">${r}</span>${tracked ? " — you read the spoor before you turn the corner." : ", and you learn nothing from the floor."}`);
+  }
+  const maxLvl = Math.min(5, Math.max(1, Math.min(S.c.level, S.floor.depth)));
+  // a level I delver never faces a mob; the maze scales up as you do
+  const cap = S.c.level <= 2 ? 2 : 3;
+  const n = wandering ? 1 : Math.min(cap, D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3);
+  const foes = [];
+  for (let i = 0; i < n; i++) {
+    const lvl = clamp(maxLvl - (D(4) === 1 ? 1 : 0), 1, 5);
+    const roster = BESTIARY[type][lvl - 1] || BESTIARY[type][BESTIARY[type].length - 1];
+    const c = pick(roster);
+    foes.push({
+      name: c.n, type, lvl, size: c.sz, intel: c.i,
+      wp: c.wp, maxWP: c.wp, alive: true, asleep: 0,
+      sp: c.sp || {}, lives: (c.sp && c.sp.twice) ? 2 : 1
+    });
+  }
+  S.beats = null; CAPTURE = null; S.lastExchange = null;
+  S.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };
+  const first = rollInitiative();
+  const samurai = S.c.sub === "Samurai", slow = R_().slow;
+  say(`<span class="banner">${wandering ? "Wandering monsters" : "Encounter"}: ${type}.</span>`);
+  say(`${foes.map(f => `${f.name} (lvl ${ROMAN[f.lvl-1]}, ${f.wp} wp)`).join(", ")}.`);
+  say(`${S.combat.initNote}${samurai ? " A Samurai never wins the first roll." : ""}${slow ? " A Fridgian is always last to get moving." : ""}${skill("Acute Hearing") ? " You heard them a corridor away." : ""} ${first === "you" ? "You move first." : "They move first."}`);
+  if (tracked) say(`<span class="hit">You can still back out of this one cleanly</span> — this round only.`);
+  if (S.c.pendingAlly) {
+    S.combat.ally = S.c.pendingAlly; S.c.pendingAlly = null;
+    say(`<span class="hit">${S.combat.ally.name}</span> was waiting for this. It joins you.`);
+  }
+
+  // a Warlock props up every walking dead thing in the room, whether he means to or not
+  if (S.c.sub === "Warlock" && type === "Walking Dead") {
+    const boost = S.c.level;
+    foes.forEach(f => { f.wp += boost; f.maxWP += boost; });
+    say(`<span class="hurt">The dead stand a little straighter near a Warlock:</span> +${boost} wp each.`);
+  }
+
+  // a Knight is beneath the notice of small things; a Con Artist is not worth the trouble
+  for (const f of foes.slice()) {
+    if (S.c.sub === "Knight" && f.maxWP < 5) { f.alive = false; f.fled = true; say(`${f.name} takes one look at the Knight and finds somewhere else to be.`); }
+    else if (S.c.sub === "Con Artist" && f.lvl <= 1 && D(6) <= 4) { f.alive = false; f.fled = true; say(`${f.name} is talked out of the whole idea before it starts.`); }
+    else if (S.c.sub === "Court Mage" && D(12) === 1) { say(`${f.name} listens to the Court Mage for one minute and dies of boredom.`); f.lives = 1; killFoe(f); }
+  }
+  if (!liveFoes().length) { say(`<span class="banner">Nothing left to fight.</span>`); S.combat = null; paint(); return; }
+
+  if (S.c.phobiaType === type && !(skill("Hardiness") && D(2) === 1)) {
+    S.combat.frozen = true;
+    say(`<span class="hurt">Your phobia.</span> ${S.c.phobia} — you lose the first round.`);
+  }
+  if (inDark() && !skill("Night Vision")) say(`<span class="miss">Pitch dark. Everyone drops to 2 to hit and nobody lands a critical.</span>`);
+  if (first === "foe") foeTurn();
+  renderEncounter();
+}
+
+function rollInitiative() {
+  const C = S.combat; if (!C) return;
+  const mine = D(20), theirs = D(20);
+  const samurai = S.c.sub === "Samurai", slow = R_().slow;
+  const foreseen = S.c.foresight; S.c.foresight = false;
+  C.first = (samurai || slow) && !foreseen ? "foe"
+          : (foreseen || skill("Acute Hearing")) ? "you"
+          : (mine >= theirs ? "you" : "foe");
+  C.initNote = `Initiative — you <span class="roll">${mine}</span>, them <span class="roll">${theirs}</span>.`;
+  return C.first;
+}
+
+function liveFoes() { return S.combat ? S.combat.foes.filter(f => f.alive) : []; }
+
+function playerStrike() {
+  const C = S.combat; if (!C) return;
+  // a Wizard does not lower himself to hand-to-hand while a spell remains
+  if (S.c.sub === "Wizard" && maxCharges() - S.c.spellsUsed > 0) {
+    say(`<span class="miss">A Wizard will not touch a weapon while there is a spell left in him.</span>`);
+    return;
+  }
+  if (C.frozen) { C.frozen = false; say(`You shake it off, too late to swing.`); afterPlayerAction(); return; }
+  const foe = C.foes[C.target];
+  if (!foe || !foe.alive) { C.target = C.foes.findIndex(f => f.alive); }
+  const t = C.foes[C.target];
+  if (!t) return;
+
+  let attacks = 1;
+  if (S.c.sub === "Barbarian") attacks = 2;
+  if (skill("Ambidextrous")) { attacks = Math.max(attacks, 2); }
+  if (S.c.haste > 0) attacks = Math.max(attacks, 2);
+  if (R_().frenzy && D(8) <= 5) {
+    attacks = 2;
+    say(`<span class="roll">Fridgian frenzy</span> (d8 ≤ 5): a second wild swing.`);
+    const corpse = C.foes.find(f => !f.alive);
+    if (corpse && D(10) <= 5) {
+      say(`<span class="miss">And spends the whole round on ${corpse.name}, which is already dead.</span>`);
+      afterPlayerAction(); return;
+    }
+  }
+
+  for (let a = 0; a < attacks && t.alive; a++) {
+    const dieN = strikeDie();
+    const roll = D(dieN);
+    let need = a === 1 && R_().frenzy ? 3 : toHit();
+    if (t.asleep > 0) need = Math.max(need, 5);                                 // p.27: 5 to hit a dozing creature
+    if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit);   // hard to hit
+    if (t.sp && t.sp.fast) need = Math.max(1, need - 1);                        // "roll 1 higher to strike"
+    if (t.sp && t.sp.magicOnly && !S.c.magicWpn) need = 0;                      // only magic touches it
+    const auto = (S.c.sub === "Cat Burglar" || S.c.sub === "Ninja") && !C.opened;
+    if (auto) C.opened = true;
+    const hit = auto || (need > 0 && roll <= need);
+    if (!hit) {
+      if (need === 0) say(`<span class="miss">${t.name} cannot be touched by an ordinary weapon.</span>`);
+      else say(`Strike: d${dieN} → <span class="roll">${roll}</span>, needed ${need}. <span class="miss">Miss.</span>`);
+      continue;
+    }
+
+    let dmg = weaponDamage();
+    const noCrit = S.c.sub === "Guard" || S.c.sub === "Soldier" || (inDark() && !skill("Night Vision"));
+    let crit = roll === 1 && !noCrit;
+    const opening = !C.opened2; C.opened2 = true;
+
+    // Death-touch: a 1 kills anything already weak
+    if (roll === 1 && skill("Death-touch") && t.wp < 15) {
+      say(`<span class="hit">Death-touch.</span> A 1, and ${t.name} had less than 15 wp left in it.`);
+      t.wp = 0; killFoe(t); continue;
+    }
+    // "Heavy armor negates any advantages they may gain for stealthiness"
+    const heavy = S.c.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(S.c.armor);
+    if (opening && heavy) say(`<span class="miss">You cannot move quietly in ${S.c.armor.toLowerCase()}. No backstab.</span>`);
+    // opening strike: Stealth, Silence, and the plain Thief backstab
+    if (opening && !noCrit && !heavy) {
+      if (skill("Silence"))                       { crit = true; say(`<span class="hit">Silence.</span> The first they know of you is the blade.`); }
+      else if (skill("Stealth") && roll <= 2 && S.c.armor !== "Plate") { crit = true; say(`<span class="hit">Stealth.</span> A 2 is as good as a 1 when they can't see you.`); }
+      else if (S.c.cls === "Thief")               { crit = true; say(`<span class="hit">Backstab.</span> They never saw you set your feet.`); }
+    }
+    if (S.c.sub === "Ninja" && !opening && roll <= 2) { crit = true; }
+    // a Con Artist's first blow is a warning, not an injury
+    if (opening && S.c.sub === "Con Artist") {
+      say(`Your first blow lands, and does <span class="miss">nothing</span> — a Con Artist is still negotiating.`);
+      continue;
+    }
+    if (S.c.sub === "Ninja" && auto) { dmg = S.c.level*S.c.level + (WEAPON_MAX[S.c.weapon] || 6) + S.c.prof; say(`The Ninja's first strike always lands, for maximum damage.`); }
+    if (S.c.sub === "Cutthroat" && !C.cut) { crit = true; C.cut = true; }
+    if (crit) dmg *= 2;
+    t.wp -= dmg;
+    say(`Strike: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hit">Hit</span> on ${t.name} for <span class="hit">${dmg}</span>${crit ? " (critical, doubled)" : ""}.`);
+    if (t.wp <= 0) killFoe(t);
+  }
+  afterPlayerAction();
+}
+
+function killFoe(f) {
+  if (f.lives > 1) {
+    f.lives--; f.wp = f.maxWP;
+    say(`<span class="hurt">${f.name} gets back up.</span> You have to kill these twice.`);
+    return;
+  }
+  f.alive = false; f.wp = 0;
+  S.c.kills = (S.c.kills || 0) + 1;
+  const roll = D(6);
+  const raw = roll * f.lvl;
+  const mul = 5 * (R_().spMul || 1) * (S.c.sub === "Barbarian" ? 0.5 : 1)
+                * (S.c.sub === "Apprentice" && S.c.level < 3 ? 2 : 1);
+  const gained = Math.round(raw * mul);
+  S.c.sp += gained;
+  say(`${f.name} drops. Skill points: d6 <span class="roll">${roll}</span> × level ${f.lvl} = ${raw}, ×${mul} solo delve → <span class="hit">+${gained}</span>.`);
+  // creatures carry things, and the things are worth wilmst
+  const purse = { "Humans":12, "Demons":8, "Magical":8, "Walking Dead":6, "Lair Beasts":3, "Beasts":1 }[f.type] || 4;
+  const coin = Math.round(D(10) * f.lvl * purse / LOOT_DIVISOR);
+  if (coin > 0) gainWilmst(coin, "off the body");
+  if (D(20) <= 2 + f.lvl) takeItem(rollTreasureItem(S.floor.depth));
+
+  if (f.type === "Beasts" || f.type === "Lair Beasts") {
+    if (skill("Cooking")) {
+      const fed = Math.max(1, Math.round(f.maxWP / 4));
+      S.c.wp = Math.min(S.c.maxWP, S.c.wp + fed);
+      S.c.rations++;
+      say(`Cooking: a quarter of its Win Potential is <span class="hit">+${fed} wp</span> and <span class="hit">+1 ration</span>.`);
+    } else if (D(6) >= 4) {
+      S.c.rations++;
+      say(`There's meat on it. You cook what you can carry — <span class="hit">+1 ration.</span>`);
+    }
+  }
+  checkLevel();
+}
+
+function checkLevel() {
+  const nl = levelFromSP(S.c.sp);
+  while (nl > S.c.level) {
+    S.c.level++;
+    const gain = CLASSES[S.c.cls].gain[S.c.level - 1]();
+    const add = R_().wpMul ? Math.round(gain * R_().wpMul) : gain;
+    S.c.maxWP += add; S.c.wp += add;
+    say(`<span class="banner">Skill level ${ROMAN[S.c.level - 1]}.</span>`);
+    say(`Win Potential <span class="hit">+${add}</span>. You now strike on <span class="roll">d${strikeDie()}</span>.`);
+
+    // a Soldier is made a Knight at three; an Apprentice finally becomes something
+    if (S.c.sub === "Soldier" && S.c.level >= 3) {
+      S.c.sub = "Knight"; [S.c.weapon, S.c.prof] = KIT["Knight"];
+      say(`<span class="banner">Knighted.</span> Three levels of service, and a pole arm to go with it.`);
+    } else if (S.c.sub === "Apprentice" && S.c.level >= 3) {
+      let ns; do { ns = CLASSES["Magic User"].subs[D(8) - 1]; } while (ns === "Apprentice");
+      S.c.sub = ns;
+      S.c.grimoire = S.c.grimoire.filter(n2 => canLearn(ns, SPELLS.find(sp => sp.n === n2) || {s:"offense"}));
+      say(`<span class="banner">No longer an Apprentice.</span> The robes finally fit: <span class="roll">${ns}</span>.`);
+    }
+    if (S.c.sub === "Sorcerer") {
+      const fresh = SPELLS.filter(sp => canLearn("Sorcerer", sp) && !S.c.grimoire.includes(sp.n));
+      shuffle(fresh);
+      const got = fresh.slice(0, 2).map(sp => sp.n);
+      S.c.grimoire.push(...got);
+      if (got.length) say(`A Sorcerer gains two spells with the level: <span class="roll">${got.join(", ")}</span>.`);
+      if (D(8) === 1) {
+        const nonFire = S.c.grimoire.filter(n2 => !["Fireball","Freeze","Lightning"].includes(n2));
+        if (nonFire.length) {
+          const lost = pick(nonFire);
+          S.c.grimoire = S.c.grimoire.filter(n2 => n2 !== lost);
+          say(`<span class="miss">And loses one that wasn't fire: ${lost} is simply gone.</span>`);
+        }
+      }
+    }
+  }
+}
+
+function castSpell(idx) {
+  const sp = SPELLS[idx], C = S.combat;
+  if (maxCharges() - S.c.spellsUsed <= 0) { say(`<span class="miss">No charges left. Walk it off — one comes back every 20 squares.</span>`); return; }
+  if (!S.c.scrollCast && !canCast(sp)) {
+    if (!S.c.grimoire.includes(sp.n)) say(`<span class="miss">${sp.n} is not in your grimoire.</span>`);
+    else if (sp.lvl > S.c.level) say(`<span class="miss">${sp.n} is above your skill level.</span>`);
+    else say(`<span class="miss">A ${S.c.sub} may not work ${sp.s} magic until skill level ${ROMAN[schoolGate(S.c.sub, sp.s) - 1]}.</span>`);
+    return;
+  }
+  S.c.spellsUsed++;
+  S.combat && (S.combat.spellOpen = false);
+
+  // an Apprentice's spells go wrong one time in eight
+  if (S.c.sub === "Apprentice" && D(8) === 1) {
+    say(`<span class="hurt">${sp.n} backfires.</span> An Apprentice gets it wrong one time in eight.`);
+    if (sp.dmg && (sp.kind === "thrown")) {
+      const self = Math.ceil(sp.dmg() / 2);
+      S.c.wp -= self;
+      say(`It goes off in your hands: <span class="hurt">−${self} wp</span>.`);
+      if (S.c.wp <= 0) return die("backfire");
+    }
+    if (S.combat) afterPlayerAction(); else (paint(), save());
+    return;
+  }
+
+  // p.25: a non-thrown spell can be resisted by an intelligent target
+  if (S.combat && !["thrown","ward","might","regen","heal","reveal","foresee","summon","mirror"].includes(sp.kind)) {
+    const t = liveFoes()[0];
+    if (t && (t.intel ?? 0) >= 12) {
+      const r = D(20);
+      if (r < t.intel) { say(`${t.name} resists ${sp.n}: d20 → <span class="roll">${r}</span>, under its intelligence of ${t.intel}.`); afterPlayerAction(); return; }
+      say(`${t.name} tries to resist: d20 → <span class="roll">${r}</span>, and fails.`);
+    }
+  }
+
+  if (sp.kind === "summon") {
+    const doubled = S.c.sub === "Summoner";           // a Summoner's creatures come doubled
+    const lvl = Math.min(5, S.c.level + (doubled ? 1 : 0));
+    if (doubled && D(8) === 1) {
+      const hurt = lvl * lvl + D(6);
+      S.c.wp -= hurt;
+      say(`<span class="hurt">The summoning turns on you</span> — one time in eight, for a Summoner, it does. <span class="hurt">−${hurt} wp</span>.`);
+      if (S.c.wp <= 0) return die("summon");
+    } else {
+      const ally = {
+        lvl, rounds: (doubled ? 2 : 1) * D(4) + 2,
+        name: pick(["A horned thing", "Something with too many arms", "A shape that hurts to look at", "A tall grey silence"])
+      };
+      if (C) {
+        C.ally = ally;
+        say(`<span class="hit">${ally.name}</span> steps out of nowhere. It fights on your side for ${ally.rounds} rounds, striking at level ${ROMAN[lvl-1]}.`);
+      } else {
+        S.c.pendingAlly = ally;
+        say(`<span class="hit">${ally.name}</span> steps out of nowhere, finds nothing to kill, and follows you. It will join the next fight for ${ally.rounds} rounds.`);
+      }
+    }
+  } else if (sp.kind === "stun") {
+    const n = D(6) * Math.max(1, S.c.level - sp.lvl);
+    liveFoes().slice(0, n).forEach(f => f.asleep = Math.max(f.asleep, D(4)));
+    say(`Stun: <span class="hit">${Math.min(n, liveFoes().length)} of them</span> stop where they are.`);
+  } else if (sp.kind === "weaken") {
+    if (C) { C.weakened = true; C.foeToHitPenalty = 3; }
+    say(`Weaken: they need a 3 to hit and everything they do lands at half.`);
+  } else if (sp.kind === "stupid") {
+    const t = C && liveFoes()[0];
+    if (t) { t.stupid = true; t.asleep = Math.max(t.asleep, D(10)); say(`Stupidity: ${t.name}'s intelligence drops to 1. It can do nothing at all.`); }
+  } else if (sp.kind === "blind") {
+    const t = C && C.foes[C.target];
+    if (t && t.alive) { t.blind = true; say(`Blind: ${t.name} will never see again. It needs a 1 to hit anything.`); }
+  } else if (sp.kind === "shrink") {
+    liveFoes().slice(0, D(6)).forEach(f => { f.wp = Math.ceil(f.wp / 2); f.maxWP = Math.ceil(f.maxWP / 2); f.shrunk = true; });
+    say(`Shrink: two sizes down, and half of everything.`);
+  } else if (sp.kind === "acid") {
+    const t = C && C.foes[C.target];
+    if (t && t.alive) { t.acid = { rounds: D(6), dmg: sp.dmg }; say(`Acid: a sheet of it over ${t.name}, for ${t.acid.rounds} rounds.`); }
+  } else if (sp.kind === "quake") {
+    const mult = Math.max(1, S.c.level - sp.lvl);
+    const d = sp.dmg() * mult;
+    liveFoes().forEach(f => { f.wp -= d; if (f.wp <= 0) killFoe(f); });
+    say(`Earthquake: <span class="hit">${d}</span> to everything standing on the floor.`);
+    if (!S.c.ward) { S.c.wp -= Math.ceil(d / 2); say(`<span class="hurt">Including you — you had no shield up. −${Math.ceil(d/2)} wp.</span>`); if (S.c.wp <= 0) return die("quake"); }
+  } else if (sp.kind === "vapor") {
+    const r = S.c.level >= 5 ? 4 : D(6);
+    const outcome = ["faint — they hit on 1-6","blind — they need a 1","choke — they cannot strike","death, unless they roll a 1 on d10","hallucinate — they strike each other","choke — they cannot strike"][r - 1];
+    say(`Noxious Vapor: d6 → <span class="roll">${r}</span>, they ${outcome}.`);
+    liveFoes().forEach(f => { if (r === 4 && D(10) !== 1) { f.wp = 0; killFoe(f); } else f.asleep = Math.max(f.asleep, D(6) + 2); });
+  } else if (sp.kind === "volley") {
+    const n = D(8), foes = liveFoes();
+    let tot = 0;
+    for (let k = 0; k < n && foes.length; k++) {
+      const t = foes[k % foes.length];
+      if (!t.alive) continue;
+      const d = sp.dmg(); t.wp -= d; tot += d;
+      if (t.wp <= 0) killFoe(t);
+    }
+    say(`Fireballs: <span class="roll">${n}</span> of them, <span class="hit">${tot}</span> damage in all.`);
+  } else if (sp.kind === "petrify") {
+    const t = C && C.foes[C.target];
+    if (t && t.alive) { t.alive = false; t.frozen = true; t.wp = 0; say(`Petrify: ${t.name} is stone for five days. No harm can be done to it, and none earned from it.`); }
+  } else if (sp.kind === "turn") {
+    if (C && C.type === "Walking Dead") {
+      const turned = liveFoes().filter(f => f.lvl <= S.c.level);
+      turned.forEach(f => { f.alive = false; f.turned = true; f.wp = 0; });
+      say(`Turn Walking Dead: <span class="hit">${turned.length} sent back into the ground.</span>`);
+      liveFoes().forEach(f => f.fixated = true);
+    } else say(`<span class="miss">Nothing here is dead enough for it to matter.</span>`);
+  } else if (sp.kind === "gate") {
+    if (C && (C.type === "Walking Dead" || C.type === "Demons")) {
+      const gone = liveFoes().slice(0, D(6));
+      gone.forEach(f => { f.alive = false; f.turned = true; f.wp = 0; });
+      say(`Plane Gate: <span class="hit">${gone.length} of them are simply not here any more.</span>`);
+    } else say(`<span class="miss">The gate only takes demons and the walking dead.</span>`);
+  } else if (sp.kind === "senses") {
+    S.c.senses = 1;
+    say(`Sense Presence: you see in the dark, and nothing surprises you, for this encounter.`);
+  } else if (sp.kind === "reveal") {
+    const f = S.floor;
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (!f.g[y][x].wall) f.g[y][x].seen = true;
+    say(`Detect Magic: the floor lays itself out in your head — <span class="hit">every corridor on this level</span>.`);
+  } else if (sp.kind === "foresee") {
+    S.c.foresight = true;
+    const type = ENC_TYPES[D(6) - 1];
+    say(`Sense Danger: the next thing you meet will be <span class="roll">${type}</span>, and it will not get the first move.`);
+  } else if (sp.kind === "mirror") {
+    S.c.mirror = D(6);
+    say(`Mirror Self: <span class="hit">${S.c.mirror} rounds</span> of copies. They need a 1 to find the real one.`);
+  } else if (sp.kind === "ward") {
+    S.c.ward = { pool: sp.pool, rounds: sp.rounds, reflect: !!sp.reflect, name: sp.n };
+    say(`${sp.n}: a skin of force, <span class="hit">${sp.pool} wp</span> of it${sp.reflect ? ", throwing back what it stops" : ""}.`);
+  } else if (sp.kind === "might") {
+    S.c.might = sp.dmg();
+    if (!S.c.strengthBoost) { S.c.strengthBoost = S.c.maxWP; S.c.maxWP += S.c.strengthBoost; S.c.wp += S.c.strengthBoost; }
+    say(`Strength: <span class="hit">Win Potential doubled</span> and <span class="hit">+${S.c.might} damage</span> until you next sleep.`);
+  } else if (sp.kind === "regen") {
+    S.c.regen = true;
+    say(`Regeneration: flesh knits back <span class="hit">d8 a round</span> for this fight.`);
+  } else if (sp.kind === "insane") {
+    const t = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : liveFoes()[0];
+    if (!t) { say(`<span class="miss">Nothing left to madden.</span>`); }
+    else {
+      const r = D(6);
+      say(`Insane on ${t.name}: d6 → <span class="roll">${r}</span>, it ${INSANITY[r-1]}.`);
+      if (r === 1) { t.wp = 0; killFoe(t); }
+      else if (r === 2) { const o = liveFoes().find(f => f !== t); if (o) { const d = t.lvl*t.lvl + D(6); o.wp -= d; say(`<span class="hit">${o.name} takes ${d}.</span>`); if (o.wp <= 0) killFoe(o); } }
+      else if (r === 3 || r === 6) { t.alive = false; t.wp = 0; t.fled = true; say(`${t.name} is out of the fight.`); }
+      else if (r === 4) { t.asleep = D(4); }
+      else if (r === 5) { t.frenzied = true; }
+    }
+  } else if (sp.kind === "heal") {
+    let amt = sp.dmg() + (S.c.sub === "Cleric" ? 3 : 0);
+    if (R_().heal2x) amt *= 2;
+    S.c.wp = Math.min(S.c.maxWP, S.c.wp + amt);
+    say(`${sp.n}: <span class="hit">+${amt} wp</span>.`);
+  } else if (sp.kind === "death") {
+    if (S.c.wp <= 26) { say(`<span class="miss">Not enough left in you to pay Death's 25 wp.</span>`); S.c.spellsUsed--; return; }
+    S.c.wp -= 25;
+    const t = liveFoes()[0];
+    say(`Death. Two rounds of concentration, 25 wp spent.`);
+    if (t) { t.wp = 0; killFoe(t); }
+  } else if (sp.kind === "status") {
+    const t = C && liveFoes()[0];
+    if (t) { t.asleep = D(4); say(`Doze: ${t.name} sleeps for <span class="roll">${t.asleep}</span> rounds.`); }
+  } else {
+    // thrown: d8, 4 to hit, plus the offensive bonus from the subclass chart
+    const bonus = schoolBonus(S.c.sub, sp.s) + eff("throw");
+    const targets = sp.n === "Lightning" ? liveFoes() : [C ? C.foes[C.target] : null].filter(Boolean);
+    if (!targets.length) { say(`<span class="miss">Nothing to throw it at.</span>`); return; }
+    for (const t of targets) {
+      if (!t.alive) continue;
+      const freeze = sp.n === "Freeze";
+      const die = freeze ? 10 : 8, target = freeze ? 6 : 4;
+      const roll = D(die);
+      say(`${sp.n} thrown at ${t.name}: d${die} → <span class="roll">${roll}</span> ${bonus ? `−${bonus} bonus ` : ""}vs ${target}.`);
+      if (roll - bonus <= target) {
+        // p.26: area, duration and effect are multiplied by (caster level − spell level)
+        const mult = Math.max(1, S.c.level - sp.lvl);
+        const dmg = sp.dmg() * mult + eff("spellDmg");
+        t.wp -= dmg;
+        say(`<span class="hit">${dmg} damage</span>${mult > 1 ? ` (×${mult} for casting ${mult} levels above it)` : ""}.`);
+        if (freeze) {
+          t.alive = false; t.frozen = true; t.wp = 0;
+          say(`<span class="hit">${t.name} is frozen solid</span> — and you get no skill points for ice.`);
+          continue;
+        }
+        if (t.wp <= 0) { killFoe(t); continue; }
+      } else say(`<span class="miss">It goes wide.</span>`);
+    }
+  }
+  if (S.combat) afterPlayerAction(); else paint(), save();
+}
+
+function drinkPotion() {
+  if (S.c.potions <= 0) return;
+  S.c.potions--;
+  let amt = 2 * D(10) + 5;
+  if (R_().heal2x) amt *= 2;
+  S.c.wp = Math.min(S.c.maxWP, S.c.wp + amt);
+  say(`Potion: <span class="hit">+${amt} wp</span>. ${S.c.potions} left.`);
+  if (S.combat) afterPlayerAction(); else (paint(), save());
+}
+
+function flee() {
+  const C = S.combat;
+  if (S.c.sub === "Samurai") { say(`<span class="miss">A Samurai never runs.</span>`); return; }
+  if (S.c.sub === "Cloaker") { say(`<span class="hit">You simply stop being where you were.</span> A Cloaker always gets away — and earns nothing for it.`); endCombat(); return; }
+  if (C.tracked && C.round === 1) { say(`<span class="hit">You saw them first and never came round the corner.</span>`); endCombat(); return; }
+  const bonus = S.c.cls === "Thief" ? 5 : 0;      // getting out is the Thief's whole trade
+  const roll = D(20);
+  say(`Break away: d20 → <span class="roll">${roll}</span>${bonus ? ` +${bonus} thief` : ""}, need 11 or better.`);
+  if (roll + bonus >= 11) { say(`<span class="hit">You get clear.</span>`); endCombat(); return; }
+  say(`<span class="miss">They cut you off.</span>`);
+  foeTurn();
+  if (!S.dead) { C.round++; }
+  renderEncounter(); paint(); save();
+}
+
+/* ---------------- talking, singing, reading ---------------- */
+const TALKATIVE = ["Humans", "Demons", "Lair Beasts", "Beasts"];
+function canParley() {
+  if (!S.combat) return false;
+  const t = S.combat.type;
+  if (t === "Walking Dead" || t === "Magical") return false;
+  if (S.c.sub === "Con Artist") return true;
+  if (S.c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
+  if (S.c.sub === "Bard" && t === "Humans") return true;
+  if (skill("Language") && TALKATIVE.includes(t)) return true;
+  // "All good and evil creatures recognize the Wilmsry and often desire to barter with them."
+  if (S.c.race === "Wilmsry" && t !== "Magical") return true;
+  // "Most humans treasure the sighting of an elf as a good omen."
+  if (S.c.race === "Elven" && t === "Humans") return true;
+  return false;
+}
+function parley() {
+  const C = S.combat; if (!C || !canParley()) return;
+  const top = Math.max(...liveFoes().map(f => f.lvl));
+  if (S.c.race === "Wilmsry" && C.type === "Magical") { say(`<span class="miss">Magic Users hate the Wilmsry. There is nothing to discuss.</span>`); return; }
+  const bonus = (S.c.sub === "Con Artist" ? 6 : 0) + (S.c.sub === "Woodsman" ? 3 : 0)
+              + (S.c.race === "Wilmsry" ? 4 : 0)                       // noted for their bargaining
+              + (S.c.race === "Elven" && C.type === "Humans" ? 3 : 0)  // a good omen
+              + S.c.level - top;
+  const roll = D(20), need = 9 + bonus;
+  say(`Parley: d20 → <span class="roll">${roll}</span>, need ${need} or under.`);
+  if (roll <= need) {
+    const sp = Math.round(liveFoes().reduce((a, f) => a + D(6) * f.lvl, 0) * 2.5);
+    S.c.sp += sp;
+    say(`<span class="hit">They stand down.</span> Half the skill points for none of the blood: <span class="hit">+${sp}</span>.`);
+    if (C.type === "Humans" && D(6) >= 4) { const wm = D(6) * 100 * S.floor.depth; S.c.gold += wm; say(`One of them pays you to forget the whole thing. <span class="hit">+${wm.toLocaleString()} wilmst.</span>`); }
+    checkLevel(); endCombat(); return;
+  }
+  say(`<span class="miss">They are not listening.</span>`);
+  afterPlayerAction();
+}
+
+const SONGS = [
+  {lvl:1, n:"Soothe the Savage", txt:"calms beasts"},
+  {lvl:2, n:"Inspire the Heart", txt:"+1 to hit this fight"},
+  {lvl:3, n:"Lullaby",           txt:"d6 foes sleep"},
+  {lvl:4, n:"Cry of Thunder",    txt:"d12 foes frozen d8 rounds"},
+  {lvl:5, n:"An Ode to Death",   txt:"equals reduced to 1 wp"}
+];
+function songReady() {
+  return S.c.sub === "Bard" && (S.steps - (S.c.songAt ?? -999)) >= 100;
+}
+function sing() {
+  const C = S.combat; if (!C || !songReady()) return;
+  const song = SONGS.filter(s => s.lvl <= S.c.level).pop();
+  S.c.songAt = S.steps;
+  say(`<span class="banner">${song.n}.</span>`);
+  const foes = liveFoes();
+  if (song.lvl === 1) {
+    if (C.type === "Beasts" || C.type === "Lair Beasts") {
+      foes.forEach(f => { f.alive = false; f.fled = true; });
+      say(`The beasts settle, turn, and wander off.`);
+    } else say(`<span class="miss">It is a lovely song. They are unmoved.</span>`);
+  } else if (song.lvl === 2) {
+    C.inspired = 1; say(`Your own hands steady: <span class="hit">+1 to hit</span> for the rest of this.`);
+  } else if (song.lvl === 3) {
+    const n = D(6); foes.slice(0, n).forEach(f => { if (f.lvl <= S.c.level) f.asleep = 24; });
+    say(`d6 → <span class="roll">${n}</span>. They fold where they stand.`);
+  } else if (song.lvl === 4) {
+    const n = D(12), r = D(8); foes.slice(0, n).forEach(f => { if (f.lvl <= S.c.level) f.asleep = r; });
+    say(`d12 → <span class="roll">${n}</span>, frozen for <span class="roll">${r}</span> rounds.`);
+  } else {
+    foes.forEach(f => { if (f.lvl <= S.c.level) f.wp = 1; });
+    say(`Everything of your own level is left with <span class="hit">1 wp</span> and a look on its face.`);
+  }
+  afterPlayerAction();
+}
+
+function canRead() {
+  if (S.c.sub === "Pilfer") return false;         // a Pilfer cannot use magic items
+  return S.c.cls === "Magic User" || skill("Runes/Signs");
+}
+function readScroll() {
+  if (!S.c.scrolls || !canRead()) return;
+  S.c.scrolls--;
+  const options = SPELLS.filter(sp => sp.lvl <= Math.min(5, S.floor.depth + 1));
+  const sp = pick(options);
+  say(`You unroll a scroll: <span class="roll">${sp.n}</span>.`);
+  // "Scrolls contain spells; transfer to grimoire erases scroll."
+  if (S.c.cls === "Magic User" && canLearn(S.c.sub, sp) && sp.lvl <= S.c.level && !S.c.grimoire.includes(sp.n)) {
+    S.c.grimoire.push(sp.n);
+    say(`<span class="hit">Copied into your grimoire.</span> The scroll goes blank.`);
+    paint(); save(); return;
+  }
+  say(`The ink lifts off the page as you read it.`);
+  const saved = S.c.spellsUsed;
+  S.c.spellsUsed = 0; S.c.scrollCast = true;       // a scroll pays for itself and ignores your book
+  castSpell(SPELLS.indexOf(sp));
+  S.c.spellsUsed = saved; S.c.scrollCast = false;
+  paint(); save();
+}
+
+function endCombat() {
+  S.combat = null;
+  S.lastExchange = null;
+  S.c.regen = false;
+  S.c.ward = null;
+  S.c.mirror = 0;
+  S.c.senses = 0;
+  paint(); save();
+}
+
+function afterPlayerAction() {
+  const C = S.combat;
+  if (!C) { paint(); save(); return; }
+  if (!liveFoes().length) {
+    say(`<span class="banner">Encounter cleared.</span>`);
+    endCombat(); return;
+  }
+  allyTurn();
+  if (!liveFoes().length) { say(`<span class="banner">Encounter cleared.</span>`); endCombat(); return; }
+  foeTurn();
+  if (!S.dead && S.combat) {
+    S.combat.round++;
+    rollInitiative();                       // p.24: a fresh d20 each round
+    if (S.combat.first === "foe") { foeTurn(); if (!S.dead && S.combat) S.combat.round++; }
+  }
+  paint(); save();
+}
+
+function allyTurn() {
+  const C = S.combat; if (!C || !C.ally) return;
+  const t = liveFoes()[0];
+  if (!t) return;
+  const roll = D(STRIKE_DICE[C.ally.lvl - 1]);
+  if (roll <= 5) {
+    const d = C.ally.lvl * C.ally.lvl + D(6);
+    t.wp -= d;
+    say(`${C.ally.name} tears into ${t.name} for <span class="hit">${d}</span>.`);
+    if (t.wp <= 0) killFoe(t);
+  } else say(`${C.ally.name} <span class="miss">misses</span>.`);
+  if (--C.ally.rounds <= 0) { say(`${C.ally.name} folds back into wherever it came from.`); C.ally = null; }
+}
+
+function foeTurn() {
+  const C = S.combat; if (!C) return;
+  if (S.c.regen) {
+    const r = D(8);
+    if (S.c.wp < S.c.maxWP) { S.c.wp = Math.min(S.c.maxWP, S.c.wp + r); say(`Regeneration knits <span class="hit">+${r} wp</span>.`); }
+  }
+  for (const f of C.foes) {
+    if (f.acid && f.acid.rounds > 0) {
+      const d = f.acid.dmg(); f.wp -= d; f.acid.rounds--;
+      say(`Acid eats at ${f.name} for <span class="hit">${d}</span>.`);
+      if (f.wp <= 0 && f.alive) { killFoe(f); continue; }
+    }
+    if (!f.alive) continue;
+    if (f.asleep > 0) { f.asleep--; say(`${f.name} ${f.stupid ? "stands there" : "sleeps on"}.`); continue; }
+    const swings = (f.frenzied ? 2 : 1) * ((f.sp && f.sp.atk) || 1);
+    for (let s = 0; s < swings; s++) {
+      if (!f.alive) break;
+      const dieN = foeDie(f);
+      const roll = D(dieN);
+      let need = foeToHitVs();
+      if (f.blind) need = 1;
+      if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
+      if (roll > need) { say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="miss">Misses.</span>`); continue; }
+      let dmg = f.lvl * f.lvl + ((f.sp && f.sp.dmg) ? f.sp.dmg() : D(6));
+      if (C.weakened) dmg = Math.ceil(dmg / 2);
+      if (roll === 1 || (roll <= 2 && S.c.sub === "Soldier")) dmg *= 2;
+      if (skill("Hardiness")) dmg = Math.max(1, dmg - 3);
+
+      // a ward eats the blow before armour or flesh does
+      let warded = 0;
+      if (S.c.ward && S.c.ward.pool > 0) {
+        warded = Math.min(S.c.ward.pool, dmg);
+        S.c.ward.pool -= warded; dmg -= warded;
+        if (S.c.ward.reflect && warded > 0) {
+          f.wp -= warded;
+          say(`${S.c.ward.name} stops <span class="hit">${warded}</span> and throws it back at ${f.name}.`);
+          if (f.wp <= 0) { killFoe(f); continue; }
+        } else if (warded > 0) say(`${S.c.ward.name} soaks <span class="hit">${warded}</span> (${S.c.ward.pool} left).`);
+        if (S.c.ward.pool <= 0) { say(`<span class="miss">${S.c.ward.name} shatters.</span>`); S.c.ward = null; }
+      }
+      if (dmg <= 0) continue;
+
+      // p.44: roll d20; at or under your AR the blow lands on the armour instead of you
+      let onArmour = false, blocked = 0;
+      const ignores = f.sp && f.sp.noArmor;
+      if (S.c.armorWP > 0 && S.c.ar > 0 && !ignores) {
+        const soak = D(20);
+        if (soak <= S.c.ar) {
+          onArmour = true; blocked = dmg;
+          if (dmg > S.c.armorMin) S.c.armorWP = Math.max(0, S.c.armorWP - dmg);
+          dmg = 0;
+          if (S.c.armorWP <= 0) say(`<span class="miss">Your ${S.c.armor.toLowerCase()} is destroyed.</span>`);
+        }
+      }
+      if (onArmour) {
+        say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}, hit — armour d20 under ${S.c.ar}: <span class="hit">the ${S.c.armor.toLowerCase()} takes all ${blocked}</span> (${S.c.armorWP}/${S.c.armorMax} left).`);
+        continue;
+      }
+      S.c.wp -= dmg;
+      say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hurt">Hits for ${dmg}</span>${ignores ? " — armour is no use against it" : ""}${roll === 1 ? " — critical" : ""}.`);
+      if (S.c.wp <= 0) { die("combat", f.name); return; }
+    }
+  }
+  if (S.c.ward && --S.c.ward.rounds <= 0) { say(`<span class="miss">${S.c.ward.name} fades.</span>`); S.c.ward = null; }
+  if (S.c.mirror > 0 && --S.c.mirror <= 0) say(`<span class="miss">The copies wink out.</span>`);
+}
+
+const CAUSE_TEXT = {
+  combat:   f => `cut down by a ${f}`,
+  starve:   () => "starved in the dark",
+  trap:     () => "undone by a trap",
+  teleport: () => "materialised inside a wall",
+  fall:     () => "fell off a wall",
+  gorge:    () => "came up short on a leap",
+  backfire: () => "killed by their own spell",
+  summon:   () => "eaten by their own summoning",
+  maze:     () => "spent by the maze itself",
+  quake:    () => "buried by their own earthquake",
+  potion:   () => "poisoned by an unlabelled bottle",
+  insanity: () => "dead by their own hand",
+  poison:   () => "carried off by poison"
+};
+
+function die(cause, detail) {
+  S.dead = true;
+  S.combat = null; S.c.wp = 0; S.c.ward = null; S.c.regen = false; S.c.mirror = 0;
+  S.deathAt = Date.now();
+  S.deathNote = CAUSE_TEXT[cause] ? CAUSE_TEXT[cause](detail) : "killed by something the maze did not name";
+  S.epitaph = epitaphFor(cause, epitaphCtx(detail));
+  S.lastWords = (S.beats && S.beats.groups && S.beats.groups.length)
+    ? S.beats.groups[S.beats.groups.length - 1].lines.slice(-4)
+    : [];
+  bury(cause, detail);
+  say(`<span class="banner">${S.c.name} is dead — ${S.deathNote}.</span>`);
+  say(`<span class="beat">${S.epitaph}</span>`);
+  paint(); save();
+}
+
+function epitaphCtx(detail) {
+  return {
+    name: S.c.name, foe: detail || "creature", sub: S.c.sub, race: S.c.race,
+    floor: S.floor.depth, day: S.day, sp: Math.round(S.c.sp),
+    gold: S.c.gold.toLocaleString(), motive: S.c.motive.toLowerCase(),
+    lvl: ROMAN[S.c.level - 1]
+  };
+}
+
+/* ---------------- the graveyard ---------------- */
+const GRAVE_KEY = "mazeworld.graveyard.v1";
+let graves = [];
+
+function loadGraves() {
+  try { const r = localStorage.getItem(GRAVE_KEY); graves = r ? JSON.parse(r) || [] : []; }
+  catch (e) { graves = []; }
+  if (!Array.isArray(graves)) graves = [];
+}
+function saveGraves() {
+  try { localStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
+}
+function bury(cause, detail) {
+  graves.unshift({
+    name: S.c.name, race: S.c.race, sub: S.c.sub, cls: S.c.cls,
+    level: S.c.level, sp: Math.round(S.c.sp), floor: S.floor.depth,
+    day: S.day, steps: S.steps, gold: S.c.gold, kills: S.c.kills || 0,
+    cause, note: S.deathNote || (cause === "won" ? "walked out" : "died"),
+    epitaph: S.epitaph, when: Date.now()
+  });
+  graves = graves.slice(0, 60);
+  saveGraves();
+  renderGraves();
+}
+
+function renderGraves() {
+  const wrap = document.getElementById("yard");
+  const count = document.getElementById("yard-count");
+  count.textContent = graves.length ? `${graves.length} interred` : "";
+  if (!graves.length) {
+    wrap.innerHTML = `<p class="yard-empty">Nobody is buried here yet. Give it a floor or two.</p>`;
+    return;
+  }
+  wrap.innerHTML = "";
+  for (const g of graves) {
+    const el = document.createElement("article");
+    el.className = "stone" + (g.cause === "won" ? " won" : "");
+    el.innerHTML = `
+      <p class="stone-name">${g.name}</p>
+      <p class="stone-sub">${g.race} ${g.sub} · lvl ${ROMAN[(g.level || 1) - 1]}</p>
+      <p class="stone-note">${g.cause === "won" ? "Walked out" : g.note.replace(/^\w/, c => c.toUpperCase())}</p>
+      <p class="stone-ep">${g.epitaph || ""}</p>
+      <dl class="stone-stats">
+        <div><dt>Floor</dt><dd>${g.floor}</dd></div>
+        <div><dt>Days</dt><dd>${g.day}</dd></div>
+        <div><dt>Squares</dt><dd>${g.steps}</dd></div>
+        <div><dt>Kills</dt><dd>${g.kills}</dd></div>
+        <div><dt>Skill pts</dt><dd>${g.sp}</dd></div>
+        <div><dt>Wilmst</dt><dd>${(g.gold || 0).toLocaleString()}</dd></div>
+      </dl>`;
+    wrap.appendChild(el);
+  }
+}
+
+/* ---------------- encounter panel ---------------- */
+function vitalsStrip() {
+  const c = S.c;
+  const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
+  const low = pct < 34;
+  return `<div class="vitals">
+    <div class="v-bar"><div class="v-fill${low ? " low" : ""}" style="width:${pct}%"></div>
+      <span class="v-lab">${Math.max(0, c.wp)} / ${c.maxWP} wp</span></div>
+    <div class="v-side">${c.potions} pot${c.ward ? ` · ${c.ward.pool} ward` : ""}</div>
+  </div>`;
+}
+
+/* The reroll button lands where Strike was, so a fast tap could wipe the death
+   screen before it was read. It stays locked for a moment first. */
+const AGAIN_LOCK = 2000;
+function armAgain() {
+  const btn = document.getElementById("btn-again");
+  if (!btn) return;
+  const left = AGAIN_LOCK - (Date.now() - (S.deathAt || 0));
+  if (left > 0) {
+    btn.disabled = true;
+    btn.textContent = "Read it first…";
+    setTimeout(() => {
+      const b2 = document.getElementById("btn-again");
+      if (!b2) return;
+      b2.disabled = false;
+      b2.textContent = "Roll another delver";
+    }, left);
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Roll another delver";
+  }
+  btn.onclick = () => { if (!btn.disabled) newGame(); };
+}
+
+function renderEncounter() {
+  const body = document.getElementById("enc-body");
+  const rd = document.getElementById("enc-round");
+  body.innerHTML = ""; rd.textContent = "";
+  if (S.c && !S.dead && !S.won) body.insertAdjacentHTML("beforeend", vitalsStrip());
+
+  if (S.dead) {
+    body.innerHTML = `<div class="deathcard">
+      <h3>Dead</h3>
+      <p>${S.c.name}, ${S.c.race} ${S.c.sub}, ${S.deathNote}.<br>
+      Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} skill points</p>
+      <p class="epitaph">${S.epitaph || ""}</p>
+      ${(S.lastWords && S.lastWords.length) ? `<div class="lastwords">${S.lastWords.map(l => `<p>${l}</p>`).join("")}</div>` : ""}
+      <div class="again"><button class="primary" id="btn-again">Roll another delver</button></div></div>`;
+    armAgain();
+    return;
+  }
+  if (S.won) {
+    body.innerHTML = `<div class="deathcard" style="border-color:var(--ditto)">
+      <h3 style="color:var(--ditto)">Through the Gate</h3>
+      <p>${S.c.name} walked ${S.steps} squares in ${S.day} days and came out the other side at skill level ${ROMAN[S.c.level-1]}.</p>
+      <p class="epitaph">${S.epitaph || ""}</p>
+      <button class="primary" id="btn-again">Roll another delver</button></div>`;
+    document.getElementById("btn-again").onclick = () => newGame();
+    return;
+  }
+  // whatever just happened comes first — one moment at a time on a phone
+  if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
+    const b = S.beats;
+    const step = stepping();
+    const groups = step ? [b.groups[Math.min(b.i, b.groups.length - 1)]] : b.groups;
+    const last = !step || b.i >= b.groups.length - 1;
+    rd.textContent = step && b.groups.length > 1 ? `${Math.min(b.i + 1, b.groups.length)} of ${b.groups.length}` : "";
+    body.innerHTML += groups.map(g =>
+        (g.title ? `<p class="enc-head" style="color:var(--${g.tone || "ditto"})">${g.title}</p>` : "")
+        + `<div class="evt">${g.lines.map(l => `<p>${l}</p>`).join("")}</div>`).join("")
+      + `<div class="actions">
+           ${last && b.action ? `<button class="primary" id="a-evt">${b.action.label}</button>` : ""}
+           <button class="${last ? "small" : "primary"}" id="a-next">${last ? "Walk on" : "Next"}</button>
+         </div>`;
+    document.getElementById("a-next").onclick = () => {
+      if (last) S.beats = null; else b.i++;
+      renderEncounter();
+    };
+    const ab = document.getElementById("a-evt");
+    if (ab) ab.onclick = () => { const f = b.action.fn; b.action = null; f(); CAPTURE = null; if (S.beats) S.beats.i = 0; renderEncounter(); };
+    return;
+  }
+
+  if (S.store) {
+    const st = S.store;
+    body.innerHTML += `<p class="enc-head" style="color:var(--moss)">A store</p>
+      <p class="enc-sub">${S.c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
+      <div class="shelf" id="shelf"></div>
+      <div class="actions"><button class="primary" id="a-leave">Leave</button></div>`;
+    const shelf = document.getElementById("shelf");
+    st.stock.forEach((item, i) => {
+      const row = document.createElement("button");
+      row.className = "goods" + (item.sold ? " sold" : "");
+      row.disabled = !!item.sold || S.c.gold < item.cost;
+      row.innerHTML = `<span class="g-n">${item.n}${item.sub ? `<i>${item.sub}</i>` : ""}</span>
+        <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
+      row.onclick = () => buyFrom(i);
+      shelf.appendChild(row);
+    });
+    document.getElementById("a-leave").onclick = leaveStore;
+    return;
+  }
+  if (!S.combat) {
+    body.innerHTML += `<p class="enc-sub" style="margin:0">The corridor is quiet. Walk on.</p>
+      <p class="hint">Red dots are encounter dots — the Maze Master rolls when you touch one. Violet diamonds teleport you a d20 in a random direction. Green arrows are one-way doors cut through a wall between two passages — you may only pass the way the arrow points, and there is no coming back. Make camp to spend a ration, sleep eight hours and mend, if nothing finds you first.</p>`;
+    return;
+  }
+
+  const C = S.combat;
+  rd.textContent = `round ${C.round}`;
+  const head = document.createElement("div");
+  head.innerHTML = `<p class="enc-head">${C.type}</p>
+    <p class="enc-sub">${liveFoes().length} still standing · you strike on d${strikeDie()}, ${toHit()} to hit</p>`;
+  body.appendChild(head);
+
+  if (C.ally) {
+    const al = document.createElement("div");
+    al.className = "foe ally";
+    al.innerHTML = `<div class="fname">${C.ally.name}</div>
+      <div class="fwp">${C.ally.rounds} rounds</div>
+      <div class="fmeta">Fighting for you · level ${ROMAN[C.ally.lvl-1]} · ${C.ally.lvl*C.ally.lvl}+d6 damage</div>`;
+    body.appendChild(al);
+  }
+
+  const list = document.createElement("div");
+  list.className = "foes";
+  C.foes.forEach((f, i) => {
+    const el = document.createElement("div");
+    el.className = "foe" + (f.alive ? "" : " dead") + (i === C.target && f.alive ? " target" : "");
+    el.innerHTML = `<div class="fname">${f.name}</div>
+      <div class="fwp">${Math.max(0,f.wp)} / ${f.maxWP} wp</div>
+      <div class="fmeta">${f.size || "H"} · int ${f.intel ?? "?"} · strikes on d${foeDie(f)}, ${foeToHitVs()} to hit${f.lives > 1 ? " · gets up again" : ""}${f.asleep>0?" · asleep":""}</div>
+      ${f.sp && f.sp.note ? `<div class="fnote">${f.sp.note}</div>` : ""}`;
+    if (f.alive) { el.tabIndex = 0; el.style.cursor = "pointer";
+      el.onclick = () => { C.target = i; renderEncounter(); };
+      el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); C.target = i; renderEncounter(); } }; }
+    list.appendChild(el);
+  });
+  body.appendChild(list);
+
+  const acts = document.createElement("div");
+  acts.className = "actions";
+  acts.innerHTML = `<button class="primary" id="a-strike">1 · Strike</button>
+    <button id="a-potion" ${S.c.potions ? "" : "disabled"}>2 · Potion (${S.c.potions})</button>
+    <button class="danger" id="a-flee">3 · ${C.tracked && C.round === 1 ? "Withdraw" : "Flee"}</button>` +
+    (S.c.cls === "Magic User" ? `<button id="a-spell">4 · Spells (${maxCharges() - S.c.spellsUsed})</button>` : "") +
+    (canParley() ? `<button id="a-talk">5 · Parley</button>` : "") +
+    (songReady() ? `<button id="a-sing">6 · Sing</button>` : "") +
+    (S.c.scrolls && canRead() ? `<button id="a-scroll">7 · Scroll (${S.c.scrolls})</button>` : "");
+  body.appendChild(acts);
+
+  const menu = document.createElement("div");
+  menu.className = "spellmenu";
+  menu.hidden = !C.spellOpen;
+  SPELLS.forEach((sp, i) => {
+    if (!canCast(sp)) return;
+    const b = document.createElement("button");
+    b.className = "small";
+    b.textContent = `${sp.n} — ${sp.txt}`;
+    b.onclick = () => act(() => castSpell(i));
+    menu.appendChild(b);
+  });
+  if (!menu.children.length) {
+    const none = document.createElement("p");
+    none.className = "hint"; none.style.margin = "0";
+    none.textContent = "Nothing in the grimoire you can work at this level.";
+    menu.appendChild(none);
+  }
+  body.appendChild(menu);
+
+  if (S.lastExchange && S.lastExchange.length) {
+    const ex = document.createElement("div");
+    ex.className = "exchange";
+    ex.dataset.n = S.exchangeN || 0;
+    ex.innerHTML = `<h4>Last exchange</h4>` + S.lastExchange.slice(-6).map(l => `<p>${l}</p>`).join("");
+    body.appendChild(ex);
+  }
+
+  document.getElementById("a-strike").onclick = () => act(playerStrike);
+  document.getElementById("a-potion").onclick = () => act(drinkPotion);
+  document.getElementById("a-flee").onclick = () => act(flee);
+  const sb = document.getElementById("a-spell");
+  if (sb) sb.onclick = () => { C.spellOpen = !C.spellOpen; renderEncounter(); };
+  const tb = document.getElementById("a-talk");   if (tb) tb.onclick = () => act(parley);
+  const gb = document.getElementById("a-sing");   if (gb) gb.onclick = () => act(sing);
+  const cb = document.getElementById("a-scroll"); if (cb) cb.onclick = () => act(readScroll);
+}
+
+/* ---------------- save / load ---------------- */
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ c: S.c, floor: S.floor, day: S.day, steps: S.steps, dead: S.dead, won: S.won, deathNote: S.deathNote, epitaph: S.epitaph })); }
+  // note: store stock holds closures and is deliberately not saved
+  catch (e) { /* private window, blocked storage — the delve just won't persist */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || !o.c || !o.floor) return null;
+    o.c.items = o.c.items || [];
+    return { c: o.c, floor: o.floor, day: o.day || 1, steps: o.steps || 0, combat: null, store: null, beats: null, dead: !!o.dead, won: !!o.won, deathNote: o.deathNote || "", epitaph: o.epitaph || "" };
+  } catch (e) { return null; }
+}
+
+/* ---------------- boot ---------------- */
+function newGame() {
+  logEl.innerHTML = "";
+  S = { c: null, floor: null, day: 1, steps: 0, combat: null, store: null, beats: null, dead: false, won: false, deathNote: "", epitaph: "" };
+  S.c = rollCharacter(true);
+  S.floor = genFloor(1);
+  reveal();
+  say(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
+  paint(); save();
+}
+
+document.getElementById("btn-new").onclick = () => newGame();
+document.getElementById("btn-wipe").onclick = () => {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  newGame();
+};
+document.getElementById("btn-camp").onclick = () => makeCamp();
+document.getElementById("btn-clearyard").onclick = () => { graves = []; saveGraves(); renderGraves(); };
+document.getElementById("dpad").addEventListener("click", e => {
+  const b = e.target.closest("button[data-dir]"); if (b) move(b.dataset.dir);
+});
+
+addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  const dirKeys = { arrowup:"N", w:"N", arrowdown:"S", s:"S", arrowleft:"W", a:"W", arrowright:"E", d:"E" };
+  if (S && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
+    // walking away dismisses the card — you should never have to press a button to leave
+    if (dirKeys[k] && !S.store && !S.dead && !S.won) { e.preventDefault(); S.beats = null; move(dirKeys[k]); return; }
+    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next"); if (n) n.click(); }
+    return;
+  }
+  const map = dirKeys;
+  if (map[k] && !S.combat) { e.preventDefault(); move(map[k]); return; }
+  if (S.combat) {
+    if (k === "1") { e.preventDefault(); act(playerStrike); }
+    else if (k === "2") { e.preventDefault(); act(drinkPotion); }
+    else if (k === "3") { e.preventDefault(); act(flee); }
+    else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
+    else if (k === "5" && canParley()) { e.preventDefault(); act(parley); }
+    else if (k === "6" && songReady()) { e.preventDefault(); act(sing); }
+    else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); act(readScroll); }
+  }
+});
+addEventListener("resize", () => { fit(); renderEncounter(); });
+
+loadGraves();
+renderGraves();
+
+const restored = load();
+if (restored) {
+  S = restored;
+  say(`<span class="banner">Delve resumed.</span>`);
+  say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the maze.`);
+  reveal();
+} else {
+  newGame();
+}
+fit();
+paint();
