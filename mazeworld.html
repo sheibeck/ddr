@@ -3455,6 +3455,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // browser dev loop and under node, so registerNativeChrome (and its
   // dynamic @capacitor/* imports) is never reached in either environment —
   // this is the one production call site.
+  //
+  // CR-03 (02-REVIEW.md): registerNativeChrome() itself now guards every
+  // plugin import (including '@capacitor/app') so it should never reject in
+  // practice, but this .catch() is defense in depth against an unhandled
+  // promise rejection here — the only production call site, so nothing else
+  // ever awaits or catches this call.
   if (window.Capacitor?.isNativePlatform?.()) {
     registerNativeChrome({
       storage: window.mzStorage,
@@ -3483,6 +3489,9 @@ window.__mzClassicBoot = async function classicBoot() {
           window.logLine(`<span class="beat">Press back again to abandon this delve.</span>`);
         },
       }),
+    }).catch(() => {
+      /* CR-03: never let a native-chrome wiring failure become an unhandled
+         promise rejection at this, the one production call site. */
     });
   }
 </script>

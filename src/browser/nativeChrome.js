@@ -21,6 +21,16 @@
 //     browser dev loop never need to resolve a bare `@capacitor/*` specifier.
 //     Called exactly once, from mazeworld.html's trailing module, and only
 //     when `window.Capacitor?.isNativePlatform?.()` is true.
+//
+//     CR-03 (02-REVIEW.md): the splash-hide/status-bar/orientation chrome
+//     runs BEFORE the `@capacitor/app` import/back-button/lifecycle wiring
+//     (deliberately reordered from the plugin's declaration order above) —
+//     since capacitor.config.json sets "launchAutoHide": false,
+//     SplashScreen.hide() is the ONLY thing that ever hides the native
+//     splash, so it must never be reachable-only-through a step that can
+//     throw first. A broken `@capacitor/app` import can therefore only cost
+//     back-button/lifecycle wiring for that launch, never soft-lock the app
+//     on its splash screen.
 
 /**
  * decideBackAction({ hasOpenModal, hasLiveRun, isAtRoot, canGoBack,
@@ -120,7 +130,51 @@ export async function registerNativeChrome({
   waitForPending,
   getGameContext,
 } = {}) {
-  const App = injectedApp || (await import("@capacitor/app")).App;
+  // CR-03 (02-REVIEW.md): splash-hide/status-bar/orientation chrome runs
+  // FIRST and independently of the '@capacitor/app' import below. Because
+  // capacitor.config.json sets "launchAutoHide": false, SplashScreen.hide()
+  // below is the ONLY thing that ever hides the native splash screen — if it
+  // ran AFTER an unguarded `@capacitor/app` import that then threw, the
+  // splash would stay up forever even though the WebView underneath is
+  // fully booted and playable (a permanent soft-lock). Running it first
+  // means a broken '@capacitor/app' import can only cost back-button/
+  // lifecycle wiring, never the ability to see or play the game at all.
+  try {
+    const SplashScreen = injectedSplashScreen || (await import("@capacitor/splash-screen")).SplashScreen;
+    await SplashScreen?.hide?.();
+  } catch {
+    /* splash-screen plugin unavailable/not yet configured — non-fatal */
+  }
+  try {
+    const StatusBar = injectedStatusBar || (await import("@capacitor/status-bar")).StatusBar;
+    // Style.Light = "dark text for light backgrounds" (StatusBar's own naming
+    // is inverted from what it sounds like) — matches mazeworld.html's
+    // --paper (#EFE7D6) parchment theme extending under the status bar.
+    await StatusBar?.setStyle?.({ style: "LIGHT" });
+    await StatusBar?.setBackgroundColor?.({ color: "#EFE7D6" });
+  } catch {
+    /* status-bar plugin unavailable/not yet configured — non-fatal */
+  }
+  try {
+    const ScreenOrientation = injectedScreenOrientation || (await import("@capacitor/screen-orientation")).ScreenOrientation;
+    await ScreenOrientation?.lock?.({ orientation: "portrait" });
+  } catch {
+    /* screen-orientation plugin unavailable/not yet configured — non-fatal */
+  }
+
+  // CR-03: the '@capacitor/app' import is guarded the same way as the three
+  // plugins above — if it rejects, the back-button/lifecycle wiring below is
+  // simply unavailable for this launch (silently reintroducing PLT-02/PLT-03
+  // regressions for that session), but the splash/status-bar/orientation
+  // chrome above has ALREADY run, so the app is never soft-locked on the
+  // splash screen because of it.
+  let App;
+  try {
+    App = injectedApp || (await import("@capacitor/app")).App;
+  } catch {
+    return;
+  }
+  if (!App) return;
 
   let confirming = false;
   let confirmTimer = null;
@@ -176,32 +230,4 @@ export async function registerNativeChrome({
   App.addListener("appStateChange", ({ isActive } = {}) => {
     if (!isActive) return flushOnBackground(storage, waitForPending);
   });
-
-  // PLT-04 chrome — splash hide / status-bar style / portrait lock, finalized
-  // in 02-04 against capacitor.config.json's SplashScreen block
-  // (androidSplashResourceName: "splash_screen", launchAutoHide: false,
-  // backgroundColor: "#EFE7D6"). Splash is hidden explicitly here, once the
-  // WebView/engine boot completes, rather than relying on a fixed timer.
-  try {
-    const SplashScreen = injectedSplashScreen || (await import("@capacitor/splash-screen")).SplashScreen;
-    await SplashScreen?.hide?.();
-  } catch {
-    /* splash-screen plugin unavailable/not yet configured — non-fatal */
-  }
-  try {
-    const StatusBar = injectedStatusBar || (await import("@capacitor/status-bar")).StatusBar;
-    // Style.Light = "dark text for light backgrounds" (StatusBar's own naming
-    // is inverted from what it sounds like) — matches mazeworld.html's
-    // --paper (#EFE7D6) parchment theme extending under the status bar.
-    await StatusBar?.setStyle?.({ style: "LIGHT" });
-    await StatusBar?.setBackgroundColor?.({ color: "#EFE7D6" });
-  } catch {
-    /* status-bar plugin unavailable/not yet configured — non-fatal */
-  }
-  try {
-    const ScreenOrientation = injectedScreenOrientation || (await import("@capacitor/screen-orientation")).ScreenOrientation;
-    await ScreenOrientation?.lock?.({ orientation: "portrait" });
-  } catch {
-    /* screen-orientation plugin unavailable/not yet configured — non-fatal */
-  }
 }

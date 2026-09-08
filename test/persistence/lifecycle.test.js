@@ -131,3 +131,67 @@ test("registerNativeChrome never throws when SplashScreen/StatusBar/ScreenOrient
   const storage = { flush: async () => {} };
   await assert.doesNotReject(() => registerNativeChrome({ App: fakeApp, storage, getGameContext: () => ({}) }));
 });
+
+// CR-03 (02-REVIEW.md): the '@capacitor/app' import must be guarded exactly
+// like SplashScreen/StatusBar/ScreenOrientation above it — a rejection must
+// NOT prevent SplashScreen.hide() from running, or (because
+// capacitor.config.json sets launchAutoHide:false) the native splash screen
+// is never hidden and the app appears permanently frozen even though the
+// WebView underneath is fully booted and playable.
+
+test("CR-03: SplashScreen.hide() still runs when the '@capacitor/app' import fails/is unavailable — no permanent splash soft-lock", async () => {
+  let hideCalled = false;
+  const fakeSplashScreen = {
+    async hide() {
+      hideCalled = true;
+    },
+  };
+  const storage = { flush: async () => {} };
+  // App is deliberately NOT injected: this project's zero-runtime-dep design
+  // (src/browser/storage.js's own doc comment; .claude/CLAUDE.md) means bare
+  // `@capacitor/*` specifiers are never resolvable under `node --test` — so
+  // the real `await import("@capacitor/app")` genuinely rejects here,
+  // exercising CR-03's guarded-import path for real rather than via a mock
+  // (the same pattern the "never throws when Splash/StatusBar/
+  // ScreenOrientation are omitted" test above already relies on for those
+  // three plugins).
+  await assert.doesNotReject(() =>
+    registerNativeChrome({ SplashScreen: fakeSplashScreen, storage, getGameContext: () => ({}) })
+  );
+  assert.equal(
+    hideCalled,
+    true,
+    "SplashScreen.hide() must run even though the @capacitor/app import failed — otherwise launchAutoHide:false leaves the splash up forever"
+  );
+});
+
+test("CR-03: registerNativeChrome resolves (does not throw/reject) when '@capacitor/app' is unavailable, even with no SplashScreen/StatusBar/ScreenOrientation injected either", async () => {
+  const storage = { flush: async () => {} };
+  const result = await registerNativeChrome({ storage, getGameContext: () => ({}) });
+  assert.equal(result, undefined, "registerNativeChrome degrades gracefully (returns) rather than propagating the @capacitor/app import failure");
+});
+
+test("CR-03: StatusBar/ScreenOrientation are still attempted (not skipped) even when the '@capacitor/app' import later fails", async () => {
+  let statusBarStyleSet = false;
+  const fakeStatusBar = {
+    async setStyle() {
+      statusBarStyleSet = true;
+    },
+    async setBackgroundColor() {},
+  };
+  let orientationLocked = false;
+  const fakeScreenOrientation = {
+    async lock() {
+      orientationLocked = true;
+    },
+  };
+  const storage = { flush: async () => {} };
+  await registerNativeChrome({
+    StatusBar: fakeStatusBar,
+    ScreenOrientation: fakeScreenOrientation,
+    storage,
+    getGameContext: () => ({}),
+  });
+  assert.equal(statusBarStyleSet, true, "status-bar chrome still runs even though @capacitor/app is unavailable");
+  assert.equal(orientationLocked, true, "orientation-lock chrome still runs even though @capacitor/app is unavailable");
+});
