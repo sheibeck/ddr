@@ -294,3 +294,36 @@ export async function registerNativeChrome(opts = {}) {
 _Reviewed: 2026-09-08_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: deep_
+
+## Fix Follow-up (2026-09-08, same day)
+
+The fixer's per-finding commits above (`c9a29d9`..`531d603`) were made and
+verified inside an isolated git worktree that had no `node_modules`
+installed. Fast-forwarding that branch onto `master` (which DOES have a
+real `node_modules` — `@capacitor/app` etc. are genuine `dependencies` for
+the Android build tooling) surfaced one incidental flake: 3 of CR-03's new
+regression tests deliberately omitted the `App` plugin to let the real
+`@capacitor/app` dynamic import fail — which works reliably for
+`@capacitor/splash-screen`/`@capacitor/status-bar`/`@capacitor/screen-orientation`
+(none of which touch `document` at module-load time), but `@capacitor/app`'s
+own web implementation does, and threw asynchronously in a way `node --test`
+flagged as a failure once the real package was actually resolvable.
+
+Follow-up commit `c689801` makes those 3 tests deterministic and
+environment-independent: `nativeChrome.js` now resolves `App` through a
+`loadApp()` helper that checks a test-only
+`globalThis.__mzAppImportOverride` hook (mirroring `storage.js`'s own
+`window.__mzPreferencesOverride` pattern) before the real import, and the
+tests force a controlled rejection through that hook instead of depending
+on package resolvability.
+
+**Final state (main repo, `master`, real `node_modules` present):**
+- `node --test`: **372/372 passing** (confirmed on 2 separate runs).
+- Build gate re-run one more time after `c689801`: `npm run build:www` ->
+  `npx cap sync android` (no tracked-file diff this time — the earlier
+  worktree-run's `android/capacitor.settings.gradle`/`capacitor.build.gradle`
+  path corruption, reverted before merging, was purely a worktree-path
+  artifact) -> `node tools/pin-jdk.mjs` -> `gradlew.bat assembleDebug` ->
+  **BUILD SUCCESSFUL in 1m 42s, exit 0**,
+  `android/app/build/outputs/apk/debug/app-debug.apk` present
+  (6,715,661 bytes). `git status` clean after the build.
