@@ -116,10 +116,21 @@ export function __resetNativeDetectionForTests() {
  */
 async function loadNativePreferences() {
   if (typeof window !== "undefined" && window.__mzPreferencesOverride) {
-    return window.__mzPreferencesOverride;
+    return { Preferences: window.__mzPreferencesOverride };
   }
   const mod = await import("@capacitor/preferences");
-  return mod.Preferences;
+  // CRITICAL: return the plugin wrapped in a plain (non-thenable) object, and
+  // destructure it at the call sites — NEVER `return mod.Preferences` from an
+  // async function, and never `await` the plugin object directly.
+  // `mod.Preferences` is a Capacitor `registerPlugin` Proxy that traps EVERY
+  // property access, including `then`. Returning it from an async function (or
+  // awaiting it) makes JS Promise adoption invoke `Preferences.then(...)`,
+  // which the proxy forwards to the native bridge as a plugin method call →
+  // "Preferences.then() is not implemented on android", an uncaught native
+  // rejection that fires during boot (device-UAT-found). A plain object
+  // wrapper is not a thenable, so it passes through `await` untouched and the
+  // real proxy is only ever reached via explicit method calls (.get/.set/...).
+  return { Preferences: mod.Preferences };
 }
 
 /**
@@ -149,7 +160,7 @@ export async function getItem(key) {
   try {
     if (isNative()) {
       try {
-        const Preferences = await loadNativePreferences();
+        const { Preferences } = await loadNativePreferences();
         const { value } = await Preferences.get({ key });
         return typeof value === "string" ? value : null;
       } catch {
@@ -188,7 +199,7 @@ export function setItem(key, value) {
   return enqueue(key, async () => {
     if (isNative()) {
       try {
-        const Preferences = await loadNativePreferences();
+        const { Preferences } = await loadNativePreferences();
         await Preferences.set({ key, value: String(value) });
         return;
       } catch {
@@ -210,7 +221,7 @@ export function removeItem(key) {
   return enqueue(key, async () => {
     if (isNative()) {
       try {
-        const Preferences = await loadNativePreferences();
+        const { Preferences } = await loadNativePreferences();
         await Preferences.remove({ key });
         return;
       } catch {

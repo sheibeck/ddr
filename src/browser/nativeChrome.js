@@ -119,11 +119,20 @@ export async function flushOnBackground(storage, waitForPending) {
  * import.
  */
 async function loadApp(injectedApp) {
-  if (injectedApp) return injectedApp;
+  // Return the plugin wrapped in a plain (non-thenable) object — NEVER return
+  // the bare `App` proxy from this async function. `App` (from `@capacitor/app`
+  // registerPlugin) is a Proxy that traps every property access including
+  // `then`; returning it from an async function makes JS Promise adoption call
+  // `App.then(...)`, which the proxy forwards to the native bridge as a plugin
+  // method → "App.then() is not implemented on android" (an uncaught native
+  // rejection at boot — the same class of bug that stuck the app on splash via
+  // Preferences). The wrapper passes through `await` untouched; the caller
+  // destructures `.App` and only ever reaches the proxy via real method calls.
+  if (injectedApp) return { App: injectedApp };
   if (globalThis.__mzAppImportOverride) {
-    return await globalThis.__mzAppImportOverride();
+    return { App: await globalThis.__mzAppImportOverride() };
   }
-  return (await import("@capacitor/app")).App;
+  return { App: (await import("@capacitor/app")).App };
 }
 
 /**
@@ -220,7 +229,7 @@ export async function registerNativeChrome({
   // splash screen because of it.
   let App;
   try {
-    App = await loadApp(injectedApp);
+    ({ App } = await loadApp(injectedApp));
   } catch {
     return;
   }

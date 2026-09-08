@@ -39,6 +39,8 @@ import {
   cpSync,
   readFileSync,
   writeFileSync,
+  readdirSync,
+  statSync,
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -98,6 +100,73 @@ function copyFonts() {
   step("copied fonts/ into www/fonts/");
 }
 
+// The vendored @capacitor/* plugin ESM (dist/esm/*.js) ships with
+// EXTENSIONLESS relative specifiers — `export * from './definitions'`,
+// `import('./web')` — and bare `@capacitor/core` specifiers. Bare specifiers
+// resolve against www/index.html's import map (fine, even from nested
+// modules), but extensionless relative specifiers do NOT resolve in the
+// Android WebView: a request for `/vendor/@capacitor/preferences/definitions`
+// (no `.js`) misses on disk, Capacitor's local server falls back to
+// index.html (MIME text/html), and the browser rejects the module script
+// ("Expected a JavaScript-or-Wasm module script but the server responded with
+// a MIME type of text/html"). That throws during boot, so the module that
+// calls SplashScreen.hide() and boots the game never runs → stuck on splash.
+//
+// Fix: after vendoring each package's full dist/esm tree, rewrite every
+// relative import/export specifier in the .js files to include an explicit
+// `.js` extension. Handles static `import ... from`, `export ... from`,
+// bare side-effect `import '...'`, and dynamic `import('...')`. Bare
+// specifiers (e.g. '@capacitor/core') are left untouched so they keep
+// resolving through the document import map.
+function needsJsExt(spec) {
+  return (
+    (spec.startsWith("./") || spec.startsWith("../")) &&
+    !/\.(mjs|cjs|js|json|css|wasm)$/.test(spec)
+  );
+}
+
+function rewriteRelativeSpecifiers(code) {
+  // Group 1 = everything up to and including the opening quote; Group 2 = the
+  // relative specifier; Group 3 = the closing quote. Covers:
+  //   from '...'            (static import / re-export)
+  //   import '...'          (side-effect import)
+  //   import('...')         (dynamic import; optional whitespace after `(`)
+  const patterns = [
+    /(\bfrom\s*['"])([^'"]+)(['"])/g,
+    /(\bimport\s+['"])([^'"]+)(['"])/g,
+    /(\bimport\s*\(\s*['"])([^'"]+)(['"])/g,
+  ];
+  let out = code;
+  for (const re of patterns) {
+    out = out.replace(re, (match, pre, spec, post) =>
+      needsJsExt(spec) ? `${pre}${spec}.js${post}` : match,
+    );
+  }
+  return out;
+}
+
+function rewriteVendoredTree(destDir) {
+  let rewrittenCount = 0;
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!full.endsWith(".js") || full.endsWith(".js.map")) continue;
+      const code = readFileSync(full, "utf8");
+      const rewritten = rewriteRelativeSpecifiers(code);
+      if (rewritten !== code) {
+        writeFileSync(full, rewritten, "utf8");
+        rewrittenCount++;
+      }
+    }
+  };
+  walk(destDir);
+  return rewrittenCount;
+}
+
 function vendorCapacitorPackages() {
   const imports = {};
   for (const pkg of CAPACITOR_PACKAGES) {
@@ -121,6 +190,10 @@ function vendorCapacitorPackages() {
     const srcDir = path.join(pkgDir, ...entryDir.split("/"));
     const destDir = path.join(WWW, "vendor", ...pkg.split("/"));
     cpSync(srcDir, destDir, { recursive: true });
+    const n = rewriteVendoredTree(destDir);
+    if (n > 0) {
+      step(`  ${pkg}: rewrote relative specifiers in ${n} .js file(s) to add .js extension`);
+    }
     imports[pkg] = `./vendor/${pkg}/${entryFile}`;
   }
   step(`vendored ${CAPACITOR_PACKAGES.length} @capacitor/* packages into www/vendor/`);
