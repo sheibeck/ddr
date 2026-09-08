@@ -1,0 +1,419 @@
+// engine/magic.js
+//
+// The magic domain (ENG-01, ENG-05) — spellcasting across every SPELLS kind,
+// potions, and scrolls. Ports mazeworld.html's castSpell/drinkPotion/
+// canRead/readScroll (lines 2483-2794), replacing every D()/pick()-backed
+// Math.random() draw with the injected engine rng (in the prototype's exact
+// consumption order, including its short-circuiting `&&` guards that only
+// sometimes roll — e.g. Noxious Vapor's per-foe d10, only rolled when the d6
+// came up 4), every `sp.dmg()` closure call with `rollDice(rng, sp.dmg)`
+// against the content module's plain dice-notation data, and every
+// say()/evt() narration call with a pushed `{type, ...}` event. No DOM, no
+// localStorage, no Math.random, no global S — every function here takes an
+// explicit `state` (already a fresh applyAction clone) and mutates it
+// directly, matching the applyAction seam.
+//
+// Offensive spells reuse combat.js's killFoe/liveFoes/afterPlayerAction —
+// engine/combat.js's own header already documents that its playerStrike/
+// foeTurn faithfully READ every field a spell can set (c.ward/c.regen/
+// c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
+// finally SETS them.
+
+import { skill, eff, canCast, canLearn, schoolBonus, schoolGate } from "./derived.js";
+import { rollDice } from "./dice.js";
+import { die } from "./death.js";
+import { liveFoes, killFoe, afterPlayerAction } from "./combat.js";
+import { maxCharges } from "./movement.js";
+import { GW, GH } from "./maze.js";
+import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
+
+// p.25: a non-thrown spell can be resisted by an intelligent target. These
+// kinds are immune to that resistance check — ports mazeworld.html's inline
+// array literal (line 2509) verbatim as a named set.
+const RESIST_IMMUNE_KINDS = new Set(["thrown", "ward", "might", "regen", "heal", "reveal", "foresee", "summon", "mirror"]);
+
+/**
+ * castSpell(state, idx, rng, events, now) — resolves SPELLS[idx] by kind.
+ * Ports mazeworld.html castSpell() (lines 2483-2672): the charge check,
+ * grimoire/school gating (skipped for a scroll-cast spell), the Apprentice's
+ * one-in-eight backfire, the intelligent-target resistance roll, and every
+ * spell kind's effect (heal/ward/might/status/thrown/reveal/mirror/stun/
+ * weaken/acid/quake/vapor/volley/petrify/insane/summon/turn/gate/senses/
+ * foresee/regen/death/stupid/blind/shrink). A bad `idx` (T-01-09a: no
+ * validated range check upstream) is a safe no-op.
+ */
+export function castSpell(state, idx, rng, events = [], now = Date.now) {
+  const sp = SPELLS[idx];
+  if (!sp) return events;
+  const c = state.c;
+  const C = state.combat;
+
+  if (maxCharges(c) - c.spellsUsed <= 0) {
+    events.push({ type: "noChargesLeft" });
+    return events;
+  }
+  if (!c.scrollCast && !canCast(state, sp)) {
+    if (!c.grimoire || !c.grimoire.includes(sp.n)) {
+      events.push({ type: "spellNotKnown", spell: sp.n });
+    } else if (sp.lvl > c.level) {
+      events.push({ type: "spellAboveLevel", spell: sp.n, need: sp.lvl, have: c.level });
+    } else {
+      events.push({ type: "spellSchoolLocked", spell: sp.n, school: sp.s, need: schoolGate(c.sub, sp.s), have: c.level });
+    }
+    return events;
+  }
+
+  c.spellsUsed++;
+  if (C) C.spellOpen = false;
+
+  // an Apprentice's spells go wrong one time in eight
+  if (c.sub === "Apprentice" && rng.d(8) === 1) {
+    events.push({ type: "spellBackfired", spell: sp.n });
+    if (sp.dmg && sp.kind === "thrown") {
+      const self = Math.ceil(rollDice(rng, sp.dmg) / 2);
+      c.wp -= self;
+      events.push({ type: "backfireSelfDamage", amount: self });
+      if (c.wp <= 0) {
+        die(state, "backfire", null, rng, events, now);
+        return events;
+      }
+    }
+    if (state.combat) afterPlayerAction(state, rng, events);
+    return events;
+  }
+
+  // p.25: a non-thrown spell can be resisted by an intelligent target
+  if (C && !RESIST_IMMUNE_KINDS.has(sp.kind)) {
+    const t = liveFoes(state)[0];
+    if (t && (t.intel ?? 0) >= 12) {
+      const r = rng.d(20);
+      if (r < t.intel) {
+        events.push({ type: "spellResisted", target: t.name, spell: sp.n, roll: r, intel: t.intel });
+        afterPlayerAction(state, rng, events);
+        return events;
+      }
+      events.push({ type: "resistFailed", target: t.name, roll: r });
+    }
+  }
+
+  if (sp.kind === "summon") {
+    const doubled = c.sub === "Summoner"; // a Summoner's creatures come doubled
+    const lvl = Math.min(5, c.level + (doubled ? 1 : 0));
+    if (doubled && rng.d(8) === 1) {
+      const hurt = lvl * lvl + rng.d(6);
+      c.wp -= hurt;
+      events.push({ type: "summonBackfired", amount: hurt });
+      if (c.wp <= 0) {
+        die(state, "summon", null, rng, events, now);
+        return events;
+      }
+    } else {
+      const ally = {
+        lvl,
+        rounds: (doubled ? 2 : 1) * rng.d(4) + 2,
+        name: rng.pick(["A horned thing", "Something with too many arms", "A shape that hurts to look at", "A tall grey silence"]),
+      };
+      if (C) {
+        C.ally = ally;
+        events.push({ type: "allySummoned", name: ally.name, rounds: ally.rounds, lvl: ally.lvl });
+      } else {
+        c.pendingAlly = ally;
+        events.push({ type: "allyPending", name: ally.name, rounds: ally.rounds, lvl: ally.lvl });
+      }
+    }
+  } else if (sp.kind === "stun") {
+    const n = rng.d(6) * Math.max(1, c.level - sp.lvl);
+    const affected = liveFoes(state).slice(0, n);
+    affected.forEach((f) => {
+      f.asleep = Math.max(f.asleep, rng.d(4));
+    });
+    events.push({ type: "stunned", count: Math.min(n, liveFoes(state).length) });
+  } else if (sp.kind === "weaken") {
+    if (C) {
+      C.weakened = true;
+      C.foeToHitPenalty = 3;
+    }
+    events.push({ type: "weakened" });
+  } else if (sp.kind === "stupid") {
+    const t = C && liveFoes(state)[0];
+    if (t) {
+      t.stupid = true;
+      t.asleep = Math.max(t.asleep, rng.d(10));
+      events.push({ type: "stupefied", target: t.name });
+    }
+  } else if (sp.kind === "blind") {
+    const t = C && C.foes[C.target];
+    if (t && t.alive) {
+      t.blind = true;
+      events.push({ type: "blinded", target: t.name });
+    }
+  } else if (sp.kind === "shrink") {
+    const n = rng.d(6);
+    const affected = liveFoes(state).slice(0, n);
+    affected.forEach((f) => {
+      f.wp = Math.ceil(f.wp / 2);
+      f.maxWP = Math.ceil(f.maxWP / 2);
+      f.shrunk = true;
+    });
+    events.push({ type: "shrunk", count: affected.length });
+  } else if (sp.kind === "acid") {
+    const t = C && C.foes[C.target];
+    if (t && t.alive) {
+      t.acid = { rounds: rng.d(6), dmg: sp.dmg };
+      events.push({ type: "acidApplied", target: t.name, rounds: t.acid.rounds });
+    }
+  } else if (sp.kind === "quake") {
+    const mult = Math.max(1, c.level - sp.lvl);
+    const d = rollDice(rng, sp.dmg) * mult;
+    liveFoes(state).forEach((f) => {
+      f.wp -= d;
+      if (f.wp <= 0) killFoe(state, f, rng, events);
+    });
+    events.push({ type: "earthquake", amount: d });
+    if (!c.ward) {
+      const self = Math.ceil(d / 2);
+      c.wp -= self;
+      events.push({ type: "earthquakeSelfDamage", amount: self });
+      if (c.wp <= 0) {
+        die(state, "quake", null, rng, events, now);
+        return events;
+      }
+    }
+  } else if (sp.kind === "vapor") {
+    const r = c.level >= 5 ? 4 : rng.d(6);
+    events.push({ type: "vaporRolled", roll: r });
+    liveFoes(state).forEach((f) => {
+      if (r === 4 && rng.d(10) !== 1) {
+        f.wp = 0;
+        killFoe(state, f, rng, events);
+      } else {
+        f.asleep = Math.max(f.asleep, rng.d(6) + 2);
+      }
+    });
+  } else if (sp.kind === "volley") {
+    const n = rng.d(8);
+    const foes = liveFoes(state);
+    let tot = 0;
+    for (let k = 0; k < n && foes.length; k++) {
+      const t = foes[k % foes.length];
+      if (!t.alive) continue;
+      const d = rollDice(rng, sp.dmg);
+      t.wp -= d;
+      tot += d;
+      if (t.wp <= 0) killFoe(state, t, rng, events);
+    }
+    events.push({ type: "volley", rolls: n, totalDamage: tot });
+  } else if (sp.kind === "petrify") {
+    const t = C && C.foes[C.target];
+    if (t && t.alive) {
+      t.alive = false;
+      t.frozen = true;
+      t.wp = 0;
+      events.push({ type: "petrified", target: t.name });
+    }
+  } else if (sp.kind === "turn") {
+    if (C && C.type === "Walking Dead") {
+      const turned = liveFoes(state).filter((f) => f.lvl <= c.level);
+      turned.forEach((f) => {
+        f.alive = false;
+        f.turned = true;
+        f.wp = 0;
+      });
+      events.push({ type: "walkingDeadTurned", count: turned.length });
+      liveFoes(state).forEach((f) => {
+        f.fixated = true;
+      });
+    } else {
+      events.push({ type: "nothingToTurn" });
+    }
+  } else if (sp.kind === "gate") {
+    if (C && (C.type === "Walking Dead" || C.type === "Demons")) {
+      const gone = liveFoes(state).slice(0, rng.d(6));
+      gone.forEach((f) => {
+        f.alive = false;
+        f.turned = true;
+        f.wp = 0;
+      });
+      events.push({ type: "planeGated", count: gone.length });
+    } else {
+      events.push({ type: "gateRefused" });
+    }
+  } else if (sp.kind === "senses") {
+    c.senses = 1;
+    events.push({ type: "sensesGained" });
+  } else if (sp.kind === "reveal") {
+    const f = state.floor;
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (!f.g[y][x].wall) f.g[y][x].seen = true;
+    events.push({ type: "detectMagic" });
+  } else if (sp.kind === "foresee") {
+    c.foresight = true;
+    const type = rng.pick(ENC_TYPES);
+    events.push({ type: "senseDanger", nextEncounter: type });
+  } else if (sp.kind === "mirror") {
+    c.mirror = rng.d(6);
+    events.push({ type: "mirrorSelf", rounds: c.mirror });
+  } else if (sp.kind === "ward") {
+    c.ward = { pool: sp.pool, rounds: sp.rounds, reflect: !!sp.reflect, name: sp.n };
+    events.push({ type: "wardRaised", spell: sp.n, pool: sp.pool, reflect: !!sp.reflect });
+  } else if (sp.kind === "might") {
+    c.might = rollDice(rng, sp.dmg);
+    if (!c.strengthBoost) {
+      c.strengthBoost = c.maxWP;
+      c.maxWP += c.strengthBoost;
+      c.wp += c.strengthBoost;
+    }
+    events.push({ type: "strengthCast", might: c.might });
+  } else if (sp.kind === "regen") {
+    c.regen = true;
+    events.push({ type: "regenerationCast" });
+  } else if (sp.kind === "insane") {
+    const t = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : liveFoes(state)[0];
+    if (!t) {
+      events.push({ type: "insaneNoTarget" });
+    } else {
+      const r = rng.d(6);
+      events.push({ type: "insaneRolled", target: t.name, roll: r });
+      if (r === 1) {
+        t.wp = 0;
+        killFoe(state, t, rng, events);
+      } else if (r === 2) {
+        const o = liveFoes(state).find((f) => f !== t);
+        if (o) {
+          const d = t.lvl * t.lvl + rng.d(6);
+          o.wp -= d;
+          events.push({ type: "insaneStruckAlly", target: o.name, dmg: d });
+          if (o.wp <= 0) killFoe(state, o, rng, events);
+        }
+      } else if (r === 3 || r === 6) {
+        t.alive = false;
+        t.wp = 0;
+        t.fled = true;
+        events.push({ type: "insaneFled", target: t.name });
+      } else if (r === 4) {
+        t.asleep = rng.d(4);
+      } else if (r === 5) {
+        t.frenzied = true;
+      }
+    }
+  } else if (sp.kind === "heal") {
+    let amt = rollDice(rng, sp.dmg) + (c.sub === "Cleric" ? 3 : 0);
+    if (RACES[c.race].heal2x) amt *= 2;
+    c.wp = Math.min(c.maxWP, c.wp + amt);
+    events.push({ type: "healed", amount: amt, spell: sp.n });
+  } else if (sp.kind === "death") {
+    if (c.wp <= 26) {
+      events.push({ type: "deathSpellTooWeak" });
+      c.spellsUsed--;
+      return events;
+    }
+    c.wp -= 25;
+    const t = liveFoes(state)[0];
+    events.push({ type: "deathCast" });
+    if (t) {
+      t.wp = 0;
+      killFoe(state, t, rng, events);
+    }
+  } else if (sp.kind === "status") {
+    const t = C && liveFoes(state)[0];
+    if (t) {
+      t.asleep = rng.d(4);
+      events.push({ type: "dozed", target: t.name, rounds: t.asleep });
+    }
+  } else {
+    // thrown: d8, 4 to hit, plus the offensive bonus from the subclass chart
+    const bonus = schoolBonus(c.sub, sp.s) + eff(c, "throw");
+    const targets = sp.n === "Lightning" ? liveFoes(state) : [C ? C.foes[C.target] : null].filter(Boolean);
+    if (!targets.length) {
+      events.push({ type: "nothingToThrowAt" });
+      return events;
+    }
+    for (const t of targets) {
+      if (!t.alive) continue;
+      const freeze = sp.n === "Freeze";
+      const dieN = freeze ? 10 : 8;
+      const target = freeze ? 6 : 4;
+      const roll = rng.d(dieN);
+      events.push({ type: "spellThrown", spell: sp.n, target: t.name, roll, need: target, bonus });
+      if (roll - bonus <= target) {
+        // p.26: area, duration and effect are multiplied by (caster level − spell level)
+        const mult = Math.max(1, c.level - sp.lvl);
+        const dmg = rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg");
+        t.wp -= dmg;
+        events.push({ type: "spellHit", target: t.name, dmg, mult });
+        if (freeze) {
+          t.alive = false;
+          t.frozen = true;
+          t.wp = 0;
+          events.push({ type: "frozenSolid", target: t.name });
+          continue;
+        }
+        if (t.wp <= 0) {
+          killFoe(state, t, rng, events);
+          continue;
+        }
+      } else {
+        events.push({ type: "spellMissed", target: t.name });
+      }
+    }
+  }
+  if (state.combat) afterPlayerAction(state, rng, events);
+  return events;
+}
+
+/**
+ * drinkPotion(state, rng, events) — consumes one carried healing potion.
+ * Ports mazeworld.html drinkPotion() (lines 2674-2682). A no-op with zero
+ * potions on hand.
+ */
+export function drinkPotion(state, rng, events = []) {
+  const c = state.c;
+  if (c.potions <= 0) return events;
+  c.potions--;
+  let amt = 2 * rng.d(10) + 5;
+  if (RACES[c.race].heal2x) amt *= 2;
+  c.wp = Math.min(c.maxWP, c.wp + amt);
+  events.push({ type: "potionDrunk", amount: amt, remaining: c.potions });
+  if (state.combat) afterPlayerAction(state, rng, events);
+  return events;
+}
+
+/**
+ * canRead(state) — can this character make use of a scroll at all? Ports
+ * mazeworld.html canRead() (lines 2772-2775). A Pilfer never gets to use a
+ * magic item; everyone else needs to be a Magic User or carry Runes/Signs.
+ */
+export function canRead(state) {
+  const c = state.c;
+  if (c.sub === "Pilfer") return false;
+  return c.cls === "Magic User" || skill(c, "Runes/Signs");
+}
+
+/**
+ * readScroll(state, rng, events) — unrolls one carried scroll. Ports
+ * mazeworld.html readScroll() (lines 2776-2794): a random spell (capped by
+ * floor depth), transferred straight into a Magic User's grimoire if it's
+ * learnable and not already known, otherwise cast for free (ignoring the
+ * caster's own charge economy and grimoire/level gates via `scrollCast`).
+ */
+export function readScroll(state, rng, events = []) {
+  const c = state.c;
+  if (!c.scrolls || !canRead(state)) return events;
+  c.scrolls--;
+  const options = SPELLS.filter((sp) => sp.lvl <= Math.min(5, state.floor.depth + 1));
+  const sp = rng.pick(options);
+  events.push({ type: "scrollRead", spell: sp.n });
+  // "Scrolls contain spells; transfer to grimoire erases scroll."
+  if (c.cls === "Magic User" && canLearn(c.sub, sp) && sp.lvl <= c.level && !c.grimoire.includes(sp.n)) {
+    c.grimoire.push(sp.n);
+    events.push({ type: "scrollCopiedToGrimoire", spell: sp.n });
+    return events;
+  }
+  events.push({ type: "scrollCast", spell: sp.n });
+  const saved = c.spellsUsed;
+  c.spellsUsed = 0;
+  c.scrollCast = true; // a scroll pays for itself and ignores your book
+  castSpell(state, SPELLS.indexOf(sp), rng, events);
+  c.spellsUsed = saved;
+  c.scrollCast = false;
+  return events;
+}

@@ -18,6 +18,7 @@ import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
 import { move, makeCamp } from "./movement.js";
 import { playerStrike, flee, parley, sing } from "./combat.js";
+import { castSpell, drinkPotion, readScroll } from "./magic.js";
 
 /**
  * applyAction(state, action) — the pure dispatcher.
@@ -63,9 +64,18 @@ export function applyAction(state, action) {
     case "sing":
       sing(next, rng, events);
       break;
-    // castSpell/drinkPotion/readScroll/buyItem/leaveStore/useItem handlers
-    // are added by their slice plans and will dispatch to their module here,
-    // each mutating `next` and pushing events.
+    case "castSpell":
+      castSpell(next, action.idx, rng, events);
+      break;
+    case "drinkPotion":
+      drinkPotion(next, rng, events);
+      break;
+    case "readScroll":
+      readScroll(next, rng, events);
+      break;
+    // buyItem/leaveStore/useItem handlers are added by their slice plans and
+    // will dispatch to their module here, each mutating `next` and pushing
+    // events.
     default:
       break;
   }
