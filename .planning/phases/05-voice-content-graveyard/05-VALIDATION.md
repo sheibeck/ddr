@@ -38,7 +38,7 @@ created: 2026-09-08
 | Requirement | Criterion | Test Type | Automated Command | Wave 0 | Status |
 |-------------|-----------|-----------|-------------------|--------|--------|
 | VOX-01 | Data-driven voice generator keyed to structured events (category mapping), replaces hardcoded strings | unit | `node --test test/voice/generator.test.js` | ❌ W0 | ⬜ |
-| VOX-01 | EVERY one of the 136 engine event types is deliberately mapped to a voice category (no silent default fall-through) | coverage test | `node --test test/voice/event-coverage.test.js` (enumerate engine event-type literals; assert each has a mapping) | ❌ W0 | ⬜ |
+| VOX-01 | EVERY one of the 158 engine event types is deliberately mapped to a voice category (no silent default fall-through) | coverage test | `node --test test/voice/event-coverage.test.js` (enumerate engine event-type literals; assert each has a mapping) | ❌ W0 | ⬜ |
 | VOX-01 | Narration is deterministic via a PRESENTATION-LOCAL rng (seed/steps/event-derived); does NOT read/advance GameState.rngState | determinism | `node --test test/voice/voice-determinism.test.js` + existing `test/parity/` `test/determinism/` `test/roundtrip/` stay green | ❌ W0 | ⬜ |
 | VOX-02 | Exhaustive family-friendly safety scan of the CLOSED variant corpus (every variant × closed-vocab token), word-boundary + allowlist (Scunthorpe-safe) | exhaustive scan | `node --test test/voice/safety-scan.test.js` | ❌ W0 | ⬜ |
 | VOX-03 | Graveyard/run-history screen reads persisted tombstones from window.mzStorage ON OPEN (re-fetch, not a stale in-memory mirror) and renders name/class/race/cause/depth/epitaph | unit + adapter | `node --test test/voice/graveyard.test.js` | ❌ W0 | ⬜ |
@@ -48,7 +48,7 @@ created: 2026-09-08
 
 ## Wave 0 Requirements
 - [ ] `test/voice/` tree established.
-- [ ] `test/voice/event-coverage.test.js` — enumerate the ~136 engine event-type string literals from `engine/*.js` and assert each maps to a declared voice category (deliberate mapping; a new/unmapped type FAILS the test — no silent default).
+- [ ] `test/voice/event-coverage.test.js` — enumerate the ~158 engine event-type string literals from `engine/*.js` and assert each maps to a declared voice category (deliberate mapping; a new/unmapped type FAILS the test — no silent default).
 - [ ] `test/voice/safety-scan.test.js` — the EXHAUSTIVE scan (render the closed corpus, scan against the vendored wordlist with word-boundary + allowlist). Standing guardrail; stays green as content grows.
 - [ ] `test/voice/voice-determinism.test.js` — same seed/steps/event → same narration; assert narration never mutates `GameState.rngState` (parity-safe).
 - [ ] Vendored, zero-dependency profanity/gore/slur/adult **wordlist data file** (small, self-maintained; if sourced from LDNOOBW, verify CC BY 4.0 license + include attribution) — NO npm runtime dependency.
