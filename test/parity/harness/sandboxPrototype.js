@@ -1,6 +1,6 @@
 // test/parity/harness/sandboxPrototype.js
 //
-// node:vm loader that runs the frozen prototype (test/parity/prototype-master.js)
+// node:vm loader that runs the frozen prototype (test/parity/prototype-master.js.txt)
 // headless, with a minimal hand-written DOM/localStorage/canvas stub surface and
 // a seeded Math.random (makeSeededMathRandom) so the prototype draws the exact
 // same roll sequence the extracted engine will.
@@ -16,7 +16,10 @@ import { fileURLToPath } from "node:url";
 import { makeSeededMathRandom } from "./seedableMathRandom.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROTOTYPE_MASTER_PATH = path.join(__dirname, "..", "prototype-master.js");
+// Named `.js.txt`, not `.js` — see the header comment in that file for why
+// (Node's bare `node --test` sweeps every .js/.cjs/.mjs file under any
+// directory named `test` as a test file; this file is data, not a test).
+const PROTOTYPE_MASTER_PATH = path.join(__dirname, "..", "prototype-master.js.txt");
 
 /**
  * makeFakeElement(tag) — a generic DOM-element stand-in covering the surface
@@ -213,7 +216,7 @@ export function loadPrototypeSandbox({ seed } = {}) {
   sandbox.Math.random = makeSeededMathRandom(seed ?? 1);
 
   const context = vm.createContext(sandbox);
-  vm.runInContext(prototypeSource, context, { filename: "prototype-master.js" });
+  vm.runInContext(prototypeSource, context, { filename: "prototype-master.js.txt" });
 
   // mazeworld.html line 1036: `let S = null;` is a top-level `let`, so it is
   // NOT reflected as a property on the vm context's global object the way

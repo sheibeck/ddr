@@ -1,7 +1,7 @@
 // test/parity/harness/seedableMathRandom.js
 //
 // A mulberry32-backed replacement for Math.random(), for injecting into the
-// node:vm sandbox that runs the frozen prototype (test/parity/prototype-master.js).
+// node:vm sandbox that runs the frozen prototype (test/parity/prototype-master.js.txt).
 //
 // This deliberately duplicates the mulberry32 bit-mixing algorithm from
 // engine/rng.js (mulberry32) rather than importing it, so that a faithful

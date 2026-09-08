@@ -1,4 +1,4 @@
-// test/parity/prototype-master.js
+// test/parity/prototype-master.js.txt
 //
 // FROZEN GOLDEN MASTER (ENG-05) — DO NOT EDIT.
 //
@@ -18,6 +18,18 @@
 // as plain text via node:fs and executed with vm.runInContext() by
 // test/parity/harness/sandboxPrototype.js. Do not add import/export syntax
 // here; doing so would no longer be a faithful extraction of the original.
+//
+// Named `.js.txt` (not `.js`) deliberately: Node's built-in test runner
+// (`node --test`, run bare per package.json's "test" script) treats EVERY
+// `.js`/`.cjs`/`.mjs` file inside any directory literally named `test`
+// (recursively) as a test file to execute — with no ignore/exclude glob for
+// this convention. This file's top-level code references `document`,
+// `localStorage`, `Math.random`, etc. that don't exist in a plain Node
+// context, so under a `.js` extension Node's bare test-file sweep would
+// execute it directly and crash the whole suite (discovered by actually
+// running `node --test` — Rule 3 auto-fix, ENG-05 gate). The `.txt`
+// extension excludes it from that sweep while sandboxPrototype.js still
+// reads its content correctly via fs.readFileSync regardless of extension.
 //
 // Regenerate ONLY if the prototype's actual game rules change (never for
 // refactors elsewhere in the repo): re-run the extraction that pulled the
