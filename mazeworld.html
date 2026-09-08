@@ -8,7 +8,18 @@
 <meta property="og:description" content="A solo roguelike dungeon-crawler. Random hero. Random dungeon. Random death.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
-<style>*{box-sizing:border-box}html{color-scheme:dark}body{margin:0}[hidden]{display:none!important}</style>
+<style>*{box-sizing:border-box}html{color-scheme:dark}body{margin:0}[hidden]{display:none!important}
+/* Device-review round 5 ("Global tap-highlight fix — root cause of the
+   recurring white flash"): matches design/Mazeworld Mobile.dc.html's own
+   `*{-webkit-tap-highlight-color:transparent}` reset. Android's System
+   WebView paints its own translucent white/grey highlight on ANY tapped
+   element the instant a touch registers — independent of and BEFORE any
+   CSS :active/:hover rule applies — so per-button :active color overrides
+   (the .mw-chip/.dpad/#btn-camp treatments already in this file) were never
+   enough on their own; this app-wide reset removes the native overlay so
+   only the deliberate CSS pressed-states below are ever visible. */
+*{-webkit-tap-highlight-color:transparent}
+</style>
 <title>Delve, Die, Repeat</title>
 <style>
 /* Self-hosted fonts (04-05) — a paid, fully-offline app must issue zero
@@ -291,6 +302,10 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
   transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow);
   background:var(--ditto);color:var(--paper);
 }
+/* DR5: same generic-hover-wins-on-specificity bug as .mw-chip/#btn-camp —
+   the D-pad cells had no scoped :hover, so a sticky-hover tap fell through
+   to the generic button rule. Neutralize hover to the resting D-pad look. */
+.dpad button:hover:not(:disabled){background:var(--paper-3);color:var(--ink)}
 
 button{
   font-family:var(--disp);font-size:13px;letter-spacing:.06em;
@@ -299,8 +314,21 @@ button{
   padding:14px 16px;cursor:pointer;min-height:48px;
   box-shadow:0 4px 0 var(--mw-btn-shadow);
   transition:transform .06s ease, box-shadow .06s ease, background .12s ease;
+  /* DR5: every button (D-pad, chips, camp, combat, nav tabs) is an
+     interactive control, not selectable text — pairs with the app-wide
+     tap-highlight reset above so a press never shows a text-selection
+     handle/flash on Android either. */
+  user-select:none;-webkit-user-select:none;
 }
-button:hover:not(:disabled){background:#F7F1E2}
+/* DR5: this was a leftover light-theme value (#F7F1E2, a warm parchment
+   white) from before the dark "torch-lit ledger" reskin (04-05) — on
+   Android's WebView a tap can leave :hover "stuck" after touchend (sticky
+   hover), so ANY plain button without its own higher-specificity :hover
+   override (MOVE ON, Clear save, the title-screen ENTER/RESUME, etc.) would
+   flash/hold this near-white background. Repointed to the dark theme's own
+   panel tone so a stuck hover reads as a subtle highlight, never a white
+   flash. */
+button:hover:not(:disabled){background:var(--paper-3)}
 button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow)}
 button:focus-visible{outline:2px solid var(--ditto);outline-offset:2px}
 button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
@@ -308,6 +336,12 @@ button.primary{background:var(--ditto);color:var(--paper);border-color:var(--dit
 button.primary:hover:not(:disabled){background:var(--ditto-2)}
 button.primary:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 button.danger{border-color:var(--stamp);color:var(--stamp)}
+/* DR5: same generic-hover-wins-on-specificity bug — .danger (the in-combat
+   Flee/Withdraw button) had no scoped hover/active, so it fell through to
+   the generic rules. Pressed state uses the danger panel fill (red-on-dark,
+   never white), consistent with .mw-danger-btn's own darker-fill press. */
+button.danger:hover:not(:disabled){background:var(--paper);color:var(--stamp)}
+button.danger:active:not(:disabled){background:var(--mw-danger-panel);color:var(--stamp);box-shadow:0 1px 0 var(--mw-btn-shadow)}
 /* DR2 "Taller buttons": .small used to be genuinely tiny (5px/9px padding,
    10.5px type) — MAKE CAMP, MOVE ON, Clear save/Clear the graveyard, and the
    spell-menu buttons all use this class. Bumped to a still-visually-
@@ -567,7 +601,19 @@ html,body{height:100%}
   border:0;border-top:3px solid transparent;border-radius:0;box-shadow:none;
   cursor:pointer;
 }
-.mw-tab:active:not(:disabled){transform:none;box-shadow:none}
+/* DR5: an explicit gold-on-dark pressed state (was transform/shadow-only,
+   relying on the .active class alone) — matches the mock's selected-tab
+   treatment so a tap on an INACTIVE tab never has a moment where only the
+   browser's own tap feedback (now suppressed above) would have shown. */
+.mw-tab:active:not(:disabled){transform:none;box-shadow:none;background:#241d12;color:var(--ditto)}
+/* DR5: scoped :hover overrides (same generic-hover-wins-on-specificity bug
+   as .mw-chip/#btn-camp/.dpad button above) — an inactive tab must fall
+   back to its own muted resting look, not the generic panel-tone hover,
+   and the SELECTED tab must stay gold even while a sticky hover lingers on
+   it (a plain `.mw-tab:hover` alone would be outranked by neither rule
+   without this second, higher-specificity `.active` variant). */
+.mw-tab:hover:not(:disabled){background:transparent;color:#8f856f}
+.mw-tab.active:hover:not(:disabled){background:#241d12;color:var(--ditto)}
 /* DR2 "Bottom-nav active highlight -> match the mock": gold text + a gold
    top-border indicator (design/Mazeworld Mobile.dc.html's `t.style`/`t.dot`
    — `color: on ? '#e8c97a' : '#8f856f'`, `background: on ? '#241d12' :
