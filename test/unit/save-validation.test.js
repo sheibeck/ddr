@@ -15,6 +15,8 @@ import url from "node:url";
 
 import { newRun } from "../../engine/state.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
+import { die } from "../../engine/death.js";
+import { makeRng } from "../../engine/rng.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -128,6 +130,34 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
   assert.equal(state.store, null);
   assert.equal(state.beats, null);
   assert.deepStrictEqual(state.c, oldSave.c);
+});
+
+// MD-01 regression: die()/winGame() set state.deathAt/lastWords on a
+// terminal run, and serializeRun() preserves them (it spreads the full
+// state) — but the save/load round-trip (validateSave -> rehydrate) used to
+// silently drop both. A reload of a dead run's save must keep its
+// time-of-death and "last words".
+test("MD-01: a dead run's deathAt/lastWords survive serializeRun -> validateSave -> rehydrate", () => {
+  const state = newRun(1);
+  const rng = makeRng(state.rngState);
+  die(state, "starve", null, rng, [], () => 998877);
+  state.rngState = rng.getState();
+
+  const json = JSON.stringify(serializeRun(state));
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+
+  const rehydrated = rehydrate(check.value);
+  assert.equal(rehydrated.deathAt, 998877);
+  assert.deepStrictEqual(rehydrated.lastWords, state.lastWords);
+});
+
+test("MD-01: a fresh (non-terminal) run's rehydrated state carries no spurious deathAt/lastWords keys", () => {
+  const original = newRun(2);
+  const check = validateSave(JSON.stringify(serializeRun(original)));
+  const rehydrated = rehydrate(check.value);
+  assert.ok(!("deathAt" in rehydrated), "a fresh run must not gain a deathAt key");
+  assert.ok(!("lastWords" in rehydrated), "a fresh run must not gain a lastWords key");
 });
 
 test("validateSave defaults day/steps when missing or non-numeric", () => {

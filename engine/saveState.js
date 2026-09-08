@@ -101,22 +101,27 @@ export function validateSave(raw, options = {}) {
   const seed = typeof obj.seed === "number" ? obj.seed : freshSeed;
   const rngState = typeof obj.rngState === "number" ? obj.rngState : makeRng(seed).getState();
 
-  return {
-    ok: true,
-    value: {
-      version: STATE_VERSION,
-      seed,
-      rngState,
-      c: obj.c,
-      floor: obj.floor,
-      day,
-      steps,
-      dead: !!obj.dead,
-      won: !!obj.won,
-      deathNote: obj.deathNote || "",
-      epitaph: obj.epitaph || "",
-    },
+  const value = {
+    version: STATE_VERSION,
+    seed,
+    rngState,
+    c: obj.c,
+    floor: obj.floor,
+    day,
+    steps,
+    dead: !!obj.dead,
+    won: !!obj.won,
+    deathNote: obj.deathNote || "",
+    epitaph: obj.epitaph || "",
   };
+  // MD-01: pass deathAt/lastWords through the validated value too, so a
+  // terminal (dead/won) run's real save/load path — validateSave then
+  // rehydrate() — doesn't lose them even though rehydrate() alone now
+  // preserves them when present on its input.
+  if (obj.deathAt !== undefined) value.deathAt = obj.deathAt;
+  if (obj.lastWords !== undefined) value.lastWords = obj.lastWords;
+
+  return { ok: true, value };
 }
 
 /**
@@ -126,7 +131,7 @@ export function validateSave(raw, options = {}) {
  * load() never resumed mid-combat or mid-store either).
  */
 export function rehydrate(obj) {
-  return {
+  const state = {
     version: STATE_VERSION,
     seed: obj.seed,
     rngState: obj.rngState,
@@ -142,4 +147,12 @@ export function rehydrate(obj) {
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
+  // MD-01: die()/winGame() also set deathAt/lastWords on a terminal run, and
+  // serializeRun() (which spreads the FULL state) preserves them — round-trip
+  // them here too rather than silently dropping a dead/won run's time-of-death
+  // and "last words" on reload. Only added when present so a save that never
+  // reached a terminal state doesn't gain spurious `undefined` fields.
+  if (obj.deathAt !== undefined) state.deathAt = obj.deathAt;
+  if (obj.lastWords !== undefined) state.lastWords = obj.lastWords;
+  return state;
 }
