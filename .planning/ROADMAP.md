@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A serialize/rehydrate round-trip test suite passes for full game state at multiple points in a run, and stays green as work continues into later phases.
   5. A full playthrough driven through the new engine (via the existing browser harness) matches the original prototype's behavior for the same inputs — all 3 classes / 24 subclasses / 6 races / 31 spells / ~45 creatures / items / economy functioning with no regressions.
 
-**Plans**: 7/10 plans executed
+**Plans**: 8/10 plans executed
 
 - [x] 01-01-PLAN.md — Scaffold + seeded RNG + dice resolver + static determinism/purity guards
 - [x] 01-02-PLAN.md — Content extraction: all rules tables → pure data + dice-notation
@@ -45,7 +45,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 01-05-PLAN.md — Engine core (applyAction + validation) + character gen, derived numbers & leveling
 - [x] 01-06-PLAN.md — Items/treasure & death/graveyard helpers + fail-closed save validation
 - [x] 01-07-PLAN.md — Movement slice + round-trip guardrail + browser adapter (walking skeleton)
-- [ ] 01-08-PLAN.md — Combat slice (encounters, strikes, foe turns, flee/parley/sing)
+- [x] 01-08-PLAN.md — Combat slice (encounters, strikes, foe turns, flee/parley/sing)
 - [ ] 01-09-PLAN.md — Magic, potions & scrolls slice
 - [ ] 01-10-PLAN.md — Economy/store (closures→data) + encounters/traps/chests + full-suite green
 
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Extraction & Determinism | 7/10 | In Progress|  |
+| 1. Engine Extraction & Determinism | 8/10 | In Progress|  |
 | 2. Android Packaging & Native Persistence | 0/TBD | Not started | - |
 | 3. Endless Descent & Difficulty Balance | 0/TBD | Not started | - |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Not started | - |
