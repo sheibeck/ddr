@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-09-08T02:32:59.028Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-09-08T02:48:37.675Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [██░░░░░░░░] 20%
 |------|----------|-------|-------|
 | Phase 01 P01 | 3min | 3 tasks | 11 files |
 | Phase 01 P02 | 6min | 3 tasks | 21 files |
+| Phase 01 P03 | 45min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase ?]: SPELLS has 32 entries in the actual prototype (not the plan's illustrative 31); content-tables test asserts the real count
 - [Phase ?]: WEAPON_BONUS_TABLE placed in content/misc-tables.js per the plan's authoritative artifacts mapping
 - [Phase ?]: CAUSE_TEXT death-note closures converted to plain {token} string templates plus a CAUSE_TEXT_TOKENS data map recording token names per cause
+- [Phase ?]: Renamed test/parity/prototype-master.js to .js.txt to avoid node --test's blanket directory-based auto-discovery sweep crashing the suite (Rule 3 fix).
+- [Phase ?]: seedableMathRandom.js duplicates engine/rng.js's mulberry32 bit-mixing inline (verified byte-identical via sequence comparison) rather than importing it, per plan's either/or guidance.
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -107,6 +110,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T02:32:59.007Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-09-08T02:48:37.649Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
