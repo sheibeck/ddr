@@ -13,7 +13,7 @@ Mazeworld ports a complete, proven ~3,300-line vanilla-JS/HTML/canvas roguelike 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Engine Extraction & Determinism** - The full ruleset runs behind a single deterministic, serializable `applyAction` contract with zero gameplay regressions
+- [x] **Phase 1: Engine Extraction & Determinism** - The full ruleset runs behind a single deterministic, serializable `applyAction` contract with zero gameplay regressions ✓ (285/285 tests, 2026-09-08)
 - [ ] **Phase 2: Android Packaging & Native Persistence** - The game installs as a native Android app that reliably autosaves and resumes on a real device
 - [ ] **Phase 3: Endless Descent & Difficulty Balance** - Players descend an endless, fairly-paced maze instead of a fixed 5-floor Gate
 - [ ] **Phase 4: Mobile Presentation, Controls & Onboarding** - The game feels native and approachable on a phone, with touch controls, readable UI, and in-context teaching
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Extraction & Determinism | 10/10 | In Progress|  |
+| 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 0/TBD | Not started | - |
 | 3. Endless Descent & Difficulty Balance | 0/TBD | Not started | - |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Not started | - |
