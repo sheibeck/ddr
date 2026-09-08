@@ -10,3 +10,5 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+.planning/research/.cache/
