@@ -287,16 +287,24 @@ test("move: dot/trap/chest feature tiles are consumed and emit a pending* stub e
 
 // --- day cycle --------------------------------------------------------
 
-test("newDay: a fed character heals and rolls the wandering-monster check without starting combat", () => {
+test("newDay: a fed character heals, and a wandering-monster hit starts a forced-random encounter (01-08)", () => {
   const state = fixedState();
-  // heal = d(10)=5 + 2*level(1) = 7; then 8 d20 monster-check draws, one hits.
-  const rng = fakeRng([5, 1, 2, 3, 4, 5, 6, 7, 8]);
+  // heal = d(10)=5 + 2*level(1) = 7; then 8 d20 monster-check draws, one
+  // hits; startCombat then draws the single foe's level (d4) and initiative
+  // (2x d20: mine=15 >= theirs=10, so the player moves first and startCombat
+  // does not also need to resolve a foeTurn). ENC_TYPES/roster picks use
+  // fakeRng's default pick => arr[0] ("Beasts" -> level-1 roster's first
+  // entry, "Bat/Rat").
+  const rng = fakeRng([5, 1, 2, 3, 4, 5, 6, 7, 8, 3, 15, 10]);
   const events = newDay(state, false, rng, []);
   assert.equal(state.day, 2);
   assert.equal(state.c.wp, 55, "already at maxWP, so the +7 heal is clamped");
   assert.equal(state.c.rations, 5, "one ration consumed");
   assert.ok(events.some((e) => e.type === "wanderingMonster"));
-  assert.equal(state.combat, null, "combat start is deferred to the combat slice (01-08)");
+  assert.ok(events.some((e) => e.type === "encounterStarted"));
+  assert.ok(state.combat, "a wandering-monster hit starts combat (01-08)");
+  assert.equal(state.combat.foes.length, 1, "a wandering encounter is always a single foe");
+  assert.equal(state.combat.foes[0].name, "Bat/Rat");
 });
 
 test("newDay: starving with no rations kills via die('starve') when wp hits 0", () => {

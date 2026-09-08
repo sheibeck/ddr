@@ -24,6 +24,7 @@ import { skill, skillTier, upkeep, eff } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
+import { startCombat } from "./combat.js";
 import { moved, floorChanged, won } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES } from "../content/index.js";
 
@@ -192,9 +193,8 @@ export function move(state, dir, rng, events = [], now = Date.now) {
  * newDay(state, camped, rng, events, now) — ports mazeworld.html newDay()
  * (lines 1717-1772). Advances the day counter, resolves upkeep/rations
  * (starving into `die("starve")` when unfed and out of wp), rests, and rolls
- * the 8-hour wandering-monster check. Starting combat from that check is
- * deferred to the combat slice (01-08); this plan only records the roll via
- * a "wanderingMonster" event.
+ * the 8-hour wandering-monster check, starting a forced-random encounter via
+ * combat.js's startCombat when at least one hour is disturbed (01-08).
  */
 export function newDay(state, camped, rng, events = [], now = Date.now) {
   const c = state.c;
@@ -269,8 +269,7 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   for (let h = 0; h < 8; h++) if (rng.d(20) === 1) woke++;
   if (woke) {
     events.push({ type: "wanderingMonster", hours: woke });
-    // Starting combat from a wandering-monster wake-up is the combat slice's
-    // job (01-08); state.combat intentionally stays null here.
+    startCombat(state, true, null, rng, events);
   }
   return events;
 }

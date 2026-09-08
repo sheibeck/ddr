@@ -18,6 +18,17 @@
 import { eff, skill } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
+// Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
+// rollTreasureItem/LOOT_DIVISOR from here) is safe: both modules only touch
+// each other's bindings from inside function bodies invoked at RUNTIME,
+// never at module-evaluation time, and every export on both sides is a
+// hoisted `function` declaration — by the time useItem()/killFoe() actually
+// run, the whole module graph has finished loading. This closes the gap
+// 01-06 deliberately left open (its useItem did minimal wp/alive/kills
+// bookkeeping for stone/fire since killFoe didn't exist yet); now that
+// combat.js owns the real killFoe, useItem calls it for full parity (loot,
+// skill points, checkLevel) instead of the old bookkeeping-only stand-in.
+import { killFoe } from "./combat.js";
 import {
   JEWELRY,
   CLOAKS,
@@ -55,8 +66,9 @@ export function giveItem(state, it, quiet, events = []) {
 /* The book's prices are modest (a long sword 500, leather 500, a healing
    potion 150) and its starting purses match them. The loot numbers were
    mine and ran ten times too rich, so found coin is divided by ten. Amounts
-   the book states outright are left alone. */
-const LOOT_DIVISOR = 10;
+   the book states outright are left alone. Exported so engine/combat.js's
+   killFoe can share the exact same divisor rather than duplicating it. */
+export const LOOT_DIVISOR = 10;
 
 /**
  * gainWilmst(state, n, why, rng, events) — adds gold, scaled by the
@@ -312,8 +324,7 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
     case "stone": {
       foes.slice(0, 2).forEach((f) => {
         f.wp = 0;
-        f.alive = false;
-        c.kills = (c.kills || 0) + 1;
+        killFoe(state, f, rng, events);
       });
       break;
     }
@@ -326,10 +337,7 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
         const dmg = rng.d(10) + 4;
         t.wp -= dmg;
         tot += dmg;
-        if (t.wp <= 0) {
-          t.alive = false;
-          c.kills = (c.kills || 0) + 1;
-        }
+        if (t.wp <= 0) killFoe(state, t, rng, events);
       }
       events.push({ type: "itemBurned", total: tot });
       break;
