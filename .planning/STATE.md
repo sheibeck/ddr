@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: android-packaging-native-persistence
 status: executing
-stopped_at: "02-02: blocked on Temurin JDK 17 UAC elevation prompt (checkpoint:human-action)"
-last_updated: "2026-09-08T15:22:55.212Z"
+stopped_at: Completed 02-03-PLAN.md (dual-write convergence, autosave, back-button + lifecycle flush) — 02-04 next; Android build still blocked on 02-02's Temurin JDK 17 UAC prompt
+last_updated: "2026-09-08T15:47:44.679Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 02 (android-packaging-native-persistence) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-08 — Phase 02 execution started
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Progress: [████████░░] 82%
 | Phase 03 P02 | 45 | 3 tasks | 12 files |
 | Phase 03-endless-descent-difficulty-balance P03 | 20min | 2 tasks | 6 files |
 | Phase 02 P01 | 20min | 3 tasks | 4 files |
+| Phase 02 P03 | 22min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase ?]: startNewRun(seed) treats seed as optional (Date.now() fallback via Number.isInteger guard) so the death-card's zero-arg call and a test's explicit-seed call share one entry point
 - [Phase ?]: 02-01: Storage abstraction native branch is testable via a test-only window.__mzPreferencesOverride hook (checked before the real dynamic import('@capacitor/preferences')), since @capacitor/preferences isn't installed until 02-02
 - [Phase ?]: 02-01: Split storage.js's implementation across Task 2 (get/set/remove/flush) and Task 3 (migrateLegacyKeys) commits to preserve the plan's per-task RED/GREEN commit boundaries
+- [Phase ?]: 02-03: mazeworld.html classic script now defers boot to window.__mzClassicBoot (async), invoked by the trailing module after window.mzStorage is assigned+migrated; a captured classicNewGame reference keeps the no-save fallback correct regardless of the module's window.newGame override
+- [Phase ?]: 02-03: engineAdapter persist()/persistGrave() are fire-and-enqueue (not awaited from dispatch()); boot()/getBest()/startNewRun() are awaited — storage.js's per-key queue keeps rapid saves ordered and never dropped (SAV-01)
+- [Phase ?]: 02-03: src/browser/nativeChrome.js's decideBackAction never returns exit-app for a live, unconfirmed run; alreadyConfirming is tracked internally in registerNativeChrome (2s auto-reset timer), keeping the decision function pure/stateless for testing
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -143,6 +147,7 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 | 1 | Live browser page currently routes only movement/camp through the engine; combat/economy still run original prototype code, and `formatEvents()` narrates only a subset of the ~26 engine event types. Intentional Phase-1 scope boundary — **Phase 4 must route ALL domains through the engine adapter and complete event narration.** | (addressed in Phase 4) |
 | 3 | Difficulty **feel-tuning**: play to floor 30–50+, confirm ~5–10 min runs, never trivial or unfairly unwinnable; tune `engine/difficulty.js` named constants (note: fairness darkness ceiling currently measured-calibrated to 0.8) and re-run `node tools/tune-difficulty.mjs`. The mechanical bounds are tested; the *feel* is human. | playtest + tune constants |
 | 3 | Death-card "Roll another delver" button click-through in a real browser (engine-level new-run loop is test-verified; only the DOM click is manual). | open mazeworld.html, die, click |
+| 2 | 02-03: on-device back-button confirm-before-quit and background/force-stop-then-reopen exact-resume — real `@capacitor/app` events and OS lifecycle timing can't be exercised headlessly; the interface-level decision/flush logic (decideBackAction, flushOnBackground) is unit-proven. | press back mid-run; background/force-stop mid-run, reopen |
 
 ## Deferred Items
 
@@ -154,6 +159,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T15:22:55.191Z
-Stopped at: 02-02: blocked on Temurin JDK 17 UAC elevation prompt (checkpoint:human-action)
+Last session: 2026-09-08T15:47:44.655Z
+Stopped at: Completed 02-03-PLAN.md (dual-write convergence, autosave, back-button + lifecycle flush) — 02-04 next; Android build still blocked on 02-02's Temurin JDK 17 UAC prompt
 Resume file: None

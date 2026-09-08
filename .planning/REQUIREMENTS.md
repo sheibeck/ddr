@@ -52,8 +52,8 @@ Requirements for the initial paid Google Play release. Each maps to a roadmap ph
 ### Platform (Android packaging)
 
 - [ ] **PLT-01**: The web game is packaged as an installable native Android app via Capacitor (produces an Android App Bundle)
-- [ ] **PLT-02**: The Android hardware/gesture back button is handled explicitly and never silently ends a run (routes to confirm-before-quit / in-game navigation)
-- [ ] **PLT-03**: App lifecycle events (background/foreground/interruption) persist run state and resume cleanly
+- [x] **PLT-02**: The Android hardware/gesture back button is handled explicitly and never silently ends a run (routes to confirm-before-quit / in-game navigation)
+- [x] **PLT-03**: App lifecycle events (background/foreground/interruption) persist run state and resume cleanly
 - [ ] **PLT-04**: Native chrome is configured — splash screen, status bar, and locked portrait orientation
 
 ### Store & Launch (Google Play)
@@ -115,8 +115,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ENG-04 | Phase 1: Engine Extraction & Determinism | Complete |
 | ENG-05 | Phase 1: Engine Extraction & Determinism | Complete |
 | PLT-01 | Phase 2: Android Packaging & Native Persistence | Pending |
-| PLT-02 | Phase 2: Android Packaging & Native Persistence | Pending |
-| PLT-03 | Phase 2: Android Packaging & Native Persistence | Pending |
+| PLT-02 | Phase 2: Android Packaging & Native Persistence | Complete |
+| PLT-03 | Phase 2: Android Packaging & Native Persistence | Complete |
 | PLT-04 | Phase 2: Android Packaging & Native Persistence | Pending |
 | SAV-01 | Phase 2: Android Packaging & Native Persistence | Complete |
 | SAV-02 | Phase 2: Android Packaging & Native Persistence | Complete |

@@ -62,13 +62,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Backgrounding, force-closing, or losing the app mid-run and reopening it resumes the run exactly where the player left off, because a save is written after every action/beat and on every app lifecycle interruption.
   4. Run state, best depth/high score, and the graveyard of past characters are stored in durable native storage (Capacitor Preferences, not browser `localStorage`) behind a versioned schema with an integrity check, and all three survive an app restart.
 
-**Plans**: 1/4 plans executed
+**Plans**: 2/4 plans executed
 
 Plans:
 
 - [x] 02-01-PLAN.md — Shared async Storage abstraction + legacy-key migration + Wave-0 persistence tests (SAV-01..05)
 - [ ] 02-02-PLAN.md — Native toolchain (Temurin 17 + android-36) + Capacitor scaffold + webDir build script + bare headless build (PLT-01)
-- [ ] 02-03-PLAN.md — Dual-write convergence onto durable storage + async autosave + back-button + lifecycle flush (SAV-01/02/04/05, PLT-02/03)
+- [x] 02-03-PLAN.md — Dual-write convergence onto durable storage + async autosave + back-button + lifecycle flush (SAV-01/02/04/05, PLT-02/03)
 - [ ] 02-04-PLAN.md — Native chrome (splash/status-bar/portrait/icon) + self-hosted offline fonts + green assembleDebug+bundleDebug build gate (PLT-01/04)
 
 **UI hint**: yes
@@ -151,7 +151,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
-| 2. Android Packaging & Native Persistence | 1/4 | In Progress|  |
+| 2. Android Packaging & Native Persistence | 2/4 | In Progress|  |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device visual test | - |
 | 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 2) | - |
