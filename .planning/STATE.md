@@ -58,6 +58,14 @@ Recent decisions affecting current work:
 - [Roadmap]: A thin, store-compliant native build reaches Phase 2 (early) to de-risk signing/storage/lifecycle compliance well before deep polish or store submission (Phase 6).
 - [Autonomous run, 2026-09-07]: User invoked `/gsd-autonomous` to build all 6 phases back-to-back, with **all human/UAT acceptance deferred to milestone end** (accumulate a single UAT checklist rather than pausing per phase). Automated verification still runs each phase; human-needed verification is recorded as deferred-and-continue, NOT a stop. Real external gates (Android tooling install + real-device testing in Phase 2/4; deep-floor playtest balance in Phase 3; Google Play account/$25/signing/submission in Phase 6) require the user and will pause the run when reached.
 
+### Provided Assets (user-supplied, in repo)
+
+Art assets the user added on 2026-09-07 — consume these instead of generating placeholders:
+
+- **`icons/`** — 8 maze map icons, 1254×1254 PNG each (need downscaling/optimization for mobile in Phase 4): `chest`, `crevice`, `descent`, `encounter`, `onewaydoor`, `party`, `teleport`, `trap`. These map to the prototype's maze feature cells (chest→chest, crevice→gorge, descent→exit/stairs, encounter→dot, onewaydoor→one-way door, party→player marker, teleport→tele, trap→trap). **Phase 4** (mobile presentation/canvas rendering) replaces the prototype's procedural vector feature glyphs with these. No icon yet for `wall`/climb or the win `gate` — handle those with existing procedural rendering or flag for the user.
+- **`assets/mazeworld-google-play-icon-512.png`** — 512×512 (correct Google Play icon spec). **Phase 6** store listing.
+- **`assets/mobile_splash.png`** — 941×1672 portrait (~9:16). ~2.7MB, will need compression + density buckets. **Phase 2** native splash screen (`@capacitor/splash-screen`).
+
 ### Pending Todos
 
 None yet.
