@@ -26,11 +26,11 @@ Requirements for the initial paid Google Play release. Each maps to a roadmap ph
 
 ### Save & Persistence
 
-- [ ] **SAV-01**: The current run auto-saves after every action/beat and whenever the app is backgrounded
-- [ ] **SAV-02**: The player can be interrupted or fully close and reopen the app and resume the run exactly where they left off
-- [ ] **SAV-03**: Saves use durable native storage (Capacitor Preferences, not browser `localStorage`) with a versioned schema and an integrity check
-- [ ] **SAV-04**: The player's best depth / high score persists across runs and app restarts
-- [ ] **SAV-05**: A persistent graveyard records past characters and how they died, surviving app restarts
+- [x] **SAV-01**: The current run auto-saves after every action/beat and whenever the app is backgrounded
+- [x] **SAV-02**: The player can be interrupted or fully close and reopen the app and resume the run exactly where they left off
+- [x] **SAV-03**: Saves use durable native storage (Capacitor Preferences, not browser `localStorage`) with a versioned schema and an integrity check
+- [x] **SAV-04**: The player's best depth / high score persists across runs and app restarts
+- [x] **SAV-05**: A persistent graveyard records past characters and how they died, surviving app restarts
 
 ### Mobile UX (controls, rendering, screens)
 
@@ -118,11 +118,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PLT-02 | Phase 2: Android Packaging & Native Persistence | Pending |
 | PLT-03 | Phase 2: Android Packaging & Native Persistence | Pending |
 | PLT-04 | Phase 2: Android Packaging & Native Persistence | Pending |
-| SAV-01 | Phase 2: Android Packaging & Native Persistence | Pending |
-| SAV-02 | Phase 2: Android Packaging & Native Persistence | Pending |
-| SAV-03 | Phase 2: Android Packaging & Native Persistence | Pending |
-| SAV-04 | Phase 2: Android Packaging & Native Persistence | Pending |
-| SAV-05 | Phase 2: Android Packaging & Native Persistence | Pending |
+| SAV-01 | Phase 2: Android Packaging & Native Persistence | Complete |
+| SAV-02 | Phase 2: Android Packaging & Native Persistence | Complete |
+| SAV-03 | Phase 2: Android Packaging & Native Persistence | Complete |
+| SAV-04 | Phase 2: Android Packaging & Native Persistence | Complete |
+| SAV-05 | Phase 2: Android Packaging & Native Persistence | Complete |
 | RUN-01 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-02 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-03 | Phase 3: Endless Descent & Difficulty Balance | Complete |
