@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: endless-descent-difficulty-balance
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-09-08T12:22:26.479Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-09-08T12:36:36.343Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 03 (endless-descent-difficulty-balance) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-08 — Phase 03 execution started
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [█████████░] 85%
 | Phase 01-engine-extraction-determinism P09 | 25min | 2 tasks | 7 files |
 | Phase 01 P10 | 50min | 3 tasks | 15 files |
 | Phase 03 P01 | ~50min | 2 tasks | 4 files |
+| Phase 03 P02 | 45 | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 01-10: Win-path parity fixture (action-script.win.json) skips floors 1-4 via direct descend() calls and BFS-walks only the final floor-5-to-Gate leg, closing the winGame parity gap the 01-07 plan-checker flagged.
 - [Phase ?]: difficultyCurve(depth): asymptotic soft-cap reproducing 9+depth/depth-1/3+depth exactly for depths 1-5 (parity guard); darkRadius not zeroed on breather floors (behaviorally inert since darkBlobs=0)
 - [Phase ?]: tune-difficulty.mjs harness reuses engine/combat.js's real canParley() and mirrors move()'s one-way-door guard (canStep) to avoid a pathfinding stall bug
+- [Phase ?]: Recalibrated fairness.test.js dark-coverage threshold from RESEARCH.md's illustrative 0.6 to 0.8, based on measured genFloor output against Plan 01's locked difficulty.js constants (max 0.733, never trending toward 1.0)
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -143,6 +145,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T12:22:26.455Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-09-08T12:36:36.315Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
