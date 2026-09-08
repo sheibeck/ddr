@@ -737,9 +737,14 @@ html,body{height:100%}
   <div class="mw-title-body">
     <!-- Title/tagline text intentionally omitted — the splash art (ddr_splash.png)
          already contains the game name + tagline (user directive, DR3). -->
+    <!-- DR4 group 3: RESUME sits ABOVE ENTER (source order = visual order
+         in this flex-column) so that when an active delve exists, RESUME is
+         the top/first button — see showTitleScreen()'s allowResume logic
+         (trailing module script) for when it's shown vs. hidden. With no
+         active delve, RESUME stays hidden and ENTER is the only button. -->
     <div class="mw-title-actions">
-      <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
       <button type="button" class="mw-title-btn mw-title-resume" id="mw-title-resume" hidden disabled>Resume</button>
+      <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
     </div>
   </div>
 </div>
@@ -3695,33 +3700,19 @@ function vitalsStrip() {
   </div>`;
 }
 
-/* The reroll button lands where Strike was, so a fast tap could wipe the death
-   screen before it was read. It stays locked for a moment first. */
-const AGAIN_LOCK = 2000;
-// 04-DR3: label + destination match design/Mazeworld Mobile.dc.html's death
-// card exactly ("ROLL THE NEXT VICTIM") and now open the roller screen
-// (window.mzStartRoll, defined by the trailing module script — same
-// window-bridge pattern as window.newGame/window.move) rather than calling
-// newGame() directly, so the next character's reveal gets the same
-// slot-machine treatment as a title-screen ENTER.
-function armAgain() {
-  const btn = document.getElementById("btn-again");
+// DR4 group 3: the death card's primary action is now a single CONFIRM that
+// returns to the TITLE/splash screen — NOT a direct reroll into the roller
+// screen. Rolling a new character only ever happens FROM the title (ENTER ->
+// the roller), matching abandon's existing title-return flow. This also
+// removes the old "read it first"/AGAIN_LOCK dice-hint lock entirely — the
+// mock's own death card has no such hint or delay, so CONFIRM is armed
+// immediately.
+function wireDeathConfirm() {
+  const btn = document.getElementById("btn-death-confirm");
   if (!btn) return;
-  const left = AGAIN_LOCK - (Date.now() - (S.deathAt || 0));
-  if (left > 0) {
-    btn.disabled = true;
-    btn.textContent = "Read it first…";
-    setTimeout(() => {
-      const b2 = document.getElementById("btn-again");
-      if (!b2) return;
-      b2.disabled = false;
-      b2.textContent = "Roll the next victim";
-    }, left);
-  } else {
-    btn.disabled = false;
-    btn.textContent = "Roll the next victim";
-  }
-  btn.onclick = () => { if (!btn.disabled) (window.mzStartRoll ? window.mzStartRoll() : newGame()); };
+  btn.onclick = () => {
+    (window.mzReturnToTitle ? window.mzReturnToTitle() : (window.mzStartRoll ? window.mzStartRoll() : newGame()));
+  };
 }
 
 function renderEncounter() {
@@ -3746,8 +3737,8 @@ function renderEncounter() {
       Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} skill points</p>
       <p class="epitaph">${S.epitaph || ""}</p>
       ${(S.lastWords && S.lastWords.length) ? `<div class="lastwords">${S.lastWords.map(l => `<p>${l}</p>`).join("")}</div>` : ""}
-      <div class="again"><button class="primary" id="btn-again">Roll the next victim</button></div></div>`;
-    armAgain();
+      <div class="again"><button class="primary" id="btn-death-confirm">Confirm</button></div></div>`;
+    wireDeathConfirm();
     return;
   }
   if (S.won) {
@@ -3756,8 +3747,9 @@ function renderEncounter() {
       <p>${S.c.name} walked ${S.steps} squares in ${S.day} days and came out the other side at skill level ${ROMAN[S.c.level-1]}.</p>
       <p class="epitaph">${S.epitaph || ""}</p>
       <button class="primary" id="btn-again">Roll another delver</button></div>`;
-    // 04-DR3: same roller-screen destination as the death card's "Roll the
-    // next victim" — see armAgain()'s doc comment above.
+    // 04-DR3: opens the roller directly (unlike the death card's CONFIRM,
+    // which now returns to the title screen instead — DR4 group 3 scoped
+    // that change to the death card only, so the won path is unchanged).
     document.getElementById("btn-again").onclick = () => (window.mzStartRoll ? window.mzStartRoll() : newGame());
     return;
   }
@@ -4237,8 +4229,22 @@ window.__mzClassicBoot = async function classicBoot() {
   // already accepts (mazeworld.html's classic <script> isn't a module and
   // exports nothing to import this from).
   const TITLE_SAVE_KEY = "ddr.delve.v1";
+  // DR4 group 3 ("ENTER-only when no save; RESUME on top when an active
+  // delve exists"): a save whose run already ended (dead/won) is not an
+  // "active delve" to resume into — dispatch()/persist() (engineAdapter.js)
+  // write the save unconditionally on every action including the one that
+  // kills/wins the run, so the key can still be PRESENT after death/victory
+  // even though there is nothing left to resume. Parse it and only count it
+  // if the run itself is still live; any read/parse failure fails closed to
+  // "no save" (ENTER-only), never a dead-end RESUME.
   let hadSaveAtLaunch = false;
-  try { hadSaveAtLaunch = !!(await window.mzStorage.getItem(TITLE_SAVE_KEY)); } catch { hadSaveAtLaunch = false; }
+  try {
+    const raw = await window.mzStorage.getItem(TITLE_SAVE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      hadSaveAtLaunch = !!(parsed && !parsed.dead && !parsed.won);
+    }
+  } catch { hadSaveAtLaunch = false; }
 
   // A fresh integer seed for a brand-new run — only used if there is no
   // valid save to rehydrate. engine/rng.js's mulberry32 coerces any number
@@ -4312,10 +4318,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // immediately), which resolves that property at CLICK time — so
   // overwriting it here reroutes it through the engine adapter's
   // startNewRun(), exactly like window.move above reroutes the dpad/keydown
-  // handlers. 04-DR3: the death card's "Roll the next victim" (armAgain()/
-  // btn-again), the won-path btn-again, and the title screen's ENTER no
-  // longer call this directly — they call window.mzStartRoll() below, which
-  // opens the roll screen and calls startNewRun() itself before committing.
+  // handlers. 04-DR3: the won-path btn-again and the title screen's ENTER
+  // don't call this directly — they call window.mzStartRoll() below, which
+  // opens the roll screen and calls startNewRun() itself before committing
+  // (the death card's CONFIRM, DR4 group 3, instead returns to the title
+  // screen via window.mzReturnToTitle() — see wireDeathConfirm() above).
   // startNewRun() is async as of 02-03 (it awaits recording the ending run's
   // best depth through storage.js before starting the new one), so this
   // handler is too.
@@ -4479,13 +4486,24 @@ window.__mzClassicBoot = async function classicBoot() {
     const screen = document.getElementById("mw-title-screen");
     if (screen) screen.hidden = true;
   }
+  // DR4 group 3 ("RESUME on top when an active delve exists"): when
+  // `allowResume` is omitted, resolve it dynamically from the classic
+  // script's own `S` (the live GameState driving the map/HUD/death card —
+  // same shared-script-global visibility registerNativeChrome's
+  // getGameContext() below already relies on) rather than requiring every
+  // caller to compute it — a run counts as "active" only while it is neither
+  // dead nor won, so a dead/won run never offers a dead-end RESUME.
+  function hasActiveDelveSave() {
+    return !!(S && S.c && !S.dead && !S.won);
+  }
   function showTitleScreen({ allowResume } = {}) {
     const screen = document.getElementById("mw-title-screen");
     const resumeBtn = document.getElementById("mw-title-resume");
     if (!screen) return;
+    const resume = allowResume != null ? allowResume : hasActiveDelveSave();
     if (resumeBtn) {
-      resumeBtn.hidden = !allowResume;
-      resumeBtn.disabled = !allowResume;
+      resumeBtn.hidden = !resume;
+      resumeBtn.disabled = !resume;
     }
     screen.hidden = false;
   }
@@ -4500,6 +4518,16 @@ window.__mzClassicBoot = async function classicBoot() {
     const ok = window.confirm("Abandon this delve? It stays saved — Resume will pick it back up.");
     if (!ok) return;
     showTitleScreen({ allowResume: true });
+  };
+
+  // DR4 group 3: the death card's CONFIRM button (classic script's
+  // wireDeathConfirm()) lands here — S.dead is still true at this point, so
+  // hasActiveDelveSave() correctly resolves to false and the title shows
+  // ENTER-only (there is no live run left to resume into). A future ENTER
+  // tap is the only way to roll the next victim, matching abandon's own
+  // title-return flow.
+  window.mzReturnToTitle = function returnToTitle() {
+    showTitleScreen();
   };
 
   (function initTitleScreen() {
