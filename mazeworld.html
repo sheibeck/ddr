@@ -179,7 +179,16 @@ ul.skills li i{font-family:var(--body);font-style:normal;font-size:13.5px;line-h
 ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);padding:2px 0 2px 8px}
 
 /* ---------- maze ---------- */
-.mazebox{background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
+/* Device-review revision #4 (04-CONTEXT.md "Device-review revisions"):
+   the MAP screen is a flex column so the viewport can fill all remaining
+   vertical space between the heading and the bottom control bar — the map
+   is the dominant element, with no permanent panel beneath it. */
+#screen-maze{display:flex;flex-direction:column;height:100%;min-height:0}
+.mw-map-heading{
+  font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.22em;
+  text-transform:uppercase;margin:0 0 8px;color:var(--ink-soft);
+}
+.mazebox{display:flex;flex-direction:column;flex:1;min-height:0;background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
 canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px solid var(--rule);touch-action:manipulation}
 
 /* 04-06: the pannable, fog-lit viewport framing DOM/CSS layer wrapped
@@ -190,14 +199,40 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    overflow:hidden and the canvas is positioned inside it (positionCanvas())
    using the SAME cs/pan/canvasPad transform src/browser/controls.js's
    screenToCell inverts for tap hit-testing — one shared transform, never a
-   second copy (04-RESEARCH.md Anti-Pattern). */
-.mw-maze-viewport{position:relative;width:100%;height:min(62vw,420px);min-height:260px;overflow:hidden;background:#080705;border:1px solid var(--rule);touch-action:none}
+   second copy (04-RESEARCH.md Anti-Pattern). Device-review revision #4:
+   height is now flex:1 (fills remaining space) instead of a fixed
+   min(62vw,420px) — "big map" is the intended feel, not a small fixed box. */
+.mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:1px solid var(--rule);touch-action:none}
 .mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
 .mw-viewport-chips{position:absolute;top:8px;left:8px;display:flex;gap:8px;z-index:3}
 .mw-chip{min-height:48px;min-width:48px;padding:6px 10px;border:2px solid #4a4032;background:#1b170f;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:4px}
 .mw-flash{position:absolute;top:8px;left:50%;transform:translate(-50%,-4px);z-index:4;background:rgba(8,7,5,.9);color:#e6ddc6;padding:6px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis;opacity:0;pointer-events:none;transition:opacity .18s ease}
 .mw-flash.mw-flash-show{opacity:1}
+
+/* Device-review revision #5: the encounter/feature-event panel as an
+   OVER-MAP OVERLAY — absolutely positioned inside .mw-maze-viewport (the
+   nearest positioned ancestor), covering it entirely while active. Replaces
+   the old permanent `.panel` styling (border/shadow/margin) with a
+   self-contained modal-over-map treatment; its own overflow-y:auto lets long
+   combat/narration content scroll internally without the outer viewport's
+   overflow:hidden clipping it (the box itself never exceeds the viewport's
+   bounds, so nothing bleeds past the crop). */
+.mw-overlay{
+  position:absolute;inset:0;z-index:8;margin:0;
+  display:flex;flex-direction:column;
+  background:rgba(8,7,5,.94);
+  padding:14px 15px;
+  overflow-y:auto;
+}
+.mw-overlay[hidden]{display:none}
+.mw-overlay h2{
+  font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.22em;
+  text-transform:uppercase;margin:0 0 10px;color:var(--ink-soft);
+  border-bottom:1px solid var(--rule);padding-bottom:6px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+}
+.mw-overlay h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ditto)}
 
 .mazefoot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-top:10px}
 .legend{display:none;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase}
@@ -213,10 +248,11 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .legend .k-exit{background:var(--ink);border-radius:0;clip-path:polygon(50% 100%,0 0,100% 0)}
 
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
-   48dp as-is); display:none by default (tap-to-move is the default control
-   scheme) — the trailing module script shows this via inline style once
-   settings.controlScheme resolves to 'dpad'. */
-.dpad{display:none;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:7px}
+   48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
+   revisions" #2): the D-pad is now the SOLE, ALWAYS-VISIBLE control in the
+   MAP tab (reverses the earlier tap-to-move-default/settings-gated
+   display) — always display:grid, no JS toggle. */
+.dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:7px}
 .dpad button{grid-column:auto}
 .dpad .up{grid-column:2;grid-row:1}
 .dpad .lf{grid-column:1;grid-row:2}
@@ -404,7 +440,14 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 html,body{height:100%}
-#app.mw-app{display:flex;flex-direction:column;min-height:100vh;background:var(--paper)}
+/* Device-review revision #4: height:100vh (was min-height) so #app has a
+   DEFINITE height every descendant flex chain can size against — needed for
+   the MAP tab's viewport to fill available space (flex:1 all the way down
+   through .mw-screens -> #screen-maze -> .mazebox -> .mw-maze-viewport).
+   .mw-screens keeps its own overflow-y:auto, so longer-than-one-screen
+   content on the other tabs (Hero/Gear/Oracle/Dead) still scrolls exactly
+   as before. */
+#app.mw-app{display:flex;flex-direction:column;height:100vh;background:var(--paper)}
 
 .mw-hud{
   position:sticky;top:0;z-index:5;
@@ -431,7 +474,7 @@ html,body{height:100%}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
 
-.mw-screens{flex:1;overflow-y:auto;padding:14px 14px calc(88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
+.mw-screens{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
 .mw-screen{display:block}
 
 .mw-tabbar{
@@ -480,11 +523,17 @@ html,body{height:100%}
   <!-- ============ 5 TAB SCREENS ============ -->
   <main class="mw-screens" id="mw-screens">
 
-    <!-- MAZE (default landing screen; canvas UNCHANGED, id="maze" preserved) -->
+    <!-- MAP (default landing screen; canvas UNCHANGED, id="maze"/data-tab
+         "maze" preserved — device-review revision #3 only renames the
+         USER-VISIBLE label, not the code ids/keys). -->
     <section class="mw-screen" id="screen-maze" data-screen="maze">
+      <h2 class="mw-map-heading">Map</h2>
       <div class="mazebox">
         <!-- 04-06: pannable fog-lit viewport framing around the untouched
-             canvas — see the .mw-maze-viewport CSS comment above. -->
+             canvas — see the .mw-maze-viewport CSS comment above. Device-
+             review revision #4: this viewport now fills the remaining
+             vertical space (flex:1, see CSS) between the heading and the
+             bottom control bar — the map is the dominant element. -->
         <div class="mw-maze-viewport" id="mw-maze-viewport">
           <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
           <div class="mw-vignette" aria-hidden="true"></div>
@@ -493,6 +542,19 @@ html,body{height:100%}
             <button type="button" class="mw-chip" id="mw-chip-centre">Centre</button>
           </div>
           <div class="mw-flash" id="mw-flash" aria-live="polite"></div>
+
+          <!-- Device-review revision #5: the encounter/feature-event panel
+               is now an OVER-MAP OVERLAY (absolutely positioned inside this
+               positioned viewport), not a permanent panel beneath the map.
+               hidden by default; renderEncounter() toggles the `hidden`
+               attribute via hasActiveEncounter() — shown only while a
+               feature tile/combat/store/death/win narration is active, and
+               dismissed by the in-body "Move on"/"Leave"/"Roll another
+               delver" action, returning focus to the map. -->
+          <section class="mw-overlay" id="enc-panel" hidden>
+            <h2>Encounter <span id="enc-round"></span></h2>
+            <div id="enc-body"></div>
+          </section>
         </div>
         <div class="mazefoot">
           <div class="legend" id="mw-legend">
@@ -507,6 +569,9 @@ html,body{height:100%}
           </div>
           <div style="display:flex;gap:12px;align-items:center">
             <button class="small" id="btn-camp">Make camp</button>
+            <!-- Device-review revision #2: the D-pad is now the SOLE,
+                 ALWAYS-VISIBLE movement control (see .dpad CSS — no more
+                 settings-gated display:none/grid toggle). -->
             <div class="dpad" id="dpad">
               <button class="up" data-dir="N" aria-label="Move north">↑</button>
               <button class="lf" data-dir="W" aria-label="Move west">←</button>
@@ -516,15 +581,6 @@ html,body{height:100%}
           </div>
         </div>
       </div>
-
-      <!-- Combat/death/win overlay lives on the MAZE tab (it's where a run
-           happens); a dedicated full-screen combat/death-card treatment is a
-           later slice's job (04-UI-SPEC.md screens 9-10) — this shell keeps
-           the existing enc-panel functional and dark-themed. -->
-      <section class="panel" id="enc-panel">
-        <h2>Encounter <span id="enc-round"></span></h2>
-        <div id="enc-body"></div>
-      </section>
     </section>
 
     <!-- HERO — "THE DOOMED" character sheet (shell; 04-UI-SPEC.md Screen 2) -->
@@ -609,7 +665,7 @@ html,body{height:100%}
 
   <!-- ============ 5-TAB BOTTOM NAV (UX; fixed, safe-area-padded) ============ -->
   <nav class="mw-tabbar" id="mw-tabbar">
-    <button type="button" class="mw-tab active" data-tab="maze" aria-current="true">MAZE</button>
+    <button type="button" class="mw-tab active" data-tab="maze" aria-current="true">MAP</button>
     <button type="button" class="mw-tab" data-tab="hero" aria-current="false">HERO</button>
     <button type="button" class="mw-tab" data-tab="gear" aria-current="false">GEAR</button>
     <button type="button" class="mw-tab" data-tab="oracle" aria-current="false">ORACLE</button>
@@ -670,10 +726,12 @@ html,body{height:100%}
    ============================================================ */
 
 /* ---------------- 04-05: 5-tab bottom nav ---------------- */
-/* Pure DOM show/hide — MAZE is the default landing screen (04-UI-SPEC.md).
-   Nothing here touches game state; it only toggles which screen container
-   is visible. Exposed as window.__mzShowTab so a later slice (e.g. the
-   death card's "THE GRAVEYARD" link) can jump tabs programmatically. */
+/* Pure DOM show/hide — MAP (data-tab="maze") is the default landing screen
+   (04-UI-SPEC.md; label renamed MAZE->MAP per device-review revision #3 —
+   the code id/data-tab key is unchanged). Nothing here touches game state;
+   it only toggles which screen container is visible. Exposed as
+   window.__mzShowTab so a later slice (e.g. the death card's "THE
+   GRAVEYARD" link) can jump tabs programmatically. */
 (function initTabs() {
   const tabs = Array.from(document.querySelectorAll(".mw-tab"));
   const screens = {
@@ -3320,6 +3378,16 @@ function renderGraves() {
 }
 
 /* ---------------- encounter panel ---------------- */
+// Device-review revision (04-CONTEXT.md "Device-review revisions" #5):
+// #enc-panel is now an OVERLAY over the map (not a permanent panel beneath
+// it) — hasActiveEncounter() is the single predicate that decides whether
+// anything is currently happening worth showing (feature-tile narration,
+// combat, store, death/win), used both by renderEncounter() (show/hide the
+// overlay) and the viewport pointerdown handler above (suppress pan-start
+// while the overlay covers the map).
+function hasActiveEncounter() {
+  return !!(S && (S.dead || S.won || S.combat || S.store || (S.beats && S.beats.groups && S.beats.groups.length)));
+}
 function vitalsStrip() {
   const c = S.c;
   const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
@@ -3355,6 +3423,15 @@ function armAgain() {
 }
 
 function renderEncounter() {
+  const panel = document.getElementById("enc-panel");
+  // Device-review revision #5: the panel is an OVERLAY over the map, shown
+  // ONLY while something is actually happening (feature-tile narration,
+  // combat, store, death/win) — never a permanent fixture beneath the map.
+  if (!hasActiveEncounter()) {
+    if (panel) panel.hidden = true;
+    return;
+  }
+  if (panel) panel.hidden = false;
   const body = document.getElementById("enc-body");
   const rd = document.getElementById("enc-round");
   body.innerHTML = ""; rd.textContent = "";
@@ -3392,7 +3469,7 @@ function renderEncounter() {
         + `<div class="evt">${g.lines.map(l => `<p>${l}</p>`).join("")}</div>`).join("")
       + `<div class="actions">
            ${last && b.action ? `<button class="primary" id="a-evt">${b.action.label}</button>` : ""}
-           <button class="${last ? "small" : "primary"}" id="a-next">${last ? "Walk on" : "Next"}</button>
+           <button class="${last ? "small" : "primary"}" id="a-next">${last ? "Move on" : "Next"}</button>
          </div>`;
     document.getElementById("a-next").onclick = () => {
       if (last) S.beats = null; else b.i++;
@@ -3422,11 +3499,9 @@ function renderEncounter() {
     document.getElementById("a-leave").onclick = leaveStore;
     return;
   }
-  if (!S.combat) {
-    body.innerHTML += `<p class="enc-sub" style="margin:0">The corridor is quiet. Walk on.</p>
-      <p class="hint">Red dots are encounter dots — the Maze Master rolls when you touch one. Violet diamonds teleport you a d20 in a random direction. Green arrows are one-way doors cut through a wall between two passages — you may only pass the way the arrow points, and there is no coming back. Make camp to spend a ration, sleep eight hours and mend, if nothing finds you first.</p>`;
-    return;
-  }
+  // No further branch needed here for "nothing happening" — hasActiveEncounter()
+  // already gated that case above (panel stays hidden, this function returns
+  // early), so reaching this point with !S.combat can no longer happen.
 
   const C = S.combat;
   rd.textContent = `round ${C.round}`;
@@ -3591,21 +3666,26 @@ document.getElementById("mw-chip-centre").addEventListener("click", () => {
   positionCanvas();
 });
 
-// 04-06: one pointerdown/move/up gesture pipeline on the viewport —
-// classifyPointerGesture (src/browser/controls.js, bridged via
-// window.__mzControls) tells tap from pan-drag; a drag only updates `pan`
-// (camera-only, never touches S.floor.px/py); a tap (only when
-// settings.controlScheme === 'tap') resolves through screenToCell +
-// resolveTapDirection against a live isSeen predicate matching the real
-// engine/maze.js floor shape, then routes through window.move(dir) — the
-// SAME dispatch()->applyAction seam the D-pad/keydown handlers already use
-// (T-04-13: no client "reachable" shortcut ever mutates state directly).
+// 04-06: one pointerdown/move/up gesture pipeline on the viewport — a drag
+// only updates `pan` (camera-only, never touches S.floor.px/py). Device-
+// review revision (04-CONTEXT.md "Device-review revisions" #2): tap-to-move
+// is DISABLED outright — a tap on the viewport no longer moves the player
+// regardless of settings.controlScheme; the D-pad is the sole movement
+// control now (see the dpad click handler above, routed through
+// window.move()/dispatch() same as always). classifyPointerGesture/
+// screenToCell/resolveTapDirection (src/browser/controls.js, bridged via
+// window.__mzControls) stay imported/bridged and fully usable — this block
+// just no longer calls them to resolve a movement direction; they remain
+// dormant/available for a future re-enable. hasActiveEncounter() also gates
+// pan-start: while the encounter/feature overlay is up (over-map, see
+// renderEncounter()), a drag on the viewport underneath would be a confusing
+// no-op, so panning is suppressed until the overlay is dismissed.
 (function initMazeViewportControls() {
   const vp = document.getElementById("mw-maze-viewport");
   if (!vp) return;
   let pointerStart = null;
   vp.addEventListener("pointerdown", e => {
-    if (!S || S.combat || S.store || S.dead || S.won) return;
+    if (!S || hasActiveEncounter()) return;
     pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp, panStart: { x: pan.x, y: pan.y }, id: e.pointerId };
     try { vp.setPointerCapture(e.pointerId); } catch (err) { /* not fatal — pointer just won't be captured off-element */ }
   });
@@ -3617,20 +3697,6 @@ document.getElementById("mw-chip-centre").addEventListener("click", () => {
   });
   const endGesture = e => {
     if (!pointerStart || e.pointerId !== pointerStart.id) return;
-    const dx = e.clientX - pointerStart.x, dy = e.clientY - pointerStart.y;
-    const totalDelta = Math.hypot(dx, dy);
-    const controlsApi = window.__mzControls;
-    const gesture = controlsApi ? controlsApi.classifyPointerGesture({ timeStamp: pointerStart.t }, e, totalDelta) : "drag";
-    const scheme = (window.__mzSettings && window.__mzSettings.controlScheme) || "tap";
-    if (gesture === "tap" && scheme === "tap" && controlsApi && S && !S.combat && !S.store && !S.dead && !S.won) {
-      const rect = vp.getBoundingClientRect();
-      const pos = { x: S.floor.px, y: S.floor.py };
-      const cell = controlsApi.screenToCell(e.clientX, e.clientY, rect, pos, pan, CELL, CANVAS_PAD);
-      const isSeen = (x, y) => !!(S.floor.g[y] && S.floor.g[y][x] && S.floor.g[y][x].seen);
-      const dir = controlsApi.resolveTapDirection(pos, cell, isSeen);
-      if (dir) move(dir);
-      else flashMessage("CAN'T GO THERE.");
-    }
     pointerStart = null;
   };
   vp.addEventListener("pointerup", endGesture);
@@ -3755,14 +3821,13 @@ window.__mzClassicBoot = async function classicBoot() {
     const appEl = document.getElementById("app");
     if (appEl) appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
     // 04-06: expose the resolved settings object so the classic script's
-    // fit() (cell size) and tap-gesture handler (controlScheme) can read it
-    // without importing settings.js directly — same bridge pattern as
-    // window.__mzState. controlScheme picks which control affordance shows:
-    // tap-to-move is the default (D-pad stays display:none, see its CSS);
-    // 'dpad' reveals the alternate on-screen D-pad instead.
+    // fit() (cell size) can read it without importing settings.js directly
+    // — same bridge pattern as window.__mzState. Device-review revision
+    // (04-CONTEXT.md "Device-review revisions" #2): the D-pad is now
+    // ALWAYS visible (display:grid in CSS, no settings-gated toggle here)
+    // and tap-to-move is disabled outright — see the viewport gesture
+    // handler below, which no longer reads controlScheme at all.
     window.__mzSettings = settings;
-    const dpadEl = document.getElementById("dpad");
-    if (dpadEl) dpadEl.style.display = settings.controlScheme === "dpad" ? "grid" : "none";
   } catch {
     /* fail-open: settings.js itself never throws, but defend anyway — a
        text-scale read failure must never block boot */
