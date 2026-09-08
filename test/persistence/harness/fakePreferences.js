@@ -19,6 +19,16 @@
 // attempting the real dynamic import. `installFakeCapacitor()` below installs
 // that hook alongside the fake `window.Capacitor`. Production code never sets
 // this hook, so real native launches always fall through to the real import.
+//
+// CR-01 (02-REVIEW.md): storage.js now memoizes its native-vs-browser
+// backend decision for the module's lifetime (so an intermittently-throwing
+// isNativePlatform() can't split reads/writes across two different
+// backends). `installFakeCapacitor()`/its `restore()` both clear that cache
+// via storage.js's test-only `__resetNativeDetectionForTests()` so each test
+// case starts from a fresh undetermined state regardless of what an earlier
+// test in the same file/process decided.
+
+import { __resetNativeDetectionForTests } from "../../../src/browser/storage.js";
 
 /**
  * makeFakePreferences() — an in-memory async fake matching
@@ -80,6 +90,7 @@ export function installFakeCapacitor({ isNative = false, preferences = null } = 
   } else {
     delete globalThis.window.__mzPreferencesOverride;
   }
+  __resetNativeDetectionForTests();
 
   return function restore() {
     if (previousCapacitor === undefined) delete globalThis.window.Capacitor;
@@ -87,6 +98,7 @@ export function installFakeCapacitor({ isNative = false, preferences = null } = 
     if (previousOverride === undefined) delete globalThis.window.__mzPreferencesOverride;
     else globalThis.window.__mzPreferencesOverride = previousOverride;
     if (!hadWindow) delete globalThis.window;
+    __resetNativeDetectionForTests();
   };
 }
 

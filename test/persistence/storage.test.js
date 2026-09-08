@@ -210,3 +210,74 @@ test("a per-key rapid-write burst on the browser backend also never drops the la
     restore();
   }
 });
+
+// CR-01 (02-REVIEW.md): the native backend must fail SAFE to a working
+// localStorage backend when it is itself broken, not degrade to a silent
+// total no-op (every read returning null forever, every write vanishing).
+
+test("CR-01: setItem/getItem fall back to localStorage when isNativePlatform() itself throws, instead of a silent no-op", async () => {
+  const restoreCap = installFakeCapacitor({ isNative: false }); // baseline install also resets the memoized backend decision
+  const { store: lsStore, restore: restoreLS } = installFakeLocalStorage();
+  // Simulate a broken native bridge: isNativePlatform() throws rather than
+  // returning a boolean (the exact scenario CR-01 names).
+  window.Capacitor = {
+    isNativePlatform() {
+      throw new Error("native bridge not ready");
+    },
+  };
+  try {
+    await setItem(SAVE_KEY, "fallback-write");
+    assert.equal(
+      lsStore.get(SAVE_KEY),
+      "fallback-write",
+      "the write actually landed in localStorage rather than being silently dropped"
+    );
+    assert.equal(
+      await getItem(SAVE_KEY),
+      "fallback-write",
+      "the read comes back via the localStorage fallback, not a silent null"
+    );
+  } finally {
+    restoreCap();
+    restoreLS();
+  }
+});
+
+test("CR-01: setItem/getItem fall back to localStorage when the native Preferences backend throws on every call, and the value actually round-trips (not just non-throwing)", async () => {
+  const throwingPreferences = {
+    async get() {
+      throw new Error("preferences bridge broken");
+    },
+    async set() {
+      throw new Error("preferences bridge broken");
+    },
+    async remove() {
+      throw new Error("preferences bridge broken");
+    },
+  };
+  const restoreCap = installFakeCapacitor({ isNative: true, preferences: throwingPreferences });
+  const { store: lsStore, restore: restoreLS } = installFakeLocalStorage();
+  try {
+    await setItem(SAVE_KEY, "fallback-value");
+    assert.equal(
+      lsStore.get(SAVE_KEY),
+      "fallback-value",
+      "setItem's write landed in localStorage, not silently dropped by the broken native backend"
+    );
+    assert.equal(
+      await getItem(SAVE_KEY),
+      "fallback-value",
+      "getItem reads the fallback value back rather than returning null forever"
+    );
+
+    // CR-01's memoization: once the native backend has proven broken, a
+    // SECOND operation should not keep re-attempting (and re-failing) the
+    // native branch — it should go straight to the already-proven-working
+    // localStorage backend.
+    await setItem(BEST_KEY, "9");
+    assert.equal(lsStore.get(BEST_KEY), "9", "a later write also degrades straight to localStorage");
+  } finally {
+    restoreCap();
+    restoreLS();
+  }
+});

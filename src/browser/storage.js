@@ -22,6 +22,16 @@
 // persist()/boot()/getBest() posture (a private window, storage quota, or a
 // native plugin error all just mean the value doesn't round-trip this time).
 //
+// CR-01 (02-REVIEW.md): "fail safe" specifically means degrading to a
+// WORKING backend, not degrading to a silent no-op. If the native branch
+// itself is broken — isNativePlatform() throws, or the
+// '@capacitor/preferences' dynamic import (or the plugin call itself)
+// throws/rejects at runtime — getItem()/setItem()/removeItem() fall through
+// to localStorage rather than returning null / dropping the write forever.
+// That decision is memoized for the rest of the session so an
+// intermittently-throwing native bridge can't split reads and writes across
+// two different backends call-to-call.
+//
 // A per-key promise-chain write queue serializes writes to the SAME key so a
 // burst of rapid same-key setItem() calls (autosave on every action) can
 // never let an earlier write settle after a later one and clobber the most
@@ -54,8 +64,43 @@ const LEGACY_KEYS = [RUN_SAVE_KEY, BEST_KEY, GRAVE_KEY];
 // shared across every caller for the lifetime of the page/process.
 const writeQueues = new Map();
 
+// CR-01: once the native-vs-browser backend decision is determined, it is
+// cached for the rest of the session (module lifetime) so an
+// intermittently-throwing isNativePlatform() can't split reads/writes across
+// two different backends call-to-call (a read right after a transient throw
+// would otherwise silently look at localStorage while an earlier write went
+// to Preferences, or vice versa). Downgraded to `false` permanently the
+// moment the native backend proves broken (isNativePlatform() throws, OR a
+// later getItem/setItem/removeItem's native branch itself throws/rejects —
+// see getItem/setItem/removeItem below) so the module degrades to a working
+// backend rather than the previous silent-no-op failure mode. `null` means
+// "not yet determined".
+let cachedIsNative = null;
+
 function isNative() {
-  return typeof window !== "undefined" && !!window.Capacitor?.isNativePlatform?.();
+  if (cachedIsNative !== null) return cachedIsNative;
+  try {
+    cachedIsNative = typeof window !== "undefined" && !!window.Capacitor?.isNativePlatform?.();
+  } catch {
+    // isNativePlatform() itself threw — the native bridge is broken. Degrade
+    // to localStorage rather than propagating the throw into a silent
+    // total-persistence-failure no-op (CR-01).
+    cachedIsNative = false;
+  }
+  return cachedIsNative;
+}
+
+/**
+ * __resetNativeDetectionForTests() — test-only: clears the memoized
+ * native-vs-browser backend decision so each `node --test` case (which
+ * installs its own fake `window.Capacitor` via
+ * test/persistence/harness/fakePreferences.js's installFakeCapacitor()) starts
+ * from a fresh undetermined state rather than inheriting a decision cached by
+ * an earlier test sharing this module instance within the same test-file
+ * process. Production code never calls this.
+ */
+export function __resetNativeDetectionForTests() {
+  cachedIsNative = null;
 }
 
 /**
@@ -103,9 +148,18 @@ function enqueue(key, fn) {
 export async function getItem(key) {
   try {
     if (isNative()) {
-      const Preferences = await loadNativePreferences();
-      const { value } = await Preferences.get({ key });
-      return typeof value === "string" ? value : null;
+      try {
+        const Preferences = await loadNativePreferences();
+        const { value } = await Preferences.get({ key });
+        return typeof value === "string" ? value : null;
+      } catch {
+        // CR-01: the native backend just proved broken (the
+        // '@capacitor/preferences' dynamic import rejected, or the plugin
+        // call itself threw) — degrade to localStorage for the rest of the
+        // session and fall through below, rather than returning null forever
+        // (a silent, permanent, session-long persistence failure).
+        cachedIsNative = false;
+      }
     }
     const value = localStorage.getItem(key);
     return typeof value === "string" ? value : null;
@@ -126,9 +180,16 @@ export async function getItem(key) {
 export function setItem(key, value) {
   return enqueue(key, async () => {
     if (isNative()) {
-      const Preferences = await loadNativePreferences();
-      await Preferences.set({ key, value: String(value) });
-      return;
+      try {
+        const Preferences = await loadNativePreferences();
+        await Preferences.set({ key, value: String(value) });
+        return;
+      } catch {
+        // CR-01: same fail-safe fallback as getItem() above — degrade to
+        // localStorage for the rest of the session rather than silently
+        // dropping this write (and every write after it) forever.
+        cachedIsNative = false;
+      }
     }
     localStorage.setItem(key, String(value));
   });
@@ -141,9 +202,14 @@ export function setItem(key, value) {
 export function removeItem(key) {
   return enqueue(key, async () => {
     if (isNative()) {
-      const Preferences = await loadNativePreferences();
-      await Preferences.remove({ key });
-      return;
+      try {
+        const Preferences = await loadNativePreferences();
+        await Preferences.remove({ key });
+        return;
+      } catch {
+        // CR-01: same fail-safe fallback as getItem()/setItem() above.
+        cachedIsNative = false;
+      }
     }
     localStorage.removeItem(key);
   });
