@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-09-08T20:21:03.622Z"
+stopped_at: Completed 04-11-PLAN.md
+last_updated: "2026-09-08T20:28:02.589Z"
 last_activity: 2026-09-08
-last_activity_desc: Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
+last_activity_desc: Phase 04 Plan 11 executed (persistence-key rename mazeworld.*.v1 -> ddr.*.v1 + product-name cleanup audit)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 31
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
-Plan: 4 of 11 (Wave 1 of 8)
-Status: Plan 04-01 complete — ready for 04-02/04-03/04-04 (remaining Wave 1 plans)
-Last activity: 2026-09-08 — Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
+Plan: 5 of 11 completed so far (Wave 2 of 8) — wave-based execution, not strictly sequential; 04-01/04-02/04-03/04-04 (Wave 1) and 04-11 (Wave 2) complete
+Status: Plan 04-11 complete (persistence-key rename, folded-in deep work) — ready for remaining Wave 2+ plans (04-05..04-10)
+Last activity: 2026-09-08 — Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)
 
-Progress: [███████░░░] 68%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -79,6 +79,7 @@ Progress: [███████░░░] 68%
 | Phase 04 P02 | 6min | 2 tasks | 4 files |
 | Phase 04 P03 | 20min | 3 tasks | 6 files |
 | Phase 04 P04 | 14min | 2 tasks | 3 files |
+| Phase 04 P11 | 6min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-03: tutorialSeen persists under the literal key mazeworld.tutorialSeen (no .v1 suffix), matching 04-CONTEXT.md's wording; not folded into the ddr.* rename scope (that's limited to the 3 pre-existing delve/graveyard/best keys)
 - [Phase ?]: 04-04: EVENT_NARRATION (src/browser/eventNarration.js) is a data-driven type->builder table covering all 162 engine-emitted event types (158 literal + 4 EVENT_TYPES-indirect: died/won/leveled/floorChanged), replacing engineAdapter's old ~26-case monolithic switch; a coverage test derives the type set from engine/*.js source at runtime (comment-stripped, ternary-aware) so a future unnarrated event type fails the guardrail
 - [Phase ?]: 04-04: "moved" stays a deliberate silent no-op excluded from both the canonical event set and EVENT_NARRATION (matches engineAdapter.test.js's existing locked assertion); the 3 dead pendingEncounter/pendingTrap/pendingChest cases were dropped (encounters.js fully superseded them since 01-10) rather than migrated, satisfying the coverage test's own no-dead-entries guard
+- [Phase ?]: 04-11: Renamed all four persistence keys mazeworld.*.v1 -> ddr.*.v1 (delve/best/graveyard + extra-scope settings) across storage.js, engineAdapter.js, settings.js, mazeworld.html classic-script literals, and six asserting tests; no migration shim (greenfield); frozen parity master left untouched
+- [Phase ?]: 04-11: Task 2 (strip residual product-name Mazeworld) found no code changes needed -- title/meta/h1 already renamed to Delve, Die, Repeat by prior f81942f; the remaining mazeworld.html credit-line reference to the real 1994 rulebook (mazeworld.pdf) is out of scope as a historical source credit + real external filename, not product branding
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -180,8 +183,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T20:21:03.600Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-09-08T20:28:02.566Z
+Stopped at: Completed 04-11-PLAN.md
 Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
