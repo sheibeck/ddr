@@ -598,6 +598,50 @@ html,body{height:100%}
 .mw-title-enter:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 .mw-title-btn:disabled{opacity:.5;cursor:not-allowed}
 .mw-title-resume[hidden]{display:none}
+
+/* ---------- character-roll screen (04-DR3, "THE TABLES DECIDE") ----------
+   A full-screen gate shown OVER #app between a new-run trigger (title
+   ENTER, the death card's "Roll the next victim", the won card's reroll)
+   and the game itself — matches design/Mazeworld Mobile.dc.html's
+   `isRolling` block: 3 reels (RACE/CLASS/SUBCLASS) that flicker (mwflick)
+   while unsettled then lock gold in sequence, a name+quirk reveal that
+   fades in (mwfade) once done, and a primary CTA that only activates once
+   the (already-rolled, real) character is fully revealed. See the trailing
+   module script's window.mzStartRoll()/#mw-roller-cta wiring: the reel
+   flicker is presentation-only (a local Math.random() over static content
+   lists), the REAL adventurer is rolled exactly once via the engine's own
+   startNewRun() at the moment the roll begins, and rngState is never read
+   or touched by the animation itself. */
+@keyframes mwflick{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes mwfade{from{opacity:0}to{opacity:1}}
+.mw-roller-screen{
+  position:fixed;inset:0;z-index:51;
+  background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column;overflow-y:auto;
+  padding:calc(48px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 20px calc(28px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  animation:mwfade .2s ease;
+}
+.mw-roller-screen[hidden]{display:none}
+.mw-roller-body{display:flex;flex-direction:column;flex:1;max-width:420px;width:100%;margin:0 auto}
+.mw-roller-heading{font-family:var(--disp);font-size:11px;color:var(--ditto);line-height:1.7;margin:0}
+.mw-roller-sub{font-family:var(--body);font-weight:700;font-size:15px;color:var(--ink-soft);margin:12px 0 0;line-height:1.45}
+.mw-roller-reels{margin-top:26px;border-top:3px solid var(--rule)}
+.mw-roller-reel{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 0;border-bottom:2px solid var(--paper-3)}
+.mw-roller-reel-key{font-family:var(--disp);font-size:8px;color:var(--ink-soft);letter-spacing:.06em}
+.mw-roller-reel-val{font-family:var(--disp);font-size:14px;line-height:1.6;color:var(--ink-soft);animation:mwflick .28s steps(2) infinite;text-align:right}
+.mw-roller-reel-val.mw-roller-locked{color:var(--ditto);animation:none}
+.mw-roller-reveal{margin-top:28px;opacity:0;transition:opacity .4s steps(4)}
+.mw-roller-reveal.mw-roller-revealed{opacity:1}
+.mw-roller-name{font-family:var(--disp);font-size:16px;line-height:1.6;color:var(--ink)}
+.mw-roller-quirk{border:2px solid var(--rule);background:var(--paper-2);padding:13px;margin-top:16px;font-family:var(--body);font-size:15px;font-weight:700;line-height:1.5;color:var(--ink-soft)}
+.mw-roller-spacer{flex:1}
+.mw-roller-cta{
+  margin-top:22px;width:100%;text-align:center;font-family:var(--disp);font-size:9px;
+  padding:17px;border:2px solid var(--rule);background:transparent;color:var(--ink-soft);
+  cursor:default;box-shadow:none;
+}
+.mw-roller-cta.mw-roller-ready{background:var(--ditto);color:var(--paper);border:none;cursor:pointer;box-shadow:0 5px 0 var(--mw-btn-border)}
+.mw-roller-cta.mw-roller-ready:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border);transform:translateY(4px)}
 </style>
 </head>
 <body>
@@ -617,6 +661,30 @@ html,body{height:100%}
       <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
       <button type="button" class="mw-title-btn mw-title-resume" id="mw-title-resume" hidden disabled>Resume</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ CHARACTER-ROLL SCREEN (04-DR3, "THE TABLES DECIDE") ============
+     Full-screen gate shown OVER #app between a new-run trigger (title
+     ENTER, the death card's "Roll the next victim", the won card's reroll)
+     and the game itself — see the .mw-roller-screen CSS comment above and
+     the trailing module script's window.mzStartRoll()/#mw-roller-cta wiring
+     for the reel-flicker + real-engine-roll behavior. -->
+<div id="mw-roller-screen" class="mw-roller-screen" hidden>
+  <div class="mw-roller-body">
+    <h2 class="mw-roller-heading">THE TABLES DECIDE</h2>
+    <p class="mw-roller-sub">You do not build a delver. One is dealt to you, and then it dies.</p>
+    <div class="mw-roller-reels">
+      <div class="mw-roller-reel"><span class="mw-roller-reel-key">RACE</span><span class="mw-roller-reel-val" id="mw-roller-race">—</span></div>
+      <div class="mw-roller-reel"><span class="mw-roller-reel-key">CLASS</span><span class="mw-roller-reel-val" id="mw-roller-class">—</span></div>
+      <div class="mw-roller-reel"><span class="mw-roller-reel-key">SUBCLASS</span><span class="mw-roller-reel-val" id="mw-roller-sub">—</span></div>
+    </div>
+    <div class="mw-roller-reveal" id="mw-roller-reveal">
+      <div class="mw-roller-name" id="mw-roller-name">—</div>
+      <div class="mw-roller-quirk" id="mw-roller-quirk">—</div>
+    </div>
+    <div class="mw-roller-spacer"></div>
+    <button type="button" class="mw-roller-cta" id="mw-roller-cta" disabled>THE DICE ARE STILL FALLING</button>
   </div>
 </div>
 
@@ -3941,6 +4009,15 @@ window.__mzClassicBoot = async function classicBoot() {
   import { screenToCell, resolveTapDirection, classifyPointerGesture } from "./src/browser/controls.js";
   import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
   import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
+  // 04-DR3 (the roll screen): characterSheetViewModel is the SAME pure,
+  // rng-free view-model the HERO tab uses (src/browser/viewModels.js) — the
+  // roller's reveal reuses it rather than re-deriving name/quirk copy, so
+  // the roll screen and the sheet always agree. RACES/CLASSES are read-only
+  // content tables (content/index.js) used ONLY to build the reel-flicker's
+  // candidate word lists (window.mzStartRoll below) — cosmetic display
+  // strings, never fed into anything rng-touching.
+  import { characterSheetViewModel } from "./src/browser/viewModels.js";
+  import { RACES, CLASSES } from "./content/index.js";
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
@@ -4095,6 +4172,134 @@ window.__mzClassicBoot = async function classicBoot() {
     window.paint();
     window.draw();
   };
+
+  // ---- 04-DR3: character-roll screen ("THE TABLES DECIDE") ----
+  // commitRolledState(state) applies an ALREADY-rolled engine state (rolled
+  // once by window.mzStartRoll below, via the SAME startNewRun() seam
+  // window.newGame() above uses) to the live UI — factored out of
+  // engineNewRun() so the roller's CTA can commit the exact state it already
+  // revealed without ever calling startNewRun() a second time (which would
+  // silently discard the revealed character and roll a different one).
+  function commitRolledState(state) {
+    window.__mzState.set(state);
+    window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
+    window.paint();
+    window.draw();
+  }
+
+  // Presentation-only word lists for the reel flicker (content/index.js's
+  // read-only race/class/subclass tables) — cosmetic strings only, never fed
+  // into the engine or any rng draw. The REAL race/class/subclass shown once
+  // each reel locks comes from characterSheetViewModel(rolledState) below,
+  // reading the actual GameState.c the engine already rolled.
+  const ROLLER_RACE_NAMES = Object.keys(RACES);
+  const ROLLER_CLASS_NAMES = Object.keys(CLASSES);
+  const ROLLER_SUB_NAMES = Object.values(CLASSES).flatMap((cls) => cls.subs);
+  // Matches design/Mazeworld Mobile.dc.html's own startRoll() timeline
+  // exactly (900/1650/2400ms lock steps, 3050ms full reveal, 70ms flicker).
+  const ROLLER_LOCK_DELAYS = { race: 900, cls: 1650, sub: 2400 };
+  const ROLLER_REVEAL_DELAY = 3050;
+  const ROLLER_SPIN_MS = 70;
+
+  let rollerSpinTimer = null;
+  let rollerLockTimers = [];
+  let rollerPendingState = null;
+
+  function clearRollerTimers() {
+    if (rollerSpinTimer) { clearInterval(rollerSpinTimer); rollerSpinTimer = null; }
+    rollerLockTimers.forEach(clearTimeout);
+    rollerLockTimers = [];
+  }
+  // Display-only Math.random() — deliberately NOT the engine's seeded rng
+  // (T-04-06-style invariant: presentation must never touch GameState.rngState).
+  function pickDisplay(list) { return list[Math.floor(Math.random() * list.length)]; }
+  function setReel(id, value, locked) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = value;
+    el.classList.toggle("mw-roller-locked", !!locked);
+  }
+
+  /**
+   * window.mzStartRoll() — opens #mw-roller-screen and performs the ONE real
+   * engine roll (startNewRun()) up front, then plays a purely cosmetic reel
+   * flicker that settles, in sequence, on the REAL rolled race/class/
+   * subclass/name/quirk already sitting in the state startNewRun() returned.
+   * The rolled state is NOT applied to the live app (map/HUD/log) until the
+   * player taps the CTA — see initRollerScreen()'s click handler below — so
+   * nothing changes on screen behind the roller until the reveal is read.
+   */
+  window.mzStartRoll = async function startRoll() {
+    clearRollerTimers();
+    rollerPendingState = null;
+    const screen = document.getElementById("mw-roller-screen");
+    const cta = document.getElementById("mw-roller-cta");
+    const reveal = document.getElementById("mw-roller-reveal");
+    const nameEl = document.getElementById("mw-roller-name");
+    const quirkEl = document.getElementById("mw-roller-quirk");
+    if (!screen) return;
+
+    if (reveal) reveal.classList.remove("mw-roller-revealed");
+    if (nameEl) nameEl.textContent = "";
+    if (quirkEl) quirkEl.textContent = "";
+    if (cta) {
+      cta.disabled = true;
+      cta.classList.remove("mw-roller-ready");
+      cta.textContent = "THE DICE ARE STILL FALLING";
+    }
+    setReel("mw-roller-race", pickDisplay(ROLLER_RACE_NAMES), false);
+    setReel("mw-roller-class", pickDisplay(ROLLER_CLASS_NAMES), false);
+    setReel("mw-roller-sub", pickDisplay(ROLLER_SUB_NAMES), false);
+    screen.hidden = false;
+
+    // The one real roll — engine rng, exactly like every other new-run entry
+    // point. characterSheetViewModel is the same rng-free, DOM-free view
+    // model the HERO tab uses (src/browser/viewModels.js) — reading it here
+    // does not draw from rolledState.rngState.
+    const rolledState = await startNewRun();
+    const sheet = characterSheetViewModel(rolledState);
+    const locked = { race: false, cls: false, sub: false };
+
+    rollerSpinTimer = setInterval(() => {
+      if (!locked.race) setReel("mw-roller-race", pickDisplay(ROLLER_RACE_NAMES), false);
+      if (!locked.cls) setReel("mw-roller-class", pickDisplay(ROLLER_CLASS_NAMES), false);
+      if (!locked.sub) setReel("mw-roller-sub", pickDisplay(ROLLER_SUB_NAMES), false);
+    }, ROLLER_SPIN_MS);
+
+    rollerLockTimers.push(setTimeout(() => { locked.race = true; setReel("mw-roller-race", sheet.raceLabel, true); }, ROLLER_LOCK_DELAYS.race));
+    rollerLockTimers.push(setTimeout(() => { locked.cls = true; setReel("mw-roller-class", sheet.classLabel, true); }, ROLLER_LOCK_DELAYS.cls));
+    rollerLockTimers.push(setTimeout(() => { locked.sub = true; setReel("mw-roller-sub", sheet.subLabel, true); }, ROLLER_LOCK_DELAYS.sub));
+    rollerLockTimers.push(setTimeout(() => {
+      clearInterval(rollerSpinTimer); rollerSpinTimer = null;
+      if (nameEl) nameEl.textContent = sheet.name;
+      if (quirkEl) quirkEl.textContent = sheet.quirk.text;
+      if (reveal) reveal.classList.add("mw-roller-revealed");
+      rollerPendingState = rolledState;
+      if (cta) {
+        cta.disabled = false;
+        cta.classList.add("mw-roller-ready");
+        cta.textContent = "ENTER THE MAZE";
+      }
+    }, ROLLER_REVEAL_DELAY));
+  };
+
+  // The roller's own primary CTA: commits whatever state finished revealing
+  // (rollerPendingState, set only once phase 4 above completes) and lands on
+  // the MAP tab — window.__mzShowTab already exists for exactly this
+  // (04-05's 5-tab nav, see initTabs() in the classic script above).
+  (function initRollerScreen() {
+    const cta = document.getElementById("mw-roller-cta");
+    const screen = document.getElementById("mw-roller-screen");
+    if (!cta || !screen) return;
+    cta.onclick = () => {
+      if (cta.disabled || !rollerPendingState) return;
+      const state = rollerPendingState;
+      rollerPendingState = null;
+      commitRolledState(state);
+      screen.hidden = true;
+      window.__mzShowTab?.("maze");
+    };
+  })();
 
   // 02-03: only NOW — after window.mzStorage is assigned + migrated above —
   // invoke the classic script's own deferred boot sequence
