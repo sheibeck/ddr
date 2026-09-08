@@ -181,8 +181,27 @@ ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);p
 /* ---------- maze ---------- */
 .mazebox{background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
 canvas{display:block;margin:0 auto;max-width:100%;background:#F4EEDF;border:1px solid var(--rule);touch-action:manipulation}
+
+/* 04-06: the pannable, fog-lit viewport framing DOM/CSS layer wrapped
+   AROUND the untouched <canvas id="maze"> (04-UI-SPEC.md Screen 1 / Safe
+   Areas & Layout — canvas stays the renderer, this is the framing only).
+   The canvas itself draws the WHOLE GW x GH grid at its natural CELL*GW
+   CSS size (see fit()); this box crops that to a phone-sized window via
+   overflow:hidden and the canvas is positioned inside it (positionCanvas())
+   using the SAME cs/pan/canvasPad transform src/browser/controls.js's
+   screenToCell inverts for tap hit-testing — one shared transform, never a
+   second copy (04-RESEARCH.md Anti-Pattern). */
+.mw-maze-viewport{position:relative;width:100%;height:min(62vw,420px);min-height:260px;overflow:hidden;background:#080705;border:1px solid var(--rule);touch-action:none}
+.mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
+.mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
+.mw-viewport-chips{position:absolute;top:8px;left:8px;display:flex;gap:8px;z-index:3}
+.mw-chip{min-height:48px;min-width:48px;padding:6px 10px;border:2px solid #4a4032;background:#1b170f;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:4px}
+.mw-flash{position:absolute;top:8px;left:50%;transform:translate(-50%,-4px);z-index:4;background:rgba(8,7,5,.9);color:#e6ddc6;padding:6px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis;opacity:0;pointer-events:none;transition:opacity .18s ease}
+.mw-flash.mw-flash-show{opacity:1}
+
 .mazefoot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-top:10px}
-.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase}
+.legend{display:none;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase}
+.legend.mw-legend-open{display:flex}
 .legend i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px;border-radius:50%}
 .legend .k-dot{background:var(--stamp)}
 .legend .k-tel{background:var(--ditto);border-radius:0;transform:rotate(45deg)}
@@ -193,7 +212,11 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#F4EEDF;border:1px 
 .legend .k-gorge{background:var(--ink);border-radius:0;clip-path:polygon(0 0,45% 50%,5% 100%,100% 100%,55% 50%,95% 0)}
 .legend .k-exit{background:var(--ink);border-radius:0;clip-path:polygon(50% 100%,0 0,100% 0)}
 
-.dpad{display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(2,36px);gap:5px}
+/* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
+   48dp as-is); display:none by default (tap-to-move is the default control
+   scheme) — the trailing module script shows this via inline style once
+   settings.controlScheme resolves to 'dpad'. */
+.dpad{display:none;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:7px}
 .dpad button{grid-column:auto}
 .dpad .up{grid-column:2;grid-row:1}
 .dpad .lf{grid-column:1;grid-row:2}
@@ -460,9 +483,19 @@ html,body{height:100%}
     <!-- MAZE (default landing screen; canvas UNCHANGED, id="maze" preserved) -->
     <section class="mw-screen" id="screen-maze" data-screen="maze">
       <div class="mazebox">
-        <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
+        <!-- 04-06: pannable fog-lit viewport framing around the untouched
+             canvas — see the .mw-maze-viewport CSS comment above. -->
+        <div class="mw-maze-viewport" id="mw-maze-viewport">
+          <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
+          <div class="mw-vignette" aria-hidden="true"></div>
+          <div class="mw-viewport-chips">
+            <button type="button" class="mw-chip" id="mw-chip-marks">Marks</button>
+            <button type="button" class="mw-chip" id="mw-chip-centre">Centre</button>
+          </div>
+          <div class="mw-flash" id="mw-flash" aria-live="polite"></div>
+        </div>
         <div class="mazefoot">
-          <div class="legend">
+          <div class="legend" id="mw-legend">
             <span><i class="k-dot"></i>Encounter dot</span>
             <span><i class="k-tel"></i>Teleport</span>
             <span><i class="k-one"></i>One-way door</span>
@@ -1452,16 +1485,50 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 
 /* ---------------- rendering ---------------- */
 let CELL = 28;
+// 04-06: camera-only pan offset (CSS px) — CENTRE snaps this to {0,0};
+// panning NEVER changes floor.px/py (S.floor is never touched here). Shared
+// by positionCanvas() (forward transform) and the tap handler below (which
+// feeds the SAME pan/CELL/CANVAS_PAD into controls.js's screenToCell — one
+// shared transform, per 04-RESEARCH.md's Anti-Pattern warning).
+let pan = { x: 0, y: 0 };
+const CANVAS_PAD = 0;
+
+// The canvas keeps drawing the WHOLE GW x GH grid (unchanged rendering
+// model); cell size now comes from the S/M/L text-size setting via
+// src/browser/canvasSizing.js's cellSizeForTextScale (bridged onto
+// window.__mzCanvasSizing by the trailing module script — a classic,
+// non-module script can't `import` directly, see that module's own doc
+// comment), not from "shrink to fit the window". The viewport DIV
+// (.mw-maze-viewport) is what's sized to the screen and crops/pans this
+// larger canvas via overflow:hidden + positionCanvas() below.
 function fit() {
-  const w = cv.parentElement.clientWidth - 26;
-  const h = Math.max(300, window.innerHeight - 260);
-  CELL = clamp(Math.floor(Math.min(w, h) / GW), 14, 34);
-  const px = CELL * GW;
+  const sizing = window.__mzCanvasSizing;
+  const settings = window.__mzSettings;
+  const textSize = (settings && settings.textSize) || "M";
+  CELL = sizing ? sizing.cellSizeForTextScale(textSize) : CELL;
+  const cssPx = CELL * GW;
   const dpr = window.devicePixelRatio || 1;
-  cv.width = px * dpr; cv.height = px * dpr;
-  cv.style.width = px + "px"; cv.style.height = px + "px";
+  const backing = sizing ? sizing.computeCanvasBacking(cssPx, dpr) : { backing: cssPx * dpr, style: cssPx };
+  cv.width = backing.backing; cv.height = backing.backing;
+  cv.style.width = backing.style + "px"; cv.style.height = backing.style + "px";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   draw();
+}
+
+// Positions the (larger) canvas inside the (smaller, cropping) viewport box
+// so the player's cell sits at the viewport center plus the pan offset —
+// the exact forward transform src/browser/controls.js's screenToCell
+// inverts for tap hit-testing (tx/ty formula documented there).
+function positionCanvas() {
+  if (!S) return;
+  const vp = document.getElementById("mw-maze-viewport");
+  if (!vp) return;
+  const rect = vp.getBoundingClientRect();
+  const { px, py } = S.floor;
+  const tx = rect.width / 2 - (px + 0.5) * CELL - CANVAS_PAD + pan.x;
+  const ty = rect.height / 2 - (py + 0.5) * CELL - CANVAS_PAD + pan.y;
+  cv.style.left = tx + "px";
+  cv.style.top = ty + "px";
 }
 
 function reveal() {
@@ -1532,58 +1599,57 @@ function draw() {
     if (solid(x+1, y)) edge(X+CELL, Y, X+CELL, Y+CELL);
   }
 
-  // features
-  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
-    const c = g[y][x];
-    if (!c.seen || !c.feat) continue;
-    const cx = x*CELL + CELL/2, cy = y*CELL + CELL/2, r = CELL*.22;
-    if (c.feat === "dot") {
-      ctx.fillStyle = C("--stamp"); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
-    } else if (c.feat === "tele") {
-      ctx.fillStyle = C("--ditto");
-      ctx.beginPath(); ctx.moveTo(cx, cy-r*1.3); ctx.lineTo(cx+r*1.3, cy); ctx.lineTo(cx, cy+r*1.3); ctx.lineTo(cx-r*1.3, cy); ctx.closePath(); ctx.fill();
-    } else if (c.feat === "one") {
-      ctx.save();
-      ctx.globalAlpha = .18; ctx.fillStyle = C("--moss");
-      ctx.fillRect(x*CELL+1, y*CELL+1, CELL-2, CELL-2);
-      ctx.globalAlpha = 1;
-      ctx.translate(cx, cy);
-      ctx.rotate({N:0,E:Math.PI/2,S:Math.PI,W:-Math.PI/2}[c.dir]);
-      ctx.fillStyle = C("--moss");
-      ctx.beginPath(); ctx.moveTo(0,-r*1.5); ctx.lineTo(r*1.1,r*.5); ctx.lineTo(0,r*.1); ctx.lineTo(-r*1.1,r*.5); ctx.closePath(); ctx.fill();
-      ctx.restore();
-    } else if (c.feat === "trap") {
-      ctx.strokeStyle = C("--stamp"); ctx.lineWidth = Math.max(2, CELL*.09);
-      ctx.beginPath(); ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
-      ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r); ctx.stroke();
-    } else if (c.feat === "chest") {
-      ctx.fillStyle = C("--moss");
-      ctx.fillRect(cx - r, cy - r*.75, r*2, r*1.5);
-      ctx.fillStyle = "#F4EEDF";
-      ctx.fillRect(cx - r*.18, cy - r*.75, r*.36, r*1.5);
-    } else if (c.feat === "climb") {
-      ctx.strokeStyle = C("--ink"); ctx.lineWidth = Math.max(2, CELL*.09);
-      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(cx - r*1.2, cy + k*r*.7); ctx.lineTo(cx + r*1.2, cy + k*r*.7); ctx.stroke(); }
-    } else if (c.feat === "gorge") {
-      ctx.fillStyle = C("--ink");
-      ctx.beginPath();
-      ctx.moveTo(cx - r*1.3, cy - r); ctx.lineTo(cx - r*.2, cy); ctx.lineTo(cx - r*1.1, cy + r);
-      ctx.lineTo(cx + r*1.3, cy + r); ctx.lineTo(cx + r*.2, cy); ctx.lineTo(cx + r*1.1, cy - r);
-      ctx.closePath(); ctx.fill();
-    } else if (c.feat === "exit" || c.feat === "gate") {
-      ctx.fillStyle = c.feat === "gate" ? C("--ditto") : C("--ink");
-      ctx.beginPath(); ctx.moveTo(cx-r*1.3, cy-r); ctx.lineTo(cx+r*1.3, cy-r); ctx.lineTo(cx, cy+r*1.3); ctx.closePath(); ctx.fill();
+  // features — PNG icons (04-06), replacing the procedural vector glyphs
+  // AND the design mockup's Unicode glyphs (04-CONTEXT.md decision).
+  // featureKeyForCell/drawFeatureIcon come from src/browser/icons.js via the
+  // window.__mzIconsApi/window.__mzIconMap bridges the trailing module
+  // script sets up (and awaits preloadIcons() for) BEFORE
+  // window.__mzClassicBoot() ever calls draw() the first time — see that
+  // module's own doc comment for why a classic (non-module) script can't
+  // `import` directly. Fail-open (04-RESEARCH.md Code Example #3): a
+  // missing/undecoded icon just draws nothing for that cell, never blocks
+  // rendering the rest of the maze.
+  const iconsApi = window.__mzIconsApi, iconMap = window.__mzIconMap;
+  const iconReady = img => img && img.complete && img.naturalWidth > 0;
+  if (iconsApi && iconMap) {
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      const c = g[y][x];
+      if (!c.seen || !c.feat) continue;
+      const key = iconsApi.featureKeyForCell(c);
+      const img = key && iconMap[key];
+      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL);
     }
   }
 
-  // the party marker, P, as the rules draw it
-  const cx = px*CELL + CELL/2, cy = py*CELL + CELL/2;
-  ctx.fillStyle = C("--ditto");
-  ctx.beginPath(); ctx.arc(cx, cy, CELL*.36, 0, 7); ctx.fill();
-  ctx.fillStyle = "#F6F1E4";
-  ctx.font = `${Math.round(CELL*.5)}px "Special Elite", monospace`;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("P", cx, cy + CELL*.03);
+  // the party marker — party.png (04-06), replacing the procedural "P"
+  // glyph, with a static soft glow behind it standing in for the design's
+  // animated mwglow pulse. draw() only runs on-demand (per move/render), not
+  // inside a continuous rAF loop — a literal animated pulse would need a new
+  // always-running render loop, out of scope for this MVP slice (Claude's
+  // discretion, 04-CONTEXT.md). Fails open to the original dot+letter marker
+  // if party.png never loaded, so the player is never invisible on the map.
+  {
+    const cx = px*CELL + CELL/2, cy = py*CELL + CELL/2;
+    const partyImg = iconsApi && iconMap && iconMap[iconsApi.PLAYER_MARKER_ICON];
+    const glowR = CELL * .5;
+    const grad = ctx.createRadialGradient(cx, cy, glowR * .15, cx, cy, glowR);
+    grad.addColorStop(0, "rgba(232,201,122,.55)");
+    grad.addColorStop(1, "rgba(232,201,122,0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, 7); ctx.fill();
+    if (iconReady(partyImg)) {
+      iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL);
+    } else {
+      ctx.fillStyle = C("--ditto");
+      ctx.beginPath(); ctx.arc(cx, cy, CELL*.36, 0, 7); ctx.fill();
+      ctx.fillStyle = "#F6F1E4";
+      ctx.font = `${Math.round(CELL*.5)}px "Special Elite", monospace`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("P", cx, cy + CELL*.03);
+    }
+  }
+
+  positionCanvas();
 }
 
 /* ---------------- log ---------------- */
@@ -3501,6 +3567,75 @@ document.getElementById("dpad").addEventListener("click", e => {
   const b = e.target.closest("button[data-dir]"); if (b) move(b.dataset.dir);
 });
 
+// 04-06: centered, single-line flash toast (04-UI-SPEC.md Screen 1 — kept
+// within the <=5-word contract by every call site below).
+let flashTimer = null;
+function flashMessage(text) {
+  const el = document.getElementById("mw-flash");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add("mw-flash-show");
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.classList.remove("mw-flash-show"), 1400);
+}
+
+// MARKS toggles the existing feature legend (mazefoot) as a compact overlay
+// reveal; CENTRE snaps the camera pan back onto the player — both are >=48dp
+// chips per the 48dp Corrections table.
+document.getElementById("mw-chip-marks").addEventListener("click", () => {
+  document.getElementById("mw-legend").classList.toggle("mw-legend-open");
+});
+document.getElementById("mw-chip-centre").addEventListener("click", () => {
+  pan = { x: 0, y: 0 };
+  positionCanvas();
+});
+
+// 04-06: one pointerdown/move/up gesture pipeline on the viewport —
+// classifyPointerGesture (src/browser/controls.js, bridged via
+// window.__mzControls) tells tap from pan-drag; a drag only updates `pan`
+// (camera-only, never touches S.floor.px/py); a tap (only when
+// settings.controlScheme === 'tap') resolves through screenToCell +
+// resolveTapDirection against a live isSeen predicate matching the real
+// engine/maze.js floor shape, then routes through window.move(dir) — the
+// SAME dispatch()->applyAction seam the D-pad/keydown handlers already use
+// (T-04-13: no client "reachable" shortcut ever mutates state directly).
+(function initMazeViewportControls() {
+  const vp = document.getElementById("mw-maze-viewport");
+  if (!vp) return;
+  let pointerStart = null;
+  vp.addEventListener("pointerdown", e => {
+    if (!S || S.combat || S.store || S.dead || S.won) return;
+    pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp, panStart: { x: pan.x, y: pan.y }, id: e.pointerId };
+    try { vp.setPointerCapture(e.pointerId); } catch (err) { /* not fatal — pointer just won't be captured off-element */ }
+  });
+  vp.addEventListener("pointermove", e => {
+    if (!pointerStart || e.pointerId !== pointerStart.id) return;
+    const dx = e.clientX - pointerStart.x, dy = e.clientY - pointerStart.y;
+    pan = { x: pointerStart.panStart.x + dx, y: pointerStart.panStart.y + dy };
+    positionCanvas();
+  });
+  const endGesture = e => {
+    if (!pointerStart || e.pointerId !== pointerStart.id) return;
+    const dx = e.clientX - pointerStart.x, dy = e.clientY - pointerStart.y;
+    const totalDelta = Math.hypot(dx, dy);
+    const controlsApi = window.__mzControls;
+    const gesture = controlsApi ? controlsApi.classifyPointerGesture({ timeStamp: pointerStart.t }, e, totalDelta) : "drag";
+    const scheme = (window.__mzSettings && window.__mzSettings.controlScheme) || "tap";
+    if (gesture === "tap" && scheme === "tap" && controlsApi && S && !S.combat && !S.store && !S.dead && !S.won) {
+      const rect = vp.getBoundingClientRect();
+      const pos = { x: S.floor.px, y: S.floor.py };
+      const cell = controlsApi.screenToCell(e.clientX, e.clientY, rect, pos, pan, CELL, CANVAS_PAD);
+      const isSeen = (x, y) => !!(S.floor.g[y] && S.floor.g[y][x] && S.floor.g[y][x].seen);
+      const dir = controlsApi.resolveTapDirection(pos, cell, isSeen);
+      if (dir) move(dir);
+      else flashMessage("CAN'T GO THERE.");
+    }
+    pointerStart = null;
+  };
+  vp.addEventListener("pointerup", endGesture);
+  vp.addEventListener("pointercancel", () => { pointerStart = null; });
+})();
+
 addEventListener("keydown", e => {
   const k = e.key.toLowerCase();
   const dirKeys = { arrowup:"N", w:"N", arrowdown:"S", s:"S", arrowleft:"W", a:"W", arrowright:"E", d:"E" };
@@ -3589,6 +3724,13 @@ window.__mzClassicBoot = async function classicBoot() {
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, effectiveTextScale } from "./src/browser/settings.js";
+  // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
+  // below so the classic (non-module) script's fit()/draw()/tap-handler code
+  // can call them without an ES `import` (see this module's own doc comment
+  // on why window.move/window.__mzState use the same bridge pattern).
+  import { screenToCell, resolveTapDirection, classifyPointerGesture } from "./src/browser/controls.js";
+  import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
+  import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
@@ -3611,10 +3753,30 @@ window.__mzClassicBoot = async function classicBoot() {
     const settings = await readSettings();
     const appEl = document.getElementById("app");
     if (appEl) appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
+    // 04-06: expose the resolved settings object so the classic script's
+    // fit() (cell size) and tap-gesture handler (controlScheme) can read it
+    // without importing settings.js directly — same bridge pattern as
+    // window.__mzState. controlScheme picks which control affordance shows:
+    // tap-to-move is the default (D-pad stays display:none, see its CSS);
+    // 'dpad' reveals the alternate on-screen D-pad instead.
+    window.__mzSettings = settings;
+    const dpadEl = document.getElementById("dpad");
+    if (dpadEl) dpadEl.style.display = settings.controlScheme === "dpad" ? "grid" : "none";
   } catch {
     /* fail-open: settings.js itself never throws, but defend anyway — a
        text-scale read failure must never block boot */
   }
+
+  // 04-06: bridge the pure controls.js/canvasSizing.js math + icons.js onto
+  // window.* for the classic script's fit()/draw()/tap-handler to consume
+  // (see the imports above). preloadIcons() is awaited here so every icon is
+  // decoded BEFORE window.__mzClassicBoot() below ever calls draw() the
+  // first time — no first-paint pop, fail-open per icons.js's own contract
+  // (a missing/broken icon just resolves without drawing).
+  window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture };
+  window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale };
+  window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON };
+  window.__mzIconMap = await preloadIcons("./icons/optimized");
 
   // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —
   // src/browser/storage.js#migrateLegacyKeys). boot() below also runs this
