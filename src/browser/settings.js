@@ -100,3 +100,63 @@ export async function writeSetting(key, value) {
   }
   return next;
 }
+
+// --- Text-scale (UX-08) + confirm-quit gate ---------------------------
+//
+// Pure functions only below this line: no DOM, no storage, no side effects
+// — mirroring src/browser/nativeChrome.js#decideBackAction's pure-gate
+// posture. 04-05 (Wave-2 shell) calls effectiveTextScale to set the root
+// `--mw-text-scale` custom property; 04-09 (settings screen) calls
+// shouldConfirmQuit to gate the Sheet's CUT LOSSES / ROLL ANOTHER action.
+//
+// RUN AWAY (combat) is deliberately NEVER routed through shouldConfirmQuit
+// — per 04-UI-SPEC.md, its mis-tap protection is isolation/sizing/color
+// only, not a confirm gate.
+
+const TEXT_SCALE_MIN = 0.85;
+const TEXT_SCALE_MAX = 1.25;
+
+const TEXT_SCALE_BY_SIZE = Object.freeze({ S: 0.85, M: 1.0, L: 1.25 });
+
+/**
+ * textScaleForSize('S'|'M'|'L') -> 0.85|1.0|1.25 (04-UI-SPEC.md Typography).
+ * Any unrecognized input defaults to 1.0 (M, the neutral multiplier).
+ */
+export function textScaleForSize(size) {
+  return TEXT_SCALE_BY_SIZE[size] ?? 1.0;
+}
+
+/**
+ * clampTextScale(osScale) — clamps any finite number to
+ * [TEXT_SCALE_MIN, TEXT_SCALE_MAX]. A non-finite input (NaN, +/-Infinity,
+ * a non-number, undefined/null) defaults to the neutral 1.0 rather than
+ * propagating garbage into the layout math.
+ */
+export function clampTextScale(osScale) {
+  if (typeof osScale !== "number" || !Number.isFinite(osScale)) return 1.0;
+  return Math.min(TEXT_SCALE_MAX, Math.max(TEXT_SCALE_MIN, osScale));
+}
+
+/**
+ * effectiveTextScale(size, osScale) — multiplies the S/M/L size multiplier
+ * by a clamped OS font-scale factor; the FINAL product is itself clamped to
+ * [TEXT_SCALE_MIN, TEXT_SCALE_MAX] so no combination of size + an extreme OS
+ * setting can push the fixed pixel-art chrome (HUD numbers, tab bar, D-pad)
+ * outside the locked bound.
+ */
+export function effectiveTextScale(size, osScale) {
+  const base = textScaleForSize(size);
+  const osFactor = clampTextScale(osScale);
+  return Math.min(TEXT_SCALE_MAX, Math.max(TEXT_SCALE_MIN, base * osFactor));
+}
+
+/**
+ * shouldConfirmQuit({confirmBeforeQuit}) -> boolean — true only when the
+ * setting is truthy. Pure, no side effects; gates the Sheet's CUT LOSSES /
+ * ROLL ANOTHER action. Accepts an absent/undefined settings object (treated
+ * as confirmBeforeQuit: false, the safest default for a caller that failed
+ * to load settings first).
+ */
+export function shouldConfirmQuit(settings) {
+  return !!settings?.confirmBeforeQuit;
+}
