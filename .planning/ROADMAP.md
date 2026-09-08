@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Engine Extraction & Determinism** - The full ruleset runs behind a single deterministic, serializable `applyAction` contract with zero gameplay regressions ✓ (285/285 tests, 2026-09-08)
 - [ ] **Phase 2: Android Packaging & Native Persistence** - The game installs as a native Android app that reliably autosaves and resumes on a real device
-- [ ] **Phase 3: Endless Descent & Difficulty Balance** - Players descend an endless, fairly-paced maze instead of a fixed 5-floor Gate
+- [x] **Phase 3: Endless Descent & Difficulty Balance** - Players descend an endless, fairly-paced maze instead of a fixed 5-floor Gate ✓ (324/324 tests, 2026-09-08)
 - [ ] **Phase 4: Mobile Presentation, Controls & Onboarding** - The game feels native and approachable on a phone, with touch controls, readable UI, and in-context teaching
 - [ ] **Phase 5: Voice, Content & Graveyard** - The game's sarcastic identity comes alive through data-driven copy tied to real events, verified safe for its rating
 - [ ] **Phase 6: Google Play Compliance & Launch** - Mazeworld is live, purchasable, and compliant on Google Play
@@ -144,9 +144,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 0/TBD | Deferred — needs Android toolchain | - |
-| 3. Endless Descent & Difficulty Balance | 3/3 | In Progress|  |
+| 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device/toolchain | - |
-| 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 3) | - |
+| 5. Voice, Content & Graveyard | 0/TBD | Next (code-only) | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
 
 > **Execution order (adjusted 2026-09-08):** Autonomous run does code-only phases first — **3 → 5** — while Android-toolchain phases (2, 4, 6) are deferred until the user's Android Studio/SDK/device and Google Play account are ready. Phase 3 depends only on the Phase 1 engine (done); Phase 5's voice system is engine/data-driven. Difficulty tuning (Phase 3) and any real-device feel are UAT items deferred to milestone end.
