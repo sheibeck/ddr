@@ -16,6 +16,7 @@
 import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
+import { move, makeCamp } from "./movement.js";
 
 /**
  * applyAction(state, action) — the pure dispatcher.
@@ -43,8 +44,14 @@ export function applyAction(state, action) {
   const events = [];
 
   switch (action.type) {
-    // move/attack/castSpell/drinkPotion/flee/parley/sing/readScroll/buyItem/
-    // leaveStore/useItem/camp handlers are added by their slice plans and will
+    case "move":
+      move(next, action.dir, rng, events);
+      break;
+    case "camp":
+      makeCamp(next, rng, events);
+      break;
+    // attack/castSpell/drinkPotion/flee/parley/sing/readScroll/buyItem/
+    // leaveStore/useItem handlers are added by their slice plans and will
     // dispatch to their module here, each mutating `next` and pushing events.
     default:
       break;
