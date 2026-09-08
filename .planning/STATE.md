@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-09-08T02:48:37.675Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-09-08T02:56:44.593Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 4 of 10
+Plan: 5 of 10
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [███░░░░░░░] 30%
 | Phase 01 P01 | 3min | 3 tasks | 11 files |
 | Phase 01 P02 | 6min | 3 tasks | 21 files |
 | Phase 01 P03 | 45min | 3 tasks | 7 files |
+| Phase 01-engine-extraction-determinism P04 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,7 @@ Recent decisions affecting current work:
 - [Phase ?]: CAUSE_TEXT death-note closures converted to plain {token} string templates plus a CAUSE_TEXT_TOKENS data map recording token names per cause
 - [Phase ?]: Renamed test/parity/prototype-master.js to .js.txt to avoid node --test's blanket directory-based auto-discovery sweep crashing the suite (Rule 3 fix).
 - [Phase ?]: seedableMathRandom.js duplicates engine/rng.js's mulberry32 bit-mixing inline (verified byte-identical via sequence comparison) rather than importing it, per plan's either/or guidance.
+- [Phase ?]: engine/maze.js reveal(floor,radius=2) takes radius as an explicit param (default 2) since character skills/effects aren't yet extracted; corrected plan's inaccurate reveal() description against the true prototype source (radius-based square reveal, not 4-neighbor)
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -110,6 +112,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T02:48:37.649Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-09-08T02:56:44.573Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
