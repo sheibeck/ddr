@@ -30,6 +30,17 @@ export function epitaphFor(cause, ctx, rng) {
 /**
  * epitaphCtx(state, detail) — the token object epitaphFor fills templates
  * from. Ports mazeworld.html epitaphCtx() (lines 2929-2936).
+ *
+ * MD-03: the prototype's `gold.toLocaleString()` was a live-DOM-render
+ * helper whose output was never itself stored or compared byte-for-byte. In
+ * the extracted engine, this same string feeds `state.epitaph`, which IS
+ * persisted GameState and compared byte-for-byte by the round-trip/
+ * determinism/parity suites. `toLocaleString()` with no explicit locale
+ * follows the JS runtime's default locale/ICU data, which the seed does not
+ * control — two devices (or the same seed under two different system
+ * locales) could otherwise produce a different `state.epitaph` string from
+ * this call alone. Pin a fixed locale so the formatted digit-grouping is a
+ * pure function of `c.gold`, not of the host runtime.
  */
 export function epitaphCtx(state, detail) {
   const c = state.c;
@@ -41,7 +52,7 @@ export function epitaphCtx(state, detail) {
     floor: state.floor.depth,
     day: state.day,
     sp: Math.round(c.sp),
-    gold: c.gold.toLocaleString(),
+    gold: c.gold.toLocaleString("en-US"),
     motive: c.motive.toLowerCase(),
     lvl: ROMAN[c.level - 1],
   };

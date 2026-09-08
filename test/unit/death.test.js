@@ -80,6 +80,36 @@ test("epitaphCtx defaults foe to 'creature' when no detail is given", () => {
   assert.equal(ctx.foe, "creature");
 });
 
+// MD-03 regression: epitaphCtx() must format `gold` with a locale PINNED to
+// "en-US", not the JS runtime's default locale/ICU data -- state.epitaph is
+// persisted GameState compared byte-for-byte by the round-trip/determinism/
+// parity suites, so a bare `toLocaleString()` would make the same seed +
+// actions produce a different byte-identical result on a host with a
+// different default locale. Spy on Number.prototype.toLocaleString rather
+// than relying on this test machine's own locale happening to be en-US.
+test("MD-03: epitaphCtx formats gold via toLocaleString('en-US') explicitly, not the runtime default", () => {
+  const original = Number.prototype.toLocaleString;
+  const calls = [];
+  Number.prototype.toLocaleString = function (...args) {
+    calls.push(args);
+    return original.apply(this, args);
+  };
+  try {
+    epitaphCtx(fixedState(), "a goblin");
+  } finally {
+    Number.prototype.toLocaleString = original;
+  }
+  assert.equal(calls.length, 1, "toLocaleString must be called exactly once for gold");
+  assert.equal(calls[0][0], "en-US", "the locale argument must be explicitly pinned to en-US");
+});
+
+test("MD-03: epitaphCtx's gold formatting is locale-stable regardless of the host's default locale", () => {
+  // Large enough to expose thousands-grouping; en-US always groups with
+  // commas regardless of what the host runtime's own default locale is.
+  const ctx = epitaphCtx(fixedState({ c: { gold: 1234567 } }), "a goblin");
+  assert.equal(ctx.gold, "1,234,567");
+});
+
 // --- die() ---------------------------------------------------------------
 
 test("die sets dead/deathNote/epitaph and clears combat/wards", () => {
