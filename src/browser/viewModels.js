@@ -129,3 +129,43 @@ export function characterSheetViewModel(state) {
     skills,
   };
 }
+
+// Matches the roll-detail span src/browser/engineAdapter.js's formatEvent()
+// already embeds inline (e.g. `<span class="roll">7</span>`).
+const ROLL_SPAN_RE = /<span class="roll">([\s\S]*?)<\/span>/;
+
+/**
+ * oracleLogViewModel(entries, diceMode) — the ORACLE tab's (and, per
+ * 04-UI-SPEC.md, the combat log's) render-ready rows. `entries` is the
+ * formatEvents()-shaped array of HTML narration strings, accumulated
+ * oldest-first; this returns rows newest-first. Each row is
+ * {narration, roll, revealable, revealedByDefault}:
+ *   - a line with no roll span: {roll: null, revealable: false, revealedByDefault: false}
+ *     under every diceMode (no reveal affordance to show).
+ *   - diceMode 'on tap' (default): revealable true, hidden until tapped.
+ *   - diceMode 'always': revealable true, revealed by default.
+ *   - diceMode 'never': roll omitted (null), not revealable.
+ * Pure/DOM-free — no reveal STATE is tracked here, only the gating flags the
+ * renderer needs to decide what to show.
+ */
+export function oracleLogViewModel(entries, diceMode) {
+  const rows = entries.map((entry) => {
+    const html = typeof entry === "string" ? entry : entry && entry.html;
+    const match = ROLL_SPAN_RE.exec(html || "");
+    const roll = match ? match[1] : null;
+    const narration = match ? (html.slice(0, match.index) + html.slice(match.index + match[0].length)).trim() : (html || "").trim();
+
+    if (roll === null) {
+      return { narration, roll: null, revealable: false, revealedByDefault: false };
+    }
+    if (diceMode === "never") {
+      return { narration, roll: null, revealable: false, revealedByDefault: false };
+    }
+    if (diceMode === "always") {
+      return { narration, roll, revealable: true, revealedByDefault: true };
+    }
+    // diceMode === "on tap" (default): hidden until tapped.
+    return { narration, roll, revealable: true, revealedByDefault: false };
+  });
+  return rows.reverse();
+}
