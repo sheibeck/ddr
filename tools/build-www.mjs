@@ -100,6 +100,23 @@ function copyFonts() {
   step("copied fonts/ into www/fonts/");
 }
 
+// 04-06: the 9 user-provided map icons (downscaled once to icons/optimized/,
+// ~128-160px, source of truth committed under version control — see that
+// directory's own commit for the dependency-free PowerShell/System.Drawing
+// resize pipeline, mirroring 02-04's launcher-icon approach since
+// @capacitor/assets is broken in this environment). No runtime fetch: this
+// is a whole-directory copy at build time, exactly like copyFonts() above.
+// NOTE: Phase 5 also edits this file (coordinate — see copySourceDirs()'s
+// own header comment for the same note re: src/browser/).
+function copyIcons() {
+  const src = path.join(ROOT, "icons", "optimized");
+  if (!existsSync(src)) {
+    throw new Error(`${src} does not exist — expected the downscaled icons/optimized/*.png set (see mazeworld.html's icon-draw code)`);
+  }
+  cpSync(src, path.join(WWW, "icons", "optimized"), { recursive: true });
+  step("copied icons/optimized/ into www/icons/optimized/");
+}
+
 // The vendored @capacitor/* plugin ESM (dist/esm/*.js) ships with
 // EXTENSIONLESS relative specifiers — `export * from './definitions'`,
 // `import('./web')` — and bare `@capacitor/core` specifiers. Bare specifiers
@@ -217,6 +234,7 @@ function main() {
   cleanWww();
   copySourceDirs();
   copyFonts();
+  copyIcons();
   const importMap = vendorCapacitorPackages();
   writeIndexHtml(importMap);
   step("done");
