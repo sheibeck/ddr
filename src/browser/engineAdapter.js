@@ -27,6 +27,15 @@ import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js
 // adapter's replacement will resolve.
 const SAVE_KEY = "mazeworld.delve.v1";
 
+// The dev-loop stand-in for a durable best-depth high score (RUN-05 /
+// 03-CONTEXT.md "score = deepest floor reached"). Deliberately a SEPARATE
+// localStorage key from SAVE_KEY, and deliberately NOT part of GameState —
+// folding it into GameState would break the save round-trip/parity
+// comparables this phase's difficulty work depends on staying stable.
+// Phase 2 (SAV-04) relocates this value to durable Capacitor Preferences;
+// this key is intentionally the minimal seam for that later swap.
+const BEST_KEY = "mazeworld.best.v1";
+
 let currentState = null;
 
 /** getState() — the adapter's current engine GameState (or null before boot). */
@@ -41,6 +50,61 @@ export function getState() {
 export function initRun(seed) {
   currentState = newRun(seed);
   return currentState;
+}
+
+/**
+ * getBest() — the best (deepest) floor.depth reached across runs, per
+ * 03-CONTEXT.md's "score = deepest floor reached" (descent is one-way, so
+ * floor.depth at any point in a run IS the deepest floor reached so far).
+ * Returns 0 if nothing is stored, the stored value is not a finite number,
+ * or storage is blocked (private window, quota) — never throws (matches
+ * boot()/persist()'s fail-open-to-zero posture; T-03-06 accepts a
+ * self-tampered value since this is single-player with no leaderboard).
+ */
+export function getBest() {
+  try {
+    const raw = localStorage.getItem(BEST_KEY);
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * recordBest(depth) — module-internal: writes max(stored best, depth) back
+ * to BEST_KEY. Never throws (private window/quota just means the new best
+ * won't persist, matching persist()'s own posture).
+ */
+function recordBest(depth) {
+  try {
+    const prev = getBest();
+    const next = Math.max(prev, Number.isFinite(depth) ? depth : 0);
+    localStorage.setItem(BEST_KEY, String(next));
+  } catch {
+    /* private window, blocked storage — the new best just won't persist */
+  }
+}
+
+/**
+ * startNewRun(seed) — the one-tap new-run entry point (RUN-05; 03-RESEARCH.md
+ * "one-tap new run" Option A: the adapter calls the engine's newRun(seed)
+ * factory directly, no new engine action type required). If a run is already
+ * live, its ending floor.depth is recorded as a candidate best-depth BEFORE
+ * it's replaced (descent is one-way, so the ending floor.depth is that run's
+ * score). `seed` is guarded to an integer with a Date.now() fallback so a
+ * malformed/adversarial seed can never reach newRun() unchecked (Security
+ * Domain V5; threat T-03-05) — mirrors the seed-recovery guard dispatch()
+ * already uses on its fail-closed path.
+ */
+export function startNewRun(seed) {
+  if (currentState) {
+    recordBest(currentState.floor.depth);
+  }
+  const safeSeed = Number.isInteger(seed) ? seed : Date.now();
+  const state = initRun(safeSeed);
+  persist();
+  return state;
 }
 
 /**

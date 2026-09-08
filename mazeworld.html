@@ -3278,7 +3278,7 @@ paint();
   // because `function move(dir){...}` in the classic script created a
   // mutable global-object property, and bare-identifier calls resolve that
   // property at call time, not at parse time.
-  import { boot, dispatch } from "./src/browser/engineAdapter.js";
+  import { boot, dispatch, startNewRun } from "./src/browser/engineAdapter.js";
 
   // A fresh integer seed for a brand-new run — only used if there is no
   // valid save to rehydrate. engine/rng.js's mulberry32 coerces any number
@@ -3297,6 +3297,24 @@ paint();
     window.paint();
     window.draw();
     for (const line of html) window.logLine(line);
+  };
+
+  // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
+  // script above created a mutable global `window.newGame` property, and the
+  // death-card's "Roll another delver" button (armAgain()/btn-again, and the
+  // won-path btn-again) both call the bare `newGame()` identifier, which
+  // resolves that property at CLICK time — so overwriting it here reroutes
+  // the button through the engine adapter's startNewRun(), exactly like
+  // window.move above reroutes the dpad/keydown handlers. No change to the
+  // death-card markup or to any DOM code inside engineAdapter.js. The
+  // polished mobile death screen / score display is Phase 4 scope — this is
+  // only closing the run loop in the dev harness.
+  window.newGame = function engineNewRun() {
+    const state = startNewRun();
+    window.__mzState.set(state);
+    window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
+    window.paint();
+    window.draw();
   };
 </script>
 

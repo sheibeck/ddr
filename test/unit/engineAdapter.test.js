@@ -12,7 +12,15 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { boot, initRun, getState, dispatch, formatEvents } from "../../src/browser/engineAdapter.js";
+import {
+  boot,
+  initRun,
+  getState,
+  dispatch,
+  formatEvents,
+  startNewRun,
+  getBest,
+} from "../../src/browser/engineAdapter.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
 
@@ -116,6 +124,62 @@ test("formatEvents maps known event types to HTML and drops unknown ones silentl
   assert.ok(html[1].includes("2"));
   assert.ok(html[2].includes("died") || html[2].toLowerCase().includes("died"));
   assert.ok(html[3].includes("Gate"));
+});
+
+test("startNewRun(seed) after a prior run returns a fresh state and swaps it in as currentState", () => {
+  withFakeLocalStorage(() => {
+    initRun(11);
+    const state = startNewRun(4242);
+    assert.equal(state.floor.depth, 1, "fresh run starts on floor 1");
+    assert.equal(state.seed, 4242, "fresh run uses the requested seed");
+    assert.equal(getState(), state, "startNewRun swaps in the returned state as current");
+  });
+});
+
+test("startNewRun(seed) records the ending run's floor.depth into getBest()", () => {
+  withFakeLocalStorage(() => {
+    initRun(11);
+    getState().floor.depth = 7;
+    startNewRun(99);
+    assert.equal(getBest(), 7, "the ended run's deepest floor became the recorded best");
+  });
+});
+
+test("startNewRun(seed) keeps the higher of two recorded bests", () => {
+  withFakeLocalStorage(() => {
+    initRun(1);
+    getState().floor.depth = 3;
+    startNewRun(2);
+    getState().floor.depth = 1;
+    startNewRun(3);
+    assert.equal(getBest(), 3, "a shallower ending run does not overwrite a deeper recorded best");
+  });
+});
+
+test("getBest() returns 0 when nothing is stored and never throws when storage is blocked", () => {
+  withFakeLocalStorage(() => {
+    assert.equal(getBest(), 0, "no stored best yields 0");
+  });
+
+  const previous = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: () => {
+      throw new Error("storage blocked");
+    },
+    setItem: () => {
+      throw new Error("storage blocked");
+    },
+    removeItem: () => {},
+  };
+  try {
+    assert.doesNotThrow(() => {
+      const best = getBest();
+      assert.equal(best, 0, "blocked storage falls back to 0");
+    });
+  } finally {
+    if (previous === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previous;
+  }
 });
 
 function stripComments(source) {
