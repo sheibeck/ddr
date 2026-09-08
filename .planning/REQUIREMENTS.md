@@ -37,9 +37,9 @@ Requirements for the initial paid Google Play release. Each maps to a roadmap ph
 - [x] **UX-01**: The player moves and acts via tap / contextual touch controls, with the prototype's D-pad available as an alternate control scheme
 - [ ] **UX-02**: All interactive touch targets meet a minimum hit size (≥48dp) with spacing that separates destructive actions from safe ones, preventing mis-tap deaths
 - [x] **UX-03**: The maze canvas renders crisply at device DPI and the layout respects safe areas/notches, locked to portrait
-- [ ] **UX-04**: The player can view a character/stat sheet showing their rolled adventurer's class, race, stats, kit, and skills
-- [ ] **UX-05**: The player can read a scrollable message/combat log
-- [ ] **UX-06**: A first-run, in-context tutorial teaches the core loop (move, fight, descend, survive) without a wall of text
+- [x] **UX-04**: The player can view a character/stat sheet showing their rolled adventurer's class, race, stats, kit, and skills
+- [x] **UX-05**: The player can read a scrollable message/combat log
+- [x] **UX-06**: A first-run, in-context tutorial teaches the core loop (move, fight, descend, survive) without a wall of text
 - [x] **UX-07**: The player can adjust settings: sound, haptics, text size, control scheme, and confirm-before-quit
 - [x] **UX-08**: Status indicators are colorblind-safe (icon + color, not color alone) and UI text scales for readability
 
@@ -131,9 +131,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | UX-01 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
 | UX-02 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
 | UX-03 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
-| UX-04 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
-| UX-05 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
-| UX-06 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-04 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
+| UX-05 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
+| UX-06 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
 | UX-07 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
 | UX-08 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
 | VOX-01 | Phase 5: Voice, Content & Graveyard | Pending |
