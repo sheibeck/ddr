@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-09-08T20:49:32.905Z"
+stopped_at: Completed 04-06-PLAN.md
+last_updated: "2026-09-08T21:06:23.076Z"
 last_activity: 2026-09-08
 last_activity_desc: "Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 31
-  completed_plans: 23
+  completed_plans: 24
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
-Plan: 6 of 11 completed so far (Wave 2 of 8) — wave-based execution, not strictly sequential; 04-01/04-02/04-03/04-04 (Wave 1) and 04-11 (Wave 2) complete
+Plan: 7 of 11 completed so far (Wave 2 of 8) — wave-based execution, not strictly sequential; 04-01/04-02/04-03/04-04 (Wave 1) and 04-11 (Wave 2) complete
 Status: Plan 04-11 complete (persistence-key rename, folded-in deep work) — ready for remaining Wave 2+ plans (04-05..04-10)
 Last activity: 2026-09-08 — Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)
 
-Progress: [███████░░░] 74%
+Progress: [████████░░] 77%
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Progress: [███████░░░] 74%
 | Phase 04 P04 | 14min | 2 tasks | 3 files |
 | Phase 04 P11 | 6min | 2 tasks | 10 files |
 | Phase 04 P05 | 19min | 3 tasks | 6 files |
+| Phase 04 P06 | 27min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,9 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-05: Tasks 1-3 landed as 2 commits (not 3) since all three interleave heavily within mazeworld.html — commit granularity documented in 04-05-SUMMARY.md
 - [Phase ?]: 04-05: Repointed existing --paper/--ink/--ditto/--stamp/--moss/--rule CSS custom-property VALUES to the dark torch-lit palette (rather than new variable names) so the whole existing panel/button/log CSS system reskins without a per-selector rewrite
 - [Phase ?]: 04-05: draw()'s maze-canvas color lookup frozen to literal hex (MAZE_CANVAS_COLORS) matching the pre-reskin light-theme values, since the canvas's own #F4EEDF light floor fill is untouched until 04-06 recolors it
+- [Phase ?]: 04-06: The maze canvas keeps drawing the FULL 21x21 grid (unchanged rendering model); a new .mw-maze-viewport DIV crops/pans the larger canvas via overflow:hidden + positionCanvas(), sharing controls.js's exact forward/inverse transform for tap hit-testing (never a second copy).
+- [Phase ?]: 04-06: window.__mzControls/__mzCanvasSizing/__mzIconsApi/__mzSettings/__mzIconMap bridge pattern lets the classic (non-module) script's fit()/draw()/tap-handler consume the Wave-1 pure ES modules, extending the existing window.move/window.__mzState bridge convention.
+- [Phase ?]: 04-06: Icon rendering fails open at three layers (preloadIcons, draw()'s iconReady guard, and a dot+letter fallback for the player marker) so a missing/undecoded PNG never blocks boot or makes the player invisible; player-marker glow is a static radial gradient, not an animated pulse, since draw() only runs on-demand (no continuous rAF loop).
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -187,8 +191,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T20:49:32.881Z
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-09-08T21:06:23.048Z
+Stopped at: Completed 04-06-PLAN.md
 Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)

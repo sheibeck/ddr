@@ -109,7 +109,7 @@ Plans:
   4. The player can open a character/stat sheet (class, race, stats, kit, skills) and a scrollable message/combat log at any point during a run.
   5. A first-run, in-context tutorial teaches move/fight/descend/survive without a wall of text, the player can adjust sound, haptics, text size, control scheme, and confirm-before-quit in settings, and status indicators are colorblind-safe with scalable UI text throughout.
 
-**Plans**: 6/11 plans executed
+**Plans**: 7/11 plans executed
 
 Plans (ordered by wave):
 
@@ -119,7 +119,7 @@ Plans (ordered by wave):
 - [x] 04-04-PLAN.md — formatEvents full-coverage data table + coverage guard [W1] [UX-05, engine-routing prereq]
 - [x] 04-11-PLAN.md — Persistence-key rename mazeworld.*.v1→ddr.*.v1 (no shim) + product-name cleanup [W2] [UX-04, UX-07, folded-in rename]
 - [x] 04-05-PLAN.md — Dark torch-lit shell: fonts + 5-tab nav + real-state HUD + safe-area + dark status bar + GAME_NAME "Delve, Die, Repeat" [W3] [UX-03, UX-08]
-- [ ] 04-06-PLAN.md — DPR canvas viewport + 9 PNG icons + tap-to-move + D-pad [W4] [UX-01, UX-02, UX-03]
+- [x] 04-06-PLAN.md — DPR canvas viewport + 9 PNG icons + tap-to-move + D-pad [W4] [UX-01, UX-02, UX-03]
 - [ ] 04-07-PLAN.md — Engine-routing completion: combat/economy/camp/new-run through applyAction [W5] [UX-05, deferred Phase-1/3 item]
 - [ ] 04-08-PLAN.md — Character sheet + Oracle log + full-screen combat, dice transparency [W6] [UX-04, UX-05, UX-02]
 - [ ] 04-09-PLAN.md — Settings screen + @capacitor/haptics + confirm-quit gating + live text-scale [W7] [UX-07, UX-08, UX-02]
@@ -174,7 +174,7 @@ Plans:
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 4/4 | Complete ✓ | 2026-09-08 |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
-| 4. Mobile Presentation, Controls & Onboarding | 6/11 | In Progress|  |
+| 4. Mobile Presentation, Controls & Onboarding | 7/11 | In Progress|  |
 | 5. Voice, Content & Graveyard | 0/3 | Planned + checked (PASS) — deferred to AFTER Phase 4 (user re-prioritized 2026-09-08) | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs $25 Play account + release signing (final phase) | - |
 
