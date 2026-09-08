@@ -38,6 +38,7 @@ inputs (`move()`, `act(playerStrike)`, `act(drinkPotion)`, etc.):
 | `type` | Prototype call it mirrors | Notes |
 |--------|---------------------------|-------|
 | `move` | `move(dir)` | requires `dir`: one of `"N"`, `"S"`, `"E"`, `"W"` |
+| `startCombat` | `startCombat(wandering, forced)` | **not** in engine/actions.js's validated `ACTION_TYPES` — an internal function other rule domains call (movement's wandering-monster check, the encounters domain's dot tile), not a player action. A fixture that needs a deterministic encounter (01-08's combat fixture) uses this to force one; the harness special-cases it (clone/rng-rehydrate/persist by hand, the same shape `applyAction` uses, since there's no `applyAction(state, {type:"startCombat"})` to call). Requires `wandering` (bool) and `forced` (an `ENC_TYPES` string, or `null` to let the rng pick). |
 | `attack` | `act(playerStrike)` | player's strike in combat |
 | `castSpell` | `act(castSpell)` (Magic User) | may require a `spell` or target field once the combat/magic slice defines its action shape |
 | `drinkPotion` | `act(drinkPotion)` | |

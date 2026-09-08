@@ -1,0 +1,46 @@
+{
+  "_note": "Combat parity fixture (01-08): four independent scenarios, each its own seed + forced encounter, so every outcome (win/lose/flee/parley) is deterministic and reachable in a small, fixed action count. `startCombat` is NOT in engine/actions.js's validated ACTION_TYPES (it is an internal function other rule domains call, not a player-facing action) -- test/parity/combat-parity.test.js special-cases it, calling engine/combat.js's startCombat directly (state/rng managed the same way applyAction does) and the prototype's `ctx.startCombat(wandering, forced)` directly, exactly mirroring the encounter the wandering-monster check or an encounter dot would eventually trigger. Every scenario's seed was found by a throwaway discovery script that simulated the engine directly against a forced encounter type until it produced the desired outcome (same method 01-05/01-07 used for chargen/movement fixture seeds), then cross-checked for prototype parity before being committed here.",
+  "scenarios": [
+    {
+      "name": "win",
+      "seed": 3,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
+        { "type": "attack" }
+      ]
+    },
+    {
+      "name": "lose",
+      "seed": 14,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" }
+      ]
+    },
+    {
+      "name": "flee",
+      "seed": 17,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
+        { "type": "flee" }
+      ]
+    },
+    {
+      "name": "parley",
+      "seed": 303,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Humans" },
+        { "type": "parley" }
+      ]
+    }
+  ]
+}
