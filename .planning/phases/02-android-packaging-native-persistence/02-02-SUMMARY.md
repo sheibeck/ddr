@@ -208,3 +208,16 @@ None for continued headless development — the Temurin 21 JDK and Android `cmdl
 ---
 *Phase: 02-android-packaging-native-persistence*
 *Completed: 2026-09-08*
+
+## Self-Check: PASSED
+
+- FOUND: tools/build-www.mjs
+- FOUND: tools/pin-jdk.mjs
+- FOUND: capacitor.config.json
+- FOUND: android/gradlew
+- FOUND: android/app/build/outputs/apk/debug/app-debug.apk
+- FOUND: .planning/phases/02-android-packaging-native-persistence/02-02-SUMMARY.md
+- FOUND commit: e5179d6 (Task 1, feat)
+- FOUND commit: e8ceb09 (Task 2 part 1, feat)
+- FOUND commit: 64f488e (Task 2 part 2, feat — BUILD SUCCESSFUL)
+- FOUND commit: 7b9e76e (docs, this SUMMARY)

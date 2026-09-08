@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: android-packaging-native-persistence
 status: executing
-stopped_at: Completed 02-03-PLAN.md (dual-write convergence, autosave, back-button + lifecycle flush) — 02-04 next; Android build still blocked on 02-02's Temurin JDK 17 UAC prompt
-last_updated: "2026-09-08T15:47:44.679Z"
+stopped_at: Completed 02-02-PLAN.md (Capacitor Android scaffold + headless assembleDebug compile proof) — 02-04 next
+last_updated: "2026-09-08T16:19:12.011Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 02 (android-packaging-native-persistence) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-08 — Phase 02 execution started
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Progress: [█████████░] 88%
 | Phase 03-endless-descent-difficulty-balance P03 | 20min | 2 tasks | 6 files |
 | Phase 02 P01 | 20min | 3 tasks | 4 files |
 | Phase 02 P03 | 22min | 3 tasks | 9 files |
+| Phase 02 P02 | 66min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,10 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-03: mazeworld.html classic script now defers boot to window.__mzClassicBoot (async), invoked by the trailing module after window.mzStorage is assigned+migrated; a captured classicNewGame reference keeps the no-save fallback correct regardless of the module's window.newGame override
 - [Phase ?]: 02-03: engineAdapter persist()/persistGrave() are fire-and-enqueue (not awaited from dispatch()); boot()/getBest()/startNewRun() are awaited — storage.js's per-key queue keeps rapid saves ordered and never dropped (SAV-01)
 - [Phase ?]: 02-03: src/browser/nativeChrome.js's decideBackAction never returns exit-app for a live, unconfirmed run; alreadyConfirming is tracked internally in registerNativeChrome (2s auto-reset timer), keeping the decision function pure/stateless for testing
+- [Phase ?]: 02-02: Resolved a hung winget/UAC MSI install for Temurin JDK by downloading the official Adoptium zip release (checksum-verified against Adoptium's own API) into a user-writable path — zero admin rights, same publisher/release winget would have installed
+- [Phase ?]: 02-02: Capacitor 8.5.1's own capacitor-android module requires Java 21 (sourceCompatibility/targetCompatibility), not 17 as 02-RESEARCH.md's JDK guidance anticipated — installed Temurin 21 (same checksum-verified zip approach), which satisfies Gradle 8.14.x, AGP 8.13.0, and capacitor-android simultaneously
+- [Phase ?]: 02-02: npx cap sync android silently regenerates android/gradle.properties from Capacitor's template on every sync, wiping the JDK pin — added tools/pin-jdk.mjs, wired into package.json's android:debug script after cap:sync and before gradlew
+- [Phase ?]: 02-02: AGP 8.13.0 cannot resolve the decimal-API-level SDK platform android-37.0 as a compileSdk target at all - reverted the interim compileSdk-37 workaround by installing platforms/android-36 via an official checksum-verified Android cmdline-tools zip, restoring Capacitor's stock compileSdk 36; gradlew assembleDebug now BUILD SUCCESSFUL with app-debug.apk produced
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -137,7 +142,6 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 
 - [Phase 3]: Endless-mode difficulty curve needs a dedicated playtesting pass (to floor 30-50+), not a one-shot formula — flagged by research as needing project-specific validation beyond genre precedent.
 - [Phase 6]: Google Play target-API level, Data Safety form fields, and IARC questionnaire specifics shift yearly — re-verify against current Play Console Help immediately before executing this phase, not from research alone.
-- 02-02: Temurin JDK 17 winget install stuck at a Windows UAC elevation consent.exe prompt (30+ min, no auto-resolution) — requires the user to click 'Yes' on the visible UAC dialog on their desktop (or run the install from an already-elevated terminal). Blocks android/gradle.properties org.gradle.java.home pin and the gradlew assembleDebug proof. All JDK-independent Task 1/Task 2 work (npm install, cap init, build-www.mjs, npx cap add android, compileSdk/targetSdk->37 + buildToolsVersion 36.0.0 retarget, local.properties) is committed and done.
 
 ## Deferred Verification (UAT — to milestone end per autonomous run)
 
@@ -159,6 +163,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T15:47:44.655Z
-Stopped at: Completed 02-03-PLAN.md (dual-write convergence, autosave, back-button + lifecycle flush) — 02-04 next; Android build still blocked on 02-02's Temurin JDK 17 UAC prompt
+Last session: 2026-09-08T16:19:11.984Z
+Stopped at: Completed 02-02-PLAN.md (Capacitor Android scaffold + headless assembleDebug compile proof) — 02-04 next
 Resume file: None
