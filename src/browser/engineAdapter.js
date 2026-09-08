@@ -21,6 +21,14 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
 import { bury } from "../../engine/death.js";
+// 04-04: the data-driven event->narration lookup table (UX-05) that replaces
+// this file's former ~26-case monolithic switch. EVENT_NARRATION covers the
+// full ~162-type engine vocabulary; test/unit/formatEventsCoverage.test.js
+// derives that vocabulary from engine/*.js source at runtime and fails if
+// any engine-emitted type has no entry, closing 04-RESEARCH.md's Pitfall 4
+// (a silently-dropped combat/economy log line once those domains route
+// through dispatch() — 04-07).
+import { EVENT_NARRATION } from "./eventNarration.js";
 // 02-03: the shared async Storage abstraction (window.mzStorage) — closes
 // 02-RESEARCH.md's dual-write hazard (this adapter and mazeworld.html's
 // classic script previously each hand-rolled their own raw localStorage
@@ -287,73 +295,31 @@ export function dispatch(action) {
 
 /**
  * formatEvents(events) — maps a structured `events` array to the prototype's
- * span-class HTML narration copy. Loosely scoped on purpose (01-RESEARCH.md
- * Open Question 1): unrecognized event types are silently dropped rather
- * than crashing the render loop, since new event types land with every
- * later slice plan.
+ * span-class HTML narration copy. Delegates to EVENT_NARRATION
+ * (eventNarration.js), a data-driven type->builder table covering the
+ * engine's full event vocabulary (04-04, UX-05). Unrecognized event types
+ * are still silently dropped rather than crashing the render loop (01-
+ * RESEARCH.md Open Question 1) — but test/unit/formatEventsCoverage.test.js
+ * enforces that no ENGINE-EMITTED type can ever hit that fallback, so the
+ * only types that legitimately reach it are genuinely new/unknown ones a
+ * later engine change hasn't been narrated for yet.
  */
 export function formatEvents(events) {
   return events.map(formatEvent).filter((html) => html !== null);
 }
 
+// A plain step is deliberately silent — no narration line of its own — by
+// design (not an omission the coverage guard should flag). See
+// eventNarration.js's header comment and
+// test/unit/formatEventsCoverage.test.js's exclusion note for the full
+// rationale; test/unit/engineAdapter.test.js locks this behavior with an
+// explicit assertion.
+const NO_NARRATION_TYPES = new Set(["moved"]);
+
 function formatEvent(e) {
-  switch (e.type) {
-    case "moved":
-      return null; // a plain step needs no narration line of its own
-    case "oneWayBlocked":
-      return e.side === "approach"
-        ? `The arrow points the other way. <span class="miss">It will not open from this side.</span>`
-        : `<span class="miss">You came through it. There is no coming back.</span>`;
-    case "climbedOver":
-    case "leaptOver":
-      return `<span class="hit">Over.</span>`;
-    case "fellClimbing":
-      return `<span class="hurt">You come off — ${e.hurt} wp.</span>`;
-    case "fellInGorge":
-      return `<span class="hurt">Short. ${e.hurt} wp on the way down.</span>`;
-    case "afflictionTick":
-      return e.loss > 0
-        ? `<span class="hurt">${e.kind}: −${e.loss} wp.</span>`
-        : `<span class="hurt">${e.kind} has taken everything it can. You are on one wp.</span>`;
-    case "afflictionPassed":
-      return `<span class="hit">It passes.</span>`;
-    case "afflictionCured":
-      return `You sweat the sickness out overnight. <span class="hit">Cured.</span>`;
-    case "spellChargeRecovered":
-      return `<span class="beat">Twenty quiet squares. A charge comes back (${e.charges} of ${e.max}).</span>`;
-    case "dayBegan":
-      return `<span class="banner">Day ${e.day}.</span>`;
-    case "rested":
-      return `Rest restores <span class="hit">+${e.amount} wp</span>.`;
-    case "armorPatched":
-      return `<span class="hit">+${e.amount}</span> back into your kit.`;
-    case "potionDuplicated":
-      return `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`;
-    case "wentHungry":
-      return `<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${e.cost} wp</span> straight out of you.`;
-    case "wanderingMonster":
-      return `Wandering monster check: <span class="roll">${e.hours}</span> of 8 hours disturbed.`;
-    case "campFailed":
-      return `<span class="miss">Not enough food to make camp.</span> Find rations first.`;
-    case "teleported":
-      return `<span class="beat">Teleport square.</span>`;
-    case "spGained":
-      return `Surviving the floor is worth <span class="roll">${e.amount}</span> skill points.`;
-    case "floorChanged":
-      return `<span class="banner">Floor ${e.depth}.</span> The air gets worse.`;
-    case "leveled":
-      return `<span class="hit">Skill level ${e.level}</span> (+${e.wpGain} wp).`;
-    case "won":
-      return `<span class="banner">The Gate.</span> Walked out on day ${e.day}, after ${e.steps} squares.`;
-    case "died":
-      return `<span class="hurt">You have died.</span>`;
-    case "pendingEncounter":
-    case "pendingTrap":
-    case "pendingChest":
-      // dot/trap/chest resolution lands in 01-09/01-10; the tile is already
-      // consumed, this just flags that a later slice owes real narration.
-      return `<span class="beat">Something happened here. The maze isn't saying what yet.</span>`;
-    default:
-      return null;
-  }
+  if (NO_NARRATION_TYPES.has(e.type)) return null;
+  const build = EVENT_NARRATION[e.type];
+  if (!build) return null;
+  const html = build(e);
+  return html || null;
 }

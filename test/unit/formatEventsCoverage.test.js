@@ -90,8 +90,18 @@ function deriveCanonicalEventTypes() {
   const types = new Set(KNOWN_INDIRECT_TYPES);
   for (const file of collectJsFiles(ENGINE_DIR)) {
     const stripped = stripComments(fs.readFileSync(file, "utf8"));
-    const matches = stripped.matchAll(/type:\s*"([A-Za-z]+)"/g);
-    for (const m of matches) types.add(m[1]);
+    // Capture the whole expression after `type:` up to the next `,`/`}` —
+    // not just a single trailing string literal — then pull every quoted
+    // string out of that expression. This also catches engine/movement.js's
+    // ternary-typed pushes (`type: climbing ? "climbedOver" : "leaptOver"`,
+    // `type: climbing ? "fellClimbing" : "fellInGorge"`), which a bare
+    // `type:\s*"([A-Za-z]+)"` match would silently miss (both branches sit
+    // after a `?`/`:`, not directly after `type:`).
+    for (const exprMatch of stripped.matchAll(/type:\s*([^,}]+)/g)) {
+      for (const strMatch of exprMatch[1].matchAll(/"([A-Za-z]+)"/g)) {
+        types.add(strMatch[1]);
+      }
+    }
   }
   return types;
 }
