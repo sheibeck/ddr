@@ -9,6 +9,7 @@
 import { makeRng } from "./rng.js";
 import { genFloor, reveal } from "./maze.js";
 import { rollCharacter } from "./character.js";
+import { revealRadius } from "./derived.js";
 
 /** Save-schema version, bumped when the GameState shape changes (see 01-06). */
 export const STATE_VERSION = 1;
@@ -28,7 +29,7 @@ export function newRun(seed) {
   const rng = makeRng(seed);
   const c = rollCharacter(rng);
   const floor = genFloor(1, rng);
-  reveal(floor);
+  reveal(floor, revealRadius({ floor, c }));
 
   return {
     version: STATE_VERSION,

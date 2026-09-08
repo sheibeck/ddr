@@ -52,6 +52,18 @@ export function inDark(state) {
 }
 
 /**
+ * revealRadius(state) — the fog-of-war reveal radius for the player's current
+ * position: 1 on a dark tile without Night Vision, 2 otherwise, plus any
+ * `sight` effect (e.g. the Amulet of Light, `eff: { sight: 1 }`). Ports
+ * mazeworld.html reveal()'s radius line verbatim (line 838): `r = ((g[py][px].dark
+ * && !skill("Night Vision")) ? 1 : 2) + eff("sight")`. Reads state.floor
+ * (via inDark) and state.c; no RNG.
+ */
+export function revealRadius(state) {
+  return (inDark(state) && !skill(state.c, "Night Vision") ? 1 : 2) + eff(state.c, "sight");
+}
+
+/**
  * toHit(state) — the die value the player needs to land a blow. Reads state.c,
  * state.combat (inspired) and state.floor (darkness); ports mazeworld.html
  * toHit() (lines 1452-1462).

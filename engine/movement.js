@@ -21,7 +21,7 @@
 // engine/encounters.js's header comment for why.
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
-import { skill, skillTier, upkeep, eff } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
@@ -110,7 +110,7 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   f.px = nx;
   f.py = ny;
   state.steps++;
-  reveal(f);
+  reveal(f, revealRadius(state));
   events.push(moved({ x: nx, y: ny }));
 
   const c = state.c;
@@ -324,7 +324,7 @@ export function teleport(state, rng, events = []) {
   }
   f.px = x;
   f.py = y;
-  reveal(f);
+  reveal(f, revealRadius(state));
   events.push({ type: "teleported", dir, other, dist, used, travelled, to: { x, y } });
 
   const cell = f.g[y][x];
@@ -383,7 +383,7 @@ export function descend(state, rng, events = []) {
   events.push({ type: "spGained", amount: bonus, reason: "descend" });
   checkLevel(state, rng, events);
   state.floor = genFloor(state.floor.depth + 1, rng);
-  reveal(state.floor);
+  reveal(state.floor, revealRadius(state));
   events.push(floorChanged(state.floor.depth));
   return events;
 }

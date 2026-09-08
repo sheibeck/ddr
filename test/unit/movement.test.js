@@ -121,6 +121,61 @@ test("move: a legal corridor move increments steps, reveals, and emits moved", (
   assert.deepStrictEqual(events, [{ type: "moved", to: { x: 5, y: 4 } }]);
 });
 
+// --- HI-01 regression: reveal radius follows darkness/Night Vision/sight --
+//
+// Ports the prototype's reveal() radius formula (test/parity/prototype-
+// master.js.txt:838): r = ((dark && !skill("Night Vision")) ? 1 : 2) +
+// eff("sight"). Before this fix, every real call site hard-coded radius 2
+// regardless of darkness/skills/items.
+
+/** assertSeenSquare(g, cx, cy, radius) — every cell within `radius` of
+ * (cx,cy) must be seen; every cell exactly one step outside that square
+ * (still in-bounds) must NOT be seen. */
+function assertSeenSquare(g, cx, cy, radius) {
+  for (let y = cy - radius; y <= cy + radius; y++) {
+    for (let x = cx - radius; x <= cx + radius; x++) {
+      assert.equal(g[y][x].seen, true, `expected (${x},${y}) seen at radius ${radius}`);
+    }
+  }
+  const outside = [
+    [cx - radius - 1, cy],
+    [cx + radius + 1, cy],
+    [cx, cy - radius - 1],
+    [cx, cy + radius + 1],
+  ];
+  for (const [x, y] of outside) {
+    assert.equal(g[y] && g[y][x] && g[y][x].seen, false, `expected (${x},${y}) unseen at radius ${radius}`);
+  }
+}
+
+test("HI-01: move onto a dark tile without Night Vision reveals only radius 1 (3x3)", () => {
+  const state = fixedState();
+  open(state.floor.g, 5, 4, { dark: true });
+  move(state, "N", fakeRng([]), []);
+  assertSeenSquare(state.floor.g, 5, 4, 1);
+});
+
+test("HI-01: move onto a dark tile WITH Night Vision reveals full radius 2 (5x5)", () => {
+  const state = fixedState({ c: { skills: { "Night Vision": 1 } } });
+  open(state.floor.g, 5, 4, { dark: true });
+  move(state, "N", fakeRng([]), []);
+  assertSeenSquare(state.floor.g, 5, 4, 2);
+});
+
+test("HI-01: the Amulet of Light's sight:1 effect widens a lit tile's reveal to radius 3 (7x7)", () => {
+  const state = fixedState({ c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }] } });
+  open(state.floor.g, 5, 4); // not dark
+  move(state, "N", fakeRng([]), []);
+  assertSeenSquare(state.floor.g, 5, 4, 3);
+});
+
+test("HI-01: sight:1 on a dark tile without Night Vision still only widens the dark 1 to a 2 (5x5)", () => {
+  const state = fixedState({ c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }] } });
+  open(state.floor.g, 5, 4, { dark: true });
+  move(state, "N", fakeRng([]), []);
+  assertSeenSquare(state.floor.g, 5, 4, 2);
+});
+
 // --- one-way doors ----------------------------------------------------
 
 test("move: a one-way door blocks entry from the wrong side (no-op)", () => {

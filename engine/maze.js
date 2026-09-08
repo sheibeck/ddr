@@ -160,19 +160,16 @@ export function genFloor(depth, rng) {
  * cells centered on the player's position as seen, clipped to grid bounds.
  * Pure mutation of the passed floor's grid; no RNG.
  *
- * NOTE ON FIDELITY: the prototype's reveal() (mazeworld.html lines
- * 1281-1287) computes its radius from `S.floor`, character skills
- * (`skill("Night Vision")`) and active effects (`eff("sight")`):
+ * The prototype's reveal() (mazeworld.html lines 1281-1287) computes its
+ * radius from `S.floor`, character skills (`skill("Night Vision")`) and
+ * active effects (`eff("sight")`):
  * `r = ((g[py][px].dark && !skill("Night Vision")) ? 1 : 2) + eff("sight")`.
- * Character skills/effects are not part of the engine surface this plan
- * extracts (character/effects extraction is a later plan). This pure
- * reveal(floor, radius) takes the resulting radius as an explicit parameter
- * (default 2, the non-dark/no-bonus case), reproducing the prototype's
- * square-block reveal shape exactly for that case — which is always the
- * correct radius at any floor's starting position, since depth-1 floors are
- * never dark and genFloor always forces g[1][1].dark = false even on floors
- * with dark-zone blobs. A future plan wiring skills/effects into engine
- * state can compute the correct radius and pass it in.
+ * This pure reveal(floor, radius) takes the resulting radius as an explicit
+ * parameter (default 2, the non-dark/no-bonus case) — every real call site
+ * (move/teleport/descend in engine/movement.js, newRun in engine/state.js)
+ * now computes and passes the true radius via engine/derived.js's
+ * revealRadius(state) (HI-01), matching the prototype's dark/Night
+ * Vision/sight behavior exactly.
  */
 export function reveal(floor, radius = 2) {
   const { g, px, py } = floor;
