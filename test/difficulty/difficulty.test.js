@@ -91,12 +91,24 @@ test("dots, darkBlobs, darkRadius are non-decreasing across non-breather depths,
 });
 
 test("difficultyCurve tolerates a non-integer or non-positive depth without NaN/Infinity output", () => {
-  for (const depth of [0, -3, 1.5]) {
+  // IN-01: NaN/Infinity/-Infinity added alongside the original [0, -3, 1.5]
+  // cases -- safeDepth()'s own doc comment specifically calls out NaN/
+  // +-Infinity as the motivating threat ("Handles NaN/+-Infinity too"), but
+  // the test previously never exercised difficultyCurve() with them
+  // directly. Math.floor(NaN)/Math.floor(+-Infinity) are all non-finite, so
+  // Number.isFinite short-circuits every one of them to the depth-1 floor.
+  for (const depth of [0, -3, 1.5, NaN, Infinity, -Infinity]) {
     const dc = difficultyCurve(depth);
     for (const [key, val] of Object.entries(dc)) {
       if (key === "breather") continue; // boolean field, not numeric
       assert.ok(Number.isFinite(val), `depth input ${depth}: field "${key}" is not finite (got ${val})`);
     }
+  }
+});
+
+test("IN-01: isBreather also tolerates NaN/Infinity/-Infinity without throwing or returning non-boolean", () => {
+  for (const depth of [NaN, Infinity, -Infinity]) {
+    assert.equal(typeof isBreather(depth), "boolean", `isBreather(${depth}) must return a boolean`);
   }
 });
 
