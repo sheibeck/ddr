@@ -77,6 +77,17 @@
   --mw-danger-fill:#6b2c22;
   --mw-danger-panel:#2a1512;
 
+  /* Device-review round 2 ("Taller buttons" — 04-CONTEXT.md DR2): the mock's
+     (design/Mazeworld Mobile.dc.html) chunky-button chrome — a thicker
+     border + a hard offset box-shadow (no blur) instead of the thin
+     1px/soft-shadow the app shipped with. Literal hex (not --rule/--paper-3)
+     because these mirror the mock's OWN literal button colors exactly
+     (#6b5c3c border / #0d0b08 shadow), matching the existing convention
+     already used by .mw-chip below rather than approximating with an
+     unrelated existing token. */
+  --mw-btn-border:#6b5c3c;
+  --mw-btn-shadow:#0d0b08;
+
   /* UX-08 text scaling — ONE root multiplier every rem-based typography
      token below multiplies by; src/browser/settings.js#effectiveTextScale
      sets this on #app at boot (S=0.85 / M=1.0 / L=1.25, OS-scale-clamped). */
@@ -206,7 +217,7 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
 .mw-viewport-chips{position:absolute;top:8px;left:8px;display:flex;gap:8px;z-index:3}
-.mw-chip{min-height:48px;min-width:48px;padding:6px 10px;border:2px solid #4a4032;background:#1b170f;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:4px}
+.mw-chip{min-height:48px;min-width:48px;padding:9px 14px;border:2px solid #4a4032;background:#1b170f;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;display:flex;align-items:center;justify-content:center}
 .mw-flash{position:absolute;top:8px;left:50%;transform:translate(-50%,-4px);z-index:4;background:rgba(8,7,5,.9);color:#e6ddc6;padding:6px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis;opacity:0;pointer-events:none;transition:opacity .18s ease}
 .mw-flash.mw-flash-show{opacity:1}
 
@@ -258,23 +269,43 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .dpad .lf{grid-column:1;grid-row:2}
 .dpad .dn{grid-column:2;grid-row:2}
 .dpad .rt{grid-column:3;grid-row:2}
+/* DR2 "Fix tiny arrows": the base `button` rule's 13px font made the
+   glyphs tiny inside a 52px cell — force ALL FOUR arrows to one big, equal
+   fixed size (not a glyph-font-metrics-dependent size) and give the cell
+   the mock's chunky border/shadow/color treatment (design/Mazeworld
+   Mobile.dc.html's up/left/down/right cells). */
+.dpad button{
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--body);font-weight:700;font-size:28px;line-height:1;
+  border:2px solid var(--mw-btn-border);background:var(--paper-3);color:var(--ink);
+  box-shadow:0 4px 0 var(--mw-btn-shadow);padding:0;
+}
+.dpad button:active:not(:disabled){
+  transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow);
+  background:var(--ditto);color:var(--paper);
+}
 
 button{
   font-family:var(--disp);font-size:13px;letter-spacing:.06em;
   background:var(--paper);color:var(--ink);
-  border:1px solid var(--ink);border-radius:0;
-  padding:7px 12px;cursor:pointer;
-  box-shadow:2px 2px 0 var(--rule);
+  border:2px solid var(--mw-btn-border);border-radius:0;
+  padding:14px 16px;cursor:pointer;min-height:48px;
+  box-shadow:0 4px 0 var(--mw-btn-shadow);
   transition:transform .06s ease, box-shadow .06s ease, background .12s ease;
 }
 button:hover:not(:disabled){background:#F7F1E2}
-button:active:not(:disabled){transform:translate(2px,2px);box-shadow:0 0 0 var(--rule)}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow)}
 button:focus-visible{outline:2px solid var(--ditto);outline-offset:2px}
 button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-button.primary{background:var(--ditto);color:var(--paper);border-color:var(--ditto)}
+button.primary{background:var(--ditto);color:var(--paper);border-color:var(--ditto);box-shadow:0 4px 0 var(--mw-btn-border)}
 button.primary:hover:not(:disabled){background:var(--ditto-2)}
+button.primary:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 button.danger{border-color:var(--stamp);color:var(--stamp)}
-button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px}
+/* DR2 "Taller buttons": .small used to be genuinely tiny (5px/9px padding,
+   10.5px type) — MAKE CAMP, MOVE ON, Roll new character/Clear save/Clear the
+   graveyard, and the spell-menu buttons all use this class. Bumped to a
+   still-visually-"secondary" but comfortably >=48dp-tall size. */
+button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:13px 14px;min-height:48px}
 
 /* ---------- encounter ---------- */
 .encounter{margin-top:14px}
@@ -474,7 +505,7 @@ html,body{height:100%}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
 
-.mw-screens{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
+.mw-screens{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(96px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
 .mw-screen{display:block}
 
 .mw-tabbar{
@@ -485,14 +516,21 @@ html,body{height:100%}
 }
 .mw-tab{
   flex:1;display:flex;align-items:center;justify-content:center;
-  min-height:48px;padding:15px 0 13px;
+  min-height:56px;padding:18px 0 16px;
   font-family:var(--disp);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;
   background:transparent;color:#8f856f;
   border:0;border-top:3px solid transparent;border-radius:0;box-shadow:none;
   cursor:pointer;
 }
 .mw-tab:active:not(:disabled){transform:none;box-shadow:none}
-.mw-tab.active{color:var(--ditto);background:#241d12;border-top-color:var(--ditto)}
+/* DR2 "Bottom-nav active highlight -> match the mock": gold text + a gold
+   top-border indicator (design/Mazeworld Mobile.dc.html's `t.style`/`t.dot`
+   — `color: on ? '#e8c97a' : '#8f856f'`, `background: on ? '#241d12' :
+   'transparent'`, a top `dot` bar that's gold when `on`, else transparent).
+   Already matched color-for-color; strengthened the weight/letter-spacing so
+   the gold top border reads clearly as the SAME "active" signal the mock
+   uses, not just a slightly different text color. */
+.mw-tab.active{color:var(--ditto);background:#241d12;border-top-color:var(--ditto);font-weight:700;letter-spacing:.08em}
 
 .mw-empty{padding:22px 6px;text-align:center}
 .mw-empty-head{display:block;font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--ink);margin:0 0 8px}

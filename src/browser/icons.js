@@ -89,13 +89,17 @@ export function preloadIcons(basePath) {
 /**
  * drawFeatureIcon(ctx, img, dx, dy, size) — draws a preloaded icon centered
  * within a `size`x`size` cell whose top-left is (dx, dy), at
- * Math.round(size * 0.6) per the UI-SPEC's glyph-sizing rule (04-RESEARCH.md
- * Code Example #3). Operates entirely in CSS-px space — `ctx` must already
- * have the DPR transform applied by the caller (canvasSizing.js), so no
- * manual device-pixel-ratio multiplication happens here.
+ * Math.round(size * 0.94) — device-review round 2 ("Icons ~2x bigger":
+ * 04-CONTEXT.md/04-DR2) bumped this from the original UI-SPEC 0.6 factor so a
+ * feature icon fills nearly the whole cell (a small ~3%-per-side inset keeps
+ * it from touching the cell's grid lines) instead of looking small/lost
+ * inside the now much-bigger 48/60/72px cells (04-DR1's cellSizeForTextScale
+ * bump). Operates entirely in CSS-px space — `ctx` must already have the DPR
+ * transform applied by the caller (canvasSizing.js), so no manual
+ * device-pixel-ratio multiplication happens here.
  */
 export function drawFeatureIcon(ctx, img, dx, dy, size) {
-  const iconSize = Math.round(size * 0.6);
+  const iconSize = Math.round(size * 0.94);
   const ix = dx + (size - iconSize) / 2;
   const iy = dy + (size - iconSize) / 2;
   ctx.drawImage(img, ix, iy, iconSize, iconSize);
