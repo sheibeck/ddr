@@ -10,7 +10,56 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
 <style>*{box-sizing:border-box}html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
 <title>Mazeworld Delve</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Self-hosted fonts (02-04) — a paid, fully-offline app must issue zero
+   network requests, including for fonts. These files are fetched once at
+   BUILD time on a networked build machine into ./fonts/, then shipped in
+   the app bundle; the running app never makes a font network call.
+   Faces/weights: Special Elite 400; Crimson Pro 400/600 normal + 400
+   italic; IBM Plex Mono 400/500/600. See 02-04-SUMMARY.md for the source. */
+@font-face{
+  font-family:"Special Elite";
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url("./fonts/special-elite-400.woff2") format("woff2");
+}
+@font-face{
+  font-family:"Crimson Pro";
+  font-style:normal;
+  font-weight:400 600;
+  font-display:swap;
+  src:url("./fonts/crimson-pro-normal.woff2") format("woff2");
+}
+@font-face{
+  font-family:"Crimson Pro";
+  font-style:italic;
+  font-weight:400;
+  font-display:swap;
+  src:url("./fonts/crimson-pro-italic-400.woff2") format("woff2");
+}
+@font-face{
+  font-family:"IBM Plex Mono";
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url("./fonts/ibm-plex-mono-400.woff2") format("woff2");
+}
+@font-face{
+  font-family:"IBM Plex Mono";
+  font-style:normal;
+  font-weight:500;
+  font-display:swap;
+  src:url("./fonts/ibm-plex-mono-500.woff2") format("woff2");
+}
+@font-face{
+  font-family:"IBM Plex Mono";
+  font-style:normal;
+  font-weight:600;
+  font-display:swap;
+  src:url("./fonts/ibm-plex-mono-600.woff2") format("woff2");
+}
+</style>
 <style>
 :root{
   --paper:#EFE7D6;

@@ -80,6 +80,24 @@ function copySourceDirs() {
   step("copied engine/, content/, src/ into www/");
 }
 
+// 02-04: self-hosted fonts (offline correctness — a paid, fully-offline app
+// must issue zero network requests, including for fonts previously loaded
+// from fonts.googleapis.com/fonts.gstatic.com). The repo-root fonts/
+// directory is the source of truth (fetched once at build time on a
+// networked machine); mazeworld.html's local @font-face rules reference
+// "./fonts/*.woff2" relatively, which resolves against www/index.html here
+// exactly the same way it resolves against mazeworld.html itself in the
+// plain browser dev loop (both files live one level above their own
+// fonts/ directory).
+function copyFonts() {
+  const src = path.join(ROOT, "fonts");
+  if (!existsSync(src)) {
+    throw new Error(`${src} does not exist — expected self-hosted font files (see mazeworld.html @font-face rules)`);
+  }
+  cpSync(src, path.join(WWW, "fonts"), { recursive: true });
+  step("copied fonts/ into www/fonts/");
+}
+
 function vendorCapacitorPackages() {
   const imports = {};
   for (const pkg of CAPACITOR_PACKAGES) {
@@ -125,6 +143,7 @@ function writeIndexHtml(importMap) {
 function main() {
   cleanWww();
   copySourceDirs();
+  copyFonts();
   const importMap = vendorCapacitorPackages();
   writeIndexHtml(importMap);
   step("done");
