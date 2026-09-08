@@ -3265,13 +3265,16 @@ paint();
 
 <script type="module">
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
-  // Reroutes ONLY the movement input surface — dpad clicks and arrow/WASD
+  // Reroutes the movement input surface — dpad clicks and arrow/WASD
   // keydown, both of which already call the plain `move(dir)` global
   // declared in the classic <script> above — through engine/engine.js's
-  // applyAction, via src/browser/engineAdapter.js. Combat/store/New-Delve/
-  // camp stay on the existing prototype code path above; those slices are
-  // wired in later plans (01-08/01-09/01-10) and the Phase 4/5 presentation
-  // rewrite replaces this temporary adapter wholesale.
+  // applyAction, via src/browser/engineAdapter.js. IN-03: as of 03-03
+  // (RUN-05), New-Delve is ALSO rerouted this way — see window.newGame
+  // below, which sends the "Roll another delver" button through
+  // engineAdapter.js's startNewRun() instead of the classic script's
+  // newGame(). Combat/store/camp stay on the existing prototype code path
+  // above; those slices are wired in later plans (01-08/01-09) and the
+  // Phase 4/5 presentation rewrite replaces this temporary adapter wholesale.
   //
   // This script never touches the dpad/keydown event listeners themselves:
   // overwriting `window.move` below redirects every existing call site,
