@@ -19,6 +19,8 @@ import { makeRng } from "./rng.js";
 import { move, makeCamp } from "./movement.js";
 import { playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
+import { useItem } from "./items.js";
+import { buyFrom, leaveStore } from "./economy.js";
 
 /**
  * applyAction(state, action) — the pure dispatcher.
@@ -73,9 +75,15 @@ export function applyAction(state, action) {
     case "readScroll":
       readScroll(next, rng, events);
       break;
-    // buyItem/leaveStore/useItem handlers are added by their slice plans and
-    // will dispatch to their module here, each mutating `next` and pushing
-    // events.
+    case "buyItem":
+      buyFrom(next, action.idx, events);
+      break;
+    case "leaveStore":
+      leaveStore(next, events);
+      break;
+    case "useItem":
+      useItem(next, action.i, rng, events);
+      break;
     default:
       break;
   }

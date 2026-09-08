@@ -1,0 +1,184 @@
+// Task 1 — the store domain (ENG-01, ENG-03, ENG-04): stock is plain data
+// (no closures) and an engine-side STORE_EFFECTS lookup applies a purchase.
+//
+// Proves: openStore builds plain-data stock entries (no function-typed
+// leaves anywhere in state.store — the flagged anti-pattern is gone);
+// buyFrom deducts gold, marks the slot sold, and applies the right
+// STORE_EFFECTS effect; buyFrom guards out-of-range/sold/insufficient-gold
+// buys as no-ops; leaveStore clears the store; a GameState with an open
+// store round-trips JSON deepStrictEqual (the store now survives
+// save/reload); economy.js references no Math.random/document/localStorage.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
+import { makeRng } from "../../engine/rng.js";
+import { openStore, buyFrom, leaveStore, STORE_EFFECTS, priceFor } from "../../engine/economy.js";
+
+function fixedFighter(overrides = {}) {
+  return {
+    cls: "Fighter", sub: "Soldier", race: "Human", level: 1, sp: 0,
+    maxWP: 55, wp: 40, skills: {}, vp: 0,
+    weapon: "Club", prof: 0, magicWpn: 0,
+    armor: "Cloth", ar: 3, armorMin: 1, armorWP: 6, armorMax: 12, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x",
+    potions: 1, rations: 6, gold: 100000, scrolls: 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
+    items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    ...overrides,
+  };
+}
+
+function fixedState(overrides = {}) {
+  const { c: cOverrides, floor: floorOverrides, ...rest } = overrides;
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: fixedFighter(cOverrides),
+    floor: { depth: 1, ...floorOverrides },
+    day: 1, steps: 0, combat: null, store: null, beats: null,
+    dead: false, won: false, deathNote: "", epitaph: "",
+    ...rest,
+  };
+}
+
+/** Recursively assert no function-typed leaf exists anywhere in `value`. */
+function assertNoFunctionLeaves(value, label = "value") {
+  if (typeof value === "function") assert.fail(`${label} is a function`);
+  if (value && typeof value === "object") {
+    for (const [k, v] of Object.entries(value)) assertNoFunctionLeaves(v, `${label}.${k}`);
+  }
+}
+
+// --- priceFor ---------------------------------------------------------
+
+test("priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise", () => {
+  assert.equal(priceFor(100, "Troll"), 300);
+  assert.equal(priceFor(101, "Elven"), 51);
+  assert.equal(priceFor(101, "Dwarven"), 51);
+  assert.equal(priceFor(100, "Human"), 100);
+});
+
+// --- openStore: plain-data stock, no closures --------------------------
+
+test("openStore: builds plain-data stock with no function-typed leaves anywhere in state.store", () => {
+  const state = fixedState();
+  const rng = makeRng(1234);
+  openStore(state, rng, []);
+  assert.ok(state.store, "store is open");
+  assert.ok(Array.isArray(state.store.stock) && state.store.stock.length > 0);
+  for (const entry of state.store.stock) {
+    assert.equal(typeof entry.effectId, "string", "every stock entry carries a plain effectId");
+    assert.notEqual(typeof entry.buy, "function", "no closure-typed `buy` field survives");
+  }
+  assertNoFunctionLeaves(state.store, "state.store");
+});
+
+test("openStore: every stock entry's effectId resolves to a real STORE_EFFECTS handler", () => {
+  const state = fixedState();
+  openStore(state, makeRng(42), []);
+  for (const entry of state.store.stock) {
+    assert.equal(typeof STORE_EFFECTS[entry.effectId], "function", `unknown effectId: ${entry.effectId}`);
+  }
+});
+
+test("openStore emits a storeOpened event and clears beats", () => {
+  const state = fixedState({ beats: { groups: [] } });
+  const events = openStore(state, makeRng(5), []);
+  assert.ok(events.some((e) => e.type === "storeOpened"));
+  assert.equal(state.beats, null);
+});
+
+// --- buyFrom ------------------------------------------------------------
+
+test("buyFrom: deducts gold, marks sold, and applies the STORE_EFFECTS effect", () => {
+  const state = fixedState({ c: { gold: 100000, rations: 0, wp: 10, maxWP: 55 } });
+  openStore(state, makeRng(9), []);
+  const idx = state.store.stock.findIndex((s) => s.effectId === "eatRation");
+  assert.notEqual(idx, -1, "fixture must roll a food entry");
+  const before = state.c.gold;
+  const events = buyFrom(state, idx, []);
+  assert.equal(state.store.stock[idx].sold, true);
+  assert.equal(state.c.gold, before - state.store.stock[idx].cost);
+  assert.equal(state.c.rations, 1, "eatRation applied via STORE_EFFECTS");
+  assert.ok(events.some((e) => e.type === "bought"));
+});
+
+test("buyFrom: an out-of-range idx is a no-op, never a throw", () => {
+  const state = fixedState();
+  openStore(state, makeRng(3), []);
+  const before = structuredClone(state);
+  const events = buyFrom(state, 9999, []);
+  assert.deepStrictEqual(state, before);
+  assert.deepStrictEqual(events, []);
+});
+
+test("buyFrom: buying an already-sold slot is a no-op", () => {
+  const state = fixedState({ c: { gold: 100000 } });
+  openStore(state, makeRng(3), []);
+  buyFrom(state, 0, []);
+  const goldAfterFirst = state.c.gold;
+  buyFrom(state, 0, []);
+  assert.equal(state.c.gold, goldAfterFirst, "a second buy on a sold slot changes nothing");
+});
+
+test("buyFrom: insufficient gold fails without mutating state", () => {
+  const state = fixedState({ c: { gold: 0 } });
+  openStore(state, makeRng(3), []);
+  const before = structuredClone(state);
+  const events = buyFrom(state, 0, []);
+  assert.deepStrictEqual(state, before);
+  assert.ok(events.some((e) => e.type === "buyFailed" && e.reason === "insufficientGold"));
+});
+
+test("buyFrom with no open store is a no-op", () => {
+  const state = fixedState();
+  const events = buyFrom(state, 0, []);
+  assert.deepStrictEqual(events, []);
+});
+
+// --- leaveStore -----------------------------------------------------------
+
+test("leaveStore clears the store and emits storeLeft", () => {
+  const state = fixedState();
+  openStore(state, makeRng(3), []);
+  const events = leaveStore(state, []);
+  assert.equal(state.store, null);
+  assert.ok(events.some((e) => e.type === "storeLeft"));
+});
+
+// --- round-trip (ENG-04): an OPEN store now survives save/reload ---------
+
+test("a GameState with an open store round-trips JSON deepStrictEqual (the closure fix)", () => {
+  const state = fixedState();
+  openStore(state, makeRng(77), []);
+  assert.ok(state.store, "store must actually be open for this to prove anything");
+  const roundTripped = JSON.parse(JSON.stringify(state));
+  assert.deepStrictEqual(roundTripped, state);
+  // structuredClone throws immediately on any function-typed leaf (applyAction's
+  // own clone strategy, per engine/engine.js) — the strongest possible proof.
+  assert.doesNotThrow(() => structuredClone(state));
+});
+
+// --- purity ---------------------------------------------------------------
+// (the project-wide code-line scan — comment-aware — lives in
+// test/unit/engine-purity.test.js and already covers this file)
+
+test("economy.js has no ACTUAL Math.random/document/localStorage code reference (comment-stripped)", () => {
+  const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+  const raw = fs.readFileSync(path.resolve(__dirname, "..", "..", "engine", "economy.js"), "utf8");
+  const codeOnly = raw
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => {
+      const idx = line.indexOf("//");
+      return idx === -1 ? line : line.slice(0, idx);
+    })
+    .join("\n");
+  assert.doesNotMatch(codeOnly, /Math\.random/);
+  assert.doesNotMatch(codeOnly, /\bdocument\b/);
+  assert.doesNotMatch(codeOnly, /\blocalStorage\b/);
+});
