@@ -6,9 +6,9 @@ current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
 stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-09-08T21:06:23.076Z"
+last_updated: "2026-09-08T21:45:00.000Z"
 last_activity: 2026-09-08
-last_activity_desc: "Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)"
+last_activity_desc: "Device-review revision (04-DR1) executed: bigger maze cells/icons (48/60/72), D-pad-only movement (tap-to-move disabled, controlScheme defaults 'dpad'), MAZE tab/heading renamed MAP, map viewport fills the screen (no permanent panel beneath it), encounter/feature-tile panel converted to an over-map overlay; npm test 451 green, test:quick 362 green, build:www OK"
 progress:
   total_phases: 5
   completed_phases: 3
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 
 Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
 Plan: 7 of 11 completed so far (Wave 2 of 8) — wave-based execution, not strictly sequential; 04-01/04-02/04-03/04-04 (Wave 1) and 04-11 (Wave 2) complete
-Status: Plan 04-11 complete (persistence-key rename, folded-in deep work) — ready for remaining Wave 2+ plans (04-05..04-10)
-Last activity: 2026-09-08 — Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)
+Status: 04-DR1 device-review revision complete (crawl-screen touch-up directed off the Wave-4 on-device build) — ready for remaining Wave 2+ plans (04-07..04-10)
+Last activity: 2026-09-08 — Device-review revision (04-DR1) executed on the MAP crawl screen (bigger cells/icons, D-pad-only, MAZE->MAP rename, dominant map layout, over-map encounter overlay); npm test 451 green, test:quick 362 green, build:www OK
 
 Progress: [████████░░] 77%
 
@@ -149,6 +149,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-06: The maze canvas keeps drawing the FULL 21x21 grid (unchanged rendering model); a new .mw-maze-viewport DIV crops/pans the larger canvas via overflow:hidden + positionCanvas(), sharing controls.js's exact forward/inverse transform for tap hit-testing (never a second copy).
 - [Phase ?]: 04-06: window.__mzControls/__mzCanvasSizing/__mzIconsApi/__mzSettings/__mzIconMap bridge pattern lets the classic (non-module) script's fit()/draw()/tap-handler consume the Wave-1 pure ES modules, extending the existing window.move/window.__mzState bridge convention.
 - [Phase ?]: 04-06: Icon rendering fails open at three layers (preloadIcons, draw()'s iconReady guard, and a dot+letter fallback for the player marker) so a missing/undecoded PNG never blocks boot or makes the player invisible; player-marker glow is a static radial gradient, not an animated pulse, since draw() only runs on-demand (no continuous rAF loop).
+- [Phase 4, device-review revision, 2026-09-08]: After the Wave-4 on-device build, user directed 5 live revisions to the crawl screen (D-pad-only movement replacing tap-to-move-default, cellSizeForTextScale bumped 28/34/40 -> 48/60/72, MAZE tab/heading renamed MAP, viewport now fills all remaining vertical space with no permanent panel beneath it, and the encounter/feature-tile panel converted to an over-map overlay gated by a new hasActiveEncounter() predicate). Combat stays on the CURRENT classic (non-engine) code path — only its container moved into the overlay; full engine routing is still 04-07's job and the polished full-screen combat surface is still 04-08's. See 04-DR1-SUMMARY.md. npm test 451 green, test:quick 362 green, build:www OK.
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -191,8 +192,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T21:06:23.048Z
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-09-08T21:45:00.000Z
+Stopped at: Completed 04-DR1 device-review revision (crawl-screen touch-up; see 04-DR1-SUMMARY.md)
 Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
