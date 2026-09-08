@@ -169,3 +169,7 @@ None - no external service configuration required.
 ---
 *Phase: 01-engine-extraction-determinism*
 *Completed: 2026-09-07*
+
+## Self-Check: PASSED
+
+All 10 claimed files found on disk; all 5 claimed commit hashes (`f8474b6`, `7935a86`, `8cf3904`, `50d746a`, `f4f37c4`) found in git log. Full `node --test` suite: 13/13 passing.
