@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-09-08T20:05:57.590Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-09-08T20:21:03.622Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 31
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
-Plan: 3 of 11 (Wave 1 of 8)
+Plan: 4 of 11 (Wave 1 of 8)
 Status: Plan 04-01 complete — ready for 04-02/04-03/04-04 (remaining Wave 1 plans)
 Last activity: 2026-09-08 — Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
 
-Progress: [███████░░░] 65%
+Progress: [███████░░░] 68%
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Progress: [███████░░░] 65%
 | Phase 04 P01 | 12min | 2 tasks | 4 files |
 | Phase 04 P02 | 6min | 2 tasks | 4 files |
 | Phase 04 P03 | 20min | 3 tasks | 6 files |
+| Phase 04 P04 | 14min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-03: DAMAGE row renders as a static [min,max] range mirroring weaponDamage()'s modifier stack (never drawing from the live rng) so the character sheet cannot advance state.rngState
 - [Phase ?]: 04-03: oracleLogViewModel(entries, diceMode) parses the <span class="roll"> detail already embedded in formatEvents()'s HTML output rather than requiring a new structured-event shape; the combat log reuses the same function
 - [Phase ?]: 04-03: tutorialSeen persists under the literal key mazeworld.tutorialSeen (no .v1 suffix), matching 04-CONTEXT.md's wording; not folded into the ddr.* rename scope (that's limited to the 3 pre-existing delve/graveyard/best keys)
+- [Phase ?]: 04-04: EVENT_NARRATION (src/browser/eventNarration.js) is a data-driven type->builder table covering all 162 engine-emitted event types (158 literal + 4 EVENT_TYPES-indirect: died/won/leveled/floorChanged), replacing engineAdapter's old ~26-case monolithic switch; a coverage test derives the type set from engine/*.js source at runtime (comment-stripped, ternary-aware) so a future unnarrated event type fails the guardrail
+- [Phase ?]: 04-04: "moved" stays a deliberate silent no-op excluded from both the canonical event set and EVENT_NARRATION (matches engineAdapter.test.js's existing locked assertion); the 3 dead pendingEncounter/pendingTrap/pendingChest cases were dropped (encounters.js fully superseded them since 01-10) rather than migrated, satisfying the coverage test's own no-dead-entries guard
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -177,8 +180,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T20:05:57.558Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-09-08T20:21:03.600Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
