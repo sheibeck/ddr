@@ -1,0 +1,6 @@
+{
+  "seed": 20260907,
+  "seeds": [1, 2, 3, 4, 6, 7, 8, 13, 15, 19, 24, 29, 32, 35],
+  "actions": [],
+  "_note": "Character generation happens entirely at newRun/newGame with no further actions, so `actions` is empty (per action-script.schema.md, an empty actions array is valid). The `seeds` array is the covering set this chargen fixture iterates: across it every class (Fighter/Thief/Magic User), all six races (Human/Elven/Dwarven/Wilmsry/Fridgian/Troll), a Samurai (plate + magic weapon), and the special-grant grimoire branches (Wizard/Illusionist/Summoner/Sorcerer/Apprentice/Warlock/Cleric) are exercised at least once. `seed` is the schema-required scalar (a representative single seed); the parity and determinism tests iterate `seeds`."
+}
