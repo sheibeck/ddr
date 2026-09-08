@@ -62,7 +62,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Backgrounding, force-closing, or losing the app mid-run and reopening it resumes the run exactly where the player left off, because a save is written after every action/beat and on every app lifecycle interruption.
   4. Run state, best depth/high score, and the graveyard of past characters are stored in durable native storage (Capacitor Preferences, not browser `localStorage`) behind a versioned schema with an integrity check, and all three survive an app restart.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+
+- [ ] 02-01-PLAN.md — Shared async Storage abstraction + legacy-key migration + Wave-0 persistence tests (SAV-01..05)
+- [ ] 02-02-PLAN.md — Native toolchain (Temurin 17 + android-36) + Capacitor scaffold + webDir build script + bare headless build (PLT-01)
+- [ ] 02-03-PLAN.md — Dual-write convergence onto durable storage + async autosave + back-button + lifecycle flush (SAV-01/02/04/05, PLT-02/03)
+- [ ] 02-04-PLAN.md — Native chrome (splash/status-bar/portrait/icon) + self-hosted offline fonts + green assembleDebug+bundleDebug build gate (PLT-01/04)
+
 **UI hint**: yes
 
 ### Phase 3: Endless Descent & Difficulty Balance
@@ -143,7 +151,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
-| 2. Android Packaging & Native Persistence | 0/TBD | Next — toolchain ready (2026-09-08) | - |
+| 2. Android Packaging & Native Persistence | 0/4 | Planned — toolchain ready (2026-09-08) | - |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device visual test | - |
 | 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 2) | - |
@@ -151,4 +159,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 > **Execution order (re-adjusted 2026-09-08 — user installed Android Studio):** 1 ✓ → 3 ✓ → **2 (now unblocked)** → 5 → then 4 & 6 when a device/emulator visual test and Google Play account are ready. Phase 2's code + a headless debug build are automatable; the emulator/device visual test and release signing are UAT/user steps.
 >
-> **Build environment (probed 2026-09-08):** Node v22.23.2 + npm 10.9.8 (registry reachable); JDK — system Java is 25 (too new for AGP → point Gradle at Android Studio's bundled JBR/JDK 21 via `org.gradle.java.home` or `JAVA_HOME`); **Android SDK installed at `%LOCALAPPDATA%\Android\Sdk`** (build-tools, platforms, platform-tools, emulator, **licenses already accepted**) — set `ANDROID_HOME`/`ANDROID_SDK_ROOT` to it (not currently exported); Android Studio at `C:\Program Files\Android\Android Studio`. `sdkmanager`/`adb`/`emulator` are in the SDK dir but not on PATH (invoke by full path or add to PATH).
+> **Build environment (probed 2026-09-08):** Node v22.23.2 + npm 10.9.8 (registry reachable); JDK — **both** system Java AND Android Studio's bundled JBR are **JDK 25** (`C:\Program Files\Android\Android Studio\jbr`, openjdk 25.0.3). JDK 25 is very new for the Android Gradle Plugin — **Phase 2 research must pin the exact Capacitor-8 Gradle/AGP version and confirm it supports JDK 25; if not, install a JDK 21 (Temurin) and point Gradle at it** via `org.gradle.java.home`. Since this Android Studio (2026) bundles JBR 25, its matching AGP/Gradle likely supports 25 — but verify with a real `./gradlew` build, don't assume; **Android SDK installed at `%LOCALAPPDATA%\Android\Sdk`** (build-tools, platforms, platform-tools, emulator, **licenses already accepted**) — set `ANDROID_HOME`/`ANDROID_SDK_ROOT` to it (not currently exported); Android Studio at `C:\Program Files\Android\Android Studio`. `sdkmanager`/`adb`/`emulator` are in the SDK dir but not on PATH (invoke by full path or add to PATH).
