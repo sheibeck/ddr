@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 current_phase_name: endless-descent-difficulty-balance
-status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-09-08T12:36:36.343Z"
+status: verifying
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-09-08T12:43:12.347Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 
 Phase: 03 (endless-descent-difficulty-balance) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-08 — Phase 03 execution started
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 92%
 | Phase 01 P10 | 50min | 3 tasks | 15 files |
 | Phase 03 P01 | ~50min | 2 tasks | 4 files |
 | Phase 03 P02 | 45 | 3 tasks | 12 files |
+| Phase 03-endless-descent-difficulty-balance P03 | 20min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase ?]: difficultyCurve(depth): asymptotic soft-cap reproducing 9+depth/depth-1/3+depth exactly for depths 1-5 (parity guard); darkRadius not zeroed on breather floors (behaviorally inert since darkBlobs=0)
 - [Phase ?]: tune-difficulty.mjs harness reuses engine/combat.js's real canParley() and mirrors move()'s one-way-door guard (canStep) to avoid a pathfinding stall bug
 - [Phase ?]: Recalibrated fairness.test.js dark-coverage threshold from RESEARCH.md's illustrative 0.6 to 0.8, based on measured genFloor output against Plan 01's locked difficulty.js constants (max 0.733, never trending toward 1.0)
+- [Phase ?]: Best-depth stays adapter-side in localStorage (mazeworld.best.v1), never folded into GameState — preserves save round-trip/parity comparables
+- [Phase ?]: startNewRun(seed) treats seed as optional (Date.now() fallback via Number.isInteger guard) so the death-card's zero-arg call and a test's explicit-seed call share one entry point
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -145,6 +148,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T12:36:36.315Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-09-08T12:43:12.327Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None

@@ -18,11 +18,11 @@ Requirements for the initial paid Google Play release. Each maps to a roadmap ph
 
 ### Run Loop (endless roguelike)
 
-- [ ] **RUN-01**: Starting a run generates a 100%-dice-rolled character with no player choices, then reveals it on a character sheet
+- [x] **RUN-01**: Starting a run generates a 100%-dice-rolled character with no player choices, then reveals it on a character sheet
 - [x] **RUN-02**: The player descends procedurally-generated floors endlessly, with no fixed floor cap or Gate ending
 - [x] **RUN-03**: Difficulty scales with depth along a tuned curve (soft-cap / breather floors) so a typical run resolves in ~5–10 minutes and never becomes a trivial or unbeatable wall
 - [x] **RUN-04**: Character death is permanent and ends the run (permadeath)
-- [ ] **RUN-05**: After death, the player can start a fresh run in a single tap from a death screen
+- [x] **RUN-05**: After death, the player can start a fresh run in a single tap from a death screen
 
 ### Save & Persistence
 
@@ -123,11 +123,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | SAV-03 | Phase 2: Android Packaging & Native Persistence | Pending |
 | SAV-04 | Phase 2: Android Packaging & Native Persistence | Pending |
 | SAV-05 | Phase 2: Android Packaging & Native Persistence | Pending |
-| RUN-01 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| RUN-01 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-02 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-03 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-04 | Phase 3: Endless Descent & Difficulty Balance | Complete |
-| RUN-05 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| RUN-05 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | UX-01 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
 | UX-02 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
 | UX-03 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
