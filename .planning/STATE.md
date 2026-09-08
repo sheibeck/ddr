@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-09-08T04:08:33.414Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-09-08T04:40:05.170Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [██████░░░░] 60%
 | Phase 01-engine-extraction-determinism P04 | 2min | 2 tasks | 3 files |
 | Phase 01 P05 | 7min | 3 tasks | 11 files |
 | Phase 01-engine-extraction-determinism P06 | 15min | 3 tasks | 6 files |
+| Phase 01 P07 | 32min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase ?]: death.js committed before items.js — useItem's Potion of Death imports die(), reversing the plan's Task 1/Task 2 order
 - [Phase ?]: itemReady(state,it) takes the full state (not just the character) since the every-N cooldown needs state.steps
 - [Phase ?]: serializeRun keeps the full GameState — nothing is excluded anymore now that state is 100% plain data end-to-end
+- [Phase ?]: [Phase 01-07]: Movement domain fully ported behind applyAction (move/newDay/makeCamp/teleport/descend/winGame); dot/trap/chest left as event-emitting stubs for 01-09/01-10.
+- [Phase ?]: [Phase 01-07]: Movement-parity fixture (seed 256) programmatically discovered via a directed-edge BFS avoiding unimplemented feature tiles and respecting one-way-door direction, continuing the same rng object across the descend to also land a monster-free day-100 bounce.
+- [Phase ?]: [Phase 01-07]: Browser adapter (src/browser/engineAdapter.js) owns its own localStorage read/write via engine/saveState.js, independent of mazeworld.html's own save()/load(); movement input is rerouted by overwriting the global move() function rather than touching dpad/keydown handlers.
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -103,7 +107,8 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 
 ### Pending Todos
 
-- [Phase 1 execution — minor]: Plan-checker PASS noted one coverage gap — the `winGame` (floor-5 Gate) path is ported in 01-07 but not parity-tested. Executor should add a win-condition case to a parity fixture (e.g. extend `action-script.movement.json` or the 01-10 full-suite aggregation) so ENG-05 "no regressions" fully covers the win path. Low long-term value (Phase 3 removes the Gate for endless descent) — do not block on it.
+- [Phase 1 execution — closed pragmatically in 01-07]: The `winGame` (floor-5 Gate) coverage gap flagged by the plan-checker is now unit-tested directly (`test/unit/movement.test.js`, a hand-placed depth-5 gate cell) rather than via full prototype-parity (a real 5-floor traversal to a generated Gate tile was impractical within one fixture). Full golden-master parity for winGame remains available to 01-10's full-suite aggregation if ever wanted. Low long-term value either way (Phase 3 removes the Gate for endless descent).
+- [Phase 1 execution — minor, new in 01-07]: mazeworld.html's New Delve/Wipe/camp buttons still call the OLD (non-engine) `newGame()`/`makeCamp()` — only dpad/keydown movement was rerouted through the engine per 01-07's scoped wiring. Playable but not engine-routed for those inputs; whichever later plan unifies all UI entry points behind the engine (likely the Phase 4/5 presentation rewrite) should reroute them too.
 
 ### Blockers/Concerns
 
@@ -120,6 +125,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T04:08:33.393Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-09-08T04:40:05.150Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None
