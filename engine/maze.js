@@ -6,6 +6,8 @@
 // preserving the exact RNG-consumption order so the same seed produces a
 // byte-identical floor. No DOM, no module-global state, no Math.random.
 
+import { difficultyCurve } from "./difficulty.js";
+
 export const GW = 21;
 export const GH = 21;
 
@@ -40,14 +42,23 @@ export function bfs(g, sx, sy) {
 
 /**
  * genFloor(depth, rng) — recursive-backtracker maze + loop-carving + a
- * farthest-cell exit/gate + feature scatter + dark-zone blobs + one-way
- * doors. Pure function of (depth, rng): takes rng as a parameter, reads no
- * module global, touches no DOM. Ports mazeworld.html lines 1167-1247
- * line-for-line, replacing every random draw with the injected rng while
- * preserving the prototype's exact call-consumption order.
+ * farthest-cell exit + feature scatter + dark-zone blobs + one-way doors.
+ * Pure function of (depth, rng): takes rng as a parameter, reads no module
+ * global, touches no DOM. Ports mazeworld.html lines 1167-1247 line-for-line,
+ * replacing every random draw with the injected rng while preserving the
+ * prototype's exact call-consumption order.
  *
- * @param {number} depth - current floor depth (1-based); depth >= 5 places
- *   a "gate" feature instead of "exit" (fixed 5-floor Gate, preserved as-is)
+ * Descent is ENDLESS (RUN-02): the farthest-cell descent tile is ALWAYS
+ * "exit" at every depth — the old fixed 5-floor "gate" Gate tile is retired
+ * (this is the phase's one intentional divergence from the frozen
+ * prototype, which still places a "gate" at depth >= 5). The three
+ * difficulty knobs (encounter-dot count, dark-blob count, dark-blob BFS
+ * radius) are sourced from difficultyCurve(depth) (engine/difficulty.js,
+ * RUN-03) instead of the old unbounded inline formulas; difficultyCurve
+ * consumes no RNG, so the seeded RNG cursor order is unchanged for the
+ * depths (1-5) where its output matches the old formulas exactly.
+ *
+ * @param {number} depth - current floor depth (1-based); no upper bound
  * @param {{next: () => number, pick: (a: any[]) => any, shuffle: (a: any[]) => any[]}} rng
  * @returns {{g: object[][], px: number, py: number, depth: number}}
  */
@@ -95,21 +106,26 @@ export function genFloor(depth, rng) {
     if (x > 0 && x < GW - 1 && g[y] && g[y][x] && g[y][x].wall) g[y][x].wall = false;
   }
 
+  // The three difficulty knobs for this floor — a pure lookup, no RNG
+  // consumed, so it never perturbs the rng cursor below (RUN-03).
+  const dc = difficultyCurve(depth);
+
   const open = [];
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (!g[y][x].wall) open.push([x, y]);
 
-  // farthest open cell from the start becomes the descent
+  // farthest open cell from the start becomes the descent — always "exit"
+  // now that descent is endless (the old depth >= 5 "gate" is retired).
   const dist = bfs(g, 1, 1);
   let best = [1, 1],
     bd = -1;
   for (const [x, y] of open) if (dist[y][x] > bd) { bd = dist[y][x]; best = [x, y]; }
-  g[best[1]][best[0]].feat = depth >= 5 ? "gate" : "exit";
+  g[best[1]][best[0]].feat = "exit";
 
   // features
   const far = open.filter(([x, y]) => dist[y][x] > 4 && !g[y][x].feat);
   rng.shuffle(far);
   let i = 0;
-  const nDots = 9 + depth;
+  const nDots = dc.dots;
   for (let k = 0; k < nDots && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "dot"; }
   for (let k = 0; k < 2 && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "tele"; }
   for (let k = 0; k < 2 && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "chest"; }
@@ -117,13 +133,16 @@ export function genFloor(depth, rng) {
   for (let k = 0; k < 2 && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "climb"; }
   for (let k = 0; k < 2 && i < far.length; k++, i++) { const [x, y] = far[i]; g[y][x].feat = "gorge"; }
 
-  // unlit stretches: the deeper you go the more of the floor has no light at all
-  if (depth >= 2) {
-    const blobs = depth - 1;
-    for (let bIdx = 0; bIdx < blobs && open.length; bIdx++) {
+  // unlit stretches: the deeper you go the more of the floor has no light at
+  // all — bounded by difficultyCurve's darkBlobs/darkRadius (RUN-03) instead
+  // of the old unbounded depth-1 / 3+depth formulas. dc.darkBlobs equals the
+  // old `blobs` count for depths 1-5, so rng.pick(open) is still called
+  // exactly darkBlobs times here, preserving the seeded RNG cursor.
+  if (dc.darkBlobs > 0) {
+    for (let bIdx = 0; bIdx < dc.darkBlobs && open.length; bIdx++) {
       const [sx, sy] = rng.pick(open);
       const d2 = bfs(g, sx, sy);
-      for (const [x, y] of open) if (d2[y][x] >= 0 && d2[y][x] <= 3 + depth) g[y][x].dark = true;
+      for (const [x, y] of open) if (d2[y][x] >= 0 && d2[y][x] <= dc.darkRadius) g[y][x].dark = true;
     }
     g[1][1].dark = false;
   }

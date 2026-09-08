@@ -47,11 +47,11 @@ test("genFloor: depth 1 places exactly one 'exit' feature, no 'gate'", () => {
   assert.equal(counts.gate, undefined);
 });
 
-test("genFloor: depth 5 places exactly one 'gate' feature, no 'exit' (fixed 5-floor Gate)", () => {
+test("genFloor: depth 5 places exactly one 'exit' feature, no 'gate' (endless descent — RUN-02, the phase's one intentional behavior change from the frozen prototype's fixed 5-floor Gate)", () => {
   const floor = genFloor(5, makeRng(42));
   const counts = countFeats(floor.g);
-  assert.equal(counts.gate, 1);
-  assert.equal(counts.exit, undefined);
+  assert.equal(counts.exit, 1);
+  assert.equal(counts.gate, undefined);
 });
 
 test("genFloor: depth 4 still places 'exit', not 'gate' (Gate is depth >= 5 only)", () => {
@@ -62,19 +62,31 @@ test("genFloor: depth 4 still places 'exit', not 'gate' (Gate is depth >= 5 only
 });
 
 test("genFloor: feature counts match the prototype's formula for seed 42, depths 1-5", () => {
-  // Locked to actual genFloor(depth, makeRng(42)) output — nDots = 9+depth,
-  // 2 each of tele/chest/trap/climb/gorge, up to 3 one-way doors.
+  // Locked to actual genFloor(depth, makeRng(42)) output — dots sourced from
+  // difficultyCurve(depth), which reproduces the old 9+depth for depths 1-5;
+  // 2 each of tele/chest/trap/climb/gorge, up to 3 one-way doors. depth-5's
+  // descent tile is now "exit" (endless descent, RUN-02) instead of "gate" —
+  // the phase's ONE intentional behavior change vs the frozen prototype.
   const expected = {
     1: { dot: 10, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
     2: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
     3: { dot: 12, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
     4: { dot: 13, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    5: { dot: 14, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, gate: 1 },
+    5: { dot: 14, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
   };
   for (const depth of [1, 2, 3, 4, 5]) {
     const floor = genFloor(depth, makeRng(42));
     const counts = countFeats(floor.g);
     assert.deepEqual(counts, expected[depth], `depth ${depth} feature counts`);
+  }
+});
+
+test("genFloor: no depth ever produces a 'gate' feature — descent is endless (RUN-02)", () => {
+  for (const depth of [5, 6, 10, 20, 50, 100]) {
+    const floor = genFloor(depth, makeRng(42));
+    const counts = countFeats(floor.g);
+    assert.equal(counts.gate, undefined, `depth ${depth} must never place a 'gate'`);
+    assert.equal(counts.exit, 1, `depth ${depth} must place exactly one 'exit'`);
   }
 });
 

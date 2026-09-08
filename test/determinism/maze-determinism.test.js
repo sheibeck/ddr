@@ -1,17 +1,19 @@
 // ENG-05 determinism proof: genFloor(depth, rng) is a pure function of
-// (depth, seed) — the same seed produces a byte-identical floor for every
-// depth the fixed 5-floor Gate spans (1-5), and different seeds diverge.
-// This is engine-vs-engine determinism (same seed twice); prototype parity
-// for maze generation is proven separately via the per-slice parity
-// fixtures built on the harness from 01-03.
+// (depth, seed) — the same seed produces a byte-identical floor at any
+// depth, including well past the old fixed 5-floor Gate cap now that
+// descent is endless (RUN-02), and different seeds diverge. This is
+// engine-vs-engine determinism (same seed twice); prototype parity for
+// maze generation (depths 1-5, where the frozen prototype still applies)
+// is proven separately via the per-slice parity fixtures built on the
+// harness from 01-03.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import { genFloor } from "../../engine/maze.js";
 import { makeRng } from "../../engine/rng.js";
 
-test("genFloor: same seed produces a byte-identical floor for depths 1-5", () => {
-  for (const depth of [1, 2, 3, 4, 5]) {
+test("genFloor: same seed produces a byte-identical floor for depths 1-5 and deep endless floors", () => {
+  for (const depth of [1, 5, 6, 10, 20, 50, 100]) {
     const a = genFloor(depth, makeRng(2026));
     const b = genFloor(depth, makeRng(2026));
     assert.deepStrictEqual(a, b, `depth ${depth}: same seed must produce identical floors`);
@@ -19,7 +21,7 @@ test("genFloor: same seed produces a byte-identical floor for depths 1-5", () =>
 });
 
 test("genFloor: two different seeds produce different floors (seed actually drives generation)", () => {
-  for (const depth of [1, 2, 3, 4, 5]) {
+  for (const depth of [1, 5, 6, 10, 20, 50, 100]) {
     const a = genFloor(depth, makeRng(1));
     const b = genFloor(depth, makeRng(2));
     assert.notDeepStrictEqual(a, b, `depth ${depth}: different seeds should not coincide`);
