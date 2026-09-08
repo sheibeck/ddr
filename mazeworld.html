@@ -302,10 +302,19 @@ button.primary:hover:not(:disabled){background:var(--ditto-2)}
 button.primary:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 button.danger{border-color:var(--stamp);color:var(--stamp)}
 /* DR2 "Taller buttons": .small used to be genuinely tiny (5px/9px padding,
-   10.5px type) — MAKE CAMP, MOVE ON, Roll new character/Clear save/Clear the
-   graveyard, and the spell-menu buttons all use this class. Bumped to a
-   still-visually-"secondary" but comfortably >=48dp-tall size. */
+   10.5px type) — MAKE CAMP, MOVE ON, Clear save/Clear the graveyard, and the
+   spell-menu buttons all use this class. Bumped to a still-visually-
+   "secondary" but comfortably >=48dp-tall size. */
 button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:13px 14px;min-height:48px}
+/* 04-DR3: "Abandon your run" — the mock's CUT LOSSES destructive chrome
+   (border/background/color literally matching design/Mazeworld
+   Mobile.dc.html's own CUT LOSSES · ROLL ANOTHER button), applied as its own
+   modifier rather than widening the shared .danger rule (which also styles
+   the unrelated in-combat Flee button) so this stays scoped to the one new
+   destructive action this plan adds. */
+button.mw-danger-btn{border-color:var(--mw-danger-border);background:var(--mw-danger-panel);color:var(--stamp)}
+button.mw-danger-btn:hover:not(:disabled){background:#341814}
+button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shadow)}
 
 /* ---------- encounter ---------- */
 .encounter{margin-top:14px}
@@ -549,14 +558,19 @@ html,body{height:100%}
 .mw-error .mw-empty-head{color:var(--stamp)}
 .yard-loading{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;text-align:center}
 
-/* ---------- title / start screen (DR2) ----------
+/* ---------- title / start screen (DR2; revised 04-DR3) ----------
    A full-screen gate shown OVER the already-booting #app (see the trailing
-   module script's initTitleScreen()) — the splash art + GAME_NAME + ENTER
-   (always) / RESUME (only when a prior save exists) buttons, dark
-   torch-lit style matching design/Mazeworld Mobile.dc.html. Boot itself
-   (auto-resume-or-new-run, both the classic and engine-routed sequences) is
-   completely unchanged underneath — this only controls whether it is
-   immediately visible before the player taps through. */
+   module script's initTitleScreen()) — the splash art + GAME_NAME + ENTER /
+   RESUME (only when a prior save exists) buttons, dark torch-lit style
+   matching design/Mazeworld Mobile.dc.html. Boot itself (auto-resume-or-
+   new-run, both the classic and engine-routed sequences) is completely
+   unchanged underneath — this only controls whether it is immediately
+   visible before the player taps through. 04-DR3: ENTER no longer rolls a
+   character directly — it dismisses this screen and opens
+   #mw-roller-screen (the "THE TABLES DECIDE" roll screen), the only place a
+   new character is ever rolled; this screen can also reappear mid-session
+   via window.mzAbandonRun (HERO tab's "Abandon your run"), always with
+   RESUME available. */
 .mw-title-screen{
   position:fixed;inset:0;z-index:50;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
@@ -806,7 +820,14 @@ html,body{height:100%}
       <section class="panel">
         <h2>Delve</h2>
         <div class="actions">
-          <button class="small" id="btn-new">Roll new character</button>
+          <!-- 04-DR3: the old immediate "Roll new character" reroll is
+               replaced per user directive — rolling a new character now only
+               ever happens FROM the title screen (ENTER -> the roller
+               screen; see #mw-roller-screen). This button is the mock's
+               CUT LOSSES · ROLL ANOTHER action, but abandoning a run now
+               returns to the title screen (confirm first) rather than
+               rolling immediately — see window.mzAbandonRun() below. -->
+          <button class="small mw-danger-btn" id="btn-abandon-run">Abandon your run</button>
           <button class="small" id="btn-wipe">Clear save</button>
         </div>
       </section>
@@ -3600,6 +3621,12 @@ function vitalsStrip() {
 /* The reroll button lands where Strike was, so a fast tap could wipe the death
    screen before it was read. It stays locked for a moment first. */
 const AGAIN_LOCK = 2000;
+// 04-DR3: label + destination match design/Mazeworld Mobile.dc.html's death
+// card exactly ("ROLL THE NEXT VICTIM") and now open the roller screen
+// (window.mzStartRoll, defined by the trailing module script — same
+// window-bridge pattern as window.newGame/window.move) rather than calling
+// newGame() directly, so the next character's reveal gets the same
+// slot-machine treatment as a title-screen ENTER.
 function armAgain() {
   const btn = document.getElementById("btn-again");
   if (!btn) return;
@@ -3611,13 +3638,13 @@ function armAgain() {
       const b2 = document.getElementById("btn-again");
       if (!b2) return;
       b2.disabled = false;
-      b2.textContent = "Roll another delver";
+      b2.textContent = "Roll the next victim";
     }, left);
   } else {
     btn.disabled = false;
-    btn.textContent = "Roll another delver";
+    btn.textContent = "Roll the next victim";
   }
-  btn.onclick = () => { if (!btn.disabled) newGame(); };
+  btn.onclick = () => { if (!btn.disabled) (window.mzStartRoll ? window.mzStartRoll() : newGame()); };
 }
 
 function renderEncounter() {
@@ -3642,7 +3669,7 @@ function renderEncounter() {
       Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} skill points</p>
       <p class="epitaph">${S.epitaph || ""}</p>
       ${(S.lastWords && S.lastWords.length) ? `<div class="lastwords">${S.lastWords.map(l => `<p>${l}</p>`).join("")}</div>` : ""}
-      <div class="again"><button class="primary" id="btn-again">Roll another delver</button></div></div>`;
+      <div class="again"><button class="primary" id="btn-again">Roll the next victim</button></div></div>`;
     armAgain();
     return;
   }
@@ -3652,7 +3679,9 @@ function renderEncounter() {
       <p>${S.c.name} walked ${S.steps} squares in ${S.day} days and came out the other side at skill level ${ROMAN[S.c.level-1]}.</p>
       <p class="epitaph">${S.epitaph || ""}</p>
       <button class="primary" id="btn-again">Roll another delver</button></div>`;
-    document.getElementById("btn-again").onclick = () => newGame();
+    // 04-DR3: same roller-screen destination as the death card's "Roll the
+    // next victim" — see armAgain()'s doc comment above.
+    document.getElementById("btn-again").onclick = () => (window.mzStartRoll ? window.mzStartRoll() : newGame());
     return;
   }
   // whatever just happened comes first — one moment at a time on a phone
@@ -3841,7 +3870,16 @@ function newGame() {
 // calling the engine-routed override there instead would leave `S` null.
 const classicNewGame = newGame;
 
-document.getElementById("btn-new").onclick = () => newGame();
+// 04-DR3: "Abandon your run" no longer rerolls immediately — it returns to
+// the title screen (confirm first), where ENTER rolls a new character via
+// the roller screen and RESUME picks the just-abandoned run back up. The
+// module script below defines window.mzAbandonRun (same bridge pattern as
+// window.move/window.newGame above it); the `|| newGame()` fallback only
+// matters if that module somehow failed to load/run, in which case the old
+// immediate-reroll behavior is a safer default than a dead button.
+document.getElementById("btn-abandon-run").onclick = () => {
+  if (window.mzAbandonRun) window.mzAbandonRun(); else newGame();
+};
 document.getElementById("btn-wipe").onclick = () => {
   // 02-03: routes through window.mzStorage, not raw localStorage — see the
   // save()/load() doc comment above (dual-write hazard fix applies here too).
@@ -4154,17 +4192,19 @@ window.__mzClassicBoot = async function classicBoot() {
   };
 
   // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
-  // script above created a mutable global `window.newGame` property, and the
-  // death-card's "Roll another delver" button (armAgain()/btn-again, and the
-  // won-path btn-again) both call the bare `newGame()` identifier, which
-  // resolves that property at CLICK time — so overwriting it here reroutes
-  // the button through the engine adapter's startNewRun(), exactly like
-  // window.move above reroutes the dpad/keydown handlers. No change to the
-  // death-card markup or to any DOM code inside engineAdapter.js. The
-  // polished mobile death screen / score display is Phase 4 scope — this is
-  // only closing the run loop in the dev harness. startNewRun() is async as
-  // of 02-03 (it awaits recording the ending run's best depth through
-  // storage.js before starting the new one), so this handler is too.
+  // script above created a mutable global `window.newGame` property; "Clear
+  // save" (btn-wipe) still calls the bare `newGame()` identifier directly
+  // (an explicit, already-destructive action that should reroll
+  // immediately), which resolves that property at CLICK time — so
+  // overwriting it here reroutes it through the engine adapter's
+  // startNewRun(), exactly like window.move above reroutes the dpad/keydown
+  // handlers. 04-DR3: the death card's "Roll the next victim" (armAgain()/
+  // btn-again), the won-path btn-again, and the title screen's ENTER no
+  // longer call this directly — they call window.mzStartRoll() below, which
+  // opens the roll screen and calls startNewRun() itself before committing.
+  // startNewRun() is async as of 02-03 (it awaits recording the ending run's
+  // best depth through storage.js before starting the new one), so this
+  // handler is too.
   window.newGame = async function engineNewRun() {
     const state = await startNewRun();
     window.__mzState.set(state);
@@ -4311,31 +4351,56 @@ window.__mzClassicBoot = async function classicBoot() {
   // classic script's own `S` state.
   await window.__mzClassicBoot();
 
-  // DR2 "Add a start/title screen" (04-CONTEXT.md DR2 Group 3): a gate
-  // shown OVER the app that both boot sequences above already fully
-  // initialized. ENTER always starts a brand-new run (the SAME
-  // engine-routed window.newGame() the death-card's "Roll another delver"
-  // button already uses); RESUME just dismisses the gate — boot() already
-  // silently rehydrated the saved run underneath it, so there is nothing
-  // else for RESUME to do. RESUME only appears when hadSaveAtLaunch (checked
-  // BEFORE boot() ran, above) was true. Both buttons start `disabled` in the
-  // markup so a tap before this wiring completes is simply inert rather than
-  // silently lost.
-  (function initTitleScreen() {
+  // DR2 "Add a start/title screen" (04-CONTEXT.md DR2 Group 3), revised by
+  // 04-DR3 per the user's live direction: ENTER no longer starts a run
+  // directly — it dismisses the title and opens the roll screen
+  // (window.mzStartRoll above), which is the only place a new character is
+  // ever rolled. RESUME just dismisses the gate — boot() already silently
+  // rehydrated the saved run underneath it, so there is nothing else for
+  // RESUME to do. hideTitleScreen()/showTitleScreen() are factored out (not
+  // just a local `dismiss` closure) so window.mzAbandonRun below can also
+  // re-show the title screen mid-session, always with RESUME available
+  // (abandoning requires an already-live run).
+  function hideTitleScreen() {
     const screen = document.getElementById("mw-title-screen");
+    if (screen) screen.hidden = true;
+  }
+  function showTitleScreen({ allowResume } = {}) {
+    const screen = document.getElementById("mw-title-screen");
+    const resumeBtn = document.getElementById("mw-title-resume");
+    if (!screen) return;
+    if (resumeBtn) {
+      resumeBtn.hidden = !allowResume;
+      resumeBtn.disabled = !allowResume;
+    }
+    screen.hidden = false;
+  }
+
+  // 04-DR3: "Abandon your run" (HERO tab's mw-danger-btn, formerly an
+  // immediate "Roll new character") — confirm, then return to the title
+  // screen WITHOUT rolling. startNewRun() is never called here, so the
+  // abandoned run's save is untouched; RESUME (now forced visible) picks
+  // that exact run back up, while ENTER instead rolls a brand-new one via
+  // the roll screen.
+  window.mzAbandonRun = function abandonRun() {
+    const ok = window.confirm("Abandon this delve? It stays saved — Resume will pick it back up.");
+    if (!ok) return;
+    showTitleScreen({ allowResume: true });
+  };
+
+  (function initTitleScreen() {
     const enterBtn = document.getElementById("mw-title-enter");
     const resumeBtn = document.getElementById("mw-title-resume");
-    if (!screen || !enterBtn) return;
-    const dismiss = () => { screen.hidden = true; };
+    if (!document.getElementById("mw-title-screen") || !enterBtn) return;
     enterBtn.disabled = false;
-    enterBtn.onclick = async () => {
-      enterBtn.disabled = true;
-      try { await window.newGame(); } finally { dismiss(); }
+    enterBtn.onclick = () => {
+      hideTitleScreen();
+      window.mzStartRoll();
     };
     if (resumeBtn) {
       resumeBtn.hidden = !hadSaveAtLaunch;
       resumeBtn.disabled = !hadSaveAtLaunch;
-      resumeBtn.onclick = dismiss;
+      resumeBtn.onclick = hideTitleScreen;
     }
   })();
 
