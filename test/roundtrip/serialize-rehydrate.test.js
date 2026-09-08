@@ -15,6 +15,13 @@
 // parity/fixtures/action-script.combat.json), proving the round-trip stays
 // lossless with an ACTIVE `state.combat` sub-state (foes, ally, in-progress
 // round) on the wire, not just before/after a fight.
+//
+// 01-09 extends it further with the magic action-script fixture (test/
+// parity/fixtures/action-script.magic.json), proving the round-trip stays
+// lossless through a ward/spell sub-state (a Shield/Bubble's pool/rounds on
+// `state.c.ward`, `state.c.mirror`, `state.c.might`/`strengthBoost`, a live
+// `state.combat` mid-cast) — every field castSpell/drinkPotion/readScroll
+// can set is plain JSON, same as every other rule domain.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -33,6 +40,9 @@ const FIXTURE = JSON.parse(
 );
 const COMBAT_FIXTURE = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.combat.json"), "utf8"),
+);
+const MAGIC_FIXTURE = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.magic.json"), "utf8"),
 );
 
 /** applyStartCombat(state, wandering, forced) — the same non-validated-action
@@ -107,3 +117,40 @@ for (const scenario of COMBAT_FIXTURE.scenarios) {
     assert.ok(sawActiveCombat, `scenario ${scenario.name} must exercise an active combat sub-state at some point`);
   });
 }
+
+// --- 01-09: the guardrail extended through the magic fixture ---------------
+
+for (const scenario of MAGIC_FIXTURE.scenarios) {
+  test(`state survives a JSON round-trip through the magic fixture's "${scenario.name}" scenario`, () => {
+    let state = newRun(scenario.seed);
+
+    scenario.actions.forEach((action, i) => {
+      const result = action.type === "startCombat" ? applyStartCombat(state, action.wandering, action.forced) : applyAction(state, action);
+      state = result.state;
+
+      const stripped = stripVolatileFields(state);
+      const rehydrated = JSON.parse(JSON.stringify(stripped));
+      assert.deepStrictEqual(
+        rehydrated,
+        stripped,
+        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}) must round-trip losslessly`,
+      );
+    });
+  });
+}
+
+test("a mid-cast ward sub-state (Shield) round-trips losslessly", () => {
+  // Directly exercise a ward spell's serializable shape (state.c.ward's
+  // pool/rounds/reflect/name) rather than relying on a fixture seed happening
+  // to roll "Shield" into its grimoire — this is a serialization proof
+  // (ENG-04), not a prototype-parity proof (that's magic-parity.test.js's job).
+  let state = newRun(1);
+  state.c.grimoire = ["Shield"];
+  const { state: afterCast } = applyAction(state, { type: "castSpell", idx: 1 }); // SPELLS[1] === Shield
+  state = afterCast;
+  assert.deepStrictEqual(state.c.ward, { pool: 50, rounds: 5, reflect: false, name: "Shield" }, "the ward was actually set");
+
+  const stripped = stripVolatileFields(state);
+  const rehydrated = JSON.parse(JSON.stringify(stripped));
+  assert.deepStrictEqual(rehydrated, stripped, "state with an active ward sub-state must round-trip losslessly");
+});

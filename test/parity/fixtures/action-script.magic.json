@@ -1,0 +1,29 @@
+{
+  "_note": "Magic parity fixture (01-09): four independent scenarios exercising castSpell (a damage spell in a forced encounter, and a heal outside combat), drinkPotion, and readScroll. Seeds were found by a throwaway discovery script (engine-only, cross-checked for prototype parity before being committed here — same method 01-05/01-07/01-08 used) that scanned seeds 1-5000 via newRun(seed) for a Magic User whose rolled grimoire/scrolls made each scenario reachable at level 1: seed 8 is an Illusionist with Freeze in its grimoire (a lvl-1 offense spell, thrown kind); seed 7 is a Wizard with Heal in its grimoire and a scroll on hand. `castSpell` requires an `idx` field (the spell's index into content/spells.js's SPELLS array, matching engine/actions.js's castSpell.idx validation); `drinkPotion`/`readScroll` take no extra fields. `startCombat` is not in engine/actions.js's validated ACTION_TYPES (an internal function other rule domains call) -- see test/parity/combat-parity.test.js's header for why the harness special-cases it.",
+  "spellIndex": { "Heal": 0, "Freeze": 4 },
+  "scenarios": [
+    {
+      "name": "cast-damage",
+      "seed": 8,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
+        { "type": "castSpell", "idx": 4 }
+      ]
+    },
+    {
+      "name": "heal",
+      "seed": 7,
+      "actions": [{ "type": "castSpell", "idx": 0 }]
+    },
+    {
+      "name": "potion",
+      "seed": 1,
+      "actions": [{ "type": "drinkPotion" }]
+    },
+    {
+      "name": "scroll",
+      "seed": 7,
+      "actions": [{ "type": "readScroll" }]
+    }
+  ]
+}
