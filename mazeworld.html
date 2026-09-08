@@ -180,7 +180,7 @@ ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);p
 
 /* ---------- maze ---------- */
 .mazebox{background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
-canvas{display:block;margin:0 auto;max-width:100%;background:#F4EEDF;border:1px solid var(--rule);touch-action:manipulation}
+canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px solid var(--rule);touch-action:manipulation}
 
 /* 04-06: the pannable, fog-lit viewport framing DOM/CSS layer wrapped
    AROUND the untouched <canvas id="maze"> (04-UI-SPEC.md Screen 1 / Safe
@@ -1546,16 +1546,17 @@ function reveal() {
 // --grid/--ink/--stamp/--ditto/--moss custom properties the rest of the app
 // used — now that :root repoints those to the dark palette (04-05), reading
 // them here would draw near-invisible low-contrast marks against the
-// canvas's own still-light #F4EEDF floor fill. Freezing this lookup table to
-// the ORIGINAL light-theme literals keeps the maze's rendered output
-// byte-for-byte identical to before the reskin, regardless of what the CSS
-// custom properties become.
+// canvas's own floor fill. This lookup table now holds the DARK torch-lit
+// maze palette (the deferred "canvas recoloring" pass): light bone walls
+// (--ink) on a dark warm-stone floor, so the rendered maze matches the dark
+// shell instead of the original light-parchment look. Kept as literals (not
+// live getComputedStyle reads) so the canvas palette is explicit and stable.
 const MAZE_CANVAS_COLORS = {
-  "--grid": "#9FBDB4",
-  "--ink": "#2A2521",
-  "--stamp": "#B03A2C",
-  "--ditto": "#4A3B8C",
-  "--moss": "#4C6B46",
+  "--grid": "#5a4f3a",
+  "--ink": "#cebfa0",
+  "--stamp": "#e07260",
+  "--ditto": "#e8c97a",
+  "--moss": "#8ec06a",
 };
 function draw() {
   if (!S) return;
@@ -1563,7 +1564,7 @@ function draw() {
   const size = CELL * GW;
   const C = n => MAZE_CANVAS_COLORS[n] || "#000";
 
-  ctx.fillStyle = "#F4EEDF"; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = "#0d0b08"; ctx.fillRect(0, 0, size, size);
 
   // graph paper
   ctx.strokeStyle = C("--grid"); ctx.globalAlpha = .30; ctx.lineWidth = 1;
@@ -1574,14 +1575,14 @@ function draw() {
   ctx.globalAlpha = 1;
 
   // unexplored haze over wall cells / unseen cells
-  ctx.fillStyle = "rgba(199,185,160,.42)";
+  ctx.fillStyle = "rgba(0,0,0,.5)";
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++)
     if (!g[y][x].seen) ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
 
   // explored floor, with unlit stretches shaded
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
     if (!g[y][x].seen || g[y][x].wall) continue;
-    ctx.fillStyle = g[y][x].dark ? "#DED3BC" : "#FBF6E9";
+    ctx.fillStyle = g[y][x].dark ? "#191509" : "#2b2416";
     ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
   }
 
