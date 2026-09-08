@@ -32,7 +32,17 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. All game content (classes, subclasses, races, spells, creatures, items, traps, afflictions, epitaphs) lives in standalone data tables the engine reads, with no content values hardcoded into logic.
   4. A serialize/rehydrate round-trip test suite passes for full game state at multiple points in a run, and stays green as work continues into later phases.
   5. A full playthrough driven through the new engine (via the existing browser harness) matches the original prototype's behavior for the same inputs — all 3 classes / 24 subclasses / 6 races / 31 spells / ~45 creatures / items / economy functioning with no regressions.
-**Plans**: TBD
+**Plans**: 10 plans (8 waves)
+- [ ] 01-01-PLAN.md — Scaffold + seeded RNG + dice resolver + static determinism/purity guards
+- [ ] 01-02-PLAN.md — Content extraction: all rules tables → pure data + dice-notation
+- [ ] 01-03-PLAN.md — Parity harness infra + frozen golden master (node:vm)
+- [ ] 01-04-PLAN.md — Maze generation (genFloor/bfs/reveal), RNG-injected + determinism
+- [ ] 01-05-PLAN.md — Engine core (applyAction + validation) + character gen, derived numbers & leveling
+- [ ] 01-06-PLAN.md — Items/treasure & death/graveyard helpers + fail-closed save validation
+- [ ] 01-07-PLAN.md — Movement slice + round-trip guardrail + browser adapter (walking skeleton)
+- [ ] 01-08-PLAN.md — Combat slice (encounters, strikes, foe turns, flee/parley/sing)
+- [ ] 01-09-PLAN.md — Magic, potions & scrolls slice
+- [ ] 01-10-PLAN.md — Economy/store (closures→data) + encounters/traps/chests + full-suite green
 
 ### Phase 2: Android Packaging & Native Persistence
 **Goal**: The game runs as an installable native Android app (via Capacitor) that autosaves durably and resumes exactly where the player left off, surfacing signing/storage/lifecycle problems early while there is still schedule slack.
@@ -106,7 +116,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Extraction & Determinism | 0/TBD | Not started | - |
+| 1. Engine Extraction & Determinism | 0/10 | Planned | - |
 | 2. Android Packaging & Native Persistence | 0/TBD | Not started | - |
 | 3. Endless Descent & Difficulty Balance | 0/TBD | Not started | - |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Not started | - |
