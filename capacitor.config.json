@@ -1,6 +1,6 @@
 {
-  "appId": "com.darktierstudios.mazeworld",
-  "appName": "Mazeworld",
+  "appId": "com.darktierstudios.delvedierepeat",
+  "appName": "Delve, Die, Repeat",
   "webDir": "www",
   "server": {
     "androidScheme": "https"

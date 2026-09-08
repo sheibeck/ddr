@@ -1,4 +1,4 @@
-package com.darktierstudios.mazeworld;
+package com.darktierstudios.delvedierepeat;
 
 import com.getcapacitor.BridgeActivity;
 

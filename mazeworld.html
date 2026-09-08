@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="A playable solo prototype of Mazeworld, the tabletop RPG from Dark Tier Studios.">
-<meta property="og:title" content="Mazeworld Delve">
-<meta property="og:description" content="A playable solo prototype of the Mazeworld tabletop RPG.">
+<meta name="description" content="Delve, Die, Repeat — a solo roguelike dungeon-crawler from Dark Tier Studios. Random hero. Random dungeon. Random death.">
+<meta property="og:title" content="Delve, Die, Repeat">
+<meta property="og:description" content="A solo roguelike dungeon-crawler. Random hero. Random dungeon. Random death.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
 <style>*{box-sizing:border-box}html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
-<title>Mazeworld Delve</title>
+<title>Delve, Die, Repeat</title>
 <style>
 /* Self-hosted fonts (02-04) — a paid, fully-offline app must issue zero
    network requests, including for fonts. These files are fetched once at
@@ -365,7 +365,7 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
 
 <div class="wrap">
   <header class="masthead">
-    <h1>Mazeworld</h1>
+    <h1>Delve, Die, Repeat</h1>
     <div class="meta">
       <div class="m">Floor<b id="m-floor">1</b></div>
       <div class="m">Day<b id="m-day">1</b></div>
@@ -429,7 +429,7 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
     <!-- ============ MAZE ============ -->
     <div class="col-maze">
       <div class="mazebox">
-        <canvas id="maze" width="640" height="640" aria-label="Maze map"></canvas>
+        <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
         <div class="mazefoot">
           <div class="legend">
             <span><i class="k-dot"></i>Encounter dot</span>
@@ -470,7 +470,7 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
     <!-- ============ DOSSIER ============ -->
     <div class="col-doss">
       <section class="panel dossier">
-        <h2>The Maze Master's notes <span id="doss-who"></span></h2>
+        <h2>The Dungeon Master's notes <span id="doss-who"></span></h2>
         <div class="doss" id="doss"></div>
       </section>
     </div>
@@ -491,7 +491,7 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
       <div>
         <h3>Made for one player</h3>
         <ul>
-          <li><b>No Maze Master, no party.</b> Encounters roll themselves and "who gets it" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.</li>
+          <li><b>No Dungeon Master, no party.</b> Encounters roll themselves and "who gets it" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.</li>
           <li><b>Sleep mends you</b> — <code>d10 + 2×level</code> for a ration and eight hours, and camping is a button. The book has no natural healing because it assumes a Cleric in the party. Without this a solo delver has no way back up.</li>
           <li><b>Skill points ×5.</b> <code>(d6 × creature level) ÷ party</code> is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.</li>
           <li><b>Spells run on <code>2×level + 2</code> charges</b>, one returning every 20 squares, instead of once per 100 squares. The book's cadence is a party's pace, not one caster's.</li>
@@ -531,7 +531,7 @@ button.small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-t
 <script>
 "use strict";
 /* ============================================================
-   MAZEWORLD — solo delve prototype
+   DELVE, DIE, REPEAT — solo delve prototype
    ============================================================ */
 
 const SAVE_KEY = "mazeworld.delve.v1";

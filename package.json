@@ -1,9 +1,9 @@
 {
-  "name": "mazeworld",
+  "name": "delve-die-repeat",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Mazeworld — offline Android roguelike dungeon-crawler. Engine extracted from the mazeworld.html prototype.",
+  "description": "Delve, Die, Repeat — offline Android roguelike dungeon-crawler. Engine extracted from the mazeworld.html prototype.",
   "scripts": {
     "test": "node --test",
     "test:quick": "node --test test/unit test/determinism test/roundtrip",
