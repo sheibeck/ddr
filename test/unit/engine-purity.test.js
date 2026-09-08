@@ -92,6 +92,16 @@ test("validateAction rejects malformed actions", () => {
   assert.equal(validateAction({ type: "buyItem", idx: 0 }).ok, true);
 });
 
+// LO-01 regression: castSpell.idx/useItem.i now apply the same non-negative
+// integer guard buyItem.idx always used, for a consistent index contract
+// across every action type.
+test("LO-01: validateAction rejects a negative castSpell.idx / useItem.i, consistent with buyItem.idx", () => {
+  assert.equal(validateAction({ type: "castSpell", idx: -1 }).ok, false);
+  assert.equal(validateAction({ type: "castSpell", idx: 0 }).ok, true);
+  assert.equal(validateAction({ type: "useItem", i: -1 }).ok, false);
+  assert.equal(validateAction({ type: "useItem", i: 0 }).ok, true);
+});
+
 test("applyAction is a safe no-op on an unknown action", () => {
   const state = newRun(999);
   const { state: next, events } = applyAction(state, { type: "definitely-not-real" });

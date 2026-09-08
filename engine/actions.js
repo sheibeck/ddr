@@ -51,10 +51,21 @@ export function validateAction(action) {
       }
       break;
     case "castSpell":
-      if (!isInt(action.idx)) return { ok: false, reason: "castSpell.idx must be an integer" };
+      // LO-01: apply the same non-negativity guard buyItem.idx already uses,
+      // for a consistent index contract across every action type (harmless
+      // today — SPELLS[idx] on a negative idx just returns undefined and
+      // castSpell no-ops — but keeps a future indexing change, e.g.
+      // Array.prototype.at(-1) semantics, from silently being accepted here).
+      if (!isInt(action.idx) || action.idx < 0) {
+        return { ok: false, reason: "castSpell.idx must be a non-negative integer" };
+      }
       break;
     case "useItem":
-      if (!isInt(action.i)) return { ok: false, reason: "useItem.i must be an integer" };
+      // LO-01: see castSpell.idx above — c.items[i] on a negative i safely
+      // no-ops today, but the contract should be consistent.
+      if (!isInt(action.i) || action.i < 0) {
+        return { ok: false, reason: "useItem.i must be a non-negative integer" };
+      }
       break;
     default:
       break;
