@@ -115,7 +115,11 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   const foes = [];
   for (let i = 0; i < n; i++) {
     const lvl = clamp(maxLvl - (rng.d(4) === 1 ? 1 : 0), 1, 5);
-    const roster = BESTIARY[type][lvl - 1] || BESTIARY[type][BESTIARY[type].length - 1];
+    // LO-02: no `||` fallback needed here — `lvl` is always clamped to
+    // [1,5] above, and every BESTIARY category has exactly 5 tiers
+    // (confirmed by 01-VERIFICATION.md's creature count audit), so
+    // BESTIARY[type][lvl - 1] can never be undefined.
+    const roster = BESTIARY[type][lvl - 1];
     const picked = rng.pick(roster);
     foes.push({
       name: picked.n,
