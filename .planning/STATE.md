@@ -56,6 +56,7 @@ Recent decisions affecting current work:
 - [Roadmap]: Wrap the existing `mazeworld.html` prototype with Capacitor rather than porting to a game engine — the prototype is DOM+canvas with a serializable global state object, an ideal shape for a WebView wrap.
 - [Roadmap]: Engine extraction (Phase 1) comes before Android packaging (Phase 2), which comes before endless-mode balance and mobile UX (Phases 3-4), so later phases build against a stable, decoupled engine instead of retrofitting one.
 - [Roadmap]: A thin, store-compliant native build reaches Phase 2 (early) to de-risk signing/storage/lifecycle compliance well before deep polish or store submission (Phase 6).
+- [Autonomous run, 2026-09-07]: User invoked `/gsd-autonomous` to build all 6 phases back-to-back, with **all human/UAT acceptance deferred to milestone end** (accumulate a single UAT checklist rather than pausing per phase). Automated verification still runs each phase; human-needed verification is recorded as deferred-and-continue, NOT a stop. Real external gates (Android tooling install + real-device testing in Phase 2/4; deep-floor playtest balance in Phase 3; Google Play account/$25/signing/submission in Phase 6) require the user and will pause the run when reached.
 
 ### Pending Todos
 

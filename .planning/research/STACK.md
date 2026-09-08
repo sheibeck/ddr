@@ -1,6 +1,8 @@
 # Stack Research
 
-**Domain:** Paid, fully-offline, single-player mobile roguelike (iOS + Android), wrapping an existing zero-dependency vanilla-JS web prototype
+> ⚠️ **SCOPE NARROWED AFTER THIS DOC WAS WRITTEN — ANDROID / GOOGLE PLAY ONLY.** iOS/Apple/Xcode/App Store/macOS content below is **out of scope**; retained for reference only. See `.planning/research/SUMMARY.md` for the reconciled Android-only view. No Mac is required.
+
+**Domain:** Paid, fully-offline, single-player mobile roguelike (**Android / Google Play only**; iOS content below is out of scope), wrapping an existing zero-dependency vanilla-JS web prototype
 **Researched:** 2026-09-07
 **Confidence:** MEDIUM (packaging/build-tool facts cross-checked across multiple independent sources; store-policy dates verified against Apple/Google official pages found in search results — treat exact dates as best-available and re-verify against `developer.apple.com/news` and Play Console Help immediately before each submission, since these thresholds move yearly)
 

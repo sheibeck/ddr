@@ -25,6 +25,8 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 
 ## Technology Stack
 
+> ⚠️ **SCOPE OVERRIDE — ANDROID / GOOGLE PLAY ONLY.** This stack section was generated from research written before iOS was dropped. **Ignore every iOS / Apple / Xcode / App Store / macOS reference below** — they are out of scope. Build only for Android via Capacitor + Android Studio (`@capacitor/android`, no `@capacitor/ios`). No Mac is required. Where a row mentions "both iOS and Android," read it as **Android only**.
+
 ## The Central Decision: Path A (wrap) vs. Path B (port/rewrite)
 
 ## Recommended Stack
@@ -33,10 +35,10 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Capacitor | **8.x** (`@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android` — iOS package at 8.5.1 as of Sept 2026) | Wraps the existing HTML/CSS/JS app in a native WebView shell for both iOS and Android from one codebase | Purpose-built for exactly this "existing web app → native store app" scenario; actively maintained by Ionic (near 1M weekly downloads); Capacitor 8 defaults iOS to Swift Package Manager (no CocoaPods needed for a fresh project); requires no rewrite of DOM/canvas code — the WebView renders `mazeworld.html` essentially unchanged (CONFIDENCE: MEDIUM) |
+| Capacitor | **8.x** (`@capacitor/core`, `@capacitor/cli`, `@capacitor/android` — **Android only; do NOT add `@capacitor/ios`**) | Wraps the existing HTML/CSS/JS app in a native Android WebView shell | Purpose-built for exactly this "existing web app → native store app" scenario; actively maintained by Ionic (near 1M weekly downloads); requires no rewrite of DOM/canvas code — the WebView renders `mazeworld.html` essentially unchanged (CONFIDENCE: MEDIUM) |
 | Node.js | **22+ (current LTS)** | Runtime for the Capacitor CLI and native build tooling | Capacitor 8 requires Node 22 or newer; older Node will fail CLI commands (CONFIDENCE: MEDIUM) |
-| Xcode | **26+ (Xcode 26, shipping with iOS 26 SDK)** — required for **new submissions/updates from April 28, 2026** | Compiles, signs, and archives the iOS build; only runs on macOS | Apple raised the mandatory minimum build SDK from iOS 18 (Apr 2025) to iOS 26 (Apr 2026) for anything uploaded to App Store Connect. This does **not** force dropping support for older iOS versions on users' phones (deployment target ≠ build SDK), but it does mean **you cannot submit at all without a Mac running a current Xcode** (CONFIDENCE: MEDIUM) |
-| Android Studio | **Otter (2025.2.1) or newer** | Compiles, signs, and builds the Android App Bundle | Capacitor 8's Android platform requires this Android Studio generation and its bundled Android Gradle Plugin; runs fine on Windows, macOS, or Linux (CONFIDENCE: MEDIUM) |
+| ~~Xcode~~ | **OUT OF SCOPE** | (iOS build tool — not used) | iOS is excluded. No Mac/Xcode needed. Row retained only to mark it explicitly out of scope. |
+| Android Studio | **Otter (2025.2.1) or newer** | Compiles, signs, and builds the Android App Bundle | Capacitor 8's Android platform requires this Android Studio generation and its bundled Android Gradle Plugin; runs fine on Windows (CONFIDENCE: MEDIUM) |
 
 ### Supporting Libraries (Capacitor plugins)
 
