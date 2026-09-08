@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 01
-current_phase_name: engine-extraction-determinism
-status: verifying
-stopped_at: Completed 01-10-PLAN.md
-last_updated: "2026-09-08T06:05:56.369Z"
-last_activity: 2026-09-07
-last_activity_desc: Phase 01 execution started
+current_phase: 03
+current_phase_name: endless-descent-difficulty-balance
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-09-08T12:22:26.479Z"
+last_activity: 2026-09-08
+last_activity_desc: Phase 03 execution started
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 13
+  completed_plans: 11
 ---
 
 # Project State
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-07)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 01 — engine-extraction-determinism
+**Current focus:** Phase 03 — endless-descent-difficulty-balance
 
 ## Current Position
 
-Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 10 of 10
-Status: Phase complete — ready for verification
-Last activity: 2026-09-07 — Phase 01 execution started
+Phase: 03 (endless-descent-difficulty-balance) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-09-08 — Phase 03 execution started
 
-Progress: [██████████] 100%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [██████████] 100%
 | Phase 01 P08 | 30min | 3 tasks | 10 files |
 | Phase 01-engine-extraction-determinism P09 | 25min | 2 tasks | 7 files |
 | Phase 01 P10 | 50min | 3 tasks | 15 files |
+| Phase 03 P01 | ~50min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 01-10: Store closures eliminated via plain-data stock {n,sub,cost,effectId,effectParams} + engine-side STORE_EFFECTS lookup (ENG-03/ENG-04) — the prototype's last non-serializable pattern, fixed.
 - [Phase ?]: 01-10: Encounters/traps/chests ported into engine/encounters.js and wired into movement's dot/trap/chest feature tiles, replacing the 01-07/01-09 pending-event stubs.
 - [Phase ?]: 01-10: Win-path parity fixture (action-script.win.json) skips floors 1-4 via direct descend() calls and BFS-walks only the final floor-5-to-Gate leg, closing the winGame parity gap the 01-07 plan-checker flagged.
+- [Phase ?]: difficultyCurve(depth): asymptotic soft-cap reproducing 9+depth/depth-1/3+depth exactly for depths 1-5 (parity guard); darkRadius not zeroed on breather floors (behaviorally inert since darkBlobs=0)
+- [Phase ?]: tune-difficulty.mjs harness reuses engine/combat.js's real canParley() and mirrors move()'s one-way-door guard (canStep) to avoid a pathfinding stall bug
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -140,6 +143,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T06:05:56.348Z
-Stopped at: Completed 01-10-PLAN.md
+Last session: 2026-09-08T12:22:26.455Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

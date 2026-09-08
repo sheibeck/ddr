@@ -79,10 +79,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Character death is permanent for that character — there is no revive, undo, or continue.
   5. From the death screen, a single tap starts a fresh dice-rolled run.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
 Plans:
-- [ ] 03-01-PLAN.md — Difficulty-curve module (engine/difficulty.js, bounded soft-cap) + property tests + headless tuning harness (RUN-03)
+
+- [x] 03-01-PLAN.md — Difficulty-curve module (engine/difficulty.js, bounded soft-cap) + property tests + headless tuning harness (RUN-03)
 - [ ] 03-02-PLAN.md — Bounded genFloor + endless descent (gate→exit, legacy gate→descend, winGame retired) + fairness/determinism/combat-regression tests (RUN-02, RUN-03, RUN-04)
 - [ ] 03-03-PLAN.md — One-tap new-run loop + best-depth tracking (adapter + mazeworld.html) + RUN-01/04/05 coverage tests (RUN-01, RUN-04, RUN-05)
 
@@ -143,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 0/TBD | Deferred — needs Android toolchain | - |
-| 3. Endless Descent & Difficulty Balance | 0/3 | Planned (code-only) | - |
+| 3. Endless Descent & Difficulty Balance | 1/3 | In Progress|  |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device/toolchain | - |
 | 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 3) | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
