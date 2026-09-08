@@ -1034,6 +1034,13 @@ function epitaphFor(cause, ctx) {
 
 /* ---------------- state ---------------- */
 let S = null;                 // full game state
+// 01-07 movement-slice engine adapter hook: a `type="module"` script (added
+// near the end of this file) drives movement through engine/engine.js's
+// applyAction and needs to read/write this top-level `S` binding, which a
+// module's own scope cannot see directly (module scopes do not share a
+// classic <script>'s top-level `let`s). This tiny accessor is the only
+// bridge; nothing else uses it. See src/browser/engineAdapter.js.
+window.__mzState = { get: () => S, set: (v) => { S = v; } };
 const cv = document.getElementById("maze");
 const ctx = cv.getContext("2d");
 const GW = 21, GH = 21;
@@ -3254,6 +3261,43 @@ if (restored) {
 }
 fit();
 paint();
+</script>
+
+<script type="module">
+  // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
+  // Reroutes ONLY the movement input surface — dpad clicks and arrow/WASD
+  // keydown, both of which already call the plain `move(dir)` global
+  // declared in the classic <script> above — through engine/engine.js's
+  // applyAction, via src/browser/engineAdapter.js. Combat/store/New-Delve/
+  // camp stay on the existing prototype code path above; those slices are
+  // wired in later plans (01-08/01-09/01-10) and the Phase 4/5 presentation
+  // rewrite replaces this temporary adapter wholesale.
+  //
+  // This script never touches the dpad/keydown event listeners themselves:
+  // overwriting `window.move` below redirects every existing call site,
+  // because `function move(dir){...}` in the classic script created a
+  // mutable global-object property, and bare-identifier calls resolve that
+  // property at call time, not at parse time.
+  import { boot, dispatch } from "./src/browser/engineAdapter.js";
+
+  // A fresh integer seed for a brand-new run — only used if there is no
+  // valid save to rehydrate. engine/rng.js's mulberry32 coerces any number
+  // via `>>> 0`, so a wall-clock timestamp is a fine one-shot seed here (the
+  // engine itself never reads the clock again once a run exists).
+  const freshSeed = Date.now();
+  const engineState = boot(freshSeed);
+  window.__mzState.set(engineState);
+  window.logLine(`<span class="banner">Movement is now walking through the engine.</span>`);
+  window.paint();
+  window.draw();
+
+  window.move = function engineMove(dir) {
+    const { state, html } = dispatch({ type: "move", dir });
+    window.__mzState.set(state);
+    window.paint();
+    window.draw();
+    for (const line of html) window.logLine(line);
+  };
 </script>
 
 </body>
