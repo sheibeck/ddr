@@ -184,6 +184,24 @@ function rewriteVendoredTree(destDir) {
   return rewrittenCount;
 }
 
+// DR2 (04-CONTEXT.md device-review round 2, Group 3 "Add a start/title
+// screen"): the title screen's splash art (assets/ddr_splash.png), copied
+// verbatim into www/assets/ — mirrors copyFonts()/copyIcons()'s pattern
+// exactly (whole-file/dir copy at build time, no runtime fetch, fail loud if
+// the source is missing rather than silently shipping a brokenimg). Only the
+// ONE file the title screen references is copied, not the whole assets/
+// directory (which also holds launcher-icon source art for a separate,
+// unrelated build step).
+function copySplash() {
+  const src = path.join(ROOT, "assets", "ddr_splash.png");
+  if (!existsSync(src)) {
+    throw new Error(`${src} does not exist — expected the title screen's splash art (see mazeworld.html's #mw-title-screen)`);
+  }
+  mkdirSync(path.join(WWW, "assets"), { recursive: true });
+  cpSync(src, path.join(WWW, "assets", "ddr_splash.png"));
+  step("copied assets/ddr_splash.png into www/assets/ddr_splash.png");
+}
+
 function vendorCapacitorPackages() {
   const imports = {};
   for (const pkg of CAPACITOR_PACKAGES) {
@@ -235,6 +253,7 @@ function main() {
   copySourceDirs();
   copyFonts();
   copyIcons();
+  copySplash();
   const importMap = vendorCapacitorPackages();
   writeIndexHtml(importMap);
   step("done");

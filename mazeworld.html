@@ -548,10 +548,77 @@ html,body{height:100%}
 .mw-empty-body{display:block;font-family:var(--body);font-style:italic;font-size:13px;color:var(--ink-soft)}
 .mw-error .mw-empty-head{color:var(--stamp)}
 .yard-loading{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;text-align:center}
+
+/* ---------- title / start screen (DR2) ----------
+   A full-screen gate shown OVER the already-booting #app (see the trailing
+   module script's initTitleScreen()) — the splash art + GAME_NAME + ENTER
+   (always) / RESUME (only when a prior save exists) buttons, dark
+   torch-lit style matching design/Mazeworld Mobile.dc.html. Boot itself
+   (auto-resume-or-new-run, both the classic and engine-routed sequences) is
+   completely unchanged underneath — this only controls whether it is
+   immediately visible before the player taps through. */
+.mw-title-screen{
+  position:fixed;inset:0;z-index:50;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  background:#080705;overflow:hidden;
+}
+.mw-title-screen[hidden]{display:none}
+.mw-title-art{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:center top;opacity:.82;
+}
+.mw-title-scrim{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(8,7,5,.15) 0%, rgba(8,7,5,.55) 55%, rgba(8,7,5,.97) 100%);
+}
+.mw-title-body{
+  position:relative;z-index:1;width:100%;max-width:420px;
+  padding:0 24px calc(40px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;
+}
+.mw-title-name{
+  font-family:var(--disp);font-weight:400;font-size:clamp(20px,6vw,28px);
+  line-height:1.35;color:var(--ditto);margin:0;text-wrap:balance;
+}
+.mw-title-tag{
+  font-family:var(--body);font-style:italic;font-size:14px;color:var(--ink-soft);
+  margin:0 0 16px;
+}
+.mw-title-actions{display:flex;flex-direction:column;gap:10px;width:100%}
+.mw-title-btn{
+  width:100%;min-height:52px;
+  font-family:var(--disp);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  padding:16px;border:2px solid var(--mw-btn-border);box-shadow:0 4px 0 var(--mw-btn-shadow);
+  cursor:pointer;
+}
+.mw-title-enter{background:var(--ditto);color:var(--paper);border-color:var(--ditto);box-shadow:0 4px 0 var(--mw-btn-border)}
+.mw-title-resume{background:var(--paper-3);color:var(--ink)}
+.mw-title-btn:active:not(:disabled){transform:translateY(3px)}
+.mw-title-resume:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shadow)}
+.mw-title-enter:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
+.mw-title-btn:disabled{opacity:.5;cursor:not-allowed}
+.mw-title-resume[hidden]{display:none}
 </style>
 </head>
 <body>
 
+
+<!-- ============ TITLE / START SCREEN (DR2) ============
+     Shown first, over everything — see the .mw-title-screen CSS comment
+     above and initTitleScreen() (trailing module script) for the
+     ENTER/RESUME wiring. -->
+<div id="mw-title-screen" class="mw-title-screen">
+  <img class="mw-title-art" src="./assets/ddr_splash.png" alt="" aria-hidden="true">
+  <div class="mw-title-scrim" aria-hidden="true"></div>
+  <div class="mw-title-body">
+    <h1 class="mw-title-name" id="mw-title-name">Delve, Die, Repeat</h1>
+    <p class="mw-title-tag">Random hero. Random dungeon. Random death.</p>
+    <div class="mw-title-actions">
+      <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
+      <button type="button" class="mw-title-btn mw-title-resume" id="mw-title-resume" hidden disabled>Resume</button>
+    </div>
+  </div>
+</div>
 
 <div id="app" class="mw-app">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
@@ -3883,6 +3950,9 @@ window.__mzClassicBoot = async function classicBoot() {
   document.title = GAME_NAME;
   const titleEl = document.getElementById("mw-title");
   if (titleEl) titleEl.textContent = GAME_NAME;
+  // DR2 title screen: same centralized-constant rule applies to its heading.
+  const titleScreenNameEl = document.getElementById("mw-title-name");
+  if (titleScreenNameEl) titleScreenNameEl.textContent = GAME_NAME;
 
   // UX-08 key_link: the shell's #app root sets --mw-text-scale from
   // settings.js's textScaleForSize(readSettings().textSize) (via
@@ -3927,6 +3997,19 @@ window.__mzClassicBoot = async function classicBoot() {
   // engineAdapter's boot() at all (it owns a completely separate `S` state),
   // so it depends on THIS call having already migrated any legacy data.
   await window.mzStorage.migrateLegacyKeys();
+
+  // DR2 title screen: whether to offer RESUME at all is decided from the
+  // save that exists RIGHT NOW, before boot() runs — boot() with no prior
+  // save never itself writes one (engineAdapter.js#boot only calls
+  // initRun(), not persist(); see its own doc comment), so checking before
+  // or after boot() is equally correct here, but "before" reads clearest.
+  // TITLE_SAVE_KEY mirrors engineAdapter.js's own SAVE_KEY literal — the
+  // same documented, temporary duplication that file's own header comment
+  // already accepts (mazeworld.html's classic <script> isn't a module and
+  // exports nothing to import this from).
+  const TITLE_SAVE_KEY = "ddr.delve.v1";
+  let hadSaveAtLaunch = false;
+  try { hadSaveAtLaunch = !!(await window.mzStorage.getItem(TITLE_SAVE_KEY)); } catch { hadSaveAtLaunch = false; }
 
   // A fresh integer seed for a brand-new run — only used if there is no
   // valid save to rehydrate. engine/rng.js's mulberry32 coerces any number
@@ -4022,6 +4105,34 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.newGame override just above and still correctly initializes the
   // classic script's own `S` state.
   await window.__mzClassicBoot();
+
+  // DR2 "Add a start/title screen" (04-CONTEXT.md DR2 Group 3): a gate
+  // shown OVER the app that both boot sequences above already fully
+  // initialized. ENTER always starts a brand-new run (the SAME
+  // engine-routed window.newGame() the death-card's "Roll another delver"
+  // button already uses); RESUME just dismisses the gate — boot() already
+  // silently rehydrated the saved run underneath it, so there is nothing
+  // else for RESUME to do. RESUME only appears when hadSaveAtLaunch (checked
+  // BEFORE boot() ran, above) was true. Both buttons start `disabled` in the
+  // markup so a tap before this wiring completes is simply inert rather than
+  // silently lost.
+  (function initTitleScreen() {
+    const screen = document.getElementById("mw-title-screen");
+    const enterBtn = document.getElementById("mw-title-enter");
+    const resumeBtn = document.getElementById("mw-title-resume");
+    if (!screen || !enterBtn) return;
+    const dismiss = () => { screen.hidden = true; };
+    enterBtn.disabled = false;
+    enterBtn.onclick = async () => {
+      enterBtn.disabled = true;
+      try { await window.newGame(); } finally { dismiss(); }
+    };
+    if (resumeBtn) {
+      resumeBtn.hidden = !hadSaveAtLaunch;
+      resumeBtn.disabled = !hadSaveAtLaunch;
+      resumeBtn.onclick = dismiss;
+    }
+  })();
 
   // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back
   // Button + Lifecycle". Native-only: isNativePlatform() is false in the
