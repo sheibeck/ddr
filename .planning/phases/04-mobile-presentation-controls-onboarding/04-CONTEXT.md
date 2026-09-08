@@ -27,6 +27,9 @@ OUT OF SCOPE:
 <decisions>
 ## Implementation Decisions
 
+### Design authority (GOVERNING PRINCIPLE — user directive 2026-09-08)
+**The Claude Design mock (`design/Mazeworld Mobile.dc.html`) is the authoritative source for ALL UX and interaction design. Every screen/interaction the mock defines SUPERSEDES the original `mazeworld.html` prototype's version of it.** We must NOT carry forward any of the prototype's original UX/layout/interaction where the mock defines that surface — the prototype's competing UI for a mocked screen is replaced, not reskinned. The prototype remains only as (a) the engine-routing seam and (b) UI the mock does not cover. Concretely, each mocked screen — the MAP/crawl view (big pannable maze + D-pad + MARKS/CENTRE), the character sheet ("THE DOOMED"), GEAR, the GRAVEYARD, the Oracle log (dice-transparency), the full-screen ENCOUNTER/combat overlay (STRIKE/POTION/RUN AWAY, party rail), the death card, the character-roll ("THE TABLES DECIDE"), the 5-tab bottom nav, and the marks-legend/camp bottom-sheets — is built to MATCH THE MOCK, driven by the real engine, with the prototype's old equivalent removed. When in doubt, do what the mock does.
+
 ### Visual theme & fidelity
 - **Adopt the dark "torch-lit ledger" theme** as the app's new visual identity, replacing the light-parchment prototype look (user-confirmed). Palette from the design: grounds `#14110c`/`#080705`/`#1b170f`, frames `#3a3226`/`#6b5c3c`, ink `#e6ddc6`, gold accent `#e8c97a`, muted `#a89c82`/`#c9bda0`, danger red `#e07260`/`#a63a2c`.
 - Also **recolor the native status bar** to the dark theme (was set to Style.Light + `#EFE7D6` parchment in Phase 2 `02-04`) — update to dark grounds (`#1b170f`/`#14110c`) with light status-bar text. Splash asset can stay as-is (branded image); the first painted post-splash screen should be the dark theme.
