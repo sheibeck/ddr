@@ -318,11 +318,26 @@ test("move: stepping onto an exit tile descends to the next floor", () => {
   assert.ok(events.some((e) => e.type === "floorChanged" && e.depth === 2));
 });
 
-test("move: stepping onto the floor-5 gate wins the run without killing it", () => {
+test("move: a legacy 'gate' tile routes to descend (endless-mode compat), never wins (RUN-04)", () => {
+  // genFloor never emits "gate" anymore (Plan 02) — this exercises the
+  // legacy-save compatibility path: an in-flight save from before endless
+  // descent may still hold a "gate" tile on its current floor. Stepping onto
+  // it must continue deeper, exactly mirroring the exit-descend test above,
+  // and must never set state.won.
   const state = fixedState({ floor: { depth: 5 } });
   open(state.floor.g, 5, 4, { feat: "gate" });
-  const rng = makeRng(42);
+  const rng = makeRng(42); // genFloor draws an unpredictable number of times
   const events = move(state, "N", rng, []);
+  assert.equal(state.floor.depth, 6);
+  assert.equal(state.won, false);
+  assert.equal(state.dead, false);
+  assert.ok(events.some((e) => e.type === "floorChanged" && e.depth === 6));
+});
+
+test("winGame: still sets state.won when called directly (RETIRED as a run terminator — no longer wired by move(), but the function itself is unchanged/dormant)", () => {
+  const state = fixedState();
+  const rng = makeRng(1);
+  const events = winGame(state, rng, [], () => 12345);
   assert.equal(state.won, true);
   assert.equal(state.dead, false, "winning is not dying");
   assert.equal(state.deathNote, "walked out");

@@ -14,11 +14,16 @@
 // "tele"/"exit"/"gate") is fully wired as of 01-10: "dot"/"trap"/"chest" now
 // call the real encounterDot/springTrap/openChest handlers from
 // engine/encounters.js (the 01-07/01-09 stubs that only pushed a "pending*"
-// event are gone), alongside the already-complete "tele" (teleport) and
-// "exit"/"gate" (descend/winGame) paths. Circular import with
-// engine/encounters.js (encounterDot/springTrap/openChest call back into
-// teleport() here; move()/teleport() call them) is safe — see
-// engine/encounters.js's header comment for why.
+// event are gone), alongside the already-complete "tele" (teleport) path.
+// As of 03-02 (endless descent, RUN-02/RUN-04): genFloor never emits "gate"
+// anymore, so "exit" is the only descent tile a freshly-generated floor can
+// have; the "gate" branch survives ONLY as legacy-save compatibility — an
+// in-flight save from before this change may still hold a "gate" tile, and
+// stepping onto it now routes to descend() (never winGame()), so permadeath
+// is the sole run terminator. Circular import with engine/encounters.js
+// (encounterDot/springTrap/openChest call back into teleport() here;
+// move()/teleport() call them) is safe — see engine/encounters.js's header
+// comment for why.
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
 import { skill, skillTier, upkeep, eff, revealRadius } from "./derived.js";
@@ -157,7 +162,12 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   } else if (cell.feat === "exit") {
     descend(state, rng, events);
   } else if (cell.feat === "gate") {
-    winGame(state, rng, events, now);
+    // Legacy-save compatibility (RUN-04): genFloor no longer ever emits a
+    // "gate" tile (Plan 02, engine/maze.js), but an in-flight save generated
+    // by the OLD genFloor may still have one on its current floor. Route it
+    // to descend() — continue deeper, never win — so permadeath (die) stays
+    // the ONLY run terminator even for a legacy save mid-floor.
+    descend(state, rng, events);
   }
 
   return events;
@@ -374,8 +384,9 @@ export function bestTeleportDir(state) {
 /**
  * descend(state, rng, events) — ports mazeworld.html descend() (lines
  * 1846-1856). Awards the depth-scaled skill-point bonus, checks for a level
- * up, then generates and reveals the next floor (a fixed 5-floor Gate stays
- * intact behind this contract; endless descent is Phase 3).
+ * up, then generates and reveals the next floor. No depth ceiling — descent
+ * is endless (RUN-02): genFloor(state.floor.depth + 1, rng) always succeeds
+ * and always yields another "exit" tile, so this can be called indefinitely.
  */
 export function descend(state, rng, events = []) {
   const bonus = 40 + 30 * state.floor.depth;
@@ -395,6 +406,14 @@ export function descend(state, rng, events = []) {
  * caller supplies the current graveyard array and calls `bury` itself once
  * it has one to persist). Sets `state.won`, NOT `state.dead` — a winner
  * keeps walking, they just already won.
+ *
+ * RETIRED as a run terminator (RUN-04, Plan 02): genFloor no longer ever
+ * emits a "gate" tile and move() no longer dispatches to this function (its
+ * old "gate" branch now calls descend() for legacy-save compatibility
+ * instead) — winGame() is unreachable via normal play. Permadeath (die,
+ * engine/death.js) is the sole run terminator. Retained, still exported, and
+ * still directly callable (movement.test.js documents this explicitly) only
+ * until Phase 4's win-screen UI cleanup removes state.won entirely.
  */
 export function winGame(state, rng, events = [], now = Date.now) {
   state.won = true;

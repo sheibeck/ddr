@@ -431,6 +431,36 @@ test("allyTurn: a summoned ally strikes for the player and eventually departs", 
   assert.equal(state.combat.ally, null);
 });
 
+// --- high-depth regression (03-02, RUN-02/RUN-03) --------------------------
+//
+// endless descent (Plan 02) means state.floor.depth can grow arbitrarily
+// large with no cap. engine/combat.js is intentionally UNMODIFIED this
+// phase (03-RESEARCH.md Pattern 2: its foe tier/count clamps already bound
+// per-encounter difficulty). This sweep proves those existing clamps still
+// hold at absurd depth, so combat difficulty never diverges even though
+// floor generation now does (via difficultyCurve, bounded separately).
+
+test("startCombat: foe tier and count clamps stay bounded at arbitrarily large floor.depth", () => {
+  // Read the roster off the "encounterStarted" event rather than
+  // state.combat.foes after the call: at max level 5 a foe going first
+  // (rollInitiative can resolve "foe") may hit hard enough to kill this
+  // fixed-wp test character in the SAME startCombat call (foeTurn runs
+  // inline when first === "foe"), which nulls state.combat via die/endCombat
+  // — irrelevant to what this test is actually proving (the roster startCombat
+  // BUILT was already tier/count-clamped before any of that happens).
+  for (const depth of [5, 20, 50, 100, 1000]) {
+    const state = fixedState({ c: { level: 5 }, floor: { depth } });
+    const events = startCombat(state, false, "Beasts", makeRng(depth), []);
+    const started = events.find((e) => e.type === "encounterStarted");
+    assert.ok(started, `depth ${depth}: startCombat should produce an encounter`);
+    for (const foe of started.foes) {
+      assert.ok(foe.lvl <= 5, `depth ${depth}: foe level ${foe.lvl} must stay <= 5 (tier clamp)`);
+      assert.ok(foe.lvl >= 1, `depth ${depth}: foe level ${foe.lvl} must stay >= 1`);
+    }
+    assert.ok(started.foes.length <= 3, `depth ${depth}: foe count ${started.foes.length} must stay <= 3`);
+  }
+});
+
 // --- purity -----------------------------------------------------------
 
 function stripComments(source) {
