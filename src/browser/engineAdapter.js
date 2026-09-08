@@ -2,7 +2,8 @@
 //
 // The walking skeleton's browser adapter (ENG-01, SKELETON.md "Browser
 // render"). This is presentation/persistence GLUE, not engine code — it is
-// the one place allowed to touch `localStorage` and to be imported as a
+// the one place allowed to touch persistence (via src/browser/storage.js's
+// shared abstraction, since 02-03 — see below) and to be imported as a
 // browser `<script type="module">`. It holds the live engine `GameState`,
 // drives it forward one `applyAction` call at a time, and translates the
 // structured `events` applyAction returns into the same HTML narration
@@ -20,6 +21,12 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
 import { bury } from "../../engine/death.js";
+// 02-03: the shared async Storage abstraction (window.mzStorage) — closes
+// 02-RESEARCH.md's dual-write hazard (this adapter and mazeworld.html's
+// classic script previously each hand-rolled their own raw localStorage
+// reads/writes on the SAME three keys, independently). Both paths now
+// converge on this one module's exported get/set/remove/migrate surface.
+import * as storage from "./storage.js";
 
 // Mirrors mazeworld.html's `const SAVE_KEY = "mazeworld.delve.v1";` (line
 // ~488). Deliberately duplicated as a literal rather than imported — the
@@ -28,23 +35,22 @@ import { bury } from "../../engine/death.js";
 // adapter's replacement will resolve.
 const SAVE_KEY = "mazeworld.delve.v1";
 
-// The dev-loop stand-in for a durable best-depth high score (RUN-05 /
-// 03-CONTEXT.md "score = deepest floor reached"). Deliberately a SEPARATE
-// localStorage key from SAVE_KEY, and deliberately NOT part of GameState —
-// folding it into GameState would break the save round-trip/parity
-// comparables this phase's difficulty work depends on staying stable.
-// Phase 2 (SAV-04) relocates this value to durable Capacitor Preferences;
-// this key is intentionally the minimal seam for that later swap.
+// The durable best-depth high score (RUN-05 / 03-CONTEXT.md "score = deepest
+// floor reached"). Deliberately a SEPARATE storage key from SAVE_KEY, and
+// deliberately NOT part of GameState — folding it into GameState would break
+// the save round-trip/parity comparables this phase's difficulty work
+// depends on staying stable. 02-03 routes this key through storage.js (SAV-04
+// — durable Capacitor Preferences on native, localStorage in the dev loop).
 const BEST_KEY = "mazeworld.best.v1";
 
 // CR-01: matches mazeworld.html's own `const GRAVE_KEY = "mazeworld.graveyard.v1";`
 // (mazeworld.html line ~2946) so both the classic combat/store code path
 // (still un-ported, per 03-CONTEXT.md/03-REVIEW.md) and this engine-routed
-// path accumulate tombstones into ONE persistent graveyard. Deliberately a
-// SEPARATE localStorage key from SAVE_KEY/BEST_KEY, and deliberately NOT part
-// of GameState — 03-CONTEXT.md locks the graveyard as adapter-side
-// cross-run accumulation (Phase 2 relocates it to durable Capacitor
-// Preferences, mirroring BEST_KEY's own seam).
+// path accumulate tombstones into ONE persistent graveyard, both now via the
+// SAME storage.js abstraction (02-03 dual-write convergence). Deliberately a
+// SEPARATE storage key from SAVE_KEY/BEST_KEY, and deliberately NOT part of
+// GameState — 03-CONTEXT.md locks the graveyard as adapter-side cross-run
+// accumulation (SAV-05 — durable Capacitor Preferences, mirroring BEST_KEY).
 const GRAVE_KEY = "mazeworld.graveyard.v1";
 
 let currentState = null;
@@ -67,14 +73,16 @@ export function initRun(seed) {
  * getBest() — the best (deepest) floor.depth reached across runs, per
  * 03-CONTEXT.md's "score = deepest floor reached" (descent is one-way, so
  * floor.depth at any point in a run IS the deepest floor reached so far).
- * Returns 0 if nothing is stored, the stored value is not a finite number,
- * or storage is blocked (private window, quota) — never throws (matches
- * boot()/persist()'s fail-open-to-zero posture; T-03-06 accepts a
+ * Resolves 0 if nothing is stored, the stored value is not a finite number,
+ * or storage is blocked (private window, quota) — never throws/rejects
+ * (matches boot()/persist()'s fail-open-to-zero posture; T-03-06 accepts a
  * self-tampered value since this is single-player with no leaderboard).
+ * Async: 02-03 routes this through storage.js's shared abstraction rather
+ * than raw localStorage.
  */
-export function getBest() {
+export async function getBest() {
   try {
-    const raw = localStorage.getItem(BEST_KEY);
+    const raw = await storage.getItem(BEST_KEY);
     const n = Number(raw);
     return Number.isFinite(n) ? n : 0;
   } catch {
@@ -85,13 +93,18 @@ export function getBest() {
 /**
  * recordBest(depth) — module-internal: writes max(stored best, depth) back
  * to BEST_KEY. Never throws (private window/quota just means the new best
- * won't persist, matching persist()'s own posture).
+ * won't persist, matching persist()'s own posture). Reads-then-writes, so it
+ * is awaited by its only caller (startNewRun) rather than fired-and-forgotten
+ * — storage.js's getItem() is deliberately NOT queued behind in-flight writes
+ * (see storage.js's own doc comment), so a caller needing read-after-write
+ * ordering must sequence it itself; startNewRun() is not the rapid-fire
+ * per-action hot path dispatch() is, so awaiting here is cheap and correct.
  */
-function recordBest(depth) {
+async function recordBest(depth) {
   try {
-    const prev = getBest();
+    const prev = await getBest();
     const next = Math.max(prev, Number.isFinite(depth) ? depth : 0);
-    localStorage.setItem(BEST_KEY, String(next));
+    await storage.setItem(BEST_KEY, String(next));
   } catch {
     /* private window, blocked storage — the new best just won't persist */
   }
@@ -111,12 +124,12 @@ function recordBest(depth) {
  * die()) — the event is the only place the raw cause string is still
  * available by the time dispatch() returns.
  */
-function persistGrave(state, cause) {
+async function persistGrave(state, cause) {
   try {
-    const raw = localStorage.getItem(GRAVE_KEY);
+    const raw = await storage.getItem(GRAVE_KEY);
     const prevGraves = raw ? JSON.parse(raw) : [];
     const graves = bury(state, cause, null, Array.isArray(prevGraves) ? prevGraves : []);
-    localStorage.setItem(GRAVE_KEY, JSON.stringify(graves));
+    await storage.setItem(GRAVE_KEY, JSON.stringify(graves));
   } catch {
     /* private window, blocked storage — the tombstone just won't persist */
   }
@@ -133,9 +146,9 @@ function persistGrave(state, cause) {
  * Domain V5; threat T-03-05) — mirrors the seed-recovery guard dispatch()
  * already uses on its fail-closed path.
  */
-export function startNewRun(seed) {
+export async function startNewRun(seed) {
   if (currentState) {
-    recordBest(currentState.floor.depth);
+    await recordBest(currentState.floor.depth);
   }
   const safeSeed = Number.isInteger(seed) ? seed : Date.now();
   const state = initRun(safeSeed);
@@ -145,15 +158,19 @@ export function startNewRun(seed) {
 
 /**
  * boot(freshSeed) — the adapter's load-on-page-open entry point (threat
- * T-01-07a). Reads the active-run save from localStorage and validates it
- * through engine/saveState.js's fail-closed `validateSave`; a missing,
- * corrupt, or tampered save (or a private-window storage exception) falls
- * back to a brand-new run seeded with `freshSeed` — it never throws.
+ * T-01-07a). Runs the one-time legacy-key migration (storage.js's
+ * migrateLegacyKeys, idempotent — safe to call on every boot), then reads the
+ * active-run save through the shared storage abstraction and validates it via
+ * engine/saveState.js's fail-closed `validateSave`; a missing, corrupt, or
+ * tampered save (or a storage exception) falls back to a brand-new run seeded
+ * with `freshSeed` — it never throws. Async: 02-03 routes this through
+ * storage.js rather than raw localStorage.
  */
-export function boot(freshSeed) {
+export async function boot(freshSeed) {
+  await storage.migrateLegacyKeys();
   let raw = null;
   try {
-    raw = localStorage.getItem(SAVE_KEY);
+    raw = await storage.getItem(SAVE_KEY);
   } catch {
     raw = null;
   }
@@ -167,16 +184,18 @@ export function boot(freshSeed) {
   return initRun(freshSeed);
 }
 
-/** persist() — best-effort save of the current state; never throws (a
- * private window or a full storage quota just means the delve won't persist,
- * matching mazeworld.html's own save()). */
+/** persist() — best-effort save of the current state, routed through the
+ * shared storage abstraction. Deliberately fire-and-enqueue (NOT awaited by
+ * its callers): dispatch() renders synchronously from the state it already
+ * has, and storage.js's per-key write queue guarantees a rapid burst of
+ * same-key writes settles in order with the last write winning (SAV-01) —
+ * blocking the render path on every write's round-trip would only add
+ * latency without improving correctness. storage.setItem() itself never
+ * throws/rejects (storage.js's own fail-safe contract), so there is nothing
+ * to catch here. */
 function persist() {
   if (!currentState) return;
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(serializeRun(currentState)));
-  } catch {
-    /* private window, blocked storage — the delve just won't persist */
-  }
+  storage.setItem(SAVE_KEY, JSON.stringify(serializeRun(currentState)));
 }
 
 /**
@@ -203,6 +222,11 @@ export function dispatch(action) {
     // from, and has no access to the raw `cause` string once dispatch()
     // returns — see persistGrave()'s doc comment).
     const diedEvent = events.find((e) => e.type === "died");
+    // persistGrave() is async (storage.js-routed) but deliberately not
+    // awaited here — same fire-and-enqueue posture as persist() above;
+    // storage.js's per-key write queue still orders it correctly, and
+    // persistGrave()'s own try/catch means this can never become an
+    // unhandled rejection.
     if (diedEvent) persistGrave(currentState, diedEvent.cause);
     return { state: currentState, events, html: formatEvents(events) };
   } catch (err) {

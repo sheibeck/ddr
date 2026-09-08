@@ -134,7 +134,18 @@ test("the classic script's OWN extracted loadGraves()/saveGraves() also route th
 
     classic.graves = [];
     await classic.loadGraves();
-    assert.deepStrictEqual(classic.graves, [{ name: "Bones", cause: "starve" }], "loadGraves() read back through window.mzStorage");
+    // classic.graves is now populated by loadGraves()'s own `JSON.parse(...)`
+    // call, evaluated INSIDE the vm sandbox's separate realm — its objects
+    // are structurally identical to, but not reference-equal-by-prototype
+    // with, this file's own Object/Array (assert.deepStrictEqual treats
+    // cross-realm objects as unequal even with identical shape/values).
+    // Round-tripping through THIS realm's JSON normalizes that away; the
+    // content equality is exactly what this test is verifying.
+    assert.deepStrictEqual(
+      JSON.parse(JSON.stringify(classic.graves)),
+      [{ name: "Bones", cause: "starve" }],
+      "loadGraves() read back through window.mzStorage",
+    );
   });
 });
 

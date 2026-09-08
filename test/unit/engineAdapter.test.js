@@ -5,6 +5,22 @@
 // harness's own fakeStorage pattern in
 // test/parity/harness/sandboxPrototype.js), then remove it afterward so it
 // can't leak into other test files.
+//
+// 02-03: engineAdapter now routes every read/write through
+// src/browser/storage.js's shared async abstraction rather than raw
+// localStorage. storage.js's own `isNative()` check returns false whenever
+// `window` doesn't exist at all (as in this plain `node --test` process, no
+// window/Capacitor ever installed) — so it falls straight through to its
+// browser branch, which reads/writes the SAME `globalThis.localStorage`
+// `withFakeLocalStorage` already installs below. No separate
+// window.mzStorage/Capacitor setup is needed in THIS file (contrast with
+// test/persistence/dual-write-convergence.test.js, which explicitly proves
+// convergence with a fake native/Capacitor window present). boot()/getBest()/
+// startNewRun() are now async; dispatch() itself stays synchronous (it
+// renders from the state it already has), but its persistence writes are
+// fire-and-enqueue — tests that immediately inspect the raw backing store
+// after a dispatch()/startNewRun() call must `await flush()` first so the
+// queued write has actually settled.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -21,6 +37,7 @@ import {
   startNewRun,
   getBest,
 } from "../../src/browser/engineAdapter.js";
+import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
 
@@ -28,7 +45,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const SAVE_KEY = "mazeworld.delve.v1";
 
-function withFakeLocalStorage(fn) {
+async function withFakeLocalStorage(fn) {
   const store = new Map();
   const previous = globalThis.localStorage;
   globalThis.localStorage = {
@@ -37,7 +54,7 @@ function withFakeLocalStorage(fn) {
     removeItem: (k) => store.delete(k),
   };
   try {
-    return fn(globalThis.localStorage);
+    return await fn(globalThis.localStorage);
   } finally {
     if (previous === undefined) delete globalThis.localStorage;
     else globalThis.localStorage = previous;
@@ -52,35 +69,35 @@ test("dispatch(action) throws a clear error if called before boot()/initRun()", 
   assert.throws(() => dispatch({ type: "move", dir: "N" }), /boot\(\)\/initRun\(\)/);
 });
 
-test("boot(freshSeed) starts a fresh run when there is no save", () => {
-  withFakeLocalStorage(() => {
-    const state = boot(4242);
+test("boot(freshSeed) starts a fresh run when there is no save", async () => {
+  await withFakeLocalStorage(async () => {
+    const state = await boot(4242);
     assert.equal(state.floor.depth, 1);
     assert.equal(state.seed, 4242);
     assert.equal(getState(), state);
   });
 });
 
-test("boot(freshSeed) rehydrates a valid existing save instead of starting fresh", () => {
-  withFakeLocalStorage((store) => {
+test("boot(freshSeed) rehydrates a valid existing save instead of starting fresh", async () => {
+  await withFakeLocalStorage(async (store) => {
     const original = newRun(99);
     store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
-    const state = boot(1);
+    const state = await boot(1);
     assert.equal(state.seed, 99, "rehydrated the saved run, not a fresh one");
     assert.deepStrictEqual(state.c, original.c);
   });
 });
 
-test("boot(freshSeed) fails closed to a fresh run on a corrupt save", () => {
-  withFakeLocalStorage((store) => {
+test("boot(freshSeed) fails closed to a fresh run on a corrupt save", async () => {
+  await withFakeLocalStorage(async (store) => {
     store.setItem(SAVE_KEY, "{not json");
-    const state = boot(777);
+    const state = await boot(777);
     assert.equal(state.seed, 777, "fell back to a brand-new run rather than throwing");
   });
 });
 
-test("dispatch(action) advances state via applyAction and persists it", () => {
-  withFakeLocalStorage((store) => {
+test("dispatch(action) advances state via applyAction and persists it (through the storage abstraction)", async () => {
+  await withFakeLocalStorage(async (store) => {
     initRun(11);
     const before = getState();
     const { state, events, html } = dispatch({ type: "move", dir: "N" });
@@ -88,14 +105,17 @@ test("dispatch(action) advances state via applyAction and persists it", () => {
     assert.ok(Array.isArray(events));
     assert.ok(Array.isArray(html));
 
+    // persist() is fire-and-enqueue (not awaited inside dispatch) — flush the
+    // storage abstraction's write queue before inspecting the raw backend.
+    await flushStorage();
     const persisted = JSON.parse(store.getItem(SAVE_KEY));
     assert.deepStrictEqual(persisted.c, state.c, "the persisted save reflects post-dispatch state");
     assert.notEqual(before, state, "dispatch never mutates the previous state object in place");
   });
 });
 
-test("CR-01: dispatch() fails closed to a fresh run instead of throwing when applyAction crashes on a corrupted state", () => {
-  withFakeLocalStorage(() => {
+test("CR-01: dispatch() fails closed to a fresh run instead of throwing when applyAction crashes on a corrupted state", async () => {
+  await withFakeLocalStorage(async () => {
     initRun(2024);
     const before = getState();
     // Simulate a state that slipped past validateSave's shape checks (or any
@@ -126,39 +146,39 @@ test("formatEvents maps known event types to HTML and drops unknown ones silentl
   assert.ok(html[3].includes("Gate"));
 });
 
-test("startNewRun(seed) after a prior run returns a fresh state and swaps it in as currentState", () => {
-  withFakeLocalStorage(() => {
+test("startNewRun(seed) after a prior run returns a fresh state and swaps it in as currentState", async () => {
+  await withFakeLocalStorage(async () => {
     initRun(11);
-    const state = startNewRun(4242);
+    const state = await startNewRun(4242);
     assert.equal(state.floor.depth, 1, "fresh run starts on floor 1");
     assert.equal(state.seed, 4242, "fresh run uses the requested seed");
     assert.equal(getState(), state, "startNewRun swaps in the returned state as current");
   });
 });
 
-test("startNewRun(seed) records the ending run's floor.depth into getBest()", () => {
-  withFakeLocalStorage(() => {
+test("startNewRun(seed) records the ending run's floor.depth into getBest()", async () => {
+  await withFakeLocalStorage(async () => {
     initRun(11);
     getState().floor.depth = 7;
-    startNewRun(99);
-    assert.equal(getBest(), 7, "the ended run's deepest floor became the recorded best");
+    await startNewRun(99);
+    assert.equal(await getBest(), 7, "the ended run's deepest floor became the recorded best");
   });
 });
 
-test("startNewRun(seed) keeps the higher of two recorded bests", () => {
-  withFakeLocalStorage(() => {
+test("startNewRun(seed) keeps the higher of two recorded bests", async () => {
+  await withFakeLocalStorage(async () => {
     initRun(1);
     getState().floor.depth = 3;
-    startNewRun(2);
+    await startNewRun(2);
     getState().floor.depth = 1;
-    startNewRun(3);
-    assert.equal(getBest(), 3, "a shallower ending run does not overwrite a deeper recorded best");
+    await startNewRun(3);
+    assert.equal(await getBest(), 3, "a shallower ending run does not overwrite a deeper recorded best");
   });
 });
 
-test("getBest() returns 0 when nothing is stored and never throws when storage is blocked", () => {
-  withFakeLocalStorage(() => {
-    assert.equal(getBest(), 0, "no stored best yields 0");
+test("getBest() returns 0 when nothing is stored and never throws when storage is blocked", async () => {
+  await withFakeLocalStorage(async () => {
+    assert.equal(await getBest(), 0, "no stored best yields 0");
   });
 
   const previous = globalThis.localStorage;
@@ -172,8 +192,8 @@ test("getBest() returns 0 when nothing is stored and never throws when storage i
     removeItem: () => {},
   };
   try {
-    assert.doesNotThrow(() => {
-      const best = getBest();
+    await assert.doesNotReject(async () => {
+      const best = await getBest();
       assert.equal(best, 0, "blocked storage falls back to 0");
     });
   } finally {
@@ -205,8 +225,8 @@ function firstOpenPlainDir(state) {
   return null;
 }
 
-test("CR-01: a starvation death (no combat object) through dispatch() writes a graveyard entry", () => {
-  withFakeLocalStorage((store) => {
+test("CR-01: a starvation death (no combat object) through dispatch() writes a graveyard entry", async () => {
+  await withFakeLocalStorage(async (store) => {
     initRun(55);
     const state = getState();
     const dir = firstOpenPlainDir(state);
@@ -223,9 +243,12 @@ test("CR-01: a starvation death (no combat object) through dispatch() writes a g
     assert.equal(after.dead, true, "the character actually died via starvation");
     assert.ok(
       events.some((e) => e.type === "died" && e.cause === "starve"),
-      "a starve-cause died event was pushed"
+      "a starve-cause died event was pushed",
     );
 
+    // persistGrave() is also fire-and-enqueue from dispatch() — flush before
+    // inspecting the raw backend.
+    await flushStorage();
     const graves = JSON.parse(store.getItem(GRAVE_KEY));
     assert.ok(Array.isArray(graves), "graveyard was written to GRAVE_KEY");
     assert.equal(graves.length, 1, "exactly one tombstone was recorded");
@@ -234,8 +257,8 @@ test("CR-01: a starvation death (no combat object) through dispatch() writes a g
   });
 });
 
-test("CR-01: a climb/gorge-fall death (no combat object) through dispatch() also writes a graveyard entry", () => {
-  withFakeLocalStorage((store) => {
+test("CR-01: a climb/gorge-fall death (no combat object) through dispatch() also writes a graveyard entry", async () => {
+  await withFakeLocalStorage(async (store) => {
     initRun(56);
     const state = getState();
     // Find a climb or gorge tile adjacent to the current position and step
@@ -260,6 +283,7 @@ test("CR-01: a climb/gorge-fall death (no combat object) through dispatch() also
     }
     state.c.wp = 1;
     dispatch({ type: "move", dir });
+    await flushStorage();
 
     const raw = store.getItem(GRAVE_KEY);
     if (!raw) return; // the climb/leap check may have succeeded (RNG-dependent); not a bug
@@ -268,8 +292,8 @@ test("CR-01: a climb/gorge-fall death (no combat object) through dispatch() also
   });
 });
 
-test("CR-01: repeated deaths accumulate multiple graveyard entries (unshift order, newest first)", () => {
-  withFakeLocalStorage((store) => {
+test("CR-01: repeated deaths accumulate multiple graveyard entries (unshift order, newest first)", async () => {
+  await withFakeLocalStorage(async (store) => {
     initRun(77);
     let dir = firstOpenPlainDir(getState());
     assert.ok(dir, "seed 77's floor 1 has at least one open, feature-free neighbor from the start tile");
@@ -277,21 +301,29 @@ test("CR-01: repeated deaths accumulate multiple graveyard entries (unshift orde
     getState().c.wp = 1;
     getState().steps = 99;
     dispatch({ type: "move", dir });
+    // Flush BEFORE starting the next run: persistGrave() does a read-then-
+    // write of GRAVE_KEY, and storage.js's getItem() is deliberately not
+    // queued behind in-flight writes to the same key (see storage.js's own
+    // doc comment) — without this flush, the second death's persistGrave()
+    // read could race ahead of the first death's still-in-flight write and
+    // overwrite it instead of appending.
+    await flushStorage();
 
-    startNewRun(78);
+    await startNewRun(78);
     dir = firstOpenPlainDir(getState());
     assert.ok(dir, "seed 78's floor 1 has at least one open, feature-free neighbor from the start tile");
     getState().c.rations = 0;
     getState().c.wp = 1;
     getState().steps = 99;
     dispatch({ type: "move", dir });
+    await flushStorage();
 
     const graves = JSON.parse(store.getItem(GRAVE_KEY));
     assert.equal(graves.length, 2, "two separate runs each recorded their own tombstone");
   });
 });
 
-test("CR-01: persistGrave never throws when storage is blocked (private window/quota)", () => {
+test("CR-01: persistGrave never throws when storage is blocked (private window/quota)", async () => {
   const previous = globalThis.localStorage;
   globalThis.localStorage = {
     getItem: () => {
@@ -307,7 +339,12 @@ test("CR-01: persistGrave never throws when storage is blocked (private window/q
     getState().c.rations = 0;
     getState().c.wp = 1;
     getState().steps = 99;
+    // dispatch() itself never awaits persistGrave() (fire-and-enqueue), so
+    // it structurally cannot throw synchronously here regardless of storage
+    // state; flushing afterward proves the queued write settled (resolved,
+    // not rejected) rather than leaving an unhandled rejection.
     assert.doesNotThrow(() => dispatch({ type: "move", dir: "N" }));
+    await assert.doesNotReject(() => flushStorage());
   } finally {
     if (previous === undefined) delete globalThis.localStorage;
     else globalThis.localStorage = previous;

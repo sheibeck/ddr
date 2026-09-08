@@ -2943,17 +2943,30 @@ function epitaphCtx(detail) {
 }
 
 /* ---------------- the graveyard ---------------- */
+/* @gsd:dual-write-convergence-extract:graves:start */
+// 02-03: loadGraves()/saveGraves() route through window.mzStorage — the
+// shared async Storage abstraction (src/browser/storage.js) — instead of raw
+// localStorage, closing 02-RESEARCH.md's dual-write hazard (this classic
+// script and src/browser/engineAdapter.js's persistGrave() previously each
+// hand-rolled their own independent localStorage reads/writes on this exact
+// key). window.mzStorage is assigned by the trailing <script type="module">
+// block below BEFORE it invokes window.__mzClassicBoot() (which is the only
+// call site that awaits loadGraves()); every OTHER call site here
+// (bury()/btn-clearyard) still calls saveGraves() fire-and-forget, matching
+// this abstraction's own fire-and-enqueue posture — storage.js's per-key
+// write queue still orders it correctly.
 const GRAVE_KEY = "mazeworld.graveyard.v1";
 let graves = [];
 
-function loadGraves() {
-  try { const r = localStorage.getItem(GRAVE_KEY); graves = r ? JSON.parse(r) || [] : []; }
+async function loadGraves() {
+  try { const r = await window.mzStorage.getItem(GRAVE_KEY); graves = r ? JSON.parse(r) || [] : []; }
   catch (e) { graves = []; }
   if (!Array.isArray(graves)) graves = [];
 }
-function saveGraves() {
-  try { localStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
+async function saveGraves() {
+  try { await window.mzStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
 }
+/* @gsd:dual-write-convergence-extract:graves:end */
 function bury(cause, detail) {
   graves.unshift({
     name: S.c.name, race: S.c.race, sub: S.c.sub, cls: S.c.cls,
@@ -3186,14 +3199,24 @@ function renderEncounter() {
 }
 
 /* ---------------- save / load ---------------- */
-function save() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ c: S.c, floor: S.floor, day: S.day, steps: S.steps, dead: S.dead, won: S.won, deathNote: S.deathNote, epitaph: S.epitaph })); }
+/* @gsd:dual-write-convergence-extract:save:start */
+// 02-03: save()/load() route through window.mzStorage instead of raw
+// localStorage — see loadGraves()/saveGraves()'s doc comment above for the
+// full dual-write-hazard rationale (identical fix, applied to the run-save
+// key). Every fire-and-forget `save();` call site elsewhere in this script
+// (there are many — after every move/act/camp/store transaction) is
+// unchanged: save() being async now just means those calls enqueue a write
+// via storage.js's per-key queue rather than writing synchronously; nothing
+// downstream awaits them, matching this abstraction's fire-and-enqueue
+// posture (SAV-01 — storage.js's queue still orders/never-drops them).
+async function save() {
+  try { await window.mzStorage.setItem(SAVE_KEY, JSON.stringify({ c: S.c, floor: S.floor, day: S.day, steps: S.steps, dead: S.dead, won: S.won, deathNote: S.deathNote, epitaph: S.epitaph })); }
   // note: store stock holds closures and is deliberately not saved
   catch (e) { /* private window, blocked storage — the delve just won't persist */ }
 }
-function load() {
+async function load() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = await window.mzStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const o = JSON.parse(raw);
     if (!o || !o.c || !o.floor) return null;
@@ -3201,6 +3224,7 @@ function load() {
     return { c: o.c, floor: o.floor, day: o.day || 1, steps: o.steps || 0, combat: null, store: null, beats: null, dead: !!o.dead, won: !!o.won, deathNote: o.deathNote || "", epitaph: o.epitaph || "" };
   } catch (e) { return null; }
 }
+/* @gsd:dual-write-convergence-extract:save:end */
 
 /* ---------------- boot ---------------- */
 function newGame() {
@@ -3212,10 +3236,20 @@ function newGame() {
   say(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
   paint(); save();
 }
+// Captured immediately (classic-script parse time, before the trailing
+// module can overwrite the bare `newGame` global with its own
+// engineNewRun/startNewRun-backed version — see that module's own doc
+// comment). window.__mzClassicBoot below MUST call the CLASSIC newGame() on
+// its no-saved-run fallback path — it is the only thing that initializes the
+// classic script's own `S` (combat/store/graveyard rendering all read `S`);
+// calling the engine-routed override there instead would leave `S` null.
+const classicNewGame = newGame;
 
 document.getElementById("btn-new").onclick = () => newGame();
 document.getElementById("btn-wipe").onclick = () => {
-  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  // 02-03: routes through window.mzStorage, not raw localStorage — see the
+  // save()/load() doc comment above (dual-write hazard fix applies here too).
+  try { window.mzStorage?.removeItem(SAVE_KEY); } catch (e) {}
   newGame();
 };
 document.getElementById("btn-camp").onclick = () => makeCamp();
@@ -3247,20 +3281,33 @@ addEventListener("keydown", e => {
 });
 addEventListener("resize", () => { fit(); renderEncounter(); });
 
-loadGraves();
-renderGraves();
+// 02-03: the classic script's boot sequence (loadGraves/renderGraves/load/
+// newGame/fit/paint) used to run synchronously right here, at classic-script
+// parse time. But window.mzStorage — the abstraction loadGraves()/load() now
+// call — is assigned by the trailing <script type="module"> block below,
+// which parses AFTER this classic script (module scripts are always
+// deferred). Exposing this boot sequence as window.__mzClassicBoot mirrors
+// the existing window.__mzState/window.move/window.newGame bridge pattern
+// (see the trailing module's own doc comment) and lets that module await
+// window.mzStorage's assignment + one-time migration BEFORE any save/load
+// call in this sequence runs, closing the parse-order half of the dual-write
+// hazard (02-RESEARCH.md "The dual-write hazard").
+window.__mzClassicBoot = async function classicBoot() {
+  await loadGraves();
+  renderGraves();
 
-const restored = load();
-if (restored) {
-  S = restored;
-  say(`<span class="banner">Delve resumed.</span>`);
-  say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the maze.`);
-  reveal();
-} else {
-  newGame();
-}
-fit();
-paint();
+  const restored = await load();
+  if (restored) {
+    S = restored;
+    say(`<span class="banner">Delve resumed.</span>`);
+    say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the maze.`);
+    reveal();
+  } else {
+    classicNewGame();
+  }
+  fit();
+  paint();
+};
 </script>
 
 <script type="module">
@@ -3281,14 +3328,36 @@ paint();
   // because `function move(dir){...}` in the classic script created a
   // mutable global-object property, and bare-identifier calls resolve that
   // property at call time, not at parse time.
+  //
+  // 02-03: this is now also the ONE place that bootstraps persistence for
+  // BOTH scripts. Importing storage.js assigns window.mzStorage as a side
+  // effect (src/browser/storage.js's own trailing `if (typeof window !==
+  // "undefined") window.mzStorage = {...}`); that assignment — plus the
+  // one-time migration below — MUST complete before either engineAdapter's
+  // own boot() or the classic script's window.__mzClassicBoot() run any
+  // save/load call, closing 02-RESEARCH.md's dual-write parse-order hazard.
+  // src/browser/nativeChrome.js's own @capacitor/* imports are dynamic-only
+  // (see its doc comment) — importing it here (a static, same-project ES
+  // module import, not a bare `@capacitor/*` specifier) is always safe under
+  // node/the browser dev loop.
+  import "./src/browser/storage.js";
   import { boot, dispatch, startNewRun } from "./src/browser/engineAdapter.js";
+  import { registerNativeChrome } from "./src/browser/nativeChrome.js";
+
+  // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —
+  // src/browser/storage.js#migrateLegacyKeys). boot() below also runs this
+  // internally as its own first step (idempotent, so the redundancy is
+  // harmless) — but window.__mzClassicBoot() further down does NOT call
+  // engineAdapter's boot() at all (it owns a completely separate `S` state),
+  // so it depends on THIS call having already migrated any legacy data.
+  await window.mzStorage.migrateLegacyKeys();
 
   // A fresh integer seed for a brand-new run — only used if there is no
   // valid save to rehydrate. engine/rng.js's mulberry32 coerces any number
   // via `>>> 0`, so a wall-clock timestamp is a fine one-shot seed here (the
   // engine itself never reads the clock again once a run exists).
   const freshSeed = Date.now();
-  const engineState = boot(freshSeed);
+  const engineState = await boot(freshSeed);
   window.__mzState.set(engineState);
   window.logLine(`<span class="banner">Movement is now walking through the engine.</span>`);
   window.paint();
@@ -3311,14 +3380,56 @@ paint();
   // window.move above reroutes the dpad/keydown handlers. No change to the
   // death-card markup or to any DOM code inside engineAdapter.js. The
   // polished mobile death screen / score display is Phase 4 scope — this is
-  // only closing the run loop in the dev harness.
-  window.newGame = function engineNewRun() {
-    const state = startNewRun();
+  // only closing the run loop in the dev harness. startNewRun() is async as
+  // of 02-03 (it awaits recording the ending run's best depth through
+  // storage.js before starting the new one), so this handler is too.
+  window.newGame = async function engineNewRun() {
+    const state = await startNewRun();
     window.__mzState.set(state);
     window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
     window.paint();
     window.draw();
   };
+
+  // 02-03: only NOW — after window.mzStorage is assigned + migrated above —
+  // invoke the classic script's own deferred boot sequence
+  // (window.__mzClassicBoot, defined at the bottom of the classic <script>).
+  // Its no-saved-run fallback calls a CAPTURED reference to the classic
+  // newGame() (`classicNewGame`, captured before this module could ever
+  // overwrite the bare `newGame` global above), so it is unaffected by the
+  // window.newGame override just above and still correctly initializes the
+  // classic script's own `S` state.
+  await window.__mzClassicBoot();
+
+  // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back
+  // Button + Lifecycle". Native-only: isNativePlatform() is false in the
+  // browser dev loop and under node, so registerNativeChrome (and its
+  // dynamic @capacitor/* imports) is never reached in either environment —
+  // this is the one production call site.
+  if (window.Capacitor?.isNativePlatform?.()) {
+    registerNativeChrome({
+      storage: window.mzStorage,
+      getGameContext: () => ({
+        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)),
+        hasLiveRun: !!(S && S.c && !S.dead && !S.won),
+        isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)),
+        closeModal: () => {
+          if (S) {
+            S.beats = null;
+            S.store = null;
+          }
+          window.paint();
+        },
+        navigateBack: () => {
+          if (S) S.store = null;
+          window.paint();
+        },
+        showConfirmQuit: () => {
+          window.logLine(`<span class="beat">Press back again to abandon this delve.</span>`);
+        },
+      }),
+    });
+  }
 </script>
 
 </body>
