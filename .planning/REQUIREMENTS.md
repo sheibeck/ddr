@@ -109,13 +109,48 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmap) | — | Pending |
+| ENG-01 | Phase 1: Engine Extraction & Determinism | Pending |
+| ENG-02 | Phase 1: Engine Extraction & Determinism | Pending |
+| ENG-03 | Phase 1: Engine Extraction & Determinism | Pending |
+| ENG-04 | Phase 1: Engine Extraction & Determinism | Pending |
+| ENG-05 | Phase 1: Engine Extraction & Determinism | Pending |
+| PLT-01 | Phase 2: Android Packaging & Native Persistence | Pending |
+| PLT-02 | Phase 2: Android Packaging & Native Persistence | Pending |
+| PLT-03 | Phase 2: Android Packaging & Native Persistence | Pending |
+| PLT-04 | Phase 2: Android Packaging & Native Persistence | Pending |
+| SAV-01 | Phase 2: Android Packaging & Native Persistence | Pending |
+| SAV-02 | Phase 2: Android Packaging & Native Persistence | Pending |
+| SAV-03 | Phase 2: Android Packaging & Native Persistence | Pending |
+| SAV-04 | Phase 2: Android Packaging & Native Persistence | Pending |
+| SAV-05 | Phase 2: Android Packaging & Native Persistence | Pending |
+| RUN-01 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| RUN-02 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| RUN-03 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| RUN-04 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| RUN-05 | Phase 3: Endless Descent & Difficulty Balance | Pending |
+| UX-01 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-02 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-03 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-04 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-05 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-06 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-07 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-08 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| VOX-01 | Phase 5: Voice, Content & Graveyard | Pending |
+| VOX-02 | Phase 5: Voice, Content & Graveyard | Pending |
+| VOX-03 | Phase 5: Voice, Content & Graveyard | Pending |
+| STR-01 | Phase 6: Google Play Compliance & Launch | Pending |
+| STR-02 | Phase 6: Google Play Compliance & Launch | Pending |
+| STR-03 | Phase 6: Google Play Compliance & Launch | Pending |
+| STR-04 | Phase 6: Google Play Compliance & Launch | Pending |
+| STR-05 | Phase 6: Google Play Compliance & Launch | Pending |
+| STR-06 | Phase 6: Google Play Compliance & Launch | Pending |
 
 **Coverage:**
-- v1 requirements: 33 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 33 ⚠️
+- v1 requirements: 36 total (ENG×5, RUN×5, SAV×5, UX×8, VOX×3, PLT×4, STR×6 — corrected from an earlier miscount of 33)
+- Mapped to phases: 36/36 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-07*
-*Last updated: 2026-09-07 after initial definition*
+*Last updated: 2026-09-07 after roadmap creation — traceability populated, coverage count corrected to 36*
