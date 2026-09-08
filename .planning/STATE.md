@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-09-08T19:42:59.745Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-09-08T19:50:47.546Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 31
-  completed_plans: 18
+  completed_plans: 19
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
-Plan: 1 of 11 (Wave 1 of 8)
+Plan: 2 of 11 (Wave 1 of 8)
 Status: Plan 04-01 complete — ready for 04-02/04-03/04-04 (remaining Wave 1 plans)
 Last activity: 2026-09-08 — Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
 
-Progress: [██████░░░░] 58%
+Progress: [██████░░░░] 61%
 
 ## Performance Metrics
 
@@ -76,6 +76,7 @@ Progress: [██████░░░░] 58%
 | Phase 02 P02 | 66min | 2 tasks | 12 files |
 | Phase 02 P04 | 20min | 3 tasks | 22 files |
 | Phase 04 P01 | 12min | 2 tasks | 4 files |
+| Phase 04 P02 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-04: npx @capacitor/assets is broken in this environment (missing chevrotain dep) -> launcher icon mipmaps generated via dependency-free PowerShell/System.Drawing resize instead
 - [Phase ?]: 02-04: self-hosted Special Elite/Crimson Pro/IBM Plex Mono as repo-root fonts/*.woff2 (latin subset only), replacing the Google Fonts CDN link -- zero network font requests, closing the offline-correctness gap
 - [Phase ?]: 04-01: resolveTapDirection takes an isSeen(x,y) predicate matching the real engine/maze.js floor shape (g[y][x].seen), never a mockup Set
+- [Phase ?]: 04-02: settings.js imports getItem/setItem directly from storage.js (import * as storage pattern), not window.mzStorage global — loads cleanly under plain node --test with no window bootstrapped, while storage.js still routes to window.mzStorage for the classic script
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -171,8 +173,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T19:42:59.720Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-09-08T19:50:47.522Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
