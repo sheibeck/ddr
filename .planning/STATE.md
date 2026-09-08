@@ -62,7 +62,7 @@ Recent decisions affecting current work:
 
 Art assets the user added on 2026-09-07 — consume these instead of generating placeholders:
 
-- **`icons/`** — 8 maze map icons, 1254×1254 PNG each (need downscaling/optimization for mobile in Phase 4): `chest`, `crevice`, `descent`, `encounter`, `onewaydoor`, `party`, `teleport`, `trap`. These map to the prototype's maze feature cells (chest→chest, crevice→gorge, descent→exit/stairs, encounter→dot, onewaydoor→one-way door, party→player marker, teleport→tele, trap→trap). **Phase 4** (mobile presentation/canvas rendering) replaces the prototype's procedural vector feature glyphs with these. No icon yet for `wall`/climb or the win `gate` — handle those with existing procedural rendering or flag for the user.
+- **`icons/`** — 9 maze map icons, 1254×1254 PNG each (need downscaling/optimization for mobile in Phase 4): `chest`, `crevice`, `descent`, `encounter`, `onewaydoor`, `party`, `teleport`, `trap`, `wall`. These map to the prototype's maze feature cells (chest→chest, crevice→gorge/climb-down, descent→exit/stairs, encounter→dot, onewaydoor→one-way door, party→player marker, teleport→tele, trap→trap, wall→climbable wall). **Phase 4** (mobile presentation/canvas rendering) replaces the prototype's procedural vector feature glyphs with these. The win `gate` needs no icon — Phase 3 makes descent endless (no Gate).
 - **`assets/mazeworld-google-play-icon-512.png`** — 512×512 (correct Google Play icon spec). **Phase 6** store listing.
 - **`assets/mobile_splash.png`** — 941×1672 portrait (~9:16). ~2.7MB, will need compression + density buckets. **Phase 2** native splash screen (`@capacitor/splash-screen`).
 
