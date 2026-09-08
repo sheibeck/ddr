@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 02
 current_phase_name: android-packaging-native-persistence
-status: executing
-stopped_at: Completed 02-02-PLAN.md (Capacitor Android scaffold + headless assembleDebug compile proof) — 02-04 next
-last_updated: "2026-09-08T16:19:12.011Z"
+status: verifying
+stopped_at: "Completed 02-04-PLAN.md (native chrome + self-hosted fonts + final green build gate: assembleDebug + bundleDebug BUILD SUCCESSFUL) -- Phase 02 complete, 4/4 plans"
+last_updated: "2026-09-08T16:36:40.200Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 
 Phase: 02 (android-packaging-native-persistence) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-08 — Phase 02 execution started
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [█████████░] 94%
 | Phase 02 P01 | 20min | 3 tasks | 4 files |
 | Phase 02 P03 | 22min | 3 tasks | 9 files |
 | Phase 02 P02 | 66min | 2 tasks | 12 files |
+| Phase 02 P04 | 20min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,9 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-02: Capacitor 8.5.1's own capacitor-android module requires Java 21 (sourceCompatibility/targetCompatibility), not 17 as 02-RESEARCH.md's JDK guidance anticipated — installed Temurin 21 (same checksum-verified zip approach), which satisfies Gradle 8.14.x, AGP 8.13.0, and capacitor-android simultaneously
 - [Phase ?]: 02-02: npx cap sync android silently regenerates android/gradle.properties from Capacitor's template on every sync, wiping the JDK pin — added tools/pin-jdk.mjs, wired into package.json's android:debug script after cap:sync and before gradlew
 - [Phase ?]: 02-02: AGP 8.13.0 cannot resolve the decimal-API-level SDK platform android-37.0 as a compileSdk target at all - reverted the interim compileSdk-37 workaround by installing platforms/android-36 via an official checksum-verified Android cmdline-tools zip, restoring Capacitor's stock compileSdk 36; gradlew assembleDebug now BUILD SUCCESSFUL with app-debug.apk produced
+- [Phase ?]: 02-04: fixed inherited StatusBar Style.Dark bug (would render invisible white text on light parchment status bar) -> Style.Light + setBackgroundColor(#EFE7D6)
+- [Phase ?]: 02-04: npx @capacitor/assets is broken in this environment (missing chevrotain dep) -> launcher icon mipmaps generated via dependency-free PowerShell/System.Drawing resize instead
+- [Phase ?]: 02-04: self-hosted Special Elite/Crimson Pro/IBM Plex Mono as repo-root fonts/*.woff2 (latin subset only), replacing the Google Fonts CDN link -- zero network font requests, closing the offline-correctness gap
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -163,6 +167,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T16:19:11.984Z
-Stopped at: Completed 02-02-PLAN.md (Capacitor Android scaffold + headless assembleDebug compile proof) — 02-04 next
+Last session: 2026-09-08T16:36:40.178Z
+Stopped at: Completed 02-04-PLAN.md (native chrome + self-hosted fonts + final green build gate: assembleDebug + bundleDebug BUILD SUCCESSFUL) -- Phase 02 complete, 4/4 plans
 Resume file: None
