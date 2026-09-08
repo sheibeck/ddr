@@ -89,6 +89,19 @@ export function validateSave(raw, options = {}) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
     return { ok: false, reason: "save must be a non-null object" };
   }
+  // MD-02: a save claiming a NEWER version than this build understands must
+  // be rejected rather than silently re-stamped with the current
+  // STATE_VERSION and validated against today's shape rules — that's exactly
+  // how a future v1->v2 shape change would slip an incompatible save past
+  // this function and into the same crash CR-01 fixed. A save with no
+  // `version` at all (a pre-refactor save) or an older/equal version is
+  // treated as version 1, today's only version, and validated normally; a
+  // real migration step for v1->v2 would be added here once STATE_VERSION
+  // bumps past 1.
+  const claimedVersion = typeof obj.version === "number" ? obj.version : 1;
+  if (claimedVersion > STATE_VERSION) {
+    return { ok: false, reason: `save version ${claimedVersion} is newer than supported (${STATE_VERSION})` };
+  }
   if (!isValidCharacter(obj.c)) {
     return { ok: false, reason: "save has a malformed character" };
   }

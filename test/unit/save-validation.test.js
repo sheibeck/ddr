@@ -160,6 +160,31 @@ test("MD-01: a fresh (non-terminal) run's rehydrated state carries no spurious d
   assert.ok(!("lastWords" in rehydrated), "a fresh run must not gain a lastWords key");
 });
 
+// MD-02 regression: validateSave never inspected obj.version, so a save
+// claiming a version newer than this build's STATE_VERSION would be
+// silently re-stamped and validated against today's shape rules instead of
+// being rejected/migrated — the intended extension point for a future
+// schema bump. A version <= STATE_VERSION (or missing entirely, a
+// pre-refactor save) must still validate normally.
+test("MD-02: validateSave rejects a save claiming a version newer than STATE_VERSION", () => {
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const check = validateSave(JSON.stringify({ version: 999, c: validChar, floor: validFloor }));
+  assert.equal(check.ok, false);
+  assert.match(check.reason, /version/i);
+});
+
+test("MD-02: validateSave accepts a save with no version field (pre-refactor save) or version <= STATE_VERSION", () => {
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  assert.equal(validateSave(JSON.stringify({ c: validChar, floor: validFloor })).ok, true, "no version field");
+  assert.equal(
+    validateSave(JSON.stringify({ version: 1, c: validChar, floor: validFloor })).ok,
+    true,
+    "version === STATE_VERSION",
+  );
+});
+
 test("validateSave defaults day/steps when missing or non-numeric", () => {
   const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
   const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
