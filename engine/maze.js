@@ -171,7 +171,18 @@ export function genFloor(depth, rng) {
     doors.push([x, y]);
   }
 
-  return { g, px: 1, py: 1, depth };
+  // WR-01: return dc.depth (difficultyCurve's sanitized, clamped-to-positive-
+  // integer depth), not the raw `depth` parameter. difficultyCurve()'s own
+  // safeDepth() guard was written specifically so a corrupted/non-integer/
+  // non-positive save-derived depth "can never poison this module's output
+  // with NaN/Infinity, which could later corrupt a serialized floor" (see
+  // engine/difficulty.js's safeDepth() doc comment) -- but returning the raw
+  // parameter here defeated that guard for the *returned* floor's own depth
+  // field, even though dc already computed the sanitized value two lines
+  // above for the dots/darkBlobs/darkRadius knobs. For any valid depth >= 1
+  // this is a no-op (dc.depth === depth); it only changes behavior for a
+  // tampered/negative/NaN input.
+  return { g, px: 1, py: 1, depth: dc.depth };
 }
 
 /**

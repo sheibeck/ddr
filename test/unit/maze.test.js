@@ -90,6 +90,21 @@ test("genFloor: no depth ever produces a 'gate' feature — descent is endless (
   }
 });
 
+test("WR-01: genFloor returns difficultyCurve's sanitized depth, not the raw (possibly tampered) parameter", () => {
+  // A hand-edited/corrupted save could carry a negative, non-integer, or
+  // non-finite floor.depth (engine/saveState.js#isValidFloor only checks
+  // Number.isInteger, not >= 1). Before the fix, genFloor computed
+  // difficultyCurve(depth) (correctly sanitized internally for the
+  // dots/darkBlobs/darkRadius knobs) but still returned the raw, untouched
+  // `depth` parameter in the floor object — so the corruption survived into
+  // the very state the safeDepth() guard exists to protect.
+  for (const tampered of [-500, 0, -1, 1.7, NaN, Infinity, -Infinity]) {
+    const floor = genFloor(tampered, makeRng(7));
+    assert.ok(Number.isInteger(floor.depth), `depth ${tampered}: returned floor.depth must be a sane integer, got ${floor.depth}`);
+    assert.ok(floor.depth >= 1, `depth ${tampered}: returned floor.depth must be >= 1, got ${floor.depth}`);
+  }
+});
+
 test("genFloor is pure: no Math.random / document / localStorage / window in engine/maze.js", () => {
   const source = fs.readFileSync(path.join(REPO_ROOT, "engine", "maze.js"), "utf8");
   const noBlockComments = source.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));

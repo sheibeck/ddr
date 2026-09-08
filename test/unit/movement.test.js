@@ -334,6 +334,27 @@ test("move: a legacy 'gate' tile routes to descend (endless-mode compat), never 
   assert.ok(events.some((e) => e.type === "floorChanged" && e.depth === 6));
 });
 
+test("WR-01: descend() guards the SP-bonus formula against a tampered negative/non-integer floor.depth", () => {
+  // A hand-edited save could rehydrate with a negative/non-integer
+  // state.floor.depth (engine/saveState.js#isValidFloor only checks
+  // Number.isInteger, not >= 1). Before the fix, `40 + 30 * state.floor.depth`
+  // read the raw field directly and could produce a large NEGATIVE SP grant
+  // (e.g. depth -500 -> bonus -14960) instead of routing through
+  // difficultyCurve()'s safeDepth() guard the way genFloor's own knobs do.
+  for (const tamperedDepth of [-500, -1, 0, 1.9, NaN]) {
+    const state = fixedState({ floor: { depth: tamperedDepth } });
+    open(state.floor.g, 5, 4, { feat: "exit" });
+    const rng = makeRng(123);
+    const before = state.c.sp;
+    const events = move(state, "N", rng, []);
+    const gained = state.c.sp - before;
+    assert.ok(gained >= 40, `depth ${tamperedDepth}: SP bonus must never go negative/absurd, got ${gained}`);
+    assert.ok(Number.isFinite(gained), `depth ${tamperedDepth}: SP bonus must be finite, got ${gained}`);
+    assert.ok(events.some((e) => e.type === "spGained" && e.amount === gained));
+    assert.ok(Number.isInteger(state.floor.depth) && state.floor.depth >= 1, "the new floor's own depth is also sanitized");
+  }
+});
+
 test("winGame: still sets state.won when called directly (RETIRED as a run terminator — no longer wired by move(), but the function itself is unchanged/dormant)", () => {
   const state = fixedState();
   const rng = makeRng(1);

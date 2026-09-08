@@ -26,6 +26,7 @@
 // comment for why.
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
+import { difficultyCurve } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
@@ -387,9 +388,16 @@ export function bestTeleportDir(state) {
  * up, then generates and reveals the next floor. No depth ceiling — descent
  * is endless (RUN-02): genFloor(state.floor.depth + 1, rng) always succeeds
  * and always yields another "exit" tile, so this can be called indefinitely.
+ *
+ * WR-01: the SP bonus formula routes state.floor.depth through
+ * difficultyCurve()'s safeDepth() guard (rather than using the raw field
+ * directly) so a corrupted/negative/non-integer/NaN save-derived depth can
+ * never produce a nonsensical (e.g. negative) SP grant here. For any valid
+ * depth >= 1 this is a no-op — difficultyCurve(depth).depth === depth.
  */
 export function descend(state, rng, events = []) {
-  const bonus = 40 + 30 * state.floor.depth;
+  const safeFloorDepth = difficultyCurve(state.floor.depth).depth;
+  const bonus = 40 + 30 * safeFloorDepth;
   state.c.sp += bonus;
   events.push({ type: "spGained", amount: bonus, reason: "descend" });
   checkLevel(state, rng, events);
