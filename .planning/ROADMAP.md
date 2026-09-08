@@ -14,7 +14,7 @@ Mazeworld ports a complete, proven ~3,300-line vanilla-JS/HTML/canvas roguelike 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Engine Extraction & Determinism** - The full ruleset runs behind a single deterministic, serializable `applyAction` contract with zero gameplay regressions ✓ (285/285 tests, 2026-09-08)
-- [ ] **Phase 2: Android Packaging & Native Persistence** - The game installs as a native Android app that reliably autosaves and resumes on a real device
+- [x] **Phase 2: Android Packaging & Native Persistence** - The game installs as a native Android app that reliably autosaves and resumes on a real device ✓ (372/372 tests, debug APK+AAB build green, 2026-09-08; device UAT deferred)
 - [x] **Phase 3: Endless Descent & Difficulty Balance** - Players descend an endless, fairly-paced maze instead of a fixed 5-floor Gate ✓ (324/324 tests, 2026-09-08)
 - [ ] **Phase 4: Mobile Presentation, Controls & Onboarding** - The game feels native and approachable on a phone, with touch controls, readable UI, and in-context teaching
 - [ ] **Phase 5: Voice, Content & Graveyard** - The game's sarcastic identity comes alive through data-driven copy tied to real events, verified safe for its rating
@@ -154,7 +154,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Android Packaging & Native Persistence | 4/4 | Complete ✓ | 2026-09-08 |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
 | 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device visual test | - |
-| 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 2) | - |
+| 5. Voice, Content & Graveyard | 0/TBD | Next (code-only) | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
 
 > **Execution order (re-adjusted 2026-09-08 — user installed Android Studio):** 1 ✓ → 3 ✓ → **2 (now unblocked)** → 5 → then 4 & 6 when a device/emulator visual test and Google Play account are ready. Phase 2's code + a headless debug build are automatable; the emulator/device visual test and release signing are UAT/user steps.
