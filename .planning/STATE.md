@@ -123,6 +123,13 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 - [Phase 3]: Endless-mode difficulty curve needs a dedicated playtesting pass (to floor 30-50+), not a one-shot formula — flagged by research as needing project-specific validation beyond genre precedent.
 - [Phase 6]: Google Play target-API level, Data Safety form fields, and IARC questionnaire specifics shift yearly — re-verify against current Play Console Help immediately before executing this phase, not from research alone.
 
+## Deferred Verification (UAT — to milestone end per autonomous run)
+
+| Phase | Item | Resume |
+|-------|------|--------|
+| 1 | Full playthrough in a browser matches the prototype (manual feel/observation) — per 01-VALIDATION.md, deferred to end-of-milestone UAT | /gsd-verify-work 1 |
+| 1 | Live browser page currently routes only movement/camp through the engine; combat/economy still run original prototype code, and `formatEvents()` narrates only a subset of the ~26 engine event types. Intentional Phase-1 scope boundary — **Phase 4 must route ALL domains through the engine adapter and complete event narration.** | (addressed in Phase 4) |
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
