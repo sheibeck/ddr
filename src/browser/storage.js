@@ -37,6 +37,18 @@
 // persistGrave()/getBest()/recordBest()) on this one module, closing the
 // dual-write hazard 02-RESEARCH.md documents.
 
+import { validateSave } from "../../engine/saveState.js";
+
+// The three legacy localStorage keys this module's callers converge on
+// (src/browser/engineAdapter.js SAVE_KEY/BEST_KEY/GRAVE_KEY, and
+// mazeworld.html's own duplicated SAVE_KEY/GRAVE_KEY literals). Defined once
+// here so migrateLegacyKeys() below has a single source of truth for which
+// keys are in scope for the one-time migration.
+const RUN_SAVE_KEY = "mazeworld.delve.v1";
+const BEST_KEY = "mazeworld.best.v1";
+const GRAVE_KEY = "mazeworld.graveyard.v1";
+const LEGACY_KEYS = [RUN_SAVE_KEY, BEST_KEY, GRAVE_KEY];
+
 // key -> a promise chain of already-queued (and always-settled) writes/
 // removes for that key. Module-level by design: one write queue per key,
 // shared across every caller for the lifetime of the page/process.
@@ -147,10 +159,57 @@ export async function flush() {
   await Promise.all([...writeQueues.values()]);
 }
 
-// migrateLegacyKeys() lands in the next commit (02-01 Task 3) — kept out of
-// this one so Task 2's commit is scoped exactly to storage.test.js's GREEN
-// (get/set/remove/flush), matching the plan's task-by-task TDD sequence.
+/**
+ * migrateLegacyKeys() — one-time, idempotent, non-destructive copy of the
+ * three legacy keys from localStorage into the abstraction's own backend
+ * (Preferences on native) ONLY when the abstraction has no value for that
+ * key yet. Never deletes/modifies the localStorage source (matches this
+ * module's fail-safe, never-throw posture). The run-save key is validated
+ * through engine/saveState.js's validateSave before being accepted — a
+ * corrupt/tampered legacy run save is NOT migrated (fail-closed); best-depth
+ * and graveyard are copied as-is (validated by their own consumers later, as
+ * they already are today in engineAdapter.js/mazeworld.html).
+ *
+ * Scope note (02-RESEARCH.md "Migration on first native launch"): Android
+ * WebView storage is sandboxed per-app/per-origin — a true first native
+ * install has never had any prior localStorage inside its own WebView, so
+ * there is no external website save to "recover." This migration's real
+ * value is narrower: it protects only against THIS PROJECT'S OWN earlier
+ * dev/test builds (an emulator/device that ran an early debug build still
+ * using raw localStorage before this abstraction existed). On a true first
+ * install (localStorage empty) and on every subsequent launch after the
+ * first successful migration, this is a no-op. Intended to run once at boot,
+ * before the adapter's own load path (wired in 02-03).
+ */
+export async function migrateLegacyKeys() {
+  for (const key of LEGACY_KEYS) {
+    try {
+      let legacyValue = null;
+      try {
+        legacyValue = localStorage.getItem(key);
+      } catch {
+        legacyValue = null;
+      }
+      if (typeof legacyValue !== "string") continue; // nothing to migrate for this key
+
+      const existing = await getItem(key);
+      if (existing !== null) continue; // already migrated (or already has a value) — copy-if-empty only
+
+      if (key === RUN_SAVE_KEY) {
+        const check = validateSave(legacyValue);
+        if (!check.ok) continue; // fail-closed: never migrate a corrupt/tampered run save
+      }
+
+      await setItem(key, legacyValue);
+    } catch {
+      // Never throw — a migration failure for one key just means that key
+      // stays un-migrated this launch, matching this module's overall
+      // fail-safe posture (mirrors persist()/getBest()'s try/catch-and-swallow
+      // pattern in engineAdapter.js).
+    }
+  }
+}
 
 if (typeof window !== "undefined") {
-  window.mzStorage = { getItem, setItem, removeItem, flush };
+  window.mzStorage = { getItem, setItem, removeItem, flush, migrateLegacyKeys };
 }
