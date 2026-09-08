@@ -56,7 +56,7 @@ test("SETTINGS_DEFAULTS: controlScheme defaults to 'tap' and diceMode defaults t
 });
 
 test("writeSetting/readSettings: each of the 6 fields round-trips through window.mzStorage", async () => {
-  await withFakeLocalStorage(async (store) => {
+  await withFakeLocalStorage(async (_ls, store) => {
     await writeSetting("sound", false);
     await writeSetting("haptics", false);
     await writeSetting("textSize", "L");
@@ -116,7 +116,7 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
 });
 
 test("readSettings(): corrupt JSON blob yields full defaults, never throws", async () => {
-  await withFakeLocalStorage(async (store) => {
+  await withFakeLocalStorage(async (_ls, store) => {
     store.set(SETTINGS_STORAGE_KEY, "{not valid json");
     const settings = await readSettings();
     assert.deepEqual(settings, SETTINGS_DEFAULTS);
@@ -124,7 +124,7 @@ test("readSettings(): corrupt JSON blob yields full defaults, never throws", asy
 });
 
 test("readSettings(): partial persisted blob merges over defaults", async () => {
-  await withFakeLocalStorage(async (store) => {
+  await withFakeLocalStorage(async (_ls, store) => {
     store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "S" }));
     const settings = await readSettings();
     assert.equal(settings.textSize, "S");
