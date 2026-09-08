@@ -218,7 +218,11 @@ ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);p
   font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.22em;
   text-transform:uppercase;margin:0 0 8px;color:var(--ink-soft);
 }
-.mazebox{display:flex;flex-direction:column;flex:1;min-height:0;background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
+/* DR5: position:relative so #enc-panel (moved here from inside
+   .mw-maze-viewport — see the .mw-overlay CSS comment) can absolutely
+   position itself against THIS box, covering the map viewport AND
+   .mazefoot's MAKE CAMP + D-pad bar, not just the canvas above them. */
+.mazebox{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
 canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px solid var(--rule);touch-action:manipulation}
 
 /* 04-06: the pannable, fog-lit viewport framing DOM/CSS layer wrapped
@@ -251,13 +255,15 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-flash.mw-flash-show{opacity:1}
 
 /* Device-review revision #5: the encounter/feature-event panel as an
-   OVER-MAP OVERLAY — absolutely positioned inside .mw-maze-viewport (the
-   nearest positioned ancestor), covering it entirely while active. Replaces
+   OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
+   .mw-maze-viewport, which only covered the canvas, to .mazebox itself —
+   the nearest positioned ancestor is now the box containing BOTH the map
+   viewport AND .mazefoot's MAKE CAMP + D-pad bar — so the overlay covers the
+   whole play area, giving it more real estate, not just the map). Replaces
    the old permanent `.panel` styling (border/shadow/margin) with a
    self-contained modal-over-map treatment; its own overflow-y:auto lets long
-   combat/narration content scroll internally without the outer viewport's
-   overflow:hidden clipping it (the box itself never exceeds the viewport's
-   bounds, so nothing bleeds past the crop). */
+   combat/narration content scroll internally without the outer box's own
+   layout clipping it. */
 .mw-overlay{
   position:absolute;inset:0;z-index:8;margin:0;
   display:flex;flex-direction:column;
@@ -876,19 +882,6 @@ html,body{height:100%}
             <button type="button" class="mw-chip" id="mw-chip-centre">Centre</button>
           </div>
           <div class="mw-flash" id="mw-flash" aria-live="polite"></div>
-
-          <!-- Device-review revision #5: the encounter/feature-event panel
-               is now an OVER-MAP OVERLAY (absolutely positioned inside this
-               positioned viewport), not a permanent panel beneath the map.
-               hidden by default; renderEncounter() toggles the `hidden`
-               attribute via hasActiveEncounter() — shown only while a
-               feature tile/combat/store/death/win narration is active, and
-               dismissed by the in-body "Move on"/"Leave"/"Roll another
-               delver" action, returning focus to the map. -->
-          <section class="mw-overlay" id="enc-panel" hidden>
-            <h2>Encounter <span id="enc-round"></span></h2>
-            <div id="enc-body"></div>
-          </section>
         </div>
         <div class="mazefoot">
           <!-- DR4 "D-pad shifted right": camp + dpad are the two direct
@@ -906,6 +899,22 @@ html,body{height:100%}
             <button class="rt" data-dir="E" aria-label="Move east">→</button>
           </div>
         </div>
+
+        <!-- DR5: the encounter/feature-event panel is a direct child of
+             .mazebox (moved from inside .mw-maze-viewport) so its
+             absolute inset:0 overlay covers BOTH the map viewport above AND
+             this MAKE CAMP + D-pad bar — giving it the full play area, not
+             just the map. hidden by default; renderEncounter() toggles the
+             `hidden` attribute via hasActiveEncounter() — shown only while a
+             feature tile/combat/store/death/win narration is active, and
+             dismissed by the in-body "Move on"/"Leave"/"Roll another
+             delver" action, returning focus to the map. Movement (D-pad
+             clicks + keydown) is gated on !hasActiveEncounter() while this
+             is up — see the dpad/keydown handlers. -->
+        <section class="mw-overlay" id="enc-panel" hidden>
+          <h2>Encounter <span id="enc-round"></span></h2>
+          <div id="enc-body"></div>
+        </section>
       </div>
     </section>
 
@@ -4004,6 +4013,13 @@ document.getElementById("btn-wipe").onclick = () => {
 document.getElementById("btn-camp").onclick = () => makeCamp();
 document.getElementById("btn-clearyard").onclick = () => { graves = []; saveGraves(); renderGraves(); };
 document.getElementById("dpad").addEventListener("click", e => {
+  // Device-review revision #5 (extended): block movement outright while the
+  // encounter/feature overlay is up (combat, store, feature narration,
+  // death/win) — the player must dismiss it via its own "Move on"/"Leave"
+  // action first. See hasActiveEncounter() and the matching keydown gate
+  // below; window.move (engineMove, set later) re-asserts this same gate as
+  // the single choke point every movement path funnels through.
+  if (hasActiveEncounter()) return;
   const b = e.target.closest("button[data-dir]"); if (b) move(b.dataset.dir);
 });
 
@@ -4107,23 +4123,27 @@ document.getElementById("mw-chip-centre").addEventListener("click", () => {
 addEventListener("keydown", e => {
   const k = e.key.toLowerCase();
   const dirKeys = { arrowup:"N", w:"N", arrowdown:"S", s:"S", arrowleft:"W", a:"W", arrowright:"E", d:"E" };
-  if (S && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
-    // walking away dismisses the card — you should never have to press a button to leave
-    if (dirKeys[k] && !S.store && !S.dead && !S.won) { e.preventDefault(); S.beats = null; move(dirKeys[k]); return; }
+  // Device-review revision #5 (extended): while the encounter/feature
+  // overlay is up, movement is blocked outright — direction keys no longer
+  // "walk away to dismiss" the card (that let the player move before ever
+  // seeing/dismissing the overlay). Combat's own action keys (1-7) and
+  // Enter/Space (the overlay's own "Move on"/"Next" button) still work;
+  // only the WASD/arrow movement path is gated. See hasActiveEncounter().
+  if (S && hasActiveEncounter()) {
+    if (S.combat) {
+      if (k === "1") { e.preventDefault(); act(playerStrike); }
+      else if (k === "2") { e.preventDefault(); act(drinkPotion); }
+      else if (k === "3") { e.preventDefault(); act(flee); }
+      else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
+      else if (k === "5" && canParley()) { e.preventDefault(); act(parley); }
+      else if (k === "6" && songReady()) { e.preventDefault(); act(sing); }
+      else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); act(readScroll); }
+      return;
+    }
     if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next"); if (n) n.click(); }
     return;
   }
-  const map = dirKeys;
-  if (map[k] && !S.combat) { e.preventDefault(); move(map[k]); return; }
-  if (S.combat) {
-    if (k === "1") { e.preventDefault(); act(playerStrike); }
-    else if (k === "2") { e.preventDefault(); act(drinkPotion); }
-    else if (k === "3") { e.preventDefault(); act(flee); }
-    else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
-    else if (k === "5" && canParley()) { e.preventDefault(); act(parley); }
-    else if (k === "6" && songReady()) { e.preventDefault(); act(sing); }
-    else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); act(readScroll); }
-  }
+  if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
 });
 addEventListener("resize", () => { fit(); renderEncounter(); });
 
@@ -4346,6 +4366,12 @@ window.__mzClassicBoot = async function classicBoot() {
   }
 
   window.move = function engineMove(dir) {
+    // Device-review revision #5 (extended): this is the single choke point
+    // every movement path (D-pad clicks, keydown, any future tap) funnels
+    // through — re-assert the encounter/feature-overlay gate here too, so
+    // no move can ever register while it's up, even from a call site that
+    // forgets its own check.
+    if (hasActiveEncounter()) return;
     const { state, events, html } = dispatch({ type: "move", dir });
     window.__mzState.set(state);
     if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
