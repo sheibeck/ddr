@@ -669,8 +669,8 @@ html,body{height:100%}
   <img class="mw-title-art" src="./assets/ddr_splash.png" alt="" aria-hidden="true">
   <div class="mw-title-scrim" aria-hidden="true"></div>
   <div class="mw-title-body">
-    <h1 class="mw-title-name" id="mw-title-name">Delve, Die, Repeat</h1>
-    <p class="mw-title-tag">Random hero. Random dungeon. Random death.</p>
+    <!-- Title/tagline text intentionally omitted — the splash art (ddr_splash.png)
+         already contains the game name + tagline (user directive, DR3). -->
     <div class="mw-title-actions">
       <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
       <button type="button" class="mw-title-btn mw-title-resume" id="mw-title-resume" hidden disabled>Resume</button>
@@ -4065,9 +4065,9 @@ window.__mzClassicBoot = async function classicBoot() {
   document.title = GAME_NAME;
   const titleEl = document.getElementById("mw-title");
   if (titleEl) titleEl.textContent = GAME_NAME;
-  // DR2 title screen: same centralized-constant rule applies to its heading.
-  const titleScreenNameEl = document.getElementById("mw-title-name");
-  if (titleScreenNameEl) titleScreenNameEl.textContent = GAME_NAME;
+  // DR3: the title screen's name/tagline text was removed — the splash art
+  // (ddr_splash.png) already contains the game name + tagline (user directive),
+  // so there is no #mw-title-name heading to populate here anymore.
 
   // UX-08 key_link: the shell's #app root sets --mw-text-scale from
   // settings.js's textScaleForSize(readSettings().textSize) (via
@@ -4318,7 +4318,7 @@ window.__mzClassicBoot = async function classicBoot() {
       if (cta) {
         cta.disabled = false;
         cta.classList.add("mw-roller-ready");
-        cta.textContent = "ENTER THE MAZE";
+        cta.textContent = "DESCEND";
       }
     }, ROLLER_REVEAL_DELAY));
   };
