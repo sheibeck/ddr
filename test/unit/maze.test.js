@@ -120,7 +120,7 @@ test("bfs: distances on a hand-built grid with a straight corridor and a branch"
   assert.equal(d[3][1], 2);
   assert.equal(d[4][1], 3);
   assert.equal(d[5][1], 4);
-  assert.equal(d[3][2], 2); // via the branch
+  assert.equal(d[3][2], 3); // via the branch: (1,1)->(1,2)->(1,3)->(2,3)
   // An open cell not reachable from the carved path (isolated) stays -1.
   g[10][10].wall = false;
   const d2 = bfs(g, 1, 1);
