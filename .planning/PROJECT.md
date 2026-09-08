@@ -4,6 +4,8 @@
 
 Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-crawler for iOS and Android, adapting a fantasy tabletop RPG the author designed in 1994. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
 
+**Tone & voice:** heavy sarcasm and dark humor — self-aware, deadpan, poking fun at fantasy-RPG tropes and at the player's own doomed adventurers — but kept **family-friendly** (no profanity, gore, or adult content; the darkness is in the wit, not the shock). Sarcasm is the through-line of every screen: death epitaphs, the "Oracle" log, item flavor, the tutorial. This voice is a core identity, not decoration.
+
 ## Core Value
 
 **The dungeon crawl** — the tension and discovery of descending into the unknown. If everything else is stripped away, walking deeper into a dangerous, uncertain maze must feel great.
@@ -73,6 +75,7 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 | Fully offline, no accounts; platform identity later | Simplest path to ship; protects multiplayer future cheaply | — Pending |
 | Paid-upfront, no ads/IAP | Author's chosen model; keeps build clean | — Pending |
 | Prototype is canon over the rulebook | Prototype is tested/playable; rulebook is old and untested | — Pending |
+| Voice: heavy sarcasm / dark humor, but family-friendly | Core identity of the game; must stay clean enough for a broad store rating | — Pending |
 | Keep rules engine decoupled + state serializable | Enables post-MVP multiplayer without a rewrite | — Pending |
 | Tech/packaging path (wrap web game vs. engine port) | High-leverage; de-risk first | — To be researched in Phase 1 |
 
