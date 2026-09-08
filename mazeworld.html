@@ -311,6 +311,17 @@ button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-tra
 .encounter{margin-top:14px}
 .enc-head{font-family:var(--disp);font-size:19px;color:var(--stamp);margin:0 0 2px}
 .enc-sub{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 12px}
+/* DR2 "HIT/MISS indicator on STRIKE" — a badge row rendered above the foe
+   list right after a Strike action resolves (renderEncounter()'s combat
+   branch); see playerStrike()'s C.lastStrike tracking. */
+.mw-strike-result{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.mw-badge-hit,.mw-badge-miss{
+  display:inline-block;font-family:var(--disp);font-size:12px;letter-spacing:.04em;
+  padding:8px 12px;background:var(--paper-3);
+  border:2px solid var(--mw-btn-border);box-shadow:0 3px 0 var(--mw-btn-shadow);
+}
+.mw-badge-hit{color:var(--moss);border-color:var(--moss)}
+.mw-badge-miss{color:var(--ink-soft)}
 .foes{display:grid;gap:8px;margin-bottom:14px}
 .foe{
   display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;
@@ -2701,6 +2712,14 @@ function liveFoes() { return S.combat ? S.combat.foes.filter(f => f.alive) : [];
 
 function playerStrike() {
   const C = S.combat; if (!C) return;
+  // DR2 "HIT/MISS indicator on STRIKE": cleared on every call (including the
+  // early-return refusal paths below) so a stale badge from a PRIOR strike
+  // never lingers once the player has pressed Strike again — renderEncounter()
+  // only shows a badge when this array is non-empty. Populated per attack
+  // resolved below (the common miss/hit paths only; the rare Death-touch/Con
+  // Artist "continue" branches keep their own distinct say() narration and
+  // are not separately badged — see 04-DR2-SUMMARY.md).
+  C.lastStrike = [];
   // a Wizard does not lower himself to hand-to-hand while a spell remains
   if (S.c.sub === "Wizard" && maxCharges() - S.c.spellsUsed > 0) {
     say(`<span class="miss">A Wizard will not touch a weapon while there is a spell left in him.</span>`);
@@ -2740,6 +2759,7 @@ function playerStrike() {
     if (!hit) {
       if (need === 0) say(`<span class="miss">${t.name} cannot be touched by an ordinary weapon.</span>`);
       else say(`Strike: d${dieN} → <span class="roll">${roll}</span>, needed ${need}. <span class="miss">Miss.</span>`);
+      C.lastStrike.push({ hit: false });
       continue;
     }
 
@@ -2773,6 +2793,7 @@ function playerStrike() {
     if (crit) dmg *= 2;
     t.wp -= dmg;
     say(`Strike: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hit">Hit</span> on ${t.name} for <span class="hit">${dmg}</span>${crit ? " (critical, doubled)" : ""}.`);
+    C.lastStrike.push({ hit: true, dmg, crit });
     if (t.wp <= 0) killFoe(t);
   }
   afterPlayerAction();
@@ -3044,6 +3065,8 @@ function castSpell(idx) {
 
 function drinkPotion() {
   if (S.c.potions <= 0) return;
+  // DR2: switching actions clears any leftover HIT/MISS strike badge.
+  if (S.combat) S.combat.lastStrike = null;
   S.c.potions--;
   let amt = 2 * D(10) + 5;
   if (R_().heal2x) amt *= 2;
@@ -3054,6 +3077,8 @@ function drinkPotion() {
 
 function flee() {
   const C = S.combat;
+  // DR2: switching actions clears any leftover HIT/MISS strike badge.
+  C.lastStrike = null;
   if (S.c.sub === "Samurai") { say(`<span class="miss">A Samurai never runs.</span>`); return; }
   if (S.c.sub === "Cloaker") { say(`<span class="hit">You simply stop being where you were.</span> A Cloaker always gets away — and earns nothing for it.`); endCombat(); return; }
   if (C.tracked && C.round === 1) { say(`<span class="hit">You saw them first and never came round the corner.</span>`); endCombat(); return; }
@@ -3548,6 +3573,19 @@ function renderEncounter() {
     <p class="enc-sub">${liveFoes().length} still standing · you strike on d${strikeDie()}, ${toHit()} to hit</p>`;
   body.appendChild(head);
 
+  // DR2 "HIT/MISS indicator on STRIKE" — a clear badge for the last Strike
+  // action's outcome(s), hooked to the same hit/dmg values playerStrike()
+  // already computed (C.lastStrike, populated/cleared there and on
+  // potion/flee). Absent (null/empty) for any turn that wasn't a Strike.
+  if (C.lastStrike && C.lastStrike.length) {
+    const badge = document.createElement("div");
+    badge.className = "mw-strike-result";
+    badge.innerHTML = C.lastStrike.map(r => r.hit
+      ? `<span class="mw-badge-hit">HIT −${r.dmg ?? 0} WP${r.crit ? " · CRIT" : ""}</span>`
+      : `<span class="mw-badge-miss">MISS</span>`).join("");
+    body.appendChild(badge);
+  }
+
   if (C.ally) {
     const al = document.createElement("div");
     al.className = "foe ally";
@@ -3901,9 +3939,55 @@ window.__mzClassicBoot = async function classicBoot() {
   window.paint();
   window.draw();
 
+  // DR2 "Encounter window on EVERY icon landing" (04-CONTEXT.md
+  // "Device-review revisions" #5, extended): 04-DR1 already turned #enc-panel
+  // into an over-map .mw-overlay gated by hasActiveEncounter(), which was
+  // true for S.combat/S.store/S.dead/S.won OR a populated S.beats.groups —
+  // but nothing on the engine-routed move path (this function) ever POPULATED
+  // S.beats; only the classic (pre-engine-routing, now-superseded) move()
+  // above did, via its own beginEvent() calls that this function's dispatch()
+  // bypasses entirely. So a feature-tile landing that did NOT start combat/a
+  // store (trap, teleport, chest, one-way door, climb, gorge, a plain
+  // encounter-dot table-4/faerie/joiner/food/affliction result, the stair
+  // down) only ever reached the Oracle log — never the over-map overlay —
+  // exactly the device-review complaint ("only shows for combat"). Fix: when
+  // this dispatch produced narration (html.length, i.e. more than a silent
+  // "moved") and did NOT already claim the overlay via combat/store/dead/won
+  // (those already have their own hasActiveEncounter()/renderEncounter()
+  // branches, untouched), synthesize the SAME beats-group shape the classic
+  // beginEvent()/newBeat() used to build — hasActiveEncounter()/
+  // renderEncounter() need no changes at all; they already know how to show
+  // it and dismiss it via "Move on" (S.beats = null). `state.beats` is
+  // presentation-transient (engine/saveState.js's rehydrate()/validateSave()
+  // both always reset/omit it — never round-tripped through a save), so
+  // setting it here is not a GameState.rngState-affecting mutation.
+  const FEATURE_EVENT_TITLE = {
+    trapSprung: ["A trap", "stamp"], trapAvoided: ["A trap", "stamp"],
+    trapDisarmed: ["A trap", "stamp"], trapDoubled: ["A trap", "stamp"], trapPoisoned: ["A trap", "stamp"],
+    chestOpened: ["A locked box", "moss"], chestLocked: ["A locked box", "moss"],
+    chestLockRolled: ["A locked box", "moss"], scrollFound: ["A locked box", "moss"],
+    teleported: ["Teleport square", "ditto"],
+    climbedOver: ["A wall", "ink"], fellClimbing: ["A wall", "ink"],
+    leaptOver: ["A crevice", "ink"], fellInGorge: ["A crevice", "ink"],
+    floorChanged: ["The stair down", "ditto"],
+    oneWayBlocked: ["A one-way door", "moss"],
+    encounterRolled: ["Encounter dot", "stamp"],
+  };
+  function beatsTitleFor(events) {
+    for (const e of events) {
+      const hit = FEATURE_EVENT_TITLE[e.type];
+      if (hit) return hit;
+    }
+    return ["", ""];
+  }
+
   window.move = function engineMove(dir) {
-    const { state, html } = dispatch({ type: "move", dir });
+    const { state, events, html } = dispatch({ type: "move", dir });
     window.__mzState.set(state);
+    if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
+      const [title, tone] = beatsTitleFor(events);
+      state.beats = { groups: [{ title, tone, lines: html }], i: 0, action: null };
+    }
     window.paint();
     window.draw();
     for (const line of html) window.logLine(line);
