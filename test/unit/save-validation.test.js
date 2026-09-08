@@ -42,7 +42,54 @@ test("validateSave rejects a save missing c or floor", () => {
   assert.equal(validateSave("{}").ok, false);
   assert.equal(validateSave(JSON.stringify({ c: {} })).ok, false, "missing floor");
   assert.equal(validateSave(JSON.stringify({ floor: {} })).ok, false, "missing c");
-  assert.equal(validateSave(JSON.stringify({ c: {}, floor: {} })).ok, true);
+});
+
+// CR-01 regression: a structurally-shallow save (present-but-empty `c`/
+// `floor` objects) used to pass validation, rehydrate unchanged, and crash
+// the very next `move` action with an uncaught TypeError (floor.g/px/py all
+// undefined). validateSave must now deep-validate the minimal shape the
+// engine's rule modules actually dereference and reject anything short of
+// it, fail-closed, before it ever reaches rehydrate()/applyAction.
+test("CR-01: validateSave rejects a structurally-shallow save ({c:{}, floor:{}}) instead of accepting it", () => {
+  const check = validateSave(JSON.stringify({ c: {}, floor: {} }));
+  assert.equal(check.ok, false, "an empty c/floor must be rejected, not silently accepted");
+});
+
+test("CR-01: validateSave rejects a character missing required fields (wp/maxWP/level/skills)", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  assert.equal(validateSave(JSON.stringify({ c: {}, floor: validFloor })).ok, false, "empty c");
+  assert.equal(
+    validateSave(JSON.stringify({ c: { wp: 10, maxWP: 10, level: 1 }, floor: validFloor })).ok,
+    false,
+    "c missing skills",
+  );
+  assert.equal(
+    validateSave(JSON.stringify({ c: { wp: 10, maxWP: 10, skills: {} }, floor: validFloor })).ok,
+    false,
+    "c missing level",
+  );
+});
+
+test("CR-01: validateSave rejects a floor missing required fields (g/px/py/depth)", () => {
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  assert.equal(validateSave(JSON.stringify({ c: validChar, floor: {} })).ok, false, "empty floor");
+  assert.equal(
+    validateSave(JSON.stringify({ c: validChar, floor: { px: 0, py: 0, depth: 1 } })).ok,
+    false,
+    "floor missing g",
+  );
+  assert.equal(
+    validateSave(JSON.stringify({ c: validChar, floor: { g: [[{ wall: false }]], depth: 1 } })).ok,
+    false,
+    "floor missing px/py",
+  );
+});
+
+test("CR-01: validateSave accepts a minimally-shaped, well-formed save", () => {
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+  assert.equal(check.ok, true);
 });
 
 test("validateSave rejects non-object and null/array inputs without throwing", () => {
@@ -55,9 +102,13 @@ test("validateSave rejects non-object and null/array inputs without throwing", (
 test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () => {
   // Mirrors mazeworld.html's pre-refactor save shape:
   // {c, floor, day, steps, dead, won, deathNote, epitaph} — no seed/rngState.
+  // (c/floor still carry the full real shape a pre-refactor save always had —
+  // only seed/rngState are the "old" part being defaulted here; see CR-01's
+  // deep-shape validation, which now requires this much of c/floor regardless
+  // of save vintage.)
   const oldSave = {
-    c: { name: "Old Save Delver", cls: "Fighter" },
-    floor: { depth: 2 },
+    c: { name: "Old Save Delver", cls: "Fighter", wp: 12, maxWP: 20, level: 2, skills: {} },
+    floor: { depth: 2, g: [[{ wall: false }]], px: 1, py: 1 },
     day: 4,
     steps: 88,
     dead: false,
@@ -80,11 +131,16 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
 });
 
 test("validateSave defaults day/steps when missing or non-numeric", () => {
-  const check = validateSave(JSON.stringify({ c: {}, floor: {} }));
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
   assert.equal(check.value.day, 1);
   assert.equal(check.value.steps, 0);
 
-  const check2 = validateSave(JSON.stringify({ c: {}, floor: {}, day: "four", steps: null }));
+  const check2 = validateSave(
+    JSON.stringify({ c: validChar, floor: validFloor, day: "four", steps: null }),
+  );
   assert.equal(check2.value.day, 1);
   assert.equal(check2.value.steps, 0);
 });

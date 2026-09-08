@@ -24,13 +24,53 @@ export function serializeRun(state) {
 }
 
 /**
+ * isValidCharacter(c) — the minimal shape `applyAction`'s rule modules
+ * actually dereference on the very next action (`c.wp`/`c.maxWP` in
+ * movement/combat math, `c.level` in strikeDie/level checks, `c.skills` in
+ * every `skill()`/`skillTier()` lookup). A save whose `c` doesn't have at
+ * least this shape is rejected outright rather than accepted and left to
+ * crash `applyAction` later (CR-01).
+ */
+function isValidCharacter(c) {
+  return (
+    !!c &&
+    typeof c === "object" &&
+    !Array.isArray(c) &&
+    typeof c.wp === "number" &&
+    typeof c.maxWP === "number" &&
+    typeof c.level === "number" &&
+    !!c.skills &&
+    typeof c.skills === "object" &&
+    !Array.isArray(c.skills)
+  );
+}
+
+/**
+ * isValidFloor(f) — the minimal shape `move`/`teleport`/`descend` dereference
+ * (`f.g[f.py][f.px]` on every step, `f.depth` for descend's bonus math). See
+ * isValidCharacter's doc comment (CR-01).
+ */
+function isValidFloor(f) {
+  return (
+    !!f &&
+    typeof f === "object" &&
+    !Array.isArray(f) &&
+    Array.isArray(f.g) &&
+    typeof f.px === "number" &&
+    typeof f.py === "number" &&
+    Number.isInteger(f.depth)
+  );
+}
+
+/**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
- * shape. Never throws: malformed JSON or a save missing `c`/`floor` returns
- * `{ ok: false }` so the caller can fail closed to `newRun` (V12). A save
- * missing the newer `seed`/`rngState` fields (a pre-refactor developer save)
- * is NOT rejected — it gets safe defaults instead, via
- * `options.freshSeed` (a caller-supplied integer; defaults to 1).
+ * shape. Never throws: malformed JSON or a save with a malformed/missing
+ * `c`/`floor` returns `{ ok: false }` so the caller can fail closed to
+ * `newRun` (V12). A save missing the newer `seed`/`rngState` fields (a
+ * pre-refactor developer save) is NOT rejected — it gets safe defaults
+ * instead, via `options.freshSeed` (a caller-supplied integer; defaults to
+ * 1).
  *
  * @param {string|object} raw
  * @param {{ freshSeed?: number }} [options]
@@ -49,11 +89,11 @@ export function validateSave(raw, options = {}) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
     return { ok: false, reason: "save must be a non-null object" };
   }
-  if (!obj.c || typeof obj.c !== "object") {
-    return { ok: false, reason: "save missing character (c)" };
+  if (!isValidCharacter(obj.c)) {
+    return { ok: false, reason: "save has a malformed character" };
   }
-  if (!obj.floor || typeof obj.floor !== "object") {
-    return { ok: false, reason: "save missing floor" };
+  if (!isValidFloor(obj.floor)) {
+    return { ok: false, reason: "save has a malformed floor" };
   }
 
   const day = typeof obj.day === "number" ? obj.day : 1;

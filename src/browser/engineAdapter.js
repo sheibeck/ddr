@@ -90,10 +90,23 @@ export function dispatch(action) {
   if (!currentState) {
     throw new Error("engineAdapter.dispatch: call boot()/initRun() before dispatch()");
   }
-  const { state, events } = applyAction(currentState, action);
-  currentState = state;
-  persist();
-  return { state: currentState, events, html: formatEvents(events) };
+  try {
+    const { state, events } = applyAction(currentState, action);
+    currentState = state;
+    persist();
+    return { state: currentState, events, html: formatEvents(events) };
+  } catch (err) {
+    // Defense in depth (CR-01): engine/saveState.js#validateSave already
+    // rejects a structurally-malformed save before it ever reaches here, but
+    // if a future bug or schema change still lets a bad state slip through
+    // and a rule module throws, fail closed to a fresh run rather than let
+    // the uncaught exception crash the page — the same fail-closed contract
+    // boot() already guarantees for a corrupt save.
+    const seed = typeof currentState.seed === "number" ? currentState.seed : Date.now();
+    currentState = initRun(seed);
+    persist();
+    return { state: currentState, events: [], html: [] };
+  }
 }
 
 /**

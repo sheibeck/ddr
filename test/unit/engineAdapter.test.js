@@ -86,6 +86,22 @@ test("dispatch(action) advances state via applyAction and persists it", () => {
   });
 });
 
+test("CR-01: dispatch() fails closed to a fresh run instead of throwing when applyAction crashes on a corrupted state", () => {
+  withFakeLocalStorage(() => {
+    initRun(2024);
+    const before = getState();
+    // Simulate a state that slipped past validateSave's shape checks (or any
+    // other future rule-module bug) and would otherwise throw a TypeError
+    // deep inside applyAction's move handler — engineAdapter.js#dispatch must
+    // not let that escape as an uncaught exception to the page.
+    before.floor = {};
+    assert.doesNotThrow(() => dispatch({ type: "move", dir: "N" }));
+    const state = getState();
+    assert.notEqual(state, before, "dispatch swapped in a fresh run rather than keeping the broken state");
+    assert.equal(state.floor.depth, 1, "the fallback run is a normal fresh floor 1");
+  });
+});
+
 test("formatEvents maps known event types to HTML and drops unknown ones silently", () => {
   const html = formatEvents([
     { type: "moved", to: { x: 1, y: 1 } },
