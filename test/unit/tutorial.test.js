@@ -29,7 +29,20 @@ import {
   TUTORIAL_SEEN_KEY,
 } from "../../src/browser/tutorial.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
-import { FEATURE_ICONS, PLAYER_MARKER_ICON, featureKeyForCell } from "../../src/browser/icons.js";
+import { FEATURE_ICONS, PLAYER_MARKER_ICON, featureKeyForCell, drawFeatureIcon } from "../../src/browser/icons.js";
+
+/** A minimal fake CanvasRenderingContext2D that just records call order/args. */
+function makeFakeCtx() {
+  const calls = [];
+  return {
+    calls,
+    save: () => calls.push(["save"]),
+    restore: () => calls.push(["restore"]),
+    translate: (x, y) => calls.push(["translate", x, y]),
+    rotate: (rad) => calls.push(["rotate", rad]),
+    drawImage: (img, x, y, w, h) => calls.push(["drawImage", x, y, w, h]),
+  };
+}
 
 async function withFakeLocalStorage(fn) {
   const store = new Map();
@@ -180,4 +193,57 @@ test("featureKeyForCell: an unfeatured/unrecognized cell returns null (no icon d
 
 test("icons.js imports cleanly under node --test (no Image()/canvas construction at module top level)", () => {
   assert.equal(typeof featureKeyForCell, "function");
+});
+
+// --- drawFeatureIcon dir/rotation (DR5, pure logic against a fake ctx) ------
+
+test("drawFeatureIcon: no dir arg draws unrotated (every non-door icon + the player marker)", () => {
+  const ctx = makeFakeCtx();
+  const img = {};
+  drawFeatureIcon(ctx, img, 10, 20, 32);
+  assert.deepEqual(ctx.calls.map((c) => c[0]), ["drawImage"]);
+  assert.equal(ctx.calls[0][1], 10 + (32 - Math.round(32 * 1.08)) / 2);
+});
+
+test("drawFeatureIcon: an unrecognized dir value fails open — draws unrotated", () => {
+  const ctx = makeFakeCtx();
+  drawFeatureIcon(ctx, {}, 0, 0, 32, "NE");
+  assert.deepEqual(ctx.calls.map((c) => c[0]), ["drawImage"]);
+});
+
+test("drawFeatureIcon: dir='E' rotates 0deg (base onewaydoor.png already points East/right)", () => {
+  const ctx = makeFakeCtx();
+  drawFeatureIcon(ctx, {}, 0, 0, 32, "E");
+  assert.deepEqual(ctx.calls.map((c) => c[0]), ["save", "translate", "rotate", "drawImage", "restore"]);
+  assert.equal(ctx.calls[2][1], 0);
+});
+
+test("drawFeatureIcon: dir='S' rotates 90deg clockwise (points down)", () => {
+  const ctx = makeFakeCtx();
+  drawFeatureIcon(ctx, {}, 0, 0, 32, "S");
+  assert.equal(ctx.calls[2][0], "rotate");
+  assert.ok(Math.abs(ctx.calls[2][1] - Math.PI / 2) < 1e-9);
+});
+
+test("drawFeatureIcon: dir='W' rotates 180deg (points left)", () => {
+  const ctx = makeFakeCtx();
+  drawFeatureIcon(ctx, {}, 0, 0, 32, "W");
+  assert.equal(ctx.calls[2][0], "rotate");
+  assert.ok(Math.abs(ctx.calls[2][1] - Math.PI) < 1e-9);
+});
+
+test("drawFeatureIcon: dir='N' rotates 270deg (points up)", () => {
+  const ctx = makeFakeCtx();
+  drawFeatureIcon(ctx, {}, 0, 0, 32, "N");
+  assert.equal(ctx.calls[2][0], "rotate");
+  assert.ok(Math.abs(ctx.calls[2][1] - (3 * Math.PI) / 2) < 1e-9);
+});
+
+test("drawFeatureIcon: rotated draw is centered on the cell (translate to cell center, drawImage offset by -iconSize/2)", () => {
+  const ctx = makeFakeCtx();
+  const size = 32;
+  drawFeatureIcon(ctx, {}, 100, 200, size, "S");
+  const iconSize = Math.round(size * 1.08);
+  assert.deepEqual(ctx.calls[1], ["translate", 100 + size / 2, 200 + size / 2]);
+  assert.deepEqual(ctx.calls[3], ["drawImage", -iconSize / 2, -iconSize / 2, iconSize, iconSize]);
 });

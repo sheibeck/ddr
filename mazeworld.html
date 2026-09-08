@@ -2018,7 +2018,11 @@ function draw() {
       if (!c.seen || !c.feat) continue;
       const key = iconsApi.featureKeyForCell(c);
       const img = key && iconMap[key];
-      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL);
+      // DR5: pass c.dir through so drawFeatureIcon can rotate the
+      // one-way-door icon to its real passable direction (N/E/S/W). Every
+      // other feature's cell has no `.dir` (undefined) — drawFeatureIcon
+      // fails open and draws those unrotated, unaffected by this change.
+      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir);
     }
   }
 

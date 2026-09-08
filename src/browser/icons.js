@@ -87,8 +87,25 @@ export function preloadIcons(basePath) {
 }
 
 /**
- * drawFeatureIcon(ctx, img, dx, dy, size) — draws a preloaded icon centered
- * within a `size`x`size` cell whose top-left is (dx, dy), at
+ * DR5 ("One-way-door icon rotates to its passable direction"): the base
+ * onewaydoor.png is drawn pointing East/right. The engine's one-way-door
+ * cells (engine/maze.js) carry a `.dir` field ("N"/"E"/"S"/"W" — the axis
+ * the door opens along) that mazeworld.html's draw() passes through to
+ * drawFeatureIcon below. Degrees are clockwise (canvas ctx.rotate()'s own
+ * convention, since the canvas y-axis points down — a positive rotation
+ * visually turns the image clockwise on screen), so E (already pointing
+ * right) needs 0°, S needs a quarter-turn clockwise (90°), W needs a
+ * half-turn (180°), and N needs a quarter-turn counter-clockwise (270°).
+ * Any `dir` value NOT in this map (including undefined, used by every
+ * OTHER feature icon + the player marker) fails open — drawFeatureIcon
+ * falls through to the plain, unrotated draw path below, exactly as it did
+ * before this map existed.
+ */
+const ONEWAYDOOR_ROTATION_DEG = { N: 270, E: 0, S: 90, W: 180 };
+
+/**
+ * drawFeatureIcon(ctx, img, dx, dy, size, dir) — draws a preloaded icon
+ * centered within a `size`x`size` cell whose top-left is (dx, dy), at
  * Math.round(size * 1.08) — device-review round 4 ("Icons even bigger":
  * 04-CONTEXT.md/04-DR4) bumped this again from round 2's 0.94 factor so a
  * feature icon fills/slightly overflows the cell instead of merely nearly
@@ -99,9 +116,24 @@ export function preloadIcons(basePath) {
  * space — `ctx` must already have the DPR transform applied by the caller
  * (canvasSizing.js), so no manual device-pixel-ratio multiplication happens
  * here.
+ *
+ * `dir` (optional, DR5) — when it's a recognized ONEWAYDOOR_ROTATION_DEG
+ * key, the icon is rotated about the cell's center by that many degrees
+ * before drawing. Omit it (or pass an unrecognized value) to draw
+ * unrotated, exactly as every non-door icon and the player marker do.
  */
-export function drawFeatureIcon(ctx, img, dx, dy, size) {
+export function drawFeatureIcon(ctx, img, dx, dy, size, dir) {
   const iconSize = Math.round(size * 1.08);
+  const rotationDeg = dir !== undefined ? ONEWAYDOOR_ROTATION_DEG[dir] : undefined;
+  if (rotationDeg !== undefined) {
+    const cx = dx + size / 2, cy = dy + size / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((rotationDeg * Math.PI) / 180);
+    ctx.drawImage(img, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
+    ctx.restore();
+    return;
+  }
   const ix = dx + (size - iconSize) / 2;
   const iy = dy + (size - iconSize) / 2;
   ctx.drawImage(img, ix, iy, iconSize, iconSize);
