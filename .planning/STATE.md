@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: android-packaging-native-persistence
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-09-08T14:28:08.219Z"
+stopped_at: "02-02: blocked on Temurin JDK 17 UAC elevation prompt (checkpoint:human-action)"
+last_updated: "2026-09-08T15:22:55.212Z"
 last_activity: 2026-09-08
 last_activity_desc: Phase 02 execution started
 progress:
@@ -133,6 +133,7 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 
 - [Phase 3]: Endless-mode difficulty curve needs a dedicated playtesting pass (to floor 30-50+), not a one-shot formula — flagged by research as needing project-specific validation beyond genre precedent.
 - [Phase 6]: Google Play target-API level, Data Safety form fields, and IARC questionnaire specifics shift yearly — re-verify against current Play Console Help immediately before executing this phase, not from research alone.
+- 02-02: Temurin JDK 17 winget install stuck at a Windows UAC elevation consent.exe prompt (30+ min, no auto-resolution) — requires the user to click 'Yes' on the visible UAC dialog on their desktop (or run the install from an already-elevated terminal). Blocks android/gradle.properties org.gradle.java.home pin and the gradlew assembleDebug proof. All JDK-independent Task 1/Task 2 work (npm install, cap init, build-www.mjs, npx cap add android, compileSdk/targetSdk->37 + buildToolsVersion 36.0.0 retarget, local.properties) is committed and done.
 
 ## Deferred Verification (UAT — to milestone end per autonomous run)
 
@@ -153,6 +154,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T14:28:08.199Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-09-08T15:22:55.191Z
+Stopped at: 02-02: blocked on Temurin JDK 17 UAC elevation prompt (checkpoint:human-action)
 Resume file: None
