@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-09-08T05:08:39.195Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-09-08T05:25:42.664Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [████████░░] 80%
 | Phase 01-engine-extraction-determinism P06 | 15min | 3 tasks | 6 files |
 | Phase 01 P07 | 32min | 3 tasks | 10 files |
 | Phase 01 P08 | 30min | 3 tasks | 10 files |
+| Phase 01-engine-extraction-determinism P09 | 25min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 01-07]: Movement-parity fixture (seed 256) programmatically discovered via a directed-edge BFS avoiding unimplemented feature tiles and respecting one-way-door direction, continuing the same rng object across the descend to also land a monster-free day-100 bounce.
 - [Phase ?]: [Phase 01-07]: Browser adapter (src/browser/engineAdapter.js) owns its own localStorage read/write via engine/saveState.js, independent of mazeworld.html's own save()/load(); movement input is rerouted by overwriting the global move() function rather than touching dpad/keydown handlers.
 - [Phase ?]: Tasks 1+2 combined into one commit; closed 01-06/01-07's flagged gaps (useItem stone/fire -> real killFoe; newDay wandering-monster -> real startCombat) via a verified-safe circular ESM import; combat fixture uses 4 independent seed+forced-type scenarios; startCombat kept out of ACTION_TYPES (internal call, not a player action)
+- [Phase ?]: 01-09: castSpell/drinkPotion/readScroll landed as one commit (readScroll calls castSpell directly, same file); magic-parity fixture passed diffState-null on the first run for all 4 scenarios.
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -127,6 +129,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T05:08:39.176Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-09-08T05:25:42.644Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
