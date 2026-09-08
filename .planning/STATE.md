@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
-stopped_at: Completed 04-11-PLAN.md
-last_updated: "2026-09-08T20:28:02.589Z"
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-09-08T20:49:32.905Z"
 last_activity: 2026-09-08
-last_activity_desc: Phase 04 Plan 11 executed (persistence-key rename mazeworld.*.v1 -> ddr.*.v1 + product-name cleanup audit)
+last_activity_desc: "Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 31
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
-Plan: 5 of 11 completed so far (Wave 2 of 8) — wave-based execution, not strictly sequential; 04-01/04-02/04-03/04-04 (Wave 1) and 04-11 (Wave 2) complete
+Plan: 6 of 11 completed so far (Wave 2 of 8) — wave-based execution, not strictly sequential; 04-01/04-02/04-03/04-04 (Wave 1) and 04-11 (Wave 2) complete
 Status: Plan 04-11 complete (persistence-key rename, folded-in deep work) — ready for remaining Wave 2+ plans (04-05..04-10)
 Last activity: 2026-09-08 — Phase 04 Plan 11 executed (renamed mazeworld.*.v1 -> ddr.*.v1 across storage.js/engineAdapter.js/settings.js/mazeworld.html + 6 tests; npm test 451 green, test:quick 362 green)
 
-Progress: [███████░░░] 71%
+Progress: [███████░░░] 74%
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Progress: [███████░░░] 71%
 | Phase 04 P03 | 20min | 3 tasks | 6 files |
 | Phase 04 P04 | 14min | 2 tasks | 3 files |
 | Phase 04 P11 | 6min | 2 tasks | 10 files |
+| Phase 04 P05 | 19min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,9 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-04: "moved" stays a deliberate silent no-op excluded from both the canonical event set and EVENT_NARRATION (matches engineAdapter.test.js's existing locked assertion); the 3 dead pendingEncounter/pendingTrap/pendingChest cases were dropped (encounters.js fully superseded them since 01-10) rather than migrated, satisfying the coverage test's own no-dead-entries guard
 - [Phase ?]: 04-11: Renamed all four persistence keys mazeworld.*.v1 -> ddr.*.v1 (delve/best/graveyard + extra-scope settings) across storage.js, engineAdapter.js, settings.js, mazeworld.html classic-script literals, and six asserting tests; no migration shim (greenfield); frozen parity master left untouched
 - [Phase ?]: 04-11: Task 2 (strip residual product-name Mazeworld) found no code changes needed -- title/meta/h1 already renamed to Delve, Die, Repeat by prior f81942f; the remaining mazeworld.html credit-line reference to the real 1994 rulebook (mazeworld.pdf) is out of scope as a historical source credit + real external filename, not product branding
+- [Phase ?]: 04-05: Tasks 1-3 landed as 2 commits (not 3) since all three interleave heavily within mazeworld.html — commit granularity documented in 04-05-SUMMARY.md
+- [Phase ?]: 04-05: Repointed existing --paper/--ink/--ditto/--stamp/--moss/--rule CSS custom-property VALUES to the dark torch-lit palette (rather than new variable names) so the whole existing panel/button/log CSS system reskins without a per-selector rewrite
+- [Phase ?]: 04-05: draw()'s maze-canvas color lookup frozen to literal hex (MAZE_CANVAS_COLORS) matching the pre-reskin light-theme values, since the canvas's own #F4EEDF light floor fill is untouched until 04-06 recolors it
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -183,8 +187,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T20:28:02.566Z
-Stopped at: Completed 04-11-PLAN.md
+Last session: 2026-09-08T20:49:32.881Z
+Stopped at: Completed 04-05-PLAN.md
 Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
