@@ -19,6 +19,7 @@
 
 import { newRun, applyAction } from "../../engine/engine.js";
 import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
+import { bury } from "../../engine/death.js";
 
 // Mirrors mazeworld.html's `const SAVE_KEY = "mazeworld.delve.v1";` (line
 // ~488). Deliberately duplicated as a literal rather than imported — the
@@ -35,6 +36,16 @@ const SAVE_KEY = "mazeworld.delve.v1";
 // Phase 2 (SAV-04) relocates this value to durable Capacitor Preferences;
 // this key is intentionally the minimal seam for that later swap.
 const BEST_KEY = "mazeworld.best.v1";
+
+// CR-01: matches mazeworld.html's own `const GRAVE_KEY = "mazeworld.graveyard.v1";`
+// (mazeworld.html line ~2946) so both the classic combat/store code path
+// (still un-ported, per 03-CONTEXT.md/03-REVIEW.md) and this engine-routed
+// path accumulate tombstones into ONE persistent graveyard. Deliberately a
+// SEPARATE localStorage key from SAVE_KEY/BEST_KEY, and deliberately NOT part
+// of GameState — 03-CONTEXT.md locks the graveyard as adapter-side
+// cross-run accumulation (Phase 2 relocates it to durable Capacitor
+// Preferences, mirroring BEST_KEY's own seam).
+const GRAVE_KEY = "mazeworld.graveyard.v1";
 
 let currentState = null;
 
@@ -83,6 +94,31 @@ function recordBest(depth) {
     localStorage.setItem(BEST_KEY, String(next));
   } catch {
     /* private window, blocked storage — the new best just won't persist */
+  }
+}
+
+/**
+ * persistGrave(state, cause) — CR-01: builds this death's tombstone via
+ * engine/death.js#bury() (which already has state.deathNote/state.epitaph
+ * set by die()) and appends it to the adapter-owned graveyard at GRAVE_KEY.
+ * Mirrors recordBest()'s try/catch-and-swallow posture: a private window or
+ * a full storage quota just means the tombstone won't persist, matching
+ * persist()/recordBest()'s own fail-safe contract — never throws.
+ *
+ * `cause` is read from the `died` event dispatch() just pushed (see below)
+ * rather than from `state` itself, because GameState has no persisted
+ * `cause` field (only `deathNote`/`epitaph`, already derived from it by
+ * die()) — the event is the only place the raw cause string is still
+ * available by the time dispatch() returns.
+ */
+function persistGrave(state, cause) {
+  try {
+    const raw = localStorage.getItem(GRAVE_KEY);
+    const prevGraves = raw ? JSON.parse(raw) : [];
+    const graves = bury(state, cause, null, Array.isArray(prevGraves) ? prevGraves : []);
+    localStorage.setItem(GRAVE_KEY, JSON.stringify(graves));
+  } catch {
+    /* private window, blocked storage — the tombstone just won't persist */
   }
 }
 
@@ -158,6 +194,16 @@ export function dispatch(action) {
     const { state, events } = applyAction(currentState, action);
     currentState = state;
     persist();
+    // 03-REVIEW.md CR-01: every engine-routed death (combat, starve,
+    // fall/gorge, trap, poison, self-inflicted "maze"/"insanity" deaths, ...)
+    // pushes a `died` event via engine/death.js#die() regardless of which
+    // rule module called it — this is the ONE choke point that catches all
+    // of them, so bury() runs here rather than only from startNewRun()
+    // (which would miss a death the player never returns to start a new run
+    // from, and has no access to the raw `cause` string once dispatch()
+    // returns — see persistGrave()'s doc comment).
+    const diedEvent = events.find((e) => e.type === "died");
+    if (diedEvent) persistGrave(currentState, diedEvent.cause);
     return { state: currentState, events, html: formatEvents(events) };
   } catch (err) {
     // Defense in depth (CR-01): engine/saveState.js#validateSave already

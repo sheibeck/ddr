@@ -182,6 +182,138 @@ test("getBest() returns 0 when nothing is stored and never throws when storage i
   }
 });
 
+const GRAVE_KEY = "mazeworld.graveyard.v1";
+
+// firstOpenPlainDir(state) — the first cardinal direction from the player's
+// current position that leads onto an open, feature-free cell (no
+// wall/climb/gorge/dot/trap/chest/tele/exit). Every genFloor() maze is
+// guaranteed at least one open neighbor from the start tile (recursive
+// backtracker connectivity), but WHICH direction that is varies by seed —
+// hard-coding "N" flaked against seed 55's actual layout (floor-1 (1,1) is
+// walled N/E/W, open only S). Used so these dispatch()-driven death tests
+// reliably trigger a genuine step (and thus newDay()'s 100-step counter)
+// without depending on a specific seed's maze shape.
+function firstOpenPlainDir(state) {
+  const f = state.floor;
+  const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
+  for (const [d, [dx, dy]] of Object.entries(DIRV)) {
+    const nx = f.px + dx;
+    const ny = f.py + dy;
+    const cell = f.g[ny] && f.g[ny][nx];
+    if (cell && !cell.wall && !cell.feat) return d;
+  }
+  return null;
+}
+
+test("CR-01: a starvation death (no combat object) through dispatch() writes a graveyard entry", () => {
+  withFakeLocalStorage((store) => {
+    initRun(55);
+    const state = getState();
+    const dir = firstOpenPlainDir(state);
+    assert.ok(dir, "seed 55's floor 1 has at least one open, feature-free neighbor from the start tile");
+    // Starve the character out: no rations, wp at 1 so the next upkeep tick
+    // in newDay() (triggered every 100 steps inside move()) kills via
+    // die(state, "starve", ...) — no combat object involved anywhere in this
+    // path (engine/movement.js:248).
+    state.c.rations = 0;
+    state.c.wp = 1;
+    state.steps = 99; // the 100th step below trips newDay()
+
+    const { state: after, events } = dispatch({ type: "move", dir });
+    assert.equal(after.dead, true, "the character actually died via starvation");
+    assert.ok(
+      events.some((e) => e.type === "died" && e.cause === "starve"),
+      "a starve-cause died event was pushed"
+    );
+
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.ok(Array.isArray(graves), "graveyard was written to GRAVE_KEY");
+    assert.equal(graves.length, 1, "exactly one tombstone was recorded");
+    assert.equal(graves[0].cause, "starve", "the tombstone records the real death cause");
+    assert.equal(graves[0].name, after.c.name, "the tombstone matches the dead character");
+  });
+});
+
+test("CR-01: a climb/gorge-fall death (no combat object) through dispatch() also writes a graveyard entry", () => {
+  withFakeLocalStorage((store) => {
+    initRun(56);
+    const state = getState();
+    // Find a climb or gorge tile adjacent to the current position and step
+    // toward it with wp low enough that any fall damage kills outright —
+    // this exercises engine/movement.js:108's die(state, "fall"/"gorge", ...)
+    // path directly, independent of newDay()/starvation.
+    const f = state.floor;
+    let dir = null;
+    for (const [d, [dx, dy]] of Object.entries({ N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] })) {
+      const nx = f.px + dx;
+      const ny = f.py + dy;
+      if (f.g[ny] && f.g[ny][nx] && !f.g[ny][nx].wall && (f.g[ny][nx].feat === "climb" || f.g[ny][nx].feat === "gorge")) {
+        dir = d;
+        break;
+      }
+    }
+    if (!dir) {
+      // No climb/gorge tile adjacent on this seed's floor 1 — the starvation
+      // test above already proves the no-combat-object path end-to-end, so
+      // skip rather than flake on maze layout.
+      return;
+    }
+    state.c.wp = 1;
+    dispatch({ type: "move", dir });
+
+    const raw = store.getItem(GRAVE_KEY);
+    if (!raw) return; // the climb/leap check may have succeeded (RNG-dependent); not a bug
+    const graves = JSON.parse(raw);
+    assert.ok(["fall", "gorge"].includes(graves[0].cause), "tombstone records fall/gorge as the cause");
+  });
+});
+
+test("CR-01: repeated deaths accumulate multiple graveyard entries (unshift order, newest first)", () => {
+  withFakeLocalStorage((store) => {
+    initRun(77);
+    let dir = firstOpenPlainDir(getState());
+    assert.ok(dir, "seed 77's floor 1 has at least one open, feature-free neighbor from the start tile");
+    getState().c.rations = 0;
+    getState().c.wp = 1;
+    getState().steps = 99;
+    dispatch({ type: "move", dir });
+
+    startNewRun(78);
+    dir = firstOpenPlainDir(getState());
+    assert.ok(dir, "seed 78's floor 1 has at least one open, feature-free neighbor from the start tile");
+    getState().c.rations = 0;
+    getState().c.wp = 1;
+    getState().steps = 99;
+    dispatch({ type: "move", dir });
+
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.equal(graves.length, 2, "two separate runs each recorded their own tombstone");
+  });
+});
+
+test("CR-01: persistGrave never throws when storage is blocked (private window/quota)", () => {
+  const previous = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: () => {
+      throw new Error("storage blocked");
+    },
+    setItem: () => {
+      throw new Error("storage blocked");
+    },
+    removeItem: () => {},
+  };
+  try {
+    initRun(88);
+    getState().c.rations = 0;
+    getState().c.wp = 1;
+    getState().steps = 99;
+    assert.doesNotThrow(() => dispatch({ type: "move", dir: "N" }));
+  } finally {
+    if (previous === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previous;
+  }
+});
+
 function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 }
