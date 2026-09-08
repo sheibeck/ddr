@@ -153,9 +153,11 @@ export async function registerNativeChrome({
     if (!isActive) return flushOnBackground(storage);
   });
 
-  // PLT-04 chrome — splash hide / status-bar style / portrait lock. Stubbed
-  // here (best-effort, never throws) so this single call site is safe to
-  // wire today; 02-04 finalizes the exact config against the real assets.
+  // PLT-04 chrome — splash hide / status-bar style / portrait lock, finalized
+  // in 02-04 against capacitor.config.json's SplashScreen block
+  // (androidSplashResourceName: "splash_screen", launchAutoHide: false,
+  // backgroundColor: "#EFE7D6"). Splash is hidden explicitly here, once the
+  // WebView/engine boot completes, rather than relying on a fixed timer.
   try {
     const SplashScreen = injectedSplashScreen || (await import("@capacitor/splash-screen")).SplashScreen;
     await SplashScreen?.hide?.();
@@ -164,7 +166,11 @@ export async function registerNativeChrome({
   }
   try {
     const StatusBar = injectedStatusBar || (await import("@capacitor/status-bar")).StatusBar;
-    await StatusBar?.setStyle?.({ style: "DARK" });
+    // Style.Light = "dark text for light backgrounds" (StatusBar's own naming
+    // is inverted from what it sounds like) — matches mazeworld.html's
+    // --paper (#EFE7D6) parchment theme extending under the status bar.
+    await StatusBar?.setStyle?.({ style: "LIGHT" });
+    await StatusBar?.setBackgroundColor?.({ color: "#EFE7D6" });
   } catch {
     /* status-bar plugin unavailable/not yet configured — non-fatal */
   }
