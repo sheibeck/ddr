@@ -1,0 +1,8 @@
+{
+  "appId": "com.darktierstudios.mazeworld",
+  "appName": "Mazeworld",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
