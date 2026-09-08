@@ -39,8 +39,8 @@ const GRADLE_PROPS = path.join(ROOT, "android", "gradle.properties");
 const javaHome = process.env.JAVA_HOME;
 if (!javaHome) {
   throw new Error(
-    "JAVA_HOME is not set — export it to the Temurin 17 install path before running this script " +
-      "(see 02-RESEARCH.md \"The JDK 25 incompatibility\")",
+    "JAVA_HOME is not set — export it to the Temurin 21 install path before running this script " +
+      "(see this file's header comment: capacitor-android's build.gradle requires Java 21 source/target compatibility)",
   );
 }
 if (!existsSync(GRADLE_PROPS)) {
