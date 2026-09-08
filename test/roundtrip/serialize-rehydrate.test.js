@@ -22,6 +22,16 @@
 // `state.c.ward`, `state.c.mirror`, `state.c.might`/`strengthBoost`, a live
 // `state.combat` mid-cast) — every field castSpell/drinkPotion/readScroll
 // can set is plain JSON, same as every other rule domain.
+//
+// 01-10 (ENG-05's phase gate) extends it a final time with the economy
+// fixture (test/parity/fixtures/action-script.economy.json — an OPEN store,
+// the exact sub-state the prototype itself flagged as unsaveable, now plain
+// data), the encounters fixture (test/parity/fixtures/
+// action-script.encounters.json — a trap-set affliction, a chest, a
+// faerie), and the win fixture (test/parity/fixtures/action-script.win.json
+// — a full run through won/deathNote/epitaph). Every fixture this phase
+// authored now has round-trip coverage, closing ENG-04 across the entire
+// extracted ruleset.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -31,8 +41,11 @@ import url from "node:url";
 
 import { newRun, applyAction } from "../../engine/engine.js";
 import { startCombat } from "../../engine/combat.js";
+import { descend } from "../../engine/movement.js";
 import { makeRng } from "../../engine/rng.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
+import { openStore } from "../../engine/economy.js";
+import { springTrap, openChest, encounterDot } from "../../engine/encounters.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -43,6 +56,15 @@ const COMBAT_FIXTURE = JSON.parse(
 );
 const MAGIC_FIXTURE = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.magic.json"), "utf8"),
+);
+const ECONOMY_FIXTURE = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.economy.json"), "utf8"),
+);
+const ENCOUNTERS_FIXTURE = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.encounters.json"), "utf8"),
+);
+const WIN_FIXTURE = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "..", "parity", "fixtures", "action-script.win.json"), "utf8"),
 );
 
 /** applyStartCombat(state, wandering, forced) — the same non-validated-action
@@ -153,4 +175,87 @@ test("a mid-cast ward sub-state (Shield) round-trips losslessly", () => {
   const stripped = stripVolatileFields(state);
   const rehydrated = JSON.parse(JSON.stringify(stripped));
   assert.deepStrictEqual(rehydrated, stripped, "state with an active ward sub-state must round-trip losslessly");
+});
+
+// --- 01-10: the guardrail extended through economy/encounters/win ---------
+
+/** applyInternal(state, fn) — the same clone/rng-rehydrate/persist shape as
+ * applyStartCombat above, generalized for economy.js's/encounters.js's
+ * internal (non-validated) functions (openStore/springTrap/openChest/
+ * encounterDot/descend). */
+function applyInternal(state, fn) {
+  const next = structuredClone(state);
+  const rng = makeRng(next.rngState);
+  const events = [];
+  fn(next, rng, events);
+  next.rngState = rng.getState();
+  return { state: next, events };
+}
+
+const ECONOMY_INTERNAL_FNS = { openStore, springTrap, openChest, encounterDot, descend };
+
+for (const scenario of [{ name: "store", ...ECONOMY_FIXTURE }]) {
+  test(`state survives a JSON round-trip through the economy fixture's "${scenario.name}" scenario, including an OPEN store`, () => {
+    let state = newRun(scenario.seed);
+    let sawOpenStore = false;
+
+    scenario.actions.forEach((action, i) => {
+      const result =
+        action.type in ECONOMY_INTERNAL_FNS ? applyInternal(state, ECONOMY_INTERNAL_FNS[action.type]) : applyAction(state, action);
+      state = result.state;
+      if (state.store) sawOpenStore = true;
+
+      const stripped = stripVolatileFields(state);
+      const rehydrated = JSON.parse(JSON.stringify(stripped));
+      assert.deepStrictEqual(
+        rehydrated,
+        stripped,
+        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}) must round-trip losslessly`,
+      );
+      // structuredClone throws immediately on any function-typed leaf — the
+      // strongest possible proof the store's closures are gone (ENG-03/04).
+      assert.doesNotThrow(() => structuredClone(state), `scenario ${scenario.name}, action ${i}: structuredClone must not throw`);
+    });
+
+    assert.ok(sawOpenStore, "the economy fixture must exercise an OPEN store sub-state at some point");
+  });
+}
+
+for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+  test(`state survives a JSON round-trip through the encounters fixture's "${scenario.name}" scenario`, () => {
+    let state = newRun(scenario.seed);
+
+    scenario.actions.forEach((action, i) => {
+      const result =
+        action.type in ECONOMY_INTERNAL_FNS ? applyInternal(state, ECONOMY_INTERNAL_FNS[action.type]) : applyAction(state, action);
+      state = result.state;
+
+      const stripped = stripVolatileFields(state);
+      const rehydrated = JSON.parse(JSON.stringify(stripped));
+      assert.deepStrictEqual(
+        rehydrated,
+        stripped,
+        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}) must round-trip losslessly`,
+      );
+    });
+  });
+}
+
+test("state survives a JSON round-trip through the win fixture, including the final won/deathNote/epitaph state", () => {
+  let state = newRun(WIN_FIXTURE.seed);
+
+  WIN_FIXTURE.actions.forEach((action, i) => {
+    const result = action.type === "descend" ? applyInternal(state, descend) : applyAction(state, action);
+    state = result.state;
+
+    const stripped = stripVolatileFields(state);
+    const rehydrated = JSON.parse(JSON.stringify(stripped));
+    assert.deepStrictEqual(
+      rehydrated,
+      stripped,
+      `win-path action ${i} (${JSON.stringify(action)}) must round-trip losslessly`,
+    );
+  });
+
+  assert.equal(state.won, true, "the fixture must have actually won");
 });

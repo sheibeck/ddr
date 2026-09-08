@@ -1,0 +1,16 @@
+{
+  "_note": "Seed 3 rolls a Thief Pickpocket Human — a normal (non-Troll/Elven/Dwarven) race so priceFor's multipliers don't complicate the arithmetic, and a class that can legally buy every weapon/armor slot openStore might roll. The test bumps state.c.gold to 5000 identically on BOTH the prototype and engine sides right after boot (before opening the store) so the scenario can afford a full spread of purchase categories (food/potion/weapon/armor/premium/lockpicks) and still land on a genuine insufficient-gold case at the end — openStore itself is deterministic from the seed, so this gold bump changes nothing about which stock rolls, only what's affordable. 'openStore'/'buyItem'/'leaveStore' indices below were hand-verified against this exact seed's rolled stock (see test/parity/economy-parity.test.js's harness note).",
+  "seed": 3,
+  "actions": [
+    { "type": "openStore" },
+    { "type": "buyItem", "idx": 0 },
+    { "type": "buyItem", "idx": 3 },
+    { "type": "buyItem", "idx": 9 },
+    { "type": "buyItem", "idx": 10 },
+    { "type": "buyItem", "idx": 11 },
+    { "type": "buyItem", "idx": 7 },
+    { "type": "buyItem", "idx": 8 },
+    { "type": "buyItem", "idx": 6 },
+    { "type": "leaveStore" }
+  ]
+}

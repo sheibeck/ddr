@@ -1,0 +1,126 @@
+// ENG-05 economy + encounters parity: the extracted engine's store domain
+// (openStore/buyFrom/leaveStore, now plain-data stock via STORE_EFFECTS) and
+// encounter/trap/chest domain (springTrap/openChest/encounterDot and their
+// helper tables) match the frozen prototype, action for action, across the
+// economy fixture (a full store visit: food/potion/weapon/armor/premium/
+// lockpicks purchases plus an insufficient-gold case) and five independent
+// encounters scenarios (trap, chest, table-four, faerie, affliction — see
+// each fixture's `_note` for how seeds were found). Both sides consume the
+// SAME mulberry32 stream, so a faithful port produces byte-identical state
+// after every action.
+//
+// `openStore`/`springTrap`/`openChest`/`encounterDot` are internal
+// (non-validated) function calls, not real `applyAction` action types —
+// mirrors test/parity/combat-parity.test.js's `startCombat` special-casing:
+// the harness clones state, rebuilds the rng from the persisted cursor,
+// calls the engine function directly, and persists the rng cursor, the same
+// shape applyAction itself uses. `buyItem`/`leaveStore` ARE validated
+// actions and go through the real `applyAction`. See
+// test/parity/harness/comparables.js for the shared dispatch/comparable
+// helpers (also reused by test/parity/full-suite.test.js).
+//
+// A structural, byte-for-byte `diffState` comparison of `state.store` is
+// impossible between the two sides by DESIGN — the prototype's stock still
+// holds live `buy` closures (the very anti-pattern this plan eliminates on
+// the engine side), and a closure can never structurally equal a plain
+// `{effectId, effectParams}` descriptor. `stripStoreClosures` (in the shared
+// harness) reduces both sides' stock entries to the fields that ARE
+// comparable (`n`, `sub`, `cost`, `sold`) before every diff, mirroring
+// test/parity/combat-parity.test.js's `stripFoeDamageClosures` carve-out for
+// the exact same reason (BESTIARY's `sp.dmg`/`acid.dmg` closures). Likewise,
+// `catchAffliction`/`springTrap`'s poisoned-arrow branch set
+// `state.c.affliction.loss` to a closure on the prototype side and a plain
+// dice-notation object on the engine side — stripped the same way.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
+import { newRun } from "../../engine/engine.js";
+import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
+import { diffState } from "./harness/diffState.js";
+import { economyComparable as comparable, runEconomyAction as runAction } from "./harness/comparables.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const ECONOMY_FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.economy.json"), "utf8"));
+const ENCOUNTERS_FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.encounters.json"), "utf8"));
+
+// --- economy: a full store visit -------------------------------------------
+
+test("economy parity (store visit): engine matches the frozen prototype after every action", () => {
+  const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
+  let engineState = newRun(ECONOMY_FIXTURE.seed);
+
+  const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+  assert.equal(initialDivergence, null, `seed ${ECONOMY_FIXTURE.seed}: initial boot state diverges at ${initialDivergence}`);
+
+  // Bump gold identically on both sides so the scenario can afford a full
+  // spread of purchase categories (see the fixture's `_note`).
+  ctx.S.c.gold = 5000;
+  engineState.c.gold = 5000;
+  assert.equal(diffState(comparable(ctx.S), comparable(engineState)), null, "the gold bump itself must land identically on both sides");
+
+  const allEventTypes = [];
+  ECONOMY_FIXTURE.actions.forEach((action, i) => {
+    const { state, events } = runAction(ctx, engineState, action);
+    engineState = state;
+    allEventTypes.push(...events.map((e) => e.type));
+
+    // ENG-04, mid-scenario: whenever the store is open, the engine's state
+    // must survive a JSON round-trip losslessly (the closure fix) — checked
+    // at every step, not just once, since a real save can happen at any
+    // point mid-shop.
+    if (engineState.store) {
+      const rehydrated = JSON.parse(JSON.stringify(engineState));
+      assert.deepStrictEqual(rehydrated, engineState, `action ${i}: an open store must round-trip losslessly`);
+      assert.doesNotThrow(() => structuredClone(engineState), `action ${i}: structuredClone must not throw on an open store`);
+    }
+
+    const divergence = diffState(comparable(ctx.S), comparable(engineState));
+    assert.equal(divergence, null, `action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`);
+  });
+
+  assert.ok(allEventTypes.includes("storeOpened"));
+  assert.ok(allEventTypes.includes("bought"), "at least one purchase succeeded");
+  assert.ok(allEventTypes.includes("buyFailed"), "the fixture must hit an insufficient-gold case");
+  assert.ok(allEventTypes.includes("storeLeft"));
+  assert.equal(engineState.store, null, "the store was left");
+});
+
+// --- encounters: trap / chest / table-four / faerie / affliction -----------
+
+for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+  test(`encounters parity (${scenario.name}): engine matches the frozen prototype after every action`, () => {
+    const ctx = loadPrototypeSandbox({ seed: scenario.seed });
+    let engineState = newRun(scenario.seed);
+
+    const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+    assert.equal(
+      initialDivergence,
+      null,
+      `scenario ${scenario.name}, seed ${scenario.seed}: initial boot state diverges at ${initialDivergence}`,
+    );
+
+    const allEventTypes = [];
+    scenario.actions.forEach((action, i) => {
+      const { state, events } = runAction(ctx, engineState, action);
+      engineState = state;
+      allEventTypes.push(...events.map((e) => e.type));
+
+      const divergence = diffState(comparable(ctx.S), comparable(engineState));
+      assert.equal(
+        divergence,
+        null,
+        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
+      );
+    });
+
+    if (scenario.name === "trap") assert.ok(allEventTypes.includes("trapSprung"));
+    else if (scenario.name === "chest") assert.ok(allEventTypes.includes("chestOpened"));
+    else if (scenario.name === "tablefour") assert.ok(allEventTypes.includes("tableFour"));
+    else if (scenario.name === "faerie") assert.ok(allEventTypes.includes("faerieMet"));
+    else if (scenario.name === "affliction") assert.ok(allEventTypes.includes("afflictionCaught"));
+  });
+}

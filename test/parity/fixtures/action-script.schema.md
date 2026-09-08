@@ -46,11 +46,16 @@ inputs (`move()`, `act(playerStrike)`, `act(drinkPotion)`, etc.):
 | `parley` | `act(parley)` | requires `canParley()` to be true in current state |
 | `sing` | `act(sing)` | requires `songReady()` |
 | `readScroll` | `act(readScroll)` | requires `S.c.scrolls && canRead()` |
-| `buyItem` | `buyFrom(state, idx)` | requires a store to be open; needs an index/id field once the economy slice defines it |
+| `buyItem` | `buyFrom(state, idx)` | requires `idx`: the index into `state.store.stock`; requires a store to be open |
 | `leaveStore` | `leaveStore()` | closes the open store |
 | `useItem` | `act(() => useItem(i))` | requires an item index field |
 | `camp` | `makeCamp()` | rests, consumes rations |
 | `newGame` | `newGame()` | starts a fresh run mid-script (rare; mostly a script's implicit first step) |
+| `openStore` | `openStore()` | **not** in engine/actions.js's validated `ACTION_TYPES` — an internal function, like `startCombat` below, that a fixture calls directly to force a deterministic store visit without needing to walk onto a "Store"-rolling dot tile first. Added in 01-10 (`action-script.economy.json`). |
+| `springTrap` | `springTrap()` | **not** a validated action — an internal function call, like `openStore` above, forcing a deterministic trap without walking onto a "trap" tile. Added in 01-10 (`action-script.encounters.json`). |
+| `openChest` | `openChest()` | **not** a validated action — an internal function call forcing a deterministic chest without walking onto a "chest" tile. Added in 01-10 (`action-script.encounters.json`). |
+| `encounterDot` | `encounterDot()` | **not** a validated action — an internal function call forcing a deterministic encounter-dot resolution without walking onto a "dot" tile (the specific outcome — Faerie/Disease/a Table Four row/etc. — is entirely a function of the seed). Added in 01-10 (`action-script.encounters.json`). |
+| `descend` | `descend()` | **not** a validated action — an internal function call that advances straight to the next floor without needing a walked path to an "exit" tile first; used by `action-script.win.json` to skip quickly to floor 5 before BFS-walking the last leg to the Gate. Added in 01-10. |
 
 Additional fields per action `type` (e.g. `dir` for `move`) are added by the
 plan that first authors a fixture exercising that action, and should be

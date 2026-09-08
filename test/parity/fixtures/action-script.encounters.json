@@ -1,0 +1,10 @@
+{
+  "_note": "Each scenario's seed was found by brute-force search: run newRun(seed) then a single direct springTrap/openChest/encounterDot call and keep the first seed whose result matches the scenario's target outcome (a sprung/damaging trap, an opened chest, a plain Table Four row, a Faerie encounter, and a Disease/Poison affliction). 'springTrap'/'openChest'/'encounterDot' are internal (non-validated) actions, mirroring action-script.combat.json's 'startCombat' precedent — the harness clones/rehydrates-rng/persists by hand, the same shape applyAction itself uses.",
+  "scenarios": [
+    { "name": "trap", "seed": 1, "actions": [{ "type": "springTrap" }] },
+    { "name": "chest", "seed": 2, "actions": [{ "type": "openChest" }] },
+    { "name": "tablefour", "seed": 3, "actions": [{ "type": "encounterDot" }] },
+    { "name": "faerie", "seed": 38, "actions": [{ "type": "encounterDot" }] },
+    { "name": "affliction", "seed": 160, "actions": [{ "type": "encounterDot" }] }
+  ]
+}
