@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: engine-extraction-determinism
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-09-08T03:54:25.093Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-09-08T04:08:33.414Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 10
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 01 (engine-extraction-determinism) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 01 execution started
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [█████░░░░░] 50%
 | Phase 01 P03 | 45min | 3 tasks | 7 files |
 | Phase 01-engine-extraction-determinism P04 | 2min | 2 tasks | 3 files |
 | Phase 01 P05 | 7min | 3 tasks | 11 files |
+| Phase 01-engine-extraction-determinism P06 | 15min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 01-05]: applyAction(state,action)->{state,events} is the single pure engine seam — validate at chokepoint, structuredClone (no try/catch, fail-fast), rehydrate rng from state.rngState, dispatch by type, persist rngState; malformed/unknown actions are no-ops (never throw).
 - [Phase ?]: [Phase 01-05]: derived numbers take an explicit c (character-only) or state (needs combat/floor) param, never a global S; character object-literal property order IS the RNG draw order, giving byte-identical chargen parity with the frozen prototype.
 - [Phase ?]: [Phase 01-05]: Executed Task 2 (character/derived, TDD) before Task 1 (state/engine) — natural dependency order since state.js imports rollCharacter; events.js created in the character GREEN commit.
+- [Phase ?]: death.js committed before items.js — useItem's Potion of Death imports die(), reversing the plan's Task 1/Task 2 order
+- [Phase ?]: itemReady(state,it) takes the full state (not just the character) since the every-N cooldown needs state.steps
+- [Phase ?]: serializeRun keeps the full GameState — nothing is excluded anymore now that state is 100% plain data end-to-end
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -116,6 +120,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T03:54:13.277Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-09-08T04:08:33.393Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None

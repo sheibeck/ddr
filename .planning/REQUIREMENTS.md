@@ -13,7 +13,7 @@ Requirements for the initial paid Google Play release. Each maps to a roadmap ph
 - [x] **ENG-01**: Game rules (character gen, movement, combat, magic, economy, leveling, death, descent) run in a UI-free engine reached only through a single `applyAction(state, action) → {state, events}` contract — no rendering, storage, or DOM inside the engine
 - [x] **ENG-02**: All randomness uses an injected seeded PRNG stored in game state (no direct `Math.random()`), so any run is reproducible from its seed
 - [x] **ENG-03**: Game content (classes, subclasses, races, spells, creatures, items, traps, afflictions, epitaphs) lives in pure data tables separated from game logic
-- [ ] **ENG-04**: Full game state serializes and rehydrates losslessly, verified by a serialize/rehydrate round-trip test kept green throughout development
+- [x] **ENG-04**: Full game state serializes and rehydrates losslessly, verified by a serialize/rehydrate round-trip test kept green throughout development
 - [x] **ENG-05**: The complete prototype ruleset is preserved with no gameplay regressions (3 classes / 24 subclasses / 6 races / 31 spells / ~45 creatures / dozens of items / economy)
 
 ### Run Loop (endless roguelike)
@@ -112,7 +112,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ENG-01 | Phase 1: Engine Extraction & Determinism | Complete |
 | ENG-02 | Phase 1: Engine Extraction & Determinism | Complete |
 | ENG-03 | Phase 1: Engine Extraction & Determinism | Complete |
-| ENG-04 | Phase 1: Engine Extraction & Determinism | Pending |
+| ENG-04 | Phase 1: Engine Extraction & Determinism | Complete |
 | ENG-05 | Phase 1: Engine Extraction & Determinism | Complete |
 | PLT-01 | Phase 2: Android Packaging & Native Persistence | Pending |
 | PLT-02 | Phase 2: Android Packaging & Native Persistence | Pending |
