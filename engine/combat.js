@@ -424,7 +424,14 @@ export function parley(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
   if (!C || !canParley(state)) return events;
-  const top = Math.max(...liveFoes(state).map((f) => f.lvl));
+  // LO-03: guard the empty-foes edge defensively. Currently unreachable
+  // (state.combat is nulled the instant liveFoes empties on every path that
+  // could produce it), but Math.max(...[]) === -Infinity would otherwise
+  // inflate `bonus` below to +Infinity and make parley un-failable if that
+  // invariant is ever changed.
+  const foes = liveFoes(state);
+  if (!foes.length) return events;
+  const top = Math.max(...foes.map((f) => f.lvl));
   if (c.race === "Wilmsry" && C.type === "Magical") {
     events.push({ type: "parleyRefused", reason: "wilmsryVsMagical" });
     return events;

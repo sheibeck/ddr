@@ -355,6 +355,20 @@ test("parley: a failing roll triggers the foe's turn instead of ending combat", 
   assert.ok(state.combat, "combat is still active after a failed parley");
 });
 
+// LO-03 regression: Math.max(...liveFoes(state).map(...)) would evaluate to
+// -Infinity with zero live foes, inflating `bonus` to +Infinity and making
+// parley un-failable. Currently unreachable via startCombat/afterPlayerAction
+// (state.combat is nulled the instant liveFoes empties), so this test forces
+// the edge directly by leaving state.combat non-null with only dead foes.
+test("LO-03: parley with zero live foes is a safe no-op, not a Math.max(...[]) crash/exploit", () => {
+  const state = fixedState({ c: { sub: "Con Artist" } });
+  const foe = fixedFoe({ type: "Humans", alive: false });
+  state.combat = fixedCombat([foe]);
+  const events = parley(state, fakeRng([]), []);
+  assert.equal(events.length, 0, "no rng draws, no events -- a clean no-op");
+  assert.ok(state.combat, "combat state is left untouched, not corrupted");
+});
+
 // --- songReady / sing --------------------------------------------------
 
 test("songReady: only a Bard, and only every 100 squares", () => {
