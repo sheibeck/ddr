@@ -3,11 +3,8 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.darktierstudios.mazeworld"
     compileSdk = rootProject.ext.compileSdkVersion
-    // Pinned to the ONLY build-tools version installed on this build
-    // machine (36.0.0) — compileSdk 37 has no matching build-tools;37.x.x
-    // installed and there is no cmdline-tools/sdkmanager to fetch one
-    // headlessly. build-tools 36.0.0 is compatible with compiling against
-    // the android-37 platform.
+    // Pinned explicitly (matches this build machine's installed
+    // build-tools/36.0.0) rather than relying on AGP's auto-selection.
     buildToolsVersion = "36.0.0"
     defaultConfig {
         applicationId "com.darktierstudios.mazeworld"

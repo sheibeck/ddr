@@ -9,7 +9,7 @@
     "test:quick": "node --test test/unit test/determinism test/roundtrip",
     "build:www": "node tools/build-www.mjs",
     "cap:sync": "npm run build:www && npx cap sync android",
-    "android:debug": "npm run cap:sync && cd android && JAVA_HOME=\"$JAVA_HOME\" ./gradlew assembleDebug"
+    "android:debug": "npm run cap:sync && node tools/pin-jdk.mjs && cd android && JAVA_HOME=\"$JAVA_HOME\" ./gradlew assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
