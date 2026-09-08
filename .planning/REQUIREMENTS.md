@@ -34,9 +34,9 @@ Requirements for the initial paid Google Play release. Each maps to a roadmap ph
 
 ### Mobile UX (controls, rendering, screens)
 
-- [ ] **UX-01**: The player moves and acts via tap / contextual touch controls, with the prototype's D-pad available as an alternate control scheme
+- [x] **UX-01**: The player moves and acts via tap / contextual touch controls, with the prototype's D-pad available as an alternate control scheme
 - [ ] **UX-02**: All interactive touch targets meet a minimum hit size (≥48dp) with spacing that separates destructive actions from safe ones, preventing mis-tap deaths
-- [ ] **UX-03**: The maze canvas renders crisply at device DPI and the layout respects safe areas/notches, locked to portrait
+- [x] **UX-03**: The maze canvas renders crisply at device DPI and the layout respects safe areas/notches, locked to portrait
 - [ ] **UX-04**: The player can view a character/stat sheet showing their rolled adventurer's class, race, stats, kit, and skills
 - [ ] **UX-05**: The player can read a scrollable message/combat log
 - [ ] **UX-06**: A first-run, in-context tutorial teaches the core loop (move, fight, descend, survive) without a wall of text
@@ -128,9 +128,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | RUN-03 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-04 | Phase 3: Endless Descent & Difficulty Balance | Complete |
 | RUN-05 | Phase 3: Endless Descent & Difficulty Balance | Complete |
-| UX-01 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-01 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
 | UX-02 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
-| UX-03 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
+| UX-03 | Phase 4: Mobile Presentation, Controls & Onboarding | Complete |
 | UX-04 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
 | UX-05 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |
 | UX-06 | Phase 4: Mobile Presentation, Controls & Onboarding | Pending |

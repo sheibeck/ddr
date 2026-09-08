@@ -109,10 +109,11 @@ Plans:
   4. The player can open a character/stat sheet (class, race, stats, kit, skills) and a scrollable message/combat log at any point during a run.
   5. A first-run, in-context tutorial teaches move/fight/descend/survive without a wall of text, the player can adjust sound, haptics, text size, control scheme, and confirm-before-quit in settings, and status indicators are colorblind-safe with scalable UI text throughout.
 
-**Plans**: 11 plans
+**Plans**: 1/11 plans executed
 
 Plans (ordered by wave):
-- [ ] 04-01-PLAN.md — Touch-control + canvas-sizing math (controls.js, canvasSizing.js) [W1] [UX-01, UX-03]
+
+- [x] 04-01-PLAN.md — Touch-control + canvas-sizing math (controls.js, canvasSizing.js) [W1] [UX-01, UX-03]
 - [ ] 04-02-PLAN.md — Settings/text-scale/confirm-quit module (settings.js) [W1] [UX-07, UX-08, UX-01]
 - [ ] 04-03-PLAN.md — Screen view-models + tutorial sequencer + icon loader [W1] [UX-04, UX-05, UX-06]
 - [ ] 04-04-PLAN.md — formatEvents full-coverage data table + coverage guard [W1] [UX-05, engine-routing prereq]
@@ -141,6 +142,7 @@ Plans (ordered by wave):
 **Plans**: 3 plans
 
 Plans:
+
 - [ ] 05-01-PLAN.md — Voice generator foundation: category-keyed event→copy map (all ~158 engine types, coverage-guarded), presentation-local RNG, first-pass banks + tone guide (VOX-01)
 - [ ] 05-02-PLAN.md — Variant breadth + narrate() wired into the live Oracle log + exhaustive family-friendly safety scan + vendored wordlist + human-review sample (VOX-01, VOX-02)
 - [ ] 05-03-PLAN.md — Graveyard/run-history screen: re-fetch-on-open fix + all-causes persistence round-trip + ship presentation/ to the build (VOX-03)
@@ -172,7 +174,7 @@ Plans:
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 4/4 | Complete ✓ | 2026-09-08 |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
-| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | **NEXT** — device available; user chose UI over voice | - |
+| 4. Mobile Presentation, Controls & Onboarding | 1/11 | In Progress|  |
 | 5. Voice, Content & Graveyard | 0/3 | Planned + checked (PASS) — deferred to AFTER Phase 4 (user re-prioritized 2026-09-08) | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs $25 Play account + release signing (final phase) | - |
 

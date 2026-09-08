@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-current_phase_name: android-packaging-native-persistence
-status: verifying
-stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-09-08T18:49:34.275Z"
+current_phase: 04
+current_phase_name: mobile-presentation-controls-onboarding
+status: executing
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-08T19:42:59.745Z"
 last_activity: 2026-09-08
-last_activity_desc: Phase 02 execution started
+last_activity_desc: Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 20
-  completed_plans: 17
+  total_plans: 31
+  completed_plans: 18
 ---
 
 # Project State
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-07)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 02 — android-packaging-native-persistence
+**Current focus:** Phase 04 — mobile-presentation-controls-onboarding
 
 ## Current Position
 
-Phase: 02 (android-packaging-native-persistence) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-08 — Phase 02 execution started
+Phase: 04 (mobile-presentation-controls-onboarding) — EXECUTING
+Plan: 1 of 11 (Wave 1 of 8)
+Status: Plan 04-01 complete — ready for 04-02/04-03/04-04 (remaining Wave 1 plans)
+Last activity: 2026-09-08 — Phase 04 Plan 01 executed (controls.js, canvasSizing.js)
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 58%
 
 ## Performance Metrics
 
@@ -75,6 +75,7 @@ Progress: [██████████] 100%
 | Phase 02 P03 | 22min | 3 tasks | 9 files |
 | Phase 02 P02 | 66min | 2 tasks | 12 files |
 | Phase 02 P04 | 20min | 3 tasks | 22 files |
+| Phase 04 P01 | 12min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-04: fixed inherited StatusBar Style.Dark bug (would render invisible white text on light parchment status bar) -> Style.Light + setBackgroundColor(#EFE7D6)
 - [Phase ?]: 02-04: npx @capacitor/assets is broken in this environment (missing chevrotain dep) -> launcher icon mipmaps generated via dependency-free PowerShell/System.Drawing resize instead
 - [Phase ?]: 02-04: self-hosted Special Elite/Crimson Pro/IBM Plex Mono as repo-root fonts/*.woff2 (latin subset only), replacing the Google Fonts CDN link -- zero network font requests, closing the offline-correctness gap
+- [Phase ?]: 04-01: resolveTapDirection takes an isSeen(x,y) predicate matching the real engine/maze.js floor shape (g[y][x].seen), never a mockup Set
 
 ### Provided Assets (user-supplied, in repo)
 
@@ -169,9 +171,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T18:49:34.245Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-mobile-presentation-controls-onboarding/04-UI-SPEC.md
+Last session: 2026-09-08T19:42:59.720Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
 
