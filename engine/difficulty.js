@@ -68,12 +68,26 @@ function softCap(base, cap, depth, k) {
 }
 
 /**
+ * isBreatherOfSafeDepth(d) — the breather-cadence check itself, assuming `d`
+ * has ALREADY been through safeDepth() (IN-02: avoids the redundant second
+ * safeDepth() call difficultyCurve() used to trigger by calling the public
+ * isBreather(depth), which re-clamps an input that was already clamped one
+ * line above it — harmless since safeDepth is idempotent, but pointless
+ * work). Not exported — internal helper only; callers with an unsanitized
+ * depth must use the public isBreather(depth) below instead.
+ */
+function isBreatherOfSafeDepth(d) {
+  return d > 1 && (d - 1) % BREATHER_EVERY === 0;
+}
+
+/**
  * isBreather(depth) — every BREATHER_EVERY-th floor after floor 1 is a
- * breather (depths 6, 11, 16, 21, ...). Pure, no RNG.
+ * breather (depths 6, 11, 16, 21, ...). Pure, no RNG. Public entry point:
+ * sanitizes `depth` itself, so it's safe to call directly with an untrusted
+ * value (tests and any future external caller both rely on this).
  */
 export function isBreather(depth) {
-  const d = safeDepth(depth);
-  return d > 1 && (d - 1) % BREATHER_EVERY === 0;
+  return isBreatherOfSafeDepth(safeDepth(depth));
 }
 
 /**
@@ -93,7 +107,7 @@ export function isBreather(depth) {
  */
 export function difficultyCurve(depth) {
   const d = safeDepth(depth);
-  const breather = isBreather(d);
+  const breather = isBreatherOfSafeDepth(d); // IN-02: d is already sanitized — skip isBreather's redundant re-clamp
   return {
     depth: d,
     breather,
