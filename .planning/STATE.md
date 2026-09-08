@@ -64,11 +64,12 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 
 - **`icons/`** — 9 maze map icons, 1254×1254 PNG each (need downscaling/optimization for mobile in Phase 4): `chest`, `crevice`, `descent`, `encounter`, `onewaydoor`, `party`, `teleport`, `trap`, `wall`. These map to the prototype's maze feature cells (chest→chest, crevice→gorge/climb-down, descent→exit/stairs, encounter→dot, onewaydoor→one-way door, party→player marker, teleport→tele, trap→trap, wall→climbable wall). **Phase 4** (mobile presentation/canvas rendering) replaces the prototype's procedural vector feature glyphs with these. The win `gate` needs no icon — Phase 3 makes descent endless (no Gate).
 - **`assets/mazeworld-google-play-icon-512.png`** — 512×512 (correct Google Play icon spec). **Phase 6** store listing.
-- **`assets/mobile_splash.png`** — 941×1672 portrait (~9:16). ~2.7MB, will need compression + density buckets. **Phase 2** native splash screen (`@capacitor/splash-screen`).
+- **`assets/mobile_splash.png`** — 941×1672 portrait source (~9:16), ~2.7MB. Superseded for build use by the density-bucket zip below (keep as the master source).
+- **`assets/mazeworld-splash-android.zip`** — READY-TO-USE Android splash density buckets (WebP q84, 9:16): `drawable-mdpi` 360×640, `drawable-hdpi` 540×960, `drawable-xhdpi` 720×1280, `drawable-xxhdpi` 1080×1920, `drawable-xxxhdpi` 1440×2560. **Phase 2 placement:** unzip and copy the five `drawable-*` folders into `android/app/src/main/res/`, reference as `@drawable/splash_screen`. Note: xxhdpi/xxxhdpi are upscaled from the 941×1672 source (no added detail). Android 12+ shows a system icon-splash first; use these for the branded splash view immediately after (Capacitor `@capacitor/splash-screen`). Contains its own README.md with this table.
 
 ### Pending Todos
 
-None yet.
+- [Phase 1 execution — minor]: Plan-checker PASS noted one coverage gap — the `winGame` (floor-5 Gate) path is ported in 01-07 but not parity-tested. Executor should add a win-condition case to a parity fixture (e.g. extend `action-script.movement.json` or the 01-10 full-suite aggregation) so ENG-05 "no regressions" fully covers the win path. Low long-term value (Phase 3 removes the Gate for endless descent) — do not block on it.
 
 ### Blockers/Concerns
 
