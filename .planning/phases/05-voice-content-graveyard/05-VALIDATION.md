@@ -68,7 +68,7 @@ created: 2026-09-08
 
 ## Validation Sign-Off
 - [ ] Every VOX req maps to an automated test or a documented manual item
-- [ ] All 136 event types deliberately mapped (coverage test); no silent default
+- [ ] All 158 event types deliberately mapped (coverage test); no silent default
 - [ ] Exhaustive safety scan green; wordlist vendored (zero dep, licensed)
 - [ ] Narration uses presentation-local rng; parity/determinism/round-trip (372) stay green
 - [ ] Graveyard re-fetches from storage on open; persists across restart
