@@ -121,6 +121,29 @@ export async function flushOnBackground(storage, waitForPending) {
  * reset by any non-confirm action) — the caller's getGameContext() does not
  * need to track it.
  */
+// WR-02 (02-REVIEW.md): guards against registerNativeChrome() ever being
+// invoked a second time in the same page/process lifetime (e.g. a future
+// refactor that re-runs the trailing bootstrap module, or a WebView reload
+// path) — without this, a second call would register a second independent
+// `backButton`/`pause`/`appStateChange` listener set with its own
+// `confirming`/`confirmTimer` closure state, so every lifecycle event would
+// fire twice (a double-fired backButton handler could show two confirm
+// prompts or call exitApp() twice). Today's single call site
+// (mazeworld.html, gated by isNativePlatform(), executed exactly once per
+// module evaluation) makes this latent rather than active, but nothing
+// previously protected against it.
+let registered = false;
+
+/**
+ * __resetNativeChromeRegistrationForTests() — test-only: clears the
+ * idempotency guard so `node --test` (which calls registerNativeChrome()
+ * once per test case, each with its own fresh fake App) doesn't have every
+ * test after the first silently no-op. Production code never calls this.
+ */
+export function __resetNativeChromeRegistrationForTests() {
+  registered = false;
+}
+
 export async function registerNativeChrome({
   App: injectedApp,
   SplashScreen: injectedSplashScreen,
@@ -130,6 +153,9 @@ export async function registerNativeChrome({
   waitForPending,
   getGameContext,
 } = {}) {
+  if (registered) return;
+  registered = true;
+
   // CR-03 (02-REVIEW.md): splash-hide/status-bar/orientation chrome runs
   // FIRST and independently of the '@capacitor/app' import below. Because
   // capacitor.config.json sets "launchAutoHide": false, SplashScreen.hide()

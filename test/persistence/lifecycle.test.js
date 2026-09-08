@@ -15,9 +15,22 @@
 // accepts an injected fake `App` so no bare `@capacitor/*` specifier is ever
 // resolved under node.
 
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { registerNativeChrome, flushOnBackground } from "../../src/browser/nativeChrome.js";
+import {
+  registerNativeChrome,
+  flushOnBackground,
+  __resetNativeChromeRegistrationForTests,
+} from "../../src/browser/nativeChrome.js";
+
+// WR-02 (02-REVIEW.md): registerNativeChrome() now guards against being
+// invoked a second time in the same process lifetime — reset that guard
+// before every test in this file so each test's own registerNativeChrome()
+// call actually registers its listeners, rather than every test after the
+// first silently no-op'ing.
+beforeEach(() => {
+  __resetNativeChromeRegistrationForTests();
+});
 
 /** makeFakeApp() — mimics @capacitor/app's `App.addListener(event, handler)`
  * surface just enough to capture the registered handlers for direct
@@ -194,4 +207,29 @@ test("CR-03: StatusBar/ScreenOrientation are still attempted (not skipped) even 
   });
   assert.equal(statusBarStyleSet, true, "status-bar chrome still runs even though @capacitor/app is unavailable");
   assert.equal(orientationLocked, true, "orientation-lock chrome still runs even though @capacitor/app is unavailable");
+});
+
+// WR-02 (02-REVIEW.md): a second registerNativeChrome() call in the same
+// process must be a no-op, not a second independent set of listeners with
+// its own confirming/confirmTimer state (which would double-fire every
+// lifecycle event).
+
+test("WR-02: a second registerNativeChrome() call in the same process is a no-op (does not register a second listener set)", async () => {
+  const firstApp = makeFakeApp();
+  const secondApp = makeFakeApp();
+  const storage = { flush: async () => {} };
+
+  await registerNativeChrome({ App: firstApp, storage, getGameContext: () => ({}) });
+  assert.ok(firstApp._listeners.has("backButton"), "the first call registers listeners on the first App instance");
+
+  // Deliberately do NOT reset the guard here (that's what
+  // __resetNativeChromeRegistrationForTests()/beforeEach above is for
+  // between different TESTS) — this call simulates a second real-world
+  // invocation within the same session.
+  await registerNativeChrome({ App: secondApp, storage, getGameContext: () => ({}) });
+  assert.equal(
+    secondApp._listeners.size,
+    0,
+    "a second call in the same process must not register any listeners on a second App instance"
+  );
 });
