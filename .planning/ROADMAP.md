@@ -151,17 +151,16 @@ Plans:
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+**Execution Order (re-sequenced 2026-09-08):** 1 ✓ → 3 ✓ → 2 ✓ → **4 (UI, NEXT)** → 5 (voice, deferred after 4) → 6 (Play launch, when $25 account ready). User has a working native build on a real device (Pixel 7, wireless adb) and chose to bring the mobile UX (Claude Design + provided map icons + touch controls + onboarding) forward ahead of the voice phase. Phase 5 is fully planned + plan-checked (PASS) and ready whenever it's resumed.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 4/4 | Complete ✓ | 2026-09-08 |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
-| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device visual test | - |
-| 5. Voice, Content & Graveyard | 0/3 | Planned — ready to execute | - |
-| 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
+| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | **NEXT** — device available; user chose UI over voice | - |
+| 5. Voice, Content & Graveyard | 0/3 | Planned + checked (PASS) — deferred to AFTER Phase 4 (user re-prioritized 2026-09-08) | - |
+| 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs $25 Play account + release signing (final phase) | - |
 
 > **Execution order (re-adjusted 2026-09-08 — user installed Android Studio):** 1 ✓ → 3 ✓ → **2 (now unblocked)** → 5 → then 4 & 6 when a device/emulator visual test and Google Play account are ready. Phase 2's code + a headless debug build are automatable; the emulator/device visual test and release signing are UAT/user steps.
 >
