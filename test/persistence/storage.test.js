@@ -281,3 +281,14 @@ test("CR-01: setItem/getItem fall back to localStorage when the native Preferenc
     restoreLS();
   }
 });
+
+test("IN-02: setItem(key, undefined) is a defensive no-op rather than persisting the literal string \"undefined\"", async () => {
+  const { store: lsStore, restore } = installFakeLocalStorage();
+  try {
+    await setItem(SAVE_KEY, undefined);
+    assert.equal(lsStore.has(SAVE_KEY), false, "no value was written at all for an undefined payload");
+    assert.equal(await getItem(SAVE_KEY), null, "the key still reads back as missing, not the string \"undefined\"");
+  } finally {
+    restore();
+  }
+});

@@ -176,8 +176,15 @@ export async function getItem(key) {
  * queued promise (always resolves, never rejects) so a caller that needs
  * ordering (e.g. flush(), or a test awaiting the write before reading back)
  * can await it.
+ *
+ * IN-02: `value === undefined` is a defensive no-op rather than coercing to
+ * the literal string `"undefined"`. Every current caller already
+ * JSON.stringify()s its payload first (so this isn't reachable today), but a
+ * future caller that forgets that step would otherwise silently persist a
+ * value indistinguishable from a real save until read back.
  */
 export function setItem(key, value) {
+  if (value === undefined) return Promise.resolve();
   return enqueue(key, async () => {
     if (isNative()) {
       try {

@@ -235,6 +235,11 @@ export async function registerNativeChrome({
         confirming = true;
         ctx.showConfirmQuit?.();
         confirmTimer = setTimeout(resetConfirm, 2000);
+        // IN-01: Node's node --test runner only — browsers'/WebViews'
+        // setTimeout() ids are plain numbers with no .unref() method, so
+        // this branch is always false in production. Without it, a `node
+        // --test` process that reaches this line keeps a pending timer
+        // alive and can hang after the last assertion instead of exiting.
         if (typeof confirmTimer.unref === "function") confirmTimer.unref();
         break;
       case "exit-app":
