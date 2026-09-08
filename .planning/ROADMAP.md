@@ -143,10 +143,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
-| 2. Android Packaging & Native Persistence | 0/TBD | Deferred — needs Android toolchain | - |
+| 2. Android Packaging & Native Persistence | 0/TBD | Next — toolchain ready (2026-09-08) | - |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
-| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device/toolchain | - |
-| 5. Voice, Content & Graveyard | 0/TBD | Next (code-only) | - |
+| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device visual test | - |
+| 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 2) | - |
 | 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
 
-> **Execution order (adjusted 2026-09-08):** Autonomous run does code-only phases first — **3 → 5** — while Android-toolchain phases (2, 4, 6) are deferred until the user's Android Studio/SDK/device and Google Play account are ready. Phase 3 depends only on the Phase 1 engine (done); Phase 5's voice system is engine/data-driven. Difficulty tuning (Phase 3) and any real-device feel are UAT items deferred to milestone end.
+> **Execution order (re-adjusted 2026-09-08 — user installed Android Studio):** 1 ✓ → 3 ✓ → **2 (now unblocked)** → 5 → then 4 & 6 when a device/emulator visual test and Google Play account are ready. Phase 2's code + a headless debug build are automatable; the emulator/device visual test and release signing are UAT/user steps.
+>
+> **Build environment (probed 2026-09-08):** Node v22.23.2 + npm 10.9.8 (registry reachable); JDK — system Java is 25 (too new for AGP → point Gradle at Android Studio's bundled JBR/JDK 21 via `org.gradle.java.home` or `JAVA_HOME`); **Android SDK installed at `%LOCALAPPDATA%\Android\Sdk`** (build-tools, platforms, platform-tools, emulator, **licenses already accepted**) — set `ANDROID_HOME`/`ANDROID_SDK_ROOT` to it (not currently exported); Android Studio at `C:\Program Files\Android\Android Studio`. `sdkmanager`/`adb`/`emulator` are in the SDK dir but not on PATH (invoke by full path or add to PATH).
