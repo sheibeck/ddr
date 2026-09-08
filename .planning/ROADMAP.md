@@ -137,8 +137,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
-| 2. Android Packaging & Native Persistence | 0/TBD | Not started | - |
-| 3. Endless Descent & Difficulty Balance | 0/TBD | Not started | - |
-| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Not started | - |
-| 5. Voice, Content & Graveyard | 0/TBD | Not started | - |
-| 6. Google Play Compliance & Launch | 0/TBD | Not started | - |
+| 2. Android Packaging & Native Persistence | 0/TBD | Deferred — needs Android toolchain | - |
+| 3. Endless Descent & Difficulty Balance | 0/TBD | Next (code-only) | - |
+| 4. Mobile Presentation, Controls & Onboarding | 0/TBD | Deferred — needs device/toolchain | - |
+| 5. Voice, Content & Graveyard | 0/TBD | Queued (code-only, after 3) | - |
+| 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs Play account/build | - |
+
+> **Execution order (adjusted 2026-09-08):** Autonomous run does code-only phases first — **3 → 5** — while Android-toolchain phases (2, 4, 6) are deferred until the user's Android Studio/SDK/device and Google Play account are ready. Phase 3 depends only on the Phase 1 engine (done); Phase 5's voice system is engine/data-driven. Difficulty tuning (Phase 3) and any real-device feel are UAT items deferred to milestone end.
