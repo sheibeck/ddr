@@ -60,6 +60,43 @@ export function getState() {
   return currentState;
 }
 
+// CR-02 (02-REVIEW.md): storage.js's flush() can only await writes that have
+// already reached its own writeQueues Map — a caller mid-way through a
+// read-then-write sequence (persistGrave() below awaits storage.getItem()
+// BEFORE its storage.setItem()) is invisible to flush() for the entire
+// duration of that read. track()/waitForPending() close that gap: any
+// fire-and-forget async operation this adapter starts that a lifecycle
+// pause/background handler needs to survive gets added here, and
+// nativeChrome.js's flushOnBackground() awaits waitForPending() ALONGSIDE
+// storage.flush() so a backgrounding event can't resolve "successfully"
+// while, e.g., a just-died player's tombstone write hasn't even started yet.
+const pending = new Set();
+function track(promise) {
+  const settled = promise.catch(() => {}).finally(() => pending.delete(settled));
+  pending.add(settled);
+  return promise;
+}
+
+/**
+ * waitForPending() — awaits every adapter-started operation currently
+ * tracked via track() (see persistGrave()'s call site in dispatch() below).
+ * Loops the same way storage.js#flush() does, so a NEW tracked operation
+ * started while this is already awaiting (e.g. another death mid-drain) is
+ * also caught rather than missed. Never throws (each tracked promise is
+ * already wrapped to swallow its own rejection before being added here).
+ */
+export async function waitForPending() {
+  let snapshot;
+  do {
+    snapshot = [...pending];
+    await Promise.all(snapshot);
+    // Each settled entry above already removed itself from `pending` (its
+    // .finally() runs before the tracked/wrapped promise itself resolves) —
+    // so anything still in `pending` now was added DURING this await and
+    // needs its own pass.
+  } while ([...pending].some((p) => !snapshot.includes(p)));
+}
+
 /**
  * initRun(seed) — starts a brand-new run from an integer seed, replacing
  * whatever state (if any) the adapter was holding.
@@ -226,8 +263,13 @@ export function dispatch(action) {
     // awaited here — same fire-and-enqueue posture as persist() above;
     // storage.js's per-key write queue still orders it correctly, and
     // persistGrave()'s own try/catch means this can never become an
-    // unhandled rejection.
-    if (diedEvent) persistGrave(currentState, diedEvent.cause);
+    // unhandled rejection. CR-02: it IS wrapped in track() so
+    // waitForPending() (awaited by nativeChrome.js's flushOnBackground
+    // alongside storage.flush()) can still catch this write even while it's
+    // still in its pre-setItem() getItem() read phase — storage.js's own
+    // flush() has no visibility into an operation that hasn't reached
+    // storage.setItem() yet.
+    if (diedEvent) track(persistGrave(currentState, diedEvent.cause));
     return { state: currentState, events, html: formatEvents(events) };
   } catch (err) {
     // Defense in depth (CR-01): engine/saveState.js#validateSave already

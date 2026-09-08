@@ -54,21 +54,42 @@ export function decideBackAction({
 }
 
 /**
- * flushOnBackground(storage) — awaits `storage.flush()` (src/browser/
- * storage.js's per-key write-queue drain) so the caller (registerNativeChrome's
- * pause/appStateChange handlers below) can be certain every in-flight write
- * has settled before returning. Never throws: a missing/malformed `storage`
- * or a rejecting `flush()` just means this resolves anyway — matches
- * storage.js's own fail-safe, never-throw posture, and a background handler
- * that itself threw would be far worse than one that merely couldn't flush.
+ * flushOnBackground(storage, waitForPending) — awaits `storage.flush()`
+ * (src/browser/storage.js's per-key write-queue drain) so the caller
+ * (registerNativeChrome's pause/appStateChange handlers below) can be
+ * certain every in-flight write has settled before returning. Never throws:
+ * a missing/malformed `storage` or a rejecting `flush()` just means this
+ * resolves anyway — matches storage.js's own fail-safe, never-throw posture,
+ * and a background handler that itself threw would be far worse than one
+ * that merely couldn't flush.
+ *
+ * CR-02 (02-REVIEW.md): `storage.flush()` alone cannot see a write that
+ * hasn't reached `storage.setItem()` yet — e.g. engineAdapter.js's
+ * `persistGrave()` is still awaiting its own `storage.getItem()` read when a
+ * `pause`/`appStateChange(inactive)` event fires. The optional
+ * `waitForPending` callback (engineAdapter.js's `waitForPending()`, wired by
+ * registerNativeChrome below) is awaited ALONGSIDE `storage.flush()` so that
+ * still-reading write is not lost. Both are awaited in parallel — either one
+ * failing/being absent never blocks the other.
  */
-export async function flushOnBackground(storage) {
-  try {
-    await storage?.flush?.();
-  } catch {
-    /* storage.flush() already never rejects, but defend anyway — a
-       background handler must never throw */
-  }
+export async function flushOnBackground(storage, waitForPending) {
+  await Promise.all([
+    (async () => {
+      try {
+        await storage?.flush?.();
+      } catch {
+        /* storage.flush() already never rejects, but defend anyway — a
+           background handler must never throw */
+      }
+    })(),
+    (async () => {
+      try {
+        await waitForPending?.();
+      } catch {
+        /* same fail-safe posture as storage.flush() above */
+      }
+    })(),
+  ]);
 }
 
 /**
@@ -96,6 +117,7 @@ export async function registerNativeChrome({
   StatusBar: injectedStatusBar,
   ScreenOrientation: injectedScreenOrientation,
   storage,
+  waitForPending,
   getGameContext,
 } = {}) {
   const App = injectedApp || (await import("@capacitor/app")).App;
@@ -147,10 +169,12 @@ export async function registerNativeChrome({
   // PLT-03/SAV-01: both events await the flush before resolving — a
   // fire-and-forget write here has no guarantee of completing before the OS
   // suspends/kills the process (02-RESEARCH.md's awaited-flush correctness
-  // note).
-  App.addListener("pause", () => flushOnBackground(storage));
+  // note). CR-02: `waitForPending` (e.g. engineAdapter.js's
+  // waitForPending()) is awaited alongside storage.flush() so a write still
+  // in its pre-setItem() read phase isn't missed either.
+  App.addListener("pause", () => flushOnBackground(storage, waitForPending));
   App.addListener("appStateChange", ({ isActive } = {}) => {
-    if (!isActive) return flushOnBackground(storage);
+    if (!isActive) return flushOnBackground(storage, waitForPending);
   });
 
   // PLT-04 chrome — splash hide / status-bar style / portrait lock, finalized

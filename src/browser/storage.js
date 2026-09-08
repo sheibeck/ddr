@@ -220,9 +220,33 @@ export function removeItem(key) {
  * 02-03 lifecycle pause/background handler) can be sure all in-flight writes
  * have settled before the OS potentially suspends the process. Never
  * throws/rejects (each per-key chain already swallows its own errors).
+ *
+ * CR-02 (02-REVIEW.md): a single `Promise.all([...writeQueues.values()])`
+ * snapshot is NOT a real drain — a same-key write chained onto `writeQueues`
+ * AFTER the snapshot is taken (but before the snapshotted promise settles)
+ * is not part of what that one snapshot awaits, so flush() could resolve
+ * while that later write is still in flight. Loop re-snapshotting
+ * `writeQueues` until it stops changing (every entry we just awaited is
+ * still the current value for its key) so a write enqueued mid-flush is
+ * caught by the next iteration rather than missed entirely.
+ *
+ * This still cannot see a write that hasn't reached setItem()/removeItem()
+ * yet at all (e.g. engineAdapter.js#persistGrave()'s `await getItem()`
+ * before its `await setItem()`) — writeQueues only has an entry once
+ * enqueue() actually runs. Callers with a read-then-write sequence need
+ * their own separate pending-operation tracking that a caller like
+ * nativeChrome.js's flushOnBackground() also awaits alongside flush() (see
+ * engineAdapter.js's `waitForPending()`).
  */
 export async function flush() {
-  await Promise.all([...writeQueues.values()]);
+  let snapshot;
+  do {
+    snapshot = [...writeQueues.entries()];
+    await Promise.all(snapshot.map(([, p]) => p));
+    // Re-check after awaiting: did any entry we just awaited get replaced
+    // (a new write chained onto the same key while we were awaiting) or did
+    // a brand-new key show up? If so, loop again — the snapshot was stale.
+  } while (snapshot.some(([key, p]) => writeQueues.get(key) !== p) || writeQueues.size !== snapshot.length);
 }
 
 /**

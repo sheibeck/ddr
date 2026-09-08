@@ -3390,7 +3390,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // module import, not a bare `@capacitor/*` specifier) is always safe under
   // node/the browser dev loop.
   import "./src/browser/storage.js";
-  import { boot, dispatch, startNewRun } from "./src/browser/engineAdapter.js";
+  import { boot, dispatch, startNewRun, waitForPending } from "./src/browser/engineAdapter.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
 
   // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —
@@ -3458,6 +3458,12 @@ window.__mzClassicBoot = async function classicBoot() {
   if (window.Capacitor?.isNativePlatform?.()) {
     registerNativeChrome({
       storage: window.mzStorage,
+      // CR-02 (02-REVIEW.md): a fire-and-forget persistGrave() write can
+      // still be in its pre-setItem() read phase when the OS backgrounds the
+      // app — engineAdapter.js's waitForPending() is awaited alongside
+      // storage.flush() (both inside registerNativeChrome's
+      // pause/appStateChange handlers) so that write isn't lost.
+      waitForPending,
       getGameContext: () => ({
         hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)),
         hasLiveRun: !!(S && S.c && !S.dead && !S.won),
