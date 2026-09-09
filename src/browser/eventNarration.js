@@ -60,8 +60,12 @@ export const EVENT_NARRATION = {
       : `<span class="hurt">${e.kind ?? "It"} has taken everything it can. You are on one wp.</span>`,
   afflictionPassed: () => `<span class="hit">It passes.</span>`,
   afflictionCured: () => `You sweat the sickness out overnight. <span class="hit">Cured.</span>`,
+  // Device-review Pass DR7: named what actually recharges — this event only
+  // ever fires for a Magic User's spell-charge pool (engine/movement.js,
+  // every 20 squares), so "A charge comes back" with no noun was the
+  // ambiguity the device-review flagged ("needs context — what recharged?").
   spellChargeRecovered: (e) =>
-    `<span class="beat">Twenty quiet squares. A charge comes back (${e.charges ?? "?"} of ${e.max ?? "?"}).</span>`,
+    `<span class="beat">Twenty quiet squares, and a spell charge is ready again</span> — ${e.charges ?? "?"} of ${e.max ?? "?"} in reserve. The maze keeps no such courtesy for you.`,
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
   rested: (e) => `Rest restores <span class="hit">+${e.amount ?? 0} wp</span>.`,
   armorPatched: (e) => `<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,

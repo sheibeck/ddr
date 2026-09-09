@@ -202,7 +202,7 @@ test("drawFeatureIcon: no dir arg draws unrotated (every non-door icon + the pla
   const img = {};
   drawFeatureIcon(ctx, img, 10, 20, 32);
   assert.deepEqual(ctx.calls.map((c) => c[0]), ["drawImage"]);
-  assert.equal(ctx.calls[0][1], 10 + (32 - Math.round(32 * 1.08)) / 2);
+  assert.equal(ctx.calls[0][1], 10 + (32 - Math.round(32 * 1.0)) / 2);
 });
 
 test("drawFeatureIcon: an unrecognized dir value fails open — draws unrotated", () => {
@@ -243,7 +243,7 @@ test("drawFeatureIcon: rotated draw is centered on the cell (translate to cell c
   const ctx = makeFakeCtx();
   const size = 32;
   drawFeatureIcon(ctx, {}, 100, 200, size, "S");
-  const iconSize = Math.round(size * 1.08);
+  const iconSize = Math.round(size * 1.0);
   assert.deepEqual(ctx.calls[1], ["translate", 100 + size / 2, 200 + size / 2]);
   assert.deepEqual(ctx.calls[3], ["drawImage", -iconSize / 2, -iconSize / 2, iconSize, iconSize]);
 });

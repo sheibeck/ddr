@@ -106,16 +106,18 @@ const ONEWAYDOOR_ROTATION_DEG = { N: 270, E: 0, S: 90, W: 180 };
 /**
  * drawFeatureIcon(ctx, img, dx, dy, size, dir) — draws a preloaded icon
  * centered within a `size`x`size` cell whose top-left is (dx, dy), at
- * Math.round(size * 1.08) — device-review round 4 ("Icons even bigger":
- * 04-CONTEXT.md/04-DR4) bumped this again from round 2's 0.94 factor so a
- * feature icon fills/slightly overflows the cell instead of merely nearly
- * filling it, matching the mock's big, unmissable map marks. A factor above
- * 1.0 means the icon is intentionally drawn a little larger than its cell
- * (centered, so it overflows evenly on all 4 sides into the neighboring
- * grid lines) rather than inset within it. Operates entirely in CSS-px
- * space — `ctx` must already have the DPR transform applied by the caller
- * (canvasSizing.js), so no manual device-pixel-ratio multiplication happens
- * here.
+ * Math.round(size * 1.0) — device-review Pass DR7 ("Icons even bigger —
+ * fill the square without overflowing") dropped this from round 4's 1.08
+ * now that icons/optimized/*.png (tools/trim-icons.ps1) is itself trimmed
+ * to its opaque bounding box and centered on its canvas: the icon's own
+ * pixel content — not a padded/oversized draw rect — now does the "big and
+ * unmissable" work round 4 was chasing, so drawing at exactly 1.0 fills the
+ * cell edge-to-edge on whichever axis the source art is widest without
+ * spilling past it into the neighboring grid lines (1.08's overflow was
+ * compensating for the SOURCE PNGs' own transparent margin, not adding
+ * genuine size). Operates entirely in CSS-px space — `ctx` must already
+ * have the DPR transform applied by the caller (canvasSizing.js), so no
+ * manual device-pixel-ratio multiplication happens here.
  *
  * `dir` (optional, DR5) — when it's a recognized ONEWAYDOOR_ROTATION_DEG
  * key, the icon is rotated about the cell's center by that many degrees
@@ -123,7 +125,7 @@ const ONEWAYDOOR_ROTATION_DEG = { N: 270, E: 0, S: 90, W: 180 };
  * unrotated, exactly as every non-door icon and the player marker do.
  */
 export function drawFeatureIcon(ctx, img, dx, dy, size, dir) {
-  const iconSize = Math.round(size * 1.08);
+  const iconSize = Math.round(size * 1.0);
   const rotationDeg = dir !== undefined ? ONEWAYDOOR_ROTATION_DEG[dir] : undefined;
   if (rotationDeg !== undefined) {
     const cx = dx + size / 2, cy = dy + size / 2;
