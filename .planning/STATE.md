@@ -188,7 +188,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none — first milestone)* | | | |
+| v2 feature | **Joiners / multi-character party** — support more than one character in the party (recruiting + party-based combat). User decision 2026-09-08 (during Phase 4 device review): **defer to v2**, keep v1 solo as originally scoped. The Claude Design mock already includes party UI (the combat party rail + `partyMode` config) to build on when we get there. | Deferred to v2 | 2026-09-08 (Phase 4) |
 
 ## Session Continuity
 
