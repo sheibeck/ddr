@@ -6,8 +6,9 @@
 // Pitfall 1, never the design mockup's throwaway state-object field names.
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
-import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff } from "../../engine/derived.js";
+import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS } from "../../content/index.js";
+import { strikeDie, toHit, upkeep, skill, eff, canCast } from "../../engine/derived.js";
+import { maxCharges } from "../../engine/movement.js";
 
 /**
  * skillTableFor(cls) — the special-skill description pool for a class
@@ -128,6 +129,57 @@ export function characterSheetViewModel(state) {
     quirk: { label: "QUIRK", text: quirkText(c) },
     skills,
   };
+}
+
+/**
+ * grimoireViewModel(state) — the HERO tab's Grimoire rows (04-DR10): the
+ * character's OWN learned spells (`c.grimoire`, a list of names) — NOT the
+ * full 32-entry SPELLS table — sorted by level then alphabetically. Each row
+ * carries content/spells.js#combatOnly plus whether it's castable RIGHT NOW
+ * from outside an encounter: the same grimoire/level/school gate
+ * engine/derived.js#canCast already enforces for the in-combat SPELLS menu,
+ * ANDed with the spell's own combatOnly flag, an out-of-combat check, and the
+ * caster's remaining charge economy (engine/movement.js#maxCharges). Purely
+ * read-only — never mutates state, never rolls against rngState (T-04-06);
+ * the actual cast still goes through applyAction's normal "castSpell"
+ * dispatch, exactly like the in-combat SPELLS menu.
+ */
+export function grimoireViewModel(state) {
+  const c = state.c;
+  const names = c.grimoire || [];
+  const inCombat = !!state.combat;
+  const charges = maxCharges(c) - c.spellsUsed;
+
+  const rows = names
+    .map((name) => SPELLS.find((sp) => sp.n === name))
+    .filter(Boolean)
+    .map((sp) => {
+      let castable = false;
+      let disabledReason = null;
+      if (sp.combatOnly) {
+        disabledReason = "Combat only";
+      } else if (inCombat) {
+        disabledReason = "Only outside combat";
+      } else if (!canCast(state, sp)) {
+        disabledReason = "Not ready yet";
+      } else if (charges <= 0) {
+        disabledReason = "No charges left";
+      } else {
+        castable = true;
+      }
+      return {
+        idx: SPELLS.indexOf(sp),
+        name: sp.n,
+        lvl: sp.lvl,
+        txt: sp.txt,
+        combatOnly: !!sp.combatOnly,
+        castable,
+        disabledReason,
+      };
+    })
+    .sort((a, b) => a.lvl - b.lvl || a.name.localeCompare(b.name));
+
+  return { rows, hasSpells: rows.length > 0, isCaster: c.cls === "Magic User" };
 }
 
 // Matches the roll-detail span src/browser/engineAdapter.js's formatEvent()

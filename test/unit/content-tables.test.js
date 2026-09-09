@@ -110,3 +110,27 @@ test("SPELLS: Fireball is 2d10+4, Mangle is 2d20+15", () => {
   assert.deepStrictEqual(fireball.dmg, { n: 2, sides: 10, bonus: 4 });
   assert.deepStrictEqual(mangle.dmg, { n: 2, sides: 20, bonus: 15 });
 });
+
+// 04-DR10: every spell carries an explicit combatOnly boolean (Grimoire
+// classification, engine/magic.js's own no-combat-context support).
+test("SPELLS: every entry has a boolean combatOnly field", () => {
+  for (const sp of SPELLS) {
+    assert.equal(typeof sp.combatOnly, "boolean", `${sp.n} missing boolean combatOnly`);
+  }
+});
+
+test("SPELLS: 12 non-combat (utility/self) castable outside an encounter", () => {
+  const nonCombat = SPELLS.filter((sp) => !sp.combatOnly).map((sp) => sp.n).sort();
+  assert.deepStrictEqual(nonCombat, [
+    "Bubble", "Detect Magic", "Heal", "Major Heal", "Mirror Self",
+    "Phantom Host", "Regeneration", "Sense Danger", "Sense Presence",
+    "Shield", "Strength", "Summon",
+  ]);
+});
+
+test("SPELLS: combat-only spells target a foe or an active encounter (Fireball, Death, Doze)", () => {
+  const byName = Object.fromEntries(SPELLS.map((sp) => [sp.n, sp]));
+  assert.equal(byName["Fireball"].combatOnly, true);
+  assert.equal(byName["Death"].combatOnly, true);
+  assert.equal(byName["Doze"].combatOnly, true);
+});

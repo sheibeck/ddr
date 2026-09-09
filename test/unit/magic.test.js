@@ -15,6 +15,7 @@ import url from "node:url";
 
 import { castSpell, drinkPotion, readScroll, canRead } from "../../engine/magic.js";
 import { SPELLS } from "../../content/index.js";
+import { GW, GH } from "../../engine/maze.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -52,11 +53,16 @@ function fixedWizard(overrides = {}) {
   };
 }
 
+// 04-DR10: full GW x GH (engine/maze.js: 21x21), not an undersized 3x3 —
+// castSpell's "reveal" kind (Detect Magic) iterates the WHOLE grid
+// unconditionally (`for y in [0,GH) for x in [0,GW)`), so an undersized
+// fixture floor throws "Cannot read properties of undefined (reading
+// 'wall')" the moment any test exercises that branch.
 function fixedFloor(overrides = {}) {
   const g = [];
-  for (let y = 0; y < 3; y++) {
+  for (let y = 0; y < GH; y++) {
     g.push([]);
-    for (let x = 0; x < 3; x++) g[y].push({ wall: false, dark: false, seen: false, feat: null });
+    for (let x = 0; x < GW; x++) g[y].push({ wall: false, dark: false, seen: false, feat: null });
   }
   return { g, px: 1, py: 1, depth: 1, ...overrides };
 }
@@ -227,6 +233,67 @@ test("castSpell: Earthquake spares the caster behind a ward", () => {
   });
   castSpell(state, SPELL_IDX.Earthquake, fakeRng([1, 1, 1]), []);
   assert.equal(state.c.wp, 50, "warded, so no self-damage");
+});
+
+// --- 04-DR10: out-of-combat casting (Group 2 — content/spells.js#combatOnly) ---
+// These document WHY each spell is classified the way it is: a non-combat
+// spell's effect branch is unconditional (works with state.combat === null);
+// a combat-only spell's branch needs a live foe/encounter to do anything
+// useful, and some (Earthquake, Death) actively harm the caster for zero
+// benefit when cast with nothing to fight — engine/magic.js#castSpell is a
+// faithful, unconditional port of the prototype and is NOT gated here; the
+// Grimoire UI (src/browser/viewModels.js#grimoireViewModel) is what refuses
+// to offer a combat-only spell's Cast button outside an encounter.
+
+test("castSpell: Detect Magic (non-combat) works with no active encounter", () => {
+  const state = fixedState({ c: { grimoire: ["Detect Magic"] }, combat: null });
+  state.floor.g[2][2].wall = true; // one wall cell, left alone by reveal
+  const events = castSpell(state, SPELL_IDX["Detect Magic"], fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "detectMagic"));
+  assert.equal(state.floor.g[0][0].seen, true, "every non-wall cell is revealed");
+  assert.equal(state.floor.g[2][2].seen, false, "wall cells are left alone");
+});
+
+test("castSpell: Sense Presence (non-combat) sets c.senses without a foe present", () => {
+  const state = fixedState({ c: { grimoire: ["Sense Presence"], level: 2 } }); // Sense Presence is lvl 2
+  const events = castSpell(state, SPELL_IDX["Sense Presence"], fakeRng([]), []);
+  assert.equal(state.c.senses, 1);
+  assert.ok(events.some((e) => e.type === "sensesGained"));
+});
+
+test("castSpell: Sense Danger (non-combat) sets foresight and picks the next encounter type", () => {
+  const state = fixedState({ c: { grimoire: ["Sense Danger"], level: 3 } }); // Sense Danger is lvl 3
+  const events = castSpell(state, SPELL_IDX["Sense Danger"], fakeRng([]), []);
+  assert.equal(state.c.foresight, true);
+  assert.ok(events.some((e) => e.type === "senseDanger"));
+});
+
+test("castSpell: Summon (non-combat) queues a pendingAlly instead of C.ally when there is no encounter", () => {
+  const state = fixedState({ c: { grimoire: ["Summon"], level: 2 }, combat: null });
+  const events = castSpell(state, SPELL_IDX.Summon, fakeRng([4]), []); // rounds d4=4
+  assert.ok(state.c.pendingAlly, "queued for the next encounter");
+  assert.equal(state.combat, null, "still no active encounter");
+  assert.ok(events.some((e) => e.type === "allyPending"));
+});
+
+test("castSpell: Earthquake (combat-only) cast with no foes present still self-damages for zero benefit", () => {
+  // Documents WHY Earthquake is combatOnly:true — liveFoes() is empty with no
+  // state.combat, so nothing is hurt, but the caster's own self-damage guard
+  // (`if (!c.ward)`) fires unconditionally regardless of combat state.
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
+    combat: null,
+  });
+  const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10]), []); // 3d10+8=38
+  assert.equal(state.c.wp, 31, "self-damage (ceil(38/2)=19) applies with nothing gained");
+  assert.ok(events.some((e) => e.type === "earthquakeSelfDamage"));
+});
+
+test("castSpell: Death (combat-only) cast with no foe present still costs 25wp for nothing", () => {
+  const state = fixedState({ c: { grimoire: ["Death"], level: 5, wp: 40 }, combat: null });
+  const events = castSpell(state, SPELL_IDX.Death, fakeRng([]), []);
+  assert.equal(state.c.wp, 15, "25wp spent regardless of whether a foe existed");
+  assert.ok(events.some((e) => e.type === "deathCast"));
 });
 
 // --- drinkPotion ------------------------------------------------------
