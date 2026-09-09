@@ -126,6 +126,20 @@ export const EPITAPHS = {
     "Survived all five floors and will now be insufferable at parties for life.",
     "Escaped. Statistically speaking, this did not occur.",
   ],
+  // Device-review Pass B1 item 3: a DISTINCT, non-combat cause for a
+  // voluntary "ABANDON THIS CHARACTER" — sarcastic and family-friendly per
+  // the design brief ("what kind of monster abandons them down here"), never
+  // implying real violence (no trap, no monster, no fall — just a decision).
+  abandon: [
+    "Not slain by the maze. Simply left here, on floor {floor}, by someone who kept walking.",
+    "Still breathing when last seen. That was, apparently, the problem.",
+    "{name} did not die down here. {name} was abandoned down here. There is a difference, and the difference is you.",
+    "The maze offers no shortage of ways to end a delver. {name} is the rare case where a person chose one.",
+    "Filed under: abandoned, not deceased. Even the paperwork thinks this is a bit much.",
+    "Walked in on day {day} with {sp} skill points and a future. Walked out alone, without {name}.",
+    "No trap. No monster. No fall. Just a decision, made on floor {floor}.",
+    "The Maze Master would like it on record that {name} was still perfectly capable of dying properly.",
+  ],
 };
 
 // Death-note templates (mazeworld.html's CAUSE_TEXT, formerly functions).
@@ -146,6 +160,9 @@ export const CAUSE_TEXT = {
   potion: "poisoned by an unlabelled bottle",
   insanity: "dead by their own hand",
   poison: "carried off by poison",
+  // Device-review Pass B1 item 3: voluntary abandonment, distinct from every
+  // combat/hazard cause above — nobody and nothing killed them.
+  abandon: "abandoned mid-delve by their own player",
 };
 
 // Per-cause list of {placeholder} token names CAUSE_TEXT[cause] requires.
@@ -163,4 +180,5 @@ export const CAUSE_TEXT_TOKENS = {
   potion: [],
   insanity: [],
   poison: [],
+  abandon: [],
 };

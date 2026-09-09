@@ -61,6 +61,19 @@ test("CAUSE_TEXT templates are strings, not functions", () => {
   assert.equal(CAUSE_TEXT.combat, "cut down by a {foe}");
 });
 
+// Device-review Pass B1 item 3: "abandon" is a distinct, non-combat/hazard
+// death cause for the voluntary "Abandon this character" action — sarcastic
+// but family-friendly per the design brief.
+test("EPITAPHS.abandon and CAUSE_TEXT.abandon are distinct from every combat/hazard cause", () => {
+  assert.ok(Array.isArray(EPITAPHS.abandon));
+  assert.ok(EPITAPHS.abandon.length > 0);
+  for (const line of EPITAPHS.abandon) {
+    assert.equal(typeof line, "string");
+  }
+  assert.equal(typeof CAUSE_TEXT.abandon, "string");
+  assert.notEqual(CAUSE_TEXT.abandon, CAUSE_TEXT.combat);
+});
+
 test("WEAPONS: Axe/Bastard Sword/Dagger dice-notation matches the prototype's rolls", () => {
   assert.deepStrictEqual(WEAPONS["Axe"].dice, { n: 1, sides: 6, bonus: 0 });
   assert.deepStrictEqual(WEAPONS["Bastard Sword"].dice, { n: 2, sides: 6, bonus: 0 });

@@ -323,6 +323,35 @@ test("CR-01: repeated deaths accumulate multiple graveyard entries (unshift orde
   });
 });
 
+test("Device-review Pass B1 item 3: dispatch({type:'abandon'}) buries the current character with a distinct cause and leaves no active run", async () => {
+  await withFakeLocalStorage(async (store) => {
+    initRun(555);
+    const before = getState();
+    const characterName = before.c.name;
+
+    const { state: after, events } = dispatch({ type: "abandon" });
+    assert.equal(after.dead, true, "abandoning ends the run, same as any other death");
+    assert.ok(
+      events.some((e) => e.type === "died" && e.cause === "abandon"),
+      "the died event records the distinct 'abandon' cause, not a combat/hazard cause",
+    );
+
+    await flushStorage();
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.ok(Array.isArray(graves), "the abandonment was buried in the graveyard");
+    assert.equal(graves.length, 1, "exactly one tombstone was recorded");
+    assert.equal(graves[0].cause, "abandon", "the tombstone records the voluntary-abandon cause");
+    assert.equal(graves[0].name, characterName, "the tombstone matches the abandoned character");
+    assert.ok(graves[0].epitaph.length > 0, "an epitaph was filled from the abandon-specific bank");
+
+    // "No active run" is the same contract every other death already relies
+    // on: a dead run is never treated as resumable (mazeworld.html's
+    // hasActiveDelveSave() checks `!S.dead`) — no separate save-clearing
+    // step is needed.
+    assert.equal(getState().dead, true, "no active run remains after abandonment");
+  });
+});
+
 test("CR-01: persistGrave never throws when storage is blocked (private window/quota)", async () => {
   const previous = globalThis.localStorage;
   globalThis.localStorage = {

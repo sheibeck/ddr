@@ -21,6 +21,12 @@ export const ACTION_TYPES = new Set([
   "useItem",
   "camp",
   "newGame",
+  // Device-review Pass B1 item 3: "ABANDON THIS CHARACTER" (mazeworld.html's
+  // HERO tab) — a voluntary, non-combat run termination routed through the
+  // same applyAction()/rngState seam as every other death, rather than
+  // presentation code touching GameState.rngState off-band. No extra fields;
+  // see engine/engine.js's "abandon" case.
+  "abandon",
 ]);
 
 const DIRS = new Set(["N", "S", "E", "W"]);

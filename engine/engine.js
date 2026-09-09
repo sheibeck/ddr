@@ -21,6 +21,7 @@ import { playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useItem } from "./items.js";
 import { buyFrom, leaveStore } from "./economy.js";
+import { die } from "./death.js";
 
 /**
  * applyAction(state, action) — the pure dispatcher.
@@ -83,6 +84,15 @@ export function applyAction(state, action) {
       break;
     case "useItem":
       useItem(next, action.i, rng, events);
+      break;
+    case "abandon":
+      // Device-review Pass B1 item 3: "ABANDON THIS CHARACTER" — a voluntary,
+      // non-combat run termination. Reuses death.js#die() (the SAME
+      // terminator every other death in the game calls) so it goes through
+      // this ONE rngState-persisting seam rather than presentation code
+      // rolling its own epitaph off-band. A no-op if the run is already
+      // over (dead/won) — nothing left to abandon.
+      if (!next.dead && !next.won) die(next, "abandon", null, rng, events);
       break;
     default:
       break;

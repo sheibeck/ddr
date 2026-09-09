@@ -967,9 +967,15 @@ html,body{height:100%}
                saved (persist() already runs after every dispatch), so this
                just returns to the title screen with resume armed; the
                title's single ENTER button (Pass B1 item 1) is what actually
-               resumes it. Not styled as danger — nothing is lost. -->
+               resumes it. Not styled as danger — nothing is lost.
+               Device-review Pass B1 item 3: "Abandon this character"
+               (formerly "Clear save," which wrongly rerolled a new
+               character immediately) — the DESTRUCTIVE option. Buries the
+               CURRENT character in the graveyard (window.mzAbandonCharacter
+               below) and leaves no active run, so the next ENTER instead
+               opens the roller for a brand-new character. -->
           <button class="small" id="btn-save-quit">Save &amp; quit</button>
-          <button class="small" id="btn-wipe">Clear save</button>
+          <button class="small mw-danger-btn" id="btn-abandon-character">Abandon this character</button>
         </div>
       </section>
     </section>
@@ -4012,11 +4018,14 @@ const classicNewGame = newGame;
 document.getElementById("btn-save-quit").onclick = () => {
   if (window.mzAbandonRun) window.mzAbandonRun(); else newGame();
 };
-document.getElementById("btn-wipe").onclick = () => {
-  // 02-03: routes through window.mzStorage, not raw localStorage — see the
-  // save()/load() doc comment above (dual-write hazard fix applies here too).
-  try { window.mzStorage?.removeItem(SAVE_KEY); } catch (e) {}
-  newGame();
+// Device-review Pass B1 item 3: "Abandon this character" (formerly "Clear
+// save", which wrongly rerolled a new character immediately) is the
+// DESTRUCTIVE option — it buries the CURRENT character in the graveyard via
+// the engine's own "abandon" action (window.mzAbandonCharacter, module
+// script below) and leaves no active run. The `|| newGame()` fallback only
+// matters if that module somehow failed to load/run.
+document.getElementById("btn-abandon-character").onclick = () => {
+  if (window.mzAbandonCharacter) window.mzAbandonCharacter(); else newGame();
 };
 document.getElementById("btn-camp").onclick = () => makeCamp();
 document.getElementById("btn-clearyard").onclick = () => { graves = []; saveGraves(); renderGraves(); };
@@ -4593,6 +4602,30 @@ window.__mzClassicBoot = async function classicBoot() {
     const ok = window.confirm("Save and quit to the title screen? Enter will pick this delve back up.");
     if (!ok) return;
     showTitleScreen({ allowResume: true });
+  };
+
+  // Device-review Pass B1 item 3: "Abandon this character" (HERO tab's
+  // #btn-abandon-character, formerly "Clear save," which wrongly rerolled a
+  // new character immediately) — the DESTRUCTIVE option. Routes through the
+  // engine's own "abandon" action (engine/engine.js -> engine/death.js#die(),
+  // the SAME terminator every other death uses) so the RNG cursor advances
+  // through applyAction()'s normal in/out handling rather than this
+  // presentation code reading/mutating GameState.rngState off-band.
+  // dispatch() (engineAdapter.js) already buries any `died` event into the
+  // graveyard unconditionally, via the ONE existing choke point every other
+  // death already relies on — no new persistence code needed here. Setting
+  // state.dead=true is also what "clears" the run: per hasActiveDelveSave()
+  // above, a dead run is never offered for resume, so the next ENTER tap
+  // opens the roller for a brand-new character — the exact same "no active
+  // run left" contract every other death in this game already relies on.
+  window.mzAbandonCharacter = function abandonCharacter() {
+    if (!hasActiveDelveSave()) return;
+    const ok = window.confirm(`Abandon ${S.c.name}? They go in the graveyard for good — there is no undo.`);
+    if (!ok) return;
+    const { state, html } = dispatch({ type: "abandon" });
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    showTitleScreen();
   };
 
   // DR4 group 3: the death card's CONFIRM button (classic script's

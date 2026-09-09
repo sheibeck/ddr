@@ -102,6 +102,31 @@ test("LO-01: validateAction rejects a negative castSpell.idx / useItem.i, consis
   assert.equal(validateAction({ type: "useItem", i: 0 }).ok, true);
 });
 
+// Device-review Pass B1 item 3: "abandon" is a real, validated action type
+// (not the ignored "newGame" placeholder above it) — routed through
+// engine/death.js#die() so a voluntary abandonment advances rngState via
+// applyAction()'s normal in/out handling, exactly like every other death.
+test("applyAction({type:'abandon'}) kills the run with a distinct 'abandon' cause via the death seam", () => {
+  const state = newRun(321);
+  const before = structuredClone(state);
+  const { state: next, events } = applyAction(state, { type: "abandon" });
+  assert.equal(next.dead, true, "abandon marks the run dead, same contract every other death uses");
+  assert.ok(
+    events.some((e) => e.type === "died" && e.cause === "abandon"),
+    "a died event with cause 'abandon' was pushed",
+  );
+  assert.notEqual(next.epitaph, "", "an epitaph was filled from the abandon-specific bank");
+  assert.notDeepStrictEqual(next.rngState, before.rngState, "the RNG cursor advanced through the normal seam (epitaphFor draws)");
+});
+
+test("applyAction({type:'abandon'}) is a no-op if the run is already dead/won", () => {
+  const state = newRun(322);
+  state.dead = true;
+  const { state: next, events } = applyAction(state, { type: "abandon" });
+  assert.deepStrictEqual(events, [], "no second death event for an already-ended run");
+  assert.equal(next.dead, true);
+});
+
 test("applyAction is a safe no-op on an unknown action", () => {
   const state = newRun(999);
   const { state: next, events } = applyAction(state, { type: "definitely-not-real" });
