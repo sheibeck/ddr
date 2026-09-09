@@ -622,18 +622,29 @@ html,body{height:100%}
 }
 /* FLOOR's number is gold in the mock; DAY/SQUARES/RATIONS stay --ink. */
 .mw-hud-floor b{color:var(--ditto)}
-/* DR4 "RATIONS layout per mock": a label+number row (mock's baseline-
-   aligned RATIONS pair, reusing .mw-hud-item for that inner row), with the
-   depletion bar BELOW it — was previously a single flex column with three
-   direct children (the bare "Rations" text node, <b>, and the bar div all
-   stacking onto separate lines) instead of the mock's 2-row layout. */
-.mw-hud-rations{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+/* 04-DR9 "HUD reorg": RATIONS moves into the LEFT cluster alongside
+   FLOOR/DAY/SQUARES (reusing .mw-hud-item's own row layout directly, no
+   separate flex-column wrapper needed anymore) and the depletion bar is
+   REMOVED outright — just the "RATIONS n" label+number now, still
+   colorblind-safe via the numeric label plus a red-text "warn" state at
+   <=2 remaining (see paint()'s classList.toggle("warn", ...)), matching the
+   mock's HUD fonts. This frees the top-right of the header for the new
+   config gear button (see .mw-gear-btn below). */
 .mw-hud-rations.warn b{color:var(--stamp)}
-.mw-bar{width:78px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09;overflow:hidden}
-.mw-bar i{display:block;height:100%;background:var(--ditto);font-style:normal}
-.mw-hud-rations.warn .mw-bar i{background:var(--stamp)}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
+/* 04-DR9: the config gear button — top-right of the header, opens the
+   Settings sheet (#mw-settings-sheet below). Same dark chip treatment as
+   .mw-chip (MARKS/CENTRE) for visual consistency, clearing 48dp as-is. */
+.mw-gear-btn{
+  min-height:48px;min-width:48px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #4a4032;background:#1b170f;color:#e8c97a;
+  box-shadow:0 3px 0 #0d0b08;border-radius:4px;font-size:20px;line-height:1;
+  padding:0;
+}
+.mw-gear-btn:hover:not(:disabled){background:#1b170f;color:#e8c97a}
+.mw-gear-btn:active:not(:disabled){background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px)}
 
 .mw-screens{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(96px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
 .mw-screen{display:block}
@@ -903,11 +914,13 @@ html,body{height:100%}
       <div class="mw-hud-item mw-hud-floor">Floor<b id="m-floor">1</b></div>
       <div class="mw-hud-item">Day<b id="m-day">1</b></div>
       <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
+      <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
+           just the label+number now (see .mw-hud-rations CSS comment). -->
+      <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
     </div>
-    <div class="mw-hud-rations" id="m-rat-wrap">
-      <div class="mw-hud-item">Rations<b id="m-rations">5</b></div>
-      <div class="mw-bar"><i id="m-rations-fill" style="width:100%"></i></div>
-    </div>
+    <!-- 04-DR9: config gear — opens the Settings sheet (#mw-settings-sheet,
+         below the MARKS legend sheet markup). -->
+    <button type="button" class="mw-gear-btn" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
   </header>
 
   <!-- ============ 5 TAB SCREENS ============ -->
@@ -2236,14 +2249,10 @@ function paint() {
   // 04-UI-SPEC.md Color contract: rations read "low" (red bar+text, still
   // paired with the numeric label — colorblind-safe, never color-only) at
   // <=2 remaining, not only at exactly zero.
+  // 04-DR9: the depletion bar is removed (HUD reorg) — just the numeric
+  // "warn" text-color toggle remains, still colorblind-safe via the
+  // co-rendered "RATIONS n" label (never color-only).
   document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations <= 2);
-  // RATIONS_BAR_MAX: the engine has no fixed ration ceiling (starting count
-  // is 4-6 by class, engine/character.js#153, and cooking/economy events can
-  // add more) — this is a visual depletion-bar ceiling only, not a game
-  // rule; clamped so the bar never overflows past a full-looking track.
-  const RATIONS_BAR_MAX = 8;
-  document.getElementById("m-rations-fill").style.width =
-    clamp((c.rations / RATIONS_BAR_MAX) * 100, 0, 100) + "%";
   document.getElementById("m-gold").textContent = c.gold.toLocaleString();
 
   document.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
