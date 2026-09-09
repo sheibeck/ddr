@@ -104,28 +104,31 @@ export function preloadIcons(basePath) {
 const ONEWAYDOOR_ROTATION_DEG = { N: 270, E: 0, S: 90, W: 180 };
 
 /**
- * drawFeatureIcon(ctx, img, dx, dy, size, dir) — draws a preloaded icon
- * centered within a `size`x`size` cell whose top-left is (dx, dy), at
- * Math.round(size * 1.0) — device-review Pass DR7 ("Icons even bigger —
- * fill the square without overflowing") dropped this from round 4's 1.08
- * now that icons/optimized/*.png (tools/trim-icons.ps1) is itself trimmed
- * to its opaque bounding box and centered on its canvas: the icon's own
- * pixel content — not a padded/oversized draw rect — now does the "big and
- * unmissable" work round 4 was chasing, so drawing at exactly 1.0 fills the
- * cell edge-to-edge on whichever axis the source art is widest without
- * spilling past it into the neighboring grid lines (1.08's overflow was
- * compensating for the SOURCE PNGs' own transparent margin, not adding
- * genuine size). Operates entirely in CSS-px space — `ctx` must already
- * have the DPR transform applied by the caller (canvasSizing.js), so no
- * manual device-pixel-ratio multiplication happens here.
+ * drawFeatureIcon(ctx, img, dx, dy, size, dir, scale) — draws a preloaded
+ * icon centered within a `size`x`size` cell whose top-left is (dx, dy), at
+ * Math.round(size * scale). Device-review Pass DR7 ("Icons even bigger —
+ * fill the square without overflowing") had fixed this at 1.0 now that
+ * icons/optimized/*.png (tools/trim-icons.ps1) is itself trimmed to its
+ * opaque bounding box and centered on its canvas: the icon's own pixel
+ * content — not a padded/oversized draw rect — does the "big and
+ * unmissable" work round 4 was chasing. Device-review Pass DR11
+ * ("Feature icons -> ~3/4 size; party marker unchanged") introduces
+ * `scale` (default 1.0, so the party-marker call site below — which never
+ * passes it — is untouched) so FEATURE tiles can be drawn smaller (~0.75)
+ * while the party marker keeps standing out at full size. Operates
+ * entirely in CSS-px space — `ctx` must already have the DPR transform
+ * applied by the caller (canvasSizing.js), so no manual device-pixel-ratio
+ * multiplication happens here.
  *
  * `dir` (optional, DR5) — when it's a recognized ONEWAYDOOR_ROTATION_DEG
  * key, the icon is rotated about the cell's center by that many degrees
  * before drawing. Omit it (or pass an unrecognized value) to draw
  * unrotated, exactly as every non-door icon and the player marker do.
+ * Rotation is always about the CELL's center (dx+size/2, dy+size/2), so a
+ * smaller `scale` shrinks the icon without moving its rotation pivot.
  */
-export function drawFeatureIcon(ctx, img, dx, dy, size, dir) {
-  const iconSize = Math.round(size * 1.0);
+export function drawFeatureIcon(ctx, img, dx, dy, size, dir, scale = 1.0) {
+  const iconSize = Math.round(size * scale);
   const rotationDeg = dir !== undefined ? ONEWAYDOOR_ROTATION_DEG[dir] : undefined;
   if (rotationDeg !== undefined) {
     const cx = dx + size / 2, cy = dy + size / 2;

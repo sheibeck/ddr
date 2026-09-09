@@ -2291,7 +2291,11 @@ function draw() {
       // one-way-door icon to its real passable direction (N/E/S/W). Every
       // other feature's cell has no `.dir` (undefined) — drawFeatureIcon
       // fails open and draws those unrotated, unaffected by this change.
-      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir);
+      // DR11 ("Feature icons -> ~3/4 size"): pass scale=0.75 so FEATURE
+      // tiles draw smaller than a full cell — the party marker below
+      // (which omits this arg, defaulting to 1.0) stays full-size so it
+      // keeps standing out against the now-smaller feature icons.
+      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75);
     }
   }
 

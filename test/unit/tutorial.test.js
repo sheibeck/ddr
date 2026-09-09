@@ -247,3 +247,31 @@ test("drawFeatureIcon: rotated draw is centered on the cell (translate to cell c
   assert.deepEqual(ctx.calls[1], ["translate", 100 + size / 2, 200 + size / 2]);
   assert.deepEqual(ctx.calls[3], ["drawImage", -iconSize / 2, -iconSize / 2, iconSize, iconSize]);
 });
+
+// --- drawFeatureIcon scale param (DR11, "Feature icons -> ~3/4 size") ------
+
+test("drawFeatureIcon: no scale arg defaults to 1.0 (party-marker call site is unaffected)", () => {
+  const ctx = makeFakeCtx();
+  const size = 32;
+  drawFeatureIcon(ctx, {}, 10, 20, size);
+  const iconSize = Math.round(size * 1.0);
+  assert.deepEqual(ctx.calls[0], ["drawImage", 10 + (size - iconSize) / 2, 20 + (size - iconSize) / 2, iconSize, iconSize]);
+});
+
+test("drawFeatureIcon: scale=0.75 shrinks the unrotated icon but keeps it centered in the cell", () => {
+  const ctx = makeFakeCtx();
+  const size = 32;
+  drawFeatureIcon(ctx, {}, 10, 20, size, undefined, 0.75);
+  const iconSize = Math.round(size * 0.75);
+  assert.equal(iconSize, 24);
+  assert.deepEqual(ctx.calls[0], ["drawImage", 10 + (size - iconSize) / 2, 20 + (size - iconSize) / 2, iconSize, iconSize]);
+});
+
+test("drawFeatureIcon: scale=0.75 with a rotated (one-way-door) icon shrinks it without moving the rotation pivot off the cell center", () => {
+  const ctx = makeFakeCtx();
+  const size = 32;
+  drawFeatureIcon(ctx, {}, 100, 200, size, "S", 0.75);
+  const iconSize = Math.round(size * 0.75);
+  assert.deepEqual(ctx.calls[1], ["translate", 100 + size / 2, 200 + size / 2]);
+  assert.deepEqual(ctx.calls[3], ["drawImage", -iconSize / 2, -iconSize / 2, iconSize, iconSize]);
+});
