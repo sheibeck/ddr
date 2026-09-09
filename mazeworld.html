@@ -208,6 +208,23 @@ ul.skills li b{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-s
 ul.skills li i{font-family:var(--body);font-style:normal;font-size:13.5px;line-height:1.35;color:var(--ink-soft)}
 ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);padding:2px 0 2px 8px}
 
+/* 04-DR10: the Grimoire row layout — a spell row reuses ul.skills' left
+   accent-bar treatment but lays out as a row (name+effect on the left, a
+   Cast button or a "combat only" hint on the right) instead of skills'
+   stacked column, so the >=48dp Cast button has room without wrapping the
+   name/level oddly. */
+ul.grimoire li{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px}
+ul.grimoire li.grim-locked{border-left-color:var(--rule)}
+.grim-info{display:flex;flex-direction:column;gap:1px;flex:1 1 auto;min-width:0}
+.grim-info b{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.03em;color:var(--ink)}
+.grim-lvl{color:var(--ink-soft);font-weight:600;margin-right:5px}
+.grim-info i{font-family:var(--body);font-style:normal;font-size:13.5px;line-height:1.35;color:var(--ink-soft)}
+.grim-hint{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-soft);white-space:nowrap;
+}
+ul.grimoire li button{flex:none}
+
 /* ---------- maze ---------- */
 /* Device-review revision #4 (04-CONTEXT.md "Device-review revisions"):
    the MAP screen is a flex column so the viewport can fill all remaining
@@ -1172,6 +1189,19 @@ html,body{height:100%}
       <section class="panel">
         <h2>Special skills <span id="s-vp"></span></h2>
         <ul class="skills" id="s-skills"></ul>
+      </section>
+
+      <!-- 04-DR10: the Grimoire — ALL of the character's own learned spells
+           (c.grimoire), sorted by level then name, level shown left of the
+           name. Non-combat spells get a working Cast button routed through
+           the out-of-combat cast path (src/browser/viewModels.js's
+           grimoireViewModel + window.mzCastSpell, the SAME dispatch bridge
+           the in-combat SPELLS menu already uses); combat-only spells are
+           shown, disabled, with a "Combat only" hint. Rendered by
+           renderGrimoire() (trailing module script), called from paint(). -->
+      <section class="panel" id="grimoire-panel">
+        <h2>Grimoire <span id="s-grim-count"></span></h2>
+        <ul class="skills grimoire" id="s-grimoire"></ul>
       </section>
 
       <section class="panel dossier">
@@ -2531,6 +2561,12 @@ function paint() {
     sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
     doss.appendChild(sec);
   }
+
+  // 04-DR10: the HERO tab's Grimoire — bridged in by the trailing module
+  // script (window.__mzRenderGrimoire, same bridge pattern as window.move/
+  // window.__mzState above), optional-chained since paint() can run before
+  // that module script finishes its own top-level setup.
+  window.__mzRenderGrimoire?.();
 
   renderEncounter();
   draw();
@@ -4586,7 +4622,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // content tables (content/index.js) used ONLY to build the reel-flicker's
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
-  import { characterSheetViewModel } from "./src/browser/viewModels.js";
+  import { characterSheetViewModel, grimoireViewModel } from "./src/browser/viewModels.js";
   import { RACES, CLASSES } from "./content/index.js";
 
   // 04-05: GAME_NAME is the single centralized source of the product's
@@ -5169,6 +5205,67 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzCastSpell = (idx) => engineCombatAction("castSpell", { idx });
   window.mzDrinkPotion = () => engineCombatAction("drinkPotion");
   window.mzReadScroll = () => engineCombatAction("readScroll");
+
+  // 04-DR10: the HERO tab's Grimoire (#s-grimoire) — the character's OWN
+  // learned spells (grimoireViewModel already sorts by level then name and
+  // computes each row's castable/disabledReason verdict; see its own doc
+  // comment). A non-combat spell's Cast button reuses window.mzCastSpell(idx)
+  // ABOVE UNCHANGED — the same dispatch()->applyAction()->engine/magic.js#
+  // castSpell bridge the in-combat SPELLS menu already calls. paint()/
+  // renderEncounter() (called inside engineCombatAction) both already
+  // tolerate no active encounter (hasActiveEncounter() hides #enc-panel), so
+  // no new dispatch path was needed for the out-of-combat case — only the
+  // Grimoire's OWN gate (grimoireViewModel) deciding which spells offer a
+  // working button. Called from paint() (classic script) via the
+  // window.__mzRenderGrimoire bridge, same bridge pattern as window.move/
+  // window.__mzState above.
+  function renderGrimoire() {
+    const ul = document.getElementById("s-grimoire");
+    if (!ul) return;
+    const state = window.__mzState.get();
+    if (!state || !state.c) return;
+    const vm = grimoireViewModel(state);
+    const countEl = document.getElementById("s-grim-count");
+    if (countEl) countEl.textContent = vm.hasSpells ? `${vm.rows.length}` : "";
+    ul.innerHTML = "";
+    if (!vm.hasSpells) {
+      const li = document.createElement("li");
+      li.className = "none";
+      li.textContent = vm.isCaster ? "No spells learned yet." : "This character does not cast spells.";
+      ul.appendChild(li);
+      return;
+    }
+    for (const row of vm.rows) {
+      const li = document.createElement("li");
+      li.className = row.combatOnly ? "grim-locked" : "";
+      const info = document.createElement("div");
+      info.className = "grim-info";
+      info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}</i>`;
+      li.appendChild(info);
+      if (row.combatOnly) {
+        const hint = document.createElement("span");
+        hint.className = "grim-hint";
+        hint.textContent = "Combat only";
+        li.appendChild(hint);
+      } else {
+        const bt = document.createElement("button");
+        bt.className = "small";
+        bt.textContent = "Cast";
+        bt.disabled = !row.castable;
+        if (!row.castable && row.disabledReason) bt.title = row.disabledReason;
+        bt.onclick = () => window.mzCastSpell?.(row.idx);
+        li.appendChild(bt);
+        if (!row.castable && row.disabledReason) {
+          const hint = document.createElement("span");
+          hint.className = "grim-hint";
+          hint.textContent = row.disabledReason;
+          li.appendChild(hint);
+        }
+      }
+      ul.appendChild(li);
+    }
+  }
+  window.__mzRenderGrimoire = renderGrimoire;
   // MAKE CAMP has no combat overlay to re-render into (camp only runs
   // outside combat, engine/movement.js#makeCamp's own guard) — paint() alone
   // covers the HUD/vitals refresh; renderEncounter() is still called so a
