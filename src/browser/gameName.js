@@ -10,7 +10,10 @@
 // future rename is a one-line change here instead of a repo-wide hunt.
 //
 // "Mazeworld" is NOT routed through this constant — it survives ONLY as the
-// in-fiction world/setting name (the Maze Master, Wilmsry, wilmst currency,
-// the lore), which this constant has nothing to do with.
+// in-fiction world/setting name (Wilmsry, wilmst currency, the lore), which
+// this constant has nothing to do with. NOTE (04-DR12, 2026-09-08): the
+// in-fiction narrator title itself was renamed player-facing from "Maze
+// Master" to "Game Master" per deliberate design direction; "Mazeworld" as
+// the world/product-lore name is unaffected by that rename.
 
 export const GAME_NAME = "Delve, Die, Repeat";

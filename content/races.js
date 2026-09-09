@@ -4,7 +4,7 @@
 // Contains no dice closures in the prototype — ported verbatim.
 
 export const RACES = {
-  "Human": { size: "Human", upkeep: 4, note: "No advantages, no penalties. The maze's default." },
+  "Human": { size: "Human", upkeep: 4, note: "No advantages, no penalties. The dungeon's default." },
   "Elven": {
     size: "Small", upkeep: 4, wpMul: 0.6, strikeStep: 1, foeToHit: -1, toHit: 5,
     note: "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit.",

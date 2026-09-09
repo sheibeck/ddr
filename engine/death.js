@@ -100,7 +100,7 @@ export function die(state, cause, detail, rng, events = [], now = Date.now) {
   state.deathAt = timestamp;
   state.deathNote = CAUSE_TEXT[cause]
     ? fillTemplate(CAUSE_TEXT[cause], { foe: detail })
-    : "killed by something the maze did not name";
+    : "killed by something the dungeon did not name";
   state.epitaph = epitaphFor(cause, epitaphCtx(state, detail), rng);
   state.lastWords =
     state.beats && state.beats.groups && state.beats.groups.length

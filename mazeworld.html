@@ -1230,7 +1230,7 @@ html,body{height:100%}
       </section>
 
       <section class="panel dossier">
-        <h2>The Maze Master's notes <span id="doss-who"></span></h2>
+        <h2>The Game Master's notes <span id="doss-who"></span></h2>
         <div class="doss" id="doss"></div>
       </section>
 
@@ -1621,7 +1621,7 @@ const DIRECTION_TABLE = ["N","N","E","E","S","S","W","W"];   // Random Direction
 
 
 const RACES = {
-  "Human":   {size:"Human", upkeep:4,  note:"No advantages, no penalties. The maze's default."},
+  "Human":   {size:"Human", upkeep:4,  note:"No advantages, no penalties. The dungeon's default."},
   "Elven":   {size:"Small", upkeep:4,  wpMul:0.6, strikeStep:1, foeToHit:-1, toHit:5,
               note:"Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit."},
   "Dwarven": {size:"Small", upkeep:1,  dmg:2, foeStrikeStep:1,
@@ -1824,24 +1824,24 @@ const EPITAPHS = {
     "{name} had {gold} wilmst and no plan. The {foe} had a plan.",
     "Last recorded thought: “it’s nearly dead.” It was nearer than {name}.",
     "Died on floor {floor} doing what {name} loved, which was evidently standing very still.",
-    "The Maze Master notes that running was, throughout, an option.",
+    "The Game Master notes that running was, throughout, an option.",
     "Survived {day} days and spent the final nine seconds of them badly.",
     "Came in for {motive}. The {foe} came in for lunch.",
     "It took {sp} skill points to get here and one honest d20 to leave.",
     "Not the worst delver on floor {floor}. Merely the most finished.",
-    "The {foe} would like to thank the dice, the Maze Master, and above all {name}.",
+    "The {foe} would like to thank the dice, the Game Master, and above all {name}.",
     "Cause of death: a {foe}, some arithmetic, and a firm refusal to withdraw.",
     "Went toe to toe with a {foe} and lost by roughly one toe."
   ],
   starve: [
     "Packed a grimoire, three potions and a good cloak. Packed no lunch.",
     "Cost of living: 4 wp a day. {name} fell behind on the payments.",
-    "The maze did not kill {name}. The maze simply outlasted a stomach.",
+    "The dungeon did not kill {name}. The dungeon simply outlasted a stomach.",
     "Died on day {day} holding {gold} wilmst and absolutely nothing to spend it on.",
     "There was food two corridors away. There is always food two corridors away.",
     "Starved to death carrying a weapon worth more than most farms.",
     "Final act: counting the rations. The count was zero. It had been for some time.",
-    "A troll’s appetite in a maze with no kitchen. This was always the ending.",
+    "A troll’s appetite in a dungeon with no kitchen. This was always the ending.",
     "Not eaten — merely unfed. {name} learned the difference slowly.",
     "Death by budgeting."
   ],
@@ -1849,9 +1849,9 @@ const EPITAPHS = {
     "Stepped on the one flagstone in the corridor with an opinion.",
     "The trap had waited four hundred years for precisely this level of confidence.",
     "1–5 on a d20 avoids it. {name} rolled the way {name} always rolled.",
-    "A {sub} with no eye for traps, in a maze assembled chiefly out of traps.",
+    "A {sub} with no eye for traps, in a dungeon assembled chiefly out of traps.",
     "Located the trap using the traditional method.",
-    "The Maze Master did not even look up.",
+    "The Game Master did not even look up.",
     "Whoever built this floor was clearly paid by the corpse.",
     "It was well marked. In a language. Somewhere. Probably."
   ],
@@ -1873,12 +1873,12 @@ const EPITAPHS = {
   teleport: [
     "Teleported d20 squares. Required d20 minus four.",
     "Arrived somewhere. Arrived inside it.",
-    "The maze does not check its destinations, and neither did {name}."
+    "The dungeon does not check its destinations, and neither did {name}."
   ],
   maze: [
     "Table four giveth. Table four overwhelmingly taketh.",
     "No monster, no trap, no fall. A red dot and a bad attitude.",
-    "The maze deducted {name} the way a bank deducts a service charge.",
+    "The dungeon deducted {name} the way a bank deducts a service charge.",
     "Killed by a d8, a d10, and an indifferent universe.",
     "Some floors have creatures. This one had paperwork.",
     "{name} walked onto a dot, and the dot walked back."
@@ -1920,7 +1920,7 @@ const EPITAPHS = {
     "The Summoner’s own notes cover this outcome. On the following page."
   ],
   won: [
-    "Walked out through the Gate on day {day}. The Maze Master has requested a recount.",
+    "Walked out through the Gate on day {day}. The Game Master has requested a recount.",
     "Reached the Gate with {sp} skill points and a limp, and retired to lie about both.",
     "Went in for {motive}. Came out with {motive} and a permanent flinch.",
     "Survived all five floors and will now be insufferable at parties for life.",
@@ -2019,11 +2019,11 @@ function rollCharacter(log) {
 
 /* ---------------- the Maze Master's opinion of you ---------------- */
 const RACE_NOTE = {
-  "Human":   "No advantages, no penalties, no excuses. The maze keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Maze Master considers statistically unremarkable.",
+  "Human":   "No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.",
   "Elven":   "Thin-boned, easy to hit, and carrying not much more than half a person's Win Potential — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
   "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising. Built low, built cheap, built to be hit. Dwarves call this a fair trade. Dwarves are rarely asked.",
   "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, which most Wilmsry take as proof they are doing something right.",
-  "Fridgian":"You will not wear armour. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest, occasionally something already dead. The Maze Master has notes about you.",
+  "Fridgian":"You will not wear armour. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest, occasionally something already dead. The Game Master has notes about you.",
   "Troll":   "Seventy-five Win Potential, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple."
 };
 const CLASS_NOTE = {
@@ -2042,7 +2042,7 @@ const SUB_NOTE = {
   "Bard":          "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Creatures too stupid to know better come for you first — which, down here, is most of them.",
 
   "Pickpocket":    "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught. You have never been thanked either.",
-  "Pilfer":        "Traps disarm themselves in your presence and no sealed room has ever held you. You cannot use a single magic item that doesn't heal, which the maze finds hilarious and stocks accordingly.",
+  "Pilfer":        "Traps disarm themselves in your presence and no sealed room has ever held you. You cannot use a single magic item that doesn't heal, which the dungeon finds hilarious and stocks accordingly.",
   "Cat Burglar":   "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
   "Cutthroat":     "Double damage on your first landed blow, and one member of every party dies by your hand before the dungeon is done. Delving alone has simplified this enormously.",
   "Cloaker":       "You can always vanish, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
@@ -2051,11 +2051,11 @@ const SUB_NOTE = {
   "Acrobat":       "Everything needs a 3 to lay a hand on you and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
 
   "Wizard":        "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand until the last spell is spent. Two wizards in a party fight each other; there is only one of you, which helps.",
-  "Warlock":       "Evil, and productive with it — a potion copied every week and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
+  "Warlock":       "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
   "Sorcerer":      "Two dozen spells to start and two more each level, nearly all of it fire, with a one-in-eight chance per level of simply forgetting the ones that aren't. Your arm caps out at 9 damage. Nobody hired the arm.",
   "Court Mage":    "You talk. Through encounters, through corridors, through other people's turns. One creature in twelve dies of boredom before the fighting starts, and the book counts that as a kill.",
-  "Illusionist":   "You choose where the teleport squares put you, which in a maze is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
-  "Cleric":        "Healing, turning the dead, chain mail and a shield: the one Magic User the maze cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
+  "Illusionist":   "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
+  "Cleric":        "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
   "Summoner":      "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
   "Apprentice":    "Double skill points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there."
 };
@@ -2827,7 +2827,7 @@ function teleport() {
     ? `<span class="miss">The square fizzles. There is nowhere on this floor it can put you.</span>`
     : travelled === dist
       ? `You pass through ${travelled} squares of solid rock and come out somewhere else entirely.${swapped}`
-      : `The full ${dist} would put you outside the maze, so it sets you down at <span class="roll">${travelled}</span> — still straight through the wall.${swapped}`);
+      : `The full ${dist} would put you outside the dungeon, so it sets you down at <span class="roll">${travelled}</span> — still straight through the wall.${swapped}`);
   const cell = f.g[y][x];
   if (cell.feat === "dot")   { cell.feat = null; encounterDot(); }
   if (cell.feat === "trap")  { cell.feat = null; springTrap(); }
@@ -3139,7 +3139,7 @@ function encounterDot() {
 
 /* Table 4 on p.45 is a straight list of things that happen to you. */
 function tableFour(result) {
-  beginEvent("The maze takes an interest", "ditto");
+  beginEvent("The dungeon takes an interest", "ditto");
   const apply = {
     "+10 WP":  () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + 10); evt(`<span class="hit">+10 wp.</span>`); },
     "-10 WP":  () => { S.c.wp -= 10; evt(`<span class="hurt">−10 wp.</span> No reason given.`); },
@@ -3949,7 +3949,7 @@ const CAUSE_TEXT = {
   gorge:    () => "came up short on a leap",
   backfire: () => "killed by their own spell",
   summon:   () => "eaten by their own summoning",
-  maze:     () => "spent by the maze itself",
+  maze:     () => "spent by the dungeon itself",
   quake:    () => "buried by their own earthquake",
   potion:   () => "poisoned by an unlabelled bottle",
   insanity: () => "dead by their own hand",
@@ -3960,7 +3960,7 @@ function die(cause, detail) {
   S.dead = true;
   S.combat = null; S.c.wp = 0; S.c.ward = null; S.c.regen = false; S.c.mirror = 0;
   S.deathAt = Date.now();
-  S.deathNote = CAUSE_TEXT[cause] ? CAUSE_TEXT[cause](detail) : "killed by something the maze did not name";
+  S.deathNote = CAUSE_TEXT[cause] ? CAUSE_TEXT[cause](detail) : "killed by something the dungeon did not name";
   S.epitaph = epitaphFor(cause, epitaphCtx(detail));
   S.lastWords = (S.beats && S.beats.groups && S.beats.groups.length)
     ? S.beats.groups[S.beats.groups.length - 1].lines.slice(-4)
@@ -4591,7 +4591,7 @@ window.__mzClassicBoot = async function classicBoot() {
   if (restored) {
     S = restored;
     say(`<span class="banner">Delve resumed.</span>`);
-    say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the maze.`);
+    say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the dungeon.`);
     reveal();
   } else {
     classicNewGame();

@@ -65,7 +65,7 @@ export const EVENT_NARRATION = {
   // every 20 squares), so "A charge comes back" with no noun was the
   // ambiguity the device-review flagged ("needs context — what recharged?").
   spellChargeRecovered: (e) =>
-    `<span class="beat">Twenty quiet squares, and a spell charge is ready again</span> — ${e.charges ?? "?"} of ${e.max ?? "?"} in reserve. The maze keeps no such courtesy for you.`,
+    `<span class="beat">Twenty quiet squares, and a spell charge is ready again</span> — ${e.charges ?? "?"} of ${e.max ?? "?"} in reserve. The dungeon keeps no such courtesy for you.`,
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
   rested: (e) => `Rest restores <span class="hit">+${e.amount ?? 0} wp</span>.`,
   armorPatched: (e) => `<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
@@ -75,7 +75,7 @@ export const EVENT_NARRATION = {
   wanderingMonster: (e) => `Wandering monster check: <span class="roll">${e.hours ?? 0}</span> of 8 hours disturbed.`,
   campFailed: () => `<span class="miss">Not enough food to make camp.</span> Find rations first.`,
   teleported: () =>
-    `<span class="beat">You teleport to an unknown location on this floor…</span> the maze does not offer refunds.`,
+    `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`,
   spGained: (e) => {
     const reason = e.reason === "parley" ? "Talking your way out" : e.reason === "descend" ? "Surviving the floor" : "That";
     return `${reason} is worth <span class="roll">${e.amount ?? 0}</span> ${plural(e.amount ?? 0, "skill point")}.`;
