@@ -962,14 +962,13 @@ html,body{height:100%}
       <section class="panel">
         <h2>Delve</h2>
         <div class="actions">
-          <!-- 04-DR3: the old immediate "Roll new character" reroll is
-               replaced per user directive — rolling a new character now only
-               ever happens FROM the title screen (ENTER -> the roller
-               screen; see #mw-roller-screen). This button is the mock's
-               CUT LOSSES · ROLL ANOTHER action, but abandoning a run now
-               returns to the title screen (confirm first) rather than
-               rolling immediately — see window.mzAbandonRun() below. -->
-          <button class="small mw-danger-btn" id="btn-abandon-run">Abandon your run</button>
+          <!-- Device-review Pass B1 item 2: "Save & quit" (formerly
+               "Abandon your run") — the NON-destructive quit. The run stays
+               saved (persist() already runs after every dispatch), so this
+               just returns to the title screen with resume armed; the
+               title's single ENTER button (Pass B1 item 1) is what actually
+               resumes it. Not styled as danger — nothing is lost. -->
+          <button class="small" id="btn-save-quit">Save &amp; quit</button>
           <button class="small" id="btn-wipe">Clear save</button>
         </div>
       </section>
@@ -4003,14 +4002,14 @@ function newGame() {
 // calling the engine-routed override there instead would leave `S` null.
 const classicNewGame = newGame;
 
-// 04-DR3: "Abandon your run" no longer rerolls immediately — it returns to
-// the title screen (confirm first), where ENTER rolls a new character via
-// the roller screen and RESUME picks the just-abandoned run back up. The
-// module script below defines window.mzAbandonRun (same bridge pattern as
-// window.move/window.newGame above it); the `|| newGame()` fallback only
-// matters if that module somehow failed to load/run, in which case the old
-// immediate-reroll behavior is a safer default than a dead button.
-document.getElementById("btn-abandon-run").onclick = () => {
+// Device-review Pass B1 item 2: "Save & quit" no longer rerolls immediately
+// — it returns to the title screen (confirm first), where the single ENTER
+// button resumes this exact run. The module script below defines
+// window.mzAbandonRun (same bridge pattern as window.move/window.newGame
+// above it); the `|| newGame()` fallback only matters if that module somehow
+// failed to load/run, in which case the old immediate-reroll behavior is a
+// safer default than a dead button.
+document.getElementById("btn-save-quit").onclick = () => {
   if (window.mzAbandonRun) window.mzAbandonRun(); else newGame();
 };
 document.getElementById("btn-wipe").onclick = () => {
@@ -4586,14 +4585,12 @@ window.__mzClassicBoot = async function classicBoot() {
     screen.hidden = false;
   }
 
-  // 04-DR3: "Abandon your run" (HERO tab's mw-danger-btn, formerly an
-  // immediate "Roll new character") — confirm, then return to the title
-  // screen WITHOUT rolling. startNewRun() is never called here, so the
-  // abandoned run's save is untouched; resumeIntent (now forced true) picks
-  // that exact run back up on the next ENTER tap, while ENTER would instead
-  // roll a brand-new one via the roll screen if the run had actually ended.
-  window.mzAbandonRun = function abandonRun() {
-    const ok = window.confirm("Abandon this delve? It stays saved — Enter will pick it back up.");
+  // Device-review Pass B1 item 2: "Save & quit" (HERO tab's #btn-save-quit,
+  // formerly "Abandon your run") — the NON-destructive quit. startNewRun()
+  // is never called here, so the run's save is untouched; resumeIntent (now
+  // forced true) picks that exact run back up on the next ENTER tap.
+  window.mzAbandonRun = function saveAndQuit() {
+    const ok = window.confirm("Save and quit to the title screen? Enter will pick this delve back up.");
     if (!ok) return;
     showTitleScreen({ allowResume: true });
   };
