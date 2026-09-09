@@ -654,9 +654,17 @@ html,body{height:100%}
   background:#080705;overflow:hidden;
 }
 .mw-title-screen[hidden]{display:none}
+/* DR5 ("Splash title-art crop fix"): object-fit:cover cropped the splash's
+   baked-in text at the phone edges on tall aspect ratios (e.g. Pixel 7).
+   contain always shows the WHOLE image regardless of device aspect ratio,
+   letterboxed against .mw-title-screen's own #080705 background — device-
+   independent by construction (never crops, on any phone). The 16px inset
+   (rather than inset:0) also guarantees a small margin so the image's own
+   text never touches the screen edge even when a device's aspect ratio
+   happens to closely match the art's. */
 .mw-title-art{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  object-position:center top;opacity:.82;
+  position:absolute;inset:16px;width:calc(100% - 32px);height:calc(100% - 32px);
+  object-fit:contain;object-position:center;opacity:.82;
 }
 .mw-title-scrim{
   position:absolute;inset:0;
