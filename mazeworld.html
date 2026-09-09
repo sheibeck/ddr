@@ -4095,10 +4095,20 @@ function closeMarksLegend() {
 document.getElementById("mw-chip-marks").addEventListener("click", openMarksLegend);
 document.getElementById("mw-legend-scrim").addEventListener("click", closeMarksLegend);
 document.getElementById("mw-legend-close").addEventListener("click", closeMarksLegend);
-document.getElementById("mw-chip-centre").addEventListener("click", () => {
+function centerMap() {
   pan = { x: 0, y: 0 };
   positionCanvas();
-});
+}
+document.getElementById("mw-chip-centre").addEventListener("click", centerMap);
+// Device-review Pass B1 item 4: bridged onto window (same pattern as
+// window.move/window.newGame/window.__mzState) so the trailing module
+// script can auto-recenter the viewport on the party without duplicating
+// pan/positionCanvas — both classic-script closures not otherwise reachable
+// from a module scope. `pan`/`positionCanvas` are declared with let/function
+// in this SAME non-module <script>, so centerMap() (a plain function
+// declaration) is already an implicit `window.centerMap` global too, but
+// naming the bridge explicitly keeps the pattern consistent and greppable.
+window.mzCenterMap = centerMap;
 
 // 04-06: one pointerdown/move/up gesture pipeline on the viewport — a drag
 // only updates `pan` (camera-only, never touches S.floor.px/py). Device-
@@ -4339,6 +4349,11 @@ window.__mzClassicBoot = async function classicBoot() {
   window.logLine(`<span class="banner">Movement is now walking through the engine.</span>`);
   window.paint();
   window.draw();
+  // Device-review Pass B1 item 4: center the viewport on the party for the
+  // very first paint (covers both a rehydrated resume and a brand-new run) —
+  // see window.mzCenterMap's own doc comment (classic script, above) for why
+  // this is bridged rather than a direct pan/positionCanvas call from here.
+  window.mzCenterMap?.();
 
   // DR2 "Encounter window on EVERY icon landing" (04-CONTEXT.md
   // "Device-review revisions" #5, extended): 04-DR1 already turned #enc-panel
@@ -4398,26 +4413,33 @@ window.__mzClassicBoot = async function classicBoot() {
     window.paint();
     window.draw();
     for (const line of html) window.logLine(line);
+    // Device-review Pass B1 item 4: recenter the viewport on the party on
+    // every descent (engine/movement.js#descend always pushes exactly one
+    // floorChanged event per genuine floor change — never a "gated"/blocked
+    // attempt) so the player is never left panned off to one side on a
+    // freshly-generated floor.
+    if (events.some((e) => e.type === "floorChanged")) window.mzCenterMap?.();
   };
 
   // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
-  // script above created a mutable global `window.newGame` property; "Clear
-  // save" (btn-wipe) still calls the bare `newGame()` identifier directly
-  // (an explicit, already-destructive action that should reroll
-  // immediately), which resolves that property at CLICK time — so
+  // script above created a mutable global `window.newGame` property;
   // overwriting it here reroutes it through the engine adapter's
   // startNewRun(), exactly like window.move above reroutes the dpad/keydown
-  // handlers. 04-DR3: the won-path btn-again and the title screen's ENTER
-  // don't call this directly — they call window.mzStartRoll() below, which
-  // opens the roll screen and calls startNewRun() itself before committing
-  // (the death card's CONFIRM, DR4 group 3, instead returns to the title
-  // screen via window.mzReturnToTitle() — see wireDeathConfirm() above).
-  // startNewRun() is async as of 02-03 (it awaits recording the ending run's
-  // best depth through storage.js before starting the new one), so this
-  // handler is too.
+  // handlers. Device-review Pass B1 items 2/3: "Save & quit"/"Abandon this
+  // character" only fall back to the bare `newGame()` identifier if their
+  // own module functions (window.mzAbandonRun/window.mzAbandonCharacter,
+  // below) somehow failed to load. 04-DR3: the won-path btn-again and the
+  // title screen's ENTER don't call this directly — they call
+  // window.mzStartRoll() below, which opens the roll screen and calls
+  // startNewRun() itself before committing (the death card's CONFIRM, DR4
+  // group 3, instead returns to the title screen via
+  // window.mzReturnToTitle() — see wireDeathConfirm() above). startNewRun()
+  // is async as of 02-03 (it awaits recording the ending run's best depth
+  // through storage.js before starting the new one), so this handler is too.
   window.newGame = async function engineNewRun() {
     const state = await startNewRun();
     window.__mzState.set(state);
+    window.mzCenterMap?.(); // Pass B1 item 4: center on the party for the new run
     window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
     window.paint();
     window.draw();
@@ -4435,6 +4457,7 @@ window.__mzClassicBoot = async function classicBoot() {
     window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
     window.paint();
     window.draw();
+    window.mzCenterMap?.(); // Pass B1 item 4: center on the party for the new run
   }
 
   // Presentation-only word lists for the reel flicker (content/index.js's
