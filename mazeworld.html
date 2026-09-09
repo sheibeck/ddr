@@ -99,6 +99,16 @@
   --mw-btn-border:#6b5c3c;
   --mw-btn-shadow:#0d0b08;
 
+  /* Device-review Pass DR11 ("Yellow/gold buttons less bright"): a
+     dedicated, more muted gold for CTA BUTTON FILLS (ENTER, the roller's
+     DESCEND-equivalent "dice are still falling"->ready CTA, button.primary
+     — Confirm/Roll another delver/Leave/combat actions/etc.) — deliberately
+     separate from --ditto (the ACCENT gold used everywhere else for text,
+     borders, HUD numbers, tab labels) which stays untouched per user
+     direction: only the bright BACKGROUND fills were flagged as too
+     bright, not the accent color itself. */
+  --mw-gold-btn:#c9a24e;
+
   /* UX-08 text scaling — ONE root multiplier every rem-based typography
      token below multiplies by; src/browser/settings.js#effectiveTextScale
      sets this on #app at boot (S=0.85 / M=1.0 / L=1.25, OS-scale-clamped). */
@@ -410,8 +420,8 @@ button:hover:not(:disabled){background:var(--paper-3)}
 button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow)}
 button:focus-visible{outline:2px solid var(--ditto);outline-offset:2px}
 button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-button.primary{background:var(--ditto);color:var(--paper);border-color:var(--ditto);box-shadow:0 4px 0 var(--mw-btn-border)}
-button.primary:hover:not(:disabled){background:var(--ditto-2)}
+button.primary{background:var(--mw-gold-btn);color:var(--paper);border-color:var(--mw-gold-btn);box-shadow:0 4px 0 var(--mw-btn-border)}
+button.primary:hover:not(:disabled){background:var(--ditto)}
 button.primary:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 button.danger{border-color:var(--stamp);color:var(--stamp)}
 /* DR5: same generic-hover-wins-on-specificity bug — .danger (the in-combat
@@ -825,7 +835,7 @@ html,body{height:100%}
   padding:16px;border:2px solid var(--mw-btn-border);box-shadow:0 4px 0 var(--mw-btn-shadow);
   cursor:pointer;
 }
-.mw-title-enter{background:var(--ditto);color:var(--paper);border-color:var(--ditto);box-shadow:0 4px 0 var(--mw-btn-border)}
+.mw-title-enter{background:var(--mw-gold-btn);color:var(--paper);border-color:var(--mw-gold-btn);box-shadow:0 4px 0 var(--mw-btn-border)}
 .mw-title-btn:active:not(:disabled){transform:translateY(3px)}
 .mw-title-enter:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 .mw-title-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -940,7 +950,7 @@ html,body{height:100%}
   padding:17px;border:2px solid var(--rule);background:transparent;color:var(--ink-soft);
   cursor:default;box-shadow:none;
 }
-.mw-roller-cta.mw-roller-ready{background:var(--ditto);color:var(--paper);border:none;cursor:pointer;box-shadow:0 5px 0 var(--mw-btn-border)}
+.mw-roller-cta.mw-roller-ready{background:var(--mw-gold-btn);color:var(--paper);border:none;cursor:pointer;box-shadow:0 5px 0 var(--mw-btn-border)}
 .mw-roller-cta.mw-roller-ready:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border);transform:translateY(4px)}
 </style>
 </head>
