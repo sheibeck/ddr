@@ -376,15 +376,38 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .enc-sub{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 12px}
 /* DR2 "HIT/MISS indicator on STRIKE" — a badge row rendered above the foe
    list right after a Strike action resolves (renderEncounter()'s combat
-   branch); see playerStrike()'s C.lastStrike tracking. */
+   branch); see playerStrike()'s C.lastStrike tracking.
+   Pass B2 group 2: each Strike press must clearly register as a NEW attack
+   — renderEncounter() rebuilds #enc-body from scratch (body.innerHTML = "")
+   on every call, so the badge below is a genuinely fresh DOM node each
+   press, not a reused one; a plain CSS entrance animation on that fresh
+   node auto-plays every time (no JS remove+reflow+re-add trick needed —
+   that pattern is only required to re-trigger an animation on an element
+   that PERSISTS across renders, which this one never does). Two consecutive
+   MISS badges therefore visibly pop in twice, not once. */
+@keyframes mwStrikePop{
+  0%{opacity:0;transform:scale(.82) translateY(-5px)}
+  65%{opacity:1;transform:scale(1.06) translateY(0)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
 .mw-strike-result{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .mw-badge-hit,.mw-badge-miss{
   display:inline-block;font-family:var(--disp);font-size:12px;letter-spacing:.04em;
   padding:8px 12px;background:var(--paper-3);
   border:2px solid var(--mw-btn-border);box-shadow:0 3px 0 var(--mw-btn-shadow);
+  animation:mwStrikePop .3s ease-out both;
 }
 .mw-badge-hit{color:var(--moss);border-color:var(--moss)}
 .mw-badge-miss{color:var(--ink-soft)}
+/* A brief highlight pulse on the persistent round counter (#enc-round,
+   NEVER destroyed/recreated by renderEncounter() — only its textContent is
+   reset) — this element DOES need the remove+reflow+re-add restart trick,
+   applied in JS right after its textContent is set each combat render. */
+@keyframes mwRoundTick{
+  0%{color:var(--ditto);text-shadow:0 0 6px var(--ditto)}
+  100%{color:inherit;text-shadow:none}
+}
+#enc-round.mw-round-tick{animation:mwRoundTick .35s ease-out}
 .foes{display:grid;gap:8px;margin-bottom:14px}
 .foe{
   display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;
@@ -3870,6 +3893,13 @@ function renderEncounter() {
 
   const C = S.combat;
   rd.textContent = `round ${C.round}`;
+  // Pass B2 group 2: #enc-round is a persistent element (never destroyed by
+  // this function's body.innerHTML = "" above) — restart its pulse
+  // animation with the classic remove+reflow+re-add trick so it retriggers
+  // on every render, not just the first time the class is added.
+  rd.classList.remove("mw-round-tick");
+  void rd.offsetWidth;
+  rd.classList.add("mw-round-tick");
   const head = document.createElement("div");
   head.innerHTML = `<p class="enc-head">${C.type}</p>
     <p class="enc-sub">${liveFoes().length} still standing · you strike on d${strikeDie()}, ${toHit()} to hit</p>`;
