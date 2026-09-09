@@ -40,6 +40,8 @@ import {
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
+import { openStore } from "../../engine/economy.js";
+import { makeRng } from "../../engine/rng.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -349,6 +351,66 @@ test("Device-review Pass B1 item 3: dispatch({type:'abandon'}) buries the curren
     // hasActiveDelveSave() checks `!S.dead`) — no separate save-clearing
     // step is needed.
     assert.equal(getState().dead, true, "no active run remains after abandonment");
+  });
+});
+
+test("Device-review Pass DR7: dispatch({type:'buyItem'})/dispatch({type:'leaveStore'}) route a purchase through the engine seam end-to-end", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(4242);
+    const state = getState();
+    // Populate state.store the SAME way the live app does — via the
+    // engine's own encounters.js -> economy.js#openStore() (plain-data
+    // stock, no `buy` closures) — rather than hand-rolling a fixture shape
+    // that could silently drift from what real gameplay produces. This is
+    // exactly the shape mazeworld.html's renderEncounter() store branch
+    // reads and window.mzBuyItem/window.mzLeaveStore dispatch against.
+    openStore(state, makeRng(state.rngState));
+    assert.ok(state.store && state.store.stock.length > 0, "openStore populated plain-data stock");
+
+    // Guarantee an affordable purchase regardless of the seed's rolled
+    // prices/starting gold — this test is about the DISPATCH seam, not
+    // economy.js's own pricing (already covered by test/unit/economy.test.js).
+    const idx = 0;
+    state.c.gold = state.store.stock[idx].cost;
+    const priorItemCount = (state.c.items || []).length;
+
+    const { state: after, events } = dispatch({ type: "buyItem", idx });
+    assert.equal(after.c.gold, 0, "the item's cost was deducted from gold");
+    assert.equal(after.store.stock[idx].sold, true, "the stock slot is marked sold");
+    assert.ok(
+      events.some((e) => e.type === "bought"),
+      "a 'bought' event was pushed for narration",
+    );
+    // Not every stock entry grants an inventory item (e.g. eatRation/
+    // repairArmor apply their effect directly to state.c) — only assert
+    // growth when this particular slot's effect is item-granting.
+    if (["givePotion", "giveLockpicks", "buyWeapon", "buyArmor", "buyPremium"].includes(state.store.stock[idx].effectId)) {
+      assert.ok((after.c.items || []).length > priorItemCount, "the purchased item was granted to the character");
+    }
+
+    const { state: closed, events: leaveEvents } = dispatch({ type: "leaveStore" });
+    assert.equal(closed.store, null, "leaveStore closes the shop");
+    assert.ok(
+      leaveEvents.some((e) => e.type === "storeLeft"),
+      "a 'storeLeft' event was pushed for narration",
+    );
+  });
+});
+
+test("Device-review Pass DR7: dispatch({type:'buyItem'}) on insufficient gold is a no-op that reports why, never a throw", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(4243);
+    const state = getState();
+    openStore(state, makeRng(state.rngState));
+    const idx = 0;
+    state.c.gold = 0; // guaranteed short of any positive-cost item
+
+    const { state: after, events } = dispatch({ type: "buyItem", idx });
+    assert.equal(after.store.stock[idx].sold, false, "an unaffordable purchase never marks the slot sold");
+    assert.ok(
+      events.some((e) => e.type === "buyFailed" && e.reason === "insufficientGold"),
+      "a 'buyFailed' event explains why, rather than silently doing nothing",
+    );
   });
 });
 

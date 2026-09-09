@@ -325,6 +325,22 @@ button{
      tap-highlight reset above so a press never shows a text-selection
      handle/flash on Android either. */
   user-select:none;-webkit-user-select:none;
+  /* Device-review Pass DR7: root cause of "buttons sometimes do nothing;
+     need a second tap." No <button> anywhere in this app declared its own
+     `touch-action` (only <canvas> and .mw-maze-viewport did) — the default
+     `touch-action:auto` leaves Android's WebView gesture recognizer waiting
+     up to ~300ms after every tap to decide whether a second tap is coming
+     (double-tap-to-zoom, still enabled since the viewport meta has no
+     user-scalable=no/maximum-scale=1). If ANYTHING re-renders that button's
+     DOM (renderEncounter() rebuilding #enc-body, a nav-tab swap, ...) during
+     that ambiguity window, the deferred synthetic click's original target no
+     longer exists and the tap is silently dropped — intermittent, exactly
+     the reported symptom, and worst on the very buttons (STORE rows,
+     combat actions, "Move on") whose own handlers trigger a re-render.
+     `touch-action:manipulation` (already used by <canvas>) disables the
+     double-tap-zoom gesture outright, so every button's click fires
+     immediately on tap-up with no ambiguity window to race against. */
+  touch-action:manipulation;
 }
 /* DR5: this was a leftover light-theme value (#F7F1E2, a warm parchment
    white) from before the dark "torch-lit ledger" reskin (04-05) — on
@@ -433,8 +449,14 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   text-align:left;font-family:var(--mono);font-size:12px;letter-spacing:0;
   padding:8px 10px;background:var(--paper);border:1px solid var(--rule);box-shadow:none;
 }
-.goods:hover:not(:disabled){border-color:var(--moss);background:#F7F1E2}
-.goods:active:not(:disabled){transform:none}
+/* Device-review Pass DR7: same leftover light-theme white (#F7F1E2) DR5A
+   fixed on the generic button:hover fallback — .goods rows are built via
+   document.createElement() at render time (renderEncounter()'s store
+   branch), so DR5A's scoped-hover audit of the static HTML never saw them.
+   Repointed to the dark theme's own panel tone, plus a genuine pressed
+   state (previously only `transform:none`, no color change at all). */
+.goods:hover:not(:disabled){border-color:var(--moss);background:var(--paper-3)}
+.goods:active:not(:disabled){transform:none;border-color:var(--moss);background:var(--paper-2)}
 .goods .g-n{display:flex;flex-direction:column;gap:1px}
 .goods .g-n i{font-family:var(--body);font-style:italic;font-size:12.5px;color:var(--ink-soft)}
 .goods .g-c{font-variant-numeric:tabular-nums;color:var(--moss);white-space:nowrap;font-weight:600}
@@ -2760,18 +2782,23 @@ function openStore() {
   if (race === "Elven" || race === "Dwarven") say(`Elves and dwarves are charged half. Nobody has ever explained why.`);
   if (haggle < 1) say(`A Wilmsry does not pay list price. Thirty per cent comes off before you speak.`);
 }
-function buyFrom(i) {
-  const st = S.store; if (!st) return;
-  const item = st.stock[i];
-  if (!item || item.sold) return;
-  if (S.c.gold < item.cost) { say(`<span class="miss">You are ${(item.cost - S.c.gold).toLocaleString()} wilmst short.</span>`); paint(); return; }
-  S.c.gold -= item.cost;
-  item.sold = true;
-  say(`Bought <span class="hit">${item.n}</span> for ${item.cost.toLocaleString()} wilmst.`);
-  item.buy();
-  paint(); save();
-}
-function leaveStore() { S.store = null; say(`You leave the shopkeeper to it.`); paint(); save(); }
+// Device-review Pass DR7: the classic buyFrom()/leaveStore() that used to
+// live here directly mutated S.store/S.c.gold and called a stock item's own
+// `item.buy()` closure. That worked only against THIS classic openStore()'s
+// closure-shaped stock — but openStore() itself is dead code (unreachable;
+// see encounterDot()'s own doc comment: window.move is unconditionally
+// overwritten by engineMove(), so this function's ONLY caller never runs).
+// Every store a player actually sees is opened by the ENGINE's own
+// encounters.js -> economy.js#openStore(), whose stock entries are plain
+// data ({effectId, effectParams}, no `buy` function — engine/economy.js's own
+// header comment: "No function value is ever written onto state"). Calling
+// item.buy() on THAT shape threw a TypeError, silently aborting the click
+// handler — this was the "STORE buy does nothing" bug. The fix is the
+// module script's window.mzBuyItem()/window.mzLeaveStore() bridges (trailing
+// <script type="module">), which route through dispatch()->applyAction's
+// existing "buyItem"/"leaveStore" engine actions (engine/economy.js) — the
+// SAME seam every other action already uses — see renderEncounter()'s store
+// branch below for the call sites.
 
 /* ---------------- traps, p.48 ---------------- */
 function springTrap() {
@@ -3881,10 +3908,10 @@ function renderEncounter() {
       row.disabled = !!item.sold || S.c.gold < item.cost;
       row.innerHTML = `<span class="g-n">${item.n}${item.sub ? `<i>${item.sub}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
-      row.onclick = () => buyFrom(i);
+      row.onclick = () => window.mzBuyItem?.(i);
       shelf.appendChild(row);
     });
-    document.getElementById("a-leave").onclick = leaveStore;
+    document.getElementById("a-leave").onclick = () => window.mzLeaveStore?.();
     return;
   }
   // No further branch needed here for "nothing happening" — hasActiveEncounter()
@@ -4710,6 +4737,32 @@ window.__mzClassicBoot = async function classicBoot() {
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     showTitleScreen();
+  };
+
+  // Device-review Pass DR7: STORE Buy/Leave route through the engine's own
+  // "buyItem"/"leaveStore" actions (engine/economy.js), the SAME dispatch()->
+  // applyAction() seam every other action already uses — this also closes
+  // the deferred 04-07 economy-routing item. Every store the player actually
+  // reaches is opened by the ENGINE (engine/encounters.js -> economy.js's
+  // openStore(), triggered from inside the engine-routed "move" action, NOT
+  // mazeworld.html's own classic openStore()/buyFrom()/leaveStore() — those
+  // are dead code, see their own doc comment above), so S.store's stock
+  // entries are always the engine's plain-data shape ({effectId,
+  // effectParams}, never a `buy` closure) — buyItem/leaveStore already know
+  // how to read that shape; no plain-data/closure mismatch is possible here.
+  window.mzBuyItem = function buyItemFromShop(idx) {
+    const { state, html } = dispatch({ type: "buyItem", idx });
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+  };
+  window.mzLeaveStore = function closeStore() {
+    const { state, html } = dispatch({ type: "leaveStore" });
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
   };
 
   // DR4 group 3: the death card's CONFIRM button (classic script's
