@@ -4555,12 +4555,16 @@ window.__mzClassicBoot = async function classicBoot() {
     window.paint();
     window.draw();
     for (const line of html) window.logLine(line);
-    // Device-review Pass B1 item 4: recenter the viewport on the party on
-    // every descent (engine/movement.js#descend always pushes exactly one
-    // floorChanged event per genuine floor change — never a "gated"/blocked
-    // attempt) so the player is never left panned off to one side on a
-    // freshly-generated floor.
-    if (events.some((e) => e.type === "floorChanged")) window.mzCenterMap?.();
+    // Device-review Pass DR8: recenter the viewport on the party after EVERY
+    // successful step, not just a floor change — engine/movement.js#move
+    // pushes exactly one `moved` event per genuine step (never for a
+    // blocked/no-op attempt: a wall, an out-of-bounds edge, or the wrong side
+    // of a one-way door all `return` before that push), so this fires only
+    // when the party actually moved. Superseding Pass B1 item 4's
+    // floorChanged-only check below it (a floor transition always also
+    // pushes `moved` first, so this check alone already covers both cases)
+    // — the player was reporting drifting off-center while just walking.
+    if (events.some((e) => e.type === "moved")) window.mzCenterMap?.();
   };
 
   // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
