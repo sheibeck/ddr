@@ -414,6 +414,79 @@ test("Device-review Pass DR7: dispatch({type:'buyItem'}) on insufficient gold is
   });
 });
 
+test("Device-review Pass DR8: dispatch({type:'castSpell'}) heals WP through the engine seam (guards the '04-07 engine-routing gap' fix — 'Greater Heal didn't heal')", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(9001);
+    const state = getState();
+    // Force a Magic User who can cast "Heal" (SPELLS[0], a level-1 healing
+    // spell) at level 1, the same way DR7's store test force-sets
+    // state.c.gold directly rather than depending on the seed's roll — this
+    // test is about the DISPATCH seam actually applying the effect, not
+    // magic.js's own gating (already covered by test/unit/magic.test.js).
+    state.c.cls = "Magic User";
+    state.c.sub = "Cleric"; // healing school ungated (schoolGate default 1) for a Cleric
+    state.c.level = 1;
+    state.c.grimoire = ["Heal"];
+    state.c.spellsUsed = 0;
+    state.c.maxWP = 100;
+    state.c.wp = 40; // damaged, well under max, so a heal has room to land
+
+    const before = state.c.wp;
+    const { state: after, events } = dispatch({ type: "castSpell", idx: 0 });
+    assert.ok(after.c.wp > before, "casting Heal actually raised WP (the live-device regression: it silently didn't)");
+    assert.ok(after.c.wp <= after.c.maxWP, "healing never overshoots max WP");
+    assert.ok(
+      events.some((e) => e.type === "healed"),
+      "a 'healed' event was pushed for narration",
+    );
+
+    // Cap-at-max: a full-health cast must not push WP past maxWP even though
+    // the spell still resolves (mirrors magic.js's own Math.min clamp).
+    after.c.wp = after.c.maxWP;
+    after.c.spellsUsed = 0;
+    const { state: capped } = dispatch({ type: "castSpell", idx: 0 });
+    assert.equal(capped.c.wp, capped.c.maxWP, "healing at full WP stays capped at max, never exceeds it");
+  });
+});
+
+test("Device-review Pass DR8: dispatch({type:'camp'}) applies its effect through the engine seam (rations spent, a day passes)", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(9002);
+    const state = getState();
+    state.c.rations = 5;
+    const priorRations = state.c.rations;
+    const priorDay = state.day;
+
+    const { state: after, events } = dispatch({ type: "camp" });
+    assert.equal(after.day, priorDay + 1, "a day actually passed");
+    assert.ok(after.c.rations < priorRations, "rations were actually spent on the camp");
+    assert.ok(
+      events.some((e) => e.type === "dayBegan" && e.camped === true),
+      "a 'dayBegan' event marked camped:true was pushed for narration",
+    );
+  });
+});
+
+test("Device-review Pass DR8: dispatch({type:'camp'}) with no rations is a no-op that reports why, never a throw", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(9003);
+    const state = getState();
+    state.c.rations = 0;
+    const priorDay = state.day;
+
+    let result;
+    assert.doesNotThrow(() => {
+      result = dispatch({ type: "camp" });
+    });
+    const { state: after, events } = result;
+    assert.equal(after.day, priorDay, "no day passed without rations");
+    assert.ok(
+      events.some((e) => e.type === "campFailed" && e.reason === "noRations"),
+      "a 'campFailed' event explains why, rather than silently doing nothing",
+    );
+  });
+});
+
 test("CR-01: persistGrave never throws when storage is blocked (private window/quota)", async () => {
   const previous = globalThis.localStorage;
   globalThis.localStorage = {

@@ -2512,6 +2512,18 @@ function newDay(camped) {
   }
 }
 
+// Device-review Pass DR8: MAKE CAMP now routes through the engine's own
+// "camp" action (engine/movement.js#makeCamp, the SAME dispatch()->
+// applyAction() seam every other engine-routed action uses — see
+// window.mzMakeCamp, trailing module script). This classic makeCamp() is
+// dead code as of this pass (its one call site, btn-camp's onclick, now
+// prefers window.mzMakeCamp — see that assignment's own doc comment for why
+// a classic function mutating S directly could silently lose its effect or
+// diverge the persisted RNG cursor the moment any OTHER engine-routed action
+// ran). Left in place rather than deleted (04-RESEARCH.md Pattern 3: don't
+// delete a classic rule function in the same commit that rewires its call
+// site) — a future cleanup pass can remove it once the engine-routed path is
+// proven on-device.
 function makeCamp() {
   if (!S || S.combat || S.store || S.dead || S.won) return;
   S.beats = null;
@@ -2993,6 +3005,30 @@ function fallDark() {
     : `The lights go out for four squares in every direction. <span class="hurt">2 to hit, and no criticals.</span>`);
 }
 
+// Device-review Pass DR8: this entire classic combat/magic resolution
+// cluster — startCombat/playerStrike/killFoe/flee/parley/sing/
+// afterPlayerAction/foeTurn/allyTurn below, plus castSpell/drinkPotion/
+// readScroll further down — is now DEAD CODE, unreachable from the live UI.
+// It was already fully unreachable for STARTING combat (encounterDot(), the
+// only classic call site, has been dead since window.move was overridden by
+// engineMove — 04-DR2/04-DR5B2's own documented finding); this pass closes
+// the remaining gap by rewiring every IN-COMBAT action button (STRIKE/
+// POTION/FLEE/SPELLS/PARLEY/SING/SCROLL) to route through the engine's own
+// already-complete port of every one of these functions (engine/combat.js,
+// engine/magic.js — see window.mzAttack/mzFlee/mzParley/mzSing/mzCastSpell/
+// mzDrinkPotion/mzReadScroll, trailing module script) instead of calling
+// these classic functions, which mutated S directly using Math.random()-
+// backed D() rather than the persisted GameState's seeded rngState. A
+// classic function mutating S directly never advances engineAdapter.js's own
+// rngState cursor via dispatch(), so its effect could be silently lost (or
+// the persisted RNG cursor could diverge) the moment any OTHER engine-routed
+// action ran — exactly the class of bug the user's own on-device testing
+// surfaced ("Greater Heal didn't heal"). Left in place rather than deleted
+// (04-RESEARCH.md Pattern 3: don't delete a classic rule cluster in the same
+// commit that rewires its call sites) — canParley()/songReady()/canRead()/
+// canCast() immediately below/elsewhere in this cluster are NOT dead; they
+// still gate which action buttons renderEncounter() shows and are read
+// directly off the (correctly engine-synced) S object.
 function startCombat(wandering, forced) {
   const type = forced || ENC_TYPES[D(6) - 1];
   let tracked = false;
@@ -3989,7 +4025,10 @@ function renderEncounter() {
     const b = document.createElement("button");
     b.className = "small";
     b.textContent = `${sp.n} — ${sp.txt}`;
-    b.onclick = () => act(() => castSpell(i));
+    // Device-review Pass DR8: routes through the engine's castSpell action
+    // (window.mzCastSpell, trailing module script) instead of the classic,
+    // now-dead castSpell() above — see startCombat()'s own doc comment.
+    b.onclick = () => window.mzCastSpell?.(i);
     menu.appendChild(b);
   });
   if (!menu.children.length) {
@@ -4008,9 +4047,14 @@ function renderEncounter() {
     body.appendChild(ex);
   }
 
-  document.getElementById("a-strike").onclick = () => act(playerStrike);
-  document.getElementById("a-potion").onclick = () => act(drinkPotion);
-  document.getElementById("a-flee").onclick = () => act(flee);
+  // Device-review Pass DR8: STRIKE/POTION/FLEE/PARLEY/SING/SCROLL route
+  // through the engine's own attack/drinkPotion/flee/parley/sing/readScroll
+  // actions (window.mzAttack etc., trailing module script) instead of the
+  // classic, now-dead functions of the same name above — see
+  // startCombat()'s own doc comment for why.
+  document.getElementById("a-strike").onclick = () => window.mzAttack?.();
+  document.getElementById("a-potion").onclick = () => window.mzDrinkPotion?.();
+  document.getElementById("a-flee").onclick = () => window.mzFlee?.();
   const sb = document.getElementById("a-spell");
   if (sb) sb.onclick = () => {
     C.spellOpen = !C.spellOpen;
@@ -4025,9 +4069,9 @@ function renderEncounter() {
     // opened list are visible together.
     if (C.spellOpen) document.getElementById("a-spell")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const tb = document.getElementById("a-talk");   if (tb) tb.onclick = () => act(parley);
-  const gb = document.getElementById("a-sing");   if (gb) gb.onclick = () => act(sing);
-  const cb = document.getElementById("a-scroll"); if (cb) cb.onclick = () => act(readScroll);
+  const tb = document.getElementById("a-talk");   if (tb) tb.onclick = () => window.mzParley?.();
+  const gb = document.getElementById("a-sing");   if (gb) gb.onclick = () => window.mzSing?.();
+  const cb = document.getElementById("a-scroll"); if (cb) cb.onclick = () => window.mzReadScroll?.();
 }
 
 /* ---------------- save / load ---------------- */
@@ -4096,7 +4140,13 @@ document.getElementById("btn-save-quit").onclick = () => {
 document.getElementById("btn-abandon-character").onclick = () => {
   if (window.mzAbandonCharacter) window.mzAbandonCharacter(); else newGame();
 };
-document.getElementById("btn-camp").onclick = () => makeCamp();
+// Device-review Pass DR8: routes through the engine's "camp" action
+// (window.mzMakeCamp, trailing module script); the `|| makeCamp()` fallback
+// only matters if that module somehow failed to load/run (same pattern as
+// btn-save-quit/btn-abandon-character above).
+document.getElementById("btn-camp").onclick = () => {
+  if (window.mzMakeCamp) window.mzMakeCamp(); else makeCamp();
+};
 document.getElementById("btn-clearyard").onclick = () => { graves = []; saveGraves(); renderGraves(); };
 document.getElementById("dpad").addEventListener("click", e => {
   // Device-review revision #5 (extended): block movement outright while the
@@ -4227,13 +4277,17 @@ addEventListener("keydown", e => {
   // only the WASD/arrow movement path is gated. See hasActiveEncounter().
   if (S && hasActiveEncounter()) {
     if (S.combat) {
-      if (k === "1") { e.preventDefault(); act(playerStrike); }
-      else if (k === "2") { e.preventDefault(); act(drinkPotion); }
-      else if (k === "3") { e.preventDefault(); act(flee); }
+      // Device-review Pass DR8: same engine-routed bridges as the combat
+      // action buttons above (window.mzAttack etc.) — see startCombat()'s
+      // own doc comment for why the classic functions these once called are
+      // now dead code.
+      if (k === "1") { e.preventDefault(); window.mzAttack?.(); }
+      else if (k === "2") { e.preventDefault(); window.mzDrinkPotion?.(); }
+      else if (k === "3") { e.preventDefault(); window.mzFlee?.(); }
       else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
-      else if (k === "5" && canParley()) { e.preventDefault(); act(parley); }
-      else if (k === "6" && songReady()) { e.preventDefault(); act(sing); }
-      else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); act(readScroll); }
+      else if (k === "5" && canParley()) { e.preventDefault(); window.mzParley?.(); }
+      else if (k === "6" && songReady()) { e.preventDefault(); window.mzSing?.(); }
+      else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); window.mzReadScroll?.(); }
       return;
     }
     if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next"); if (n) n.click(); }
@@ -4760,6 +4814,70 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzLeaveStore = function closeStore() {
     const { state, html } = dispatch({ type: "leaveStore" });
     window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+  };
+
+  // Device-review Pass DR8 (the deferred 04-07 engine-routing item,
+  // completed here): combat/magic/camp actions now route through the SAME
+  // dispatch()->applyAction() seam as buyItem/leaveStore above. Every one of
+  // these already has a complete engine port (engine/combat.js's
+  // playerStrike/flee/parley/sing, engine/magic.js's castSpell/drinkPotion/
+  // readScroll, engine/movement.js's makeCamp) — the classic mazeworld.html
+  // functions of the same name (see startCombat()'s own doc comment, classic
+  // script above) duplicated this logic against Math.random()-backed D()
+  // rather than the persisted GameState's seeded rngState, so a classic
+  // mutation's effect could be silently lost (or the persisted RNG cursor
+  // could diverge) the moment any OTHER engine-routed action ran — this is
+  // the root cause behind the on-device report "Greater Heal didn't heal."
+  //
+  // engineCombatAction() is the one choke point every combat/magic/camp
+  // button call funnels through: dispatch, swap in the returned state,
+  // narrate, then re-render — mirroring window.mzBuyItem/mzLeaveStore above.
+  function engineCombatAction(type, extra) {
+    const { state, events, html } = dispatch({ type, ...extra });
+    window.__mzState.set(state);
+    // DR2's HIT/MISS strike badge (renderEncounter()'s `C.lastStrike`) was a
+    // field the classic playerStrike() populated directly; engine/combat.js
+    // deliberately carries no such presentation-only field on state.combat
+    // (its own header: no DOM/render concerns inside the engine). Synthesize
+    // it here from the SAME `struck`/`strikeMissed` events the engine
+    // already emits — populated only for "attack", cleared (null) for every
+    // other action, exactly matching the classic behavior these bridges
+    // replace (playerStrike() populated it fresh every call; drinkPotion()/
+    // flee() explicitly nulled a stale one out).
+    if (state.combat) {
+      state.combat.lastStrike =
+        type === "attack"
+          ? events
+              .filter((e) => e.type === "struck" || e.type === "strikeMissed")
+              .map((e) => (e.type === "struck" ? { hit: true, dmg: e.dmg, crit: e.critical } : { hit: false }))
+          : null;
+    }
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+  }
+  window.mzAttack = () => engineCombatAction("attack");
+  window.mzFlee = () => engineCombatAction("flee");
+  window.mzParley = () => engineCombatAction("parley");
+  window.mzSing = () => engineCombatAction("sing");
+  window.mzCastSpell = (idx) => engineCombatAction("castSpell", { idx });
+  window.mzDrinkPotion = () => engineCombatAction("drinkPotion");
+  window.mzReadScroll = () => engineCombatAction("readScroll");
+  // MAKE CAMP has no combat overlay to re-render into (camp only runs
+  // outside combat, engine/movement.js#makeCamp's own guard) — paint() alone
+  // covers the HUD/vitals refresh; renderEncounter() is still called so a
+  // `campFailed` no-op or a `camped`-triggered feature landing (wandering
+  // monster ambush) still surfaces its own overlay via the SAME beats-
+  // synthesis path window.move (engineMove) uses, not a duplicate here.
+  window.mzMakeCamp = () => {
+    const { state, html } = dispatch({ type: "camp" });
+    window.__mzState.set(state);
+    if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
+      state.beats = { groups: [{ title: "Camp", tone: "moss", lines: stripRollDetail(html) }], i: 0, action: null };
+    }
     for (const line of html) window.logLine(line);
     window.paint();
     window.renderEncounter();
