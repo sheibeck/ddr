@@ -55,7 +55,13 @@ test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad' and diceMode defaults 
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
 });
 
-test("writeSetting/readSettings: each of the 6 fields round-trips through window.mzStorage", async () => {
+// 04-DR9: handedness field (default "right" = D-pad left / MAKE CAMP right,
+// swapping the bottom control bar sides live via the Settings sheet).
+test("SETTINGS_DEFAULTS: handedness defaults to 'right'", () => {
+  assert.equal(SETTINGS_DEFAULTS.handedness, "right");
+});
+
+test("writeSetting/readSettings: each of the 7 fields round-trips through window.mzStorage", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
     await writeSetting("sound", false);
     await writeSetting("haptics", false);
@@ -63,6 +69,7 @@ test("writeSetting/readSettings: each of the 6 fields round-trips through window
     await writeSetting("controlScheme", "dpad");
     await writeSetting("confirmBeforeQuit", false);
     await writeSetting("diceMode", "always");
+    await writeSetting("handedness", "left");
     await flushStorage();
 
     const settings = await readSettings();
@@ -73,6 +80,7 @@ test("writeSetting/readSettings: each of the 6 fields round-trips through window
       controlScheme: "dpad",
       confirmBeforeQuit: false,
       diceMode: "always",
+      handedness: "left",
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -112,6 +120,10 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
     await writeSetting("diceMode", "sometimes"); // not in {on tap,always,never}
     await flushStorage();
     assert.equal((await readSettings()).diceMode, "on tap");
+
+    await writeSetting("handedness", "ambidextrous"); // not in {left,right}
+    await flushStorage();
+    assert.equal((await readSettings()).handedness, "right");
   });
 });
 

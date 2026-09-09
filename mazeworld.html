@@ -282,6 +282,18 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 
 .mazefoot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-top:10px}
 
+/* 04-DR9: handedness (Settings sheet) swaps which side MAKE CAMP vs. the
+   D-pad sit on within .mazefoot's flex row. Default "right" (right-handed:
+   D-pad LEFT, MAKE CAMP RIGHT) REVERSES the original DR4 fixed layout
+   (#btn-camp then .dpad in DOM order = camp left/dpad right), which is now
+   only the "left" (left-handed) layout. #app's data-handedness attribute is
+   set at boot and re-applied live on every Settings-sheet change (see the
+   trailing module script's applySettings()). */
+#app[data-handedness="right"] #btn-camp{order:2}
+#app[data-handedness="right"] .dpad{order:1}
+#app[data-handedness="left"] #btn-camp{order:1}
+#app[data-handedness="left"] .dpad{order:2}
+
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
    48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
    revisions" #2): the D-pad is now the SOLE, ALWAYS-VISIBLE control in the
@@ -494,6 +506,27 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .log .beat{color:var(--ink-soft);font-style:italic}
 .log .banner{font-family:var(--disp);font-size:14px;color:var(--ink);border-top:1px solid var(--rule);padding-top:7px;margin-top:4px;text-indent:0;padding-left:0}
 .log .banner::before{content:""}
+
+/* 04-DR9: diceMode (Settings sheet) gates dice-roll visibility uniformly
+   across the Oracle log (#log) and every combat/feature exchange rendered
+   into #enc-body (.evt/.exchange) — both already emit the SAME
+   `<span class="roll">...</span>` markup from every say()/evt() call site in
+   this file. #app's data-dice-mode attribute (settings.js's diceMode field)
+   is set at boot and re-applied live on every Settings-sheet change (see
+   the trailing module script's applySettings()). "always" needs no
+   override (the existing inline .roll display above is the always-visible
+   default); "never" always hides it; "on tap" hides it until the containing
+   <p> is tapped (mw-roll-revealed, toggled by the delegated click listeners
+   near the dpad click handler below) — matching the design's "TAP A LINE TO
+   SEE THE DICE THAT DID IT" dice-transparency interaction. */
+#app[data-dice-mode="never"] #log p .roll,
+#app[data-dice-mode="never"] #enc-body p .roll{display:none}
+#app[data-dice-mode="on tap"] #log p .roll,
+#app[data-dice-mode="on tap"] #enc-body p .roll{display:none}
+#app[data-dice-mode="on tap"] #log p.mw-roll-revealed .roll,
+#app[data-dice-mode="on tap"] #enc-body p.mw-roll-revealed .roll{display:inline}
+.mw-oracle-hint{display:none;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:#8f856f;margin:0 0 10px}
+#app[data-dice-mode="on tap"] .mw-oracle-hint{display:block}
 
 /* ---------- dossier ---------- */
 .dossier{margin-top:0}
@@ -809,6 +842,34 @@ html,body{height:100%}
   color:#e6ddc6;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;
 }
 .mw-legend-row-desc{flex:1;font-family:var(--mono);font-size:12.5px;font-weight:700;color:#a89c82;line-height:1.35}
+
+/* ---------- Settings bottom sheet (04-DR9, completes UX-07) ----------
+   Reuses the MARKS legend's own sheet chrome (.mw-legend-sheet/-scrim/
+   -panel/-head/-close, above) — only the rows content differs. Each row is
+   a label + a row of segmented option buttons (handedness/text size/dice
+   detail) or a two-state ON/OFF segmented toggle (confirm-before-quit/
+   sound/haptics); the selected option gets `.active` (gold), applied by the
+   trailing module script's renderSettingsSheet(). */
+.mw-settings-row{padding:14px 0;border-bottom:2px solid #241f16}
+.mw-settings-row:last-child{border-bottom:0}
+.mw-settings-label{
+  display:block;font-family:var(--disp);font-size:8px;letter-spacing:.08em;
+  text-transform:uppercase;color:#c9bda0;margin-bottom:10px;
+}
+.mw-settings-options{display:flex;gap:8px;flex-wrap:wrap}
+.mw-settings-opt{
+  flex:1;min-height:48px;min-width:64px;padding:10px 8px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  border:2px solid #4a4032;background:#1b170f;color:#c9bda0;
+  box-shadow:0 3px 0 #0d0b08;border-radius:4px;
+}
+.mw-settings-opt.active{background:#241d12;color:#e8c97a;border-color:#e8c97a}
+.mw-settings-opt:hover:not(:disabled){background:#1b170f;color:#c9bda0}
+.mw-settings-opt.active:hover:not(:disabled){background:#241d12;color:#e8c97a}
+.mw-settings-opt:active:not(:disabled){
+  background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px);
+}
+
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
   background:var(--paper);color:var(--ink);
@@ -905,7 +966,74 @@ html,body{height:100%}
   </div>
 </div>
 
-<div id="app" class="mw-app">
+<!-- ============ SETTINGS BOTTOM SHEET (04-DR9, completes UX-07) ============
+     Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
+     -scrim/-panel/-head/-close, above) — opened by the top-HUD gear button
+     (#mw-gear-btn), dismissed by tapping the scrim or Close. Each row is a
+     label + a row of segmented option buttons; the currently-selected value
+     (read from settings.js's readSettings()) gets the `active` class — see
+     the trailing module script's applySettings()/renderSettingsSheet(). A
+     tap on any option writes back through settings.js's writeSetting() and
+     applies the change live (text scale/cell size, handedness layout,
+     dice-reveal gating) — never a raw window.mzStorage/localStorage call
+     from here. -->
+<div id="mw-settings-sheet" class="mw-legend-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-settings-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-label="Settings">
+    <div class="mw-legend-head">
+      <span>Settings</span>
+      <button type="button" class="mw-legend-close" id="mw-settings-close" aria-label="Close">Close</button>
+    </div>
+    <div class="mw-settings-rows" id="mw-settings-rows">
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Handedness</span>
+        <div class="mw-settings-options" data-setting="handedness">
+          <button type="button" class="mw-settings-opt" data-value="right">Right-handed</button>
+          <button type="button" class="mw-settings-opt" data-value="left">Left-handed</button>
+        </div>
+      </div>
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Text size</span>
+        <div class="mw-settings-options" data-setting="textSize">
+          <button type="button" class="mw-settings-opt" data-value="S">S</button>
+          <button type="button" class="mw-settings-opt" data-value="M">M</button>
+          <button type="button" class="mw-settings-opt" data-value="L">L</button>
+        </div>
+      </div>
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Dice detail</span>
+        <div class="mw-settings-options" data-setting="diceMode">
+          <button type="button" class="mw-settings-opt" data-value="on tap">On tap</button>
+          <button type="button" class="mw-settings-opt" data-value="always">Always</button>
+          <button type="button" class="mw-settings-opt" data-value="never">Never</button>
+        </div>
+      </div>
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Confirm before quit</span>
+        <div class="mw-settings-options" data-setting="confirmBeforeQuit">
+          <button type="button" class="mw-settings-opt" data-value="true">On</button>
+          <button type="button" class="mw-settings-opt" data-value="false">Off</button>
+        </div>
+      </div>
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Sound</span>
+        <div class="mw-settings-options" data-setting="sound">
+          <button type="button" class="mw-settings-opt" data-value="true">On</button>
+          <button type="button" class="mw-settings-opt" data-value="false">Off</button>
+        </div>
+      </div>
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Haptics</span>
+        <div class="mw-settings-options" data-setting="haptics">
+          <button type="button" class="mw-settings-opt" data-value="true">On</button>
+          <button type="button" class="mw-settings-opt" data-value="false">Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="mw-app" data-handedness="right" data-dice-mode="on tap">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
   <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
@@ -1056,6 +1184,9 @@ html,body{height:100%}
     <section class="mw-screen" id="screen-oracle" data-screen="oracle" hidden>
       <section class="panel" id="log-panel">
         <h2>The Oracle <span id="log-count"></span></h2>
+        <!-- 04-DR9: shown only in diceMode "on tap" (#app[data-dice-mode]
+             CSS, above) — the mock's dice-transparency hint. -->
+        <p class="mw-oracle-hint" id="mw-oracle-hint">Tap a line to see the dice that did it.</p>
         <div class="log" id="log"></div>
       </section>
     </section>
@@ -4165,7 +4296,32 @@ document.getElementById("dpad").addEventListener("click", e => {
   // below; window.move (engineMove, set later) re-asserts this same gate as
   // the single choke point every movement path funnels through.
   if (hasActiveEncounter()) return;
-  const b = e.target.closest("button[data-dir]"); if (b) move(b.dataset.dir);
+  const b = e.target.closest("button[data-dir]");
+  if (b) {
+    move(b.dataset.dir);
+    // 04-DR9: illustrative touch-feedback call site for the Settings
+    // sheet's Haptics toggle — see src/browser/haptics.js's header comment
+    // for why this is a guarded no-op today (@capacitor/haptics isn't
+    // installed/vendored yet). Bridged onto window.__mzHaptics by the
+    // trailing module script, same pattern as window.__mzControls/
+    // window.__mzCanvasSizing/window.__mzIconsApi above.
+    window.__mzHaptics?.maybeHaptic?.(window.__mzSettings);
+  }
+});
+
+// 04-DR9: dice-reveal tap targets for the Oracle log (#log) AND the
+// combat/feature exchange log (#enc-body's .evt/.exchange <p> lines) —
+// delegated to the container so renderEncounter() rebuilding #enc-body from
+// scratch never orphans a listener. Toggling this class is a harmless no-op
+// under diceMode "always"/"never" (the #app[data-dice-mode=...] CSS rules
+// above only key off it in "on tap" mode).
+document.getElementById("log").addEventListener("click", e => {
+  const p = e.target.closest("p");
+  if (p) p.classList.toggle("mw-roll-revealed");
+});
+document.getElementById("enc-body").addEventListener("click", e => {
+  const p = e.target.closest("p");
+  if (p) p.classList.toggle("mw-roll-revealed");
 });
 
 // 04-06: centered, single-line flash toast (04-UI-SPEC.md Screen 1 — kept
@@ -4370,7 +4526,8 @@ window.__mzClassicBoot = async function classicBoot() {
   import { boot, dispatch, startNewRun, waitForPending } from "./src/browser/engineAdapter.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
-  import { readSettings, effectiveTextScale } from "./src/browser/settings.js";
+  import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
+  import { maybeHaptic } from "./src/browser/haptics.js";
   // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
@@ -4408,10 +4565,17 @@ window.__mzClassicBoot = async function classicBoot() {
   // source is wired this early) — effectiveTextScale(size, undefined) falls
   // back to a neutral 1.0 OS factor, matching the "not yet OS-aware" default
   // until a later plan wires the real OS signal.
-  try {
-    const settings = await readSettings();
-    const appEl = document.getElementById("app");
-    if (appEl) appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
+  //
+  // 04-DR9: currentSettings is the ONE in-memory mirror of settings.js's
+  // persisted blob for this whole module — every live-apply site below
+  // (handedness layout, --mw-text-scale/cell size, dice-mode gating,
+  // confirm-before-quit gate) reads it via applySettings()/shouldConfirmQuit,
+  // and every write goes back through settings.js's writeSetting() (see the
+  // Settings sheet's click handler further down) — never a raw
+  // window.mzStorage/localStorage call from here.
+  let currentSettings = null;
+  function applySettings(settings) {
+    currentSettings = settings;
     // 04-06: expose the resolved settings object so the classic script's
     // fit() (cell size) can read it without importing settings.js directly
     // — same bridge pattern as window.__mzState. Device-review revision
@@ -4420,9 +4584,82 @@ window.__mzClassicBoot = async function classicBoot() {
     // and tap-to-move is disabled outright — see the viewport gesture
     // handler below, which no longer reads controlScheme at all.
     window.__mzSettings = settings;
+    const appEl = document.getElementById("app");
+    if (!appEl) return;
+    appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
+    // 04-DR9: handedness (bottom control-bar side swap) and diceMode
+    // (Oracle/combat-log roll-detail gating) — see the matching
+    // #app[data-handedness=...]/#app[data-dice-mode=...] CSS rules.
+    appEl.setAttribute("data-handedness", settings.handedness);
+    appEl.setAttribute("data-dice-mode", settings.diceMode);
+  }
+
+  // 04-DR9: highlights the currently-selected option in each Settings-sheet
+  // row (gold `.active`) from currentSettings — called once when the sheet
+  // opens and again after every write so the just-tapped option immediately
+  // reflects as selected.
+  function renderSettingsSheet() {
+    if (!currentSettings) return;
+    document.querySelectorAll("#mw-settings-rows .mw-settings-options").forEach((group) => {
+      const key = group.dataset.setting;
+      const current = String(currentSettings[key]);
+      group.querySelectorAll(".mw-settings-opt").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.value === current);
+      });
+    });
+  }
+
+  function openSettingsSheet() {
+    renderSettingsSheet();
+    const sheet = document.getElementById("mw-settings-sheet");
+    if (sheet) sheet.hidden = false;
+  }
+  function closeSettingsSheet() {
+    const sheet = document.getElementById("mw-settings-sheet");
+    if (sheet) sheet.hidden = true;
+  }
+  document.getElementById("mw-gear-btn")?.addEventListener("click", openSettingsSheet);
+  document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
+  document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
+
+  // 04-DR9: one delegated click handler for every settings row — reads
+  // which setting/value was tapped from the button's own data-setting
+  // (its .mw-settings-options ancestor)/data-value, writes it through
+  // settings.js's writeSetting() (which validates against its own
+  // ALLOWED_VALUES — an unrecognized value here is simply a no-op, matching
+  // writeSetting()'s own contract), then re-applies + re-renders. textSize
+  // additionally recomputes the maze cell size live (window.fit()) and
+  // recenters the viewport (window.mzCenterMap()) — both are plain global
+  // functions the classic script declares (see this module's own header
+  // comment on the window.move/window.__mzState bridge pattern), safe to
+  // call here even before a run exists (fit()/draw()/positionCanvas() all
+  // guard on `!S`).
+  document.getElementById("mw-settings-rows")?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".mw-settings-opt");
+    if (!btn) return;
+    const group = btn.closest(".mw-settings-options");
+    const key = group?.dataset.setting;
+    if (!key) return;
+    const raw = btn.dataset.value;
+    // confirmBeforeQuit/sound/haptics persist as real booleans — the DOM
+    // dataset only ever carries strings, so coerce "true"/"false" back.
+    const value = raw === "true" ? true : raw === "false" ? false : raw;
+    const next = await writeSetting(key, value);
+    applySettings(next);
+    renderSettingsSheet();
+    if (key === "textSize") {
+      window.fit?.();
+      window.mzCenterMap?.();
+    }
+  });
+
+  window.__mzHaptics = { maybeHaptic };
+
+  try {
+    applySettings(await readSettings());
   } catch {
     /* fail-open: settings.js itself never throws, but defend anyway — a
-       text-scale read failure must never block boot */
+       settings read failure must never block boot */
   }
 
   // 04-06: bridge the pure controls.js/canvasSizing.js math + icons.js onto
@@ -4796,10 +5033,19 @@ window.__mzClassicBoot = async function classicBoot() {
   // above, a dead run is never offered for resume, so the next ENTER tap
   // opens the roller for a brand-new character — the exact same "no active
   // run left" contract every other death in this game already relies on.
+  // 04-DR9: gated by the Settings sheet's confirm-before-quit toggle
+  // (04-UI-SPEC.md "Confirm-before-quit" — this is the Sheet's "CUT LOSSES ·
+  // ROLL ANOTHER" action). ON (default): unchanged confirm-then-abandon
+  // flow. OFF: abandon immediately, no dialog. The Android back button's own
+  // press-twice-to-exit safety (nativeChrome.js#decideBackAction) is
+  // deliberately untouched by this setting — see settings.js's own header
+  // note and 04-UI-SPEC.md's "this phase doesn't change that logic".
   window.mzAbandonCharacter = function abandonCharacter() {
     if (!hasActiveDelveSave()) return;
-    const ok = window.confirm(`Abandon ${S.c.name}? They go in the graveyard for good — there is no undo.`);
-    if (!ok) return;
+    if (shouldConfirmQuit(currentSettings)) {
+      const ok = window.confirm(`Abandon ${S.c.name}? They go in the graveyard for good — there is no undo.`);
+      if (!ok) return;
+    }
     const { state, html } = dispatch({ type: "abandon" });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);

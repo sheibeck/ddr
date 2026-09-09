@@ -1,19 +1,20 @@
 // src/browser/settings.js
 //
-// The single source of truth for the six persisted UX settings (UX-07) plus
-// the pure text-scaling (UX-08) and confirm-before-quit-gate helpers. All
-// persistence goes through src/browser/storage.js's shared async
-// abstraction (which itself installs `window.mzStorage` for the classic
-// non-module script) — never any raw browser-native key/value store directly
-// (T-04-03, 04-RESEARCH.md data-integrity threat). This module is the ONLY
-// writer of the settings keys: mirrors src/browser/engineAdapter.js's
-// `import * as storage from "./storage.js"` pattern rather than reaching for
-// the global, so this also loads cleanly under a plain `node --test` process
-// that never bootstraps `window` at all.
+// The single source of truth for the seven persisted UX settings (UX-07,
+// plus 04-DR9's `handedness`) plus the pure text-scaling (UX-08) and
+// confirm-before-quit-gate helpers. All persistence goes through
+// src/browser/storage.js's shared async abstraction (which itself installs
+// `window.mzStorage` for the classic non-module script) — never any raw
+// browser-native key/value store directly (T-04-03, 04-RESEARCH.md
+// data-integrity threat). This module is the ONLY writer of the settings
+// keys: mirrors src/browser/engineAdapter.js's `import * as storage from
+// "./storage.js"` pattern rather than reaching for the global, so this also
+// loads cleanly under a plain `node --test` process that never bootstraps
+// `window` at all.
 //
-// All six fields are persisted as ONE JSON object under a single versioned
-// key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry per settings
-// change, never six separate keys racing each other.
+// All seven fields are persisted as ONE JSON object under a single
+// versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
+// per settings change, never seven separate keys racing each other.
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()/getBest()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
@@ -22,10 +23,10 @@
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all six settings fields are persisted under. */
+/** Single versioned key all seven settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
-/** The six UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
+/** The seven UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
   haptics: true,
@@ -39,6 +40,14 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   controlScheme: "dpad",
   confirmBeforeQuit: true,
   diceMode: "on tap",
+  // 04-DR9 (Settings sheet, completing the deferred UX-07 panel): which
+  // side of the MAP tab's bottom bar the D-pad vs. MAKE CAMP sit on.
+  // "right" (right-handed, the default) puts the D-pad on the LEFT and
+  // MAKE CAMP on the RIGHT — this REVERSES 04's earlier device-review
+  // d-pad-right-by-default layout; that fixed layout is now "left"
+  // (left-handed: D-pad right, MAKE CAMP left). See mazeworld.html's
+  // `#app[data-handedness=...]` CSS rules for the live layout swap.
+  handedness: "right",
 });
 
 // Allowed value sets per field — writeSetting() validates against these
@@ -51,6 +60,7 @@ const ALLOWED_VALUES = {
   controlScheme: ["tap", "dpad"],
   confirmBeforeQuit: [true, false],
   diceMode: ["on tap", "always", "never"],
+  handedness: ["left", "right"],
 };
 
 function isValidSettingValue(key, value) {
@@ -59,7 +69,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full six-field settings object: persisted
+ * readSettings() — resolves the full seven-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled
