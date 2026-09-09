@@ -236,8 +236,17 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
         events.push({ type: "armorPatched", amount: amt });
       }
     }
-    // a Warlock can copy a potion once a week
-    if (c.sub === "Warlock" && state.day - (c.dupAt || 0) >= 7 && c.potions > 0) {
+    // DELIBERATE RULES CHANGE (04-DR12, 2026-09-08): the prototype's Warlock
+    // duplicates a potion once a week (`state.day - dupAt >= 7`, see
+    // test/parity/prototype-master.js.txt line ~1311 and content/flavor.js's
+    // subclass blurb). Per explicit user design direction this cadence is
+    // intentionally changed to DAILY here — every newDay tick, not every 7th.
+    // This is a canon rules deviation, not a fidelity bug: the frozen
+    // prototype reference is left untouched (parity tests never drive a
+    // Warlock through multiple newDay ticks, so no fixture assumes the old
+    // cadence). `dupAt` is retained for save-shape stability even though the
+    // weekly gate it backed no longer applies.
+    if (c.sub === "Warlock" && c.potions > 0) {
       c.dupAt = state.day;
       c.potions++;
       events.push({ type: "potionDuplicated" });

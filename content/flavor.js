@@ -56,7 +56,7 @@ export const SUB_NOTE = {
   "Acrobat": "Everything needs a 3 to lay a hand on you and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
 
   "Wizard": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand until the last spell is spent. Two wizards in a party fight each other; there is only one of you, which helps.",
-  "Warlock": "Evil, and productive with it — a potion copied every week and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
+  "Warlock": "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
   "Sorcerer": "Two dozen spells to start and two more each level, nearly all of it fire, with a one-in-eight chance per level of simply forgetting the ones that aren't. Your arm caps out at 9 damage. Nobody hired the arm.",
   "Court Mage": "You talk. Through encounters, through corridors, through other people's turns. One creature in twelve dies of boredom before the fighting starts, and the book counts that as a kill.",
   "Illusionist": "You choose where the teleport squares put you, which in a maze is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
