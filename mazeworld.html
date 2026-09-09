@@ -319,19 +319,24 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 }
 .mw-overlay h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ditto)}
 
-.mazefoot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-top:10px}
+/* 04-DR11: grid (not flex) so the D-pad can occupy a fixed CENTER column
+   regardless of which side MAKE CAMP is assigned to — see the
+   data-handedness rules below and .mazefoot .dpad's grid-column:2. */
+.mazefoot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px 18px;margin-top:10px}
+.mazefoot .dpad{grid-column:2;justify-self:center}
 
-/* 04-DR9: handedness (Settings sheet) swaps which side MAKE CAMP vs. the
-   D-pad sit on within .mazefoot's flex row. Default "right" (right-handed:
-   D-pad LEFT, MAKE CAMP RIGHT) REVERSES the original DR4 fixed layout
-   (#btn-camp then .dpad in DOM order = camp left/dpad right), which is now
-   only the "left" (left-handed) layout. #app's data-handedness attribute is
-   set at boot and re-applied live on every Settings-sheet change (see the
-   trailing module script's applySettings()). */
-#app[data-handedness="right"] #btn-camp{order:2}
-#app[data-handedness="right"] .dpad{order:1}
-#app[data-handedness="left"] #btn-camp{order:1}
-#app[data-handedness="left"] .dpad{order:2}
+/* 04-DR11 ("D-pad ALWAYS centered; handedness moves only MAKE CAMP"):
+   supersedes 04-DR9's swap-both-sides layout. .mazefoot is now a 3-column
+   grid — [side-slot][D-pad][side-slot] — so the D-pad (grid-column:2,
+   below) is dead-center in BOTH handedness modes; only MAKE CAMP's grid
+   column/alignment moves. "left" (left-handed, the DEFAULT per user
+   device-review direction — see settings.js SETTINGS_DEFAULTS.handedness)
+   puts MAKE CAMP on the LEFT; "right" (right-handed) puts it on the
+   RIGHT. #app's data-handedness attribute is set at boot and re-applied
+   live on every Settings-sheet change (see the trailing module script's
+   applySettings()). */
+#app[data-handedness="left"] #btn-camp{grid-column:1;justify-self:start}
+#app[data-handedness="right"] #btn-camp{grid-column:3;justify-self:end}
 
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
    48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
@@ -1027,8 +1032,8 @@ html,body{height:100%}
       <div class="mw-settings-row">
         <span class="mw-settings-label">Handedness</span>
         <div class="mw-settings-options" data-setting="handedness">
-          <button type="button" class="mw-settings-opt" data-value="right">Right-handed</button>
           <button type="button" class="mw-settings-opt" data-value="left">Left-handed</button>
+          <button type="button" class="mw-settings-opt" data-value="right">Right-handed</button>
         </div>
       </div>
       <div class="mw-settings-row">
@@ -1072,7 +1077,7 @@ html,body{height:100%}
   </div>
 </div>
 
-<div id="app" class="mw-app" data-handedness="right" data-dice-mode="on tap">
+<div id="app" class="mw-app" data-handedness="left" data-dice-mode="on tap">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
   <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
@@ -1126,10 +1131,11 @@ html,body{height:100%}
           <div class="mw-flash" id="mw-flash" aria-live="polite"></div>
         </div>
         <div class="mazefoot">
-          <!-- DR4 "D-pad shifted right": camp + dpad are the two direct
-               .mazefoot flex children, so .mazefoot's existing
-               justify-content:space-between spreads them apart — MAKE CAMP
-               left, D-pad right, matching the mock's bottom bar. -->
+          <!-- DR11 "D-pad ALWAYS centered; handedness moves only MAKE
+               CAMP": camp + dpad are the two direct .mazefoot grid
+               children — see the .mazefoot/[data-handedness] CSS above —
+               so the D-pad stays dead-center in the middle grid column
+               while MAKE CAMP floats to whichever side handedness picks. -->
           <button class="small" id="btn-camp">Make camp</button>
           <!-- Device-review revision #2: the D-pad is now the SOLE,
                ALWAYS-VISIBLE movement control (see .dpad CSS — no more

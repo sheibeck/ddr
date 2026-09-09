@@ -40,14 +40,15 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   controlScheme: "dpad",
   confirmBeforeQuit: true,
   diceMode: "on tap",
-  // 04-DR9 (Settings sheet, completing the deferred UX-07 panel): which
-  // side of the MAP tab's bottom bar the D-pad vs. MAKE CAMP sit on.
-  // "right" (right-handed, the default) puts the D-pad on the LEFT and
-  // MAKE CAMP on the RIGHT — this REVERSES 04's earlier device-review
-  // d-pad-right-by-default layout; that fixed layout is now "left"
-  // (left-handed: D-pad right, MAKE CAMP left). See mazeworld.html's
-  // `#app[data-handedness=...]` CSS rules for the live layout swap.
-  handedness: "right",
+  // 04-DR11 ("D-pad ALWAYS centered; handedness moves only MAKE CAMP"):
+  // supersedes 04-DR9's swap-both-sides layout. The D-pad is now
+  // horizontally CENTERED in the MAP tab's bottom bar regardless of this
+  // setting — handedness controls ONLY which side MAKE CAMP floats to.
+  // "left" (left-handed, the DEFAULT per user device-review direction)
+  // puts MAKE CAMP on the LEFT; "right" (right-handed) puts it on the
+  // RIGHT. See mazeworld.html's `#app[data-handedness=...]` CSS rules for
+  // the live layout.
+  handedness: "left",
 });
 
 // Allowed value sets per field — writeSetting() validates against these

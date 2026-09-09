@@ -55,10 +55,11 @@ test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad' and diceMode defaults 
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
 });
 
-// 04-DR9: handedness field (default "right" = D-pad left / MAKE CAMP right,
-// swapping the bottom control bar sides live via the Settings sheet).
-test("SETTINGS_DEFAULTS: handedness defaults to 'right'", () => {
-  assert.equal(SETTINGS_DEFAULTS.handedness, "right");
+// 04-DR11: handedness field (default "left" = MAKE CAMP on the left, D-pad
+// ALWAYS centered regardless of this setting; only MAKE CAMP's side moves
+// live via the Settings sheet).
+test("SETTINGS_DEFAULTS: handedness defaults to 'left'", () => {
+  assert.equal(SETTINGS_DEFAULTS.handedness, "left");
 });
 
 test("writeSetting/readSettings: each of the 7 fields round-trips through window.mzStorage", async () => {
@@ -69,7 +70,7 @@ test("writeSetting/readSettings: each of the 7 fields round-trips through window
     await writeSetting("controlScheme", "dpad");
     await writeSetting("confirmBeforeQuit", false);
     await writeSetting("diceMode", "always");
-    await writeSetting("handedness", "left");
+    await writeSetting("handedness", "right");
     await flushStorage();
 
     const settings = await readSettings();
@@ -80,7 +81,7 @@ test("writeSetting/readSettings: each of the 7 fields round-trips through window
       controlScheme: "dpad",
       confirmBeforeQuit: false,
       diceMode: "always",
-      handedness: "left",
+      handedness: "right",
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -123,7 +124,7 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
 
     await writeSetting("handedness", "ambidextrous"); // not in {left,right}
     await flushStorage();
-    assert.equal((await readSettings()).handedness, "right");
+    assert.equal((await readSettings()).handedness, "left");
   });
 });
 
