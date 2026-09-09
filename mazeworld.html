@@ -635,19 +635,21 @@ html,body{height:100%}
 .mw-error .mw-empty-head{color:var(--stamp)}
 .yard-loading{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;text-align:center}
 
-/* ---------- title / start screen (DR2; revised 04-DR3) ----------
+/* ---------- title / start screen (DR2; revised 04-DR3; RESUME removed
+   device-review Pass B1 item 1) ----------
    A full-screen gate shown OVER the already-booting #app (see the trailing
-   module script's initTitleScreen()) — the splash art + GAME_NAME + ENTER /
-   RESUME (only when a prior save exists) buttons, dark torch-lit style
-   matching design/Mazeworld Mobile.dc.html. Boot itself (auto-resume-or-
-   new-run, both the classic and engine-routed sequences) is completely
-   unchanged underneath — this only controls whether it is immediately
-   visible before the player taps through. 04-DR3: ENTER no longer rolls a
-   character directly — it dismisses this screen and opens
-   #mw-roller-screen (the "THE TABLES DECIDE" roll screen), the only place a
-   new character is ever rolled; this screen can also reappear mid-session
-   via window.mzAbandonRun (HERO tab's "Abandon your run"), always with
-   RESUME available. */
+   module script's initTitleScreen()) — the splash art + GAME_NAME + a
+   SINGLE context-aware ENTER button, dark torch-lit style matching
+   design/Mazeworld Mobile.dc.html. Boot itself (auto-resume-or-new-run,
+   both the classic and engine-routed sequences) is completely unchanged
+   underneath — this only controls whether it is immediately visible before
+   the player taps through. There is no separate RESUME button: ENTER
+   itself resumes the live delve underneath (just dismisses this screen) when
+   one exists, or opens #mw-roller-screen (the "THE TABLES DECIDE" roll
+   screen, the only place a new character is ever rolled) when it doesn't —
+   see the trailing module script's `resumeIntent`/showTitleScreen(). This
+   screen can also reappear mid-session via window.mzAbandonRun (HERO tab's
+   abandon-run action). */
 .mw-title-screen{
   position:fixed;inset:0;z-index:50;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
@@ -691,12 +693,9 @@ html,body{height:100%}
   cursor:pointer;
 }
 .mw-title-enter{background:var(--ditto);color:var(--paper);border-color:var(--ditto);box-shadow:0 4px 0 var(--mw-btn-border)}
-.mw-title-resume{background:var(--paper-3);color:var(--ink)}
 .mw-title-btn:active:not(:disabled){transform:translateY(3px)}
-.mw-title-resume:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shadow)}
 .mw-title-enter:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 .mw-title-btn:disabled{opacity:.5;cursor:not-allowed}
-.mw-title-resume[hidden]{display:none}
 
 /* ---------- character-roll screen (04-DR3, "THE TABLES DECIDE") ----------
    A full-screen gate shown OVER #app between a new-run trigger (title
@@ -797,13 +796,11 @@ html,body{height:100%}
   <div class="mw-title-body">
     <!-- Title/tagline text intentionally omitted — the splash art (ddr_splash.png)
          already contains the game name + tagline (user directive, DR3). -->
-    <!-- DR4 group 3: RESUME sits ABOVE ENTER (source order = visual order
-         in this flex-column) so that when an active delve exists, RESUME is
-         the top/first button — see showTitleScreen()'s allowResume logic
-         (trailing module script) for when it's shown vs. hidden. With no
-         active delve, RESUME stays hidden and ENTER is the only button. -->
+    <!-- Device-review Pass B1 item 1: ONE context-aware ENTER button, no
+         separate RESUME. See showTitleScreen()/`resumeIntent` (trailing
+         module script) for how ENTER decides whether to resume the live
+         delve underneath or open the roller for a fresh character. -->
     <div class="mw-title-actions">
-      <button type="button" class="mw-title-btn mw-title-resume" id="mw-title-resume" hidden disabled>Resume</button>
       <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
     </div>
   </div>
@@ -4297,24 +4294,24 @@ window.__mzClassicBoot = async function classicBoot() {
   // so it depends on THIS call having already migrated any legacy data.
   await window.mzStorage.migrateLegacyKeys();
 
-  // DR2 title screen: whether to offer RESUME at all is decided from the
-  // save that exists RIGHT NOW, before boot() runs — boot() with no prior
-  // save never itself writes one (engineAdapter.js#boot only calls
-  // initRun(), not persist(); see its own doc comment), so checking before
-  // or after boot() is equally correct here, but "before" reads clearest.
-  // TITLE_SAVE_KEY mirrors engineAdapter.js's own SAVE_KEY literal — the
-  // same documented, temporary duplication that file's own header comment
-  // already accepts (mazeworld.html's classic <script> isn't a module and
-  // exports nothing to import this from).
+  // Device-review Pass B1 item 1: whether the FIRST ENTER tap resumes (vs.
+  // opens the roller) is decided from the save that exists RIGHT NOW, before
+  // boot() runs — boot() with no prior save never itself writes one
+  // (engineAdapter.js#boot only calls initRun(), not persist(); see its own
+  // doc comment), so checking before or after boot() is equally correct
+  // here, but "before" reads clearest. TITLE_SAVE_KEY mirrors
+  // engineAdapter.js's own SAVE_KEY literal — the same documented, temporary
+  // duplication that file's own header comment already accepts
+  // (mazeworld.html's classic <script> isn't a module and exports nothing to
+  // import this from).
   const TITLE_SAVE_KEY = "ddr.delve.v1";
-  // DR4 group 3 ("ENTER-only when no save; RESUME on top when an active
-  // delve exists"): a save whose run already ended (dead/won) is not an
-  // "active delve" to resume into — dispatch()/persist() (engineAdapter.js)
-  // write the save unconditionally on every action including the one that
-  // kills/wins the run, so the key can still be PRESENT after death/victory
-  // even though there is nothing left to resume. Parse it and only count it
-  // if the run itself is still live; any read/parse failure fails closed to
-  // "no save" (ENTER-only), never a dead-end RESUME.
+  // A save whose run already ended (dead/won) is not an "active delve" to
+  // resume into — dispatch()/persist() (engineAdapter.js) write the save
+  // unconditionally on every action including the one that kills/wins the
+  // run, so the key can still be PRESENT after death/victory even though
+  // there is nothing left to resume. Parse it and only count it if the run
+  // itself is still live; any read/parse failure fails closed to "no save"
+  // (ENTER opens the roller), never a dead-end resume.
   let hadSaveAtLaunch = false;
   try {
     const raw = await window.mzStorage.getItem(TITLE_SAVE_KEY);
@@ -4557,49 +4554,46 @@ window.__mzClassicBoot = async function classicBoot() {
   await window.__mzClassicBoot();
 
   // DR2 "Add a start/title screen" (04-CONTEXT.md DR2 Group 3), revised by
-  // 04-DR3 per the user's live direction: ENTER no longer starts a run
-  // directly — it dismisses the title and opens the roll screen
-  // (window.mzStartRoll above), which is the only place a new character is
-  // ever rolled. RESUME just dismisses the gate — boot() already silently
-  // rehydrated the saved run underneath it, so there is nothing else for
-  // RESUME to do. hideTitleScreen()/showTitleScreen() are factored out (not
-  // just a local `dismiss` closure) so window.mzAbandonRun below can also
-  // re-show the title screen mid-session, always with RESUME available
-  // (abandoning requires an already-live run).
+  // 04-DR3, revised again by device-review Pass B1 item 1: RESUME is gone —
+  // ENTER is the ONLY title button and is context-aware. `resumeIntent`
+  // records what the NEXT ENTER tap should do: resume the live delve
+  // underneath (just dismiss the gate — boot() already silently rehydrated
+  // it) or open the roller (window.mzStartRoll above, the only place a new
+  // character is ever rolled). It is seeded once from `hadSaveAtLaunch`
+  // (computed BEFORE boot() ran, above) rather than from hasActiveDelveSave()
+  // for the VERY FIRST screen — boot() always leaves S.c populated (even a
+  // brand-new run rolls a full character via engine/state.js#newRun), so
+  // checking S only after boot() could never distinguish "a real save
+  // existed" from "boot() just rolled a throwaway fresh-run character." Every
+  // LATER re-show (SAVE & QUIT, ABANDON THIS CHARACTER, the death card's
+  // CONFIRM) instead recomputes it live via hasActiveDelveSave(), when S
+  // genuinely reflects real gameplay. hideTitleScreen()/showTitleScreen() stay
+  // factored out (not a local `dismiss` closure) so those mid-session
+  // callers can reuse them.
   function hideTitleScreen() {
     const screen = document.getElementById("mw-title-screen");
     if (screen) screen.hidden = true;
   }
-  // DR4 group 3 ("RESUME on top when an active delve exists"): when
-  // `allowResume` is omitted, resolve it dynamically from the classic
-  // script's own `S` (the live GameState driving the map/HUD/death card —
-  // same shared-script-global visibility registerNativeChrome's
-  // getGameContext() below already relies on) rather than requiring every
-  // caller to compute it — a run counts as "active" only while it is neither
-  // dead nor won, so a dead/won run never offers a dead-end RESUME.
+  // A run counts as "active"/resumable only while it is neither dead nor won.
   function hasActiveDelveSave() {
     return !!(S && S.c && !S.dead && !S.won);
   }
+  let resumeIntent = false;
   function showTitleScreen({ allowResume } = {}) {
     const screen = document.getElementById("mw-title-screen");
-    const resumeBtn = document.getElementById("mw-title-resume");
     if (!screen) return;
-    const resume = allowResume != null ? allowResume : hasActiveDelveSave();
-    if (resumeBtn) {
-      resumeBtn.hidden = !resume;
-      resumeBtn.disabled = !resume;
-    }
+    resumeIntent = allowResume != null ? allowResume : hasActiveDelveSave();
     screen.hidden = false;
   }
 
   // 04-DR3: "Abandon your run" (HERO tab's mw-danger-btn, formerly an
   // immediate "Roll new character") — confirm, then return to the title
   // screen WITHOUT rolling. startNewRun() is never called here, so the
-  // abandoned run's save is untouched; RESUME (now forced visible) picks
-  // that exact run back up, while ENTER instead rolls a brand-new one via
-  // the roll screen.
+  // abandoned run's save is untouched; resumeIntent (now forced true) picks
+  // that exact run back up on the next ENTER tap, while ENTER would instead
+  // roll a brand-new one via the roll screen if the run had actually ended.
   window.mzAbandonRun = function abandonRun() {
-    const ok = window.confirm("Abandon this delve? It stays saved — Resume will pick it back up.");
+    const ok = window.confirm("Abandon this delve? It stays saved — Enter will pick it back up.");
     if (!ok) return;
     showTitleScreen({ allowResume: true });
   };
@@ -4616,18 +4610,17 @@ window.__mzClassicBoot = async function classicBoot() {
 
   (function initTitleScreen() {
     const enterBtn = document.getElementById("mw-title-enter");
-    const resumeBtn = document.getElementById("mw-title-resume");
     if (!document.getElementById("mw-title-screen") || !enterBtn) return;
     enterBtn.disabled = false;
+    // The very first screen's resume-or-roll decision (see resumeIntent's
+    // own doc comment above for why this must be hadSaveAtLaunch, not
+    // hasActiveDelveSave(), here specifically).
+    resumeIntent = hadSaveAtLaunch;
     enterBtn.onclick = () => {
       hideTitleScreen();
+      if (resumeIntent) return; // boot() already rehydrated the live delve underneath
       window.mzStartRoll();
     };
-    if (resumeBtn) {
-      resumeBtn.hidden = !hadSaveAtLaunch;
-      resumeBtn.disabled = !hadSaveAtLaunch;
-      resumeBtn.onclick = hideTitleScreen;
-    }
   })();
 
   // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back
