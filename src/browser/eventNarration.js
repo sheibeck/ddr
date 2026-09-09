@@ -62,7 +62,8 @@ export const EVENT_NARRATION = {
     `<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${e.cost ?? 0} wp</span> straight out of you.`,
   wanderingMonster: (e) => `Wandering monster check: <span class="roll">${e.hours ?? 0}</span> of 8 hours disturbed.`,
   campFailed: () => `<span class="miss">Not enough food to make camp.</span> Find rations first.`,
-  teleported: () => `<span class="beat">Teleport square.</span>`,
+  teleported: () =>
+    `<span class="beat">You teleport to an unknown location on this floor…</span> the maze does not offer refunds.`,
   spGained: (e) => {
     const reason = e.reason === "parley" ? "Talking your way out" : e.reason === "descend" ? "Surviving the floor" : "That";
     return `${reason} is worth <span class="roll">${e.amount ?? 0}</span> ${plural(e.amount ?? 0, "skill point")}.`;

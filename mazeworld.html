@@ -4078,7 +4078,7 @@ function flashMessage(text) {
 // entry in the mock (it treats them as maze structure / the player, not a
 // rollable feature) so their copy is new but matches the same voice.
 const MARKS_LEGEND = [
-  { icon: "encounter",  name: "ENCOUNTER DOT", desc: "Something gets rolled for you the moment you touch it." },
+  { icon: "encounter",  name: "ENCOUNTER",     desc: "Something gets rolled for you the moment you touch it." },
   { icon: "teleport",   name: "TELEPORT",      desc: "Thrown a d20 of squares somewhere you did not choose." },
   { icon: "onewaydoor", name: "ONE-WAY DOOR",  desc: "Go where the arrow points. There is no coming back." },
   { icon: "trap",       name: "TRAP",          desc: "A d6 out of you, before you knew it was there." },
@@ -4358,7 +4358,6 @@ window.__mzClassicBoot = async function classicBoot() {
   const freshSeed = Date.now();
   const engineState = await boot(freshSeed);
   window.__mzState.set(engineState);
-  window.logLine(`<span class="banner">Movement is now walking through the engine.</span>`);
   window.paint();
   window.draw();
   // Device-review Pass B1 item 4: center the viewport on the party for the
@@ -4399,7 +4398,7 @@ window.__mzClassicBoot = async function classicBoot() {
     leaptOver: ["A crevice", "ink"], fellInGorge: ["A crevice", "ink"],
     floorChanged: ["The stair down", "ditto"],
     oneWayBlocked: ["A one-way door", "moss"],
-    encounterRolled: ["Encounter dot", "stamp"],
+    encounterRolled: ["Encounter", "stamp"],
   };
   function beatsTitleFor(events) {
     for (const e of events) {
@@ -4407,6 +4406,26 @@ window.__mzClassicBoot = async function classicBoot() {
       if (hit) return hit;
     }
     return ["", ""];
+  }
+
+  // Pass B2 group 1: the over-map encounter/feature-landing OVERLAY shows
+  // ONLY narration prose — never the dice-roll mechanics (the
+  // `<span class="roll">...</span>` detail formatEvents() embeds inline).
+  // The ORACLE log keeps that same detail unchanged (see the unmodified
+  // `for (const line of html) window.logLine(line);` call below, which still
+  // receives the FULL `html` array). Both consume the SAME formatEvents()
+  // output; this strips the roll span (and drops any line that becomes
+  // empty/whitespace-only once its dice content is removed) only for the
+  // copy handed to state.beats, matching src/browser/viewModels.js's own
+  // ROLL_SPAN_RE pattern for the Oracle tab's separate dice-reveal gating.
+  function stripRollDetail(lines) {
+    const stripped = lines
+      .map((line) => line.replace(/<span class="roll">[\s\S]*?<\/span>\s*/g, "").trim())
+      .filter((line) => line.replace(/<[^>]+>/g, "").trim().length > 0);
+    // Never hand the overlay a completely empty body — fall back to the
+    // untouched lines if stripping happened to remove everything (a line
+    // that is PURELY dice mechanics with no surrounding prose).
+    return stripped.length ? stripped : lines;
   }
 
   window.move = function engineMove(dir) {
@@ -4420,7 +4439,7 @@ window.__mzClassicBoot = async function classicBoot() {
     window.__mzState.set(state);
     if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
       const [title, tone] = beatsTitleFor(events);
-      state.beats = { groups: [{ title, tone, lines: html }], i: 0, action: null };
+      state.beats = { groups: [{ title, tone, lines: stripRollDetail(html) }], i: 0, action: null };
     }
     window.paint();
     window.draw();
