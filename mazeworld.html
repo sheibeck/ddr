@@ -3088,7 +3088,7 @@ function playerStrike() {
     const hit = auto || (need > 0 && roll <= need);
     if (!hit) {
       if (need === 0) say(`<span class="miss">${t.name} cannot be touched by an ordinary weapon.</span>`);
-      else say(`Strike: d${dieN} → <span class="roll">${roll}</span>, needed ${need}. <span class="miss">Miss.</span>`);
+      else say(`Strike: d${dieN} → <span class="roll">${roll}</span>, needed ${need}. <span class="miss">Miss — the air remains unharmed.</span>`);
       C.lastStrike.push({ hit: false });
       continue;
     }
@@ -3122,7 +3122,7 @@ function playerStrike() {
     if (S.c.sub === "Cutthroat" && !C.cut) { crit = true; C.cut = true; }
     if (crit) dmg *= 2;
     t.wp -= dmg;
-    say(`Strike: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hit">Hit</span> on ${t.name} for <span class="hit">${dmg}</span>${crit ? " (critical, doubled)" : ""}.`);
+    say(`Strike: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hit">Hit</span> on ${t.name} for <span class="hit">${dmg}</span>${crit ? " — critical, doubled, and thoroughly deserved" : ""}.`);
     C.lastStrike.push({ hit: true, dmg, crit });
     if (t.wp <= 0) killFoe(t);
   }
@@ -3143,7 +3143,7 @@ function killFoe(f) {
                 * (S.c.sub === "Apprentice" && S.c.level < 3 ? 2 : 1);
   const gained = Math.round(raw * mul);
   S.c.sp += gained;
-  say(`${f.name} drops. Skill points: d6 <span class="roll">${roll}</span> × level ${f.lvl} = ${raw}, ×${mul} solo delve → <span class="hit">+${gained}</span>.`);
+  say(`${f.name} drops, permanently unbothered by how this ends. Skill points: d6 <span class="roll">${roll}</span> × level ${f.lvl} = ${raw}, ×${mul} solo delve → <span class="hit">+${gained}</span>.`);
   // creatures carry things, and the things are worth wilmst
   const purse = { "Humans":12, "Demons":8, "Magical":8, "Walking Dead":6, "Lair Beasts":3, "Beasts":1 }[f.type] || 4;
   const coin = Math.round(D(10) * f.lvl * purse / LOOT_DIVISOR);
@@ -3533,11 +3533,11 @@ function afterPlayerAction() {
   const C = S.combat;
   if (!C) { paint(); save(); return; }
   if (!liveFoes().length) {
-    say(`<span class="banner">Encounter cleared.</span>`);
+    say(`<span class="banner">Nothing left standing.</span> You, mostly, in one piece.`);
     endCombat(); return;
   }
   allyTurn();
-  if (!liveFoes().length) { say(`<span class="banner">Encounter cleared.</span>`); endCombat(); return; }
+  if (!liveFoes().length) { say(`<span class="banner">Nothing left standing.</span> You, mostly, in one piece.`); endCombat(); return; }
   foeTurn();
   if (!S.dead && S.combat) {
     S.combat.round++;
@@ -3583,7 +3583,7 @@ function foeTurn() {
       let need = foeToHitVs();
       if (f.blind) need = 1;
       if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
-      if (roll > need) { say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="miss">Misses.</span>`); continue; }
+      if (roll > need) { say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="miss">Swings, and finds nothing.</span>`); continue; }
       let dmg = f.lvl * f.lvl + ((f.sp && f.sp.dmg) ? f.sp.dmg() : D(6));
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       if (roll === 1 || (roll <= 2 && S.c.sub === "Soldier")) dmg *= 2;
@@ -3620,7 +3620,7 @@ function foeTurn() {
         continue;
       }
       S.c.wp -= dmg;
-      say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hurt">Hits for ${dmg}</span>${ignores ? " — armour is no use against it" : ""}${roll === 1 ? " — critical" : ""}.`);
+      say(`${f.name}: d${dieN} → <span class="roll">${roll}</span> vs ${need}. <span class="hurt">Connects for ${dmg}</span>${ignores ? " — armour is no use against it" : ""}${roll === 1 ? " — critical" : ""}.`);
       if (S.c.wp <= 0) { die("combat", f.name); return; }
     }
   }

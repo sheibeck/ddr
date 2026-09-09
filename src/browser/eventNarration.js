@@ -38,14 +38,22 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 export const EVENT_NARRATION = {
   /* ---------------- movement.js (migrated verbatim from the prior formatEvent switch) ---------------- */
 
+  // Pass B2 group 3: voice cleanup for the 8 feature-landing buckets the
+  // over-map encounter overlay shows (dark-but-family-friendly, matching
+  // design/Mazeworld Mobile.dc.html's deadpan tone). Any dice-mechanics
+  // clause that should vanish from the overlay (Pass B2 group 1's
+  // stripRollDetail, mazeworld.html) is kept entirely inside its own
+  // `<span class="roll">` (trailing punctuation included) so what remains
+  // after stripping is always a clean, complete sentence — not a dangling
+  // fragment. The Oracle log still shows the full line, dice and all.
   oneWayBlocked: (e) =>
     e.side === "approach"
-      ? `The arrow points the other way. <span class="miss">It will not open from this side.</span>`
-      : `<span class="miss">You came through it. There is no coming back.</span>`,
-  climbedOver: () => `<span class="hit">Over.</span>`,
-  leaptOver: () => `<span class="hit">Over.</span>`,
-  fellClimbing: (e) => `<span class="hurt">You come off — ${e.hurt ?? 0} wp.</span>`,
-  fellInGorge: (e) => `<span class="hurt">Short. ${e.hurt ?? 0} wp on the way down.</span>`,
+      ? `Someone built this door to work exactly once, and used their turn already. <span class="miss">It will not open from this side.</span>`
+      : `<span class="miss">You are through. That door is furniture now — there is no coming back.</span>`,
+  climbedOver: () => `<span class="hit">Over, and no worse for it.</span>`,
+  leaptOver: () => `<span class="hit">Cleared it. No drama.</span>`,
+  fellClimbing: (e) => `<span class="hurt">Gravity remembers you exist — ${e.hurt ?? 0} wp.</span>`,
+  fellInGorge: (e) => `<span class="hurt">Short. The floor of the crevice makes its introduction — ${e.hurt ?? 0} wp.</span>`,
   afflictionTick: (e) =>
     (e.loss ?? 0) > 0
       ? `<span class="hurt">${e.kind ?? "It"}: −${e.loss} wp.</span>`
@@ -68,7 +76,7 @@ export const EVENT_NARRATION = {
     const reason = e.reason === "parley" ? "Talking your way out" : e.reason === "descend" ? "Surviving the floor" : "That";
     return `${reason} is worth <span class="roll">${e.amount ?? 0}</span> ${plural(e.amount ?? 0, "skill point")}.`;
   },
-  floorChanged: (e) => `<span class="banner">Floor ${e.depth ?? "?"}.</span> The air gets worse.`,
+  floorChanged: (e) => `<span class="banner">Floor ${e.depth ?? "?"}.</span> The air gets worse, and takes it personally.`,
   leveled: (e) => `<span class="hit">Skill level ${e.level ?? "?"}</span> (+${e.wpGain ?? 0} wp).`,
   won: (e) => `<span class="banner">The Gate.</span> Walked out on day ${e.day ?? "?"}, after ${e.steps ?? 0} squares.`,
   died: () => `<span class="hurt">You have died.</span>`,
@@ -215,16 +223,16 @@ export const EVENT_NARRATION = {
 
   /* ---------------- encounters.js ---------------- */
 
-  trapAvoided: (e) => `<span class="hit">You see it coming.</span> <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}.`,
-  trapDisarmed: () => `<span class="hit">A Pilfer's hands know exactly where to be.</span>`,
-  trapDoubled: () => `<span class="hurt">Cat Burglar's luck: the trap hits twice as hard.</span>`,
-  trapSprung: (e) => `<span class="hurt">${e.name ?? "A trap."}</span> <span class="roll">${e.dmg ?? 0}</span> wp.`,
-  trapPoisoned: () => `<span class="hurt">The trap leaves poison in you.</span>`,
-  chestOpened: () => `<span class="hit">The chest opens.</span>`,
-  chestLockRolled: (e) => `Lock: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}.`,
-  chestLocked: () => `<span class="miss">The lock holds.</span>`,
-  scrollFound: () => `<span class="hit">A scroll.</span>`,
-  encounterRolled: (e) => `<span class="roll">Table ${e.table ?? "?"}, roll ${e.roll ?? "?"}:</span> ${e.result ?? "something"}.`,
+  trapAvoided: (e) => `<span class="hit">You clock it a half-step early.</span> <span class="roll">${e.roll ?? "?"} vs ${e.need ?? "?"}.</span>`,
+  trapDisarmed: () => `<span class="hit">A Pilfer's hands already knew where not to put themselves.</span>`,
+  trapDoubled: () => `<span class="hurt">Cat Burglar's luck holds — for the trap. It hits twice as hard.</span>`,
+  trapSprung: (e) => `<span class="hurt">${e.name ?? "A trap"} finds you first.</span> <span class="roll">${e.dmg ?? 0} wp.</span>`,
+  trapPoisoned: () => `<span class="hurt">The trap leaves something behind that outlasts the bruise.</span>`,
+  chestOpened: () => `<span class="hit">The box gives up its secrets.</span>`,
+  chestLockRolled: (e) => `<span class="roll">Lock: ${e.roll ?? "?"} vs ${e.need ?? "?"}.</span>`,
+  chestLocked: () => `<span class="miss">Not today. The lock wins this round.</span>`,
+  scrollFound: () => `<span class="hit">A scroll, tucked in with the loot.</span>`,
+  encounterRolled: (e) => `<span class="roll">Table ${e.table ?? "?"}, roll ${e.roll ?? "?"}:</span> The dice decide — ${e.result ?? "something"}.`,
   tableFour: (e) => `<span class="beat">${e.result ?? "Something happens."}</span>`,
   tableFourNoop: (e) => `<span class="beat">${e.result ?? "Nothing much happens."}</span>`,
   foodFound: (e) => `<span class="hit">${e.name ?? "Food"}</span> (+${e.wp ?? 0} wp).`,
