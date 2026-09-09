@@ -3955,7 +3955,19 @@ function renderEncounter() {
   document.getElementById("a-potion").onclick = () => act(drinkPotion);
   document.getElementById("a-flee").onclick = () => act(flee);
   const sb = document.getElementById("a-spell");
-  if (sb) sb.onclick = () => { C.spellOpen = !C.spellOpen; renderEncounter(); };
+  if (sb) sb.onclick = () => {
+    C.spellOpen = !C.spellOpen;
+    renderEncounter();
+    // Device-review Pass B1 item 5: the spell list already renders directly
+    // under the SPELLS button in DOM order, but #enc-panel scrolls
+    // internally (overflow-y:auto) — with several foes on screen the button
+    // (and the list opened beneath it) can sit below the fold, making SPELLS
+    // look dead. renderEncounter() just rebuilt the DOM, so re-query rather
+    // than reuse the now-detached `sb` reference, and scroll the button
+    // (not just the menu) into view so both the button and its freshly
+    // opened list are visible together.
+    if (C.spellOpen) document.getElementById("a-spell")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const tb = document.getElementById("a-talk");   if (tb) tb.onclick = () => act(parley);
   const gb = document.getElementById("a-sing");   if (gb) gb.onclick = () => act(sing);
   const cb = document.getElementById("a-scroll"); if (cb) cb.onclick = () => act(readScroll);
