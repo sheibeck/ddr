@@ -44,7 +44,7 @@ Cheap rulebook-described mechanics with existing engine seams.
 
 - [x] **BEST-01**: Every creature's HP / damage / to-hit / AR / attack count is reviewed against its intended depth band and the encounter tables, with outliers fixed and a before/after stat table committed
 - [x] **BEST-02**: Ability-bearing foes carry proportionally lower raw stats (hand-tuned; the formal threat-budget system is deferred unless the tuning harness proves it necessary)
-- [ ] **BEST-03**: Bestiary changes to creatures a parity fixture rolls land only through narrow, named `comparables.js` carve-outs per FID-05
+- [x] **BEST-03**: Bestiary changes to creatures a parity fixture rolls land only through narrow, named `comparables.js` carve-outs per FID-05
 
 ### Consolidated Difficulty Retune (TUNE)
 
@@ -123,7 +123,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CANON-05 | Phase 18 | Complete |
 | BEST-01 | Phase 18 | Complete |
 | BEST-02 | Phase 18 | Complete |
-| BEST-03 | Phase 18 | Pending |
+| BEST-03 | Phase 18 | Complete |
 | TUNE-01 | Phase 21 | Pending |
 | TUNE-02 | Phase 21 | Pending |
 | TUNE-03 | Phase 21 | Pending |

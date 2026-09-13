@@ -95,7 +95,7 @@ Plans:
   4. Only named, narrow `comparables.js` carve-outs cover fixture-exercised creatures that changed numbers — no blanket fixture regeneration — with a documented rationale per carve-out.
   5. Ability-bearing foes (Djinni, Krupke, Drudge, Vampire, Stalka Beast) carry proportionally lower raw stats than their pre-rebalance baseline, anticipating the ability kits landing in Phase 19.
 
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -107,7 +107,7 @@ Plans:
 
 - [x] 18-03-PLAN.md — CANON-01/03/04/05: route playerStrike / allyTurn / alliesTurn / ward-reflect / acid-tick in `engine/combat.js` through the seam; Philly `slow` two-dice-keep-lower; 12 behavioral tests + D-13 countingRng draw pins (FID-02 baseline unchanged)
 - [x] 18-04-PLAN.md — CANON-01/03/04: route quake / volley / insane / thrown in `engine/magic.js` and the fire item in `engine/items.js`; Cleric-vs-Demons, spell-vs-Walking-Dead, per-foe Earthquake, halfDmg volley, spell-bypass tests
-- [ ] 18-05-PLAN.md — BEST-01/02/03: bestiary numbers (D-03 discount x7 entries, Drake 135→38, Werebeast d10+5→d10), header reference to the stat doc, content-table pins incl. verbatim fixture-exposed rows and tier shape (zero carve-outs)
+- [x] 18-05-PLAN.md — BEST-01/02/03: bestiary numbers (D-03 discount x7 entries, Drake 135→38, Werebeast d10+5→d10), header reference to the stat doc, content-table pins incl. verbatim fixture-exposed rows and tier shape (zero carve-outs)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -173,7 +173,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
-| 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 4/6 | In Progress|  |
+| 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 5/6 | In Progress|  |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 0/TBD | Not started | - |
 | 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
