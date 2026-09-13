@@ -102,44 +102,51 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FID-01 | — | Pending |
-| FID-02 | — | Pending |
-| FID-03 | — | Pending |
-| FID-04 | — | Pending |
-| FID-05 | — | Pending |
-| FOE-01 | — | Pending |
-| FOE-02 | — | Pending |
-| FOE-03 | — | Pending |
-| FOE-04 | — | Pending |
-| FOE-05 | — | Pending |
-| FOE-06 | — | Pending |
-| FOE-07 | — | Pending |
-| FOE-08 | — | Pending |
-| FOE-09 | — | Pending |
-| CANON-01 | — | Pending |
-| CANON-02 | — | Pending |
-| CANON-03 | — | Pending |
-| CANON-04 | — | Pending |
-| CANON-05 | — | Pending |
-| BEST-01 | — | Pending |
-| BEST-02 | — | Pending |
-| BEST-03 | — | Pending |
-| TUNE-01 | — | Pending |
-| TUNE-02 | — | Pending |
-| TUNE-03 | — | Pending |
-| TUNE-04 | — | Pending |
-| PARLEY-01 | — | Pending |
-| PARLEY-02 | — | Pending |
-| PARLEY-03 | — | Pending |
-| PARLEY-04 | — | Pending |
-| LANG-01 | — | Pending |
-| LANG-02 | — | Pending |
+| FID-01 | Phase 17 | Pending |
+| FID-02 | Phase 17 | Pending |
+| FID-03 | Phase 17 | Pending |
+| FID-04 | Phase 19 | Pending |
+| FID-05 | Phase 18 | Pending |
+| FOE-01 | Phase 19 | Pending |
+| FOE-02 | Phase 19 | Pending |
+| FOE-03 | Phase 19 | Pending |
+| FOE-04 | Phase 19 | Pending |
+| FOE-05 | Phase 19 | Pending |
+| FOE-06 | Phase 19 | Pending |
+| FOE-07 | Phase 19 | Pending |
+| FOE-08 | Phase 19 | Pending |
+| FOE-09 | Phase 19 | Pending |
+| CANON-01 | Phase 18 | Pending |
+| CANON-02 | Phase 19 | Pending |
+| CANON-03 | Phase 18 | Pending |
+| CANON-04 | Phase 18 | Pending |
+| CANON-05 | Phase 18 | Pending |
+| BEST-01 | Phase 18 | Pending |
+| BEST-02 | Phase 18 | Pending |
+| BEST-03 | Phase 18 | Pending |
+| TUNE-01 | Phase 21 | Pending |
+| TUNE-02 | Phase 21 | Pending |
+| TUNE-03 | Phase 21 | Pending |
+| TUNE-04 | Phase 21 | Pending |
+| PARLEY-01 | Phase 20 | Pending |
+| PARLEY-02 | Phase 20 | Pending |
+| PARLEY-03 | Phase 20 | Pending |
+| PARLEY-04 | Phase 20 | Pending |
+| LANG-01 | Phase 20 | Pending |
+| LANG-02 | Phase 20 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32 ⚠️ (filled by roadmap)
+- Mapped to phases: 32
+- Unmapped: 0 ✓
+
+**Phase map:**
+- Phase 17 — Fixture Inventory & Foe-Turn Refactors: FID-01, FID-02, FID-03
+- Phase 18 — Bestiary Rebalance & Canon Combat Fixes: BEST-01, BEST-02, BEST-03, CANON-01, CANON-03, CANON-04, CANON-05, FID-05
+- Phase 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance: FOE-01..09, CANON-02, FID-04
+- Phase 20 — Parley Balance & Language System: PARLEY-01..04, LANG-01, LANG-02
+- Phase 21 — Consolidated Difficulty Retune: TUNE-01..04
 
 ---
 *Requirements defined: 2026-09-13*
-*Last updated: 2026-09-13 after initial definition (research-first: `.planning/research/SUMMARY.md`)*
+*Last updated: 2026-09-13 — roadmap created (`.planning/ROADMAP.md`, Phases 17–21), all 32 v1.1 requirements mapped with zero orphans*

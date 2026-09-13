@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Monster Balancing & Abilities
 status: planning
-last_updated: "2026-09-13T18:13:10.880Z"
+last_updated: "2026-09-13T18:50:17.000Z"
 last_activity: 2026-09-13
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Milestone v1.1 Monster Balancing & Abilities — defining requirements (research-first)
+**Current focus:** Milestone v1.1 Monster Balancing & Abilities — roadmap created (Phases 17–21), ready to plan Phase 17
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-13 — Milestone v1.1 started
+Phase: 17 of 21 (Fixture Inventory & Foe-Turn Refactors)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-09-13 — Roadmap created for v1.1 (Phases 17–21); REQUIREMENTS.md traceability updated (32/32 mapped)
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -39,7 +41,9 @@ Last activity: 2026-09-13 — Milestone v1.1 started
 
 **Device:** Pixel 7 wireless adb (`adb-28051FDH200H0R`, 10.0.0.175:<port rotates>; rediscover via `adb mdns services`). Deploy = `adb install -r` + `am force-stop` + `monkey` relaunch (install alone doesn't reload the WebView). A Play-installed build and a local build have different signers — uninstall one before installing the other (Preferences data is lost on uninstall). Screenshots via screencap usually hit the lock screen — the user reviews and reports.
 
-**Engine gate (non-negotiable, every change):** engine pure/deterministic; parity byte-identical for solo/empty-party play; new rng draws only behind new-feature guards; new serialized fields carved out in all 3 `*Comparable()` fns (`test/parity/harness/comparables.js`); `test/parity/prototype-master.js.txt` NEVER edited; every new event type gets an `EVENT_NARRATION` entry (coverage guard). Deliberate divergences regenerate only their specific fixtures, with rationale.
+**Engine gate (non-negotiable, every change):** engine pure/deterministic; parity byte-identical for solo/empty-party play; new rng draws only behind new-feature guards; new serialized fields carved out in all 3 `*Comparable()` fns (`test/parity/harness/comparables.js`); `test/parity/prototype-master.js.txt` NEVER edited; every new event type gets an `EVENT_NARRATION` entry (coverage guard). Deliberate divergences regenerate only their specific fixtures, with rationale. (Also stated in `ROADMAP.md` as the v1.1 preamble gate.)
+
+**v1.1 phase order (ROADMAP.md):** 17 Fixture Inventory & Foe-Turn Refactors → 18 Bestiary Rebalance & Canon Combat Fixes → 19 Foe Abilities/Spellcasting/Symmetric INT Resistance (`--research-phase` recommended) → 20 Parley Balance & Language System → 21 Consolidated Difficulty Retune (`--research-phase` recommended; TUNE-04 human DR sign-off is the milestone's last step, UAT deferred to milestone end).
 
 **Working method:** GSD phases (autonomous runs) for systems work; on-device DR rounds (small user-directed batches, each with a `DR*-SUMMARY.md`) for UX. Commit per batch — do not let the tree sit uncommitted for days. Remote: `origin` = https://github.com/sheibeck/ddr (public). Push is a user-run step (`! git push`) — the auto-mode classifier blocks pushes from Claude.
 
@@ -47,7 +51,7 @@ Last activity: 2026-09-13 — Milestone v1.1 started
 
 ### Blockers/Concerns (open)
 
-- [Balance]: The consolidated difficulty retune (Phase-3 feel-tuning to floor 30–50+, PARTY-10 party power, ECON deep tuning, foe abilities) has NOT happened — it runs ONCE in Monster Balancing using `tools/tune-difficulty.mjs` / `tools/tune-economy.mjs`.
+- [Balance]: The consolidated difficulty retune (Phase-3 feel-tuning to floor 30–50+, PARTY-10 party power, ECON deep tuning, foe abilities, parley economy) has NOT happened — it runs ONCE in Phase 21 using `tools/tune-difficulty.mjs` / `tools/tune-economy.mjs`, closed by a human DR-round sign-off (TUNE-04).
 - [Play launch]: target-API level, Data Safety fields, and IARC questions shift yearly — re-verify against current Play Console Help right before the production phase. Repo-side: a dependency/SDK audit proving "no data collected" is still owed.
 - [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
 - [Play testers]: internal testers are on the pre-DR18 build until the versionCode-2 AAB is uploaded.
@@ -55,7 +59,6 @@ Last activity: 2026-09-13 — Milestone v1.1 started
 ### Pending Todos
 
 - Set up Play Developer API upload (service account) so `play:release` can push to the internal track without Console drag-and-drop — user steps in `docs/RELEASING.md`.
-- DR15-A "Language as a system" design + DR16-G "squares of opponents" — fold into Monster Balancing's parley pass / foe model if relevant.
 
 ## Deferred Items
 
@@ -66,18 +69,19 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | verification | Phases 01/02/03 VERIFICATION.md `human_needed` | accepted — end-of-milestone UAT satisfied by DR1–DR18 on-device play + Play internal testers |
 | quick_task | rules-text-audit-pass (20260909) | missing SUMMARY → shipped as Phase 04.2 |
 | quick_task | 260908-kkq-rename-product-to-delve-die-repeat-and-s | partial → landed in f81942f |
-| requirement | UX-06 first-run tutorial (04-10) | user-deferred until the UI settles (build LAST) |
-| requirement | STR-01..04, STR-06 production launch | in progress by the user; repo-side audit owed |
-| requirement | PARTY-10 consolidated difficulty retune | Monster Balancing milestone |
+| requirement | UX-06 first-run tutorial (04-10) | user-deferred until the UI settles (build LAST, after v1.1) |
+| requirement | STR-01..04, STR-06 production launch | in progress by the user; repo-side audit owed; after v1.1 |
+| requirement | PARTY-10 consolidated difficulty retune | now Phase 21 (v1.1) |
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
+| v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
 
 ## Session Continuity
 
-Last session: 2026-09-13 — resumed after a token-limit cutoff; reconstructed the 09-10 state; built + sideloaded DR17/DR18; set up the signed Play release pipeline + JDK unification; committed everything (3 commits) and the user pushed to `origin/master`; closed v1.0 (override closeout) and reconciled all planning docs.
-Stopped at: v1.0 closed; ready to `/compact` then `/gsd-new-milestone` (Monster Balancing & Abilities).
+Last session: 2026-09-13 — created the v1.1 ROADMAP.md (Phases 17–21, derived from `.planning/research/SUMMARY.md` and `.planning/REQUIREMENTS.md`), mapped all 32 v1.1 requirements with zero orphans, and updated REQUIREMENTS.md traceability.
+Stopped at: v1.1 roadmap created and awaiting user approval; ready for `/gsd-plan-phase 17` once approved.
 Resume file: None.
 
 ## Operator Next Steps
 
-1. Upload the signed versionCode-2 AAB to the internal-testing track (Play Console → Testing → Internal testing → Create new release).
-2. `/compact`, then `/gsd-new-milestone` — Monster Balancing & Abilities (research-first).
+1. Upload the signed versionCode-2 AAB to the internal-testing track (Play Console → Testing → Internal testing → Create new release), if not already done.
+2. Review/approve `.planning/ROADMAP.md` for v1.1, then `/gsd-plan-phase 17`.
