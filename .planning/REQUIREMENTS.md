@@ -13,7 +13,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 The non-negotiable engine gate, made explicit for this milestone because every feature below touches combat RNG or the bestiary the frozen prototype embeds its own copy of.
 
 - [x] **FID-01**: A written fixture inventory documents exactly which `content/bestiary.js` creatures each parity fixture seed rolls (combat/magic/full-suite), BEFORE any bestiary number or foe-turn behavior changes land
-- [ ] **FID-02**: A foe without the new `abilities` field draws exactly zero additional RNG in any fight — verified by a draw-count regression test on non-ability fixtures — so solo/empty-party play stays byte-identical to the frozen prototype master
+- [x] **FID-02**: A foe without the new `abilities` field draws exactly zero additional RNG in any fight — verified by a draw-count regression test on non-ability fixtures — so solo/empty-party play stays byte-identical to the frozen prototype master
 - [x] **FID-03**: The foe-turn targeting and player-damage pipeline (ward/armor/damage) is extracted into shared helpers (`pickFoeTarget`, `applyFoeDamageToPlayer`) with behavior-preserving tests, so foe abilities reuse the melee path instead of duplicating it
 - [ ] **FID-04**: Every new serialized field (per-foe ability state, foe-inflicted player effects, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load; a v1.0 internal-tester save loads without data loss
 - [ ] **FID-05**: Deliberate divergences from the prototype (bestiary numbers, parley formula) regenerate only their specific fixtures, each with a before/after table and rationale — never a blanket fixture regeneration
@@ -103,7 +103,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FID-01 | Phase 17 | Complete |
-| FID-02 | Phase 17 | Pending |
+| FID-02 | Phase 17 | Complete |
 | FID-03 | Phase 17 | Complete |
 | FID-04 | Phase 19 | Pending |
 | FID-05 | Phase 18 | Pending |

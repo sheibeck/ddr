@@ -69,7 +69,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
   3. A draw-count regression test proves a foe without the new `abilities` field draws exactly zero additional RNG in any fight.
   4. The full parity suite remains byte-identical to the frozen prototype master.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -79,7 +79,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 17-03-PLAN.md — FID-02: `countingRng` draw-count regression test pinning per-foeTurn and full-fight draws for ability-less foes (+ mulberry32 cursor cross-check); baseline appended to the inventory; phase gate (wave 2)
+- [x] 17-03-PLAN.md — FID-02: `countingRng` draw-count regression test pinning per-foeTurn and full-fight draws for ability-less foes (+ mulberry32 cursor cross-check); baseline appended to the inventory; phase gate (wave 2)
 
 ### Phase 18: Bestiary Rebalance & Canon Combat Fixes
 
@@ -156,7 +156,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
-| 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 2/3 | In Progress|  |
+| 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | In Progress|  |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 0/TBD | Not started | - |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 0/TBD | Not started | - |
 | 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |

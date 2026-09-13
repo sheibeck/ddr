@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Monster Balancing & Abilities
 current_phase: 17
 current_phase_name: Fixture Inventory & Foe-Turn Refactors
-status: executing
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-09-13T20:19:24.961Z"
+status: verifying
+stopped_at: Completed 17-03-PLAN.md (Phase 17 complete)
+last_updated: "2026-09-13T20:27:38.033Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 17 execution started
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 20
 ---
 
 # Project State
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 Phase: 17 (Fixture Inventory & Foe-Turn Refactors) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-13 — Phase 17 execution started
 
-Progress: [███████░░░] 67%
+Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-13T20:19:24.938Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-09-13T20:27:38.011Z
+Stopped at: Completed 17-03-PLAN.md (Phase 17 complete)
 Resume file: None
 
 ## Operator Next Steps
@@ -96,9 +96,11 @@ Resume file: None
 |------|----------|-------|-------|
 | Phase 17 P01 | 30min | 2 tasks | 4 files |
 | Phase 17 P02 | 20min | 2 tasks | 3 files |
+| Phase 17 P03 | 25min | 2 tasks | 2 files |
 
 ## Decisions
 
 - [Phase ?]: 17-01: fixtureRoster.js replays fixtures via applyStartCombat/applyAction/runEconomyAction rather than re-deriving startCombat math; foes snapshotted only on the null->non-null state.combat transition (once per script/scenario)
 - [Phase ?]: 17-02: applyFoeDamageToPlayer avoids an internal f=foe alias so its killFoe/die call sites read as the literal parameter name, matching the plan's textual acceptance-criteria greps
 - [Phase ?]: 17-02: options-object signature (state, foe, rng, events, { dmg, roll, need }) locked per CONTEXT.md's small-rng-explicit-signature preference over RESEARCH.md's positional draft
+- [Phase ?]: 17-03: pinned draw-count integers measured by actually running countingRng against the post-17-02 engine (not hand-traced); matched the plan's PRE-Phase-17 numbers exactly, confirming 17-02's extraction is draw-for-draw identical
