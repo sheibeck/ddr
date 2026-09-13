@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 18
 current_phase_name: Bestiary Rebalance & Canon Combat Fixes
 status: executing
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-09-13T23:18:39.937Z"
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-09-13T23:32:23.206Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 18 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 9
-  completed_plans: 5
+  completed_plans: 6
   percent: 20
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 ## Current Position
 
 Phase: 18 (Bestiary Rebalance & Canon Combat Fixes) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 18 execution started
 
-Progress: [██████░░░░] 56%
+Progress: [███████░░░] 67%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-13T23:18:39.913Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-09-13T23:32:23.167Z
+Stopped at: Completed 18-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -99,6 +99,7 @@ Resume file: None
 | Phase 17 P03 | 25min | 2 tasks | 2 files |
 | Phase 18 P01 | 28min | 2 tasks | 3 files |
 | Phase 18 P02 | 20min | 2 tasks | 6 files |
+| Phase 18 P03 | 25min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -109,3 +110,5 @@ Resume file: None
 - [Phase ?]: 18-01: Werebeast's TTK ratio computes to exactly 2.0 (unflagged) while lethality 2.60 flags it, matching the plan's strict boundary rule precisely; Philly's ttkRatio floats to 2.0000000000000004 due to the twice-doubling path (cosmetic, handled via the curated Review Verdicts disposition, not a code fix)
 - [Phase ?]: 18-01: CANON-04's damage-source x creature-type multiplier is out of tools/bestiary-yardstick.mjs's melee-only scope (depends on caster class, not modeled by the composite hero) — documented explicitly in content/BESTIARY-REBALANCE.md
 - [Phase ?]: 18-02: implemented damageFoe/multiplierFor exactly per plan's locked order (multiplier -> halfDmg -> soak); no call site routed yet (18-03/18-04 do the routing)
+- [Phase ?]: 18-03: reflect damage routed as kind:"reflect" (physical for armor-soak, never multiplier-eligible); ally/member strikes routed as kind:"ally" so D-20 (no Fighter-vs-Trachea doubling for allies) holds structurally
+- [Phase ?]: 18-03: renamed playerStrike's damageFoe result binding from the plan's suggested 'hit' to 'landed' to avoid colliding with the pre-existing to-hit boolean of the same name
