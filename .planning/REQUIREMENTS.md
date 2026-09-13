@@ -12,7 +12,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 The non-negotiable engine gate, made explicit for this milestone because every feature below touches combat RNG or the bestiary the frozen prototype embeds its own copy of.
 
-- [ ] **FID-01**: A written fixture inventory documents exactly which `content/bestiary.js` creatures each parity fixture seed rolls (combat/magic/full-suite), BEFORE any bestiary number or foe-turn behavior changes land
+- [x] **FID-01**: A written fixture inventory documents exactly which `content/bestiary.js` creatures each parity fixture seed rolls (combat/magic/full-suite), BEFORE any bestiary number or foe-turn behavior changes land
 - [ ] **FID-02**: A foe without the new `abilities` field draws exactly zero additional RNG in any fight — verified by a draw-count regression test on non-ability fixtures — so solo/empty-party play stays byte-identical to the frozen prototype master
 - [ ] **FID-03**: The foe-turn targeting and player-damage pipeline (ward/armor/damage) is extracted into shared helpers (`pickFoeTarget`, `applyFoeDamageToPlayer`) with behavior-preserving tests, so foe abilities reuse the melee path instead of duplicating it
 - [ ] **FID-04**: Every new serialized field (per-foe ability state, foe-inflicted player effects, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load; a v1.0 internal-tester save loads without data loss
@@ -102,7 +102,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FID-01 | Phase 17 | Pending |
+| FID-01 | Phase 17 | Complete |
 | FID-02 | Phase 17 | Pending |
 | FID-03 | Phase 17 | Pending |
 | FID-04 | Phase 19 | Pending |
@@ -136,11 +136,13 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LANG-02 | Phase 20 | Pending |
 
 **Coverage:**
+
 - v1.1 requirements: 32 total
 - Mapped to phases: 32
 - Unmapped: 0 ✓
 
 **Phase map:**
+
 - Phase 17 — Fixture Inventory & Foe-Turn Refactors: FID-01, FID-02, FID-03
 - Phase 18 — Bestiary Rebalance & Canon Combat Fixes: BEST-01, BEST-02, BEST-03, CANON-01, CANON-03, CANON-04, CANON-05, FID-05
 - Phase 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance: FOE-01..09, CANON-02, FID-04

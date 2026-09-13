@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 17
 current_phase_name: Fixture Inventory & Foe-Turn Refactors
 status: executing
-stopped_at: v1.1 roadmap created and awaiting user approval; ready for `/gsd-plan-phase 17` once approved.
-last_updated: "2026-09-13T19:59:25.464Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-09-13T20:07:58.494Z"
 last_activity: 2026-09-13
-last_activity_desc: Roadmap created for v1.1 (Phases 17–21); REQUIREMENTS.md traceability updated (32/32 mapped)
+last_activity_desc: Phase 17 execution started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Milestone v1.1 Monster Balancing & Abilities — roadmap created (Phases 17–21), ready to plan Phase 17
+**Current focus:** Phase 17 — Fixture Inventory & Foe-Turn Refactors
 
 ## Current Position
 
-Phase: 17 of 21 (Fixture Inventory & Foe-Turn Refactors)
-Plan: — (not yet planned)
+Phase: 17 (Fixture Inventory & Foe-Turn Refactors) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-13 — Roadmap created for v1.1 (Phases 17–21); REQUIREMENTS.md traceability updated (32/32 mapped)
+Last activity: 2026-09-13 — Phase 17 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,11 +81,21 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-13 — created the v1.1 ROADMAP.md (Phases 17–21, derived from `.planning/research/SUMMARY.md` and `.planning/REQUIREMENTS.md`), mapped all 32 v1.1 requirements with zero orphans, and updated REQUIREMENTS.md traceability.
-Stopped at: v1.1 roadmap created and awaiting user approval; ready for `/gsd-plan-phase 17` once approved.
-Resume file: None.
+Last session: 2026-09-13T20:07:58.472Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
 1. Upload the signed versionCode-2 AAB to the internal-testing track (Play Console → Testing → Internal testing → Create new release), if not already done.
 2. Review/approve `.planning/ROADMAP.md` for v1.1, then `/gsd-plan-phase 17`.
+
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 17 P01 | 30min | 2 tasks | 4 files |
+
+## Decisions
+
+- [Phase ?]: 17-01: fixtureRoster.js replays fixtures via applyStartCombat/applyAction/runEconomyAction rather than re-deriving startCombat math; foes snapshotted only on the null->non-null state.combat transition (once per script/scenario)
