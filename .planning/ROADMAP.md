@@ -42,7 +42,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 **Milestone Goal:** Make fights fair and interesting at depth — give foes real abilities (spellcasting and specials), rebalance the bestiary, fix parley's dominance, and run the ONE consolidated difficulty retune across party, economy, and monster power. Engine/data/narration only — no new screens.
 
-- [ ] **Phase 17: Fixture Inventory & Foe-Turn Refactors** - Document which bestiary creatures each parity fixture rolls and extract shared foe-turn helpers before any bestiary or ability behavior changes land
+- [x] **Phase 17: Fixture Inventory & Foe-Turn Refactors** - Document which bestiary creatures each parity fixture rolls and extract shared foe-turn helpers before any bestiary or ability behavior changes land (completed 2026-09-13)
 - [ ] **Phase 18: Bestiary Rebalance & Canon Combat Fixes** - Review every creature's stats against its intended depth band and land canon-accurate combat modifiers (armor, half-damage, type multipliers, slow)
 - [ ] **Phase 19: Foe Abilities, Spellcasting & Symmetric INT Resistance** - Foes cast, drain, debuff, heal, and summon via a data-driven ability system; the player's Intelligence resists incoming foe magic
 - [ ] **Phase 20: Parley Balance & Language System** - Fix parley's payout/spam dominance and wire Language/Helm-of-Knowledge fluency into the same bonus term
@@ -69,7 +69,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
   3. A draw-count regression test proves a foe without the new `abilities` field draws exactly zero additional RNG in any fight.
   4. The full parity suite remains byte-identical to the frozen prototype master.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -156,7 +156,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
-| 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | In Progress|  |
+| 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 0/TBD | Not started | - |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 0/TBD | Not started | - |
 | 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |
