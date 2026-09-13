@@ -1,8 +1,8 @@
-# Mazeworld
+# Delve, Die, Repeat
 
 ## What This Is
 
-Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
+**Delve, Die, Repeat** (appId `com.darktierstudios.delvedierepeat`) is a premium (paid-upfront), fully-offline mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. As of v1.0 (2026-09-13) it is a native Capacitor app on a Google Play **internal-testing track** with real testers: a pure deterministic engine (`engine/`), a dark torch-lit mobile UX built from the Claude Design mock, endless descent, an NPC party system, a real loot economy, and the sarcastic Oracle voice. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
 
 **Tone & voice:** heavy sarcasm and dark humor — self-aware, deadpan, poking fun at fantasy-RPG tropes and at the player's own doomed adventurers — but kept **family-friendly** (no profanity, gore, or adult content; the darkness is in the wit, not the shock). Sarcasm is the through-line of every screen: death epitaphs, the "Oracle" log, item flavor, the tutorial. This voice is a core identity, not decoration.
 
@@ -13,38 +13,43 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 ## Business Context
 
 - **Customer**: Solo mobile players who like roguelikes / dungeon crawlers; plus the author's nostalgia audience for the original tabletop game.
-- **Revenue model**: One-time paid purchase on the App Store and Google Play (no ads, no IAP in v1).
-- **Success metric**: Successful launch on both stores + players completing and repeating runs (depth-chasing retention).
+- **Revenue model**: One-time paid purchase on Google Play (no ads, no IAP in v1). iOS dropped.
+- **Success metric**: Production launch on Google Play + players completing and repeating runs (depth-chasing retention). Internal testers active since 2026-09-10.
 - **Strategy notes**: MVP is solo-only. "Play with friends" multiplayer is a deliberate post-MVP add-on that wraps the same rules engine.
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate. Note: an extensive **web prototype** already implements the full solo ruleset and is treated as the authoritative design spec, but nothing has shipped to a store, so nothing is validated in-market yet.)
+- ✓ Native, store-installable **Android app** (Capacitor 8) — v1.0, on the Play internal-testing track with real testers
+- ✓ Prototype's **full ruleset** preserved as canon — v1.0 (frozen golden-master parity suite, byte-identical every commit; deliberate deviations logged per phase)
+- ✓ **100%-dice-rolled character creation** — v1.0 ("THE TABLES DECIDE" roller)
+- ✓ **Endless descent** with a bounded soft-cap difficulty curve — v1.0 (feel-tuning still owed → Monster Balancing)
+- ✓ **Permadeath** + persistent graveyard (last 5 shown, running total, epitaphs) — v1.0
+- ✓ **Local best-depth chase**, no server — v1.0
+- ✓ **Fully offline** — v1.0 (self-hosted fonts, zero network calls, `@capacitor/preferences` saves)
+- ✓ **Claude Design "Mazeworld Mobile" UX** adapted as the authoritative surface — v1.0 (18 on-device review rounds)
+- ✓ Mobile-first controls + readable/accessible UI + settings (handedness, text size, confirm-quit, sound, haptics) — v1.0
+- ✓ **Robust local save/resume** (durable native storage, lifecycle flush, fail-closed validation) — v1.0
+- ✓ Signed Android App Bundle via Play App Signing, validated on the **internal testing track** — v1.0 (STR-05)
+- ✓ NPC **Joiner party system** (1-member cap, model built for N) — v1.0 (Phases 7–11; pulled forward from "post-MVP" because the engine seam made it cheap)
+- ✓ **Loot economy**: class bags/carry, manual take/leave/drop/equip, sell-back store, 9 inert items wired — v1.0 (Phases 12–16)
 
 ### Active
 
-- [ ] Package the game as a native, store-installable **Android app (Google Play)**
-- [ ] Preserve the prototype's **full ruleset** as canon (3 classes / 24 subclasses / 6 races / 31 spells / ~45 creatures / dozens of items / combat / magic / economy / procedural mazes)
-- [ ] **100%-dice-rolled character creation** — no player choices (faithful to the game's identity)
-- [ ] **Endless descent** — infinite floors with scaling difficulty, replacing the prototype's fixed 5-floor Gate ending
-- [ ] **Permadeath** ends a run; player starts fresh
-- [ ] **Local high-score / depth chase** as the primary replay hook (no server)
-- [ ] **Quick 5–10 minute** session feel on a phone
-- [ ] **Fully offline** — no accounts, no servers, no network dependency
-- [ ] Adapt the **Claude Design "Mazeworld Mobile" UX** as the visual/UX target
-- [ ] Mobile-first controls, readable UI, and player **onboarding/tutorial** (the prototype assumes rules knowledge)
-- [ ] **Robust local save/resume** and persistent graveyard of past runs
-- [ ] **Publish to Google Play** (store listing, signing, submission) — the project isn't done until it's live on Google Play
+- [ ] **Monster Balancing & Abilities** — foe spellcasting/abilities (deterministic, parity-gated), bestiary rebalance, parley balance pass, symmetric INT spell resistance, and the ONE consolidated `difficulty.js` retune across party/economy/monster power (PARTY-10, ECON deep tuning, Phase 3 feel-tuning). NEXT milestone — research-first.
+- [ ] **Quick 5–10 minute session feel** — mechanically bounded; the *feel* is validated only by the consolidated retune + playtest
+- [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
+- [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
+- [ ] Automate the Play upload (Developer API service account) — see `docs/RELEASING.md`
 
 ### Out of Scope
 
 - **iOS / Apple App Store** — deliberately out of scope. Android/Google Play only. Avoids the Apple Developer account, Mac/Xcode toolchain, and Apple's review process. May be reconsidered post-launch, but the tech path should not be compromised to accommodate it now.
-- **Multiplayer / "play with friends"** — explicitly deferred to a post-MVP add-on; MVP is solo-only.
+- **Networked multiplayer / "play with friends"** — still post-launch (v2). The *party* layer is now IN scope and shipped (Joiners, Phases 7–11) as its single-player foundation; only the network/relay layer stays out.
 - **Accounts, logins, cloud save, servers** — go simple; use platform identity (Game Center / Google Play Games) later if/when multiplayer needs it.
 - **Ads and in-app purchases** — v1 is paid-upfront only.
-- **Player-authored / Maze-Master / party layer from the tabletop rules** — the prototype already stubs these out for solo play; not revived for v1.
+- **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
 ## Context
@@ -53,12 +58,15 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
   - `mazeworld.html` — a ~3,300-line, single-file, **zero-dependency vanilla-JS** prototype (DOM + `<canvas>`, `localStorage` save). It is a **complete, proven solo implementation** of the ruleset and is the authoritative behavioral spec. Key seams already present: a single global `S` state object, an `act()`/"beats" action system, and a responsive 1080px mobile reflow with a touch D-pad and one-beat-at-a-time stepping.
   - `mazeworld.pdf` — the original 1994 rulebook (~3,700 lines of text). Old and untested; **superseded by the prototype** wherever they conflict. Valuable for lore (the god Felect, The Planes, the Wilmsry, the year-792 cataclysm) and for dropped systems that could be ported later (bag/carry-weight, shields, thrown weapons, richer phobia/language tables).
 - **Prototype rules that supersede the rulebook** (already decided in-prototype): solo conversion (no party/Maze Master), invented natural healing (`sleep = d10 + 2×level`), skill points ×5 for solo pacing, Magic Users start `25 + d10` WP, loot ÷10, and several book-ambiguity rulings the prototype formalized.
-- **Author is new to mobile development** — the roadmap should make "where we start" explicit and de-risk the platform/packaging path first.
+- **Codebase state after v1.0 (2026-09-13):** ~15.5k lines of game source (`engine/` pure rules, `content/` pure data tables, `src/browser/` adapter/view-models/narration, `mazeworld.html` as the DOM/canvas shell with a strangler-fig'd classic script) + ~22.8k lines of tests (683 tests: unit, determinism, round-trip, parity against the frozen `test/parity/prototype-master.js.txt`, voice safety scan). Zero runtime dependencies beyond Capacitor's own plugins. Build: `tools/build-www.mjs` (no bundler) → `npx cap sync` → Gradle; release via `npm run play:release` (`docs/RELEASING.md`).
+- **Working method that emerged:** GSD phases for systems work, then rapid on-device "DR" (device-review) rounds on the user's Pixel 7 for UX — each round a small user-directed batch, built + sideloaded + reviewed live. The user's device play is the human UAT. Every engine change is parity-gated: new rng draws only behind new-feature guards, new serialized fields carved out of the parity comparators, the prototype master never edited.
+- **Known debt:** the classic (non-engine) gameplay functions in `mazeworld.html` are dead-but-present; `formatEvents`/`EVENT_NARRATION` is the single narration table (coverage-guarded); `04-10-PLAN.md` (tutorial) predates the DR-era UI and needs re-planning.
+- **Author is new to mobile development** — de-risked: native build, signing, and Play internal testing are all working.
 - **The heavy lift is platform + presentation + endless-mode conversion**, not rebuilding game logic. Whatever tech path is chosen (e.g. wrapping the existing web game vs. porting to an engine) must keep the rules engine decoupled and state serializable to protect the multiplayer future.
 
 ## Constraints
 
-- **Platforms**: Must ship to **Google Play (Android only)**. Requires native packaging (Android App Bundle), Play app signing, a store listing, and compliance (content rating, Data safety form, target-API level) — new territory for the author. iOS is explicitly excluded.
+- **Platforms**: Must ship to **Google Play (Android only)**. Native packaging, Play App Signing, store entry and internal-testing track are DONE (targetSdk 36, minSdk 24); remaining compliance = Data Safety form, IARC, privacy policy, production listing. iOS is explicitly excluded.
 - **Offline**: v1 must run with **no network**, no accounts, no backend.
 - **Monetization**: **Paid upfront**, no ads/IAP — keep the build free of monetization SDKs.
 - **Fidelity**: The prototype's rules are **canon**; deviations must be deliberate design decisions, not accidental regressions.
@@ -69,17 +77,24 @@ Mazeworld is a premium (paid-upfront), fully-offline mobile roguelike dungeon-cr
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Android / Google Play only; no iOS | Avoid Apple's account/Mac/Xcode/review overhead; author's explicit choice | — Pending |
-| Solo-only MVP; multiplayer post-MVP add-on | Ship value fast; multiplayer is a large, separable layer | — Pending |
-| Endless descent replaces fixed 5-floor Gate | "Descend forever + chase depth" fits roguelike + quick sessions | — Pending |
-| Permadeath, no meta-progression in v1 | Author chose pure roguelike; local high-score is the hook | — Pending |
-| 100%-dice-rolled characters, no player choice | Faithful to the game's comedic identity | — Pending |
-| Fully offline, no accounts; platform identity later | Simplest path to ship; protects multiplayer future cheaply | — Pending |
-| Paid-upfront, no ads/IAP | Author's chosen model; keeps build clean | — Pending |
-| Prototype is canon over the rulebook | Prototype is tested/playable; rulebook is old and untested | — Pending |
-| Voice: heavy sarcasm / dark humor, but family-friendly | Core identity of the game; must stay clean enough for a broad store rating | — Pending |
-| Keep rules engine decoupled + state serializable | Enables post-MVP multiplayer without a rewrite | — Pending |
-| Tech/packaging path (wrap web game vs. engine port) | High-leverage; de-risk first | — To be researched in Phase 1 |
+| Android / Google Play only; no iOS | Avoid Apple's account/Mac/Xcode/review overhead; author's explicit choice | ✓ Good — shipped to internal testing in 7 days on Windows only |
+| Solo-only MVP; multiplayer post-MVP add-on | Ship value fast; multiplayer is a large, separable layer | ⚠️ Revisit — the *party* half was pulled into v1.0 (Joiners) because the engine seam made it cheap; only networking remains deferred |
+| Endless descent replaces fixed 5-floor Gate | "Descend forever + chase depth" fits roguelike + quick sessions | ✓ Good — curve is bounded/tested; feel-tuning owed to the consolidated retune |
+| Permadeath, no meta-progression in v1 | Author chose pure roguelike; local high-score is the hook | ✓ Good — graveyard rework (cap 5, running total) made death feel like content |
+| 100%-dice-rolled characters, no player choice | Faithful to the game's comedic identity | ✓ Good — "THE TABLES DECIDE" roller is a highlight on device |
+| Fully offline, no accounts; platform identity later | Simplest path to ship; protects multiplayer future cheaply | ✓ Good — Data Safety can truthfully declare "no data collected" |
+| Paid-upfront, no ads/IAP | Author's chosen model; keeps build clean | ✓ Good — zero third-party SDKs beyond Capacitor plugins |
+| Prototype is canon over the rulebook | Prototype is tested/playable; rulebook is old and untested | ✓ Good — frozen golden master + parity suite made every deviation deliberate and visible |
+| Voice: heavy sarcasm / dark humor, but family-friendly | Core identity of the game; must stay clean enough for a broad store rating | ✓ Good — safety-scan guardrail over all copy; user directive: lean into humor when class/race works against the player |
+| Keep rules engine decoupled + state serializable | Enables post-MVP multiplayer without a rewrite | ✓ Good — paid off immediately: party system, economy, and every UI rewrite touched no engine seam |
+| Wrap the web game with Capacitor (not an engine port) | Prototype is DOM+canvas with a serializable global state — ideal WebView shape | ✓ Good — same JS runs in a browser (Claude-in-Chrome layout checks) and on device |
+| Claude Design mock is the AUTHORITATIVE UX; prototype UX superseded where the mock defines a surface | User directive 2026-09-09 | ✓ Good — kept 18 DR rounds converging instead of drifting |
+| D-pad-only movement (tap-to-move removed); handedness moves only MAKE CAMP | On-device feel, user decision | ✓ Good |
+| Name: "Delve, Die, Repeat" (the working title collided with an existing Play listing) | Trademark/discoverability research 2026-09-08 | ✓ Good — appId `com.darktierstudios.delvedierepeat` is now permanent (published) |
+| Human UAT deferred to milestone end; user's device play IS the UAT | Autonomous run 2026-09-07 | ✓ Good — v1.0 closed as an override closeout on that basis |
+| Every engine change parity-gated (rng draws behind feature guards, new fields carved out of comparators, master never edited) | Protects "prototype is canon" while adding systems | ✓ Good — byte-identical through Joiners, Economy, phobias, flight |
+| ONE consolidated difficulty retune after all power-changing milestones (not per-milestone) | Avoid triple-tuning across Joiners/Economy/Monsters | — Pending — lands in Monster Balancing |
+| Tutorial built LAST, after the UI settles | A UI change forces a tutorial redo | — Pending |
 
 ## Evolution
 
@@ -99,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 after initialization*
+*Last updated: 2026-09-13 after v1.0 milestone (override closeout — internal testing live; production launch + tutorial carried forward)*
