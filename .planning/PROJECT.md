@@ -65,6 +65,8 @@
 - Consolidated difficulty retune — fold ability-bearing foes into `difficulty.js`, re-run the tuning harness (closes PARTY-10, ECON deep tuning, Phase 3 feel-tuning)
 - Parley balance pass + Language as a system (DR15-A, Helm of Knowledge wiring) + symmetric INT spell resistance
 
+**Progress:** Phase 17 complete (2026-09-13) — fixture inventory (`test/parity/FIXTURE-INVENTORY.md`: only Bat/Rat, Shriek, Viper, Dante at L1 are fixture-exposed), `pickFoeTarget`/`applyFoeDamageToPlayer` extracted from `foeTurn`, FID-02 draw-count baseline pinned; 724/724 tests, parity byte-identical.
+
 **Scope boundaries:** engine/data/narration only — no new screens. Backlogged (not this milestone): DR16-G "squares of opponents" / Amulet of Stone, foe inspect / threat hint on the encounter panel, a browsable bestiary screen. Research-first: foe casting vs. RNG order/parity, how abilities move the tuned curve, which abilities fit tone + canon.
 
 ## Context
@@ -129,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-13 — milestone v1.1 Monster Balancing & Abilities started*
+*Last updated: 2026-09-13 — Phase 17 complete (v1.1)*
