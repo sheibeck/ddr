@@ -1,5 +1,27 @@
 apply plugin: 'com.android.application'
 
+// ---- Release signing + version (Play internal-testing pipeline, 2026-09-13) ----
+// android/keystore.properties (git-ignored) holds the UPLOAD keystore path +
+// passwords; android/version.properties (committed) holds versionCode/Name and
+// is bumped by `node tools/bump-version.mjs` before every Play upload (Play
+// rejects a re-used versionCode). When keystore.properties is absent the
+// release build type falls back to UNSIGNED (assembleDebug is unaffected).
+def keystoreProps = new Properties()
+def keystorePropsFile = rootProject.file("keystore.properties")
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+def versionProps = new Properties()
+def versionPropsFile = rootProject.file("version.properties")
+if (versionPropsFile.exists()) {
+    versionPropsFile.withInputStream { versionProps.load(it) }
+}
+def appVersionCode = (versionProps.getProperty("versionCode") ?: "1").trim().toInteger()
+def appVersionName = (versionProps.getProperty("versionName") ?: "1.0").trim()
+def hasReleaseKeystore = keystoreProps.getProperty("storeFile")?.trim() &&
+        keystoreProps.getProperty("storePassword")?.trim() &&
+        keystoreProps.getProperty("keyAlias")?.trim()
+
 android {
     namespace = "com.darktierstudios.delvedierepeat"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -10,8 +32,8 @@ android {
         applicationId "com.darktierstudios.delvedierepeat"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -19,10 +41,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseKeystore) {
+                storeFile file(keystoreProps.getProperty("storeFile"))
+                storePassword keystoreProps.getProperty("storePassword")
+                keyAlias keystoreProps.getProperty("keyAlias")
+                // keyPassword defaults to storePassword (PKCS12 keystores share one)
+                keyPassword (keystoreProps.getProperty("keyPassword")?.trim() ?: keystoreProps.getProperty("storePassword"))
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

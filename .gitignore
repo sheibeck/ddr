@@ -28,3 +28,6 @@ android/local.properties
 android/**/build/
 *.apk
 *.aab
+
+# Play upload-keystore credentials (machine-local, never commit)
+android/keystore.properties
