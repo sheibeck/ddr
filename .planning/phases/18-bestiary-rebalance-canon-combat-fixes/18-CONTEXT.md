@@ -39,6 +39,11 @@ Every creature in `content/bestiary.js` has its HP / damage / to-hit / AR / atta
 - D-16: Run `tools/tune-difficulty.mjs` before and after the rebalance and record both readouts in the stat table as an informational sanity signal — NOT a gate (the bot is blind to abilities until Phase 21).
 - D-17: No bestiary schema change: stats stay flat on existing entries (`wp`, `sp.dmg`, `sp.ar`, `sp.toHit`, `sp.atk`); only numbers move, so `test/unit/content-tables.test.js` pins are updated for changed entries only, each with a one-line rationale.
 
+### Research-resolved follow-ups (orchestrator, 2026-09-13)
+- D-18: Drake (tier 4, wp 135 ≈ 7.3× tier-4 median TTK) and Werebeast (tier 3, atk 2 × 1d10+5 ≈ 2.9× tier-3 median RTD) ARE outliers under D-02 and are in scope. Bring them to within ~2× of their tier median (not to the median) so their "boss" identity survives; Drake's fire-breath is a Phase 19 ability (CANON-02) — do not model it here.
+- D-19: Sterling: implement `halfDmg` (D-10) and leave `wp: 35` unchanged; record the resulting ~2× TTK in the stat table as "canon-intended (two hearts) — revisit in Phase 21".
+- D-20: The Fighter-melee-vs-Trachea multiplier applies to the HERO only. Do NOT add a `cls` field to `C.allies` party-member entries in this phase (new serialized field → parity carve-out); note it as deferred to Phase 19/21.
+
 ### Claude's Discretion
 - Exact outlier list and new numbers (within D-02's rule), the exact helper name/signature for the damage seam, event field names, and test file layout.
 - Whether the yardstick computation is a committed script (e.g. `tools/bestiary-yardstick.mjs`) or a documented one-off — a committed script is preferred if cheap, since Phase 21 will want it.
