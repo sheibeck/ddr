@@ -37,7 +37,10 @@
 
 ### Active
 
-- [ ] **Monster Balancing & Abilities** — foe spellcasting/abilities (deterministic, parity-gated), bestiary rebalance, parley balance pass, symmetric INT spell resistance, and the ONE consolidated `difficulty.js` retune across party/economy/monster power (PARTY-10, ECON deep tuning, Phase 3 feel-tuning). NEXT milestone — research-first.
+- [ ] **Foe abilities + spellcasting** — data-driven monster ability system (offensive spells generalized from `engine/magic.js`, summons, drains, status inflicts); pure/deterministic, parity-gated, narrated via Oracle/toasts/condition tracker. Rulebook-first, invent only to fill depth-band gaps. — v1.1
+- [ ] **Bestiary rebalance** — every creature's HP/damage/to-hit/AR/special reviewed vs. its intended depth; outliers fixed. — v1.1
+- [ ] **Consolidated difficulty retune** — the ONE `difficulty.js` retune across party/economy/monster power (PARTY-10, ECON deep tuning, Phase 3 feel-tuning) via `tools/tune-difficulty.mjs` / `tools/tune-economy.mjs`. — v1.1
+- [ ] **Parley balance + Language system + symmetric INT resistance** — parley XP/odds/failure-cost pass, DR15-A Language as a real system (Helm of Knowledge `tongue` wired), player Intelligence resists incoming foe spells. — v1.1
 - [ ] **Quick 5–10 minute session feel** — mechanically bounded; the *feel* is validated only by the consolidated retune + playtest
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
 - [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
@@ -51,6 +54,18 @@
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v1.1 Monster Balancing & Abilities
+
+**Goal:** Make fights fair and interesting at depth — give foes real abilities (spellcasting and specials), rebalance the bestiary, fix parley's dominance, and run the ONE consolidated difficulty retune across party, economy, and monster power.
+
+**Target features:**
+- Foe abilities + spellcasting — data-driven, deterministic, parity-gated, narrated through the Oracle/toasts/condition tracker; rulebook-first, invent only to fill depth-band gaps
+- Bestiary rebalance — every creature's HP/damage/to-hit/AR/special vs. intended depth
+- Consolidated difficulty retune — fold ability-bearing foes into `difficulty.js`, re-run the tuning harness (closes PARTY-10, ECON deep tuning, Phase 3 feel-tuning)
+- Parley balance pass + Language as a system (DR15-A, Helm of Knowledge wiring) + symmetric INT spell resistance
+
+**Scope boundaries:** engine/data/narration only — no new screens. Backlogged (not this milestone): DR16-G "squares of opponents" / Amulet of Stone, foe inspect / threat hint on the encounter panel, a browsable bestiary screen. Research-first: foe casting vs. RNG order/parity, how abilities move the tuned curve, which abilities fit tone + canon.
 
 ## Context
 
@@ -114,4 +129,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-13 after v1.0 milestone (override closeout — internal testing live; production launch + tutorial carried forward)*
+*Last updated: 2026-09-13 — milestone v1.1 Monster Balancing & Abilities started*

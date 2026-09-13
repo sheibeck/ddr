@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Delve, Die, Repeat — Android build & internal testing
-status: Awaiting next milestone
-stopped_at: "v1.0 closed 2026-09-13 (override closeout). Next: /gsd-new-milestone for Monster Balancing & Abilities."
-last_updated: "2026-09-13T18:20:00.000Z"
+milestone: v1.1
+milestone_name: Monster Balancing & Abilities
+status: planning
+last_updated: "2026-09-13T18:13:10.880Z"
 last_activity: 2026-09-13
-last_activity_desc: Milestone v1.0 completed and archived; planning docs reconciled; ready for /gsd-new-milestone
 progress:
-  total_phases: 17
-  completed_phases: 17
-  total_plans: 37
-  completed_plans: 37
-current_phase: null
-current_phase_name: null
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -23,13 +20,14 @@ current_phase_name: null
 See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Planning the next milestone — **Monster Balancing & Abilities** (`/gsd-new-milestone`; spec in `.planning/proposed-milestone-monster-balancing.md`)
+**Current focus:** Milestone v1.1 Monster Balancing & Abilities — defining requirements (research-first)
 
 ## Current Position
 
-Milestone v1.0 SHIPPED to Google Play internal testing (archived: `milestones/v1.0-ROADMAP.md`, `v1.0-REQUIREMENTS.md`, `v1.0-STATE.md` (full session history), `v1.0-phases/`). No active phase.
-
-Carried forward (see ROADMAP.md "Carried-forward work"): Monster Balancing milestone (next) → first-run tutorial 04-10 (LAST, user-deferred) → Google Play production launch (user-driven + repo-side audit).
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-13 — Milestone v1.1 started
 
 ## Ground Truth (durable facts every session needs)
 
