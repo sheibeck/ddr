@@ -29,6 +29,11 @@ import { die } from "./death.js";
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
 import { killFoe } from "./combat.js";
+// Phase 18 (D-09/CANON-01): the fire effect below routes through the shared
+// foe-damage seam. This edge is NOT part of the circular-import concern
+// above — engine/foeDamage.js imports only ../content/index.js, never
+// ./combat.js or ./items.js, so no cycle is introduced.
+import { damageFoe } from "./foeDamage.js";
 import {
   JEWELRY,
   CLOAKS,
@@ -590,8 +595,10 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
         const t = foes[k % foes.length];
         if (!t.alive) continue;
         const dmg = rng.d(10) + 4;
-        t.wp -= dmg;
-        tot += dmg;
+        // Item damage is physical (18-RESEARCH A3): soakable by sp.ar,
+        // never multiplied (no caster identity applies to an item effect).
+        const hit = damageFoe(state, t, dmg, { kind: "item", crit: false }, rng, events);
+        tot += hit.applied;
         if (t.wp <= 0) killFoe(state, t, rng, events);
       }
       events.push({ type: "itemBurned", total: tot });

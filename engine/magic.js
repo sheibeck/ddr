@@ -26,6 +26,9 @@ import { liveFoes, killFoe, afterPlayerAction } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
+// Phase 18 (D-09/CANON-01/03/04): every damage-to-foe site below routes
+// through the shared seam instead of decrementing foe.wp directly.
+import { damageFoe } from "./foeDamage.js";
 
 // p.25: a non-thrown spell can be resisted by an intelligent target. These
 // kinds are immune to that resistance check — ports mazeworld.html's inline
@@ -166,7 +169,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const mult = Math.max(1, c.level - sp.lvl);
     const d = rollDice(rng, sp.dmg) * mult;
     liveFoes(state).forEach((f) => {
-      f.wp -= d;
+      // Spell damage (CANON-04, D-11): per-foe multiplier/halfDmg/bypass —
+      // the event below reports the single rolled base, not the per-foe
+      // applied amount (each foe's own wp shows what actually landed).
+      damageFoe(state, f, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
       if (f.wp <= 0) killFoe(state, f, rng, events);
     });
     events.push({ type: "earthquake", amount: d });
@@ -198,8 +204,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       const t = foes[k % foes.length];
       if (!t.alive) continue;
       const d = rollDice(rng, sp.dmg);
-      t.wp -= d;
-      tot += d;
+      // Spell damage (CANON-04, D-11): route through the seam; the volley
+      // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
+      const hit = damageFoe(state, t, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
+      tot += hit.applied;
       if (t.wp <= 0) killFoe(state, t, rng, events);
     }
     events.push({ type: "volley", rolls: n, totalDamage: tot });
@@ -280,8 +288,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         const o = liveFoes(state).find((f) => f !== t);
         if (o) {
           const d = t.lvl * t.lvl + rng.d(6);
-          o.wp -= d;
-          events.push({ type: "insaneStruckAlly", target: o.name, dmg: d });
+          // A maddened foe's blow on its neighbour is physical (kind:"foe")
+          // — the victim's own natural armor may soak it (gated d20, D-05);
+          // no CANON-04 multiplier row applies (no player caster identity).
+          const hit = damageFoe(state, o, d, { kind: "foe", crit: false }, rng, events);
+          if (!hit.soaked) events.push({ type: "insaneStruckAlly", target: o.name, dmg: hit.applied });
           if (o.wp <= 0) killFoe(state, o, rng, events);
         }
       } else if (r === 3 || r === 6) {
@@ -338,8 +349,12 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         // p.26: area, duration and effect are multiplied by (caster level − spell level)
         const mult = Math.max(1, c.level - sp.lvl);
         const dmg = rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg");
-        t.wp -= dmg;
-        events.push({ type: "spellHit", target: t.name, dmg, mult });
+        // Spell damage (D-06): bypasses foe armor entirely; eligible for the
+        // CANON-04 multiplier table. `mult` in the event stays the level
+        // multiplier above (unrelated to the seam's own multiplier); `dmg`
+        // switches to the APPLIED amount.
+        const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
+        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, mult });
         if (freeze) {
           t.alive = false;
           t.frozen = true;
