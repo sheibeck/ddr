@@ -58,68 +58,88 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 </details>
 
 ### Phase 17: Fixture Inventory & Foe-Turn Refactors
+
 **Goal**: Establish the parity-safety foundation — know exactly which bestiary creatures each parity fixture rolls, and extract shared foe-turn helpers — before any bestiary or ability behavior changes land.
 **Depends on**: Nothing new (first phase of v1.1; builds on the v1.0 engine)
 **Requirements**: FID-01, FID-02, FID-03
 **Success Criteria** (what must be TRUE):
+
   1. A written fixture inventory document lists exactly which `content/bestiary.js` creatures each parity fixture seed (combat/magic/full-suite) rolls.
   2. `pickFoeTarget` and `applyFoeDamageToPlayer` exist as shared, tested helper functions used by the existing foe-turn melee path, with behavior-preserving tests proving zero output change.
   3. A draw-count regression test proves a foe without the new `abilities` field draws exactly zero additional RNG in any fight.
   4. The full parity suite remains byte-identical to the frozen prototype master.
+
 **Plans:** 3 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 17-01-PLAN.md — FID-01: replay-generated fixture roster (harness module + CLI), committed `test/parity/FIXTURE-INVENTORY.md`, pinned roster/doc-consistency test (wave 1)
 - [ ] 17-02-PLAN.md — FID-03: extract `pickFoeTarget` + `applyFoeDamageToPlayer` from `foeTurn` with `{ died, onArmour }` signal; direct helper tests + foeTurn control-flow tests; parity byte-identical (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 17-03-PLAN.md — FID-02: `countingRng` draw-count regression test pinning per-foeTurn and full-fight draws for ability-less foes (+ mulberry32 cursor cross-check); baseline appended to the inventory; phase gate (wave 2)
 
 ### Phase 18: Bestiary Rebalance & Canon Combat Fixes
+
 **Goal**: Every creature's HP/damage/to-hit/AR/special is reviewed and fixed against its intended depth band, with canon-accurate combat modifiers applied — all parity-safe via narrow, named carve-outs.
 **Depends on**: Phase 17 (fixture inventory + shared helpers)
 **Requirements**: BEST-01, BEST-02, BEST-03, CANON-01, CANON-03, CANON-04, CANON-05, FID-05
 **Rationale for CANON placement**: CANON-01 (foe AR reduces damage taken) is a generic formula affecting every creature's effective toughness, so it lands alongside the BEST-01 stat review it directly informs. CANON-03/04/05 (Sterling half-damage, damage-type multipliers, Philly's slow) are single-creature "special" stat behaviors the research groups as bestiary-adjacent stretch fixes, not ability-system work. CANON-02 (Spectre pursue, Drudge never-melee, Drake cooldown) instead lands in Phase 19 because it shares the cooldown-gating pattern with foe abilities and Drudge's never-melee behavior is part of its caster wiring (FOE-05).
 **Success Criteria** (what must be TRUE):
+
   1. A committed before/after stat table shows every bestiary creature's HP/damage/to-hit/AR/attack-count reviewed against its intended depth band, with outliers corrected.
   2. Foe AR (`sp.ar`) measurably reduces damage a creature takes, verified by a unit test covering the generic formula.
   3. Sterling takes half damage from all sources; Cleric spells deal 2x to Demons and magic deals 2x to Walking Dead; Philly's `slow` gives the player the lower of two dice on strikes — each verified by a dedicated test.
   4. Only named, narrow `comparables.js` carve-outs cover fixture-exercised creatures that changed numbers — no blanket fixture regeneration — with a documented rationale per carve-out.
   5. Ability-bearing foes (Djinni, Krupke, Drudge, Vampire, Stalka Beast) carry proportionally lower raw stats than their pre-rebalance baseline, anticipating the ability kits landing in Phase 19.
+
 **Plans**: TBD
 
 ### Phase 19: Foe Abilities, Spellcasting & Symmetric INT Resistance
+
 **Goal**: Foes can cast, drain, debuff, heal, and summon via a data-driven ability system resolved deterministically; the player's Intelligence resists incoming foe magic using the same canon rule foes already use against players.
 **Depends on**: Phase 17 (`pickFoeTarget` / `applyFoeDamageToPlayer` reused by the ability resolver), Phase 18 (ability-bearing foes' base stats already rebalanced)
 **Requirements**: FOE-01, FOE-02, FOE-03, FOE-04, FOE-05, FOE-06, FOE-07, FOE-08, FOE-09, CANON-02, FID-04
 **Research flag**: `--research-phase` recommended during planning — the single biggest design fork in the milestone (new resolver vocabulary, resistance sharing, new serialized state, foe-array mutation for summons).
 **Success Criteria** (what must be TRUE):
+
   1. The five canon casters (Drudge, Krupke, Djinni, Vampire, Stalka Beast) each have a wired `abilities` kit resolved by a pure `engine/foeAbilities.js` resolver; new determinism tests forcing Magical/Demons/Walking Dead encounters pass (parity fixtures never exercise these types).
   2. The player takes dice-notation damage from offensive foe bolt spells through the shared damage pipeline (ward/armor/conditions apply), can be drained, debuffed (via a new `c.foeEffect` slot surfaced through `conditionsOf`), or face a foe that heals itself or summons reinforcements that join the fight the following round.
   3. The player's Intelligence resists incoming foe spells via a single shared resistance helper (`intel >= 12`, `d20 < intel`) reused in both directions; the resistance roll fires only when a foe actually casts.
   4. Every ability is bounded (per-day caps / every-N-turn cooldowns per canon) and telegraphed in the Oracle the turn it fires; every new event type has a sarcastic, family-friendly `EVENT_NARRATION` entry passing the voice safety scan (coverage guard stays green).
   5. Spectre pursues a fleeing player, Drudge never melees, and Drake's breath is gated by an every-N cooldown; every new serialized field (per-foe ability state, `c.foeEffect`, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load, including a v1.0 internal-tester save loading without data loss.
+
 **Plans**: TBD
 
 ### Phase 20: Parley Balance & Language System
+
 **Goal**: Parley pays fairly, can no longer be spammed for free, keeps the Con Artist subclass viable, and Language/Helm-of-Knowledge fluency is wired into the same bonus term so it isn't balanced twice.
 **Depends on**: Phase 17 (baseline gate); substantially independent of Phases 18–19 (parley touches a different subsystem than combat/bestiary) but sequenced here so its economy impact lands before the one consolidated retune
 **Requirements**: PARLEY-01, PARLEY-02, PARLEY-03, PARLEY-04, LANG-01, LANG-02
 **Success Criteria** (what must be TRUE):
+
   1. Successful parley pays XP no greater than the combat-equivalent value of the group (no longer 2.5x the kill value), verified by a test comparing parley payout to computed combat-equivalent.
   2. A failed parley attempt carries a real cost — a per-encounter attempt cap and/or an aggro penalty — so it cannot be spammed until success; every `canParley` gate has test coverage, including the previously-dead Wilmsry-vs-Magical branch now removed or made reachable.
   3. Con Artist's baseline parley odds are retuned to a stated, documented post-rebalance win-rate target that keeps the subclass identity viable rather than gutted.
   4. The Language skill and the Helm of Knowledge (`tongue`) both contribute a fluency bonus to the same parley `bonus` term (Option B), and fluency widens which encounter types a character can parley, verified by an availability test per race/class/skill/Helm combination.
+
 **Plans**: TBD
 
 ### Phase 21: Consolidated Difficulty Retune
+
 **Goal**: Run the ONE retune across party power, economy, monster power, ability threat, and parley numbers so a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+ — closing PARTY-10, ECON deep tuning, and Phase 3 feel-tuning as this milestone's single tuning exercise, signed off by human play.
 **Depends on**: Phase 18 (rebalanced bestiary), Phase 19 (foe abilities), Phase 20 (parley/economy changes) — every power-changing phase must land before the one retune
 **Requirements**: TUNE-01, TUNE-02, TUNE-03, TUNE-04
 **Research flag**: `--research-phase` recommended during planning — whether to build the full `foeThreatBudget(depth)` system or use the simpler hand-tuned fallback is an open design call flagged at MEDIUM confidence in research; worth a short spike before committing.
 **Success Criteria** (what must be TRUE):
+
   1. `engine/difficulty.js` owns combat-scaling knobs (foe count / level / ability threat by depth) alongside its existing floor-generation knobs, as one source of truth.
   2. `tools/tune-difficulty.mjs` and `tools/tune-economy.mjs` tally foe-ability events and the heuristic bot's policy reacts to caster foes, producing usable harness output across the full feature set (bestiary + abilities + parley/economy).
   3. The curve is retuned once across party power, economy (loot/wilmst/store), monster power, and ability threat; harness runs confirm a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+.
   4. A human signs off via an on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion — as the milestone's single deferred UAT checkpoint (last thing in the milestone).
+
 **Plans**: TBD
 
 ## Carried-forward work (not yet phases)

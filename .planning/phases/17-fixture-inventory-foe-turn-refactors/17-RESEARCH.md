@@ -460,7 +460,7 @@ test("pickFoeTarget: pick===1 targets the hero (null); pick>1 targets liveMember
 
 **If this table is empty:** N/A — two low-risk implementation-detail assumptions are listed above; neither affects gameplay behavior or requires user confirmation before planning proceeds (both are internal code-organization choices the planner can lock either way).
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `applyFoeDamageToPlayer` need a `need` parameter, or should `foeTurn` push `struckByFoe` itself?**
    - What we know: the current inline code has `need` in scope when the event is pushed (`combat.js:973`); the helper's proposed signature doesn't include it.

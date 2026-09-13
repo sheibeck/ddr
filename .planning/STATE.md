@@ -2,9 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Monster Balancing & Abilities
-status: planning
-last_updated: "2026-09-13T18:50:17.000Z"
+current_phase: 17
+current_phase_name: Fixture Inventory & Foe-Turn Refactors
+status: executing
+stopped_at: v1.1 roadmap created and awaiting user approval; ready for `/gsd-plan-phase 17` once approved.
+last_updated: "2026-09-13T19:59:25.464Z"
 last_activity: 2026-09-13
+last_activity_desc: Roadmap created for v1.1 (Phases 17–21); REQUIREMENTS.md traceability updated (32/32 mapped)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -26,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 Phase: 17 of 21 (Fixture Inventory & Foe-Turn Refactors)
 Plan: — (not yet planned)
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-13 — Roadmap created for v1.1 (Phases 17–21); REQUIREMENTS.md traceability updated (32/32 mapped)
 
 Progress: [░░░░░░░░░░] 0%
