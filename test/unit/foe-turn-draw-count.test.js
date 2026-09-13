@@ -268,6 +268,112 @@ const FULL_FIGHTS = [
   { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 32, attacks: 4, outcome: "won" },
 ];
 
+// --- Section 3: Phase 18 seam + slow — gated draws (D-13) ------------------
+//
+// PROVENANCE: measured against the post-18-03 engine on 2026-09-13; the
+// Section 1/2 numbers above are re-asserted unchanged by this same run.
+// THE RULE (restated): pins are measured, not adjusted — a mismatch here is
+// an engine bug in the seam's gating, never a reason to edit a number below.
+
+test("Phase 18 baseline: a lethal hero strike on a plain foe draws 6 (strike, damage, killFoe x4)", () => {
+  const foe = fixedFoe({ wp: 1, maxWP: 1 });
+  const state = fixedState({ combat: fixedCombat([foe]) });
+  const rng = countingRng(fakeRng([3, 4, 1, 1, 20, 1]));
+  const events = playerStrike(state, rng, []);
+  assert.equal(rng.draws, 6);
+  assert.equal(state.combat, null);
+  const types = events.map((e) => e.type);
+  assert.ok(types.includes("struck"));
+  assert.ok(types.includes("foeKilled"));
+});
+
+test("CANON-01: the same strike on an sp.ar foe whose soak roll fails draws exactly 7 (+1 = the d20)", () => {
+  const foe = fixedFoe({ wp: 1, maxWP: 1, sp: { ar: 12 } });
+  const state = fixedState({ combat: fixedCombat([foe]) });
+  const rng = countingRng(fakeRng([3, 4, 20, 1, 1, 20, 1]));
+  const events = playerStrike(state, rng, []);
+  assert.equal(rng.draws, 7);
+  assert.equal(state.combat, null, "the foe died");
+  assert.equal(events.some((e) => e.type === "foeArmorSoaked"), false);
+});
+
+test("CANON-01: a soaked strike costs one d20 and the fight continues — 6 draws for the whole action", () => {
+  const foe = fixedFoe({ wp: 10, maxWP: 10, sp: { ar: 12 } });
+  const state = fixedState({ combat: fixedCombat([foe]) });
+  const rng = countingRng(fakeRng([3, 4, 5, 7, 15, 10]));
+  const events = playerStrike(state, rng, []);
+  assert.equal(rng.draws, 6, "strike, damage, soak, foe miss, initiative x2");
+  assert.deepEqual(events.map((e) => e.type), ["foeArmorSoaked", "foeMissed"]);
+  assert.equal(foe.wp, 10);
+});
+
+test("CANON-01 zero-draw: an armoured foe hit by a spell-kind tick draws no d20 — acid tick + foe miss = 2", () => {
+  const foe = fixedFoe({
+    type: "Walking Dead",
+    sp: { ar: 15 },
+    acid: { rounds: 2, dmg: { n: 1, sides: 6 } },
+    wp: 20,
+    maxWP: 20,
+  });
+  const state = fixedState({ combat: fixedCombat([foe]) });
+  const rng = countingRng(fakeRng([4, 7]));
+  const events = foeTurn(state, rng, []);
+  assert.equal(rng.draws, 2, "the armored foe's own ar never gates a spell-kind tick");
+  assert.ok(events.some((e) => e.type === "acidTick" && e.dmg === 8));
+});
+
+test("CANON-05: a slow foe adds exactly one strike die — lethal 7 vs baseline 6", () => {
+  const foe = fixedFoe({ wp: 1, maxWP: 1, sp: { slow: true } });
+  const state = fixedState({ combat: fixedCombat([foe]) });
+  const rng = countingRng(fakeRng([7, 2, 4, 1, 1, 20, 1]));
+  const events = playerStrike(state, rng, []);
+  assert.equal(rng.draws, 7, "one extra strike die vs the 6-draw plain-foe baseline");
+  const struck = events.find((e) => e.type === "struck");
+  assert.equal(struck.roll, 2);
+});
+
+test("CANON-05: a slow all-miss action draws 5 vs the non-slow 4", () => {
+  const slowFoe = fixedFoe({ wp: 10, maxWP: 10, sp: { slow: true } });
+  const slowState = fixedState({ combat: fixedCombat([slowFoe]) });
+  const slowRng = countingRng(fakeRng([7, 9, 7, 15, 10]));
+  playerStrike(slowState, slowRng, []);
+  assert.equal(slowRng.draws, 5);
+
+  const plainFoe = fixedFoe({ wp: 10, maxWP: 10 });
+  const plainState = fixedState({ combat: fixedCombat([plainFoe]) });
+  const plainRng = countingRng(fakeRng([7, 7, 15, 10]));
+  playerStrike(plainState, plainRng, []);
+  assert.equal(plainRng.draws, 4);
+});
+
+test("CANON-03/04 are pure arithmetic: halfDmg and the Trachea row add zero draws (5 each, same as a plain non-lethal hit)", () => {
+  const halfDmgFoe = fixedFoe({ wp: 20, maxWP: 20, sp: { halfDmg: true } });
+  const halfDmgState = fixedState({ combat: fixedCombat([halfDmgFoe]) });
+  const halfDmgRng = countingRng(fakeRng([3, 4, 7, 15, 10]));
+  const halfDmgEvents = playerStrike(halfDmgState, halfDmgRng, []);
+  assert.equal(halfDmgRng.draws, 5);
+  assert.ok(halfDmgEvents.some((e) => e.type === "struck" && e.dmg === 3));
+
+  const tracheaFoe = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
+  const tracheaState = fixedState({ combat: fixedCombat([tracheaFoe]) });
+  const tracheaRng = countingRng(fakeRng([3, 4, 7, 15, 10]));
+  const tracheaEvents = playerStrike(tracheaState, tracheaRng, []);
+  assert.equal(tracheaRng.draws, 5);
+  assert.ok(tracheaEvents.some((e) => e.type === "struck" && e.dmg === 10));
+
+  const plainFoe = fixedFoe({ wp: 20, maxWP: 20 });
+  const plainState = fixedState({ combat: fixedCombat([plainFoe]) });
+  const plainRng = countingRng(fakeRng([3, 4, 7, 15, 10]));
+  const plainEvents = playerStrike(plainState, plainRng, []);
+  assert.equal(plainRng.draws, 5);
+  assert.ok(plainEvents.some((e) => e.type === "struck" && e.dmg === 5));
+});
+
+test("FID-02 contract restated: the five FULL_FIGHTS pins and six micro pins above are unchanged by Phase 18", () => {
+  const r = runFullFight(3, "Beasts");
+  assert.equal(r.rng.draws, 12);
+});
+
 for (const row of FULL_FIGHTS) {
   test(`FID-02 full fight: seed ${row.seed}/${row.forced} pins ${row.totalDraws} total draws (${row.outcome})`, () => {
     const r = runFullFight(row.seed, row.forced);
