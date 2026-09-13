@@ -1,377 +1,375 @@
 # Pitfalls Research
 
-**Domain:** Paid, offline, single-player mobile roguelike (vanilla-JS web game → native App Store + Google Play), solo first-time mobile dev
-**Researched:** 2026-09-07
-**Confidence:** HIGH (store policy, wrapper mechanics, packaging/signing) / MEDIUM (roguelike design traps — synthesized from established genre wisdom + game-dev postmortems, not project-specific playtesting)
+**Domain:** Adding a single-player party/"Joiners" system to a deterministic, parity-frozen, single-hero turn-based roguelike engine (Delve, Die, Repeat)
+**Researched:** 2026-09-09
+**Confidence:** HIGH (grounded in direct reads of `engine/combat.js`, `engine/difficulty.js`, `engine/saveState.js`, `test/parity/harness/comparables.js`, and the frozen `test/parity/prototype-master.js.txt`)
+
+> **Proposed phase labels used below** (the roadmap isn't built yet; `/gsd-new-milestone` will name the real phases). Pitfalls are tagged to the logical phase that must own them:
+> - **P1 · Party Model** — generalize `c.joiner` + `C.ally` into a serialized party array; save-migration.
+> - **P2 · Party Combat** — turn order, per-member strikes/targeting, foe target selection, loop termination.
+> - **P3 · Joiner Acquisition** — wire `meetJoiner()` into real recruitment.
+> - **P4 · Party UI** — turn on the mock's party rail; status legibility on a phone.
+> - **P5 · Balance Pass** — the *coordinated* difficulty-dial retune shared with Economy & Monster milestones.
+> - **P6 · Death/Permadeath Semantics** — joiner death, departure, run impact.
+> - **P0 · Scope Fence** — v1 party vs. the later true-multiplayer milestone (cross-cutting).
+
+---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Data Safety / Privacy declarations don't match reality (Google) or missing Privacy Nutrition Label (Apple) — even for a "we collect nothing" offline game
+### Pitfall 1: New RNG draws shift the seeded cursor and break the parity suite
 
 **What goes wrong:**
-Developers assume "offline game, no accounts, no analytics" means they can skip or rubber-stamp the privacy forms. In reality, both stores require an affirmative declaration, and any embedded SDK — including ones a bundler/toolchain adds silently (crash reporter, ad-mediation stub left over from a template, a WebView engine's own telemetry) — counts as data collection even if you never call it. Google's Data Safety form is checked against your actual APK's declared permissions and linked SDKs; Apple's Nutrity Label mismatch (e.g., declaring "Data Not Collected" while the binary contains a crash-reporting SDK that phones home) is a common, very avoidable rejection/removal reason. This is *more* dangerous for a "we're offline, this doesn't apply to us" project because the temptation is to skip the form or fill it in from memory rather than from the actual dependency tree.
+Every party feature that rolls dice — a per-member strike (`rng.d(STRIKE_DICE[...])`), a per-member damage roll, a foe's *choice of which party member to hit*, a recruit roll — consumes from the same single seeded stream (`state.rngState`). The frozen master `test/parity/prototype-master.js.txt` was recorded with the OLD consumption order. Insert one draw anywhere in a path a parity fixture exercises and every downstream roll in that run diverges, so the whole byte-comparison suite goes red — not because behavior is wrong, but because the cursor moved.
 
 **Why it happens:**
-Wrapper toolchains (Capacitor/Cordova/Tauri) pull in plugins by default (e.g., an analytics or push-notification plugin included in a starter template) that the developer never intentionally added. Store review increasingly does automated binary scanning for SDK signatures and flags forms that don't match.
+Developers add a die roll at the "logically correct" spot (e.g. inside `foeTurn`'s per-swing loop, or unconditionally in `startCombat`) without realizing the parity suite pins the *exact* draw order, not just the outcomes. This engine's whole test strategy is order-fidelity against a frozen golden file that must never be edited.
 
 **How to avoid:**
-- Audit the final native project's actual dependencies (`Podfile`/`build.gradle`, not just `package.json`) before filling out either store's data form.
-- Default to zero third-party SDKs. If you add a crash reporter later (recommended — see Pitfall 9), that changes both forms and must be re-declared.
-- Re-check both forms after *every* dependency/plugin version bump, not just at initial submission — a transitive update can silently add telemetry.
-- Write the privacy policy and the data-safety form from the same checklist so they can't drift apart (a mismatch between the two is itself a rejection trigger).
+- **Gate every new draw behind a condition that is false on the parity fixtures' path**, exactly as the codebase already does: the phobia-Hardiness `rng.d(2)` in `startCombat` (combat.js:236-238) only fires when a phobia has *already* triggered AND the character has Hardiness — never during chargen, never for the fixtures. Copy this discipline: a party-member strike draw only fires when `C.party` is non-empty; a foe-target-selection draw only fires when there is more than one valid target. Existing single-hero fixtures have empty parties and one target, so they draw nothing new.
+- **Never add an unconditional draw to `startCombat`, `foeTurn`, `playerStrike`, `afterPlayerAction`, or `killFoe`.** Those are on every combat fixture's hot path.
+- **Follow the `C.ally` precedent literally:** the existing ally strike (`allyTurn`, combat.js:646-664) already draws `rng.d(...)` and passes parity *because* `C.ally` is null on the fixtures. A party is the same shape at N; keep the draws inside `if (party member exists)`.
+- **Put any recruit/roster rolls in the non-chargen dungeon path only** (the `meetJoiner` encounter), never in `rollCharacter` — chargen parity is the most heavily pinned fixture set.
 
-**Warning signs:** You're filling out the form "from memory" instead of from a dependency audit; you can't name every native plugin in your Capacitor/Cordova config; your privacy policy is a generic template that doesn't match your actual (non-)data collection.
+**Warning signs:**
+A parity test that was green goes red across *many* asserted fields at once (cascade), while unit tests of the new feature pass. That signature = cursor shift, not a logic bug.
 
-**Phase to address:** Store-launch prep phase (metadata/compliance), with a re-check gate any time the wrapper/native-plugin set changes.
+**Phase to address:** P2 (combat draws), P3 (recruit draws) — with a determinism guard written into the plan's success criteria.
 
 ---
 
-### Pitfall 2: Age rating undersold or oversold because "dark humor" and "sarcasm" don't map cleanly onto the IARC/Apple questionnaires
+### Pitfall 2: New engine-only party fields aren't carved out of `comparable()` — permanent false parity failures
 
 **What goes wrong:**
-Both stores' age rating is generated from a checkbox questionnaire (IARC for Google, Apple's own age-rating form) built around concrete content categories: violence, blood/gore, fear/horror themes, crude humor, language, gambling-like mechanics. "Sarcastic tone" and "dark humor" as described in this project (death epitaphs, mocking the player's dead character, deadpan flavor text) don't have a dedicated checkbox — the developer has to correctly map them onto categories like "Crude Humor" and possibly "Fantasy Violence" / "Mild Blood." Two failure modes: (a) under-declaring — checking "no violence/no crude humor" because "it's just funny text," which can get an app re-rated or pulled after a complaint or a later audit; (b) over-declaring/self-sabotage — checking boxes conservatively out of caution and landing at a higher age bracket than the content warrants, which narrows the audience and can trigger extra scrutiny (Apple's 17+ tier has additional restrictions; some regions restrict discovery of higher-rated apps to minors' devices by default).
-Permadeath + monster combat + "dungeon crawler" also almost always triggers a **Fantasy Violence** checkbox even in a family-friendly game — failing to check it because "there's no blood" is a common mistake distinct from the humor question.
+The party lives in new state fields (`C.party`, `c.party`, per-member `wp`/`gear`/`asleep`). The frozen prototype never had them, so a raw `deepEqual(engineState, prototypeState)` fails forever on the extra keys — even when RNG order is perfectly preserved.
 
-**Why it happens:** First-time developers treat the questionnaire as a formality and answer optimistically rather than literally against Apple's/IARC's category definitions.
+**Why it happens:**
+The parity harness compares whole state trees. Any field the engine adds that the frozen master lacks is a structural mismatch unless explicitly stripped in the domain's `comparable()` transform.
 
 **How to avoid:**
-- Before filling out the questionnaire, write down concrete examples from your own copy (death epitaphs, Oracle log lines, monster-death flavor text) and match each to the closest official category (Crude Humor, Fantasy Violence, Mild Blood if any combat text implies injury) rather than answering from a gut "is this violent?" feeling.
-- Target: land in the "everyone 10+/Teen" bracket deliberately (Fantasy Violence + Crude/Mild Humor, no blood/gore, no profanity) rather than either extreme — this matches the stated "sarcastic but family-friendly" identity and keeps discoverability broad.
-- Do a tone pass explicitly checking for anything that could read as real-world profanity substitutes, drug/alcohol jokes, or anything punching at real groups — genre parody of fantasy tropes is safe; edgy meta-humor about real-world topics is not, and is also inconsistent with the game's own stated identity.
+- **Add `stripPartyField` carve-outs** to `test/parity/harness/comparables.js`, mirroring the existing `stripDarkForField` / `stripFlightFields` / `stripRationsField` precedents (comparables.js:36-57, 174-178). Strip `c.party` (and any new persistent per-member fields) in `combatComparable`, `movementComparable`, and `economyComparable`; strip `combat.party` in `combatComparable` alongside the existing `stripFoeDamageClosures`.
+- **Document each carve-out with the same "deliberate, permanent, engine-only divergence — not a fidelity regression" rationale** the existing strippers carry, so a future reader doesn't "fix" it by editing the frozen master.
+- **Never edit `test/parity/prototype-master.js.txt`.** It is the golden reference; the carve-out lives on the engine/harness side only.
+- **Prefer additive event fields over changed ones.** Party events (`partyMemberStruck`, `memberJoined`) should be brand-new event types, following the additive `allyStruck`/`allyJoined` pattern, so no existing event-shape assertion breaks.
 
-**Warning signs:** You're unsure which questionnaire box your flavor text falls under; nobody has read every piece of procedurally-assembled flavor text end-to-end (see Pitfall 11 on procedural text combinatorics) to confirm none of it could combine into something out of tone.
+**Warning signs:**
+Parity failures that point at *field presence/absence* (extra key `party`) rather than value drift; failures that appear on step 1 of a run before any dice are even rolled.
 
-**Phase to address:** Presentation/content phase (writing all flavor text) should include a tone/rating audit pass; store-launch phase does the actual questionnaire.
+**Phase to address:** P1 (define the carve-outs the moment the party field is introduced).
 
 ---
 
-### Pitfall 3: App Store "minimum functionality" / "template app" rejection because a wrapped web game looks like a WebView wrapper
+### Pitfall 3: Extra bodies trivialize combat — the difficulty curve is silently invalidated
 
 **What goes wrong:**
-Apple explicitly rejects apps that are thin WebView wrappers around a website with no native functionality (Guideline 4.2, "Minimum Functionality") and apps that feel like a repackaged web page rather than a real app. A vanilla-JS canvas game wrapped in Capacitor is exactly the shape reviewers are trained to flag — full-screen `<canvas>`, DOM UI, no visible native chrome. Reviewers can and do reject on "this appears to be a web site bundled as an app" even when the underlying tech (Capacitor) is perfectly legitimate and used by many shipped games.
+Combat is tuned around ONE hero versus a level-scaled foe count (`startCombat`: `cap = c.level<=2 ? 2 : 3`, foe level `clamp(min(c.level, depth) ...)`). Add 2-3 party members each swinging every round and the player's effective DPS roughly N-times's, while incoming damage is still split across one shared pool of foes. The Phase-3 tuned 5-10 minute descent curve (`engine/difficulty.js`) becomes a walkover; the core "tension of descending into the unknown" (the stated Core Value) evaporates.
 
-**Why it happens:** The reviewer is judging by feel in a few minutes of tapping, not auditing your build pipeline. If the app doesn't clearly use native capabilities (haptics, native share sheet, proper app icon/launch screen, native-feeling navigation/back behavior, offline-first responsiveness) it reads as "just a website."
+**Why it happens:**
+`difficulty.js` scales *floor generation* (dot count, darkness) by depth alone — it has no notion of party size. Foe count/level in `startCombat` keys off `c.level` and `depth`, never party size. Nothing in the power budget accounts for extra allied action economy.
 
 **How to avoid:**
-- Use native-feeling chrome: a real splash/launch screen (not a flash of white/unstyled HTML), a native status-bar treatment, native haptic feedback on key actions (hit, death, level-up) via a Capacitor plugin, and native share (share your graveyard entry / high score) — cheap wins that both improve feel and defang this rejection.
-- Ensure the app works fully offline from first launch with no network calls at all (no CDN-fetched assets, no external fonts) — a reviewer testing in airplane mode finding a spinner or blank screen is an instant rejection and also violates your own "fully offline" requirement.
-- In App Review notes, proactively state "this is a native, offline, single-player game; no network functionality is used or required" to preempt the assumption.
+- **Treat "effective party power" as an input to the difficulty dial.** In P5, feed party size/strength into foe count or foe level scaling (e.g. raise the `cap`, or bias `maxLvl`) so encounters stay on the tuned curve. Do this in `engine/difficulty.js` and `startCombat`, keeping both pure/deterministic.
+- **Cap party contribution hard for v1.** Reuse the existing ally model's *weakness* as a balance lever: the `C.ally` strike hits only on `roll <= 5` of a level-die and departs after N rounds. A joiner that is time-limited, less reliable than the hero, or capped at 1-2 members is far easier to balance than a permanent full party.
+- **Re-run the Phase-3 headless tuning harness with party scenarios**, not just solo, before declaring the curve valid.
 
-**Warning signs:** Cold-launching the built app shows a flash of unstyled content or a loading spinner; the app has no native UI chrome at all outside the canvas; you haven't tested a true airplane-mode cold start on a real device.
+**Warning signs:**
+Playtests where floors clear in one or two player turns; hero HP never drops; session length collapses below the 5-minute floor; kill counts spike.
 
-**Phase to address:** Packaging/platform phase (wrapper setup) and a dedicated pre-submission QA pass in store-launch phase.
+**Phase to address:** P5 (dial retune) — but the *lever* (party power as a scaling input) must be designed in P1/P2 so P5 has something to turn.
 
 ---
 
-### Pitfall 4: Canvas scaling / DPI handled with CSS pixels only, producing blurry or misaligned rendering on real devices
+### Pitfall 4: Tuning the difficulty dial three times — Joiners, Economy, and Monster milestones fight each other
 
 **What goes wrong:**
-The prototype was built for desktop browser testing at a fixed ~1080px reflow. Naively stretching that canvas to fill a phone screen via CSS (`width:100%; height:100%`) without accounting for `devicePixelRatio` produces blurry, soft-edged rendering on high-DPI phone screens (most modern phones are 2x–3.5x DPR). Combined with WebView viewport quirks, this is one of the most common "why does this look like a phone-2012 game" complaints on ported web games.
+Three proposed milestones each move the same dial: **Joiners** adds party power, **Monster Balancing** adds enemy power (foe spellcasting, new abilities, bestiary rebalance), **Economy & Item Balancing** changes gear/resource power (bags, sell economy, retuned costs/rewards). If each does its own full `difficulty.js` retune in isolation, the third one relitigates the first two, and the curve is tuned against assumptions that later milestones invalidate. Work is done 2-3×, and the final balance is whatever landed last, not a coherent design.
 
-**Why it happens:** Desktop dev/test never surfaces the problem because desktop DPR is usually 1x or the difference is less visually obvious at typical viewing distance; it only becomes visible on a real handset held close to the face.
+**Why it happens:**
+Each milestone reads as self-contained and each legitimately "needs a balance pass." All three point at `engine/difficulty.js` and the Phase-3 tuning harness. Without an explicit ordering decision they collide.
 
 **How to avoid:**
-- Set canvas backing-store resolution to `cssWidth * devicePixelRatio` × `cssHeight * devicePixelRatio`, scale the drawing context by DPR, and keep CSS size at the logical (CSS pixel) size — standard "retina canvas" pattern.
-- Test on at least one real low/mid-range Android device and one real iPhone early — simulators/emulators frequently misreport or fake DPR and won't catch this.
-- Re-verify after any change to the responsive layout math inherited from the prototype's 1080px reflow assumption, since that assumption doesn't hold across the full range of phone screen sizes/aspect ratios (tall 19.5:9/20:9 vs. older 16:9).
+- **Decide global order at the milestone-planning session and do the difficulty-dial retune ONCE, last, after the power-changing milestones land** — this is exactly what all three proposed-milestone docs already flag ("ideally the difficulty-dial retune happens once, after the power-changing milestones land"). Recommended sequence: land the *mechanics* of Joiners (party model + combat + acquisition, with party power exposed as a scaling input but left at conservative defaults), then Monster, then Economy, then a single consolidated balance milestone/phase that retunes `difficulty.js` against the full combined system.
+- **Alternatively, if each milestone must ship balanced independently**, make each one adjust *only its own local knobs* (Joiners: party cap/reliability; Monster: per-creature stats; Economy: prices/rewards) and reserve the *global* `difficulty.js` curve constants for the final consolidated pass. Split "local balance" (owned per milestone) from "global curve" (owned once) explicitly in each plan.
+- **Keep `difficulty.js` a pure depth function** (it already consumes no RNG and touches no DOM — combat.js/difficulty.js header) so retuning is just constant changes plus a harness run, cheap to redo once.
+- **Coordinate the shared reward numbers in one place:** parley's `d6*100*depth` Humans payout, killFoe's purse table + `LOOT_DIVISOR`, the Table-Four `+3000 WM` — the Monster and Economy docs already note these overlap. Party changes XP/loot *pressure* (more mouths, more kills); make sure the party milestone doesn't also re-tune those numbers the Economy milestone owns.
 
-**Warning signs:** Text and pixel-art/canvas-drawn UI looks noticeably softer on-device than on a desktop browser at the same zoom; screenshots taken directly from the device look "smudged" compared to the design mockups.
+**Warning signs:**
+Two milestone plans both editing `difficulty.js` constants; playtesters reporting the game "feels different" after each milestone with no single source of truth for the intended curve; the tuning harness being run with different assumptions in different milestones.
 
-**Phase to address:** Packaging/presentation phase (mobile rendering pass), before any store screenshots are taken (blurry screenshots also hurt conversion).
+**Phase to address:** P0/P5 — sequencing decision at milestone-planning; the actual retune deferred to a single consolidated pass.
 
 ---
 
-### Pitfall 5: Safe-area insets and system UI overlap ignored, especially on Android edge-to-edge enforcement
+### Pitfall 5: XP-split and loot inflation — the party either snowballs or starves the hero
 
 **What goes wrong:**
-iOS notch/Dynamic Island and the home indicator, plus Android's status/navigation bars, will overlap game content (D-pad, HP bar, tap targets) if the layout doesn't respect safe-area insets. This is a bigger deal in 2026 than it used to be: Android 15+ (API 35+) **enforces edge-to-edge** for apps targeting that SDK — meaning a WebView-based app that previously had the OS draw opaque system bars for it now renders *behind* the status and navigation bars by default, and CSS/layout that never accounted for this will suddenly have controls hidden under the nav bar or the D-pad half-covered by gesture navigation.
+`killFoe` currently dumps 100% of skill points, coin, and treasure onto the single hero (`c.sp += gained`, `gainWilmst`, `takeItem`). With a party you must decide who gets XP and loot. Two failure modes:
+1. **No split (all to hero):** the hero levels at the same rate but now clears fights N× faster → far more kills per minute → runaway leveling snowball. `checkLevel` fires constantly; the hero outscales the depth curve.
+2. **Naive split (÷ party size):** the hero levels slower while carrying the risk, feels punished for recruiting, and joiners accrue power the UI/save must now track.
 
-**Why it happens:** This is invisible on desktop and even on some emulator configurations; it only bites on real devices with notches/gesture nav, and the Android 15 behavior change specifically bites apps that worked fine when built/tested against older target SDKs.
+**Why it happens:**
+The reward code assumes exactly one recipient. Adding recipients without redesigning the reward math produces either inflation or a feels-bad tax.
 
 **How to avoid:**
-- Use `env(safe-area-inset-*)` CSS variables (iOS) and the Capacitor/Android equivalent insets (Android) to pad the touch D-pad, action buttons, and any bottom/top HUD elements — never place interactive controls in the outer ~24-48dp margin without insetting.
-- Explicitly test in landscape *and* portrait if both are supported, and on a device with a physical notch/pill cutout plus one with 3-button vs. gesture Android navigation.
-- Re-test this specifically after any Android target-SDK bump, since the edge-to-edge behavior is tied to `targetSdkVersion`, not just OS version on the device.
+- **Decide the reward model explicitly in P1 and keep it simple for v1:** recommended — **joiners do NOT accrue XP or loot** (they're hired muscle at a fixed level, like `C.ally`), and the hero's kill rewards are dampened to compensate for the faster clears (fold party size into a reward multiplier, or accept the extra clears are offset by tougher scaled encounters from Pitfall 3's lever). This avoids per-member progression bookkeeping entirely for v1.
+- **If joiners must level**, define it as its own deferred sub-scope, not v1 (see Pitfall 12).
+- **Watch loot *slot* pressure** — this collides with the Economy milestone's bag/carry system. A party doesn't share a bag today; decide whether joiners carry their own gear (more state, more save shape) or the hero holds everything (bag pressure). Recommend hero-holds-everything for v1 to keep the Economy interaction one-dimensional.
 
-**Warning signs:** The D-pad or an action button sits flush against the screen edge in your mockups with no padding logic; you've only tested in an emulator or a single device form factor.
+**Warning signs:**
+Hero hitting level caps far earlier at depth than in solo playtests; skill-point totals ballooning; treasure inventory overflowing faster than the Economy milestone's bag caps assume.
 
-**Phase to address:** Packaging/presentation phase (mobile layout), with a regression check any time Android target SDK is bumped.
+**Phase to address:** P1 (reward model decision), coordinated with P5 and the Economy milestone.
 
 ---
 
-### Pitfall 6: Touch targets sized for a mouse cursor / desktop click precision, not fingers
+### Pitfall 6: Combat turn loop drags past the 5-10 minute session (and can infinite-loop)
 
 **What goes wrong:**
-The prototype's D-pad and buttons were designed for a "responsive reflow" that still assumes reasonably precise pointer input (or a big-enough touch target on a device held at arm's length during dev testing). Real one-thumb mobile play — especially during a stressful permadeath dungeon moment — needs generously sized, well-spaced tap targets (Apple HIG and Material guidance both converge around a **44×44pt / 48×48dp minimum**, with more spacing between adjacent action buttons than a mouse UI would use). Undersized or tightly-packed buttons cause mis-taps that, in a permadeath game, directly cause player-perceived "unfair" deaths (tapped "attack" but hit "flee," or the reverse) — this compounds Pitfall 8 (permadeath frustration) by adding *input-error* deaths on top of legitimate RNG deaths.
+`afterPlayerAction` already has a non-trivial control flow: it runs `allyTurn`, `foeTurn`, then on a fresh-initiative "foe wins" it runs a *second* `foeTurn` and double-increments the round (combat.js:601-640). Multiply the per-round work by N party members each striking, plus foes now choosing among N targets, and each round balloons. More rounds + more per-round narration = a fight that blows past the session budget. Worse, a poorly-guarded party-turn or targeting loop (e.g. "pick next living target" over an all-dead party, or a member whose action re-enters combat resolution) can spin forever.
 
-**Why it happens:** Developer testing on their own phone with careful, deliberate taps doesn't reproduce the fast, adrenaline-driven taps of real play, and desktop-first UI design habits carry over the wrapper conversion.
+**Why it happens:**
+The single-hero loop terminates cleanly because there's exactly one player and `liveFoes()` shrinks monotonically. Adding a second axis (living party members) introduces a second termination condition that's easy to get wrong: `findIndex(alive)` returning -1, a `while (someMemberCanAct)` that never clears, or re-entrancy through `afterPlayerAction`.
 
 **How to avoid:**
-- Enforce a minimum 44pt/48dp hit target (not just visual size — the *tappable* hit area, which can be larger than the visible icon) for every combat/movement control, with real spacing between destructive actions (flee/attack) and less-destructive ones.
-- Put an "are you sure" or at least a brief input debounce/confirmation on any single mis-tap that could end a run avoidably (e.g., don't let one accidental tap during descent trigger a fight with no way to back out if the design intent was deliberate engagement).
-- Playtest one-handed/one-thumb on a real device, not just two-handed at a desk.
+- **Model party turns as a bounded `for` over a snapshot of members, never a `while`** — mirror `playerStrike`'s `for (let a = 0; a < attacks && t.alive; a++)` and `foeTurn`'s `for (const f of C.foes)` bounded loops. Snapshot the member/foe lists (like `foes.slice()` at combat.js:182) so mutation during iteration can't create an unbounded loop.
+- **Guard dead-member / no-target cases explicitly:** `liveFoes()[0]` (allyTurn) returns undefined when empty and bails — replicate that guard for every party member's targeting, and skip (don't retry) a dead member.
+- **Re-check `liveFoes().length` after every actor**, exactly as `afterPlayerAction` already does at three points, so combat ends the instant foes are cleared regardless of which party member landed the kill — otherwise the player is stranded on the combat screen (the bug the existing acid/ward re-check comment at combat.js:616-625 already warns about).
+- **Budget the round:** cap party size (2-3 for v1), keep joiner actions terse in the event stream, and consider letting joiners act *simultaneously/summarized* rather than as full separate animated turns so the UI doesn't narrate N times per round.
+- **Add a hard round ceiling / stalemate exit** as a safety net so no encounter can run unbounded.
 
-**Warning signs:** Buttons in the current CSS are sized to fit content tightly rather than to a minimum tap-target spec; there's no debounce/confirm on high-stakes taps.
+**Warning signs:**
+Encounters averaging many more rounds than solo; a test that hangs; combat that never returns `combatEnded`; profiler showing `afterPlayerAction` re-entrancy.
 
-**Phase to address:** Presentation/UX phase (mobile controls), verified via on-device playtesting before store submission.
+**Phase to address:** P2 (turn order + termination), P4 (narration budget).
 
 ---
 
-### Pitfall 7: Android hardware/gesture back button not wired into game state (breaks navigation or accidentally exits mid-run)
+### Pitfall 7: Foe target selection introduces a new draw AND new "who dies" semantics
 
 **What goes wrong:**
-Android's back gesture/button is a first-class navigation expectation that a web-game-turned-app frequently forgets to handle. Two failure modes: (a) back does nothing (app feels broken/unresponsive — a classic "this is just a website" tell, see Pitfall 3), or (b) back exits the entire app immediately, including mid-dungeon-run, with no confirmation — which for a permadeath game is a *disaster* (players lose in-progress runs to a reflexive back-tap, and rage-review the app for it). There's also the app-lifecycle counterpart: backgrounding the app (home button, notification, phone call) must not silently lose run state or corrupt the save.
+Today every foe attacks the hero (`c`) unconditionally in `foeTurn` (`c.wp -= dmg`, `die(state, "combat", ...)`). With a party, each foe swing needs a *target choice* among living party members + hero. That choice (a) needs a rule (random? focus the weakest? always the hero?), and (b) if random, consumes a new `rng.d(...)` draw per swing — a parity-order hazard (Pitfall 1) on the single hottest loop in the engine.
 
-**Why it happens:** Web apps built for a mouse+browser context never had to think about a system-level "back" affordance or true OS-level backgrounding/suspension; the concept doesn't exist in a normal web page and is easy to omit entirely when wrapping.
+**Why it happens:**
+The single-target assumption is baked into `foeTurn`: there is no target variable, damage goes straight to `c`. Retrofitting target selection touches the most parity-sensitive function.
 
 **How to avoid:**
-- Intercept the Android hardware/gesture back event: first press backs out of a menu/modal one level at a time; from the root gameplay screen, either do nothing dangerous (require a second "press back again to exit" or open a pause menu) — never let a bare back-tap silently kill an in-progress run.
-- Persist full run state (not just high scores) on every app-lifecycle pause/background event, not just on explicit save actions, so a phone call or notification mid-dungeon never loses progress (this overlaps with Pitfall 8/save-durability below).
-- Test explicitly: background the app mid-combat, kill it from the OS task switcher, relaunch — the run must resume exactly where it left off.
+- **Choose a deterministic, draw-free targeting rule for v1 where possible** — e.g. "foes always hit the hero" (party members are damage-soakers only via their own presence, not by drawing aggro), or "foes hit the front-most living member by fixed order." A fixed-order rule needs *zero* new RNG and keeps parity trivially (the hero-only branch is what the fixtures already exercise).
+- **If targeting must be randomized, gate the draw behind `party.length > 0`** so solo fixtures (empty party) never draw it — same discipline as Pitfall 1.
+- **Route ALL damage-to-a-character through one helper** so `die()` semantics, Hardiness, ward, armor soak (all currently hard-coded to `c`) work identically for a party member. Don't copy-paste the `c`-specific block per member; parameterize the target once.
 
-**Warning signs:** There's no back-button handler at all in the wrapper config; the only save point is "on death" or "on manual save," not continuous.
+**Warning signs:**
+Parity break isolated to `foeTurn`; a party member taking ward/armor effects that belong to the hero; a foe swing with no target when the party is wiped but the hero lives.
 
-**Phase to address:** Packaging phase (lifecycle wiring) and save/resume phase; verify with an explicit lifecycle test checklist before submission.
+**Phase to address:** P2.
 
 ---
 
-### Pitfall 8: `localStorage` treated as durable storage in a native wrapper — save data (or the graveyard/high-score history) silently wiped
+### Pitfall 8: Save migration — old saves have no party; `rehydrate` drops transient combat party state
 
 **What goes wrong:**
-The prototype's `localStorage` save was fine in a desktop browser, where it's effectively persistent. Inside a native WebView (WKWebView on iOS, Android System WebView), `localStorage`/IndexedDB is **not guaranteed durable**: iOS can and does evict WebView storage under disk pressure, and there are known WebKit bugs/behaviors where localStorage is lost across app updates, OS updates, or even ordinary relaunches in some WKWebView configurations. This is exactly the kind of bug that won't show up in a week of dev testing but *will* show up for real users months later — and for a game whose primary retention hook is "persistent graveyard of past runs" and local high scores, silently losing that data is close to a worst-case failure for this specific project.
+`STATE_VERSION` is 1 and `validateSave` currently treats any versionless/old save as v1 and validates against *today's* shape (saveState.js:101). A pre-party save has no `c.party`. If the party field is required, old in-progress runs fail to load or crash on first action. Separately, `rehydrate` **always resets `combat` to null** (saveState.js:156) — the prototype never resumed mid-combat — so any party state stored on `state.combat` (like `C.ally`) silently vanishes on reload. A partially-recruited/aborted party (recruit offered, app backgrounded mid-encounter) can leave `c.pendingAlly`/partial `c.party` in an inconsistent shape.
 
-**Why it happens:** `localStorage` "just works" in every desktop browser test, so the durability gap is invisible until a device runs low on storage, gets an OS update, or the app itself is updated — none of which happen during normal development iteration.
+**Why it happens:**
+The save layer was built for a fixed single-hero shape with a documented-but-unbuilt v1→v2 migration hook (saveState.js:96-100). New persistent fields need a migration path and a default; transient combat fields don't survive reload by design.
 
 **How to avoid:**
-- Do **not** treat raw `localStorage` as the durable store for save/graveyard data in the shipped app. Use a native persistence layer instead — e.g. Capacitor's `Preferences`/Filesystem APIs (backed by native storage, not WebView storage) or a small SQLite plugin — and treat `localStorage` only as an in-session cache, if used at all.
-- Migrate/mirror existing prototype save-format logic onto the native store early (this is a core packaging-phase task, not a launch-week afterthought) since it affects every other feature that reads/writes `S` state.
-- Add defensive save redundancy: periodic writes (not just on death), a versioned save schema so a corrupt/partial write doesn't nuke the whole save, and ideally a lightweight backup/checksum so a torn write (app killed mid-save) doesn't corrupt the graveyard file.
-- Test explicitly: force-quit during a save, fill device storage near capacity, update the app in place, update the OS — confirm the graveyard and high scores survive all four.
+- **Store the *persistent* party on `c` (or top-level `state.party`), NOT on `state.combat`** — combat is wiped on every reload. `c.joiner` is already the persistent home; generalize *that* into the party roster. Only the *in-fight* per-member combat state (current wp this fight, asleep counters) lives on `combat` and is legitimately transient/reset-on-reload (consistent with how the hero's own combat is not resumed).
+- **Bump `STATE_VERSION` to 2 and add the real migration step** at the hook saveState.js:96-100: a v1 save (no party) migrates to `{ ...save, c: { ...c, party: [] } }` (empty party default). Make the party field *optional with an empty-array default* in `isValidCharacter`/rehydrate so old saves load unchanged.
+- **Default missing party to empty everywhere it's read** (`c.party ?? []`), the same defensive `?? default` style the codebase uses (`c.songAt ?? -999`, `obj.day ?? 1`).
+- **Define and clear partial/aborted recruit state:** ensure `c.pendingAlly`/pending-recruit is either fully applied or fully discarded on load; never leave a half-built member. A validation guard (like `isValidCharacter`) should treat a malformed party entry as "no party" and fail closed, not crash.
+- **Add a round-trip parity/serialize test** for a save containing a party (serialize → validate → rehydrate → deep-equal), mirroring the existing save round-trip tests.
 
-**Warning signs:** The save code is a direct lift of the prototype's `localStorage.setItem`/`getItem` calls with no native storage plugin in between; there's a single save file with no versioning and no backup/redundancy.
+**Warning signs:**
+Old dev saves failing to load after the party field lands; a reloaded mid-combat run losing its allies; `validateSave` accepting a save whose `party` entries are malformed.
 
-**Phase to address:** Packaging phase (native persistence layer) — this is arguably the single highest-priority technical pitfall for this project given the "local high-score / graveyard as primary hook" requirement, and should be solved before endless-mode or presentation work, since every other system depends on save integrity.
+**Phase to address:** P1 (version bump + migration + defaults + round-trip test).
 
 ---
 
-### Pitfall 9: No crash reporting or device-diversity testing before launch — the "silent field failure" trap
+### Pitfall 9: Party UI — the party rail overflows a phone and status becomes illegible
 
 **What goes wrong:**
-A solo first-time mobile dev ships, gets a wave of 1-star reviews saying "crashes on open" on a phone model/OS version they never tested, and has zero visibility into *why* because there's no crash reporting and no device lab. Nearly all first-release pain for solo/indie devs is infrastructure — signing, provisioning, native-plugin version mismatches — not the game logic itself, and these infrastructure issues manifest as crashes that only reproduce on specific real hardware/OS combinations never covered by a single developer's own device(s) or by simulators/emulators.
+The mock's "party rail" is currently hidden/OFF for v1 (per the 04-UI-SPEC combat screen). Turning it on with N members plus the existing foe list, hero sheet, and combat log has to fit a portrait phone (the app is portrait-locked, 1080px reflow). Each member needs name, HP, level, status (asleep/frozen/dead). At 3+ members this overflows, forces tiny text, or pushes the combat controls off-screen — directly harming the "responsive, native-quality on mid-range phones" constraint and the 5-10 minute quick-session feel.
 
-**Why it happens:** Simulators/emulators don't perfectly replicate real GPU/WebView behavior, memory constraints, or OEM Android skinning quirks; a solo dev typically owns exactly one iPhone and one (or zero) Android phones, nowhere near the device matrix that Play Store's install base spans.
+**Why it happens:**
+The combat screen was laid out for one hero + a short foe list. The party rail was designed but deferred precisely because it's a layout risk; N is unbounded in the naive design.
 
 **How to avoid:**
-- Add a crash reporting SDK before public launch (even a minimal, privacy-respecting one) — but see Pitfall 1: this *must* then be correctly reflected in both stores' privacy/data-safety declarations, since it's now genuine third-party data collection.
-- Use TestFlight (iOS) and Google Play's internal/closed testing tracks (Android) with a handful of real external testers on different device models before public release — this is free and is the closest a solo dev gets to a device lab.
-- Budget explicit time for provisioning-profile/signing-certificate setup pain: expired distribution certificates, App ID capability mismatches, and "no registered device" errors are the most common first-timer blockers and have nothing to do with game code — treat this as its own task, not a footnote of "submit to store."
-- Keep Apple Developer Program (paid, annual) and Google Play Console (one-time fee) enrollment and signing identity setup as an explicit early milestone, not something discovered during a crunch right before intended launch.
+- **Cap visible party size and design the rail for the cap** (2-3 members recommended for v1) — don't build an arbitrarily-scrolling rail.
+- **Use compact status chips** (reuse the enemy-status-chip pattern already built in the Phase-4 combat-UX rework) for member status rather than full sheets; a tap opens the full member sheet.
+- **Keep the rail presentation-only over engine state.** The rail reads `state.combat.party` / `c.party`; it must never mutate engine state or read DOM inside the engine (the decoupling constraint). Render from events + state, like the existing `renderEncounter`.
+- **Test on a real mid-range portrait device early** (the project is already in heavy device-review on a Pixel 7) with a full party + multi-foe encounter, before wiring deep combat logic.
 
-**Warning signs:** You've only ever run the app on the simulator/emulator or your own single physical device; you have no way to find out about a production crash except user reviews.
+**Warning signs:**
+Combat controls scrolling off-screen; HP numbers below legible size; the log collapsing to a couple of lines; testers unable to tell which member is hurt.
 
-**Phase to address:** Packaging/platform phase (signing + testing infra setup, early) and a dedicated pre-launch beta-testing phase using TestFlight/Play internal testing.
+**Phase to address:** P4 (with a device-review checkpoint).
 
 ---
 
-### Pitfall 10: Endless-mode difficulty scaling breaks because enemy/player growth curves were never designed against each other
+### Pitfall 10: Strangler-fig bridge pitfalls — the half-migrated `C.ally`/`c.joiner`/`c.pendingAlly` mess
 
 **What goes wrong:**
-Converting a fixed 5-floor "Gate" ending into infinite descent is not "just remove the floor cap and keep incrementing a difficulty number." The most common failure pattern across games that add endless/infinite modes to originally-bounded content: **player power grows linearly/additively (fixed stat gains per level) while enemy difficulty is scaled multiplicatively/exponentially (percentage increases per floor)** — the two curves diverge, and the game becomes either (a) trivially easy for the first N floors because the original balance assumed a 5-floor ceiling and undertuned early difficulty, or (b) a hard wall at some floor where enemy scaling outpaces anything the player's build can compensate for, making death feel like an arbitrary stat check rather than a meaningful choice. A second common failure: removing "breathing room" — in a bounded 5-floor design, easier floors/encounters are intentionally rare punctuation; naive endless scaling makes *every* floor harder than the last with no periodic easier floors, which removes the pacing variety that makes runs feel like a story rather than a monotonic grind.
+There are already **three** disconnected ally footholds: `C.ally` (combat-scoped, from Summoner spell, single strike, departs after N rounds), `c.pendingAlly` (out-of-combat summon, transferred at `startCombat`), and `c.joiner` (persistent, set by `meetJoiner` but **never read by combat** — a dead stub). If the party system is bolted on *beside* these instead of *absorbing* them, you get two parallel ally code paths (`allyTurn` vs. new party turn) that can both fire, double-count, or diverge. Note also the master's `meetJoiner` sets `maxWP` via `D(20)` then immediately overwrites it with `wp` (master:1762-1763) — a latent double-roll/shape quirk to reconcile, not blindly port.
 
-**Why it happens:** The original 5-floor balance was tuned for a *known, bounded* endpoint (the Gate). Endless mode requires an entirely separate balance pass with its own curve design — treating it as a trivial parameter change (just multiply monster stats by `1.1^floor`) is the default naive approach and is exactly the trap most postmortems describe.
+**Why it happens:**
+Incremental "add a party without touching the working ally" feels safer but leaves a strangler-fig half-migration: old and new systems coexist, each partially wired.
 
 **How to avoid:**
-- Design the endless difficulty curve as its own deliverable, not a byproduct of removing the floor cap: decide explicitly what floor number represents "roughly as hard as the old floor 5" and tune around known reference points, then extrapolate deliberately beyond it with playtesting at high floor counts (30, 50, 100+), not just floors 1–10.
-- Build in periodic "easier" floors or a soft plateau/breather mechanism (a common roguelike pattern) rather than strict monotonic escalation, so long sessions still feel like a story with ebbs and flows rather than a wall that suddenly appears.
-- Separate "time survived" pacing (this game's 5–10 min session target) from "floors survived" difficulty pacing — make sure a *typical* run naturally lands in the 5–10 minute window at typical player skill, and use telemetry-free local instrumentation (e.g., dev-mode logging during playtesting) to check actual average run length against that target before launch, since there's no live analytics to tell you post-launch (per the offline/no-server constraint).
-- Explicitly decide what "infinite" means for stat scaling to avoid numeric overflow / absurd number inflation at very high floors for long-session players (a known failure mode in endless-mode games — eventually numbers become meaningless "bigger number" theater rather than a meaningful difficulty signal).
+- **Generalize, don't duplicate.** Make `C.ally` a party of size 1 — i.e. the new party array *is* the ally mechanism, and `allyTurn` becomes "each party member's turn." Migrate the Summoner summon (`master:2075-2084` / combat.js `C.ally`) to push into the party array; migrate `meetJoiner` (P3) to push a persistent member into `c.party`. Delete the standalone `C.ally`/`c.pendingAlly` paths once the party subsumes them.
+- **Reconcile the `meetJoiner` shape deliberately** (fix the discarded-`maxWP` double-roll as an intentional, documented change — and mind that changing that draw count is itself a Pitfall-1 parity event; do it behind the non-chargen encounter gate).
+- **One turn function, one targeting helper, one death helper** for all allied combatants — no parallel `allyTurn` + `partyTurn`.
+- **Sequence the absorb explicitly:** P1 defines the party array + migrates `C.ally` into it (parity-neutral for solo saves), P3 wires `meetJoiner`. Don't ship the party rail (P4) reading a different data source than combat writes.
 
-**Warning signs:** Difficulty scaling is implemented as a single multiplier applied uniformly to floor number with no distinct tuning pass; nobody has played to floor 50+ in testing; average playtest session length hasn't been measured against the 5–10 min target.
+**Warning signs:**
+Both `allyStruck` and a new `partyMemberStruck` firing for the same combatant; a summoned ally not appearing in the party rail; `c.joiner` set but nothing happening in the next fight; two departure timers.
 
-**Phase to address:** Endless-mode conversion phase — treat as a dedicated design/balance phase with its own playtesting pass, not a side effect of "remove the floor cap" engineering work.
+**Phase to address:** P1 (absorb `C.ally`), P3 (absorb `meetJoiner`).
 
 ---
 
-### Pitfall 11: Permadeath frustration from *unfair-feeling* deaths (RNG or input error) vs. *earned* deaths — and procedural flavor text combinatorics nobody proofread
+### Pitfall 11: Joiner death & permadeath semantics are undefined — inconsistent, un-serialized run impact
 
 **What goes wrong:**
-Permadeath is core to this game's identity and isn't itself a mistake — but permadeath dramatically raises the cost of any *other* unfairness in the system, because a death is never "just try again from here," it's "lose the whole run." Two distinct failure modes compound under permadeath: (1) **RNG unfairness** — a single unlucky roll (e.g., an early, disproportionately powerful monster spawn, or a run-ending trap with no counterplay) feels like the game cheated rather than like a consequence of player choices, especially if the randomness has no "fixed layer" the player can rely on (e.g., always being able to see incoming danger before it resolves, or always having a flee option that has real chance of success). (2) **Combinatorial flavor-text failures** — with 100%-dice-rolled characters, 45 creatures, dozens of items, and sarcastic procedurally-assembled text (death epitaphs, Oracle log), the combinatorial space is large enough that nobody manually reviews every combination, and it's common for procedurally-composed sarcastic lines to occasionally combine into something that reads as genuinely mean-spirited, nonsensical, or (worst case for a family-friendly rating) accidentally suggestive/inappropriate when two independently-fine text fragments concatenate.
+The game is permadeath for the hero (`die()` ends the run). Joiner death is undefined: do members permadie, flee at low HP, or just "depart"? If undefined, you get inconsistent behavior — a member's `wp<=0` might route through the hero's `die()` (ending the whole run — catastrophic), or be ignored (immortal members trivialize combat), or leave a `alive:false` member lingering in the party rail and the save.
 
-**Why it happens:** Roguelike design wisdom (established across the genre) is that RNG should be layered — a fixed/skill layer where player choices always matter, a semi-random layer where strategy shapes outcomes, and a small pure-RNG layer for flavor/surprise — but it's easy to accidentally let pure RNG govern life-or-death outcomes (e.g., "did the trap kill you or not" as a flat percentage with zero player agency) rather than keeping it in the flavor layer. Procedural text combinatorics are a design-time blind spot because during development you only ever see a handful of combinations, never the full cross-product.
+**Why it happens:**
+`foeTurn`'s death path is hard-coded to the hero (`die(state, "combat", f.name, ...)` on `c.wp<=0`). A party member reaching 0 HP has no defined route. `killFoe`/`die` are hero/foe-centric.
 
 **How to avoid:**
-- Audit every death-causing mechanic and classify it: does the player have a meaningful choice/counterplay before this could kill them (fixed/semi-random layer — good), or is it a flat unavoidable percentage roll with no signal or counterplay (pure-RNG-kills-you layer — minimize this)? Aim to make "you saw it coming and made a choice" the dominant death pattern; keep pure bad-luck deaths rare and, ideally, still narratively satisfying (a sarcastic epitaph helps sell an unlucky death as "funny," not "unfair").
-- Add a lightweight procedural-text QA pass: either generate and skim a large batch of randomly-assembled epitaphs/Oracle lines programmatically before launch to catch bad combinations, or constrain the combination grammar so fragments can't concatenate into unintended meanings (this is cheap insurance against both an awkward player experience and an accidental rating problem).
-- Distinguish "hard death, taught me something" from "cheap death, learned nothing" during playtesting — collect informal player reactions specifically to *how* they died, not just whether they died, since permadeath makes the *feeling* of the death as important as balance numbers.
+- **Define member-death semantics explicitly in P6 and keep them simple for v1:** recommended — a downed member **departs the run** (removed from `c.party`), does NOT trigger the hero's `die()`, and does NOT end the run. Time-limited joiners (the `C.ally` `rounds` model) sidestep the question entirely for the summon case.
+- **Ensure a member reaching 0 HP is routed to a member-death handler, never the hero's `die()`.** This is the same "route all damage through one target-parameterized helper" fix as Pitfall 7 — but the *death branch* must fork on hero-vs-member.
+- **Clean up dead members from both the roster and the save** so a permadead member doesn't linger in `c.party` and the rail (Pitfall 8/9).
+- **Decide the emotional/tone framing** (dark-humor departure/epitaph flavor) — consistent with the game's voice, but that's polish, not the mechanic.
 
-**Warning signs:** There exist mechanics where death probability is a flat roll with no preceding player-visible signal or choice; nobody has read a large batch of auto-generated epitaphs/flavor lines end-to-end looking for bad combinations.
+**Warning signs:**
+A member's death ending the whole run; dead members still shown as fighting; the save carrying `alive:false` party entries; members that never die (immortal DPS).
 
-**Phase to address:** Endless-mode/balance phase (RNG layering audit) and presentation/content phase (procedural text QA pass), both before store-launch.
+**Phase to address:** P6.
 
 ---
 
-### Pitfall 12: High-score / graveyard integrity — trivially editable local save invites "cheating" that undermines the game's own value proposition
+### Pitfall 12: Scope creep — building toward true multiplayer instead of a v1 single-player party
 
 **What goes wrong:**
-Because this is fully offline with no server, the local save file (wherever it lives) is directly inspectable/editable by any player willing to root/jailbreak or use a file-sharing/backup tool. For a game whose stated retention hook is "chase a higher depth/score," an easily-editable local high score undermines the personal-achievement value even in single-player (there's no leaderboard to protect from cheaters, but a player who edits their own file loses the thing the feature was for, and a "share your depth" social feature — if ever added — becomes worthless if screenshots/scores can't be trusted). This isn't a security emergency (no multiplayer leaderboard to poison yet — see Key Decisions), but it's a cheap-to-fix design smell that becomes expensive to retrofit once the multiplayer/leaderboard future (explicitly planned in this project) arrives.
+"Party system" invites building the *full* multiplayer-grade layer: per-member independent progression, per-member inventories/bags, member equip screens, AI behavior trees, reordering/formation, dismiss/rehire economies, member-specific dialogue. PROJECT.md is explicit: **multiplayer / "play with friends" is a deliberately deferred post-MVP milestone**, and Joiners is only the *single-player on-ramp* to the party-ready engine. Over-building here delays the milestone, multiplies the balance/save/UI surface, and pre-commits design the real multiplayer milestone should own.
 
-**Why it happens:** "It's single-player and offline, why would we bother obfuscating a save file" is a reasonable-sounding argument that ignores the later multiplayer plan and the reputational cost of a game whose achievements are known to be trivially fakeable.
+**Why it happens:**
+The engine was intentionally built "multiplayer-ready" (pure serializable `applyAction`), so it's tempting to "just finish the party fully." The three-way balance coupling (Pitfall 4) also tempts scope-widening ("while we're in here...").
 
-**How to avoid:**
-- Lightly obfuscate or checksum the save/graveyard file (a simple HMAC or hash-of-contents check is enough to deter casual editing — this is about intent-signaling and social-share trustworthiness, not defeating a determined attacker) so that if/when a "share your best run" feature ships, screenshots and shared scores carry some minimal credibility.
-- Keep the save-format versioning (see Pitfall 8) and integrity-checking as the *same* piece of work — a checksummed, versioned save format solves both durability and light tamper-resistance at once.
-- Explicitly do **not** over-invest here for v1 (no server-side verification is needed for a solo offline game) — this is a "cheap now, expensive later" pitfall, not a launch blocker.
+**How to avoid — draw the v1 fence explicitly:**
+- **IN for v1:** a small (cap 2-3) party of joiners that fight alongside the hero; recruited via the `meetJoiner` encounter; fixed-level "hired muscle" (no per-member XP); hero holds all loot (no per-member bags); deterministic/low-RNG combat contribution; serialized + migrated; depart-on-death; party rail UI showing HP/status; the difficulty *lever* wired but retuned in the consolidated balance pass.
+- **DEFER to the true-multiplayer milestone:** per-member progression/leveling; per-member inventories/bags/equip; human-controlled members; member AI behavior trees / tactics selection; formation/positioning; networked/relayed state sync; member-specific quests/dialogue; large parties.
+- **Write the fence into the milestone's scope doc and each phase's success criteria** so "add per-member leveling" gets bounced to the deferred milestone, not absorbed.
+- **Reuse the weakest-possible mechanic that ships value:** the existing `C.ally` (time-limited, unreliable, no loot/XP) is *already* a shippable party-of-one; v1 is "generalize it to N with recruitment + UI + balance," nothing more.
 
-**Warning signs:** The save file is human-readable plaintext JSON with an obvious `highScore`/`bestDepth` field and no integrity check at all.
+**Warning signs:**
+Plans introducing per-member `sp`/`level`/bag fields; a member-equip UI; AI tactics settings; anything titled "so it's ready for multiplayer"; the milestone growing past the 2-3 phase core.
 
-**Phase to address:** Packaging phase (bundle into the native save-format work from Pitfall 8) — low effort if done alongside save/versioning work, high effort if retrofitted after a multiplayer leaderboard exists.
-
----
-
-### Pitfall 13: Rules-engine/UI coupling creeps back in during the mobile port, quietly closing the door on the planned multiplayer future
-
-**What goes wrong:**
-The project's stated architecture goal is a decoupled, fully-serializable rules engine (the prototype's `S`-state / `act()` pattern) so a future multiplayer layer can wrap the same engine without a rewrite. The single most common way solo devs paint themselves into a corner here: while doing mobile-specific work (endless-mode conversion, new UI screens, save/resume, onboarding/tutorial), it's easy to reach for "just read/write global state directly from the UI layer real quick" as a shortcut under time pressure — each individual shortcut feels harmless, but they accumulate into implicit UI-to-engine coupling that isn't visible until someone tries to drive the engine from a second client (a remote peer) and discovers dozens of places where UI code and engine state are entangled in ways that assumed a single local synchronous caller.
-
-**Why it happens:** Solo devs under deadline pressure optimize for "make this screen work" not "keep this abstraction pure," and there's no automated test or lint rule enforcing the boundary unless one is deliberately set up.
-
-**How to avoid:**
-- Treat "does this change require touching the engine's serialization boundary or public action interface" as an explicit design-review question for every mobile-specific feature (onboarding, endless-mode counters, save/resume, new UI screens) — if a new mobile feature needs new state, it should go through the same `act()`/beats action system as existing rules, not a side-channel global mutation.
-- Write (even a minimal) test that fully serializes game state to JSON and rehydrates it mid-run, and run it as part of normal development — this is the cheapest possible guardrail for "is the engine still actually decoupled and serializable," and it doubles as a regression test for the save/resume feature itself (Pitfall 8).
-- Resist adding any mobile/presentation-only fields into the core `S` state object; keep UI-only state (animation flags, screen-transition state, tutorial-step tracking) in a clearly separate namespace from rules-relevant state, so a future network sync layer only has to serialize the rules-relevant part.
-
-**Warning signs:** New mobile features are being implemented by directly mutating `S` from UI event handlers rather than through the existing action system; there's no serialize/deserialize round-trip test; UI-only concerns (like "is the tutorial tooltip showing") live in the same state object as combat/character data.
-
-**Phase to address:** Cuts across every phase that touches game state (endless-mode, save/resume, onboarding) — enforce as an ongoing architectural discipline/checklist item rather than a single phase, with the serialization round-trip test established as early as possible (ideally during the packaging/endless-mode phase) so it catches violations for the rest of the project.
-
----
-
-### Pitfall 14: Scope creep from "since we're rebuilding the UI anyway" — presentation/UX polish swallowing the schedule before store submission is even attempted
-
-**What goes wrong:**
-Adopting a new visual/UX target (the "Claude Design Mazeworld Mobile" direction referenced in this project) alongside endless-mode conversion and platform packaging is three significant workstreams happening at once. First-time mobile solo devs commonly under-budget the packaging/store-submission workstream (signing, provisioning, store listing assets, review-guideline compliance, actual submission-and-rejection-cycle time) because it's unfamiliar and "invisible" compared to visible feature/UI work, and then discover late that store submission itself eats weeks (first submission almost always gets rejected at least once for something fixable but blocking) — by which time polish work has consumed the schedule slack that should have covered that.
-
-**Why it happens:** Feature and visual work produces visible, satisfying progress; packaging/compliance work is invisible until it blocks you, so it's naturally deprioritized by a solo dev without a second opinion forcing the tradeoff into view.
-
-**How to avoid:**
-- Treat "get a minimally-styled but fully compliant build through TestFlight + Play internal testing" as an early milestone, deliberately *before* the full visual redesign is finished — this surfaces signing/provisioning/compliance problems (Pitfalls 1, 3, 5, 9) while there's still schedule slack to fix them, rather than discovering them the week of intended launch.
-- Explicitly budget calendar time (not just engineering time) for the store review cycle itself — first submissions to both stores routinely require at least one rejection-and-resubmit round, and Apple's review turnaround alone can be multiple days per cycle.
-- Keep a hard-line "store submission checklist" (signing certs valid, privacy forms accurate, age rating set, screenshots/metadata complete, offline cold-start tested) as a gating checklist separate from "does the game feel good," so visual polish work never silently absorbs the time reserved for compliance.
-
-**Warning signs:** No build has been through TestFlight/Play internal testing until very late in the schedule; there's no separate checklist/milestone for "store-submission-ready" distinct from "feature-complete."
-
-**Phase to address:** Should be an explicit early phase (a thin, ugly, fully-store-compliant vertical slice submitted to both stores' test tracks) that runs in parallel with, not after, the visual redesign and endless-mode work.
+**Phase to address:** P0 (scope fence at milestone-planning) — enforced in every phase's success criteria.
 
 ---
 
 ## Technical Debt Patterns
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|-----------------|------------------|
-| Keep using `localStorage` directly instead of a native persistence plugin | Fast, zero new dependencies, code already works | Silent save/graveyard data loss on real devices (Pitfall 8) | Never for shipped builds — acceptable only in throwaway dev-only test builds never installed on a real device |
-| Multiply enemy stats by a flat per-floor factor instead of a real endless-curve design pass | Fast to implement, "endless" technically works | Difficulty either trivializes early game or hard-walls late game; run-length target missed (Pitfall 10) | Acceptable as a first-pass prototype for internal playtesting only, never as shipped balance |
-| Mutate global `S` state directly from new mobile UI code instead of routing through `act()` | Faster to ship a given screen under deadline | Closes the door on multiplayer without a rewrite (Pitfall 13) | Never — this is the one architectural line the project explicitly cares about protecting |
-| Skip a crash-reporting SDK to avoid privacy-form complexity | Simpler compliance forms, faster to submit | No visibility into post-launch crashes on device models never personally tested (Pitfall 9) | Acceptable only if replaced by a rigorous, larger external beta-test group across many device models before public launch |
-| Ship without a save-file checksum/version | Simpler save code | Corrupted/edited saves crash the app or undermine the depth-chase hook (Pitfall 8, 12); expensive to retrofit once graveyard data exists in the wild | Acceptable only for the very first internal alpha, must be added before any external beta |
+|----------|-------------------|----------------|-----------------|
+| Keep `C.ally` beside a new party array instead of absorbing it | No risk to the working Summoner ally | Two parallel ally paths, double-counting, diverging UI/combat data (Pitfall 10) | Never — absorb it in P1 |
+| Store party on `state.combat` (transient) for speed | Easy to wire into `foeTurn`/`allyTurn` | Party vanishes on every reload (`rehydrate` nulls combat); breaks persistent joiners | Only the *in-fight* per-member combat sub-state; persistent roster must live on `c` |
+| Add foe target-selection as an unconditional `rng.d(...)` | "Correct" random targeting | Breaks the entire parity suite via cursor shift (Pitfall 1/7) | Never — gate behind `party.length>0` or use a draw-free rule |
+| All kill rewards to the hero, ignore the faster clears | No reward-split design needed | Hero snowballs past the difficulty curve (Pitfall 5) | Acceptable for v1 *only if* the difficulty lever (Pitfall 3) compensates |
+| Per-milestone `difficulty.js` retune | Each milestone "ships balanced" | Tuned 2-3× against stale assumptions (Pitfall 4) | Never for the global curve — do the consolidated retune once, last |
+| Uncapped, scrolling party rail | Handles any N | Overflows a portrait phone, illegible status (Pitfall 9) | Never for v1 — design for a fixed cap |
+| Per-member XP/leveling in v1 | "Feels like a real party" | Multiplayer-milestone scope pulled forward; save/UI/balance surface explodes (Pitfall 12) | Never in v1 — defer |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
-|-------------|-----------------|-------------------|
-| Capacitor/Cordova wrapper | Trusting starter-template defaults (bundled analytics/ads plugins) without auditing | Start from a minimal template, add plugins one at a time, re-check privacy forms after each addition |
-| Apple TestFlight | Treating provisioning/signing as a one-time setup step done right before submission | Set up signing identity, App ID, and at least one registered test device in the first packaging session, well before any real deadline pressure |
-| Google Play Console data safety form | Filling it out once at submission and never revisiting | Re-derive the form from an actual dependency audit after every plugin/SDK version change |
-| Native storage plugin (Preferences/SQLite) | Assuming API parity with `localStorage` (same size limits, same sync behavior) | Read the plugin's actual size/async semantics; migrate save-schema logic deliberately, don't copy-paste `localStorage` calls onto the new API |
-| Android edge-to-edge (SDK 35+) | Assuming old target-SDK behavior (opaque system bars) still applies | Explicitly test safe-area insets any time `targetSdkVersion` changes, even without other code changes |
+|-------------|----------------|------------------|
+| `engine/difficulty.js` (the dial) | Adding party size as a new *RNG-consuming* input | Keep it a pure depth+party-size function; it must consume no RNG (per its own header) so it never perturbs the cursor |
+| `test/parity/harness/comparables.js` | Forgetting to carve out new party fields, or editing the frozen master | Add `stripPartyField` to all three `*Comparable()` fns; never touch `prototype-master.js.txt` |
+| `engine/saveState.js` migration hook | Leaving `STATE_VERSION` at 1 and validating old saves against the new shape | Bump to 2, add the real v1→v2 migration (empty-party default), keep party optional in `isValidCharacter` |
+| `killFoe` / `gainWilmst` / `takeItem` (rewards) | Assuming one recipient | Decide the reward model in P1; coordinate the *numbers* with the Economy milestone, not here |
+| Economy milestone's bag/carry system | Party members carrying their own bags in v1 | Hero holds all loot in v1; keep the party↔economy interaction one-dimensional |
+| Monster milestone's foe abilities | Foe spellcasting/target choice adding draws that collide with party draws | Both milestones must gate new draws behind existence conditions; agree the draw order at planning |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|-----------------|
-| Canvas rendered at CSS-pixel resolution, not DPR-scaled | Blurry text/sprites on-device vs. desktop dev | Scale canvas backing store by `devicePixelRatio`, keep CSS size logical | Immediately visible on any real device with DPR > 1 (i.e., almost every modern phone) |
-| Full-frame redraws on every tick regardless of what changed | Battery drain, jank on mid-range Android, thermal throttling during longer sessions | Redraw only changed regions or throttle to actual game-tick rate, not display refresh rate | Noticeable on mid-range/older Android hardware well before flagship devices show it |
-| Procedural generation (maze/monster/loot rolls) running synchronously on the main thread at floor transitions | Visible hitch/freeze exactly at the moment a new floor loads — a bad first impression during a 5-10 min session | Profile floor-generation cost early; move to a background step or pre-generate the next floor during idle time if cost is non-trivial | Becomes noticeable as endless-mode floor numbers grow if procedural complexity scales with floor depth |
-| Long-task-blocking JS on the WebView main thread during combat animations/flavor-text rendering | Input lag on taps right when players are making time-pressured decisions | Keep animation/text work off long synchronous loops; batch DOM updates | Compounds on lower-end Android WebView vs. desktop dev machine |
+|------|----------|------------|----------------|
+| Per-round work ×N party members ×N foes | Encounters run many rounds; combat animation lags on a mid-range phone | Cap party size (2-3); summarize joiner actions in the event stream; bounded `for` loops | ~3+ members vs. a full foe roster on a Pixel-class device |
+| N× narration events per round | Combat log floods; session drags past 10 min | Terse/summarized party events; don't animate every member turn separately | As soon as the rail is turned on with multiple members |
+| Unbounded targeting/turn loop | Test hangs; combat never returns `combatEnded` | Snapshot lists; bounded loops; hard round ceiling; re-check `liveFoes()` after every actor | Any party size if the loop uses `while` over a mutating list |
 
-## Security Mistakes
+## Security / Integrity Mistakes
+
+*(No network/accounts in v1 — the relevant "security" is save-integrity, the engine's existing threat model T-01-06a.)*
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Plaintext, unchecksummed save/graveyard file | Trivial editing undermines the depth-chase hook; corrupted saves crash the app with no recovery | Versioned save schema + lightweight integrity check (Pitfall 8, 12) |
-| Leaving debug/dev-mode cheat hooks (god mode, floor-skip) reachable in a shipped release build | Player-discoverable cheats undermine the core "play the hand you're dealt" identity; also a possible App Review flag if discovered as a hidden/undisclosed feature | Strip or hard-gate dev tools behind a build flag that's verifiably off in release builds |
-| Bundling a crash-reporter or any SDK without matching privacy declarations | Store rejection/removal, potential policy strikes | Any SDK addition triggers a mandatory privacy/data-safety form re-check (Pitfall 1) |
+| Trusting party entries from an untrusted save | Malformed `c.party` crashes `applyAction` on the next action | Extend the fail-closed `validateSave` shape check to party entries; treat malformed party as empty, fail closed to a safe default |
+| Corrupted/non-integer member `wp`/`lvl` from a tampered save | NaN/Infinity poisoning combat math (same class as difficulty.js's `safeDepth` guard) | Clamp/validate member numeric fields on load, mirroring `safeDepth`'s `Number.isFinite` guard |
+| Party size from a save used to size loops/arrays unchecked | A save claiming a huge party → DoS / memory blowup | Cap party size on load, not just on recruit |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
-|---------|-------------|-------------------|
-| Undersized/adjacent touch targets for high-stakes actions (attack vs. flee) | Input-error deaths feel unfair, compounding permadeath frustration | 44pt/48dp minimum hit areas, spacing between destructive/non-destructive actions (Pitfall 6) |
-| No confirmation before an irreversible, high-stakes tap during a run | Rage-inducing accidental run loss | Debounce or lightweight confirm on run-ending actions, and on the Android back gesture from the root gameplay screen (Pitfall 6, 7) |
-| Tutorial/onboarding assumes rules knowledge (inherited from the prototype, which assumed a rules-literate player) | New mobile players bounce off a rules-heavy game with zero ramp | Build a first-run onboarding pass calibrated for someone who has never seen the 1994 ruleset, distinct from the prototype's implicit assumption of rules literacy |
-| Pure-RNG mechanics can end a run with no preceding player signal | Death feels like the game cheated, not like a consequence | Layer RNG so life-or-death outcomes have a visible signal/choice beforehand; keep pure-luck swings in the flavor layer (Pitfall 11) |
+|---------|-------------|-----------------|
+| Party rail overflows portrait phone | Combat controls off-screen; illegible HP/status | Fixed-cap rail with compact status chips; tap-to-expand member sheet |
+| Player can't tell which member is hurt/asleep/dead | Bad decisions; feels-bad losses | Reuse the enemy-status-chip pattern; clear per-member status |
+| Fights take too long with a party | Breaks the 5-10 min quick-session promise | Cap party size; summarize joiner turns; keep the log terse |
+| Joiner death has no clear feedback | Player confused why a member vanished | Explicit departure event + on-tone (dark-humor) departure line |
+| Recruit offer with no clear cost/benefit | Player doesn't understand the party decision | Surface the joiner's level/role and that it's temporary/loot-less at the offer |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Offline mode:** Often "works" only because dev machine has network access in the background — verify by testing true airplane mode from a cold app launch, not just "the code has no fetch calls."
-- [ ] **Save/resume:** Often only tested via explicit "Save" button taps — verify by force-quitting mid-run, killing from the OS task switcher, and simulating low-storage conditions, then confirming the graveyard/high-score history survives an app update and an OS update.
-- [ ] **Age rating / content compliance:** Often filled out from a quick skim of "the obviously violent stuff" — verify by walking through actual procedurally-generated flavor text/epitaph samples against the literal questionnaire category definitions, not general impressions.
-- [ ] **Endless-mode balance:** Often only playtested through the first 10-15 floors (where old fixed-length balance still roughly holds) — verify with dedicated playtests reaching floor 30-50+, checking both that difficulty doesn't wall out and that a typical run still lands near the 5-10 minute target.
-- [ ] **Mobile input feel:** Often only tested via mouse-emulated touch in a desktop browser or a slow, deliberate on-device tap-through — verify with real one-thumb, fast-paced play on a real device during a simulated "tense combat" moment.
-- [ ] **Rules-engine decoupling:** Often assumed true because "the prototype was already structured that way" — verify with an actual serialize-to-JSON/rehydrate-mid-run round-trip test run against the *ported* mobile codebase, not just the original prototype.
-- [ ] **Privacy/data-safety forms:** Often filled out once at the start of store setup — verify they still match the actual shipped binary's dependency tree immediately before final submission, not just at first draft.
+- [ ] **Party combat:** Often missing the *foe-target-selection* rule and its parity gate — verify solo fixtures draw zero new RNG and combat still ends when foes clear regardless of who lands the kill.
+- [ ] **Save/migration:** Often missing the `STATE_VERSION` bump + real v1→v2 step — verify a pre-party dev save loads unchanged and a party-bearing save survives serialize→validate→rehydrate.
+- [ ] **Parity carve-outs:** Often missing `stripPartyField` in one of the three `*Comparable()` fns — verify the full parity suite is green with a party field present.
+- [ ] **`C.ally` absorption:** Often missing — verify the Summoner summon now flows through the party array and no `allyTurn`/`partyTurn` double-fires.
+- [ ] **Member death:** Often missing the fork away from the hero's `die()` — verify a downed member departs and does NOT end the run.
+- [ ] **Difficulty lever:** Often "done" as a stub — verify party size actually feeds foe scaling and the tuning harness was re-run with party scenarios.
+- [ ] **Balance coordination:** Often missing — verify the plan reserves the *global* `difficulty.js` retune for the consolidated pass and only touches party-local knobs.
+- [ ] **UI decoupling:** Often violated — verify the rail reads engine state/events only, with zero DOM reads/writes inside engine functions.
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
-|---------|----------------|-----------------|
-| Data-safety/privacy form mismatch caught by store review | LOW | Update the form/policy to match the audited dependency tree and resubmit; usually a fast fix once identified, but costs a review cycle (days) |
-| Save data loss discovered post-launch (localStorage eviction) | HIGH | Requires an app update introducing the native persistence layer; any already-lost user saves are unrecoverable — this is why it must be prevented pre-launch, not patched after |
-| Endless-mode difficulty curve found broken via post-launch reviews ("unfair/unbeatable past floor X") | MEDIUM | Ship a balance-patch update; because there's no live analytics (offline, no server), rely on store reviews/support email as the primary signal, so build in some way to gather this feedback (e.g., an in-app "report an issue" mailto or feedback link) |
-| Engine/UI coupling discovered only when starting the multiplayer add-on | HIGH | Requires a refactor pass to re-establish the action-system boundary before multiplayer work can proceed — exactly the rewrite the architecture was meant to avoid; costliest pitfall to recover from late |
-| Age rating found to be miscalibrated after launch (complaint or re-review) | MEDIUM | Re-submit the content questionnaire with corrected answers; may require a content tweak if a specific piece of flavor text is the trigger; can temporarily affect store visibility during re-review |
+|---------|---------------|----------------|
+| RNG-order parity break (Pitfall 1/7) | LOW-MEDIUM | Find the unconditional draw; gate it behind a party/target existence condition; re-run parity |
+| Missing parity carve-out (Pitfall 2) | LOW | Add `stripPartyField` to the affected `*Comparable()`; document the divergence rationale |
+| Difficulty invalidated (Pitfall 3/4/5) | MEDIUM-HIGH | Re-run the Phase-3 tuning harness with party scenarios; adjust the party-size lever + do the consolidated dial retune once |
+| Save can't load old runs (Pitfall 8) | MEDIUM | Add the v1→v2 migration + empty-party default; make party optional in `isValidCharacter` |
+| Parallel ally paths (Pitfall 10) | MEDIUM | Refactor to one party array/turn/targeting/death helper; migrate `C.ally`/`meetJoiner` into it; delete the old paths |
+| Member death ends the run (Pitfall 11) | LOW-MEDIUM | Fork the 0-HP branch: hero → `die()`, member → depart-and-remove |
+| Scope creep (Pitfall 12) | HIGH | Cut deferred features back to the multiplayer milestone; re-baseline the v1 fence |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
-|---------|-------------------|----------------|
-| Data safety/privacy form mismatch (P1) | Store-launch/compliance phase | Dependency audit checklist run immediately before each submission |
-| Age rating miscalibration (P2) | Presentation/content phase + store-launch phase | Content-to-questionnaire mapping exercise using real flavor-text samples |
-| "Looks like a website" rejection (P3) | Packaging/wrapper phase | Cold-launch, airplane-mode, native-chrome QA pass before first TestFlight/Play internal build |
-| Canvas DPI blur (P4) | Packaging/presentation phase | Side-by-side screenshot comparison, desktop vs. real device |
-| Safe-area/edge-to-edge overlap (P5) | Packaging/presentation phase | On-device test on notched iPhone + gesture-nav Android; re-test on any target-SDK bump |
-| Undersized touch targets (P6) | Presentation/UX phase | One-thumb, fast-paced on-device playtest |
-| Android back button / lifecycle (P7) | Packaging phase (lifecycle wiring) | Explicit background/kill/relaunch mid-run test |
-| `localStorage` durability (P8) | Packaging phase (native persistence) | Force-quit, low-storage, app-update, OS-update save-survival tests |
-| No crash reporting / device diversity (P9) | Packaging/platform phase + pre-launch beta phase | TestFlight/Play internal testing with external testers on varied devices |
-| Endless-mode curve mismatch (P10) | Endless-mode conversion phase (dedicated balance pass) | Playtests to floor 30-50+; average session-length measurement vs. 5-10 min target |
-| Permadeath fairness / procedural text combinatorics (P11) | Endless-mode/balance phase + presentation/content phase | RNG-layer audit of death mechanics; batch-generated flavor-text review |
-| Save/high-score tamperability (P12) | Packaging phase (bundle with P8 save-format work) | Checksum/version validation test on a manually-edited save file |
-| Engine/UI coupling creep (P13) | Ongoing, all phases touching game state; establish guardrail early in endless-mode/save phase | Serialize/rehydrate round-trip test kept green throughout development |
-| Scope creep vs. compliance workstream (P14) | Early dedicated "thin vertical slice through both stores' test tracks" phase, run parallel to visual redesign | A build reaches TestFlight + Play internal testing well before feature/visual work is "finished" |
+|---------|------------------|--------------|
+| 1 · RNG cursor shift breaks parity | P2 / P3 | Full parity suite green; solo fixtures draw zero new RNG |
+| 2 · Missing party carve-out | P1 | Parity suite green with `c.party`/`combat.party` present |
+| 3 · Extra bodies trivialize combat | P5 (lever designed P1/P2) | Tuning harness re-run with party; session length in 5-10 min band |
+| 4 · Triple difficulty-dial retune | P0 / P5 | Only one consolidated `difficulty.js` retune; ordering decided at planning |
+| 5 · XP-split / loot inflation | P1 (+ Economy coord) | Hero leveling curve at depth matches intended; loot pressure within Economy caps |
+| 6 · Combat drags / infinite loop | P2 (+ P4 narration) | No hang; bounded loops; round ceiling; `combatEnded` always reached |
+| 7 · Foe target selection | P2 | Draw-free or gated targeting; damage routed through one target helper |
+| 8 · Save migration | P1 | Old save loads unchanged; party save round-trips; malformed party fails closed |
+| 9 · Party rail overflow | P4 | Full party + multi-foe encounter legible on a Pixel-class portrait device |
+| 10 · Strangler-fig ally mess | P1 / P3 | `C.ally` + `meetJoiner` absorbed into one party path; no double-fire |
+| 11 · Member death semantics | P6 | Downed member departs; run does not end; save has no lingering dead members |
+| 12 · Scope creep vs. multiplayer | P0 (all phases) | Deferred-feature list enforced in each phase's success criteria |
 
 ## Sources
 
-- [App Store Rejection Reasons in 2026: The 15 Most Common and How to Avoid Each](https://www.applander.io/blog/app-store-rejection-reasons-2026) — MEDIUM confidence (SEO/blog aggregator, cross-checked against Apple's own guideline categories)
-- [Why Apps Get Rejected in 2026: 15 Key Reasons and Fixes](https://www.openspaceservices.com/blog/mobile-app-development/apple-app-store-rejection-guide-2026-the-15-most-common-reasons-and-how-to-fix-each) — MEDIUM confidence
-- [Google Play App Rejected in 2026: Rejection Reasons Decoded](https://qawerk.com/blog/google-play-rejection-reasons/) — MEDIUM confidence
-- [Invalid Data Safety Form – Why Google Play Rejects Your App](https://www.webtonative.com/blog/fixing-invalid-data-safety-form-android-rejection) — MEDIUM confidence
-- [Google Play Data Safety Form: The Complete Walkthrough for 2026](https://www.applander.io/blog/google-play-data-safety-form-complete-guide) — MEDIUM confidence
-- [Google Play's Data safety section — official Play Console Help](https://support.google.com/googleplay/android-developer/answer/10787469?hl=en) — HIGH confidence (official)
-- [Apps & Games content ratings on Google Play — official Google Play Help](https://support.google.com/googleplay/answer/6209544?hl=en) — HIGH confidence (official)
-- [Ratings Definitions — IARC](https://globalratings.com/ratings-definitions/) — HIGH confidence (official rating body)
-- [App Store Age Ratings Guide for iOS and Android](https://capgo.app/blog/app-store-age-ratings-guide/) — MEDIUM confidence
-- [Capacitor Edge-to-Edge & Safe Areas: The Complete Guide — Capawesome](https://capawesome.io/blog/capacitor-edge-to-edge-and-safe-areas-guide/) — HIGH confidence (maintainer-authored, technically detailed, matches known Android 15 edge-to-edge enforcement)
-- [Storage — Capacitor official documentation](https://capacitorjs.com/docs/guides/storage) — HIGH confidence (official)
-- [WKWebView: localStorage lost — Apple Developer Forums](https://developer.apple.com/forums/thread/742037) — MEDIUM confidence (developer-reported, corroborated by multiple independent Capacitor/Cordova issue threads)
-- [On app reboot `localStorage` is lost — ionic-team/capacitor issue #636](https://github.com/ionic-team/capacitor/issues/636) — MEDIUM confidence (community-reported, corroborating pattern)
-- [Designing Fair RNG in Roguelikes: Balancing Luck and Skill](https://medium.com/@JeongHyeonUk/designing-fair-rng-in-roguelikes-balancing-luck-and-skill-7b967230e961) — MEDIUM confidence (design-blog synthesis of established genre wisdom)
-- [Solving RNG abuse in roguelikes — Game Developer](https://www.gamedeveloper.com/game-platforms/solving-rng-abuse-in-roguelikes) — MEDIUM-HIGH confidence (established industry publication)
-- [Permadeath — RogueBasin](https://www.roguebasin.com/index.php/Permadeath) — HIGH confidence (long-standing genre reference wiki)
-- [How To Set Up Pacing, Difficulty, And Progression Within An Infinite Metagame — GameDev.net](https://gamedev.net/blogs/entry/2294544-how-to-set-up-pacing-difficulty-and-progression-within-an-infinite-metagame/) — MEDIUM confidence
-- [Endless Mode Balancing discussion — Steam Community (9 Kings)](https://steamcommunity.com/app/2784470/discussions/0/640179446900371381/) — LOW-MEDIUM confidence (player forum anecdote, used only to corroborate the well-established linear-vs-exponential scaling failure pattern)
-- [iOS Distribution Guide 2026: TestFlight, App Store & Enterprise](https://foresightmobile.com/blog/ios-app-distribution-guide-2026) — MEDIUM confidence
-- Domain knowledge synthesis (rules-engine/UI decoupling risk, scope-creep-vs-compliance-workstream pattern, save-integrity-vs-tamper pattern) — general software/mobile-shipping experience, flagged LOW-source/HIGH-reasoning-confidence, not tied to a single external citation
+- Direct read: `engine/combat.js` — `startCombat`/`playerStrike`/`killFoe`/`foeTurn`/`afterPlayerAction`/`allyTurn`, `C.ally`/`c.pendingAlly` seams, RNG draw sites, single-hero `die()` path (CONFIDENCE: HIGH — primary source).
+- Direct read: `engine/difficulty.js` — pure, RNG-free depth curve; the tuned 5-10 min dial and its constants (CONFIDENCE: HIGH).
+- Direct read: `engine/saveState.js` + `engine/state.js` — `STATE_VERSION=1`, `validateSave`/`rehydrate`, the unbuilt v1→v2 migration hook, combat-reset-on-load (CONFIDENCE: HIGH).
+- Direct read: `test/parity/harness/comparables.js` — `strip*Field` carve-out pattern, the "frozen master, never edit" discipline (CONFIDENCE: HIGH).
+- Direct read: `test/parity/prototype-master.js.txt` — `meetJoiner()` (`c.joiner`, the `maxWP` double-roll quirk), the Summoner `C.ally`/`pendingAlly` spawn, `allyTurn`, `Joiner` encounter type (CONFIDENCE: HIGH — frozen reference).
+- Direct read: `.planning/PROJECT.md` + the three proposed-milestone docs (Joiners, Economy & Item Balancing, Monster Balancing) — the deferred-multiplayer boundary, the three-way balance coupling, the "retune once" intent (CONFIDENCE: HIGH — project canon).
 
 ---
-*Pitfalls research for: Mazeworld (paid, offline, single-player mobile roguelike dungeon crawler)*
-*Researched: 2026-09-07*
+*Pitfalls research for: single-player party/Joiners system on a deterministic parity-frozen roguelike engine*
+*Researched: 2026-09-09*

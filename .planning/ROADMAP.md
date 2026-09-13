@@ -19,6 +19,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Mobile Presentation, Controls & Onboarding** - The game feels native and approachable on a phone, with touch controls, readable UI, and in-context teaching
 - [ ] **Phase 5: Voice, Content & Graveyard** - The game's sarcastic identity comes alive through data-driven copy tied to real events, verified safe for its rating
 - [ ] **Phase 6: Google Play Compliance & Launch** - Mazeworld is live, purchasable, and compliant on Google Play
+- [ ] **Phases 7–11: Joiners / Party System** (INSERTED 2026-09-09 — executes NEXT, before launch) - Recruit an NPC joiner into a real, damageable, serialized party; the single-player foundation of the multiplayer-ready engine
+
+> **Execution order (user directive 2026-09-09):** the remaining v1.0 work runs **Joiners (Phases 7–11) → Phase 4 tutorial (04-10, LAST) → Phase 5 Voice → Phase 6 Play launch**. Phase numbers are labels; this order is the source of truth.
 
 ## Phase Details
 
@@ -109,7 +112,7 @@ Plans:
   4. The player can open a character/stat sheet (class, race, stats, kit, skills) and a scrollable message/combat log at any point during a run.
   5. A first-run, in-context tutorial teaches move/fight/descend/survive without a wall of text, the player can adjust sound, haptics, text size, control scheme, and confirm-before-quit in settings, and status indicators are colorblind-safe with scalable UI text throughout.
 
-**Plans**: 7/11 plans executed
+**Plans**: 8/11 plans executed
 
 Plans (ordered by wave):
 
@@ -122,10 +125,49 @@ Plans (ordered by wave):
 - [x] 04-06-PLAN.md — DPR canvas viewport + 9 PNG icons + tap-to-move + D-pad [W4] [UX-01, UX-02, UX-03]
 - [ ] 04-07-PLAN.md — Engine-routing completion: combat/economy/camp/new-run through applyAction [W5] [UX-05, deferred Phase-1/3 item]
 - [ ] 04-08-PLAN.md — Character sheet + Oracle log + full-screen combat, dice transparency [W6] [UX-04, UX-05, UX-02]
-- [ ] 04-09-PLAN.md — Settings screen + @capacitor/haptics + confirm-quit gating + live text-scale [W7] [UX-07, UX-08, UX-02]
+- [x] 04-09-PLAN.md — Settings screen + @capacitor/haptics + confirm-quit gating + live text-scale [W7] [UX-07, UX-08, UX-02] (settings sheet/text-scale/confirm gates via DR9; haptics install+vendor+beat-wiring 2026-09-09, 499/499)
 - [ ] 04-10-PLAN.md — First-run coach-mark tutorial overlay [W8] [UX-06]
 
 **UI hint**: yes
+
+### Phase 04.1: Rules Review & Wiring: every character-sheet stat affects gameplay — implement missing rules, adapt unimplementable ones, wire orphaned rules through existing systems, fix terminology (skill points to experience, win-potential to hit points, rations as rations), give phobias real effects (INSERTED)
+
+**Goal:** Every character-sheet value that reads like it affects gameplay actually does. Fix terminology (skill points→experience, Win Potential/wp→Hit Points/hp — text-only, resolving the live HUD-says-HP-but-sheet-says-Win-Potential split); fix the `c.dr` dead-code bug that silently disables Thief Sewing + Fighter Master of Arms; decouple rations from the food/HP purchase (sell rations directly); wire Intelligence into a self-contained check; and give the 6 inert phobias bespoke, flavor-matched effects (incl. a real persistent darkness/fog-of-war state for the Darkness phobia). Engine stays pure/deterministic; no state-field/event renames; scroll type-system deferred.
+**Requirements**: TERM-01, TERM-02, RULE-01, RULE-02, RATION-01, PHOBIA-01
+**Depends on:** Phase 4
+**Plans:** 6/6 plans executed (Executed 2026-09-09, 535/535 tests green, deployed to Pixel 7; device UAT + gsd-verifier gate pending)
+
+Plans:
+
+- [x] 04.1-01-PLAN.md — Terminology: skill points→experience/XP, Win Potential/wp→Hit Points/hp (text-only, incl. engine store labels) [W1] [TERM-01, TERM-02]
+- [x] 04.1-02-PLAN.md — Fix the c.dr dead-code gate (Thief Sewing armour patch) + implement Master of Arms "+2 with every weapon" [W1] [RULE-02]
+- [x] 04.1-03-PLAN.md — Sell rations directly: food = pure HP heal, dedicated Rations store line, decouple findFood, surface ration changes [W2] [RATION-01]
+- [x] 04.1-04-PLAN.md — Intelligence self-contained check: intelBonus helper (derived.js) applied to the openChest lock roll + sheet sync [W3] [RULE-01]
+- [x] 04.1-05-PLAN.md — Phobia part A: persistent darkness state (fallDark→counter, inDark extension, fog-of-war shrink) + Darkness-phobia freeze [W4] [PHOBIA-01]
+- [x] 04.1-06-PLAN.md — Phobia part B: Death (near-death panic), Being trapped, Heights, Bodies of water — bespoke Hardiness-halved effects [W5] [PHOBIA-01]
+
+### Phase 04.2: Bug Fixes & Text Polish (INSERTED — device-review batch, 2026-09-09)
+
+**Goal:** Consolidate the DR14 device-review bug/text batch (from the rules-text audit + live play) into one GSD phase. Fix the live bugs (poison-at-1hp loop, foe HP showing current/current, Oracle not clearing on new character, backstab "Critical" on a miss, inert Cloak-of-Armor, dead character missing from the Dead screen) and the text/terminology cleanup (Disease→Ailment bucket, duplicate Teleport, remaining SP→XP/WP→HP uppercase, raw-jargon narration leaks in tableFour/meetFaerie, wm→wilmst, cosmetic voice fixes) — plus the already-landed rules work (flying charge/cooldown, rest cure-roll, affliction narration kind). Engine stays pure/deterministic; player-facing text/UI only where noted; no state-field/event-type renames.
+**Requirements**: BUGFIX (audit A1-A3 + P1/P2/P3 + E1,E3–E9; E2 deferred to the Economy & Item Balancing milestone)
+**Depends on:** Phase 4.1
+**Source of truth for the fix inventory:** `.planning/quick/20260909-rules-text-audit-pass/` — `FINDINGS.md` (audit P1/P2/P3 + A1-A3 + locked decisions), `EXTRA-SCOPE.md` (E1–E9), `SUMMARY-batch1.md` (landed rules work).
+**Plans (executor batches — some already landed as pre-phase quick-task work, folded in here for GSD tracking):**
+
+- [x] Batch 1 (rules) — flying charge/cooldown (A2), rest cure-roll (A3), affliction event `kind` (A1 engine) — DONE, 545/545 (`SUMMARY-batch1.md`)
+- [x] Bugs A — E5 poison-loop auto-clear ✓, E6 clear Oracle on new character ✓, E4 foe HP current/max (defensive `maxWP` in `encounterStarted` event; couldn't repro in current source — watch on device) — DONE, 549/549, deployed
+- [x] Bugs B — E7 Con-Artist opener no longer fakes "Critical" (now a sarcastic no-damage beat), E8 Cloak-of-Armor soaks as Plate (take-the-better, magical/non-degrading), E9 Dead tab re-fetches storage on open — DONE, 554/554, deployed
+- [x] Graveyard Rework (E12, user-requested during DR14) — cap graveyard at last 5 shown/stored, non-clearable running total of all dead, clear button removed, no name reuse over last ~25 (determinism-safe: one seeded pick + no-rng forward-walk past excluded names) — DONE, 564/564, deployed
+- [x] Text — A1 narration + Disease→Ailment bucket, E1 dup Teleport (→ `-10 HP`), E3 SP→XP/WP→HP (+ dual-purpose parsers), E10 (+3000 triple-message + `(tableFour)` why-leak removed), E11 `Skill pts`→XP gravestone label + epitaph editorial polish, P1 tableFour/meetFaerie jargon→prose + stripRollDetail scoping, P2 wm→wilmst, P3 cosmetics — DONE, 567/567 (parity 25/25), deployed
+
+**Phase 04.2 COMPLETE 2026-09-09** — all batches built + deployed to the Pixel 7 (567/567 full suite, parity 25/25). E2 (combat-item use in the combat bar) deferred to the Economy & Item Balancing milestone. NEW balance items captured this session → milestone specs: **+3000 wilmst amount** (too generous) and the full **parley balance pass** (2.5× kill-XP + zero-risk + Con-Artist 75%@L1) → see Economy/Monster specs.
+
+> **Proposed future milestones** (captured 2026-09-09; to be stood up via `/gsd-new-milestone` after the 04.1 device UAT + the in-flight rules-text-audit quick task land). BOTH affect game balance — coordinate the balance passes / decide order at planning time.
+> 1. **"Economy & Item Balancing"** (`.planning/proposed-milestone-economy-item-balancing.md`) — bags/carry-capacity + inventory management (choose-to-take, keep/drop, **manual equip incl. inferior gear**, replacing auto-take-best) + store sells all carried gear + full item review & rebalance + economy cost balancing.
+> 2. **"Joiners / Party System"** (`.planning/proposed-milestone-joiners-party-system.md`) — NPCs that join you; introduces the party system (the engine's multiplayer-ready foundation). **User wants this as the NEXT focus milestone.** Affects difficulty-curve + economy balance; builds on the existing `C.ally`/`allyStruck` hook.
+> 3. **"Monster Balancing & Abilities"** (`.planning/proposed-milestone-monster-balancing.md`) — rebalance the bestiary + give foes new abilities incl. **magic/spellcasting** (foes can't cast today); retune the difficulty dial. RESEARCH-FIRST. Also unlocks the deferred 04.1 symmetric-INT spell-resistance (blocked until foes cast).
+>
+> **These 3 all move game balance** (party power / enemy power / gear-economy power) and interact with `engine/difficulty.js` (Phase 3 curve) — coordinate the balance passes / decide global order at the milestone-planning session. Open question: how they + the remaining v1.0 phases (tutorial, Voice, Play launch) sequence — before the Play launch or as post-launch v1.1+.
 
 ### Phase 5: Voice, Content & Graveyard
 
@@ -165,6 +207,90 @@ Plans:
 
 **Plans**: TBD
 
+---
+
+## Milestone: Joiners / Party System (Phases 7–11 — INSERTED 2026-09-09, executes NEXT, BEFORE launch)
+
+Introduces the single-player party system — the multiplayer-ready foundation. Generalizes the two half-built ally footholds (inert persistent `c.joiner`, invulnerable combat-only `C.ally`) into a real, damageable, serialized party. **Research:** `.planning/research/{SUMMARY,STACK,FEATURES,ARCHITECTURE,PITFALLS}.md` (four-way HIGH-confidence convergence). **Locked decisions (2026-09-09):** v1 cap = **1 joiner** (model built for N); lifecycle = **permadeath-when-downed, else leaves after a while**; **canon XP split among participants, hero keeps all loot** (hired muscle, no separate progression). **Requirements:** PARTY-01..10.
+
+> **EXECUTION ORDER (user directive 2026-09-09):** these Phases 7–11 run **NEXT** — before the still-pending v1.0 tail (Phase 4 first-run tutorial 04-10 → Phase 5 Voice → Phase 6 Play launch). Phase NUMBERS continue from 6 (GSD numbering); the sequence above is the source of truth, consistent with this project's prior re-sequenced execution orders. Networked co-op stays v2 (MP-01/02).
+>
+> **NON-NEGOTIABLE ENGINE GATE (every phase below):** engine stays pure/deterministic; the parity suite stays byte-identical for an EMPTY party — new rng draws gated behind party size (mirror the phobia `rng.d(2)` guard + today's null-`C.ally` `allyTurn`); new serialized fields carved out in `test/parity/harness/comparables.js` (mirror `stripDarkForField`); `prototype-master.js.txt` NEVER edited; new event types get `EVENT_NARRATION` entries (formatEventsCoverage guard). No git commits (device-review tree).
+
+### Phase 7: Party Model + Save Migration + Parity Carve-outs
+**Depends on:** Phase 1 (engine), Phase 2 (persistence). **Requirements:** PARTY-02, PARTY-08.
+**Success Criteria:**
+  1. A persistent party roster (top-level `state.party[]` of full `rollCharacter`-shaped sheets) exists in state and serializes/rehydrates losslessly (round-trip test green).
+  2. Pre-existing saves (no party field) load with an empty party and zero data loss (migration via the `validateSave`/`rehydrate` whitelists; fail-open on malformed party data).
+  3. The party is capped at 1 in v1 but the model + all iteration is written for N members.
+  4. **Parity gate:** with an empty party, the full parity + unit suites are byte-identical to pre-change (new field stripped in all three `*Comparable()` fns).
+
+### Phase 8: Party Combat — turn order, targeting, member HP, death fork
+**Depends on:** Phase 7. **Requirements:** PARTY-03, PARTY-04, PARTY-05, PARTY-06.
+**Success Criteria:**
+  1. The persistent party syncs into a combat-scoped `C.allies[]` at `startCombat` and HP syncs back at `endCombat`; the joiner auto-acts each round with its own strike math (no player micro-management).
+  2. Foes choose targets from a `[hero] + live members` pool; a joiner has its own HP that takes damage and can reach 0.
+  3. A joiner at 0 HP is downed/departs the run and NEVER routes into the hero's `die()`/run-end; combat still terminates the instant `liveFoes()` clears (bounded loop, hard round ceiling).
+  4. XP from a kill splits among participants (a joiner reduces the hero's per-kill share, per canon); wilmst/loot all go to the hero.
+  5. **Parity/perf gate:** every new draw (member strike, foe target choice) is gated behind party size so solo fixtures draw ZERO new rng and stay byte-identical; new events have narration entries.
+
+### Phase 9: Joiner Acquisition (accept/decline) + Voice
+**Depends on:** Phase 8. **Requirements:** PARTY-01, PARTY-09.
+**Success Criteria:**
+  1. The Joiner encounter presents a real accept/decline choice; accepting recruits a fully-rolled adventurer (own class/race/level/gear/HP) into the roster; declining leaves them behind.
+  2. Recruitment captures the character `meetJoiner` ALREADY rolls (zero new chargen rng); `c.joiner` continues to be set identically (frozen shape preserved).
+  3. Join / kill / downed / leave moments emit sarcastic, family-friendly flavor in the game's voice (reusing the rolled temperament/motive).
+  4. **Parity gate:** recruit-path rng fires only in the non-chargen encounter path, gated; empty-party runs unaffected.
+
+### Phase 10: Party UI (turn the rail on)
+**Depends on:** Phase 8 (live party/combat state). **Requirements:** PARTY-07.
+**Success Criteria:**
+  1. The design mock's party rail is turned on, data-driven on `party.length` (dropping the demo `partyOn` toggle) — shown only when a joiner is present, hidden when solo.
+  2. The rail shows the joiner's identity, HP, and status legibly in portrait on a phone (reusing the Phase-4 status-chip pattern), threaded through the existing `window.__mzState` bridge (no new bridge).
+  3. Verified on the Pixel 7 via a device-review checkpoint (no overflow, readable, no mis-tap hazards).
+
+### Phase 11: Party Balance (consolidated, coordinated)
+**Depends on:** Phases 8–10; **coordinate with** the Economy & Item Balancing and Monster Balancing milestones. **Requirements:** PARTY-10.
+**Success Criteria:**
+  1. `engine/difficulty.js` accounts for added party power (wandering-monster scaling already keys off highest party level) in a SINGLE consolidated retune — not a party-only pass.
+  2. Per-member upkeep (rations) and the XP-split numbers are tuned so a joiner is a meaningful choice, not free power — using the Phase-3 tuning harness with party scenarios.
+  3. The retune is sequenced ONCE across the three balance-touching milestones (no double/triple tuning); each other milestone touches only its local knobs.
+  4. A typical party run still resolves in ~5–10 minutes and never becomes trivial or an unbeatable wall.
+
+**Coverage:** PARTY-01→P9, PARTY-02→P7, PARTY-03→P8, PARTY-04→P8, PARTY-05→P8, PARTY-06→P8, PARTY-07→P10, PARTY-08→P7, PARTY-09→P9, PARTY-10→P11. All 10 mapped ✓.
+
+---
+
+> **ECONOMY & ITEM BALANCING = CODE-COMPLETE + DEPLOYED 2026-09-10 (666/666, parity 25/25 byte-identical throughout).** P12 Carry Model ✅ · P13 Inventory Actions ✅ (auto-take-best replaced) · P14 Store-Sell+E2 ✅ · P15 Item-Wiring ✅ (9 inert items wired incl. DR15-A/DR16-G) · P16 Conservative Tuning ✅ (+3000→300×depth). DEFERRED to the consolidated cross-milestone pass: deep economy tuning + the GLOBAL difficulty retune (with Joiners P11 + Monster Balancing). All on the Pixel 7.
+
+## Milestone: Economy & Item Balancing (Phases 12–16 — INSERTED 2026-09-09, after Joiners, before launch)
+
+Turns the loot/economy loop into a real system: bags/carry, manual inventory (replacing auto-take-best), sell economy, item review/wiring, conservative economy-number fixes. **Research:** `.planning/research/economy-SUMMARY.md` (HIGH confidence, rulebook p.9 bag table + code-cited). **Requirements:** ECON-01..10. **Scope (user, 2026-09-09):** mechanics + CONSERVATIVE first-pass numbers; deep harness tuning + the GLOBAL `difficulty.js` retune DEFERRED (the latter to the consolidated cross-milestone pass). **Locked defaults:** bag slots 4/6/8/10 + book wilmst caps + rations-days 10/20/40/60; starting gold stays 50; ex-large carry-gate = flavor; equip = direct swap. **Folds in:** DR15-A (Language/Helm), DR15-D (potion use-affordance/ether), DR16-G (Amulet-of-Stone 4-target), E2 (combat-item use).
+
+> **NON-NEGOTIABLE ENGINE GATE (every phase):** engine pure/deterministic; parity byte-identical for empty/solo play — new serialized fields (`c.bag`, `state.pendingFind`) carved out in all 3 comparators (mirror `stripDarkForField`); capacity clamps + new behavior ONLY in new gated action handlers (never in ported `giveItem`/`takeItem`/`gainWilmst`); reward retunes add NO rng draw (flat/derived), regenerating only the specific economy-parity fixtures they change (deliberate divergence, RATION-01 style); `prototype-master.js.txt` NEVER edited; new event types get `EVENT_NARRATION` entries. GLOBAL `difficulty.js` foe-scaling UNTOUCHED.
+
+### Phase 12: Carry Model + Migration (A)
+**Depends on:** Phase 1 (engine), 2 (persistence). **Requirements:** ECON-01, ECON-02.
+**Success criteria:** (1) `BAGS` content table + class-derived `c.bag` at chargen (plain assignment, NO rng); `state.pendingFind` field. (2) A gated `clampCarry(c)` helper — no-op when `!c.bag`. (3) Save defaults in `validateSave`/`rehydrate` (old saves → default bag, `pendingFind` null); no `STATE_VERSION` bump. (4) **Parity gate:** `stripBagField` + `pendingFind` strip in all 3 comparators; full parity byte-identical (clamp is a no-op on every frozen fixture); chargen-parity green with `c.bag` stripped.
+
+### Phase 13: Inventory Actions + UI (B) — replaces auto-take-best
+**Depends on:** Phase 12. **Requirements:** ECON-03, ECON-04, ECON-05.
+**Success criteria:** (1) New PURE actions `takeFind`/`leaveFind`/`dropItem`/`equipItem`/`unequipSlot` (no rng); find callers (`openChest`/`findGear`/`findMisc`/`meetFaerie`) stash `pendingFind` + emit `findOffered` instead of auto-`takeItem`. (2) `equipItem` equips regardless of better/worse (deliberate rules change) but enforces class/subclass/race legality via `canEquipWeapon/Armor` extracted from `takeItem`; full bag → keep/drop prompt. (3) GEAR-tab keep/drop/equip UI + the find accept/decline prompt. (4) **Parity gate:** new actions touch no frozen fixture; ported find paths stay callable OR fixtures migrated with documented rationale; parity green; equip-restriction unit tests.
+
+### Phase 14: Store Sells All Gear (C)
+**Depends on:** Phases 12–13. **Requirements:** ECON-06, ECON-07.
+**Success criteria:** (1) Pure `sellItem{i}` action + `sellPriceFor` (≈50% spread, race-adjusted, a tuning knob). (2) Store render gains a "Your gear" sell section listing `c.items` with Sell buttons; selling frees a slot + credits gold (bag-cap clamped). (3) ONE carried-item list component shared by the store-sell list AND the combat-bar use-list (E2 — `useItem` already wired). (4) **Parity gate:** sell is pure/no-rng, zero parity impact; sell-pricing + wilmst-cap unit tests.
+
+### Phase 15: Item Audit + Inert-Effect Wiring (D)
+**Depends on:** Phase 12 (pairs with 14's base-value work). **Requirements:** ECON-08.
+**Success criteria:** (1) Wire the confirmed-inert set: Helm of Knowledge `tongue`→canParley (DR15-A), Cloak of Healing/Regeneration per-step tick, Cloak of Strength `noCrit` (`|| eff(c,"noCrit")`), Pendant of Fortitude `halfNext`, Amulet of Light `light`→dispel darkFor; Amulet of Stone → per-item AoE count `slice(0,4)` (DR16-G). (2) `ether` + Gauntlet-of-the-Giant: wire a real effect OR formally retire (design call). (3) Treasure items get a base value (feeds §3 pricing). (4) **Parity gate:** each new read is a pure state read (mirror `isFlying`/`armorSoak`); any new combat draw gated to the qualifying non-chargen path; parity + same-seed green.
+
+### Phase 16: Economy-Local Conservative Tuning (E)
+**Depends on:** Phases 12–15. **Requirements:** ECON-09, ECON-10.
+**Success criteria:** (1) The `+3000` red-dot reward → depth-scaled flat (e.g. `~300*depth`) with NO new rng draw; audit chest/faerie/grimoire grants + `LOOT_DIVISOR` and fix only the egregious ones (conservative — deep tuning deferred to device playtest). (2) Bag caps (slots/wilmst/rations) set to sensible v1 values, documented as knobs. (3) **Parity gate:** no new rng draws (flat/derived only); same-seed-same-result green; regenerate ONLY the specific economy-parity fixtures whose reward amounts changed (documented deliberate divergence); GLOBAL `difficulty.js` explicitly untouched. (4) A headless tuning harness may be scaffolded for the later deep-tune, but final deep balance is deferred.
+
+**Coverage:** ECON-01→P12, ECON-02→P12, ECON-03→P13, ECON-04→P13, ECON-05→P13, ECON-06→P14, ECON-07→P14, ECON-08→P15, ECON-09→P16, ECON-10→P16. All 10 mapped ✓.
+
 ## Progress
 
 **Execution Order (re-sequenced 2026-09-08):** 1 ✓ → 3 ✓ → 2 ✓ → **4 (UI, NEXT)** → 5 (voice, deferred after 4) → 6 (Play launch, when $25 account ready). User has a working native build on a real device (Pixel 7, wireless adb) and chose to bring the mobile UX (Claude Design + provided map icons + touch controls + onboarding) forward ahead of the voice phase. Phase 5 is fully planned + plan-checked (PASS) and ready whenever it's resumed.
@@ -174,9 +300,13 @@ Plans:
 | 1. Engine Extraction & Determinism | 10/10 | Complete ✓ | 2026-09-08 |
 | 2. Android Packaging & Native Persistence | 4/4 | Complete ✓ | 2026-09-08 |
 | 3. Endless Descent & Difficulty Balance | 3/3 | Complete ✓ | 2026-09-08 |
-| 4. Mobile Presentation, Controls & Onboarding | 7/11 | In Progress|  |
-| 5. Voice, Content & Graveyard | 0/3 | Planned + checked (PASS) — deferred to AFTER Phase 4 (user re-prioritized 2026-09-08) | - |
-| 6. Google Play Compliance & Launch | 0/TBD | Deferred — needs $25 Play account + release signing (final phase) | - |
+| 4. Mobile Presentation, Controls & Onboarding | 8/11 | In Progress (04-07/08 delivered via DR loop; **only 04-10 tutorial remains, deferred to LAST**) |  |
+| 04.1 Rules Review & Wiring | 6/6 | Complete ✓ (535/535, on device) | 2026-09-09 |
+| 04.2 Bug Fixes & Text Polish (DR14 batch) | 5 batches | Complete ✓ (567/567, parity 25/25, deployed; ran as quick-task batches — see 04.2-SUMMARY.md) | 2026-09-09 |
+| **7–11. Joiners / Party System** | **5/5 CODE-COMPLETE + DEPLOYED** | **Built autonomously 2026-09-09, parity byte-identical throughout.** P7 Model ✅ · P8 Combat ✅ · P9 Acquisition+Voice ✅ · P10 UI ✅ · P11 Party-local balance ✅ (global difficulty retune DEFERRED). Deployed to Pixel 7. | 2026-09-09 |
+| **12–16. Economy & Item Balancing** | **5/5 CODE-COMPLETE + DEPLOYED** | **Built autonomously 2026-09-10, 666/666, parity byte-identical throughout.** P12 Carry Model ✅ · P13 Inventory (auto-take-best replaced) ✅ · P14 Store-Sell+E2 ✅ · P15 Item-Wiring ✅ · P16 Conservative Tuning ✅. Deep tuning + global difficulty retune DEFERRED. Deployed to Pixel 7. | 2026-09-10 |
+| 5. Voice, Content & Graveyard | **3/3 ✅** | **Complete 2026-09-09 (605/605).** VOX-01 (eventNarration.js voice + coverage guard) & VOX-03 (graveyard re-fetch, 04.2 E9/E12) satisfied by DR work; VOX-02 family-friendly safety-scan guardrail built now. Test-only, no device deploy needed. | 2026-09-09 |
+| 6. Google Play Compliance & Launch | 0/TBD | Deferred — final phase; needs $25 Play account + release signing | - |
 
 > **Execution order (re-adjusted 2026-09-08 — user installed Android Studio):** 1 ✓ → 3 ✓ → **2 (now unblocked)** → 5 → then 4 & 6 when a device/emulator visual test and Google Play account are ready. Phase 2's code + a headless debug build are automatable; the emulator/device visual test and release signing are UAT/user steps.
 >

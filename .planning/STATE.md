@@ -6,17 +6,23 @@ current_phase: 04
 current_phase_name: mobile-presentation-controls-onboarding
 status: executing
 stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-09-08T21:45:00.000Z"
-last_activity: 2026-09-08
-last_activity_desc: "Device-review revision (04-DR1) executed: bigger maze cells/icons (48/60/72), D-pad-only movement (tap-to-move disabled, controlScheme defaults 'dpad'), MAZE tab/heading renamed MAP, map viewport fills the screen (no permanent panel beneath it), encounter/feature-tile panel converted to an over-map overlay; npm test 451 green, test:quick 362 green, build:www OK"
+last_updated: "2026-09-13T17:30:00.000Z"
+last_activity: 2026-09-13
+last_activity_desc: "DR17+DR18 built and sideloaded to the Pixel 7 (683/683); app is on Play internal testing (pre-DR18 build); tutorial deferred by user"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 3
   total_plans: 31
   completed_plans: 24
 ---
 
 # Project State
+
+## Quick Tasks Completed
+
+| Slug | Date | Description | Status |
+|------|------|-------------|--------|
+| enemy-status-effects | 2026-09-09 | Show enemy status (asleep/frozen/acid/blind/stupefied/shrunk/fixated/frenzied) as chips on each foe row in combat | complete ✓ |
 
 ## Project Reference
 
@@ -171,6 +177,10 @@ Art assets the user added on 2026-09-07 — consume these instead of generating 
 - [Phase 6]: Google Play target-API level, Data Safety form fields, and IARC questionnaire specifics shift yearly — re-verify against current Play Console Help immediately before executing this phase, not from research alone.
 - [Phase 6 — NAME/BRAND, flagged 2026-09-08]: "Mazeworld" likely collides with an existing "Maze World" puzzle game on Google Play. Trademark (not the 1994 copyright) governs app names; the missing space doesn't distinguish them, "Maze+World" is a weak/descriptive mark, and Play review can reject/pull confusable listings in the same category (extra scrutiny for new accounts/first submissions). **Decision needed before Phase 6 submission:** pick a distinctive (ideally non-"maze") name. Free to change now (nothing published); the app ID `com.darktierstudios.mazeworld` becomes PERMANENT at first publish, so lock the new name before submitting. Phase 4 UI should keep the game name as a single centralized string/config so a rename is a one-line change, not a code hunt. (Research task result, not legal advice.) **User decision 2026-09-08 (Phase 4 discuss): keep "Mazeworld" as a CENTRALIZED placeholder constant for now; make the final name call before Phase 6.** Name research explored (for the Phase 6 decision, NOT yet chosen): frontrunner **"Descend, Die, Repeat"** (no exact Play collision, nails the loop, but "Descend" is a crowded/moderate mark); **"Deeper: <punny subtitle>"** (bare "Deeper" is a registered TM by Deeper UAB — must always use the full subtitled title, e.g. "Deeper: You'll Die Down There"); strongest-to-own are lore-coined names (**Felect's Descent**, **Wilmsry**) built from the user's 1994 world. Any final pick must be re-checked on Play + USPTO/TESS before Phase 6 submit, and the permanent app ID reset to match then.
 
+### Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: Rules Review & Wiring: every character-sheet stat affects gameplay; implement missing rules, adapt unimplementable ones, wire orphaned rules, fix terminology (skill points to experience, win-potential to hit points, rations as rations), phobias with real effects (URGENT)
+
 ## Deferred Verification (UAT — to milestone end per autonomous run)
 
 | Phase | Item | Resume |
@@ -192,9 +202,40 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-08T21:45:00.000Z
-Stopped at: Completed 04-DR1 device-review revision (crawl-screen touch-up; see 04-DR1-SUMMARY.md)
-Resume file: None
+Last session: 2026-09-09
+Stopped at: **Economy & Item Balancing milestone CODE-COMPLETE + DEPLOYED (Phases 12–16, 666/666, parity 25/25 byte-identical) 2026-09-10.** Built autonomously (`/gsd-autonomous --from 12`): carry model+bags → inventory (auto-take-best replaced w/ take/keep-drop/equip) → store-sell + combat-item-use (E2) → 9 inert items wired (DR15-A Helm/Language, DR16-G Amulet-of-Stone, cloaks, pendant, ether, etc.) → conservative tuning (+3000→300×depth, rng-free). DEFERRED: deep economy tuning + GLOBAL difficulty retune → consolidated cross-milestone pass. Determinism held throughout (new rng gated; `c.bag`/`pendingFind` carved out; `reconcilePendingFind` comparator for the find divergence; master untouched). Also this session: the generalized death-on-move beat ("They got the drop on you" / "The maze has the last word"), the generative name generator (~200+/race), teleport removal, round-count fix, DR16 UI batch, death→splash + New-Character button — all deployed. Device at 10.0.0.175:33241 (port rotates). **NEXT:** device-review Joiners+Economy; remaining v1.0 = Monster Balancing milestone (+ the consolidated difficulty retune), DR15-B/C/E + DR16-F backlog, then tutorial (04-10, LAST) → Phase 6 Play launch (user's manual steps).
+Prior: **Joiners / Party System milestone CODE-COMPLETE + DEPLOYED (Phases 7–11) + Phase 5 Voice complete (605/605, parity byte-identical). Party build DEPLOYED to the Pixel 7 2026-09-09 (reconnected at 10.0.0.175:33241 — port rotates, rediscover via `adb mdns services`|grep tls-connect) — awaiting the user's on-device review of the party system.** Planned via `/gsd-new-milestone` (PARTY-01..10, research SUMMARY in `.planning/research/`), built via `/gsd-autonomous --from 7 --to 11` as executor-per-phase + immediate parity verification. Decisions: cap 1 (model for N), permadeath-when-downed-else-leaves, canon XP-split + hero keeps loot. Global `difficulty.js` retune DEFERRED to the consolidated cross-milestone pass (with Economy & Monster). **RESUME:** when the Pixel 7 is back on wireless debugging, rediscover the port (`adb mdns services` | grep tls-connect), `adb connect 10.0.0.175:<port>`, then `adb install -r android/app/build/outputs/apk/debug/app-debug.apk` + force-stop + monkey relaunch — the APK already includes P7–P11. Then device-review the party system (recruit at a Joiner tile → accept/decline prompt → party rail → fight/down/depart). DR15 backlog (A–E) parked in `.planning/proposed-features-dr15.md`.
+Prior stop: **Phase 04.2 (Bug Fixes & Text Polish) COMPLETE + deployed to the Pixel 7** — 567/567 full suite, parity 25/25. All 5 batches done (Batch 1→545, Bugs A→549, Bugs B→554, Graveyard Rework/E12→564, Text→567). Build chain: `build-www` → `cap sync` → `pin-jdk` → `assembleDebug` (SUCCESS) → adb install -r + force-stop + monkey relaunch to `10.0.0.175:38883` (wireless-adb port had rotated from :36421; rediscover via `adb mdns services` | grep tls-connect). Working tree still entirely uncommitted by design.
+Resume file: None.
+
+**DR16 party-build device-review batch DEPLOYED 2026-09-09 (605/605, parity green):** teleport REMOVED from ENCOUNTER_TABLES entirely (both cells, deliberate divergence — no fixture rolls them); round-count fixed (dropped the foes-win-initiative double-increment at afterPlayerAction; `combat.round` carved out of the 3 combat comparators as a deliberate divergence, round===1 preserved); foe target-pool VERIFIED (foes roll uniformly over [hero]+members) + Oracle now names the target on hits AND misses (foeMissed/memberStruck carry the member/roll); log-accuracy pass — every combat line now shows `roll vs need` + attacker/target + dmg (struck/struckByFoe/memberStruck/strikeMissed); DR16 UI (mazeworld.html): Darkness now contracts the fog (reveal() reads S.c.darkFor), heal-potion blocked at full HP (no eat-food button exists — food is passive+capped), death card gets a "Review the Oracle" button + Confirm → graveyard (Dead tab) not splash, "Move on" button moved to the encounter header (right-aligned, off the d-pad). **Still captured for next round:** DR16-F armor-HP sheet display inconsistency, DR16-G Amulet-of-Stone/"squares of opponents" concept (both in `.planning/proposed-features-dr15.md`). Device still at 10.0.0.175:33241 (port rotates).
+
+## Session Snapshot — 2026-09-09 (Phase 04.2 COMPLETE; DR14 batch closed)
+
+**What shipped this session (all deployed):**
+- **Bugs B:** E7 Con-Artist opener no longer fakes "A blade in the back. Critical." on its no-damage warning — now a SARCASTIC beat (`conArtistOpener` narration; user directive: *lean into humor whenever class/race works against the player*). E8 Cloak-of-Armor (`eff.cloakArmor`, was inert) now soaks as Plate via new `armorSoak(c)` in `engine/derived.js` (take-the-better vs worn, magical/non-degrading). E9 Dead tab staleness — `showTab()` now `loadGraves().then(renderGraves)` on open (the adapter `persistGrave` write was always correct; render was boot-only).
+- **Graveyard Rework (E12):** `persistGrave` caps stored graves at 5 (`GRAVE_CAP`), keeps a never-trimmed total (`ddr.graveyard.total.v1`) and a ≤25 recent-names list (`ddr.graveyard.names.v1`); `#yard-count` shows "Showing last 5 of {total}"; clear button (`#btn-clearyard`) removed. Name dedup: `nameFor(rng,r,exclude=[])` makes EXACTLY ONE `rng.pick` then walks forward with NO rng past excluded names → parity byte-identical with empty exclusion (no comparables carve-out). `rollCharacter(rng,exclude)` / `newRun` / adapter `initRun`/`startNewRun`/`boot` thread the exclusion.
+- **Text:** A1 (`afflictionRolled` span/punctuation fixed → clean "Something is wrong with you. Poison."; ENCOUNTER "Disease"→"Ailment" bucket, dual-purpose w/ `encounterDot` parser). E1 dup Teleport → `-10 HP`. E3 SP→XP/WP→HP across combat toasts + `content/encounters.js:12` row + `treasure-tables.js` FAERIE row, each atomic with its `tableFour`/`meetFaerie`/`encounterDot` parser. E10 `goldGained` dropped the `(${why})` source-tag leak + reads "wilmst"; removed the redundant raw `tableFour` beat on the +3000 row. E11 gravestone `Skill pts`→`XP` + epitaph editorial polish (3 clunky lines in `content/epitaphs.js`). P1 jargon→prose + stripRollDetail scoping. P2 wm→wilmst. P3 partial (spellThrown/trapPoisoned/scroll* deliberately skipped, noted in the Text SUMMARY).
+
+**Balance backlog captured this session (NOT changed — logged to milestone specs):**
+- **+3000 wilmst** Table-Four reward is too generous (only its DISPLAY was fixed) → `proposed-milestone-economy-item-balancing.md` §5, w/ a note to audit chest/faerie/grimoire grants too.
+- **Parley balance pass** → `proposed-milestone-monster-balancing.md` candidate #5: parley pays ~2.5× the group's kill-XP at ZERO risk (dominant), Con-Artist 75%@L1, no failure cost/retry-spam; also the dead `parleyRefused` Wilmsry-vs-Magical branch (`combat.js:489`). Reward amount cross-ref'd to Economy.
+
+**NEXT:** `/gsd-new-milestone` — user's stated priority is **Joiners / Party System** first; coordinate with Economy & Monster Balancing (all 3 move the difficulty dial). Then Phase 4 tutorial (04-10, LAST) → Phase 5 (Voice) → Phase 6 (Play launch). Inventory source of truth: `.planning/quick/20260909-rules-text-audit-pass/EXTRA-SCOPE.md` (E1–E12).
+
+## Session Snapshot — 2026-09-13 (DR17/DR18 built + deployed; app is on Google Play internal testing)
+
+**GOOGLE PLAY (user, 2026-09-10):** the Play Console store entry EXISTS and the app is on an **internal-testing track** — the user built `android/app/release/app-release.aab` (versionCode 1, Android Studio signed-bundle wizard; no gradle signing config, keystore NOT in repo), uploaded it, installed it from Play, and **friends are now installing it from the store as internal testers**. That AAB was built from a `www/` that PRE-DATES DR18 → testers lack DR18 until the next upload (bump `versionCode` to 2 first). Play-signed installs can't be overwritten by local APKs (signer mismatch) — the user uninstalled the Play build from the Pixel 7 on 2026-09-13 so the sideload review loop works again.
+
+**This session:** reconstructed the 09-10 cutoff (DR18 edits at 09:31–09:33 were never built), rebuilt `www/` → `cap sync` → `pin-jdk` → `assembleDebug` (BUILD SUCCESSFUL) → sideloaded to the Pixel 7 (`adb-28051FDH200H0R`, 10.0.0.175:38575). `npm test` **683/683**. Summary: `.planning/phases/dr17-encounter-ux/DR17-DR18-SUMMARY.md`. Working tree still intentionally uncommitted.
+
+**RELEASE PIPELINE (set up 2026-09-13):** `android/app/build.gradle` now reads `android/keystore.properties` (git-ignored; upload keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`, alias `key0`) and `android/version.properties` (committed; versionCode/versionName — Play needs a fresh versionCode per upload). `npm run play:release` = `tools/bump-version.mjs` → build:www → cap sync → pin-jdk → `tools/gradle.mjs bundleRelease` (Node runner because `NoDefaultCurrentDirectoryInExePath=1` breaks bare `gradlew` under npm's cmd.exe). Output `android/app/build/outputs/bundle/release/app-release.aab`, signed (`META-INF/KEY0.RSA`). First signed build = versionCode 2 (DR17+DR18) built 2026-09-13 13:48 — user uploads it to the internal track by hand until the Play Developer API service account is set up (`docs/RELEASING.md`). **STANDING RULE (user): after every update batch, ASK whether to push a Play internal-testing build** (see memory `ask-before-play-internal-deploy`).
+
+**JDK unification (2026-09-13):** everything now resolves to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` — `android/gradle.properties` `org.gradle.java.home` (working-tree value; the HEAD value still points at the old Temurin `.jdk/jdk-21.0.12.1+1` → **do NOT `git checkout -- android/gradle.properties` before builds anymore**, just let pin-jdk re-apply), and Android Studio's Gradle JDK (`android/.idea/gradle.xml` gradleJvm=`#JAVA_HOME`, was `#GRADLE_LOCAL_JAVA_HOME` which fell back to the bundled JBR when cap sync had wiped the property) — fixes Studio's "multiple Gradle daemons / JDK ≠ JAVA_HOME" warning.
+
+**User directives 2026-09-13:** do NOT build the tutorial (04-10) yet. Remaining v1.0 per roadmap: Monster Balancing milestone (proposed, research-first — not yet phases) → 04-10 tutorial (LAST) → Phase 6 launch close-out (Data Safety/IARC/privacy policy/listing are partly done by the user already since the store entry exists — audit what's actually left before planning Phase 6). GSD bookkeeping note: phases 04.2/5/7–16 are done in reality but read as "partial" to gsd-tools (SUMMARY-only, no PLAN/VERIFICATION) — scope autonomous runs with `--from/--to/--only` or reconcile the roadmap first.
+
+---
 
 ## Session Snapshot — 2026-09-08 (pre-compact)
 
@@ -240,3 +281,61 @@ Resume file: None
 **BUILD/ENV (durable):** build chain = `git checkout -- android/gradle.properties` → `npm run build:www` → `npx cap sync android` → `node tools/pin-jdk.mjs` → `cd android && ./gradlew.bat assembleDebug` → `"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe" install -r android/app/build/outputs/apk/debug/app-debug.apk`. `pin-jdk.mjs` auto-resolves a JDK 21 (currently `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/`); `android/gradle.properties` shows as modified each build (local pin) — `git checkout` it before building, never commit it. **Device = Pixel 7 wireless adb (serial 28051FDH200H0R)** — drops between sessions (reconnect via Settings→Developer options→Wireless debugging or USB). **The phone auto-locks fast, so `adb exec-out screencap` usually catches the lock screen — do NOT rely on device screenshots; the user reviews directly and reports.** `@capacitor/haptics` NOT installed. `npm run test:quick` was repaired to use `**/*.test.js` globs (Node 22).
 
 **WORKFLOW NOTE:** device-review rounds (DR1–DR12) were run as ad-hoc `gsd-executor` passes (each writes its own `04-DR*-SUMMARY.md`; they did NOT run the full state.advance-plan/roadmap machinery — consistent precedent). One executor at a time (sequential, worktrees auto-degraded since HEAD diverged). ~14.99M of 15M session tokens remain at compact.
+
+---
+
+## Session Snapshot — 2026-09-09 (DR13 batch, pre-compact)
+
+**All of the below is LIVE on the Pixel 7 (built + installed + force-relaunched each change). `npm test` 495/495, `npm run test:quick` 406/406.** This session ran as a rapid on-device device-review loop (call it DR13) — many small user-directed changes, each: edit `mazeworld.html`/`src/browser/*` → `build:www` → (browser-verify layout via a local `node` static server on :5599 + Claude-in-Chrome measuring computed layout) → `cap sync` + `assembleDebug` + `adb install -r` + **force-stop + monkey relaunch** (important: `install -r` does NOT reload a running WebView; always force-restart so the user sees changes).
+
+**NEXT (continue "as planned"):** finish remaining **Phase 4** items → **Phase 4 verify** → **Phase 4.1 (Rules Review & Wiring, INSERTED this session)** → **Phase 5 (voice)** → **Phase 6 (Play launch)**. The combat-UX rework the user asked for pre-compact is now substantially DONE (toasts + victory report + enemy status chips). Still open in Phase 4: install `@capacitor/haptics` + wire `maybeHaptic`; reconcile Gear/Graveyard tabs to the mock; **first-run tutorial (UX-06) built LAST** (deferred on purpose until UI settles).
+
+**Phase 4.1 INSERTED** (`.planning/phases/04.1-rules-review-wiring-*`, roadmap + evolution logged): every character-sheet stat must affect gameplay; implement missing rules, adapt unimplementable ones, wire orphaned rules, **fix terminology (skill points→experience, win-potential→hit points, food/rations mess→rations as rations), phobias with real effects**. Also folded here: **scroll type-system** (scrolls are currently an undifferentiated count with a random read-time learn-or-cast outcome — can't split "learning scrolls → Gear" vs "combat scrolls" without a real scroll-type system).
+
+**DR13 changes shipped this session:**
+- **HUD restructure:** removed the "MAP" heading entirely; character line now lives in the sticky header beneath FLOOR/DAY/MOVES/RATIONS — `Name · Subclass<gold roman level> · <status tag> · HP bar`. (User chose to compress class→subclass + fold level in to de-crowd; dropped the redundant class word. IDs: `hud-name`, `hud-cls`, `mm-status`, `mm-hp`/`mm-hpmax`/`mm-hpfill`; `mm-level` element REMOVED — level is now inside `hud-cls`.) "Squares"→"Moves". Gear = bare glyph (no box), stays on header top line (`.mw-hud` is now flex-column: `.mw-hud-top` + `.mw-hud-char`).
+- **Toast feedback system** (`window.mzToast`, host `#mw-toast-host` fixed at TOP, bold uppercase, tone-colored hit/miss/hurt/magic). Every combat action raises one via `window.mzCombatFeedback(type,events,html,extra)` (classic scope) called in `engineCombatAction`. Removed the old in-panel HIT/MISS badge + the vitals/`#pot` strip (no more CLS).
+- **Combat report on victory:** `noteCombat(wasCombat, after, events)` (module scope, in the `window.move`/`engineCombatAction` bridges) snapshots at combat START and, on END (not flee/death), sets `state.beats` to a report built by classic `window.mzCombatReport(data)` (foes/rounds/felled/HP taken/gold/level/final HP). Fleeing = toast only, straight to map.
+- **Enemy status chips** (quick task `20260909-enemy-status-effects`): `foeStatusBadges(f)` → chips on each foe row (Asleep/Frozen/Acid·N/Blind/Stupefied/Shrunk/Fixated, + red "Frenzied"). `.fchip` (-good green / -acid gold / -bad red).
+- **Grimoire (Gear) count** = casts available "N of M" (charges), updates live after inventory casts. Bigger gold panel-header text (`.panel h2 span` 10→13px, overlay/yard 12px).
+- **Icon safe-zone fix:** adaptive foreground was full-bleed (content-frac 1.0) → launcher cropped ⅓. Regenerated all densities from `assets/ddr_icon.png` at 72% (round legacy 88%). Adaptive bg `#14100E` matches medallion corners → seamless.
+- **Pinch-to-zoom** the map (two-finger, `zoom` 0.6–2.4× multiplies `fit()`'s base cell; one-finger still pans; `initMazeViewportControls` tracks a pointer Map).
+- **Move on** pinned bottom-center full-width; encounter panel reclaimed for its text.
+
+**BUG FIXES this session (with tests):**
+- **Acid-tick soft-lock (engine):** `engine/combat.js#afterPlayerAction` only checked `liveFoes` BEFORE `foeTurn`, so a foe killed DURING foeTurn by an acid DoT tick (or a ward reflect) left combat open with nothing to fight — player stranded, had to flee. Added post-`foeTurn` `liveFoes→encounterCleared+endCombat` checks (both foe-turn slots). Same bug existed in the classic (dead) `afterPlayerAction` — a deliberate, documented fix-deviation. Regression test in `test/unit/combat.test.js`.
+- **Insanity narration** (`src/browser/eventNarration.js#insanityRolled`): roll span sat mid-sentence and got stripped by dice-hidden mode → "Insanity: , bolts into the dark." Rewritten so the roll trails and strips cleanly.
+- **Heal-in-combat contradiction** (`src/browser/viewModels.js#grimoireViewModel`): engine DOES cast heal/ward/might/mirror/reveal in combat, so the combat menu correctly shows Heal; the Hero sheet's "Only outside combat" label was the lie. In combat the Hero grimoire now says "On the combat screen" for all spells. Test updated.
+
+**Verification technique established:** for layout/DOM questions, don't guess — serve `www/` over a local `node` http server on :5599 and use Claude-in-Chrome (`navigate` http://localhost:5599, `javascript_tool` to measure `getBoundingClientRect`/computed styles at a forced 390px `#app` width). file:// is blocked by the chrome tool. Always close the tab + kill the :5599 server after.
+
+---
+
+## Session Snapshot — 2026-09-09 (DR13 tail + Phase 04.1 + DR14 bug batch; PRE-COMPACT)
+
+**Git:** repo on `master`, ~40+ uncommitted files (the ENTIRE session's work — DR13 + haptics + 04.1 + audit batches — is intentionally UNCOMMITTED; device-review workflow reviews on-device, not via git). Do NOT commit unless the user asks; if asked, branch first (on master).
+
+**Test baseline:** `npm test` = **549/549** after Bugs A. (499 after haptics → 535 after 04.1 → 545 after Batch 1 → 549 after Bugs A.) All of 04.1 + Batch 1 + Bugs A are built + deployed to the Pixel 7.
+
+**Device:** Pixel 7 wireless adb, mdns `adb-28051FDH200H0R`, reconnect via `adb connect 10.0.0.175:36421` (IP:port changes — use `adb mdns services` to rediscover). Build+deploy chain unchanged: `node tools/build-www.mjs` → `npx cap sync android` → `node tools/pin-jdk.mjs` (sync wipes pin) → `cd android && ./gradlew assembleDebug` → adb install -r + force-stop + monkey relaunch. adb at `$LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe`.
+
+### DONE this session (all on device except the DR14 bug batches still executing)
+- **Phase 4 04-09 (haptics):** `@capacitor/haptics@8.0.2` installed+vendored; `hapticForEvents()` fires Heavy(trap/level-up/crit)/Medium(hit)/Light(hurt) via `maybeHaptic` gated by the Settings toggle. ROADMAP 04-09 = done (8/11; only 04-10 tutorial remains, deferred to LAST).
+- **Phase 04.1 (Rules Review & Wiring) — COMPLETE, 6/6 plans, 535/535, deployed:** terminology (skill points→XP, Win Potential/wp→HP; HUD↔sheet aligned); Sewing + Master of Arms revived from `c.dr` dead code; rations sold directly (food=pure heal, findFood decoupled); Intelligence→chest-lock bonus (`intelBonus` in derived.js); all 10 phobias wired (persistent darkness state `c.darkFor` + Darkness freeze; Death/Trapped/Heights/Water bespoke, Hardiness-halved). Parity carve-outs `stripDarkForField`. SUMMARYs in `.planning/phases/04.1-.../`.
+
+### Phase 04.2: Bug Fixes & Text Polish (INSERTED — the DR14 batch; IN PROGRESS)
+Full inventory in `.planning/quick/20260909-rules-text-audit-pass/` (FINDINGS.md = audit A1-A3 + P1/P2/P3 + LOCKED decisions; EXTRA-SCOPE.md = E1-E9; SUMMARY-batch1.md = landed rules). Phase index: `.planning/phases/04.2-bug-fixes-text-polish/04.2-CONTEXT.md`.
+- **Batch 1 (rules) ✅ 545/545:** flying charge/cooldown (Bracelet always-on; Cloak 20-sq/50-sq via new serialized `c.flightLeft`/`c.flightCooldown`, `isFlying(state)`/`hasItemNamed`); rest cure-roll (50%+Hardiness, `afflictionLingers`); affliction events carry `kind`. New events `flownOver`/`afflictionLingers`. Parity `stripFlightFields`.
+- **Bugs A ✅ DONE, 549/549, deployed:** E5 poison-at-1hp loop auto-clears when `l===0` (`engine/movement.js`); E6 Oracle log cleared in `commitRolledState` (both death→new and abandon→new converge there; use `getElementById("log")` not the classic `logEl` — module can't see classic block scope); E4 defensive `maxWP` added to `encounterStarted` event (`combat.js:145`) — executor couldn't repro 5/5 in current source (foe `maxWP` stable at 13/20 in a probe), theory = the device build the user tested was stale. WATCH E4 on device; if 5/5 recurs on the fresh build, dig into the sync again.
+- **Bugs B (queued — touches combat.js/derived.js/adapter, run AFTER Bugs A):** E7 backstab "A blade in the back. Critical." fires on a MISS (`combat.js:312-323` emits `backstab` regardless of hit); E8 Cloak of Armor `eff.cloakArmor` inert (like `eff.fly` was) → wire to act as Plate; E9 dead character NOT on Dead/graveyard screen (likely Phase-5 "re-fetch-on-open" class).
+- **Text (queued, last — shares mazeworld.html/eventNarration):** A1 narration + "Disease"→"Ailment" bucket (`content/encounters.js:11,14` + `engine/encounters.js:179`); E1 remove dup Teleport (`content/encounters.js:12`); E3 SP→XP/WP→HP uppercase (combat toasts `mazeworld.html:2545/2552` + `content/encounters.js:12` + `content/treasure-tables.js:47` w/ dual-purpose parsers); P1 tableFour/meetFaerie raw-jargon→prose + `stripRollDetail` scoping; P2 `wm`→`wilmst` (`eventNarration.js:148,229,230`); P3 cosmetics.
+- **E2 (use combat items in combat bar): DEFERRED** to the Economy & Item Balancing milestone.
+
+### Milestone backlog (PROPOSED — capture only; plan via `/gsd-new-milestone` AFTER 04.2 + a /compact). Specs in `.planning/proposed-milestone-*.md`; ROADMAP note after the 04.1 section.
+1. **Economy & Item Balancing** — bags/carry-capacity (rulebook p.9 table → item/ration/wilmst caps, slots ~4/6/8/10), inventory mgmt (choose-to-take, keep/drop, **manual equip incl. inferior gear**, replacing auto-take-best), store sells all gear, item review & rebalance, economy cost balancing.
+2. **Joiners / Party System** — NPCs join → party system (engine multiplayer-ready foundation; builds on `C.ally`/`allyStruck`). **User's stated NEXT-focus milestone.**
+3. **Monster Balancing & Abilities** (research-first) — foe magic/spellcasting (foes can't cast today) + bestiary rebalance + difficulty-dial retune; unlocks deferred 04.1 symmetric-INT resistance.
+All 3 move balance → coordinate their passes + `engine/difficulty.js`; sequence (pre- vs post-launch) TBD.
+
+### NEXT (post-compact)
+Execute Phase 04.2 remaining via GSD: finish Bugs A (deploy to unstick the poison loop) → Bugs B → Text → full `npm test` + device build. Then start milestone planning (Joiners first per user). Phase 4 tutorial (04-10) still LAST. Then Phase 5 (Voice), Phase 6 (Play launch).

@@ -1,335 +1,300 @@
 # Architecture Research
 
-**Domain:** Mobile roguelike dungeon-crawler, ported from a single-file web prototype to native iOS/Android, with post-MVP online multiplayer as a designed-for (not built) future
-**Researched:** 2026-09-07
-**Confidence:** HIGH (component boundaries and seam design — derived directly from reading the existing 3,300-line prototype, `mazeworld.html`, plus well-established game-architecture patterns); MEDIUM (specific packaging tech references — cross-checked web sources, see Sources)
+**Domain:** Persistent single-player party system inside a pure/serializable roguelike engine (strangler-fig migration)
+**Researched:** 2026-09-09
+**Confidence:** HIGH (primary-source read of the actual engine + bridge + mock; every claim below is cited to file:line)
 
-## Prototype As-Built (what already exists)
+## Executive Framing
 
-Before recommending a target architecture, this is what `mazeworld.html` actually does today — every recommendation below is a *refactor* of this, not a rewrite from zero:
+The engine already contains **two disconnected proto-party mechanisms** that this milestone unifies:
 
-- **`S`** — one global mutable object: `{ c: character, floor: mazeGrid+features+playerPos, day, steps, combat, store, beats, dead, won, deathNote, epitaph }`. `S.c` and `S.floor` are plain JSON-serializable data (numbers, strings, plain objects/arrays) — this is the single biggest asset the port inherits for free.
-- **`act(fn)`** — wraps a "turn": runs a closure that mutates `S` and calls `logLine`/`say`/`evt` to narrate; captures those narration strings into `S.beats` (a list of "beat" groups with HTML-flavored lines); then calls `renderEncounter()` directly. This is an embryonic event-log pattern, but it's incomplete as a seam (see Anti-Patterns).
-- **Dice/RNG** — `D(n)` and `pick(a)` call `Math.random()` directly, globally, unseeded. Maze generation, combat, loot, and encounter tables all consume it the same way.
-- **Rendering** — `draw()` (canvas, reads `S.floor` directly), `paint()` (imperative DOM writes for the character sheet/HUD, reads `S.c`/`S.floor`/`S.day` directly), `renderEncounter()`, `renderGraves()`. All are called *from inside* game-logic functions (`move()`, `descend()`, `die()`, etc.), not from a separate loop.
-</br>
-- **Persistence** — `save()`/`load()` synchronously JSON-serialize a hand-picked subset of `S` to `localStorage`; `S.store` (shop) is deliberately excluded from saves because it "holds closures" — a design smell where a piece of otherwise-game state became non-serializable.
-- **Input** — DOM `addEventListener` handlers (`dpad` clicks, `keydown`) call domain functions (`move(dir)`, combat button handlers) directly and synchronously; each call cascades through mutation → narration → render → save in one call stack.
-- **Procedural generation** — `genFloor(depth)`: recursive-backtracker maze + BFS-farthest-cell exit placement + feature scattering + depth-scaled "dark zone" blobs. Depth already flows in as a parameter and already tunes *some* things (dark-zone count, encounter-dot count) but **not** monster difficulty or loot tier — those are static tables today. The fixed 5-floor "Gate" ending is a single `depth >= 5` check in `genFloor`.
-- **Module boundaries that already exist as comment sections** (useful cut lines): state, character creation, maze generation, rendering, log/beats, derived character numbers, encounters, carried treasure, the graveyard, boot/wiring. These map almost 1:1 onto the module split recommended below.
+1. **`c.joiner`** — a *persistent* NPC set by `meetJoiner` (`engine/encounters.js:397-407`), shape `{name, race, sub, cls, lvl, wp, maxWP}`. It survives across floors in `state.c`, **but nothing in combat ever reads it.** It is a dead-end field today: acquired, narrated (`joinerMet`), then inert.
+2. **`C.ally`** — a *combat-scoped* transient set by the summon spell (`engine/magic.js:111-122`), shape `{lvl, rounds, name}`. It strikes once per round (`allyTurn`, `engine/combat.js:646-665`) and departs after `C.ally.rounds` hits. Reaches combat via the `c.pendingAlly → C.ally` one-shot handoff (`engine/combat.js:163-167`).
+
+**The milestone = promote `c.joiner` (single) into a real persistent `c.party[]` roster, sync it into combat the way `pendingAlly` already syncs, and generalize the single-`C.ally` turn/target logic into a multi-combatant loop — without breaking determinism, the EVENT_NARRATION coverage guard, or the classic↔module bridge.**
+
+The design authority (`design/Mazeworld Mobile.dc.html`) already contains the target UI: a **party rail** gated behind `s.partyOn` (default OFF, `:383` `partyOn: !!props.partyMode`), showing up to three members each with their own WP and an active-turn highlight (`:700-706`), plus the map marker "THE PARTY … one dot, until something finds you and makes it three" (`:800`). Turning that rail on is the UI half of this milestone.
 
 ## Standard Architecture
 
-### System Overview
+### System Overview (current strangler-fig, with party additions marked ★)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  PLATFORM SHELL  (native iOS/Android via WebView wrapper, or later    │
-│  a native rewrite of the same shape)                                  │
-│  ┌────────────┐ ┌────────────────┐ ┌───────────────┐ ┌─────────────┐ │
-│  │ App lifecy-│ │ Native storage │ │ Haptics/Audio │ │ Store/build │ │
-│  │ cle bridge │ │ (file/KV, not  │ │ bridge        │ │ signing     │ │
-│  │            │ │ browser LS)    │ │               │ │             │ │
-│  └─────┬──────┘ └───────┬────────┘ └───────┬───────┘ └─────────────┘ │
-├────────┼────────────────┼──────────────────┼──────────────────────── ┤
-│        │      PRESENTATION LAYER (UI — DOM/canvas today, could be    │
-│        │      native views in a rewrite)                             │
-│  ┌─────▼──────┐  ┌──────────────┐  ┌───────────────┐  ┌────────────┐ │
-│  │ Input      │  │ HUD / sheet  │  │ Maze renderer │  │ Event-log  │ │
-│  │ adapter    │  │ view         │  │ (canvas)      │  │ view (log/ │ │
-│  │ (taps→     │  │ (reads       │  │ (reads floor  │  │ beats,     │ │
-│  │  Actions)  │  │  snapshot)   │  │  snapshot)    │  │ formats    │ │
-│  │            │  │              │  │               │  │ Events)    │ │
-│  └─────┬──────┘  └──────▲───────┘  └──────▲────────┘  └─────▲──────┘ │
-│        │ Action         │ StateSnapshot   │ StateSnapshot   │Events  │
-├────────┼────────────────┴─────────────────┴─────────────────┴────────┤
-│        │           RULES / SIMULATION ENGINE (pure, sync, no DOM,    │
-│        ▼           no I/O — this is the multiplayer-ready seam)      │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  applyAction(state, action, rng) → { state, events }          │   │
-│  │  ── character creation  ── combat resolution  ── movement     │   │
-│  │  ── shop/economy        ── leveling/skills    ── death/burial │   │
-│  └───────────────────────────────┬────────────────────────────────┘  │
-│                                    │ uses                             │
-│                    ┌───────────────▼────────────────┐                │
-│                    │ PROCEDURAL GENERATION            │               │
-│                    │ maze/floor gen, encounter tables,│               │
-│                    │ loot tables, difficulty curve —  │               │
-│                    │ all pure functions of (seed,     │               │
-│                    │ depth, rng-cursor)                │               │
-│                    └───────────────┬────────────────┘                │
-│                                    │ consumes                         │
-│                    ┌───────────────▼────────────────┐                │
-│                    │ SEEDED RNG  (deterministic,      │               │
-│                    │ serializable cursor)             │               │
-│                    └──────────────────────────────────┘              │
-├─────────────────────────────────────────────────────────────────────┤
-│  PERSISTENCE  (adapter behind an interface; localStorage today,      │
-│  native secure/file storage on-device, no server in MVP)             │
-│  ┌─────────────┐  ┌────────────────┐  ┌───────────────────────────┐ │
-│  │ Active run  │  │ Graveyard /    │  │ Settings (audio, controls)│ │
-│  │ snapshot    │  │ high scores    │  │                            │ │
-│  └─────────────┘  └────────────────┘  └───────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
+│  mazeworld.html  (single-page: classic dead code + live <script module>)│
+│  ┌────────────────────┐        ┌──────────────────────────────────┐   │
+│  │ classic renderers  │◄──────►│  window.__mzState  {get,set}      │   │
+│  │ renderEncounter()  │  reads │  (the ONLY state bridge, :2053)   │   │
+│  │  reads S.combat    │  S     └──────────────────────────────────┘   │
+│  │  ★ render C.allies │              ▲  window.mzAttack / mzToast etc. │
+│  │  ★ party rail       │              │                                 │
+│  └────────────────────┘              │                                 │
+├──────────────────────────────────────┼─────────────────────────────────┤
+│  src/browser/  (adapters — presentation only, never mutate state)      │
+│  ┌──────────────────┐   ┌──────────────────────────────────────────┐  │
+│  │ engineAdapter.js │──►│ dispatch(action) → applyAction(state,act) │  │
+│  │  formatEvent()   │◄──│   returns {state, events}                 │  │
+│  └────────┬─────────┘   └──────────────────────────────────────────┘  │
+│           │ delegates to                                                │
+│  ┌────────▼──────────────────────────────────────────────────────┐    │
+│  │ eventNarration.js  EVENT_NARRATION{}  (coverage-guarded table) │    │
+│  │  ★ every NEW event type needs an entry or the test fails       │    │
+│  └───────────────────────────────────────────────────────────────┘    │
+├────────────────────────────────────────────────────────────────────────┤
+│  engine/  (PURE: no DOM, no I/O; applyAction(state,action)→{state,events})│
+│  ┌───────────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
+│  │ engine.js │ │ combat.js │ │encounters│ │ magic.js │ │difficulty.js│  │
+│  │ dispatch  │ │ ★turn loop│ │ meetJoiner│ │ summon   │ │ ★party-aware│  │
+│  │ switch    │ │ ★foe tgt  │ │ →★c.party │ │ →C.ally  │ │ retune      │  │
+│  └───────────┘ └───────────┘ └──────────┘ └──────────┘ └────────────┘  │
+│           state.c (player + ★c.party[])   state.combat (C + ★C.allies)  │
+│           state.rngState  (persisted deterministic cursor)             │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Component Responsibilities
+### Component Responsibilities (party-relevant)
 
-| Component | Responsibility | Typical Implementation |
-|-----------|-----------------|-------------------------|
-| Rules/Simulation Engine | Owns all game rules: character creation, movement legality, combat math, spellcasting, shop economy, leveling, death, endless-descent progression. Exposes one narrow entry point (`applyAction`). Never touches DOM, canvas, `localStorage`, or `Math.random()` directly. | A dependency-free module (or small set of modules) of pure/near-pure functions operating on a plain-data `GameState` object; this is exactly what `move()`, `descend()`, `startCombat()`, `openStore()`, `die()`, `checkLevel()` etc. already are today, minus their render/save/DOM calls. |
-| Game State | The plain-data object graph the engine reads and writes: character, current floor grid, run counters (day/steps/depth), combat sub-state, shop sub-state, RNG cursor, seed, run-log/version. Must be 100% JSON-serializable — no closures, no class instances with methods, no DOM references. | Prototype's `S` object, with the one wart fixed: shop stock becomes plain data (regenerated deterministically from seed+turn, or stored as plain arrays) instead of closures. |
-| Procedural Generation | Pure functions that take `(seed, depth, rngCursor)` and return floor layouts, encounters, loot, and — new for endless mode — a difficulty-scaling curve. No global RNG access; only the injected RNG. | `genFloor(depth)`, `bfs()`, encounter/loot table lookups — same algorithms as today (recursive backtracker + BFS placement), parameterized by depth for endless scaling. |
-| Rendering / Presentation | Turns a `StateSnapshot` (and/or an `Events` stream) into pixels/DOM: HUD, character sheet, canvas maze, encounter log. Never mutates game state; only reads it and dispatches `Action`s on input. | `draw()`, `paint()`, `renderEncounter()`, `renderGraves()` today — refactored to be pure "read state, write UI," called from one render loop/subscriber instead of scattered inline in gameplay functions. |
-| Input | Translates platform input (touch D-pad, keyboard, tap targets) into engine `Action` objects (`{type:'move', dir:'N'}`, `{type:'attack'}`, `{type:'buyItem', idx}`) and hands them to a single dispatch point. Contains no game rules. | Today's `dpad` click handler and `keydown` listener, changed from "call `move()` directly" to "build an Action and dispatch it." |
-| Persistence | Serializes/deserializes `GameState` (active run) and a separate append-only Graveyard/high-score store, behind a small interface (`load()/save()/loadGraves()/saveGraves()`) so the storage backend (browser `localStorage` today, native `Preferences`/file storage tomorrow) is swappable without touching the engine. | Prototype's `save()/load()/loadGraves()/saveGraves()`, with the shop-closure gap closed and a storage-adapter interface inserted between them and `localStorage`. |
-| Platform/Native Bridge | Everything that only exists because the app runs on a phone inside an app-store shell: app lifecycle (background/foreground, low-memory), native storage APIs, haptics, safe-area/notch layout, back-button handling, store billing stub (none needed for v1), crash/analytics opt-in. | A thin wrapper layer (e.g., Capacitor) around the existing web app; talks to Persistence and Input, never to the Engine directly. |
+| Component | Owns today | Party change |
+|-----------|-----------|--------------|
+| `state.c` | player character fields incl. single `c.joiner` (`encounters.js:404`) | **NEW** `c.party[]` roster; `c.joiner` deprecated/migrated into it |
+| `state.combat` (`C`) | `C.foes[]`, `C.target`, `C.round`, `C.first`, single `C.ally` | **NEW** `C.allies[]` (party synced in + transient summons) |
+| `combat.js` `startCombat` (:163-167) | one-shot `pendingAlly → C.ally` handoff | **MODIFIED** sync `c.party[] → C.allies[]` (and keep summon path) |
+| `combat.js` `allyTurn` (:646-665) | single ally strikes `liveFoes[0]`, decrements rounds | **MODIFIED → `alliesTurn`** iterate `C.allies[]` |
+| `combat.js` `afterPlayerAction` (:601-640) | turn loop: ally → foe → round++/init | **MODIFIED** call `alliesTurn`; re-check clears after it |
+| `combat.js` `foeTurn` (:674-790) | every foe attacks **the player only** (`c.wp -= dmg`, :768) | **MODIFIED** choose target among player + live party members |
+| `combat.js` `endCombat` (:584-592) | tears down `state.combat` | **MODIFIED** sync surviving `C.allies` HP back to `c.party[]` |
+| `encounters.js` `meetJoiner` (:397-407) | sets single `c.joiner` | **MODIFIED** push into `c.party[]` (respect a party-size cap) |
+| `magic.js` summon (:111-122) | sets `C.ally` / `c.pendingAlly` | **MODIFIED** target `C.allies[]` / a pending-summon list |
+| `difficulty.js` `difficultyCurve` (:108-118) | pure depth→knobs, party-blind | **MODIFIED (balance phase)** account for party power |
+| `eventNarration.js` `EVENT_NARRATION` | ~162-type coverage-guarded table | **MODIFIED** add an entry per new event type |
+| `mazeworld.html` `renderEncounter` (~:4480-4527) | renders `C.ally` card (:4502-4509), foes, actions | **MODIFIED** render `C.allies[]`; party rail; member sheets |
 
-## Recommended Project Structure
+## Recommended State Model
 
-```
-src/
-├── engine/                     # The decoupled, serializable rules engine — the multiplayer seam
-│   ├── state.ts                # GameState shape + factory (newRun(seed)), pure data only
-│   ├── actions.ts               # Action type union + validators (what a caller may ask the engine to do)
-│   ├── events.ts                # Event type union (what the engine reports happened) — structured, no HTML/markup
-│   ├── engine.ts                # applyAction(state, action) -> {state, events}; the single public entry point
-│   ├── rng.ts                   # Seeded PRNG (mulberry32-class) + roll/pick/shuffle helpers, all engine-internal
-│   ├── character.ts             # rollCharacter, leveling, skills — ports rollCharacter()/checkLevel()
-│   ├── maze.ts                  # genFloor, bfs, feature placement — ports genFloor()/bfs()
-│   ├── difficulty.ts            # NEW: endless-descent scaling curve (depth -> monster tier/loot tier/hazard density)
-│   ├── combat.ts                # startCombat, strike resolution, spellcasting — ports startCombat() and friends
-│   ├── economy.ts                # shop/store, loot, gold — ports openStore()/findGear() etc., stock as plain data
-│   └── death.ts                  # die(), epitaphFor(), run summary for graveyard — ports die()/epitaphCtx()
-├── content/                     # Pure data tables — no logic — extracted from the prototype's big consts
-│   ├── classes.ts, races.ts, spells.ts, creatures.ts, items.ts, epitaphs.ts, names.ts ...
-├── presentation/                 # UI layer — DOM/canvas now; swappable later
-│   ├── render/
-│   │   ├── mazeCanvas.ts         # ports draw()
-│   │   ├── hud.ts                # ports paint()
-│   │   └── log.ts                # formats Events -> narration text/markup (the ONE place HTML/copy lives)
-│   ├── input/
-│   │   └── controls.ts           # dpad + keyboard -> Action objects, ports the addEventListener wiring
-│   └── screens/                  # character sheet, encounter panel, graveyard, tutorial, store dialogs
-├── persistence/
-│   ├── storageAdapter.ts         # interface: get/set/remove, implemented per platform
-│   ├── runStore.ts                # ports save()/load()
-│   └── graveyardStore.ts          # ports loadGraves()/saveGraves()/bury()
-├── platform/                      # native bridge — thin, replaced per target
-│   └── capacitorBridge.ts (or equivalent)
-└── app.ts                         # boot/wiring: creates engine, presentation, persistence; owns the one game loop
-```
-
-### Structure Rationale
-
-- **`engine/` has zero imports from `presentation/`, `persistence/`, or `platform/`.** This is enforced (lint rule / separate package) not just conventional — it is the concrete guarantee that a future multiplayer server can `require`/`import` this folder verbatim and run it headless in Node.
-- **`content/` is split out from `engine/`** because it's large, static, and edited far more often (balance passes, new creatures/spells) than the logic that consumes it — keeps diffs small and lets non-engineers (design/writing passes on epitaphs, flavor text) touch it safely.
-- **`presentation/render/log.ts` is the only file allowed to know about HTML/CSS classes or narrative string templates.** The engine emits structured `Events` (`{type:'hit', attacker, target, dmg}`); this file turns them into the sarcastic, family-friendly copy the game's voice requires. This directly fixes the prototype's biggest coupling problem (see Anti-Patterns).
-- **`persistence/` is behind an adapter interface** so swapping `localStorage` for a Capacitor `Preferences`/filesystem plugin (or, far later, a cloud save) touches one file, not the engine or UI.
-
-## Architectural Patterns
-
-### Pattern 1: Command/Event Engine Boundary (the multiplayer-ready seam)
-
-**What:** The engine exposes exactly one public function shape: `applyAction(state: GameState, action: Action) => { state: GameState, events: Event[] }`. `Action` is what a player (local input, or later a network message) wants to attempt. `Event` is a structured, serializable record of what actually happened (a hit, a level-up, a floor change, a death) — never a pre-formatted string. Everything the UI shows — canvas redraw, HUD numbers, the sarcastic log — is derived by *presentation* code reading the returned `state` and translating `events` into pixels/text. The engine never calls a render function, never touches `localStorage`, never touches `Math.random()` directly.
-
-**When to use:** From day one of the port — this is the seam the whole multiplayer future depends on, and it costs the same to build now as it would later, except later requires unwinding real coupling.
-
-**Trade-offs:** Slightly more ceremony per action (define an Action type, an Event type) than "just call the function and let it render." Pays for itself immediately: it's also exactly the shape a native rewrite needs (no DOM to entangle with), and exactly the shape a lockstep multiplayer host needs (broadcast the `Action`, everyone runs the same `applyAction`, or a server runs it once and broadcasts the `Event`s) — deterministic command/event separation is the standard basis for turn-based/lockstep multiplayer architectures [MEDIUM confidence, cross-checked general pattern].
-
-**Example:**
-```typescript
-// engine/actions.ts
-type Action =
-  | { type: "move"; dir: "N"|"S"|"E"|"W" }
-  | { type: "attack"; targetIdx?: number }
-  | { type: "castSpell"; spellId: string; targetIdx?: number }
-  | { type: "buyItem"; idx: number }
-  | { type: "flee" };
-
-// engine/events.ts
-type Event =
-  | { type: "moved"; to: [number, number] }
-  | { type: "strike"; actor: "player"|"monster"; roll: number; hit: boolean; dmg: number }
-  | { type: "floorChanged"; depth: number }
-  | { type: "died"; cause: string; epitaphKey: string };
-
-// engine/engine.ts
-function applyAction(state: GameState, action: Action): { state: GameState; events: Event[] } {
-  const events: Event[] = [];
-  const next = structuredClone(state); // or an immutable-update helper
-  switch (action.type) {
-    case "move": movePlayer(next, action.dir, events); break;
-    case "attack": resolveAttack(next, action, events); break;
-    // ...
-  }
-  return { state: next, events };
-}
-```
-
-### Pattern 2: Injected, Serializable Seed-Cursor RNG
-
-**What:** Replace every `Math.random()` call with a small seeded PRNG (mulberry32-class: a 32-bit state, fast, good-enough statistical quality for gameplay, not cryptographic) whose state lives *inside* `GameState.rngState` and advances only when the engine consumes it. `D(n)`/`pick(a)`/`shuffle(a)` become methods on an `Rng` object threaded through engine calls, never free functions calling the global `Math.random`.
-
-**When to use:** From day one — this is required for both the endless-mode requirement ("scaling difficulty" needs the engine to *know* how deep it is generating for, deterministically) and the stated requirement of deterministic/seeded runs for high-score integrity: persist `{ seed, actionLog | rngCursor+depth }` alongside a run's final score so a claimed high score can, in principle, be replayed and checked, and so the exact same seed can reproduce the exact same floor for debugging or (later) a daily-challenge/shared-seed mode.
-
-**Trade-offs:** None significant for a single-player game — mulberry32-class PRNGs are proven fast and simple [MEDIUM confidence, cross-checked]. The only discipline required is never letting *presentation* code call the RNG (a UI-only "cosmetic shimmer" effect can use its own unseeded RNG, but nothing that affects `GameState` may).
-
-**Example:**
-```typescript
-// engine/rng.ts
-function mulberry32(seed: number) {
-  let a = seed;
-  return function next() {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-// GameState carries { seed: number, rngCalls: number } — rehydrate the generator
-// on load by re-seeding and fast-forwarding rngCalls, OR persist the raw internal
-// state `a` directly (simpler; do this).
-```
-
-### Pattern 3: Depth-Parameterized Procedural Generation + Difficulty Curve
-
-**What:** `genFloor(depth, rng)` already takes `depth` as an input and already scales two things by it (dark-zone blob count, encounter-dot count). Endless mode extends this same shape with a `difficultyCurve(depth)` pure function that returns tunables — monster tier weighting, loot tier weighting, WP/damage multipliers or floor-scoped modifiers, maze size/complexity bumps — consumed by maze gen, encounter resolution, and loot rolls. No hard floor cap; scaling should asymptote (log/soft-cap curves) rather than grow unbounded, so floor 80 is brutal-but-fair rather than instant-death, and so numbers don't overflow.
-
-**When to use:** This is the concrete design for the "endless descent with scaling difficulty" requirement — it replaces the single `depth >= 5 ? "gate" : "exit"` check with an always-`"exit"` (no gate) plus a depth-fed difficulty table.
-
-**Trade-offs:** Requires actual game-design tuning work (what should floor 20 feel like vs floor 5?) that the prototype never had to do, since it only ever needed 5 floors. Budget real playtesting time for this curve — it is a game-balance problem, not just an engineering one.
-
-## Data Flow
-
-### Turn/Action Flow (the core loop, single-player MVP)
+### Where the party lives
 
 ```
-[Touch D-pad / keypress]
-    ↓  (Input adapter: raw event -> Action)
-[Action object]  e.g. {type:"move", dir:"N"}
-    ↓  dispatch()
-[Engine.applyAction(state, action)]
-    ↓  reads/writes GameState via engine-internal modules (maze, combat, economy, rng)
-[{ newState, events[] }]
-    ↓                                   ↓
-[app.ts replaces current state]   [events fan out to:]
-    ↓                                   ├─→ presentation/render/log.ts  (narrate: "A goblin claws at you — miss.")
-    ↓                                   └─→ (future) network layer (broadcast events to other peers)
-[presentation/render/*] reads new state → redraws canvas + HUD
-    ↓
-[persistence/runStore.save(newState)]  (fire-and-forget, throttled to once per turn)
+state.c                       # the player = de-facto party leader (unchanged)
+  ├── wp, maxWP, ward, mirror, armorWP …   # player-only defensive machinery
+  ├── party: [                ★ NEW: persistent roster (generalizes c.joiner)
+  │     { id, name, race, sub, cls, lvl,
+  │       wp, maxWP,          # survives across floors, mended by rest
+  │       status: "ok"|"downed",   # v1 death semantics knob
+  │       origin: "joiner" }  # provenance (joiner vs future recruit)
+  │   ]
+  └── joiner: null            # DEPRECATED — migrated into party[] (see below)
+
+state.combat (C)              # combat-scoped, rebuilt every fight
+  ├── foes: [ … ]
+  ├── target                  # player's chosen foe index (playerStrike :271)
+  ├── allies: [               ★ NEW: unified combatant list for this fight
+  │     { ref: "party", id }  #   — a live view/sync of a c.party[] member
+  │     { ref: "summon", lvl, rounds, name }  # transient summon (old C.ally)
+  │   ]
+  └── first, round …
 ```
 
-**Direction is one-way and non-negotiable:** Input → Action → Engine → (State, Events) → Presentation/Persistence. Presentation and Persistence never call back into the engine except by producing a new `Action`; they never reach into `GameState` and mutate it directly, and the engine never calls into presentation or persistence.
+**Design decision — keep persistent party and transient summons in ONE combat list (`C.allies`) but tagged by `ref`.** Persistent members sync HP back out at `endCombat`; `ref:"summon"` members are discarded (they only ever lived in `C`, exactly like today's `C.ally`). This preserves the existing summon semantics (`magic.js:111-122`, departs after `rounds`) while letting the turn loop iterate a single array.
 
-### State Management
+### Save migration (mandatory, one-time)
+
+Old saves carry `c.joiner` (single object or `null`) and no `c.party`. On load:
 
 ```
-GameState (single source of truth, owned by app.ts)
-    ↓ (read-only StateSnapshot passed down)
-[HUD / MazeCanvas / LogView / GraveyardView]  — pure "render(snapshot)" functions, no local game-rule state
-    ↑ (Action, on user interaction)
-[Input adapter] → dispatch(action) → Engine.applyAction → new GameState → loop
+c.party = Array.isArray(c.party) ? c.party
+        : c.joiner ? [ {...c.joiner, id: 0, status: "ok", origin: "joiner"} ]
+        : [];
+c.joiner = null;
 ```
 
-### Key Data Flows
+Follow the codebase's existing save-migration discipline (`mazeworld.html` save/load routes through `window.mzStorage`, :4599-4615). Because saves are serialized JSON and the engine is `structuredClone`-based (`engine.js:44`), the party array serializes for free — the "multiplayer-ready" property PROJECT.md protects (`CLAUDE.md` "state serializable") already covers it.
 
-1. **A turn (move/fight/shop):** Input builds an `Action` → `Engine.applyAction` returns new `state` + `events` → app.ts swaps state, hands `events` to the log formatter and new `state` to the renderers → persistence saves the new state. This is identical whether the action came from a local D-pad tap or (post-MVP) a message received from a network peer — that identity is the entire point of the seam.
-2. **Endless descent:** On an `"exit"` tile, engine increments `depth`, calls `genFloor(depth, rng)` which calls `difficultyCurve(depth)` for tuning, and emits a `floorChanged` event. No floor cap; the game never "wins," it only ends in death (permadeath) or, if ever desired, a voluntary "retire and bank the score" action.
-3. **Run end → graveyard:** `die()`/(future) `retire()` produces a `RunSummary` (name, depth reached, day, steps, cause, epitaph) that persistence appends to the Graveyard store — a separate, append-only, smaller data set from the active-run snapshot, so a corrupted/cleared active run never loses history.
-4. **Save/resume:** Persistence serializes the *entire* `GameState` (including `rngState` and any mid-encounter/mid-shop sub-state, now plain data) after every turn; on relaunch, `load()` rehydrates `GameState` and presentation re-renders from it — fixing the prototype's current gap where an open shop (closures) can't survive a reload.
+## The Combat-Loop Extension (the core engine change)
 
-## Endless Descent & Determinism — how they fit the architecture
+### Turn order today (`afterPlayerAction`, combat.js:601-640)
 
-- **Endless descent** is purely a `content + difficulty.ts` concern layered on the existing `genFloor(depth)` shape — no new component is needed, just: (a) remove the depth-5 "Gate" branch, (b) add `difficultyCurve(depth)` consumed by monster/loot rolls and maze generation, (c) decide and implement a soft-cap curve so late floors stay winnable-but-hard rather than either trivial or instantly lethal.
-- **Deterministic/seeded runs** requires exactly two things the engine must own: (1) an injected seeded RNG whose *entire* state is part of `GameState` (Pattern 2), and (2) a stable `applyAction` that produces identical output given identical `(state, action)` input — i.e., no reads of wall-clock time, `Math.random()`, or ambient globals anywhere inside `engine/`. Given both, a run's integrity can be checked in one of two ways: store the `seed + ordered action log` and replay it to confirm the claimed final depth/score (strong, more storage), or store just `seed + depth reached + a running checksum/hash of state at intervals` (weaker, cheap). For a fully-offline v1 with local-only high scores, the cheap option is sufficient; keep the action-log replay option in mind as a "don't architecturally foreclose it" concern for any future shared/online leaderboard.
-- These two concerns compose: the same seeded RNG that makes floor generation reproducible is what makes a "share this seed" or "daily challenge" feature possible later, at zero extra engine cost — it fits naturally into `engine/rng.ts` + `engine/maze.ts` and needs no bespoke plumbing beyond what determinism already requires.
+```
+player acts (playerStrike/castSpell/…)   ← the dispatched action
+  → clear? end : allyTurn (single C.ally)   :609
+  → clear? end : foeTurn (all foes hit player)  :615
+  → clear? end : round++ ; rollInitiative       :627-628
+  → if first==="foe": foeTurn again ; round++    :629-637
+```
 
-## Scaling Considerations
+### Recommended extension
 
-Reframed for this project: there is no "user count" scaling problem (fully offline, single local player). The axes that matter are **depth** (how far a single run can sensibly go) and **multiplayer readiness** (how much rework is needed to add the post-MVP feature).
+1. **`allyTurn` → `alliesTurn(state, rng, events)`** — iterate `C.allies` in **fixed array order** (party members first in roster order, then summons). Each member reuses the existing strike math verbatim (`combat.js:651-656`): roll `STRIKE_DICE[lvl-1]`, hit on `roll ≤ 5`, dmg `lvl*lvl + d6`, `killFoe` on `wp ≤ 0`. Summons additionally decrement `rounds` and depart at 0 (the current `:660-662` logic, applied per-summon). Emit one strike/miss event **per member**.
 
-| Scale | Architecture Adjustments |
-|-------|---------------------------|
-| MVP: solo, offline, fixed-size 21×21 maze per floor | Current architecture (engine + local presentation + local persistence) is sufficient. No networking, no server, no accounts. |
-| Endless depth (floor 50, 100, 500+) | `difficultyCurve` must asymptote; consider periodically enlarging the maze or increasing feature density rather than only scaling monster stats, to keep pacing (5–10 min sessions) intact at depth. Watch for numeric growth (WP/damage) overflowing UI formatting or breaking balance — cap or log-scale past a threshold. |
-| Post-MVP multiplayer ("play with friends") | Because `engine/` already only consumes `(state, action) → (state, events)`, add a thin transport layer: a session host (could be one player's device acting as authority, or a small relay service) receives `Action`s from peers, calls the *same* `engine/applyAction` used offline, and broadcasts resulting `state`/`events`. No engine changes required if the seam was honored; this is the payoff of the whole architecture. |
+2. **Targeting for allies** — v1: keep the current "hit `liveFoes(state)[0]`" default (`combat.js:649`). Cheapest, matches the mock's auto-resolved "EACH ROLLS THEIR OWN" (`:697`). A `memberId → foe index` map is a later refinement, not v1.
 
-### Scaling Priorities
+3. **Foe targeting (`foeTurn`, combat.js:674-790)** — today every foe unconditionally lands on the player (`c.wp -= dmg`, :768; `die(...)` on `c.wp ≤ 0`, :778-781). Generalize to a **target pool** = `[player] + livePartyMembers`. Recommended v1 rule: each foe picks a target by a *deterministic* roll over the pool size (e.g. `rng.d(pool.length)`), so bodies genuinely soak hits (the whole balance point). Then **branch damage application**:
+   - target = player → the full existing pipeline (ward → armor soak → `c.wp`), unchanged.
+   - target = party member → a **simplified** pipeline in v1: `member.wp -= dmg` (no ward/armor/mirror — those are player-only fields). Member death → set `status:"downed"`, remove from `C.allies`, emit an event. **Do NOT call `die()`** for a member (`die()` is the run-ending player terminator, `death.js`).
 
-1. **First bottleneck: difficulty-curve tuning, not engineering.** Endless mode's hardest problem is game balance (what should depth 30 feel like?), not code structure — budget playtesting iterations, not just implementation time.
-2. **Second bottleneck: presentation performance on mid-range phones.** The canvas maze redraw is currently a full-grid repaint per move (`draw()` iterates all 441 cells every call); this is fine at 21×21 but should be profiled early on real mid-range Android hardware inside the native shell, since WebView canvas performance is a known soft spot for HTML-wrapped games.
+4. **Determinism guard (critical).** The engine is seeded and parity-tested against the solo prototype (`difficulty.js` header; `structuredClone` + `rngState` in `engine.js:44-48,103`). New `rng` draws in `alliesTurn`/`foeTurn` **must be gated so an empty party consumes zero extra RNG** — i.e. `if (C.allies.length)` around ally draws, and only widen the foe-target roll when `pool.length > 1`. This mirrors exactly how phobia/darkness code (`combat.js:203-218`) and `difficulty.js` were added without perturbing the seeded stream. An empty `c.party` ⇒ byte-identical behavior to today ⇒ existing parity/round-trip/determinism tests stay green.
 
-## Anti-Patterns
+### New engine actions — only if members are player-directed
 
-### Anti-Pattern 1: Rules Functions That Call Render/Save/DOM Inline
+The mock is **auto-resolved** (party members roll their own strikes; the only party-aware button change is the strike label showing whose turn it is, `:710`). **Recommendation for v1: auto-resolve, add NO new player-facing actions** — `alliesTurn` runs inside `afterPlayerAction` just like `allyTurn` does now. This keeps the `applyAction` switch (`engine.js:51-99`) untouched and is faithful to the prototype's "no party micromanagement" solo conversion (`mazeworld.html:1409`).
 
-**What people do (and what the prototype does today):** `move()`, `descend()`, `die()`, `openStore()` etc. mutate `S`, call `logLine()`/`say()`/`evt()` (which push raw HTML strings directly into the DOM *and* into the state's `beats`), then call `paint()`/`draw()`/`renderEncounter()`, then call `save()` — all in the same function, same call stack.
-**Why it's wrong:** It's untestable without a DOM, unrunnable headlessly (which a future multiplayer server or a native rewrite both need), and it bakes presentation markup (`<span class="hurt">`) into what should be portable game data. It also means "what happened" and "how it's shown" can never be decoupled without touching every rule function.
-**Instead:** Engine functions return `{ state, events }` and know nothing about rendering, storage, or markup; exactly one place (the presentation log formatter) turns `events` into copy/markup; exactly one place (persistence) decides when/how to save.
+If player-directed control is later desired, add a pure action e.g. `{type:"partyStrike", memberId, targetIdx}` to the switch (`engine.js`), handled like `attack`/`castSpell`, emitting events — but treat that as a **separate, optional milestone**, not v1.
 
-### Anti-Pattern 2: Unseeded Global RNG Inside Game Rules
+### New event types → EVENT_NARRATION entries are MANDATORY
 
-**What people do (and what the prototype does today):** Every roll (`D(n)`, `pick(a)`, `shuffle(a)`) calls the global `Math.random()` directly, so no run is ever reproducible and there is no way to verify or replay a high score.
-**Why it's wrong:** Forecloses seeded/reproducible runs, deterministic multiplayer lockstep, and any future "share a seed"/daily-challenge feature — all cheap to build in if RNG is injected from the start, expensive to retrofit once dozens of call sites assume a global.
-**Instead:** One `Rng` instance lives in `GameState`, is threaded explicitly into every engine function that needs randomness, and is the only thing in the codebase allowed to call `Math.random()` (to pick the initial seed on a brand-new run).
+`test/unit/formatEventsCoverage.test.js` derives the full event vocabulary from `engine/*.js` source and asserts **every** type has a non-null `EVENT_NARRATION` entry (`eventNarration.js:6-9`). Any new `events.push({type:"…"})` **fails the build** until a builder is added.
 
-### Anti-Pattern 3: Non-Serializable Data Sneaking Into Game State
+**Minimize new types by reusing the existing `ally*` family** (`eventNarration.js:184-186,127`): `allyStruck`, `allyMissed`, `allyDeparted`, `allyJoined` already carry `{name, target, dmg}` and render generically — party members can emit these directly. New types likely still needed, each requiring a builder:
 
-**What people do (and what the prototype does today):** `S.store` holds closures (function values) generated when a shop opens, so it's excluded from `save()` — meaning a save/reload mid-shop silently loses the shop.
-**Why it's wrong:** Any value in `GameState` that isn't plain JSON-serializable data is a save/resume bug waiting to happen, and it's also a value a multiplayer host could never send over a wire.
-**Instead:** Represent shop stock (and anything similar) as plain data — an array of item IDs/quantities/prices generated deterministically from `(seed, depth, turn)` — so it can regenerate identically from the RNG cursor if needed, or simply be saved as data like everything else.
+| New event | When | Reuse instead? |
+|-----------|------|----------------|
+| `partyMemberJoined` | `meetJoiner` adds to roster | maybe reuse `joinerMet` (:290) |
+| `partyMemberHurt` | foe hits a member | NEW (foe→member has no analog; `struckByFoe` is player-only, :196) |
+| `partyMemberDowned` / `partyMemberDied` | member `wp ≤ 0` | NEW (death semantics knob) |
+| `partyMemberLeft` | summon rounds expire | reuse `allyDeparted` (:186) |
 
-### Anti-Pattern 4: Treating "Wrap the Web App" as License to Skip the Engine/UI Split
+Keep new types **few and additive**; do not remove `ally*` entries (the coverage test also forbids dead/typo entries, :29-34).
 
-**What people do:** Assume that because the plan is "wrap the existing web page in a native shell," no refactor of the coupling described above is needed — just ship the HTML as-is inside Capacitor/Cordova.
-**Why it's wrong:** Wrapping solves *packaging/distribution* (native binary, store listing, native APIs) but does nothing for the *decoupling* requirement the project explicitly calls out (rules engine must stay UI-independent and serializable for multiplayer). Those are orthogonal problems; solving one does not solve the other, and the multiplayer requirement is stated as non-negotiable in `PROJECT.md`.
-**Instead:** Do the wrap for distribution *and* do the engine/UI extraction for the seam — they're independent workstreams that can proceed in parallel once the extraction has started (see Suggested Build Order).
+## UI Integration (turning the rail on)
 
-## Integration Points
+### Bridge constraint
 
-### External Services
+The live module cannot see classic block-scoped consts; the **only** state channel is `window.__mzState = {get,set}` (`mazeworld.html:2053`), and classic renderers read `S` while module actions are exposed as `window.mz*` (e.g. `window.mzAttack`, `mzToast`, `mzCombatFeedback`, `mzCombatReport`, wired at :4575-4594). Party rendering therefore must:
 
-| Service | Integration Pattern | Notes |
-|---------|----------------------|-------|
-| None required for MVP (fully offline, no accounts, no backend) | — | Deliberate per `PROJECT.md` constraints. |
-| Native packaging shell (e.g., Capacitor) | Wraps the built web bundle; exposes storage/haptics/lifecycle plugins to `platform/` | Works with plain vanilla JS/canvas apps, not tied to a JS framework; used by other canvas/web games for the same iOS/Android packaging need [MEDIUM confidence, cross-checked]. Final tool choice (Capacitor vs. Cordova vs. a from-scratch native rewrite) is the subject of a separate stack/feasibility research track per `PROJECT.md`; this document's component boundaries hold regardless of which is chosen. |
-| App store platform identity (Game Center / Google Play Games) | Out of scope for v1; would attach at the `platform/` layer only if/when multiplayer needs matchmaking/identity | Per `PROJECT.md`, explicitly deferred. |
+1. Read party from live state: `S.c.party` and `S.combat.allies` via the same `S` the classic `renderEncounter` already reads.
+2. Render the **party rail** (currently the summon `C.ally` card, `mazeworld.html:4502-4509`) as a list over `C.allies`, styled per the mock's rail (`design/…dc.html:240-244,700-706`) — each member: name, WP, active-turn highlight.
+3. Add out-of-combat party display on the HERO/character screen (member sheets: race/sub/cls/lvl/HP) sourced from `S.c.party`.
+4. Show **joiner status during combat** (rounds left for summons; HP for persistent members) — extend the existing `.foe.ally` card (CSS at `mazeworld.html:535`).
 
-### Internal Boundaries
+The mock's toggle (`partyOn`, `togglePartyMode` :813) is a **mock-only demo affordance**; in the real game the rail visibility is driven by `S.c.party.length > 0`, not a manual toggle. Do not port the toggle button.
 
-| Boundary | Communication | Notes |
-|----------|-----------------|-------|
-| Input ↔ Engine | `Action` objects, one-directional (Input → Engine) | Input never reads engine internals beyond the last `StateSnapshot` needed to know what actions are currently legal to offer (e.g., gray out "attack" outside combat). |
-| Engine ↔ Presentation | `StateSnapshot` + `Event[]`, one-directional (Engine → Presentation) | Presentation never mutates state; a UI-only optimistic animation (e.g., a swing animation before the result renders) must be purely cosmetic and reconciled against the authoritative `state`/`events` once they arrive. |
-| Engine ↔ Persistence | Plain-data `GameState` in/out, via `save(state)`/`load(): state` | Persistence has no knowledge of game rules; it's a dumb serializer + storage adapter. |
-| Engine ↔ Procedural Generation | Direct function calls within `engine/`, sharing the same injected `Rng` | Not a network/process boundary — just a module boundary for organization; generation code must still never touch `Math.random()`, DOM, or storage. |
-| Platform Bridge ↔ everything else | Platform talks only to Persistence (native storage) and Input (native lifecycle/back-button events); never to Engine directly | Keeps the engine identically portable to a future server process, which will never have "platform" concerns like haptics or app lifecycle. |
-| Engine ↔ (future) Multiplayer transport | Same `Action` in / `Event`+`state` out contract, just relayed over a network instead of a function call | This is the payoff: no new engine API is needed for multiplayer, only a new caller of the existing one. |
+### Feedback plumbing
 
-## Suggested Build Order
+Combat action feedback already rides fixed toasts / a victory report, not in-panel badges (`mazeworld.html:4498-4500`, `window.mzToast` :2532, `mzCombatReport` :2599). Party strike/hurt lines flow through the **same event → `formatEvent` → narration** path as everything else, so once `EVENT_NARRATION` has the entries, the Oracle log renders party events with zero extra UI wiring. Only the *rail* and *sheets* are net-new DOM.
 
-The rules engine already exists and works (as entangled logic inside `mazeworld.html`). The build order below is an **extraction and hardening sequence**, not a from-scratch build — front-load the decoupling work because every later phase (endless mode, native packaging, onboarding/tutorial, eventual multiplayer) is cheaper once the seam exists, and needlessly expensive if bolted on after presentation/platform work has already assumed the tangled shape.
+## Difficulty-Dial Interaction & Retune Sequencing
 
-1. **Extract `content/` (data tables) first.** Zero behavior risk — pulling `CLASSES`, `RACES`, `SPELLS`, `WEAPONS`, `EPITAPHS`, `NAMES`, encounter/loot tables into standalone modules is pure mechanical refactoring and immediately shrinks the surface area of every later step.
-2. **Introduce the seeded `Rng` and thread it through generation/combat/loot, replacing `Math.random()`/`D()`/`pick()`/`shuffle()` call sites.** Do this before splitting engine/UI, because it's easiest to verify correctness (same seed → same maze) while the code still runs in the browser exactly as before, side-by-side with the old behavior.
-3. **Define `Action`/`Event` types and refactor one vertical slice end-to-end** (movement is the best first candidate: `move()` touches maze traversal, feature triggers, day/upkeep ticking) into `applyAction(state, action) → {state, events}`, with a temporary adapter that still calls the old `paint()`/`draw()`/`logLine()` from `events` so the game keeps working at every commit.
-4. **Repeat the slice-by-slice extraction for combat, shop/economy, character creation/leveling, and death/graveyard** — each becomes its own `engine/*.ts` module reachable only through `applyAction`. By the end of this step, `engine/` should have no imports of DOM/canvas/`localStorage`.
-5. **Replace the temporary adapter with a real `presentation/render/log.ts`** that formats structured `Event`s into the sarcastic narrative copy — this is also the natural point to do the "voice" pass (epitaphs, log flavor) since it's now centralized in one file instead of scattered across every rule function.
-6. **Add `difficulty.ts` and remove the depth-5 Gate, wiring `genFloor`/combat/loot to consult it** — this is the endless-descent conversion, and it's now a content/tuning change against a stable engine rather than a structural one.
-7. **Harden persistence:** fix the shop-closure gap (make shop stock plain data), version the saved `GameState` shape, and confirm save/resume works through every sub-state (mid-combat, mid-shop, mid-beat) now that everything is plain data.
-8. **Only now touch packaging/platform** (native shell, storage adapter swap, onboarding/tutorial UI, mobile-first layout passes) — these are presentation/platform concerns that are strictly easier against a clean `engine/` boundary, and this ordering means platform research (wrap vs. rewrite, decided separately) can proceed in parallel with steps 1–6 without blocking them.
-9. **Multiplayer is not built in this build order** (explicitly post-MVP), but steps 1–7 are exactly the prerequisite work the project already committed to doing regardless — nothing here is speculative "build for a future that might not come," it is the same refactor endless mode and robust save/resume already require.
+`engine/difficulty.js` is a **pure `difficultyCurve(depth)`** (`:108-118`) that bounds encounter-dot count and darkness — it is **party-blind**. Adding N extra bodies that strike every round and soak foe hits makes every fight materially easier at a given depth, flattening the Phase-3-tuned curve.
+
+Interacting balance surfaces (all touched by party size):
+- **Combat lethality** — foes now split damage across the pool (`foeTurn` change above); the curve was tuned for one target.
+- **XP economy** — the prototype divides XP by party size (`mazeworld.html:1411`, "÷ party"); solo hard-codes party=1 (×5). More members change `spGained` math.
+- **Rations/upkeep** — "a party eats more" (proposed-milestone `:13`); `wentHungry` (`eventNarration.js:91`) pressure scales with mouths to feed.
+
+**Recommended sequencing (do the retune LAST, and only once):**
+
+1. Land party **data model + combat + UI first** with `difficultyCurve` **unchanged**. Fights will be temporarily too easy — accept that; you cannot tune against a party that does not yet exist.
+2. Then a **single balance phase** that (a) adds a party-power input to `difficultyCurve` (e.g. a `partyStrength` argument or a post-curve multiplier — keep it a *pure function of party composition + depth*, no RNG, preserving the module's determinism contract, `:9-13`), and (b) revisits XP-÷-party and ration upkeep together.
+3. **Coordinate with the "Economy & Item Balancing" milestone** (proposed-milestone `:27-28`): both retune the same curve/economy. Sequence them adjacent and share one playtest pass so the curve is not tuned twice. This is explicitly **1 of 3 balance-touching milestones** — treat the difficulty retune as a shared, sequenced concern, not a party-local edit.
+
+Keep the retune's constants where Phase-3 left its knobs (`difficulty.js:24-39`) so there is one source of difficulty truth.
+
+## New vs Modified — component ledger
+
+**NEW**
+- `state.c.party[]` roster (state shape) + save-migration shim.
+- `state.combat.allies[]` unified combatant list.
+- `alliesTurn` (generalized from `allyTurn`) — or a rewrite of `allyTurn` in place.
+- Foe target-selection branch + member-damage pipeline in `foeTurn`.
+- Party-hurt/downed/died event types + their `EVENT_NARRATION` builders.
+- Party rail DOM + member sheets in `mazeworld.html` (rail styled per mock).
+- Party-power input to `difficultyCurve` (balance phase).
+
+**MODIFIED**
+- `combat.js` `startCombat` (:163-167) — sync `c.party → C.allies` alongside the summon handoff.
+- `combat.js` `afterPlayerAction` (:601-640) — call `alliesTurn`; keep clear-checks.
+- `combat.js` `endCombat` (:584-592) — persist member HP back to `c.party`.
+- `encounters.js` `meetJoiner` (:397-407) — append to `c.party` (with cap) instead of overwriting `c.joiner`.
+- `magic.js` summon (:111-122) — write into `C.allies` / a pending-summon list.
+- `eventNarration.js` — add builders; reuse `ally*` where possible.
+- `mazeworld.html` `renderEncounter` (~:4480-4527) + character screen — read `C.allies` / `S.c.party`.
+- `difficulty.js` (:108-118) — party-aware, in the balance phase only.
+
+**UNCHANGED (must stay so)**
+- `engine.js` `applyAction` switch (:51-99) — untouched if party is auto-resolved (recommended v1).
+- `window.__mzState` bridge (:2053) — the party reuses it; no new bridge.
+- Determinism/parity contract — guarded by the empty-party RNG gate.
+
+## Recommended Build Order (dependency-ordered phases)
+
+```
+Phase A — DATA MODEL (foundation, no behavior change)
+  • Add c.party[]; migrate c.joiner→c.party on load; meetJoiner appends (cap).
+  • Serialization + save-migration tests. Party still inert in combat.
+  • Gate: empty/one-member party ⇒ existing tests byte-identical.
+        ↓ (combat needs a roster to read)
+Phase B — COMBAT (the mechanical heart)
+  • startCombat syncs c.party→C.allies; endCombat syncs HP back.
+  • allyTurn→alliesTurn (iterate C.allies, per-member strike).
+  • foeTurn target-selection + member-damage branch; member down/death.
+  • New events + EVENT_NARRATION builders (coverage test must pass).
+  • Determinism gate: empty party = zero extra RNG draws.
+        ↓ (UI needs the live C.allies / c.party to render)
+Phase C — UI (turn the rail on)
+  • Party rail over C.allies (per mock); member sheets on HERO screen;
+    joiner/summon status in combat. All via window.__mzState; no new bridge.
+  • Party events already narrate through formatEvent (from Phase B).
+        ↓ (balance needs a real, playable party to tune against)
+Phase D — BALANCE (retune, do ONCE, coordinate with Economy milestone)
+  • Party-power input to difficultyCurve; XP-÷-party; ration upkeep.
+  • Shared playtest pass with the Economy & Item Balancing milestone.
+```
+
+**Rationale:** data model has no upstream deps and unblocks everything; combat depends on the roster; UI depends on live combat/party state; balance depends on a working, playable party to tune against (you cannot tune a party that does not exist yet). This is the classic "make it work, make it visible, make it fair" ordering and it matches the proposed-milestone's own candidate-scope order (`proposed-milestone…:19-26`).
+
+## Anti-Patterns (specific to this integration)
+
+### Anti-Pattern 1: Routing foe damage to party members through the player's defensive pipeline
+**What people do:** reuse `foeTurn`'s ward/armor/mirror/`die()` block for members.
+**Why it's wrong:** `c.ward`, `c.armorWP`, `c.mirror` are **player-only** fields (`combat.js:719-788`), and `die()` ends the *run* (`death.js`). Applying them to a member either crashes or kills the player when a companion falls.
+**Instead:** a simplified `member.wp -= dmg` branch; member death sets `status:"downed"` and emits a party event — never `die()`.
+
+### Anti-Pattern 2: Adding RNG draws that fire even when the party is empty
+**What people do:** unconditionally roll ally strikes / foe-target selection.
+**Why it's wrong:** perturbs the seeded cursor (`engine.js:48,103`), breaking parity/determinism tests against the solo prototype.
+**Instead:** gate every new draw behind `C.allies.length` / `pool.length > 1`, exactly as phobia/darkness (`combat.js:203-218`) and `difficulty.js` were introduced.
+
+### Anti-Pattern 3: Emitting new event types without an EVENT_NARRATION builder
+**What people do:** `events.push({type:"partyMemberHurt", …})` and move on.
+**Why it's wrong:** `formatEventsCoverage.test.js` fails the build (`eventNarration.js:6-9`); the render loop would also silently drop the line.
+**Instead:** add the builder in the same change; reuse the `ally*` family where the shape matches.
+
+### Anti-Pattern 4: Tuning `difficultyCurve` inside the combat/UI phases
+**What people do:** nudge difficulty constants while building party combat.
+**Why it's wrong:** you are tuning against a moving target and will redo it; it also collides with the Economy milestone's curve edits.
+**Instead:** defer all curve/economy edits to the single Phase-D balance pass, coordinated with the Economy milestone.
+
+### Anti-Pattern 5: Porting the mock's `partyOn` toggle as a real feature
+**What people do:** ship a "make this a party" toggle button.
+**Why it's wrong:** it is a mock demo affordance (`design/…dc.html:813`); real party presence is data-driven (`c.party.length`).
+**Instead:** derive rail visibility from `S.c.party.length > 0`.
+
+## Integration Points (quick reference)
+
+| Boundary | File:line | Change |
+|----------|-----------|--------|
+| pendingAlly→combat handoff | `engine/combat.js:163-167` | add `c.party→C.allies` sync |
+| single ally strike | `engine/combat.js:646-665` | generalize to `alliesTurn` over `C.allies` |
+| turn loop | `engine/combat.js:601-640` | call `alliesTurn`; keep clear-checks |
+| foe damage → player only | `engine/combat.js:674-790` (apply :768,778) | target pool + member-damage branch |
+| combat teardown | `engine/combat.js:584-592` | sync member HP back to `c.party` |
+| joiner acquisition | `engine/encounters.js:397-407` | append to `c.party` (cap) |
+| summon | `engine/magic.js:111-122` | write `C.allies` / pending-summon |
+| narration table | `src/browser/eventNarration.js:127,184-186,290` | reuse `ally*`; add party builders |
+| state bridge | `mazeworld.html:2053` | reuse `window.__mzState` (no new bridge) |
+| combat render (ally card) | `mazeworld.html:4502-4509` | render `C.allies[]` as rail |
+| party rail (design authority) | `design/Mazeworld Mobile.dc.html:240-244,700-706` | port styling; drop the toggle |
+| difficulty curve | `engine/difficulty.js:108-118` | party-aware (balance phase only) |
 
 ## Sources
 
-- `C:\projects\mazeworld\mazeworld.html` — primary source; read directly (state shape, `act()`/beats, `draw()`/`paint()`, `genFloor()`, `move()`, `save()`/`load()`, `die()`/graveyard, RNG usage, depth-5 Gate logic).
-- `C:\projects\mazeworld\.planning\PROJECT.md` — project constraints and requirements (endless descent, decoupled/serializable engine, offline-only, deterministic/seeded high-score integrity implied by "local high-score/depth chase").
-- Deterministic lockstep / command-pattern multiplayer architecture — general pattern, cross-checked via web search [MEDIUM confidence]: [Netcode Architectures Part 1: Lockstep (SnapNet)](https://www.snapnet.dev/blog/netcode-architectures-part-1-lockstep/), [Game Networking Demystified, Part III: Lockstep](https://ruoyusun.com/2019/04/06/game-networking-3.html), [GameDev.net: deterministic lockstep for turn-based games](https://gamedev.net/forums/topic/708524-right-way-of-implementing-deterministic-lockstep-for-turn-based-games/).
-- Seeded PRNG (mulberry32-class) for reproducible game randomness — cross-checked via web search [MEDIUM confidence]: [Mulberry32 GitHub](https://github.com/cprosche/mulberry32), [Understanding Mulberry32 for deterministic randomness in JS](https://emanueleferonato.com/2026/01/08/understanding-how-to-use-mulberry32-to-achieve-deterministic-randomness-in-javascript/).
-- Wrapping an existing vanilla-JS/canvas web app for iOS/Android app-store distribution — cross-checked via web search [MEDIUM confidence]: [Ionic: Native Mobile Apps with Capacitor & VanillaJS](https://ionic.io/blog/create-powerful-native-mobile-apps-with-capacitor-vanillajs), [Android Games with Capacitor and JavaScript (Excalibur.js)](https://excaliburjs.com/blog/android-games-capacitor/). Final packaging-tech decision (Capacitor vs. Cordova vs. native rewrite) is deferred to the separate stack/feasibility research track named in `PROJECT.md`; cited here only to support that the "wrap" path is viable in principle and doesn't change the component boundaries above.
+- Direct read of `engine/combat.js` (turn loop :601-640, `allyTurn` :646-665, `foeTurn` :674-790, `startCombat` :163-167, `endCombat` :584-592, `rollInitiative` :69-88) — CONFIDENCE: HIGH (primary source)
+- Direct read of `engine/encounters.js` `meetJoiner` :397-407, `engine/magic.js` summon :111-122, `engine/engine.js` `applyAction` :33-105 — CONFIDENCE: HIGH
+- Direct read of `engine/difficulty.js` (pure curve, determinism contract) — CONFIDENCE: HIGH
+- Direct read of `src/browser/eventNarration.js` (coverage guard :6-9; `ally*`/`joinerMet` entries) — CONFIDENCE: HIGH
+- Direct read of `mazeworld.html` (`__mzState` bridge :2053, combat render :4480-4538, ally card :4502-4509, `window.mz*` wiring :4575-4594, save/load :4599-4615, dead classic party code :3443-3446,3798,4095-4105) — CONFIDENCE: HIGH
+- Direct read of `design/Mazeworld Mobile.dc.html` (party rail :240-244,697-710,800; `partyOn` :383,813) — CONFIDENCE: HIGH
+- `.planning/proposed-milestone-joiners-party-system.md`, `.planning/PROJECT.md`, `.claude/CLAUDE.md` (scope, serializability/multiplayer-ready constraint, balance-milestone coordination) — CONFIDENCE: HIGH
 
 ---
-*Architecture research for: mobile roguelike dungeon-crawler port (Mazeworld)*
-*Researched: 2026-09-07*
+*Architecture research for: persistent single-player party system integration*
+*Researched: 2026-09-09*

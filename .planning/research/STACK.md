@@ -1,164 +1,230 @@
 # Stack Research
 
-> ⚠️ **SCOPE NARROWED AFTER THIS DOC WAS WRITTEN — ANDROID / GOOGLE PLAY ONLY.** iOS/Apple/Xcode/App Store/macOS content below is **out of scope**; retained for reference only. See `.planning/research/SUMMARY.md` for the reconciled Android-only view. No Mac is required.
+**Domain:** Internal engine-state / serialization / save-migration for a single-player Party System ("Joiners") in a pure, deterministic, serializable vanilla-JS roguelike engine
+**Researched:** 2026-09-09
+**Confidence:** HIGH (primary source — direct read of the actual engine + parity harness)
 
-**Domain:** Paid, fully-offline, single-player mobile roguelike (**Android / Google Play only**; iOS content below is out of scope), wrapping an existing zero-dependency vanilla-JS web prototype
-**Researched:** 2026-09-07
-**Confidence:** MEDIUM (packaging/build-tool facts cross-checked across multiple independent sources; store-policy dates verified against Apple/Google official pages found in search results — treat exact dates as best-available and re-verify against `developer.apple.com/news` and Play Console Help immediately before each submission, since these thresholds move yearly)
+> **Scope note.** This is NOT a technology-adoption research doc. No runtime/framework/library is being added — the milestone is internal engine work on an existing pure-JS engine (`engine/*.js`, `applyAction(state,action)→{state,events}`, seeded mulberry32 rng). The "stack" here is the set of **engine-state mechanisms, serialization seams, and parity constraints** the party system rides on. The template's headers are reused; the content is the concrete field shapes, migration approach, and parity carve-outs the requirements author + roadmapper need.
 
-## The Central Decision: Path A (wrap) vs. Path B (port/rewrite)
+---
 
-**Recommendation: Path A — wrap the existing `mazeworld.html` prototype with Capacitor.** Do not port to a game engine or cross-platform UI framework.
+## Executive Answer (TL;DR for the roadmapper)
 
-**Why, based on what the prototype actually is:** `mazeworld.html` is not a canvas-rendered game in the Phaser/Godot/Unity sense. It is a DOM-and-CSS single-page app (character sheet panels, dice-roll log, item lists, dialog boxes — all real HTML elements with a `1080px` responsive reflow and a touch D-pad) that uses a single `<canvas>` element only for the maze grid. Its state lives in one plain global object (`S`) with an `act()`/"beats" action dispatcher, its only browser API usage is `localStorage` for saves — no `fetch`, no `WebSocket`, no Web Workers, no Service Worker. This is close to the ideal shape for Capacitor: a webview literally renders the app almost unchanged, and Capacitor adds nothing to the actual game logic or DOM layer.
+1. **Data model:** Add a new **top-level `state.party` array** (sibling to `state.c`, `state.combat`), NOT a field on `c`. Each member is a **full `rollCharacter()`-shaped sheet** plus a few party-scoped fields. Keep the existing `c.joiner` (persistent summary) and `state.combat.ally` (`C.ally`, temporary summon) **exactly as they are** — they are frozen in the parity master. Wire the party in **additively** alongside them; do not fold either into `state.party` this milestone.
+2. **Serialization:** `serializeRun()` already spreads the full state (`{...state, version}`) so `state.party` persists for free. The **only** two edits are in `engine/saveState.js`: add `party` to the **explicit whitelist** in `validateSave()` and in `rehydrate()`, each defaulting to `[]`. That IS the save migration — old saves (no `party` key) default to an empty party. No storage-key change, no `mzStorage`/`storage.js`/`engineAdapter` change.
+3. **Parity/determinism:** Add a carve-out that **strips `party` at the top-level state destructure** in `test/parity/harness/comparables.js` (the top-level analog of `stripDarkForField`, stripped like `beats`/`lastExchange`). Any **new rng draws** (party members acting in combat) must be **guarded to fire only when `state.party` is non-empty** — a situation the frozen prototype never reaches — so the frozen chargen/combat rng order is byte-identical when party is empty (exactly the pattern the phobia `rng.d(2)` and `nameFor` already use).
+4. **No new dependency** is warranted. Confirmed: pure in-engine plain-data state, riding the existing JSON save blob through the existing `@capacitor/preferences`-backed `mzStorage`. Zero npm/native additions. Offline / paid-upfront / zero-SDK constraint fully honored.
 
-Porting to a game engine (Godot/Unity) would mean re-authoring every panel, dice roll, and menu — the DOM UI, not the maze canvas, is the bulk of the app — for a solo first-timer, with zero payoff, since none of the "canvas game" performance problems those engines solve (thousands of sprites, physics, particle systems) exist here. Porting to React Native or Flutter means the same UI rewrite in a different, unfamiliar language/framework, plus re-plumbing all state bindings that the prototype's `S` object + `act()` beats already do correctly. Both alternatives cost weeks-to-months of rewrite risk to a solo new-to-mobile developer, for a game whose stated heavy lift is explicitly "platform + presentation + endless-mode conversion, not rebuilding game logic" (per PROJECT.md).
+---
 
-Capacitor is the only path that lets the proven, tested rules engine ship almost as-is.
+## Current State of Play (what the code actually does today)
+
+Two **disconnected** halves exist, confirmed by direct read:
+
+| Half | Where | Shape | Lifetime | Wired into combat? |
+|------|-------|-------|----------|--------------------|
+| `c.joiner` (persistent summary) | `engine/encounters.js:404` (`meetJoiner`) | `{ name, race, sub, cls, lvl, wp, maxWP }` — a **summary only** (no skills/armor/grimoire/gear) | Persists on the character sheet across floors | **No.** Nothing ever reads `c.joiner` in combat. It is inert display data. |
+| `C.ally` (temporary summon) | `state.combat.ally`, set at `engine/combat.js:163-167` (from `c.pendingAlly`) or `engine/magic.js:117` (Summon spell) | `{ lvl, rounds, name }` | **Combat-scoped only** — cleared when `--C.ally.rounds <= 0` (`combat.js:660-663`); `state.combat` itself is nulled on `endCombat` | **Yes** — `allyTurn()` (`combat.js:646-665`) strikes each round: `rng.d(STRIKE_DICE[lvl-1])`, damage `lvl*lvl + rng.d(6)`, emits `allyStruck`/`allyMissed`/`allyDeparted`. |
+
+`meetJoiner()` (`encounters.js:397-407`) already rolls a **full** character via `rollCharacter(rng)` (plus two discarded `d20` draws for rng-order fidelity) but throws away everything except the 7-field summary. **This is the key leverage point:** the full sheet is already rolled and paid-for in rng; the party system just needs to *keep* it.
+
+Both `c.joiner` and `C.ally` are present verbatim in the **frozen parity master** (`test/parity/prototype-master.js.txt:1762-1763, 1836-1837, 2373-2383`) — so their shapes, fields, events, and rng draws are **locked**. Touching them breaks parity.
+
+---
 
 ## Recommended Stack
 
-### Core Technologies
+### Core Technologies (engine-state mechanisms)
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Capacitor | **8.x** (`@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android` — iOS package at 8.5.1 as of Sept 2026) | Wraps the existing HTML/CSS/JS app in a native WebView shell for both iOS and Android from one codebase | Purpose-built for exactly this "existing web app → native store app" scenario; actively maintained by Ionic (near 1M weekly downloads); Capacitor 8 defaults iOS to Swift Package Manager (no CocoaPods needed for a fresh project); requires no rewrite of DOM/canvas code — the WebView renders `mazeworld.html` essentially unchanged (CONFIDENCE: MEDIUM) |
-| Node.js | **22+ (current LTS)** | Runtime for the Capacitor CLI and native build tooling | Capacitor 8 requires Node 22 or newer; older Node will fail CLI commands (CONFIDENCE: MEDIUM) |
-| Xcode | **26+ (Xcode 26, shipping with iOS 26 SDK)** — required for **new submissions/updates from April 28, 2026** | Compiles, signs, and archives the iOS build; only runs on macOS | Apple raised the mandatory minimum build SDK from iOS 18 (Apr 2025) to iOS 26 (Apr 2026) for anything uploaded to App Store Connect. This does **not** force dropping support for older iOS versions on users' phones (deployment target ≠ build SDK), but it does mean **you cannot submit at all without a Mac running a current Xcode** (CONFIDENCE: MEDIUM) |
-| Android Studio | **Otter (2025.2.1) or newer** | Compiles, signs, and builds the Android App Bundle | Capacitor 8's Android platform requires this Android Studio generation and its bundled Android Gradle Plugin; runs fine on Windows, macOS, or Linux (CONFIDENCE: MEDIUM) |
+| Mechanism | "Version"/Location | Purpose | Why This Is The Right Seam |
+|-----------|--------------------|---------|-----------------------------|
+| **Top-level `state.party` array** | `engine/state.js` `newRun()` return (init `party: []`) | The persistent joiner roster — an array of full character sheets that travel with the run | Joiners are **peers** of the player character, not properties of them. Top-level placement mirrors `state.combat`/`state.store`; keeps `c` = "the player's own sheet" clean; and `serializeRun`'s `{...state}` spread persists it with **zero serializer change**. A `state`-level field is also stripped in one place in the parity comparable (like `beats`) rather than needing a per-`c` helper. |
+| **Full `rollCharacter()`-shaped member** | reuse `engine/character.js` `rollCharacter(rng)` output | Each party member has its own sheet/gear/HP/skills/grimoire — "each with their own sheet/gear/HP" | `rollCharacter` already produces the exact plain, serializable, combat-ready sheet a party actor needs (`wp/maxWP/level/skills/weapon/prof/armor/ar/armorWP/grimoire/...`). `meetJoiner` already rolls one and discards it — capturing it costs **no new rng**. |
+| **Guarded party-turn in combat** | new `partyTurn(state, rng, events)` in `engine/combat.js`, called from `afterPlayerAction`/`startCombat` behind `if (state.party?.length)` | Party members act each round | Mirrors `allyTurn`'s early-return guard (`combat.js:648 if (!C.ally) return`). When `state.party` is empty (every prototype-parity fixture), it consumes no rng and pushes no events → `afterPlayerAction` stays byte-identical to the frozen master. |
+| **Whitelist migration in `validateSave`/`rehydrate`** | `engine/saveState.js:117-129, 147-162` | Load-time default-fill so old saves get `party: []` | These two functions build their output from an **explicit named whitelist** (they do NOT spread `obj`), so a new field is silently dropped unless added. Adding `party` with an `[]` default IS the backward-compatible migration. |
 
-### Supporting Libraries (Capacitor plugins)
+### Supporting Libraries (existing seams reused — nothing new)
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `@capacitor/preferences` | latest 8.x-compatible | Durable native key-value storage (`UserDefaults` on iOS, `SharedPreferences` on Android) | **Use for the save file and graveyard, not raw `localStorage`.** Android's System WebView storage is evictable under storage pressure, idle/maintenance sweeps, or a user tapping "clear storage" in Android settings; WKWebView migrations have historically dropped `localStorage` entirely. Preferences is the officially-recommended durable substitute (CONFIDENCE: MEDIUM) |
-| `@capacitor/app` | latest 8.x-compatible | Hooks the Android hardware/gesture back button | Required so Android's back button does something sane (close a menu, confirm-exit) instead of Capacitor's default (which can pop the WebView history or exit unexpectedly) — a common Play Store UX complaint if unhandled |
-| `@capacitor/splash-screen` | latest 8.x-compatible | Native splash screen shown while the WebView boots | Avoids a flash of unstyled white screen on cold start; cheap to configure, expected on both stores |
-| `@capacitor/status-bar` | latest 8.x-compatible | Controls status bar color/style | Lets the parchment/paper theme extend under the status bar cleanly |
-| `@capacitor/screen-orientation` (community) | latest | Lock to portrait | The prototype's UI (1080px reflow, D-pad) is portrait-first; lock orientation rather than build responsive landscape layouts |
-| `@capacitor/haptics` | latest 8.x-compatible | Light haptic tap on hits/traps/level-ups | Optional differentiator — cheap "native feel" polish, not required for MVP |
+| Seam | Location | Purpose | Party-System Use |
+|------|----------|---------|------------------|
+| `serializeRun(state)` | `engine/saveState.js:22-24` | `{...state, version}` — persists the whole state | **No change.** Automatically includes `state.party`. |
+| `window.mzStorage` / `storage.js` | `src/browser/storage.js` (via `engineAdapter.js:37`) | `@capacitor/preferences`-backed durable K/V | **No change.** Party rides inside the existing `SAVE_KEY` (`ddr.delve.v1`) JSON blob — it is in-run state, so it belongs in the save, NOT a new key (contrast graveyard/best, which are cross-run and use separate keys). |
+| `engineAdapter.js` persist/boot | `src/browser/engineAdapter.js:295-331` | Load/validate/persist the run | **No change** beyond what `validateSave`/`rehydrate` already return — the adapter just round-trips whatever those emit. |
+| `STRIKE_DICE`, `SPELL_LEVEL_TABLE` | `content/misc-tables.js:13,27` | Existing combat/level tables | Reusable for party-member combat math if you keep the ally-style `lvl*lvl+d6` model; no new content file needed. |
 
-Do **not** add any ad SDK, analytics SDK, or in-app-purchase plugin (e.g. `@capacitor-community/in-app-purchases`) — the project is explicitly paid-upfront with no ads/IAP, and every added SDK is one more thing to justify in the privacy declarations below.
-
-### Development Tools
+### Development Tools (verification, not build tools)
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| Xcode (macOS only) | iOS build, signing, archive, upload | **Hard blocker if the author only has Windows** (this environment is win32). iOS builds cannot be produced or signed on Windows. Options: (1) buy/borrow a Mac (a Mac mini is the cheapest dedicated option), (2) use a cloud Mac CI service — Codemagic or Ionic Appflow both have first-class Capacitor support and can build+sign+upload from a Windows dev's git push, (3) rent-a-Mac services like MacinCloud for occasional manual builds. Decide this **before** roadmap phase 1 — it blocks the entire iOS leg |
-| Android Studio | Android build, signing, bundle generation | Fully usable on Windows; no blocker here |
-| `keytool` / Android Studio's built-in signing wizard | Generates the one-time upload keystore | Back this file up somewhere durable (losing it without Play App Signing enrolled would be catastrophic; with Play App Signing enrolled, Google can help recover) |
-| Fastlane (optional) or Codemagic/Appflow CI | Automates repetitive signing/build/upload steps | Strongly recommended for a solo dev doing two-store submissions manually the first time is painful and error-prone; not required for a first manual submission but pays off on every update afterward |
-| VS Code + a local static file server (e.g. `npx serve`, `live-server`) | Keep iterating on `mazeworld.html` as a normal web page | The vanilla-JS prototype needs zero build step to keep developing in a browser; only wrap with `npx cap sync` when testing/shipping the native shell |
+| `test/parity/harness/comparables.js` | The strip carve-out surface | Add `party` to the top-level destructure-and-drop in `movementComparable`/`combatComparable`/`economyComparable` (see Parity section). This is the milestone's single most important test-side edit. |
+| `test/parity/prototype-master.js.txt` | **FROZEN golden master — DO NOT EDIT** | Contains `c.joiner`/`C.ally` verbatim. Party has no prototype equivalent, so party state must be *stripped*, never matched. |
+| `test/unit/encounters.test.js:306-314`, `test/unit/combat.test.js:683` | Existing joiner/ally unit tests | New party behavior gets NEW unit tests here; do not weaken the existing `c.joiner`/`C.ally` assertions. |
 
 ## Installation
 
 ```bash
-# One-time global/project tooling
-npm install -D @capacitor/core @capacitor/cli
-
-# Initialize (creates capacitor.config.ts, wwwDir points at your existing HTML/CSS/JS)
-npx cap init "Mazeworld" "com.darktierstudios.mazeworld" --web-dir=www
-
-# Add native platforms
-npm install @capacitor/android @capacitor/ios
-npx cap add android
-npx cap add ios
-
-# Core plugins for a durable, native-feeling offline app
-npm install @capacitor/preferences @capacitor/app @capacitor/splash-screen @capacitor/status-bar
-
-# Sync web assets + plugins into the native projects after every change
-npx cap sync
+# No packages. This milestone adds zero npm/native dependencies.
+# (Offline, paid-upfront, zero-SDK constraint — confirmed below.)
 ```
 
-Note: Capacitor expects a `www/` (or configured `webDir`) directory of static assets. The existing single `mazeworld.html` file (plus any split-out CSS/JS if you choose to break it up later) simply becomes the contents of that directory — no bundler (Webpack/Vite) is required to ship, though adding Vite later is trivial if you want a dev server with hot reload during native-shell development.
+---
+
+## Concrete Field Shapes
+
+### `state.party` (new top-level array)
+
+```js
+// engine/state.js — newRun() return object, add alongside combat/store/beats:
+party: [],   // plain assignment — no rng draw (like combat:null, store:null)
+```
+
+### A party member (recommended shape)
+
+```js
+// Produced by capturing meetJoiner's already-rolled full character, e.g.:
+{
+  ...rollCharacter(rng),        // full serializable sheet: cls, sub, race, level,
+                                //   wp, maxWP, skills, weapon, prof, magicWpn,
+                                //   armor/ar/armorMin/armorWP/armorMax, grimoire,
+                                //   temperament, motive, phobia, name, darkFor,
+                                //   flightLeft, flightCooldown, ... (see character.js:175-217)
+  joinerLvl: lvl,               // the SPELL_LEVEL_TABLE[d10] "power" tier meetJoiner rolls
+  // OPTIONAL party-scoped bookkeeping (roadmapper's call — combat-design, not state):
+  // id, alive, roundsLeft (if joiners are temporary), targetIdx, ...
+}
+```
+
+**Design decision to flag (out of scope for *this* STACK doc, it's combat design):** whether a party member fights via the lightweight ally model (`lvl*lvl + d6`, one `STRIKE_DICE` roll) or via a fuller `playerStrike`-like path using their real `weapon`/`skills`/`grimoire`. The **state shape supports either**; the requirements author should decide. Keeping the full sheet (option above) leaves both doors open.
+
+**Do NOT** overwrite the existing `c.joiner` summary shape. `meetJoiner` must **still set `c.joiner` exactly as today** (parity master pins it) AND additionally push the full member into `state.party`. See rng note below.
+
+---
+
+## Serialization + Save Migration (concrete)
+
+### The one file that changes: `engine/saveState.js`
+
+**`serializeRun` (line 22):** no change — `{...state}` already carries `state.party`.
+
+**`validateSave` (lines 117-129):** the `value` object is an explicit whitelist. Add:
+
+```js
+const value = {
+  version: STATE_VERSION,
+  seed, rngState,
+  c: obj.c,
+  floor: obj.floor,
+  party: Array.isArray(obj.party) ? obj.party : [],   // ADD — old saves → []
+  day, steps,
+  dead: !!obj.dead, won: !!obj.won,
+  deathNote: obj.deathNote || "",
+  epitaph: obj.epitaph || "",
+};
+```
+
+**`rehydrate` (lines 147-162):** same — add `party: Array.isArray(obj.party) ? obj.party : []`.
+
+### Migration semantics
+
+- **Old saves have no `party` key** → `Array.isArray(undefined)` is false → default `[]`. Safe, silent, backward-compatible.
+- **STATE_VERSION bump: NOT required.** Adding an additive field with a safe default does not change how existing v1 saves validate (`validateSave` only *rejects* saves claiming a version **newer** than supported — `saveState.js:101-104`). You MAY bump `STATE_VERSION` to 2 for documentation clarity; it is harmless (a stored v1 save still passes `1 <= 2`) but not necessary. Recommendation: **keep `STATE_VERSION = 1`**, treat the default-fill as the migration, and add a one-line comment at the existing migration-note site (`saveState.js:94-104`).
+- **Malformed party members:** recommend **fail-open, not fail-closed** — validate that `party` is an array and default to `[]` if not; do NOT reject the entire save because one member is malformed. Optionally filter members through the existing `isValidCharacter` (`saveState.js:34-46`) and drop bad ones, but do not let a bad member nuke an otherwise-valid run. (Mirrors the adapter's fail-open posture, e.g. `readRecentNames` `engineAdapter.js:149-157`.)
+- **Storage layer:** untouched. Party is inside the `SAVE_KEY` blob; `@capacitor/preferences`/`mzStorage`/`storage.js` and `engineAdapter.boot/persist` need no edits.
+
+---
+
+## Determinism / Parity Constraints (the hard part)
+
+### 1. New parity carve-out (mirror `stripDarkForField`, but at state-level)
+
+`c.darkFor`/`flightLeft`/`flightCooldown` are stripped by per-`c` helpers because they live on `c`. **`state.party` lives at the top level**, so it is stripped at the **state destructure**, exactly like `beats`/`seed`/`rngState`/`lastExchange`/`exchangeN` already are (`comparables.js:64, 92-93, 182`). Add `party` to each comparable's destructure-and-drop list:
+
+```js
+// movementComparable (line 64):
+export function movementComparable(state) {
+  const { beats, seed, rngState, version, party, ...rest } = state;   // ADD party
+  if (rest.c) rest.c = stripFlightFields(stripDarkForField(rest.c));
+  return rest;
+}
+// combatComparable (line 92) and economyComparable (line 182): add `party` to the
+// same `const { beats, seed, rngState, version, lastExchange, exchangeN, ... }` list.
+```
+
+Add a doc-comment block above these mirroring `stripDarkForField`'s (comparables.js:26-40): *"`state.party` is a brand-new engine-only top-level field with no prototype-side equivalent — the frozen prototype-master.js.txt never sets it — a deliberate, permanent divergence, stripped like `beats`."*
+
+**Why it's needed:** the comparables deep-equal `...rest` against the prototype sandbox. The frozen prototype has **no** `party` concept, so an un-stripped engine-side `party` (even `[]`) is an extra key → guaranteed parity failure the moment any fixture touches `newRun`/`meetJoiner`. Stripping it keeps every fixture green.
+
+**Note:** `c.joiner` and `state.combat.ally` are **NOT** stripped and must not be — the prototype master sets them identically, so they compare equal and *guard* fidelity. Only the genuinely-new `state.party` is stripped.
+
+### 2. RNG-order rules (do not shift the frozen draw sequence)
+
+- **Chargen order is frozen** (`character.js` header, lines 16-17). `state.party` is initialized in `newRun` as a **plain `party: []`** — no rng draw — exactly like `darkFor`/`flightLeft` were added as plain assignments (`character.js:200,213`). Safe.
+- **`meetJoiner` must not change its rng draws.** It currently consumes: `d10` (level table) → full `rollCharacter(rng)` → `d20` → `d20` (discarded) (`encounters.js:399-403`). This exact sequence is in the frozen master (`prototype-master.js.txt:1762-1763`). To wire the joiner into the party, **capture the already-rolled `joinerChar` into `state.party`** — this adds **zero** rng draws. Keep setting `c.joiner` identically. Result: byte-identical rng stream; only a new (stripped) `state.party` entry appears.
+- **Party members acting in combat = new rng draws** (their strike dice, etc.). These MUST be **guarded to fire only when `state.party` is non-empty**, e.g. a `partyTurn` that early-returns like `allyTurn` (`combat.js:648`). Every prototype-parity fixture runs with an **empty** party, so the guard short-circuits → no rng consumed → the frozen combat/afterPlayerAction sequence (`combat.js:601-640`) stays byte-identical. This is precisely the pattern the phobia-Hardiness `rng.d(2)` uses ("fires ONLY in the qualifying situation... never during chargen... RNG consumption order is unchanged for everyone else" — `combat.js:216-219`).
+- **Insertion point discipline:** if `partyTurn` is inserted into `afterPlayerAction` (e.g. between `allyTurn` and `foeTurn`), it must be a guarded no-op when party is empty so the ported `foeTurn`/`rollInitiative` call sequence is unchanged for parity fixtures.
+
+---
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|--------------------------|
-| Capacitor | Cordova | Never for a new project — Cordova is the predecessor Capacitor was built to replace and is effectively deprecated; only relevant if inheriting a legacy Cordova codebase |
-| Capacitor | React Native / Expo | If you were starting from scratch with no working UI and wanted a single native-widget-based codebase; wrong fit here because it requires re-authoring the entire proven DOM UI in JSX/native components for no functional gain |
-| Capacitor | Flutter | Same reasoning as React Native, plus a new language (Dart) for a solo first-timer — highest rewrite cost of all options considered |
-| Capacitor | Godot / Unity (engine port) | If the game were a real-time action game needing sprite batching, physics, or particle-heavy rendering at scale — not the case for a turn-based, DOM-panel-heavy, single-canvas-maze roguelike |
-| `@capacitor/preferences` for saves | Raw `localStorage` only | Never for the shipped app — acceptable only in the browser-based dev loop before wrapping, since native WebView storage is evictable |
-| Manual keystore + Xcode signing | Fastlane / Appflow CI from day one | If comfortable investing setup time before the first submission; otherwise defer CI until after the first successful manual publish so you learn the raw process once |
+| Recommended | Alternative | When The Alternative Would Win |
+|-------------|-------------|--------------------------------|
+| `state.party` (top-level array) | `c.party` (array on the character) | Never for this engine — joiners are peers, not a property of the player; top-level strips in one place and mirrors `state.combat`. `c.party` would need a per-`c` `stripPartyField` helper (like `stripDarkForField`) and muddies "`c` = the player's sheet". Both are technically viable; top-level is cleaner. |
+| Full `rollCharacter` sheet per member | 7-field summary (like today's `c.joiner`) | If joiners were purely cosmetic display. But the milestone explicitly wants "their own sheet/gear/HP" and real party combat → needs the full sheet. The full sheet is already rolled in `meetJoiner`, so it's *cheaper* to keep than to re-derive. |
+| Keep `C.ally` + `state.party` separate | Unify `C.ally` into `state.party` now | Only if you accept touching parity-frozen `allyTurn`/`startCombat`/summon code. Not worth it this milestone — unifying risks the frozen `allyStruck`/`allyDeparted`/rng path. Coexist now; unify later behind its own parity review if ever. |
+| Default-fill migration (keep v1) | Bump `STATE_VERSION` to 2 + version gate | If a *breaking* shape change lands later. For an additive-with-default field, the version bump buys nothing (old v1 saves still validate) and adds ceremony. |
+| Fail-open on malformed party | Reject whole save if any member malformed | Never — one bad joiner should not cost the player their whole in-progress run. Fail-open to `[]` (or drop bad members) matches the codebase's storage posture. |
 
-## What NOT to Use
+## What NOT to Use / What NOT to Change
 
-| Avoid | Why | Use Instead |
-|-------|-----|--------------|
-| Cordova | Deprecated predecessor to Capacitor; weaker maintenance, WebView bridge is a documented performance bottleneck Capacitor was built to fix | Capacitor |
-| Any ad or analytics SDK (Firebase Analytics, AdMob, etc.) | Directly contradicts the paid-upfront, no-ads/IAP constraint; also forces extra disclosures on both stores' privacy forms and adds network calls to a "fully offline" app | Nothing — ship with zero third-party SDKs beyond Capacitor's own plugins |
-| Raw `localStorage` as the sole save mechanism in the shipped native app | Evictable under Android storage pressure / iOS WebView migrations; risks silently deleting a player's graveyard and in-progress run | `@capacitor/preferences`, optionally with `localStorage` kept as a fast in-memory mirror during a session |
-| A custom native WebView wrapper written by hand (raw `WKWebView`/`android.webkit.WebView` project) | Reinvents plugin bridging, lifecycle handling, and store-compliant boilerplate (splash screen, back-button, status bar) that Capacitor already solves and maintains | Capacitor |
-| Electron | Desktop-only technology; irrelevant to "must ship to App Store and Google Play" | Capacitor |
+| Avoid | Why | Do Instead |
+|-------|-----|------------|
+| Any new npm package / Capacitor plugin / native SDK | Violates offline + paid-upfront + zero-SDK constraint (PROJECT.md Constraints; CLAUDE.md). Party is pure plain-data state. | Pure in-engine state + existing `serializeRun`/`mzStorage`. |
+| A new storage key for the party | Party is **in-run** state, not cross-run — it belongs in the `SAVE_KEY` blob. A separate key would desync from the run and break the save round-trip. | Ride inside `serializeRun(currentState)` under existing `ddr.delve.v1`. |
+| Renaming/reshaping `c.joiner` | Frozen in `prototype-master.js.txt:1762-1763`; renaming breaks parity across every encounter fixture. | Keep `c.joiner` summary as-is; **add** `state.party` alongside it. |
+| Touching `C.ally`/`state.combat.ally`, `allyTurn`, or the `allyStruck`/`allyMissed`/`allyDeparted`/`allyJoined` events | Frozen in the master (`:2373-2383, :1836-1837`). Any rng or event-shape change there breaks combat parity. | Add a **separate** guarded `partyTurn`; leave the summon-ally path untouched. |
+| Adding rng draws inside `rollCharacter`/`meetJoiner`/`startCombat` for party setup | Shifts the frozen chargen/encounter draw order → breaks chargen + combat parity everywhere. | Init party with plain `party: []`; capture `meetJoiner`'s **already-rolled** character (no new draw); gate all party-combat draws behind non-empty `state.party`. |
+| Editing `test/parity/prototype-master.js.txt` to "add" party | It is the immutable golden master. | Strip `state.party` in `comparables.js` instead. |
 
 ## Stack Patterns by Variant
 
-**If the author has no Mac at all:**
-- Use a cloud Mac CI (Codemagic has a documented Capacitor/Ionic build flow; Ionic Appflow is the Capacitor team's own hosted CI) to produce and sign the iOS build from a Windows machine via git push.
-- Because Xcode literally does not run outside macOS, and Apple's April 2026 SDK bump makes "an old borrowed Mac" a shrinking window — plan for this constraint explicitly, ideally as its own early roadmap phase ("stand up iOS build pipeline") rather than discovering it late.
+**If joiners are permanent party members (persist across floors, permadie):**
+- `state.party` holds them for the whole run; members carry `alive`; a dead member stays in the array flagged dead (or is filtered) — decided by permadeath-semantics requirement (proposed-milestone item 6).
+- Combat reads `state.party` directly each `partyTurn`.
 
-**If post-MVP multiplayer is added later:**
-- Keep all game logic reachable through the existing `S` state object and `act()` dispatcher, fully serializable to/from JSON, with **zero direct DOM reads/writes inside the rules engine functions** (only in rendering/UI code that consumes `S`).
-- Because Capacitor changes nothing about the JS runtime — the same rules engine that runs in a browser tab runs unmodified inside the WebView — a later multiplayer layer can add a thin WebSocket/relay client that serializes `S` diffs, without touching how the app is packaged. This is the direct payoff of choosing "wrap, don't rewrite": the decoupling the author already built survives the packaging decision entirely.
+**If joiners are temporary (leave after N encounters, like `C.ally`):**
+- Give each member a `roundsLeft`/`encountersLeft` counter and decrement in `partyTurn` (mirror `allyTurn`'s `--C.ally.rounds`), removing at zero.
+- Either way the **state/serialization/parity work is identical** — only the combat-behavior code differs.
+
+**Either variant:** the migration (`validateSave`/`rehydrate` default-fill) and the single `comparables.js` strip are unchanged.
 
 ## Version Compatibility
 
-| Package A | Compatible With | Notes |
-|-----------|------------------|-------|
-| Capacitor 8.x | Node 22+ | CLI will fail confusingly on older Node — check `node -v` before `npx cap` commands |
-| Capacitor 8.x (iOS) | Xcode 16+ (Xcode 26+ required for store submission from Apr 28, 2026) | Building locally with an older Xcode may still work for development, but App Store Connect will reject the final upload if built with a pre-26 SDK after that date |
-| Capacitor 8.x (Android) | Android Studio Otter (2025.2.1)+ | Older Android Studio / Android Gradle Plugin versions are not guaranteed to build a Capacitor 8 Android project |
-| Android target SDK | API 36 (Android 16) for new apps/updates from Aug 31, 2026; API 35 minimum for existing apps | Play Console will reject submissions targeting lower API levels after the deadline (extension to Nov 1, 2026 available on request); re-check `developer.android.com/google/play/requirements/target-sdk` before each submission since this floor rises annually |
+| Component | Compatible With | Notes |
+|-----------|-----------------|-------|
+| New `state.party` field | `STATE_VERSION = 1` (unchanged) | Additive + default-filled; old saves validate unchanged (`validateSave` only rejects *newer*-than-supported versions). |
+| `state.party` | `serializeRun` `{...state}` spread | Round-trips automatically; the only load-side edits are the two whitelist defaults. |
+| Guarded `partyTurn` rng | Frozen parity master | Byte-identical only while every parity fixture keeps `party` empty — enforce the non-empty guard. |
+| `@capacitor/preferences` / `mzStorage` / `storage.js` | unchanged | Party lives inside the existing `SAVE_KEY` JSON; storage layer is agnostic to blob shape. |
 
-## Store-Submission Prerequisites (concrete, for a first-timer)
+## No-New-Dependency Confirmation
 
-### Apple App Store
-
-| Requirement | Detail |
-|---|---|
-| Developer account | Apple Developer Program, **$99/year** (waivable only for qualifying nonprofit/education/government entities). Individual or Organization enrollment; identity verification is required. |
-| Hardware | **A Mac is mandatory** to run Xcode, sign, archive, and upload. No Windows-native path exists. |
-| Code signing | Apple-issued Distribution Certificate + App Store provisioning profile; for a solo dev, use Xcode's "Automatically manage signing" rather than manual certificate juggling. |
-| Build toolchain | Xcode 16+ today; **Xcode 26+ / iOS 26 SDK mandatory for any new submission or update from April 28, 2026.** |
-| Age rating | New (2025–2026) age-ratings questionnaire in App Store Connect, categories now **4+, 9+, 13+, 16+, 18+** (old 12+/17+ retired). Must be completed — apps that haven't completed it are blocked from new submissions/updates. For this game's content (dice-driven combat, permadeath, dark-but-family-friendly humor, "mild horror" flavor text, no gore/profanity), expect a low-tier rating (4+ or 9+) depending on how "fantasy violence"/"horror themes" questions are answered — answer conservatively and honestly. |
-| Privacy | A **Privacy Policy URL is mandatory for every app regardless of data collection** — host a simple static page (e.g. GitHub Pages) stating no personal data is collected and all data (saves, graveyard) stays on-device. Also complete the **App Privacy ("Nutrition Label")** section in App Store Connect; a fully offline app with local-only storage can truthfully declare "Data Not Collected." |
-| Pricing | Set as a **paid app** at a chosen price tier in App Store Connect — no code/SDK needed; this is a store-console configuration only. No IAP entitlements or StoreKit code required for a pure paid-upfront app. |
-| Review | Standard App Review after upload via Xcode Organizer or the Transporter app; expect roughly 24–48 hours typical turnaround, longer for first-time submissions or if age-rating/content questions trigger manual review. |
-
-### Google Play
-
-| Requirement | Detail |
-|---|---|
-| Developer account | Google Play Console, **one-time $25 USD registration fee** (no recurring fee). Personal accounts created since early 2024 must verify access to a real Android device during setup. Organization accounts require a linked Business Google Payments Profile. |
-| Hardware | Fully buildable on Windows, macOS, or Linux via Android Studio — no Mac required for the Android leg. |
-| Build format | **Android App Bundle (`.aab`) is mandatory** for all new apps (has been since August 2021); plain `.apk` uploads are not accepted for new listings. |
-| Code signing | Generate an upload keystore once (`keytool`/Android Studio wizard); **Play App Signing enrollment is mandatory** for new apps — Google holds/manages the real signing key, you keep the upload key. Back up the upload keystore; losing it is recoverable via Play App Signing's key-reset process but is a hassle. |
-| Target API level | New apps/updates must target **Android 16 (API level 36)** by Aug 31, 2026 (extension to Nov 1, 2026 available on request); existing apps need at least API 35 to stay visible to new users on newer OS versions. This floor rises yearly — verify current requirement at submission time. |
-| Age rating / content | Google Play uses the **IARC (International Age Rating Coalition) questionnaire** inside Play Console — a separate process from Apple's, answer similarly (mild fantasy violence, no profanity/gore) to get an appropriately low rating (Google's system typically yields "PEGI 3 / Everyone"-equivalent for this content profile). |
-| Privacy | **Data Safety section is mandatory for every app, no skip option**, even ones collecting nothing. "Collected" is defined as data leaving the device; a fully offline app with local-only save/graveyard data can declare **"No data collected or shared."** A privacy policy link is also good practice to have ready even if not strictly gated the same way as Apple. |
-| Pricing | Set as a **paid app** at a chosen price in Play Console — again, a console configuration, not an SDK/code requirement. No Play Billing Library integration needed for a pure paid-upfront app with no IAP. |
-| Review | Google Play review is typically faster than Apple's for straightforward apps (often same-day to a few days), but new developer accounts / first app submissions can be subject to longer, more manual review; budget a few days of buffer. |
+**Confirmed: no new npm or native dependency is warranted.** The party system is entirely (a) new plain-data fields on the already-100%-serializable `GameState`, (b) reuse of the existing pure `rollCharacter(rng)`, (c) two default-fill lines in `saveState.js`, (d) one guarded combat function, and (e) one parity strip. It rides the existing `@capacitor/preferences`-backed `mzStorage` save blob with no schema-external storage. This honors the offline / paid-upfront / zero-SDK / "keep the build free of monetization+extra SDKs" constraints (PROJECT.md Constraints; CLAUDE.md) with **zero** additions to `package.json` or the native project.
 
 ## Sources
 
-- https://www.npmjs.com/package/@capacitor/ios — Capacitor 8.5.1 current version (CONFIDENCE: MEDIUM, cross-checked)
-- https://ionic.io/blog/announcing-capacitor-8 — Capacitor 8 SPM default, Android Studio Otter requirement (CONFIDENCE: MEDIUM)
-- https://capacitorjs.com/docs/updating/8-0 — Capacitor 8 migration/requirements (CONFIDENCE: MEDIUM)
-- https://developer.apple.com/programs/enroll/ , https://developer.apple.com/help/account/membership/fee-waivers/ — Apple Developer Program $99/yr, waiver conditions (CONFIDENCE: MEDIUM)
-- https://developer.apple.com/news/?id=ueeok6yw and https://9to5mac.com/2026/02/03/apple-to-update-minimum-sdk-requirements-for-all-app-store-submissions/ — iOS 18 SDK (Apr 2025) → iOS 26 SDK (Apr 2026) mandatory build requirement (CONFIDENCE: MEDIUM)
-- https://developer.apple.com/news/upcoming-requirements/?id=07242025a and https://ppc.land/apple-updates-app-store-age-ratings-system-with-granular-controls/ — new 4+/9+/13+/16+/18+ age rating system, Jan 31 2026 questionnaire deadline (CONFIDENCE: MEDIUM)
-- https://www.termsfeed.com/blog/ios-apps-privacy-policy/ , https://developer.apple.com/app-store/app-privacy-details/ — mandatory privacy policy URL + App Privacy label for all apps (CONFIDENCE: MEDIUM)
-- https://support.google.com/googleplay/android-developer/answer/6112435 and consolemint/afkarsoftware guides — Google Play $25 one-time fee, device verification (CONFIDENCE: MEDIUM, cross-checked across several independent sites)
-- https://developer.android.com/guide/app-bundle/faq , https://developer.android.com/studio/publish/app-signing — mandatory AAB format since 2021, mandatory Play App Signing for new apps (CONFIDENCE: MEDIUM)
-- https://support.google.com/googleplay/android-developer/answer/11926878 and https://developer.android.com/google/play/requirements/target-sdk — API 36 target requirement by Aug 31 2026, API 35 floor for existing apps (CONFIDENCE: MEDIUM)
-- https://support.google.com/googleplay/android-developer/answer/10787469 — Data Safety form mandatory, on-device-only data doesn't count as "collected" (CONFIDENCE: MEDIUM)
-- GitHub issue ionic-team/capacitor#636 ("localStorage lost on app reboot") and Capacitor Preferences plugin docs (capacitorjs.com/docs/apis/preferences) — localStorage eviction risk in WebViews, recommendation to use Preferences plugin (CONFIDENCE: MEDIUM)
-- https://excaliburjs.com/blog/android-games-capacitor/ , https://capgo.app/blog/capacitor-vs-cordova/ — Capacitor as the standard path for wrapping existing JS/canvas web games; Cordova deprecated/legacy (CONFIDENCE: MEDIUM)
-- Direct inspection of `C:\projects\mazeworld\mazeworld.html` (3,260 lines) — confirmed DOM+CSS UI with single `<canvas>` maze renderer, `localStorage`-only persistence (2 keys: graveyard + active save), no `fetch`/`WebSocket`/Worker/ServiceWorker usage (CONFIDENCE: HIGH — primary source, direct code read)
+- `engine/character.js:140-218` (`rollCharacter`), `:189` (`joiner:null`) — full serializable sheet + the frozen chargen rng order; the `darkFor`/`flightLeft` plain-assignment precedent (:200,:213) — CONFIDENCE: HIGH (direct read)
+- `engine/encounters.js:397-407` (`meetJoiner`) — rolls a full character + 2 discarded d20s, keeps only a 7-field `c.joiner` summary — CONFIDENCE: HIGH
+- `engine/combat.js:163-167` (pendingAlly→`C.ally`), `:646-665` (`allyTurn`), `:601-640` (`afterPlayerAction` frozen sequence), `:216-219` (guarded-rng precedent) — CONFIDENCE: HIGH
+- `engine/magic.js:100-123` — the Summon `C.ally`/`c.pendingAlly` shape `{lvl,rounds,name}` — CONFIDENCE: HIGH
+- `engine/state.js:34-56` (`newRun`) — where `party: []` initializes; plain-assignment top-level fields — CONFIDENCE: HIGH
+- `engine/saveState.js:22-24` (`serializeRun` full spread), `:79-138` (`validateSave` explicit whitelist + version gate), `:146-171` (`rehydrate` whitelist) — the migration seam — CONFIDENCE: HIGH
+- `src/browser/engineAdapter.js:44-83` (SAVE_KEY vs separate cross-run keys), `:295-331` (boot/persist) — party belongs in the save blob, not a new key — CONFIDENCE: HIGH
+- `test/parity/harness/comparables.js:26-40` (`stripDarkForField`), `:53-57` (`stripFlightFields`), `:64,92-93,182` (top-level destructure strips) — the exact carve-out pattern to mirror — CONFIDENCE: HIGH
+- `test/parity/prototype-master.js.txt:1762-1763,1836-1837,2373-2383` — `c.joiner`/`C.ally` frozen (do not touch) — CONFIDENCE: HIGH
+- `content/misc-tables.js:13,27` (`STRIKE_DICE`, `SPELL_LEVEL_TABLE`) — reusable combat tables — CONFIDENCE: HIGH
+- `.planning/PROJECT.md` Constraints, `.claude/CLAUDE.md` — offline/paid-upfront/zero-SDK/serializable-engine constraints — CONFIDENCE: HIGH
 
 ---
-*Stack research for: Mazeworld (paid, offline, mobile roguelike — Capacitor packaging path)*
-*Researched: 2026-09-07*
+*Stack research for: single-player Party System ("Joiners") — engine-state, serialization, save-migration, parity*
+*Researched: 2026-09-09*

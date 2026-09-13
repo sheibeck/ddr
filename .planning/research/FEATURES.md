@@ -1,225 +1,220 @@
 # Feature Research
 
-**Domain:** Premium (paid), offline, single-player mobile roguelike dungeon-crawler
-**Researched:** 2026-09-07
-**Confidence:** MEDIUM-HIGH (cross-corroborated web research across multiple queries; no official platform-doc lookups were needed since findings are design/UX conventions, not API specifics)
+**Domain:** Single-player "Joiner"/party system for a turn-based descent roguelike (Mazeworld / "Delve, Die, Repeat")
+**Researched:** 2026-09-09
+**Confidence:** HIGH (rulebook canon read directly; existing code inspected line-by-line; genre patterns from established turn-based roguelikes)
+
+> Scope: the SOLO party foundation only. NPCs ("Joiners") that join the single player. True networked multiplayer stays a later milestone. Every balance-affecting choice is flagged inline with **[BALANCE]** because this is one of three balance-touching milestones (sequence/coordinate with the **Economy & Item Balancing** milestone).
+
+---
+
+## What the rulebook actually says (CANON)
+
+Rulebook consulted directly (`mazeworld.pdf`, extracted via `pdftotext`, 6,922 lines). There is a dedicated **JOINERS** section (TOC p.46). Verbatim canon:
+
+> **Joiners** — "A Joiner is a fellow adventurer that your characters meet in the dungeon. Roll on the Level Table to determine the Joiners Level. **If the party accepts the Joiner, roll up a new character.** If the Joiner is a Magic User roll for spells one time for each level. Then randomly choose spells using the Level Table for spell level, and rolling on the Spell Listing to determine the exact spell. **The Maze Master can give the Joiner any weapons and armour (magical or otherwise) that he deems fit.**" (line 5615)
+
+**Level Table** (line ~5645): d10 → 1-2 = level I, 3-4 = II, 5-6 = III, 7-8 = IV, 9-10 = V. (This is the `SPELL_LEVEL_TABLE` already ported in `engine/encounters.js`.)
+
+Other party-relevant canon found across the book:
+
+| Topic | Canon | Line | Implication |
+|-------|-------|------|-------------|
+| **Recruitment** | "If the party **accepts** the Joiner, roll up a new character." | 5615 | Explicit **accept/decline**. A joiner is a **full rolled character** (own class/race/level/gear/HP), not a stat stub. |
+| **Joiner gear** | "The Maze Master can give the Joiner any weapons and armour… he deems fit." | 5615 | No MM in solo → **engine rolls/assigns** the joiner's gear (rollCharacter already does). |
+| **Cost of living (upkeep)** | "it takes 4wp per day just to live… subtracted at the start of the day… replenished by food, drink or sleep." Dwarf = 1WP/day, Troll = 15WP/day. | 582, 1309, 719, 732 | **[BALANCE]** Upkeep is **per character** → a party literally eats more. Direct coupling to the Economy milestone. |
+| **XP split** | Won combat SP = "d6 × creature level + bonuses… **divided evenly between all of the party members who participated** in the encounter." | 1368 | **[BALANCE]** XP is **split among participants**, slowing the leader's leveling — a natural counterweight to extra party power. |
+| **Initiative** | "Roll a d20 for **the party** and a d20 for the **enemy group**." | 1342 | Initiative is **party-level**, one roll for the whole side — matches the existing single-initiative combat model. |
+| **Shared-target resolution** | For a dot/gift/trap: "count the total number of party members and assign them a number on a dice. Roll… whoever's number shows up gets the result be it good or bad." | 1311 | Canon precedent for **randomly targeting one party member** (used later for foe targeting design). |
+| **Wandering-monster scaling** | "the level of these monsters will never exceed the highest party members level." | 1319 | **[BALANCE]** Difficulty scales off the **highest** party level → a high-level joiner raises the threat floor. |
+| **Cutthroat sacrifice gag** | A Cutthroat "will automatically kill one of the party members… during each dungeon… **if there is a joiner at the time of the killing then the joiner must be the victim.** Tough cookies!" | 1177 | Canon treats joiners as **expendable**, and it is played for **dark comedy** — a ready-made voice hook. |
+| **Party size** | No explicit numeric cap anywhere. Examples use "a party of four"; size only matters via the Size rule (line 705, members that don't fit a 10'×10' square split into two parties). | 705, 1311 | **[BALANCE]** **Party-size cap is a design decision, not canon.** (Recommend cap = 1 joiner for v1; see below.) |
+
+**Prototype supersedes rulebook where they conflict** (per PROJECT.md): the prototype deliberately did the **solo conversion — "no party/Maze Master"** — and dropped bags/carry-weight. So this milestone *re-introduces* a party as a **solo, engine-driven** system; it does not restore the tabletop's multi-player-around-a-table party or the MM.
+
+---
+
+## What already exists in the code (FOOTING)
+
+Two separate, half-built ally concepts exist. They are **not** the same thing:
+
+**1. `meetJoiner` — a rolled joiner that is currently a DEAD STUB.** (`engine/encounters.js:397-407`)
+- Fires on the `"Joiner"` encounter cell (`content/encounters.js` tables 2 & 6).
+- Rolls a **full character** via `rollCharacter(rng)` (which produces class/race/subclass, weapon, armor, grimoire, `rations`, `gold`, `wp`/`maxWP`, phobia, temperament, etc. — `engine/character.js:140+`).
+- **Keeps only** `c.joiner = {name, race, sub, cls, lvl, wp, maxWP}` and pushes a `joinerMet` event narrated "*X, a [sub], joins you for a while.*" (`src/browser/eventNarration.js:290`).
+- **Nothing consumes `c.joiner`.** No accept/decline, no combat participation, no lifecycle. It is set and forgotten. **This is the seam to light up.**
+
+**2. `C.ally` — a per-round combat striker, ONLY from the Summon spell.** (`engine/combat.js:646-665`, `engine/magic.js:99-123`)
+- Shape: `{lvl, rounds, name}` — **no HP, no sheet, cannot be targeted or die.**
+- `allyTurn()` each round: targets `liveFoes(state)[0]` (first foe only); hits if `rng.d(STRIKE_DICE[lvl-1]) <= 5`; damage = `lvl*lvl + d6`; decrements `rounds`; departs at 0 (`allyDeparted`).
+- Enters combat via `c.pendingAlly` → `startCombat` promotes it to `state.combat.ally` and emits `allyJoined` (`combat.js:163-167`).
+- This single-slot, auto-acting, temporary striker is the **starting point** the milestone brief calls out — the party system generalizes it from one invulnerable summon into an array of real, damageable joiners.
+
+**3. Party UI already mocked but OFF.** The combat "party rail" exists in the design/UI-SPEC but is hidden for v1 — this milestone turns it on.
+
+**Key gap:** there is **no party array, no accept/decline, no foe→ally targeting, no joiner HP/death, no upkeep for extra members, and no XP split.** `state.c` is a single character; `c.joiner` is inert data.
+
+---
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Table Stakes (a v1 party system feels broken without these)
 
-Missing any of these on a **paid** game invites 1-star reviews and refund requests — paid buyers hold premium titles to a "complete, respectful experience" bar that free-to-play doesn't get held to.
+| Feature | Why Expected | Complexity | Notes / Dependencies |
+|---------|--------------|------------|----------------------|
+| **Accept/Decline a joiner** | Canon: "*If the party accepts…*". Players expect agency over who joins; auto-adding a body is jarring. | LOW–MED | Gate `meetJoiner` behind a choice. Depends on `encounters.js` + a combat/encounter prompt in `src/browser`. Currently auto-set — must add the branch. |
+| **Party model: generalize `C.ally`/`c.joiner` into a party array** | Foundation for everything else; the engine was built serializable for exactly this. | MED–HIGH | New `state.party[]` (or leader `state.c` + `state.party[]` of joiners). Touches `combat.js`, `saveState.js` (migration for saves with no party), the `applyAction` clone. Hard dependency for all combat/UI features. |
+| **Joiner keeps its own sheet (class/race/level/gear/HP)** | Canon: a joiner is a full "roll up a new character," MM-gifted gear. Players expect a real teammate, not a number. | LOW (data exists) / MED (wiring) | `rollCharacter` already produces the full sheet; `meetJoiner` currently **discards** most of it. Stop discarding; persist weapon/armor/grimoire/level/`rations`. |
+| **Joiner acts in combat automatically each round** | The whole point of a party. AI-acted (not micromanaged) fits the game's "no player choices" identity and the 5–10 min session. | MED | Extend `allyTurn` from one slot to N members, each using **its own** strike dice / spells (Magic-User joiners cast). Depends on party array. |
+| **Joiner has its own HP and can be hurt/downed** | Current `C.ally` is invulnerable — a party of invincible bodies is a non-game. Damage-able allies are the core tension. | MED | **[BALANCE]** Give each joiner real `wp`/`maxWP` (already rolled). Foes must be able to reduce it. |
+| **Foe targeting across the party** | Players expect enemies to sometimes hit the joiner, not always the leader. Canon precedent: randomize target among members (line 1311). | MED | **[BALANCE]** Pick foe targets across live party members (random or weighted). Touches `foeTurn` in `combat.js`. Big difficulty lever (a joiner as a damage sponge protects the leader). |
+| **Party status UI (turn on the party rail)** | Players must see each member's name/HP/status or the party is invisible. The rail is already mocked. | MED | UI-only; depends on the party model + new events (`allyStruck`, joiner-damaged, joiner-down). |
+| **Joiner lifecycle & death semantics** | Players must know: do they permadie, flee, or leave? Ambiguity feels buggy. | MED | **[BALANCE + TONE]** Decide: HP≤0 = permadeath (canon-flavored, matches Cutthroat "expendable" gag) vs. flee/leave. Recommend **permadeath on downed** + **voluntary departure after N rounds/floors** (see differentiators). |
+| **Save/serialize + migration for the party** | The serializable-state constraint is a project pillar; existing saves have no party field. | MED | Add party array to save shape; migrate old saves (empty party). Depends on `saveState.js` parity/field lists (`joiner` is already a tracked field). |
+| **XP split among participants** | Canon (line 1368). Without it, party = free power with no cost — breaks progression. | LOW–MED | **[BALANCE]** Divide combat SP among participants. Decide whether a **temporary** joiner counts as a participant (recommend yes, while present). Slows leader leveling — an intentional counterweight. |
+| **Per-member upkeep / rations** | Canon: 4WP/day **per character**; "a party eats more." A costless party unbalances the descent. | MED | **[BALANCE — couples to Economy milestone]** Each joiner consumes upkeep (own `rations`, already rolled). Touches `economy.js`. **Sequence with the Economy balance pass so it isn't tuned twice.** |
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Tap-to-move / contextual touch controls (tap empty tile to move, tap enemy to attack) | This is *the* proven mobile control scheme for grid roguelikes (Shattered Pixel Dungeon's whole UX is built on it: "tap to move, tap enemy to attack, most controls fully contextual"). A D-pad-only port of a desktop/web UI feels like an afterthought. | MEDIUM | Keep the prototype's D-pad as a fallback/option, but tap-to-move-on-grid should be the primary scheme. Contextual = the game infers "move" vs "attack" vs "pick up" from what's tapped. |
-| Chunky, high-contrast, distance-readable UI | Reviewers explicitly praise UIs "designed to be viewed from a distance" on phones; small text/icons are a top mobile-game complaint. | LOW | Directly supports 5–10 min sessions played one-handed on a commute/couch. |
-| Reliable autosave every action + instant resume after interruption (call, notification, app-kill, OS memory reclaim) | Turn-based roguelikes traditionally autosave every turn; on mobile this is non-negotiable because sessions *will* be interrupted by phone calls/texts mid-run — losing a run to an interruption (not to the game's own permadeath) is an instant-refund-grade complaint. | MEDIUM | Because the prototype already has a serializable global `S` state + `act()`/beats system, this should be cheap: snapshot after every beat, not just every floor. |
-| Clear, ceremonial death screen with permadeath finality (no fake "revive?" dialog) | Permadeath is the genre's core contract; players expect a definitive, well-presented end screen, not an ambiguous game-over. | LOW | This is also the primary comedy delivery point (see Differentiators — epitaphs). |
-| One-tap "new run" from the death screen | Session length target is 5–10 minutes; every extra tap between death and the next run is friction against the depth-chase loop. | LOW | Should skip all menus — death screen → tap → dice roll → playing. |
-| Local best-depth / high-score tracking, persisted across app kills | This is the game's explicitly designated **primary replay hook** (per PROJECT.md) — it must be bulletproof and always visible (e.g., on the death screen: "Your best: Depth 14"). | LOW | Pure local storage; no server needed for v1. |
-| Integrated first-run tutorial / contextual tooltips (not a text wall) | The rules engine is deep (3 classes, 24 subclasses, 6 races, 31 spells, ~45 creatures) but the prototype "assumes rules knowledge." Untaught mechanics are a top cause of early quits on rules-heavy mobile games. Best practice: teach one mechanic at a time, in-context, during the first real run — not a separate menu-based tutorial. | MEDIUM-HIGH | Biggest UX risk in the project. Should be the first thing playtested. |
-| Scrollable message/combat log | Dice-driven combat generates numbers players need to parse ("why did I take 7 damage?"); without a log, a crunchy rules engine feels arbitrary/unfair rather than crunchy. | LOW-MEDIUM | Also a natural home for the sarcastic "Oracle" commentary (see Differentiators). |
-| Character/stat sheet screen | Since character creation is 100% dice-rolled, players need a clear screen to see *what they got* (class, subclass, race, stats, spells known) — this doubles as the "reveal" moment that replaces player choice. | LOW | Already modeled in the rules engine; mostly a UI task. |
-| Basic settings: sound/music toggle, haptics toggle, text size, control-scheme choice, "confirm before quitting a run" | Baseline expectation for any 2025-era mobile game; absence reads as unfinished. | LOW-MEDIUM | Text size ties into accessibility compliance (below). |
-| No forced network / no login / no ads / no IAP nags | This *is* the pitch (paid, offline, complete). Any deviation (a hidden analytics SDK phoning home, a "rate us" popup that looks like an IAP prompt) breaks the trust premium buyers are paying for and reads as bait-and-switch in reviews. | LOW | Mostly a discipline/process constraint, not a build task — but must be verified before submission (see compliance row). |
-| Basic accessibility: adjustable text size, colorblind-safe status/threat indicators (never color-only) | The four most-complained-about accessibility gaps across games are remapping, text size, colorblindness, and subtitle/text presentation. The EU's European Accessibility Act became fully enforceable in June 2025 and covers mobile apps sold to EU consumers — this is now a *compliance* table-stake, not just a nicety, for a game selling on both stores globally. | MEDIUM | Cheapest if designed in from day one (icon+color for status effects, scalable text) rather than retrofitted after UI is locked. |
-| Store compliance basics: privacy label / data-use declaration, accurate age rating (via IARC/Apple's updated questionnaire), privacy policy URL | Mandatory gate to ship on both stores in 2025–2026; Apple's rating system added new tiers (13+/16+/18+) with a stricter questionnaire, and Google's IARC questionnaire is required for every app. | LOW-MEDIUM | Process work, but must be planned into the roadmap's "publish to both stores" phase — an offline game with zero data collection should sail through this if declared honestly. |
-
-### Differentiators (Competitive Advantage)
-
-Where Mazeworld should actually compete — mostly by leaning into its already-decided identity (sarcasm, full dice-roll, no meta-progression) rather than chasing generic "content depth."
+### Differentiators (lean into this game's identity)
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Sarcastic content/voice system (death epitaphs, item flavor text, an in-fiction "Oracle" commentary log) | This is the game's stated core identity, not decoration. Distinct voice is one of the few ways a small paid indie title stands out in a crowded roguelike field, and it's a strong word-of-mouth driver ("look at this hilarious death message" screenshots). | MEDIUM-HIGH | Needs to be built as **data tables keyed off structured game events** (cause of death, class/race, floor depth, item used) rather than hardcoded strings, so content can grow without code changes and so tone stays consistent as more writers/content get added later. Depends on the rules engine emitting structured event data (see Dependencies). |
-| The "reveal" moment for 100%-dice-rolled characters | Since players make zero build choices, the character-creation roll itself must feel like the game's loot box — a satisfying, theatrical reveal of race/class/subclass/stats is the emotional hook that replaces "build crafting." | LOW-MEDIUM | Rules engine already has all the data; this is primarily a presentation/animation task. |
-| Graveyard / run-history screen (browsable list of past characters, how they died, depth reached) | Reinforces the depth-chase loop and comedic tone without violating the "no meta-progression in v1" decision — it's pure history/flavor, not power. Doubles as content that rewards returning players. | MEDIUM | Needs only an append-only local log of past runs; low schema cost on top of the required save/resume system. |
-| Non-power "knowledge" unlocks: bestiary/compendium fills in as creatures/spells are encountered, plus small lore/trivia entries | Gives mobile players *something* that persists and grows across permadeath runs (a well-documented retention driver in the genre) **without** touching starting-power balance — threads the needle between "pure roguelike, no meta-progression" and mobile players' general expectation of *some* cross-run progression. | MEDIUM | Depends on the rules engine already tracking creature/spell IDs (it does, given ~45 creatures / 31 spells are modeled) — mostly a "have I seen this?" flag plus a compendium UI. |
-| Shareable, funny "run summary" card (screenshot-friendly stat card at death: depth, cause of death, a generated one-liner) | Free organic marketing for a paid game with no ad budget — this is exactly the kind of asset that gets shared to social media and drives discovery, which paid indie games desperately need since store algorithms favor free/viral hits. | LOW-MEDIUM | Reuses the epitaph/flavor-text system; mostly a "render to shareable image" feature. |
-| Touch-native QoL commands adapted from desktop roguelike conventions: auto-explore empty corridors (interruptible), rest-until-healed/-interrupted, single-tap "continue descending" | Modern roguelikes are increasingly judged on these QoL conveniences; without them, a deep rules engine can feel tedious to operate one-tap-at-a-time on a phone. Also **directly shortens dead time within the 5–10 minute session target** by cutting repetitive taps. | MEDIUM | Auto-explore/rest must remain interruptible (stop immediately on danger) — this is a well-established genre convention, not novel risk. |
-| Fine-grained mid-beat state snapshotting (quit and resume *inside* a fight, not just between floors) | A step beyond the "reliable autosave" table stake — genuinely resuming exactly where you left off, mid-action, is a differentiator versus games that only checkpoint between levels. | MEDIUM | This is mostly free if the roadmap keeps the prototype's decoupled/serializable `S`-state + `act()`/beats architecture (already a stated project constraint for multiplayer-readiness) — the same architecture that enables multiplayer later also enables perfect save/resume now. |
-| Escalating-difficulty pacing curve explicitly tuned for 5–10 minute mobile sessions | Generic "endless descent" isn't automatically mobile-shaped; the differentiator is deliberately tuning the difficulty ramp so a *typical* run (not a lucky/skilled one) naturally resolves in that window, so permadeath doesn't feel like it's punishing players for playing on the go. | MEDIUM | Needs playtesting/telemetry-free tuning since there's no server to A/B against — budget explicit design time for this in the roadmap. |
-| Optional, fully offline-degradable platform achievements/leaderboards (Game Center / Google Play Games) | Platform-native leaderboards raise a game's perceived polish and give players an external flex point, but the standard implementations are cloud/account-based. The differentiator is treating this as strictly opt-in and non-blocking — the local high-score system is the source of truth, and platform services (if added at all) sync opportunistically without ever requiring login. | MEDIUM | Do **not** let this become a dependency for launch; if it slips, the offline local high-score system alone fully satisfies the replay-hook requirement. |
+| **Sarcastic joiner personality & barks** | Voice is a **core identity** (PROJECT.md). Joiners that quip on join / kill / getting downed / leaving are cheap, high-impact, and uniquely on-brand. | LOW–MED (content) | Reuse `temperament`/`motive` fields already rolled per character; write barks in `content/flavor.js` + `eventNarration.js`. Family-friendly dark comedy. |
+| **Impermanence by design — "joins you for a while"** | The current narration and the Summon `rounds` timer already imply temporary allies. Bounded joiner tenure (leaves after N rounds/floors) keeps sessions short and stops the party from snowballing the difficulty curve. | LOW–MED | **[BALANCE]** Reuse the `rounds`/departure pattern from `allyTurn`. Turns "party" into a **transient boon**, not a permanent roster — fits 5–10 min runs and permadeath. |
+| **Class-flavored joiner behavior** | A Magic-User joiner casts (canon rolls its spells); a Con Artist can defuse a fight; the Cutthroat-sacrifices-the-joiner gag. Depth for free by reusing existing subclass rules. | MED | Canon hooks already exist in the ruleset (Con Artist line 1193, Cutthroat line 1177). The Cutthroat "joiner must be the victim" gag is a signature dark-comedy beat. |
+| **Joiner as risk/reward economy pressure** | Feed them (rations) and they fight for you; starve them and they leave (or worse). Ties the party directly into the loot/economy loop. | MED | **[BALANCE — Economy coupling]** Makes the party a meaningful resource decision, not pure upside. |
+| **Cheap to ship — the stub is already there** | `meetJoiner` already rolls the character and `allyTurn` already runs an ally each round. Most roguelikes have *no* companions; this game can add one at low marginal cost. | — | Leverage, not a feature: reduces implementation risk vs. the genre. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### Anti-Features (seductive, but wrong for a 5–10 min mobile roguelike)
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|------------------|-------------|
-| Power-affecting meta-progression (unlockable starting gear, permanent stat boosts, unlockable "easier" classes) | Extremely common in modern roguelites (Hades, Rogue Legacy) and correlated with higher retention — an obvious thing to copy. | Directly contradicts the project's own decided identity: "Permadeath, no meta-progression in v1" and "100%-dice-rolled characters, no player choice." Once a run's difficulty assumes accumulated unlocks, later runs stop being a fair "play the hand you're dealt" test, undermining the comedic premise. | Non-power "knowledge" unlocks only (bestiary, epitaphs, graveyard, titles) — see Differentiators above. Revisit power-based meta-progression only as a deliberate, separately-decided v2 pivot, not a default add. |
-| Any ads, IAP, or monetization SDK (including "innocent" ones like a review-nag that resembles a purchase prompt) | Common in mobile to boost LTV even after an upfront purchase. | Explicitly out of scope; breaks the "paid, complete, respectful experience" promise that is the entire value proposition of a premium offline game, and is exactly the kind of thing that triggers "bait and switch" 1-star reviews. | One-time purchase price covers the full game, forever. If future content is added, ship it as a free update, not paid DLC, to protect trust (or treat a paid expansion as a clearly separate v2 decision). |
-| Accounts / cloud save / social login for the base game | Feels modern, enables cross-device play. | Directly conflicts with the "fully offline, no accounts, no servers" constraint; adds attack surface for privacy-label complications and slows store review. | Local save only for v1; add platform identity (Game Center / Google Play Games) later and only when the deferred multiplayer feature actually needs it. |
-| Real-time multiplayer or async "ghost run" leaderboards requiring a server | Natural extension of a depth-chase hook — "see how you compare to friends." | Explicitly deferred post-MVP per PROJECT.md; building any server dependency now works against the "fully offline" constraint and the decoupled/serializable architecture goal. | Local high-score/depth chase only for v1; keep the rules engine's state fully serializable so a future multiplayer layer can be bolted on without a rewrite. |
-| Real-time pressure elements (turn timers, twitch/reflex mechanics) | Common in mobile to inject urgency and shorten sessions. | This is a **turn-based, dice-driven tactical crawler** — imposing a clock on decisions clashes with the tabletop-fidelity identity and punishes exactly the "crunchy, dice-driven" tactical thinking the target audience loves. | Let session length come from pacing/difficulty-curve tuning (see Differentiators), not from clocking the player. |
-| Player-authored content / Maze-Master / party tools from the original tabletop rules | Tempting since it exists in the source rulebook and some nostalgia players may ask for it. | Already deliberately stubbed out in the prototype for solo play and explicitly out of scope; reviving it now is scope creep against a solo MVP. | Leave stubbed; revisit only alongside the deferred multiplayer milestone, since Maze-Master tooling is inherently a multiplayer/party feature. |
-| Character build choices (pick starting equipment, allocate stat points, choose a class) | Standard RPG expectation; players unfamiliar with the tabletop original may ask "why can't I choose?" | Directly undermines the stated, deliberate identity: "100%-dice-rolled character creation — no player choices (faithful to the game's identity)." This isn't an oversight to fix, it's the joke. | Invest instead in making the dice-roll *reveal* itself satisfying and funny (see Differentiators), and use onboarding/flavor text to frame "no choice" as the game's comedic premise rather than a missing feature. |
-| Heavy narrative/cutscenes or extensive voiced dialogue | Seen as adding "production value" and immersion. | High cost (writing, localization, possibly VO) for a solo/small team shipping a paid game; PROJECT.md explicitly treats richer art/audio as a nice-to-have, not a gate. Cutscenes also work against 5–10 minute sessions by adding unskippable dead time. | Deliver all humor and worldbuilding through short, skippable in-line text (epitaphs, item flavor, Oracle log, tutorial copy) — cheap to produce, cheap to consume, and reinforces rather than interrupts the session-length target. |
-| Aggressive push notifications / re-engagement nudges | Standard F2P retention lever ("come back and claim your reward!"). | Clashes with the premium/no-tracking, no-server positioning and reads as F2P behavior bleeding into a paid game — a common source of paid-game complaints about "feeling exploited." | If notifications exist at all, make them strictly opt-in, minimal, and locally generated (e.g., a single optional "new best depth today?" reminder) — never framed as urgency or loss. |
-| Full auto-battler / auto-play mode that resolves floors without player input | Superficially a QoL win, and easy to justify by analogy to "auto-explore." | Guts the game's stated Core Value ("the tension and discovery of descending... must feel great") — auto-resolving combat removes the exact tactical decisions the dice-driven rules engine exists to create. | Limit automation to genuinely tedious, low-decision actions only (walking empty corridors, resting when safe); every combat/spell decision stays manual. |
+| Feature | Why Requested | Why Problematic | Better Approach |
+|---------|---------------|-----------------|-----------------|
+| **Full manual control of each joiner's turn** | "More tactics / more control." | Multiplies taps per round on a phone, blows past the 5–10 min session, and **contradicts the 100%-dice / no-player-choice identity**. | **Auto-acting AI joiners** (extend `allyTurn`). Player agency is at *recruitment*, not per-turn. |
+| **Large parties (4–6 members)** | "Real RPG party." | Each member = another combat turn → slow, and N extra bodies is a **balance explosion** against the endless-descent curve. | **Cap at 1 joiner for v1** (design the array for N). Revisit 2 after balancing. **[BALANCE]** |
+| **Party-splitting by creature size** (canon p.705) | It's in the rulebook. | Two independently-moving sub-parties is huge state/UI complexity with zero payoff on a phone. | **Skip.** Single square, single party. Explicitly a dropped tabletop rule (like bags). |
+| **Per-member inventory / gear-swapping UI** | "Manage my party's loadout." | Deep management screens; drains the session; not the core loop. | Joiners **keep their rolled gear**; no management. |
+| **Permanent party that persists the whole run** | "I bonded with my joiner." | Snowballs power, flattens the difficulty curve, and undercuts permadeath tension. | **Transient joiners** (leave after N rounds/floors, or permadie). Impermanence is a feature. **[BALANCE]** |
+| **Formation / front-back positioning** | Tactical depth. | The maze combat has **no positioning model** to build on; large new system. | Flat target pool + random/weighted foe targeting (canon line 1311 precedent). |
+| **Player spends own HP/potions to revive/heal joiners as a core loop** | "Keep my buddy alive." | Constant drain + micromanagement; makes joiners a liability treadmill. | Joiners heal via **their own** sleep/upkeep, or not at all in v1. Downed = gone. |
+| **Individual per-member loot/wilmst bags** (canon had bags) | Rulebook realism. | Prototype already dropped bags; per-member banking is bookkeeping the solo player won't enjoy. | **Shared wilmst pool** on the leader; joiners carry no persistent loot. **[BALANCE]** |
+| **Networked multiplayer / "play with friends" now** | It's the long-term dream. | Out of scope; explicitly a later milestone. Joiners is the **solo on-ramp** to it. | Keep the party model serializable so multiplayer can reuse it later — but don't build sync. |
+
+---
 
 ## Feature Dependencies
 
 ```
-Reliable autosave/instant-resume (table stake)
-    └──requires──> Decoupled, serializable `S`-state / act()-beats architecture (already a stated project constraint)
+Party model (state.party[] + save migration)   <-- FOUNDATION
+    |
+    ├── requires ──> generalize C.ally / c.joiner (stop discarding the rolled sheet)
+    |
+    ├──> Accept/Decline recruitment (meetJoiner gate)
+    |
+    ├──> Joiner acts in combat (extend allyTurn to N, own strike/spells)
+    |        └── requires ──> Joiner HP + foe targeting across party
+    |                              └──> Joiner death/lifecycle semantics
+    |
+    ├──> Party status UI (party rail) ──enhances──> combat readability
+    |
+    ├──> XP split (participants)            [BALANCE]
+    |
+    └──> Per-member upkeep / rations        [BALANCE, couples to Economy milestone]
 
-Fine-grained mid-beat snapshotting (differentiator)
-    └──requires──> Reliable autosave/instant-resume
-    └──enhances──> Session-length fit (5-10 min) and future multiplayer-readiness
-
-Integrated first-run tutorial
-    └──requires──> Scrollable message/combat log (to surface contextual tooltips/explanations)
-    └──requires──> Rules engine already modeling all outcomes to explain (exists)
-
-Sarcastic content/voice system (epitaphs, Oracle log, item flavor)
-    └──requires──> Rules engine emitting structured event data (cause of death, class/race, floor, item used)
-    └──enhances──> Death screen (table stake), Graveyard screen, Shareable run-summary card
-
-Graveyard / run-history screen
-    └──requires──> Reliable autosave/local persistence layer (table stake)
-    └──requires──> Sarcastic content/voice system (for the epitaphs that make it fun to browse)
-
-Non-power "knowledge" unlocks (bestiary/compendium)
-    └──requires──> Rules engine tracking creature/spell IDs encountered (largely exists: ~45 creatures / 31 spells modeled)
-    └──conflicts──> Power-affecting meta-progression (anti-feature) — must stay strictly informational, never power-affecting
-
-Shareable run-summary card
-    └──requires──> Sarcastic content/voice system
-    └──requires──> Local high-score/depth tracking (table stake)
-
-Touch-native QoL (auto-explore, rest-until-healed)
-    └──requires──> Turn-based beats-stepping system (exists in prototype)
-    └──enhances──> 5-10 minute session pacing
-
-Optional platform achievements/leaderboards (Game Center / Google Play Games)
-    └──enhances──> Local high-score/depth tracking (table stake)
-    └──conflicts──> Fully-offline / no-accounts constraint if implemented as a hard dependency (must stay optional/opt-in)
-
-Accessibility (text scale, colorblind-safe indicators)
-    └──requires──> UI theming architecture designed for it from the start (retrofitting color-only status effects later is costly)
-
-Power-affecting meta-progression (anti-feature)
-    └──conflicts──> 100%-dice-rolled characters / permadeath-with-no-meta-progression (decided project identity)
+Sarcastic barks ──enhances──> Accept/Decline, death, departure
+Impermanence (leave after N) ──conflicts──> Permanent party (pick one: transient)
+Large party (4-6) ──conflicts──> 5-10 min session + difficulty curve
 ```
 
-### Dependency Notes
+### Dependency notes
+- **Everything depends on the party model.** Land `state.party[]` + save migration first; it is the single highest-risk, highest-leverage piece (touches the `applyAction` clone, `saveState.js`, and every combat function).
+- **Joiner combat requires HP + foe targeting requires lifecycle.** These three ship together or not at all — an ally that acts but can't be hurt (today's `C.ally`) is not a party.
+- **XP split and upkeep are the two balance counterweights** to the extra combat power; ship them *with* the combat feature, not after, or the first playtest is unbalanced.
+- **Impermanence vs. permanence is a fork** — decide early; it changes save, UI, and balance assumptions.
 
-- **Autosave/resume requires the serializable state architecture:** this is good news — PROJECT.md already mandates keeping the rules engine decoupled and state serializable for the future multiplayer feature. The same architectural discipline that protects multiplayer also gives near-free, best-in-class save/resume now. Don't treat these as separate investments.
-- **The sarcastic content system requires structured event data, not string concatenation:** epitaphs/Oracle log entries should be authored as data tables keyed by event type (death cause, class, race, depth, item), so tone stays consistent and content can be expanded without touching game logic. This is a content-pipeline decision that should be made early, since retrofitting a hardcoded joke system later is expensive and risks tonal drift (sarcastic-but-family-friendly must stay consistent as content grows).
-- **Non-power unlocks conflict with power-affecting meta-progression:** these two must be kept clearly separate in the roadmap so "knowledge/lore persistence" (fine, differentiator) doesn't quietly grow into "starting-gear persistence" (anti-feature, contradicts a core decision).
-- **Accessibility must be designed in, not bolted on:** status effects, threat indicators, and UI feedback should use icon+shape+color from the start; retrofitting colorblind support after art/UI is locked is a common and costly mistake.
-- **Optional platform leaderboards must never become a hard dependency:** the local high-score system alone must fully satisfy the "primary replay hook" requirement; platform services are a nice-to-have layered on top, not a blocker.
+---
 
 ## MVP Definition
 
-### Launch With (v1)
-
-Minimum viable product — everything already required by PROJECT.md plus the table-stakes UX/compliance work needed to survive App Store/Play Store scrutiny as a paid title.
-
-- [ ] Tap-to-move / contextual touch controls (with D-pad as an alternate control option) — the proven mobile control scheme for grid crawlers
-- [ ] Full ruleset preserved as canon (3 classes/24 subclasses/6 races/31 spells/~45 creatures/economy/procedural mazes) — already required
-- [ ] 100%-dice-rolled character creation with a satisfying "reveal" presentation — core identity, low incremental cost
-- [ ] Endless descent with a difficulty curve tuned for 5–10 minute typical runs
-- [ ] Permadeath with a ceremonial death screen (epitaph) and one-tap "new run"
-- [ ] Local high-score / best-depth tracking, persisted locally
-- [ ] Reliable autosave every beat + instant resume after any interruption
-- [ ] Integrated, in-context first-run tutorial (not a menu wall)
-- [ ] Scrollable message/combat log
-- [ ] Character/stat sheet screen
-- [ ] Basic settings: sound/music, haptics, text size, control scheme, confirm-before-quit
-- [ ] Sarcastic content/voice system for death epitaphs, item flavor, and Oracle log — the game's stated core identity
-- [ ] Graveyard / run-history screen — supports depth-chase loop without meta-progression
-- [ ] Basic accessibility: adjustable text size, colorblind-safe (icon+color) status/threat indicators
-- [ ] Store compliance: privacy label, accurate age rating, privacy policy, verified no hidden data collection
+### Launch With (v1 of the party system)
+- [ ] **Party model** `state.party[]` + save migration — foundation, everything depends on it.
+- [ ] **Accept/Decline** on the `Joiner` encounter — canon-required agency; stop auto-setting `c.joiner`.
+- [ ] **Cap = 1 joiner** (array built for N) — keeps turns fast + balance tractable. **[BALANCE]**
+- [ ] **Joiner keeps full rolled sheet** (class/level/gear/HP) — stop discarding rollCharacter output.
+- [ ] **Joiner auto-acts in combat** using its own strike dice / spells — generalize `allyTurn`.
+- [ ] **Joiner HP + foe targeting across party + death/departure semantics** — makes it a real party. **[BALANCE]**
+- [ ] **Party rail UI on** — visibility of member HP/status.
+- [ ] **XP split among participants** — canon, progression counterweight. **[BALANCE]**
+- [ ] **Per-member upkeep (rations)** — canon, economy pressure. **[BALANCE, coordinate with Economy milestone]**
+- [ ] **Sarcastic join/kill/down/leave barks** — cheap, core-identity payoff.
 
 ### Add After Validation (v1.x)
-
-Add once the core loop and store presence are proven.
-
-- [ ] Bestiary/compendium unlocks (creatures/spells seen) — trigger: players ask "what was that monster?" or engagement data shows repeat-run drop-off that lore/collection hooks could offset
-- [ ] Shareable "run summary" card — trigger: want organic/social discovery for a paid game with no ad budget
-- [ ] Optional Game Center / Google Play Games achievements & leaderboards (opt-in, offline-safe) — trigger: platform polish once core loop is validated; must never block launch
-- [ ] Expanded QoL (auto-explore, rest-until-healed/interrupted, quick "continue descending") — trigger: playtesting shows tedium/excess taps within a run
-- [ ] Expanded accessibility (remappable controls, additional colorblind modes, larger accessibility pass) — trigger: post-launch review feedback or EU market expansion
-- [ ] Fine-grained mid-beat snapshotting (if not already achieved for free via the serializable architecture)
+- [ ] **Second joiner slot (cap = 2)** — only after the single-joiner balance pass holds. **[BALANCE]**
+- [ ] **Class-specialized joiner behaviors** (Con Artist defuse, Cutthroat sacrifice gag, MU spell selection).
+- [ ] **Voluntary departure conditions** (starved/unpaid joiner leaves) tied to the Economy loop.
 
 ### Future Consideration (v2+)
+- [ ] **Networked multiplayer** reusing the serializable party model — separate later milestone.
+- [ ] **Larger parties / formations** — only if sessions and balance ever justify it (likely never on mobile).
 
-Explicitly deferred; do not let scope creep pull these into v1.
-
-- [ ] Play-with-friends multiplayer — explicitly deferred per PROJECT.md; large, separable layer
-- [ ] Platform identity / cloud save bridging (Game Center / Google Play Games as an account layer) — only needed once multiplayer requires it
-- [ ] Power-affecting meta-progression — only reconsider as a deliberate, separately-decided design pivot away from "pure roguelike," not a default add
-- [ ] Daily/seasonal shared-seed challenge runs — interesting differentiator later, but adds seed-sharing/fairness-verification complexity not worth taking on pre-launch
-- [ ] Narrative expansion / story mode — richer art/audio and story are nice-to-haves, not gates, per PROJECT.md
+---
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Tap-to-move contextual controls | HIGH | MEDIUM | P1 |
-| Reliable autosave/instant resume | HIGH | MEDIUM | P1 |
-| Ceremonial death screen + one-tap restart | HIGH | LOW | P1 |
-| Local high-score/depth tracking | HIGH | LOW | P1 |
-| Integrated first-run tutorial | HIGH | HIGH | P1 |
-| Message/combat log | HIGH | LOW-MEDIUM | P1 |
-| Sarcastic content/voice system (epitaphs, Oracle log) | HIGH | MEDIUM-HIGH | P1 |
-| Basic accessibility (text scale, colorblind-safe indicators) | MEDIUM-HIGH | MEDIUM | P1 |
-| Store compliance (privacy, age rating) | HIGH (gates launch) | LOW-MEDIUM | P1 |
-| Graveyard/run-history screen | MEDIUM | MEDIUM | P2 |
-| Bestiary/compendium unlocks | MEDIUM | MEDIUM | P2 |
-| Shareable run-summary card | MEDIUM | LOW-MEDIUM | P2 |
-| Touch-native QoL (auto-explore, rest) | MEDIUM | MEDIUM | P2 |
-| Optional platform leaderboards/achievements | LOW-MEDIUM | MEDIUM | P3 |
-| Fine-grained mid-beat snapshotting | MEDIUM | MEDIUM | P2 |
-| Power-affecting meta-progression | (rejected — see anti-features) | — | N/A |
-| Play-with-friends multiplayer | HIGH (long-term) | HIGH | P3 (post-MVP) |
+|---------|-----------|---------------------|----------|
+| Party model + save migration | HIGH | HIGH | P1 |
+| Accept/Decline recruitment | HIGH | LOW | P1 |
+| Joiner keeps own sheet | MED | LOW | P1 |
+| Joiner auto-acts in combat | HIGH | MED | P1 |
+| Joiner HP + foe targeting + death | HIGH | MED | P1 |
+| Party rail UI | HIGH | MED | P1 |
+| XP split **[BALANCE]** | MED | LOW | P1 |
+| Per-member upkeep **[BALANCE]** | MED | MED | P1 |
+| Sarcastic joiner barks | HIGH | LOW | P1/P2 |
+| Impermanence (leave after N) **[BALANCE]** | MED | LOW | P2 |
+| Class-flavored behavior | MED | MED | P2 |
+| Second joiner slot **[BALANCE]** | MED | MED | P3 |
+| Manual per-member control | LOW | HIGH | P3 (anti) |
 
-**Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
+---
 
-## Competitor Feature Analysis
+## Balance interactions (explicit call-outs for the roadmapper)
 
-Comparing Mazeworld's planned approach against the closest genre analogues: touch-native grid roguelikes and premium mobile roguelike/roguelite titles.
+This milestone is one of three balance-touching efforts. Flag every one of these to the requirements author and **coordinate the tuning pass with the Economy & Item Balancing milestone** so balance isn't done twice:
 
-| Feature | Shattered Pixel Dungeon (free, grid roguelike) | Slice & Dice / Card Thief-style premium roguelites | Our Approach |
-|---------|--------------------------------------------------|------------------------------------------------------|--------------|
-| Movement/combat input | Tap-to-move on grid, tap enemy to attack, fully contextual | Varies — often card/dice-drag rather than grid movement | Tap-to-move + tap-to-attack on the grid maze, D-pad as an alt option, matching the genre's proven touch pattern |
-| Meta-progression | None to minimal in base game (classic roguelike, permadeath-pure lineage) | Often includes unlockable characters/cards between runs | Deliberately none for power (matches SPD's classic-roguelike camp); knowledge-only unlocks (bestiary, graveyard) as the compromise |
-| Monetization | Free with optional cosmetic support | Premium, one-time purchase, no ads/IAP | Premium, one-time purchase, no ads/IAP — matches the trusted "complete experience" premium roguelite convention |
-| Tone/voice | Minimal narrative, mechanically focused | Varies; some (e.g., Card Thief) have light flavor text | Heavy, distinctive sarcastic voice as the primary differentiator — genre gap most competitors don't fill |
-| Session length design | Designed for longer, exploratory runs (can run 20–40+ min) | Explicitly designed for 5–15 minute sessions | Matches the short-session camp: endless descent tuned specifically for 5–10 minutes, with autosave/resume supporting interruption |
-| Save/resume | Autosave every turn is a genre norm | Same convention | Adopt the norm, extend it to mid-beat snapshotting given the existing serializable state architecture |
-| Accessibility | Minimal formal accessibility features (community-driven, not designed-in) | Varies widely, generally weak across the genre | Treat as a table stake designed in from the start — a gap most competitors leave open, and now a compliance requirement (EAA) for EU sales |
+1. **Party-size cap** — NOT specified by canon. Recommend **1** for v1. Each extra body multiplies combat turns (session length) and combat power (difficulty curve).
+2. **Extra combat contribution** — a joiner adds DPS *and* soaks foe attacks (damage sponge protecting the leader). Foes clear faster and the leader takes less → the endless-descent difficulty curve (Phase 3 / `difficulty.js`) will need retuning. Note canon: wandering-monster level scales off the **highest** party member (line 1319).
+3. **XP split** (canon line 1368) — the natural brake on the extra power. Decide participant rules for **temporary** joiners.
+4. **Upkeep per member** (canon 4WP/day each; Dwarf 1, Troll 15) — the party's cost. Directly couples to rations/economy. **Sequence this with the Economy milestone.**
+5. **Loot model** — recommend **shared wilmst on the leader**, joiners carry no persistent loot (avoids per-member banking; prototype already dropped bags).
+6. **Joiner death vs. departure** — permadeath-on-downed keeps stakes high and matches the "expendable joiner" tone; voluntary departure caps snowball. Decide the mix.
+
+---
+
+## Genre reference (turn-based roguelike party/follower patterns)
+
+| Pattern | Example | Fit for this game |
+|---------|---------|-------------------|
+| **Auto-acting temporary follower** | NetHack pet, DCSS summons/allies | **Best fit.** Matches existing `allyTurn` + Summon `rounds`; no micromanagement; keeps sessions short. |
+| **Small permanent party, permadeath, upkeep/provisions** | Darkest Dungeon (party of 4, provisions, stress) | Good tonal/upkeep reference, but 4 members is too many turns for a 5–10 min phone session → **shrink to 1**. |
+| **Solo, no party** | Slay the Spire, Hoplite, Dredmor | The prototype's current state; this milestone is the deliberate step beyond it. |
+| **Manual full-party control** | Classic party CRPGs | **Anti-pattern here** — contradicts the no-choice identity and the session length. |
+
+Takeaway: the genre's mobile/short-session winners use **few, auto-acted, often temporary** allies. That is exactly what the existing `allyTurn`/`rounds`/`c.joiner` seams already point at — the milestone is generalizing a proven pattern, not inventing one.
+
+---
 
 ## Sources
 
-- [Best mobile Dungeon Crawler games 2025 — MiniReview](https://minireview.io/top-mobile-games/best-dungeon-crawler-games-mobile)
-- [Best roguelikes and roguelites for iPhone/iPad — Pocket Gamer](https://www.pocketgamer.com/ios/best-roguelikes-ios/)
-- [Best Roguelikes on Android and iOS — Rogueliker](https://rogueliker.com/android-roguelikes/)
-- [Shattered Pixel Dungeon — Glitchwave (control scheme, UI, genre classification)](https://glitchwave.com/game/shattered-pixel-dungeon/)
-- [Shattered Pixel Dungeon for Android — Uptodown (touch-control description)](https://shattered-pixel-dungeon.en.uptodown.com/android)
-- [Game Wisdom — The Struggles of Onboarding Gamers](https://game-wisdom.com/critical/onboarding)
-- [Wayline — Tutorial UX: Your Indie Game's Onboarding Roadmap](https://www.wayline.io/blog/tutorial-ux-indie-game-onboarding)
-- [Adrian Crook & Associates — Best Practices For Mobile Game Onboarding](https://adriancrook.com/best-practices-for-mobile-game-onboarding/)
-- [Medium — I'm Better Than My Stats: Is Meta-Progression Killing Mastery?](https://medium.com/@jannihilator/im-better-than-my-stats-5e19fb38ac35)
-- [Bugnet Blog — How to Design a Roguelite Meta-Progression](https://bugnet.io/blog/how-to-design-a-roguelite-meta-progression)
-- [Hamatti Notes — Meta-progression with gradual tutorial in roguelike games](https://notes.hamatti.org/gaming/video-games/meta-progression-with-gradual-tutorial-in-roguelike-games)
-- [Google for Developers — Enabling Server-Side Access to Google Play Games Services](https://developers.google.com/games/services/android/offline-access)
-- [Google Play Help — Track achievements, XP & leaderboards](https://support.google.com/googleplay/answer/3129939?hl=en)
-- [Gloobia — Gaming Accessibility Options (2026 Update)](https://gloobia.com/gaming-accessibility-options/)
-- [Game Accessibility Guidelines — Basic](https://gameaccessibilityguidelines.com/basic/)
-- [Access-Ability — Accessibility Standards / Advancements 2025 Needs (European Accessibility Act)](https://access-ability.uk/2025/02/21/accessibility-standards-advancements-2025-needs/)
-- [AppFollow — Mobile game monetization guide: what players want according to reviews](https://appfollow.io/blog/what-mobile-game-players-want-monetization-insights-from-app-store-reviews)
-- [AppFollow — Monetization & paywall complaints: a game studio playbook](https://appfollow.io/blog/monetization-paywall-complaints-mobile-game-reviews)
-- [Mobile Free To Play — Mobile Session Design: Easy In, Easy Out](https://mobilefreetoplay.com/mobile-session-design/)
-- [Udonis — 10 Roguelike Mobile Games You Will Not Quit](https://www.blog.udonis.co/top-games/roguelike)
-- [RogueBasin — Catacombs of the Luato Depths (QoL feature conventions)](https://www.roguebasin.com/index.php/Catacombs_of_the_Luato_Depths)
-- [Capgo — App Store Age Ratings Guide for iOS and Android](https://capgo.app/blog/app-store-age-ratings-guide/)
-- [Capgo — The Complete First-Time App Review Guide for 2026](https://capgo.app/blog/first-time-app-review-guide/)
+- **`mazeworld.pdf`** (rulebook, CANON) — JOINERS section (line 5615) + Level Table (~5645); Cost of Living (582, 1309); XP split (1368); Initiative (1342); party-member target resolution (1311); wandering-monster scaling (1319); Cutthroat joiner-sacrifice (1177); Con Artist (1193); Size/party-split (705). CONFIDENCE: HIGH (primary source, direct extraction).
+- **`engine/encounters.js:397-407`** — `meetJoiner` dead-stub; rolls full character, keeps only 7 fields, nothing consumes `c.joiner`. CONFIDENCE: HIGH.
+- **`engine/combat.js:646-665, 163-167, 594-640`** — `allyTurn`, `pendingAlly`→`state.combat.ally` join, `afterPlayerAction`/`foeTurn` sequence. CONFIDENCE: HIGH.
+- **`engine/magic.js:99-123`** — Summon spell as the only `C.ally` source (`{lvl, rounds, name}`, no HP). CONFIDENCE: HIGH.
+- **`engine/character.js:140-200`** — `rollCharacter` full sheet incl. per-character `rations`/`gold`/gear/`grimoire`. CONFIDENCE: HIGH.
+- **`content/encounters.js:26,30`** — `"Joiner"` encounter cells (tables 2 & 6). CONFIDENCE: HIGH.
+- **`src/browser/eventNarration.js:127,290`** — existing `allyJoined`/`joinerMet` voice. CONFIDENCE: HIGH.
+- **`.planning/PROJECT.md`** — solo-conversion canon, voice identity, 5–10 min sessions, serializable-state constraint. **`.planning/proposed-milestone-joiners-party-system.md`** — milestone intent, balance-coupling flag. CONFIDENCE: HIGH.
+- Genre patterns (NetHack pets, DCSS summons, Darkest Dungeon party/provisions) — established turn-based roguelike design. CONFIDENCE: HIGH (well-known domain knowledge).
 
 ---
-*Feature research for: premium offline single-player mobile roguelike dungeon-crawler (Mazeworld)*
-*Researched: 2026-09-07*
+*Feature research for: single-player Joiner/party system, Mazeworld ("Delve, Die, Repeat")*
+*Researched: 2026-09-09*

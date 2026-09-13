@@ -1,171 +1,167 @@
 # Project Research Summary
 
-**Project:** Mazeworld
-**Domain:** Paid, fully-offline, single-player mobile roguelike dungeon-crawler - Android / Google Play only
-**Researched:** 2026-09-07
-**Confidence:** MEDIUM-HIGH
-
-Scope note: The project scope was narrowed to Android/Google Play only after the Stack and Pitfalls research was already underway. Both documents were written against a dual iOS+Android target and contain Apple App Store, Xcode, and Mac-toolchain content that is now out of scope. This summary strips that content out. iOS may be reconsidered post-launch but does not inform any current recommendation below. Dropping iOS removes the need-a-Mac-to-build-and-sign blocker entirely; the whole toolchain (Capacitor plus Android Studio plus keytool) runs natively on the author Windows machine.
+**Project:** Delve, Die, Repeat (Mazeworld) — "Joiners / Party System" milestone
+**Domain:** Persistent single-player party/companion system inside a deterministic, parity-frozen, fully-serializable turn-based roguelike engine
+**Researched:** 2026-09-09
+**Confidence:** HIGH (all four research tracks are grounded in direct primary-source reads of the actual engine, save layer, parity harness, frozen golden master, rulebook PDF, and the design mock)
 
 ## Executive Summary
 
-Mazeworld is a premium, offline, single-player mobile roguelike that already has a complete, tested ruleset living in a 3300-line vanilla-JS/HTML/canvas prototype (mazeworld.html). The heavy lift is not building a dungeon crawler; it is platform packaging, mobile presentation, endless-mode conversion, and onboarding, without breaking the existing proven rules. All four research tracks converge on wrap, do not rewrite. The prototype is a DOM-and-canvas app with a single serializable global state object (S) and an act()/beats action dispatcher, an ideal shape for Capacitor, which ships it as a native Android app with no game-logic rewrite and no engine-port detour.
+This milestone introduces the party system the engine was always designed to support: NPC "Joiners" who fight alongside the still-solo hero. It is **not** a technology-adoption effort — no library, plugin, or SDK is added (the offline/paid-upfront/zero-SDK constraint is fully honored). It is internal engine work that generalizes two disconnected, half-built ally footholds — the inert persistent `c.joiner` summary set by `meetJoiner`, and the invulnerable combat-scoped `C.ally` summon striker — into a real, damageable, serialized party roster. All four researchers converged independently and unanimously on the same shape, the same dominant hazard, and the same build spine, which is why overall confidence is HIGH.
 
-The recommended approach is a phased extraction-and-hardening sequence: pull the engine data tables and rules functions out from behind DOM/render/save entanglement, inject a seeded RNG in place of Math.random(), and land on a clean applyAction(state, action) to (state, events) boundary. This single refactor delivers bulletproof autosave/resume, reproducible seed-verifiable high scores, and the decoupled, serializable engine requirement PROJECT.md states as non-negotiable. Endless descent then becomes a difficultyCurve(depth) layered onto the existing floor generator, replacing the fixed 5-floor Gate; a design/balance problem more than an engineering one.
+The recommended approach is a **strangler-fig generalization, not a bolt-on**: add a persistent party (a new top-level `state.party[]` of full `rollCharacter`-shaped sheets, kept out of the parity-FROZEN `c.joiner` / `C.ally` shapes), sync it into combat at `startCombat` exactly as `pendingAlly → C.ally` already does (COMBAT-scoped `C.allies[]`), generalize the single-ally turn/target logic into a bounded multi-combatant loop, wire `meetJoiner` into real accept/decline recruitment, and turn on the design mock's already-built party rail. The rulebook is canon and explicit here: there is a dedicated JOINERS section (roll on the Level Table, accept/decline, roll up a full sheet per joiner; 4 WP/day upkeep — Dwarf 1, Troll 15; XP split among participants; wandering-monster level scales off the highest party member; the Cutthroat sacrifices a joiner — "Tough cookies!" — so joiners are canonically expendable, a ready-made dark-comedy hook).
 
-Key risks are unglamorous, well-documented porting failure modes: localStorage is not durable inside a native WebView and must be replaced with native storage (this game entire replay hook depends on save durability); Android back-button/lifecycle handling must be explicit (an unhandled back-tap can silently kill a permadeath run); touch targets must be sized to avoid mis-tap unfair deaths; Google Play compliance (Data Safety form, IARC rating) is mandatory even for a zero-data-collection offline app; and endless-mode difficulty must be a deliberate curve-design pass, not a flat per-floor multiplier. The roadmap should front-load engine extraction and a thin, store-compliant vertical slice through the Play internal testing track, rather than let visual polish or balance work consume the schedule before compliance and durability are proven.
+The dominant risk is **determinism/parity**. The engine is byte-compared against a frozen `prototype-master.js.txt` that must never be edited, and the whole test strategy pins exact RNG draw-order. Every new party dice draw (member strikes, foe target choice, recruit rolls) must be **gated behind party existence** so an empty party stays byte-identical to the frozen master; new serialized fields need a `strip*` carve-out in `comparables.js` (never a master edit); and new event types need `EVENT_NARRATION` entries or the coverage guard fails the build. The second-order risk is **balance**: extra bodies trivialize the Phase-3-tuned difficulty curve, and Joiners is only 1 of 3 balance-touching milestones (with Economy & Item Balancing and Monster Balancing) that all point at `engine/difficulty.js`. The mitigation is unanimous: build the mechanics with party-power exposed as a conservative lever, and defer the global dial retune to a single consolidated pass done LAST, coordinated across the three milestones — each milestone touches only its own local knobs.
 
 ## Key Findings
 
 ### Recommended Stack
 
-Path: wrap mazeworld.html with Capacitor for Android. The prototype is a DOM UI (character sheet, dice log, dialogs) with one canvas for the maze grid, plain-JSON global state, and only localStorage as a browser dependency (no fetch/WebSocket/Workers). Capacitor wraps this almost unchanged. No game-engine or cross-platform-framework port is advisable; the canvas-game problems those tools solve do not exist in this turn-based, DOM-panel-heavy crawler.
+No new dependencies. This is internal engine-state work riding the existing `ddr.delve.v1` save blob through the already-`@capacitor/preferences`-backed `mzStorage`. The "stack" is the set of engine-state seams the party rides on. Persistence is nearly free: `serializeRun()` already spreads `{...state}`, so the only save-layer edit is ~2 lines — add `party` (default `[]`) to the explicit whitelists in `validateSave()` and `rehydrate()` in `engine/saveState.js`. **No `STATE_VERSION` bump is required** (additive-with-default field; old saves default to an empty party) — though a bump to 2 is a harmless documentation choice. Fail-open on malformed party data (default to `[]`, drop bad members) rather than nuking an in-progress run.
 
-Core technologies:
-- Capacitor 8.x (capacitor/core, capacitor/cli, capacitor/android) - wraps the existing HTML/CSS/JS in a native Android WebView shell, no DOM/canvas rewrite needed.
-- Node.js 22+ - required by the Capacitor 8 CLI.
-- Android Studio (Otter/2025.2.1+) - compiles, signs, and builds the Android App Bundle; runs fully on Windows.
-- capacitor/preferences - durable native key-value storage; must replace raw localStorage for save/graveyard data.
-- capacitor/app - hooks the Android hardware/gesture back button.
-- capacitor/splash-screen, capacitor/status-bar - cheap native-chrome polish.
-- capacitor/screen-orientation (community) - lock to portrait, matching the prototype 1080px reflow.
-- Explicitly no ad SDK, analytics SDK, or IAP plugin - paid-upfront, offline, zero third-party SDKs is both the product promise and the simplest compliance path.
+**Core technologies (engine-state mechanisms):**
+- **Top-level `state.party[]`** (persistent roster of full `rollCharacter`-shaped sheets) — peers of the hero, not a property of `c`; strips in one place like `beats`; rides the save spread for free.
+- **Combat-scoped `C.allies[]`** synced in at `startCombat` — mirrors today's `pendingAlly → C.ally` handoff; in-fight state is transient (reload nulls `combat`), so persistent roster lives on `c`/top-level state and only in-fight sub-state lives on combat.
+- **Reuse of existing pure `rollCharacter(rng)`** — `meetJoiner` *already rolls a full sheet and discards it*; capturing it costs ZERO new RNG.
+- **Guarded `partyTurn`/`alliesTurn`** and **`comparables.js` strip carve-out** — the two load-bearing determinism seams (see Pitfalls).
+
+> **State-model tension, reconciled:** STACK framed the roster as top-level `state.party`; ARCHITECTURE framed it as `c.party` (because `rehydrate` always nulls `combat`). These agree on the substance: the **persistent** roster must live somewhere that survives reload (`c` or top-level state — NOT `state.combat`), and only the **combat-scoped** `C.allies[]` is transient and rebuilt each fight. Requirements author to pick top-level `state.party` vs `c.party`; both strip cleanly, top-level mirrors `state.combat`.
 
 ### Expected Features
 
-Must have (table stakes):
-- Tap-to-move / contextual touch controls (D-pad retained as alternate scheme)
-- Reliable autosave every beat plus instant resume after any interruption
-- Ceremonial permadeath death screen plus one-tap new run
-- Local best-depth/high-score tracking, bulletproof and persisted
-- Integrated first-run tutorial taught in-context, not a text wall
-- Scrollable message/combat log
-- Character/stat sheet screen (the reveal for 100 percent dice-rolled characters)
-- Basic settings (sound, haptics, text size, control scheme, confirm-before-quit)
-- Basic accessibility: adjustable text size, colorblind-safe status indicators
-- Google Play compliance: Data Safety form, IARC content rating, privacy policy
+Canon + code inspection define a tight, shippable v1. The `meetJoiner` seam is a dead stub (rolls a full character, keeps only a 7-field summary, nothing consumes it) and `C.ally` is an invulnerable single-slot summon striker — the milestone lights up and generalizes both.
 
-Should have (differentiators):
-- Sarcastic content/voice system (death epitaphs, item flavor, Oracle log) built as data tables keyed to structured engine events
-- Graveyard/run-history screen; reinforces depth-chase without violating no-meta-progression
-- Non-power knowledge unlocks (bestiary/compendium)
-- Shareable run summary card; free organic marketing
-- Touch-native QoL (interruptible auto-explore, rest-until-healed)
-- Escalating difficulty pacing tuned for 5 to 10 minute typical runs
+**Must have (table stakes — a party feels broken without these):**
+- Party model (`state.party[]`) + save migration — the foundation everything depends on.
+- Accept/Decline recruitment (canon: "If the party accepts the Joiner, roll up a new character") — stop auto-setting `c.joiner`.
+- Joiner keeps its full rolled sheet (class/race/level/gear/HP) — stop discarding `rollCharacter` output.
+- Joiner auto-acts in combat each round using its own strike math.
+- Joiner HP + foe targeting across the party + death/departure — a party of invulnerable bodies is a non-game.
+- Party rail UI turned on (already mocked, gated OFF behind `partyOn`).
+- XP split among participants + per-member upkeep (rations) — the two **[BALANCE]** counterweights; ship WITH combat, not after.
 
-Defer (v2+):
-- Multiplayer / play with friends (architecture must stay ready for it)
-- Power-affecting meta-progression, platform-identity/account layer, daily/seasonal seeded challenges, narrative expansion
+**Should have (differentiators — lean into identity):**
+- Sarcastic joiner barks on join/kill/down/leave (reuse rolled `temperament`/`motive`) — cheap, core-identity payoff, family-friendly dark comedy.
+- Impermanence by design ("joins you for a while") — transient tenure keeps sessions short and caps snowball.
+- Class-flavored behavior (MU joiner casts; the Cutthroat sacrifice gag).
+
+**Defer (v2+ / anti-features for a 5–10 min mobile roguelike):**
+- Manual per-member control (contradicts the no-choice identity + session length) — auto-resolve instead.
+- Large parties (4–6) / formations / party-splitting-by-size — cap at 1 for v1, build the array for N.
+- Per-member inventories/bags/equip screens — hero holds all loot (shared pool).
+- Networked multiplayer — the deferred milestone this is the solo on-ramp to.
 
 ### Architecture Approach
 
-Refactor (not rewrite) the prototype into a layered system with one hard boundary: a pure, synchronous rules/simulation engine (applyAction(state, action) to (state, events)) that never touches DOM, localStorage, or Math.random() directly. This is simultaneously the save/resume mechanism, the endless-mode scaling seam, and the future multiplayer seam.
+A strangler-fig integration that absorbs both existing ally paths into ONE party mechanism, one turn function, one targeting helper, one death helper — never parallel `allyTurn` + `partyTurn`. The persistent roster syncs into a unified combat combatant list at `startCombat`; the turn loop iterates it in fixed order; foes gain a target pool `[hero] + live members`; member damage takes a **simplified** branch (no ward/armor/mirror — those are hero-only) and member death sets `status:"downed"` and departs — it must **never** route into the hero's run-ending `die()`. All party events flow through the existing event → `formatEvent` → narration path, so once `EVENT_NARRATION` has entries, the Oracle log renders them with zero extra UI wiring; only the rail and member sheets are net-new DOM, driven data-drivenly by `party.length` (not the mock's demo `partyOn` toggle).
 
-Major components:
-1. Rules/Simulation Engine (engine/) - character creation, movement, combat, magic, economy, leveling, death, endless-descent progression; consumes an injected seeded RNG.
-2. Content (content/) - pure data tables (classes, races, spells, creatures, items, epitaphs) split out from logic.
-3. Presentation (presentation/) - DOM/canvas rendering, input adapter, and the one place structured Events become sarcastic narrative copy.
-4. Persistence (persistence/) - versioned save/graveyard storage behind a swappable adapter (native Preferences, not raw localStorage).
-5. Platform Bridge (platform/) - Capacitor-specific lifecycle, native storage, haptics, back-button handling.
-
-Suggested extraction order: content tables first (zero risk), inject seeded RNG, slice-by-slice convert movement/combat/economy/character/death into the applyAction contract, build the real event-to-narrative log formatter, add the endless-mode difficulty curve, harden persistence, and only then do platform packaging and visual/UX work.
+**Major components (with file:line seams):**
+1. **`state.party[]` / `C.allies[]`** — persistent roster + combat-scoped synced list; save-migration in `saveState.js` (~2 lines) — foundation.
+2. **`combat.js` turn loop** — `startCombat` (~163, sync party in), `allyTurn`→generalized iterate (~646), `foeTurn` (~674-790; today every foe hits ONLY the hero at ~768 — becomes a hero+members target pool with a simplified member-damage branch), `endCombat` (~584, sync member HP back), `afterPlayerAction` (guarded party turn).
+3. **`encounters.js` `meetJoiner` (~397-407)** — wire real accept/decline recruitment; keep setting `c.joiner` identically (frozen), additionally push the already-rolled full sheet into the roster (zero new RNG).
+4. **UI: party rail + member sheets** in `mazeworld.html` via the `window.__mzState` bridge (no new bridge); reuse Phase-4 status chips; `eventNarration.js` builders reusing the `ally*` family.
+5. **`difficulty.js`** — party-aware, but ONLY in the deferred consolidated balance phase.
 
 ### Critical Pitfalls
 
-1. localStorage is not durable inside a native WebView - must migrate save and graveyard to native storage (capacitor/preferences) before shipping; highest-priority technical pitfall given local high-score/graveyard is the primary replay hook.
-2. Android hardware/gesture back button unhandled - a bare back-tap can silently exit mid-run with no confirmation, catastrophic for permadeath. Intercept explicitly; persist full run state on every backgrounding event.
-3. Endless-mode difficulty curve treated as just multiply stats per floor - player power vs enemy difficulty diverging produces a trivial early game or an unbeatable wall. Needs a dedicated design/balance pass playtested to floor 30 to 50+.
-4. Undersized/adjacent touch targets on high-stakes actions - mis-taps cause player-perceived unfair deaths; enforce 44pt/48dp minimum hit areas with spacing between destructive/non-destructive actions.
-5. Google Play compliance treated as a rubber stamp - Data Safety form and IARC questionnaire are mandatory even for a zero-collection offline app, and must be derived from an actual dependency audit, re-checked after every plugin change.
-6. Rules-engine/UI coupling creeping back in under deadline pressure - mobile-specific feature work tempts direct global-state mutation from UI code, quietly foreclosing the planned multiplayer future. Guard with a serialize/rehydrate round-trip test kept green throughout development.
+1. **New RNG draws shift the seeded cursor and break the parity suite.** Gate every new draw (member strike, foe target choice, recruit roll) behind party existence (`state.party?.length` / `pool.length > 1`), exactly as the phobia-Hardiness `rng.d(2)` and today's null-`C.ally` `allyTurn` already do. Never add an unconditional draw to `startCombat`/`foeTurn`/`playerStrike`/`afterPlayerAction`. Signature of failure: a cascade of many parity fields go red at once while unit tests pass.
+2. **New engine-only party fields aren't carved out of `comparable()` → permanent false parity failures.** Add a `stripPartyField`/top-level `party` strip to all three `*Comparable()` fns in `comparables.js` (mirroring `stripDarkForField`), document the deliberate-divergence rationale, and NEVER edit `prototype-master.js.txt`. Keep party events additive new types (reuse `ally*` where shape matches) so no existing event-shape assertion breaks.
+3. **Extra bodies trivialize combat and the difficulty curve is done 3×.** Party power must be a designed-in lever (P1/P2) but the global `difficulty.js` retune is deferred to ONE consolidated pass done LAST, coordinated with Economy & Monster milestones — each milestone touches only local knobs. XP-split (canon) + upkeep (canon) are the built-in counterweights; recommend joiners do NOT accrue XP/loot in v1 (hired muscle), hero holds all loot.
+4. **Combat loop drags past the 5–10 min session or infinite-loops.** Model party turns as a bounded `for` over a snapshot (never a `while`), guard dead/no-target cases, re-check `liveFoes()` after every actor so combat ends the instant foes clear, cap party size, add a hard round ceiling.
+5. **Save migration + member death semantics.** Persistent party must live on `c`/top-level (combat is nulled on reload); default missing party to `[]` everywhere; validate/clamp member fields fail-closed. A downed member departs the run and must fork AWAY from the hero's `die()` — never end the run when a companion falls.
 
 ## Implications for Roadmap
 
-### Phase 1: Engine Extraction and Determinism
-Rationale: Everything else (save/resume, endless mode, multiplayer-readiness) is cheaper once the engine is decoupled and deterministic; doing this first, against the still-working browser prototype, is lowest-risk.
-Delivers: engine/ module reachable only through applyAction(state, action) to (state, events); content tables extracted; seeded RNG replacing all Math.random() calls; a serialize/rehydrate round-trip test.
-Addresses: the project non-negotiable decoupled, serializable engine constraint; seed for deterministic/verifiable high scores.
-Avoids: engine/UI coupling creep - establish the guardrail before any mobile-specific feature work.
+All four tracks independently produced the **same dependency-ordered spine**: Party Model → Party Combat → Joiner Acquisition → Party UI → Balance (deferred) → Death Semantics. This is "make it work → make it visible → make it fair." Suggested phases:
 
-### Phase 2: Android Packaging and Native Persistence
-Rationale: De-risk the platform/store path early - surfaces signing/storage/compliance problems while there is still schedule slack.
-Delivers: Capacitor Android shell; native Preferences-based persistence (versioned save schema plus integrity checksum) replacing raw localStorage; back-button and app-lifecycle handling; splash/status-bar chrome.
-Uses: Capacitor 8.x, capacitor/android, capacitor/preferences, capacitor/app.
-Implements: Persistence and Platform Bridge components.
-Avoids: localStorage durability failure, unhandled Android back button, canvas DPI/safe-area issues.
+### Phase 1: Party Model + Migration + Parity Carve-outs
+**Rationale:** Zero upstream deps; unblocks everything. Highest-leverage, highest-risk piece.
+**Delivers:** Persistent `state.party[]` (full sheets), the ~2-line `saveState.js` whitelist migration (default `[]`, no `STATE_VERSION` bump needed), the `comparables.js` strip carve-out, and a save round-trip test. Party still inert in combat.
+**Addresses:** Party model + "joiner keeps own sheet" (FEATURES table stakes).
+**Avoids:** Pitfall 2 (carve-out defined the moment the field lands), Pitfall 8 (persistent-on-`c`, fail-open migration), Pitfall 10 (absorb `C.ally`, don't duplicate).
+**Gate:** empty/one-member party ⇒ existing tests byte-identical.
 
-### Phase 3: Endless Descent and Difficulty Balance
-Rationale: Requires a stable engine boundary (Phase 1) to be a pure content/tuning change rather than a structural one; explicitly a design-balance problem needing dedicated playtesting.
-Delivers: difficultyCurve(depth) replacing the fixed 5-floor Gate; soft-cap/asymptotic scaling with periodic breather floors; playtesting to floor 30 to 50+ validating fairness and the 5 to 10 minute session target.
-Addresses: the endless descent core requirement.
-Avoids: linear-vs-exponential curve divergence; unfair-feeling permadeath deaths from RNG layering issues.
+### Phase 2: Party Combat (turn order, targeting, RNG gating, loop termination)
+**Rationale:** The mechanical heart; needs a roster to read.
+**Delivers:** `startCombat` syncs `party → C.allies`; `endCombat` syncs HP back; generalized `alliesTurn`; `foeTurn` target-pool + simplified member-damage branch + member down (never `die()`); new events + `EVENT_NARRATION` builders.
+**Uses:** existing `STRIKE_DICE`/strike math; `window.__mzState` unchanged; `applyAction` switch UNTOUCHED (auto-resolved members).
+**Avoids:** Pitfalls 1, 6, 7, 11 (gated draws, bounded loops, one target/death helper, member-death fork).
+**Gate:** full parity suite green; solo fixtures draw ZERO new RNG; `combatEnded` always reached.
 
-### Phase 4: Mobile Presentation, Controls, and Onboarding
-Rationale: Best done against a stable, portable engine and working native shell, so UX iteration does not risk re-coupling the engine.
-Delivers: Tap-to-move contextual controls (D-pad alt); touch-target sizing/spacing; DPI-correct canvas rendering; safe-area-aware layout; in-context first-run tutorial; character sheet/HUD/combat log screens; basic accessibility.
-Addresses: table-stakes UX features.
-Avoids: canvas DPI blur, safe-area/edge-to-edge overlap, undersized touch targets.
+### Phase 3: Joiner Acquisition (wire `meetJoiner` recruitment)
+**Rationale:** Combat must exist before recruits are meaningful.
+**Delivers:** accept/decline gate on the `Joiner` encounter; capture `meetJoiner`'s already-rolled sheet into the roster (zero new RNG); respect a party-size cap; keep `c.joiner` set identically (frozen).
+**Addresses:** Accept/Decline (canon-required agency).
+**Avoids:** Pitfall 1 (recruit draws gated to the non-chargen encounter path), Pitfall 10 (absorb `meetJoiner`).
 
-### Phase 5: Voice, Content, and Differentiators
-Rationale: Depends on the engine emitting structured events and a stable log formatter; this is where the game core comedic identity gets built and QA verified.
-Delivers: Sarcastic content/voice system (epitaphs, Oracle log, item flavor) as data tables keyed to structured events; graveyard/run-history screen; non-power knowledge unlocks; shareable run-summary card; a batch-generated procedural-text QA pass for tone/rating safety.
-Addresses: the game stated differentiators and core identity.
-Avoids: procedural text combinatorics reading as unintended/inappropriate; age-rating mapping errors for dark humor.
+### Phase 4: Party UI (turn the rail on)
+**Rationale:** UI needs live combat/party state to render.
+**Delivers:** party rail over `C.allies` (per mock, drop the `partyOn` toggle — data-drive on `party.length`); member sheets on the HERO screen; compact status chips (reuse Phase-4 combat-UX pattern); tap-to-expand.
+**Implements:** the design mock's already-built rail; presentation-only over engine state.
+**Avoids:** Pitfall 9 (fixed-cap rail, portrait-legible) — with a device-review checkpoint on the Pixel 7.
 
-### Phase 6: Google Play Compliance and Launch
-Rationale: Store submission itself eats real calendar time and should be a gated checklist distinct from feature complete.
-Delivers: Data Safety form (from a real dependency audit), IARC content rating (mapped from real flavor-text samples), privacy policy, Play Console listing, signed AAB via Play App Signing, Play internal testing track validation, optional crash-reporting hook (re-declared in compliance forms if added).
-Addresses: the Publish to Google Play requirement.
-Avoids: privacy/data-safety mismatch, age-rating miscalibration, no crash reporting/device diversity, compliance workstream starved by polish work.
+### Phase 5: Balance (deferred consolidated retune)
+**Rationale:** You cannot tune against a party that doesn't yet exist; and Joiners is 1 of 3 balance milestones. Do the global `difficulty.js` retune ONCE, LAST.
+**Delivers:** party-power input to `difficultyCurve`; XP-÷-party; ration upkeep — coordinated with Economy & Item Balancing (shared playtest pass, shared reward numbers).
+**Avoids:** Pitfalls 3 & 4 (curve invalidation, triple-retune). Each earlier milestone touches only its local knobs.
+
+### Phase 6: Death / Permadeath Semantics
+**Rationale:** Finalize the lifecycle knob once combat + UI expose it.
+**Delivers:** downed-member departs-the-run (no hero `die()`, no run-end), roster/save cleanup of dead members, on-tone dark-humor departure lines. May fold into Phase 2's combat branch if kept minimal.
 
 ### Phase Ordering Rationale
-
-- Engine extraction comes first because every later phase is cheaper against a clean, deterministic, serializable engine and expensive to retrofit once presentation/platform code has assumed a tangled shape.
-- Packaging/native persistence comes early (Phase 2), before the full visual/UX redesign, specifically to surface signing/storage/compliance problems while there is still schedule slack; a thin but store-compliant build should reach the Play internal testing track early, in parallel with polish work, not after.
-- Endless-mode balance and mobile presentation are sequenced after the engine and packaging are stable so tuning/UI iteration does not risk re-coupling the architecture.
-- Voice/content and final compliance are placed last since they depend on structured events existing and benefit from testing against a feature-complete, already-store-compliant build.
+- **Data before behavior before visibility before balance** — the unanimous dependency chain; matches the proposed-milestone's own candidate order.
+- **Balance is deliberately last and shared** — the single most important sequencing decision; prevents tuning `difficulty.js` 2–3× against stale assumptions.
+- **Every phase carries a determinism gate** in its success criteria (empty party ⇒ byte-identical), because parity is the dominant hazard.
 
 ### Research Flags
+Phases likely needing deeper research during planning (`/gsd-plan-phase --research-phase`):
+- **Phase 2 (Combat):** the highest-parity-sensitivity change (`foeTurn` retrofit, RNG gating, loop termination) — worth a focused pre-plan pass over the exact draw sites even though the seams are already mapped.
+- **Phase 5 (Balance):** genuinely cross-milestone; needs the Economy/Monster ordering decided and the tuning harness re-run with party scenarios — coordinate, don't research in isolation.
 
-Needs research: Phase 3 (project-specific difficulty-curve tuning requires playtesting data beyond genre precedent), Phase 6 (Google Play target-API/Data-Safety/IARC specifics shift yearly - re-verify against current Play Console Help immediately before execution).
-
-Standard patterns (skip research-phase): Phase 1 (command/event engine boundary and seeded-PRNG patterns are well-established, with code examples already in ARCHITECTURE.md), Phase 2 (Capacitor plus native storage plugin usage is a documented standard pattern), Phase 4 (DPI-scaling, safe-area insets, touch-target sizing are standard mobile UX patterns).
+Phases with standard/well-documented patterns (skip research-phase):
+- **Phase 1 (Model/Migration):** the save/parity seams are documented to file:line; it's mechanical.
+- **Phase 3 (Acquisition):** a single-seam wire-up of an already-analyzed stub.
+- **Phase 4 (UI):** the rail is already designed in the mock and the bridge is known.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM (Android-specific portions HIGH) | Capacitor/Android Studio/Play packaging facts cross-checked across multiple sources; dropping iOS removes the one genuinely fragile/time-sensitive claim set (Apple SDK deadlines) from this project critical path entirely. |
-| Features | MEDIUM-HIGH | Cross-corroborated genre/UX research across multiple queries; findings are design conventions, not API specifics. |
-| Architecture | HIGH | Component boundaries derived directly from reading the actual prototype source; multiplayer-lockstep and seeded-PRNG patterns are established general knowledge. |
-| Pitfalls | HIGH for Android/Play and wrapper-mechanics pitfalls; MEDIUM for roguelike-design pitfalls | Store-policy and WebView-storage pitfalls corroborated by official docs and GitHub issues; genre pitfalls synthesized from established design wisdom, not project-specific playtesting. |
+| Stack | HIGH | Direct read of the engine + save layer + parity harness; no new deps; seams cited to file:line. |
+| Features | HIGH | Rulebook canon read directly (JOINERS §, line-cited) + line-by-line code inspection + genre patterns. |
+| Architecture | HIGH | Every integration point cited to file:line across engine, bridge, and the design mock. |
+| Pitfalls | HIGH | Grounded in the frozen master + harness + save layer; each pitfall maps to a phase + verification. |
 
-Overall confidence: MEDIUM-HIGH
+**Overall confidence:** HIGH — remarkable four-way convergence on state shape, the parity hazard, and the build spine.
 
 ### Gaps to Address
-
-- Exact current Google Play target-API-level deadline and Data Safety form field set shift yearly - re-verify against developer.android.com and Play Console Help immediately before Phase 6, not from this document alone.
-- Actual endless-mode difficulty curve shape requires project-specific playtesting during Phase 3 - budget real iteration time, not a one-shot formula.
-- No crash-reporting or multi-device test data exists yet (pre-development); Phase 6 should budget Play internal testing with external testers on varied Android device models.
-- Procedural flavor-text combinatorics have not been generated or reviewed yet; Phase 5 must include a batch-generation QA pass before tone/rating is finalized.
+Open questions for the requirements author (research recommendations in parentheses):
+- **Party-size cap for v1** — (recommend 1 joiner; build the array for N).
+- **State home for the persistent roster** — top-level `state.party` vs `c.party` (both strip cleanly; top-level mirrors `state.combat`; must NOT be on `state.combat`).
+- **Joiner lifecycle** — permadeath-on-downed vs leave-after-N vs both (recommend BOTH: downed departs the run; transient tenure caps snowball).
+- **Does a temporary joiner count for the XP split** — (recommend yes, while present).
+- **Foe-targeting rule** — draw-free fixed rule vs gated random (either is fine; gate any draw behind `party.length > 0`).
+- **Reconcile the `meetJoiner` `maxWP` double-roll quirk** in the master — fix deliberately, behind the non-chargen gate (itself a Pitfall-1 event).
+- **Final ordering of the 3 balance milestones** — decide at milestone-planning; global `difficulty.js` retune reserved for one consolidated pass.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Direct inspection of mazeworld.html - confirmed DOM+CSS UI, single-canvas maze renderer, localStorage-only persistence, no fetch/WebSocket/Worker usage.
-- .planning/PROJECT.md - authoritative scope, requirements, and constraints.
-- Official docs: capacitorjs.com/docs/guides/storage, capawesome.io (edge-to-edge/safe-area guide), support.google.com/googleplay (Data Safety, content ratings), developer.android.com (target SDK, app bundle, signing).
+- `engine/combat.js` — `startCombat` (~163), `allyTurn` (~646), `foeTurn` (~674-790, hero-only hit at ~768), `afterPlayerAction`, `endCombat` (~584), guarded-RNG precedents.
+- `engine/saveState.js` — `serializeRun` spread, `validateSave`/`rehydrate` whitelists (the ~2-line migration), `STATE_VERSION`, combat-reset-on-load.
+- `engine/encounters.js:397-407` (`meetJoiner` dead stub), `engine/magic.js:99-123` (summon `C.ally`), `engine/character.js:140-218` (`rollCharacter`), `engine/state.js` (`newRun`), `engine/difficulty.js` (pure curve).
+- `test/parity/harness/comparables.js` (`stripDarkForField` carve-out pattern) and `test/parity/prototype-master.js.txt` (FROZEN — `c.joiner`/`C.ally` verbatim; `maxWP` double-roll quirk).
+- `mazeworld.pdf` rulebook — JOINERS § (line 5615), Level Table (~5645), upkeep (582/719/732/1309), XP split (1368), initiative (1342), member-target resolution (1311), wandering-monster scaling (1319), Cutthroat sacrifice (1177).
+- `design/Mazeworld Mobile.dc.html` (party rail, `partyOn` gate), `mazeworld.html` (`__mzState` bridge :2053, combat render, save/load), `src/browser/eventNarration.js` (coverage guard + `ally*` family).
+- `.planning/PROJECT.md`, `.claude/CLAUDE.md`, `.planning/proposed-milestone-joiners-party-system.md` — constraints, voice, balance-coupling.
 
 ### Secondary (MEDIUM confidence)
-- Ionic/Capacitor 8 release notes and migration docs.
-- Genre/UX research: Shattered Pixel Dungeon control-scheme analysis, mobile roguelike onboarding/accessibility best-practice articles, EU Accessibility Act coverage.
-- Store-rejection-pattern aggregator articles cross-checked against official guideline categories.
-- WKWebView/Capacitor localStorage-eviction reports (Apple Developer Forums, ionic-team/capacitor GitHub issue 636).
-- Deterministic lockstep / command-pattern multiplayer architecture references.
+- Genre companion patterns (NetHack pets, DCSS summons, Darkest Dungeon provisions/party) — established turn-based roguelike design.
 
 ### Tertiary (LOW confidence)
-- Single player-forum anecdote on endless-mode balancing - used only to corroborate an already well-established scaling-failure pattern.
+- None — all findings trace to primary sources.
 
 ---
-Research completed: 2026-09-07
-Ready for roadmap: yes
+*Research completed: 2026-09-09*
+*Ready for roadmap: yes*
