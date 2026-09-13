@@ -207,6 +207,10 @@ export const EVENT_NARRATION = {
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
   armorSoaked: (e) => `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.`,
+  // Phase 18 (CANON-01, D-08) — the FOE's natural armor ate the hero's/
+  // ally's blow. `name` is the foe; `amount` is what it shrugged off (kept
+  // short for the toast).
+  foeArmorSoaked: (e) => `<span class="miss">Your blow rings off ${e.name ?? "the thing"}'s armor. It looks bored.</span>`,
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
   damageHalved: (e) => `<span class="hit">The pendant drinks half of ${e.name ?? "that"}'s blow before it reaches you.</span>`,
