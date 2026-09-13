@@ -23,8 +23,8 @@
 // plan needing to implement magic itself.
 //
 // Most BESTIARY creature `sp.*` flags (poison/disease/steals/enthrall/awe/
-// grapple/entangle/possess/raise/shriek/quills/ar/critOn/loot/song/pack/
-// slow/halfDmg/age/pursues/seesInvis/noTurn/never_melee/dark/daggerOnly/
+// grapple/entangle/possess/raise/shriek/quills/critOn/loot/song/pack/
+// age/pursues/seesInvis/noTurn/never_melee/dark/daggerOnly/
 // caster/breaks/every, etc.) are flavor-only in the frozen prototype — grep
 // confirms none of them are ever read anywhere in mazeworld.html's live
 // logic (only `sp.note` feeds the UI). Only `sp.atk`, `sp.dmg`, `sp.toHit`,
@@ -32,8 +32,14 @@
 // any mechanical effect, and this module implements exactly those, matching
 // the prototype's ACTUAL behavior rather than the aspirational flavor text
 // (fidelity rule: port what the prototype DOES, not what its comments imply).
+// Since Phase 18 (CANON-01/03/05), `sp.ar` and `sp.halfDmg` (plus the
+// CANON-04 damage-source x creature-type multipliers) are applied by
+// engine/foeDamage.js#damageFoe, and `sp.slow` by playerStrike's to-hit
+// roll below — every other flag in the list above stays flavor-only until
+// Phase 19.
 
 import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak } from "./derived.js";
+import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { checkLevel } from "./character.js";
@@ -316,7 +322,13 @@ export function playerStrike(state, rng, events = []) {
 
   for (let a = 0; a < attacks && t.alive; a++) {
     const dieN = strikeDie(c);
-    const roll = rng.d(dieN);
+    let roll = rng.d(dieN);
+    // CANON-05 (D-12, p.36): Philly's `slow` gives the player two dice, keep
+    // the lower (low = hit) — player-favorable. DETERMINISM GATE: the second
+    // die is drawn ONLY when `t.sp.slow` is truthy; Philly is the sole
+    // carrier and is not fixture-exposed, so every other strike draws
+    // exactly one die, unchanged.
+    if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
     let need = a === 1 && R.frenzy ? 3 : toHit(state);
     if (t.asleep > 0) need = Math.max(need, 5); // p.27: 5 to hit a dozing creature
     if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
@@ -392,8 +404,13 @@ export function playerStrike(state, rng, events = []) {
       C.cut = true;
     }
     if (crit) dmg *= 2;
-    t.wp -= dmg;
-    events.push({ type: "struck", target: t.name, roll, dmg, critical: crit });
+    // CANON-01/03/04 (D-05..D-11): route the hero's weapon hit through the
+    // seam. `casterClass`/`casterSub` let the multiplier table identify a
+    // Fighter's melee vs Trachea (D-11/D-20 — hero-only); `crit` lets a
+    // critical bypass the armor soak (D-07). On a soak the seam's own
+    // `foeArmorSoaked` is the only narration for this blow — no `struck`.
+    const landed = damageFoe(state, t, dmg, { kind: "melee", casterClass: c.cls, casterSub: c.sub, crit }, rng, events);
+    if (!landed.soaked) events.push({ type: "struck", target: t.name, roll, dmg: landed.applied, critical: crit });
     if (t.wp <= 0) killFoe(state, t, rng, events);
   }
   afterPlayerAction(state, rng, events);
@@ -735,8 +752,10 @@ export function allyTurn(state, rng, events = []) {
   const roll = rng.d(STRIKE_DICE[C.ally.lvl - 1]);
   if (roll <= 5) {
     const d = C.ally.lvl * C.ally.lvl + rng.d(6);
-    t.wp -= d;
-    events.push({ type: "allyStruck", name: C.ally.name, target: t.name, dmg: d });
+    // D-06/D-20: an ally's blow is physical (soakable) and never matches a
+    // multiplier row (no cls on a summoned/party ally this phase).
+    const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
+    if (!hit.soaked) events.push({ type: "allyStruck", name: C.ally.name, target: t.name, dmg: hit.applied });
     if (t.wp <= 0) killFoe(state, t, rng, events);
   } else {
     events.push({ type: "allyMissed", name: C.ally.name });
@@ -778,8 +797,10 @@ export function alliesTurn(state, rng, events = []) {
     const roll = rng.d(STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1]);
     if (roll <= 5) {
       const d = ally.lvl * ally.lvl + rng.d(6);
-      t.wp -= d;
-      events.push({ type: "allyStruck", name: ally.name, target: t.name, dmg: d });
+      // D-06/D-20: a party member's blow is physical (soakable) and never
+      // matches a multiplier row (no cls on C.allies entries this phase).
+      const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
+      if (!hit.soaked) events.push({ type: "allyStruck", name: ally.name, target: t.name, dmg: hit.applied });
       if (t.wp <= 0) killFoe(state, t, rng, events);
     } else {
       events.push({ type: "allyMissed", name: ally.name });
@@ -896,8 +917,12 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
     c.ward.pool -= warded;
     dmg -= warded;
     if (c.ward.reflect && warded > 0) {
-      foe.wp -= warded;
-      events.push({ type: "wardReflected", target: foe.name, amount: warded });
+      // Reflected damage is treated as physical (18-RESEARCH A2 — soakable
+      // by the foe's own natural armor, never subject to the multiplier
+      // table); the d20 here is gated on foe.sp.ar exactly like every other
+      // seam draw, so no parity path changes.
+      const bounce = damageFoe(state, foe, warded, { kind: "reflect", crit: false }, rng, events);
+      if (!bounce.soaked) events.push({ type: "wardReflected", target: foe.name, amount: bounce.applied });
       if (foe.wp <= 0) {
         killFoe(state, foe, rng, events);
         return { died: false, onArmour: false }; // the FOE died to reflect, not the hero
@@ -978,9 +1003,13 @@ export function foeTurn(state, rng, events = []) {
   for (const f of C.foes) {
     if (f.acid && f.acid.rounds > 0) {
       const d = rollDice(rng, f.acid.dmg);
-      f.wp -= d;
+      // Acid is spell damage (bypasses armor, D-06; eligible for the
+      // Walking Dead / Cleric-vs-Demons rows, D-11). `c.sub` is read live at
+      // tick time — the hero cannot change class mid-fight — so no caster
+      // identity is stashed on `f.acid` (D-17: no new serialized field).
+      const tick = damageFoe(state, f, d, { kind: "spell", school: "acid", casterSub: c.sub }, rng, events);
       f.acid.rounds--;
-      events.push({ type: "acidTick", target: f.name, dmg: d });
+      events.push({ type: "acidTick", target: f.name, dmg: tick.applied });
       if (f.wp <= 0 && f.alive) {
         killFoe(state, f, rng, events);
         continue;

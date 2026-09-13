@@ -29,6 +29,7 @@ import {
   endCombat,
   afterPlayerAction,
   allyTurn,
+  alliesTurn,
   foeTurn,
   applyFoeDamageToPlayer,
 } from "../../engine/combat.js";
@@ -959,4 +960,182 @@ test("afterPlayerAction: an acid tick that kills the last foe during foeTurn end
   assert.equal(foe.alive, false, "the tick killed the foe");
   assert.equal(state.combat, null, "combat ends instead of stranding the player");
   assert.ok(events.some((e) => e.type === "encounterCleared"), "encounterCleared emitted");
+});
+
+// --- Phase 18: damageFoe routing + slow (CANON-01/03/04/05) ---------------
+
+test("playerStrike: natural armour soaks a blow (roll <= sp.ar): foeArmorSoaked, no struck, wp unchanged, exactly one extra d20", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe]);
+  // strike d20=3 vs need=5 -> hit; club d6=4 -> dmg=5; armor soak d20=5 <= ar 12
+  // -> soaked, no struck; foe's own swing (foeDie 7) misses; fresh initiative
+  // (mine=15 >= theirs=10 -> player stays first).
+  const rng = fakeRng([3, 4, 5, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
+  assert.equal(events.some((e) => e.type === "struck"), false, "a soaked blow emits no struck event");
+  assert.equal(foe.wp, 10, "the armor absorbed the blow entirely");
+  assert.equal(state.combat.round, 2);
+  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly one extra d20 (the soak roll) was drawn");
+});
+
+test("playerStrike: a soak roll above sp.ar lets the blow land", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([3, 4, 13, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "struck" && e.dmg === 5));
+  assert.equal(foe.wp, 5);
+  assert.equal(events.some((e) => e.type === "foeArmorSoaked"), false);
+});
+
+test("playerStrike: a critical ignores the soak (D-07) — no d20 drawn", () => {
+  const state = fixedState({ c: { sub: "Knight" } });
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  // strike d20=1 -> natural-1 crit (Knight is not noCrit); club d6=4 -> base
+  // dmg=5, doubled to 10; the crit bypasses the armor soak entirely (no d20
+  // drawn for it); foe's own swing (foeDie 7) misses; fresh initiative.
+  const rng = fakeRng([1, 4, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "struck" && e.critical === true && e.dmg === 10));
+  assert.equal(foe.wp, 10);
+  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 5 draws total — no soak roll for a crit");
+});
+
+test("playerStrike: slow — two dice, the lower kept: a 7 then a 2 hits with struck.roll === 2 (D-12)", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { slow: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([7, 2, 4, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  const struck = events.find((e) => e.type === "struck");
+  assert.equal(struck.roll, 2, "the lower of the two strike dice is kept");
+  assert.equal(struck.dmg, 5);
+  assert.equal(foe.wp, 15);
+});
+
+test("playerStrike: slow — both dice above need: strikeMissed with roll 7 (the lower), then the foe turn", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { slow: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([7, 9, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  const missed = events.find((e) => e.type === "strikeMissed");
+  assert.equal(missed.roll, 7, "the lower of the two strike dice (7 vs 9) is kept");
+  assert.equal(foe.wp, 20);
+  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 5 draws for a slow foe");
+
+  // Control: a non-slow foe draws exactly one strike die and misses after 4 draws total.
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ wp: 20, maxWP: 20 });
+  state2.combat = fixedCombat([foe2]);
+  const rng2 = fakeRng([7, 7, 15, 10]);
+  playerStrike(state2, rng2, []);
+  assert.throws(() => rng2.d(20), /sequence exhausted/, "exactly 4 draws for a non-slow foe");
+});
+
+test("playerStrike: a halfDmg foe takes ceil(5/2) = 3 (D-10)", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { halfDmg: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([3, 4, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "struck" && e.dmg === 3));
+  assert.equal(foe.wp, 17);
+});
+
+test("playerStrike: a Fighter's melee doubles against Trachea (D-11); a Thief's does not (hero class check, D-20)", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([3, 4, 7, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "struck" && e.dmg === 10), "a Fighter's melee doubles vs Trachea");
+  assert.equal(foe.wp, 10);
+
+  // Thief control: opened2:true skips the opening backstab so the comparison is clean.
+  const state2 = fixedState({ c: { cls: "Thief", sub: "Cutpurse" } });
+  const foe2 = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
+  state2.combat = fixedCombat([foe2], { opened2: true });
+  const rng2 = fakeRng([3, 4, 7, 15, 10]);
+  const events2 = playerStrike(state2, rng2, []);
+  assert.ok(events2.some((e) => e.type === "struck" && e.dmg === 5), "a Thief's melee does not double vs Trachea");
+  assert.equal(foe2.wp, 15);
+});
+
+test("allyTurn: an ally's blow can be soaked (one extra d20, no allyStruck), and an ally never doubles against Trachea (D-20)", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe], { ally: { lvl: 1, rounds: 2, name: "Bear" } });
+  const rng = fakeRng([3, 4, 5]);
+  const events = allyTurn(state, rng, []);
+  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
+  assert.equal(events.some((e) => e.type === "allyStruck"), false);
+  assert.equal(foe.wp, 10);
+  assert.equal(state.combat.ally.rounds, 1);
+
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
+  state2.combat = fixedCombat([foe2], { ally: { lvl: 1, rounds: 2, name: "Bear" } });
+  const rng2 = fakeRng([3, 4]);
+  const events2 = allyTurn(state2, rng2, []);
+  assert.ok(events2.some((e) => e.type === "allyStruck" && e.dmg === 5), "an ally never doubles vs Trachea");
+  assert.equal(foe2.wp, 15);
+});
+
+test("alliesTurn: a party member's strike is routed through the seam (soakable)", () => {
+  const state = fixedState({ party: [{ name: "Ada", level: 1, sub: "Soldier", wp: 20, maxWP: 20 }] });
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 20, maxWP: 20 }] });
+  const rng = fakeRng([3, 4, 5]);
+  const events = alliesTurn(state, rng, []);
+  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
+  assert.equal(events.some((e) => e.type === "allyStruck"), false);
+  assert.equal(foe.wp, 10);
+});
+
+test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soaked — pool spent, no wardReflected, foe unhurt, died:false", () => {
+  const state = fixedState({ c: { ward: { pool: 10, reflect: true, rounds: 3 } } });
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe]);
+  const events = [];
+  const rng = fakeRng([5]);
+  const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 3, need: 5 });
+  assert.deepEqual(result, { died: false, onArmour: false });
+  assert.deepStrictEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 5 }]);
+  assert.equal(foe.wp, 10);
+  assert.equal(state.c.ward.pool, 5);
+  assert.equal(state.c.wp, 55);
+});
+
+test("foeTurn: an acid tick on a Walking Dead foe is spell damage — doubled (D-11), never soaked (D-06)", () => {
+  const state = fixedState();
+  const foe = fixedFoe({
+    type: "Walking Dead",
+    sp: { ar: 15 },
+    acid: { rounds: 2, dmg: { n: 1, sides: 6 } },
+    wp: 20,
+    maxWP: 20,
+  });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([4, 7]);
+  const events = foeTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "acidTick" && e.dmg === 8), "any-spell x2 vs Walking Dead, no soak");
+  assert.equal(foe.wp, 12);
+  assert.ok(events.some((e) => e.type === "foeMissed"));
+  assert.equal(foe.acid.rounds, 1);
+  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 2 draws — the ar-15 armor never gates a spell tick");
+});
+
+test("foeTurn: an acid tick on a halfDmg foe is halved (ceil)", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { halfDmg: true }, acid: { rounds: 2, dmg: { n: 1, sides: 6 } }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  const rng = fakeRng([5, 7]);
+  const events = foeTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "acidTick" && e.dmg === 3));
+  assert.equal(foe.wp, 17);
 });
