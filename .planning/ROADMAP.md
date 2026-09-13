@@ -66,7 +66,12 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
   2. `pickFoeTarget` and `applyFoeDamageToPlayer` exist as shared, tested helper functions used by the existing foe-turn melee path, with behavior-preserving tests proving zero output change.
   3. A draw-count regression test proves a foe without the new `abilities` field draws exactly zero additional RNG in any fight.
   4. The full parity suite remains byte-identical to the frozen prototype master.
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — FID-01: replay-generated fixture roster (harness module + CLI), committed `test/parity/FIXTURE-INVENTORY.md`, pinned roster/doc-consistency test (wave 1)
+- [ ] 17-02-PLAN.md — FID-03: extract `pickFoeTarget` + `applyFoeDamageToPlayer` from `foeTurn` with `{ died, onArmour }` signal; direct helper tests + foeTurn control-flow tests; parity byte-identical (wave 1)
+- [ ] 17-03-PLAN.md — FID-02: `countingRng` draw-count regression test pinning per-foeTurn and full-fight draws for ability-less foes (+ mulberry32 cursor cross-check); baseline appended to the inventory; phase gate (wave 2)
 
 ### Phase 18: Bestiary Rebalance & Canon Combat Fixes
 **Goal**: Every creature's HP/damage/to-hit/AR/special is reviewed and fixed against its intended depth band, with canon-accurate combat modifiers applied — all parity-safe via narrow, named carve-outs.
