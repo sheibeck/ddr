@@ -354,6 +354,124 @@ test("readScroll: no scrolls or cannot read is a no-op", () => {
   assert.deepStrictEqual(readScroll(cannotRead, fakeRng([]), []), []);
 });
 
+// --- Phase 18: damageFoe routing (CANON-04 / CANON-03 / D-06) ---
+
+test("castSpell: a Cleric's Fireball deals double to a Demons foe (CANON-04, D-11)", () => {
+  const foe = fixedFoe({ type: "Demons", wp: 40, maxWP: 40, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Cleric", grimoire: ["Fireball"], level: 3 },
+    combat: fixedCombat([foe]),
+  });
+  // toHit d8=1 (Cleric offense bonus 0, 1-0<=4 hits); dmg 2d10+4 = 5+5+4=14,
+  // doubled to 28 vs Demons; then one foe-turn miss (7) and fresh initiative
+  // (15 vs 10 -> "you") — 6 draws total, no armor-soak draw for a spell.
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const hit = events.find((e) => e.type === "spellHit");
+  assert.equal(hit.dmg, 28, "Cleric spell damage doubles vs Demons");
+  assert.equal(foe.wp, 12);
+  assert.ok(!events.some((e) => e.type === "foeArmorSoaked"));
+});
+
+test("castSpell: a Wizard's Fireball does NOT double against Demons (Cleric-only row)", () => {
+  const foe = fixedFoe({ type: "Demons", wp: 40, maxWP: 40, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
+    combat: fixedCombat([foe]),
+  });
+  // toHit d8=1 (Wizard offense bonus 3, 1-3<=4 hits); same 14 raw damage,
+  // undoubled (Wizard is not a Cleric).
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const hit = events.find((e) => e.type === "spellHit");
+  assert.equal(hit.dmg, 14, "no Cleric-only doubling for a Wizard");
+  assert.equal(foe.wp, 26);
+});
+
+test("castSpell: any caster's Fireball doubles against Walking Dead (magic x2, D-11)", () => {
+  const foe = fixedFoe({ type: "Walking Dead", wp: 40, maxWP: 40, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
+    combat: fixedCombat([foe]),
+  });
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const hit = events.find((e) => e.type === "spellHit");
+  assert.equal(hit.dmg, 28, "any spell doubles vs Walking Dead, not just Cleric-cast");
+  assert.equal(foe.wp, 12);
+});
+
+test("castSpell: a spell never draws the armor soak (D-06) — Fireball vs sp.ar 15 lands in full", () => {
+  const foe = fixedFoe({ type: "Humans", sp: { ar: 15 }, wp: 40, maxWP: 40, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
+    combat: fixedCombat([foe]),
+  });
+  // The same 6-draw sequence as above — a 7th draw (the armor-soak d20)
+  // would throw fakeRng's underflow error if the spell ever reached it.
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const hit = events.find((e) => e.type === "spellHit");
+  assert.equal(hit.dmg, 14, "spells bypass foe armor entirely");
+  assert.equal(foe.wp, 26);
+  assert.ok(!events.some((e) => e.type === "foeArmorSoaked"));
+});
+
+test("castSpell: Earthquake is applied per foe — Walking Dead takes 2x, Humans 1x; earthquake.amount stays the rolled 38", () => {
+  const wd = fixedFoe({ type: "Walking Dead", wp: 100, maxWP: 100, intel: 1 });
+  const humans = fixedFoe({ name: "Target2", type: "Humans", wp: 100, maxWP: 100, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
+    combat: fixedCombat([wd, humans]),
+  });
+  // dmg 3d10+8: 10+10+10+8=38 (mult = max(1,4-4)=1); Walking Dead doubles to
+  // 76 (wp 24), Humans stays at 38 (wp 62); then two foe-turn misses (7, 7)
+  // and fresh initiative (15 vs 10 -> "you").
+  const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 7, 7, 15, 10]), []);
+  assert.equal(wd.wp, 24, "Walking Dead took the doubled 76");
+  assert.equal(humans.wp, 62, "Humans took the unmultiplied 38");
+  assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 38), "the event reports the single rolled base");
+  assert.ok(events.some((e) => e.type === "earthquakeSelfDamage" && e.amount === 19));
+  assert.equal(state.c.wp, 31, "caster took ceil(38/2)=19, unaffected by the per-foe multiplier");
+});
+
+test("castSpell: Fireballs (volley) totals APPLIED damage — each ball on a halfDmg foe is ceil-halved (CANON-03)", () => {
+  const foe = fixedFoe({ type: "Humans", sp: { halfDmg: true }, wp: 50, maxWP: 50, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Fireballs"], level: 4 },
+    combat: fixedCombat([foe]),
+  });
+  // n=d8=2 balls; ball 1 d10=5 -> 5+2=7 -> ceil(7/2)=4; ball 2 d10=3 -> 3+2=5
+  // -> ceil(5/2)=3; total APPLIED = 7 (not the 12 raw); then one foe-turn
+  // miss (7) and fresh initiative (15 vs 10 -> "you").
+  const events = castSpell(state, SPELL_IDX.Fireballs, fakeRng([2, 5, 3, 7, 15, 10]), []);
+  const volley = events.find((e) => e.type === "volley");
+  assert.deepStrictEqual(volley, { type: "volley", rolls: 2, totalDamage: 7 });
+  assert.equal(foe.wp, 43);
+});
+
+test("castSpell: Insanity r=2 — the foe-on-foe blow is physical and can be soaked by the victim's natural armor (one gated d20, no insaneStruckAlly)", () => {
+  const a = fixedFoe({ name: "A", type: "Beasts", lvl: 1, wp: 10, maxWP: 10, intel: 1 });
+  const b = fixedFoe({ name: "B", type: "Beasts", sp: { ar: 12 }, wp: 10, maxWP: 10, intel: 1 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Insane"], level: 2 },
+    combat: fixedCombat([a, b], { target: 0 }),
+  });
+  // d6=2 (r=2, the foe-on-foe blow); d = 1*1 + d6=4 = 5; armor-soak d20=5,
+  // 5<=12 soaks entirely -> no insaneStruckAlly, B.wp untouched; then two
+  // foe-turn misses (7, 7) and fresh initiative (15 vs 10 -> "you").
+  const events = castSpell(state, SPELL_IDX.Insane, fakeRng([2, 4, 5, 7, 7, 15, 10]), []);
+  assert.ok(events.some((e) => e.type === "foeArmorSoaked" && e.name === "B" && e.amount === 5));
+  assert.ok(!events.some((e) => e.type === "insaneStruckAlly"), "a fully-soaked blow reports no insaneStruckAlly");
+  assert.equal(b.wp, 10, "the soaked blow left B untouched");
+
+  const a2 = fixedFoe({ name: "A", type: "Beasts", lvl: 1, wp: 10, maxWP: 10, intel: 1 });
+  const b2 = fixedFoe({ name: "B", type: "Beasts", wp: 10, maxWP: 10, intel: 1 }); // no sp.ar -> no soak draw
+  const control = fixedState({
+    c: { sub: "Wizard", grimoire: ["Insane"], level: 2 },
+    combat: fixedCombat([a2, b2], { target: 0 }),
+  });
+  const controlEvents = castSpell(control, SPELL_IDX.Insane, fakeRng([2, 4, 7, 7, 15, 10]), []);
+  assert.ok(controlEvents.some((e) => e.type === "insaneStruckAlly" && e.target === "B" && e.dmg === 5));
+  assert.equal(b2.wp, 5, "the unsoaked blow applied the full 5");
+});
+
 // --- purity ---------------------------------------------------------------
 
 /** Strip block + line comments before scanning source for forbidden refs. */

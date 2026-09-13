@@ -239,7 +239,29 @@ test("Gauntlet of the Giant adds a flat size damage bonus to weaponDamage", () =
   assert.equal(weaponDamage(giant, fakeRng([4])), 7, "1 + d6=4 + size(2) = 7");
 });
 
-// --- 9. Treasure base values feed sellPriceFor ----------------------------
+// --- 9. Phase 18: fire item routed through damageFoe (CANON-01 A3) --------
+
+test("Pine Staff's fire effect routes through damageFoe: soakable by sp.ar, never multiplied", () => {
+  const soaked = fixedState({
+    c: { items: [{ n: "Pine Staff", use: "fire" }] },
+    combat: fixedCombat([fixedFoe({ sp: { ar: 12 }, wp: 30, maxWP: 30 })]),
+  });
+  // n=d6=1 ball; dmg = d10=6 + 4 = 10; armor-soak d20=3, 3<=12 soaks entirely.
+  const events = useItem(soaked, 0, fakeRng([1, 6, 3]), []);
+  assert.ok(events.some((e) => e.type === "foeArmorSoaked" && e.amount === 10));
+  assert.ok(events.some((e) => e.type === "itemBurned" && e.total === 0));
+  assert.equal(soaked.combat.foes[0].wp, 30, "the soaked ball left the foe untouched");
+
+  const unarmoured = fixedState({
+    c: { items: [{ n: "Pine Staff", use: "fire" }] },
+    combat: fixedCombat([fixedFoe({ wp: 30, maxWP: 30 })]),
+  });
+  const controlEvents = useItem(unarmoured, 0, fakeRng([1, 6]), []);
+  assert.ok(controlEvents.some((e) => e.type === "itemBurned" && e.total === 10));
+  assert.equal(unarmoured.combat.foes[0].wp, 20, "an unarmoured foe takes the full 10");
+});
+
+// --- 10. Treasure base values feed sellPriceFor ---------------------------
 
 test("sellPriceFor uses real treasure base values for cloaks/jewelry/staves, not the flat fallback", () => {
   // SELL_SPREAD 0.5, priceFor(base, "Human") === base.
