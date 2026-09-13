@@ -95,7 +95,23 @@ Plans:
   4. Only named, narrow `comparables.js` carve-outs cover fixture-exercised creatures that changed numbers — no blanket fixture regeneration — with a documented rationale per carve-out.
   5. Ability-bearing foes (Djinni, Krupke, Drudge, Vampire, Stalka Beast) carry proportionally lower raw stats than their pre-rebalance baseline, anticipating the ability kits landing in Phase 19.
 
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 18-01-PLAN.md — BEST-01/02: `tools/bestiary-yardstick.mjs` (TTK/RTD calculator, prototype/canon modes) + unit pins; `content/BESTIARY-REBALANCE.md` BEFORE half (tune-difficulty BEFORE readout, prototype-mode table, review verdicts, D-03 numbers, zero-carve-out statement)
+- [ ] 18-02-PLAN.md — CANON-01/03/04: the seam `engine/foeDamage.js#damageFoe` (multiplier → halfDmg → gated d20 soak → apply) + `multiplierFor`; `content/damage-multipliers.js` (3 rows, pinned); `foeArmorSoaked` event + narration; 18 dedicated fakeRng tests
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 18-03-PLAN.md — CANON-01/03/04/05: route playerStrike / allyTurn / alliesTurn / ward-reflect / acid-tick in `engine/combat.js` through the seam; Philly `slow` two-dice-keep-lower; 12 behavioral tests + D-13 countingRng draw pins (FID-02 baseline unchanged)
+- [ ] 18-04-PLAN.md — CANON-01/03/04: route quake / volley / insane / thrown in `engine/magic.js` and the fire item in `engine/items.js`; Cleric-vs-Demons, spell-vs-Walking-Dead, per-foe Earthquake, halfDmg volley, spell-bypass tests
+- [ ] 18-05-PLAN.md — BEST-01/02/03: bestiary numbers (D-03 discount x7 entries, Drake 135→38, Werebeast d10+5→d10), header reference to the stat doc, content-table pins incl. verbatim fixture-exposed rows and tier shape (zero carve-outs)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 18-06-PLAN.md — seam-only invariant test (no foe-wp decrement outside `engine/foeDamage.js`); `BESTIARY-REBALANCE.md` AFTER table (canon mode, consistency-tested), tune-difficulty AFTER readout, change ledger with deferred canon consequences (Sterling, the five `sp.ar` creatures); phase parity gate
 
 ### Phase 19: Foe Abilities, Spellcasting & Symmetric INT Resistance
 
