@@ -21,7 +21,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { makeRng } from "../../engine/rng.js";
-import { startCombat, alliesTurn, foeTurn, killFoe, endCombat, afterPlayerAction } from "../../engine/combat.js";
+import { startCombat, alliesTurn, foeTurn, killFoe, endCombat, afterPlayerAction, pickFoeTarget } from "../../engine/combat.js";
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
  * on underflow, which doubles as a "no more rng draws expected" assertion. */
@@ -248,4 +248,61 @@ test("afterPlayerAction: a party member landing the kill still ends combat the i
   assert.equal(state.combat, null, "combat ended (bounded — no hang, no stranded screen)");
   assert.ok(events.some((e) => e.type === "encounterCleared"));
   assert.ok(events.some((e) => e.type === "combatEnded"));
+});
+
+// --- pickFoeTarget: target pool helper (Phase 17, FID-03) ------------------
+
+test("pickFoeTarget: an absent allies key draws ZERO rng and returns null", () => {
+  const state = { combat: { foes: [] } };
+  const result = pickFoeTarget(state, fakeRng([]));
+  assert.equal(result, null);
+});
+
+test("pickFoeTarget: an empty allies array draws ZERO rng and returns null", () => {
+  const state = { combat: { foes: [], allies: [] } };
+  const result = pickFoeTarget(state, fakeRng([]));
+  assert.equal(result, null);
+});
+
+test("pickFoeTarget: a party whose members are all at 0 wp draws ZERO rng and returns null", () => {
+  const state = { combat: { foes: [], allies: [fixedAlly({ wp: 0 }), fixedAlly({ name: "Beo", wp: 0 })] } };
+  const result = pickFoeTarget(state, fakeRng([]));
+  assert.equal(result, null);
+});
+
+test("pickFoeTarget: draw 1 targets the hero (null); draw k>1 targets live member k-2, in C.allies order", () => {
+  const members = [fixedAlly({ name: "Ada", wp: 20 }), fixedAlly({ name: "Beo", wp: 5 })];
+  const state = { combat: { foes: [], allies: members } };
+  assert.equal(pickFoeTarget(state, fakeRng([1])), null, "draw 1 => hero");
+  assert.equal(pickFoeTarget(state, fakeRng([2])).name, "Ada", "draw 2 => first live member");
+  assert.equal(pickFoeTarget(state, fakeRng([3])).name, "Beo", "draw 3 => second live member");
+  // Each call above consumed exactly one draw off its own single-entry
+  // fakeRng — a second draw on any of them would throw "sequence exhausted".
+  const rng = fakeRng([2]);
+  pickFoeTarget(state, rng);
+  assert.throws(() => rng.d(3), /sequence exhausted/, "exactly one draw was consumed");
+});
+
+test("pickFoeTarget: downed members are excluded from the pool before the draw", () => {
+  const members = [fixedAlly({ name: "Ada", wp: 0 }), fixedAlly({ name: "Beo", wp: 5 })];
+  const state = { combat: { foes: [], allies: members } };
+  // Only Beo is live, so the pool is [hero, Beo] (2 sides); draw 2 => the
+  // LIVE list's index 0 (Beo), not raw C.allies index 1.
+  assert.equal(pickFoeTarget(state, fakeRng([2])).name, "Beo");
+});
+
+test("pickFoeTarget: the pool die has exactly (live members + 1) sides", () => {
+  function recordingRng() {
+    const sides = [];
+    return { d: (n) => { sides.push(n); return 1; }, pick: (a) => a[0], shuffle: (a) => a, sides };
+  }
+  const two = [fixedAlly({ name: "Ada", wp: 20 }), fixedAlly({ name: "Beo", wp: 5 })];
+  let rng = recordingRng();
+  pickFoeTarget({ combat: { foes: [], allies: two } }, rng);
+  assert.deepEqual(rng.sides, [3], "two live members -> a 3-sided pool die");
+
+  const one = [fixedAlly({ name: "Ada", wp: 20 })];
+  rng = recordingRng();
+  pickFoeTarget({ combat: { foes: [], allies: one } }, rng);
+  assert.deepEqual(rng.sides, [2], "one live member -> a 2-sided pool die");
 });

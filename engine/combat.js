@@ -810,11 +810,40 @@ function downMember(state, member, events) {
 }
 
 /**
+ * pickFoeTarget(state, rng) — chooses which live combatant a foe's swing
+ * targets: `null` means the hero, a `C.allies` member object means that party
+ * member. Pure extraction of the former inline block at the top of foeTurn's
+ * swing loop (formerly foeTurn lines 860-865, Phase 8 PARTY-04/05) — no
+ * behavior change.
+ *
+ * DETERMINISM GATE (unchanged from the inline version this replaces): the
+ * `rng.d(pool)` roll is drawn ONLY when at least one live party member
+ * exists. An absent `C.allies` key, an empty `allies` array, or an allies
+ * array whose members are all at wp<=0 all yield an empty pool — this
+ * function returns `null` immediately WITHOUT touching `rng`, byte-identical
+ * to every solo/empty-party parity fixture today. Only when at least one
+ * live member exists is the single `rng.d(liveMembers.length + 1)` draw
+ * taken (result 1 => hero, 2..N+1 => that live member, in `C.allies` order).
+ *
+ * Phase 19's foe-ability resolver (`engine/foeAbilities.js`) reuses this
+ * helper so `bolt`/`drain`-style abilities target the same pool as a melee
+ * swing.
+ */
+export function pickFoeTarget(state, rng) {
+  const C = state.combat;
+  const liveMembers = C.allies ? C.allies.filter((a) => a.wp > 0) : [];
+  if (!liveMembers.length) return null;
+  const pick = rng.d(liveMembers.length + 1);
+  return pick > 1 ? liveMembers[pick - 2] : null;
+}
+
+/**
  * foeTurn(state, rng, events) — every live foe's attack: regen tick, an
  * acid-over-time tick, sleep, per-swing foeDie vs foeToHitVs (blind/weakened
  * overrides), damage (sp.dmg dice, criticals, Hardiness reduction), a ward's
  * absorb/reflect/shatter, armor soak, and die() on wp<=0. Ports
- * mazeworld.html foeTurn() (lines 2838-2903).
+ * mazeworld.html foeTurn() (lines 2838-2903). Uses pickFoeTarget for target
+ * selection.
  */
 export function foeTurn(state, rng, events = []) {
   const C = state.combat;
@@ -849,20 +878,10 @@ export function foeTurn(state, rng, events = []) {
       if (!f.alive) break;
 
       // PARTY-04/PARTY-05 (Phase 8): each foe swing chooses a target from the
-      // pool [hero] + live party members. DETERMINISM GATE (the single hottest
-      // parity loop in the engine): the target-selection roll `rng.d(pool)` is
-      // drawn ONLY when at least one live member exists. With an empty/absent
-      // party `liveMembers` is empty, NO roll is drawn, `member` stays null,
-      // and control falls straight through to the byte-identical hero branch
-      // below — exactly the path every solo parity fixture already exercises.
-      // Only when members are present is the extra draw taken (pick 1 ⇒ hero,
-      // 2..N+1 ⇒ that member), which is new, unfrozen behavior.
-      const liveMembers = C.allies ? C.allies.filter((a) => a.wp > 0) : [];
-      let member = null;
-      if (liveMembers.length) {
-        const pick = rng.d(liveMembers.length + 1);
-        if (pick > 1) member = liveMembers[pick - 2];
-      }
+      // pool [hero] + live party members, via pickFoeTarget's DETERMINISM
+      // GATE (the single hottest parity loop in the engine) — see its JSDoc
+      // above for the exact zero-draw rationale this call preserves.
+      const member = pickFoeTarget(state, rng);
       if (member) {
         // SIMPLIFIED member branch: no ward/armor/mirror/Hardiness (all
         // hero-only machinery), no die(). Same to-hit shape, then straight to
