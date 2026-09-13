@@ -13,8 +13,14 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import { damageFoe, multiplierFor } from "../../engine/foeDamage.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count;
  * throws on underflow, which doubles as a "no more rng draws expected"
@@ -258,4 +264,58 @@ test("no event on the non-soak path", () => {
   const result = damageFoe(state, foe, 7, { kind: "melee" }, fakeRng([19]), events);
   assert.equal(result.applied, 7);
   assert.deepEqual(events, []);
+});
+
+// --- Phase 18 invariant: damageFoe is the ONLY foe-wp decrement site (D-09, assumption-delta: promote) ---
+//
+// Source-assertion tests (mirroring test/unit/combat.test.js's
+// "combat.js references no Math.random/document/localStorage" pattern):
+// read the real engine source, strip comments, and count regex matches on
+// code lines only. This proves the "one seam" property is a MAINTAINED
+// invariant (enforced by CI), not a one-time cleanup that could silently
+// regress the next time someone adds a damage path.
+//
+// The regex intentionally matches ONLY the foe-side loop/target identifiers
+// the engine actually uses (`t`, `f`, `o`, `foe`) followed by `.wp -= `. It
+// deliberately does NOT match `c` (the hero) or `member` (a party member) —
+// those decrements are legitimate and must remain untouched by this phase.
+
+function stripComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+}
+
+const FOE_WP_DECREMENT_RE = /\b(?:foe|t|f|o)\.wp -= /g;
+
+test("invariant: engine/combat.js, engine/magic.js and engine/items.js contain zero foe-side wp decrements on code lines", () => {
+  for (const file of ["combat.js", "magic.js", "items.js"]) {
+    const src = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", file), "utf8"));
+    const matches = src.match(FOE_WP_DECREMENT_RE) || [];
+    assert.equal(
+      matches.length,
+      0,
+      `engine/${file} should have zero foe-side wp decrements outside the seam, found ${matches.length}: ${JSON.stringify(matches)}`,
+    );
+  }
+});
+
+test("invariant: engine/foeDamage.js contains exactly one foe-side wp decrement (the seam itself)", () => {
+  const src = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", "foeDamage.js"), "utf8"));
+  const matches = src.match(FOE_WP_DECREMENT_RE) || [];
+  assert.equal(matches.length, 1, `engine/foeDamage.js should have exactly one foe-side wp decrement, found ${matches.length}`);
+});
+
+test("sanity: the regex would catch a violation, and does not match a hero-side decrement", () => {
+  const violation = "t" + ".wp -= " + "5;";
+  assert.match(violation, FOE_WP_DECREMENT_RE);
+
+  const heroSide = "c" + ".wp -= " + "dmg;";
+  assert.doesNotMatch(heroSide, FOE_WP_DECREMENT_RE);
+});
+
+test("sanity: the hero and party-member wp decrements still exist, untouched, in combat.js", () => {
+  const src = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", "combat.js"), "utf8"));
+  const heroMatches = src.match(/\bc\.wp -= dmg;/g) || [];
+  const memberMatches = src.match(/\bmember\.wp -= mDmg;/g) || [];
+  assert.equal(heroMatches.length, 1, "combat.js's hero-side c.wp -= dmg; must still exist exactly once");
+  assert.equal(memberMatches.length, 1, "combat.js's party-member member.wp -= mDmg; must still exist exactly once");
 });
