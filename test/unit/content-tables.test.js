@@ -9,7 +9,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   WEAPONS, CLASSES, RACES, RACE_D8, ARMORS, BESTIARY, ENC_TYPES, SPELLS,
-  POTIONS, TRAPS, EPITAPHS, CAUSE_TEXT,
+  POTIONS, TRAPS, EPITAPHS, CAUSE_TEXT, DAMAGE_MULTIPLIERS,
 } from "../../content/index.js";
 
 test("content/index.js exposes WEAPONS/CLASSES/RACES/BESTIARY/SPELLS", () => {
@@ -133,4 +133,16 @@ test("SPELLS: combat-only spells target a foe or an active encounter (Fireball, 
   assert.equal(byName["Fireball"].combatOnly, true);
   assert.equal(byName["Death"].combatOnly, true);
   assert.equal(byName["Doze"].combatOnly, true);
+});
+
+// Phase 18 (CANON-04, D-11, D-13): the multiplier table is pinned verbatim so
+// a silent edit — a new row, a changed factor, or widening the Trachea row
+// to kind "ally" (which would violate D-20's hero-only scope) fails loudly.
+test("DAMAGE_MULTIPLIERS (CANON-04, D-11): exactly the three canon rows, hero-only Trachea (D-20)", () => {
+  assert.equal(DAMAGE_MULTIPLIERS.length, 3);
+  assert.deepStrictEqual(DAMAGE_MULTIPLIERS, [
+    { sourceKind: "spell", casterSub: "Cleric", casterClass: null, foeType: "Demons", foeName: null, mult: 2 },
+    { sourceKind: "spell", casterSub: null, casterClass: null, foeType: "Walking Dead", foeName: null, mult: 2 },
+    { sourceKind: "melee", casterSub: null, casterClass: "Fighter", foeType: null, foeName: "Trachea", mult: 2 },
+  ]);
 });
