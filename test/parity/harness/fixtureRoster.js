@@ -54,7 +54,6 @@ function replayEngineActions(fixtureFile, scenario, seed, actions) {
   let trigger = "none";
   let forced = null;
   let foes = [];
-  let snapshotted = false;
   let wasCombat = state.combat != null;
   for (const action of actions) {
     let next;
@@ -68,9 +67,14 @@ function replayEngineActions(fixtureFile, scenario, seed, actions) {
       ({ state: next } = applyAction(state, { type: action.type }));
     }
     const nowCombat = next.combat != null;
-    if (!wasCombat && nowCombat && !snapshotted) {
-      foes = next.combat.foes.map(snapshotFoe);
-      snapshotted = true;
+    // WR-02 fix (Phase 17 review): record EVERY null->non-null transition,
+    // not just the first — a script that flees and re-engages (or otherwise
+    // starts a second combat) would otherwise silently drop that encounter's
+    // foes from the roster. Today's fixtures each start at most one combat
+    // per scenario/script, so this concat is a no-op vs. the prior
+    // single-snapshot behavior for every existing row.
+    if (!wasCombat && nowCombat) {
+      foes = foes.concat(next.combat.foes.map(snapshotFoe));
       if (trigger === "none") trigger = "wandering";
     }
     wasCombat = nowCombat;
@@ -99,14 +103,14 @@ function replayEconomyLikeActions(fixtureFile, scenario, seed, actions, { bumpGo
   }
   let trigger = "none";
   let foes = [];
-  let snapshotted = false;
   let wasCombat = state.combat != null;
   for (const action of actions) {
     const { state: next } = runEconomyAction(ctx, state, action);
     const nowCombat = next.combat != null;
-    if (!wasCombat && nowCombat && !snapshotted) {
-      foes = next.combat.foes.map(snapshotFoe);
-      snapshotted = true;
+    // WR-02 fix (Phase 17 review): see replayEngineActions above — record
+    // every transition rather than only the first.
+    if (!wasCombat && nowCombat) {
+      foes = foes.concat(next.combat.foes.map(snapshotFoe));
       trigger = "wandering";
     }
     wasCombat = nowCombat;
