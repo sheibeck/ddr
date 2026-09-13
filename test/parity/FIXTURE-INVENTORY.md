@@ -117,4 +117,41 @@ touch none of the four exposed creatures.
 
 ## Draw-count baseline (FID-02)
 
-Appended by plan 17-03.
+These totals are pinned by `test/unit/foe-turn-draw-count.test.js`, using a
+counting wrapper (`countingRng`) around `makeRng`, measured against the
+pre-Phase-17 engine on 2026-09-13 and re-asserted, unchanged, after the
+17-02 `pickFoeTarget`/`applyFoeDamageToPlayer` extraction.
+
+### Full-fight totals
+
+Fixture scenario / seed / forced type / foes match the roster table above.
+"Attacks to resolve" is the test's own attack-until-resolved loop (one
+`playerStrike` call per row), not the fixture's own scripted action list.
+
+| Fixture scenario | Seed | Forced | Foes | Attacks to resolve | Total RNG draws | Outcome |
+|---|---|---|---|---|---|---|
+| combat/win | 3 | Beasts | Shriek | 1 | 12 | won |
+| combat/lose | 14 | Beasts | Bat/Rat, Shriek | 10 | 101 | died |
+| combat/flee | 17 | Beasts | Viper, Shriek | 11 | 111 | won |
+| combat/parley | 303 | Humans | Dante x2 | 6 | 66 | won |
+| magic/cast-damage | 8 | Beasts | Shriek | 4 | 32 | won |
+
+### Per-foeTurn micro pins
+
+| Case | Draws |
+|---|---|
+| asleep foe | 0 |
+| one swing that misses | 1 |
+| one swing that hits an unarmoured hero | 2 |
+| Bat/Rat shape (atk 2, two flat-damage swings) | 2 |
+| hit on an armoured hero (to-hit + d6 + d20 soak) | 3 |
+| two Dante-shaped foes (atk 3 each), all six swings miss | 6 |
+
+### Phase 19 contract
+
+A foe without an `abilities` field must reproduce every number above,
+unchanged, after Phase 19's ability-attempt gate lands. `abilities: []` must
+behave identically to an absent field — zero extra draws either way. Only a
+foe carrying a non-empty ability kit may draw more, and any such extra draw
+must be carved out per FID-04 (a narrow, named gate on that kit's presence,
+matching every other zero-draw gate in this engine).
