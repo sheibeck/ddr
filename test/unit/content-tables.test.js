@@ -146,3 +146,111 @@ test("DAMAGE_MULTIPLIERS (CANON-04, D-11): exactly the three canon rows, hero-on
     { sourceKind: "melee", casterSub: null, casterClass: "Fighter", foeType: null, foeName: "Trachea", mult: 2 },
   ]);
 });
+
+// --- Phase 18: bestiary rebalance pins (BEST-01/02/03, D-03/D-14/D-17/D-18/D-19) ---
+
+test("BESTIARY Phase 18 / D-03: Djinni (Demons T4 and T5) -25% HP and a d4 melee step", () => {
+  const djinniT4 = BESTIARY["Demons"][3][0];
+  const djinniT5 = BESTIARY["Demons"][4][0];
+  for (const djinni of [djinniT4, djinniT5]) {
+    assert.equal(djinni.n, "Djinni");
+    assert.equal(djinni.wp, 65);
+    assert.deepStrictEqual(djinni.sp.dmg, { n: 1, sides: 4, bonus: 0 });
+    assert.equal(djinni.sp.caster, true);
+  }
+});
+
+test("BESTIARY Phase 18 / D-03: Krupke wp 17, d6+2", () => {
+  const krupke = BESTIARY["Humans"][1][1];
+  assert.equal(krupke.n, "Krupke");
+  assert.equal(krupke.wp, 17);
+  assert.deepStrictEqual(krupke.sp.dmg, { n: 1, sides: 6, bonus: 2 });
+  assert.equal(krupke.sp.ar, 12);
+});
+
+test("BESTIARY Phase 18 / D-03: Drudge (Magical T4 and T5) wp 9, HP-only — no dmg field", () => {
+  const drudgeT4 = BESTIARY["Magical"][3][0];
+  const drudgeT5 = BESTIARY["Magical"][4][0];
+  for (const drudge of [drudgeT4, drudgeT5]) {
+    assert.equal(drudge.n, "Drudge");
+    assert.equal(drudge.wp, 9);
+    assert.equal(Object.hasOwn(drudge.sp, "dmg"), false);
+    assert.equal(drudge.sp.never_melee, true);
+  }
+});
+
+test("BESTIARY Phase 18 / D-03: Vampire wp 71 + d4; Stalka Beast wp 94 + d4; both keep atk 2", () => {
+  const vampire = BESTIARY["Walking Dead"][4][0];
+  const stalka = BESTIARY["Beasts"][4][1];
+  assert.equal(vampire.n, "Vampire");
+  assert.equal(vampire.wp, 71);
+  assert.deepStrictEqual(vampire.sp.dmg, { n: 1, sides: 4, bonus: 0 });
+  assert.equal(vampire.sp.atk, 2);
+  assert.equal(stalka.n, "Stalka Beast");
+  assert.equal(stalka.wp, 94);
+  assert.deepStrictEqual(stalka.sp.dmg, { n: 1, sides: 4, bonus: 0 });
+  assert.equal(stalka.sp.atk, 2);
+});
+
+test("BESTIARY Phase 18 / D-18: Drake wp 38 (was 135), dmg 2d10+4 and every:4 unchanged", () => {
+  const drake = BESTIARY["Beasts"][3][0];
+  assert.equal(drake.n, "Drake");
+  assert.equal(drake.wp, 38);
+  assert.deepStrictEqual(drake.sp.dmg, { n: 2, sides: 10, bonus: 4 });
+  assert.equal(drake.sp.every, 4);
+});
+
+test("BESTIARY Phase 18 / D-18: Werebeast two attacks at d10 (bonus 5 -> 0), wp 32 unchanged, note matches the dice", () => {
+  const werebeast = BESTIARY["Magical"][2][0];
+  assert.equal(werebeast.n, "Werebeast");
+  assert.equal(werebeast.wp, 32);
+  assert.equal(werebeast.sp.atk, 2);
+  assert.deepStrictEqual(werebeast.sp.dmg, { n: 1, sides: 10, bonus: 0 });
+  assert.equal(werebeast.sp.note, "two attacks at d10");
+});
+
+test("BESTIARY Phase 18 / D-19: Sterling keeps wp 35 and halfDmg (TTK doubling recorded in BESTIARY-REBALANCE.md, revisit Phase 21)", () => {
+  const sterling = BESTIARY["Beasts"][2][3];
+  assert.equal(sterling.n, "Sterling");
+  assert.equal(sterling.wp, 35);
+  assert.equal(sterling.sp.halfDmg, true);
+  assert.deepStrictEqual(sterling.sp.dmg, { n: 1, sides: 12, bonus: 0 });
+});
+
+// Any diff here means a fixture-exposed creature moved and BEST-03 requires a
+// named carve-out — which Phase 18 forbids (D-14).
+test("BESTIARY Phase 18 / D-14 (BEST-03, FID-05): the four fixture-exposed rows are byte-identical to the prototype", () => {
+  assert.deepStrictEqual(BESTIARY["Beasts"][0], [
+    { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 wp each" } },
+    { n: "Shriek", sz: "T", i: 1, wp: 3, sp: { shriek: true, note: "a scream deafens; half damage after" } },
+    { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 wp a round for d10 rounds" } },
+  ]);
+  assert.deepStrictEqual(BESTIARY["Humans"][0], [
+    { n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } },
+  ]);
+});
+
+test("BESTIARY Phase 18 / D-17: no creature added, removed, or reordered — tier lengths per type", () => {
+  assert.deepStrictEqual(Object.keys(BESTIARY), ["Beasts", "Demons", "Humans", "Lair Beasts", "Magical", "Walking Dead"]);
+  assert.deepStrictEqual(
+    Object.values(BESTIARY).map((tiers) => tiers.map((t) => t.length)),
+    [[3, 2, 5, 2, 2], [1, 1, 1, 3, 1], [1, 2, 2, 2, 1], [5, 2, 1, 1, 1], [1, 1, 1, 1, 1], [1, 2, 2, 3, 1]],
+  );
+  assert.equal(Object.values(BESTIARY).flat(2).length, 53);
+});
+
+test("BESTIARY Phase 18 / D-17: every entry keeps the flat shape — allowed top-level keys n/sz/i/wp/sp only, and sp.dmg where present is {n,sides,bonus}", () => {
+  const allowedTopKeys = new Set(["n", "sz", "i", "wp", "sp"]);
+  for (const row of Object.values(BESTIARY).flat(2)) {
+    for (const key of Object.keys(row)) {
+      assert.ok(allowedTopKeys.has(key), `${row.n} has unexpected top-level key ${key}`);
+    }
+    assert.ok(Number.isInteger(row.wp) && row.wp > 0, `${row.n} must have a positive integer wp`);
+    if (row.sp && Object.hasOwn(row.sp, "dmg")) {
+      const { n, sides, bonus } = row.sp.dmg;
+      assert.ok(Number.isInteger(n), `${row.n} sp.dmg.n must be an integer`);
+      assert.ok(Number.isInteger(sides), `${row.n} sp.dmg.sides must be an integer`);
+      assert.ok(Number.isInteger(bonus), `${row.n} sp.dmg.bonus must be an integer`);
+    }
+  }
+});
