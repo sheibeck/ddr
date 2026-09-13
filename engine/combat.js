@@ -838,12 +838,130 @@ export function pickFoeTarget(state, rng) {
 }
 
 /**
+ * applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need }) — the
+ * hero-damage pipeline a landed foe swing runs through, from Hardiness
+ * onward: Hardiness reduction, the Pendant of Fortitude's single-charge
+ * `c.halfNext` halving, ward absorb/reflect/shatter (a reflected blow can
+ * kill the FOE instead of the hero), armor soak (`rng.d(20)` via
+ * `armorSoak(c)`, gated on worn/effective armour), the `struckByFoe` event,
+ * and `die()` on lethal. Verbatim port of foeTurn's former hero-damage branch
+ * (formerly lines 904-981) — the to-hit roll, raw damage computation,
+ * weakened halving, and critical doubling stay inline in foeTurn and are
+ * passed in via `{ dmg, roll, need }`.
+ *
+ * Returns `{ died, onArmour }`:
+ *   - `died: true` fires ONLY on the `c.wp <= 0` branch, after `die()` has
+ *     already run (which sets `state.combat = null`) — the caller MUST
+ *     `return events` immediately as the very next statement, exactly
+ *     matching today's early-return-on-death control flow (it must not read
+ *     `state.combat`/`C` again on this path).
+ *   - A ward-reflect kill of the FOE (not the hero) returns
+ *     `{ died: false, onArmour: false }` so `foeTurn`'s swing loop continues
+ *     to the next swing/foe and still runs the end-of-turn ward/mirror tick
+ *     — `died` is never set on this branch.
+ *   - `onArmour: true` is informational for callers (e.g. Phase 19
+ *     narration); `foeTurn` only branches on `died`, since every other
+ *     outcome already falls through to the next swing.
+ *
+ * Gated draws: the `rng.d(20)` armor-soak roll is drawn ONLY when
+ * `av.wp > 0 && av.ar > 0 && !ignores`; `killFoe`/`die` draw only on their
+ * own branches (a ward-reflect kill, or the lethal hero-death path). The
+ * simplified member-damage branch (`foeTurn`'s `if (member) { ... }` block,
+ * no ward/armor/Hardiness/die) is deliberately NOT routed through this
+ * helper — that asymmetry is intentional (Phase 17 CONTEXT.md), not an
+ * oversight.
+ */
+export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need }) {
+  const c = state.c;
+  if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
+
+  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Pendant of
+  // Fortitude (content/treasure-tables.js, use:"half") sets `c.halfNext`
+  // (items.js:"half" case) but the flag was READ NOWHERE. Wired here: it
+  // halves ONE incoming landed blow (this hero-damage branch only runs on a
+  // successful foe hit), then clears — a single-charge damage buffer. Pure
+  // (no rng): `c.halfNext` is only ever set by USING the Pendant, so it is
+  // falsy on every parity fixture and this block never runs for them.
+  if (c.halfNext) {
+    dmg = Math.ceil(dmg / 2);
+    c.halfNext = false;
+    events.push({ type: "damageHalved", name: foe.name });
+  }
+
+  // a ward eats the blow before armour or flesh does
+  let warded = 0;
+  if (c.ward && c.ward.pool > 0) {
+    warded = Math.min(c.ward.pool, dmg);
+    c.ward.pool -= warded;
+    dmg -= warded;
+    if (c.ward.reflect && warded > 0) {
+      foe.wp -= warded;
+      events.push({ type: "wardReflected", target: foe.name, amount: warded });
+      if (foe.wp <= 0) {
+        killFoe(state, foe, rng, events);
+        return { died: false, onArmour: false }; // the FOE died to reflect, not the hero
+      }
+    } else if (warded > 0) {
+      events.push({ type: "wardAbsorbed", amount: warded, remaining: c.ward.pool });
+    }
+    if (c.ward.pool <= 0) {
+      events.push({ type: "wardShattered" });
+      c.ward = null;
+    }
+  }
+  if (dmg <= 0) return { died: false, onArmour: false };
+
+  // p.44: roll d20; at or under your AR the blow lands on the armour
+  // instead of you
+  let onArmour = false;
+  let blocked = 0;
+  const ignores = foe.sp && foe.sp.noArmor;
+  // E8: read EFFECTIVE armour (worn armour, or PLATE when the Cloak of
+  // Armor is carried — see engine/derived.js armorSoak). For any character
+  // WITHOUT the cloak av === the worn c.ar/c.armorWP/c.armorMin values, so
+  // the soak roll fires exactly as before (no new rng draw). A cloak-bearer
+  // soaks as plate; the magical plate never wears out (av.magic), so no
+  // worn-armour durability is consumed and armorDestroyed never fires.
+  const av = armorSoak(c);
+  if (av.wp > 0 && av.ar > 0 && !ignores) {
+    const soak = rng.d(20);
+    if (soak <= av.ar) {
+      onArmour = true;
+      blocked = dmg;
+      if (!av.magic && dmg > av.min) c.armorWP = Math.max(0, c.armorWP - dmg);
+      dmg = 0;
+      if (!av.magic && c.armorWP <= 0) events.push({ type: "armorDestroyed" });
+    }
+  }
+  if (onArmour) {
+    events.push({ type: "armorSoaked", name: foe.name, amount: blocked });
+    return { died: false, onArmour: true };
+  }
+  c.wp -= dmg;
+  events.push({
+    type: "struckByFoe",
+    name: foe.name,
+    roll,
+    need,
+    dmg,
+    ignoresArmor: !!ignores,
+    critical: roll === 1,
+  });
+  if (c.wp <= 0) {
+    die(state, "combat", foe.name, rng, events);
+    return { died: true, onArmour: false };
+  }
+  return { died: false, onArmour: false };
+}
+
+/**
  * foeTurn(state, rng, events) — every live foe's attack: regen tick, an
  * acid-over-time tick, sleep, per-swing foeDie vs foeToHitVs (blind/weakened
  * overrides), damage (sp.dmg dice, criticals, Hardiness reduction), a ward's
  * absorb/reflect/shatter, armor soak, and die() on wp<=0. Ports
  * mazeworld.html foeTurn() (lines 2838-2903). Uses pickFoeTarget for target
- * selection.
+ * selection and applyFoeDamageToPlayer (Hardiness onward) for the hero-
+ * damage pipeline.
  */
 export function foeTurn(state, rng, events = []) {
   const C = state.combat;
@@ -920,84 +1038,9 @@ export function foeTurn(state, rng, events = []) {
       let dmg = f.lvl * f.lvl + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
-      if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
 
-      // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Pendant of
-      // Fortitude (content/treasure-tables.js, use:"half") sets `c.halfNext`
-      // (items.js:"half" case) but the flag was READ NOWHERE. Wired here: it
-      // halves ONE incoming landed blow (this hero-damage branch only runs on a
-      // successful foe hit), then clears — a single-charge damage buffer. Pure
-      // (no rng): `c.halfNext` is only ever set by USING the Pendant, so it is
-      // falsy on every parity fixture and this block never runs for them.
-      if (c.halfNext) {
-        dmg = Math.ceil(dmg / 2);
-        c.halfNext = false;
-        events.push({ type: "damageHalved", name: f.name });
-      }
-
-      // a ward eats the blow before armour or flesh does
-      let warded = 0;
-      if (c.ward && c.ward.pool > 0) {
-        warded = Math.min(c.ward.pool, dmg);
-        c.ward.pool -= warded;
-        dmg -= warded;
-        if (c.ward.reflect && warded > 0) {
-          f.wp -= warded;
-          events.push({ type: "wardReflected", target: f.name, amount: warded });
-          if (f.wp <= 0) {
-            killFoe(state, f, rng, events);
-            continue;
-          }
-        } else if (warded > 0) {
-          events.push({ type: "wardAbsorbed", amount: warded, remaining: c.ward.pool });
-        }
-        if (c.ward.pool <= 0) {
-          events.push({ type: "wardShattered" });
-          c.ward = null;
-        }
-      }
-      if (dmg <= 0) continue;
-
-      // p.44: roll d20; at or under your AR the blow lands on the armour
-      // instead of you
-      let onArmour = false;
-      let blocked = 0;
-      const ignores = f.sp && f.sp.noArmor;
-      // E8: read EFFECTIVE armour (worn armour, or PLATE when the Cloak of
-      // Armor is carried — see engine/derived.js armorSoak). For any character
-      // WITHOUT the cloak av === the worn c.ar/c.armorWP/c.armorMin values, so
-      // the soak roll fires exactly as before (no new rng draw). A cloak-bearer
-      // soaks as plate; the magical plate never wears out (av.magic), so no
-      // worn-armour durability is consumed and armorDestroyed never fires.
-      const av = armorSoak(c);
-      if (av.wp > 0 && av.ar > 0 && !ignores) {
-        const soak = rng.d(20);
-        if (soak <= av.ar) {
-          onArmour = true;
-          blocked = dmg;
-          if (!av.magic && dmg > av.min) c.armorWP = Math.max(0, c.armorWP - dmg);
-          dmg = 0;
-          if (!av.magic && c.armorWP <= 0) events.push({ type: "armorDestroyed" });
-        }
-      }
-      if (onArmour) {
-        events.push({ type: "armorSoaked", name: f.name, amount: blocked });
-        continue;
-      }
-      c.wp -= dmg;
-      events.push({
-        type: "struckByFoe",
-        name: f.name,
-        roll,
-        need,
-        dmg,
-        ignoresArmor: !!ignores,
-        critical: roll === 1,
-      });
-      if (c.wp <= 0) {
-        die(state, "combat", f.name, rng, events);
-        return events;
-      }
+      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need });
+      if (hit.died) return events;
     }
   }
   if (c.ward && --c.ward.rounds <= 0) {
