@@ -831,6 +831,7 @@ function downMember(state, member, events) {
  */
 export function pickFoeTarget(state, rng) {
   const C = state.combat;
+  if (!C) return null;
   const liveMembers = C.allies ? C.allies.filter((a) => a.wp > 0) : [];
   if (!liveMembers.length) return null;
   const pick = rng.d(liveMembers.length + 1);
