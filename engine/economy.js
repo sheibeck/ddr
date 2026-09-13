@@ -16,6 +16,7 @@
 // injected engine rng, in the prototype's exact consumption order.
 
 import { giveItem, takeItem, hasPicks, rollBlade, rollMailPiece } from "./items.js";
+import { clampCarry } from "./derived.js";
 import { WEAPONS, ARMORS, FOODS, POTIONS, RACES } from "../content/index.js";
 
 /**
@@ -29,6 +30,141 @@ export function priceFor(base, race) {
   return base;
 }
 
+// ECON-06 (Phase 14, Economy C): the buy/sell spread. A store buys any carried
+// item back for ~50% of its (race-adjusted) buy value. This is a TUNING KNOB —
+// Phase 16 (Numbers) tunes the spread. Kept module-local so it is the one place
+// the sell discount lives.
+const SELL_SPREAD = 0.5;
+
+// ECON-06 FALLBACK base value for treasure items that carry no `cost` yet —
+// jewelry, cloaks, and staves (content/treasure-tables.js) have no base value
+// today. Phase 15 (item audit) adds real per-item base values; until then this
+// documented flat default keeps selling ALWAYS possible (never a 0-gold no-sale)
+// for a magic treasure item. Deliberately modest — a real value refines it.
+const TREASURE_FALLBACK_VALUE = 200;
+
+// Phase 15 item-wiring (ECON-08): real per-item base (buy) values for the
+// jewelry / cloaks / staves that carried NO cost in the content tables — the
+// gap Phase 14's baseValueFor documented and fell back on TREASURE_FALLBACK_VALUE
+// for. Keyed by the item's DISPLAY NAME (`item.n`) so the values live entirely
+// here and NOT as a new field on the treasure-table item objects — that keeps
+// the rolled item shapes byte-identical to the frozen prototype master (adding
+// a `cost` field to a rolled cloak/jewel/staff would diverge c.items on any
+// fixture that rolls one). Values are set roughly in proportion to each item's
+// power and are a Phase-16 tuning knob, not frozen. sellPriceFor halves these
+// (SELL_SPREAD) and race-adjusts them (priceFor).
+const TREASURE_BASE_VALUES = {
+  // JEWELRY (content/treasure-tables.js)
+  "Ring of Power": 1500,
+  "Gauntlet of the Giant": 1200,
+  "Amulet of Light": 1000,
+  "Pendant of Fortitude": 800,
+  "Anklet of Invisibility": 1500,
+  "Helm of Knowledge": 900,
+  "Bracelet of Flight": 2500,
+  "Amulet of Stone": 2000,
+  // CLOAKS
+  "Cloak of Healing": 1200,
+  "Cloak of Strength": 1500,
+  "Cloak of Invisibility": 1400,
+  "Cloak of Speed": 1600,
+  "Cloak of Regeneration": 1400,
+  "Cloak of Armor": 2500,
+  "Cloak of Flying": 2200,
+  "Cloak of Ether": 1800,
+  // STAVES (Magic-User only, uniformly potent)
+  "Rowan Staff": 2000,
+  "Birch Staff": 2200,
+  "Walnut Staff": 2000,
+  "Oak Staff": 2400,
+  "Crystal Staff": 1800,
+  "Poplar Staff": 1800,
+  "Pine Staff": 2600,
+  "Cedar Staff": 2200,
+};
+
+/**
+ * baseValueFor(item) — the pre-race, pre-spread BUY value of a carried item,
+ * derived from the same content tables the store's buy prices use:
+ *   - weapon: WEAPONS[base].cost, times the enchant premium (2 + bonus) for a
+ *     magic blade (mirrors openStore's premium weapon pricing, economy.js);
+ *   - armor:  ARMORS.find(name).cost, doubled for a warded (magic) piece whose
+ *     AR exceeds its base (mirrors openStore's premium armor ×2);
+ *   - potion: POTIONS[*].price, matched by the store item's "<Name> potion" `n`;
+ *   - picks:  the store's lockpick price (450);
+ *   - jewelry/cloaks/staves (no base value yet): TREASURE_FALLBACK_VALUE.
+ * Pure, no rng, no mutation. Returns a non-negative number.
+ */
+function baseValueFor(item) {
+  if (!item) return 0;
+  if (item.kind === "weapon") {
+    const base = WEAPONS[item.base] ? WEAPONS[item.base].cost : null;
+    if (base == null) return TREASURE_FALLBACK_VALUE;
+    return item.bonus ? base * (2 + item.bonus) : base;
+  }
+  if (item.kind === "armor") {
+    const found = ARMORS.find((a) => a.name === item.armor);
+    if (!found) return TREASURE_FALLBACK_VALUE;
+    // A warded (magic) piece carries a higher AR than its base — reflect the
+    // enchant premium (openStore prices magic armor at ×2).
+    return item.ar > found.ar ? found.cost * 2 : found.cost;
+  }
+  if (item.kind === "potion") {
+    const p = POTIONS.find((pp) => typeof item.n === "string" && item.n.startsWith(pp.n));
+    return p ? p.price : TREASURE_FALLBACK_VALUE;
+  }
+  if (item.kind === "picks") return 450;
+  // jewelry, cloaks, staves (Phase 15, ECON-08): read the real per-item base
+  // value from the name-keyed TREASURE_BASE_VALUES table above; only an
+  // unrecognised/renamed treasure item now falls back to the flat default.
+  if (item.kind === "jewel" || item.kind === "cloak" || item.kind === "staff") {
+    return TREASURE_BASE_VALUES[item.n] ?? TREASURE_FALLBACK_VALUE;
+  }
+  return TREASURE_FALLBACK_VALUE;
+}
+
+/**
+ * sellPriceFor(item, race) — what a store PAYS for a carried item: ~50% of its
+ * buy value (SELL_SPREAD), race-adjusted through the existing priceFor (trolls
+ * pay/receive triple, elves/dwarves half). Always at least 1 so a sale never
+ * yields nothing. Pure, no rng. Phase 16 tunes SELL_SPREAD; Phase 15 refines the
+ * treasure base values baseValueFor falls back on.
+ */
+export function sellPriceFor(item, race) {
+  const buy = priceFor(baseValueFor(item), race);
+  return Math.max(1, Math.round(buy * SELL_SPREAD));
+}
+
+/**
+ * sellItem(state, i, events) — sell carried item `i` at a store (ECON-06). Pure,
+ * NO rng: splices c.items[i] (freeing a slot), credits c.gold by
+ * sellPriceFor(item, race), then runs the Phase-12 GATED clamp (clampCarry — a
+ * no-op when the character carries no bag) so the credited gold never exceeds
+ * the bag's wilmst cap. No-op on an out-of-range index. Pushes `itemSold`.
+ * Not driven by any parity fixture (no rng, new action) — parity-safe.
+ */
+export function sellItem(state, i, events = []) {
+  const c = state.c;
+  const it = (c.items || [])[i];
+  if (!it) return events;
+  const price = sellPriceFor(it, c.race);
+  c.items.splice(i, 1);
+  c.gold += price;
+  // Phase-12 gated clamp: shrinks c.gold to BAGS[c.bag].wilmst when over-cap,
+  // and is a COMPLETE no-op for a bag-less (parity/test) character.
+  clampCarry(c);
+  events.push({ type: "itemSold", item: it, price });
+  return events;
+}
+
+// DELIBERATE RULES CHANGE (04.1-03, RATION-01): rations are their own
+// purchasable resource, decoupled from HP-restoring food. Previously every
+// food purchase silently added +1 ration regardless of the food's price or
+// wp value (04.1-RESEARCH.md "the food/rations tangle"). This is a
+// deliberate, fixed design value — one ration for 30 gold, race-adjusted via
+// priceFor like every other store price.
+const RATIONS_BASE_PRICE = 30;
+
 /**
  * STORE_EFFECTS — effectId → (state, params, events) => void. The engine-
  * side replacement for every stock entry's `buy` closure. Never stored on
@@ -37,9 +173,19 @@ export function priceFor(base, race) {
  */
 export const STORE_EFFECTS = {
   eatRation(state, params, events) {
+    // DELIBERATE RULES CHANGE (04.1-03, RATION-01): food purchases are now
+    // PURE HP healing — the old silent `c.rations++` side effect is removed.
+    // Rations are bought separately via the dedicated buyRations effect below.
     const c = state.c;
     c.wp = Math.min(c.maxWP, c.wp + params.wp);
-    c.rations++;
+  },
+  buyRations(state, params, events) {
+    // DELIBERATE RULES CHANGE (04.1-03, RATION-01): the dedicated, visible
+    // ration purchase — replaces the old silent food-side-effect ration gain.
+    const c = state.c;
+    const amount = params.amount ?? 1;
+    c.rations += amount;
+    events.push({ type: "rationsBought", amount });
   },
   givePotion(state, params, events) {
     giveItem(state, params.item, false, events);
@@ -82,7 +228,7 @@ export function openStore(state, rng, events = []) {
   const add = (n, cost, effectId, effectParams, sub) =>
     stock.push({ n, sub: sub ?? null, cost: Math.max(1, Math.round(cost)), effectId, effectParams: effectParams ?? null, sold: false });
 
-  for (const f of [FOODS[0], FOODS[1], FOODS[5]]) add(`${f.n} (+${f.wp} wp)`, f.cost, "eatRation", { wp: f.wp });
+  for (const f of [FOODS[0], FOODS[1], FOODS[5]]) add(`${f.n} (+${f.wp} hp)`, f.cost, "eatRation", { wp: f.wp });
   for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]])
     add(`${p.n} potion`, p.price, "givePotion", { item: { kind: "potion", n: `${p.n} potion`, txt: p.txt, eff2: p.eff, uses: 1 } }, p.txt);
   if (!hasPicks(c))
@@ -114,7 +260,7 @@ export function openStore(state, rng, events = []) {
       priceFor(a.cost, race),
       "buyArmor",
       { item: { kind: "armor", n: a.name, armor: a.name, ar: a.ar, wp: a.wp, min: a.min, cls: a.cls, txt: `AR ${a.ar}` } },
-      `AR ${a.ar}, ${a.wp} wp`,
+      `AR ${a.ar}, ${a.wp} hp`,
     );
   }
 
@@ -127,6 +273,16 @@ export function openStore(state, rng, events = []) {
       ? priceFor((WEAPONS[premium.base] || { cost: 500 }).cost, race) * (2 + premium.bonus)
       : priceFor((ARMORS.find((a) => a.name === premium.armor) || ARMORS[0]).cost, race) * 2;
   add(premium.n, pCost, "buyPremium", { item: premium }, `${premium.txt} · enchanted`);
+
+  // RATION-01: Rations are their own store line, decoupled from HP-restoring
+  // food. `add()` consumes no rng, so appending it here does not shift the
+  // rng.shuffle(arms)/rng.d(2)/rollBlade/rollMailPiece draw order above —
+  // it is placed last (rather than among the food adds) purely to preserve
+  // the existing stock array's index positions for every other item, which
+  // test/parity/fixtures/action-script.economy.json's buyItem actions
+  // reference by hand-verified index against the frozen prototype's stock
+  // (which has no Rations line at all — see comparables.js's stripStoreClosures).
+  add("Rations (+1 ration)", priceFor(RATIONS_BASE_PRICE, race), "buyRations", { amount: 1 });
 
   const haggle = race === "Wilmsry" ? 0.7 : 1;
   if (haggle < 1) stock.forEach((x) => (x.cost = Math.round(x.cost * haggle)));

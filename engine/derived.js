@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS } from "../content/index.js";
 import { rollDice } from "./dice.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -25,6 +25,205 @@ export function eff(c, key) {
   let t = 0;
   for (const it of c.items || []) if (it.eff && it.eff[key]) t += it.eff[key];
   return t;
+}
+
+/**
+ * clampCarry(c) — ECON-01 (Phase 12, Economy A): enforce the carry caps of the
+ * character's bag tier (content/bags.js BAGS[c.bag]) by clamping, in place:
+ *   - `c.items.length` down to `slots` (dropping the OVERFLOW off the end),
+ *   - `c.gold` down to the `wilmst` cap,
+ *   - `c.rations` down to the `rations` cap.
+ *
+ * GATED: a COMPLETE no-op when `!c.bag` (returns immediately, mutating
+ * nothing). This is what keeps every FROZEN parity fixture byte-identical —
+ * those characters carry no `c.bag` (stripped by the comparators), so the
+ * clamp never runs on them. Each clamp is ALSO one-directional (only ever
+ * shrinks an over-cap value, `if (x > cap)`), so it never PADS c.items to a
+ * longer length or bumps an under-cap value — a fresh, under-cap character is
+ * left byte-identical.
+ *
+ * THIS PHASE is data-model only: clampCarry exists and is unit-tested, and is
+ * called only where it is provably a no-op (end of chargen — a fresh character
+ * is always under caps). It is deliberately NOT retrofitted into the ported
+ * giveItem/gainWilmst/takeItem paths (that would change frozen-fixture
+ * behavior); Phase 13's new gated find/keep/drop action handlers call it.
+ *
+ * Pure w.r.t. rng (no draw); mutates and returns the passed `c`.
+ */
+export function clampCarry(c) {
+  if (!c || !c.bag) return c; // GATED no-op — no bag, nothing to clamp
+  const cap = BAGS[c.bag];
+  if (!cap) return c; // unknown bag key — leave untouched rather than crash
+  if (Array.isArray(c.items) && c.items.length > cap.slots) c.items.length = cap.slots;
+  if (typeof c.gold === "number" && c.gold > cap.wilmst) c.gold = cap.wilmst;
+  if (typeof c.rations === "number" && c.rations > cap.rations) c.rations = cap.rations;
+  return c;
+}
+
+/** hasItemNamed(c, name) — does the character currently carry an item whose
+ * exact display name (`.n`) is `name`? Used below to tell the Bracelet of
+ * Flight and the Cloak of Flying apart even though both set the identical
+ * `eff:{fly:1}` flag (content/treasure-tables.js) — `eff()` alone can only
+ * sum that flag, not identify its source. Exported so engine/movement.js's
+ * climb/gorge block can reuse the identical name check to decide whether
+ * ACTIVATING flight should touch the Cloak's charge counters (never the
+ * Bracelet's — it has none). */
+export function hasItemNamed(c, name) {
+  return (c.items || []).some((it) => it.n === name);
+}
+
+/**
+ * isFlying(state) — DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2):
+ * `eff(c,"fly")` (set by the Bracelet of Flight and the Cloak of Flying,
+ * content/treasure-tables.js:20,31) was read NOWHERE in the engine — flight
+ * was flavor text only. Wired here as the single capacity check
+ * engine/movement.js's climb/gorge block consults to skip the roll/fall-
+ * damage entirely:
+ *   - Bracelet of Flight ("walls and crevices are nothing") = unconditional,
+ *     always-on flight — no charge, no cooldown, ever.
+ *   - Cloak of Flying ("flight for 20 squares, once every 50") = a real
+ *     resource, backed by `c.flightLeft`/`c.flightCooldown` (chargen-
+ *     initialized to 0 in engine/character.js, ticked once per step by
+ *     engine/movement.js's move(), exactly like haste/invis/ether): flying
+ *     while an active charge window is still open (`flightLeft > 0`), or the
+ *     instant the cooldown has fully elapsed and a fresh window is about to
+ *     open (`flightCooldown <= 0`) — movement.js's climb/gorge block is what
+ *     actually starts that fresh window (sets `flightLeft`) the moment this
+ *     returns true for a Cloak-only character.
+ * If a character somehow carries BOTH items, the Bracelet takes precedence
+ * unconditionally and the Cloak's counters are left untouched (per the
+ * audit's explicit decision) — this is a pure read of already-computed
+ * state; no rng, no mutation, so determinism/parity are unaffected for every
+ * character without either item.
+ */
+export function isFlying(state) {
+  const c = state.c;
+  if (hasItemNamed(c, "Bracelet of Flight")) return true;
+  if (!hasItemNamed(c, "Cloak of Flying")) return false;
+  return c.flightLeft > 0 || c.flightCooldown <= 0;
+}
+
+/**
+ * conditionsOf(state) — DR15-B (2026-09-10): a PURE derived enumeration of the
+ * character's currently-active status conditions, good AND bad, as DATA ONLY
+ * (no labels, no copy, no player-object copy). The UI (mazeworld.html) maps
+ * each returned `key` to a short label + a good/bad chip; keeping copy out of
+ * the engine keeps this reusable (e.g. a future party-member tracker) and
+ * presentation-agnostic.
+ *
+ * Reads ONLY already-computed `state.c.*` fields (haste/invis/acute/ether/
+ * might/flight counters, affliction, darkFor) plus the two flight item-name
+ * checks isFlying already consults — NO rng draw, NO mutation of state or c,
+ * NO new serialized field. It is therefore a zero-parity-impact read: every
+ * frozen fixture round-trips byte-identical because nothing is written.
+ *
+ * Returns an array of descriptors in a STABLE order (good conditions first,
+ * then bad), each `{ key, polarity, ... }`:
+ *   - haste  {polarity:"good", remaining:<sq left>}       — double attacks
+ *   - invis  {polarity:"good", remaining:<sq left>}       — foes barely see you
+ *   - acute  {polarity:"good", remaining:<rounds>}        — strike on a d6
+ *   - ether  {polarity:"good", remaining:<sq left>}       — pass through walls
+ *   - might  {polarity:"good"}                            — +damage, lasts the day (no count)
+ *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
+ *   - affliction {polarity:"bad", kind:"Poison"|"Disease"|…}
+ *   - darkness   {polarity:"bad", remaining:<sq left>}    — the persistent Darkness/phobia state
+ *   - phobia     {polarity:"bad", phobia:<fear name>}     — DR17: the active fear in the CURRENT combat (state.combat only)
+ *
+ * Only currently-active conditions are included; a character with none set
+ * yields an empty array. `remaining` is the raw engine counter (squares or
+ * rounds) where a countdown is knowable — omitted where the effect has no
+ * square/round count (might lasts until the next day; flight "always" from the
+ * Bracelet has no charge). The flight `flight` sub-state mirrors isFlying's
+ * Bracelet/Cloak logic so the chip can read "Flying" vs "recharging".
+ */
+export function conditionsOf(state) {
+  const c = (state && state.c) || {};
+  const out = [];
+
+  // --- GOOD conditions (in a fixed order for deterministic rendering) -------
+  if (c.haste > 0) out.push({ key: "haste", polarity: "good", remaining: c.haste });
+  if (c.invis > 0) out.push({ key: "invis", polarity: "good", remaining: c.invis });
+  if (c.acute > 0) out.push({ key: "acute", polarity: "good", remaining: c.acute });
+  if (c.ether > 0) out.push({ key: "ether", polarity: "good", remaining: c.ether });
+  if (c.might > 0) out.push({ key: "might", polarity: "good" });
+
+  // Flight mirrors isFlying's item logic: the Bracelet is unconditional; the
+  // Cloak of Flying is a real charge/cooldown resource. Surface all knowable
+  // sub-states so the chip can read "Flying" vs "recharging".
+  if (hasItemNamed(c, "Bracelet of Flight")) {
+    out.push({ key: "flight", polarity: "good", flight: "always" });
+  } else if (hasItemNamed(c, "Cloak of Flying")) {
+    if (c.flightLeft > 0) out.push({ key: "flight", polarity: "good", flight: "charged", remaining: c.flightLeft });
+    else if (c.flightCooldown > 0) out.push({ key: "flight", polarity: "good", flight: "cooldown", remaining: c.flightCooldown });
+    else out.push({ key: "flight", polarity: "good", flight: "ready" });
+  }
+
+  // --- BAD conditions -------------------------------------------------------
+  if (c.affliction && c.affliction.kind) {
+    out.push({ key: "affliction", polarity: "bad", kind: c.affliction.kind });
+  }
+  // Persistent Darkness (04.1) — this is ALSO the active-phobia surface DR15-B
+  // asks for: show it while darkFor > 0 (actively in effect), not merely
+  // because the character has the Darkness phobia.
+  if (c.darkFor > 0) out.push({ key: "darkness", polarity: "bad", remaining: c.darkFor });
+
+  // Active phobia (DR17 item 1, 2026-09-10): surface the character's fear as a
+  // named BAD chip whenever the phobia is ACTIVELY gripping them in the CURRENT
+  // combat — so the tracker names it (e.g. "Phobia: Humans") for the whole
+  // feared fight, matching the "your phobia rooted you" moment the Oracle
+  // already narrates. This MIRRORS the exact trigger engine/combat.js
+  // startCombat uses (~:259-262): the type-matched freeze (c.phobiaType ===
+  // state.combat.type), the Darkness-in-the-dark freeze, and the near-death
+  // Death-panic freeze — plus state.combat.frozen itself (set by that same
+  // block) so the chip is up while the root actually holds. Gated on
+  // state.combat existing, so it NEVER surfaces outside a fight; a pure read of
+  // already-computed state (no rng, no mutation) — zero parity impact, exactly
+  // like every other condition above.
+  if (state && state.combat && c.phobia) {
+    const DEATH_PANIC_THRESHOLD = 0.25; // mirror engine/combat.js's constant
+    const phobiaActive =
+      !!state.combat.frozen ||
+      c.phobiaType === state.combat.type ||
+      (c.phobia === "Darkness" && inDark(state)) ||
+      (c.phobia === "Death" && c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD);
+    if (phobiaActive) out.push({ key: "phobia", polarity: "bad", phobia: c.phobia });
+  }
+
+  return out;
+}
+
+/**
+ * armorSoak(c) — DELIBERATE RULES CHANGE (04.2 Bugs B, 2026-09-09, E8): the
+ * Cloak of Armor (content/treasure-tables.js, eff:{cloakArmor:1}, "a full suit
+ * of plate that weighs nothing") was inert — `cloakArmor` was READ NOWHERE,
+ * exactly like eff.fly before the A2 flight wiring. This is the single source
+ * the combat soak block (engine/combat.js) consults for the player's EFFECTIVE
+ * armour instead of reading c.ar/c.armorWP/c.armorMin/c.armorMax directly.
+ *
+ * When the character carries the Cloak of Armor (`eff(c,"cloakArmor") > 0`),
+ * effective armour operates as PLATE (content/armors.js Plate ar:15/wp:45):
+ * take-the-better of the cloak's plate and the worn armour for both the d20
+ * soak rating (`ar`) and the durability pool. Because the cloak is a weightless
+ * MAGICAL suit, its plate does not wear out — `magic:true` tells the soak site
+ * to consume NO worn-armour durability (and never emit armorDestroyed) when the
+ * cloak is present. Without the cloak this returns the worn armour verbatim
+ * (`magic:false`), so behaviour is byte-identical for every character that
+ * lacks the item.
+ *
+ * Pure read of `c` (uses only eff() + the static Plate constants); no rng, no
+ * mutation of `c`, so determinism/parity are unaffected.
+ */
+export function armorSoak(c) {
+  const worn = { ar: c.ar || 0, wp: c.armorWP, min: c.armorMin || 0, max: c.armorMax };
+  if (eff(c, "cloakArmor") <= 0) return { ...worn, magic: false };
+  const plate = ARMORS.find((a) => a.name === "Plate") || { ar: 15, wp: 45 };
+  return {
+    ar: Math.max(worn.ar, plate.ar),
+    wp: Math.max(worn.wp, plate.wp),
+    min: worn.min,
+    max: Math.max(worn.max, plate.wp),
+    magic: true,
+  };
 }
 
 // --- die / hit numbers ------------------------------------------------------
@@ -45,10 +244,24 @@ export function strikeDie(c) {
 /**
  * inDark(state) — is the player standing on an unlit square? Reads state.floor;
  * ports mazeworld.html inDark() (lines 1463-1466).
+ *
+ * DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): extended to ALSO
+ * return true while the persistent darkness counter (`state.c.darkFor`, set
+ * by engine/encounters.js's fallDark and decremented per step by
+ * engine/movement.js) is active, regardless of the current tile's own
+ * `.dark` flag. This is the single hook every darkness consumer already
+ * reads (revealRadius below, toHit's in-dark cap, foeToHitVs's silent-thief
+ * clause, combat.js's combatInDark/no-crit-in-dark/Darkness-phobia freeze),
+ * so extending it here makes the persistent state flow through all of them
+ * for free — and every Night Vision waiver keeps working unchanged, since
+ * those checks already wrap inDark() rather than reading tile.dark
+ * directly. Pure read of already-computed state; no rng, so
+ * determinism/parity are unaffected.
  */
 export function inDark(state) {
   const f = state.floor;
-  return !!(f && f.g[f.py] && f.g[f.py][f.px] && f.g[f.py][f.px].dark);
+  const tileDark = !!(f && f.g[f.py] && f.g[f.py][f.px] && f.g[f.py][f.px].dark);
+  return tileDark || !!(state.c && state.c.darkFor > 0);
 }
 
 /**
@@ -128,7 +341,23 @@ export function weaponDamage(c, rng) {
   if (c.might) d += c.might;
   if (skill(c, "Kata")) d += c.level;
   if (skill(c, "Heft")) d += 2;
+  // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of
+  // Arms subclass blurb (content/flavor.js SUB_NOTE["Master of Arms"]) reads
+  // "Plus two with every weapon ever forged" but the +2 weapon-proficiency
+  // bonus had NO implementation anywhere in the engine. Wired here as a flat
+  // additive, mirroring the existing prof/Heft pattern — no RNG, so this
+  // does not change RNG consumption order or affect determinism/parity.
+  if (c.sub === "Master of Arms") d += 2;
   d += eff(c, "dmg");
+  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Gauntlet of
+  // the Giant (content/treasure-tables.js, eff:{size:1}, "one size larger")
+  // was inert — the player's `size` effect was READ NOWHERE (combat.js:128
+  // `size:` is the FOE's size). Wired here as the design-call "small damage
+  // benefit" (CONTEXT §8): a giant's reach/mass adds a flat +2 per size step
+  // to every strike, mirroring the existing eff("dmg")/Heft additives just
+  // above. Pure read of `c` (no rng), so RNG consumption order/parity are
+  // unaffected for every character not carrying the Gauntlet (eff size === 0).
+  d += 2 * eff(c, "size");
   if (c.sub === "Guard" && c.level < 4) d -= 4 - c.level;
   if (c.sub === "Sorcerer") d = Math.min(d, 9); // a Sorcerer's arm is not the point
   return Math.max(1, d);
@@ -141,6 +370,27 @@ export function weaponDamage(c, rng) {
 export function upkeep(c) {
   const R = RACES[c.race];
   return Math.max(1, Math.round(R.upkeep * (skill(c, "Heft") ? 0.5 : 1)) + eff(c, "upkeep"));
+}
+
+/**
+ * intelBonus(c) — DELIBERATE RULES CHANGE (04.1-04, 2026-09-09, RULE-01):
+ * Intelligence (`c.intel`, rolled once at chargen as a d20, character.js) was
+ * a pure cosmetic orphan — displayed on the sheet, never read by any engine
+ * function on the player's OWN character (only a foe's `intel` fed spell
+ * resistance, magic.js). Per the phase-04.1 rules audit + user's Option B
+ * decision, this exported helper gives Intelligence a small, self-contained
+ * mechanical read with NO dependency on foe spellcasting: a modest,
+ * documented curve — +1 bonus at intel >= 15, +2 (capped) at intel >= 20 —
+ * consumed by openChest's lock-roll SUCCESS THRESHOLD (engine/encounters.js)
+ * and mirrored on the character sheet (src/browser/viewModels.js), the same
+ * single-source-of-truth pattern damageBracket↔weaponDamage already use.
+ * This function does NO rng draw and is a pure read of `c`; callers apply it
+ * to a comparison threshold, never to the rng draw itself, so RNG
+ * consumption order is unaffected.
+ */
+export function intelBonus(c) {
+  const intel = c.intel || 0;
+  return clamp(Math.floor((intel - 10) / 5), 0, 2);
 }
 
 /**

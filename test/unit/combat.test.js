@@ -31,6 +31,7 @@ import {
   allyTurn,
   foeTurn,
 } from "../../engine/combat.js";
+import { weaponDamage } from "../../engine/derived.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -63,6 +64,11 @@ function fixedFighter(overrides = {}) {
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    darkFor: 0,
+    // audit-batch1 (2026-09-09, A2): Cloak of Flying's charge/cooldown
+    // fields — 0/0 (ready-to-activate) by default, same treatment as
+    // darkFor above.
+    flightLeft: 0, flightCooldown: 0,
     ...overrides,
   };
 }
@@ -116,6 +122,26 @@ test("startCombat: builds a deterministic foe list from BESTIARY for a fixed see
   assert.ok(events1.some((e) => e.type === "encounterStarted"));
 });
 
+// audit-bugs (2026-09-09, E4): the reported live bug was a foe's rendered hp
+// showing current/current (e.g. "5/5") instead of current/max (e.g. "5/20")
+// after taking damage. The render (mazeworld.html renderEncounter) reads
+// state.combat.foes directly, so the fix here is defense-in-depth: (1) each
+// foe is created with a stable maxWP === its starting wp, unaffected by later
+// damage, and (2) the encounterStarted event additively carries maxWP too, so
+// any consumer reading the event instead of live state gets the same real
+// starting hp rather than a value that silently degrades to "current/current".
+test("startCombat: each foe's maxWP is its stable starting hp, on both state.combat.foes and the encounterStarted event", () => {
+  const state = fixedState();
+  const events = startCombat(state, false, "Beasts", makeRng(42), []);
+  const started = events.find((e) => e.type === "encounterStarted");
+  assert.ok(started);
+  state.combat.foes.forEach((f, i) => {
+    assert.equal(f.maxWP, f.wp, "freshly created foe starts at full (max) hp");
+    assert.equal(started.foes[i].maxWP, f.maxWP, "encounterStarted event's maxWP matches the real foe");
+    assert.equal(started.foes[i].wp, f.wp);
+  });
+});
+
 test("startCombat: a wandering encounter is always exactly one foe", () => {
   const state = fixedState();
   startCombat(state, true, "Humans", makeRng(7), []);
@@ -130,6 +156,114 @@ test("startCombat: a Knight is beneath the notice of a weak foe (fled, not fough
   const events = startCombat(state, true, "Beasts", makeRng(99), []);
   assert.ok(events.some((e) => e.type === "foeFled" && e.reason === "knight"));
   assert.equal(state.combat, null, "the only foe fled -> nothing left to fight");
+});
+
+// --- PHOBIA-01: Darkness-phobia freeze on encounter start (04.1-05) -------
+//
+// Every test below hand-drives startCombat(state, true /* wandering */,
+// "Beasts", rng, []) so the roster/initiative rng draws are pinned to
+// exactly 3: rng.d(4) (the foe's level-reduction roll, here 1 -> lvl 1),
+// then rng.d(20) x2 for rollInitiative (mine, theirs), chosen so mine >=
+// theirs -> first === "you", which skips foeTurn() entirely and keeps the
+// draw count exact. A 4th fakeRng entry, when present, is the Hardiness
+// mitigation roll (rng.d(2)) — fakeRng throws on sequence underflow, so any
+// test that supplies EXACTLY 3 entries also proves no extra rng draw fires
+// for that scenario (T-04.1-10).
+
+test("startCombat: a Darkness-phobic character freezes on encounter start while dark", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null } });
+  state.floor.g[state.floor.py][state.floor.px].dark = true;
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.equal(state.combat.frozen, true);
+  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: the persistent darkness counter (darkFor) also triggers the Darkness-phobia freeze off a lit tile", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, darkFor: 10 } });
+  // floor tile itself stays lit (fixedFloor default dark:false) — only the
+  // persistent counter is active, proving Task 1's inDark extension flows
+  // through here too.
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.equal(state.combat.frozen, true);
+  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: the same Darkness-phobic character does NOT freeze in the light, and no extra rng is drawn", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null } });
+  // floor stays lit, darkFor stays 0 — exactly 3 fakeRng entries: any 4th
+  // (unwanted Hardiness-style) draw would throw "sequence exhausted".
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.ok(!state.combat.frozen);
+  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: a non-Darkness, non-type-matched phobic character in the dark does not freeze and draws no extra rng", () => {
+  const state = fixedState({ c: { phobia: "Spiders", phobiaType: "x" } });
+  state.floor.g[state.floor.py][state.floor.px].dark = true;
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.ok(!state.combat.frozen, "an unrelated phobia never triggers the Darkness freeze");
+  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  assert.ok(events.some((e) => e.type === "combatInDark"), "the ordinary in-dark combat notice still fires, unrelated to phobia");
+});
+
+test("startCombat: Hardiness gives a Darkness-phobic character a 50% chance to shrug off the freeze (roll shrugs it off)", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { Hardiness: 1 } } });
+  state.floor.g[state.floor.py][state.floor.px].dark = true;
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 1]), []); // Hardiness roll: d(2)=1 -> shrugged off
+  assert.ok(!state.combat.frozen, "a Hardiness roll of 1 shrugs the freeze off entirely");
+  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: Hardiness's mitigation roll can still fail, leaving the Darkness-phobia freeze in place", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { Hardiness: 1 } } });
+  state.floor.g[state.floor.py][state.floor.px].dark = true;
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 2]), []); // Hardiness roll: d(2)=2 -> no shrug
+  assert.equal(state.combat.frozen, true);
+  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+});
+
+// --- PHOBIA-01: Death-phobia near-death panic on encounter start (04.1-06) -
+//
+// maxWP is 55 (fixedFighter default), so DEATH_PANIC_THRESHOLD (0.25) puts
+// the near-death line at wp <= 13.75. wp:10 is at/below it; wp:20 is above
+// it. Same 3-draw rng shape as the Darkness tests above (foe-level roll +
+// initiative x2, "you" goes first so foeTurn never runs and the draw count
+// stays exact); a 4th entry, when present, is the Hardiness mitigation roll.
+
+test("startCombat: a Death-phobic character at/below the near-death threshold freezes on encounter start", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10 } });
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.equal(state.combat.frozen, true);
+  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: the same Death-phobic character does NOT freeze above the threshold, and no extra rng is drawn", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 20 } });
+  // exactly 3 fakeRng entries: any 4th (unwanted Hardiness-style) draw would throw.
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.ok(!state.combat.frozen);
+  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: a non-Death phobic character near death does not freeze and draws no extra rng", () => {
+  const state = fixedState({ c: { phobia: "Spiders", phobiaType: "x", wp: 5 } });
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
+  assert.ok(!state.combat.frozen, "an unrelated phobia never triggers the near-death panic");
+  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: Hardiness gives a near-death Death-phobic character a 50% chance to shrug off the panic (roll shrugs it off)", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10, skills: { Hardiness: 1 } } });
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 1]), []); // Hardiness roll: d(2)=1 -> shrugged off
+  assert.ok(!state.combat.frozen, "a Hardiness roll of 1 shrugs the panic off entirely");
+  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+});
+
+test("startCombat: Hardiness's mitigation roll can still fail, leaving the Death-phobia panic in place", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10, skills: { Hardiness: 1 } } });
+  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 2]), []); // Hardiness roll: d(2)=2 -> no shrug
+  assert.equal(state.combat.frozen, true);
+  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
 });
 
 test("liveFoes: filters to only alive foes; empty outside combat", () => {
@@ -148,6 +282,18 @@ test("rollInitiative: a Samurai never wins the first roll unless foreseen", () =
   state2.combat = fixedCombat([]);
   assert.equal(rollInitiative(state2, fakeRng([1, 10])), "you");
   assert.equal(state2.c.foresight, false, "foresight is consumed by the roll");
+});
+
+// --- weaponDamage: Master of Arms "+2 with every weapon" (RULE-02) --------
+
+test("weaponDamage: Master of Arms deals exactly +2 versus an identical non-Master-of-Arms fighter", () => {
+  const plain = fixedFighter();
+  const moa = fixedFighter({ sub: "Master of Arms" });
+  // Same weapon (Club), same level, same rng draw for the weapon's dice ->
+  // any difference in the result is solely the Master of Arms bonus.
+  const dmgPlain = weaponDamage(plain, fakeRng([4]));
+  const dmgMoA = weaponDamage(moa, fakeRng([4]));
+  assert.equal(dmgMoA, dmgPlain + 2, "Master of Arms adds exactly +2 weapon damage");
 });
 
 // --- playerStrike ------------------------------------------------------
@@ -173,6 +319,22 @@ test("playerStrike: a hit applies weaponDamage, kills the foe on lethal wp, and 
   assert.equal(state.c.kills, 1);
   assert.ok(state.c.sp > 0, "killFoe awarded skill points");
   assert.equal(state.combat, null, "the encounter clears once the only foe dies");
+});
+
+test("playerStrike: a non-lethal hit lowers wp but leaves maxWP (starting hp) unchanged (E4 regression)", () => {
+  const state = fixedState();
+  state.combat = fixedCombat([fixedFoe({ wp: 20, maxWP: 20 })]);
+  // strike d20=1 vs need=5 -> hit; club d6=6 -> dmg = level^2(1) + 6 = 7, non-lethal
+  // (20-7=13). afterPlayerAction then runs foeTurn (d20=20 vs need=5 -> miss) and
+  // advances the round via a fresh rollInitiative (mine=15 >= theirs=10 -> "you"
+  // stays first, so no second foeTurn this call) — same pattern as the
+  // Barbarian/Ambidextrous/haste test above.
+  const rng = fakeRng([1, 6, 20, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "struck" && e.dmg === 7));
+  const foe = state.combat.foes[0];
+  assert.equal(foe.wp, 13, "took 7 damage off 20");
+  assert.equal(foe.maxWP, 20, "maxWP (starting hp) is untouched by damage — never 5/5-style collapse");
 });
 
 test("playerStrike: Barbarian, Ambidextrous, and haste each grant two attacks", () => {
@@ -206,6 +368,48 @@ test("playerStrike: Fridgian frenzy grants a second wild swing, which can be was
   assert.ok(events.some((e) => e.type === "frenzy"));
   assert.ok(events.some((e) => e.type === "frenzyWasted" && e.target === "Corpse"));
   assert.equal(events.some((e) => e.type === "struck"), false, "the round was wasted, nothing landed");
+});
+
+// audit-bugs (2026-09-09, E7): a Con Artist's opening blow is a deliberate
+// no-damage "warning" (the conArtistOpener bail applies no damage). The bug:
+// the opening-crit block still fired a `backstab` event first, so the game
+// announced "A blade in the back. Critical." for a strike that dealt nothing.
+// The fix guards that block with `c.sub !== "Con Artist"`, leaving
+// conArtistOpener as the ONLY opener event and no `struck`/`backstab`.
+test("playerStrike: a Con Artist's opening strike emits only conArtistOpener — no backstab, no struck, no damage (E7)", () => {
+  const state = fixedState({ c: { cls: "Thief", sub: "Con Artist", skills: {} } });
+  state.combat = fixedCombat([fixedFoe({ wp: 10, maxWP: 10 })]);
+  // strike d20=3 vs Thief need=4 -> hit; club d6=4 (weaponDamage is computed
+  // before the opener bail, so the draw is still consumed) but the damage is
+  // discarded by the conArtistOpener `continue`. The foe survives untouched, so
+  // afterPlayerAction runs a foe swing (d?=20 vs need 5 -> miss) then a fresh
+  // rollInitiative (mine=15 >= theirs=10 -> player stays first, no 2nd foeTurn).
+  const rng = fakeRng([3, 4, 20, 15, 10]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "conArtistOpener"), "the warning-shot beat fires");
+  assert.equal(events.some((e) => e.type === "backstab"), false, "no misleading backstab crit is announced");
+  assert.equal(events.some((e) => e.type === "struck"), false, "the opener deals no damage");
+  assert.equal(state.combat.foes[0].wp, 10, "the foe took no damage from the warning shot");
+});
+
+test("playerStrike: a plain (non-Con-Artist) Thief still opens with a backstab for doubled damage (E7 control)", () => {
+  const state = fixedState({ c: { cls: "Thief", sub: "Pilfer", skills: {} } });
+  state.combat = fixedCombat([fixedFoe({ wp: 3, maxWP: 3 })]);
+  // Pilfer (a plain Thief sub — not Pickpocket, whose gainWilmst rolls extra
+  // gold draws; not Cat Burglar/Ninja auto-open; not Cutthroat/Con Artist).
+  // strike d20=3 vs Thief need=4 -> hit; club d6=4 -> base dmg = level^2(1)+4 = 5,
+  // doubled by the backstab crit to 10, lethal against 3 wp. killFoe then draws
+  // sp d6=5, coin d10=5, treasure d20=20 (skips), cooking d6=1 (skips) — the
+  // encounter clears with no foe turn (only foe dead).
+  const rng = fakeRng([3, 4, 5, 5, 20, 1]);
+  const events = playerStrike(state, rng, []);
+  assert.ok(events.some((e) => e.type === "backstab"), "a real Thief opener still backstabs");
+  assert.ok(
+    events.some((e) => e.type === "struck" && e.critical === true && e.dmg === 10),
+    "the backstab lands doubled damage (base 5 -> 10)",
+  );
+  assert.ok(events.some((e) => e.type === "foeKilled"), "the doubled backstab killed the foe");
+  assert.equal(state.combat, null, "the encounter clears once the only foe dies");
 });
 
 // --- killFoe -------------------------------------------------------------
@@ -263,6 +467,54 @@ test("foeTurn: armor soaks a blow that lands under the character's AR", () => {
   assert.equal(state.c.wp, 55, "the armor absorbed the hit");
   assert.equal(state.c.armorWP, 15, "5 damage came off the armor's wp");
   assert.ok(events.some((e) => e.type === "armorSoaked"));
+});
+
+// audit-bugs (2026-09-09, E8): the Cloak of Armor (eff:{cloakArmor:1}, "a full
+// suit of plate that weighs nothing") was inert — cloakArmor was read nowhere.
+// Wired via engine/derived.js#armorSoak: a cloak-bearer's effective armour is
+// PLATE (ar:15), take-the-better of the cloak's plate and the worn armour, and
+// the magical plate never wears out.
+test("foeTurn: a Leather-wearer holding the Cloak of Armor soaks as Plate — AR 15, not Leather's 6 (E8)", () => {
+  const state = fixedState({
+    c: {
+      wp: 55, maxWP: 55,
+      armor: "Leather", ar: 6, armorWP: 15, armorMax: 15, armorMin: 1,
+      items: [{ n: "Cloak of Armor", eff: { cloakArmor: 1 } }],
+    },
+  });
+  const foe = fixedFoe({ wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe]);
+  // foeDie roll=3 (hit, no crit) vs need=5; dmg = 1 + d6(4) = 5; armor soak
+  // roll d20=12 — this is the crux: 12 > Leather's ar 6 (would have hit the
+  // player) but 12 <= the cloak's Plate ar 15, so it lands on the (magical,
+  // non-degrading) plate instead.
+  const rng = fakeRng([3, 4, 12]);
+  const events = foeTurn(state, rng, []);
+  assert.equal(state.c.wp, 55, "the cloak's plate (AR 15) soaked a blow leather's AR 6 would have taken");
+  assert.equal(state.c.armorWP, 15, "the weightless magical plate does not wear out — worn-armour wp untouched");
+  assert.ok(events.some((e) => e.type === "armorSoaked"));
+  assert.equal(events.some((e) => e.type === "armorDestroyed"), false, "the magical plate is never destroyed");
+});
+
+test("foeTurn: the SAME Leather-wearer WITHOUT the cloak takes the blow — soaks only as Leather AR 6 (E8 control)", () => {
+  const state = fixedState({
+    c: {
+      wp: 55, maxWP: 55,
+      armor: "Leather", ar: 6, armorWP: 15, armorMax: 15, armorMin: 1,
+      items: [],
+    },
+  });
+  const foe = fixedFoe({ wp: 10, maxWP: 10 });
+  state.combat = fixedCombat([foe]);
+  // Identical foe swing and soak roll as above (roll d20=12); with no cloak the
+  // effective AR is Leather's 6, so 12 > 6 misses the armour and the 5 damage
+  // lands on the player — proving the previous test's soak came from the cloak.
+  const rng = fakeRng([3, 4, 12]);
+  const events = foeTurn(state, rng, []);
+  assert.equal(state.c.wp, 50, "without the cloak, AR 6 can't stop a soak roll of 12 — the player takes 5");
+  assert.equal(state.c.armorWP, 15, "the blow bypassed the armour entirely, so its wp is untouched");
+  assert.ok(events.some((e) => e.type === "struckByFoe" && e.dmg === 5));
+  assert.equal(events.some((e) => e.type === "armorSoaked"), false, "leather's AR 6 did not soak this blow");
 });
 
 test("foeTurn: a sleeping foe skips its turn without drawing a die", () => {
@@ -472,4 +724,23 @@ test("combat.js references no Math.random/document/localStorage", () => {
   assert.ok(!/Math\.random/.test(src));
   assert.ok(!/\bdocument\b/.test(src));
   assert.ok(!/\blocalStorage\b/.test(src));
+});
+
+// --- regression: DoT/reflect kills during foeTurn must end combat ----------
+
+test("afterPlayerAction: an acid tick that kills the last foe during foeTurn ends combat", () => {
+  // Regression (DR13): a foe can die from an acid-over-time tick INSIDE
+  // foeTurn, not only from the player's strike. afterPlayerAction only checked
+  // liveFoes BEFORE foeTurn, so the encounter stayed open with nothing left to
+  // fight — the player was stranded on the combat screen and had to flee out.
+  const state = fixedState();
+  const foe = fixedFoe({ wp: 1, maxWP: 10, acid: { rounds: 2, dmg: { n: 1, sides: 6 } } });
+  state.combat = fixedCombat([foe]);
+
+  const events = afterPlayerAction(state, makeRng(5), []);
+
+  assert.ok(events.some((e) => e.type === "acidTick"), "acid ticked this foeTurn");
+  assert.equal(foe.alive, false, "the tick killed the foe");
+  assert.equal(state.combat, null, "combat ends instead of stranding the player");
+  assert.ok(events.some((e) => e.type === "encounterCleared"), "encounterCleared emitted");
 });

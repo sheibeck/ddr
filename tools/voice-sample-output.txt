@@ -1,0 +1,1021 @@
+══════════════════════════════════════════════════════════════════════════════
+DELVE, DIE, REPEAT — VOICE SAMPLE (human tone review)
+Generated deterministically (seed 0x5eed1e) by tools/voice-sample.mjs
+Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
+══════════════════════════════════════════════════════════════════════════════
+
+## ORACLE / EVENT LOG — 177 event types × 3 samples
+
+▶ oneWayBlocked
+    You are through. That door is furniture now — there is no coming back.
+    You are through. That door is furniture now — there is no coming back.
+    You are through. That door is furniture now — there is no coming back.
+
+▶ climbedOver
+    Over, and no worse for it.
+    Over, and no worse for it.
+    Over, and no worse for it.
+
+▶ leaptOver
+    Cleared it. No drama.
+    Cleared it. No drama.
+    Cleared it. No drama.
+
+▶ flownOver
+    You simply fly over it.
+    You simply fly over it.
+    You simply fly over it.
+
+▶ fellClimbing
+    Gravity remembers you exist — 8 hp.
+    Gravity remembers you exist — 3 hp.
+    Gravity remembers you exist — 10 hp.
+
+▶ fellInGorge
+    Short. The floor of the crevice makes its introduction — 8 hp.
+    Short. The floor of the crevice makes its introduction — 11 hp.
+    Short. The floor of the crevice makes its introduction — 6 hp.
+
+▶ heightsFear
+    Your stomach reaches the ground well before your feet do.
+    Your stomach reaches the ground well before your feet do.
+    Your stomach reaches the ground well before your feet do.
+
+▶ waterFear
+    Something down there may be wet. That is enough.
+    Something down there may be wet. That is enough.
+    Something down there may be wet. That is enough.
+
+▶ trappedPanic
+    Four walls and one door you already used. −5 hp.
+    Four walls and one door you already used. −4 hp.
+    Four walls and one door you already used. −6 hp.
+
+▶ afflictionTick
+    Poison: −6 hp.
+    Disease has taken everything it can. You are on one hp.
+    Disease: −1 hp.
+
+▶ afflictionPassed
+    The Disease passes.
+    The Disease passes.
+    The Poison passes.
+
+▶ afflictionCured
+    You sweat the Disease out overnight. Cured.
+    You sweat the Disease out overnight. Cured.
+    You sweat the Poison out overnight. Cured.
+
+▶ afflictionLingers
+    You rest, but the Disease rides out the night with you.
+    You rest, but the Disease rides out the night with you.
+    You rest, but the Poison rides out the night with you.
+
+▶ spellChargeRecovered
+    Twenty quiet squares, and a spell charge is ready again — 5 of 5 in reserve. The dungeon keeps no such courtesy for you.
+    Twenty quiet squares, and a spell charge is ready again — 4 of 5 in reserve. The dungeon keeps no such courtesy for you.
+    Twenty quiet squares, and a spell charge is ready again — 5 of 5 in reserve. The dungeon keeps no such courtesy for you.
+
+▶ dayBegan
+    Day 2.
+    Day 28.
+    Day 30.
+
+▶ rested
+    Rest restores +7 hp.
+    Rest restores +11 hp.
+    Rest restores +19 hp.
+
+▶ armorPatched
+    +21 back into your kit.
+    +24 back into your kit.
+    +10 back into your kit.
+
+▶ potionDuplicated
+    The Warlock spends the small hours duplicating a potion. +1 potion.
+    The Warlock spends the small hours duplicating a potion. +1 potion.
+    The Warlock spends the small hours duplicating a potion. +1 potion.
+
+▶ wentHungry
+    No rations. Cost of living takes 4 hp straight out of you.
+    No rations. Cost of living takes 4 hp straight out of you.
+    No rations. Cost of living takes 6 hp straight out of you.
+
+▶ wanderingMonster
+    Something in the dark takes an interest in you. 1 of 8 night-hours disturbed.
+    Something in the dark takes an interest in you. 1 of 8 night-hours disturbed.
+    Something in the dark takes an interest in you. 5 of 8 night-hours disturbed.
+
+▶ campFailed
+    Not enough food to make camp. Find rations first.
+    Not enough food to make camp. Find rations first.
+    Not enough food to make camp. Find rations first.
+
+▶ teleported
+    You teleport to an unknown location on this floor… the dungeon does not offer refunds.
+    You teleport to an unknown location on this floor… the dungeon does not offer refunds.
+    You teleport to an unknown location on this floor… the dungeon does not offer refunds.
+
+▶ spGained
+    Talking your way out is worth 17 17 experience points.
+    Surviving the floor is worth 2 2 experience points.
+    Talking your way out is worth 3 3 experience points.
+
+▶ floorChanged
+    Floor 3. The air gets worse, and takes it personally.
+    Floor 1. The air gets worse, and takes it personally.
+    Floor 3. The air gets worse, and takes it personally.
+
+▶ leveled
+    Skill level 2 (+2 hp).
+    Skill level 2 (+1 hp).
+    Skill level 2 (+1 hp).
+
+▶ won
+    The Gate. Walked out on day 14, after 586 squares.
+    The Gate. Walked out on day 26, after 145 squares.
+    The Gate. Walked out on day 29, after 1170 squares.
+
+▶ died
+    You have died.
+    You have died.
+    You have died.
+
+▶ trackingRolled
+    They keep their lead, for now. Tracking roll 20 — no luck.
+    They keep their lead, for now. Tracking roll 2 — no luck.
+    They keep their lead, for now. Tracking roll 20 — no luck.
+
+▶ encounterStarted
+    An encounter. Drudge, Pogo.
+    An encounter. Rinkle, Hair.
+    An encounter. Trachea, Bones.
+
+▶ trackable
+    They have not noticed you yet.
+    They have not noticed you yet.
+    They have not noticed you yet.
+
+▶ allyJoined
+    Pogo falls in beside you.
+    China Wolf falls in beside you.
+    Rinkle falls in beside you.
+
+▶ warlockBoost
+    The Warlock's presence stiffens the dead. +3 hp to every corpse in the room.
+    The Warlock's presence stiffens the dead. +7 hp to every corpse in the room.
+    The Warlock's presence stiffens the dead. +12 hp to every corpse in the room.
+
+▶ foeFled
+    Hobgoblin thinks better of it and leaves.
+    Krupke thinks better of it and leaves.
+    Drekk thinks better of it and leaves.
+
+▶ foeBored
+    Wolf loses interest entirely.
+    Werebeast loses interest entirely.
+    Werebeast loses interest entirely.
+
+▶ encounterCleared
+    Nothing left standing.
+    Nothing left standing.
+    Nothing left standing.
+
+▶ phobiaFrozen
+    Your phobia has you rooted to the spot.
+    Your phobia has you rooted to the spot.
+    Your phobia has you rooted to the spot.
+
+▶ combatInDark
+    You cannot see what you are fighting.
+    You cannot see what you are fighting.
+    You cannot see what you are fighting.
+
+▶ strikeRefused
+    You hold back.
+    You hold back.
+    You hold back.
+
+▶ shookOffFrozen
+    You shake it off.
+    You shake it off.
+    You shake it off.
+
+▶ frenzy
+    Something in your blood takes over. Frenzy.
+    Something in your blood takes over. Frenzy.
+    Something in your blood takes over. Frenzy.
+
+▶ frenzyWasted
+    The frenzy swings wide and finds only Trachea. Wasted.
+    The frenzy swings wide and finds only Zit. Wasted.
+    The frenzy swings wide and finds only Zombie. Wasted.
+
+▶ strikeMissed
+    20 vs 9. Miss.
+    10 vs 19. Miss.
+    7 vs 17. Miss.
+
+▶ deathTouch
+    One touch. Werebeast drops.
+    One touch. Hobgoblin drops.
+    One touch. M&M drops.
+
+▶ backstabDenied
+    Heavy armor gives you away.
+    Heavy armor gives you away.
+    Heavy armor gives you away.
+
+▶ silenceStrike
+    Not a sound. Critical.
+    Not a sound. Critical.
+    Not a sound. Critical.
+
+▶ stealthStrike
+    They never saw you. Critical.
+    They never saw you. Critical.
+    They never saw you. Critical.
+
+▶ backstab
+    A blade in the back. Critical.
+    A blade in the back. Critical.
+    A blade in the back. Critical.
+
+▶ conArtistOpener
+    You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.
+    You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.
+    You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.
+
+▶ ninjaFirstStrike
+    One perfect opening strike.
+    One perfect opening strike.
+    One perfect opening strike.
+
+▶ struck
+    Critical! You hit Wolf for 1 hp.
+    Critical! You hit Skeleton for 18 hp.
+    Critical! You hit Hair for 16 hp.
+
+▶ foeRevived
+    Cave Bear gets back up.
+    Herman gets back up.
+    Sterling gets back up.
+
+▶ foeKilled
+    Ghost falls. +31 XP.
+    Viper falls. +25 XP.
+    Goblin falls. +4 XP.
+
+▶ cooked
+    You cook what is left. +1 hp, +3 ration.
+    You cook what is left. +12 hp, +2 ration.
+    You salvage a ration off the carcass. +3 ration.
+
+▶ fleeRefused
+    A Samurai does not run.
+    A Samurai does not run.
+    A Samurai does not run.
+
+▶ fled
+    You vanish. Clean escape.
+    You get clear.
+    You get clear.
+
+▶ fleeRolled
+    Flee: 12+3 vs 18.
+    Flee: 14+0 vs 14.
+    Flee: 19+0 vs 20.
+
+▶ fleeFailed
+    You do not make it.
+    You do not make it.
+    You do not make it.
+
+▶ parleyRefused
+    Not this time, not with them.
+    Not this time, not with them.
+    Not this time, not with them.
+
+▶ parleyRolled
+    Talk it down: 20 vs 19.
+    Talk it down: 7 vs 13.
+    Talk it down: 16 vs 1.
+
+▶ goldGained
+    +16 wilmst.
+    +9 wilmst.
+    +3 wilmst.
+
+▶ parleyFailed
+    They are not buying it.
+    They are not buying it.
+    They are not buying it.
+
+▶ sang
+    You strike up "a tune".
+    You strike up "a tune".
+    You strike up "a tune".
+
+▶ beastsSoothed
+    3 calm right down.
+    3 calm right down.
+    6 calm right down.
+
+▶ songIgnored
+    They do not care for music.
+    They do not care for music.
+    They do not care for music.
+
+▶ lullabyRolled
+    1 nod off.
+    4 nod off.
+    4 nod off.
+
+▶ thunderRolled
+    Thunder rolls; 3 freeze for 1 rounds.
+    Thunder rolls; 5 freeze for 2 rounds.
+    Thunder rolls; 2 freeze for 4 rounds.
+
+▶ combatEnded
+    The fight is over.
+    The fight is over.
+    The fight is over.
+
+▶ allyStruck
+    Krupke lands a hit on Cave Bear for 13 hp.
+    Stink Bug lands a hit on Bat/Rat for 25 hp.
+    Sterling lands a hit on Blumble for 2 hp.
+
+▶ allyMissed
+    Pogo swings and misses.
+    Ghost swings and misses.
+    Rinkle swings and misses.
+
+▶ allyDeparted
+    Werebeast slips away, obligation met.
+    Philly slips away, obligation met.
+    Dread Lock slips away, obligation met.
+
+▶ memberStruck
+    Trachea turns on Ulba the Wide for 1 hp.
+    Critical! Primp turns on Skeg for 16 hp.
+    Zit turns on Ysolde Nim for 9 hp.
+
+▶ memberDowned
+    Blumble goes down, and what is left of them wants no further part of this.
+    Vampire goes down, and what is left of them wants no further part of this.
+    Hobgoblin goes down, and what is left of them wants no further part of this.
+
+▶ regenerated
+    +20 hp knits itself shut.
+    +1 hp knits itself shut.
+    +5 hp knits itself shut.
+
+▶ acidTick
+    Acid eats at Dread Lock: 9 hp.
+    Acid eats at Spectre: 4 hp.
+    Acid eats at Ghost: 28 hp.
+
+▶ foeSlept
+    Google sleeps through it.
+    Stink Bug sleeps through it.
+    Dog Face sleeps through it.
+
+▶ foeMissed
+    Shriek swings, 8 vs 3, and misses.
+    Flube swings, 10 vs 14, and misses.
+    Frank swings, 19 vs 12, and misses.
+
+▶ wardReflected
+    The ward throws 12 back at Ghoul.
+    The ward throws 7 back at Krupke.
+    The ward throws 6 back at Primp.
+
+▶ wardAbsorbed
+    The ward eats 8 (1 left).
+    The ward eats 19 (0 left).
+    The ward eats 8 (0 left).
+
+▶ wardShattered
+    The ward shatters.
+    The ward shatters.
+    The ward shatters.
+
+▶ armorDestroyed
+    Your armor gives out.
+    Your armor gives out.
+    Your armor gives out.
+
+▶ armorSoaked
+    Your armor takes 6 from Poltergeist so you do not have to.
+    Your armor takes 23 from Zombie so you do not have to.
+    Your armor takes 22 from Ghost so you do not have to.
+
+▶ struckByFoe
+    Drekk hits you for 21 hp.
+    Drake hits you for 7 hp.
+    Critical! Shadow hits you for 3 hp.
+
+▶ wardFaded
+    The ward fades.
+    The ward fades.
+    The ward fades.
+
+▶ mirrorFaded
+    The mirror fades.
+    The mirror fades.
+    The mirror fades.
+
+▶ noChargesLeft
+    Nothing left to cast with.
+    Nothing left to cast with.
+    Nothing left to cast with.
+
+▶ spellNotKnown
+    You do not know Summon.
+    You do not know Noxious Vapor.
+    You do not know Noxious Vapor.
+
+▶ spellAboveLevel
+    Mirror Self needs level 10; you are ?.
+    Fireball needs level 20; you are ?.
+    Plane Gate needs level 15; you are ?.
+
+▶ spellSchoolLocked
+    Acid is not open to you yet.
+    Weaken is not open to you yet.
+    Weaken is not open to you yet.
+
+▶ spellBackfired
+    Earthquake goes wrong.
+    Weaken goes wrong.
+    Freeze goes wrong.
+
+▶ backfireSelfDamage
+    It costs you 1 hp.
+    It costs you 5 hp.
+    It costs you 23 hp.
+
+▶ spellResisted
+    Goblin shrugs it off. 17 vs intel 9.
+    Spectre shrugs it off. 14 vs intel 7.
+    Shadow shrugs it off. 9 vs intel 8.
+
+▶ resistFailed
+    Drarl tries to resist and fails. 8.
+    Drake tries to resist and fails. 7.
+    Drake tries to resist and fails. 8.
+
+▶ summonBackfired
+    The summoning turns on you for 2 hp.
+    The summoning turns on you for 18 hp.
+    The summoning turns on you for 19 hp.
+
+▶ allySummoned
+    Rast answers the call.
+    Goblin answers the call.
+    Werebeast answers the call.
+
+▶ allyPending
+    Drudge is coming, once there is a fight to join.
+    Ghoul is coming, once there is a fight to join.
+    Herman is coming, once there is a fight to join.
+
+▶ stunned
+    2 freeze in place.
+    3 freeze in place.
+    1 freeze in place.
+
+▶ weakened
+    They hit softer now.
+    They hit softer now.
+    They hit softer now.
+
+▶ stupefied
+    Rast forgets what it is doing.
+    Craig forgets what it is doing.
+    Rinkle forgets what it is doing.
+
+▶ blinded
+    Pogo cannot see a thing.
+    Bones cannot see a thing.
+    Ghoul cannot see a thing.
+
+▶ shrunk
+    1 shrink to half size.
+    5 shrink to half size.
+    2 shrink to half size.
+
+▶ acidApplied
+    Gremlin starts to dissolve. 4 rounds of it.
+    Stalka Beast starts to dissolve. 2 rounds of it.
+    China Wolf starts to dissolve. 2 rounds of it.
+
+▶ earthquake
+    The floor heaves. 14 to everyone in the room.
+    The floor heaves. 16 to everyone in the room.
+    The floor heaves. 16 to everyone in the room.
+
+▶ earthquakeSelfDamage
+    The shaking costs you 8 hp too.
+    The shaking costs you 2 hp too.
+    The shaking costs you 25 hp too.
+
+▶ vaporRolled
+    Noxious vapor: 9.
+    Noxious vapor: 4.
+    Noxious vapor: 3.
+
+▶ volley
+    1 shots, 32 total damage.
+    6 shots, 30 total damage.
+    3 shots, 25 total damage.
+
+▶ petrified
+    Stalka Beast turns to stone.
+    Rinkle turns to stone.
+    Spectre turns to stone.
+
+▶ walkingDeadTurned
+    2 of the dead turn and flee.
+    5 of the dead turn and flee.
+    4 of the dead turn and flee.
+
+▶ nothingToTurn
+    Nothing here to turn.
+    Nothing here to turn.
+    Nothing here to turn.
+
+▶ planeGated
+    5 are gated straight back out.
+    3 are gated straight back out.
+    2 are gated straight back out.
+
+▶ gateRefused
+    There is no plane here worth opening.
+    There is no plane here worth opening.
+    There is no plane here worth opening.
+
+▶ sensesGained
+    Your senses sharpen.
+    Your senses sharpen.
+    Your senses sharpen.
+
+▶ detectMagic
+    The floor lights up. You see all of it now.
+    The floor lights up. You see all of it now.
+    The floor lights up. You see all of it now.
+
+▶ senseDanger
+    You get a bad feeling about the next encounter.
+    You get a bad feeling about the next encounter.
+    You get a bad feeling about the next encounter.
+
+▶ mirrorSelf
+    A mirror image holds for 6 rounds.
+    A mirror image holds for 6 rounds.
+    A mirror image holds for 2 rounds.
+
+▶ wardRaised
+    Turn Walking Dead raises a ward: 50 points.
+    Phantom Host raises a ward: 50 points, reflecting.
+    Regeneration raises a ward: 50 points.
+
+▶ strengthCast
+    Might surges: +3.
+    Might surges: +4.
+    Might surges: +7.
+
+▶ regenerationCast
+    Wounds start closing on their own.
+    Wounds start closing on their own.
+    Wounds start closing on their own.
+
+▶ insaneNoTarget
+    There is no one here to turn insane at.
+    There is no one here to turn insane at.
+    There is no one here to turn insane at.
+
+▶ insaneRolled
+    Insanity takes Ghost: 13.
+    Insanity takes Herman: 9.
+    Insanity takes Ghoul: 7.
+
+▶ insaneStruckAlly
+    The maddened thing turns on Poltergeist for 12 hp.
+    The maddened thing turns on Stink Bug for 9 hp.
+    The maddened thing turns on Ghost for 4 hp.
+
+▶ insaneFled
+    Dread Lock bolts, mad with fear.
+    Dread Lock bolts, mad with fear.
+    Dread Lock bolts, mad with fear.
+
+▶ healed
+    +19 hp from Plane Gate.
+    +3 hp from Mirror Self.
+    +24 hp from Detect Magic.
+
+▶ deathSpellTooWeak
+    You are too weak yourself to cast it.
+    You are too weak yourself to cast it.
+    You are too weak yourself to cast it.
+
+▶ deathCast
+    You spend 25 hp calling on Death itself.
+    You spend 25 hp calling on Death itself.
+    You spend 25 hp calling on Death itself.
+
+▶ dozed
+    Stalka Beast dozes off for 4 rounds.
+    Ghost dozes off for 5 rounds.
+    Hobgoblin dozes off for 2 rounds.
+
+▶ nothingToThrowAt
+    Nothing here to throw it at.
+    Nothing here to throw it at.
+    Nothing here to throw it at.
+
+▶ spellThrown
+    Phantom Host at Viper: 17 vs 10.
+    Doze at Pogo: 5 vs 20.
+    Doze at M&M: 8 vs 10.
+
+▶ spellHit
+    Hit. 23 hp (×2).
+    Hit. 1 hp (×3).
+    Hit. 18 hp (×3).
+
+▶ frozenSolid
+    Bat/Rat freezes solid.
+    Zombie freezes solid.
+    Shriek freezes solid.
+
+▶ spellMissed
+    Missed Shriek.
+    Missed Wolf.
+    Missed Hair.
+
+▶ potionDrunk
+    +10 hp (0 potions left).
+    +1 hp (1 potion left).
+    +24 hp (2 potions left).
+
+▶ scrollRead
+    You unroll a scroll: Lightning.
+    You unroll a scroll: Lightning.
+    You unroll a scroll: Bubble.
+
+▶ scrollCopiedToGrimoire
+    Stupidity copied into your grimoire.
+    Lightning copied into your grimoire.
+    Insane copied into your grimoire.
+
+▶ scrollCast
+    The scroll casts itself: Strength.
+    The scroll casts itself: Insane.
+    The scroll casts itself: Summon.
+
+▶ storeOpened
+    The shop is open.
+    The shop is open.
+    The shop is open.
+
+▶ buyFailed
+    You are short 37 wilmst.
+    You are short 37 wilmst.
+    You are short 11 wilmst.
+
+▶ bought
+    Bought: [object Object] for 6 wilmst.
+    Bought: [object Object] for 5 wilmst.
+    Bought: [object Object] for 5 wilmst.
+
+▶ rationsBought
+    Stocked up: +3 rations. At least someone is planning ahead.
+    Stocked up: +19 rations. At least someone is planning ahead.
+    Stocked up: +11 rations. At least someone is planning ahead.
+
+▶ storeLeft
+    You leave the shop.
+    You leave the shop.
+    You leave the shop.
+
+▶ trapAvoided
+    You clock it a half-step early. 3 vs 14.
+    You clock it a half-step early. 4 vs 9.
+    You clock it a half-step early. 11 vs 5.
+
+▶ trapDisarmed
+    A Pilfer's hands already knew where not to put themselves.
+    A Pilfer's hands already knew where not to put themselves.
+    A Pilfer's hands already knew where not to put themselves.
+
+▶ trapDoubled
+    Cat Burglar's luck holds — for the trap. It hits twice as hard.
+    Cat Burglar's luck holds — for the trap. It hits twice as hard.
+    Cat Burglar's luck holds — for the trap. It hits twice as hard.
+
+▶ trapSprung
+    Dread Lock finds you first. 22 hp.
+    Dante finds you first. 28 hp.
+    Hair finds you first. 27 hp.
+
+▶ trapPoisoned
+    The trap leaves something behind that outlasts the bruise.
+    The trap leaves something behind that outlasts the bruise.
+    The trap leaves something behind that outlasts the bruise.
+
+▶ chestOpened
+    The box gives up its secrets.
+    The box gives up its secrets.
+    The box gives up its secrets.
+
+▶ chestLockRolled
+    Lock: 2 vs 19.
+    Lock: 11 vs 14.
+    Lock: 20 vs 11.
+
+▶ chestLocked
+    Not today. The lock wins this round.
+    Not today. The lock wins this round.
+    Not today. The lock wins this round.
+
+▶ scrollFound
+    A scroll, tucked in with the loot.
+    A scroll, tucked in with the loot.
+    A scroll, tucked in with the loot.
+
+▶ encounterRolled
+    Table 6, roll 7: The dice decide — something odd.
+    Table 6, roll 15: The dice decide — something odd.
+    Table 7, roll 15: The dice decide — something odd.
+
+▶ tableFour
+    something odd
+    something odd
+    something odd
+
+▶ tableFourNoop
+    something odd
+    something odd
+    something odd
+
+▶ foodFound
+    Vampire (+13 hp).
+    Drake (+11 hp).
+    Dog Face (+7 hp).
+
+▶ grimoireSold
+    You cannot use it, so you sell it.
+    You cannot use it, so you sell it.
+    You cannot use it, so you sell it.
+
+▶ grimoireLearned
+    New spells: Lightning, Doze.
+    New spells: Heal, Summon.
+    New spells: Blind, Plane Gate.
+
+▶ faerieMet
+    A faerie blinks into being, takes your measure, and decides.
+    A faerie blinks into being, takes your measure, and decides.
+    A faerie blinks into being, takes your measure, and decides.
+
+▶ faerieBoon
+    +19 base hp.
+    +10 base hp.
+    +11 base hp.
+
+▶ faerieBane
+    −13 base hp.
+    −19 base hp.
+    −21 base hp.
+
+▶ joinerMet
+    Gremlin, a stranger, joins you for a while.
+    Craig, a stranger, joins you for a while.
+    Hair, a stranger, joins you for a while.
+
+▶ joinerJoined
+    Zombie falls in beside you, already quietly revising their life expectancy downward.
+    M&M falls in beside you, already quietly revising their life expectancy downward.
+    Hobgoblin falls in beside you, already quietly revising their life expectancy downward.
+
+▶ joinerDeclined
+    You wave Zit off. The dungeon will find another use for them soon enough.
+    You wave Wolf off. The dungeon will find another use for them soon enough.
+    You wave Werebeast off. The dungeon will find another use for them soon enough.
+
+▶ afflictionRolled
+    Something is wrong with you. The die turns up 3. Disease.
+    Something is wrong with you. The die turns up 10. Disease.
+    Something is wrong with you. The die turns up 8. Poison.
+
+▶ phobiaAcquired
+    A new fear settles in: Ghost.
+    A new fear settles in: Ghoul.
+    A new fear settles in: Wolf.
+
+▶ afflictionCaught
+    Poison takes hold. −2 hp.
+    Disease takes hold. −1 hp.
+    Poison takes hold. −3 hp.
+
+▶ insanityRolled
+    Insanity. It something odd. d6 → 11.
+    Insanity. It something odd. d6 → 11.
+    Insanity. It something odd. d6 → 20.
+
+▶ insanitySelfHarm
+    You turn on yourself.
+    You turn on yourself.
+    You turn on yourself.
+
+▶ insanityRage
+    Rage: +11 might.
+    Rage: +1 might.
+    Rage: +12 might.
+
+▶ darknessFell
+    The dark closes in around you.
+    The dark closes in around you.
+    The dark closes in around you.
+
+▶ darknessLifted
+    The dark loosens its grip. You can see again.
+    The dark loosens its grip. You can see again.
+    The dark loosens its grip. You can see again.
+
+▶ miscMagicRolled
+    Miscellaneous magic: a cloak.
+    Miscellaneous magic: a cloak.
+    Miscellaneous magic: a cloak.
+
+▶ itemGiven
+    Received: Cloak of Speed.
+    Received: Katana.
+    Received: Katana.
+
+▶ itemRejected
+    Not an upgrade. Dagger.
+    Not an upgrade. Cloak of Speed.
+    Not an upgrade. Ring of Power.
+
+▶ itemTaken
+    Equipped: Cloak of Speed.
+    Equipped: Ring of Power.
+    Equipped: Katana.
+
+▶ itemUsed
+    You use Cloak of Speed.
+    You use Katana.
+    You use Katana.
+
+▶ cured
+    Cured of Disease.
+    Cured of Poison.
+    Cured of Disease.
+
+▶ itemBurned
+    19 fire damage spread across the room.
+    38 fire damage spread across the room.
+    33 fire damage spread across the room.
+
+▶ itemFizzled
+    Nothing happens.
+    Nothing happens.
+    Nothing happens.
+
+▶ itemConsumed
+    Ring of Power is spent.
+    Katana is spent.
+    Ring of Power is spent.
+
+══════════════════════════════════════════════════════════════════════════════
+## DEATH EPITAPHS — every bucket
+══════════════════════════════════════════════════════════════════════════════
+
+▶ combat  (cause note: "cut down by a Google")
+    Killed by a China Wolf. The China Wolf has since been promoted.
+    Died as Marta Quen lived: needing a 5 and rolling whatever that was.
+    The Vampire was not the strongest thing in the room. It is now.
+    Fought to the last breath, which arrived punctually in round four.
+    A Master of Arms of skill level I, undone by something called a Poltergeist. Put it on the stone. All of it.
+    Skalgrim had 1801 wilmst and no plan. The Flube had a plan.
+    Last recorded thought: “it’s nearly dead.” True of someone in the room, just not the Zombie.
+    Died on floor 4 doing what Hrafn the Loud loved, which was evidently standing very still.
+    The Game Master notes that running was, throughout, an option.
+    Survived 24 days and spent the final nine seconds of them badly.
+    Came in for Adventure. The China Wolf came in for lunch.
+    It took 9 experience points to get here and one honest d20 to leave.
+    Not the worst delver on floor 2. Merely the most finished.
+    The Zit would like to thank the dice, the Game Master, and above all Vott Icebound.
+    Cause of death: a Hobgoblin, some arithmetic, and a firm refusal to withdraw.
+    Went toe to toe with a Stalka Beast and lost by roughly one toe.
+
+▶ starve  (cause note: "starved in the dark")
+    Packed a grimoire, three potions and a good cloak. Packed no lunch.
+    Cost of living: 4 hp a day. Aeryth Vale fell behind on the payments.
+    The dungeon did not kill Ulba the Wide. The dungeon simply outlasted a stomach.
+    Died on day 33 holding 2243 wilmst and absolutely nothing to spend it on.
+    There was food two corridors away. There is always food two corridors away.
+    Starved to death carrying a weapon worth more than most farms.
+    Final act: counting the rations. The count was zero. It had been for some time.
+    A troll’s appetite in a dungeon with no kitchen. This was always the ending.
+    Not eaten — merely unfed. Bertram Hask learned the difference slowly.
+    Death by budgeting.
+
+▶ trap  (cause note: "undone by a trap")
+    Stepped on the one flagstone in the corridor with an opinion.
+    The trap had waited four hundred years for precisely this level of confidence.
+    1–5 on a d20 avoids it. Hrafn the Loud rolled the way Hrafn the Loud always rolled.
+    A Master of Arms with no eye for traps, in a dungeon assembled chiefly out of traps.
+    Located the trap using the traditional method.
+    The Game Master did not even look up.
+    Whoever built this floor was clearly paid by the corpse.
+    It was well marked. In a language. Somewhere. Probably.
+
+▶ fall  (cause note: "fell off a wall")
+    Climbing was there to be learned. Hrafn the Loud spent the points on Cooking.
+    Went up the wall beautifully. Came down it considerably faster.
+    Gravity remains undefeated on floor 2.
+    Needed a 6 on a d10, three separate times. Managed two.
+    The wall is still standing. Aldric Vane is being scraped off it.
+    A short climb and an even shorter career.
+
+▶ gorge  (cause note: "came up short on a leap")
+    Cleared eleven feet of a twelve-foot gap. So very nearly.
+    Leaping is a d10 roll. Grommash Nine-Teeth treated it as a formality.
+    The crevice is not deep. It is simply deeper than Hrafn the Loud was tall.
+    Jumped on day 19. Landed shortly afterwards, and at length.
+    The gap did not move. This was checked. Twice.
+
+▶ teleport  (cause note: "materialised inside a wall")
+    Teleported d20 squares. Required d20 minus four.
+    Arrived somewhere. Arrived inside it.
+    The dungeon does not check its destinations, and neither did Faelin Shear.
+
+▶ maze  (cause note: "spent by the dungeon itself")
+    Table four giveth. Table four overwhelmingly taketh.
+    No monster, no trap, no fall. A red dot and a bad attitude.
+    The dungeon deducted Skalgrim the way a bank deducts a service charge.
+    Killed by a d8, a d10, and an indifferent universe.
+    Some floors have creatures. This one had paperwork.
+    Skeg walked onto a dot, and the dot walked back.
+
+▶ quake  (cause note: "buried by their own earthquake")
+    Cast an earthquake indoors. Reader, the ceiling was also indoors.
+    3d10+8 does not stop to ask whose side anyone is on.
+    The rules say cast it from behind a shield. The rules are right there.
+    Brought the house down, and then the house returned the favour.
+
+▶ potion  (cause note: "poisoned by an unlabelled bottle")
+    The colour was listed as “??”. Borin Stonecut was thirsty.
+    Fifty wilmst — the cheapest item on the table and the priciest decision on it.
+    One bottle in ten is Death. Osk the Patient tested this thoroughly. Once.
+    Drank an unlabelled potion on floor 2. The reviews are in.
+
+▶ insanity  (cause note: "dead by their own hand")
+    Rolled a 1 on the madness table and won the argument with themselves.
+    The corridor whispered something. Bertram Hask took it entirely on board.
+    Nothing attacked Hrafn the Loud. Nothing needed to.
+    Cause of death: one d6, honestly interpreted.
+
+▶ poison  (cause note: "carried off by poison")
+    Poison is patient. Ivy Corrin was merely available.
+    There was a cure. It cost 100 wilmst. Sera Coll had 730 and no store in sight.
+    Died on an instalment plan, two hp per square.
+    Not a dramatic death — but a beautifully documented one.
+
+▶ backfire  (cause note: "killed by their own spell")
+    One spell in eight goes wrong for an Apprentice. This was the eighth.
+    Held the incantation slightly wrong, and then very briefly.
+    The grimoire is fine. The grimoire is always fine.
+    Killed by their own homework.
+
+▶ summon  (cause note: "eaten by their own summoning")
+    Called something up. It arrived. It had questions.
+    One time in eight the summoning turns around. Hrafn the Loud beat the odds in the wrong direction.
+    Read the opening paragraph of the ritual with tremendous conviction.
+    The Summoner’s own notes cover this outcome. On the following page.
+
+▶ won  (cause note: "—")
+    Walked out through the Gate on day 4. The Game Master has requested a recount.
+    Reached the Gate with 1126 experience points and a limp, and retired to lie about both.
+    Went in for Knowledge. Came out with Knowledge and a permanent flinch.
+    Survived all five floors and will now be insufferable at parties for life.
+    Escaped. Statistically speaking, this did not occur.
+
+▶ abandon  (cause note: "abandoned mid-delve by their own player")
+    Not slain by the dungeon. Simply left here, on floor 5, by someone who kept walking.
+    Still breathing when last seen. That was, apparently, the problem.
+    Pell of Ninth Row did not die down here. Pell of Ninth Row was abandoned down here. There is a difference, and the difference is you.
+    The dungeon offers no shortage of ways to end a delver. Skeg is the rare case where a person chose one.
+    Filed under: abandoned, not deceased. Even the paperwork thinks this is a bit much.
+    Walked in on day 1 with 1201 experience points and a future. Walked out alone, without Hrafn the Loud.
+    No trap. No monster. No fall. Just a decision, made on floor 4.
+    The Game Master would like it on record that Marta Quen was still perfectly capable of dying properly.
+
+══════════════════════════════════════════════════════════════════════════════
+Total rendered voice lines: 622
+══════════════════════════════════════════════════════════════════════════════

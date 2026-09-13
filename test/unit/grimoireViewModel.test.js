@@ -91,14 +91,19 @@ test("grimoireViewModel: a combat-only spell is never castable outside combat, r
   assert.equal(row.disabledReason, "Combat only");
 });
 
-test("grimoireViewModel: a non-combat spell is disabled while an encounter is active", () => {
+test("grimoireViewModel: during a fight the Hero grimoire defers casting to the combat screen", () => {
+  // DR13: Heal (a non-combatOnly self-heal the engine DOES handle in combat)
+  // must not be labeled "outside combat only" on the Hero sheet while the
+  // combat SPELLS menu is simultaneously offering it — that contradiction was
+  // the reported bug. In combat, the Hero grimoire is a reference and points
+  // the player to the combat screen for ALL spells.
   const state = fixedState({
     c: { grimoire: ["Heal"], level: 3, spellsUsed: 0 },
     combat: { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false },
   });
   const vm = grimoireViewModel(state);
   assert.equal(vm.rows[0].castable, false);
-  assert.equal(vm.rows[0].disabledReason, "Only outside combat");
+  assert.equal(vm.rows[0].disabledReason, "On the combat screen");
 });
 
 test("grimoireViewModel: a non-combat spell above the caster's level is disabled (Not ready yet)", () => {

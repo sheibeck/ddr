@@ -17,17 +17,17 @@
 export const EPITAPHS = {
   combat: [
     "Killed by a {foe}. The {foe} has since been promoted.",
-    "Died as {name} lived: needing a 5, and getting whatever that was.",
+    "Died as {name} lived: needing a 5 and rolling whatever that was.",
     "The {foe} was not the strongest thing in the room. It is now.",
     "Fought to the last breath, which arrived punctually in round four.",
     "A {sub} of skill level {lvl}, undone by something called a {foe}. Put it on the stone. All of it.",
     "{name} had {gold} wilmst and no plan. The {foe} had a plan.",
-    "Last recorded thought: “it’s nearly dead.” It was nearer than {name}.",
+    "Last recorded thought: “it’s nearly dead.” True of someone in the room, just not the {foe}.",
     "Died on floor {floor} doing what {name} loved, which was evidently standing very still.",
     "The Game Master notes that running was, throughout, an option.",
     "Survived {day} days and spent the final nine seconds of them badly.",
     "Came in for {motive}. The {foe} came in for lunch.",
-    "It took {sp} skill points to get here and one honest d20 to leave.",
+    "It took {sp} experience points to get here and one honest d20 to leave.",
     "Not the worst delver on floor {floor}. Merely the most finished.",
     "The {foe} would like to thank the dice, the Game Master, and above all {name}.",
     "Cause of death: a {foe}, some arithmetic, and a firm refusal to withdraw.",
@@ -35,7 +35,7 @@ export const EPITAPHS = {
   ],
   starve: [
     "Packed a grimoire, three potions and a good cloak. Packed no lunch.",
-    "Cost of living: 4 wp a day. {name} fell behind on the payments.",
+    "Cost of living: 4 hp a day. {name} fell behind on the payments.",
     "The dungeon did not kill {name}. The dungeon simply outlasted a stomach.",
     "Died on day {day} holding {gold} wilmst and absolutely nothing to spend it on.",
     "There was food two corridors away. There is always food two corridors away.",
@@ -56,7 +56,7 @@ export const EPITAPHS = {
     "It was well marked. In a language. Somewhere. Probably.",
   ],
   fall: [
-    "Climbing is a 2vp skill. {name} bought Cooking.",
+    "Climbing was there to be learned. {name} spent the points on Cooking.",
     "Went up the wall beautifully. Came down it considerably faster.",
     "Gravity remains undefeated on floor {floor}.",
     "Needed a 6 on a d10, three separate times. Managed two.",
@@ -104,7 +104,7 @@ export const EPITAPHS = {
   poison: [
     "Poison is patient. {name} was merely available.",
     "There was a cure. It cost 100 wilmst. {name} had {gold} and no store in sight.",
-    "Died on an instalment plan, two wp per square.",
+    "Died on an instalment plan, two hp per square.",
     "Not a dramatic death — but a beautifully documented one.",
   ],
   backfire: [
@@ -121,7 +121,7 @@ export const EPITAPHS = {
   ],
   won: [
     "Walked out through the Gate on day {day}. The Game Master has requested a recount.",
-    "Reached the Gate with {sp} skill points and a limp, and retired to lie about both.",
+    "Reached the Gate with {sp} experience points and a limp, and retired to lie about both.",
     "Went in for {motive}. Came out with {motive} and a permanent flinch.",
     "Survived all five floors and will now be insufferable at parties for life.",
     "Escaped. Statistically speaking, this did not occur.",
@@ -136,7 +136,7 @@ export const EPITAPHS = {
     "{name} did not die down here. {name} was abandoned down here. There is a difference, and the difference is you.",
     "The dungeon offers no shortage of ways to end a delver. {name} is the rare case where a person chose one.",
     "Filed under: abandoned, not deceased. Even the paperwork thinks this is a bit much.",
-    "Walked in on day {day} with {sp} skill points and a future. Walked out alone, without {name}.",
+    "Walked in on day {day} with {sp} experience points and a future. Walked out alone, without {name}.",
     "No trap. No monster. No fall. Just a decision, made on floor {floor}.",
     "The Game Master would like it on record that {name} was still perfectly capable of dying properly.",
   ],

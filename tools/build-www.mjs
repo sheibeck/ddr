@@ -61,6 +61,12 @@ const CAPACITOR_PACKAGES = [
   "@capacitor/splash-screen",
   "@capacitor/status-bar",
   "@capacitor/screen-orientation",
+  // 04-09: haptics — vendored + import-mapped exactly like the other
+  // plugins so src/browser/haptics.js's guarded dynamic import
+  // ('@capacitor/haptics') resolves in the Android WebView. Reached only via
+  // that fail-open seam (never a network fetch), keeping the offline/no-SDK
+  // posture — a first-party Capacitor plugin, not an ad/analytics SDK.
+  "@capacitor/haptics",
 ];
 
 function step(msg) {

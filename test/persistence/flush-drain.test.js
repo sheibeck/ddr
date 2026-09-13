@@ -200,10 +200,15 @@ test("CR-02: flushOnBackground(storage, waitForPending) — what registerNativeC
     );
 
     preferences._releaseGet();
-    // Let persistGrave()'s subsequent setItem(GRAVE_KEY, ...) actually reach
-    // Preferences.set() and release it too.
-    await waitUntil(() => preferences._pendingSetCount() >= 1);
-    preferences._releaseNextSet();
+    // audit-batch E12: persistGrave() now issues THREE key writes (GRAVE_KEY
+    // plus the running total and recentNames) via a single Promise.all instead
+    // of the old single GRAVE_KEY write — drain every pending Preferences.set()
+    // across microtask ticks so the whole tombstone write settles and
+    // waitForPending()/flushOnBackground() can resolve.
+    for (let i = 0; i < 200 && !backgroundFlushResolved; i++) {
+      while (preferences._pendingSetCount() > 0) preferences._releaseNextSet();
+      await Promise.resolve();
+    }
     await bgFlush;
 
     assert.equal(backgroundFlushResolved, true);

@@ -39,7 +39,33 @@ const FIXTURE = JSON.parse(
  * strip them from both sides before every diffState call.
  */
 function comparable(state) {
-  const { beats, seed, rngState, version, ...rest } = state;
+  // PARTY-02 (Phase 7): `state.party` is a brand-new top-level roster field
+  // (engine/state.js's newRun) with no prototype-side equivalent — strip it the
+  // same way test/parity/harness/comparables.js's movementComparable does,
+  // since this file defines its own local comparable() rather than importing
+  // the shared one. Top-level analog of the darkFor/flight `c.*` strip below.
+  // PARTY-01 (Phase 9): strip the new top-level `state.pendingJoiner` too —
+  // second top-level analog of `party`, mirroring harness movementComparable.
+  // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — third
+  // top-level analog of `party`/`pendingJoiner`, mirroring harness movementComparable.
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, ...rest } = state;
+  // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field (see
+  // engine/character.js's rollCharacter) with no prototype-side equivalent
+  // at all — strip it the same way test/parity/harness/comparables.js's
+  // movementComparable does, since this file defines its own local
+  // comparable() rather than importing the shared one.
+  // audit-batch1 (2026-09-09, A2): same treatment for c.flightLeft/
+  // c.flightCooldown — see test/parity/harness/comparables.js's
+  // stripFlightFields for the full rationale.
+  // DR-name-generator (2026-09-09): c.name is now a generative first × surname
+  // build — a deliberate cosmetic divergence made with the SAME single rng draw;
+  // strip it like darkFor above (see harness/comparables.js's stripNameField).
+  if (rest.c) {
+    // ECON-01 (Phase 12): strip the new engine-only c.bag field too (see harness
+    // stripBagField) — same treatment as name/darkFor/flight, mirrored here.
+    const { name, darkFor, flightLeft, flightCooldown, bag, ...cRest } = rest.c;
+    rest.c = cRest;
+  }
   return rest;
 }
 

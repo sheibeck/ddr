@@ -27,9 +27,25 @@ export const ACTION_TYPES = new Set([
   // presentation code touching GameState.rngState off-band. No extra fields;
   // see engine/engine.js's "abandon" case.
   "abandon",
+  // PARTY-01 (Phase 9): accept/decline a pending Joiner recruitment stashed by
+  // encounters.js#meetJoiner. Pure (no rng); carries a boolean `accept`.
+  "resolveJoiner",
+  // ECON-03/04/05 (Phase 13): the player-choice inventory actions. All pure
+  // (no rng). takeFind/leaveFind accept/decline the pending find stashed by a
+  // find caller (encounters.js#offerFind); dropItem/equipItem carry a
+  // non-negative item index `i`; unequipSlot carries a `slot` ("weapon"/"armor").
+  "takeFind",
+  "leaveFind",
+  "dropItem",
+  "equipItem",
+  "unequipSlot",
+  // ECON-06 (Phase 14): sell carried item `i` at a store. Pure (no rng); carries
+  // a non-negative item index `i`, same contract as dropItem/useItem.
+  "sellItem",
 ]);
 
 const DIRS = new Set(["N", "S", "E", "W"]);
+const EQUIP_SLOTS = new Set(["weapon", "armor"]);
 
 const isInt = (v) => typeof v === "number" && Number.isInteger(v);
 
@@ -72,6 +88,36 @@ export function validateAction(action) {
       if (!isInt(action.i) || action.i < 0) {
         return { ok: false, reason: "useItem.i must be a non-negative integer" };
       }
+      break;
+    case "resolveJoiner":
+      // PARTY-01 (Phase 9): the accept/decline flag must be a strict boolean so
+      // a malformed presentation/peer payload can never coax an ambiguous
+      // truthy/falsy value through the recruitment chokepoint.
+      if (typeof action.accept !== "boolean") {
+        return { ok: false, reason: "resolveJoiner.accept must be a boolean" };
+      }
+      break;
+    case "dropItem":
+    case "equipItem":
+    case "sellItem":
+      // ECON-04/05/06 (Phase 13/14): the carried-item index — same non-negative
+      // integer contract as useItem.i above (c.items[i] on a bad index safely
+      // no-ops in the handler, but the shape contract stays consistent).
+      if (!isInt(action.i) || action.i < 0) {
+        return { ok: false, reason: `${action.type}.i must be a non-negative integer` };
+      }
+      break;
+    case "unequipSlot":
+      // ECON-05 (Phase 13): only the two real equip slots — a malformed slot
+      // string can never reach the handler.
+      if (!EQUIP_SLOTS.has(action.slot)) {
+        return { ok: false, reason: "unequipSlot.slot must be 'weapon' or 'armor'" };
+      }
+      break;
+    case "takeFind":
+    case "leaveFind":
+      // ECON-03 (Phase 13): no payload fields — the pending find is read from
+      // state.pendingFind, exactly like leaveStore reads state.store.
       break;
     default:
       break;

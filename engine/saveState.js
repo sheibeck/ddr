@@ -63,6 +63,47 @@ function isValidFloor(f) {
 }
 
 /**
+ * sanitizeParty(raw) — fail-open normalization of an untrusted `party` field
+ * (PARTY-02 migration). A missing or non-array `party` (a pre-Phase-7 save, or
+ * a tampered `party:"x"`) becomes `[]`; individual members that don't meet the
+ * same minimal character shape `isValidCharacter` demands (e.g. `party:[null]`)
+ * are DROPPED rather than accepted. This never throws and never rejects the
+ * whole save — a malformed roster degrades to an empty/partial party instead of
+ * nuking an otherwise-loadable in-progress run (research SUMMARY: "fail-open on
+ * malformed party data ... never nuke an in-progress run"). Additive-with-
+ * default, so no STATE_VERSION bump is required.
+ */
+function sanitizeParty(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((m) => isValidCharacter(m));
+}
+
+/**
+ * defaultBagForClass(cls) — the chargen bag tier a class is issued (rulebook
+ * p.10), the single migration default: Fighter = "medium", everything else
+ * (Magic User, Thief, or an UNKNOWN/missing class) = "small". Mirrors the
+ * plain class-derived assignment in engine/character.js's rollCharacter.
+ */
+function defaultBagForClass(cls) {
+  return cls === "Fighter" ? "medium" : "small";
+}
+
+/**
+ * migrateCarry(c) — ECON-01 (Phase 12) additive-with-default migration,
+ * mirroring the sanitizeParty precedent (PARTY-02): a pre-Phase-12 save has no
+ * `c.bag`, so default it by class (Fighter=medium, else small; "small" if the
+ * class is unknown). Only fills a MISSING bag — a save that already carries a
+ * valid `c.bag` is left untouched. Never throws; requires NO STATE_VERSION bump
+ * (purely additive default). Mutates and returns the passed `c`.
+ */
+function migrateCarry(c) {
+  if (c && typeof c === "object" && !Array.isArray(c) && !c.bag) {
+    c.bag = defaultBagForClass(c.cls);
+  }
+  return c;
+}
+
+/**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
  * shape. Never throws: malformed JSON or a save with a malformed/missing
@@ -118,10 +159,14 @@ export function validateSave(raw, options = {}) {
     version: STATE_VERSION,
     seed,
     rngState,
-    c: obj.c,
+    // ECON-01 (Phase 12): default a missing c.bag by class (see migrateCarry).
+    // pendingFind is transient (like combat/store) — not carried through
+    // validateSave's value; rehydrate() nulls it below.
+    c: migrateCarry(obj.c),
     floor: obj.floor,
     day,
     steps,
+    party: sanitizeParty(obj.party),
     dead: !!obj.dead,
     won: !!obj.won,
     deathNote: obj.deathNote || "",
@@ -148,13 +193,27 @@ export function rehydrate(obj) {
     version: STATE_VERSION,
     seed: obj.seed,
     rngState: obj.rngState,
-    c: obj.c,
+    // ECON-01 (Phase 12): default a missing c.bag by class (migrateCarry),
+    // mirroring the validateSave side so a save loaded through either entry
+    // point lands with a bag.
+    c: migrateCarry(obj.c),
     floor: obj.floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
     combat: null,
     store: null,
     beats: null,
+    // ECON-02 (Phase 12): pendingFind is transient run state — always reset to
+    // null on load, exactly like combat/store above (the prototype's load()
+    // never resumed a mid-find prompt either). Defaults a missing field to null.
+    pendingFind: null,
+    // PARTY-02 (Phase 7): whitelist the persistent roster, mirroring dead/won
+    // above. sanitizeParty fail-opens a missing party (pre-Phase-7 save) to []
+    // and drops malformed members, so old saves load with `party: []` and zero
+    // other data loss. serializeRun's state spread already persists it; this is
+    // the explicit read-back side. combat is still nulled (roster is persistent,
+    // combat sub-state is transient), so the party correctly survives reload.
+    party: sanitizeParty(obj.party),
     dead: !!obj.dead,
     won: !!obj.won,
     deathNote: obj.deathNote || "",

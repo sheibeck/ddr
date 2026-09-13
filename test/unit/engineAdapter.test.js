@@ -148,6 +148,28 @@ test("formatEvents maps known event types to HTML and drops unknown ones silentl
   assert.ok(html[3].includes("Gate"));
 });
 
+// 04.2 Text batch (E10/P2): goldGained must never leak the engine's internal
+// source tag (`why`) to the player, and must read "wilmst", not "wm".
+test("E10/P2: formatEvents(goldGained) drops the internal `why` tag and reads 'wilmst'", () => {
+  const html = formatEvents([{ type: "goldGained", amount: 3000, why: "tableFour" }]);
+  assert.equal(html.length, 1);
+  assert.ok(html[0].includes("3000 wilmst"), "reads the canonical 'wilmst' spelling");
+  assert.ok(!/tableFour/.test(html[0]), "the internal source tag never leaks");
+  assert.ok(!/\bwm\b/.test(html[0]), "the 'wm' abbreviation is gone");
+});
+
+// 04.2 Text batch (A1): the affliction line must not leave the ": ," / ":: ,"
+// artifact once its <span class="roll"> dice clause is stripped for the
+// over-map overlay. Mirror mazeworld.html's stripRollDetail transform here.
+test("A1: afflictionRolled renders a clean sentence with no dangling ': ,' after the roll span is stripped", () => {
+  const html = formatEvents([{ type: "afflictionRolled", roll: 4, kind: "Poison" }]);
+  assert.equal(html.length, 1);
+  const stripped = html[0].replace(/<span class="roll">[\s\S]*?<\/span>\s*/g, "").replace(/<[^>]+>/g, "").trim();
+  assert.equal(stripped, "Something is wrong with you. Poison.");
+  assert.ok(!/:\s*,/.test(stripped), "no dangling ': ,' punctuation artifact");
+  assert.ok(!/::/.test(stripped), "no ':: ' artifact");
+});
+
 test("startNewRun(seed) after a prior run returns a fresh state and swaps it in as currentState", async () => {
   await withFakeLocalStorage(async () => {
     initRun(11);
@@ -205,6 +227,9 @@ test("getBest() returns 0 when nothing is stored and never throws when storage i
 });
 
 const GRAVE_KEY = "ddr.graveyard.v1";
+// audit-batch E12: the two new adapter-owned graveyard keys.
+const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
+const RECENT_NAMES_KEY = "ddr.graveyard.names.v1";
 
 // firstOpenPlainDir(state) — the first cardinal direction from the player's
 // current position that leads onto an open, feature-free cell (no
@@ -325,6 +350,70 @@ test("CR-01: repeated deaths accumulate multiple graveyard entries (unshift orde
   });
 });
 
+// audit-bugs (2026-09-09, E9): the reported live bug was a Con Artist who died
+// IN COMBAT and never appeared on the Dead/graveyard screen. The adapter's
+// persist path is cause-agnostic (every `died` event, whatever its cause,
+// funnels through the ONE persistGrave choke point in dispatch()), so the
+// existing starve/fall/abandon tests already prove the write. This test pins
+// the specific COMBAT-death case end-to-end: a foe kills the player through
+// dispatch({type:"attack"}) and the tombstone lands in the graveyard store.
+//
+// ROOT CAUSE of the live bug is NOT here — the adapter writes the tombstone
+// correctly. It is in mazeworld.html's RENDER layer: the Dead screen renders
+// from a classic in-memory `graves` array that is only synced from storage at
+// boot (loadGraves() inside window.__mzClassicBoot), while every live death now
+// routes through this adapter's persistGrave (storage only) and never touches
+// that in-memory list or re-renders. That render-layer path is DOM-bound and
+// not reachable from `node --test`; the fix (re-fetch loadGraves()+renderGraves()
+// every time the Dead tab is opened, mazeworld.html showTab) is verified on
+// device. This assertion guards the engine/adapter half of the contract.
+test("E9: a COMBAT death through dispatch({type:'attack'}) writes the dead character to the graveyard", async () => {
+  await withFakeLocalStorage(async (store) => {
+    initRun(4321);
+    const state = getState();
+    // A plain melee Fighter so playerStrike never short-circuits before the
+    // foe's turn (a Wizard refuses to melee while a charge remains and would
+    // return before afterPlayerAction ever runs the lethal foe swing).
+    state.c.cls = "Fighter";
+    state.c.sub = "Soldier";
+    state.c.race = "Human";
+    state.c.wp = 1; // any landed foe blow is lethal
+    state.c.maxWP = 55;
+    state.c.invis = 0;
+    state.c.mirror = 0;
+    state.c.armor = "Nothing";
+    state.c.ar = 0;
+    state.c.armorWP = 0;
+    state.c.armorMax = 0;
+    // An effectively unkillable foe: the player can never end the fight first,
+    // so the loop only exits when a foe blow lands and routes
+    // die(state, "combat", ...).
+    state.combat = {
+      foes: [
+        { name: "Ogre", type: "Beasts", lvl: 3, size: "L", intel: 1, wp: 999999, maxWP: 999999, alive: true, asleep: 0, sp: {}, lives: 1 },
+      ],
+      type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false,
+    };
+    const charName = state.c.name;
+
+    let died = false;
+    for (let i = 0; i < 500 && !died; i++) {
+      const { state: after, events } = dispatch({ type: "attack" });
+      if (after.dead) {
+        died = events.some((e) => e.type === "died" && e.cause === "combat");
+        break;
+      }
+    }
+    assert.ok(died, "a foe eventually landed a lethal blow, producing a combat-cause died event");
+
+    await flushStorage();
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.ok(Array.isArray(graves) && graves.length >= 1, "the combat death was written to GRAVE_KEY");
+    assert.equal(graves[0].cause, "combat", "the tombstone records the combat death cause");
+    assert.equal(graves[0].name, charName, "the tombstone matches the dead character");
+  });
+});
+
 test("Device-review Pass B1 item 3: dispatch({type:'abandon'}) buries the current character with a distinct cause and leaves no active run", async () => {
   await withFakeLocalStorage(async (store) => {
     initRun(555);
@@ -351,6 +440,91 @@ test("Device-review Pass B1 item 3: dispatch({type:'abandon'}) buries the curren
     // hasActiveDelveSave() checks `!S.dead`) — no separate save-clearing
     // step is needed.
     assert.equal(getState().dead, true, "no active run remains after abandonment");
+  });
+});
+
+// audit-batch E12 (2026-09-09) — the graveyard rework. Parts 1/2/4 all land in
+// persistGrave(): the stored tombstones cap at 5, a separate lifetime total
+// counts every death untrimmed, and a wider recent-names window accumulates for
+// the fresh-roll dedup. `abandon` is used to bury seed-independently (it never
+// depends on maze layout, unlike the starve/fall paths above).
+test("E12: persistGrave caps stored graves at 5 while the total climbs and recentNames accumulates", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const names = [];
+    for (let i = 0; i < 7; i++) {
+      await startNewRun(1000 + i);
+      names.push(getState().c.name);
+      dispatch({ type: "abandon" });
+      // persistGrave() read-then-writes three keys; flush before the next
+      // startNewRun so the running total/graves/recentNames all settle in order
+      // (getItem is not queued behind in-flight writes — see storage.js).
+      await flushStorage();
+    }
+
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.ok(Array.isArray(graves), "graveyard was written");
+    assert.equal(graves.length, 5, "only the last 5 tombstones are stored (part 1 cap)");
+    // newest-first: the 5 stored are the last 5 deaths, most-recent first
+    assert.equal(graves[0].name, names[6], "the newest death is first among the stored 5");
+
+    const total = Number(store.getItem(GRAVE_TOTAL_KEY));
+    assert.equal(total, 7, "the running total counts EVERY death, untrimmed (part 2)");
+
+    const recent = JSON.parse(store.getItem(RECENT_NAMES_KEY));
+    assert.ok(Array.isArray(recent), "recentNames was written");
+    assert.equal(recent.length, 7, "all 7 names accumulate (still under the 25 cap, part 4)");
+    assert.equal(recent[0], names[6], "recentNames is newest-first");
+  });
+});
+
+test("E12: the recent-names window is capped at 25 (separately from the 5-grave cap)", async () => {
+  await withFakeLocalStorage(async (store) => {
+    for (let i = 0; i < 30; i++) {
+      await startNewRun(2000 + i);
+      dispatch({ type: "abandon" });
+      await flushStorage();
+    }
+    const recent = JSON.parse(store.getItem(RECENT_NAMES_KEY));
+    assert.equal(recent.length, 25, "recentNames never exceeds the 25-name window");
+    const total = Number(store.getItem(GRAVE_TOTAL_KEY));
+    assert.equal(total, 30, "the lifetime total still counts all 30 deaths");
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.equal(graves.length, 5, "the visible graveyard stays capped at 5");
+  });
+});
+
+test("E12: startNewRun threads recentNames into the fresh roll so a just-used name is avoided", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const seed = 24680;
+    // What this seed rolls with NO dedup (the engine's raw newRun):
+    const base = newRun(seed);
+    // Simulate that exact adventurer having just died — pre-seed recentNames.
+    store.setItem(RECENT_NAMES_KEY, JSON.stringify([base.c.name]));
+
+    const state = await startNewRun(seed);
+    assert.notEqual(state.c.name, base.c.name, "the just-used name was avoided on the fresh roll");
+    // Same rng order → only the name differs; race/subclass are unchanged.
+    assert.equal(state.c.race, base.c.race, "the roll's race is unchanged (no extra rng draw)");
+    assert.equal(state.c.sub, base.c.sub, "the roll's subclass is unchanged (no extra rng draw)");
+  });
+});
+
+test("E12: persistGrave seeds the total from existing graves when the total key is missing (migration)", async () => {
+  await withFakeLocalStorage(async (store) => {
+    // A pre-E12 player: three tombstones already stored, but no total key yet.
+    store.setItem(GRAVE_KEY, JSON.stringify([
+      { name: "Old One", cause: "combat" },
+      { name: "Older Two", cause: "starve" },
+      { name: "Oldest Three", cause: "fall" },
+    ]));
+    await startNewRun(31415);
+    dispatch({ type: "abandon" });
+    await flushStorage();
+
+    const total = Number(store.getItem(GRAVE_TOTAL_KEY));
+    assert.equal(total, 4, "the total is seeded from the 3 pre-existing graves, then +1 for this death");
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.equal(graves.length, 4, "still under the cap — all four remain (newest first)");
   });
 });
 

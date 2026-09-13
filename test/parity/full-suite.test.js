@@ -58,7 +58,27 @@ const CHARACTER_FIELDS = [
   "patches", "temperament", "motive", "phobia", "phobiaType", "potions", "rations",
   "gold", "scrolls", "haste", "invis", "ether", "acute", "affliction", "joiner",
   "items", "grimoire", "spellsUsed", "kills", "might", "ward", "regen", "mirror",
-  "foresight", "name",
+  "foresight",
+  // DR-name-generator (2026-09-09): "name" is carved out of the parity field
+  // list — nameFor now builds a GENERATIVE first × surname name (a cosmetic
+  // divergence from the frozen prototype) while making the SAME single rng
+  // draw, so every OTHER chargen field stays byte-identical. The engine still
+  // builds c.name, so it is appended to the shape assertion and stripped from
+  // both sides before diffState below. See chargen-parity.test.js for the full
+  // rationale.
+  // PHOBIA-01 (04.1-05): engine-only persistent darkness counter, no
+  // prototype-side equivalent — see chargen-parity.test.js's identical
+  // comment for the full rationale; stripped again below before diffState.
+  "darkFor",
+  // audit-batch1 (2026-09-09, A2): engine-only Cloak-of-Flying charge/
+  // cooldown fields, no prototype-side equivalent — same treatment as
+  // darkFor immediately above; stripped again below before diffState.
+  "flightLeft",
+  "flightCooldown",
+  // ECON-01 (Phase 12): engine-only class-derived carry bag key, no
+  // prototype-side equivalent — plain assignment (no rng), stripped again
+  // below before diffState. See chargen-parity.test.js for the full rationale.
+  "bag",
 ];
 
 test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/economy/encounters", async (t) => {
@@ -68,8 +88,13 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
     for (const seed of CHARGEN_FIXTURE.seeds) {
       const ctx = loadPrototypeSandbox({ seed });
       const engineC = newRun(seed).c;
-      assert.deepStrictEqual(Object.keys(engineC).sort(), CHARACTER_FIELDS.slice().sort());
-      assert.equal(diffState(ctx.S.c, engineC), null, `chargen seed ${seed} diverged`);
+      // "name" is carved out of the field list but still built by the engine.
+      assert.deepStrictEqual(Object.keys(engineC).sort(), [...CHARACTER_FIELDS, "name"].sort());
+      // DR-name-generator: strip the generative "name" from both sides — a
+      // deliberate cosmetic divergence with no rng-order effect.
+      const { name: _en, darkFor, flightLeft, flightCooldown, bag, ...engineCForDiff } = engineC;
+      const { name: _pn, ...protoCForDiff } = ctx.S.c;
+      assert.equal(diffState(protoCForDiff, engineCForDiff), null, `chargen seed ${seed} diverged`);
     }
   });
 

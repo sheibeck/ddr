@@ -142,11 +142,14 @@ test("openChest: a Pilfer always opens the box for free", () => {
   assert.ok(events.some((e) => e.type === "chestOpened" && e.reason === "pilfer"));
   assert.equal(state.c.gold, 150, "50 starting + 100 chest gold");
   assert.equal(state.c.scrolls, 1);
-  // rollTreasureItem happens to roll a staff here, and a Fighter can't wield
-  // one (takeItem's class gate, ported verbatim) — the treasure roll still
-  // ran (itemRejected proves it), it just didn't land in the character's
-  // items array. That class gate is takeItem's job, not openChest's.
-  assert.ok(events.some((e) => e.type === "itemTaken" || e.type === "itemRejected"), "the treasure roll ran through takeItem");
+  // ECON-03 (Phase 13): the rolled treasure is now OFFERED (state.pendingFind +
+  // a findOffered event), not auto-taken. The treasure roll STILL ran (same rng
+  // order — findOffered proves it landed a staff), it just waits on the player's
+  // takeFind/leaveFind choice instead of auto-equipping. rollTreasureItem here
+  // rolls a staff (d10=10 -> rollStaff); openChest does not gate on class —
+  // that is equipItem's job now.
+  assert.ok(events.some((e) => e.type === "findOffered"), "the treasure roll ran and was offered");
+  assert.ok(state.pendingFind && state.pendingFind.kind === "staff", "the rolled staff is stashed as the pending find");
 });
 
 test("openChest: with no lock skill, a bare d20 roll over 8 leaves it locked (no further rolls)", () => {
@@ -165,6 +168,34 @@ test("openChest: with no lock skill, a bare d20 roll of 8 or under opens it", ()
   assert.equal(state.c.gold, 120, "50 starting + 70 chest gold");
   assert.equal(state.c.scrolls, 0);
   assert.ok(events.some((e) => e.type === "chestOpened"));
+});
+
+test("openChest: RULE-01 — a higher-Intelligence character opens a borderline lock that an identical lower-Intelligence character does not, given the same rng", () => {
+  // Bare d20 path (no Locks skill/lockpicks): need = 8 + intelBonus(c).
+  // intelBonus(5) floors to 0 (below the intel-15 threshold) -> need stays 8;
+  // a roll of 9 (9 > 8) fails, matching the pre-RULE-01 baseline exactly.
+  const lowIntel = fixedState({ c: { intel: 5 } });
+  const lowEvents = openChest(lowIntel, fakeRng([9]), []);
+  assert.ok(
+    lowEvents.some((e) => e.type === "chestLockRolled" && e.need === 8 && e.roll === 9 && e.opened === false),
+    "low intel: need stays 8, the same borderline roll of 9 still fails"
+  );
+  assert.ok(lowEvents.some((e) => e.type === "chestLocked"));
+  assert.equal(lowIntel.c.gold, 50, "untouched — the chest never opened");
+
+  // intelBonus(20) = 2 (capped) -> need rises to 10; the SAME roll of 9 (9 <=
+  // 10) now succeeds. Everything after the lock roll (gainWilmst d10=1,
+  // scroll d6=2 <3 none, rollTreasureItem d12=7/d10=8 -> rollCloak d8=1)
+  // consumes rng in the exact same order as the identical bare-d20-opens
+  // fixture above, proving the intel bonus changed only the threshold.
+  const highIntel = fixedState({ c: { intel: 20 } });
+  const highEvents = openChest(highIntel, fakeRng([9, 1, 2, 7, 8, 1]), []);
+  assert.ok(
+    highEvents.some((e) => e.type === "chestLockRolled" && e.need === 10 && e.roll === 9 && e.opened === true),
+    "high intel: need rises to 10, the identical roll of 9 now succeeds"
+  );
+  assert.ok(highEvents.some((e) => e.type === "chestOpened"));
+  assert.equal(highIntel.c.gold, 120, "50 starting + 70 chest gold — the chest opened and paid out");
 });
 
 // --- encounterDot ---------------------------------------------------------
@@ -188,13 +219,14 @@ test("encounterDot: a monster-type result (via ENC_ALIAS) starts combat", () => 
   assert.ok(found, "at least one seed in range must roll a monster-type encounter");
 });
 
-test("encounterDot: a plain Table Four row (e.g. '+10 WP') applies directly, no extra rolls", () => {
+test("encounterDot: a plain Table Four row (e.g. '+10 HP') applies directly, no extra rolls", () => {
   const state = fixedState({ c: { wp: 40, maxWP: 55 } });
-  // d8=4, d10=1 -> ENCOUNTER_TABLES[3][0] === "+10 WP".
+  // d8=4, d10=1 -> ENCOUNTER_TABLES[3][0] === "+10 HP" (04.2 E3: was "+10 WP").
   const events = encounterDot(state, fakeRng([4, 1]), []);
   assert.equal(state.c.wp, 50);
-  assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 WP"));
-  assert.ok(events.some((e) => e.type === "tableFour"));
+  assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 HP"));
+  // The tableFour beat now carries a prose sentence, not the raw cell string.
+  assert.ok(events.some((e) => e.type === "tableFour" && /10 hp/.test(e.result)));
 });
 
 test("encounterDot: 'Store' opens the shop with plain-data stock", () => {
@@ -216,20 +248,38 @@ test("tableFour: '-All armour' strips every armor field", () => {
   assert.equal(state.c.armorMax, 0);
 });
 
-test("tableFour: a lethal '-15 WP' row kills via die('maze')", () => {
+test("tableFour: a lethal '-15 HP' row kills via die('maze')", () => {
   const state = fixedState({ c: { wp: 10 } });
-  const events = tableFour(state, "-15 WP", fakeRng([]), []);
+  // 04.2 E3: the dual-purpose switch key was "-15 WP", now "-15 HP".
+  const events = tableFour(state, "-15 HP", fakeRng([]), []);
   assert.equal(state.dead, true);
   assert.ok(events.some((e) => e.type === "died" && e.cause === "maze"));
 });
 
+test("tableFour: the 'wilmst cache' row pays a depth-scaled amount via goldGained, NO redundant beat, NO new rng (E10/ECON-09)", () => {
+  // Depth 1 → 300 * 1. The empty fakeRng sequence is itself the no-new-rng
+  // assertion: fakeRng throws on ANY .d()/.pick() draw, so the row's gold path
+  // must stay flat/derived (a Pickpocket would draw, but a Soldier does not).
+  const d1 = fixedState({ c: { gold: 0 }, floor: { depth: 1 } });
+  const e1 = tableFour(d1, "wilmst cache", fakeRng([]), []);
+  assert.equal(d1.c.gold, 300, "depth 1 → 300 wilmst");
+  assert.ok(e1.some((e) => e.type === "goldGained" && e.amount === 300), "goldGained narrates the depth-1 amount");
+  assert.ok(!e1.some((e) => e.type === "tableFour"), "no redundant raw-jargon tableFour beat");
+
+  // Depth 7 → 300 * 7 = 2100, confirming the flat linear depth scaling.
+  const d7 = fixedState({ c: { gold: 0 }, floor: { depth: 7 } });
+  const e7 = tableFour(d7, "wilmst cache", fakeRng([]), []);
+  assert.equal(d7.c.gold, 2100, "depth 7 → 2100 wilmst");
+  assert.ok(e7.some((e) => e.type === "goldGained" && e.amount === 2100), "goldGained narrates the depth-7 amount");
+});
+
 // --- findFood / findGrimoire / findGear / findMisc -------------------------
 
-test("findFood: heals toward the cap and grants a ration", () => {
+test("findFood: heals toward the cap and leaves c.rations UNCHANGED (RATION-01)", () => {
   const state = fixedState({ c: { wp: 40, maxWP: 55, rations: 2 } });
   const events = findFood(state, fakeRng([1]), []); // FOODS[0] === Chicken (+12 wp)
   assert.equal(state.c.wp, 52);
-  assert.equal(state.c.rations, 3);
+  assert.equal(state.c.rations, 2, "findFood must not silently change rations");
   assert.ok(events.some((e) => e.type === "foodFound"));
 });
 
@@ -240,10 +290,12 @@ test("findGrimoire: a non-Magic-User sells the book for gold instead of learning
   assert.ok(events.some((e) => e.type === "grimoireSold"));
 });
 
-test("findGear: 'weapon' takes a mundane blade via rollBlade/takeItem", () => {
+test("findGear: 'weapon' OFFERS a mundane blade via rollBlade/offerFind (ECON-03)", () => {
   const state = fixedState({ c: { cls: "Fighter", weapon: "Club", prof: 0, magicWpn: 0 } });
   const events = findGear(state, "weapon", fakeRng([1, 1]), []);
-  assert.ok(events.some((e) => e.type === "itemTaken" || e.type === "itemRejected"));
+  // ECON-03 (Phase 13): the rolled blade is offered, not auto-equipped.
+  assert.ok(events.some((e) => e.type === "findOffered" && e.kind === "weapon"));
+  assert.ok(state.pendingFind && state.pendingFind.kind === "weapon", "the rolled blade is the pending find");
 });
 
 test("findMisc: a Scroll result increments scrolls", () => {
@@ -256,9 +308,9 @@ test("findMisc: a Scroll result increments scrolls", () => {
 
 // --- meetFaerie / meetJoiner ------------------------------------------------
 
-test("meetFaerie: '+d20 Base WP' raises the WP cap", () => {
+test("meetFaerie: '+d20 Base HP' raises the WP cap", () => {
   const state = fixedState({ c: { maxWP: 55, wp: 40 } });
-  // d8=2 -> FAERIE[1] === "+d20 Base WP"; boon roll d20=10.
+  // d8=2 -> FAERIE[1] === "+d20 Base HP" (04.2 E3: was "+d20 Base WP"); boon roll d20=10.
   const events = meetFaerie(state, fakeRng([2, 10]), []);
   assert.equal(state.c.maxWP, 65);
   assert.equal(state.c.wp, 50);

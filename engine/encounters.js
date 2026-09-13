@@ -26,14 +26,15 @@
 // declaration, and each only touches the other module's binding from inside
 // a function body invoked at runtime, never at module-evaluation time.
 
-import { skill, skillTier, canLearn } from "./derived.js";
+import { skill, skillTier, canLearn, intelBonus } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { checkLevel, rollCharacter } from "./character.js";
-import { giveItem, takeItem, gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
+import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
 import { teleport } from "./movement.js";
+import { addPartyMember } from "./state.js";
 import {
   TRAPS,
   AFFLICTIONS,
@@ -105,18 +106,28 @@ export function openChest(state, rng, events = []) {
   const c = state.c;
   const tier = skillTier(c, "Locks") + (hasPicks(c) ? 1 : 0);
   let opened = false;
+  // DELIBERATE RULES CHANGE (04.1-04, 2026-09-09, RULE-01): Intelligence had
+  // no mechanical read anywhere in the engine (04.1-RESEARCH.md's clearest
+  // cosmetic-orphan finding). intelBonus(c) (derived.js) now raises the lock
+  // roll's SUCCESS THRESHOLD — a smarter character needs a higher/easier
+  // number, not a better roll — in both the tiered (Locks-skill/lockpick)
+  // and bare-d20 paths below. This changes the COMPARISON only: the
+  // rng.d(10)/rng.d(20) lock-roll draw, and every following gainWilmst/
+  // scroll/treasure draw, stay in the exact same order, so RNG consumption
+  // is unaffected and parity/determinism stay green.
   if (c.sub === "Pilfer") {
     opened = true;
     events.push({ type: "chestOpened", reason: "pilfer" });
   } else if (tier) {
-    const need = [0, 5, 7, 8][Math.min(tier, 3)];
+    const need = [0, 5, 7, 8][Math.min(tier, 3)] + intelBonus(c);
     const roll = rng.d(10);
     opened = roll <= need;
     events.push({ type: "chestLockRolled", roll, need, dieN: 10, picks: hasPicks(c), opened });
   } else {
+    const need = 8 + intelBonus(c);
     const roll = rng.d(20);
-    opened = roll <= 8;
-    events.push({ type: "chestLockRolled", roll, need: 8, dieN: 20, picks: false, opened });
+    opened = roll <= need;
+    events.push({ type: "chestLockRolled", roll, need, dieN: 20, picks: false, opened });
   }
   if (!opened) {
     events.push({ type: "chestLocked" });
@@ -128,7 +139,29 @@ export function openChest(state, rng, events = []) {
     c.scrolls = (c.scrolls || 0) + 1;
     events.push({ type: "scrollFound" });
   }
-  takeItem(state, rollTreasureItem(rng, state.floor.depth, c), events);
+  // ECON-03 (Phase 13): OFFER the rolled treasure instead of auto-taking it.
+  // rollTreasureItem still draws the same rng in the same order (the whole
+  // point — the DELIBERATE divergence is take→offer, NOT the roll), so
+  // determinism is unchanged; offerFind adds no rng. See offerFind's header.
+  offerFind(state, rollTreasureItem(rng, state.floor.depth, c), events);
+  return events;
+}
+
+/**
+ * offerFind(state, it, events) — ECON-03 (Phase 13): stash a rolled find in
+ * state.pendingFind and push `findOffered` INSTEAD of auto-adding/equipping it
+ * (the old takeItem/giveItem behavior). The player then accepts it (items.js
+ * takeFind) or declines it (leaveFind). This is the DELIBERATE, documented
+ * divergence from the frozen prototype (test/parity/prototype-master.js.txt,
+ * which auto-takes) — see engine/encounters.js callers and the
+ * reconcilePendingFind carve-out in test/parity/harness/comparables.js. Adds
+ * NO rng draw (plain assignment, like meetJoiner's pendingJoiner stash), so the
+ * seeded cursor never shifts; state.pendingFind is a top-level sibling of
+ * pendingJoiner, already carved out of every parity comparison (Phase 12).
+ */
+export function offerFind(state, it, events = []) {
+  state.pendingFind = it;
+  events.push({ type: "findOffered", name: it.n, kind: it.kind });
   return events;
 }
 
@@ -166,7 +199,7 @@ export function encounterDot(state, rng, events = []) {
     case "Food":
       findFood(state, rng, events);
       return events;
-    case "Disease":
+    case "Ailment":
       catchAffliction(state, rng, events);
       return events;
     case "Insanity":
@@ -199,6 +232,17 @@ export function encounterDot(state, rng, events = []) {
   }
 }
 
+// ECON-09 (Phase 16, Economy E): the Table-4 gold row ("wilmst cache") pays a
+// depth-scaled FLAT amount — a documented TUNING KNOB. The ported prototype
+// handed a flat 3000 for a single red-dot pull, an order of magnitude richer
+// than any other grant (openChest tops out ~160*depth; a faerie ~1000). This
+// cuts it to ~300 per floor depth: 300 at depth 1, scaling linearly. CRITICAL:
+// this is a FLAT/derived formula with NO new rng draw — the row drew zero rng
+// before (gainWilmst only rolls for a Pickpocket, independent of the amount),
+// and a new draw here would shift the entire downstream seeded stream and break
+// same-seed-same-result + parity. Keep it flat.
+const WILMST_CACHE_PER_DEPTH = 300;
+
 /**
  * tableFour(state, result, rng, events) — Table 4 on p.45, a straight list
  * of things that happen to you. Ports mazeworld.html tableFour() (lines
@@ -206,44 +250,58 @@ export function encounterDot(state, rng, events = []) {
  */
 export function tableFour(state, result, rng, events = []) {
   const c = state.c;
+  // P1 (04.2 Text batch): the `tableFour` beat used to echo the raw table cell
+  // ("+10 WP", "+3000 WM", "-All armour") verbatim — literal dev jargon. The
+  // switch still DISPATCHES on the (dual-purpose) cell string, but the event
+  // now carries a prose sentence in the game's deadpan voice so the beat reads
+  // as a line, not a stat token. E10: rows already narrated by another event
+  // (the "wilmst cache" row → goldGained) do NOT also push a redundant beat.
   switch (result) {
-    case "+10 WP":
+    case "+10 HP":
       c.wp = Math.min(c.maxWP, c.wp + 10);
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "The maze, for once, gives something back. 10 hp." });
       break;
-    case "-10 WP":
+    case "-10 HP":
       c.wp -= 10;
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "Something unseen takes its cut — 10 hp, gone." });
       break;
-    case "+10 SP":
+    case "+10 XP":
       c.sp += 10;
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "You are, marginally, wiser for the ordeal. 10 experience." });
       checkLevel(state, rng, events);
       break;
-    case "+25 WP":
+    case "+25 HP":
       c.maxWP += 25;
       c.wp += 25;
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "A rare kindness — you come away tougher. +25 to your health, for keeps." });
       break;
-    case "+25 SP":
+    case "+25 XP":
       c.sp += 25;
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "A hard lesson, and you actually learned it. 25 experience." });
       checkLevel(state, rng, events);
       break;
-    case "-15 WP":
+    case "-15 HP":
       c.wp -= 15;
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "The maze extracts a toll you did not agree to. 15 hp." });
       break;
-    case "+3000 WM":
-      gainWilmst(state, 3000, "tableFour", rng, events);
-      events.push({ type: "tableFour", result });
+    case "wilmst cache":
+      // E10: gainWilmst already pushes a goldGained beat that narrates the
+      // actual amount — pushing a second `tableFour` beat here was the redundant
+      // raw-jargon line the player used to see as the triple "+3000 WM". Dropped.
+      // ECON-09 (Phase 16): the flat 3000 is now a depth-scaled FLAT amount
+      // (WILMST_CACHE_PER_DEPTH * depth). gainWilmst's only rng draw is the
+      // Pickpocket take (independent of `n`), so scaling the amount adds NO new
+      // draw — the seeded stream is byte-identical. The generic "wilmst cache"
+      // key (renamed atomically with content/encounters.js) lets the payout vary
+      // by depth without a dual-purpose string hard-coding a stale number.
+      gainWilmst(state, WILMST_CACHE_PER_DEPTH * state.floor.depth, "tableFour", rng, events);
       break;
     case "-All armour":
       c.armor = "Nothing";
       c.ar = 0;
       c.armorWP = 0;
       c.armorMax = 0;
-      events.push({ type: "tableFour", result });
+      events.push({ type: "tableFour", result: "Your armour sloughs off in useless flakes. Whatever you were wearing, you no longer are." });
       break;
     default:
       events.push({ type: "tableFourNoop", result });
@@ -254,10 +312,14 @@ export function tableFour(state, result, rng, events = []) {
 
 /** findFood(state, rng, events) — ports mazeworld.html findFood() (lines 2157-2163). */
 export function findFood(state, rng, events = []) {
+  // DELIBERATE RULES CHANGE (04.1-03, RATION-01): a found food heals HP
+  // only — the old silent `c.rations++` side effect is removed here in
+  // lockstep with the matching decoupling in engine/economy.js's eatRation
+  // (the "any food = +1 ration" rule is removed from BOTH acquisition
+  // paths together, per 04.1-CONTEXT.md).
   const c = state.c;
   const f = FOODS[rng.d(6) - 1];
   c.wp = Math.min(c.maxWP, c.wp + f.wp);
-  c.rations++;
   events.push({ type: "foodFound", name: f.n, wp: f.wp });
   return events;
 }
@@ -288,15 +350,18 @@ export function findGrimoire(state, rng, events = []) {
  * 2175-2180).
  */
 export function findGear(state, kind, rng, events = []) {
+  // ECON-03 (Phase 13): OFFER the rolled gear (offerFind) instead of auto-
+  // taking it. rollBlade/rollMailPiece still draw the same rng in the same
+  // order; offerFind adds none — determinism unchanged.
   if (kind === "weapon") {
-    takeItem(state, rollBlade(rng, state.floor.depth, false), events);
+    offerFind(state, rollBlade(rng, state.floor.depth, false), events);
     return events;
   }
   if (kind === "magicweapon") {
-    takeItem(state, rollBlade(rng, state.floor.depth, true), events);
+    offerFind(state, rollBlade(rng, state.floor.depth, true), events);
     return events;
   }
-  takeItem(state, rollMailPiece(rng), events);
+  offerFind(state, rollMailPiece(rng), events);
   return events;
 }
 
@@ -309,20 +374,25 @@ export function findMisc(state, rng, events = []) {
   const c = state.c;
   const what = MISC_MAGIC[rng.d(10) - 1];
   events.push({ type: "miscMagicRolled", what });
+  // ECON-03 (Phase 13): OFFER a rolled item (potion/cloak/staff/jewelry)
+  // instead of auto-adding it. Each roller still draws the same rng in the same
+  // order; offerFind adds none. The Scroll (c.scrolls++) and Grimoire
+  // (findGrimoire — sells/learns, no carried item) branches are NOT item adds,
+  // so they keep their immediate resolution — nothing to offer.
   if (what === "Potion") {
     const p = POTIONS[rng.d(10) - 1];
-    giveItem(state, { kind: "potion", n: `${p.n} potion (${p.col.toLowerCase()})`, txt: p.txt, eff2: p.eff, uses: 1 }, false, events);
+    offerFind(state, { kind: "potion", n: `${p.n} potion (${p.col.toLowerCase()})`, txt: p.txt, eff2: p.eff, uses: 1 }, events);
   } else if (what === "Scroll") {
     c.scrolls = (c.scrolls || 0) + 1;
     events.push({ type: "scrollFound" });
   } else if (what === "Grimoire") {
     findGrimoire(state, rng, events);
   } else if (what === "Cloak") {
-    takeItem(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1]), events);
+    offerFind(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1]), events);
   } else if (what === "Staff") {
-    takeItem(state, Object.assign({ kind: "staff", every: 250 }, STAVES[rng.d(8) - 1]), events);
+    offerFind(state, Object.assign({ kind: "staff", every: 250 }, STAVES[rng.d(8) - 1]), events);
   } else if (what === "Jewelry") {
-    takeItem(state, Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]), events);
+    offerFind(state, Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]), events);
   }
   return events;
 }
@@ -341,23 +411,25 @@ export function meetFaerie(state, rng, events = []) {
     const n = gift === "+2 Level" ? 2 : 1;
     c.sp = Math.max(c.sp, THRESHOLDS[Math.min(4, c.level - 1 + n)]);
     checkLevel(state, rng, events);
-  } else if (gift === "+d20 Base WP") {
+  } else if (gift === "+d20 Base HP") {
     const a = rng.d(20);
     c.maxWP += a;
     c.wp += a;
     events.push({ type: "faerieBoon", amount: a });
-  } else if (gift === "-d10 Base WP") {
+  } else if (gift === "-d10 Base HP") {
     const a = rng.d(10);
     c.maxWP = Math.max(5, c.maxWP - a);
     c.wp = Math.min(c.wp, c.maxWP);
     events.push({ type: "faerieBane", amount: a });
   } else if (gift === "Magic Weapon") {
-    takeItem(state, rollBlade(rng, state.floor.depth, true), events);
+    // ECON-03 (Phase 13): OFFER the faerie's gift (offerFind) instead of auto-
+    // taking it; the roll order is unchanged, offerFind adds no rng.
+    offerFind(state, rollBlade(rng, state.floor.depth, true), events);
   } else if (gift === "Magic Armor") {
-    takeItem(state, rollMailPiece(rng), events);
+    offerFind(state, rollMailPiece(rng), events);
   } else if (gift === "Miscellaneous Magic") {
     findMisc(state, rng, events);
-  } else if (gift === "d10 x 100 WM") {
+  } else if (gift === "d10 x 100 wilmst") {
     gainWilmst(state, rng.d(10) * 100, "faerie", rng, events);
   }
   return events;
@@ -380,7 +452,40 @@ export function meetJoiner(state, rng, events = []) {
   // eslint-disable-next-line no-unused-vars -- consumed for RNG-order fidelity only
   const discardedMaxWP = 20 * lvl + rng.d(20);
   c.joiner = { name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, cls: joinerChar.cls, lvl, wp, maxWP: wp };
+  // PARTY-01 (Phase 9): stash the FULL already-rolled joiner sheet as a pending
+  // recruitment candidate for resolveJoiner to accept/decline — NO new rng
+  // draw. We reuse the already-rolled `joinerChar` (spread whole so the member
+  // carries a real rollCharacter-shaped sheet) and the already-drawn joiner
+  // `wp`/`lvl`; only plain data overrides follow. The spread's own `level: 1`
+  // is overridden to the joiner `lvl` so Phase 8's startCombat/alliesTurn
+  // (which read `m.level ?? m.lvl`) fight the member at its rolled joiner level,
+  // and `wp`/`maxWP` are set to the joiner's fight pool. This is a top-level
+  // SIBLING field (like `party`), carved out of every parity comparison the
+  // same way `state.party` is, so it never shifts the frozen master and adds no
+  // draw. `c.joiner` + the `joinerMet` event above stay byte-identical.
+  state.pendingJoiner = { ...joinerChar, lvl, level: lvl, wp, maxWP: wp };
   events.push({ type: "joinerMet", name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, lvl });
+  return events;
+}
+
+/**
+ * resolveJoiner(state, accept, events) — the pure (NO rng) accept/decline of a
+ * pending recruitment stashed by meetJoiner (PARTY-01, Phase 9). On accept, if
+ * a candidate exists and the roster is under PARTY_CAP, the full pending sheet
+ * is appended via addPartyMember (Phase 7's bounded helper) and a `joinerJoined`
+ * event is pushed; otherwise (declined, cap full, or no candidate) a
+ * `joinerDeclined` event is pushed. `state.pendingJoiner` is ALWAYS cleared.
+ * Draws zero rng — plain data bookkeeping — so it never shifts the seeded
+ * cursor; it is not part of any parity fixture.
+ */
+export function resolveJoiner(state, accept, events = []) {
+  const pending = state.pendingJoiner;
+  if (accept && pending && addPartyMember(state, pending)) {
+    events.push({ type: "joinerJoined", name: pending.name, sub: pending.sub, lvl: pending.lvl });
+  } else {
+    events.push({ type: "joinerDeclined", name: pending ? pending.name : undefined });
+  }
+  state.pendingJoiner = null;
   return events;
 }
 
@@ -441,15 +546,36 @@ export function newPhobia(state, rng, events = []) {
   return events;
 }
 
+// A "Darkness" table result's persistent-condition duration, in steps.
+// DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01) — see fallDark
+// below.
+const DARKNESS_DURATION = 30;
+
 /**
  * fallDark(state, rng, events) — darkens a 4-square radius around the
  * player. Ports mazeworld.html fallDark() (lines 2247-2255). No RNG.
+ *
+ * DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): the prototype's
+ * "Darkness" content-table result only ever painted a local 4-square radius
+ * of tiles `.dark = true` — a purely cosmetic effect once the player
+ * stepped off those specific tiles, and one of the phase-04.1 rules audit's
+ * flagged "inert table effects." Per the phase's PHOBIA-01 directive (and
+ * the user's explicit steer), this now ALSO sets a persistent darkness
+ * counter (`state.c.darkFor`, in steps) so the table result has lasting
+ * mechanical weight: while the counter is active, engine/derived.js's
+ * inDark(state) reads true regardless of the player's current tile, which
+ * shrinks revealRadius and applies the existing in-dark to-hit penalty
+ * (Night Vision still waives both, since its checks already wrap inDark);
+ * engine/movement.js's per-step tick decrements and clears it. This is a
+ * plain assignment — no rng draw added — so determinism/parity are
+ * unaffected.
  */
 export function fallDark(state, rng, events = []) {
   const f = state.floor;
   const r = 4;
   for (let y = f.py - r; y <= f.py + r; y++)
     for (let x = f.px - r; x <= f.px + r; x++) if (f.g[y] && f.g[y][x] && !f.g[y][x].wall) f.g[y][x].dark = true;
-  events.push({ type: "darknessFell", nightVision: skill(state.c, "Night Vision") });
+  state.c.darkFor = DARKNESS_DURATION;
+  events.push({ type: "darknessFell", nightVision: skill(state.c, "Night Vision"), duration: DARKNESS_DURATION });
   return events;
 }

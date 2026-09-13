@@ -18,7 +18,7 @@ export const JEWELRY = [
   { n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: "unseen; foes need two better to land" },
   { n: "Helm of Knowledge", eff: { tongue: 1 }, txt: "perfect fluency in one language" },
   { n: "Bracelet of Flight", eff: { fly: 1 }, txt: "flight — walls and crevices are nothing" },
-  { n: "Amulet of Stone", eff: {}, use: "stone", every: 200, txt: "turns up to 4 squares of opponents to stone, once every 200 squares" },
+  { n: "Amulet of Stone", eff: {}, use: "stone", every: 200, aoe: 4, txt: "turns up to 4 squares of opponents to stone, once every 200 squares" },
 ];
 
 export const CLOAKS = [
@@ -43,9 +43,15 @@ export const STAVES = [
   { n: "Cedar Staff", use: "gas", txt: "knocks out 3 squares of enemies for a day" },
 ];
 
+// FAERIE gift labels are DUAL-PURPOSE — each is also the switch key in
+// engine/encounters.js meetFaerie(). The player-facing unit tokens were
+// modernised here (04.2 Text batch: "Base WP"->"Base HP", "WM"->"wilmst",
+// E3/P2) together with those switch comparisons, atomically. The frozen
+// parity master keeps the old strings; the state effects are identical, so
+// parity stays green (the gift string is an event field, never compared).
 export const FAERIE = [
-  "+1 Level", "+d20 Base WP", "Magic Weapon", "-d10 Base WP",
-  "Miscellaneous Magic", "d10 x 100 WM", "Magic Armor", "+2 Level",
+  "+1 Level", "+d20 Base HP", "Magic Weapon", "-d10 Base HP",
+  "Miscellaneous Magic", "d10 x 100 wilmst", "Magic Armor", "+2 Level",
 ];
 
 export const MISC_MAGIC = ["Cloak", "Potion", "Scroll", "Grimoire", "Potion", "Staff", "Cloak", "Jewelry", "Potion", "Scroll"];

@@ -53,10 +53,33 @@ function stripFoeDamageClosures(combat) {
 }
 
 function comparable(state) {
-  const { beats, seed, rngState, version, lastExchange, exchangeN, ...rest } = state;
+  // PARTY-02 (Phase 7): strip the new top-level `state.party` roster — no
+  // prototype-side equivalent; same carve-out as harness/comparables.js's
+  // combatComparable, mirrored here because this file has its own comparable().
+  // PARTY-01 (Phase 9): strip the new top-level `state.pendingJoiner` too —
+  // second top-level analog of `party`, mirroring harness combatComparable.
+  // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — third
+  // top-level analog of `party`/`pendingJoiner`, mirroring harness combatComparable.
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, ...rest } = state;
   if (rest.combat) {
-    const { initNote, ...combatRest } = rest.combat;
+    const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);
+  }
+  // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field with no
+  // prototype-side equivalent — strip it the same way test/parity/harness/
+  // comparables.js's combatComparable does (this file predates that shared
+  // helper and keeps its own local comparable(), mirroring combat-parity).
+  // audit-batch1 (2026-09-09, A2): same treatment for c.flightLeft/
+  // c.flightCooldown — see test/parity/harness/comparables.js's
+  // stripFlightFields for the full rationale.
+  // DR-name-generator (2026-09-09): c.name is now a generative first × surname
+  // build — a deliberate cosmetic divergence made with the SAME single rng draw;
+  // strip it like darkFor above (see harness/comparables.js's stripNameField).
+  if (rest.c) {
+    // ECON-01 (Phase 12): strip the new engine-only c.bag field too (see harness
+    // stripBagField) — same treatment as name/darkFor/flight, mirrored here.
+    const { name, darkFor, flightLeft, flightCooldown, bag, ...cRest } = rest.c;
+    rest.c = cRest;
   }
   return rest;
 }

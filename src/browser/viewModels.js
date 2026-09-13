@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, canCast } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, canCast, intelBonus } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 
 /**
@@ -95,10 +95,15 @@ export function characterSheetViewModel(state) {
     { key: "toHit", label: "TO HIT", value: `${toHit(state)}+` },
     { key: "damage", label: "DAMAGE", value: `${damage.min}–${damage.max}`, min: damage.min, max: damage.max },
     { key: "armor", label: "ARMOR", value: `${c.armor.toUpperCase()} · AR ${c.ar}` },
-    { key: "intelligence", label: "INTELLIGENCE", value: c.intel },
-    { key: "skillPoints", label: "SKILL POINTS", value: c.sp },
+    // RULE-01 (04.1-04): intelBonus(c) is the SAME derived.js helper openChest
+    // consumes for its lock-roll threshold — surfaced here as `lockBonus` so
+    // the sheet and the engine can never drift (the damageBracket↔
+    // weaponDamage single-source-of-truth pattern). `value` stays the raw
+    // c.intel score; lockBonus is the additional derived read.
+    { key: "intelligence", label: "INTELLIGENCE", value: c.intel, lockBonus: intelBonus(c) },
+    { key: "skillPoints", label: "EXPERIENCE", value: c.sp },
     { key: "nextLevel", label: "NEXT LEVEL", value: nextLevelValue(c) },
-    { key: "upkeep", label: "UPKEEP", value: `${upkeep(c)} wp/day` },
+    { key: "upkeep", label: "UPKEEP", value: `${upkeep(c)} hp/day` },
   ];
 
   const winPotential = {
@@ -156,10 +161,16 @@ export function grimoireViewModel(state) {
     .map((sp) => {
       let castable = false;
       let disabledReason = null;
-      if (sp.combatOnly) {
+      // DR13: during a fight ALL casting happens on the combat SPELLS menu —
+      // including the non-combatOnly self-buffs/heal the engine handles in
+      // combat (heal/ward/might/mirror/reveal). So while in combat the Hero
+      // grimoire is a reference only and points the player there, instead of
+      // the old (and wrong) "Only outside combat" that contradicted the combat
+      // menu actually offering Heal/Shield/Strength.
+      if (inCombat) {
+        disabledReason = "On the combat screen";
+      } else if (sp.combatOnly) {
         disabledReason = "Combat only";
-      } else if (inCombat) {
-        disabledReason = "Only outside combat";
       } else if (!canCast(state, sp)) {
         disabledReason = "Not ready yet";
       } else if (charges <= 0) {

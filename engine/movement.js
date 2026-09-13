@@ -27,7 +27,7 @@
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
 import { difficultyCurve } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
@@ -42,6 +42,63 @@ export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
 /** climbBonus/leapBonus(c) — ports mazeworld.html lines 1467-1468. */
 const climbBonus = (c) => (skill(c, "Climbing") ? 4 : 0);
 const leapBonus = (c) => (skill(c, "Leaping") ? 2 : 0);
+
+// DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Heights and
+// Bodies-of-water phobias (both `t: null` in content/flavor.js's PHOBIAS
+// catalog — inert per 04.1-RESEARCH.md's audit) get a documented, DETERMINISTIC
+// penalty added to the climb/leap roll COMPARISON (`r`) below, never a new
+// rng draw — the plan-checker's own design constraint, kept so the movement
+// path stays trivially parity/determinism-safe. Hardiness halves the
+// magnitude (rounded), mirroring the "phobias halved" mitigation the 5
+// type-matched combat phobias already use, just applied as a deterministic
+// value here instead of a 50%-chance mitigation roll (there is no rng draw
+// in this path to mitigate).
+const HEIGHTS_PHOBIA_PENALTY = 2;
+const WATER_PHOBIA_PENALTY = 2;
+/** heightsPenalty(c) — added to the climb roll `r` for a Heights-phobic character. */
+const heightsPenalty = (c) =>
+  c.phobia === "Heights" ? (skill(c, "Hardiness") ? Math.round(HEIGHTS_PHOBIA_PENALTY / 2) : HEIGHTS_PHOBIA_PENALTY) : 0;
+/** waterPenalty(c) — added to the gorge/crevice leap roll `r` for a Bodies-of-water-phobic character. */
+const waterPenalty = (c) =>
+  c.phobia === "Bodies of water" ? (skill(c, "Hardiness") ? Math.round(WATER_PHOBIA_PENALTY / 2) : WATER_PHOBIA_PENALTY) : 0;
+
+// DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Being-trapped
+// phobia (also `t: null`, also inert) gets a fear reaction on a genuine ENTRY
+// into an enclosed (dead-end) tile — one with exactly one non-wall orthogonal
+// neighbor. Debounced per the plan's explicit WARNING via a marker on the
+// TILE ITSELF (`there.trapPanicked`), not a new chargen field — so a player
+// who leaves and later re-enters the identical dead-end tile never re-fires
+// the penalty ("a second consecutive attempt at the same dead-end" in the
+// plan's own language), and no new save-shape/parity carve-out is needed
+// (the marker only ever appears on a tile a Being-trapped-phobic character
+// has actually panicked in — every other character's save/parity surface is
+// untouched). No rng draw either way.
+const TRAPPED_PHOBIA_PANIC = 4;
+
+// DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): the Cloak of
+// Flying's real charge/cooldown resource — see engine/derived.js's isFlying
+// for the full design rationale. Constants named/documented here since this
+// is the ONLY module that ever mutates c.flightLeft/c.flightCooldown.
+const FLIGHT_CHARGE_SQUARES = 20;
+const FLIGHT_COOLDOWN_SQUARES = 50;
+
+// Phase 15 item-wiring (ECON-08): the Cloak of Healing / Cloak of Regeneration
+// per-step tick cadence + flat-heal magnitude. Named/documented here since
+// engine/movement.js's move() is the only site that ticks them. The cadence
+// (every 20 squares) honours both cloaks' flavor text verbatim; the flat
+// CLOAK_HEAL_PER_TICK ("up to 10 wp every 20 squares") stays a Phase-16 knob.
+const CLOAK_TICK_SQUARES = 20;
+const CLOAK_HEAL_PER_TICK = 10;
+/** isDeadEnd(f, x, y) — does (x,y) have exactly one (or zero) non-wall orthogonal neighbor? */
+function isDeadEnd(f, x, y) {
+  let openNeighbors = 0;
+  for (const [ddx, ddy] of Object.values(DIRV)) {
+    const ax = x + ddx;
+    const ay = y + ddy;
+    if (f.g[ay] && f.g[ay][ax] && !f.g[ay][ax].wall) openNeighbors++;
+  }
+  return openNeighbors <= 1;
+}
 
 /** maxCharges(c) — a Magic User's spell charges. Ports mazeworld.html line 914. */
 export const maxCharges = (c) => 2 * c.level + 2 + eff(c, "charges");
@@ -80,37 +137,74 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   // distance and class.
   if (there.feat === "climb" || there.feat === "gorge") {
     const climbing = there.feat === "climb";
-    let ok = true;
-    let hurt = 0;
-    if (climbing) {
-      const kind = rng.pick(["rope", "rock", "wood"]);
-      const tbl = CLIMB_TABLE[kind];
-      const feet = 10 * (1 + rng.d(2));
-      for (let ft = 0; ft < feet && ok; ft += 10) {
-        const r = rng.d(10) - climbBonus(state.c);
-        if (r <= tbl.success) continue;
-        ok = false;
-        for (let g = 0; g <= ft; g += 10) if (rng.d(20) > 2) hurt += rollDice(rng, tbl.fall);
-        if (skill(state.c, "Climbing")) hurt = Math.ceil(hurt / 2);
+    // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): flight
+    // (Bracelet of Flight = unconditional; Cloak of Flying = a real
+    // 20-square charge on a 50-square cooldown — see engine/derived.js's
+    // isFlying for the full rationale) skips the climb/leap roll AND all
+    // fall-damage math entirely — "walls and crevices are nothing" and
+    // "flight ... once every 50" were both inert `eff.fly` flags read
+    // nowhere in the engine before this. No rng draw either way on this
+    // branch, so determinism/parity are unaffected for every character
+    // without a flight item. A Cloak-only character activates a fresh
+    // 20-square charge window right here if one is not already open (the
+    // per-step tick below then burns it down); the Bracelet never touches
+    // the Cloak's counters.
+    if (isFlying(state)) {
+      if (!hasItemNamed(state.c, "Bracelet of Flight") && state.c.flightLeft <= 0) {
+        state.c.flightLeft = FLIGHT_CHARGE_SQUARES;
       }
+      events.push({ type: "flownOver" });
+      there.feat = null;
+    } else if (state.c.ether > 0) {
+      // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08 §8 design call):
+      // the Cloak of Ether (content/treasure-tables.js, use:"ether", "walk
+      // through walls") set `c.ether=20` (items.js:"ether") but the field was
+      // only ever set + ticked down (per-step below), READ NOWHERE. Wired here
+      // by MIRRORING isFlying: while ethereal you phase through the wall/crevice
+      // with no climb/leap roll and no fall damage. Deliberately NOT touching
+      // the Cloak-of-Flying charge counters (ether is its own 20-square window,
+      // already ticked below). No rng draw either way on this branch, so
+      // determinism/parity are unaffected for every character with ether === 0
+      // (every parity fixture — ether is only ever raised by USING the cloak).
+      events.push({ type: "phasedThrough" });
+      there.feat = null;
     } else {
-      const row = LEAP_TABLE[rng.d(4) - 1];
-      const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
-      const r = rng.d(10) - leapBonus(state.c);
-      if (r > need) {
-        ok = false;
-        hurt = rng.d(6) + rng.d(6);
-        if (skill(state.c, "Climbing")) hurt = Math.ceil(hurt / 2);
+      let ok = true;
+      let hurt = 0;
+      if (climbing) {
+        const hPenalty = heightsPenalty(state.c);
+        if (hPenalty) events.push({ type: "heightsFear" });
+        const kind = rng.pick(["rope", "rock", "wood"]);
+        const tbl = CLIMB_TABLE[kind];
+        const feet = 10 * (1 + rng.d(2));
+        for (let ft = 0; ft < feet && ok; ft += 10) {
+          const r = rng.d(10) - climbBonus(state.c) + hPenalty;
+          if (r <= tbl.success) continue;
+          ok = false;
+          for (let g = 0; g <= ft; g += 10) if (rng.d(20) > 2) hurt += rollDice(rng, tbl.fall);
+          if (skill(state.c, "Climbing")) hurt = Math.ceil(hurt / 2);
+        }
+      } else {
+        const wPenalty = waterPenalty(state.c);
+        if (wPenalty) events.push({ type: "waterFear" });
+        const row = LEAP_TABLE[rng.d(4) - 1];
+        const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
+        const r = rng.d(10) - leapBonus(state.c) + wPenalty;
+        if (r > need) {
+          ok = false;
+          hurt = rng.d(6) + rng.d(6);
+          if (skill(state.c, "Climbing")) hurt = Math.ceil(hurt / 2);
+        }
       }
+      if (!ok) {
+        state.c.wp -= hurt;
+        events.push({ type: climbing ? "fellClimbing" : "fellInGorge", hurt });
+        if (state.c.wp <= 0) die(state, climbing ? "fall" : "gorge", null, rng, events, now);
+        return events;
+      }
+      events.push({ type: climbing ? "climbedOver" : "leaptOver" });
+      there.feat = null;
     }
-    if (!ok) {
-      state.c.wp -= hurt;
-      events.push({ type: climbing ? "fellClimbing" : "fellInGorge", hurt });
-      if (state.c.wp <= 0) die(state, climbing ? "fall" : "gorge", null, rng, events, now);
-      return events;
-    }
-    events.push({ type: climbing ? "climbedOver" : "leaptOver" });
-    there.feat = null;
   }
 
   f.px = nx;
@@ -120,21 +214,120 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   events.push(moved({ x: nx, y: ny }));
 
   const c = state.c;
+
+  // DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): Being-trapped
+  // panic on a genuine, not-yet-panicked entry into a dead-end tile — see
+  // isDeadEnd/TRAPPED_PHOBIA_PANIC above for the full rationale. `there` is
+  // still the same cell object as `f.g[ny][nx]` (feature dispatch may have
+  // cleared `.feat` above, but never replaced the object), so this stays a
+  // direct in-place mutation, exactly like every other per-step tick below.
+  // The loss is clamped to leave at least 1 wp — a fear reaction should
+  // never itself be the killing blow — mirroring the affliction-tick clamp
+  // immediately below.
+  if (c.phobia === "Being trapped" && !there.trapPanicked && isDeadEnd(f, nx, ny)) {
+    there.trapPanicked = true;
+    const raw = skill(c, "Hardiness") ? Math.round(TRAPPED_PHOBIA_PANIC / 2) : TRAPPED_PHOBIA_PANIC;
+    const loss = Math.min(raw, Math.max(0, c.wp - 1));
+    c.wp -= loss;
+    events.push({ type: "trappedPanic", loss });
+  }
+
   if (c.affliction) {
     const af = c.affliction;
     if (state.steps % af.per === 0) {
       const l = Math.min(rollDice(rng, af.loss), Math.max(0, c.wp - 1));
       c.wp -= l;
-      events.push({ type: "afflictionTick", kind: af.kind, loss: l });
-      if (--af.left <= 0) {
+      // DELIBERATE RULES CHANGE (audit-bugs, 2026-09-09, E5): the clamp above
+      // floors the affliction at 1 hp (it should never itself be the killing
+      // blow) — but at 1 hp every subsequent tick draws `l === 0` forever,
+      // and the old code only ever cleared the affliction via the DURATION
+      // counter (`--af.left <= 0`), which kept counting down while still
+      // re-emitting the same loss-0 "has taken everything it can" line every
+      // tick until it happened to hit zero — the reported infinite loop.
+      // Once a tick can take nothing more, clear the affliction immediately
+      // instead of waiting for the duration to run out, and skip the loss-0
+      // tick event entirely so this reads as the affliction burning itself
+      // out (afflictionPassed) rather than repeating the no-op loop line.
+      // The normal duration-based clear (`--af.left <= 0`) is unchanged for
+      // every tick that still has room to deal damage.
+      if (l === 0) {
         c.affliction = null;
-        events.push({ type: "afflictionPassed" });
+        events.push({ type: "afflictionPassed", kind: af.kind });
+      } else {
+        events.push({ type: "afflictionTick", kind: af.kind, loss: l });
+        if (--af.left <= 0) {
+          c.affliction = null;
+          events.push({ type: "afflictionPassed", kind: af.kind });
+        }
       }
+    }
+  }
+  // DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): the persistent
+  // darkness counter (see engine/encounters.js fallDark, engine/derived.js
+  // inDark) decrements per step, exactly like the affliction tick above —
+  // a plain decrement, no rng — and clears at zero with a narrated
+  // "darkness lifts" event.
+  if (c.darkFor > 0) {
+    // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Amulet of
+    // Light (content/treasure-tables.js, eff:{sight:1,light:1}) already grants
+    // the reveal-radius bonus via `sight` (derived.js revealRadius); its
+    // `light` half ("dispels darkness") was inert — READ NOWHERE. Wired here:
+    // carrying a light source (eff("light") > 0) DISPELS the persistent
+    // darkness counter (c.darkFor, set by encounters.js fallDark) outright
+    // rather than merely ticking it down, so inDark()/revealRadius/the in-dark
+    // to-hit cap all clear immediately. Pure read of eff() + a plain field
+    // clear (no rng). GATED behind c.darkFor > 0 AND eff("light"): a
+    // non-carrier falls to the byte-identical decrement branch, so parity is
+    // unaffected for every fixture (none carry the Amulet).
+    if (eff(c, "light") > 0) {
+      c.darkFor = 0;
+      events.push({ type: "darknessDispelled" });
+    } else {
+      c.darkFor--;
+      if (c.darkFor === 0) events.push({ type: "darknessLifted" });
     }
   }
   if (c.haste > 0) c.haste--;
   if (c.invis > 0) c.invis--;
   if (c.ether > 0) c.ether--;
+  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
+  // Healing (eff:{cloakHeal:1}, "heals up to 10 wp every 20 squares") and the
+  // Cloak of Regeneration (eff:{cloakRegen:1}, "d6 wp back every 20 squares")
+  // were inert — both keys READ NOWHERE. Wired at this per-step tick site,
+  // firing on the item's own 20-square cadence (honouring the flavor text
+  // verbatim rather than a raw per-step tick — keeps the frozen-master item
+  // `txt` truthful without editing it, and keeps the numbers sane for Phase 16
+  // to tune). Both are GATED behind CARRYING the cloak (eff(...) > 0) AND being
+  // hurt, so a non-carrier NEVER enters either branch.
+  //   - Healing is a FLAT +CLOAK_HEAL_PER_TICK: NO rng.
+  //   - Regeneration is the ONE new rng draw this phase — the rng.d(6) sits
+  //     STRICTLY INSIDE the `eff(c,"cloakRegen") > 0` gate, so a character NOT
+  //     carrying the Cloak of Regeneration draws NOTHING here and the seeded
+  //     cursor is byte-identical (verified: no parity fixture carries it —
+  //     treasure finds are not part of chargen/fixtures).
+  if (eff(c, "cloakHeal") > 0 && state.steps % CLOAK_TICK_SQUARES === 0 && c.wp < c.maxWP) {
+    const before = c.wp;
+    c.wp = Math.min(c.maxWP, c.wp + CLOAK_HEAL_PER_TICK);
+    events.push({ type: "cloakHealed", amount: c.wp - before });
+  }
+  if (eff(c, "cloakRegen") > 0 && state.steps % CLOAK_TICK_SQUARES === 0 && c.wp < c.maxWP) {
+    const r = rng.d(6);
+    const before = c.wp;
+    c.wp = Math.min(c.maxWP, c.wp + r);
+    events.push({ type: "cloakRegenerated", amount: c.wp - before });
+  }
+  // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): tick the Cloak of
+  // Flying's charge/cooldown exactly like haste/invis/ether above — the
+  // active charge (`flightLeft`) burns down first; the instant it is spent,
+  // the 50-square cooldown (`flightCooldown`) starts. The Bracelet of Flight
+  // never sets either field, so this is a no-op for every character who
+  // never activated the Cloak (both fields start and stay at 0).
+  if (c.flightLeft > 0) {
+    c.flightLeft--;
+    if (c.flightLeft === 0) c.flightCooldown = FLIGHT_COOLDOWN_SQUARES;
+  } else if (c.flightCooldown > 0) {
+    c.flightCooldown--;
+  }
 
   // the book recharges a Magic User every hundred squares; a solo caster
   // needs it oftener.
@@ -194,8 +387,30 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     c.strengthBoost = 0;
   }
   const R = RACES[c.race];
-  const cost = upkeep(c);
-  const eats = R.eats || 1;
+  let cost = upkeep(c);
+  let eats = R.eats || 1;
+  // PARTY-10 (Phase 11, party-LOCAL balance): a joiner is a real resource cost,
+  // not free power — the canon counterweight is that a party EATS MORE. Each
+  // LIVE party member folds its own hunger into the daily food math: the
+  // member's rations into `eats` (a fed party drains rations faster) and the
+  // member's `upkeep()` into `cost` (an unfed party burns the hero's wp faster,
+  // starving into the same die("starve") path). Members are full
+  // rollCharacter()-shaped sheets and are already pruned to LIVE-only in
+  // endCombat (downed/departed members are removed from state.party), so every
+  // member present here genuinely eats. Reuses upkeep()/`R.eats` for
+  // consistency with the hero's own model — pure post-state arithmetic, NO rng.
+  //
+  // DETERMINISM GATE: gated behind `state.party?.length`. With no party the
+  // loop never runs and `cost`/`eats`/`c.rations` stay byte-identical to the
+  // pre-party baseline (596/596 parity). The GLOBAL engine/difficulty.js curve
+  // retune is DEFERRED to the consolidated Economy & Monster balance pass — it
+  // is deliberately NOT touched here (it also carries a parity guard).
+  if (state.party?.length) {
+    for (const m of state.party) {
+      cost += upkeep(m);
+      eats += RACES[m.race]?.eats || 1;
+    }
+  }
   events.push({ type: "dayBegan", day: state.day, camped: !!camped });
 
   if (c.rations >= eats) {
@@ -206,19 +421,43 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     c.wp = Math.min(c.maxWP, c.wp + heal);
     if (c.wp > before) events.push({ type: "rested", amount: c.wp - before });
 
+    // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A3): resting used to
+    // auto-cure any affliction unconditionally, no roll, every fed night.
+    // Per the audit, this is now a real d20 cure roll — ~50% base
+    // (10-or-under on a d20) plus a Hardiness bonus — mirroring the
+    // armor-patch fix's (04.1-02) determinism-safe pattern: this rng.d draw
+    // fires ONLY for a character who currently HAS an affliction, so RNG
+    // consumption order/parity are completely unaffected for everyone else.
+    // A failed roll leaves the affliction lingering (new `afflictionLingers`
+    // event) rather than curing it outright.
     if (c.affliction) {
-      c.affliction = null;
-      events.push({ type: "afflictionCured" });
+      const af = c.affliction;
+      if (rng.d(20) <= 10 + (skill(c, "Hardiness") ? 4 : 0)) {
+        c.affliction = null;
+        events.push({ type: "afflictionCured", kind: af.kind });
+      } else {
+        events.push({ type: "afflictionLingers", kind: af.kind });
+      }
     }
 
     // Patching armour by the fire: Sewing for thieves, Master of Arms for
-    // fighters. NOTE (fidelity, not a bug): the prototype's condition reads
-    // `S.c.dr`, a field `rollCharacter()` never sets anywhere in
-    // mazeworld.html — this branch is unreachable dead code in the shipped
-    // prototype (mazeworld.html lines 1737-1754). Ported verbatim rather
-    // than "fixed" to `c.ar`, per the project's fidelity rule (deviations
-    // from the canon prototype must be deliberate, not accidental).
-    if (c.armorWP < c.armorMax && c.dr > 0) {
+    // fighters.
+    // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the prototype's
+    // condition reads `S.c.dr`, a field `rollCharacter()` never sets anywhere
+    // in mazeworld.html — this branch was unreachable dead code in the
+    // shipped prototype (mazeworld.html lines 1737-1754), silently disabling
+    // both the Thief Sewing skill and the Fighter subclass Master of Arms'
+    // repair bonus. Per the phase-04.1 rules audit, the dead `c.dr > 0` gate
+    // is deliberately replaced with a real capability check —
+    // `skillTier(c, "Sewing") || c.sub === "Master of Arms"` — so these two
+    // character-sheet capabilities actually fire. The bare `else { d4 }`
+    // fallback that only ever ran under the dead gate is removed entirely
+    // (it must NOT patch armour for characters lacking both capabilities —
+    // see the T-04.1-03 threat in 04.1-02-PLAN.md). This adds a new rng.d
+    // draw inside newDay, but ONLY for Sewing/Master-of-Arms characters with
+    // damaged armour; no chargen RNG draw is added or reordered, so
+    // determinism/parity are unaffected.
+    if (c.armorWP < c.armorMax && (skillTier(c, "Sewing") || c.sub === "Master of Arms")) {
       const tier = skillTier(c, "Sewing");
       const maxPatch = tier === 2 ? 6 : 4;
       if (tier && c.patches < maxPatch) {
@@ -228,10 +467,6 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
         events.push({ type: "armorPatched", amount: amt });
       } else if (c.sub === "Master of Arms") {
         const amt = rng.d(6) + 3;
-        c.armorWP = Math.min(c.armorMax, c.armorWP + amt);
-        events.push({ type: "armorPatched", amount: amt });
-      } else {
-        const amt = rng.d(4);
         c.armorWP = Math.min(c.armorMax, c.armorWP + amt);
         events.push({ type: "armorPatched", amount: amt });
       }

@@ -35,7 +35,7 @@ test("characterSheetViewModel(state): binds name/level/class/race/sub to the rea
   assert.equal(vm.subLabel, state.c.sub);
 });
 
-test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE / SKILL POINTS / NEXT LEVEL / UPKEEP bind to engine/derived.js and real GameState.c fields", () => {
+test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE / EXPERIENCE / NEXT LEVEL / UPKEEP bind to engine/derived.js and real GameState.c fields", () => {
   const state = newRun(42);
   const vm = characterSheetViewModel(state);
 
@@ -44,7 +44,8 @@ test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE 
   assert.equal(statByKey(vm, "armor").value, `${state.c.armor.toUpperCase()} · AR ${state.c.ar}`);
   assert.equal(statByKey(vm, "intelligence").value, state.c.intel);
   assert.equal(statByKey(vm, "skillPoints").value, state.c.sp);
-  assert.equal(statByKey(vm, "upkeep").value, `${upkeep(state.c)} wp/day`);
+  assert.equal(statByKey(vm, "skillPoints").label, "EXPERIENCE", "TERM-01: the sheet's sp row reads EXPERIENCE, not the old SKILL POINTS label");
+  assert.equal(statByKey(vm, "upkeep").value, `${upkeep(state.c)} hp/day`, "TERM-02: upkeep's unit reads hp, not wp");
 
   // NEXT LEVEL: the sp threshold for the next skill level, from THRESHOLDS.
   assert.equal(statByKey(vm, "nextLevel").value, THRESHOLDS[state.c.level]);
@@ -57,7 +58,7 @@ test("characterSheetViewModel(state): NEXT LEVEL reads MAX at the top skill leve
   assert.equal(statByKey(vm, "nextLevel").value, "MAX");
 });
 
-test("characterSheetViewModel(state): WIN POTENTIAL binds to c.wp/c.maxWP (not a mockup placeholder)", () => {
+test("characterSheetViewModel(state): HIT POINTS (winPotential) binds to c.wp/c.maxWP (not a mockup placeholder)", () => {
   const state = newRun(6); // Troll — flatWP 75, a distinctive real value to bind against
   const vm = characterSheetViewModel(state);
   assert.equal(vm.winPotential.value, state.c.wp);

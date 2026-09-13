@@ -13,7 +13,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { makeRng } from "../../engine/rng.js";
-import { rollCharacter, checkLevel } from "../../engine/character.js";
+import { rollCharacter, checkLevel, nameFor } from "../../engine/character.js";
 import {
   strikeDie,
   toHit,
@@ -22,7 +22,7 @@ import {
   levelFromSP,
   foeDie,
 } from "../../engine/derived.js";
-import { KIT, STRIKE_DICE, THRESHOLDS } from "../../content/index.js";
+import { KIT, STRIKE_DICE, THRESHOLDS, NAMES } from "../../content/index.js";
 
 // A complete, fixed level-1 Fighter for the pure-derived assertions — no RNG,
 // no global state, every field the engine's character shape carries.
@@ -47,6 +47,118 @@ test("rollCharacter is deterministic: same seed → deepStrictEqual character", 
     const a = rollCharacter(makeRng(seed));
     const b = rollCharacter(makeRng(seed));
     assert.deepStrictEqual(a, b, `seed ${seed} must roll an identical character twice`);
+  }
+});
+
+// ---- audit-batch E12 (part 4) + DR-name-generator: determinism-safe,
+//      GENERATIVE (first × surname) name dedup ----
+
+// Mirror the engine's index → name decode so the tests can enumerate the full
+// combo space independently of nameFor (content/names.js is now a { first, sur }
+// bank per race, not a flat pool).
+function buildName(pool, idx) {
+  const first = pool.first[idx % pool.first.length];
+  const sur = pool.sur[Math.floor(idx / pool.first.length)];
+  return sur ? first + " " + sur : first;
+}
+function allNames(pool) {
+  const combos = pool.first.length * pool.sur.length;
+  const out = [];
+  for (let i = 0; i < combos; i++) out.push(buildName(pool, i));
+  return out;
+}
+function comboCount(pool) {
+  return pool.first.length * pool.sur.length;
+}
+
+test("nameFor consumes exactly ONE rng draw (one gen.next(), same as the old rng.pick), with or without an exclusion", () => {
+  for (const race of Object.keys(NAMES)) {
+    const pool = NAMES[race];
+    for (const seed of [1, 42, 12345]) {
+      // baseline: cursor after a single gen.next() (rng.d/pick both draw once)
+      const rngOne = makeRng(seed);
+      rngOne.next();
+      const afterOne = rngOne.getState();
+
+      // no exclusion
+      const rngA = makeRng(seed);
+      nameFor(rngA, race);
+      assert.equal(rngA.getState(), afterOne, `${race}/${seed}: empty-exclude nameFor draws once`);
+
+      // with an exclusion (forward-walk must consume NO extra rng)
+      const rngB = makeRng(seed);
+      nameFor(rngB, race, allNames(pool)); // exclude every combo → forces the walk
+      assert.equal(rngB.getState(), afterOne, `${race}/${seed}: excluded nameFor still draws exactly once`);
+    }
+  }
+});
+
+test("nameFor with empty/absent exclusion is deterministic and yields a real first × surname combo", () => {
+  for (const race of Object.keys(NAMES)) {
+    const pool = NAMES[race];
+    const valid = new Set(allNames(pool));
+    for (const seed of [1, 42, 999, 20260907]) {
+      const a = nameFor(makeRng(seed), race);
+      const b = nameFor(makeRng(seed), race);
+      assert.equal(a, b, `${race}/${seed}: same seed → identical name`);
+      assert.ok(valid.has(a), `${race}/${seed}: "${a}" is a real first × surname combo`);
+    }
+  }
+});
+
+test("nameFor returns a name NOT in the exclusion when one is available (deterministic forward-walk)", () => {
+  const race = "Human";
+  const pool = NAMES[race];
+  const combos = allNames(pool); // Human has no mononym column → all distinct
+  const keep = combos[combos.length - 1];
+  const exclude = combos.filter((n) => n !== keep); // exclude all but one
+  for (const seed of [1, 2, 3, 7, 42, 100, 555]) {
+    const name = nameFor(makeRng(seed), race, exclude);
+    assert.equal(name, keep, `seed ${seed}: forward-walk lands on the sole non-excluded name`);
+  }
+});
+
+test("nameFor falls back to the originally-built name when EVERY combo is excluded", () => {
+  for (const race of Object.keys(NAMES)) {
+    const pool = NAMES[race];
+    const all = allNames(pool);
+    const combos = comboCount(pool);
+    for (const seed of [1, 5, 9, 77]) {
+      // the name it would build from its single draw, with no exclusion applied
+      const i = makeRng(seed).d(combos) - 1;
+      const expected = buildName(pool, i);
+      const name = nameFor(makeRng(seed), race, all);
+      assert.equal(name, expected, `${race}/${seed}: a fully-excluded pool falls back to the built name`);
+    }
+  }
+});
+
+test("nameFor yields FAR more distinct names than the old 3-per-race (the duplicate-name fix)", () => {
+  for (const race of Object.keys(NAMES)) {
+    const seen = new Set();
+    for (let seed = 1; seed <= 400; seed++) seen.add(nameFor(makeRng(seed), race));
+    // The old flat pool produced ~3 names/race; the generative banks produce
+    // hundreds of combos, so 400 seeds must surface many dozens of distinct names.
+    assert.ok(seen.size >= 100, `${race}: expected 100+ distinct names across 400 seeds, got ${seen.size}`);
+  }
+});
+
+test("rollCharacter with an empty/absent exclusion rolls the byte-identical character (parity-safe)", () => {
+  for (const seed of [1, 42, 12345, 20260907]) {
+    const base = rollCharacter(makeRng(seed));
+    const empty = rollCharacter(makeRng(seed), []);
+    assert.deepStrictEqual(empty, base, `seed ${seed}: an empty exclusion must not change the roll`);
+  }
+});
+
+test("rollCharacter forwards the exclusion to the name pick and changes ONLY c.name", () => {
+  for (const seed of [3, 77, 555, 4242, 20260907]) {
+    const base = rollCharacter(makeRng(seed));
+    const excl = rollCharacter(makeRng(seed), [base.name]); // exclude the name it would have used
+    const { name: baseName, ...baseRest } = base;
+    const { name: exclName, ...exclRest } = excl;
+    assert.deepStrictEqual(exclRest, baseRest, `seed ${seed}: every rng-driven field stays identical`);
+    assert.notEqual(exclName, baseName, `seed ${seed}: the excluded name was avoided (hundreds of combos available)`);
   }
 });
 

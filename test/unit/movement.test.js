@@ -27,6 +27,8 @@ import {
   winGame,
   maxCharges,
 } from "../../engine/movement.js";
+import { fallDark } from "../../engine/encounters.js";
+import { inDark, revealRadius } from "../../engine/derived.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -74,6 +76,11 @@ function fixedFighter(overrides = {}) {
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    darkFor: 0,
+    // audit-batch1 (2026-09-09, A2): Cloak of Flying's charge/cooldown
+    // fields — 0/0 (ready-to-activate) by default, same treatment as
+    // darkFor above.
+    flightLeft: 0, flightCooldown: 0,
     ...overrides,
   };
 }
@@ -272,6 +279,207 @@ test("move: a successful gorge leap clears the feature", () => {
   assert.ok(events.some((e) => e.type === "leaptOver"));
 });
 
+// --- audit-batch1 (2026-09-09, A2): flight (Bracelet of Flight / Cloak of
+// Flying) skips the climb/leap roll and all fall damage entirely. Bracelet
+// of Flight is unconditional and never touches c.flightLeft/flightCooldown;
+// Cloak of Flying is a real 20-square charge on a 50-square cooldown, ticked
+// by the same per-step block as haste/invis/ether. `fakeRng([])` throws if
+// ANY die is drawn, so a flownOver test that passes proves the roll (and its
+// fall-damage math) was skipped entirely, not just that it happened to pass.
+
+test("move: Bracelet of Flight skips the climb roll/fall damage entirely (no rng draw) and never touches flightLeft/flightCooldown", () => {
+  const state = fixedState({ c: { items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.wp, 55, "no fall damage — the roll never ran");
+  assert.equal(state.floor.g[4][5].feat, null, "the climb feature is still consumed");
+  assert.equal(state.floor.py, 4);
+  assert.ok(events.some((e) => e.type === "flownOver"));
+  assert.ok(!events.some((e) => e.type === "climbedOver"));
+  assert.equal(state.c.flightLeft, 0, "the Bracelet never banks a charge");
+  assert.equal(state.c.flightCooldown, 0, "the Bracelet never starts a cooldown");
+});
+
+test("move: Bracelet of Flight also skips a gorge leap (no rng draw)", () => {
+  const state = fixedState({ c: { items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  open(state.floor.g, 5, 4, { feat: "gorge" });
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.wp, 55);
+  assert.equal(state.floor.g[4][5].feat, null);
+  assert.ok(events.some((e) => e.type === "flownOver"));
+});
+
+test("move: a ready Cloak of Flying (0 charge, 0 cooldown) flies over a climb, banking a fresh 20-square charge that the per-step tick immediately starts burning down", () => {
+  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }] } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  const events = move(state, "N", fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "flownOver"));
+  assert.equal(state.floor.g[4][5].feat, null);
+  // activation banks 20, then this same move's per-step tick burns 1 off it.
+  assert.equal(state.c.flightLeft, 19, "20-square charge activated, then ticked once by this same step");
+  assert.equal(state.c.flightCooldown, 0, "cooldown has not started — the charge is still active");
+});
+
+test("move: while a Cloak of Flying charge is still active, a SECOND climb in the same window flies over again without re-banking the charge", () => {
+  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }], flightLeft: 5, flightCooldown: 0 } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  const events = move(state, "N", fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "flownOver"));
+  assert.equal(state.c.flightLeft, 4, "the existing charge just ticks down by one step — never resets to 20");
+});
+
+test("move: a Cloak of Flying charge exhausting on a plain step starts the 50-square cooldown", () => {
+  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }], flightLeft: 1, flightCooldown: 0 } });
+  open(state.floor.g, 5, 4); // a plain corridor step, not a climb/gorge tile
+  move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.flightLeft, 0, "the last square of charge is spent");
+  assert.equal(state.c.flightCooldown, 50, "the cooldown starts the instant the charge hits zero");
+});
+
+test("move: while a Cloak of Flying is on cooldown, climb/gorge rolls resume normally (isFlying is false) and the cooldown keeps ticking", () => {
+  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }], flightLeft: 0, flightCooldown: 5 } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  // Same successful-climb roll sequence as the plain climb test above.
+  const rng = fakeRng([1, 5, 5]);
+  const events = move(state, "N", rng, []);
+  assert.ok(events.some((e) => e.type === "climbedOver"), "on cooldown, a real roll happens — not flownOver");
+  assert.ok(!events.some((e) => e.type === "flownOver"));
+  assert.equal(state.c.wp, 55, "the roll succeeded, so still no fall damage");
+  assert.equal(state.c.flightCooldown, 4, "the cooldown still ticks down on an ordinary step");
+});
+
+test("move: carrying BOTH items, the Bracelet flies unconditionally and the Cloak's charge counters are left untouched", () => {
+  const state = fixedState({
+    c: {
+      items: [
+        { n: "Bracelet of Flight", eff: { fly: 1 } },
+        { n: "Cloak of Flying", eff: { fly: 1 } },
+      ],
+    },
+  });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  const events = move(state, "N", fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "flownOver"));
+  assert.equal(state.c.flightLeft, 0, "the Bracelet's flight never banks a Cloak charge");
+  assert.equal(state.c.flightCooldown, 0);
+});
+
+// --- PHOBIA-01: Heights/Bodies-of-water climb/leap penalties (04.1-06) ----
+//
+// Both penalties add a DETERMINISTIC value to the roll comparison `r` —
+// never a new rng draw — so an identical rng sequence produces a different
+// pass/fail outcome purely from the phobia flag. Hardiness halves the
+// penalty (round(2/2)=1), proven by re-running the SAME borderline roll.
+
+test("move: a Heights-phobic character fails a borderline climb an identical non-phobic character passes", () => {
+  const nonPhobic = fixedState(); // default phobia "Spiders" — not Heights
+  open(nonPhobic.floor.g, 5, 4, { feat: "climb" });
+  // pick(["rope","rock","wood"]) -> rope (success=7); feet=10*(1+d(2)=1)=20;
+  // rung 1: r = d(10)=6 - climbBonus(0) + 0 = 6 <= 7 -> pass; rung 2: r=5<=7 -> pass.
+  const passEvents = move(nonPhobic, "N", fakeRng([1, 6, 5]), []);
+  assert.equal(nonPhobic.c.wp, 55, "no penalty, no phobia -> clean climb");
+  assert.ok(passEvents.some((e) => e.type === "climbedOver"));
+  assert.ok(!passEvents.some((e) => e.type === "heightsFear"));
+
+  const phobic = fixedState({ c: { phobia: "Heights", phobiaType: null } });
+  open(phobic.floor.g, 5, 4, { feat: "climb" });
+  // Identical roll (6), but +2 Heights penalty: r = 6 + 2 = 8 > 7 -> fails on
+  // rung 1; fall check g=0: d(20)=15 (>2, hurt rolls); fall damage d6=4.
+  const failEvents = move(phobic, "N", fakeRng([1, 6, 15, 4]), []);
+  assert.equal(phobic.c.wp, 51, "the SAME roll now fails and costs 4 fall wp");
+  assert.ok(failEvents.some((e) => e.type === "fellClimbing" && e.hurt === 4));
+  assert.ok(failEvents.some((e) => e.type === "heightsFear"));
+});
+
+test("move: Hardiness halves the Heights penalty enough to turn the same borderline roll back into a pass", () => {
+  const state = fixedState({ c: { phobia: "Heights", phobiaType: null, skills: { Hardiness: 1 } } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  // Halved penalty = round(2/2) = 1: rung 1 r = 6 + 1 = 7 <= 7 -> pass;
+  // rung 2 r = 5 + 1 = 6 <= 7 -> pass.
+  const events = move(state, "N", fakeRng([1, 6, 5]), []);
+  assert.equal(state.c.wp, 55, "Hardiness halves the penalty enough to clear the climb");
+  assert.ok(events.some((e) => e.type === "climbedOver"));
+  assert.ok(events.some((e) => e.type === "heightsFear"), "the fear still registers even though the roll passes");
+});
+
+test("move: a Bodies-of-water-phobic character fails a borderline gorge leap an identical non-phobic character passes", () => {
+  const nonPhobic = fixedState();
+  open(nonPhobic.floor.g, 5, 4, { feat: "gorge" });
+  // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=9 - leapBonus(0) + 0 = 9 <= 10 -> clear.
+  const passEvents = move(nonPhobic, "N", fakeRng([1, 9]), []);
+  assert.equal(nonPhobic.c.wp, 55);
+  assert.ok(passEvents.some((e) => e.type === "leaptOver"));
+  assert.ok(!passEvents.some((e) => e.type === "waterFear"));
+
+  const phobic = fixedState({ c: { phobia: "Bodies of water", phobiaType: null } });
+  open(phobic.floor.g, 5, 4, { feat: "gorge" });
+  // Identical roll (9), but +2 water penalty: r = 9 + 2 = 11 > 10 -> fails; fall = d6+d6.
+  const failEvents = move(phobic, "N", fakeRng([1, 9, 3, 4]), []);
+  assert.equal(phobic.c.wp, 48, "the SAME roll now fails and costs 7 (3+4) fall wp");
+  assert.ok(failEvents.some((e) => e.type === "fellInGorge" && e.hurt === 7));
+  assert.ok(failEvents.some((e) => e.type === "waterFear"));
+});
+
+test("move: Hardiness halves the Bodies-of-water penalty enough to turn the same borderline roll back into a pass", () => {
+  const state = fixedState({ c: { phobia: "Bodies of water", phobiaType: null, skills: { Hardiness: 1 } } });
+  open(state.floor.g, 5, 4, { feat: "gorge" });
+  // Halved penalty = round(2/2) = 1: r = 9 + 1 = 10 <= 10 -> clear.
+  const events = move(state, "N", fakeRng([1, 9]), []);
+  assert.equal(state.c.wp, 55, "Hardiness halves the penalty enough to clear the leap");
+  assert.ok(events.some((e) => e.type === "leaptOver"));
+  assert.ok(events.some((e) => e.type === "waterFear"));
+});
+
+// --- PHOBIA-01: Being-trapped dead-end panic, debounced (04.1-06) --------
+//
+// A dead-end tile has exactly one (or zero) non-wall orthogonal neighbor.
+// The debounce marker lives on the TILE itself (there.trapPanicked), not a
+// new chargen field — proven by the regression test below: leaving and
+// re-entering the identical dead-end tile does not re-fire the penalty.
+
+test("move: a Being-trapped-phobic character panics on first entry into a dead-end tile", () => {
+  const state = fixedState({ c: { phobia: "Being trapped", phobiaType: null } });
+  open(state.floor.g, 5, 5); // the start tile itself, so a return trip stays legal
+  open(state.floor.g, 5, 4); // a genuine dead end: its only open neighbor is (5,5)
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.wp, 51, "took the 4 wp Being-trapped panic (no Hardiness)");
+  assert.ok(events.some((e) => e.type === "trappedPanic" && e.loss === 4));
+  assert.equal(state.floor.g[4][5].trapPanicked, true, "the tile itself carries the debounce marker");
+});
+
+test("move: a second consecutive entry into the SAME dead-end tile does NOT re-apply the panic (debounce regression)", () => {
+  const state = fixedState({ c: { phobia: "Being trapped", phobiaType: null } });
+  // (5,5) needs a SECOND open neighbor (5,6) so the start tile is not itself
+  // read as a dead end when the player steps back onto it — isolating this
+  // regression to exactly one dead-end tile, (5,4).
+  open(state.floor.g, 5, 5);
+  open(state.floor.g, 5, 6);
+  open(state.floor.g, 5, 4);
+  move(state, "N", fakeRng([]), []); // first entry into (5,4): panics, wp 55 -> 51
+  move(state, "S", fakeRng([]), []); // leaves (5,4) for (5,5) — not a dead end, no panic
+  const events = move(state, "N", fakeRng([]), []); // second entry into (5,4): already panicked
+  assert.equal(state.c.wp, 51, "no additional wp loss on re-entry — debounced");
+  assert.ok(!events.some((e) => e.type === "trappedPanic"), "the marker on the tile suppresses the re-fire");
+});
+
+test("move: a non-Being-trapped-phobic character entering the same dead-end tile takes no panic", () => {
+  const state = fixedState(); // default phobia "Spiders"
+  open(state.floor.g, 5, 5);
+  open(state.floor.g, 5, 4);
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.wp, 55);
+  assert.ok(!events.some((e) => e.type === "trappedPanic"));
+});
+
+test("move: Hardiness halves a Being-trapped character's panic loss", () => {
+  const state = fixedState({ c: { phobia: "Being trapped", phobiaType: null, skills: { Hardiness: 1 } } });
+  open(state.floor.g, 5, 5);
+  open(state.floor.g, 5, 4);
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.wp, 53, "took only 2 wp (halved from 4) with Hardiness");
+  assert.ok(events.some((e) => e.type === "trappedPanic" && e.loss === 2));
+});
+
 // --- per-step ticks -------------------------------------------------------
 
 test("move: an active affliction ticks down and clears when its duration expires", () => {
@@ -281,7 +489,96 @@ test("move: an active affliction ticks down and clears when its duration expires
   const events = move(state, "N", rng, []);
   assert.equal(state.c.wp, 52, "lost 3 wp to the tick");
   assert.equal(state.c.affliction, null, "left hit 0 and the affliction cleared");
-  assert.ok(events.some((e) => e.type === "afflictionPassed"));
+  // audit-batch1 (2026-09-09, A1): afflictionPassed now names what passed.
+  const passed = events.find((e) => e.type === "afflictionPassed");
+  assert.ok(passed, "afflictionPassed fired");
+  assert.equal(passed.kind, "Poison");
+});
+
+// audit-bugs (2026-09-09, E5): poison-at-1hp infinite loop. A character at
+// 1 hp clamps every tick's loss to 0 (never the killing blow) — before the
+// fix, the affliction only cleared via its duration counter, so a long-left
+// affliction kept re-emitting the same loss-0 "has taken everything it can"
+// tick every step, forever, with no way out. The fix clears the affliction
+// immediately once a tick can take nothing more, regardless of how much
+// duration is left, and never emits the loss-0 afflictionTick at all.
+test("move: poison at 1 hp clears immediately on the next tick instead of looping the loss-0 tick forever", () => {
+  const state = fixedState({
+    c: { wp: 1, affliction: { kind: "Poison", loss: { n: 1, sides: 6, bonus: 0 }, per: 1, left: 10 } },
+  });
+  open(state.floor.g, 5, 4);
+  const rng = fakeRng([6]); // the affliction's d6 loss roll — irrelevant, clamped to 0 at 1 hp
+  const events = move(state, "N", rng, []);
+  assert.equal(state.c.wp, 1, "already at 1 hp; the clamp leaves it untouched");
+  assert.equal(state.c.affliction, null, "the affliction auto-clears once it can take nothing more");
+  assert.ok(!events.some((e) => e.type === "afflictionTick"), "no loss-0 tick event — it clears instead of looping");
+  const passed = events.find((e) => e.type === "afflictionPassed");
+  assert.ok(passed, "afflictionPassed fired instead");
+  assert.equal(passed.kind, "Poison");
+});
+
+test("move: poison NOT yet at the floor keeps ticking normally (duration-based clear unaffected)", () => {
+  const state = fixedState({
+    c: { wp: 20, affliction: { kind: "Poison", loss: { n: 1, sides: 6, bonus: 0 }, per: 1, left: 10 } },
+  });
+  open(state.floor.g, 5, 4);
+  const rng = fakeRng([4]); // the affliction's d6 loss roll — well under wp-1, no clamp
+  const events = move(state, "N", rng, []);
+  assert.equal(state.c.wp, 16, "took the full rolled loss");
+  assert.ok(state.c.affliction, "still has 9 rounds left — not cleared");
+  assert.equal(state.c.affliction.left, 9);
+  const tick = events.find((e) => e.type === "afflictionTick");
+  assert.ok(tick, "a normal (non-floored) tick still fires afflictionTick");
+  assert.equal(tick.loss, 4);
+  assert.ok(!events.some((e) => e.type === "afflictionPassed"), "duration has not run out yet");
+});
+
+// --- PHOBIA-01: persistent darkness state (04.1-05) -----------------------
+
+test("fallDark sets a persistent darkFor counter; inDark reads true and revealRadius shrinks even off a dark tile", () => {
+  const state = fixedState();
+  const events = fallDark(state, fakeRng([]), []);
+  assert.ok(state.c.darkFor > 0, "fallDark sets a positive persistent-darkness duration");
+  // The player's own current tile (5,5) was never opened/painted dark by
+  // this wallGrid fixture, so a bare tile check would read false here —
+  // proving the counter, not the tile, is what's driving these reads.
+  assert.equal(state.floor.g[5][5].dark, undefined, "the current tile itself carries no dark flag");
+  assert.equal(inDark(state), true, "inDark reads true purely from the persistent counter");
+  assert.equal(revealRadius(state), 1, "the shrunk fog-of-war radius applies off a dark tile");
+  assert.ok(events.some((e) => e.type === "darknessFell"));
+});
+
+test("a Night Vision character's revealRadius ignores the persistent darkness counter's shrink", () => {
+  const state = fixedState({ c: { skills: { "Night Vision": 1 } } });
+  fallDark(state, fakeRng([]), []);
+  assert.equal(inDark(state), true, "inDark still reports the state fact");
+  assert.equal(revealRadius(state), 2, "Night Vision waives the shrink, exactly like the tile-dark case");
+});
+
+test("move: the persistent darkness counter decrements per step and clears at zero, emitting darknessLifted", () => {
+  const state = fixedState({ c: { darkFor: 1 } });
+  open(state.floor.g, 5, 4);
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.darkFor, 0);
+  assert.ok(events.some((e) => e.type === "darknessLifted"));
+  assert.equal(inDark(state), false, "once cleared, a non-dark tile no longer reads inDark");
+});
+
+test("move: the persistent darkness counter decrements without clearing while still active", () => {
+  const state = fixedState({ c: { darkFor: 5 } });
+  open(state.floor.g, 5, 4);
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.darkFor, 4);
+  assert.ok(!events.some((e) => e.type === "darknessLifted"));
+  assert.equal(inDark(state), true, "still active, so inDark stays true even off a dark tile");
+});
+
+test("move: a character with darkFor at 0 gets no darkness tick/event at all", () => {
+  const state = fixedState({ c: { darkFor: 0 } });
+  open(state.floor.g, 5, 4);
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.darkFor, 0);
+  assert.ok(!events.some((e) => e.type === "darknessLifted"));
 });
 
 test("move: haste/invis/ether all decrement by one on a step", () => {
@@ -367,16 +664,18 @@ test("winGame: still sets state.won when called directly (RETIRED as a run termi
 });
 
 test("move: dot/trap/chest feature tiles are consumed and dispatch to the real encounter/trap/chest handlers (01-10)", () => {
-  // dot: d8=4 -> ENCOUNTER_TABLES[3] ("+10 WP".."-All armour"), d10=1 -> "+10 WP"
+  // dot: d8=4 -> ENCOUNTER_TABLES[3] ("+10 HP".."-All armour"), d10=1 -> "+10 HP"
   // (a plain tableFour row; no further rolls, so a 2-entry fakeRng suffices).
+  // 04.2 E3: the dual-purpose cell/switch key was "+10 WP", now "+10 HP"; the
+  // tableFour beat now carries a prose sentence rather than the raw cell.
   {
     const state = fixedState();
     open(state.floor.g, 5, 4, { feat: "dot" });
     const events = move(state, "N", fakeRng([4, 1]), []);
     assert.equal(state.floor.g[4][5].feat, null, "dot is consumed");
-    assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 WP"));
-    assert.ok(events.some((e) => e.type === "tableFour" && e.result === "+10 WP"));
-    assert.equal(state.c.wp, 55, "the +10 WP row healed toward the cap (already at max)");
+    assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 HP"));
+    assert.ok(events.some((e) => e.type === "tableFour" && /10 hp/.test(e.result)));
+    assert.equal(state.c.wp, 55, "the +10 HP row healed toward the cap (already at max)");
   }
   // trap: nimble = 5 (no Agility/Leaping skill, not an Acrobat); a dodge roll
   // of 5 <= nimble avoids the trap outright, so no further rolls are drawn.
@@ -421,12 +720,171 @@ test("newDay: a fed character heals, and a wandering-monster hit starts a forced
   assert.equal(state.combat.foes[0].name, "Bat/Rat");
 });
 
+// --- newDay: audit-batch1 (2026-09-09, A3) resting cure roll --------------
+//
+// Resting used to auto-cure any affliction unconditionally. Now it is a real
+// d20 roll — <=10 succeeds (~50%), +4 with Hardiness — that fires ONLY when
+// the character HAS an affliction. Sequence discipline matches the "fed
+// character heals" test above: heal d(10), then (only with an affliction)
+// the cure-roll d(20), then 8 wandering-monster d20 checks.
+
+test("newDay: a successful cure roll clears the affliction and fires afflictionCured with its kind", () => {
+  const state = fixedState({ c: { affliction: { kind: "Poison", loss: { n: 1, sides: 6, bonus: 0 }, per: 1, left: 5 } } });
+  const rng = fakeRng([5, 5, 2, 2, 2, 2, 2, 2, 2, 2]); // heal 5, cure roll 5 (<=10 -> succeeds)
+  const events = newDay(state, false, rng, []);
+  assert.equal(state.c.affliction, null, "the roll succeeded");
+  const cured = events.find((e) => e.type === "afflictionCured");
+  assert.ok(cured);
+  assert.equal(cured.kind, "Poison");
+  assert.ok(!events.some((e) => e.type === "afflictionLingers"));
+});
+
+test("newDay: a failed cure roll leaves the affliction lingering and fires afflictionLingers with its kind", () => {
+  const state = fixedState({ c: { affliction: { kind: "Poison", loss: { n: 1, sides: 6, bonus: 0 }, per: 1, left: 5 } } });
+  const rng = fakeRng([5, 15, 2, 2, 2, 2, 2, 2, 2, 2]); // heal 5, cure roll 15 (>10 -> fails)
+  const events = newDay(state, false, rng, []);
+  assert.ok(state.c.affliction, "the affliction is still present");
+  assert.equal(state.c.affliction.kind, "Poison");
+  const lingers = events.find((e) => e.type === "afflictionLingers");
+  assert.ok(lingers);
+  assert.equal(lingers.kind, "Poison");
+  assert.ok(!events.some((e) => e.type === "afflictionCured"));
+});
+
+test("newDay: Hardiness raises the cure threshold from 10 to 14, turning the same roll from a fail into a success", () => {
+  const noHardiness = fixedState({
+    c: { affliction: { kind: "Disease", loss: { n: 1, sides: 6, bonus: 0 }, per: 1, left: 5 } },
+  });
+  const failRng = fakeRng([5, 13, 2, 2, 2, 2, 2, 2, 2, 2]); // heal 5, cure roll 13 (>10, no Hardiness -> fails)
+  newDay(noHardiness, false, failRng, []);
+  assert.ok(noHardiness.c.affliction, "without Hardiness, 13 fails the base threshold of 10");
+
+  const withHardiness = fixedState({
+    c: { skills: { Hardiness: 1 }, affliction: { kind: "Disease", loss: { n: 1, sides: 6, bonus: 0 }, per: 1, left: 5 } },
+  });
+  const passRng = fakeRng([5, 13, 2, 2, 2, 2, 2, 2, 2, 2]); // the SAME roll of 13, now <=14 -> succeeds
+  newDay(withHardiness, false, passRng, []);
+  assert.equal(withHardiness.c.affliction, null, "Hardiness's +4 turns the identical roll into a cure");
+});
+
+// --- newDay: armour patching, Sewing + Master of Arms (RULE-02) -----------
+//
+// Ports the movement.js armour-patch block. The outer gate used to read the
+// dead `c.dr > 0` (a field rollCharacter never sets); it now reads
+// `skillTier(c, "Sewing") || c.sub === "Master of Arms"`. Sequence discipline
+// matches the "fed character heals" test above: heal d(10), then (only when
+// the armour-patch branch actually draws) its own die, then 8 wandering-
+// monster d20 checks (all non-1 here, so no combat starts).
+
+test("newDay: a tier-1 Sewing thief patches d6 armour, clamped to armorMax", () => {
+  const state = fixedState({ c: { skills: { Sewing: 1 }, armorWP: 18, armorMax: 20, patches: 0 } });
+  const rng = fakeRng([5, 6, 2, 2, 2, 2, 2, 2, 2, 2]);
+  const events = newDay(state, false, rng, []);
+  assert.equal(state.c.armorWP, 20, "18 + d6(6) clamps to armorMax 20");
+  assert.equal(state.c.patches, 1);
+  assert.ok(events.some((e) => e.type === "armorPatched" && e.amount === 6));
+});
+
+test("newDay: a tier-2 Sewing thief patches d6+3 armour", () => {
+  const state = fixedState({ c: { skills: { Sewing: 2 }, armorWP: 10, armorMax: 100, patches: 5 } });
+  const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
+  const events = newDay(state, false, rng, []);
+  assert.equal(state.c.armorWP, 15, "10 + (d6(2)+3) = 15");
+  assert.equal(state.c.patches, 6);
+  assert.ok(events.some((e) => e.type === "armorPatched" && e.amount === 5));
+});
+
+test("newDay: a tier-2 Sewing thief who has already used all 6 patches gets no further patch", () => {
+  const state = fixedState({ c: { skills: { Sewing: 2 }, armorWP: 10, armorMax: 100, patches: 6 } });
+  const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]);
+  const events = newDay(state, false, rng, []);
+  assert.equal(state.c.armorWP, 10, "patch budget exhausted -> no repair");
+  assert.equal(state.c.patches, 6);
+  assert.ok(!events.some((e) => e.type === "armorPatched"));
+});
+
+test("newDay: a Master of Arms fighter (no Sewing) patches d6+3 armour", () => {
+  const state = fixedState({ c: { sub: "Master of Arms", skills: {}, armorWP: 10, armorMax: 100, patches: 0 } });
+  const rng = fakeRng([5, 4, 2, 2, 2, 2, 2, 2, 2, 2]);
+  const events = newDay(state, false, rng, []);
+  assert.equal(state.c.armorWP, 17, "10 + (d6(4)+3) = 17");
+  assert.equal(state.c.patches, 0, "the Master of Arms branch does not consume a Sewing patch slot");
+  assert.ok(events.some((e) => e.type === "armorPatched" && e.amount === 7));
+});
+
+test("newDay: a plain character with damaged armour and neither capability gets NO patch (T-04.1-03)", () => {
+  const state = fixedState({ c: { sub: "Soldier", skills: {}, armorWP: 10, armorMax: 100, patches: 0 } });
+  const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]);
+  const events = newDay(state, false, rng, []);
+  assert.equal(state.c.armorWP, 10, "no Sewing and not Master of Arms -> the gate never opens");
+  assert.equal(state.c.patches, 0);
+  assert.ok(!events.some((e) => e.type === "armorPatched"), "the old bare-else d4 fallback must not fire");
+});
+
 test("newDay: starving with no rations kills via die('starve') when wp hits 0", () => {
   const state = fixedState({ c: { rations: 0, wp: 1 } }); // Human upkeep cost is 4
   const rng = makeRng(9);
   const events = newDay(state, false, rng, []);
   assert.equal(state.dead, true);
   assert.equal(state.deathNote, "starved in the dark");
+  assert.ok(events.some((e) => e.type === "died" && e.cause === "starve"));
+});
+
+// --- newDay: party upkeep, party-LOCAL balance (PARTY-10, Phase 11) --------
+//
+// A joiner must be a real resource cost, not free power: the canon
+// counterweight is that a PARTY EATS MORE. newDay now folds each LIVE party
+// member's rations into `eats` and its upkeep() into the hungry-path `cost`,
+// GATED behind `state.party?.length`. These tests prove (a) the empty/no-party
+// path is byte-identical to the pre-party baseline, (b) a member drains
+// rations faster, and (c) an unfed party starves the hero faster. Sequence
+// discipline matches the "fed character heals" test: heal d(10), then 8
+// wandering-monster d20 checks (all non-1 here, so no combat starts).
+
+/** A live party member: a full rollCharacter()-shaped sheet (fixedFighter),
+ * Human by default (upkeep 4, eats 1). state.party holds LIVE members only —
+ * endCombat prunes downed/departed — so tests may list them all directly. */
+function member(overrides = {}) {
+  return fixedFighter({ name: "Hired Muscle", ...overrides });
+}
+
+test("newDay: a solo day (no party) drains exactly one ration — byte-identical to the pre-party baseline", () => {
+  // No `party` field at all, and an explicit empty `party: []`, must BOTH
+  // consume exactly one ration (Human hero eats 1), proving the party-upkeep
+  // block is fully skipped when there is no party.
+  for (const overrides of [{ c: { rations: 6 } }, { c: { rations: 6 }, party: [] }]) {
+    const state = fixedState(overrides);
+    const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]); // heal 5, then 8 non-1 monster checks
+    newDay(state, false, rng, []);
+    assert.equal(state.c.rations, 5, `${JSON.stringify(overrides)}: solo consumes exactly one ration`);
+    assert.equal(state.dead, false);
+  }
+});
+
+test("newDay: one live party member makes the day eat MORE rations than solo (a party is a real cost)", () => {
+  const solo = fixedState({ c: { rations: 6 } });
+  newDay(solo, false, fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]), []);
+  assert.equal(solo.c.rations, 5, "solo Human hero eats 1 ration");
+
+  const withMember = fixedState({ c: { rations: 6 }, party: [member({ race: "Human" })] });
+  newDay(withMember, false, fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]), []);
+  assert.equal(withMember.c.rations, 4, "hero (1) + one Human member (1) = 2 rations consumed");
+  assert.ok(withMember.c.rations < solo.c.rations, "a party drains rations faster than solo");
+});
+
+test("newDay: an unfed party starves the hero FASTER — a wp the solo hero survives is lethal with a member in tow", () => {
+  // Human upkeep cost is 4. At wp 5 the solo hero survives the hungry night
+  // (5 - 4 = 1). With one live Human member the cost is 8 (4 + 4), so the same
+  // wp 5 hero starves into die("starve").
+  const solo = fixedState({ c: { rations: 0, wp: 5 } });
+  newDay(solo, false, fakeRng([2, 2, 2, 2, 2, 2, 2, 2]), []); // no heal (hungry path), 8 monster checks
+  assert.equal(solo.dead, false, "solo hero survives the hungry night at wp 5 (cost 4)");
+  assert.equal(solo.c.wp, 1, "5 - 4 = 1 wp left");
+
+  const withMember = fixedState({ c: { rations: 0, wp: 5 }, party: [member({ race: "Human" })] });
+  const events = newDay(withMember, false, fakeRng([]), []); // dies before the monster checks -> no rng draws
+  assert.equal(withMember.dead, true, "the party's extra upkeep (cost 8) starves the hero");
+  assert.equal(withMember.deathNote, "starved in the dark");
   assert.ok(events.some((e) => e.type === "died" && e.cause === "starve"));
 });
 

@@ -61,6 +61,27 @@ const BEST_KEY = "ddr.best.v1";
 // accumulation (SAV-05 — durable Capacitor Preferences, mirroring BEST_KEY).
 const GRAVE_KEY = "ddr.graveyard.v1";
 
+// audit-batch E12 (2026-09-09) — the graveyard rework's two new adapter-owned
+// keys, both routed through the SAME storage.js abstraction as GRAVE_KEY and,
+// like GRAVE_KEY, deliberately SEPARATE from SAVE_KEY/BEST_KEY and NOT part of
+// GameState (cross-run accumulation, mirroring the graveyard).
+//
+//  - GRAVE_TOTAL_KEY: a running count of EVERY death ever, incremented on each
+//    persistGrave() and NEVER trimmed (the graveyard array itself is capped at
+//    GRAVE_CAP; this counter is the true lifetime total the Dead screen shows).
+//  - RECENT_NAMES_KEY: the last RECENT_NAMES_CAP dead characters' names,
+//    capped SEPARATELY from the 5-grave cap so names survive as graves trim.
+//    Read on a fresh roll and passed as the name-dedup exclusion (part 4).
+const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
+const RECENT_NAMES_KEY = "ddr.graveyard.names.v1";
+
+// Only the 5 most-recent tombstones are stored/shown (part 1); the running
+// total (GRAVE_TOTAL_KEY) is what conveys the true body count. The recent-name
+// dedup window is wider (part 4) so a name stays "recently used" long after its
+// tombstone has aged out of the visible 5.
+const GRAVE_CAP = 5;
+const RECENT_NAMES_CAP = 25;
+
 let currentState = null;
 
 /** getState() — the adapter's current engine GameState (or null before boot). */
@@ -106,12 +127,33 @@ export async function waitForPending() {
 }
 
 /**
- * initRun(seed) — starts a brand-new run from an integer seed, replacing
- * whatever state (if any) the adapter was holding.
+ * initRun(seed, exclude) — starts a brand-new run from an integer seed,
+ * replacing whatever state (if any) the adapter was holding. `exclude`
+ * (audit-batch E12, part 4) is an optional recent-names list forwarded to
+ * newRun → rollCharacter → nameFor for name dedup; it defaults to empty, so
+ * every existing caller/test that calls initRun(seed) is unaffected and the
+ * roll stays byte-identical.
  */
-export function initRun(seed) {
-  currentState = newRun(seed);
+export function initRun(seed, exclude = []) {
+  currentState = newRun(seed, exclude);
   return currentState;
+}
+
+/**
+ * readRecentNames() — audit-batch E12 (part 4): the last RECENT_NAMES_CAP dead
+ * characters' names from storage, for the fresh-roll name-dedup exclusion.
+ * Fail-open to [] (private window, blocked storage, corrupt JSON, non-array) —
+ * a missing/broken list just means no dedup this roll, never a throw, mirroring
+ * getBest()'s fail-open-to-zero posture.
+ */
+async function readRecentNames() {
+  try {
+    const raw = await storage.getItem(RECENT_NAMES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -171,10 +213,46 @@ async function recordBest(depth) {
  */
 async function persistGrave(state, cause) {
   try {
-    const raw = await storage.getItem(GRAVE_KEY);
-    const prevGraves = raw ? JSON.parse(raw) : [];
-    const graves = bury(state, cause, null, Array.isArray(prevGraves) ? prevGraves : []);
-    await storage.setItem(GRAVE_KEY, JSON.stringify(graves));
+    // Read all three graveyard keys up front. getItem() is NOT queued behind
+    // in-flight writes (storage.js contract), so a caller needing read-after-
+    // write ordering across deaths flushes between them (see the adapter test);
+    // reading them together here keeps the subsequent writes contiguous.
+    const [rawGraves, rawTotal, rawRecent] = await Promise.all([
+      storage.getItem(GRAVE_KEY),
+      storage.getItem(GRAVE_TOTAL_KEY),
+      storage.getItem(RECENT_NAMES_KEY),
+    ]);
+
+    // Part 1 — append the tombstone, then TRIM to the most-recent GRAVE_CAP.
+    // bury() unshifts newest-first (and caps at 60); slice(0, GRAVE_CAP) keeps
+    // the newest 5 that remain shown/stored.
+    let prevGraves = rawGraves ? JSON.parse(rawGraves) : [];
+    if (!Array.isArray(prevGraves)) prevGraves = [];
+    const graves = bury(state, cause, null, prevGraves).slice(0, GRAVE_CAP);
+
+    // Part 2 — the never-trimmed running total of ALL dead. Migration-safe: a
+    // pre-E12 player has graves but no total key yet, so seed the base from the
+    // existing grave count rather than 0 (Number(null) is a finite 0, so the
+    // null check is required to tell "missing key" from a real stored "0").
+    const parsedTotal = Number(rawTotal);
+    const prevTotal =
+      rawTotal !== null && Number.isFinite(parsedTotal) ? parsedTotal : prevGraves.length;
+    const total = prevTotal + 1;
+
+    // Part 4 — the wider recent-names dedup window, capped SEPARATELY from the
+    // 5-grave cap so a name stays excluded long after its tombstone trims away.
+    let recent = rawRecent ? JSON.parse(rawRecent) : [];
+    if (!Array.isArray(recent)) recent = [];
+    const name = state.c && state.c.name;
+    if (name) recent = [name, ...recent].slice(0, RECENT_NAMES_CAP);
+
+    // Enqueue all three writes back-to-back (no await between them) so a single
+    // flush()/waitForPending() drain settles the whole tombstone atomically.
+    await Promise.all([
+      storage.setItem(GRAVE_KEY, JSON.stringify(graves)),
+      storage.setItem(GRAVE_TOTAL_KEY, String(total)),
+      storage.setItem(RECENT_NAMES_KEY, JSON.stringify(recent)),
+    ]);
   } catch {
     /* private window, blocked storage — the tombstone just won't persist */
   }
@@ -196,7 +274,10 @@ export async function startNewRun(seed) {
     await recordBest(currentState.floor.depth);
   }
   const safeSeed = Number.isInteger(seed) ? seed : Date.now();
-  const state = initRun(safeSeed);
+  // audit-batch E12 (part 4): thread the recent-names dedup window into the
+  // fresh roll so a new adventurer avoids reusing the last ~25 dead names.
+  const exclude = await readRecentNames();
+  const state = initRun(safeSeed, exclude);
   persist();
   return state;
 }
@@ -226,7 +307,13 @@ export async function boot(freshSeed) {
       return currentState;
     }
   }
-  return initRun(freshSeed);
+  // No valid save → a brand-new run. audit-batch E12 (part 4): apply the same
+  // recent-names dedup the one-tap startNewRun() path uses, so a first roll
+  // after a death (or a cold boot with no active save) also avoids reusing the
+  // last ~25 dead names. The rehydrate path above never rolls a character, so
+  // it needs no exclusion.
+  const exclude = await readRecentNames();
+  return initRun(freshSeed, exclude);
 }
 
 /** persist() — best-effort save of the current state, routed through the

@@ -23,25 +23,25 @@ export const PHOBIAS = [
 
 export const RACE_NOTE = {
   "Human": "No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.",
-  "Elven": "Thin-boned, easy to hit, and carrying not much more than half a person's Win Potential — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+  "Elven": "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
   "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising. Built low, built cheap, built to be hit. Dwarves call this a fair trade. Dwarves are rarely asked.",
   "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, which most Wilmsry take as proof they are doing something right.",
   "Fridgian": "You will not wear armour. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest, occasionally something already dead. The Game Master has notes about you.",
-  "Troll": "Seventy-five Win Potential, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple.",
+  "Troll": "Seventy-five Hit Points, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple.",
 };
 
 export const CLASS_NOTE = {
-  "Fighter": "The best Win Potential in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
-  "Thief": "Forty Win Potential, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
-  "Magic User": "Twenty-five Win Potential plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough.",
+  "Fighter": "The best Hit Points in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
+  "Thief": "Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
+  "Magic User": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough.",
 };
 
 export const SUB_NOTE = {
-  "Knight": "Nothing under 5 wp will come near you and everything over 20 comes straight at you. You have been made important by the only creatures whose vote counts: the large ones.",
+  "Knight": "Nothing under 5 hp will come near you and everything over 20 comes straight at you. You have been made important by the only creatures whose vote counts: the large ones.",
   "Guard": "No critical strike, ever, and three damage off the top until level four. You are a professional. The profession is standing there.",
   "Woodsman": "No mail, no plate, no shield, and a quarter staff you are genuinely superb with. You speak to every animal in here except dragons — a pity, as it is mostly dragons that want a word.",
   "Soldier": "You take criticals on a 2 and deal them never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
-  "Barbarian": "Two attacks a round and half the skill points, on the sound principle that a man swinging twice is learning nothing either time.",
+  "Barbarian": "Two attacks a round and half the experience points, on the sound principle that a man swinging twice is learning nothing either time.",
   "Master of Arms": "Plus two with every weapon ever forged, plus three with anything you have repaired yourself. You attack creatures without question. The book files this under abilities.",
   "Samurai": "A magical katana, armour like plate, and enough clatter that you never win the first roll of anything. You never run. The book uses the word suicidal and does not soften it.",
   "Bard": "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Creatures too stupid to know better come for you first — which, down here, is most of them.",
@@ -62,5 +62,5 @@ export const SUB_NOTE = {
   "Illusionist": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
   "Cleric": "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
   "Summoner": "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
-  "Apprentice": "Double skill points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there.",
+  "Apprentice": "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there.",
 };

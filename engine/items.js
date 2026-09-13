@@ -40,6 +40,7 @@ import {
   MAGIC_ARMOR_TABLE,
   WEAPON_BONUS_TABLE,
   RACES,
+  BAGS,
 } from "../content/index.js";
 
 export { eff };
@@ -157,23 +158,67 @@ export function rollTreasureItem(rng, depth, c) {
   return rollStaff(rng);
 }
 
+/* ---------------- equip legality (ECON-05) ---------------- */
+
+/**
+ * classLetter(c) — the F/T/M weapon/armor class letter for `c`. The prototype
+ * derived this inline in three separate places (takeItem's weapon gate, its
+ * armor gate, and openStore's stock build); factored out here so the equip
+ * legality predicates below and the store buy path (via takeItem) all read the
+ * exact same rule.
+ */
+function classLetter(c) {
+  return c.cls === "Fighter" ? "F" : c.cls === "Thief" ? "T" : "M";
+}
+
+/**
+ * canEquipWeapon(c, it) — ECON-05 (Phase 13): is weapon item `it` LEGAL for
+ * `c` to wield? The class/subclass gate ONLY (does NOT consider whether it is
+ * a strictly-better upgrade — that is a separate takeItem concern the deliberate
+ * equipItem change drops). Extracted verbatim from takeItem's weapon gate so
+ * `equipItem` and the store buy path (buyWeapon → takeItem) share ONE source of
+ * truth: the character's class must be listed in WEAPONS[it.base].cls, and an
+ * Acrobat may wield only a Dagger. Pure, no rng, no mutation.
+ */
+export function canEquipWeapon(c, it) {
+  return !!(
+    WEAPONS[it.base] &&
+    WEAPONS[it.base].cls.includes(classLetter(c)) &&
+    (c.sub !== "Acrobat" || it.base === "Dagger")
+  );
+}
+
+/**
+ * canEquipArmor(c, it) — ECON-05 (Phase 13): is armor item `it` LEGAL for `c`
+ * to wear? The race/class gate ONLY (not the strictly-better AR check). A
+ * noArmor race (RACES[c.race].noArmor, e.g. a form that cannot wear armor) can
+ * wear nothing; otherwise the class must be listed in `it.cls`, OR the wearer
+ * is a Thief with the Heft skill and the piece is light enough (AR ≤ 12).
+ * Extracted verbatim from takeItem's armor gate. Pure, no rng, no mutation.
+ */
+export function canEquipArmor(c, it) {
+  if (RACES[c.race].noArmor) return false;
+  return !!(it.cls.includes(classLetter(c)) || (c.cls === "Thief" && skill(c, "Heft") && it.ar <= 12));
+}
+
 /* ---------------- equip / consume ---------------- */
 
 /**
  * takeItem(state, it, events) — the weapon/armor equip-swap (only takes a
  * strictly-better item; staves require a Magic User; everything else goes
  * through giveItem). Ports mazeworld.html takeItem() (lines 1929-1955).
+ * Re-pointed at the canEquipWeapon/canEquipArmor legality predicates above
+ * (ECON-05) so its class/race gate is byte-identical to equipItem's — the
+ * strictly-better AR/damage gate stays takeItem's own (the store's
+ * buy=auto-equip convenience keeps it; equipItem deliberately drops it).
  */
 export function takeItem(state, it, events = []) {
   const c = state.c;
 
   if (it.kind === "weapon") {
-    const letter = c.cls === "Fighter" ? "F" : c.cls === "Thief" ? "T" : "M";
-    const legal =
-      WEAPONS[it.base] && WEAPONS[it.base].cls.includes(letter) && (c.sub !== "Acrobat" || it.base === "Dagger");
     const now = (WEAPON_MAX[c.weapon] || 0) + c.prof + c.magicWpn;
     const then = (WEAPON_MAX[it.base] || 0) + it.bonus;
-    if (!legal) {
+    if (!canEquipWeapon(c, it)) {
       events.push({ type: "itemRejected", item: it, reason: "wrongClass" });
       return events;
     }
@@ -193,9 +238,7 @@ export function takeItem(state, it, events = []) {
       events.push({ type: "itemRejected", item: it, reason: "noArmor" });
       return events;
     }
-    const letter = c.cls === "Fighter" ? "F" : c.cls === "Thief" ? "T" : "M";
-    const allowed = it.cls.includes(letter) || (c.cls === "Thief" && skill(c, "Heft") && it.ar <= 12);
-    if (!allowed) {
+    if (!canEquipArmor(c, it)) {
       events.push({ type: "itemRejected", item: it, reason: "tooHeavy" });
       return events;
     }
@@ -219,6 +262,201 @@ export function takeItem(state, it, events = []) {
   }
 
   giveItem(state, it, false, events);
+  return events;
+}
+
+/* ---------------- inventory actions (ECON-03/04/05, Phase 13) ---------------
+
+   PLAYER-CHOICE carried-item management. The find callers
+   (engine/encounters.js openChest/findGear/findMisc/meetFaerie) no longer
+   auto-take the rolled item — they stash it in state.pendingFind (see
+   encounters.js#offerFind) and the player accepts (takeFind) or declines
+   (leaveFind) it. equipItem/unequipSlot/dropItem then manage the bag directly.
+   All FIVE are PURE (no rng) — plain bookkeeping over c.items and the scalar
+   equipped-weapon/armor fields, so they never shift the seeded rng cursor and
+   are inherently parity-safe (no fixture drives them). The bag-slot cap
+   (content/bags.js BAGS[c.bag].slots) is enforced HERE and ONLY here (Phase 12
+   deliberately left giveItem/gainWilmst/takeItem uncapped to keep the frozen
+   parity fixtures byte-identical). */
+
+/** bagCap(c) — the character's bag slot capacity, or Infinity if it carries no
+ * bag key (a bag-less parity/test character is never capped — matches the
+ * clampCarry gate in engine/derived.js). */
+function bagCap(c) {
+  return c.bag && BAGS[c.bag] ? BAGS[c.bag].slots : Infinity;
+}
+
+/** wornWeaponItem(c) — reconstruct the CURRENTLY-wielded weapon as a plain bag
+ * item (for an equip swap / unequip), or null when the character is bare-handed
+ * (an unequip sentinel weapon not in the WEAPONS table). The equipped weapon is
+ * stored only as scalar base/prof/magicWpn fields — like takeItem, the magic
+ * weapon's flavor name is not retained, so the reconstructed item uses the base
+ * name; its magic bonus (c.magicWpn) IS preserved on `bonus`. */
+function wornWeaponItem(c) {
+  if (!c.weapon || !WEAPONS[c.weapon]) return null;
+  const bonus = c.magicWpn || 0;
+  return {
+    kind: "weapon",
+    n: c.weapon,
+    base: c.weapon,
+    bonus,
+    txt: WEAPONS[c.weapon].lab + (bonus ? ` +${bonus}` : ""),
+  };
+}
+
+/** wornArmorItem(c) — reconstruct the CURRENTLY-worn armor as a plain bag item
+ * (for an equip swap / unequip), or null when the character wears nothing
+ * ("Nothing"/AR 0). Like takeItem, only the base armor type + scalar AR/max
+ * are retained on the character, so the reconstructed piece carries the base
+ * name and its full (undamaged) max — re-equipping repairs it, matching
+ * takeItem's own always-full-on-equip semantics. */
+function wornArmorItem(c) {
+  if (!c.armor || c.armor === "Nothing" || !(c.ar > 0)) return null;
+  const base = ARMORS.find((a) => a.name === c.armor);
+  return {
+    kind: "armor",
+    n: c.armor,
+    armor: c.armor,
+    ar: c.ar,
+    wp: c.armorMax,
+    min: c.armorMin,
+    cls: base ? base.cls : "FTM",
+    txt: `AR ${c.ar}, ${c.armorMax} hp`,
+  };
+}
+
+/**
+ * takeFind(state, events) — ACCEPT the pending find (ECON-03). Adds
+ * state.pendingFind to the bag if a slot is free; on a FULL bag keeps the item
+ * pending and pushes `bagFull` (the UI then offers keep/drop, ECON-04). Found
+ * weapons/armor land in the bag like anything else (NO auto-equip — that is the
+ * player's separate equipItem choice); the flat `eff.wp` effect (if any) is
+ * applied on pickup, exactly as giveItem does. Pure, no rng.
+ */
+export function takeFind(state, events = []) {
+  const c = state.c;
+  const it = state.pendingFind;
+  if (!it) return events;
+  if ((c.items || []).length >= bagCap(c)) {
+    events.push({ type: "bagFull", item: it });
+    return events; // keep pending — the player must drop something first
+  }
+  giveItem(state, it, true, events); // quiet bag-add + eff.wp application
+  state.pendingFind = null;
+  events.push({ type: "findTaken", item: it });
+  return events;
+}
+
+/**
+ * leaveFind(state, events) — DECLINE the pending find (ECON-03): clear it and
+ * push `findLeft`. Pure, no rng.
+ */
+export function leaveFind(state, events = []) {
+  const it = state.pendingFind || null;
+  state.pendingFind = null;
+  events.push({ type: "findLeft", item: it });
+  return events;
+}
+
+/**
+ * dropItem(state, i, events) — remove carried item `i` from the bag, freeing a
+ * slot (ECON-04). No-op on an out-of-range index. Pure, no rng.
+ */
+export function dropItem(state, i, events = []) {
+  const c = state.c;
+  const it = (c.items || [])[i];
+  if (!it) return events;
+  c.items.splice(i, 1);
+  events.push({ type: "itemDropped", item: it });
+  return events;
+}
+
+/**
+ * equipItem(state, i, events) — equip carried weapon/armor `i` onto the
+ * character (ECON-05), REGARDLESS of whether it is better or worse than the
+ * worn piece (the deliberate change vs takeItem's strictly-better gate) — but
+ * REJECTING an illegal class/subclass/race combination (`equipRejected`). The
+ * equip is a DIRECT SWAP: the previously-worn piece drops back into the freed
+ * bag slot (no net slot change); if the character wore nothing, the item is
+ * simply removed from the bag (net −1). No-op on an out-of-range index. Pure,
+ * no rng.
+ */
+export function equipItem(state, i, events = []) {
+  const c = state.c;
+  const it = (c.items || [])[i];
+  if (!it) return events;
+
+  if (it.kind === "weapon") {
+    if (!canEquipWeapon(c, it)) {
+      events.push({ type: "equipRejected", item: it, reason: "wrongClass" });
+      return events;
+    }
+    const worn = wornWeaponItem(c);
+    c.weapon = it.base;
+    c.prof = 0;
+    c.magicWpn = it.bonus || 0;
+    if (worn) c.items[i] = worn;
+    else c.items.splice(i, 1);
+    events.push({ type: "itemEquipped", item: it, slot: "weapon" });
+    return events;
+  }
+
+  if (it.kind === "armor") {
+    if (RACES[c.race].noArmor) {
+      events.push({ type: "equipRejected", item: it, reason: "noArmor" });
+      return events;
+    }
+    if (!canEquipArmor(c, it)) {
+      events.push({ type: "equipRejected", item: it, reason: "tooHeavy" });
+      return events;
+    }
+    const worn = wornArmorItem(c);
+    c.armor = it.armor;
+    c.ar = it.ar;
+    c.armorMin = it.min;
+    c.armorMax = it.wp;
+    c.armorWP = it.wp;
+    c.patches = 0;
+    if (worn) c.items[i] = worn;
+    else c.items.splice(i, 1);
+    events.push({ type: "itemEquipped", item: it, slot: "armor" });
+    return events;
+  }
+
+  // staves, cloaks, jewelry, potions, picks — not an equip slot
+  events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
+  return events;
+}
+
+/**
+ * unequipSlot(state, slot, events) — move the equipped weapon/armor back into
+ * the bag (ECON-05), leaving the slot bare (a weapon → bare-handed "Fists",
+ * armor → "Nothing"). Needs a free bag slot; on a FULL bag pushes `bagFull` and
+ * does nothing. No-op when the slot is already bare. Pure, no rng.
+ */
+export function unequipSlot(state, slot, events = []) {
+  const c = state.c;
+  const worn = slot === "weapon" ? wornWeaponItem(c) : slot === "armor" ? wornArmorItem(c) : null;
+  if (!worn) return events; // nothing equipped in that slot (or unknown slot)
+  if ((c.items || []).length >= bagCap(c)) {
+    events.push({ type: "bagFull", item: worn });
+    return events;
+  }
+  c.items = c.items || [];
+  c.items.push(worn);
+  if (slot === "weapon") {
+    c.weapon = "Fists";
+    c.prof = 0;
+    c.magicWpn = 0;
+  } else {
+    c.armor = "Nothing";
+    c.ar = 0;
+    c.armorMin = 0;
+    c.armorMax = 0;
+    c.armorWP = 0;
+    c.patches = 0;
+  }
+  events.push({ type: "itemUnequipped", item: worn, slot });
   return events;
 }
 
@@ -314,7 +552,13 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
       break;
     }
     case "freeze": {
-      foes.slice(0, 2).forEach((f) => (f.asleep = 99));
+      // DR16-G / Phase 15 (ECON-08): the AoE target count is now a per-item
+      // field, defaulting to 2 (byte-identical to the old hard-coded slice for
+      // the Birch Staff and every other freeze source). See the "stone" case
+      // below for the full rationale; the Amulet of Stone is the only item that
+      // overrides it (aoe:4). NOTE: the item's DISPLAY NAME lives on `.n`, so
+      // the count is carried on `.aoe`, NOT `.n` as the CONTEXT shorthand said.
+      foes.slice(0, it.aoe ?? 2).forEach((f) => (f.asleep = 99));
       break;
     }
     case "weaken": {
@@ -322,7 +566,18 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
       break;
     }
     case "stone": {
-      foes.slice(0, 2).forEach((f) => {
+      // DR16-G / Phase 15 (ECON-08): make the petrify AoE count a per-item
+      // field `aoe` (default 2) so the Amulet of Stone can turn "up to 4
+      // squares of opponents to stone" (aoe:4, content/treasure-tables.js)
+      // while the Oak Staff and every other stone source keep the original 2.
+      // The DEFAULT preserves byte-identical behavior for every existing stone
+      // source (Oak Staff has no `aoe`, so `?? 2` = the old slice(0,2)); only
+      // the Amulet — a treasure find no parity fixture USES — overrides it. The
+      // per-foe killFoe rng draws are unchanged in shape; only the number of
+      // foes the Amulet hits changes, and it drives no frozen fixture.
+      // NOTE: the count is `it.aoe`, not `it.n` (the CONTEXT shorthand) — `.n`
+      // is the item's display-name field throughout the codebase.
+      foes.slice(0, it.aoe ?? 2).forEach((f) => {
         f.wp = 0;
         killFoe(state, f, rng, events);
       });

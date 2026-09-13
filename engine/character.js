@@ -18,7 +18,7 @@
 
 import { rollDice } from "./dice.js";
 import { leveled } from "./events.js";
-import { canLearn, schoolGate, levelFromSP } from "./derived.js";
+import { canLearn, schoolGate, levelFromSP, clampCarry } from "./derived.js";
 import {
   CLASSES,
   RACES,
@@ -94,8 +94,52 @@ export function rollGrimoire(rng, sub) {
   return book;
 }
 
-/** nameFor(rng, race) — a random name for the race. Ports mazeworld.html line 1164. */
-const nameFor = (rng, r) => rng.pick(NAMES[r] || NAMES.Human);
+/**
+ * nameFor(rng, race, exclude) — a random GENERATIVE name for the race
+ * (DR-name-generator, 2026-09-09). Replaces the prototype's `pick(NAMES[r])`
+ * over a ~3-entry flat pool with a first × surname combination over the new
+ * { first, sur } banks in content/names.js, yielding hundreds of distinct
+ * names per race so runs stop colliding (the device-review "duplicate names"
+ * complaint) and the E12 recent-name dedup no longer exhausts the pool.
+ *
+ * DETERMINISM CONTRACT (unchanged from the flat-pool version): this makes
+ * EXACTLY ONE rng draw — a single `rng.d(combos)`, which consumes exactly one
+ * `gen.next()`, identical to the old single `rng.pick(...)` (see engine/rng.js:
+ * both d() and pick() draw once). So the rng cursor advances IDENTICALLY and
+ * every SUBSEQUENT chargen field (stats, weapon, armor, gold, grimoire, …)
+ * stays byte-identical to the frozen prototype. ONLY the resulting `c.name`
+ * changes — an intentional COSMETIC divergence carved out of the chargen
+ * parity comparators (test/parity/chargen-parity.test.js, full-suite.test.js).
+ * NEVER add a second draw (picking first AND surname separately would be two
+ * draws and would shift every following field, breaking parity everywhere).
+ *
+ * The index `i` in [0, combos) is decoded into a (first, sur) pair; an empty
+ * surname entry ("") renders as a bare mononym. When the built name is in
+ * `exclude`, it walks FORWARD deterministically (i = (i+1) % combos, rebuild)
+ * to the first non-excluded name, consuming NO further rng; if every combo is
+ * excluded it falls back to the originally-built name. Same one-draw-then-
+ * no-rng-walk contract as the E12 flat-pool version.
+ */
+export const nameFor = (rng, r, exclude = []) => {
+  const pool = NAMES[r] || NAMES.Human;
+  const combos = pool.first.length * pool.sur.length;
+  let i = rng.d(combos) - 1; // the ONE and ONLY rng draw (one gen.next())
+  const build = (idx) => {
+    const first = pool.first[idx % pool.first.length];
+    const sur = pool.sur[Math.floor(idx / pool.first.length)];
+    return sur ? first + " " + sur : first;
+  };
+  const name = build(i);
+  if (!exclude || exclude.length === 0) return name;
+  const excluded = new Set(exclude);
+  if (!excluded.has(name)) return name;
+  // no-rng deterministic forward walk over the combo space
+  for (let step = 1; step < combos; step++) {
+    const cand = build((i + step) % combos);
+    if (!excluded.has(cand)) return cand;
+  }
+  return name; // every combo excluded — fall back to the originally-built name
+};
 
 /**
  * rollCharacter(rng) — the 100%-dice-rolled adventurer. Consumes the injected
@@ -103,8 +147,15 @@ const nameFor = (rng, r) => rng.pick(NAMES[r] || NAMES.Human);
  * the plain, serializable character object. No player choice, no logging.
  * Ports mazeworld.html rollCharacter() (lines 1042-1111) sans its `if(log)`
  * narration branch.
+ *
+ * `exclude` (audit-batch E12, part 4) is an optional, additive recent-names
+ * list threaded in from the NON-engine persistence layer (the adapter reads it
+ * from storage on a fresh roll). It is forwarded UNCHANGED to nameFor as the
+ * very last chargen step and only affects which name is chosen — never the rng
+ * draw count or order — so `rollCharacter(rng)` with no/empty `exclude` stays
+ * byte-identical to the prototype and the parity suite needs no carve-out.
  */
-export function rollCharacter(rng) {
+export function rollCharacter(rng, exclude = []) {
   const cd = rng.d(6);
   const cls = cd <= 2 ? "Magic User" : cd <= 4 ? "Fighter" : "Thief";
   let sd = rng.d(8);
@@ -157,8 +208,46 @@ export function rollCharacter(rng) {
     items: cls === "Thief" ? [Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1])] : [],
     grimoire: cls === "Magic User" ? rollGrimoire(rng, sub) : [],
     spellsUsed: 0, kills: 0, might: 0, ward: null, regen: false, mirror: 0, foresight: false,
+    // DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): a brand-new
+    // field with no prototype-side equivalent — the persistent darkness
+    // counter (see engine/encounters.js fallDark and engine/derived.js
+    // inDark). Initialized to 0 alongside the other 0/null chargen scalars
+    // so the save shape stays clean; this is a plain assignment, so it adds
+    // NO chargen rng draw and does not shift the rng-consumption order the
+    // chargen-parity/determinism suites depend on.
+    darkFor: 0,
+    // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): two brand-new
+    // fields backing the Cloak of Flying's real charge/cooldown resource
+    // (see engine/derived.js's isFlying and engine/movement.js's climb/gorge
+    // block + per-step tick) — a 20-square active-flight charge
+    // (`flightLeft`) and, once that charge is spent, a 50-square cooldown
+    // (`flightCooldown`) before the cloak is ready again. Both start at 0
+    // ("no banked charge, no cooldown running" = ready-to-activate) for
+    // EVERY character, whether or not they end up ever carrying the cloak —
+    // plain assignments alongside darkFor above, so this adds NO chargen rng
+    // draw and does not shift the rng-consumption order the chargen-parity/
+    // determinism suites depend on. The Bracelet of Flight never reads or
+    // writes either field (it grants unconditional flight regardless).
+    flightLeft: 0,
+    flightCooldown: 0,
+    // ECON-01 (Phase 12, Economy A): the carry-capacity bag tier, a plain
+    // string key into content/bags.js's BAGS. Assigned by class per rulebook
+    // p.10 — Magic User = "small", Fighter = "medium", Thief = "small". This
+    // is a PLAIN ASSIGNMENT off the already-rolled `cls` (NO rng draw),
+    // placed alongside the darkFor/flightLeft/flightCooldown plain scalars
+    // above and deliberately NOT interleaved with any rng.d()/rng.pick()
+    // call, so the chargen rng-consumption order the chargen-parity/
+    // determinism suites pin is completely untouched. Carried out of the
+    // parity comparators (stripBagField) the same way name/darkFor/flight are.
+    bag: cls === "Fighter" ? "medium" : "small",
   };
-  c.name = nameFor(rng, race);
+  c.name = nameFor(rng, race, exclude);
+  // ECON-01 (Phase 12): enforce the freshly-assigned bag's caps at a SAFE,
+  // provably no-op site — a chargen character (gold 50, rations ≤ 6, items 0-1)
+  // is always under every bag tier's caps, and clampCarry only ever SHRINKS an
+  // over-cap value, so this never mutates a fresh sheet and adds no rng draw.
+  // (Phase 13 wires clampCarry into the real gated find/keep/drop handlers.)
+  clampCarry(c);
   return c;
 }
 

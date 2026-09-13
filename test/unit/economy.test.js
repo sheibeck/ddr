@@ -92,6 +92,34 @@ test("openStore emits a storeOpened event and clears beats", () => {
   assert.equal(state.beats, null);
 });
 
+// --- TERM-02: engine-generated store-row labels read "hp", not "wp" -------
+// engine/economy.js builds these label strings itself (they end up embedded
+// in serialized state.store.stock[i].n) — a text-only rename, but it must be
+// asserted here because it's generated code, not static markup.
+
+test("openStore: the food stock label reads '(+N hp)', never '(+N wp)'", () => {
+  const state = fixedState();
+  openStore(state, makeRng(9), []);
+  const foodEntries = state.store.stock.filter((s) => s.effectId === "eatRation");
+  assert.ok(foodEntries.length > 0, "fixture must roll at least one food entry");
+  for (const entry of foodEntries) {
+    assert.match(entry.n, /\(\+\d+ hp\)/, `food label "${entry.n}" must read hp, not wp`);
+    assert.doesNotMatch(entry.n, /\bwp\b/, `food label "${entry.n}" must not contain the old wp unit`);
+  }
+});
+
+test("openStore: an armor upgrade's sub-label reads 'AR N, M hp', never '... wp'", () => {
+  // Give the fixture a beatable armor so a strictly-better upgrade is offered.
+  const state = fixedState({ c: { armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0 } });
+  openStore(state, makeRng(9), []);
+  const armorEntries = state.store.stock.filter((s) => s.effectId === "buyArmor");
+  assert.ok(armorEntries.length > 0, "fixture must roll an armor upgrade entry");
+  for (const entry of armorEntries) {
+    assert.match(entry.sub, /AR \d+, \d+ hp/, `armor sub-label "${entry.sub}" must read hp, not wp`);
+    assert.doesNotMatch(entry.sub, /\bwp\b/, `armor sub-label "${entry.sub}" must not contain the old wp unit`);
+  }
+});
+
 // --- buyFrom ------------------------------------------------------------
 
 test("buyFrom: deducts gold, marks sold, and applies the STORE_EFFECTS effect", () => {
@@ -103,8 +131,39 @@ test("buyFrom: deducts gold, marks sold, and applies the STORE_EFFECTS effect", 
   const events = buyFrom(state, idx, []);
   assert.equal(state.store.stock[idx].sold, true);
   assert.equal(state.c.gold, before - state.store.stock[idx].cost);
-  assert.equal(state.c.rations, 1, "eatRation applied via STORE_EFFECTS");
+  assert.ok(state.c.wp > 10, "eatRation healed wp via STORE_EFFECTS");
   assert.ok(events.some((e) => e.type === "bought"));
+});
+
+// --- RATION-01: food is pure HP healing; Rations are a dedicated, visible line ---
+
+test("buyFrom: buying food (eatRation) heals wp and leaves c.rations UNCHANGED", () => {
+  const state = fixedState({ c: { gold: 100000, rations: 3, wp: 10, maxWP: 55 } });
+  openStore(state, makeRng(9), []);
+  const idx = state.store.stock.findIndex((s) => s.effectId === "eatRation");
+  assert.notEqual(idx, -1, "fixture must roll a food entry");
+  buyFrom(state, idx, []);
+  assert.ok(state.c.wp > 10, "wp healed");
+  assert.equal(state.c.rations, 3, "food purchase must not change rations");
+});
+
+test("openStore: offers a dedicated Rations line, race-priced via priceFor", () => {
+  const state = fixedState();
+  openStore(state, makeRng(9), []);
+  const rationEntries = state.store.stock.filter((s) => s.effectId === "buyRations");
+  assert.equal(rationEntries.length, 1, "exactly one Rations line item");
+  assert.equal(rationEntries[0].cost, priceFor(30, state.store.race));
+});
+
+test("buyFrom: buying the Rations line increments c.rations and emits rationsBought", () => {
+  const state = fixedState({ c: { gold: 100000, rations: 3 } });
+  openStore(state, makeRng(9), []);
+  const idx = state.store.stock.findIndex((s) => s.effectId === "buyRations");
+  assert.notEqual(idx, -1, "fixture must roll the Rations line");
+  const amount = state.store.stock[idx].effectParams.amount;
+  const events = buyFrom(state, idx, []);
+  assert.equal(state.c.rations, 3 + amount);
+  assert.ok(events.some((e) => e.type === "rationsBought" && e.amount === amount));
 });
 
 test("buyFrom: an out-of-range idx is a no-op, never a throw", () => {

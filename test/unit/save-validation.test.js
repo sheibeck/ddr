@@ -129,7 +129,13 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
   assert.equal(state.combat, null);
   assert.equal(state.store, null);
   assert.equal(state.beats, null);
-  assert.deepStrictEqual(state.c, oldSave.c);
+  // ECON-02 (Phase 12): pendingFind is transient run state — reset to null on
+  // load, exactly like combat/store/beats above.
+  assert.equal(state.pendingFind, null);
+  // ECON-01 (Phase 12): an old save with no c.bag migrates to the class-derived
+  // default (Fighter => "medium"); every OTHER field is preserved verbatim.
+  assert.equal(state.c.bag, "medium");
+  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium" });
 });
 
 // MD-01 regression: die()/winGame() set state.deathAt/lastWords on a

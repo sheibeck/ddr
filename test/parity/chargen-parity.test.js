@@ -38,7 +38,34 @@ const CHARACTER_FIELDS = [
   "patches", "temperament", "motive", "phobia", "phobiaType", "potions", "rations",
   "gold", "scrolls", "haste", "invis", "ether", "acute", "affliction", "joiner",
   "items", "grimoire", "spellsUsed", "kills", "might", "ward", "regen", "mirror",
-  "foresight", "name",
+  "foresight",
+  // DR-name-generator (2026-09-09): "name" is DELIBERATELY carved out of the
+  // parity comparison. nameFor now builds a GENERATIVE first × surname name
+  // (content/names.js), which is a cosmetic divergence from the frozen
+  // prototype's flat-pool pick — it has NO mechanical effect and, crucially,
+  // makes the SAME single rng draw (rng.d(combos) === one gen.next(), same as
+  // the old rng.pick), so the draw ORDER is unchanged and EVERY OTHER chargen
+  // field stays byte-identical. The engine still BUILDS c.name, so it is
+  // appended to the shape assertion below and stripped from BOTH sides before
+  // diffState (see the destructure further down).
+  // PHOBIA-01 (04.1-05): a brand-new, engine-only persistent darkness
+  // counter (see engine/character.js's rollCharacter) with NO prototype-
+  // side equivalent — stripped out again below before diffState compares
+  // against the frozen prototype's S.c, mirroring how RATION-01 handles
+  // engine-only additions elsewhere in this parity suite.
+  "darkFor",
+  // audit-batch1 (2026-09-09, A2): two more brand-new, engine-only fields
+  // backing the Cloak of Flying's charge/cooldown resource (see engine/
+  // character.js's rollCharacter and engine/derived.js's isFlying) — same
+  // no-prototype-equivalent treatment as darkFor immediately above.
+  "flightLeft",
+  "flightCooldown",
+  // ECON-01 (Phase 12, Economy A): a brand-new, engine-only class-derived
+  // carry-capacity bag key (see engine/character.js's rollCharacter) with NO
+  // prototype-side equivalent — set as a PLAIN assignment (no rng draw), so
+  // every other chargen field stays byte-identical; stripped again below
+  // before diffState, same treatment as darkFor/flight above.
+  "bag",
 ];
 
 test("engine chargen matches the frozen prototype for every fixture seed", () => {
@@ -56,14 +83,28 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
     // Engine side: newRun consumes the identical stream in the identical order.
     const engineC = newRun(seed).c;
 
-    // Compare the full stored character on both sides.
+    // Compare the full stored character on both sides. "name" is carved out
+    // of the parity FIELD LIST (DR-name-generator) but the engine still builds
+    // it, so the full engine shape is CHARACTER_FIELDS + "name".
     assert.deepStrictEqual(
       Object.keys(engineC).sort(),
-      CHARACTER_FIELDS.slice().sort(),
+      [...CHARACTER_FIELDS, "name"].sort(),
       `seed ${seed}: engine character shape drifted from the documented field set`,
     );
 
-    const divergence = diffState(protoC, engineC);
+    // PHOBIA-01 (04.1-05): strip the engine-only darkFor field (always 0 at
+    // chargen) before comparing against the prototype, which never carries
+    // this field at all — see the CHARACTER_FIELDS comment above.
+    // audit-batch1 (2026-09-09, A2): same treatment for flightLeft/
+    // flightCooldown (also always 0 at chargen).
+    // DR-name-generator (2026-09-09): strip the generative "name" from BOTH
+    // sides — it is a deliberate cosmetic divergence (the prototype's flat-pool
+    // name differs from the engine's first × surname build), with no mechanical
+    // effect and no change to the rng draw count/order, so every OTHER field
+    // still compares byte-identical.
+    const { name: _engineName, darkFor, flightLeft, flightCooldown, bag, ...engineCForDiff } = engineC;
+    const { name: _protoName, ...protoCForDiff } = protoC;
+    const divergence = diffState(protoCForDiff, engineCForDiff);
     assert.equal(
       divergence,
       null,

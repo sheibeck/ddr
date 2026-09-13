@@ -33,7 +33,7 @@
 // the prototype's ACTUAL behavior rather than the aspirational flavor text
 // (fidelity rule: port what the prototype DOES, not what its comments imply).
 
-import { skill, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { checkLevel } from "./character.js";
@@ -142,7 +142,18 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     type: "encounterStarted",
     wandering: !!wandering,
     combatType: type,
-    foes: foes.map((f) => ({ name: f.name, lvl: f.lvl, wp: f.wp })),
+    // DELIBERATE RULES CHANGE (audit-bugs, 2026-09-09, E4): additive field —
+    // this event previously mapped foes to {name, lvl, wp} only, dropping
+    // maxWP. Nothing in the live render path was actually found to depend on
+    // this event for its foe hp display (mazeworld.html's renderEncounter
+    // reads state.combat.foes directly, which always carries the real,
+    // stable starting maxWP), but a foe's starting hp is exactly the kind of
+    // value a narration/summary consumer would reasonably expect this event
+    // to carry, and dropping it silently is a footgun for any future
+    // consumer (e.g. a combat-start toast/report) that reads this event
+    // instead of live state. Safe/additive: no existing event-shape
+    // assertion pins this array to exactly {name, lvl, wp}.
+    foes: foes.map((f) => ({ name: f.name, lvl: f.lvl, wp: f.wp, maxWP: f.maxWP })),
     first,
     samuraiNeverFirst: c.sub === "Samurai",
     fridgianSlow: !!R.slow,
@@ -153,6 +164,31 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     state.combat.ally = c.pendingAlly;
     c.pendingAlly = null;
     events.push({ type: "allyJoined", name: state.combat.ally.name });
+  }
+
+  // PARTY-03/PARTY-04 (Phase 8): sync the persistent roster (state.party) into
+  // a COMBAT-SCOPED C.allies list, exactly the way `c.pendingAlly → C.ally`
+  // hands the summon into combat just above. Each entry MIRRORS a persistent
+  // member (its own in-fight `wp` this fight) and back-references it via
+  // `partyIdx` so endCombat can sync surviving hp out and drop the downed.
+  //
+  // DETERMINISM GATE (the dominant constraint): this is a pure data copy — it
+  // draws ZERO rng — and, critically, the `state.combat.allies` KEY is only
+  // ever ADDED when `state.party?.length` is truthy. An empty party (every
+  // parity fixture) leaves `state.combat` WITHOUT an `allies` field at all, so
+  // the combat object stays byte-identical to the frozen master and never
+  // reaches a compared-field mismatch (mirrors the null-`C.ally` precedent:
+  // absent, not empty). All downstream party rng draws (alliesTurn, foeTurn
+  // target selection, killFoe split) are likewise gated on `C.allies`.
+  if (state.party?.length) {
+    state.combat.allies = state.party.map((m, i) => ({
+      partyIdx: i,
+      name: m.name,
+      lvl: clamp(m.level ?? m.lvl ?? 1, 1, 5),
+      sub: m.sub,
+      wp: m.wp,
+      maxWP: m.maxWP ?? m.wp,
+    }));
   }
 
   // a Warlock props up every walking dead thing in the room, whether he means
@@ -189,7 +225,42 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     return events;
   }
 
-  if (c.phobiaType === type && !(skill(c, "Hardiness") && rng.d(2) === 1)) {
+  // DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): the Darkness
+  // phobia (`c.phobia === "Darkness"`) has `phobiaType: null` in the
+  // PHOBIAS catalog (content/flavor.js) — it was one of the 6 phobias with
+  // NO game effect (04.1-RESEARCH.md's Phobias audit). Generalized the
+  // existing type-matched freeze condition to ALSO trigger when the
+  // character is Darkness-phobic AND inDark(state) is true at encounter
+  // start (reusing Task 1's persistent-darkness-aware inDark), reusing the
+  // exact same frozen/shookOffFrozen seam and Hardiness-halved mitigation
+  // the 5 type-matched phobias already use. The two conditions are
+  // mutually exclusive per character (Darkness's phobiaType is always
+  // null, so a Darkness-phobic character never also carries a
+  // type-matched phobiaType), so this never double-triggers or
+  // double-rolls Hardiness for a single character. Because the left side
+  // of the `&&` short-circuits, rng.d(2) is drawn ONLY when one of the two
+  // conditions is already true AND the character has Hardiness — never for
+  // a non-phobic or non-triggered character, and never during chargen — so
+  // RNG consumption order is unchanged for everyone else.
+  //
+  // DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Death
+  // phobia (`c.phobia === "Death"`, `phobiaType: null` in the PHOBIAS
+  // catalog) was likewise inert — 04.1-RESEARCH.md flagged it as having "no
+  // existing near-death state hook". Generalized the same freeze condition
+  // a third time to ALSO trigger a near-death panic: a Death-phobic
+  // character whose own `c.wp` is at/below DEATH_PANIC_THRESHOLD (25%) of
+  // `c.maxWP` at encounter start. Death's phobiaType is also always null in
+  // the catalog, so this operand stays mutually exclusive with the other
+  // two per character (a character carries exactly one `c.phobia` value),
+  // and it reuses the identical frozen/shookOffFrozen seam and single
+  // Hardiness rng.d(2) mitigation roll — never a second roll, never for a
+  // non-Death-phobic or non-near-death character, never during chargen.
+  const DEATH_PANIC_THRESHOLD = 0.25; // near-death: at/below 25% of maxWP
+  const nearDeathPanic = c.phobia === "Death" && c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD;
+  if (
+    (c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic) &&
+    !(skill(c, "Hardiness") && rng.d(2) === 1)
+  ) {
     state.combat.frozen = true;
     events.push({ type: "phobiaFrozen" });
   }
@@ -260,7 +331,17 @@ export function playerStrike(state, rng, events = []) {
     }
 
     let dmg = weaponDamage(c, rng);
-    const noCrit = c.sub === "Guard" || c.sub === "Soldier" || (inDark(state) && !skill(c, "Night Vision"));
+    // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
+    // Strength (content/treasure-tables.js, eff:{noCrit:1}, "no critical
+    // damage ever lands on you") was inert — the prototype's noCrit was
+    // class-only (Guard/Soldier/dark) and never read eff(c,"noCrit"). This
+    // flag ("no critical damage lands ON YOU") reads as PLAYER protection, but
+    // the same field name is reused here as the player's OWN crit-suppression
+    // (the only noCrit hook in combat), matching the prototype's Guard/Soldier
+    // "your blows never crit" seam. Pure read (no rng), so parity is unaffected
+    // for every character not carrying the cloak (eff noCrit === 0).
+    const noCrit =
+      c.sub === "Guard" || c.sub === "Soldier" || (inDark(state) && !skill(c, "Night Vision")) || eff(c, "noCrit") > 0;
     let crit = roll === 1 && !noCrit;
     const opening = !C.opened2;
     C.opened2 = true;
@@ -275,8 +356,16 @@ export function playerStrike(state, rng, events = []) {
     // "Heavy armor negates any advantages they may gain for stealthiness"
     const heavy = c.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(c.armor);
     if (opening && heavy) events.push({ type: "backstabDenied", reason: "heavyArmor" });
-    // opening strike: Stealth, Silence, and the plain Thief backstab
-    if (opening && !noCrit && !heavy) {
+    // opening strike: Stealth, Silence, and the plain Thief backstab.
+    // DELIBERATE FIX (04.2 Bugs B, E7): a Con Artist's opening blow is a
+    // deliberate no-damage "warning" (the `conArtistOpener` bail below emits
+    // no `struck` and `continue`s without applying damage). Emitting a
+    // backstab/silence/stealth crit here made the game announce "A blade in
+    // the back. Critical." for a hit that dealt nothing. Skipping this whole
+    // block for a Con Artist opener leaves `conArtistOpener` as the only
+    // opener event. No rng change (crit only doubles already-rolled damage
+    // that is then discarded by the bail), so determinism/parity are intact.
+    if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
       if (skill(c, "Silence")) {
         crit = true;
         events.push({ type: "silenceStrike" });
@@ -333,8 +422,23 @@ export function killFoe(state, f, rng, events = []) {
   const R = RACES[c.race];
   const mul = 5 * (R.spMul || 1) * (c.sub === "Barbarian" ? 0.5 : 1) * (c.sub === "Apprentice" && c.level < 3 ? 2 : 1);
   const gained = Math.round(raw * mul);
-  c.sp += gained;
-  events.push({ type: "foeKilled", name: f.name, spGained: gained });
+  // PARTY-06 (Phase 8): canon splits the XP award among participants (hero +
+  // members present). Members are hired muscle in v1 (no XP progression), so
+  // their shares are simply DISCARDED — the split's only effect is to damp the
+  // hero's gain, the built-in counterweight to a party's faster clears. Loot
+  // and wilmst (below) stay 100% the hero's.
+  //
+  // DETERMINISM GATE: the `rng.d(6)` that produced `raw` above is UNCHANGED and
+  // still drawn unconditionally (it must be — every combat fixture pins it).
+  // The split is pure post-draw arithmetic, applied ONLY when `shares > 1`
+  // (i.e. live members are present). With no members `shares === 1` and
+  // `heroShare === gained` exactly, so both `c.sp` and the `foeKilled` event
+  // are byte-identical to today.
+  const liveMembers = state.combat && state.combat.allies ? state.combat.allies.filter((a) => a.wp > 0) : [];
+  const shares = 1 + liveMembers.length;
+  const heroShare = shares > 1 ? Math.round(gained / shares) : gained;
+  c.sp += heroShare;
+  events.push({ type: "foeKilled", name: f.name, spGained: heroShare });
 
   // creatures carry things, and the things are worth wilmst
   const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
@@ -407,7 +511,14 @@ export function canParley(state) {
   if (c.sub === "Con Artist") return true;
   if (c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
   if (c.sub === "Bard" && t === "Humans") return true;
-  if (skill(c, "Language") && TALKATIVE.includes(t)) return true;
+  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, DR15-A / ECON-08): the Helm
+  // of Knowledge (content/treasure-tables.js, eff:{tongue:1}, "perfect fluency
+  // in one language") was inert — `tongue` was READ NOWHERE. Carrying it now
+  // grants the Language capability (parley the TALKATIVE encounter types),
+  // OR-ed with the trained Language skill here. Pure read (no rng): canParley
+  // is a boolean gate; parley() only draws rng once talking is attempted, so
+  // this never shifts the rng stream for a non-carrier (eff tongue === 0).
+  if ((skill(c, "Language") || eff(c, "tongue") > 0) && TALKATIVE.includes(t)) return true;
   // "All good and evil creatures recognize the Wilmsry and often desire to barter with them."
   if (c.race === "Wilmsry" && t !== "Magical") return true;
   // "Most humans treasure the sighting of an elf as a good omen."
@@ -528,6 +639,22 @@ export function sing(state, rng, events = []) {
  * comparison after the FIRST fight stays byte-identical on both sides.
  */
 export function endCombat(state, events = []) {
+  // PARTY-05 (Phase 8): sync surviving party members' in-fight `wp` back to the
+  // persistent roster, then drop any member that was downed this fight (its
+  // combat entry was already spliced out of C.allies by downMember, and it was
+  // flagged `status:"downed"` on state.party). GATE: this whole block only runs
+  // when `C.allies` exists — i.e. a non-empty party was synced in at
+  // startCombat. An empty party never gets a `C.allies`, so this is skipped
+  // entirely and endCombat stays byte-identical to today for solo fixtures.
+  const C = state.combat;
+  if (C && C.allies && Array.isArray(state.party)) {
+    for (const ally of C.allies) {
+      if (typeof ally.partyIdx === "number" && state.party[ally.partyIdx]) {
+        state.party[ally.partyIdx].wp = ally.wp;
+      }
+    }
+    state.party = state.party.filter((m) => m.status !== "downed");
+  }
   state.combat = null;
   state.c.regen = false;
   state.c.ward = null;
@@ -553,18 +680,44 @@ export function afterPlayerAction(state, rng, events = []) {
     return events;
   }
   allyTurn(state, rng, events);
+  // PARTY-04 (Phase 8): the party members act in the SAME slot the summon ally
+  // does, right after it. GATE: alliesTurn is an immediate no-op (zero rng) on
+  // an empty/absent C.allies, so for solo fixtures this call is invisible and
+  // the shared clear-check below is byte-identical to today.
+  alliesTurn(state, rng, events);
   if (!liveFoes(state).length) {
     events.push({ type: "encounterCleared" });
     endCombat(state, events);
     return events;
   }
   foeTurn(state, rng, events);
+  // A foe can DIE during foeTurn (an acid-over-time tick, or a ward reflecting a
+  // blow back onto it) — not just on the player's own strike. Re-check for a
+  // cleared encounter here too, or combat stays open with nothing left to fight
+  // and the player is stranded on the combat screen. (The pre-foeTurn checks
+  // above only catch kills from the player's action / the ally's turn.)
+  if (state.combat && !liveFoes(state).length) {
+    events.push({ type: "encounterCleared" });
+    endCombat(state, events);
+    return events;
+  }
   if (!state.dead && state.combat) {
     state.combat.round++;
     rollInitiative(state, rng); // p.24: a fresh d20 each round
     if (state.combat.first === "foe") {
       foeTurn(state, rng, events);
-      if (!state.dead && state.combat) state.combat.round++;
+      if (state.combat && !liveFoes(state).length) {
+        events.push({ type: "encounterCleared" });
+        endCombat(state, events);
+        return events;
+      }
+      // ROUND-COUNT FIX (user directive 2026-09-09): a round is ONE full cycle
+      // (every entity acts once), not per-attack. The foes winning this fresh
+      // initiative act FIRST in the round already begun by the `round++` above;
+      // that pre-emptive turn must NOT advance the counter a second time (it
+      // made the displayed round jump 1→3→5). The player's next action completes
+      // this round and the round++ at the top of the next afterPlayerAction
+      // advances it. round===1 mechanics are unaffected (697 only fired ≥ round 2).
     }
   }
   return events;
@@ -593,6 +746,67 @@ export function allyTurn(state, rng, events = []) {
     C.ally = null;
   }
   return events;
+}
+
+/**
+ * alliesTurn(state, rng, events) — every persistent party member's strike this
+ * round (PARTY-04). Generalizes allyTurn's single-`C.ally` striker over the
+ * combat-scoped `C.allies` roster synced in at startCombat, reusing the exact
+ * same STRIKE_DICE hit math and reusing the `allyStruck`/`allyMissed` event
+ * family (so member strikes need no new narration entry). The summon `C.ally`
+ * path (allyTurn) is left entirely untouched and still fires independently.
+ *
+ * DETERMINISM GATE: the guard `!C.allies || !C.allies.length` returns
+ * IMMEDIATELY drawing ZERO rng when there is no party — modeled on allyTurn's
+ * own null-`C.ally` early return. An empty party (every parity fixture) never
+ * enters the loop, so the seeded cursor is untouched and parity stays
+ * byte-identical.
+ *
+ * LOOP SAFETY (PARTY-07): a bounded `for` over a SNAPSHOT (`C.allies.slice()`),
+ * never a `while`; re-checks `liveFoes()` every iteration and BREAKS the
+ * instant foes clear; skips a downed member (`wp <= 0`) rather than retrying —
+ * so it can never spin.
+ */
+export function alliesTurn(state, rng, events = []) {
+  const C = state.combat;
+  if (!C || !C.allies || !C.allies.length) return events;
+  for (const ally of C.allies.slice()) {
+    if (ally.wp <= 0) continue; // a downed member takes no swing
+    const foes = liveFoes(state);
+    if (!foes.length) break; // nothing left to hit — end the party's turn
+    const t = foes[0];
+    const roll = rng.d(STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1]);
+    if (roll <= 5) {
+      const d = ally.lvl * ally.lvl + rng.d(6);
+      t.wp -= d;
+      events.push({ type: "allyStruck", name: ally.name, target: t.name, dmg: d });
+      if (t.wp <= 0) killFoe(state, t, rng, events);
+    } else {
+      events.push({ type: "allyMissed", name: ally.name });
+    }
+  }
+  return events;
+}
+
+/**
+ * downMember(state, member, events) — a party member reaches 0 wp (PARTY-05).
+ * It is pulled from the combat roster (`C.allies`) so no foe/ally targets it
+ * again, and flagged `status:"downed"` on the persistent `state.party` so
+ * endCombat drops it from the run. It emits a `memberDowned` event and — the
+ * critical fork — NEVER calls die() (that terminator ends the HERO's run); a
+ * companion falling must not end the run.
+ */
+function downMember(state, member, events) {
+  member.wp = 0;
+  const C = state.combat;
+  if (C && Array.isArray(C.allies)) {
+    const ci = C.allies.indexOf(member);
+    if (ci >= 0) C.allies.splice(ci, 1);
+  }
+  if (typeof member.partyIdx === "number" && Array.isArray(state.party) && state.party[member.partyIdx]) {
+    state.party[member.partyIdx].status = "downed";
+  }
+  events.push({ type: "memberDowned", name: member.name });
 }
 
 /**
@@ -633,6 +847,48 @@ export function foeTurn(state, rng, events = []) {
     const swings = (f.frenzied ? 2 : 1) * ((f.sp && f.sp.atk) || 1);
     for (let s = 0; s < swings; s++) {
       if (!f.alive) break;
+
+      // PARTY-04/PARTY-05 (Phase 8): each foe swing chooses a target from the
+      // pool [hero] + live party members. DETERMINISM GATE (the single hottest
+      // parity loop in the engine): the target-selection roll `rng.d(pool)` is
+      // drawn ONLY when at least one live member exists. With an empty/absent
+      // party `liveMembers` is empty, NO roll is drawn, `member` stays null,
+      // and control falls straight through to the byte-identical hero branch
+      // below — exactly the path every solo parity fixture already exercises.
+      // Only when members are present is the extra draw taken (pick 1 ⇒ hero,
+      // 2..N+1 ⇒ that member), which is new, unfrozen behavior.
+      const liveMembers = C.allies ? C.allies.filter((a) => a.wp > 0) : [];
+      let member = null;
+      if (liveMembers.length) {
+        const pick = rng.d(liveMembers.length + 1);
+        if (pick > 1) member = liveMembers[pick - 2];
+      }
+      if (member) {
+        // SIMPLIFIED member branch: no ward/armor/mirror/Hardiness (all
+        // hero-only machinery), no die(). Same to-hit shape, then straight to
+        // the member's own `wp`; a member at 0 wp is downed + departs.
+        const mDieN = foeDie(c, f);
+        const mRoll = rng.d(mDieN);
+        let mNeed = foeToHitVs(state);
+        if (f.blind) mNeed = 1;
+        if (C.foeToHitPenalty) mNeed = Math.min(mNeed, C.foeToHitPenalty);
+        if (mRoll > mNeed) {
+          // name the member as the intended target so a whiff at a party
+          // member reads distinctly from a whiff at the hero (PARTY: Oracle
+          // shows who was targeted). `member` field is additive + only set in
+          // this live-member branch, which never runs in solo parity fixtures.
+          events.push({ type: "foeMissed", name: f.name, roll: mRoll, need: mNeed, member: member.name });
+          continue;
+        }
+        let mDmg = f.lvl * f.lvl + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
+        if (C.weakened) mDmg = Math.ceil(mDmg / 2);
+        if (mRoll === 1) mDmg *= 2;
+        member.wp -= mDmg;
+        events.push({ type: "memberStruck", name: f.name, member: member.name, dmg: mDmg, roll: mRoll, need: mNeed, critical: mRoll === 1 });
+        if (member.wp <= 0) downMember(state, member, events);
+        continue;
+      }
+
       const dieN = foeDie(c, f);
       const roll = rng.d(dieN);
       let need = foeToHitVs(state);
@@ -646,6 +902,19 @@ export function foeTurn(state, rng, events = []) {
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
       if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
+
+      // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Pendant of
+      // Fortitude (content/treasure-tables.js, use:"half") sets `c.halfNext`
+      // (items.js:"half" case) but the flag was READ NOWHERE. Wired here: it
+      // halves ONE incoming landed blow (this hero-damage branch only runs on a
+      // successful foe hit), then clears — a single-charge damage buffer. Pure
+      // (no rng): `c.halfNext` is only ever set by USING the Pendant, so it is
+      // falsy on every parity fixture and this block never runs for them.
+      if (c.halfNext) {
+        dmg = Math.ceil(dmg / 2);
+        c.halfNext = false;
+        events.push({ type: "damageHalved", name: f.name });
+      }
 
       // a ward eats the blow before armour or flesh does
       let warded = 0;
@@ -675,14 +944,21 @@ export function foeTurn(state, rng, events = []) {
       let onArmour = false;
       let blocked = 0;
       const ignores = f.sp && f.sp.noArmor;
-      if (c.armorWP > 0 && c.ar > 0 && !ignores) {
+      // E8: read EFFECTIVE armour (worn armour, or PLATE when the Cloak of
+      // Armor is carried — see engine/derived.js armorSoak). For any character
+      // WITHOUT the cloak av === the worn c.ar/c.armorWP/c.armorMin values, so
+      // the soak roll fires exactly as before (no new rng draw). A cloak-bearer
+      // soaks as plate; the magical plate never wears out (av.magic), so no
+      // worn-armour durability is consumed and armorDestroyed never fires.
+      const av = armorSoak(c);
+      if (av.wp > 0 && av.ar > 0 && !ignores) {
         const soak = rng.d(20);
-        if (soak <= c.ar) {
+        if (soak <= av.ar) {
           onArmour = true;
           blocked = dmg;
-          if (dmg > c.armorMin) c.armorWP = Math.max(0, c.armorWP - dmg);
+          if (!av.magic && dmg > av.min) c.armorWP = Math.max(0, c.armorWP - dmg);
           dmg = 0;
-          if (c.armorWP <= 0) events.push({ type: "armorDestroyed" });
+          if (!av.magic && c.armorWP <= 0) events.push({ type: "armorDestroyed" });
         }
       }
       if (onArmour) {

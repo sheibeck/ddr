@@ -21,13 +21,133 @@ import { startCombat } from "../../../engine/combat.js";
 import { openStore } from "../../../engine/economy.js";
 import { springTrap, openChest, encounterDot } from "../../../engine/encounters.js";
 import { descend } from "../../../engine/movement.js";
+import { takeItem } from "../../../engine/items.js";
 import { applyAction } from "../../../engine/engine.js";
+
+/** reconcilePendingFind(rest, pendingFind) — ECON-03/04/05 (Phase 13) carve-out
+ * for the ONE deliberate divergence this phase introduces. The find callers
+ * (engine/encounters.js openChest/findGear/findMisc/meetFaerie) now DEFER the
+ * rolled item into state.pendingFind + a `findOffered` event instead of auto-
+ * taking it (the player-choice change). The frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) auto-takes via takeItem. Two encounter
+ * fixtures actually drive a find path — `chest` (seed 2, rolls a Cloak of Speed
+ * into the bag) and `faerie` (seed 38, equips a "Warded leather") — so their
+ * post-action c.items / equipped-armor state would otherwise diverge.
+ *
+ * Rather than editing the master or blanket-stripping c.items (both forbidden),
+ * this reconciles the divergence PRECISELY: when a find is pending, it applies
+ * the SAME legacy takeItem auto-take the prototype used onto a CLONE of `c`,
+ * then compares that. The assertion stays strong and meaningful — it proves the
+ * engine offers byte-identically the item the prototype auto-took (same roll,
+ * same rng stream) — the ONLY divergence being the take→offer indirection, which
+ * the new takeFind/leaveFind actions own (and which no fixture drives). A no-op
+ * when pendingFind is null (every non-find scenario, and the economy fixture),
+ * and never mutates the real comparison state (operates on a structuredClone). */
+function reconcilePendingFind(rest, pendingFind) {
+  if (!pendingFind || !rest.c) return rest;
+  const proxy = { c: structuredClone(rest.c) };
+  takeItem(proxy, structuredClone(pendingFind), []);
+  return { ...rest, c: proxy.c };
+}
+
+/** stripDarkForField(c) — PHOBIA-01 (04.1-05) adds a brand-new persistent
+ * darkness counter (`c.darkFor`, set by engine/encounters.js's fallDark,
+ * decremented by engine/movement.js's per-step tick) with NO prototype-side
+ * equivalent at all — the frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) never sets this field on chargen or
+ * anywhere else. This is a genuine, permanent, deliberate divergence (a new
+ * engine-only field), not a fidelity regression, so it is excluded from
+ * every state-vs-prototype comparison the same way stripRationsField/
+ * stripAfflictionLoss below exclude their own engine-only/closure-vs-data
+ * divergences. */
+function stripDarkForField(c) {
+  if (!c || !("darkFor" in c)) return c;
+  const { darkFor, ...rest } = c;
+  return rest;
+}
+
+/** stripFlightFields(c) — audit-batch1 (2026-09-09, A2) adds two brand-new
+ * fields backing the Cloak of Flying's real charge/cooldown resource
+ * (`c.flightLeft`/`c.flightCooldown`, set by engine/character.js's
+ * rollCharacter and ticked by engine/movement.js's per-step tick) with NO
+ * prototype-side equivalent at all — the frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) never sets either field. This is a
+ * genuine, permanent, deliberate divergence (a new engine-only field), not a
+ * fidelity regression, so both fields are excluded from every state-vs-
+ * prototype comparison, mirroring stripDarkForField immediately above (the
+ * exact same 04.1-05 precedent this batch's PLAN explicitly asked to
+ * follow). */
+function stripFlightFields(c) {
+  if (!c) return c;
+  const { flightLeft, flightCooldown, ...rest } = c;
+  return rest;
+}
+
+/** stripBagField(c) — ECON-01 (Phase 12, Economy A) adds a brand-new class-
+ * derived carry-capacity field (`c.bag`, a plain string assigned at chargen by
+ * engine/character.js's rollCharacter) with NO prototype-side equivalent at
+ * all — the frozen prototype (test/parity/prototype-master.js.txt — DO NOT
+ * EDIT) never sets this field. Like darkFor/flight above, the bag is set as a
+ * PLAIN assignment (no rng draw), so the chargen rng-consumption order is
+ * unchanged and every OTHER field stays byte-identical — only this new field
+ * appears. It is a genuine, permanent, deliberate divergence (a new engine-only
+ * field), not a fidelity regression, so it is excluded from every state-vs-
+ * prototype comparison, mirroring stripDarkForField / stripFlightFields /
+ * stripNameField. */
+function stripBagField(c) {
+  if (!c || !("bag" in c)) return c;
+  const { bag, ...rest } = c;
+  return rest;
+}
+
+/** stripNameField(c) — DR-name-generator (2026-09-09) makes `c.name` a
+ * GENERATIVE first × surname build (engine/character.js's nameFor over the new
+ * content/names.js { first, sur } banks) instead of the frozen prototype's
+ * flat-pool pick. Both sides make the SAME single rng draw (rng.d(combos) ===
+ * one gen.next(), exactly like the old rng.pick), so the draw ORDER is
+ * unchanged and every OTHER field stays byte-identical — only the resulting
+ * name string differs. That is a deliberate COSMETIC divergence (fixing the
+ * device-review "duplicate names" complaint), not a fidelity regression, so
+ * `c.name` is excluded from every state-vs-prototype comparison, mirroring
+ * stripDarkForField / stripFlightFields / stripRationsField above. The chargen
+ * parity tests carve the same field out directly; this keeps the movement/
+ * combat/magic/economy comparables (whose `rest.c` still carries name) green
+ * too. */
+function stripNameField(c) {
+  if (!c || !("name" in c)) return c;
+  const { name, ...rest } = c;
+  return rest;
+}
 
 /** movementComparable(state) — strips engine-only bookkeeping and the
  * prototype's presentation-only `beats`. No domain-specific closures to
- * strip (movement never touches combat/store/affliction sub-state). */
+ * strip (movement never touches combat/store/affliction sub-state), but
+ * PHOBIA-01's new `c.darkFor` field (see stripDarkForField above) does need
+ * stripping since movement fixtures can exercise fallDark's caller. */
 export function movementComparable(state) {
-  const { beats, seed, rngState, version, ...rest } = state;
+  // PARTY-02 (Phase 7): `state.party` is a brand-new top-level roster field
+  // (engine/state.js's newRun) with NO prototype-side equivalent — the frozen
+  // prototype-master.js.txt (DO NOT EDIT) never carries a top-level party. It
+  // is the top-level analog of stripDarkForField's `c.*` carve-out: strip it at
+  // the state destructure the SAME place `beats`/`seed`/`rngState`/`version`
+  // (other engine-only top-level fields) are dropped, so an inert/empty party
+  // stays byte-identical to the master and a populated one never reaches the
+  // diff. Note this strips only the TOP-LEVEL `state.party`; the frozen
+  // `c.joiner`/`C.ally` shapes are intentionally left untouched so they keep
+  // matching the master.
+  // PARTY-01 (Phase 9): `state.pendingJoiner` is a second brand-new top-level
+  // field (set by encounters.js#meetJoiner, which IS exercised in encounter
+  // fixtures) with NO prototype-side equivalent — strip it exactly like `party`
+  // beside it so a stashed candidate never reaches the diff.
+  // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — a
+  // third top-level analog of `party`/`pendingJoiner`, with no prototype-side
+  // equivalent (set only by Phase 13's gated find handlers). Strip it beside
+  // them so a stashed find never reaches the diff.
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, ...state0 } = state;
+  // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
+  // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
+  const rest = reconcilePendingFind(state0, pendingFind);
+  if (rest.c) rest.c = stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))));
   return rest;
 }
 
@@ -54,11 +174,21 @@ export function stripFoeDamageClosures(combat) {
 
 /** combatComparable(state) — combat/magic-parity's shared comparable(). */
 export function combatComparable(state) {
-  const { beats, seed, rngState, version, lastExchange, exchangeN, ...rest } = state;
+  // PARTY-02 (Phase 7): strip the new top-level `state.party` — see
+  // movementComparable's rationale above (top-level analog of stripDarkForField;
+  // `c.joiner`/`C.ally` left untouched).
+  // PARTY-01 (Phase 9): strip the new top-level `state.pendingJoiner` too — see
+  // movementComparable's rationale (top-level analog of `party`).
+  // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — see
+  // movementComparable's rationale (top-level analog of `party`/`pendingJoiner`).
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, ...state0 } = state;
+  // ECON-03/04/05 (Phase 13): reconcile a deferred find (no-op when none pending).
+  const rest = reconcilePendingFind(state0, pendingFind);
   if (rest.combat) {
-    const { initNote, ...combatRest } = rest.combat;
+    const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);
   }
+  if (rest.c) rest.c = stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))));
   return rest;
 }
 
@@ -80,8 +210,37 @@ export function applyStartCombat(state, wandering, forced) {
  * equal the engine's plain `{effectId, effectParams}` descriptor. */
 export function stripStoreClosures(store) {
   if (!store) return store;
-  const stock = store.stock.map((s) => ({ n: s.n, sub: s.sub ?? null, cost: s.cost, sold: !!s.sold }));
+  // RATION-01 (04.1-03): "Rations" is a deliberate, engine-only new store
+  // line item (see engine/economy.js's STORE_EFFECTS.buyRations) with no
+  // prototype-side equivalent — the frozen prototype (test/parity/
+  // prototype-master.js.txt) still only sells food, never rations
+  // directly. Filter it out of the comparison the same way TERM-02's
+  // normalizeHpUnit below handles the wp/hp rename: a permanent,
+  // deliberate, documented divergence, not a fidelity regression. The
+  // prototype-side stock entries have no `effectId` field at all (they
+  // carry a live `buy` closure instead), so this filter is a no-op on
+  // that side and only ever removes the engine's extra entry.
+  const stock = store.stock
+    .filter((s) => s.effectId !== "buyRations")
+    .map((s) => ({ n: normalizeHpUnit(s.n), sub: normalizeHpUnit(s.sub ?? null), cost: s.cost, sold: !!s.sold }));
   return { ...store, stock };
+}
+
+/** normalizeHpUnit(text) — 04.1-01 (TERM-01/TERM-02) renamed every
+ * player-facing hit-point unit from "wp" to "hp", INCLUDING the
+ * engine-generated store-row label text this harness compares
+ * (engine/economy.js's openStore, the exact site flagged in
+ * 04.1-RESEARCH.md's "Provenance/risk split"). test/parity/prototype-
+ * master.js.txt is the FROZEN GOLDEN MASTER — DO NOT EDIT — so it still
+ * emits the pre-rename "(+12 wp)"/"AR 3, 12 wp" text and always will.
+ * That leaves exactly one permanent, deliberate, cosmetic divergence
+ * between the two sides' store-stock label strings. Normalizing the unit
+ * token on both sides before comparing keeps this parity check meaningful
+ * for everything it actually guards (item identity, cost, structure,
+ * ordering) without failing forever on a rename the phase intentionally
+ * made only on the live/engine side. */
+function normalizeHpUnit(text) {
+  return typeof text === "string" ? text.replace(/\bwp\b/g, "hp") : text;
 }
 
 /** stripAfflictionLoss(c) — an affliction's `loss` is a closure on the
@@ -93,11 +252,40 @@ function stripAfflictionLoss(c) {
   return { ...c, affliction: afRest };
 }
 
+/** stripRationsField(c) — RATION-01 (04.1-03) deliberately decouples ration
+ * acquisition from HP-restoring food on the engine side: neither the
+ * store's eatRation effect (engine/economy.js) nor the dungeon-tile
+ * findFood (engine/encounters.js) silently increments c.rations anymore.
+ * The frozen prototype (test/parity/prototype-master.js.txt — DO NOT EDIT)
+ * still does, on both paths, because it predates this rules change. This
+ * is a genuine, permanent, DELIBERATE gameplay divergence (not a fidelity
+ * bug) — so c.rations itself is excluded from this parity comparison,
+ * mirroring stripAfflictionLoss's carve-out immediately above and
+ * normalizeHpUnit's label carve-out above that. Ration purchases via the
+ * new dedicated buyRations effect are exercised by
+ * test/unit/economy.test.js instead, not by this prototype-fidelity check. */
+function stripRationsField(c) {
+  if (!c || !("rations" in c)) return c;
+  const { rations, ...rest } = c;
+  return rest;
+}
+
 /** economyComparable(state) — economy/encounters-parity's shared comparable(). */
 export function economyComparable(state) {
-  const { beats, seed, rngState, version, lastExchange, exchangeN, ...rest } = state;
+  // PARTY-02 (Phase 7): strip the new top-level `state.party` — see
+  // movementComparable's rationale above (top-level analog of stripDarkForField;
+  // `c.joiner`/`C.ally` left untouched).
+  // PARTY-01 (Phase 9): strip the new top-level `state.pendingJoiner` too — see
+  // movementComparable's rationale (top-level analog of `party`).
+  // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — see
+  // movementComparable's rationale (top-level analog of `party`/`pendingJoiner`).
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, ...state0 } = state;
+  // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
+  // auto-take before comparing — the `chest` (seed 2) and `faerie` (seed 38)
+  // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.
+  const rest = reconcilePendingFind(state0, pendingFind);
   if (rest.store) rest.store = stripStoreClosures(rest.store);
-  if (rest.c) rest.c = stripAfflictionLoss(rest.c);
+  if (rest.c) rest.c = stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))));
   return rest;
 }
 

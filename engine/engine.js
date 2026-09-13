@@ -19,8 +19,9 @@ import { makeRng } from "./rng.js";
 import { move, makeCamp } from "./movement.js";
 import { playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
-import { useItem } from "./items.js";
-import { buyFrom, leaveStore } from "./economy.js";
+import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot } from "./items.js";
+import { buyFrom, leaveStore, sellItem } from "./economy.js";
+import { resolveJoiner } from "./encounters.js";
 import { die } from "./death.js";
 
 /**
@@ -82,6 +83,11 @@ export function applyAction(state, action) {
     case "leaveStore":
       leaveStore(next, events);
       break;
+    case "sellItem":
+      // ECON-06 (Phase 14): sell carried item `i` at a store. Pure (no rng):
+      // frees the slot, credits gold (bag wilmst-cap clamped), pushes itemSold.
+      sellItem(next, action.i, events);
+      break;
     case "useItem":
       useItem(next, action.i, rng, events);
       break;
@@ -93,6 +99,34 @@ export function applyAction(state, action) {
       // rolling its own epitaph off-band. A no-op if the run is already
       // over (dead/won) — nothing left to abandon.
       if (!next.dead && !next.won) die(next, "abandon", null, rng, events);
+      break;
+    case "resolveJoiner":
+      // PARTY-01 (Phase 9): accept/decline the pending Joiner meetJoiner stashed.
+      // Pure data mutation (no rng): appends to state.party under PARTY_CAP on
+      // accept, else declines; always clears state.pendingJoiner.
+      resolveJoiner(next, action.accept, events);
+      break;
+    case "takeFind":
+      // ECON-03 (Phase 13): accept state.pendingFind into the bag (or bagFull).
+      // Pure (no rng).
+      takeFind(next, events);
+      break;
+    case "leaveFind":
+      // ECON-03 (Phase 13): decline state.pendingFind. Pure (no rng).
+      leaveFind(next, events);
+      break;
+    case "dropItem":
+      // ECON-04 (Phase 13): drop carried item `i`, freeing a slot. Pure (no rng).
+      dropItem(next, action.i, events);
+      break;
+    case "equipItem":
+      // ECON-05 (Phase 13): equip carried weapon/armor `i` (direct swap; illegal
+      // combos rejected). Pure (no rng).
+      equipItem(next, action.i, events);
+      break;
+    case "unequipSlot":
+      // ECON-05 (Phase 13): return the equipped weapon/armor to the bag. Pure (no rng).
+      unequipSlot(next, action.slot, events);
       break;
     default:
       break;

@@ -186,7 +186,9 @@ h1{
   border-bottom:1px solid var(--rule);padding-bottom:6px;
   display:flex;justify-content:space-between;align-items:baseline;gap:8px;
 }
-.panel h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ditto)}
+/* DR13: the small gold count/meta on the right of panel headers was too small
+   to read — bumped up across panels (see also .mw-overlay/.yard-head h2 span). */
+.panel h2 span{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--ditto)}
 
 /* ---------- character sheet ---------- */
 .name{font-family:var(--disp);font-size:20px;line-height:1.15;color:var(--ink);margin:0 0 2px}
@@ -244,13 +246,23 @@ ul.grimoire li button{flex:none}
 /* 04-DR10: the MAP heading row now carries a compact HP+level readout
    alongside the "MAP" label itself, so current health is visible without
    switching to the HERO tab (real GameState.c, refreshed by paint() on every
-   action — same c.wp/c.maxWP/c.level values the HERO sheet's own Win
-   Potential bar/LVL badge read, never a second/duplicated source). */
+   action — same c.wp/c.maxWP/c.level values the HERO sheet's own Hit
+   Points bar/LVL badge read, never a second/duplicated source). */
 .mw-map-heading-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px}
+/* DR13: "MAP" label + active-affliction tag share the left of the heading row. */
+.mw-map-heading-left{display:flex;align-items:center;gap:8px;min-width:0}
 .mw-map-heading{
   font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.22em;
   text-transform:uppercase;margin:0;color:var(--ink-soft);
 }
+/* DR13: persistent status-effect tag (poison/disease) — colorblind-safe via its
+   own text label, not color alone. data-kind lets disease read distinctly. */
+.mw-map-status{
+  font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;white-space:nowrap;line-height:1;
+  color:var(--stamp);border:1px solid var(--stamp);border-radius:3px;padding:3px 6px;
+}
+.mw-map-status[data-kind="disease"]{color:var(--ditto);border-color:var(--ditto)}
 .mw-map-vitals{display:flex;align-items:center;gap:10px;flex:none}
 .mw-map-level{
   font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.06em;
@@ -327,13 +339,27 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
   border-bottom:1px solid var(--rule);padding-bottom:6px;
   display:flex;justify-content:space-between;align-items:baseline;gap:8px;
 }
-.mw-overlay h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ditto)}
+.mw-overlay h2 span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ditto)}
+/* DR16 Fix 4: header row holding the "Encounter" heading (left) and the
+   repositioned dismiss/advance control (#enc-dismiss-slot, right). The
+   heading's own bottom rule/margin move up to this wrapper so the divider
+   still spans the full overlay width. */
+.mw-overlay .enc-topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border-bottom:1px solid var(--rule);margin:0 0 10px;padding-bottom:6px;
+}
+.mw-overlay .enc-topbar h2{border-bottom:none;margin:0;padding-bottom:0;flex:0 1 auto}
+#enc-dismiss-slot{flex:0 0 auto;display:flex}
+#enc-dismiss-slot button{min-height:48px;padding:0 18px;white-space:nowrap}
 
 /* 04-DR11: grid (not flex) so the D-pad can occupy a fixed CENTER column
    regardless of which side MAKE CAMP is assigned to — see the
    data-handedness rules below and .mazefoot .dpad's grid-column:2. */
-.mazefoot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px 18px;margin-top:10px}
-.mazefoot .dpad{grid-column:2;justify-self:center}
+/* DR13: control bar is a TIGHT flex cluster — MAKE CAMP sits snug beside the
+   D-pad, both BOTTOM-aligned (align-items:flex-end) so camp is level with the
+   ← ↓ → row, not floating far-left in a wide grid column. The whole cluster is
+   centered; handedness flips which side CAMP is on via flex-direction below. */
+.mazefoot{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-top:10px}
 
 /* 04-DR11 ("D-pad ALWAYS centered; handedness moves only MAKE CAMP"):
    supersedes 04-DR9's swap-both-sides layout. .mazefoot is now a 3-column
@@ -345,8 +371,13 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    RIGHT. #app's data-handedness attribute is set at boot and re-applied
    live on every Settings-sheet change (see the trailing module script's
    applySettings()). */
-#app[data-handedness="left"] #btn-camp{grid-column:1;justify-self:start}
-#app[data-handedness="right"] #btn-camp{grid-column:3;justify-self:end}
+/* DR13: MAKE CAMP drops to the BOTTOM of the control row (align-self:end) so
+   it sits level with the D-pad's bottom arrow row (← ↓ →) instead of floating
+   at the bar's vertical middle. D-pad still owns the center column. */
+/* DR13: left-handed (default) = MAKE CAMP on the LEFT of the D-pad (camp is
+   first in the DOM, so plain row order); right-handed flips it to the right. */
+#app[data-handedness="left"] .mazefoot{flex-direction:row}
+#app[data-handedness="right"] .mazefoot{flex-direction:row-reverse}
 
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
    48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
@@ -501,12 +532,33 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .foe .fwp{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
 .foe .fmeta{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);grid-column:1/-1}
 .foe .fnote{grid-column:1/-1;font-family:var(--body);font-style:italic;font-size:13px;line-height:1.35;color:var(--ink-soft);margin-top:2px}
+/* Quick task: per-enemy status effects (asleep/frozen/acid/blind/…) as chips. */
+.foe .fstatus{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.fchip{
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;line-height:1.5;
+  border:1px solid var(--ink-soft);color:var(--ink-soft);
+}
+.fchip-good{color:var(--moss);border-color:var(--moss)}
+.fchip-acid{color:var(--ditto);border-color:var(--ditto)}
+.fchip-bad{color:var(--stamp);border-color:var(--stamp)}
 .foe.target{outline:2px solid var(--ditto);outline-offset:1px}
 .foe.ally{border-left-color:var(--moss);margin-bottom:8px}
 .evt{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
 .evt p{font-family:var(--body);font-size:15px;line-height:1.45;margin:0;color:var(--ink)}
 .evt p .roll{font-family:var(--mono);font-size:13px}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
+/* DR13: in the encounter panel, the dismiss ("Move on") sits at the BOTTOM of
+   the panel, centered and full-width for an easy one-handed tap. enc-body
+   becomes a flex column that fills the overlay so margin-top:auto floats the
+   action row to the bottom; a longer body scrolls inside enc-body itself. */
+#enc-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto}
+#enc-body .actions{margin-top:auto;justify-content:center;padding-top:12px}
+/* DR16 Fix 4: #a-next ("Move on"/"Next") moved OUT of #enc-body into the header
+   slot (#enc-dismiss-slot), so its old full-width-bottom rule is retired. The
+   feature-action button (a-evt, when present) keeps the base centered bottom
+   .actions treatment; combat/store action rows are unaffected. */
+#enc-body .actions #a-evt{flex:1 1 100%;justify-content:center;min-height:52px}
 .hint{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:10px 0 0;line-height:1.55}
 
 .shelf{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
@@ -540,7 +592,11 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .exchange p:last-child{margin-bottom:0}
 @keyframes exflash{from{background:rgba(74,59,140,.14)}to{background:transparent}}
 @media (prefers-reduced-motion:reduce){.exchange{animation:none}}
-.again{margin-top:4px}
+/* DR16 Fix 3: the death card now carries two stacked actions — a secondary
+   "Review the Oracle" and the primary Confirm — so .again is a full-width
+   column with both buttons clearing the 48dp touch target (UX-02). */
+.again{margin-top:4px;display:flex;flex-direction:column;gap:8px}
+.again button{width:100%;min-height:48px}
 .again button:disabled{opacity:.45}
 
 .spellmenu{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--rule)}
@@ -561,26 +617,16 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .log .banner{font-family:var(--disp);font-size:14px;color:var(--ink);border-top:1px solid var(--rule);padding-top:7px;margin-top:4px;text-indent:0;padding-left:0}
 .log .banner::before{content:""}
 
-/* 04-DR9: diceMode (Settings sheet) gates dice-roll visibility uniformly
-   across the Oracle log (#log) and every combat/feature exchange rendered
-   into #enc-body (.evt/.exchange) — both already emit the SAME
-   `<span class="roll">...</span>` markup from every say()/evt() call site in
-   this file. #app's data-dice-mode attribute (settings.js's diceMode field)
-   is set at boot and re-applied live on every Settings-sheet change (see
-   the trailing module script's applySettings()). "always" needs no
-   override (the existing inline .roll display above is the always-visible
-   default); "never" always hides it; "on tap" hides it until the containing
-   <p> is tapped (mw-roll-revealed, toggled by the delegated click listeners
-   near the dpad click handler below) — matching the design's "TAP A LINE TO
-   SEE THE DICE THAT DID IT" dice-transparency interaction. */
-#app[data-dice-mode="never"] #log p .roll,
-#app[data-dice-mode="never"] #enc-body p .roll{display:none}
-#app[data-dice-mode="on tap"] #log p .roll,
-#app[data-dice-mode="on tap"] #enc-body p .roll{display:none}
-#app[data-dice-mode="on tap"] #log p.mw-roll-revealed .roll,
-#app[data-dice-mode="on tap"] #enc-body p.mw-roll-revealed .roll{display:inline}
-.mw-oracle-hint{display:none;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:#8f856f;margin:0 0 10px}
-#app[data-dice-mode="on tap"] .mw-oracle-hint{display:block}
+/* DR18 (DR15-E): dice-roll detail now lives EXCLUSIVELY in the Oracle log.
+   Every say()/evt() call site still emits the SAME
+   `<span class="roll">...</span>` markup into both #log and #enc-body, and
+   the spans stay in the DOM — this is a VISIBILITY/placement rule, not a
+   data change. A single static gate replaces 04-DR9's 3-mode `diceMode`
+   setting (removed), its on-tap reveal, and the .mw-oracle-hint: the dice
+   are ALWAYS shown in the Oracle (#log's inline .roll, styled above) and
+   NEVER shown in the encounter panel #enc-body/.exchange, so the "last
+   exchange" reads as clean HIT/MISS prose while the Oracle keeps the math. */
+#enc-body p .roll{display:none}
 
 /* ---------- dossier ---------- */
 .dossier{margin-top:0}
@@ -614,11 +660,37 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   .v-side{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
 }
 
+/* ---------- DR13: toast feedback ---------- */
+.mw-toast-host{
+  position:fixed;left:0;right:0;
+  top:calc(102px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+  z-index:120;display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:0 14px;pointer-events:none;
+}
+.mw-toast{
+  pointer-events:none;max-width:360px;
+  font-family:var(--mono);font-size:14px;letter-spacing:.05em;font-weight:700;
+  text-transform:uppercase;
+  color:var(--ink);background:var(--paper-3);
+  border:1px solid var(--ink-soft);border-left:5px solid var(--ink-soft);
+  box-shadow:0 10px 26px rgba(0,0,0,.6);
+  padding:12px 20px;border-radius:5px;text-align:center;
+  animation:mwToastIn .18s cubic-bezier(.2,1.25,.35,1) both;
+}
+.mw-toast.out{animation:mwToastOut .3s ease forwards}
+.mw-toast[data-tone="hit"]{border-color:var(--moss);border-left-color:var(--moss);color:var(--moss)}
+.mw-toast[data-tone="miss"]{border-color:var(--ink-soft);border-left-color:var(--ink-soft);color:var(--ink-soft)}
+.mw-toast[data-tone="hurt"]{border-color:var(--stamp);border-left-color:var(--stamp);color:var(--stamp)}
+.mw-toast[data-tone="magic"]{border-color:var(--ditto);border-left-color:var(--ditto);color:var(--ditto)}
+@keyframes mwToastIn{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes mwToastOut{to{opacity:0;transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.mw-toast,.mw-toast.out{animation:none}}
+
 /* ---------- graveyard ---------- */
 .yard-wrap{margin-top:28px;border-top:2px solid var(--ink);padding-top:14px}
 .yard-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
 .yard-head h2{font-family:var(--disp);font-size:15px;letter-spacing:.2em;text-transform:uppercase;margin:0;color:var(--ink-soft)}
-.yard-head h2 span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ditto);margin-left:10px}
+.yard-head h2 span{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--ditto);margin-left:10px}
 .yard{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px}
 .yard-empty{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;border-top:1px dotted var(--rule);border-bottom:1px dotted var(--rule)}
 .stone{
@@ -690,10 +762,64 @@ html,body{height:100%}
   position:sticky;top:0;z-index:5;
   background:var(--paper-2);
   border-bottom:1px solid var(--rule);
-  padding:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 10px;
-  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;
+  padding:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;
+  display:flex;flex-direction:column;gap:7px;
 }
-.mw-hud-row{display:flex;gap:6px 16px;flex-wrap:wrap}
+/* DR13: line 1 = FLOOR/DAY/MOVES/RATIONS cluster + gear; line 2 = character. */
+.mw-hud-top{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:6px 16px}
+/* DR13: the stat cluster takes the available width (flex:1;min-width:0) and the
+   gear stays pinned to the top line's right end — nowrap stops the gear dropping
+   to its own header line and stealing vertical space from the map. */
+.mw-hud-row{display:flex;gap:6px 16px;flex-wrap:wrap;flex:1;min-width:0}
+/* DR13: character line — name · class/subclass · level · status · health bar,
+   sitting beneath the resource line. Name/class/level are compact text on the
+   left; the HP bar takes the remaining width on the right. */
+.mw-hud-char{display:flex;align-items:center;gap:8px;min-width:0;padding-top:1px;border-top:1px solid var(--rule)}
+.mw-hud-name{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.02em;color:var(--ink);white-space:nowrap;flex:none}
+.mw-hud-cls{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+.mw-hud-lvl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ditto);white-space:nowrap;flex:none}
+.mw-hud-hp{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:64px;margin-left:auto}
+.mw-hud-hp-lab{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
+.mw-hud-hp-lab b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+/* DR15-B: unified condition tracker "up top". A wrapping row so a stack of
+   chips never overflows the phone width — they flow onto a second line and the
+   row's max-height keeps the map from being shoved off-screen (gracefully
+   scrolls if a character somehow amasses more than fits). Speaks the existing
+   .fchip status-chip vocabulary. Colorblind-safe: good vs bad is carried by the
+   leading ▲/▼ marker glyph + the label text, NOT by the color swap alone. */
+.mw-cond-track{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;max-height:52px;overflow-y:auto}
+.mw-cond{
+  font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;line-height:1.5;white-space:nowrap;
+  border:1px solid var(--ink-soft);color:var(--ink-soft);
+  display:inline-flex;align-items:center;gap:4px;
+}
+/* The marker glyph is the primary good/bad signal (redundant with color). */
+.mw-cond::before{font-weight:700;font-size:9px}
+.mw-cond-good{color:var(--moss);border-color:var(--moss)}
+.mw-cond-good::before{content:"\25B2"}   /* ▲ up = boon */
+.mw-cond-bad{color:var(--stamp);border-color:var(--stamp)}
+.mw-cond-bad::before{content:"\25BC"}    /* ▼ down = bane */
+.mw-cond .mw-cond-detail{opacity:.8;font-weight:600}
+/* Phase 10 (Party UI): the persistent PARTY RAIL — a data-driven flex row of
+   member cards (per design/Mazeworld Mobile.dc.html's `railStyle`/`party`
+   member cards, ~lines 240/700), shown only while S.party.length > 0 (the
+   mock's demo partyOn toggle is DROPPED — visibility is data-driven here).
+   Reuses the Phase-4 map HP-bar treatment (.mw-map-hptrack/.mw-map-hpfill) and
+   the .fchip status-chip vocabulary so it speaks the existing visual language
+   rather than inventing a new one. Sits beneath the hero HUD char line, above
+   the map, so a companion's identity/HP/status is legible in portrait during
+   play; renderPartyRail() (paint() path) keeps its HP live through combat. */
+.mw-party-rail{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px;padding-top:7px;border-top:1px solid var(--rule)}
+.mw-party-rail[hidden]{display:none}
+.mw-party-member{flex:1 1 auto;min-width:120px;padding:7px 9px;border:2px solid var(--rule);background:var(--paper-2);display:flex;flex-direction:column;gap:4px}
+.mw-party-member.downed{opacity:.6;border-color:var(--stamp)}
+.mw-party-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.mw-party-name{font-family:var(--disp);font-size:12px;letter-spacing:.02em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mw-party-sub{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--ditto);white-space:nowrap;flex:none}
+.mw-party-hp-lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft)}
+.mw-party-hp-lab b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.mw-party-status{align-self:flex-start;margin-top:1px}
 /* Device-review round 4 ("HUD FLOOR/DAY/SQUARES bigger + mock fonts"): the
    label used the wrong font family (mono, not Press Start 2P) at a smaller
    size than the mock, and the number read small too — match
@@ -723,15 +849,18 @@ html,body{height:100%}
 /* 04-DR9: the config gear button — top-right of the header, opens the
    Settings sheet (#mw-settings-sheet below). Same dark chip treatment as
    .mw-chip (MARKS/CENTRE) for visual consistency, clearing 48dp as-is. */
+/* DR13: bare gear GLYPH — no border/background/shadow box (the box ate header
+   real estate and read as a heavy chip). Still a 44px hit area for the thumb;
+   resting color matches the HUD labels, gold on press. */
 .mw-gear-btn{
-  min-height:48px;min-width:48px;flex:none;
+  min-height:44px;min-width:44px;flex:none;
   display:flex;align-items:center;justify-content:center;
-  border:2px solid #4a4032;background:#1b170f;color:#e8c97a;
-  box-shadow:0 3px 0 #0d0b08;border-radius:4px;font-size:20px;line-height:1;
+  border:none;background:transparent;color:#9a8f76;
+  box-shadow:none;border-radius:0;font-size:24px;line-height:1;
   padding:0;
 }
-.mw-gear-btn:hover:not(:disabled){background:#1b170f;color:#e8c97a}
-.mw-gear-btn:active:not(:disabled){background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px)}
+.mw-gear-btn:hover:not(:disabled){background:transparent;color:#e8c97a}
+.mw-gear-btn:active:not(:disabled){background:transparent;color:#e8c97a;box-shadow:none;transform:none}
 
 .mw-screens{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(96px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
 .mw-screen{display:block}
@@ -845,6 +974,13 @@ html,body{height:100%}
   cursor:pointer;
 }
 .mw-title-enter{background:var(--mw-gold-btn);color:var(--paper);border-color:var(--mw-gold-btn);box-shadow:0 4px 0 var(--mw-btn-border)}
+/* DR18 (DR15-C): the graveyard entry — a secondary (non-gold) title button,
+   parchment-dark so it reads under the splash art without competing with the
+   gold ENTER. Shares .mw-title-btn's sizing (min-height:52px, >=48dp UX-02).
+   Only visible when the graveyard is non-empty (see refreshTitleDead()). */
+.mw-title-dead{background:#1a1510;color:var(--ditto);border-color:var(--mw-btn-border);box-shadow:0 4px 0 var(--mw-btn-shadow)}
+.mw-title-dead[hidden]{display:none}
+.mw-title-dead:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shadow)}
 .mw-title-btn:active:not(:disabled){transform:translateY(3px)}
 .mw-title-enter:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border)}
 .mw-title-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -982,6 +1118,11 @@ html,body{height:100%}
          delve underneath or open the roller for a fresh character. -->
     <div class="mw-title-actions">
       <button type="button" class="mw-title-btn mw-title-enter" id="mw-title-enter" disabled>Enter</button>
+      <!-- DR18 (DR15-C): "View the Dead" opens the existing DEAD graveyard
+           view (window.__mzShowTab("dead"), which re-fetches). Shown ONLY
+           when the graveyard is non-empty — initTitleScreen()/showTitleScreen()
+           toggle its [hidden] via refreshTitleDead() (trailing module script). -->
+      <button type="button" class="mw-title-btn mw-title-dead" id="mw-title-dead" hidden>View the Dead</button>
     </div>
   </div>
 </div>
@@ -1064,14 +1205,6 @@ html,body{height:100%}
         </div>
       </div>
       <div class="mw-settings-row">
-        <span class="mw-settings-label">Dice detail</span>
-        <div class="mw-settings-options" data-setting="diceMode">
-          <button type="button" class="mw-settings-opt" data-value="on tap">On tap</button>
-          <button type="button" class="mw-settings-opt" data-value="always">Always</button>
-          <button type="button" class="mw-settings-opt" data-value="never">Never</button>
-        </div>
-      </div>
-      <div class="mw-settings-row">
         <span class="mw-settings-label">Confirm before quit</span>
         <div class="mw-settings-options" data-setting="confirmBeforeQuit">
           <button type="button" class="mw-settings-opt" data-value="true">On</button>
@@ -1096,23 +1229,56 @@ html,body{height:100%}
   </div>
 </div>
 
-<div id="app" class="mw-app" data-handedness="left" data-dice-mode="on tap">
+<div id="app" class="mw-app" data-handedness="left">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
   <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
   <header class="mw-hud" id="mw-hud">
-    <div class="mw-hud-row">
-      <div class="mw-hud-item mw-hud-floor">Floor<b id="m-floor">1</b></div>
-      <div class="mw-hud-item">Day<b id="m-day">1</b></div>
-      <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
-      <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
-           just the label+number now (see .mw-hud-rations CSS comment). -->
-      <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
+    <div class="mw-hud-top">
+      <div class="mw-hud-row">
+        <div class="mw-hud-item mw-hud-floor">Floor<b id="m-floor">1</b></div>
+        <div class="mw-hud-item">Day<b id="m-day">1</b></div>
+        <div class="mw-hud-item">Moves<b id="m-steps">0</b></div>
+        <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
+             just the label+number now (see .mw-hud-rations CSS comment). -->
+        <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
+      </div>
+      <!-- 04-DR9: config gear — opens the Settings sheet (#mw-settings-sheet,
+           below the MARKS legend sheet markup). -->
+      <button type="button" class="mw-gear-btn" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
     </div>
-    <!-- 04-DR9: config gear — opens the Settings sheet (#mw-settings-sheet,
-         below the MARKS legend sheet markup). -->
-    <button type="button" class="mw-gear-btn" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
+    <!-- DR13: character line beneath the FLOOR/DAY/MOVES line — name,
+         class·subclass, level, active-affliction status, and the health bar.
+         Populated by paint(). Replaces the removed MAP heading row + its vitals. -->
+    <div class="mw-hud-char" id="mw-hud-char">
+      <span class="mw-hud-name" id="hud-name">—</span>
+      <!-- DR13: subclass + level in one compact token (e.g. "Illusionist III"),
+           gold numeral — the redundant class word is dropped to free room for
+           the status tag. Full class/subclass still lives on the Hero sheet. -->
+      <span class="mw-hud-cls" id="hud-cls"></span>
+      <div class="mw-hud-hp">
+        <span class="mw-hud-hp-lab">HP <b id="mm-hp">0</b>/<b id="mm-hpmax">0</b></span>
+        <div class="mw-map-hptrack"><div class="mw-map-hpfill" id="mm-hpfill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <!-- DR15-B: unified condition tracker "up top" — a wrapping row of
+         good/bad status chips (haste/invis/acute/ether/might/flight + the
+         poison/disease affliction that used to be the lone #mm-status tag +
+         the persistent Darkness/active-phobia state). Populated by paint()
+         from the shared conditionsOf(S) engine helper (window.__mzConditionsOf).
+         Colorblind-safe: each chip carries a text label + a good/bad marker
+         glyph, never color alone. Hidden entirely when no condition is active. -->
+    <div class="mw-cond-track" id="mm-conditions" hidden></div>
+    <!-- Phase 10 (Party UI, PARTY-07): the persistent PARTY RAIL. Data-driven
+         on S.party.length (hidden when solo) — populated/toggled by
+         renderPartyRail() on the paint() path, so a companion's HP updates live
+         through combat on the same repaint that refreshes the hero HP above. -->
+    <div class="mw-party-rail" id="mw-party-rail" hidden></div>
   </header>
+
+  <!-- DR13: fixed, non-layout toast host for transient action feedback
+       (hit/miss, potion, spell, flee…) — never shuffles panel real estate. -->
+  <div class="mw-toast-host" id="mw-toast-host" aria-live="polite" aria-atomic="false"></div>
 
   <!-- ============ 5 TAB SCREENS ============ -->
   <main class="mw-screens" id="mw-screens">
@@ -1121,19 +1287,9 @@ html,body{height:100%}
          "maze" preserved — device-review revision #3 only renames the
          USER-VISIBLE label, not the code ids/keys). -->
     <section class="mw-screen" id="screen-maze" data-screen="maze">
-      <div class="mw-map-heading-row">
-        <h2 class="mw-map-heading">Map</h2>
-        <!-- 04-DR10: compact HP+level readout — real GameState.c, refreshed
-             by paint() alongside the HERO tab's own Win Potential bar/LVL
-             badge (same values, mirrored here for at-a-glance visibility). -->
-        <div class="mw-map-vitals" id="mw-map-vitals">
-          <span class="mw-map-level" id="mm-level">LVL I</span>
-          <div class="mw-map-hp">
-            <span class="mw-map-hp-lab">HP <b id="mm-hp">0</b>/<b id="mm-hpmax">0</b></span>
-            <div class="mw-map-hptrack"><div class="mw-map-hpfill" id="mm-hpfill" style="width:100%"></div></div>
-          </div>
-        </div>
-      </div>
+      <!-- DR13: the "MAP" heading row is gone — its vitals (level, HP, status)
+           moved up into the persistent HUD character line, and the map viewport
+           now claims that reclaimed vertical space. -->
       <div class="mazebox">
         <!-- 04-06: pannable fog-lit viewport framing around the untouched
              canvas — see the .mw-maze-viewport CSS comment above. Device-
@@ -1179,7 +1335,15 @@ html,body{height:100%}
              clicks + keydown) is gated on !hasActiveEncounter() while this
              is up — see the dpad/keydown handlers. -->
         <section class="mw-overlay" id="enc-panel" hidden>
-          <h2>Encounter <span id="enc-round"></span></h2>
+          <!-- DR16 Fix 4: the beat/encounter dismiss ("Move on"/"Next") used to
+               sit at the BOTTOM of enc-body, directly over the movement D-pad,
+               causing mis-taps. It now renders into #enc-dismiss-slot here in
+               the header row, right-aligned beside the Encounter heading — out
+               of the D-pad zone. renderEncounter() fills/clears the slot. -->
+          <div class="enc-topbar">
+            <h2>Encounter <span id="enc-round"></span></h2>
+            <div id="enc-dismiss-slot"></div>
+          </div>
           <div id="enc-body"></div>
         </section>
       </div>
@@ -1193,7 +1357,7 @@ html,body{height:100%}
         <p class="tagline" id="s-tag">—</p>
 
         <div class="wpbar">
-          <div class="lab"><span>Win Potential</span><b><span id="s-wp">0</span> / <span id="s-wpmax">0</span></b></div>
+          <div class="lab"><span>Hit Points</span><b><span id="s-wp">0</span> / <span id="s-wpmax">0</span></b></div>
           <div class="track"><div class="fill" id="s-wpfill" style="width:100%"></div></div>
         </div>
 
@@ -1203,9 +1367,9 @@ html,body{height:100%}
           <dt>Damage</dt><dd id="s-dmg">—</dd>
           <dt>Armor</dt><dd id="s-arm">—</dd>
           <dt>Intelligence</dt><dd id="s-int">—</dd>
-          <dt>Skill points</dt><dd id="s-sp">0</dd>
+          <dt>Experience points</dt><dd id="s-sp">0</dd>
           <dt>Next level</dt><dd id="s-next">201</dd>
-          <dt>Upkeep</dt><dd id="s-cost">4 wp/day</dd>
+          <dt>Upkeep</dt><dd id="s-cost">4 hp/day</dd>
         </dl>
 
         <p class="trait" id="s-trait">—</p>
@@ -1273,9 +1437,6 @@ html,body{height:100%}
     <section class="mw-screen" id="screen-oracle" data-screen="oracle" hidden>
       <section class="panel" id="log-panel">
         <h2>The Oracle <span id="log-count"></span></h2>
-        <!-- 04-DR9: shown only in diceMode "on tap" (#app[data-dice-mode]
-             CSS, above) — the mock's dice-transparency hint. -->
-        <p class="mw-oracle-hint" id="mw-oracle-hint">Tap a line to see the dice that did it.</p>
         <div class="log" id="log"></div>
       </section>
     </section>
@@ -1284,8 +1445,9 @@ html,body{height:100%}
     <section class="mw-screen" id="screen-dead" data-screen="dead" hidden>
       <section class="yard-wrap">
         <div class="yard-head">
+          <!-- audit-batch E12 (part 3): the "Clear the graveyard" button was
+               removed — the running total is non-clearable by design now. -->
           <h2>The graveyard <span id="yard-count"></span></h2>
-          <button class="small" id="btn-clearyard">Clear the graveyard</button>
         </div>
         <div class="yard" id="yard"><p class="yard-loading">Consulting the ledger…</p></div>
       </section>
@@ -1315,21 +1477,21 @@ html,body{height:100%}
       <ul>
         <li><b>No Dungeon Master, no party.</b> Encounters roll themselves and "who gets it" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.</li>
         <li><b>Sleep mends you</b> — <code>d10 + 2×level</code> for a ration and eight hours, and camping is a button. The book has no natural healing because it assumes a Cleric in the party. Without this a solo delver has no way back up.</li>
-        <li><b>Skill points ×5.</b> <code>(d6 × creature level) ÷ party</code> is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.</li>
+        <li><b>Experience points ×5.</b> <code>(d6 × creature level) ÷ party</code> is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.</li>
         <li><b>Spells run on <code>2×level + 2</code> charges</b>, one returning every 20 squares, instead of once per 100 squares. The book's cadence is a party's pace, not one caster's.</li>
-        <li><b>Magic Users start at 25 + d10 wp</b> rather than a flat 25. Twenty-five with no armour is one bad round, every time.</li>
+        <li><b>Magic Users start at 25 + d10 hp</b> rather than a flat 25. Twenty-five with no armour is one bad round, every time.</li>
       </ul>
     </div>
     <div>
       <h3>Balance decisions</h3>
       <ul>
-        <li><b>Elves keep 0.6 of their Win Potential</b>, not half. A flat half on a 25-wp caster was a death sentence; the other elven rules are as written.</li>
-        <li><b>Trolls eat two rations a night</b> on top of the 15 wp cost of living. Otherwise 75 wp and +9 damage carried no real price.</li>
+        <li><b>Elves keep 0.6 of their Hit Points</b>, not half. A flat half on a 25-hp caster was a death sentence; the other elven rules are as written.</li>
+        <li><b>Trolls eat two rations a night</b> on top of the 15 hp cost of living. Otherwise 75 hp and +9 damage carried no real price.</li>
         <li><b>Every Thief opens with a backstab</b> (doubled damage) and breaks away on <code>d20+5</code>. The class description is three-quarters stealth and back-stabbing, and the rules gave it no mechanic.</li>
         <li><b>At most two creatures until skill level III.</b> Three level-one creatures on a fresh character is not a fight, it is a formality.</li>
         <li><b>Forcing a locked box is 8-in-20</b>, and a failed attempt lets you smash it for half the coin and none of the glass. Lockpicks exist as an item so a non-thief has a route in.</li>
         <li><b>Sewing patches any armour</b>, not only cloth and leather. The restriction mostly punished the one class that can take the skill.</li>
-        <li><b>Poison and disease stop at 1 wp</b> and clear with a night's rest. As written they run at up to 2d6 a square with only a Cure spell to stop them — which no solo delver has. They still take everything you had.</li>
+        <li><b>Poison and disease stop at 1 hp</b> and clear with a night's rest. As written they run at up to 2d6 a square with only a Cure spell to stop them — which no solo delver has. They still take everything you had.</li>
         <li><b>Two traps a floor, dodged on 1–5</b> (better if you are nimble), and the Spike pit does d10×5 rather than d10×10. The trap table is written for a party that can absorb one; at full strength it was killing a third of all characters outright.</li>
         <li><b>Level V has only Beasts and a Vampire</b> in the book — the other four type headings on p.43 are empty. Floor five falls back to the level IV roster for those types.</li>
       </ul>
@@ -1378,6 +1540,23 @@ html,body{height:100%}
       const on = btn.dataset.tab === name;
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-current", on ? "true" : "false");
+    }
+    // E9 (04.2 Bugs B): re-fetch the graveyard from storage every time the Dead
+    // tab is opened. The Dead screen renders from the classic in-memory `graves`
+    // array, which is only synced from storage at BOOT (loadGraves() inside
+    // window.__mzClassicBoot). Every LIVE death now flows through the engine
+    // adapter (window.move / engineCombatAction -> dispatch ->
+    // engineAdapter.persistGrave), which durably writes the tombstone to
+    // GRAVE_KEY but never touches this classic in-memory list or re-renders the
+    // Dead screen — so a just-died character was invisible on the Dead tab until
+    // the next app reboot (the reported bug: a dead Con Artist never appeared).
+    // loadGraves()/renderGraves() are hoisted classic-script function
+    // declarations (defined further down, same script scope), so they resolve at
+    // click time; the async persistGrave write has long settled by the time the
+    // player taps over to the Dead tab. Presentation-only re-read — no GameState
+    // touched.
+    if (name === "dead" && typeof loadGraves === "function" && typeof renderGraves === "function") {
+      loadGraves().then(() => renderGraves()).catch(() => {});
     }
   }
   for (const btn of tabs) btn.addEventListener("click", () => showTab(btn.dataset.tab));
@@ -1485,11 +1664,11 @@ const KIT = {
 const FIGHTER_SKILLS = {
   "Kata":         {cost:4, txt:"+level damage and 1–6 accuracy with your first weapon"},
   "Stealth":      {cost:3, txt:"critical on a 2 when you open a fight; never in plate"},
-  "Death-touch":  {cost:4, txt:"a 1 doubles, and kills outright under 15 wp"},
+  "Death-touch":  {cost:4, txt:"a 1 doubles, and kills outright under 15 hp"},
   "Agility":      {cost:5, txt:"every enemy needs one better to land on you"},
   "Hardiness":    {cost:6, txt:"−3 to all damage taken; phobias halved"},
   "Ambidextrous": {cost:4, txt:"a second weapon at the end of every round"},
-  "Cooking":      {cost:3, txt:"eat any beast for a quarter of its wp"},
+  "Cooking":      {cost:3, txt:"eat any beast for a quarter of its hp"},
   "Language":     {cost:1, txt:"parley with anything that talks"},
   "Runes/Signs":  {cost:2, txt:"read scrolls; without it they are waste paper"},
   "Tracking":     {cost:4, txt:"1–5 on d20 to read an encounter, and walk away from it"},
@@ -1544,27 +1723,27 @@ const JEWELRY = [   // Jewelry Table, d8, p.47
   {n:"Amulet of Stone",      eff:{}, use:"stone", every:200, txt:"turns up to 4 squares of opponents to stone, once every 200 squares"}
 ];
 const CLOAKS = [    // Magic Cloaks Table, d8, p.46 — every thief begins with one
-  {n:"Cloak of Healing",     eff:{cloakHeal:1},  txt:"heals up to 10 wp every 20 squares"},
+  {n:"Cloak of Healing",     eff:{cloakHeal:1},  txt:"heals up to 10 hp every 20 squares"},
   {n:"Cloak of Strength",    eff:{noCrit:1},     txt:"no critical damage ever lands on you"},
   {n:"Cloak of Invisibility",eff:{},  use:"invis", every:100, txt:"invisible, once every 100 squares"},
   {n:"Cloak of Speed",       eff:{},  use:"haste", every:50,  txt:"double attacks, once every 50 squares"},
-  {n:"Cloak of Regeneration",eff:{cloakRegen:1}, txt:"d6 wp back every 20 squares"},
+  {n:"Cloak of Regeneration",eff:{cloakRegen:1}, txt:"d6 hp back every 20 squares"},
   {n:"Cloak of Armor",       eff:{cloakArmor:1}, txt:"a full suit of plate that weighs nothing"},
   {n:"Cloak of Flying",      eff:{fly:1},        txt:"flight for 20 squares, once every 50"},
   {n:"Cloak of Ether",       eff:{},  use:"ether", every:100, txt:"walk through walls, once every 100 squares"}
 ];
 const STAVES = [    // Magic Staves Table, d8, p.46 — one use every 250 squares
-  {n:"Rowan Staff",  use:"dome",   txt:"a protective dome of 100 wp"},
+  {n:"Rowan Staff",  use:"dome",   txt:"a protective dome of 100 hp"},
   {n:"Birch Staff",  use:"freeze", txt:"freezes up to 2 squares of opponents indefinitely"},
   {n:"Walnut Staff", use:"weaken", txt:"all hits on the weakened do double damage"},
   {n:"Oak Staff",    use:"stone",  txt:"turns 2 squares of opponents to stone"},
   {n:"Crystal Staff",use:"invis",  txt:"party invisible d10+5 squares; enemies need a 1"},
-  {n:"Poplar Staff", use:"heal",   txt:"1d20+10 wp to up to 6"},
+  {n:"Poplar Staff", use:"heal",   txt:"1d20+10 hp to up to 6"},
   {n:"Pine Staff",   use:"fire",   txt:"d6 fireballs, automatic hits, 1d10+4 each"},
   {n:"Cedar Staff",  use:"gas",    txt:"knocks out 3 squares of enemies for a day"}
 ];
 const POTIONS = [   // Potions Table, d10, p.47
-  {n:"Healing",     col:"Blue",   uses:()=>D(8), price:150, eff:"heal",    txt:"+d10+2 wp"},
+  {n:"Healing",     col:"Blue",   uses:()=>D(8), price:150, eff:"heal",    txt:"+d10+2 hp"},
   {n:"Cure Poison", col:"Green",  uses:()=>D(6), price:100, eff:"poison",  txt:"cures poison"},
   {n:"Speed",       col:"Yellow", uses:()=>D(6), price:500, eff:"speed",   txt:"double attacks, 50 squares"},
   {n:"Xtra Healing",col:"Blue",   uses:()=>D(2), price:500, eff:"full",    txt:"heal to maximum"},
@@ -1601,7 +1780,7 @@ const AFFLICTIONS = [  // Poison/Disease Table, d8, p.48
   {dur:"1 day",       loss:()=>2*D(20),per:10, kind:"Disease"}
 ];
 const FAERIE = [    // Faerie Table, d8, p.48
-  "+1 Level", "+d20 Base WP", "Magic Weapon", "-d10 Base WP",
+  "+1 Level", "+d20 Base HP", "Magic Weapon", "-d10 Base HP",
   "Miscellaneous Magic", "d10 x 100 WM", "Magic Armor", "+2 Level"
 ];
 const MISC_MAGIC = ["Cloak","Potion","Scroll","Grimoire","Potion","Staff","Cloak","Jewelry","Potion","Scroll"];
@@ -1625,13 +1804,13 @@ const RACES = {
   "Elven":   {size:"Small", upkeep:4,  wpMul:0.6, strikeStep:1, foeToHit:-1, toHit:5,
               note:"Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit."},
   "Dwarven": {size:"Small", upkeep:1,  dmg:2, foeStrikeStep:1,
-              note:"+2 damage and 1 wp/day upkeep; foes strike at a better die."},
+              note:"+2 damage and 1 hp/day upkeep; foes strike at a better die."},
   "Wilmsry": {size:"Human", upkeep:4,  heal2x:true, spMul:0.5,
               note:"Heals twice as fast, learns half as quickly. Magic Users despise them."},
   "Fridgian":{size:"Human", upkeep:4,  noArmor:true, frenzy:true, slow:true,
               note:"Never wears armor, strikes last, frenzies into a second wild swing."},
   "Troll":   {size:"Large", upkeep:15, flatWP:75, dmg:6, wpnBonus:3, eats:2,
-              note:"75 wp regardless of class and +9 damage, but eats two rations a night."}
+              note:"75 hp regardless of class and +9 damage, but eats two rations a night."}
 };
 const RACE_D8 = ["Elven","Dwarven","Wilmsry","Human","Fridgian","Troll","Human","Human"];
 
@@ -1648,9 +1827,9 @@ const PHOBIAS = [
    `sp` carries the special rules that matter in a fight. */
 const BESTIARY = {
   "Beasts": [
-    [{n:"Bat/Rat", sz:"T", i:1, wp:1,  sp:{atk:2, dmg:()=>1, note:"two attacks, 1 wp each"}},
+    [{n:"Bat/Rat", sz:"T", i:1, wp:1,  sp:{atk:2, dmg:()=>1, note:"two attacks, 1 hp each"}},
      {n:"Shriek",  sz:"T", i:1, wp:3,  sp:{shriek:true, note:"a scream deafens; half damage after"}},
-     {n:"Viper",   sz:"S", i:1, wp:3,  sp:{poison:true, note:"venom: 2 wp a round for d10 rounds"}}],
+     {n:"Viper",   sz:"S", i:1, wp:3,  sp:{poison:true, note:"venom: 2 hp a round for d10 rounds"}}],
     [{n:"Cave Bear", sz:"L", i:4, wp:25, sp:{dmg:()=>D(8), disease:true, note:"rabid — d8, and the bite carries it"}},
      {n:"Zit",       sz:"T", i:6, wp:4,  sp:{acid:true, toHit:4, note:"acid; hittable only on a 4"}}],
     [{n:"Drat",     sz:"L", i:10, wp:26, sp:{ar:12, toHit:5, breaks:true, note:"natural mail; may break your weapon"}},
@@ -1720,7 +1899,7 @@ const ENCOUNTER_TABLES = [
   ["Lair Beast","Magical","Beasts","Food","Humans","Magical","Walking Dead","Beasts","Lair Beast","Demons"],
   ["Lair Beast","Misc Magic","Beasts","Walking Dead","Joiner","Demons","Store","Humans","Magical","Weapon"],
   ["Demons","Walking Dead","Lair Beast","Misc Magic","Beasts","Teleport","Disease","Magical","Humans","Magic Armor"],
-  ["+10 WP","-10 WP","Teleport","+10 SP","+25 WP","+25 SP","-15 WP","Teleport","+3000 WM","-All armour"],
+  ["+10 HP","-10 HP","Teleport","+10 XP","+25 HP","+25 XP","-15 HP","Teleport","+3000 WM","-All armour"],
   ["Magic Weapon","Lair Beast","Misc Magic","Humans","Food","Misc Magic","Demons","Walking Dead","Beasts","Magic Armor"],
   ["Beasts","Grimoire","Lair Beast","Humans","Demons","Disease","Store","Misc Magic","Magical","Joiner"],
   ["Humans","Faerie","Demons","Beasts","Insanity","Phobia","Lair Beast","Darkness","Walking Dead","Magical"],
@@ -1729,8 +1908,8 @@ const ENCOUNTER_TABLES = [
 const ENC_ALIAS = {"Lair Beast":"Lair Beasts","Beasts":"Beasts","Demons":"Demons","Humans":"Humans","Magical":"Magical","Walking Dead":"Walking Dead"};
 
 const SPELLS = [
-  {n:"Heal",        lvl:1, s:"healing",    kind:"heal",   dmg:()=>D(10),             txt:"d10 wp"},
-  {n:"Shield",      lvl:1, s:"protection", kind:"ward",   pool:50,  rounds:5,        txt:"soaks 50 wp, 5 rounds"},
+  {n:"Heal",        lvl:1, s:"healing",    kind:"heal",   dmg:()=>D(10),             txt:"d10 hp"},
+  {n:"Shield",      lvl:1, s:"protection", kind:"ward",   pool:50,  rounds:5,        txt:"soaks 50 hp, 5 rounds"},
   {n:"Strength",    lvl:1, s:"offense",    kind:"might",  dmg:()=>D(10),             txt:"+d10 damage till tomorrow"},
   {n:"Doze",        lvl:1, s:"offense",    kind:"status", txt:"sleep d4 rounds"},
   {n:"Freeze",      lvl:1, s:"offense",    kind:"thrown", dmg:()=>D(6),              txt:"d6, thrown"},
@@ -1741,7 +1920,7 @@ const SPELLS = [
   {n:"Acid",        lvl:2, s:"offense",    kind:"acid",   dmg:()=>2*D(6)+2,          txt:"2d6+2 a round for d6 rounds"},
   {n:"Stupidity",   lvl:2, s:"offense",    kind:"stupid", txt:"intelligence to 1; it can do nothing"},
   {n:"Blind",       lvl:3, s:"offense",    kind:"blind",  txt:"blind for life, thrown"},
-  {n:"Shrink",      lvl:3, s:"offense",    kind:"shrink", txt:"two sizes down, half wp and damage"},
+  {n:"Shrink",      lvl:3, s:"offense",    kind:"shrink", txt:"two sizes down, half hp and damage"},
   {n:"Ice",         lvl:3, s:"offense",    kind:"thrown", dmg:()=>D(6),              txt:"d6 a round, then frozen"},
   {n:"Earthquake",  lvl:4, s:"offense",    kind:"quake",  dmg:()=>3*D(10)+8,         txt:"3d10+8 to everything, you included"},
   {n:"Noxious Vapor",lvl:4,s:"offense",    kind:"vapor",  txt:"a d6 of very bad outcomes"},
@@ -1750,17 +1929,17 @@ const SPELLS = [
   {n:"Insane",      lvl:2, s:"offense",    kind:"insane", txt:"one foe rolls on the madness table"},
   {n:"Summon",      lvl:2, s:"special",    kind:"summon", txt:"something fights beside you"},
   {n:"Fireball",    lvl:3, s:"offense",    kind:"thrown", dmg:()=>D(10)+D(10)+4,     txt:"2d10+4"},
-  {n:"Major Heal",  lvl:3, s:"healing",    kind:"heal",   dmg:()=>D(10)+D(10)+D(10), txt:"3d10 wp"},
-  {n:"Bubble",      lvl:3, s:"protection", kind:"ward",   pool:100, rounds:12, reflect:true, txt:"soaks 100 wp and reflects"},
+  {n:"Major Heal",  lvl:3, s:"healing",    kind:"heal",   dmg:()=>D(10)+D(10)+D(10), txt:"3d10 hp"},
+  {n:"Bubble",      lvl:3, s:"protection", kind:"ward",   pool:100, rounds:12, reflect:true, txt:"soaks 100 hp and reflects"},
   {n:"Sense Danger",lvl:3, s:"divination", kind:"foresee",txt:"read the next encounter"},
   {n:"Turn Walking Dead",lvl:2,s:"protection",kind:"turn",txt:"the dead of your level or lower are sent back"},
   {n:"Plane Gate",  lvl:3, s:"protection", kind:"gate",   txt:"d6 demons or dead vanquished to The Planes"},
   {n:"Sense Presence",lvl:2,s:"protection",kind:"senses", txt:"see in the dark; never surprised"},
   {n:"Phantom Host",lvl:3, s:"illusion",   kind:"summon", txt:"a host that isn't there"},
   {n:"Lightning",   lvl:4, s:"offense",    kind:"thrown", dmg:()=>D(10)+6,           txt:"d10+6, every foe"},
-  {n:"Regeneration",lvl:4, s:"healing",    kind:"regen",  txt:"d8 wp a round this fight"},
+  {n:"Regeneration",lvl:4, s:"healing",    kind:"regen",  txt:"d8 hp a round this fight"},
   {n:"Mangle",      lvl:5, s:"offense",    kind:"thrown", dmg:()=>2*D(20)+15,        txt:"2d20+15"},
-  {n:"Death",       lvl:5, s:"offense",    kind:"death",  txt:"one foe dies, costs 25 wp"}
+  {n:"Death",       lvl:5, s:"offense",    kind:"death",  txt:"one foe dies, costs 25 hp"}
 ];
 
 /* The Magic User bonus table, p.18. A number is the bonus to thrown spells of
@@ -1827,7 +2006,7 @@ const EPITAPHS = {
     "The Game Master notes that running was, throughout, an option.",
     "Survived {day} days and spent the final nine seconds of them badly.",
     "Came in for {motive}. The {foe} came in for lunch.",
-    "It took {sp} skill points to get here and one honest d20 to leave.",
+    "It took {sp} experience points to get here and one honest d20 to leave.",
     "Not the worst delver on floor {floor}. Merely the most finished.",
     "The {foe} would like to thank the dice, the Game Master, and above all {name}.",
     "Cause of death: a {foe}, some arithmetic, and a firm refusal to withdraw.",
@@ -1835,7 +2014,7 @@ const EPITAPHS = {
   ],
   starve: [
     "Packed a grimoire, three potions and a good cloak. Packed no lunch.",
-    "Cost of living: 4 wp a day. {name} fell behind on the payments.",
+    "Cost of living: 4 hp a day. {name} fell behind on the payments.",
     "The dungeon did not kill {name}. The dungeon simply outlasted a stomach.",
     "Died on day {day} holding {gold} wilmst and absolutely nothing to spend it on.",
     "There was food two corridors away. There is always food two corridors away.",
@@ -1904,7 +2083,7 @@ const EPITAPHS = {
   poison: [
     "Poison is patient. {name} was merely available.",
     "There was a cure. It cost 100 wilmst. {name} had {gold} and no store in sight.",
-    "Died on an instalment plan, two wp per square.",
+    "Died on an instalment plan, two hp per square.",
     "Not a dramatic death — but a beautifully documented one."
   ],
   backfire: [
@@ -1921,7 +2100,7 @@ const EPITAPHS = {
   ],
   won: [
     "Walked out through the Gate on day {day}. The Game Master has requested a recount.",
-    "Reached the Gate with {sp} skill points and a limp, and retired to lie about both.",
+    "Reached the Gate with {sp} experience points and a limp, and retired to lie about both.",
     "Went in for {motive}. Came out with {motive} and a permanent flinch.",
     "Survived all five floors and will now be insufferable at parties for life.",
     "Escaped. Statistically speaking, this did not occur."
@@ -2004,7 +2183,7 @@ function rollCharacter(log) {
     logLine(`<span class="banner">A new delver rolls up.</span>`);
     say(`Class on d6: <span class="roll">${cd}</span> → ${cls}. Subclass on d8: <span class="roll">${sd}</span> → ${sub}.`);
     say(`Race on d8: <span class="roll">${rd}</span> → ${race}. Intelligence on d20: <span class="roll">${intel}</span>.`);
-    say(`Win Potential: <span class="roll">${maxWP}</span>. ${c.name} carries a ${wpn}${prof ? ` (+${prof} proficiency)` : ""} and wears ${armor.name.toLowerCase()}.`);
+    say(`Hit Points: <span class="roll">${maxWP}</span>. ${c.name} carries a ${wpn}${prof ? ` (+${prof} proficiency)` : ""} and wears ${armor.name.toLowerCase()}.`);
     const names = Object.keys(c.skills);
     if (names.length) {
       const vpTotal = cls === "Fighter" ? 8 : 12;
@@ -2020,23 +2199,23 @@ function rollCharacter(log) {
 /* ---------------- the Maze Master's opinion of you ---------------- */
 const RACE_NOTE = {
   "Human":   "No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.",
-  "Elven":   "Thin-boned, easy to hit, and carrying not much more than half a person's Win Potential — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+  "Elven":   "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
   "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising. Built low, built cheap, built to be hit. Dwarves call this a fair trade. Dwarves are rarely asked.",
   "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, which most Wilmsry take as proof they are doing something right.",
   "Fridgian":"You will not wear armour. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest, occasionally something already dead. The Game Master has notes about you.",
-  "Troll":   "Seventy-five Win Potential, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple."
+  "Troll":   "Seventy-five Hit Points, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple."
 };
 const CLASS_NOTE = {
-  "Fighter":    "The best Win Potential in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
-  "Thief":      "Forty Win Potential, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
-  "Magic User": "Twenty-five Win Potential plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough."
+  "Fighter":    "The best Hit Points in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
+  "Thief":      "Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
+  "Magic User": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough."
 };
 const SUB_NOTE = {
-  "Knight":        "Nothing under 5 wp will come near you and everything over 20 comes straight at you. You have been made important by the only creatures whose vote counts: the large ones.",
+  "Knight":        "Nothing under 5 hp will come near you and everything over 20 comes straight at you. You have been made important by the only creatures whose vote counts: the large ones.",
   "Guard":         "No critical strike, ever, and three damage off the top until level four. You are a professional. The profession is standing there.",
   "Woodsman":      "No mail, no plate, no shield, and a quarter staff you are genuinely superb with. You speak to every animal in here except dragons — a pity, as it is mostly dragons that want a word.",
   "Soldier":       "You take criticals on a 2 and deal them never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
-  "Barbarian":     "Two attacks a round and half the skill points, on the sound principle that a man swinging twice is learning nothing either time.",
+  "Barbarian":     "Two attacks a round and half the experience points, on the sound principle that a man swinging twice is learning nothing either time.",
   "Master of Arms":"Plus two with every weapon ever forged, plus three with anything you have repaired yourself. You attack creatures without question. The book files this under abilities.",
   "Samurai":       "A magical katana, armour like plate, and enough clatter that you never win the first roll of anything. You never run. The book uses the word suicidal and does not soften it.",
   "Bard":          "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Creatures too stupid to know better come for you first — which, down here, is most of them.",
@@ -2057,7 +2236,7 @@ const SUB_NOTE = {
   "Illusionist":   "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
   "Cleric":        "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
   "Summoner":      "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
-  "Apprentice":    "Double skill points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there."
+  "Apprentice":    "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there."
 };
 
 const NAMES = {
@@ -2179,6 +2358,11 @@ let CELL = 28;
 // feeds the SAME pan/CELL/CANVAS_PAD into controls.js's screenToCell — one
 // shared transform, per 04-RESEARCH.md's Anti-Pattern warning).
 let pan = { x: 0, y: 0 };
+// DR13: pinch-to-zoom map scale. `zoom` multiplies the text-scale-derived base
+// cell size in fit(); clamped so the maze never zooms uselessly tiny or huge.
+let zoom = 1;
+const ZOOM_MIN = 0.6, ZOOM_MAX = 2.4;
+const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 const CANVAS_PAD = 0;
 
 // The canvas keeps drawing the WHOLE GW x GH grid (unchanged rendering
@@ -2193,7 +2377,9 @@ function fit() {
   const sizing = window.__mzCanvasSizing;
   const settings = window.__mzSettings;
   const textSize = (settings && settings.textSize) || "M";
-  CELL = sizing ? sizing.cellSizeForTextScale(textSize) : CELL;
+  // DR13: base cell from text-scale, then apply the live pinch `zoom` factor.
+  const baseCell = sizing ? sizing.cellSizeForTextScale(textSize) : 28;
+  CELL = Math.max(6, Math.round(baseCell * zoom));
   const cssPx = CELL * GW;
   const dpr = window.devicePixelRatio || 1;
   const backing = sizing ? sizing.computeCanvasBacking(cssPx, dpr) : { backing: cssPx * dpr, style: cssPx };
@@ -2221,7 +2407,21 @@ function positionCanvas() {
 
 function reveal() {
   const { g, px, py } = S.floor;
-  const r = ((g[py][px].dark && !skill("Night Vision")) ? 1 : 2) + eff("sight");
+  // DR16 Fix 1: mirror engine/derived.js revealRadius()/inDark() — the fog
+  // reveal radius must shrink not only on a physically dark TILE but also
+  // while the engine's persistent Darkness countdown (S.c.darkFor, set by the
+  // Darkness phobia/encounter) is running. Previously this only checked the
+  // tile's own .dark, so triggering Darkness had no visible effect on the map.
+  // Night Vision still negates the contraction; eff("sight") still widens it.
+  // DR17 item 2: TRUE darkness (in the dark, no Night Vision) now reveals ONLY
+  // the square you stand on — radius 0, and NOT widened by eff("sight") (in real
+  // dark, a keener eye still sees nothing beyond your own cell). Night Vision
+  // negates it to the full 2 + eff("sight"); a lit tile is unchanged. The
+  // Amulet of Light already dispels darkFor, so a light-bearer is never "in the
+  // dark" here and keeps the full radius.
+  const inDk = (g[py][px].dark || (S.c && S.c.darkFor > 0));
+  const trueDark = inDk && !skill("Night Vision");
+  const r = trueDark ? 0 : (2 + eff("sight"));
   for (let y = py - r; y <= py + r; y++)
     for (let x = px - r; x <= px + r; x++)
       if (g[y] && g[y][x]) g[y][x].seen = true;
@@ -2406,6 +2606,106 @@ function logLine(html) {
 }
 const say = logLine;
 
+/* ---------------- DR13: transient toast feedback ----------------
+   A fixed-position, non-layout toast so action feedback (hit/miss, potion,
+   spell, flee, …) never shuffles a panel or causes CLS. mzToast is global so
+   any script/module can raise one; mzCombatFeedback turns a dispatched action's
+   events into a short toast string+tone (all game vocab lives here in the
+   classic scope where SPELLS / event names are known). */
+window.mzToast = function (text, tone) {
+  if (!text) return;
+  const host = document.getElementById("mw-toast-host");
+  if (!host) return;
+  const t = document.createElement("div");
+  t.className = "mw-toast";
+  if (tone) t.dataset.tone = tone;
+  t.textContent = text;
+  host.appendChild(t);
+  while (host.children.length > 3) host.removeChild(host.firstChild);
+  const life = Math.min(4200, 1500 + text.length * 45);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, life);
+};
+window.mzSpellName = (idx) => (SPELLS[idx] ? SPELLS[idx].n : "a spell");
+window.mzSpellCharges = () => (S && S.c && S.c.cls === "Magic User")
+  ? { left: Math.max(0, maxCharges() - S.c.spellsUsed), max: maxCharges() } : null;
+window.mzCombatFeedback = function (type, events, html, extra) {
+  events = events || []; html = html || [];
+  const has = t => events.some(e => e.type === t);
+  const first = html.length ? String(html[0]) : "";
+  let text = "", tone = "info";
+  if (/class="hurt"/.test(first)) tone = "hurt";
+  else if (/class="miss"/.test(first)) tone = "miss";
+  else if (/class="hit"/.test(first)) tone = "hit";
+  switch (type) {
+    case "attack": {
+      const strikes = events.filter(e => e.type === "struck" || e.type === "strikeMissed");
+      const hits = strikes.filter(e => e.type === "struck");
+      if (strikes.length) {
+        if (hits.length) {
+          const dmg = hits.reduce((s, e) => s + (e.dmg || 0), 0);
+          text = `Hit — ${dmg} HP${hits.some(e => e.critical) ? " · CRIT" : ""}`; tone = "hit";
+        } else { text = "Miss"; tone = "miss"; }
+      }
+      break;
+    }
+    case "drinkPotion": {
+      const heal = events.find(e => e.type === "healed");
+      text = (heal && heal.amount != null) ? `Potion — +${heal.amount} HP` : "Drank a potion"; tone = "hit";
+      break;
+    }
+    case "castSpell": {
+      if (has("noChargesLeft")) { text = "No charges left"; tone = "miss"; }
+      else { text = `Cast ${window.mzSpellName(extra && extra.idx)}`; tone = "magic"; }
+      break;
+    }
+    case "flee":
+      if (has("fled")) { text = "You slip away"; tone = "hit"; }
+      else if (has("fleeFailed")) { text = "Flee failed"; tone = "miss"; }
+      else if (has("fleeRefused")) { text = "Can't break away yet"; tone = "miss"; }
+      else { text = "You try to flee"; }
+      break;
+    case "parley":
+      if (has("beastsSoothed")) { text = "They stand down"; tone = "hit"; }
+      else if (has("parleyFailed")) { text = "Parley failed"; tone = "miss"; }
+      else if (has("parleyRefused")) { text = "They won't talk"; tone = "miss"; }
+      else { text = "You parley"; }
+      break;
+    case "sing": text = "You sing"; tone = "magic"; break;
+    case "readScroll": text = "Read a scroll"; tone = "magic"; break;
+    case "useItem": {
+      // Phase 14 (ECON-07): the combat-bar use-list toast.
+      const used = events.find(e => e.type === "itemUsed");
+      text = used && used.item ? `Used ${used.item.n}` : "Used an item"; tone = "hit";
+      break;
+    }
+  }
+  if (!text) text = first ? first.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 90) : "";
+  return { text, tone };
+};
+/* DR13: end-of-combat report — a beats group summarizing the fight (who, how
+   long, felled, HP taken, loot, level-ups) shown before returning to the map.
+   Fed pre-computed deltas by the module's noteCombat(); ROMAN etc. live here. */
+window.mzCombatReport = function (d) {
+  d = d || {};
+  const rounds = d.rounds || 1;
+  let title = "Victory", tone = "moss";
+  if (d.outcome === "soothed") { title = "They stand down"; tone = "moss"; }
+  const lines = [];
+  if (d.foes && d.foes.length) {
+    const who = d.foes.length === 1 ? d.foes[0] : `${d.foes.length} of them`;
+    lines.push(`${who}, over ${rounds} round${rounds !== 1 ? "s" : ""}.`);
+  } else {
+    lines.push(`${rounds} round${rounds !== 1 ? "s" : ""}.`);
+  }
+  if (d.killsGained > 0) lines.push(`<span class="hit">Felled ${d.killsGained}.</span>`);
+  if (d.hpDelta < 0) lines.push(`<span class="hurt">Took ${-d.hpDelta} hp.</span>`);
+  else if (d.hpDelta > 0) lines.push(`<span class="hit">Recovered ${d.hpDelta} hp.</span>`);
+  if (d.goldGained > 0) lines.push(`<span class="roll">+${d.goldGained} wilmst.</span>`);
+  if (d.leveled > 0) lines.push(`<span class="hit">Now skill level ${ROMAN[Math.max(0, d.level - 1)] || d.level}.</span>`);
+  lines.push(`Left standing on <b>${Math.max(0, d.hpNow)}/${d.hpMax} hp</b>.`);
+  return { title, tone, lines };
+};
+
 /* ---------------- derived character numbers ---------------- */
 const R_ = () => RACES[S.c.race];
 function strikeDie() {
@@ -2464,6 +2764,58 @@ function upkeep() { return Math.max(1, Math.round(R_().upkeep * (skill("Heft") ?
 function levelFromSP(sp) { let l = 1; for (let i = 4; i >= 0; i--) if (sp >= THRESHOLDS[i]) { l = i + 1; break; } return l; }
 
 /* ---------------- UI paint ---------------- */
+// DR15-B: presentation-only copy for each condition KEY the engine's
+// conditionsOf() can return. The engine emits DATA (key/polarity/remaining/…);
+// this table owns the short label + how to phrase the remaining detail. Kept in
+// the game's deadpan voice ("In the dark", "Hasted"). Anything the engine
+// surfaces that ISN'T here still renders a safe fallback chip (see below).
+const CONDITION_COPY = {
+  haste:  { label: "Hasted",    unit: "sq"  },  // double attacks
+  invis:  { label: "Invisible", unit: "sq"  },
+  acute:  { label: "Acute",     unit: "rds" },  // strike on a d6
+  ether:  { label: "Ethereal",  unit: "sq"  },  // pass through walls
+  might:  { label: "Strong"                  },  // +damage; lasts the day, no count
+  flight: { label: "Flying"                  },  // detail comes from the flight sub-state
+  darkness: { label: "In the dark", unit: "sq" },
+  phobia: { label: "Phobia"                  },  // DR17: names its own fear (see paintConditions)
+};
+
+// Render the unified good/bad condition tracker from conditionsOf(S). Reads the
+// shared engine helper (bridged) so the active SET is single-sourced; maps each
+// descriptor to a chip. Hides the whole row when nothing is active.
+function paintConditions(c) {
+  const host = document.getElementById("mm-conditions");
+  if (!host) return;
+  const enumerate = window.__mzConditionsOf;
+  const conds = (typeof enumerate === "function" ? enumerate(S) : []) || [];
+  if (!conds.length) {
+    host.hidden = true;
+    host.innerHTML = "";
+    return;
+  }
+  host.innerHTML = conds.map((cn) => {
+    // Affliction has no fixed copy row — it names its own kind (Poison/Disease).
+    // DR17 item 1: the phobia chip names the active fear — "Phobia: <fear>".
+    let label = cn.key === "affliction" ? (cn.kind || "Afflicted")
+      : cn.key === "phobia" ? `Phobia: ${cn.phobia || "Fear"}`
+      : (CONDITION_COPY[cn.key]?.label || cn.key);
+    let detail = "";
+    if (cn.key === "flight") {
+      // Flight detail from its sub-state: charged/recharging show the count.
+      if (cn.flight === "cooldown") detail = `recharge ${cn.remaining} sq`;
+      else if (cn.flight === "charged") detail = `${cn.remaining} sq`;
+      // "always"/"ready" carry no count.
+    } else if (typeof cn.remaining === "number") {
+      const unit = CONDITION_COPY[cn.key]?.unit || "";
+      detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
+    }
+    const tone = cn.polarity === "bad" ? "bad" : "good";
+    const det = detail ? ` <span class="mw-cond-detail">${detail}</span>` : "";
+    return `<span class="mw-cond mw-cond-${tone}">${label}${det}</span>`;
+  }).join("");
+  host.hidden = false;
+}
+
 function paint() {
   const c = S.c;
   document.getElementById("m-floor").textContent = S.floor.depth;
@@ -2482,6 +2834,13 @@ function paint() {
   document.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
   document.getElementById("s-name").textContent = c.name;
   document.getElementById("s-tag").textContent = `${c.race} ${c.sub} · ${c.cls}`;
+  // DR16 fix: when the character is dead they're already buried, so the
+  // "Abandon this character" control becomes the new-run entry point. Flip its
+  // label live (its onclick branches on the same dead state).
+  {
+    const abandonBtn = document.getElementById("btn-abandon-character");
+    if (abandonBtn) abandonBtn.textContent = S.dead ? "New Character" : "Abandon this character";
+  }
   document.getElementById("s-wp").textContent = Math.max(0, c.wp);
   document.getElementById("s-wpmax").textContent = c.maxWP;
   const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
@@ -2492,12 +2851,26 @@ function paint() {
   // 04-DR10: mirror the SAME c.wp/c.maxWP/c.level values onto the MAP
   // heading's compact HP+level readout (see .mw-map-heading-row CSS above) —
   // no separate data source, just a second render target for one paint().
-  document.getElementById("mm-level").textContent = "LVL " + ROMAN[c.level - 1];
+  // DR13: HUD character line — name, then "Subclass <gold level>" (the class
+  // word is implied by the subclass and dropped to keep the line uncrowded).
+  const hudName = document.getElementById("hud-name");
+  const hudCls = document.getElementById("hud-cls");
+  if (hudName) hudName.textContent = c.name;
+  if (hudCls) hudCls.innerHTML = `${c.sub} <span class="mw-hud-lvl">${ROMAN[c.level - 1]}</span>`;
   document.getElementById("mm-hp").textContent = Math.max(0, c.wp);
   document.getElementById("mm-hpmax").textContent = c.maxWP;
   const mmFill = document.getElementById("mm-hpfill");
   mmFill.style.width = pct + "%";
   mmFill.classList.toggle("low", pct < 34);
+
+  // DR15-B: unified condition tracker "up top" — render ALL active conditions
+  // (good AND bad) as a wrapping row of chips, replacing the DR13 lone
+  // poison/disease tag (which is now just one of the conditions). The active
+  // SET comes from the shared PURE engine helper conditionsOf(S) (bridged as
+  // window.__mzConditionsOf); this UI owns ONLY the label/detail/chip copy —
+  // the engine stays presentation-free. Colorblind-safe via the ▲/▼ marker +
+  // text label baked into .mw-cond-good/.mw-cond-bad.
+  paintConditions(c);
 
   document.getElementById("s-die").textContent = "d" + strikeDie();
   document.getElementById("s-hit").textContent = "1–" + toHit();
@@ -2508,7 +2881,7 @@ function paint() {
   document.getElementById("s-int").textContent = c.intel;
   document.getElementById("s-sp").textContent = Math.round(c.sp);
   document.getElementById("s-next").textContent = c.level >= 5 ? "—" : THRESHOLDS[c.level];
-  document.getElementById("s-cost").textContent = upkeep() + " wp/day";
+  document.getElementById("s-cost").textContent = upkeep() + " hp/day";
 
   document.getElementById("s-trait").innerHTML =
     `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>. ${R_().note}`;
@@ -2517,14 +2890,14 @@ function paint() {
   kit.innerHTML = "";
   const rows = [
     [c.weapon, `${w.lab}${c.prof ? ` +${c.prof}` : ""}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`],
-    [c.armor, c.armorWP > 0 ? `AR ${c.ar} · ${c.armorWP}/${c.armorMax} wp` : "destroyed"],
+    [c.armor, c.armorWP > 0 ? `AR ${c.ar} · ${c.armorWP}/${c.armorMax} hp` : "destroyed"],
     ["Potions", c.potions],
     ...(c.scrolls ? [["Scrolls", `${c.scrolls}${canRead() ? "" : " (unreadable)"}`]] : []),
     ["Rations", `${c.rations} days`],
     ["Wilmst", c.gold.toLocaleString()]
   ];
   if (c.cls === "Magic User") rows.push(["Spell charges", `${maxCharges() - c.spellsUsed} / ${maxCharges()}`]);
-  if (c.ward) rows.push([c.ward.name, `${c.ward.pool} wp left`]);
+  if (c.ward) rows.push([c.ward.name, `${c.ward.pool} hp left`]);
   if (c.might) rows.push(["Strength", `+${c.might} damage`]);
   if (c.regen) rows.push(["Regeneration", "d8 a round"]);
   rows.push(["Kills", c.kills || 0]);
@@ -2552,29 +2925,52 @@ function paint() {
     sk.appendChild(li);
   }
 
-  // carried treasure
+  // carried treasure (Phase 13, ECON-04/05: the keep/drop/equip UI)
   const carry = document.getElementById("s-carry");
   const items = c.items || [];
-  document.getElementById("s-carry-n").textContent = items.length ? `${items.length}` : "";
+  // Capacity readout — "used / slots" (content/bags.js BAGS[c.bag].slots,
+  // bridged as window.__mzBags). A bag-less character shows just the count.
+  const bagSlots = (window.__mzBags && window.__mzBags[c.bag] && window.__mzBags[c.bag].slots) || null;
+  document.getElementById("s-carry-n").textContent = bagSlots ? `${items.length} / ${bagSlots}` : (items.length ? `${items.length}` : "");
+  const bagFull = bagSlots != null && items.length >= bagSlots;
   carry.innerHTML = "";
-  if (!items.length) {
+
+  // ≥48dp helper: build a small action button dispatching an engine inventory
+  // bridge (never wrapped in the classic act() — the bridge owns its own
+  // state-swap + repaint), with an optional disabled state.
+  const gearBtn = (label, onClick, disabled) => {
+    const bt = document.createElement("button");
+    bt.className = "small"; bt.textContent = label;
+    bt.style.marginTop = "4px"; bt.style.marginRight = "6px"; bt.style.alignSelf = "flex-start";
+    if (disabled) { bt.disabled = true; }
+    else bt.onclick = onClick;
+    return bt;
+  };
+
+  // Equipped weapon/armor rows first, each with an Unequip control (stows the
+  // worn piece back into the bag — engine gates on a free slot). A bare-handed
+  // "Fists" weapon / "Nothing" armor has nothing to unequip.
+  const wornRow = (label, sub, slot, canUnequip) => {
+    const li = document.createElement("li");
+    li.className = "mw-worn";
+    li.innerHTML = `<b>${label} <span class="mw-worn-tag">worn</span></b><i>${sub}</i>`;
+    if (canUnequip) li.appendChild(gearBtn(bagFull ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull));
+    carry.appendChild(li);
+  };
+  wornRow(c.weapon, `${w.lab}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`, "weapon", c.weapon && c.weapon !== "Fists" && WEAPONS[c.weapon]);
+  if (c.armor && c.armor !== "Nothing")
+    wornRow(c.armor, c.armorWP > 0 ? `AR ${c.ar} · ${c.armorWP}/${c.armorMax} hp` : "destroyed", "armor", true);
+
+  // Phase 14 (ECON-06/07): the carried-item rows now come from the SHARED
+  // renderCarriedList component (used identically by the store sell section and
+  // the combat use-list). clear:false preserves the worn weapon/armor rows
+  // appended just above. Use routes through the engine bridge (window.mzUseItem)
+  // like Equip/Drop already do — no more classic act(()=>useItem(i)).
+  renderCarriedList(carry, items, {
+    clear: false,
+    actions: ["use", "equip", "drop"],
     // 04-UI-SPEC.md Copywriting Contract — GEAR tab's CARRIED empty state.
-    const li = document.createElement("li");
-    li.className = "none mw-empty";
-    li.innerHTML = `<b class="mw-empty-head">NOTHING LEFT TO CARRY</b><i class="mw-empty-body">You used it all. That was the plan, technically.</i>`;
-    carry.appendChild(li);
-  } else items.forEach((it, i) => {
-    const li = document.createElement("li");
-    const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
-    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${it.txt}</i>`;
-    if (itemReady(it)) {
-      const bt = document.createElement("button");
-      bt.className = "small"; bt.textContent = "Use";
-      bt.style.marginTop = "4px"; bt.style.alignSelf = "flex-start";
-      bt.onclick = () => act(() => useItem(i));
-      li.appendChild(bt);
-    }
-    carry.appendChild(li);
+    emptyHtml: `<b class="mw-empty-head">NOTHING LEFT TO CARRY</b><i class="mw-empty-body">You used it all. That was the plan, technically.</i>`,
   });
 
   // the Maze Master's notes on whoever is currently walking around down there
@@ -2597,6 +2993,7 @@ function paint() {
   // that module script finishes its own top-level setup.
   window.__mzRenderGrimoire?.();
 
+  renderPartyRail();
   renderEncounter();
   draw();
 }
@@ -2639,7 +3036,7 @@ function move(dir) {
         ok = false;
         for (let g = 0; g <= ft; g += 10) if (D(20) > 2) hurt += tbl.fall();
         if (skill("Climbing")) hurt = Math.ceil(hurt / 2);
-        evt(`d10 → <span class="roll">${r}</span> at ${ft + 10} feet. <span class="hurt">You come off — ${hurt} wp.</span>`);
+        evt(`d10 → <span class="roll">${r}</span> at ${ft + 10} feet. <span class="hurt">You come off — ${hurt} hp.</span>`);
       }
     } else {
       const row = LEAP_TABLE[D(4) - 1];
@@ -2650,7 +3047,7 @@ function move(dir) {
         ok = false;
         hurt = D(6) + D(6);
         if (skill("Climbing")) hurt = Math.ceil(hurt / 2);
-        evt(`<span class="hurt">Short. ${hurt} wp on the way down.</span>`);
+        evt(`<span class="hurt">Short. ${hurt} hp on the way down.</span>`);
       }
     }
     if (!ok) {
@@ -2673,8 +3070,8 @@ function move(dir) {
     if (S.steps % af.per === 0) {
       const l = Math.min(af.loss(), Math.max(0, S.c.wp - 1));
       S.c.wp -= l;
-      if (l > 0) say(`<span class="hurt">${af.kind}: −${l} wp.</span>`);
-      else say(`<span class="hurt">${af.kind} has taken everything it can. You are on one wp.</span>`);
+      if (l > 0) say(`<span class="hurt">${af.kind}: −${l} hp.</span>`);
+      else say(`<span class="hurt">${af.kind} has taken everything it can. You are on one hp.</span>`);
       if (--af.left <= 0) { S.c.affliction = null; say(`<span class="hit">It passes.</span>`); }
     }
   }
@@ -2714,13 +3111,13 @@ function newDay(camped) {
   evt(`<span class="banner">Day ${S.day}.</span>`);
   if (S.c.rations >= eats) {
     S.c.rations -= eats;
-    evt(`${camped ? "You make camp" : "A hundred squares walked"}. You eat, sleep eight hours, and pay <span class="roll">${cost} wp</span> of upkeep from your rations.`);
+    evt(`${camped ? "You make camp" : "A hundred squares walked"}. You eat, sleep eight hours, and pay <span class="roll">${cost} hp</span> of upkeep from your rations.`);
     // eight hours' rest mends you
     let heal = D(10) + 2 * S.c.level;
     if (R_().heal2x || S.c.sub === "Soldier") heal *= 2;
     const before = S.c.wp;
     S.c.wp = Math.min(S.c.maxWP, S.c.wp + heal);
-    if (S.c.wp > before) evt(`Rest restores <span class="hit">+${S.c.wp - before} wp</span>.`);
+    if (S.c.wp > before) evt(`Rest restores <span class="hit">+${S.c.wp - before} hp</span>.`);
 
     if (S.c.affliction) { S.c.affliction = null; evt(`You sweat the ${S.c.affliction ? "" : ""}sickness out overnight. <span class="hit">Cured.</span>`); }
     // patching armour by the fire: Sewing for thieves, Master of Arms for fighters
@@ -2749,7 +3146,7 @@ function newDay(camped) {
     }
   } else {
     S.c.wp -= cost;
-    evt(`<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${cost} wp</span> straight out of you, and you wake no better than you lay down.`);
+    evt(`<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${cost} hp</span> straight out of you, and you wake no better than you lay down.`);
     if (S.c.wp <= 0) return die("starve");
   }
   // wandering monsters: d20 per hour slept, a 1 wakes you
@@ -2850,7 +3247,7 @@ function descend() {
   const bonus = 40 + 30 * S.floor.depth;
   S.c.sp += bonus;
   evt(`<span class="banner">You find the stair down.</span>`);
-  evt(`Surviving floor ${S.floor.depth} is worth <span class="roll">${bonus}</span> skill points.`);
+  evt(`Surviving floor ${S.floor.depth} is worth <span class="roll">${bonus}</span> experience points.`);
   checkLevel();
   S.floor = genFloor(S.floor.depth + 1);
   reveal();
@@ -2916,7 +3313,7 @@ function rollMailPiece() {
   const a = pick(ARMORS);
   const m = MAGIC_ARMOR_TABLE[D(6) - 1];
   return { kind:"armor", n:`Warded ${a.name.toLowerCase()}`, armor:a.name,
-           ar:a.ar + m.ar, wp:a.wp + m.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar + m.ar}, ${a.wp + m.wp} wp` };
+           ar:a.ar + m.ar, wp:a.wp + m.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar + m.ar}, ${a.wp + m.wp} hp` };
 }
 function rollTreasureItem(depth) {
   if (!hasPicks() && D(12) === 1) return { kind:"picks", n:"Lockpicks", txt:"1–5 on d10 against any lock" };
@@ -2971,7 +3368,7 @@ function useItem(i) {
   const kind = it.kind === "potion" ? it.eff2 : it.use;
   const foes = C ? liveFoes() : [];
   switch (kind) {
-    case "heal":     { const a = D(10) + 2; S.c.wp = Math.min(S.c.maxWP, S.c.wp + a); say(`<span class="hit">+${a} wp.</span>`); break; }
+    case "heal":     { const a = D(10) + 2; S.c.wp = Math.min(S.c.maxWP, S.c.wp + a); say(`<span class="hit">+${a} hp.</span>`); break; }
     case "full":     { S.c.wp = S.c.maxWP; say(`<span class="hit">Back to ${S.c.maxWP}.</span>`); break; }
     case "poison":
     case "disease":  { S.c.affliction = null; say(`<span class="hit">Whatever was in you is gone.</span>`); break; }
@@ -2984,7 +3381,7 @@ function useItem(i) {
     case "ether":    { S.c.ether = 20; say(`<span class="hit">Twenty squares of walking through stone.</span>`); break; }
     case "half":     { S.c.halfNext = true; say(`<span class="hit">The next blow lands at half.</span>`); break; }
     case "death":    { say(`<span class="hurt">"??" was the colour. Your dead!</span>`); S.c.wp = 0; die("potion"); return; }
-    case "dome":     { S.c.ward = { pool:100, rounds:99, reflect:false, name:it.n }; say(`<span class="hit">A dome of 100 wp.</span>`); break; }
+    case "dome":     { S.c.ward = { pool:100, rounds:99, reflect:false, name:it.n }; say(`<span class="hit">A dome of 100 hp.</span>`); break; }
     case "freeze":   { foes.slice(0, 2).forEach(f => f.asleep = 99); say(`<span class="hit">Frozen where they stand.</span>`); break; }
     case "weaken":   { if (C) C.weakened = true; say(`<span class="hit">Every hit on them lands double now.</span>`); break; }
     case "stone":    { foes.slice(0, 2).forEach(f => { f.wp = 0; killFoe(f); }); break; }
@@ -2996,6 +3393,60 @@ function useItem(i) {
   if (S.combat) afterPlayerAction(); else (paint(), save());
 }
 
+/* ---------------- shared carried-item list (Phase 14, ECON-06/07) ----------------
+   ONE carried-item list renderer, authored once and reused by three hosts: the
+   GEAR tab (paint()), the store "Your gear" SELL section, and the combat-bar
+   USE list (both in renderEncounter()). Each host passes which per-item actions
+   to surface (`use`/`equip`/`drop`/`sell`) and an optional `filter`, so the gear
+   list is never built three times. Every action button routes through the
+   window.mz* engine bridges (mzUseItem/mzEquipItem/mzDropItem/mzSellItem) — the
+   pure applyAction() seam — so the classic UI never mutates GameState off-band.
+   `container` is a <ul>; rows are <li> with ≥48dp action buttons. */
+function renderCarriedList(container, items, opts = {}) {
+  // `clear` (default true) wipes the container first — the store/combat hosts
+  // own their <ul> outright. The GEAR tab passes clear:false so its worn
+  // weapon/armor rows (appended before this call) survive.
+  if (opts.clear !== false) container.innerHTML = "";
+  const rows = (items || [])
+    .map((it, i) => ({ it, i }))
+    .filter(({ it }) => (opts.filter ? opts.filter(it) : true));
+  if (!rows.length) {
+    if (opts.emptyHtml) {
+      const li = document.createElement("li");
+      li.className = "none mw-empty";
+      li.innerHTML = opts.emptyHtml;
+      container.appendChild(li);
+    }
+    return;
+  }
+  const mkBtn = (label, onClick, disabled) => {
+    const bt = document.createElement("button");
+    bt.className = "small";
+    bt.textContent = label;
+    bt.style.marginTop = "4px"; bt.style.marginRight = "6px"; bt.style.alignSelf = "flex-start";
+    if (disabled) bt.disabled = true; else bt.onclick = onClick;
+    return bt;
+  };
+  rows.forEach(({ it, i }) => {
+    const li = document.createElement("li");
+    const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
+    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${it.txt ?? ""}</i>`;
+    for (const a of (opts.actions || [])) {
+      if (a === "use") {
+        if (itemReady(it)) li.appendChild(mkBtn("Use", () => window.mzUseItem?.(i)));
+      } else if (a === "equip") {
+        if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => window.mzEquipItem?.(i)));
+      } else if (a === "drop") {
+        li.appendChild(mkBtn("Drop", () => window.mzDropItem?.(i)));
+      } else if (a === "sell") {
+        const price = window.__mzSellPrice ? window.__mzSellPrice(it) : null;
+        li.appendChild(mkBtn(price != null ? `Sell · ${price.toLocaleString()} wm` : "Sell", () => window.mzSellItem?.(i)));
+      }
+    }
+    container.appendChild(li);
+  });
+}
+
 /* ---------------- the store ---------------- */
 function openStore() {
   const stock = [], d = S.floor.depth, race = S.c.race;
@@ -3003,7 +3454,7 @@ function openStore() {
   const add = (n, cost, buy, sub) => stock.push({ n, sub, cost: Math.max(1, Math.round(cost)), buy });
 
   for (const f of [FOODS[0], FOODS[1], FOODS[5]])
-    add(`${f.n} (+${f.wp} wp)`, f.cost, () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + f.wp); S.c.rations++; });
+    add(`${f.n} (+${f.wp} hp)`, f.cost, () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + f.wp); S.c.rations++; });
   for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]])
     add(`${p.n} potion`, p.price, () => giveItem({ kind:"potion", n:`${p.n} potion`, txt:p.txt, eff2:p.eff, uses:1 }), p.txt);
   if (!hasPicks()) add("Set of lockpicks", 450, () => giveItem({ kind:"picks", n:"Lockpicks", txt:"1–5 on d10 against any lock" }), "opens boxes on 1–5");
@@ -3023,7 +3474,7 @@ function openStore() {
   const mails = ARMORS.filter(a => a.cls.includes(letter) && a.ar > S.c.ar);
   if (mails.length && !RACES[race].noArmor) {
     const a = mails[0];
-    add(a.name, priceFor(a.cost, race), () => takeItem({ kind:"armor", n:a.name, armor:a.name, ar:a.ar, wp:a.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar}` }), `AR ${a.ar}, ${a.wp} wp`);
+    add(a.name, priceFor(a.cost, race), () => takeItem({ kind:"armor", n:a.name, armor:a.name, ar:a.ar, wp:a.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar}` }), `AR ${a.ar}, ${a.wp} hp`);
   }
   if (S.c.cls === "Magic User") add("Sealed scroll", 900, () => { S.c.scrolls = (S.c.scrolls || 0) + 1; });
   // one thing on the shelf you cannot simply buy
@@ -3073,7 +3524,7 @@ function springTrap() {
   if (S.c.sub === "Cat Burglar") { dmg *= 2; evt(`A Cat Burglar goes through first and takes the whole of it.`); }
   if (skill("Hardiness")) dmg = Math.max(1, dmg - 3);
   S.c.wp -= dmg;
-  evt(`d8 → <span class="roll">${r}</span>: ${tr.n}. <span class="hurt">−${dmg} wp.</span>`);
+  evt(`d8 → <span class="roll">${r}</span>: ${tr.n}. <span class="hurt">−${dmg} hp.</span>`);
   if (tr.poison) { S.c.affliction = { kind:"Poison", loss:()=>2*D(6), per:1, left:10 }; evt(`<span class="hurt">And the arrow was poisoned.</span>`); }
   if (S.c.wp <= 0) return die("trap");
 }
@@ -3141,12 +3592,12 @@ function encounterDot() {
 function tableFour(result) {
   beginEvent("The dungeon takes an interest", "ditto");
   const apply = {
-    "+10 WP":  () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + 10); evt(`<span class="hit">+10 wp.</span>`); },
-    "-10 WP":  () => { S.c.wp -= 10; evt(`<span class="hurt">−10 wp.</span> No reason given.`); },
-    "+10 SP":  () => { S.c.sp += 10; evt(`<span class="hit">+10 skill points.</span>`); checkLevel(); },
-    "+25 WP":  () => { S.c.maxWP += 25; S.c.wp += 25; evt(`<span class="hit">+25 to your base Win Potential.</span>`); },
-    "+25 SP":  () => { S.c.sp += 25; evt(`<span class="hit">+25 skill points.</span>`); checkLevel(); },
-    "-15 WP":  () => { S.c.wp -= 15; evt(`<span class="hurt">−15 wp.</span>`); },
+    "+10 HP":  () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + 10); evt(`<span class="hit">+10 hp.</span>`); },
+    "-10 HP":  () => { S.c.wp -= 10; evt(`<span class="hurt">−10 hp.</span> No reason given.`); },
+    "+10 XP":  () => { S.c.sp += 10; evt(`<span class="hit">+10 experience points.</span>`); checkLevel(); },
+    "+25 HP":  () => { S.c.maxWP += 25; S.c.wp += 25; evt(`<span class="hit">+25 to your base Hit Points.</span>`); },
+    "+25 XP":  () => { S.c.sp += 25; evt(`<span class="hit">+25 experience points.</span>`); checkLevel(); },
+    "-15 HP":  () => { S.c.wp -= 15; evt(`<span class="hurt">−15 hp.</span>`); },
     "+3000 WM":() => { evt(`Just lying there:`); gainWilmst(3000); },
     "-All armour": () => { S.c.armor = "Nothing"; S.c.ar = 0; S.c.armorWP = 0; S.c.armorMax = 0; evt(`<span class="hurt">Every piece of armour you own is gone.</span>`); }
   }[result];
@@ -3159,7 +3610,7 @@ function findFood() {
   const f = FOODS[D(6) - 1];
   S.c.wp = Math.min(S.c.maxWP, S.c.wp + f.wp);
   S.c.rations++;
-  evt(`${f.n}. <span class="hit">+${f.wp} wp</span> and a day's food.`);
+  evt(`${f.n}. <span class="hit">+${f.wp} hp</span> and a day's food.`);
 }
 
 function findGrimoire() {
@@ -3199,8 +3650,8 @@ function meetFaerie() {
     const n = gift === "+2 Level" ? 2 : 1;
     S.c.sp = Math.max(S.c.sp, THRESHOLDS[Math.min(4, S.c.level - 1 + n)]);
     checkLevel();
-  } else if (gift === "+d20 Base WP") { const a = D(20); S.c.maxWP += a; S.c.wp += a; evt(`<span class="hit">+${a} to your base.</span>`); }
-  else if (gift === "-d10 Base WP")   { const a = D(10); S.c.maxWP = Math.max(5, S.c.maxWP - a); S.c.wp = Math.min(S.c.wp, S.c.maxWP); evt(`<span class="hurt">−${a} from your base.</span> Faeries are not all nice.`); }
+  } else if (gift === "+d20 Base HP") { const a = D(20); S.c.maxWP += a; S.c.wp += a; evt(`<span class="hit">+${a} to your base.</span>`); }
+  else if (gift === "-d10 Base HP")   { const a = D(10); S.c.maxWP = Math.max(5, S.c.maxWP - a); S.c.wp = Math.min(S.c.wp, S.c.maxWP); evt(`<span class="hurt">−${a} from your base.</span> Faeries are not all nice.`); }
   else if (gift === "Magic Weapon")   takeItem(rollBlade(S.floor.depth, true));
   else if (gift === "Magic Armor")    takeItem(rollMailPiece(S.floor.depth));
   else if (gift === "Miscellaneous Magic") findMisc();
@@ -3224,14 +3675,14 @@ function catchAffliction() {
   S.c.affliction = { kind: a.kind, loss: a.loss, per: a.per, left: D(20) };
   const first = Math.min(a.loss(), Math.max(0, S.c.wp - 1));
   S.c.wp -= first;
-  evt(`<span class="hurt">−${first} wp</span>, and it keeps taking more until it is cured or slept off.`);
+  evt(`<span class="hurt">−${first} hp</span>, and it keeps taking more until it is cured or slept off.`);
 }
 
 function goInsane() {
   beginEvent("Insanity", "stamp");
   const r = D(6);
   evt(`Something in the corridor gets into your head. d6 → <span class="roll">${r}</span>: you ${INSANITY[r - 1]}.`);
-  if (r === 1) { S.c.wp = Math.ceil(S.c.wp / 2); evt(`<span class="hurt">You turn the blade on yourself. Half your Win Potential.</span>`); }
+  if (r === 1) { S.c.wp = Math.ceil(S.c.wp / 2); evt(`<span class="hurt">You turn the blade on yourself. Half your Hit Points.</span>`); }
   else if (r === 3) { teleport(); }
   else if (r === 5) { S.c.might = D(10); evt(`<span class="hit">A frothing rage: +${S.c.might} damage until you sleep.</span>`); }
   if (S.c.wp <= 0) die("insanity");
@@ -3306,7 +3757,7 @@ function startCombat(wandering, forced) {
   const first = rollInitiative();
   const samurai = S.c.sub === "Samurai", slow = R_().slow;
   say(`<span class="banner">${wandering ? "Wandering monsters" : "Encounter"}: ${type}.</span>`);
-  say(`${foes.map(f => `${f.name} (lvl ${ROMAN[f.lvl-1]}, ${f.wp} wp)`).join(", ")}.`);
+  say(`${foes.map(f => `${f.name} (lvl ${ROMAN[f.lvl-1]}, ${f.wp} hp)`).join(", ")}.`);
   say(`${S.combat.initNote}${samurai ? " A Samurai never wins the first roll." : ""}${slow ? " A Fridgian is always last to get moving." : ""}${skill("Acute Hearing") ? " You heard them a corridor away." : ""} ${first === "you" ? "You move first." : "They move first."}`);
   if (tracked) say(`<span class="hit">You can still back out of this one cleanly</span> — this round only.`);
   if (S.c.pendingAlly) {
@@ -3318,7 +3769,7 @@ function startCombat(wandering, forced) {
   if (S.c.sub === "Warlock" && type === "Walking Dead") {
     const boost = S.c.level;
     foes.forEach(f => { f.wp += boost; f.maxWP += boost; });
-    say(`<span class="hurt">The dead stand a little straighter near a Warlock:</span> +${boost} wp each.`);
+    say(`<span class="hurt">The dead stand a little straighter near a Warlock:</span> +${boost} hp each.`);
   }
 
   // a Knight is beneath the notice of small things; a Con Artist is not worth the trouble
@@ -3412,7 +3863,7 @@ function playerStrike() {
 
     // Death-touch: a 1 kills anything already weak
     if (roll === 1 && skill("Death-touch") && t.wp < 15) {
-      say(`<span class="hit">Death-touch.</span> A 1, and ${t.name} had less than 15 wp left in it.`);
+      say(`<span class="hit">Death-touch.</span> A 1, and ${t.name} had less than 15 hp left in it.`);
       t.wp = 0; killFoe(t); continue;
     }
     // "Heavy armor negates any advantages they may gain for stealthiness"
@@ -3455,7 +3906,7 @@ function killFoe(f) {
                 * (S.c.sub === "Apprentice" && S.c.level < 3 ? 2 : 1);
   const gained = Math.round(raw * mul);
   S.c.sp += gained;
-  say(`${f.name} drops, permanently unbothered by how this ends. Skill points: d6 <span class="roll">${roll}</span> × level ${f.lvl} = ${raw}, ×${mul} solo delve → <span class="hit">+${gained}</span>.`);
+  say(`${f.name} drops, permanently unbothered by how this ends. Experience points: d6 <span class="roll">${roll}</span> × level ${f.lvl} = ${raw}, ×${mul} solo delve → <span class="hit">+${gained}</span>.`);
   // creatures carry things, and the things are worth wilmst
   const purse = { "Humans":12, "Demons":8, "Magical":8, "Walking Dead":6, "Lair Beasts":3, "Beasts":1 }[f.type] || 4;
   const coin = Math.round(D(10) * f.lvl * purse / LOOT_DIVISOR);
@@ -3467,7 +3918,7 @@ function killFoe(f) {
       const fed = Math.max(1, Math.round(f.maxWP / 4));
       S.c.wp = Math.min(S.c.maxWP, S.c.wp + fed);
       S.c.rations++;
-      say(`Cooking: a quarter of its Win Potential is <span class="hit">+${fed} wp</span> and <span class="hit">+1 ration</span>.`);
+      say(`Cooking: a quarter of its Hit Points is <span class="hit">+${fed} hp</span> and <span class="hit">+1 ration</span>.`);
     } else if (D(6) >= 4) {
       S.c.rations++;
       say(`There's meat on it. You cook what you can carry — <span class="hit">+1 ration.</span>`);
@@ -3484,7 +3935,7 @@ function checkLevel() {
     const add = R_().wpMul ? Math.round(gain * R_().wpMul) : gain;
     S.c.maxWP += add; S.c.wp += add;
     say(`<span class="banner">Skill level ${ROMAN[S.c.level - 1]}.</span>`);
-    say(`Win Potential <span class="hit">+${add}</span>. You now strike on <span class="roll">d${strikeDie()}</span>.`);
+    say(`Hit Points <span class="hit">+${add}</span>. You now strike on <span class="roll">d${strikeDie()}</span>.`);
 
     // a Soldier is made a Knight at three; an Apprentice finally becomes something
     if (S.c.sub === "Soldier" && S.c.level >= 3) {
@@ -3532,7 +3983,7 @@ function castSpell(idx) {
     if (sp.dmg && (sp.kind === "thrown")) {
       const self = Math.ceil(sp.dmg() / 2);
       S.c.wp -= self;
-      say(`It goes off in your hands: <span class="hurt">−${self} wp</span>.`);
+      say(`It goes off in your hands: <span class="hurt">−${self} hp</span>.`);
       if (S.c.wp <= 0) return die("backfire");
     }
     if (S.combat) afterPlayerAction(); else (paint(), save());
@@ -3555,7 +4006,7 @@ function castSpell(idx) {
     if (doubled && D(8) === 1) {
       const hurt = lvl * lvl + D(6);
       S.c.wp -= hurt;
-      say(`<span class="hurt">The summoning turns on you</span> — one time in eight, for a Summoner, it does. <span class="hurt">−${hurt} wp</span>.`);
+      say(`<span class="hurt">The summoning turns on you</span> — one time in eight, for a Summoner, it does. <span class="hurt">−${hurt} hp</span>.`);
       if (S.c.wp <= 0) return die("summon");
     } else {
       const ally = {
@@ -3594,7 +4045,7 @@ function castSpell(idx) {
     const d = sp.dmg() * mult;
     liveFoes().forEach(f => { f.wp -= d; if (f.wp <= 0) killFoe(f); });
     say(`Earthquake: <span class="hit">${d}</span> to everything standing on the floor.`);
-    if (!S.c.ward) { S.c.wp -= Math.ceil(d / 2); say(`<span class="hurt">Including you — you had no shield up. −${Math.ceil(d/2)} wp.</span>`); if (S.c.wp <= 0) return die("quake"); }
+    if (!S.c.ward) { S.c.wp -= Math.ceil(d / 2); say(`<span class="hurt">Including you — you had no shield up. −${Math.ceil(d/2)} hp.</span>`); if (S.c.wp <= 0) return die("quake"); }
   } else if (sp.kind === "vapor") {
     const r = S.c.level >= 5 ? 4 : D(6);
     const outcome = ["faint — they hit on 1-6","blind — they need a 1","choke — they cannot strike","death, unless they roll a 1 on d10","hallucinate — they strike each other","choke — they cannot strike"][r - 1];
@@ -3642,11 +4093,11 @@ function castSpell(idx) {
     say(`Mirror Self: <span class="hit">${S.c.mirror} rounds</span> of copies. They need a 1 to find the real one.`);
   } else if (sp.kind === "ward") {
     S.c.ward = { pool: sp.pool, rounds: sp.rounds, reflect: !!sp.reflect, name: sp.n };
-    say(`${sp.n}: a skin of force, <span class="hit">${sp.pool} wp</span> of it${sp.reflect ? ", throwing back what it stops" : ""}.`);
+    say(`${sp.n}: a skin of force, <span class="hit">${sp.pool} hp</span> of it${sp.reflect ? ", throwing back what it stops" : ""}.`);
   } else if (sp.kind === "might") {
     S.c.might = sp.dmg();
     if (!S.c.strengthBoost) { S.c.strengthBoost = S.c.maxWP; S.c.maxWP += S.c.strengthBoost; S.c.wp += S.c.strengthBoost; }
-    say(`Strength: <span class="hit">Win Potential doubled</span> and <span class="hit">+${S.c.might} damage</span> until you next sleep.`);
+    say(`Strength: <span class="hit">Hit Points doubled</span> and <span class="hit">+${S.c.might} damage</span> until you next sleep.`);
   } else if (sp.kind === "regen") {
     S.c.regen = true;
     say(`Regeneration: flesh knits back <span class="hit">d8 a round</span> for this fight.`);
@@ -3666,12 +4117,12 @@ function castSpell(idx) {
     let amt = sp.dmg() + (S.c.sub === "Cleric" ? 3 : 0);
     if (R_().heal2x) amt *= 2;
     S.c.wp = Math.min(S.c.maxWP, S.c.wp + amt);
-    say(`${sp.n}: <span class="hit">+${amt} wp</span>.`);
+    say(`${sp.n}: <span class="hit">+${amt} hp</span>.`);
   } else if (sp.kind === "death") {
-    if (S.c.wp <= 26) { say(`<span class="miss">Not enough left in you to pay Death's 25 wp.</span>`); S.c.spellsUsed--; return; }
+    if (S.c.wp <= 26) { say(`<span class="miss">Not enough left in you to pay Death's 25 hp.</span>`); S.c.spellsUsed--; return; }
     S.c.wp -= 25;
     const t = liveFoes()[0];
-    say(`Death. Two rounds of concentration, 25 wp spent.`);
+    say(`Death. Two rounds of concentration, 25 hp spent.`);
     if (t) { t.wp = 0; killFoe(t); }
   } else if (sp.kind === "status") {
     const t = C && liveFoes()[0];
@@ -3695,7 +4146,7 @@ function castSpell(idx) {
         say(`<span class="hit">${dmg} damage</span>${mult > 1 ? ` (×${mult} for casting ${mult} levels above it)` : ""}.`);
         if (freeze) {
           t.alive = false; t.frozen = true; t.wp = 0;
-          say(`<span class="hit">${t.name} is frozen solid</span> — and you get no skill points for ice.`);
+          say(`<span class="hit">${t.name} is frozen solid</span> — and you get no experience points for ice.`);
           continue;
         }
         if (t.wp <= 0) { killFoe(t); continue; }
@@ -3713,7 +4164,7 @@ function drinkPotion() {
   let amt = 2 * D(10) + 5;
   if (R_().heal2x) amt *= 2;
   S.c.wp = Math.min(S.c.maxWP, S.c.wp + amt);
-  say(`Potion: <span class="hit">+${amt} wp</span>. ${S.c.potions} left.`);
+  say(`Potion: <span class="hit">+${amt} hp</span>. ${S.c.potions} left.`);
   if (S.combat) afterPlayerAction(); else (paint(), save());
 }
 
@@ -3763,7 +4214,7 @@ function parley() {
   if (roll <= need) {
     const sp = Math.round(liveFoes().reduce((a, f) => a + D(6) * f.lvl, 0) * 2.5);
     S.c.sp += sp;
-    say(`<span class="hit">They stand down.</span> Half the skill points for none of the blood: <span class="hit">+${sp}</span>.`);
+    say(`<span class="hit">They stand down.</span> Half the experience points for none of the blood: <span class="hit">+${sp}</span>.`);
     if (C.type === "Humans" && D(6) >= 4) { const wm = D(6) * 100 * S.floor.depth; S.c.gold += wm; say(`One of them pays you to forget the whole thing. <span class="hit">+${wm.toLocaleString()} wilmst.</span>`); }
     checkLevel(); endCombat(); return;
   }
@@ -3776,7 +4227,7 @@ const SONGS = [
   {lvl:2, n:"Inspire the Heart", txt:"+1 to hit this fight"},
   {lvl:3, n:"Lullaby",           txt:"d6 foes sleep"},
   {lvl:4, n:"Cry of Thunder",    txt:"d12 foes frozen d8 rounds"},
-  {lvl:5, n:"An Ode to Death",   txt:"equals reduced to 1 wp"}
+  {lvl:5, n:"An Ode to Death",   txt:"equals reduced to 1 hp"}
 ];
 function songReady() {
   return S.c.sub === "Bard" && (S.steps - (S.c.songAt ?? -999)) >= 100;
@@ -3802,7 +4253,7 @@ function sing() {
     say(`d12 → <span class="roll">${n}</span>, frozen for <span class="roll">${r}</span> rounds.`);
   } else {
     foes.forEach(f => { if (f.lvl <= S.c.level) f.wp = 1; });
-    say(`Everything of your own level is left with <span class="hit">1 wp</span> and a look on its face.`);
+    say(`Everything of your own level is left with <span class="hit">1 hp</span> and a look on its face.`);
   }
   afterPlayerAction();
 }
@@ -3877,7 +4328,7 @@ function foeTurn() {
   const C = S.combat; if (!C) return;
   if (S.c.regen) {
     const r = D(8);
-    if (S.c.wp < S.c.maxWP) { S.c.wp = Math.min(S.c.maxWP, S.c.wp + r); say(`Regeneration knits <span class="hit">+${r} wp</span>.`); }
+    if (S.c.wp < S.c.maxWP) { S.c.wp = Math.min(S.c.maxWP, S.c.wp + r); say(`Regeneration knits <span class="hit">+${r} hp</span>.`); }
   }
   for (const f of C.foes) {
     if (f.acid && f.acid.rounds > 0) {
@@ -3989,12 +4440,20 @@ function epitaphCtx(detail) {
 // hand-rolled their own independent localStorage reads/writes on this exact
 // key). window.mzStorage is assigned by the trailing <script type="module">
 // block below BEFORE it invokes window.__mzClassicBoot() (which is the only
-// call site that awaits loadGraves()); every OTHER call site here
-// (bury()/btn-clearyard) still calls saveGraves() fire-and-forget, matching
-// this abstraction's own fire-and-enqueue posture — storage.js's per-key
-// write queue still orders it correctly.
+// call site that awaits loadGraves()); the classic bury() call site still
+// calls saveGraves() fire-and-forget, matching this abstraction's own
+// fire-and-enqueue posture — storage.js's per-key write queue still orders it
+// correctly. (audit-batch E12 removed the former #btn-clearyard saveGraves()
+// caller — the lifetime total is non-clearable by design now.)
 const GRAVE_KEY = "ddr.graveyard.v1";
+// audit-batch E12 (part 2): the never-trimmed lifetime death total, owned and
+// incremented by src/browser/engineAdapter.js#persistGrave (the live death
+// choke point). Read here (read-only) on the Dead-tab open the same way the
+// capped `graves` array is, so the #yard-count copy can show the TRUE body
+// count even though only the last 5 stones are stored/rendered.
+const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
 let graves = [];
+let gravesTotal = 0;
 // 04-05: tracked separately from `graves.length === 0` so a genuine storage
 // read failure renders the distinct "THE LEDGER WON'T OPEN" fallback
 // (04-UI-SPEC.md Copywriting Contract / UI Considerations backstop) rather
@@ -4011,11 +4470,34 @@ async function loadGraves() {
     gravesLoadError = true;
   }
   if (!Array.isArray(graves)) graves = [];
+  // audit-batch E12 (part 2): pull the lifetime total alongside the graves.
+  // Migration-safe — a pre-E12 player has graves but no total key yet, so fall
+  // back to the visible grave count (Number(null) is a finite 0, so the null
+  // check is needed to tell "missing key" from a real stored "0"). max() guards
+  // any transient under-count so the total is never fewer than the stones shown.
+  try {
+    const tr = await window.mzStorage.getItem(GRAVE_TOTAL_KEY);
+    const tn = Number(tr);
+    gravesTotal = tr !== null && Number.isFinite(tn) ? tn : graves.length;
+  } catch (e) {
+    gravesTotal = graves.length;
+  }
+  gravesTotal = Math.max(gravesTotal, graves.length);
 }
 async function saveGraves() {
   try { await window.mzStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
 }
 /* @gsd:dual-write-convergence-extract:graves:end */
+// DR18 (DR15-C): read-only bridge so the trailing <script type="module">'s
+// title-screen code can gate its "View the Dead" entry on a non-empty
+// graveyard. gravesTotal/graves are classic-script top-level `let`s, invisible
+// to the module scope (mirrors window.__mzState's accessor pattern). Populated
+// by loadGraves() during __mzClassicBoot(), which the module awaits BEFORE
+// initTitleScreen() runs; graves.length is the floor so a fresh death (which
+// unshifts into `graves`) surfaces the entry even if the persisted total lags.
+// Kept OUTSIDE the extract-sentinel block above: that block is lifted into a
+// DOM-less node:vm sandbox by the persistence harness where `window` is absent.
+window.__mzGravesCount = () => Math.max(gravesTotal || 0, (graves && graves.length) || 0);
 // 04-05: a brief loading placeholder shown while mzStorage resolves the
 // graveyard read, before renderGraves() replaces it with ranked stones, the
 // empty state, or the error fallback (04-UI-SPEC.md UI Considerations
@@ -4052,17 +4534,24 @@ function renderGraves() {
     </div>`;
     return;
   }
-  count.textContent = graves.length ? `${graves.length} interred` : "";
-  if (!graves.length) {
+  // audit-batch E12 (part 2): the count reflects the TRUE lifetime total, not
+  // the (≤5) number of stones stored. Only the last GRAVE_CAP stones are kept,
+  // so once the body count passes 5 the copy says so explicitly.
+  const total = gravesTotal;
+  if (!total) {
     // 04-UI-SPEC.md Copywriting Contract — DEAD tab's zero-grave empty state.
+    count.textContent = "";
     wrap.innerHTML = `<div class="mw-empty">
       <p class="mw-empty-head">NOBODY'S DOWN THERE YET</p>
       <p class="mw-empty-body">The ledger is empty. Go make it worse.</p>
     </div>`;
     return;
   }
+  count.textContent = total > 5 ? `Showing last 5 of ${total}` : `${total} interred`;
   wrap.innerHTML = "";
-  for (const g of graves) {
+  // Defensive: the adapter already caps storage at 5, but never render more
+  // than the last 5 stones regardless of what the array holds.
+  for (const g of graves.slice(0, 5)) {
     const el = document.createElement("article");
     el.className = "stone" + (g.cause === "won" ? " won" : "");
     el.innerHTML = `
@@ -4075,7 +4564,7 @@ function renderGraves() {
         <div><dt>Days</dt><dd>${g.day}</dd></div>
         <div><dt>Squares</dt><dd>${g.steps}</dd></div>
         <div><dt>Kills</dt><dd>${g.kills}</dd></div>
-        <div><dt>Skill pts</dt><dd>${g.sp}</dd></div>
+        <div><dt>XP</dt><dd>${g.sp}</dd></div>
         <div><dt>Wilmst</dt><dd>${(g.gold || 0).toLocaleString()}</dd></div>
       </dl>`;
     wrap.appendChild(el);
@@ -4091,32 +4580,106 @@ function renderGraves() {
 // overlay) and the viewport pointerdown handler above (suppress pan-start
 // while the overlay covers the map).
 function hasActiveEncounter() {
-  return !!(S && (S.dead || S.won || S.combat || S.store || (S.beats && S.beats.groups && S.beats.groups.length)));
+  // Phase 10 (Party UI, PARTY-01 UI half): a met-but-unresolved Joiner
+  // (S.pendingJoiner, stashed by encounters.js#meetJoiner) keeps the over-map
+  // overlay up so its accept/decline prompt can be shown/answered — the same
+  // way combat/store/beats do. It resolves via window.mzResolveJoiner (which
+  // clears S.pendingJoiner), after which this returns false and the overlay
+  // dismisses itself, exactly like "Move on"/"Leave" close their panels.
+  // Phase 13 (ECON-03/04): a pending FIND (S.pendingFind, stashed by
+  // encounters.js#offerFind) keeps the overlay up for its Take it / Leave it
+  // prompt exactly like pendingJoiner. It resolves via window.mzTakeFind /
+  // mzLeaveFind (which clear S.pendingFind), after which this returns false.
+  return !!(S && (S.dead || S.won || S.combat || S.store || S.pendingJoiner || S.pendingFind || (S.beats && S.beats.groups && S.beats.groups.length)));
 }
 function vitalsStrip() {
   const c = S.c;
-  const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
-  const low = pct < 34;
-  return `<div class="vitals">
-    <div class="v-bar"><div class="v-fill${low ? " low" : ""}" style="width:${pct}%"></div>
-      <span class="v-lab">${Math.max(0, c.wp)} / ${c.maxWP} wp</span></div>
-    <div class="v-side">${c.potions} pot${c.ward ? ` · ${c.ward.pool} ward` : ""}</div>
-  </div>`;
+  // DR13: the WP/health bar is removed from the encounter panel — current HP
+  // now lives permanently in the MAP header (mm-hp/mm-hpfill), so repeating a
+  // full bar here only ate panel real estate. Keep just the at-a-glance combat
+  // resources (potions / ward) the map header does NOT show.
+  const side = `${c.potions} pot${c.ward ? ` · ${c.ward.pool} ward` : ""}`;
+  return `<div class="vitals"><div class="v-side">${side}</div></div>`;
 }
 
-// DR4 group 3: the death card's primary action is now a single CONFIRM that
-// returns to the TITLE/splash screen — NOT a direct reroll into the roller
-// screen. Rolling a new character only ever happens FROM the title (ENTER ->
-// the roller), matching abandon's existing title-return flow. This also
-// removes the old "read it first"/AGAIN_LOCK dice-hint lock entirely — the
-// mock's own death card has no such hint or delay, so CONFIRM is armed
-// immediately.
+// DR4 group 3: the death card's primary action is a single armed CONFIRM (no
+// "read it first"/AGAIN_LOCK dice-hint lock — the mock's own death card has no
+// such hint or delay).
+// DR16 (revised 2026-09-09): CONFIRM returns to the TITLE/splash screen (its
+// original behavior), where ENTER starts a fresh roll — the clean new-run path.
+// The earlier DR16 detour to the graveyard removed that path (game-stopper);
+// now that the death card has its own "Review the Oracle" button, the player
+// can read what killed them BEFORE confirming, so Confirm no longer needs to
+// land on the graveyard. (The graveyard is still one tap away on the DEAD tab.)
 function wireDeathConfirm() {
   const btn = document.getElementById("btn-death-confirm");
   if (!btn) return;
   btn.onclick = () => {
     (window.mzReturnToTitle ? window.mzReturnToTitle() : (window.mzStartRoll ? window.mzStartRoll() : newGame()));
   };
+}
+
+// Quick task: enemy status effects → badges on each foe row. Reads the same
+// per-foe status fields the engine sets (asleep from doze/stun, frozen from
+// freeze/ice, an acid-over-time tick, blind, stupefied, shrunk, fixated) plus
+// the foe-DANGER "frenzied" (it swings twice), which is flagged in red.
+function foeStatusBadges(f) {
+  const out = [];
+  if (f.asleep > 0) out.push({ t: "Asleep", tone: "good" });
+  if (f.frozen) out.push({ t: "Frozen", tone: "good" });
+  if (f.acid && f.acid.rounds > 0) out.push({ t: `Acid · ${f.acid.rounds}`, tone: "acid" });
+  if (f.blind) out.push({ t: "Blind", tone: "good" });
+  if (f.stupid) out.push({ t: "Stupefied", tone: "good" });
+  if (f.shrunk) out.push({ t: "Shrunk", tone: "good" });
+  if (f.fixated) out.push({ t: "Fixated", tone: "good" });
+  if (f.frenzied) out.push({ t: "Frenzied", tone: "bad" });
+  // DR18 (Fix 4): the Weaken spell sets a COMBAT-WIDE flag (S.combat.weakened,
+  // engine/magic.js) that halves EVERY foe's damage (read at combat.js) — but
+  // nothing surfaced it on the monsters. Read the shared flag here and show a
+  // "Weakened" chip on each foe while it's set (tone "good" — a foe debuff is
+  // good for the player, like Asleep/Frozen). Presentation only; engine unchanged.
+  if (S && S.combat && S.combat.weakened) out.push({ t: "Weakened", tone: "good" });
+  return out;
+}
+
+// Phase 10 (Party UI, PARTY-07): the persistent PARTY RAIL. Reads the engine's
+// own persistent roster (S.party — the array of full member sheets Phase 7's
+// addPartyMember grows, each carrying name/sub/lvl(level)/wp/maxWP/status) and
+// renders one card per member: name, subclass·level, an HP bar (wp/maxWP reusing
+// the map HUD's own .mw-map-hptrack/.mw-map-hpfill treatment), and a "Downed"
+// status chip (a member is flagged status:"downed" by combat.js#downMember when
+// it hits 0 wp, before endCombat drops it from the run). Data-driven visibility:
+// shown ONLY when S.party.length > 0, hidden when solo. Called from paint() — the
+// SAME repaint the hero/foe HUD rides — so member HP updates live in combat.
+function renderPartyRail() {
+  const rail = document.getElementById("mw-party-rail");
+  if (!rail) return;
+  const party = (S && Array.isArray(S.party)) ? S.party : [];
+  if (!party.length) {
+    rail.hidden = true;
+    rail.innerHTML = "";
+    return;
+  }
+  rail.hidden = false;
+  rail.innerHTML = "";
+  party.forEach((m) => {
+    const lvl = m.lvl ?? m.level ?? 1;
+    const maxWP = m.maxWP || 1;
+    const wp = Math.max(0, m.wp ?? 0);
+    const pct = clamp(wp / maxWP * 100, 0, 100);
+    const downed = m.status === "downed" || wp <= 0;
+    const card = document.createElement("div");
+    card.className = "mw-party-member" + (downed ? " downed" : "");
+    card.innerHTML =
+      `<div class="mw-party-head">
+         <span class="mw-party-name">${m.name || "Companion"}</span>
+         <span class="mw-party-sub">${m.sub ? m.sub + " · " : ""}${ROMAN[lvl - 1] || lvl}</span>
+       </div>
+       <div class="mw-party-hp-lab">HP <b>${wp}</b>/<b>${maxWP}</b></div>
+       <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
+       ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}`;
+    rail.appendChild(card);
+  });
 }
 
 function renderEncounter() {
@@ -4132,16 +4695,37 @@ function renderEncounter() {
   const body = document.getElementById("enc-body");
   const rd = document.getElementById("enc-round");
   body.innerHTML = ""; rd.textContent = "";
-  if (S.c && !S.dead && !S.won) body.insertAdjacentHTML("beforeend", vitalsStrip());
+  // DR16 Fix 4: the header dismiss slot is repopulated only by the beats
+  // branch below; clear it on every render so it never lingers on the combat/
+  // store/death/joiner branches.
+  const dismissSlot = document.getElementById("enc-dismiss-slot");
+  if (dismissSlot) dismissSlot.innerHTML = "";
+  // DR13: the vitals strip (HP bar, then potions/ward) is gone from the
+  // encounter panel entirely — HP lives in the MAP header now, and this header
+  // space is reclaimed for the encounter-specific text itself.
 
-  if (S.dead) {
+  // Death-on-combat-entry (see window.move): while the pre-death "ambush" beat
+  // is still pending, fall through to the beats branch below so the player sees
+  // the fight that killed them; its "Move on" clears S.beats and re-renders,
+  // and THEN this death card shows.
+  const preDeathBeat = S.dead && S.beats && S.beats.preDeath && S.beats.groups && S.beats.groups.length;
+  if (S.dead && !preDeathBeat) {
     body.innerHTML = `<div class="deathcard">
       <h3>Dead</h3>
       <p>${S.c.name}, ${S.c.race} ${S.c.sub}, ${S.deathNote}.<br>
-      Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} skill points</p>
+      Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} XP</p>
       <p class="epitaph">${S.epitaph || ""}</p>
       ${(S.lastWords && S.lastWords.length) ? `<div class="lastwords">${S.lastWords.map(l => `<p>${l}</p>`).join("")}</div>` : ""}
-      <div class="again"><button class="primary" id="btn-death-confirm">Confirm</button></div></div>`;
+      <div class="again">
+        <button class="small" id="btn-death-oracle">Review the Oracle</button>
+        <button class="primary" id="btn-death-confirm">Confirm</button>
+      </div></div>`;
+    // DR16 Fix 3: let the player read the full Oracle log (what killed them,
+    // their last exchanges) BEFORE dismissing. The log lives on its own ORACLE
+    // tab; this affordance jumps there. The death overlay + Confirm persist on
+    // the MAP tab, so returning still lands on the armed Confirm.
+    const oracleBtn = document.getElementById("btn-death-oracle");
+    if (oracleBtn) oracleBtn.onclick = () => window.__mzShowTab?.("oracle");
     wireDeathConfirm();
     return;
   }
@@ -4160,6 +4744,23 @@ function renderEncounter() {
   // whatever just happened comes first — one moment at a time on a phone
   if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
     const b = S.beats;
+    // DR17 item 4 — AMBUSH death Fight! gate: the pre-emptive turn killed the
+    // player on entry (state.combat already nulled), but they should still SEE
+    // the foes + press Fight! before the killing narration plays. Render the
+    // roster (carried on the beat from the encounterStarted event) + a single
+    // Fight! button; mzFight() clears the flag and re-renders into the pre-death
+    // beat below → death card.
+    if (b.awaitingFight) {
+      rd.textContent = "";
+      const roster = (b.foes || []).map((f) =>
+        `<div class="foe"><div class="fname">${f.name}</div>
+          <div class="fwp">${Math.max(0, f.wp)} / ${f.maxWP} hp</div></div>`).join("");
+      body.innerHTML = `<p class="enc-head">${b.combatType || "Ambush"}</p>
+        <div class="foes">${roster}</div>
+        <div class="actions"><button class="primary" id="a-fight">Fight!</button></div>`;
+      document.getElementById("a-fight").onclick = () => window.mzFight?.();
+      return;
+    }
     const step = stepping();
     const groups = step ? [b.groups[Math.min(b.i, b.groups.length - 1)]] : b.groups;
     const last = !step || b.i >= b.groups.length - 1;
@@ -4167,10 +4768,12 @@ function renderEncounter() {
     body.innerHTML += groups.map(g =>
         (g.title ? `<p class="enc-head" style="color:var(--${g.tone || "ditto"})">${g.title}</p>` : "")
         + `<div class="evt">${g.lines.map(l => `<p>${l}</p>`).join("")}</div>`).join("")
-      + `<div class="actions">
-           ${last && b.action ? `<button class="primary" id="a-evt">${b.action.label}</button>` : ""}
-           <button class="${last ? "small" : "primary"}" id="a-next">${last ? "Move on" : "Next"}</button>
-         </div>`;
+      + (last && b.action ? `<div class="actions"><button class="primary" id="a-evt">${b.action.label}</button></div>` : "");
+    // DR16 Fix 4: the "Move on"/"Next" dismiss/advance control renders into the
+    // header slot (right-aligned, top of the overlay) instead of the bottom
+    // .actions row, keeping it clear of the D-pad zone. The feature-action
+    // button (a-evt, e.g. "Smash it open") stays inline in the body above.
+    if (dismissSlot) dismissSlot.innerHTML = `<button class="${last ? "small" : "primary"}" id="a-next">${last ? "Move on" : "Next"}</button>`;
     document.getElementById("a-next").onclick = () => {
       if (last) S.beats = null; else b.i++;
       renderEncounter();
@@ -4180,11 +4783,94 @@ function renderEncounter() {
     return;
   }
 
+  // Phase 10 (Party UI, PARTY-01 UI half): the ACCEPT/DECLINE recruitment
+  // prompt. When a "Joiner" encounter fired joinerMet, encounters.js#meetJoiner
+  // stashed the full rolled candidate on S.pendingJoiner. Its joinerMet
+  // narration plays first through the beats branch above ("Move on"); once that
+  // is dismissed (S.beats cleared) we reach here with the candidate still
+  // pending and offer the decision. Both buttons route through the engine via
+  // window.mzResolveJoiner(accept) -> dispatch({type:"resolveJoiner",accept}),
+  // which appends to S.party (accept) or declines and ALWAYS clears
+  // S.pendingJoiner; the joinerJoined/joinerDeclined line already flows to the
+  // Oracle log. Buttons inherit the base ≥48dp min-height and the .actions
+  // gap keeps the two choices separated (UX-02 mis-tap rule).
+  if (S.pendingJoiner && !S.combat && !S.store) {
+    const j = S.pendingJoiner;
+    const lvl = j.lvl ?? j.level ?? 1;
+    const ident = [j.race, j.sub].filter(Boolean).join(" ");
+    // DR17 item 4 (one-screen): render the joinerMet narration INLINE above the
+    // accept/decline buttons — no separate "Move on" beat first. (The full line
+    // still went to the Oracle log via window.move's logLine.)
+    const narr = window.__mzPendingNarration;
+    if (narr && narr.length) body.innerHTML += `<div class="evt">${narr.map((l) => `<p>${l}</p>`).join("")}</div>`;
+    body.innerHTML += `<p class="enc-head" style="color:var(--moss)">${j.name || "A wanderer"} wants to tag along</p>
+      <p class="enc-sub">${ident ? ident + " · " : ""}skill level ${ROMAN[lvl - 1] || lvl}</p>
+      <div class="actions">
+        <button class="primary" id="a-join-yes">Take them along</button>
+        <button id="a-join-no">Leave them</button>
+      </div>`;
+    document.getElementById("a-join-yes").onclick = () => window.mzResolveJoiner?.(true);
+    document.getElementById("a-join-no").onclick = () => window.mzResolveJoiner?.(false);
+    return;
+  }
+
+  // Phase 13 (ECON-03/04): the find accept/decline prompt. When a find caller
+  // (engine/encounters.js openChest/findGear/findMisc/meetFaerie -> offerFind)
+  // stashed a rolled item on S.pendingFind, offer it — Take it (mzTakeFind) or
+  // Leave it (mzLeaveFind). If the bag is full, takeFind emits `bagFull` and the
+  // item stays pending; we surface a keep/drop chooser (each carried item gets a
+  // Drop button, freeing a slot) so the player can make room, then Take it
+  // again. Both bridges route through the engine (dispatch -> applyAction); the
+  // findTaken/findLeft/itemDropped narration already flows to the Oracle log.
+  // Buttons inherit the base ≥48dp min-height (UX-02 mis-tap rule).
+  if (S.pendingFind && !S.combat && !S.store) {
+    const it = S.pendingFind;
+    const c = S.c;
+    const slots = (window.__mzBags && window.__mzBags[c.bag] && window.__mzBags[c.bag].slots) || Infinity;
+    const full = (c.items || []).length >= slots;
+    // DR17 item 4 (one-screen): render the findOffered narration INLINE above the
+    // Take/Leave buttons — no separate "Move on" beat first. (Full line still
+    // logged to the Oracle by window.move.)
+    const narr = window.__mzPendingNarration;
+    if (narr && narr.length) body.innerHTML += `<div class="evt">${narr.map((l) => `<p>${l}</p>`).join("")}</div>`;
+    body.innerHTML += `<p class="enc-head" style="color:var(--ditto)">Something worth taking</p>
+      <p class="enc-sub">${it.n || "An item"}${it.txt ? ` · ${it.txt}` : ""}</p>`;
+    if (!full) {
+      body.innerHTML += `<div class="actions">
+        <button class="primary" id="a-find-take">Take it</button>
+        <button id="a-find-leave">Leave it</button>
+      </div>`;
+      document.getElementById("a-find-take").onclick = () => window.mzTakeFind?.();
+      document.getElementById("a-find-leave").onclick = () => window.mzLeaveFind?.();
+    } else {
+      // keep/drop chooser: the bag is full — drop something to make room.
+      body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Your bag is full (${(c.items || []).length}/${slots}). Drop something to make room, or leave it.</p>
+        <div class="shelf" id="find-drop-shelf"></div>
+        <div class="actions">
+          <button class="primary" id="a-find-take">Take it now</button>
+          <button id="a-find-leave">Leave it</button>
+        </div>`;
+      const shelf = document.getElementById("find-drop-shelf");
+      (c.items || []).forEach((bi, i) => {
+        const row = document.createElement("button");
+        row.className = "goods";
+        row.innerHTML = `<span class="g-n">${bi.n}${bi.txt ? `<i>${bi.txt}</i>` : ""}</span><span class="g-c">Drop</span>`;
+        row.onclick = () => window.mzDropItem?.(i);
+        shelf.appendChild(row);
+      });
+      document.getElementById("a-find-take").onclick = () => window.mzTakeFind?.();
+      document.getElementById("a-find-leave").onclick = () => window.mzLeaveFind?.();
+    }
+    return;
+  }
+
   if (S.store) {
     const st = S.store;
     body.innerHTML += `<p class="enc-head" style="color:var(--moss)">A store</p>
       <p class="enc-sub">${S.c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
       <div class="shelf" id="shelf"></div>
+      <p class="enc-sub" id="sell-head" style="margin-top:12px">Your gear</p>
+      <ul class="skills" id="sell-list"></ul>
       <div class="actions"><button class="primary" id="a-leave">Leave</button></div>`;
     const shelf = document.getElementById("shelf");
     st.stock.forEach((item, i) => {
@@ -4196,6 +4882,17 @@ function renderEncounter() {
       row.onclick = () => window.mzBuyItem?.(i);
       shelf.appendChild(row);
     });
+    // Phase 14 (ECON-06): the "Your gear" SELL section — every carried item with
+    // a Sell button (window.mzSellItem → {type:"sellItem", i}), rendered by the
+    // SAME shared component the GEAR tab and the combat use-list use. Selling
+    // frees a slot and credits gold; the bridge re-renders the store after.
+    const sellHead = document.getElementById("sell-head");
+    if ((S.c.items || []).length) {
+      renderCarriedList(document.getElementById("sell-list"), S.c.items, { actions: ["sell"] });
+    } else {
+      // Nothing to sell — drop the heading so the empty <ul> isn't a bare label.
+      if (sellHead) sellHead.style.display = "none";
+    }
     document.getElementById("a-leave").onclick = () => window.mzLeaveStore?.();
     return;
   }
@@ -4217,18 +4914,9 @@ function renderEncounter() {
     <p class="enc-sub">${liveFoes().length} still standing · you strike on d${strikeDie()}, ${toHit()} to hit</p>`;
   body.appendChild(head);
 
-  // DR2 "HIT/MISS indicator on STRIKE" — a clear badge for the last Strike
-  // action's outcome(s), hooked to the same hit/dmg values playerStrike()
-  // already computed (C.lastStrike, populated/cleared there and on
-  // potion/flee). Absent (null/empty) for any turn that wasn't a Strike.
-  if (C.lastStrike && C.lastStrike.length) {
-    const badge = document.createElement("div");
-    badge.className = "mw-strike-result";
-    badge.innerHTML = C.lastStrike.map(r => r.hit
-      ? `<span class="mw-badge-hit">HIT −${r.dmg ?? 0} WP${r.crit ? " · CRIT" : ""}</span>`
-      : `<span class="mw-badge-miss">MISS</span>`).join("");
-    body.appendChild(badge);
-  }
+  // DR13: the in-panel HIT/MISS badge is gone — action feedback now rides the
+  // fixed toast (window.mzToast, raised in engineCombatAction) so nothing in the
+  // combat panel resizes/reflows when you act (no CLS, no real-estate churn).
 
   if (C.ally) {
     const al = document.createElement("div");
@@ -4244,9 +4932,11 @@ function renderEncounter() {
   C.foes.forEach((f, i) => {
     const el = document.createElement("div");
     el.className = "foe" + (f.alive ? "" : " dead") + (i === C.target && f.alive ? " target" : "");
+    const badges = f.alive ? foeStatusBadges(f) : [];
     el.innerHTML = `<div class="fname">${f.name}</div>
-      <div class="fwp">${Math.max(0,f.wp)} / ${f.maxWP} wp</div>
-      <div class="fmeta">${f.size || "H"} · int ${f.intel ?? "?"} · strikes on d${foeDie(f)}, ${foeToHitVs()} to hit${f.lives > 1 ? " · gets up again" : ""}${f.asleep>0?" · asleep":""}</div>
+      <div class="fwp">${Math.max(0,f.wp)} / ${f.maxWP} hp</div>
+      <div class="fmeta">${f.size || "H"} · int ${f.intel ?? "?"} · strikes on d${foeDie(f)}, ${foeToHitVs()} to hit${f.lives > 1 ? " · gets up again" : ""}</div>
+      ${badges.length ? `<div class="fstatus">${badges.map(s => `<span class="fchip fchip-${s.tone}">${s.t}</span>`).join("")}</div>` : ""}
       ${f.sp && f.sp.note ? `<div class="fnote">${f.sp.note}</div>` : ""}`;
     if (f.alive) { el.tabIndex = 0; el.style.cursor = "pointer";
       el.onclick = () => { C.target = i; renderEncounter(); };
@@ -4255,16 +4945,50 @@ function renderEncounter() {
   });
   body.appendChild(list);
 
+  // DR17 item 4 — the "Fight!" gate: combat has JUST started and hasn't been
+  // entered yet. Show the FOE ROSTER (above) + a single Fight! button, and STOP
+  // here — no action bar (strike/potion/flee/spell/use), no spell menu, and no
+  // "Last exchange" block, so the initiative / pre-emptive first-turn outcome
+  // stays hidden until the player confirms. mzFight() flips the flag and
+  // re-renders into the full combat panel below (revealing that outcome + the
+  // action bar). Presentation-only: the engine already rolled initiative inside
+  // startCombat; this gates ONLY what the screen shows.
+  if (C.awaitingFight) {
+    const g = document.createElement("div");
+    g.className = "actions";
+    g.innerHTML = `<button class="primary" id="a-fight">Fight!</button>`;
+    body.appendChild(g);
+    document.getElementById("a-fight").onclick = () => window.mzFight?.();
+    return;
+  }
+
   const acts = document.createElement("div");
   acts.className = "actions";
   acts.innerHTML = `<button class="primary" id="a-strike">1 · Strike</button>
-    <button id="a-potion" ${S.c.potions ? "" : "disabled"}>2 · Potion (${S.c.potions})</button>
+    <button id="a-potion" ${(S.c.potions && S.c.wp < S.c.maxWP) ? "" : "disabled"}${S.c.wp >= S.c.maxWP ? ' title="Already at full health"' : ""}>2 · Potion (${S.c.potions})</button>
     <button class="danger" id="a-flee">3 · ${C.tracked && C.round === 1 ? "Withdraw" : "Flee"}</button>` +
     (S.c.cls === "Magic User" ? `<button id="a-spell">4 · Spells (${maxCharges() - S.c.spellsUsed})</button>` : "") +
     (canParley() ? `<button id="a-talk">5 · Parley</button>` : "") +
     (songReady() ? `<button id="a-sing">6 · Sing</button>` : "") +
     (S.c.scrolls && canRead() ? `<button id="a-scroll">7 · Scroll (${S.c.scrolls})</button>` : "");
   body.appendChild(acts);
+
+  // E2 / ECON-07 (Phase 14): the combat-bar USE-LIST — combat-usable carried
+  // items (potions/staves/scrolls/cloaks/jewelry with a `use`) surfaced mid-fight
+  // with a Use button dispatching {type:"useItem", i} via window.mzUseItem (the
+  // useItem action is already wired — engine/engine.js). Rendered by the SAME
+  // shared renderCarriedList component the store sell section and GEAR tab use.
+  // Filtered to ready, combat-relevant items so the bar stays actionable.
+  const useable = (S.c.items || []).some((it) => (it.kind === "potion" || it.use) && itemReady(it));
+  if (useable) {
+    const useWrap = document.createElement("div");
+    useWrap.innerHTML = `<p class="enc-sub" style="margin:10px 0 2px">Use an item</p><ul class="skills" id="combat-use-list"></ul>`;
+    body.appendChild(useWrap);
+    renderCarriedList(document.getElementById("combat-use-list"), S.c.items, {
+      actions: ["use"],
+      filter: (it) => (it.kind === "potion" || it.use) && itemReady(it),
+    });
+  }
 
   const menu = document.createElement("div");
   menu.className = "spellmenu";
@@ -4302,7 +5026,14 @@ function renderEncounter() {
   // classic, now-dead functions of the same name above — see
   // startCombat()'s own doc comment for why.
   document.getElementById("a-strike").onclick = () => window.mzAttack?.();
-  document.getElementById("a-potion").onclick = () => window.mzDrinkPotion?.();
+  // DR16 Fix 2: never let a heal potion be wasted at full HP. The button is
+  // rendered disabled when wp >= maxWP (above); this onclick guard also covers
+  // the key-2 path and any programmatic click, no-opping with a clear toast
+  // instead of dispatching the (parity-sensitive, rng-drawing) engine drink.
+  document.getElementById("a-potion").onclick = () => {
+    if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "miss"); return; }
+    window.mzDrinkPotion?.();
+  };
   document.getElementById("a-flee").onclick = () => window.mzFlee?.();
   const sb = document.getElementById("a-spell");
   if (sb) sb.onclick = () => {
@@ -4387,7 +5118,19 @@ document.getElementById("btn-save-quit").onclick = () => {
 // script below) and leaves no active run. The `|| newGame()` fallback only
 // matters if that module somehow failed to load/run.
 document.getElementById("btn-abandon-character").onclick = () => {
-  if (window.mzAbandonCharacter) window.mzAbandonCharacter(); else newGame();
+  // DR16 fix: once the character is DEAD they are already buried in the
+  // graveyard (die()->persistGrave), so "Abandon this character" is meaningless
+  // — the button becomes "New Character" (label flipped in paint()) and starts a
+  // fresh roll instead. This restores the new-run path the death->graveyard
+  // Confirm change removed. While ALIVE it is still the destructive abandon.
+  const st = window.__mzState && window.__mzState.get();
+  if (st && st.dead) {
+    if (window.mzStartRoll) window.mzStartRoll(); else newGame();
+  } else if (window.mzAbandonCharacter) {
+    window.mzAbandonCharacter();
+  } else {
+    newGame();
+  }
 };
 // Device-review Pass DR8: routes through the engine's "camp" action
 // (window.mzMakeCamp, trailing module script); the `|| makeCamp()` fallback
@@ -4396,7 +5139,8 @@ document.getElementById("btn-abandon-character").onclick = () => {
 document.getElementById("btn-camp").onclick = () => {
   if (window.mzMakeCamp) window.mzMakeCamp(); else makeCamp();
 };
-document.getElementById("btn-clearyard").onclick = () => { graves = []; saveGraves(); renderGraves(); };
+// audit-batch E12 (part 3): the #btn-clearyard control and its handler were
+// removed — the lifetime death total is non-clearable by design now.
 document.getElementById("dpad").addEventListener("click", e => {
   // Device-review revision #5 (extended): block movement outright while the
   // encounter/feature overlay is up (combat, store, feature narration,
@@ -4407,31 +5151,19 @@ document.getElementById("dpad").addEventListener("click", e => {
   if (hasActiveEncounter()) return;
   const b = e.target.closest("button[data-dir]");
   if (b) {
+    // UX-07: haptics are now fired from window.move's event path
+    // (hapticForEvents → trap-sprung/level-up on a step), not on every raw
+    // d-pad tap — a buzz on each tap (including blocked moves into walls)
+    // was too noisy once @capacitor/haptics became a real installed plugin.
+    // Plain steps stay silent; only meaningful beats buzz.
     move(b.dataset.dir);
-    // 04-DR9: illustrative touch-feedback call site for the Settings
-    // sheet's Haptics toggle — see src/browser/haptics.js's header comment
-    // for why this is a guarded no-op today (@capacitor/haptics isn't
-    // installed/vendored yet). Bridged onto window.__mzHaptics by the
-    // trailing module script, same pattern as window.__mzControls/
-    // window.__mzCanvasSizing/window.__mzIconsApi above.
-    window.__mzHaptics?.maybeHaptic?.(window.__mzSettings);
   }
 });
 
-// 04-DR9: dice-reveal tap targets for the Oracle log (#log) AND the
-// combat/feature exchange log (#enc-body's .evt/.exchange <p> lines) —
-// delegated to the container so renderEncounter() rebuilding #enc-body from
-// scratch never orphans a listener. Toggling this class is a harmless no-op
-// under diceMode "always"/"never" (the #app[data-dice-mode=...] CSS rules
-// above only key off it in "on tap" mode).
-document.getElementById("log").addEventListener("click", e => {
-  const p = e.target.closest("p");
-  if (p) p.classList.toggle("mw-roll-revealed");
-});
-document.getElementById("enc-body").addEventListener("click", e => {
-  const p = e.target.closest("p");
-  if (p) p.classList.toggle("mw-roll-revealed");
-});
+// DR18 (DR15-E): the 04-DR9 dice-reveal tap listeners on #log/#enc-body were
+// removed alongside the `diceMode` setting — dice detail is now statically
+// always-on in the Oracle (#log) and always-off in the encounter panel
+// (#enc-body), so there is no per-line reveal interaction to toggle.
 
 // 04-06: centered, single-line flash toast (04-UI-SPEC.md Screen 1 — kept
 // within the <=5-word contract by every call site below).
@@ -4520,24 +5252,50 @@ window.mzCenterMap = centerMap;
 (function initMazeViewportControls() {
   const vp = document.getElementById("mw-maze-viewport");
   if (!vp) return;
-  let pointerStart = null;
+  // DR13: one pipeline handles BOTH a one-finger pan and a two-finger
+  // pinch-to-zoom. `pts` tracks every active pointer; a single pointer drags
+  // `pan`, a second pointer switches to pinch (distance ratio -> `zoom`), and
+  // lifting back to one finger resumes panning from where it is.
+  const pts = new Map();          // pointerId -> {x, y}
+  let pointerStart = null;        // active single-finger pan
+  let pinch = null;               // { dist, zoom } captured at pinch start
+  const spread = () => {
+    const [a, b] = [...pts.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  const startPan = (id, x, y) => { pointerStart = { x, y, panStart: { x: pan.x, y: pan.y }, id }; };
   vp.addEventListener("pointerdown", e => {
     if (!S || hasActiveEncounter()) return;
-    pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp, panStart: { x: pan.x, y: pan.y }, id: e.pointerId };
-    try { vp.setPointerCapture(e.pointerId); } catch (err) { /* not fatal — pointer just won't be captured off-element */ }
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { vp.setPointerCapture(e.pointerId); } catch (err) { /* off-element capture is non-fatal */ }
+    if (pts.size >= 2) { pointerStart = null; pinch = { dist: spread(), zoom }; }
+    else startPan(e.pointerId, e.clientX, e.clientY);
   });
   vp.addEventListener("pointermove", e => {
-    if (!pointerStart || e.pointerId !== pointerStart.id) return;
-    const dx = e.clientX - pointerStart.x, dy = e.clientY - pointerStart.y;
-    pan = { x: pointerStart.panStart.x + dx, y: pointerStart.panStart.y + dy };
-    positionCanvas();
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) {
+      const d = spread();
+      if (pinch.dist > 0) { zoom = clampZoom(pinch.zoom * (d / pinch.dist)); fit(); positionCanvas(); }
+      return;
+    }
+    if (pointerStart && e.pointerId === pointerStart.id) {
+      pan = { x: pointerStart.panStart.x + (e.clientX - pointerStart.x), y: pointerStart.panStart.y + (e.clientY - pointerStart.y) };
+      positionCanvas();
+    }
   });
-  const endGesture = e => {
-    if (!pointerStart || e.pointerId !== pointerStart.id) return;
-    pointerStart = null;
+  const release = e => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pointerStart && e.pointerId === pointerStart.id) pointerStart = null;
+    // one finger left after a pinch -> hand the pan off to it cleanly
+    if (pts.size === 1 && !pointerStart) {
+      const [id, p] = [...pts.entries()][0];
+      startPan(id, p.x, p.y);
+    }
   };
-  vp.addEventListener("pointerup", endGesture);
-  vp.addEventListener("pointercancel", () => { pointerStart = null; });
+  vp.addEventListener("pointerup", release);
+  vp.addEventListener("pointercancel", release);
 })();
 
 addEventListener("keydown", e => {
@@ -4551,12 +5309,19 @@ addEventListener("keydown", e => {
   // only the WASD/arrow movement path is gated. See hasActiveEncounter().
   if (S && hasActiveEncounter()) {
     if (S.combat) {
+      // DR17 item 4: while the Fight! gate is up, the action keys (1-7) are
+      // suppressed — only Enter/Space/1 release the gate (see the a-fight click
+      // fallback below), so the player can't strike/flee before confirming.
+      if (S.combat.awaitingFight) {
+        if (k === "enter" || k === " " || k === "1") { e.preventDefault(); window.mzFight?.(); }
+        return;
+      }
       // Device-review Pass DR8: same engine-routed bridges as the combat
       // action buttons above (window.mzAttack etc.) — see startCombat()'s
       // own doc comment for why the classic functions these once called are
       // now dead code.
       if (k === "1") { e.preventDefault(); window.mzAttack?.(); }
-      else if (k === "2") { e.preventDefault(); window.mzDrinkPotion?.(); }
+      else if (k === "2") { e.preventDefault(); if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "miss"); } else { window.mzDrinkPotion?.(); } }
       else if (k === "3") { e.preventDefault(); window.mzFlee?.(); }
       else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
       else if (k === "5" && canParley()) { e.preventDefault(); window.mzParley?.(); }
@@ -4564,7 +5329,10 @@ addEventListener("keydown", e => {
       else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); window.mzReadScroll?.(); }
       return;
     }
-    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next"); if (n) n.click(); }
+    // DR17 item 4: an ambush-death Fight! gate (state.combat already nulled, the
+    // gate lives on the pre-death beat) shows an a-fight button, not a-next —
+    // Enter/Space should release it too.
+    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-fight") || document.getElementById("a-next"); if (n) n.click(); }
     return;
   }
   if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
@@ -4652,7 +5420,30 @@ window.__mzClassicBoot = async function classicBoot() {
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
   import { characterSheetViewModel, grimoireViewModel } from "./src/browser/viewModels.js";
-  import { RACES, CLASSES } from "./content/index.js";
+  import { RACES, CLASSES, BAGS } from "./content/index.js";
+  import { sellPriceFor } from "./engine/economy.js";
+  import { conditionsOf } from "./engine/derived.js";
+
+  // Phase 13 (ECON-04): expose the read-only BAGS capacity table so the classic
+  // script's GEAR tab + find keep/drop prompt can show the "used / slots"
+  // readout and gate Take-it without importing content (same bridge pattern as
+  // window.__mzState / window.__mzSettings above). Pure display data — never fed
+  // into anything rng-touching; the ENGINE alone enforces the real cap.
+  window.__mzBags = BAGS;
+
+  // Phase 14 (ECON-06): a pure, read-only price probe so the store sell section
+  // can LABEL each Sell button with what the shop will pay. sellPriceFor draws no
+  // rng and mutates nothing (engine/economy.js) — the same read-only-helper
+  // bridge pattern as __mzBags. The actual sale still goes through the engine
+  // action (window.mzSellItem → applyAction), never this display helper.
+  window.__mzSellPrice = (item) => sellPriceFor(item, (window.__mzState?.get?.() || {})?.c?.race);
+
+  // DR15-B (2026-09-10): bridge the PURE conditionsOf(state) derived enumerator
+  // so the classic paint()'s top-of-screen condition tracker maps its DATA-only
+  // descriptors → labels/chips through ONE shared engine source of truth (same
+  // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
+  // mutation — safe to call every paint().
+  window.__mzConditionsOf = conditionsOf;
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
@@ -4696,11 +5487,10 @@ window.__mzClassicBoot = async function classicBoot() {
     const appEl = document.getElementById("app");
     if (!appEl) return;
     appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
-    // 04-DR9: handedness (bottom control-bar side swap) and diceMode
-    // (Oracle/combat-log roll-detail gating) — see the matching
-    // #app[data-handedness=...]/#app[data-dice-mode=...] CSS rules.
+    // 04-DR9: handedness (bottom control-bar side swap) — see the matching
+    // #app[data-handedness=...] CSS rule. (04-DR9's diceMode gating was
+    // removed in DR18/DR15-E; dice detail is now a static #log-only rule.)
     appEl.setAttribute("data-handedness", settings.handedness);
-    appEl.setAttribute("data-dice-mode", settings.diceMode);
   }
 
   // 04-DR9: highlights the currently-selected option in each Settings-sheet
@@ -4894,6 +5684,66 @@ window.__mzClassicBoot = async function classicBoot() {
     return stripped.length ? stripped : lines;
   }
 
+  // DR13: combat-report tracking. combatSnap is captured when combat starts
+  // (from any dispatch that turns combat on) and read when it ends to build the
+  // end-of-fight report beats (window.mzCombatReport). Mutation-safe: callers
+  // pass a `wasCombat` boolean sampled BEFORE the dispatch, not a state ref.
+  let combatSnap = null;
+  function noteCombat(wasCombat, after, events) {
+    const has = !!(after && after.combat);
+    if (!wasCombat && has) {
+      const c = after.c;
+      combatSnap = {
+        hp: c.wp, gold: c.gold, kills: c.kills || 0, level: c.level,
+        foes: after.combat.foes.map((f) => f.name),
+        lastRound: after.combat.round || 1,
+      };
+      // DR17 item 4: combat JUST started this dispatch — gate the presentation so
+      // the player sees the full foe roster + a single "Fight!" before any action
+      // bar / initiative outcome is shown. Presentation-ONLY flag on state.combat
+      // (never set by the engine, so parity is untouched); cleared by mzFight().
+      after.combat.awaitingFight = true;
+    } else if (wasCombat && has) {
+      if (combatSnap) combatSnap.lastRound = after.combat.round || combatSnap.lastRound;
+    } else if (wasCombat && !has) {
+      // combat ended: death/win have their own cards; fleeing just toasts.
+      if (!after || after.dead || after.won) { combatSnap = null; return; }
+      if (events.some((e) => e.type === "fled")) { combatSnap = null; return; }
+      const c = after.c, snap = combatSnap || {};
+      const data = {
+        outcome: events.some((e) => e.type === "beastsSoothed") ? "soothed" : "victory",
+        rounds: snap.lastRound || 1,
+        goldGained: (c.gold || 0) - (snap.gold || 0),
+        killsGained: (c.kills || 0) - (snap.kills || 0),
+        leveled: (c.level || 1) - (snap.level || c.level || 1),
+        hpDelta: (c.wp || 0) - (snap.hp != null ? snap.hp : c.wp),
+        hpNow: c.wp, hpMax: c.maxWP, level: c.level, foes: snap.foes || [],
+      };
+      combatSnap = null;
+      const rep = window.mzCombatReport ? window.mzCombatReport(data) : null;
+      if (rep && !after.beats) after.beats = { groups: [rep], i: 0, action: null };
+    }
+  }
+
+  // UX-07 haptics: fire ONE device haptic for the strongest meaningful beat in
+  // a dispatched action's events — gated by the Settings "Haptics" toggle via
+  // maybeHaptic(currentSettings, …) (a no-op off-device or when the setting is
+  // OFF; @capacitor/haptics resolves only through haptics.js's guarded import).
+  // Priority: a sprung trap or a level-up is the strongest (Heavy), a landed
+  // critical hit is Heavy, an ordinary hit is Medium, taking a foe's hit is a
+  // Light tick. Called from the two gameplay event paths (engineMove +
+  // engineCombatAction) so hit/trap/level-up all buzz consistently.
+  function hapticForEvents(events) {
+    if (!events || !events.length) return;
+    const has = (t) => events.some((e) => e.type === t);
+    let style = null;
+    if (has("trapSprung") || has("leveled")) style = "Heavy";
+    else if (events.some((e) => e.type === "struck" && e.critical)) style = "Heavy";
+    else if (has("struck")) style = "Medium";
+    else if (has("struckByFoe")) style = "Light";
+    if (style) maybeHaptic(currentSettings, style);
+  }
+
   window.move = function engineMove(dir) {
     // Device-review revision #5 (extended): this is the single choke point
     // every movement path (D-pad clicks, keydown, any future tap) funnels
@@ -4901,9 +5751,46 @@ window.__mzClassicBoot = async function classicBoot() {
     // no move can ever register while it's up, even from a call site that
     // forgets its own check.
     if (hasActiveEncounter()) return;
+    const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
     const { state, events, html } = dispatch({ type: "move", dir });
     window.__mzState.set(state);
-    if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
+    noteCombat(wasCombat, state, events);
+    hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
+    // Death ON A MOVE — you stepped onto a tile and this one dispatch killed you
+    // before you could see what happened: a combat ambush (foes won initiative +
+    // a pre-emptive killing turn), a Table-4 "-N HP" toll, a trap, a poison tick,
+    // etc. In every case state.dead is set (and state.combat, if any, already
+    // nulled by die()), so you'd jump STRAIGHT to the death card and never see
+    // the cause. Stash the narration (what got you) as a pre-death beat;
+    // renderEncounter shows it BEFORE the death card. Scoped to !wasCombat so a
+    // death DURING an ongoing fight (where you already saw the combat window)
+    // still goes straight to the death card. Presentation-only — full dice
+    // detail stays in the Oracle (stripRollDetail here + the logLine below).
+    const diedOnMove = state.dead && !wasCombat && events.some((e) => e.type === "died");
+    // DR17 item 4 (one-screen Joiner/find): a pending recruitment (pendingJoiner)
+    // or pending find (pendingFind) renders its narration INLINE above its own
+    // accept/decline / Take-Leave buttons (see renderEncounter) — so DON'T build
+    // an intermediate "Move on" beat for those; stash the stripped narration for
+    // that prompt branch to show instead. Cleared to null on any move that has
+    // no pending prompt so it never leaks into a later prompt.
+    window.__mzPendingNarration =
+      (state.pendingJoiner || state.pendingFind) && html.length ? stripRollDetail(html) : null;
+    if (diedOnMove && html.length) {
+      const ambush = events.some((e) => e.type === "encounterStarted");
+      state.beats = { groups: [{ title: ambush ? "They got the drop on you" : "The maze has the last word", tone: "hurt", lines: stripRollDetail(html) }], i: 0, action: null, preDeath: true };
+      // DR17 item 4 — AMBUSH death: gate the killing narration behind the same
+      // "see the foes, then Fight!" roster the player would have gotten had they
+      // survived. die() has already nulled state.combat, so carry the foe roster
+      // from the encounterStarted event onto the (presentation-transient) beat;
+      // renderEncounter shows roster + Fight! first, then reveals this beat.
+      if (ambush) {
+        const es = events.find((e) => e.type === "encounterStarted");
+        state.beats.awaitingFight = true;
+        state.beats.foes = (es && es.foes) || [];
+        state.beats.combatType = (es && es.combatType) || "";
+      }
+    } else if (!state.combat && !state.store && !state.dead && !state.won && !state.beats
+               && !state.pendingJoiner && !state.pendingFind && html.length) {
       const [title, tone] = beatsTitleFor(events);
       state.beats = { groups: [{ title, tone, lines: stripRollDetail(html) }], i: 0, action: null };
     }
@@ -4940,6 +5827,19 @@ window.__mzClassicBoot = async function classicBoot() {
   window.newGame = async function engineNewRun() {
     const state = await startNewRun();
     window.__mzState.set(state);
+    // audit-bugs (2026-09-09, E6): a fresh character's Oracle log must start
+    // empty, not carry over the previous run's entries — logLine() only ever
+    // appends to #log (classicNewGame's own `logEl.innerHTML = ""`, classic
+    // script above, already did this for the pre-engine-routing path); this
+    // is the engine-routed equivalent, cleared right before the new run's
+    // own first "Floor 1" line. Queried fresh via getElementById rather than
+    // the classic script's `logEl` binding — this module script's own
+    // top-level scope cannot see a classic <script>'s block-scoped
+    // const/let (the same reason every other cross-script reference here
+    // goes through a window.mz*/window.__mzState bridge instead of a bare
+    // identifier). Presentation-only DOM state, not GameState — never
+    // round-tripped through a save.
+    document.getElementById("log").innerHTML = "";
     window.mzCenterMap?.(); // Pass B1 item 4: center on the party for the new run
     window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
     window.paint();
@@ -4955,6 +5855,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // silently discard the revealed character and roll a different one).
   function commitRolledState(state) {
     window.__mzState.set(state);
+    // audit-bugs (2026-09-09, E6): this is the ACTUAL commit point for both
+    // the death->one-tap-new-run path (death CONFIRM -> mzReturnToTitle ->
+    // title ENTER -> mzStartRoll -> here) and the "Abandon this character ->
+    // new character" path (mzAbandonCharacter -> showTitleScreen -> title
+    // ENTER -> mzStartRoll -> here) — see this function's own doc comment
+    // above. Without this, the Oracle log (#log) carried the previous
+    // character's entries straight into the new one. See engineNewRun's
+    // matching fix above for why this is getElementById rather than the
+    // classic script's own `logEl` binding.
+    document.getElementById("log").innerHTML = "";
     window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
     window.paint();
     window.draw();
@@ -5111,10 +6021,22 @@ window.__mzClassicBoot = async function classicBoot() {
     return !!(S && S.c && !S.dead && !S.won);
   }
   let resumeIntent = false;
+  // DR18 (DR15-C): show the title screen's "View the Dead" entry ONLY when the
+  // graveyard is non-empty. Reads the classic script's live count via the
+  // window.__mzGravesCount bridge (see its doc comment in the classic script);
+  // re-checked every time the title screen shows so a death mid-session (which
+  // populates the graveyard) makes the entry appear on the next title return.
+  function refreshTitleDead() {
+    const deadBtn = document.getElementById("mw-title-dead");
+    if (!deadBtn) return;
+    const n = window.__mzGravesCount ? window.__mzGravesCount() : 0;
+    deadBtn.hidden = !(n > 0);
+  }
   function showTitleScreen({ allowResume } = {}) {
     const screen = document.getElementById("mw-title-screen");
     if (!screen) return;
     resumeIntent = allowResume != null ? allowResume : hasActiveDelveSave();
+    refreshTitleDead();
     screen.hidden = false;
   }
 
@@ -5187,6 +6109,79 @@ window.__mzClassicBoot = async function classicBoot() {
     window.renderEncounter();
   };
 
+  // Phase 10 (Party UI, PARTY-01 UI half): the accept/decline recruitment
+  // bridge. Routes the over-map prompt's two buttons through the SAME
+  // dispatch()->applyAction() seam as mzBuyItem/mzLeaveStore above — Phase 9
+  // already added the engine's own "resolveJoiner" action (engine/encounters.js
+  // #resolveJoiner: appends the pending sheet to state.party under PARTY_CAP on
+  // accept, else declines, and ALWAYS clears state.pendingJoiner; draws zero
+  // rng, so no parity impact). `accept` is a strict boolean (the action's own
+  // validator rejects anything else). After the dispatch: swap in the returned
+  // state, narrate the joinerJoined/joinerDeclined line to the Oracle log, then
+  // repaint — paint() re-runs renderPartyRail() (the rail appears on accept)
+  // and renderEncounter() (the overlay dismisses itself now that pendingJoiner
+  // is cleared), mirroring the buy/leave bridges' render tail exactly.
+  window.mzResolveJoiner = function resolveJoinerBridge(accept) {
+    const { state, html } = dispatch({ type: "resolveJoiner", accept: !!accept });
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+  };
+
+  // Phase 13 (ECON-03/04/05): the player-choice inventory bridges. Each routes
+  // through the SAME dispatch()->applyAction() seam as mzBuyItem/mzResolveJoiner
+  // above — the engine owns takeFind/leaveFind/dropItem/equipItem/unequipSlot
+  // (engine/items.js), all pure (no rng), so no parity/determinism impact. After
+  // each: swap in the returned state, narrate the findTaken/bagFull/itemDropped/
+  // itemEquipped/... line to the Oracle log, then repaint — paint() re-runs the
+  // HERO/GEAR render (capacity readout, equip/drop rows) AND renderEncounter()
+  // (the find prompt dismisses itself once S.pendingFind clears, or re-renders
+  // the keep/drop chooser after a Drop frees a slot). Mirrors the buy/leave
+  // bridges' render tail exactly.
+  function inventoryAction(action) {
+    const result = dispatch(action);
+    const { state, html } = result;
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+    return result;
+  }
+  window.mzTakeFind = () => inventoryAction({ type: "takeFind" });
+  window.mzLeaveFind = () => inventoryAction({ type: "leaveFind" });
+  window.mzDropItem = (i) => inventoryAction({ type: "dropItem", i });
+  // DR18 (Fix 3): equip that the engine REJECTS (illegal class/subclass/race/
+  // Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
+  // `equipRejected` event) was previously a silent no-op in the UI. The
+  // rejection narration still flows to the Oracle via `html`; this adds the
+  // immediate fixed toast (window.mzToast, same "miss" tone as a whiffed
+  // strike). Engine unchanged — we only READ the events dispatch() returned.
+  window.mzEquipItem = (i) => {
+    const { events } = inventoryAction({ type: "equipItem", i });
+    if (events && events.some((e) => e.type === "equipRejected")) {
+      window.mzToast?.("You cannot use that.", "miss");
+    }
+  };
+  window.mzUnequip = (slot) => inventoryAction({ type: "unequipSlot", slot });
+  // Phase 14 (ECON-06/07): USE a carried item (potions/staves/… — the already-
+  // wired useItem action, engine/engine.js) and SELL a carried item at a store
+  // (the new sellItem action). Both pure (no rng). mzSellItem takes the plain
+  // inventoryAction repaint seam (selling only happens out of combat, at a
+  // store). mzUseItem serves BOTH the GEAR tab and the combat-bar use-list: IN
+  // COMBAT it routes through engineCombatAction (below) so an item that ends the
+  // fight (a Death potion, a stone/fire/gas that clears the room) gets the full
+  // combat-end handling — victory report beats, death card, haptics, toast —
+  // exactly like Strike/Potion/Spell; OUT of combat (the GEAR tab) it takes the
+  // plain inventoryAction repaint. engineCombatAction is a hoisted function
+  // declaration in this same scope, so it is callable from here.
+  window.mzUseItem = (i) => {
+    const st = window.__mzState.get();
+    if (st && st.combat) engineCombatAction("useItem", { i });
+    else inventoryAction({ type: "useItem", i });
+  };
+  window.mzSellItem = (i) => inventoryAction({ type: "sellItem", i });
+
   // Device-review Pass DR8 (the deferred 04-07 engine-routing item,
   // completed here): combat/magic/camp actions now route through the SAME
   // dispatch()->applyAction() seam as buyItem/leaveStore above. Every one of
@@ -5204,6 +6199,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // button call funnels through: dispatch, swap in the returned state,
   // narrate, then re-render — mirroring window.mzBuyItem/mzLeaveStore above.
   function engineCombatAction(type, extra) {
+    const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
     const { state, events, html } = dispatch({ type, ...extra });
     window.__mzState.set(state);
     // DR2's HIT/MISS strike badge (renderEncounter()'s `C.lastStrike`) was a
@@ -5223,11 +6219,34 @@ window.__mzClassicBoot = async function classicBoot() {
               .map((e) => (e.type === "struck" ? { hit: true, dmg: e.dmg, crit: e.critical } : { hit: false }))
           : null;
     }
+    // DR13: detect combat end and build the end-of-fight report (sets
+    // state.beats so renderEncounter shows it before returning to the map).
+    noteCombat(wasCombat, state, events);
+    hapticForEvents(events); // UX-07: hit / crit / level-up buzz on the combat path
     for (const line of html) window.logLine(line);
     window.paint();
     window.renderEncounter();
+    // DR13: transient toast feedback for EVERY combat/spell action — a fixed,
+    // non-layout notification (no CLS) describing what the tap just did.
+    const fb = window.mzCombatFeedback ? window.mzCombatFeedback(type, events, html, extra) : null;
+    if (fb && fb.text) window.mzToast(fb.text, fb.tone);
   }
   window.mzAttack = () => engineCombatAction("attack");
+  // DR17 item 4: the "Fight!" gate release. Purely presentation — flips the
+  // awaitingFight flag off (on the live combat, or on an ambush-death pre-death
+  // beat) and re-renders so the initiative/first-turn outcome + action bar (or,
+  // for an ambush death, the killing narration → death card) become visible. No
+  // dispatch, no rng, no engine call: the engine already resolved everything
+  // inside startCombat; this only reveals it.
+  window.mzFight = () => {
+    const state = window.__mzState.get();
+    if (state) {
+      if (state.combat && state.combat.awaitingFight) state.combat.awaitingFight = false;
+      if (state.beats && state.beats.awaitingFight) state.beats.awaitingFight = false;
+      window.__mzState.set(state);
+    }
+    window.renderEncounter();
+  };
   window.mzFlee = () => engineCombatAction("flee");
   window.mzParley = () => engineCombatAction("parley");
   window.mzSing = () => engineCombatAction("sing");
@@ -5254,8 +6273,14 @@ window.__mzClassicBoot = async function classicBoot() {
     const state = window.__mzState.get();
     if (!state || !state.c) return;
     const vm = grimoireViewModel(state);
+    // DR13: the Grimoire header shows how many CASTS you have left (charges),
+    // not how many spells are known — and paint()->renderGrimoire re-runs after
+    // an inventory cast, so the count drops live as you spend charges.
     const countEl = document.getElementById("s-grim-count");
-    if (countEl) countEl.textContent = vm.hasSpells ? `${vm.rows.length}` : "";
+    if (countEl) {
+      const ch = window.mzSpellCharges ? window.mzSpellCharges() : null;
+      countEl.textContent = ch ? `${ch.left} of ${ch.max}` : (vm.hasSpells ? `${vm.rows.length}` : "");
+    }
     ul.innerHTML = "";
     if (!vm.hasSpells) {
       const li = document.createElement("li");
@@ -5304,6 +6329,10 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzMakeCamp = () => {
     const { state, html } = dispatch({ type: "camp" });
     window.__mzState.set(state);
+    // DR17 item 4: a wandering-monster ambush during camp is a fresh combat
+    // START (camp only runs outside combat), so gate it behind the same Fight!
+    // roster as any other combat start. Presentation-only flag; parity untouched.
+    if (state.combat) state.combat.awaitingFight = true;
     if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
       state.beats = { groups: [{ title: "Camp", tone: "moss", lines: stripRollDetail(html) }], i: 0, action: null };
     }
@@ -5335,6 +6364,19 @@ window.__mzClassicBoot = async function classicBoot() {
       if (resumeIntent) return; // boot() already rehydrated the live delve underneath
       window.mzStartRoll();
     };
+    // DR18 (DR15-C): "View the Dead" — dismiss the title gate and open the
+    // existing DEAD graveyard view (__mzShowTab("dead") re-fetches the stones).
+    // gravesTotal is already loaded here (loadGraves() ran inside the awaited
+    // __mzClassicBoot() above), so refreshTitleDead()'s non-empty gate is
+    // authoritative on this first paint.
+    const deadBtn = document.getElementById("mw-title-dead");
+    if (deadBtn) {
+      deadBtn.onclick = () => {
+        hideTitleScreen();
+        window.__mzShowTab?.("dead");
+      };
+    }
+    refreshTitleDead();
   })();
 
   // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back

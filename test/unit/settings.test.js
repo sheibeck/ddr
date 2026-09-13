@@ -46,9 +46,8 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad' and diceMode defaults to 'on tap'", () => {
+test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad'", () => {
   assert.equal(SETTINGS_DEFAULTS.controlScheme, "dpad");
-  assert.equal(SETTINGS_DEFAULTS.diceMode, "on tap");
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
   assert.equal(SETTINGS_DEFAULTS.haptics, true);
@@ -62,14 +61,13 @@ test("SETTINGS_DEFAULTS: handedness defaults to 'left'", () => {
   assert.equal(SETTINGS_DEFAULTS.handedness, "left");
 });
 
-test("writeSetting/readSettings: each of the 7 fields round-trips through window.mzStorage", async () => {
+test("writeSetting/readSettings: each of the 6 fields round-trips through window.mzStorage", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
     await writeSetting("sound", false);
     await writeSetting("haptics", false);
     await writeSetting("textSize", "L");
     await writeSetting("controlScheme", "dpad");
     await writeSetting("confirmBeforeQuit", false);
-    await writeSetting("diceMode", "always");
     await writeSetting("handedness", "right");
     await flushStorage();
 
@@ -80,7 +78,6 @@ test("writeSetting/readSettings: each of the 7 fields round-trips through window
       textSize: "L",
       controlScheme: "dpad",
       confirmBeforeQuit: false,
-      diceMode: "always",
       handedness: "right",
     });
 
@@ -118,10 +115,6 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
     await flushStorage();
     assert.equal((await readSettings()).controlScheme, "dpad");
 
-    await writeSetting("diceMode", "sometimes"); // not in {on tap,always,never}
-    await flushStorage();
-    assert.equal((await readSettings()).diceMode, "on tap");
-
     await writeSetting("handedness", "ambidextrous"); // not in {left,right}
     await flushStorage();
     assert.equal((await readSettings()).handedness, "left");
@@ -142,7 +135,7 @@ test("readSettings(): partial persisted blob merges over defaults", async () => 
     const settings = await readSettings();
     assert.equal(settings.textSize, "S");
     assert.equal(settings.sound, SETTINGS_DEFAULTS.sound);
-    assert.equal(settings.diceMode, SETTINGS_DEFAULTS.diceMode);
+    assert.equal(settings.handedness, SETTINGS_DEFAULTS.handedness);
   });
 });
 

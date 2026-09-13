@@ -10,6 +10,7 @@ export * from "./classes.js";
 export * from "./races.js";
 export * from "./weapons.js";
 export * from "./armors.js";
+export * from "./bags.js";
 export * from "./kit.js";
 export * from "./skills.js";
 export * from "./bestiary.js";
