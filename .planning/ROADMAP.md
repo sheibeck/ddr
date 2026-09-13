@@ -95,12 +95,12 @@ Plans:
   4. Only named, narrow `comparables.js` carve-outs cover fixture-exercised creatures that changed numbers — no blanket fixture regeneration — with a documented rationale per carve-out.
   5. Ability-bearing foes (Djinni, Krupke, Drudge, Vampire, Stalka Beast) carry proportionally lower raw stats than their pre-rebalance baseline, anticipating the ability kits landing in Phase 19.
 
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 18-01-PLAN.md — BEST-01/02: `tools/bestiary-yardstick.mjs` (TTK/RTD calculator, prototype/canon modes) + unit pins; `content/BESTIARY-REBALANCE.md` BEFORE half (tune-difficulty BEFORE readout, prototype-mode table, review verdicts, D-03 numbers, zero-carve-out statement)
+- [x] 18-01-PLAN.md — BEST-01/02: `tools/bestiary-yardstick.mjs` (TTK/RTD calculator, prototype/canon modes) + unit pins; `content/BESTIARY-REBALANCE.md` BEFORE half (tune-difficulty BEFORE readout, prototype-mode table, review verdicts, D-03 numbers, zero-carve-out statement)
 - [ ] 18-02-PLAN.md — CANON-01/03/04: the seam `engine/foeDamage.js#damageFoe` (multiplier → halfDmg → gated d20 soak → apply) + `multiplierFor`; `content/damage-multipliers.js` (3 rows, pinned); `foeArmorSoaked` event + narration; 18 dedicated fakeRng tests
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -173,7 +173,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
-| 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 0/TBD | Not started | - |
+| 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 1/6 | In Progress|  |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 0/TBD | Not started | - |
 | 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |

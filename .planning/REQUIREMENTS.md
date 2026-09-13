@@ -16,7 +16,7 @@ The non-negotiable engine gate, made explicit for this milestone because every f
 - [x] **FID-02**: A foe without the new `abilities` field draws exactly zero additional RNG in any fight — verified by a draw-count regression test on non-ability fixtures — so solo/empty-party play stays byte-identical to the frozen prototype master
 - [x] **FID-03**: The foe-turn targeting and player-damage pipeline (ward/armor/damage) is extracted into shared helpers (`pickFoeTarget`, `applyFoeDamageToPlayer`) with behavior-preserving tests, so foe abilities reuse the melee path instead of duplicating it
 - [ ] **FID-04**: Every new serialized field (per-foe ability state, foe-inflicted player effects, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load; a v1.0 internal-tester save loads without data loss
-- [ ] **FID-05**: Deliberate divergences from the prototype (bestiary numbers, parley formula) regenerate only their specific fixtures, each with a before/after table and rationale — never a blanket fixture regeneration
+- [x] **FID-05**: Deliberate divergences from the prototype (bestiary numbers, parley formula) regenerate only their specific fixtures, each with a before/after table and rationale — never a blanket fixture regeneration
 
 ### Foe Abilities & Spellcasting (FOE)
 
@@ -42,8 +42,8 @@ Cheap rulebook-described mechanics with existing engine seams.
 
 ### Bestiary Rebalance (BEST)
 
-- [ ] **BEST-01**: Every creature's HP / damage / to-hit / AR / attack count is reviewed against its intended depth band and the encounter tables, with outliers fixed and a before/after stat table committed
-- [ ] **BEST-02**: Ability-bearing foes carry proportionally lower raw stats (hand-tuned; the formal threat-budget system is deferred unless the tuning harness proves it necessary)
+- [x] **BEST-01**: Every creature's HP / damage / to-hit / AR / attack count is reviewed against its intended depth band and the encounter tables, with outliers fixed and a before/after stat table committed
+- [x] **BEST-02**: Ability-bearing foes carry proportionally lower raw stats (hand-tuned; the formal threat-budget system is deferred unless the tuning harness proves it necessary)
 - [ ] **BEST-03**: Bestiary changes to creatures a parity fixture rolls land only through narrow, named `comparables.js` carve-outs per FID-05
 
 ### Consolidated Difficulty Retune (TUNE)
@@ -106,7 +106,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FID-02 | Phase 17 | Complete |
 | FID-03 | Phase 17 | Complete |
 | FID-04 | Phase 19 | Pending |
-| FID-05 | Phase 18 | Pending |
+| FID-05 | Phase 18 | Complete |
 | FOE-01 | Phase 19 | Pending |
 | FOE-02 | Phase 19 | Pending |
 | FOE-03 | Phase 19 | Pending |
@@ -121,8 +121,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CANON-03 | Phase 18 | Pending |
 | CANON-04 | Phase 18 | Pending |
 | CANON-05 | Phase 18 | Pending |
-| BEST-01 | Phase 18 | Pending |
-| BEST-02 | Phase 18 | Pending |
+| BEST-01 | Phase 18 | Complete |
+| BEST-02 | Phase 18 | Complete |
 | BEST-03 | Phase 18 | Pending |
 | TUNE-01 | Phase 21 | Pending |
 | TUNE-02 | Phase 21 | Pending |

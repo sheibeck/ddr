@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 18
 current_phase_name: Bestiary Rebalance & Canon Combat Fixes
 status: executing
-stopped_at: Completed 17-03-PLAN.md (Phase 17 complete)
-last_updated: "2026-09-13T22:37:54.381Z"
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-09-13T23:09:51.897Z"
 last_activity: 2026-09-13
-last_activity_desc: Phase 17 complete, transitioned to Phase 18
+last_activity_desc: Phase 18 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 9
+  completed_plans: 4
   percent: 20
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 17 — Fixture Inventory & Foe-Turn Refactors
+**Current focus:** Phase 18 — Bestiary Rebalance & Canon Combat Fixes
 
 ## Current Position
 
-Phase: 18 — Bestiary Rebalance & Canon Combat Fixes
-Plan: Not started
+Phase: 18 (Bestiary Rebalance & Canon Combat Fixes) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-09-13 — Phase 17 complete, transitioned to Phase 18
+Last activity: 2026-09-13 — Phase 18 execution started
 
-Progress: [██████████] 100%
+Progress: [████░░░░░░] 44%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-13T20:27:38.011Z
-Stopped at: Completed 17-03-PLAN.md (Phase 17 complete)
+Last session: 2026-09-13T23:09:51.860Z
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -97,6 +97,7 @@ Resume file: None
 | Phase 17 P01 | 30min | 2 tasks | 4 files |
 | Phase 17 P02 | 20min | 2 tasks | 3 files |
 | Phase 17 P03 | 25min | 2 tasks | 2 files |
+| Phase 18 P01 | 28min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -104,3 +105,5 @@ Resume file: None
 - [Phase ?]: 17-02: applyFoeDamageToPlayer avoids an internal f=foe alias so its killFoe/die call sites read as the literal parameter name, matching the plan's textual acceptance-criteria greps
 - [Phase ?]: 17-02: options-object signature (state, foe, rng, events, { dmg, roll, need }) locked per CONTEXT.md's small-rng-explicit-signature preference over RESEARCH.md's positional draft
 - [Phase ?]: 17-03: pinned draw-count integers measured by actually running countingRng against the post-17-02 engine (not hand-traced); matched the plan's PRE-Phase-17 numbers exactly, confirming 17-02's extraction is draw-for-draw identical
+- [Phase ?]: 18-01: Werebeast's TTK ratio computes to exactly 2.0 (unflagged) while lethality 2.60 flags it, matching the plan's strict boundary rule precisely; Philly's ttkRatio floats to 2.0000000000000004 due to the twice-doubling path (cosmetic, handled via the curated Review Verdicts disposition, not a code fix)
+- [Phase ?]: 18-01: CANON-04's damage-source x creature-type multiplier is out of tools/bestiary-yardstick.mjs's melee-only scope (depends on caster class, not modeled by the composite hero) — documented explicitly in content/BESTIARY-REBALANCE.md
