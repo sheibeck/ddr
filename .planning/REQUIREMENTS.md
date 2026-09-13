@@ -34,10 +34,10 @@ The non-negotiable engine gate, made explicit for this milestone because every f
 
 Cheap rulebook-described mechanics with existing engine seams.
 
-- [ ] **CANON-01**: A foe's own `sp.ar` (natural armor) reduces damage it takes, per canon (generic formula, all creatures)
+- [x] **CANON-01**: A foe's own `sp.ar` (natural armor) reduces damage it takes, per canon (generic formula, all creatures)
 - [ ] **CANON-02**: Spectre pursues a fleeing player (reuses the existing flee resolution path); Drudge never melees; Drake's breath is gated by an `every`-N cooldown (mirrors the item-cooldown pattern)
-- [ ] **CANON-03**: Sterling takes half damage from all sources (`halfDmg`)
-- [ ] **CANON-04**: Damage-source-vs-creature-type multipliers apply per canon (Cleric spells 2× vs Demons, magic 2× vs Walking Dead) via one small `{source, target} → multiplier` table in the magic damage path
+- [x] **CANON-03**: Sterling takes half damage from all sources (`halfDmg`)
+- [x] **CANON-04**: Damage-source-vs-creature-type multipliers apply per canon (Cleric spells 2× vs Demons, magic 2× vs Walking Dead) via one small `{source, target} → multiplier` table in the magic damage path
 - [ ] **CANON-05**: Philly's `slow` gives the player the lower of two dice on its strikes (isolated to `strikeDie`/to-hit resolution)
 
 ### Bestiary Rebalance (BEST)
@@ -116,10 +116,10 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FOE-07 | Phase 19 | Pending |
 | FOE-08 | Phase 19 | Pending |
 | FOE-09 | Phase 19 | Pending |
-| CANON-01 | Phase 18 | Pending |
+| CANON-01 | Phase 18 | Complete |
 | CANON-02 | Phase 19 | Pending |
-| CANON-03 | Phase 18 | Pending |
-| CANON-04 | Phase 18 | Pending |
+| CANON-03 | Phase 18 | Complete |
+| CANON-04 | Phase 18 | Complete |
 | CANON-05 | Phase 18 | Pending |
 | BEST-01 | Phase 18 | Complete |
 | BEST-02 | Phase 18 | Complete |
