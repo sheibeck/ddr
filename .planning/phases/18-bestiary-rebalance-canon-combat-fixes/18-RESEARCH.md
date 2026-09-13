@@ -587,7 +587,7 @@ None applicable — this phase is an internal, offline, single-player engine/con
 
 **If this table is empty:** N/A — six assumptions listed above; A6 in particular should be surfaced to the user/planner as a specific confirmation point since it expands the outlier list beyond what CONTEXT.md's smart-discuss session explicitly named.
 
-## Open Questions
+## Open Questions (RESOLVED — see CONTEXT.md D-18, D-20)
 
 1. **Should Drake's and Werebeast's stat fixes be locked now, or treated as "Claude's discretion, exact numbers TBD at plan time"?**
    - What we know: both are >2x-median outliers by the yardstick math computed in this session (Drake 7.3x TTK, Werebeast 2.9x RTD); CONTEXT.md's D-02 rule explicitly covers "fix ONLY outliers... >2x off the tier's median."
