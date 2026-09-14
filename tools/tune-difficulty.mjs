@@ -153,9 +153,31 @@ function autoPlayOnce(seed) {
   const policyRng = makeRng(seed ^ 0x9e3779b9);
   let state = newRun(seed);
   let actions = 0;
+  // Phase 20 (D-15): a READOUT ONLY (informational, like 18-06's tune-
+  // difficulty readout, never a pass/fail gate) tallying parley attempts /
+  // successes / failures / refusals / exhausted-retries / SP share per run.
+  // parleyExhausted is expected to read 0 until the Phase 20 engine rules
+  // (20-02) land — this plan touches no dial, no economy number, and no
+  // policy decision (decideAction is unchanged).
+  let parleyAttempts = 0;
+  let parleySuccesses = 0;
+  let parleyFailures = 0;
+  let parleyRefused = 0;
+  let parleyExhausted = 0;
+  let parleySp = 0;
   while (!state.dead && !state.won && actions < MAX_ACTIONS) {
     const action = decideAction(state, policyRng);
-    ({ state } = applyAction(state, action));
+    let events;
+    ({ state, events } = applyAction(state, action));
+    for (const e of events) {
+      if (e.type === "parleyRolled") parleyAttempts++;
+      else if (e.type === "spGained" && e.reason === "parley") {
+        parleySuccesses++;
+        parleySp += e.amount;
+      } else if (e.type === "parleyFailed") parleyFailures++;
+      else if (e.type === "parleyRefused") parleyRefused++;
+      else if (e.type === "parleyExhausted") parleyExhausted++;
+    }
     actions++;
   }
   return {
@@ -165,6 +187,13 @@ function autoPlayOnce(seed) {
     won: state.won,
     cause: state.deathNote || (state.won ? "walked out" : actions >= MAX_ACTIONS ? "maxActionsHit" : "unknown"),
     actions,
+    parleyAttempts,
+    parleySuccesses,
+    parleyFailures,
+    parleyRefused,
+    parleyExhausted,
+    parleySp,
+    spTotal: state.c.sp,
   };
 }
 
@@ -194,6 +223,34 @@ function causeBreakdown(results) {
     .map(([cause, count]) => ({ cause, count }));
 }
 
+/**
+ * parleySummary(results) — Phase 20 (D-15) readout aggregation, informational
+ * only (never a gate). Sums each run's parley tally and reports the derived
+ * successRate/spShare ratios across the whole batch.
+ */
+function parleySummary(results) {
+  const attempts = results.reduce((sum, r) => sum + r.parleyAttempts, 0);
+  const successes = results.reduce((sum, r) => sum + r.parleySuccesses, 0);
+  const failures = results.reduce((sum, r) => sum + r.parleyFailures, 0);
+  const refused = results.reduce((sum, r) => sum + r.parleyRefused, 0);
+  const exhausted = results.reduce((sum, r) => sum + r.parleyExhausted, 0);
+  const runsWithAttempt = results.filter((r) => r.parleyAttempts > 0).length;
+  const parleySp = results.reduce((sum, r) => sum + r.parleySp, 0);
+  const spTotal = results.reduce((sum, r) => sum + r.spTotal, 0);
+  return {
+    attempts,
+    successes,
+    failures,
+    refused,
+    exhausted,
+    runsWithAttempt,
+    parleySp,
+    spTotal,
+    successRate: attempts ? successes / attempts : 0,
+    spShare: spTotal ? parleySp / spTotal : 0,
+  };
+}
+
 function printReport(results) {
   const depths = distribution(results.map((r) => r.deathDepth));
   const actions = distribution(results.map((r) => r.actions));
@@ -216,6 +273,16 @@ function printReport(results) {
     const pct = ((count / results.length) * 100).toFixed(1);
     console.log(`  ${String(cause).padEnd(20)} ${count} (${pct}%)`);
   }
+
+  const parley = parleySummary(results);
+  const successPct = (parley.successRate * 100).toFixed(1);
+  const spSharePct = (parley.spShare * 100).toFixed(1);
+  console.log("\nParley (D-15 readout — informational, not a gate):");
+  console.log(
+    `  attempts=${parley.attempts}  successes=${parley.successes} (${successPct}%)  failures=${parley.failures}  refused=${parley.refused}  exhausted=${parley.exhausted}`,
+  );
+  console.log(`  runs with >=1 attempt: ${parley.runsWithAttempt} of ${results.length}`);
+  console.log(`  SP from parley: ${parley.parleySp} of ${parley.spTotal} total SP (${spSharePct}%)`);
 
   console.log(`\nOutcome: ${deadCount} dead, ${wonCount} won (legacy floor-5 Gate), ${stoppedCount} hit MAX_ACTIONS`);
   if (wonCount > 0) {
@@ -260,6 +327,7 @@ function main() {
           causes: causeBreakdown(results),
           won: results.filter((r) => r.won).length,
           dead: results.filter((r) => r.dead).length,
+          parley: parleySummary(results),
         },
         null,
         2,
