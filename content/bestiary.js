@@ -8,8 +8,11 @@
 // Array order within each floor bucket is preserved exactly — the maze's
 // encounter resolution indexes into these arrays by roll.
 //
-// Phase 18 (BEST-01/BEST-02) deliberately moved ten entries away from the
-// prototype's numbers; the full before/after stat table, yardstick
+// Phase 18 (BEST-01/BEST-02) deliberately moved nine entries' numbers away
+// from the prototype's values (Drake, Stalka Beast, Djinni x2, Krupke,
+// Werebeast, Drudge x2, Vampire) and wired a tenth pre-existing flag
+// (Sterling's sp.halfDmg) into the engine without changing its own numbers;
+// the full before/after stat table, yardstick
 // methodology and per-creature rationale live in content/BESTIARY-REBALANCE.md
 // (D-04). The four fixture-exposed creatures (Bat/Rat, Shriek, Viper, Dante —
 // see test/parity/FIXTURE-INVENTORY.md) are untouched and must stay so
