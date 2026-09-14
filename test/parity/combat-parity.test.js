@@ -29,6 +29,7 @@ import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
+import { stripParleyDivergence } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -134,10 +135,16 @@ function applyStartCombat(state, wandering, forced) {
 
 for (const scenario of FIXTURE.scenarios) {
   test(`combat parity (${scenario.name}): engine matches the frozen prototype after every action`, () => {
+    // D-13/D-18 (Phase 20): the parley scenario carries a deliberate, scenario-
+    // scoped divergence (c.sp/c.gold/combat.parleyTried/combat.parleyInsulted);
+    // see stripParleyDivergence's JSDoc in ./harness/comparables.js. Every other
+    // scenario keeps comparing on the bare comparable().
+    const cmp = scenario.name === "parley" ? (s) => stripParleyDivergence(comparable(s)) : comparable;
+
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
 
-    const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+    const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(
       initialDivergence,
       null,
@@ -170,7 +177,7 @@ for (const scenario of FIXTURE.scenarios) {
         assert.fail(`unhandled combat fixture action type: ${action.type}`);
       }
 
-      const divergence = diffState(comparable(ctx.S), comparable(engineState));
+      const divergence = diffState(cmp(ctx.S), cmp(engineState));
       assert.equal(
         divergence,
         null,

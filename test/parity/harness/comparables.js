@@ -313,6 +313,47 @@ function stripRationsField(c) {
   return rest;
 }
 
+/** stripParleyDivergence(state) — PARLEY-01..PARLEY-04 (Phase 20, CONTEXT
+ * D-13/D-18) is a DELIBERATE, PERMANENT gameplay divergence, not a fidelity
+ * bug swept under the rug: parley's SP payout becomes
+ * `round(combat-equivalent × 0.5)` via the shared `killSpFor` helper, the
+ * Humans wilmst check tightens to `d6 === 6` (down from `d6 >= 4`), the Con
+ * Artist bonus drops from +6 to +4 with `need` clamped to a ceiling of 17,
+ * and two new combat-scoped flags (`combat.parleyTried` /
+ * `combat.parleyInsulted`) are lazily added. For the ONE parity-exposed
+ * parley — `test/parity/fixtures/action-script.combat.json`'s scenario
+ * `parley` (seed 303) — this legitimately makes `c.sp` and `c.gold` differ
+ * from the frozen prototype (`test/parity/prototype-master.js.txt` — DO NOT
+ * EDIT).
+ *
+ * This stripper is applied ONLY to that one scenario, at BOTH of its parity
+ * replay sites — `test/parity/combat-parity.test.js`'s local `comparable()`
+ * and `test/parity/full-suite.test.js`'s shared `combatComparable` loop —
+ * via a scenario-scoped wrapper chosen when `scenario.name === "parley"`.
+ * Every other combat scenario (win/lose/flee), the entire magic fixture,
+ * and every other fixture stay byte-identical with NO carve-out; it is not
+ * folded into `combatComparable`/`movementComparable`/`economyComparable`
+ * themselves, so those keep exposing `c.sp`/`c.gold` for every other
+ * comparison.
+ *
+ * The two flags are stripped defensively: a SUCCESSFUL parley nulls
+ * `state.combat` before any post-action comparison happens (both on the
+ * prototype and the engine), so for seed 303 specifically only `c.sp`/
+ * `c.gold` actually diverge today — the flag strip protects a FUTURE
+ * fixture that might capture state mid-fight or after a failed attempt. */
+export function stripParleyDivergence(state) {
+  const rest = { ...state };
+  if (rest.c) {
+    const { sp, gold, ...c } = rest.c;
+    rest.c = c;
+  }
+  if (rest.combat) {
+    const { parleyTried, parleyInsulted, ...combat } = rest.combat;
+    rest.combat = combat;
+  }
+  return rest;
+}
+
 /** economyComparable(state) — economy/encounters-parity's shared comparable(). */
 export function economyComparable(state) {
   // PARTY-02 (Phase 7): strip the new top-level `state.party` — see

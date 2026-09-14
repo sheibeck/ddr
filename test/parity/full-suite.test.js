@@ -38,6 +38,7 @@ import {
   applyStartCombat,
   economyComparable,
   runEconomyAction,
+  stripParleyDivergence,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -113,9 +114,16 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
 
   await t.test("combat: every combat scenario matches the frozen prototype", () => {
     for (const scenario of COMBAT_FIXTURE.scenarios) {
+      // D-13/D-18 (Phase 20): the parley scenario carries a deliberate,
+      // scenario-scoped divergence (c.sp/c.gold/combat.parleyTried/
+      // combat.parleyInsulted); see the imported stripper's JSDoc in
+      // ./harness/comparables.js. Every other scenario (win/lose/flee) keeps
+      // comparing on the bare combatComparable.
+      const cmp = scenario.name === "parley" ? (s) => stripParleyDivergence(combatComparable(s)) : combatComparable;
+
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
-      assert.equal(diffState(combatComparable(ctx.S), combatComparable(engineState)), null);
+      assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
       scenario.actions.forEach((action, i) => {
         if (action.type === "startCombat") {
           ctx.startCombat(action.wandering, action.forced);
@@ -126,7 +134,7 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
           const { state } = applyAction(engineState, { type: action.type });
           engineState = state;
         }
-        const d = diffState(combatComparable(ctx.S), combatComparable(engineState));
+        const d = diffState(cmp(ctx.S), cmp(engineState));
         assert.equal(d, null, `combat scenario ${scenario.name}, action ${i}: diverged at ${d}`);
       });
     }
