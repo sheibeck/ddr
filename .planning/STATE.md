@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Monster Balancing & Abilities
-current_phase: 18
-current_phase_name: Bestiary Rebalance & Canon Combat Fixes
-status: verifying
+current_phase: 19
+current_phase_name: Foe Abilities, Spellcasting & Symmetric INT Resistance
+status: planning
 stopped_at: Completed 18-06-PLAN.md (Phase 18 complete)
-last_updated: "2026-09-14T00:23:26.461Z"
+last_updated: "2026-09-14T00:52:13.823Z"
 last_activity: 2026-09-13
-last_activity_desc: Phase 18 execution started
+last_activity_desc: Phase 18 complete, transitioned to Phase 19
 progress:
   total_phases: 5
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 ## Current Position
 
-Phase: 18 (Bestiary Rebalance & Canon Combat Fixes) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-09-13 — Phase 18 execution started
+Phase: 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-13 — Phase 18 complete, transitioned to Phase 19
 
 Progress: [██████████] 100%
 
