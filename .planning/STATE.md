@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Monster Balancing & Abilities
 current_phase: 21
 current_phase_name: Consolidated Difficulty Retune
-status: executing
-stopped_at: Completed 21-04-PLAN.md
-last_updated: "2026-09-14T16:51:28.814Z"
+status: verifying
+stopped_at: Completed 21-05-PLAN.md — phase 21 automated work done, awaiting human DR round verdict (TUNE-04)
+last_updated: "2026-09-14T17:01:27.963Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 21 execution started
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 21
-  completed_plans: 20
-  percent: 80
+  completed_plans: 21
+  percent: 100
 ---
 
 # Project State
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 Phase: 21 (Consolidated Difficulty Retune) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-14 — Phase 21 execution started
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +87,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T16:51:28.786Z
-Stopped at: Completed 21-04-PLAN.md
+Last session: 2026-09-14T17:01:17.973Z
+Stopped at: Completed 21-05-PLAN.md — phase 21 automated work done, awaiting human DR round verdict (TUNE-04)
 Resume file: None
 
 ## Operator Next Steps
@@ -120,6 +120,7 @@ Resume file: None
 | Phase 21 P02 | 45min | 2 tasks | 4 files |
 | Phase 21 P03 | 15min | 3 tasks | 13 files |
 | Phase 21 P04 | 70min | 2 tasks | 4 files |
+| Phase 21 P05 | 35min | 2 tasks | 1 files |
 
 ## Decisions
 
@@ -167,3 +168,10 @@ Resume file: None
 - [Phase ?]: 21-03: startAt sanitisation reuses difficultyCurve's own safeDepth clamp rather than a bespoke clamp — 0/-3/NaN/1.5/Infinity/'abc'/undefined all sanitize to 1 for free
 - [Phase ?]: 21-03: three per-domain parity test files (movement/combat/magic-parity.test.js) carry their own local comparable() duplicates predating the shared harness extraction — these needed the same dev carve-out or parity dropped to 21/30 (Rule 1 fix)
 - [Phase ?]: 21-04: retuned FOE_CAP_MAX=5/FOE_POWER_MAX=1.6/ABILITY_THREAT_MAX=2.0 (iteration 1) and raised FOE_POWER_SOFT_K/ABILITY_THREAT_SOFT_K (iteration 2, per D-11) — confirmed via real re-run that the D-09 median/p90/actions-per-floor targets can't move because the bot rarely survives past depth 5-10; both conditional counterweights (lootDepth, memberUpkeepScale) never fired, so neither was added
+- [Phase ?]: 21-05: curve values for the DR checklist's three run tables (depth 20/35/50) were computed by running difficultyCurve() directly against the frozen engine via node -e, not hand-derived
+- [Phase ?]: 21-05: the 21-30/31-50 depth bands have zero bot samples in every readout across the phase's ledger, so Run 2/3's 'What to expect here' lines say so explicitly rather than inventing a caster-encounter-rate expectation
+- [Phase ?]: 21-05: adb was unreachable from this shell and this plan's own project notes forbid the executor from deploying to the device itself — recorded the debug APK's build success and path instead of attempting adb install
+
+### Blockers
+
+- Phase 21 human_needed: TUNE-04 sign-off — user must play the DR round (3 dev-start runs at depth 20/35/50 per docs/DIFFICULTY-RETUNE.md's DR checklist) and record a pass/tune-again verdict before the phase/milestone can close

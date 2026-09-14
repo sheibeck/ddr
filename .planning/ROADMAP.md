@@ -183,7 +183,7 @@ Plans:
   3. The curve is retuned once across party power, economy (loot/wilmst/store), monster power, and ability threat; harness runs confirm a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+.
   4. A human signs off via an on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion — as the milestone's single deferred UAT checkpoint (last thing in the milestone).
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans executed
 
 Plans:
 **Wave 1**
@@ -204,7 +204,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4)*
 
-- [ ] 21-05-PLAN.md — TUNE-04 sign-off packaging: DR checklist (3 runs at depths 20/35/50, D-15), debug-build/adb how-to, D-16 outcomes, phase gate; the phase ends `human_needed` on the DR verdict (wave 5)
+- [x] 21-05-PLAN.md — TUNE-04 sign-off packaging: DR checklist (3 runs at depths 20/35/50, D-15), debug-build/adb how-to, D-16 outcomes, phase gate; the phase ends `human_needed` on the DR verdict (wave 5)
 
 ## Carried-forward work (not yet phases)
 
@@ -224,5 +224,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
 | 20. Parley Balance & Language System | v1.1 | 3/3 | Complete    | 2026-09-14 |
-| 21. Consolidated Difficulty Retune | v1.1 | 4/5 | In Progress|  |
+| 21. Consolidated Difficulty Retune | v1.1 | 5/5 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |
