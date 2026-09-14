@@ -121,9 +121,38 @@ Top 5 death causes:
 Outcome: 187 dead, 0 won (legacy floor-5 Gate), 13 hit MAX_ACTIONS
 ```
 
-### AFTER
+### AFTER (captured against the rebalanced tree with canon modifiers live, `--seeds=200`)
 
-_Filled by 18-06 after the rebalance and the canon modifiers land._
+```
+tune-difficulty: 200 seeded auto-play run(s)
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=1  p90=2  max=4
+
+Action-count distribution:
+  min=12  p50=189  p90=8908  max=20000
+
+Top 5 death causes:
+  starved in the dark          42 (21.0%)
+  fell off a wall               30 (15.0%)
+  cut down by a Dante           23 (11.5%)
+  undone by a trap               23 (11.5%)
+  maxActionsHit                 16 (8.0%)
+
+Outcome: 184 dead, 0 won (legacy floor-5 Gate), 16 hit MAX_ACTIONS
+```
+
+**Comparison to BEFORE:** the death-depth distribution is within noise of the
+BEFORE readout (median stays 1, p90 moves from 2 to 2, max shrinks 6 → 4 —
+no depth improvement, no regression) and the top-5 causes are the same five
+(starvation, wall falls, Dante, traps, MAX_ACTIONS) in a slightly reordered
+mix; this is expected per D-16 — the bot fights melee-only with a starting
+kit and never reaches the mid/high-tier creatures this phase retuned (Drake,
+Werebeast, Djinni, Vampire, Stalka Beast are all tier 4-5), so a heuristic
+bot blind to abilities was never going to show this phase's fix. Informational
+sanity signal only, not a gate — Phase 21's ability-aware retune is where a
+tune-difficulty shift would actually be expected.
 
 ## BEFORE — full table (mechanics=prototype, 53 rows)
 
@@ -223,10 +252,10 @@ Mechanics: prototype | T1 med TTK=3.51 RTD=30.89 | T2 med TTK=3.31 RTD=10.87 | T
 
 ## Canon modifiers and the AFTER table (CANON-01/03/04/05)
 
-18-06 will paste the `--mechanics=canon` output between the AFTER marker
-comment pair below (both marker lines are already in place, bracketing a
-placeholder). Two consequences the planner already knows about, ahead of
-that table landing:
+Generated from the rebalanced `content/bestiary.js` with `--mechanics=canon`
+(ar soak, slow, halfDmg modelled — the engine as of Phase 18, i.e. after
+CANON-01/03/04/05 land and 18-05's number changes are applied). Two
+consequences the planner already knew about, ahead of this table landing:
 
 - **Foe natural armor (D-05, no durability)** raises the melee-only TTK of
   the five `sp.ar` creatures purely by existing — no `wp` is lowered to
@@ -245,7 +274,62 @@ that table landing:
   documented scope limit of the tool, not a balance gap in the engine.
 
 <!-- yardstick:after:begin -->
-_Filled by 18-06._
+Mechanics: canon | T1 med TTK=3.51 RTD=30.89 | T2 med TTK=3.31 RTD=10.87 | T3 med TTK=2.34 RTD=5.56 | T4 med TTK=1.43 RTD=3.73 | T5 med TTK=2.63 RTD=2.81
+| Tier | Type | Creature | wp | atk | dmg | toHit | ar | flags | heroE | TTK | xTTKmed | foeDPR | RTD | xLethal | Flag |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Beasts | Bat/Rat | 1.00 | 2 | 0d0+1 |  |  |  | 1.42 | 0.70 | 0.20 | 1.20 | 34.75 | 0.89 | under-tier |
+| 1 | Beasts | Shriek | 3.00 | 1 | d6* |  |  |  | 1.42 | 2.11 | 0.60 | 1.35 | 30.89 | 1.00 |  |
+| 1 | Beasts | Viper | 3.00 | 1 | d6* |  |  |  | 1.42 | 2.11 | 0.60 | 1.35 | 30.89 | 1.00 |  |
+| 2 | Beasts | Cave Bear | 25.00 | 1 | 1d8+0 |  |  |  | 3.62 | 6.90 | 2.08 | 4.25 | 10.87 | 1.00 | over-tier |
+| 2 | Beasts | Zit | 4.00 | 1 | d6* | 4.00 |  |  | 3.62 | 1.10 | 0.33 | 3.75 | 12.32 | 0.88 | under-tier |
+| 3 | Beasts | Drat | 26.00 | 1 | d6* | 5.00 | 12.00 |  | 4.38 | 5.93 | 2.54 | 7.50 | 6.67 | 0.83 | over-tier |
+| 3 | Beasts | Flube | 7.00 | 1 | d6* |  |  |  | 6.85 | 1.02 | 0.44 | 7.50 | 6.67 | 0.83 | under-tier |
+| 3 | Beasts | Rast | 12.00 | 1 | 1d8+4 |  |  |  | 6.85 | 1.75 | 0.75 | 10.50 | 4.76 | 1.17 |  |
+| 3 | Beasts | Sterling | 35.00 | 1 | 1d12+0 |  |  | halfDmg | 3.42 | 10.23 | 4.38 | 9.30 | 5.38 | 1.03 | over-tier |
+| 3 | Beasts | Wolf | 6.00 | 1 | 1d6+2 |  |  |  | 6.85 | 0.88 | 0.38 | 8.70 | 5.75 | 0.97 | under-tier |
+| 4 | Beasts | Drake | 38.00 | 1 | 2d10+4 |  |  |  | 12.93 | 2.94 | 2.05 | 23.25 | 2.34 | 1.59 | over-tier |
+| 4 | Beasts | Stink Bug | 4.00 | 1 | d6* | 2.00 |  |  | 7.76 | 0.52 | 0.36 | 14.63 | 3.73 | 1.00 | under-tier |
+| 5 | Beasts | Dread Lock | 40.00 | 1 | d6* |  |  |  | 24.74 | 1.62 | 0.62 | 21.38 | 2.81 | 1.00 |  |
+| 5 | Beasts | Stalka Beast | 94.00 | 2 | 1d4+0 |  |  |  | 24.74 | 3.80 | 1.45 | 41.25 | 1.45 | 1.93 |  |
+| 1 | Demons | Gremlin | 8.00 | 1 | 1d6+3 |  |  |  | 1.42 | 5.62 | 1.60 | 2.25 | 18.53 | 1.67 |  |
+| 2 | Demons | Poltergeist | 10.00 | 2 | d6* |  |  |  | 3.62 | 2.76 | 0.83 | 7.50 | 6.16 | 1.76 |  |
+| 3 | Demons | Rinkle | 16.00 | 1 | d6* |  |  |  | 6.85 | 2.34 | 1.00 | 7.50 | 6.67 | 0.83 |  |
+| 4 | Demons | Djinni | 65.00 | 1 | 1d4+0 |  |  | caster | 12.93 | 5.03 | 3.51 | 13.88 | 3.93 | 0.95 | over-tier |
+| 4 | Demons | Ghost | 28.00 | 1 | d6* |  |  | magicOnly | 0.00 | inf | inf | 14.63 | 3.73 | 1.00 | infinite |
+| 4 | Demons | Spectre | 32.00 | 1 | d6* |  |  | magicOnly | 0.00 | inf | inf | 14.63 | 3.73 | 1.00 | infinite |
+| 5 | Demons | Djinni | 65.00 | 1 | 1d4+0 |  |  | caster | 24.74 | 2.63 | 1.00 | 20.63 | 2.91 | 0.96 |  |
+| 1 | Humans | Dante | 20.00 | 3 | d6* |  |  |  | 1.42 | 14.06 | 4.00 | 4.05 | 10.30 | 3.00 | over-tier |
+| 2 | Humans | China Wolf | 16.00 | 2 | 1d6+0 |  |  |  | 3.62 | 4.42 | 1.33 | 7.50 | 6.16 | 1.76 |  |
+| 2 | Humans | Krupke | 17.00 | 1 | 1d6+2 |  | 12.00 | caster | 2.32 | 7.34 | 2.21 | 4.75 | 9.73 | 1.12 | over-tier |
+| 3 | Humans | Frank | 20.00 | 1 | 1d8+6 |  |  |  | 6.85 | 2.92 | 1.25 | 11.70 | 4.27 | 1.30 |  |
+| 3 | Humans | Primp | 18.00 | 1 | 1d8+2 |  |  |  | 6.85 | 2.63 | 1.13 | 9.30 | 5.38 | 1.03 |  |
+| 4 | Humans | Craig | 24.00 | 1 | 1d12+0 |  | 15.00 |  | 7.11 | 3.37 | 2.36 | 16.88 | 3.23 | 1.15 | over-tier |
+| 4 | Humans | Herman | 36.00 | 1 | 0d0+25 |  | 15.00 |  | 7.11 | 5.06 | 3.54 | 30.75 | 1.77 | 2.10 | over-tier |
+| 5 | Humans | Herman | 36.00 | 1 | 0d0+25 |  | 15.00 |  | 13.61 | 2.65 | 1.01 | 37.50 | 1.60 | 1.75 |  |
+| 1 | Lair Beasts | Dog Face | 6.00 | 1 | 1d6+0 |  |  |  | 1.42 | 4.22 | 1.20 | 1.35 | 30.89 | 1.00 |  |
+| 1 | Lair Beasts | Goblin | 4.00 | 1 | d6* |  |  |  | 1.42 | 2.81 | 0.80 | 1.35 | 30.89 | 1.00 |  |
+| 1 | Lair Beasts | Hobgoblin | 5.00 | 1 | 1d6+1 |  |  |  | 1.42 | 3.51 | 1.00 | 1.65 | 25.27 | 1.22 |  |
+| 1 | Lair Beasts | M&M | 3.00 | 1 | d6* |  |  |  | 1.42 | 2.11 | 0.60 | 1.35 | 30.89 | 1.00 |  |
+| 1 | Lair Beasts | Pogo | 4.00 | 1 | 1d6+4 |  |  | fast | 1.14 | 3.51 | 1.00 | 2.55 | 16.35 | 1.89 |  |
+| 2 | Lair Beasts | Hair | 12.00 | 1 | 1d6+0 |  |  |  | 3.62 | 3.31 | 1.00 | 3.75 | 12.32 | 0.88 |  |
+| 2 | Lair Beasts | Trachea | 8.00 | 1 | 1d10+0 |  |  |  | 3.62 | 2.21 | 0.67 | 4.75 | 9.73 | 1.12 |  |
+| 3 | Lair Beasts | Blumble | 16.00 | 1 | 1d12+0 |  |  |  | 6.85 | 2.34 | 1.00 | 9.30 | 5.38 | 1.03 |  |
+| 4 | Lair Beasts | Drarl | 19.00 | 1 | d6* |  |  |  | 12.93 | 1.47 | 1.03 | 14.63 | 3.73 | 1.00 |  |
+| 5 | Lair Beasts | Drarl | 19.00 | 1 | d6* |  |  |  | 24.74 | 0.77 | 0.29 | 21.38 | 2.81 | 1.00 | under-tier |
+| 1 | Magical | Drekk | 7.00 | 1 | d6* |  |  |  | 1.42 | 4.92 | 1.40 | 1.35 | 30.89 | 1.00 |  |
+| 2 | Magical | Shadow | 4.00 | 1 | d6* |  |  |  | 3.62 | 1.10 | 0.33 | 3.75 | 12.32 | 0.88 | under-tier |
+| 3 | Magical | Werebeast | 32.00 | 2 | 1d10+0 |  |  |  | 6.85 | 4.67 | 2.00 | 17.40 | 2.87 | 1.94 |  |
+| 4 | Magical | Drudge | 9.00 | 1 | d6* |  |  | caster,never_melee | 12.93 | 0.70 | 0.49 | 14.63 | 3.73 | 1.00 | under-tier |
+| 5 | Magical | Drudge | 9.00 | 1 | d6* |  |  | caster,never_melee | 24.74 | 0.36 | 0.14 | 21.38 | 2.81 | 1.00 | under-tier |
+| 1 | Walking Dead | Philly | 5.00 | 1 | 1d4+2 |  |  | twice,slow | 2.60 | 3.84 | 1.09 | 1.65 | 25.27 | 1.22 |  |
+| 2 | Walking Dead | Google | 19.00 | 1 | 1d8+0 |  | 15.00 |  | 1.99 | 9.54 | 2.88 | 4.25 | 10.87 | 1.00 | over-tier |
+| 2 | Walking Dead | Skeleton | 6.00 | 1 | d6* | 4.00 |  | twice | 3.62 | 3.31 | 1.00 | 3.75 | 12.32 | 0.88 |  |
+| 3 | Walking Dead | Ghoul | 15.00 | 1 | 1d6+0 |  |  |  | 6.85 | 2.19 | 0.94 | 7.50 | 6.67 | 0.83 |  |
+| 3 | Walking Dead | Zombie | 12.00 | 1 | d6* |  |  |  | 6.85 | 1.75 | 0.75 | 7.50 | 6.67 | 0.83 |  |
+| 4 | Walking Dead | Bones | 14.00 | 1 | d6* |  |  |  | 12.93 | 1.08 | 0.76 | 14.63 | 3.73 | 1.00 |  |
+| 4 | Walking Dead | Floater | 8.00 | 1 | d6* |  |  |  | 12.93 | 0.62 | 0.43 | 14.63 | 3.73 | 1.00 | under-tier |
+| 4 | Walking Dead | Undead | 18.00 | 1 | d6* |  |  |  | 12.93 | 1.39 | 0.97 | 14.63 | 3.73 | 1.00 |  |
+| 5 | Walking Dead | Vampire | 71.00 | 2 | 1d4+0 |  |  | caster | 24.74 | 2.87 | 1.09 | 41.25 | 1.45 | 1.93 |  |
 <!-- yardstick:after:end -->
 
 ## Pre-ability discount (D-03, BEST-02)
@@ -279,23 +363,88 @@ intentional never-melee design, and Krupke, whose numbers are not yet a >2x
 outlier) as genuine current-state TTK outliers — reinforcing that this is a
 real, presently-measurable balance fix, not merely future-proofing.
 
-## Parity carve-outs (BEST-03 / FID-05)
+## Parity carve-outs (BEST-03 / FID-05) — measured
 
-**ZERO.** The four fixture-exposed creatures — Bat/Rat, Shriek, Viper, Dante
-(all level 1, per `test/parity/FIXTURE-INVENTORY.md`) — are untouched by this
-phase's number changes, so **no `comparables.js` carve-out is added and no
-fixture is regenerated**. `test/parity/fixture-inventory.test.js` and
-`test/unit/foe-turn-draw-count.test.js`'s FULL_FIGHTS pins are the proof:
-both stay green, unmodified, through every plan in this phase.
-
-Every new canon mechanic (`sp.ar`, `sp.slow`, `sp.halfDmg`, and the
-type/name-keyed damage multipliers) is gated on a flag that none of the four
-fixture-exposed creatures carries (D-15) — Bat/Rat, Shriek, and Viper have no
+**Zero carve-outs. Zero regenerations.** The four fixture-exposed creatures —
+Bat/Rat, Shriek, Viper, Dante (all level 1, per
+`test/parity/FIXTURE-INVENTORY.md`) — are untouched by this phase's number
+changes: the set of regenerated fixtures is **EMPTY**, by construction (D-14)
+and confirmed by measurement (D-15), because every new canon mechanic
+(`sp.ar`, `sp.slow`, `sp.halfDmg`, and the type/name-keyed damage
+multipliers) is gated on a flag that none of the four fixture-exposed
+creatures carries — Bat/Rat, Shriek, and Viper have no
 `sp.ar`/`sp.slow`/`sp.halfDmg` field at all, and Dante is a plain
-three-attack Human with none of those flags either. Zero draw-order risk,
-zero fixture drift.
+three-attack Human with none of those flags either. No `comparables.js`
+carve-out was ever needed.
+
+Measured at the phase gate (18-06):
+
+- `git diff --quiet e01ac46 -- test/parity/fixtures test/parity/harness/comparables.js test/parity/prototype-master.js.txt engine/difficulty.js package.json package-lock.json` — **exits 0** (byte-identical to the phase-start tree).
+- `node --test "test/parity/**/*.test.js"` — **30/30 pass**, byte-identical.
+- `test/parity/fixture-inventory.test.js` — green, unmodified pins.
+- `test/unit/foe-turn-draw-count.test.js`'s FULL_FIGHTS pins (12/101/111/66/32) — unchanged.
+- `npm test` — green (see the phase gate section below for the exact count).
+
+### Regenerating this document
+
+1. **BEFORE block:** a historical snapshot captured at commit `e01ac46` (the
+   unmodified phase-start tree). **Never regenerate it** — it is the fixed
+   baseline every future retune (Phase 21) diffs against.
+2. **AFTER block:** run `node tools/bestiary-yardstick.mjs` (canon mode, the
+   default) against the live `content/bestiary.js` and paste its stdout
+   verbatim between the `<!-- yardstick:after:begin -->` /
+   `<!-- yardstick:after:end -->` markers, replacing the existing block
+   exactly (including the `Mechanics: canon | ...` summary line).
+3. The doc-consistency test in `test/unit/bestiary-yardstick.test.js` ("D-04
+   doc consistency") enforces this automatically — a hand-edited or
+   stale AFTER block fails `npm test`.
 
 ## Change ledger
 
-_Filled by 18-06 (a table of every number that actually moved, cross-checked
-against this document's Review verdicts and Pre-ability discount sections)._
+A table of every number that actually moved in Phase 18, cross-checked
+against this document's Review verdicts and Pre-ability discount sections.
+"Prototype-mode TTK/lethality xmed after" columns are measured against the
+POST-rebalance bestiary in `--mechanics=prototype` mode (i.e. the number
+change alone, canon mechanics still inert) — this is the number that answers
+"did the D-03/D-18 fix land where D-18/D-03 intended." The canon-mode
+consequences (armor soak, halfDmg, slow) are recorded separately in the
+"Unchanged by decision" table below, since those are mechanic-driven, not
+number-driven.
+
+| Creature | Tier / Type | Field | Before | After | Prototype-mode TTK xmed after | Lethality xmed after | Decision | Note |
+|---|---|---|---|---|---|---|---|---|
+| Drake | T4 Beasts | wp | 135 | 38 | 2.05x | 1.59x | D-18 | wp 135 → 38 outlier fix; stays the tankiest T4 body (Herman 36); fire-breath cooldown is CANON-02/Phase 19 |
+| Werebeast | T3 Magical | sp.dmg bonus | 1d10+5 | 1d10+0 | 2.00x | 1.94x | D-18 | note text corrected from "two attacks at d10+5" to "two attacks at d10" |
+| Djinni (T4) | T4 Demons | wp / sp.dmg | 86 / none | 65 / 1d4+0 | 3.51x | 0.95x | D-03 | pre-ability discount — revisit Phase 21 |
+| Djinni (T5) | T5 Demons | wp / sp.dmg | 86 / none | 65 / 1d4+0 | 1.63x | 0.96x | D-03 | duplicate entry, same fix — pre-ability discount — revisit Phase 21 |
+| Krupke | T2 Humans | wp / sp.dmg | 23 / 1d8+2 | 17 / 1d6+2 | 1.42x | 1.12x | D-03 | pre-ability discount (not itself an outlier pre-fix) |
+| Drudge (T4) | T4 Magical | wp | 12 | 9 | 0.49x | 1.00x | D-03 | HP-only — never melees per canon, so no dice step |
+| Drudge (T5) | T5 Magical | wp | 12 | 9 | 0.23x | 1.00x | D-03 | HP-only; already under-tier before the discount, stays a caster-only under-tier body by design |
+| Vampire | T5 Walking Dead | wp / sp.dmg | 95 / none | 71 / 1d4+0 | 1.77x | 1.93x | D-03 | pre-ability discount — revisit Phase 21 |
+| Stalka Beast | T5 Beasts | wp / sp.dmg | 125 / none | 94 / 1d4+0 | 2.35x | 1.93x | D-03 | still ~2.35x after — the discount is the locked treatment; Phase 21 owns the rest |
+
+### Unchanged by decision (canon-mode consequences recorded, deferred to Phase 21)
+
+| Creature | Tier / Type | Canon TTK (xmed) | Disposition | Note |
+|---|---|---|---|---|
+| Sterling | T3 Beasts | 10.23 (4.38x) | D-19, canon-intended | halfDmg roughly doubles TTK — "two hearts," canon-intended, revisit Phase 21 |
+| Dante | T1 Humans | 14.06 (4.00x) proto / RTD 10.30 (3.00x) | D-14, fixture-exposed | no change this phase — carving it out would break parity; deferred to Phase 21 |
+| Cave Bear | T2 Beasts | 6.90 (2.08x) | UNCHANGED, borderline | within the composite-hero approximation error; research-reviewed, Phase 21 |
+| Herman (T4) | T4 Humans | lethality 2.10x (proto); canon TTK 5.06 (3.54x) | UNCHANGED | flat 25 base damage is explicit rulebook text; canon natural armor (D-05) raises its melee-only TTK — melee yardstick only, spells bypass (D-06); revisit Phase 21 |
+| Drat | T3 Beasts | 5.93 (2.54x) | UNCHANGED | canon natural armor (D-05); melee yardstick only, spells bypass (D-06); revisit Phase 21 |
+| Krupke (canon) | T2 Humans | 7.34 (2.21x) | UNCHANGED beyond D-03 | canon natural armor (D-05) stacks with the D-03 discount; melee yardstick only, spells bypass (D-06); revisit Phase 21 |
+| Craig | T4 Humans | 3.37 (2.36x) | UNCHANGED | canon natural armor (D-05); melee yardstick only, spells bypass (D-06); revisit Phase 21 |
+| Google | T2 Walking Dead | 9.54 (2.88x) | UNCHANGED | canon natural armor (D-05); melee yardstick only, spells bypass (D-06); revisit Phase 21 |
+| Philly | T1 Walking Dead | 3.84 (1.09x) | RESOLVED | CANON-05 slow lowers its canon TTK from the prototype's 7.03 (2.00x) to 3.84 (1.09x) — no longer flagged |
+| Ghost / Spectre | T4 Demons | infinite | UNCHANGED, by design | magicOnly canon gate — intentionally unhittable without a magic weapon |
+| Bat/Rat, Zit, Shadow, Stink Bug, Wolf, Floater, Flube, Drarl (T5) | various | under-tier | UNCHANGED, no buff in a conservative pass | Phase 21 owns any buff pass |
+
+Note: the canon-mode tier-5 TTK median moves from 1.62 (prototype) to 2.63
+(canon) — Herman's own tier-4 armored TTK isn't the T5 median (Herman is
+tier 4), but the T5 median shift shown in the AFTER table's header line is
+driven by the five `sp.ar` rows' canon TTK rising while the discount rows'
+wp falls; ratios in this ledger's "Prototype-mode" columns intentionally
+use the STABLE prototype-mode medians (unaffected by CANON-01/03/05 landing)
+so the D-03/D-18 number-only fixes are measured against a fixed yardstick,
+while the AFTER table's own `xTTKmed`/`xLethal` columns are relative to the
+live canon-mode medians printed in its own header.

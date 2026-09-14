@@ -12,9 +12,15 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import { computeYardstick, toMarkdown } from "../../tools/bestiary-yardstick.mjs";
 import { BESTIARY } from "../../content/index.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 const EPS = 0.01;
 function closeTo(actual, expected, eps = EPS) {
@@ -250,4 +256,33 @@ test("live bestiary smoke (canon mode): Philly's TTK drops below 4.0 (slow), Ste
       );
     }
   }
+});
+
+// --- D-04 doc consistency: BESTIARY-REBALANCE.md's AFTER block must match ---
+
+test("BESTIARY-REBALANCE.md AFTER block matches the live canon-mode yardstick (D-04 doc consistency)", () => {
+  const docPath = path.join(REPO_ROOT, "content", "BESTIARY-REBALANCE.md");
+  const doc = fs.readFileSync(docPath, "utf8");
+  const beginMarker = "<!-- yardstick:after:begin -->";
+  const endMarker = "<!-- yardstick:after:end -->";
+  const beginIdx = doc.indexOf(beginMarker);
+  const endIdx = doc.indexOf(endMarker);
+  assert.ok(beginIdx !== -1 && endIdx !== -1, "content/BESTIARY-REBALANCE.md must contain both yardstick:after markers");
+
+  const normalize = (block) =>
+    block
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((line) => line.replace(/[ \t]+$/, ""))
+      .join("\n")
+      .trim();
+
+  const docBlock = normalize(doc.slice(beginIdx + beginMarker.length, endIdx));
+  const liveBlock = normalize(toMarkdown(computeYardstick(BESTIARY, { mechanics: "canon" })));
+
+  assert.equal(
+    docBlock,
+    liveBlock,
+    "content/BESTIARY-REBALANCE.md's AFTER block drifted from tools/bestiary-yardstick.mjs — regenerate with `node tools/bestiary-yardstick.mjs` and paste verbatim between the markers",
+  );
 });
