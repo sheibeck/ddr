@@ -24,10 +24,17 @@ import {
   tallyEvents,
   abilitySummary,
   reachTable,
+  actionsPerFloorDist,
+  sharedJson,
+  isTalkFirst,
+  botLine,
+  playRun,
+  BOT_DEFAULTS,
 } from "../../tools/lib/tuning-bot.mjs";
 import { newRun } from "../../engine/engine.js";
 import { SPELLS, RACES } from "../../content/index.js";
 import { maxCharges } from "../../engine/movement.js";
+import { stripVolatileFields } from "../parity/harness/diffState.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -104,6 +111,43 @@ function mkState(over = {}) {
     won: false,
     ...rest,
   };
+}
+
+/** idx(name) — the SPELLS index for a spell by exact display name. */
+function idx(name) {
+  return SPELLS.findIndex((s) => s.n === name);
+}
+
+/**
+ * mu(over) — a Magic User character sheet for HARN-02's chooseSpell/opener
+ * tests. Defaults to a Sorcerer (broad "offense"-school access, no gates
+ * beyond level) at level 1, empty grimoire, full wp — every field is
+ * overridable per test.
+ */
+function mu(over = {}) {
+  return {
+    name: "T",
+    race: "Human",
+    cls: "Magic User",
+    sub: "Sorcerer",
+    level: 1,
+    wp: 40,
+    maxWP: 40,
+    potions: 0,
+    rations: 0,
+    spellsUsed: 0,
+    grimoire: [],
+    items: [],
+    skills: {},
+    gold: 0,
+    ...over,
+  };
+}
+
+/** fight(type, nFoes, round, extra) — a minimal state.combat with nFoes plain, alive, undamaged foes. */
+function fight(type, nFoes, round = 1, extra = {}) {
+  const foes = Array.from({ length: nFoes }, (_, i) => ({ name: `foe${i}`, alive: true, wp: 20, maxWP: 20 }));
+  return { type, foes, round, target: 0, ...extra };
 }
 
 test("D-06: caster threshold raises flee/parley to 0.5 vs any kit-bearing live foe (0.3 otherwise)", () => {
@@ -343,6 +387,345 @@ test("D-07: tallyEvents sums counters/damage and buckets encounters by depth ban
   });
 });
 
+test("HARN-02: Death gate — costs 25 wp, only cast when the post-cost wp stays above the flee line", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Sorcerer", level: 5, grimoire: ["Death"] });
+
+  const fullWp = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 40, maxWP: 40 } });
+  assert.deepStrictEqual(decideAction(fullWp, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Death") });
+
+  // 30 - 25 = 5, not > fleeThreshold(0.3) * maxWP(40) = 12 -> the engine
+  // would refuse at wp<=26 anyway; chooseSpell must not even try.
+  const tooWeak = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 30, maxWP: 40 } });
+  assert.deepStrictEqual(decideAction(tooWeak, fixedPolicyRng, ctx), { type: "attack" });
+});
+
+test("HARN-02: DAMAGE-tier ordering — Mangle > Fireball(s) > Acid/Lightning > Ice, Lightning scales with live-foe count", () => {
+  const ctx = makeBotContext();
+  const base = { sub: "Sorcerer", level: 5 };
+
+  const fullSet = mkState({
+    combat: fight("Beasts", 1),
+    c: mu({ ...base, grimoire: ["Mangle", "Lightning", "Fireball", "Acid", "Ice"] }),
+  });
+  assert.deepStrictEqual(decideAction(fullSet, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Mangle") });
+
+  const lightningVsFireball1 = mkState({
+    combat: fight("Beasts", 1),
+    c: mu({ ...base, grimoire: ["Lightning", "Fireball"] }),
+  });
+  assert.deepStrictEqual(decideAction(lightningVsFireball1, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Fireball") });
+
+  const lightningVsFireball3 = mkState({
+    combat: fight("Beasts", 3),
+    c: mu({ ...base, grimoire: ["Lightning", "Fireball"] }),
+  });
+  assert.deepStrictEqual(decideAction(lightningVsFireball3, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Lightning") });
+
+  const acidVsIce = mkState({ combat: fight("Beasts", 1), c: mu({ ...base, grimoire: ["Acid", "Ice"] }) });
+  assert.deepStrictEqual(decideAction(acidVsIce, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Acid") });
+
+  const acidAlreadyTicking = mkState({
+    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 20, maxWP: 20, acid: { rounds: 3 } }] }),
+    c: mu({ ...base, grimoire: ["Acid", "Ice"] }),
+  });
+  assert.deepStrictEqual(decideAction(acidAlreadyTicking, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Ice") });
+});
+
+test("HARN-02: disables score only at 2+ live foes; weaken is skipped once C.weakened is set", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Sorcerer", level: 2, grimoire: ["Stun", "Doze", "Weaken"] });
+
+  const oneFoe = mkState({ combat: fight("Beasts", 1), c });
+  assert.deepStrictEqual(decideAction(oneFoe, fixedPolicyRng, ctx), { type: "attack" });
+
+  const twoFoes = mkState({ combat: fight("Beasts", 2), c });
+  assert.deepStrictEqual(decideAction(twoFoes, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Stun") });
+
+  const weakenVsDoze = mkState({ combat: fight("Beasts", 2), c: { ...c, grimoire: ["Weaken", "Doze"] } });
+  assert.deepStrictEqual(decideAction(weakenVsDoze, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Weaken") });
+
+  const alreadyWeakened = mkState({
+    combat: fight("Beasts", 2, 1, { weakened: true }),
+    c: { ...c, grimoire: ["Weaken", "Doze"] },
+  });
+  assert.deepStrictEqual(decideAction(alreadyWeakened, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Doze") });
+});
+
+test("HARN-02: Heal fires below potionThreshold once potions run out; Major Heal outranks Heal", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Cleric", level: 3, grimoire: ["Heal", "Major Heal"] });
+
+  const noPotionsLowWp = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 15, maxWP: 40, potions: 0 } });
+  assert.deepStrictEqual(decideAction(noPotionsLowWp, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Major Heal") });
+
+  const withPotion = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 15, maxWP: 40, potions: 1 } });
+  assert.deepStrictEqual(decideAction(withPotion, fixedPolicyRng, ctx), { type: "drinkPotion" });
+
+  const aboveHalf = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 30, maxWP: 40, potions: 0 } });
+  assert.deepStrictEqual(decideAction(aboveHalf, fixedPolicyRng, ctx), { type: "attack" });
+});
+
+test("HARN-02: Mirror Self is a round-1 opener that precedes the KILL tier; skipped once already up or off round 1", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Illusionist", level: 1, grimoire: ["Mirror Self", "Freeze"] });
+
+  // c.mirror lives on the CHARACTER (magic.js#castSpell sets `c.mirror`), not
+  // on state.combat.
+  const round1NoMirror = mkState({ combat: fight("Beasts", 1, 1), c: { ...c, mirror: 0 } });
+  assert.deepStrictEqual(decideAction(round1NoMirror, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Mirror Self") });
+
+  const round2 = mkState({ combat: fight("Beasts", 1, 2), c: { ...c, mirror: 0 } });
+  assert.deepStrictEqual(decideAction(round2, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Freeze") });
+
+  const round1AlreadyMirrored = mkState({ combat: fight("Beasts", 1, 1), c: { ...c, mirror: 3 } });
+  assert.deepStrictEqual(decideAction(round1AlreadyMirrored, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Freeze") });
+});
+
+test("HARN-02: Shield/Bubble score a round-1 WARD-OPENER below every other tier, including KILL", () => {
+  const ctx = makeBotContext();
+  // c.ward lives on the CHARACTER (magic.js#castSpell sets `c.ward`), not on
+  // state.combat.
+  const clericC = mu({ sub: "Cleric", level: 1, grimoire: ["Shield", "Heal"], wp: 40, maxWP: 40, ward: null });
+
+  const round1NoWard = mkState({ combat: fight("Beasts", 1, 1), c: clericC });
+  assert.deepStrictEqual(decideAction(round1NoWard, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Shield") });
+
+  const round2 = mkState({ combat: fight("Beasts", 1, 2), c: clericC });
+  assert.deepStrictEqual(decideAction(round2, fixedPolicyRng, ctx), { type: "attack" });
+
+  const round1WardUp = mkState({ combat: fight("Beasts", 1, 1), c: { ...clericC, ward: { pool: 50 } } });
+  assert.deepStrictEqual(decideAction(round1WardUp, fixedPolicyRng, ctx), { type: "attack" });
+
+  const sorcererShieldVsFreeze = mkState({
+    combat: fight("Beasts", 1, 1),
+    c: mu({ sub: "Sorcerer", level: 1, grimoire: ["Shield", "Freeze"], ward: null }),
+  });
+  assert.deepStrictEqual(decideAction(sorcererShieldVsFreeze, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Freeze") });
+});
+
+test("HARN-02: Summon in combat — round 1, no ally yet, charges remain; Phantom Host follows the same rule", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Summoner", level: 2, grimoire: ["Summon"] });
+
+  const round1NoAlly = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c });
+  assert.deepStrictEqual(decideAction(round1NoAlly, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
+
+  const round1WithAlly = mkState({ combat: fight("Beasts", 1, 1, { ally: { lvl: 2 } }), c });
+  assert.deepStrictEqual(decideAction(round1WithAlly, fixedPolicyRng, ctx), { type: "attack" });
+
+  const round2 = mkState({ combat: fight("Beasts", 1, 2), c });
+  assert.deepStrictEqual(decideAction(round2, fixedPolicyRng, ctx), { type: "attack" });
+
+  const illusionistPhantom = mkState({
+    combat: fight("Beasts", 1, 1),
+    c: mu({ sub: "Illusionist", level: 3, grimoire: ["Phantom Host"] }),
+  });
+  assert.deepStrictEqual(decideAction(illusionistPhantom, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Phantom Host") });
+});
+
+test("HARN-02: Summon out of combat — no pendingAlly and more than half of maxCharges left", () => {
+  const ctx = makeBotContext();
+  const grid = mkGrid(["?....", ".S...", ".....", ".....", "....."]);
+  const base = mu({ sub: "Summoner", level: 2, grimoire: ["Summon"], spellsUsed: 0 });
+
+  const plentyOfCharges = mkState({ floor: grid, c: base });
+  assert.deepStrictEqual(decideAction(plentyOfCharges, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
+
+  // maxCharges(level 2) = 6; spellsUsed 3 -> chargesLeft 3, not > 3.
+  const halfCharges = mkState({ floor: grid, c: { ...base, spellsUsed: 3 } });
+  assert.strictEqual(decideAction(halfCharges, fixedPolicyRng, ctx).type, "move");
+
+  const pendingAlly = mkState({ floor: grid, c: { ...base, pendingAlly: { lvl: 2 } } });
+  assert.strictEqual(decideAction(pendingAlly, fixedPolicyRng, ctx).type, "move");
+});
+
+test("HARN-02: Bard sings on round 1 once ready; a level-1 song only does anything vs Beasts/Lair Beasts", () => {
+  const ctx = makeBotContext();
+  const bardC = { cls: "Fighter", sub: "Bard", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
+
+  const level1VsBeasts = mkState({ steps: 500, combat: fight("Beasts", 1, 1), c: bardC });
+  assert.deepStrictEqual(decideAction(level1VsBeasts, fixedPolicyRng, ctx), { type: "sing" });
+
+  const level1VsWalkingDead = mkState({ steps: 500, combat: fight("Walking Dead", 1, 1), c: bardC });
+  assert.deepStrictEqual(decideAction(level1VsWalkingDead, fixedPolicyRng, ctx), { type: "attack" });
+
+  const level2VsWalkingDead = mkState({ steps: 500, combat: fight("Walking Dead", 1, 1), c: { ...bardC, level: 2 } });
+  assert.deepStrictEqual(decideAction(level2VsWalkingDead, fixedPolicyRng, ctx), { type: "sing" });
+
+  const notReady = mkState({ steps: 500, combat: fight("Walking Dead", 1, 1), c: { ...bardC, level: 2, songAt: 450 } });
+  assert.deepStrictEqual(decideAction(notReady, fixedPolicyRng, ctx), { type: "attack" });
+});
+
+test("HARN-02: talk-first identities try parley at round 1, once, before anything else", () => {
+  const ctx = () => makeBotContext();
+
+  const conArtist = { cls: "Thief", sub: "Con Artist", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
+  const round1Beasts = mkState({ combat: fight("Beasts", 1, 1), c: conArtist });
+  assert.deepStrictEqual(decideAction(round1Beasts, fixedPolicyRng, ctx()), { type: "parley" });
+  const round2Beasts = mkState({ combat: fight("Beasts", 1, 2), c: conArtist });
+  assert.deepStrictEqual(decideAction(round2Beasts, fixedPolicyRng, ctx()), { type: "attack" });
+  const blockedCtx = ctx();
+  blockedCtx.parleyBlocked = true;
+  assert.deepStrictEqual(decideAction(round1Beasts, fixedPolicyRng, blockedCtx), { type: "attack" });
+
+  const woodsman = { cls: "Fighter", sub: "Woodsman", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
+  assert.deepStrictEqual(decideAction(mkState({ combat: fight("Beasts", 1, 1), c: woodsman }), fixedPolicyRng, ctx()), { type: "parley" });
+  assert.deepStrictEqual(decideAction(mkState({ combat: fight("Humans", 1, 1), c: woodsman }), fixedPolicyRng, ctx()), { type: "attack" });
+
+  const bard = { cls: "Fighter", sub: "Bard", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
+  assert.deepStrictEqual(
+    decideAction(mkState({ steps: 500, combat: fight("Humans", 1, 1), c: bard }), fixedPolicyRng, ctx()),
+    { type: "parley" },
+  ); // talk beats song
+
+  const wilmsry = { race: "Wilmsry", cls: "Fighter", sub: "Soldier", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
+  assert.deepStrictEqual(decideAction(mkState({ combat: fight("Humans", 1, 1), c: wilmsry }), fixedPolicyRng, ctx()), { type: "parley" });
+  assert.deepStrictEqual(decideAction(mkState({ combat: fight("Magical", 1, 1), c: wilmsry }), fixedPolicyRng, ctx()), { type: "attack" });
+
+  const elven = { race: "Elven", cls: "Fighter", sub: "Soldier", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
+  assert.deepStrictEqual(decideAction(mkState({ combat: fight("Humans", 1, 1), c: elven }), fixedPolicyRng, ctx()), { type: "parley" });
+  assert.deepStrictEqual(decideAction(mkState({ combat: fight("Demons", 1, 1), c: elven }), fixedPolicyRng, ctx()), { type: "attack" });
+});
+
+test("HARN-02: a Samurai never flees; a generically flee-blocked character fights instead", () => {
+  const ctx = makeBotContext();
+  const samuraiC = { cls: "Fighter", sub: "Samurai", level: 1, grimoire: [], wp: 8, maxWP: 52, potions: 0, rations: 0 };
+
+  const vsPlain = mkState({ combat: fight("Walking Dead", 1, 1), c: samuraiC });
+  assert.deepStrictEqual(decideAction(vsPlain, fixedPolicyRng, ctx), { type: "attack" });
+
+  const vsCaster = mkState({
+    combat: { type: "Walking Dead", foes: [{ name: "f", alive: true, wp: 20, maxWP: 20, abilities: ["x"] }], round: 1, target: 0 },
+    c: samuraiC,
+  });
+  assert.deepStrictEqual(decideAction(vsCaster, fixedPolicyRng, ctx), { type: "attack" });
+
+  const blockedCtx = makeBotContext();
+  blockedCtx.fleeBlocked = true;
+  const soldierC = { cls: "Fighter", sub: "Soldier", level: 1, grimoire: [], wp: 8, maxWP: 40, potions: 0, rations: 0 };
+  const soldierState = mkState({ combat: fight("Beasts", 1, 1), c: soldierC });
+  assert.deepStrictEqual(decideAction(soldierState, fixedPolicyRng, blockedCtx), { type: "attack" });
+});
+
+test("HARN-02: a strike-refused Wizard casts something else while charges remain, else flees (unless flee is also blocked)", () => {
+  const strikeBlockedCtx = () => {
+    const c = makeBotContext();
+    c.strikeBlocked = true;
+    return c;
+  };
+  const combat = fight("Beasts", 1, 1);
+
+  const withUtilitySpells = mkState({
+    combat,
+    c: mu({ sub: "Wizard", level: 1, grimoire: ["Detect Magic", "Strength"], spellsUsed: 0 }),
+  });
+  const result = decideAction(withUtilitySpells, fixedPolicyRng, strikeBlockedCtx());
+  assert.strictEqual(result.type, "castSpell");
+  assert.ok([idx("Detect Magic"), idx("Strength")].includes(result.idx));
+
+  const emptyGrimoire = mkState({ combat, c: mu({ sub: "Wizard", level: 1, grimoire: [], spellsUsed: 0 }) });
+  assert.deepStrictEqual(decideAction(emptyGrimoire, fixedPolicyRng, strikeBlockedCtx()), { type: "flee" });
+
+  const bothBlockedCtx = strikeBlockedCtx();
+  bothBlockedCtx.fleeBlocked = true;
+  assert.deepStrictEqual(decideAction(emptyGrimoire, fixedPolicyRng, bothBlockedCtx), { type: "attack" });
+
+  // Once charges hit 0, playerStrike's Wizard refusal lifts on its own — the
+  // guard requires chargesLeft > 0, so this falls straight through to attack.
+  const mc = maxCharges({ level: 1, items: [] });
+  const outOfCharges = mkState({ combat, c: mu({ sub: "Wizard", level: 1, grimoire: [], spellsUsed: mc }) });
+  assert.deepStrictEqual(decideAction(outOfCharges, fixedPolicyRng, strikeBlockedCtx()), { type: "attack" });
+});
+
+test("HARN-02: observe sets fleeBlocked/strikeBlocked on refusal events, clears both (plus parleyBlocked) on encounterStarted", () => {
+  const ctx = makeBotContext();
+  observe(ctx, [{ type: "fleeRefused", reason: "samurai" }]);
+  assert.strictEqual(ctx.fleeBlocked, true);
+  observe(ctx, [{ type: "strikeRefused", reason: "wizard" }]);
+  assert.strictEqual(ctx.strikeBlocked, true);
+  ctx.parleyBlocked = true;
+  observe(ctx, [{ type: "encounterStarted" }]);
+  assert.strictEqual(ctx.fleeBlocked, false);
+  assert.strictEqual(ctx.strikeBlocked, false);
+  assert.strictEqual(ctx.parleyBlocked, false);
+});
+
+test("HARN-02: readScroll out of combat when canRead; a Pilfer never reads; no scrolls carried is a no-op", () => {
+  const ctx = makeBotContext();
+
+  const readerState = mkState({ c: mu({ sub: "Sorcerer", grimoire: [], scrolls: 1 }) });
+  assert.deepStrictEqual(decideAction(readerState, fixedPolicyRng, ctx), { type: "readScroll" });
+
+  const pilferState = mkState({ c: { cls: "Thief", sub: "Pilfer", scrolls: 1 } });
+  assert.strictEqual(decideAction(pilferState, fixedPolicyRng, ctx).type, "move");
+
+  const noScrollsState = mkState({ c: mu({ sub: "Sorcerer", grimoire: [], scrolls: 0 }) });
+  assert.strictEqual(decideAction(noScrollsState, fixedPolicyRng, ctx).type, "move");
+});
+
+test("HARN-02: isTalkFirst names the five identity talkers and nobody else", () => {
+  const mk = (c, type) => ({ combat: { type, foes: [], round: 1 }, c });
+
+  assert.strictEqual(isTalkFirst(mk({ sub: "Con Artist" }, "Beasts")), true);
+  assert.strictEqual(isTalkFirst(mk({ sub: "Woodsman" }, "Beasts")), true);
+  assert.strictEqual(isTalkFirst(mk({ sub: "Bard" }, "Humans")), true);
+  assert.strictEqual(isTalkFirst(mk({ race: "Wilmsry" }, "Humans")), true);
+  assert.strictEqual(isTalkFirst(mk({ race: "Elven" }, "Humans")), true);
+
+  assert.strictEqual(isTalkFirst(mk({ sub: "Woodsman" }, "Humans")), false);
+  assert.strictEqual(isTalkFirst(mk({ race: "Wilmsry" }, "Magical")), false);
+  assert.strictEqual(isTalkFirst(mk({ sub: "Soldier", race: "Human" }, "Beasts")), false);
+});
+
+test("HARN-04: stuck is its own outcome bucket, excluded from the depth-stat readouts", () => {
+  const r = playRun(1, { ...BOT_DEFAULTS, maxActions: 25 });
+  assert.strictEqual(r.stuck, true);
+  assert.strictEqual(r.outcome, "stuck");
+  assert.strictEqual(r.cause, "maxActionsHit");
+  assert.strictEqual(r.startDepth, 1);
+  assert.strictEqual(r.floorsGained, r.state.floor.depth - 1);
+  assert.ok(r.encountersSurvived <= r.tallies.encounters);
+
+  const stuckRow = [{ stuck: true, deathDepth: 999, actionsPerFloor: 999 }];
+  assert.deepStrictEqual(reachTable(stuckRow), { "5": 0, "10": 0, "20": 0, "30": 0, "50": 0 });
+  assert.deepStrictEqual(actionsPerFloorDist(stuckRow), { min: 0, p50: 0, p90: 0, max: 0 });
+
+  const sj = sharedJson([r], { ...BOT_DEFAULTS, maxActions: 25 });
+  assert.strictEqual(sj.stuck, 1);
+  assert.strictEqual(sj.completed, 0);
+  assert.strictEqual(sj.bot.startDepth, 1);
+});
+
+test("HARN-04: playRun(seed, { startDepth }) is deterministic; startDepth:1/force:undefined matches the bare default", () => {
+  for (const startDepth of [1, 20]) {
+    const a = playRun(9, { ...BOT_DEFAULTS, startDepth, maxActions: 300 });
+    const b = playRun(9, { ...BOT_DEFAULTS, startDepth, maxActions: 300 });
+    assert.deepStrictEqual({ ...a, state: stripVolatileFields(a.state) }, { ...b, state: stripVolatileFields(b.state) });
+    assert.strictEqual(a.startDepth, startDepth);
+    if (startDepth === 20) {
+      assert.ok(a.state.c.level === 5 || a.state.dead);
+      assert.strictEqual(a.state.dev, true);
+    }
+  }
+
+  const natural = playRun(9, { ...BOT_DEFAULTS, maxActions: 300 });
+  const explicit = playRun(9, { ...BOT_DEFAULTS, startDepth: 1, force: undefined, maxActions: 300 });
+  assert.deepStrictEqual(
+    { ...natural, state: stripVolatileFields(natural.state) },
+    { ...explicit, state: stripVolatileFields(explicit.state) },
+  );
+});
+
+test("HARN-04: botLine emits the grep-stable Bot: line, appending seeds/workers/startDepth in order", () => {
+  const plain = botLine({ ...BOT_DEFAULTS });
+  assert.ok(plain.startsWith("Bot: exploreBudget=50  maxActions=20000  party=off"));
+  assert.ok(plain.endsWith("  startDepth=1"));
+
+  const withSeedsAndWorkers = botLine({ ...BOT_DEFAULTS, seeds: 40, workers: 4 });
+  assert.ok(withSeedsAndWorkers.includes("  seeds=40  workers=4  startDepth=1"));
+});
+
 test("purity: decideAction never mutates its state argument; module source draws no Math.random/Date.now", () => {
   const ctx = makeBotContext();
   const combatFoe = { name: "x", alive: true, wp: 5, maxWP: 5 };
@@ -351,6 +734,11 @@ test("purity: decideAction never mutates its state argument; module source draws
     mkState({ c: { wp: 16, maxWP: 40, potions: 1 } }),
     mkState({ c: { wp: 16, maxWP: 40, rations: 1 } }),
     mkState({}),
+    // HARN-02: a caster combat state (chooseSpell's tiers all read `state`
+    // and `state.c` without ever writing to them) and a Bard state (sing's
+    // songReady/type gate).
+    mkState({ combat: fight("Beasts", 2, 1), c: mu({ sub: "Sorcerer", level: 5, grimoire: ["Mangle", "Stun", "Heal"] }) }),
+    mkState({ steps: 500, combat: fight("Beasts", 1, 1), c: { cls: "Fighter", sub: "Bard", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 } }),
   ];
   for (const state of states) {
     const before = structuredClone(state);
