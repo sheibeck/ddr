@@ -1036,6 +1036,139 @@ follow-up constants-only pass, not a re-plan.
   Ideas per 21-CONTEXT.md; revisit only if the DR round flags them,
   otherwise next milestone.
 
-## DR checklist — TUNE-04 sign-off (21-05)
+## DR checklist — TUNE-04 sign-off
 
-*Filled by plan 21-05.*
+This round is the phase's exit criterion (D-15) — everything above is a
+sanity floor, never the exit criterion. The two AFTER readouts above show
+the retuned combat dials are real and verified in unit tests
+(`difficultyCurve(30)`: ≈4-foe cap, ≈1.38x foe power, ≈1.7x ability cadence)
+but that the bot proxy structurally never lives long enough to feel them —
+99.5% of solo runs and 98% of `--party` runs die by floor 10. The retune
+under test in this checklist is the final constant block: `FOE_CAP_MAX=5`,
+`FOE_POWER_MAX=1.6`, `ABILITY_THREAT_MAX=2.0` (iteration 1), plus
+`FOE_POWER_SOFT_K=35` / `ABILITY_THREAT_SOFT_K=30` (iteration 2 — confirmed
+no measurable effect on the bot, but still the constants shipping). The
+tester is the user, playing on the Pixel 7 — the verdict below is either
+**pass** or **tune-again**, and only the tester fills it in.
+
+### Getting the build on the device
+
+1. Build the debug APK: `npm run android:debug` (produces
+   `android/app/build/outputs/apk/debug/app-debug.apk`; JDK/gradle pin
+   notes live in `docs/RELEASING.md` and `.planning/STATE.md`'s
+   "Build/env" ground truth).
+2. If a Play-installed build is on the phone, uninstall it first — a
+   Play build and a locally-signed debug build have different signers,
+   and the phone can't hold both. Uninstalling loses the app's
+   Preferences data, which is fine for a dev round.
+3. Rediscover the wireless device: `adb devices` (or `adb mdns services`
+   if the port has rotated — the Pixel 7 is `adb-28051FDH200H0R`,
+   `10.0.0.175:<port rotates>` per STATE.md's Device notes).
+4. Install: `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
+5. Relaunch (install alone does not reload the WebView):
+   `adb shell am force-stop com.darktierstudios.delvedierepeat` then
+   `adb shell monkey -p com.darktierstudios.delvedierepeat 1`.
+
+### Starting a run at depth N
+
+1. Start (or resume) a normal run.
+2. Tap the HUD gear icon → **Settings**.
+3. Press and **HOLD** the last row, "Version 1.0.1 (2)" (≈ 1.2 s — a
+   plain tap does nothing).
+4. The hidden **"Start at depth (dev)"** row appears.
+5. Type the depth (20, 35, or 50).
+6. Tap **Start**.
+7. The sheet closes, the log shows "Floor N." with the dev banner ("A
+   dev run. The graveyard has agreed to look the other way."), and the
+   HUD shows a **DEV chip**. The hero is level 5 with a `300 × N` wilmst
+   purse. This run is never buried and never counts as a best depth
+   (D-13).
+
+Each of the three runs below is a **fresh dev start** — die or abandon
+the current run between them; don't try to chain all three off one dev
+start.
+
+### Run 1 — depth 20
+
+**What to expect here:** `difficultyCurve(20)` → foe cap 4 (foeBonus +1
+over the canon roll), foe power ≈1.21x, ability cadence ≈1.39x. The
+AFTER readout's only populated caster band past floor 10 (11-20,
+`--party` only, n=12) showed a 66.7% caster-encounter rate — expect
+casters to show up more often than at floor 1-10 (2.5-2.6% there).
+
+| Check | Tester's notes |
+|---|---|
+| Session-length feel — start/end clock, floors cleared, did 5–10 minutes feel right? | (to be filled by the tester) |
+| One caster fight — which caster; bolt / drain / debuff legible? did the resist (or resist-failed) feel fair? | (to be filled by the tester) |
+| One parley attempt + one parley failure — did the success line read right? did the failure's insulted aggro get noticed? | (to be filled by the tester) |
+| Party affordability — a Joiner met/accepted? did feeding the party (rations/wp) bite? (no hire cost exists per D-20 — joining is free) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + the epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+### Run 2 — depth 35
+
+**What to expect here:** `difficultyCurve(35)` → foe cap 5 (foeBonus
++2), foe power ≈1.35x, ability cadence ≈1.63x. No bot samples exist in
+the 21-30/31-50 bands (0/0 in every readout) — there is no empirical
+caster-encounter-rate signal at this depth; the dials are verified by
+unit test only (`test/unit/combat-scaling.test.js`), not by bot play.
+
+| Check | Tester's notes |
+|---|---|
+| Session-length feel — start/end clock, floors cleared, did 5–10 minutes feel right? | (to be filled by the tester) |
+| One caster fight — which caster; bolt / drain / debuff legible? did the resist (or resist-failed) feel fair? | (to be filled by the tester) |
+| One parley attempt + one parley failure — did the success line read right? did the failure's insulted aggro get noticed? | (to be filled by the tester) |
+| Party affordability — a Joiner met/accepted? did feeding the party (rations/wp) bite? (no hire cost exists per D-20 — joining is free) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + the epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+### Run 3 — depth 50
+
+**What to expect here:** `difficultyCurve(50)` → foe cap 5 (foeBonus
++2, already asymptoted), foe power ≈1.43x, ability cadence ≈1.78x —
+both `foePower` and `abilityThreat` are approaching their `_MAX` values
+(1.6 / 2.0) by this depth. Same caveat as Run 2: no bot samples past
+floor 20, so this is the deepest, least bot-verified band — the DR
+round's own judgment carries the most weight here.
+
+| Check | Tester's notes |
+|---|---|
+| Session-length feel — start/end clock, floors cleared, did 5–10 minutes feel right? | (to be filled by the tester) |
+| One caster fight — which caster; bolt / drain / debuff legible? did the resist (or resist-failed) feel fair? | (to be filled by the tester) |
+| One parley attempt + one parley failure — did the success line read right? did the failure's insulted aggro get noticed? | (to be filled by the tester) |
+| Party affordability — a Joiner met/accepted? did feeding the party (rations/wp) bite? (no hire cost exists per D-20 — joining is free) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + the epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+### Flag if noticed (observations, not tasks)
+
+- Sterling's `halfDmg` time-to-kill (canon-mode TTK ≈10.23 rounds, the
+  "two hearts" intent) feeling too tanky or too fast (18-06 deferred to
+  Phase 21 — revisit only if flagged here, otherwise next milestone).
+- The Djinni / Stalka Beast pre-ability wp discount (D-03) feeling
+  under- or over-tuned in canon mode (18-06 deferred).
+- Bolts feeling unfair without a one-round-ahead telegraph (19 deferred
+  — only act on this if it actually feels unfair in play).
+- Anything about summoned reinforcements (deliberately unscaled by
+  design — 21-02's discretion).
+- Any place the Oracle voice slipped out of family-friendly sarcasm.
+
+### Verdict
+
+**Overall verdict:** (to be filled by the tester) — pass / tune-again
+
+**Per-run notes above complete:** (to be filled by the tester)
+
+### What happens next (D-16)
+
+- **pass:** TUNE-04 closes the milestone's deferred UAT; the phase's
+  VERIFICATION flips from `human_needed` to `passed` on the user's
+  word. Per the standing rule (STATE.md, 2026-09-13), the assistant
+  then **ASKS** whether to push a versionCode-bumped signed AAB to the
+  Play internal-testing track (`npm run play:release`, see
+  `docs/RELEASING.md`) — it never pushes unasked.
+- **tune-again:** ONE `/gsd-quick` pass editing only
+  `engine/difficulty.js` constants (plus a `### Addendum` appended
+  under the Change table above, with before/after values and a
+  rationale), then a second DR round using this same checklist. No
+  re-plan.
