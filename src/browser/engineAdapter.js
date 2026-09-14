@@ -127,15 +127,18 @@ export async function waitForPending() {
 }
 
 /**
- * initRun(seed, exclude) — starts a brand-new run from an integer seed,
- * replacing whatever state (if any) the adapter was holding. `exclude`
+ * initRun(seed, exclude, options) — starts a brand-new run from an integer
+ * seed, replacing whatever state (if any) the adapter was holding. `exclude`
  * (audit-batch E12, part 4) is an optional recent-names list forwarded to
  * newRun → rollCharacter → nameFor for name dedup; it defaults to empty, so
  * every existing caller/test that calls initRun(seed) is unaffected and the
- * roll stays byte-identical.
+ * roll stays byte-identical. `options` (Phase 21, TUNE-04, D-13) is forwarded
+ * straight through to newRun — `options.startDepth` is the dev-only
+ * start-at-depth field; every existing caller omits it, so their rolls stay
+ * byte-identical.
  */
-export function initRun(seed, exclude = []) {
-  currentState = newRun(seed, exclude);
+export function initRun(seed, exclude = [], options = {}) {
+  currentState = newRun(seed, exclude, options);
   return currentState;
 }
 
@@ -259,25 +262,33 @@ async function persistGrave(state, cause) {
 }
 
 /**
- * startNewRun(seed) — the one-tap new-run entry point (RUN-05; 03-RESEARCH.md
- * "one-tap new run" Option A: the adapter calls the engine's newRun(seed)
- * factory directly, no new engine action type required). If a run is already
- * live, its ending floor.depth is recorded as a candidate best-depth BEFORE
- * it's replaced (descent is one-way, so the ending floor.depth is that run's
- * score). `seed` is guarded to an integer with a Date.now() fallback so a
- * malformed/adversarial seed can never reach newRun() unchecked (Security
- * Domain V5; threat T-03-05) — mirrors the seed-recovery guard dispatch()
- * already uses on its fail-closed path.
+ * startNewRun(seed, options) — the one-tap new-run entry point (RUN-05;
+ * 03-RESEARCH.md "one-tap new run" Option A: the adapter calls the engine's
+ * newRun(seed) factory directly, no new engine action type required). If a
+ * run is already live AND it is not a dev run, its ending floor.depth is
+ * recorded as a candidate best-depth BEFORE it's replaced (descent is
+ * one-way, so the ending floor.depth is that run's score). `seed` is guarded
+ * to an integer with a Date.now() fallback so a malformed/adversarial seed
+ * can never reach newRun() unchecked (Security Domain V5; threat T-03-05) —
+ * mirrors the seed-recovery guard dispatch() already uses on its fail-closed
+ * path. `options.startDepth` (Phase 21, TUNE-04, D-13) is the dev-only
+ * start-at-depth field, threaded through to newRun via initRun; a
+ * non-integer or sub-1 value is ignored here (Security V5 — a second,
+ * adapter-side clamp before the engine's own DEV_START_DEPTH_MAX/
+ * difficultyCurve sanitisation).
  */
-export async function startNewRun(seed) {
-  if (currentState) {
+export async function startNewRun(seed, options = {}) {
+  if (currentState && !currentState.dev) {
+    // Phase 21 (TUNE-04, D-13): a dev run's ending depth is never a "best" —
+    // it was never earned by a real 1-to-N-depth climb.
     await recordBest(currentState.floor.depth);
   }
   const safeSeed = Number.isInteger(seed) ? seed : Date.now();
   // audit-batch E12 (part 4): thread the recent-names dedup window into the
   // fresh roll so a new adventurer avoids reusing the last ~25 dead names.
   const exclude = await readRecentNames();
-  const state = initRun(safeSeed, exclude);
+  const startDepth = Number.isInteger(options.startDepth) && options.startDepth >= 1 ? options.startDepth : 1;
+  const state = initRun(safeSeed, exclude, { startDepth });
   persist();
   return state;
 }
@@ -364,7 +375,10 @@ export function dispatch(action) {
     // still in its pre-setItem() getItem() read phase — storage.js's own
     // flush() has no visibility into an operation that hasn't reached
     // storage.setItem() yet.
-    if (diedEvent) track(persistGrave(currentState, diedEvent.cause));
+    // Phase 21 (TUNE-04, D-13) — a dev start-at-depth run is a testing run;
+    // its death must not enter the graveyard, the all-time total, or the
+    // recent-names window.
+    if (diedEvent && !currentState.dev) track(persistGrave(currentState, diedEvent.cause));
     return { state: currentState, events, html: formatEvents(events) };
   } catch (err) {
     // Defense in depth (CR-01): engine/saveState.js#validateSave already

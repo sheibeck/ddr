@@ -689,6 +689,77 @@ test("CR-01: persistGrave never throws when storage is blocked (private window/q
   }
 });
 
+// --- Phase 21 (TUNE-04, D-13): dev-only start-at-depth threading + exclusion ---
+
+test("D-13: startNewRun(seed, { startDepth: 20 }) starts a dev run on floor 20", async () => {
+  await withFakeLocalStorage(async () => {
+    const state = await startNewRun(4242, { startDepth: 20 });
+    assert.equal(state.floor.depth, 20);
+    assert.equal(state.dev, true);
+    assert.equal(state.c.level, 5);
+    assert.equal(getState(), state);
+
+    const nonInteger = await startNewRun(4243, { startDepth: "20" });
+    assert.equal(nonInteger.floor.depth, 1, "a non-integer startDepth is ignored by the adapter's own clamp");
+    assert.equal(nonInteger.dev, false);
+  });
+});
+
+test("D-13: a dev run's death through dispatch() writes NO graveyard entry", async () => {
+  await withFakeLocalStorage(async (store) => {
+    initRun(55, [], { startDepth: 20 });
+    const state = getState();
+    const dir = firstOpenPlainDir(state);
+    assert.ok(dir, "seed 55's floor 1 has at least one open, feature-free neighbor from the start tile");
+    state.c.rations = 0;
+    state.c.wp = 1;
+    state.steps = 99;
+
+    const { state: after } = dispatch({ type: "move", dir });
+    assert.equal(after.dead, true, "the dev character actually died via starvation");
+
+    await flushStorage();
+    assert.equal(store.getItem(GRAVE_KEY), null, "a dev run's death writes no graveyard entry");
+    assert.equal(store.getItem(GRAVE_TOTAL_KEY), null, "a dev run's death does not bump the all-time total");
+    assert.equal(store.getItem(RECENT_NAMES_KEY), null, "a dev run's death does not enter the recent-names window");
+  });
+});
+
+test("D-13: ending a dev run via startNewRun does not record its depth as best", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(11, [], { startDepth: 30 });
+    getState().floor.depth = 31; // walked one deeper mid-run
+    await startNewRun(99);
+    assert.equal(await getBest(), 0, "a dev run's ending depth is never recorded as best");
+
+    getState().floor.depth = 4;
+    await startNewRun(100);
+    assert.equal(await getBest(), 4, "a normal run's ending depth still records as best");
+  });
+});
+
+test("D-14: a normal run's death after a dev run still buries normally", async () => {
+  await withFakeLocalStorage(async (store) => {
+    initRun(55, [], { startDepth: 20 }); // a dev run, replaced below without ever dying
+    await startNewRun(56); // a normal run
+    const state = getState();
+    assert.equal(state.dev, false);
+    const dir = firstOpenPlainDir(state);
+    assert.ok(dir, "seed 56's floor 1 has at least one open, feature-free neighbor from the start tile");
+    state.c.rations = 0;
+    state.c.wp = 1;
+    state.steps = 99;
+
+    const { state: after } = dispatch({ type: "move", dir });
+    assert.equal(after.dead, true);
+
+    await flushStorage();
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.equal(graves.length, 1, "exactly one tombstone was recorded");
+    assert.equal(graves[0].name, after.c.name, "the tombstone matches the normal run's character");
+  });
+});
+
 function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 }
