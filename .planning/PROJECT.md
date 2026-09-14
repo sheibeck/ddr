@@ -67,6 +67,8 @@
 
 **Progress:** Phase 17 complete (2026-09-13) — fixture inventory (`test/parity/FIXTURE-INVENTORY.md`: only Bat/Rat, Shriek, Viper, Dante at L1 are fixture-exposed), `pickFoeTarget`/`applyFoeDamageToPlayer` extracted from `foeTurn`, FID-02 draw-count baseline pinned; 724/724 tests, parity byte-identical.
 
+**Progress:** Phase 18 complete (2026-09-13) — `engine/foeDamage.js#damageFoe` is now the ONE damage-to-foe seam (multiplier → halfDmg → gated d20 armor soak → apply); foe natural armor, Sterling halving, Cleric/spell/Fighter type multipliers, Philly `slow` live; 9 bestiary rows retuned (Drake 135→38, Werebeast, 7 pre-ability caster discounts) with the before/after ledger in `content/BESTIARY-REBALANCE.md` + `tools/bestiary-yardstick.mjs`; zero carve-outs; 796/796 tests.
+
 **Scope boundaries:** engine/data/narration only — no new screens. Backlogged (not this milestone): DR16-G "squares of opponents" / Amulet of Stone, foe inspect / threat hint on the encounter panel, a browsable bestiary screen. Research-first: foe casting vs. RNG order/parity, how abilities move the tuned curve, which abilities fit tone + canon.
 
 ## Context
@@ -131,4 +133,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-13 — Phase 17 complete (v1.1)*
+*Last updated: 2026-09-13 — Phase 18 complete (v1.1)*
