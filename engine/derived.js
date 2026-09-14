@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES } from "../content/index.js";
 import { rollDice } from "./dice.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -512,9 +512,67 @@ export function canLearn(sub, sp) {
   return schoolAllowed(sub, sp.s);
 }
 
+/**
+ * spellLevelFor(sub, sp) — DELIBERATE RULES CHANGE (Phase 23, 2026-09-14,
+ * IDENT-03/IDENT-04): the EFFECTIVE spell level to use for a (sub, spell)
+ * pair's level-gate check, reading content/spell-level-overrides.js's
+ * SPELL_LEVEL_OVERRIDES table. Returns the override when one exists for this
+ * exact sub-class and spell name (SPELL_LEVEL_OVERRIDES[sub]?.[sp.n]) and it
+ * is a number; otherwise falls back to the spell's own printed level
+ * (`sp.lvl`) — the byte-identical old behavior for every (sub, spell) pair
+ * NOT in the table. Pure read, no rng, no mutation. This is the ONE place
+ * canCast (below) and engine/character.js#rollGrimoire consult, so the
+ * override table has exactly one consumer.
+ */
+export function spellLevelFor(sub, sp) {
+  const override = SPELL_LEVEL_OVERRIDES[sub]?.[sp.n];
+  return typeof override === "number" ? override : sp.lvl;
+}
+
+/**
+ * ATTACK_SPELL_KINDS — the ONE engine-wide definition of "attack spell"
+ * (Phase 23, IDENT-01/IDENT-02, CONTEXT: "What counts as an attack spell").
+ * Exactly the four kinds behind the level-1 offense spells Doze (status),
+ * Freeze (thrown), Stun (stun), Weaken (weaken) — plus every OTHER spell
+ * that shares one of those four kinds at a higher level (Ice/Fireball/
+ * Lightning/Mangle are all `kind: "thrown"`). By deliberate decision, the
+ * other disabling/offense kinds (acid, volley, quake, death, blind, shrink,
+ * petrify, insane, stupid, vapor) are NOT in this set — they do not count as
+ * a "guaranteed attack" for the Wizard melee rule or the grimoire top-up.
+ * Consumed by isAttackSpell/castableAttackSpells below, engine/character.js's
+ * rollGrimoire top-up, and engine/combat.js's Wizard refusal check — a
+ * single shared definition so those three call sites can never drift apart.
+ */
+export const ATTACK_SPELL_KINDS = new Set(["status", "thrown", "stun", "weaken"]);
+
+/** isAttackSpell(sp) — does this spell's kind belong to ATTACK_SPELL_KINDS? */
+export function isAttackSpell(sp) {
+  return ATTACK_SPELL_KINDS.has(sp.kind);
+}
+
+/**
+ * castableAttackSpells(state) — every attack-kind spell the current character
+ * could cast RIGHT NOW: known (grimoire), level-legal (via spellLevelFor,
+ * honoring the override table), and school-legal (canCast's schoolGate
+ * check). Returns spell OBJECTS (not names) in SPELLS array order, so the
+ * result is fully deterministic — the first element is what
+ * engine/combat.js's strikeRefused event names as `spell`. Deliberately does
+ * NOT check remaining charges (maxCharges/spellsUsed) — that check stays at
+ * the Wizard-refusal call site, so this helper answers only "is there a
+ * legal attack spell to cast", not "do you still have a charge for it".
+ * Pure read of state; no rng, no mutation.
+ */
+export function castableAttackSpells(state) {
+  return SPELLS.filter((sp) => isAttackSpell(sp) && canCast(state, sp));
+}
+
 export function canCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
-  if (sp.lvl > c.level) return false;
+  // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-03/IDENT-04): routed
+  // through spellLevelFor so the per-sub override table can lower a spell's
+  // effective level (Summoner/Summon, Illusionist/Phantom Host); byte-
+  // identical to the old `sp.lvl > c.level` check for every other pair.
+  if (spellLevelFor(c.sub, sp) > c.level) return false;
   return c.level >= schoolGate(c.sub, sp.s);
 }

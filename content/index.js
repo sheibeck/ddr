@@ -19,6 +19,7 @@ export * from "./damage-multipliers.js";
 export * from "./encounters.js";
 export * from "./spells.js";
 export * from "./mu-chart.js";
+export * from "./spell-level-overrides.js";
 export * from "./potions.js";
 export * from "./foods.js";
 export * from "./traps.js";
