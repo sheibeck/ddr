@@ -1,0 +1,5922 @@
+{
+  "meta": {
+    "tool": "tune-classes",
+    "commit": "5565b22",
+    "seeds": 40,
+    "seedList": "i*7919+1",
+    "workers": 4,
+    "maxActions": 5000,
+    "startDepth": 1,
+    "exploreBudget": 50,
+    "bot": "Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=40  workers=4  startDepth=1",
+    "cells": 143,
+    "excluded": [
+      {
+        "cls": "Fighter",
+        "sub": "Samurai",
+        "race": "Fridgian",
+        "reason": "canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)"
+      }
+    ],
+    "filter": {
+      "cls": null,
+      "sub": null,
+      "race": null
+    }
+  },
+  "cells": [
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 5.38,
+      "p50Depth": 5,
+      "p90Depth": 10,
+      "reach5": 62.5,
+      "reach10": 10,
+      "meanKills": 10.07,
+      "meanLevel": 3.08,
+      "meanActions": 560.15,
+      "meanFloorsGained": 4.38,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 15.95,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Blumble",
+          "count": 4
+        }
+      ],
+      "rank": 1
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 5.03,
+      "p50Depth": 5,
+      "p90Depth": 8,
+      "reach5": 52.5,
+      "reach10": 5,
+      "meanKills": 7.55,
+      "meanLevel": 2.75,
+      "meanActions": 539.83,
+      "meanFloorsGained": 4.03,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 13.6,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        }
+      ],
+      "rank": 2
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 5,
+      "p50Depth": 5,
+      "p90Depth": 7,
+      "reach5": 67.5,
+      "reach10": 0,
+      "meanKills": 1.5,
+      "meanLevel": 2.75,
+      "meanActions": 516.67,
+      "meanFloorsGained": 4,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 13.23,
+      "topCauses": [
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Google",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 3
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.9,
+      "p50Depth": 5,
+      "p90Depth": 7,
+      "reach5": 62.5,
+      "reach10": 2.5,
+      "meanKills": 7.38,
+      "meanLevel": 2.85,
+      "meanActions": 522.7,
+      "meanFloorsGained": 3.9,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 13.98,
+      "topCauses": [
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Blumble",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 2
+        }
+      ],
+      "rank": 4
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.88,
+      "p50Depth": 5,
+      "p90Depth": 7,
+      "reach5": 55,
+      "reach10": 2.5,
+      "meanKills": 7.5,
+      "meanLevel": 2.83,
+      "meanActions": 505.2,
+      "meanFloorsGained": 3.88,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 13.03,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 5
+        }
+      ],
+      "rank": 5
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.8,
+      "p50Depth": 4,
+      "p90Depth": 8,
+      "reach5": 47.5,
+      "reach10": 2.5,
+      "meanKills": 15.8,
+      "meanLevel": 3.35,
+      "meanActions": 498.2,
+      "meanFloorsGained": 3.8,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 12.98,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        }
+      ],
+      "rank": 6
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.72,
+      "p50Depth": 5,
+      "p90Depth": 7,
+      "reach5": 67.5,
+      "reach10": 0,
+      "meanKills": 4.68,
+      "meanLevel": 2.85,
+      "meanActions": 498.98,
+      "meanFloorsGained": 3.73,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 12.95,
+      "topCauses": [
+        {
+          "cause": "cut down by a Rinkle",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 3
+        }
+      ],
+      "rank": 7
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.63,
+      "p50Depth": 4,
+      "p90Depth": 7,
+      "reach5": 45,
+      "reach10": 2.5,
+      "meanKills": 13.93,
+      "meanLevel": 3.15,
+      "meanActions": 460.13,
+      "meanFloorsGained": 3.63,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 11.83,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 8
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.6,
+      "p50Depth": 4,
+      "p90Depth": 7,
+      "reach5": 45,
+      "reach10": 2.5,
+      "meanKills": 11.98,
+      "meanLevel": 3.08,
+      "meanActions": 477.13,
+      "meanFloorsGained": 3.6,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 11.25,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 15
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 9
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.43,
+      "p50Depth": 5,
+      "p90Depth": 7,
+      "reach5": 50,
+      "reach10": 0,
+      "meanKills": 4.72,
+      "meanLevel": 2.7,
+      "meanActions": 451.18,
+      "meanFloorsGained": 3.43,
+      "p50FloorsGained": 4,
+      "meanEncountersSurvived": 11.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 3
+        }
+      ],
+      "rank": 10
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.3,
+      "p50Depth": 4,
+      "p90Depth": 7,
+      "reach5": 40,
+      "reach10": 0,
+      "meanKills": 1.78,
+      "meanLevel": 2.53,
+      "meanActions": 452.28,
+      "meanFloorsGained": 3.3,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 11.43,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 10
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 3
+        }
+      ],
+      "rank": 11
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.15,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 42.5,
+      "reach10": 0,
+      "meanKills": 5.5,
+      "meanLevel": 2.58,
+      "meanActions": 437.33,
+      "meanFloorsGained": 3.15,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.45,
+      "topCauses": [
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Frank",
+          "count": 3
+        }
+      ],
+      "rank": 12
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.1,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 47.5,
+      "reach10": 0,
+      "meanKills": 11.73,
+      "meanLevel": 2.55,
+      "meanActions": 429.95,
+      "meanFloorsGained": 3.1,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 11.23,
+      "topCauses": [
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 10
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 13
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.08,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 40,
+      "reach10": 0,
+      "meanKills": 5.03,
+      "meanLevel": 2.38,
+      "meanActions": 437.2,
+      "meanFloorsGained": 3.08,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.33,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Rinkle",
+          "count": 3
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 3
+        }
+      ],
+      "rank": 14
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4.05,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 27.5,
+      "reach10": 0,
+      "meanKills": 4.65,
+      "meanLevel": 2.33,
+      "meanActions": 406.78,
+      "meanFloorsGained": 3.05,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Google",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 15
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 4,
+      "p50Depth": 4,
+      "p90Depth": 7,
+      "reach5": 35,
+      "reach10": 0,
+      "meanKills": 4.47,
+      "meanLevel": 2.42,
+      "meanActions": 445.88,
+      "meanFloorsGained": 3,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 11.55,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 3
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 2
+        }
+      ],
+      "rank": 16
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.98,
+      "p50Depth": 4,
+      "p90Depth": 7,
+      "reach5": 37.5,
+      "reach10": 0,
+      "meanKills": 4.78,
+      "meanLevel": 2.3,
+      "meanActions": 447.08,
+      "meanFloorsGained": 2.98,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 9.73,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Google",
+          "count": 3
+        }
+      ],
+      "rank": 17
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.98,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 30,
+      "reach10": 0,
+      "meanKills": 1.73,
+      "meanLevel": 2.38,
+      "meanActions": 416.45,
+      "meanFloorsGained": 2.98,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 11.15,
+      "topCauses": [
+        {
+          "cause": "cut down by a Blumble",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 18
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.98,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 30,
+      "reach10": 0,
+      "meanKills": 4.65,
+      "meanLevel": 2.38,
+      "meanActions": 398.33,
+      "meanFloorsGained": 2.98,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 9.45,
+      "topCauses": [
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Ghoul",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Hair",
+          "count": 3
+        }
+      ],
+      "rank": 19
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.98,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 27.5,
+      "reach10": 0,
+      "meanKills": 11.95,
+      "meanLevel": 2.88,
+      "meanActions": 392.6,
+      "meanFloorsGained": 2.98,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.23,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 4
+        }
+      ],
+      "rank": 20
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.88,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 25,
+      "reach10": 0,
+      "meanKills": 4.43,
+      "meanLevel": 2.23,
+      "meanActions": 401.15,
+      "meanFloorsGained": 2.88,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 9
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Cave Bear",
+          "count": 3
+        }
+      ],
+      "rank": 21
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.8,
+      "p50Depth": 4,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 0.83,
+      "meanLevel": 2.1,
+      "meanActions": 393.25,
+      "meanFloorsGained": 2.8,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.33,
+      "topCauses": [
+        {
+          "cause": "cut down by a Skeleton",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 22
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.78,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 25,
+      "reach10": 0,
+      "meanKills": 1.95,
+      "meanLevel": 2.13,
+      "meanActions": 387.95,
+      "meanFloorsGained": 2.78,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 9.43,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 23
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.75,
+      "p50Depth": 4,
+      "p90Depth": 7,
+      "reach5": 37.5,
+      "reach10": 0,
+      "meanKills": 6,
+      "meanLevel": 2.3,
+      "meanActions": 381.03,
+      "meanFloorsGained": 2.75,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 9.23,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Rinkle",
+          "count": 3
+        }
+      ],
+      "rank": 24
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.75,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 27.5,
+      "reach10": 0,
+      "meanKills": 11.9,
+      "meanLevel": 2.8,
+      "meanActions": 372.43,
+      "meanFloorsGained": 2.75,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 9.95,
+      "topCauses": [
+        {
+          "cause": "cut down by a Cave Bear",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Rinkle",
+          "count": 4
+        }
+      ],
+      "rank": 25
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.7,
+      "p50Depth": 4,
+      "p90Depth": 6,
+      "reach5": 32.5,
+      "reach10": 2.5,
+      "meanKills": 11.43,
+      "meanLevel": 2.5,
+      "meanActions": 373.05,
+      "meanFloorsGained": 2.7,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 10.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Blumble",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        }
+      ],
+      "rank": 26
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.63,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 32.5,
+      "reach10": 0,
+      "meanKills": 1.75,
+      "meanLevel": 2.25,
+      "meanActions": 366.45,
+      "meanFloorsGained": 2.63,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 9.85,
+      "topCauses": [
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 7
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 7
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 27
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.53,
+      "p50Depth": 4,
+      "p90Depth": 5,
+      "reach5": 32.5,
+      "reach10": 0,
+      "meanKills": 7.93,
+      "meanLevel": 2.23,
+      "meanActions": 384.65,
+      "meanFloorsGained": 2.53,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 8.7,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 9
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 7
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 28
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.48,
+      "p50Depth": 4,
+      "p90Depth": 5,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 8.28,
+      "meanLevel": 2.3,
+      "meanActions": 370.45,
+      "meanFloorsGained": 2.48,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 9.75,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 12
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Blumble",
+          "count": 2
+        }
+      ],
+      "rank": 29
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.45,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 30,
+      "reach10": 0,
+      "meanKills": 5.5,
+      "meanLevel": 2.25,
+      "meanActions": 342.9,
+      "meanFloorsGained": 2.45,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.95,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 3
+        }
+      ],
+      "rank": 30
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.43,
+      "p50Depth": 4,
+      "p90Depth": 5,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 9.23,
+      "meanLevel": 2.35,
+      "meanActions": 364.23,
+      "meanFloorsGained": 2.42,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 8.45,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 31
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.43,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 6.1,
+      "meanLevel": 2.35,
+      "meanActions": 335.8,
+      "meanFloorsGained": 2.42,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 9.03,
+      "topCauses": [
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 3
+        }
+      ],
+      "rank": 32
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.4,
+      "p50Depth": 4,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 2.8,
+      "meanLevel": 2.03,
+      "meanActions": 349.25,
+      "meanFloorsGained": 2.4,
+      "p50FloorsGained": 3,
+      "meanEncountersSurvived": 8.25,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        }
+      ],
+      "rank": 33
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.35,
+      "p50Depth": 3,
+      "p90Depth": 6,
+      "reach5": 22.5,
+      "reach10": 2.5,
+      "meanKills": 8.13,
+      "meanLevel": 2.28,
+      "meanActions": 329.4,
+      "meanFloorsGained": 2.35,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.3,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 4
+        }
+      ],
+      "rank": 34
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.35,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 17.5,
+      "reach10": 0,
+      "meanKills": 8.13,
+      "meanLevel": 2.25,
+      "meanActions": 371.05,
+      "meanFloorsGained": 2.35,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 9.28,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 19
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 2
+        }
+      ],
+      "rank": 35
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.33,
+      "p50Depth": 3,
+      "p90Depth": 7,
+      "reach5": 17.5,
+      "reach10": 0,
+      "meanKills": 6.58,
+      "meanLevel": 2.08,
+      "meanActions": 338.25,
+      "meanFloorsGained": 2.33,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.15,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 13
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 36
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.3,
+      "p50Depth": 3,
+      "p90Depth": 6,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 8.6,
+      "meanLevel": 2.48,
+      "meanActions": 331.73,
+      "meanFloorsGained": 2.3,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 37
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.3,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 8.15,
+      "meanLevel": 1.95,
+      "meanActions": 318.15,
+      "meanFloorsGained": 2.3,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.83,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 3
+        }
+      ],
+      "rank": 38
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.28,
+      "p50Depth": 3,
+      "p90Depth": 6,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 1.08,
+      "meanLevel": 1.85,
+      "meanActions": 336.13,
+      "meanFloorsGained": 2.28,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.7,
+      "topCauses": [
+        {
+          "cause": "fell off a wall",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 39
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.28,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 9.13,
+      "meanLevel": 1.98,
+      "meanActions": 355.7,
+      "meanFloorsGained": 2.28,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 9.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 40
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.25,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 5.95,
+      "meanLevel": 2.2,
+      "meanActions": 340.3,
+      "meanFloorsGained": 2.25,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.78,
+      "topCauses": [
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 5
+        }
+      ],
+      "rank": 41
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.25,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 8.75,
+      "meanLevel": 2.35,
+      "meanActions": 317.13,
+      "meanFloorsGained": 2.25,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.07,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Blumble",
+          "count": 4
+        }
+      ],
+      "rank": 42
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.2,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 2.58,
+      "meanLevel": 1.95,
+      "meanActions": 330.2,
+      "meanFloorsGained": 2.2,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Cave Bear",
+          "count": 3
+        }
+      ],
+      "rank": 43
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.2,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 17.5,
+      "reach10": 0,
+      "meanKills": 4.7,
+      "meanLevel": 1.98,
+      "meanActions": 332.7,
+      "meanFloorsGained": 2.2,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.05,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 8
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 44
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.18,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 8.38,
+      "meanLevel": 2.3,
+      "meanActions": 338.55,
+      "meanFloorsGained": 2.17,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.78,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Werebeast",
+          "count": 3
+        }
+      ],
+      "rank": 45
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.15,
+      "p50Depth": 3,
+      "p90Depth": 6,
+      "reach5": 25,
+      "reach10": 0,
+      "meanKills": 2.13,
+      "meanLevel": 1.95,
+      "meanActions": 335.05,
+      "meanFloorsGained": 2.15,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Rinkle",
+          "count": 3
+        }
+      ],
+      "rank": 46
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.13,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 7.4,
+      "meanLevel": 2.08,
+      "meanActions": 314.25,
+      "meanFloorsGained": 2.13,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Sterling",
+          "count": 3
+        }
+      ],
+      "rank": 47
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.1,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 4.65,
+      "meanLevel": 1.93,
+      "meanActions": 293.2,
+      "meanFloorsGained": 2.1,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.73,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 48
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.1,
+      "p50Depth": 3,
+      "p90Depth": 6,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 5.65,
+      "meanLevel": 2.03,
+      "meanActions": 346.08,
+      "meanFloorsGained": 2.1,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.83,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 49
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.1,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 17.5,
+      "reach10": 0,
+      "meanKills": 5.75,
+      "meanLevel": 2.23,
+      "meanActions": 304.7,
+      "meanFloorsGained": 2.1,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.58,
+      "topCauses": [
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        }
+      ],
+      "rank": 50
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.1,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 5.3,
+      "meanLevel": 2.05,
+      "meanActions": 312.68,
+      "meanFloorsGained": 2.1,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.23,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 51
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.08,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 1.4,
+      "meanLevel": 2.05,
+      "meanActions": 301.15,
+      "meanFloorsGained": 2.08,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.48,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Krupke",
+          "count": 3
+        }
+      ],
+      "rank": 52
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.08,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 4.13,
+      "meanLevel": 1.98,
+      "meanActions": 317.8,
+      "meanFloorsGained": 2.08,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.43,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 12
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 53
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.05,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 17.5,
+      "reach10": 0,
+      "meanKills": 4.9,
+      "meanLevel": 2.15,
+      "meanActions": 294.65,
+      "meanFloorsGained": 2.05,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.73,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 54
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.05,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 4.47,
+      "meanLevel": 1.9,
+      "meanActions": 308.48,
+      "meanFloorsGained": 2.05,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.18,
+      "topCauses": [
+        {
+          "cause": "fell off a wall",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 6
+        }
+      ],
+      "rank": 55
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.05,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 6.63,
+      "meanLevel": 2.1,
+      "meanActions": 287.15,
+      "meanFloorsGained": 2.05,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.13,
+      "topCauses": [
+        {
+          "cause": "cut down by a Google",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 3
+        }
+      ],
+      "rank": 56
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.05,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 8.4,
+      "meanLevel": 2.17,
+      "meanActions": 304.45,
+      "meanFloorsGained": 2.05,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.03,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 57
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.03,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 8.4,
+      "meanLevel": 2.23,
+      "meanActions": 296.98,
+      "meanFloorsGained": 2.03,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.23,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        }
+      ],
+      "rank": 58
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.03,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 2.5,
+      "meanKills": 7.4,
+      "meanLevel": 2.1,
+      "meanActions": 309.68,
+      "meanFloorsGained": 2.03,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.05,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Skeleton",
+          "count": 3
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 3
+        }
+      ],
+      "rank": 59
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.03,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 4.47,
+      "meanLevel": 1.85,
+      "meanActions": 313.52,
+      "meanFloorsGained": 2.03,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.93,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 13
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        }
+      ],
+      "rank": 60
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3.03,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 22.5,
+      "reach10": 2.5,
+      "meanKills": 1.93,
+      "meanLevel": 1.83,
+      "meanActions": 291.1,
+      "meanFloorsGained": 2.03,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.68,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        }
+      ],
+      "rank": 61
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 3,
+      "p50Depth": 2,
+      "p90Depth": 7,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 7.53,
+      "meanLevel": 2.1,
+      "meanActions": 283.83,
+      "meanFloorsGained": 2,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.95,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 62
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.98,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 7.45,
+      "meanLevel": 2.05,
+      "meanActions": 296.95,
+      "meanFloorsGained": 1.98,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.43,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 3
+        }
+      ],
+      "rank": 63
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.95,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 7.2,
+      "meanLevel": 2.08,
+      "meanActions": 281.13,
+      "meanFloorsGained": 1.95,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.85,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 12
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 64
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.95,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 3.63,
+      "meanLevel": 1.75,
+      "meanActions": 288.18,
+      "meanFloorsGained": 1.95,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.73,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 12
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 3
+        }
+      ],
+      "rank": 65
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.95,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 4.58,
+      "meanLevel": 1.8,
+      "meanActions": 285.4,
+      "meanFloorsGained": 1.95,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.8,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 7
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 66
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.93,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 6.53,
+      "meanLevel": 2,
+      "meanActions": 283,
+      "meanFloorsGained": 1.93,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.38,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 12
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 5
+        }
+      ],
+      "rank": 67
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.9,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 17.5,
+      "reach10": 0,
+      "meanKills": 7.43,
+      "meanLevel": 2.13,
+      "meanActions": 297.13,
+      "meanFloorsGained": 1.9,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.75,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 4
+        }
+      ],
+      "rank": 68
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.9,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 5.78,
+      "meanLevel": 1.9,
+      "meanActions": 290.85,
+      "meanFloorsGained": 1.9,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 14
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 69
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.9,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 5.1,
+      "meanLevel": 2.08,
+      "meanActions": 292.7,
+      "meanFloorsGained": 1.9,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 8.18,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Trachea",
+          "count": 3
+        }
+      ],
+      "rank": 70
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.9,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 22.5,
+      "reach10": 0,
+      "meanKills": 1.53,
+      "meanLevel": 1.75,
+      "meanActions": 288.8,
+      "meanFloorsGained": 1.9,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        }
+      ],
+      "rank": 71
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.88,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 20,
+      "reach10": 0,
+      "meanKills": 5.53,
+      "meanLevel": 1.9,
+      "meanActions": 276.6,
+      "meanFloorsGained": 1.88,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.48,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 72
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.88,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 1.15,
+      "meanLevel": 1.48,
+      "meanActions": 277.27,
+      "meanFloorsGained": 1.88,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.45,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Shadow",
+          "count": 4
+        }
+      ],
+      "rank": 73
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.85,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 6.23,
+      "meanLevel": 2.03,
+      "meanActions": 273.98,
+      "meanFloorsGained": 1.85,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.18,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Google",
+          "count": 3
+        }
+      ],
+      "rank": 74
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.85,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 4.38,
+      "meanLevel": 1.75,
+      "meanActions": 286.9,
+      "meanFloorsGained": 1.85,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 8
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        }
+      ],
+      "rank": 75
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.83,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 4.93,
+      "meanLevel": 1.83,
+      "meanActions": 272.2,
+      "meanFloorsGained": 1.83,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.93,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 4
+        }
+      ],
+      "rank": 76
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.8,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 4.2,
+      "meanLevel": 1.8,
+      "meanActions": 269.2,
+      "meanFloorsGained": 1.8,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 77
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.8,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 5.78,
+      "meanLevel": 1.83,
+      "meanActions": 273.58,
+      "meanFloorsGained": 1.8,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 7.25,
+      "topCauses": [
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 78
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.8,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 2.25,
+      "meanLevel": 1.6,
+      "meanActions": 283.9,
+      "meanFloorsGained": 1.8,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.68,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 79
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.8,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 4.93,
+      "meanLevel": 1.78,
+      "meanActions": 272.85,
+      "meanFloorsGained": 1.8,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 5
+        }
+      ],
+      "rank": 80
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.8,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 6.63,
+      "meanLevel": 1.88,
+      "meanActions": 269.25,
+      "meanFloorsGained": 1.8,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 7.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Shadow",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Cave Bear",
+          "count": 3
+        }
+      ],
+      "rank": 81
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.78,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 5.48,
+      "meanLevel": 1.9,
+      "meanActions": 284.95,
+      "meanFloorsGained": 1.78,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 82
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.73,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 7.8,
+      "meanLevel": 2.13,
+      "meanActions": 260.4,
+      "meanFloorsGained": 1.73,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.38,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 5
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        }
+      ],
+      "rank": 83
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.7,
+      "p50Depth": 3,
+      "p90Depth": 5,
+      "reach5": 15,
+      "reach10": 0,
+      "meanKills": 5.3,
+      "meanLevel": 1.83,
+      "meanActions": 279.02,
+      "meanFloorsGained": 1.7,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Drekk",
+          "count": 3
+        }
+      ],
+      "rank": 84
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.7,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 5.35,
+      "meanLevel": 1.75,
+      "meanActions": 276.2,
+      "meanFloorsGained": 1.7,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 5.75,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 85
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.7,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 5.05,
+      "meanLevel": 1.78,
+      "meanActions": 293.18,
+      "meanFloorsGained": 1.7,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.85,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 3
+        }
+      ],
+      "rank": 86
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.7,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 6.05,
+      "meanLevel": 1.88,
+      "meanActions": 271.83,
+      "meanFloorsGained": 1.7,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.35,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 87
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.7,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 5.08,
+      "meanLevel": 1.85,
+      "meanActions": 263.33,
+      "meanFloorsGained": 1.7,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 6.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 3
+        }
+      ],
+      "rank": 88
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.7,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 4.43,
+      "meanLevel": 1.75,
+      "meanActions": 276.23,
+      "meanFloorsGained": 1.7,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 7.53,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 12
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 4
+        }
+      ],
+      "rank": 89
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Troll",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.65,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 7.4,
+      "meanLevel": 1.98,
+      "meanActions": 251.58,
+      "meanFloorsGained": 1.65,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 5.65,
+      "topCauses": [
+        {
+          "cause": "starved in the dark",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 90
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.65,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 4.35,
+      "meanLevel": 1.7,
+      "meanActions": 262.23,
+      "meanFloorsGained": 1.65,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.63,
+      "topCauses": [
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 91
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Wilmsry",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.6,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 3.18,
+      "meanLevel": 1.7,
+      "meanActions": 266.48,
+      "meanFloorsGained": 1.6,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.28,
+      "topCauses": [
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        }
+      ],
+      "rank": 92
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.58,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 5.28,
+      "meanLevel": 1.6,
+      "meanActions": 244.83,
+      "meanFloorsGained": 1.58,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.55,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 12
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Krupke",
+          "count": 3
+        }
+      ],
+      "rank": 93
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.55,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 4.75,
+      "meanLevel": 1.7,
+      "meanActions": 263.93,
+      "meanFloorsGained": 1.55,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.85,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 5
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 4
+        }
+      ],
+      "rank": 94
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.55,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 2.33,
+      "meanLevel": 1.68,
+      "meanActions": 247.53,
+      "meanFloorsGained": 1.55,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.28,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 95
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.55,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 0.83,
+      "meanLevel": 1.33,
+      "meanActions": 222.38,
+      "meanFloorsGained": 1.55,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 6
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 96
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.53,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 3.58,
+      "meanLevel": 1.58,
+      "meanActions": 239.63,
+      "meanFloorsGained": 1.53,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.68,
+      "topCauses": [
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Google",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 97
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.5,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 4.97,
+      "meanLevel": 1.68,
+      "meanActions": 278.85,
+      "meanFloorsGained": 1.5,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 7.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 5
+        }
+      ],
+      "rank": 98
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.5,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 7.15,
+      "meanLevel": 1.58,
+      "meanActions": 238.45,
+      "meanFloorsGained": 1.5,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.73,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 17
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Google",
+          "count": 2
+        }
+      ],
+      "rank": 99
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.48,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 3.03,
+      "meanLevel": 1.65,
+      "meanActions": 244.83,
+      "meanFloorsGained": 1.48,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 6.55,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 100
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.45,
+      "p50Depth": 3,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 5.3,
+      "meanLevel": 1.73,
+      "meanActions": 235.9,
+      "meanFloorsGained": 1.45,
+      "p50FloorsGained": 2,
+      "meanEncountersSurvived": 5.75,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 101
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.45,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 4.75,
+      "meanLevel": 1.68,
+      "meanActions": 235.63,
+      "meanFloorsGained": 1.45,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.25,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 13
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 102
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.45,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 3.3,
+      "meanLevel": 1.65,
+      "meanActions": 270.6,
+      "meanFloorsGained": 1.45,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.68,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a China Wolf",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 103
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.45,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 2.98,
+      "meanLevel": 1.63,
+      "meanActions": 225.3,
+      "meanFloorsGained": 1.45,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.13,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 104
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.42,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 1.2,
+      "meanLevel": 1.45,
+      "meanActions": 221.78,
+      "meanFloorsGained": 1.43,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.08,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 4
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 105
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.4,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 2.93,
+      "meanLevel": 1.65,
+      "meanActions": 241.65,
+      "meanFloorsGained": 1.4,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.05,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 12
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 106
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.4,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 2.85,
+      "meanLevel": 1.48,
+      "meanActions": 228.03,
+      "meanFloorsGained": 1.4,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.95,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 13
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 3
+        }
+      ],
+      "rank": 107
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.4,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 6.55,
+      "meanLevel": 1.78,
+      "meanActions": 225.6,
+      "meanFloorsGained": 1.4,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.03,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Google",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 108
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.38,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 0.95,
+      "meanLevel": 1.3,
+      "meanActions": 244.15,
+      "meanFloorsGained": 1.38,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.78,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 3
+        }
+      ],
+      "rank": 109
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.35,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 12.5,
+      "reach10": 0,
+      "meanKills": 5.18,
+      "meanLevel": 1.73,
+      "meanActions": 215.23,
+      "meanFloorsGained": 1.35,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 11
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        }
+      ],
+      "rank": 110
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.35,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 2.38,
+      "meanLevel": 1.45,
+      "meanActions": 214.9,
+      "meanFloorsGained": 1.35,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 7
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        }
+      ],
+      "rank": 111
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.33,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 3.85,
+      "meanLevel": 1.5,
+      "meanActions": 217.48,
+      "meanFloorsGained": 1.33,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.55,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Poltergeist",
+          "count": 4
+        }
+      ],
+      "rank": 112
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.3,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 3.55,
+      "meanLevel": 1.45,
+      "meanActions": 222.13,
+      "meanFloorsGained": 1.3,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 5
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 5
+        }
+      ],
+      "rank": 113
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.3,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 2.95,
+      "meanLevel": 1.55,
+      "meanActions": 218.73,
+      "meanFloorsGained": 1.3,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 3
+        }
+      ],
+      "rank": 114
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.28,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 1.58,
+      "meanLevel": 1.33,
+      "meanActions": 200.63,
+      "meanFloorsGained": 1.27,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 12
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Drekk",
+          "count": 3
+        }
+      ],
+      "rank": 115
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.23,
+      "p50Depth": 2,
+      "p90Depth": 5,
+      "reach5": 10,
+      "reach10": 0,
+      "meanKills": 3.35,
+      "meanLevel": 1.53,
+      "meanActions": 226.85,
+      "meanFloorsGained": 1.23,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 5
+        }
+      ],
+      "rank": 116
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.23,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 3.03,
+      "meanLevel": 1.43,
+      "meanActions": 202.2,
+      "meanFloorsGained": 1.23,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.28,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 11
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 3
+        }
+      ],
+      "rank": 117
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.23,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 1.73,
+      "meanLevel": 1.43,
+      "meanActions": 209.2,
+      "meanFloorsGained": 1.23,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.75,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 118
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.2,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 3.5,
+      "meanLevel": 1.53,
+      "meanActions": 209.93,
+      "meanFloorsGained": 1.2,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.97,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 7
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 119
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.2,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 5.43,
+      "meanLevel": 1.55,
+      "meanActions": 182.1,
+      "meanFloorsGained": 1.2,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 12
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        }
+      ],
+      "rank": 120
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.2,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 2.15,
+      "meanLevel": 1.48,
+      "meanActions": 222.08,
+      "meanFloorsGained": 1.2,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.88,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        }
+      ],
+      "rank": 121
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.2,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 1.83,
+      "meanLevel": 1.35,
+      "meanActions": 219.25,
+      "meanFloorsGained": 1.2,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.55,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        }
+      ],
+      "rank": 122
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.17,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 3.75,
+      "meanLevel": 1.5,
+      "meanActions": 205.93,
+      "meanFloorsGained": 1.18,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.72,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 13
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Blumble",
+          "count": 3
+        }
+      ],
+      "rank": 123
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.17,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 4.13,
+      "meanLevel": 1.6,
+      "meanActions": 219.58,
+      "meanFloorsGained": 1.18,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 11
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        },
+        {
+          "cause": "starved in the dark",
+          "count": 3
+        }
+      ],
+      "rank": 124
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.17,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 1.88,
+      "meanLevel": 1.45,
+      "meanActions": 213.9,
+      "meanFloorsGained": 1.18,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Drekk",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 125
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.13,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 2.88,
+      "meanLevel": 1.43,
+      "meanActions": 209.63,
+      "meanFloorsGained": 1.13,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 12
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        }
+      ],
+      "rank": 126
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.13,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 7.5,
+      "reach10": 0,
+      "meanKills": 1.63,
+      "meanLevel": 1.4,
+      "meanActions": 190.15,
+      "meanFloorsGained": 1.13,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.93,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        }
+      ],
+      "rank": 127
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.1,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 2.23,
+      "meanLevel": 1.43,
+      "meanActions": 227.33,
+      "meanFloorsGained": 1.1,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 3
+        }
+      ],
+      "rank": 128
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.1,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 1.78,
+      "meanLevel": 1.35,
+      "meanActions": 180.53,
+      "meanFloorsGained": 1.1,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.75,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 14
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 7
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 3
+        }
+      ],
+      "rank": 129
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.05,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 4.22,
+      "meanLevel": 1.55,
+      "meanActions": 188.55,
+      "meanFloorsGained": 1.05,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.85,
+      "topCauses": [
+        {
+          "cause": "undone by a trap",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 130
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.05,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 1.55,
+      "meanLevel": 1.27,
+      "meanActions": 201.68,
+      "meanFloorsGained": 1.05,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.48,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 131
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.03,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 1.75,
+      "meanLevel": 1.48,
+      "meanActions": 163.07,
+      "meanFloorsGained": 1.02,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 2.98,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 5
+        }
+      ],
+      "rank": 132
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.03,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 1.58,
+      "meanLevel": 1.48,
+      "meanActions": 175.83,
+      "meanFloorsGained": 1.02,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 6
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 4
+        }
+      ],
+      "rank": 133
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.03,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 3,
+      "meanLevel": 1.48,
+      "meanActions": 185.3,
+      "meanFloorsGained": 1.02,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.25,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 5
+        },
+        {
+          "cause": "spent by the dungeon itself",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 4
+        }
+      ],
+      "rank": 134
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.98,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 1.18,
+      "meanLevel": 1.25,
+      "meanActions": 158.35,
+      "meanFloorsGained": 0.98,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 2.73,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Drekk",
+          "count": 4
+        }
+      ],
+      "rank": 135
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Human",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.98,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 3.15,
+      "meanLevel": 1.53,
+      "meanActions": 188.13,
+      "meanFloorsGained": 0.98,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.93,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        }
+      ],
+      "rank": 136
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.9,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 2.58,
+      "meanLevel": 1.38,
+      "meanActions": 181.73,
+      "meanFloorsGained": 0.9,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.73,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Drekk",
+          "count": 5
+        }
+      ],
+      "rank": 137
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.9,
+      "p50Depth": 1,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 2.65,
+      "meanLevel": 1.35,
+      "meanActions": 167.45,
+      "meanFloorsGained": 0.9,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3.55,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 4
+        }
+      ],
+      "rank": 138
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.88,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 2.5,
+      "reach10": 0,
+      "meanKills": 2.42,
+      "meanLevel": 1.3,
+      "meanActions": 168.58,
+      "meanFloorsGained": 0.88,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.13,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 13
+        },
+        {
+          "cause": "cut down by a Drekk",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 3
+        }
+      ],
+      "rank": 139
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Elven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.83,
+      "p50Depth": 2,
+      "p90Depth": 3,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 1.8,
+      "meanLevel": 1.2,
+      "meanActions": 156.95,
+      "meanFloorsGained": 0.83,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 3.03,
+      "topCauses": [
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 8
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 6
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 140
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Fridgian",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.8,
+      "p50Depth": 1,
+      "p90Depth": 4,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 1.48,
+      "meanLevel": 1.2,
+      "meanActions": 174.3,
+      "meanFloorsGained": 0.8,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3.73,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 10
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 7
+        },
+        {
+          "cause": "fell off a wall",
+          "count": 5
+        }
+      ],
+      "rank": 141
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.7,
+      "p50Depth": 1,
+      "p90Depth": 3,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 1.58,
+      "meanLevel": 1.15,
+      "meanActions": 172.65,
+      "meanFloorsGained": 0.7,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3.35,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 15
+        },
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 9
+        },
+        {
+          "cause": "undone by a trap",
+          "count": 4
+        }
+      ],
+      "rank": 142
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 1.63,
+      "p50Depth": 1,
+      "p90Depth": 3,
+      "reach5": 0,
+      "reach10": 0,
+      "meanKills": 0.88,
+      "meanLevel": 1.08,
+      "meanActions": 140.57,
+      "meanFloorsGained": 0.63,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.63,
+      "topCauses": [
+        {
+          "cause": "cut down by a Gremlin",
+          "count": 13
+        },
+        {
+          "cause": "cut down by a Dante",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 6
+        }
+      ],
+      "rank": 143
+    }
+  ],
+  "rollups": {
+    "byClass": [
+      {
+        "key": "Thief",
+        "n": 1920,
+        "completed": 1920,
+        "stuck": 0,
+        "meanDepth": 3.42,
+        "p50Depth": 3,
+        "p90Depth": 6,
+        "reach5": 24.6,
+        "reach10": 0.6,
+        "meanKills": 6.5,
+        "meanLevel": 2.22,
+        "meanActions": 351.33,
+        "meanFloorsGained": 2.42,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 8.86,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 248
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 200
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 177
+          }
+        ]
+      },
+      {
+        "key": "Fighter",
+        "n": 1880,
+        "completed": 1880,
+        "stuck": 0,
+        "meanDepth": 3.05,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 16.2,
+        "reach10": 0.1,
+        "meanKills": 5.71,
+        "meanLevel": 2,
+        "meanActions": 302.65,
+        "meanFloorsGained": 2.05,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.59,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 292
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 154
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 127
+          }
+        ]
+      },
+      {
+        "key": "Magic User",
+        "n": 1920,
+        "completed": 1920,
+        "stuck": 0,
+        "meanDepth": 2.44,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 7.7,
+        "reach10": 0.1,
+        "meanKills": 2.41,
+        "meanLevel": 1.55,
+        "meanActions": 236.82,
+        "meanFloorsGained": 1.44,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 5.03,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 352
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 178
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 162
+          }
+        ]
+      }
+    ],
+    "bySub": [
+      {
+        "key": "Ninja",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 4.22,
+        "p50Depth": 4,
+        "p90Depth": 7,
+        "reach5": 37.1,
+        "reach10": 2.9,
+        "meanKills": 11.92,
+        "meanLevel": 2.84,
+        "meanActions": 428.07,
+        "meanFloorsGained": 3.22,
+        "p50FloorsGained": 3,
+        "meanEncountersSurvived": 11.49,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 24
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 24
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 19
+          }
+        ]
+      },
+      {
+        "key": "Con Artist",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 4.08,
+        "p50Depth": 4,
+        "p90Depth": 6,
+        "reach5": 35.8,
+        "reach10": 0,
+        "meanKills": 1.59,
+        "meanLevel": 2.35,
+        "meanActions": 422.18,
+        "meanFloorsGained": 3.08,
+        "p50FloorsGained": 3,
+        "meanEncountersSurvived": 10.9,
+        "topCauses": [
+          {
+            "cause": "undone by a trap",
+            "count": 35
+          },
+          {
+            "cause": "cut down by a Werebeast",
+            "count": 23
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 20
+          }
+        ]
+      },
+      {
+        "key": "Acrobat",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.71,
+        "p50Depth": 4,
+        "p90Depth": 6,
+        "reach5": 27.9,
+        "reach10": 1.3,
+        "meanKills": 8.42,
+        "meanLevel": 2.42,
+        "meanActions": 383.45,
+        "meanFloorsGained": 2.71,
+        "p50FloorsGained": 3,
+        "meanEncountersSurvived": 9.46,
+        "topCauses": [
+          {
+            "cause": "starved in the dark",
+            "count": 25
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 23
+          },
+          {
+            "cause": "cut down by a Dante",
+            "count": 19
+          }
+        ]
+      },
+      {
+        "key": "Barbarian",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.44,
+        "p50Depth": 3,
+        "p90Depth": 6,
+        "reach5": 25,
+        "reach10": 0.4,
+        "meanKills": 8.13,
+        "meanLevel": 2.08,
+        "meanActions": 351.63,
+        "meanFloorsGained": 2.44,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 9.23,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 41
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 18
+          },
+          {
+            "cause": "cut down by a Werebeast",
+            "count": 15
+          }
+        ]
+      },
+      {
+        "key": "Master of Arms",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.25,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 18.3,
+        "reach10": 0.4,
+        "meanKills": 7.33,
+        "meanLevel": 2.19,
+        "meanActions": 327.16,
+        "meanFloorsGained": 2.25,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 8.36,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 34
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 19
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 16
+          }
+        ]
+      },
+      {
+        "key": "Cat Burglar",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.23,
+        "p50Depth": 3,
+        "p90Depth": 6,
+        "reach5": 23.8,
+        "reach10": 0.4,
+        "meanKills": 7.66,
+        "meanLevel": 2.23,
+        "meanActions": 313.87,
+        "meanFloorsGained": 2.23,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.81,
+        "topCauses": [
+          {
+            "cause": "undone by a trap",
+            "count": 50
+          },
+          {
+            "cause": "cut down by a Dante",
+            "count": 35
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 20
+          }
+        ]
+      },
+      {
+        "key": "Pilfer",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.2,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 22.1,
+        "reach10": 0.4,
+        "meanKills": 6.14,
+        "meanLevel": 2.06,
+        "meanActions": 342.89,
+        "meanFloorsGained": 2.2,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 8.07,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 49
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 18
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 14
+          }
+        ]
+      },
+      {
+        "key": "Knight",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.19,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 23.3,
+        "reach10": 0,
+        "meanKills": 4.54,
+        "meanLevel": 2.04,
+        "meanActions": 316.42,
+        "meanFloorsGained": 2.19,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 8.12,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 39
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 25
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 18
+          }
+        ]
+      },
+      {
+        "key": "Cloaker",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.04,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 17.5,
+        "reach10": 0,
+        "meanKills": 5.6,
+        "meanLevel": 2,
+        "meanActions": 323.05,
+        "meanFloorsGained": 2.04,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 8.32,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 39
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 31
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 28
+          }
+        ]
+      },
+      {
+        "key": "Bard",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.04,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 12.1,
+        "reach10": 0,
+        "meanKills": 4.76,
+        "meanLevel": 1.95,
+        "meanActions": 299.7,
+        "meanFloorsGained": 2.04,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.64,
+        "topCauses": [
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 24
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 24
+          },
+          {
+            "cause": "cut down by a Dante",
+            "count": 21
+          }
+        ]
+      },
+      {
+        "key": "Woodsman",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 3.02,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 17.1,
+        "reach10": 0,
+        "meanKills": 4.21,
+        "meanLevel": 1.99,
+        "meanActions": 297.91,
+        "meanFloorsGained": 2.02,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.71,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 36
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 24
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 18
+          }
+        ]
+      },
+      {
+        "key": "Cutthroat",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.98,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 16.3,
+        "reach10": 0,
+        "meanKills": 5.76,
+        "meanLevel": 1.98,
+        "meanActions": 304.22,
+        "meanFloorsGained": 1.98,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.63,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 41
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 20
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 19
+          }
+        ]
+      },
+      {
+        "key": "Soldier",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.95,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 13.3,
+        "reach10": 0,
+        "meanKills": 5.45,
+        "meanLevel": 1.97,
+        "meanActions": 289.87,
+        "meanFloorsGained": 1.95,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 6.71,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 46
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 25
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 18
+          }
+        ]
+      },
+      {
+        "key": "Pickpocket",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.88,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 16.7,
+        "reach10": 0,
+        "meanKills": 4.93,
+        "meanLevel": 1.85,
+        "meanActions": 292.95,
+        "meanFloorsGained": 1.88,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.18,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 35
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 24
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 21
+          }
+        ]
+      },
+      {
+        "key": "Guard",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.8,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 10.4,
+        "reach10": 0,
+        "meanKills": 4.85,
+        "meanLevel": 1.83,
+        "meanActions": 277.63,
+        "meanFloorsGained": 1.8,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 6.8,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 37
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 23
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 22
+          }
+        ]
+      },
+      {
+        "key": "Sorcerer",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.72,
+        "p50Depth": 3,
+        "p90Depth": 4,
+        "reach5": 9.6,
+        "reach10": 0,
+        "meanKills": 1.24,
+        "meanLevel": 1.5,
+        "meanActions": 264.27,
+        "meanFloorsGained": 1.72,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 6,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 34
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 27
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 27
+          }
+        ]
+      },
+      {
+        "key": "Samurai",
+        "n": 200,
+        "completed": 200,
+        "stuck": 0,
+        "meanDepth": 2.69,
+        "p50Depth": 3,
+        "p90Depth": 4,
+        "reach5": 8.5,
+        "reach10": 0,
+        "meanKills": 6.54,
+        "meanLevel": 1.94,
+        "meanActions": 252.52,
+        "meanFloorsGained": 1.69,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 5.86,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 38
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 17
+          },
+          {
+            "cause": "cut down by a Google",
+            "count": 14
+          }
+        ]
+      },
+      {
+        "key": "Warlock",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.58,
+        "p50Depth": 2,
+        "p90Depth": 5,
+        "reach5": 10.4,
+        "reach10": 0,
+        "meanKills": 2.38,
+        "meanLevel": 1.62,
+        "meanActions": 247.8,
+        "meanFloorsGained": 1.58,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 5.51,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 45
+          },
+          {
+            "cause": "starved in the dark",
+            "count": 22
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 21
+          }
+        ]
+      },
+      {
+        "key": "Court Mage",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.52,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 8.8,
+        "reach10": 0,
+        "meanKills": 2.85,
+        "meanLevel": 1.63,
+        "meanActions": 249.82,
+        "meanFloorsGained": 1.52,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 5.41,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 48
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 21
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 21
+          }
+        ]
+      },
+      {
+        "key": "Wizard",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.48,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 8.8,
+        "reach10": 0.4,
+        "meanKills": 2.32,
+        "meanLevel": 1.55,
+        "meanActions": 240.72,
+        "meanFloorsGained": 1.48,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 4.65,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 46
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 27
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 22
+          }
+        ]
+      },
+      {
+        "key": "Cleric",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.42,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 8.8,
+        "reach10": 0,
+        "meanKills": 2.97,
+        "meanLevel": 1.59,
+        "meanActions": 246.14,
+        "meanFloorsGained": 1.43,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 5.34,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 54
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 21
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 21
+          }
+        ]
+      },
+      {
+        "key": "Apprentice",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.4,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 6.7,
+        "reach10": 0,
+        "meanKills": 2.03,
+        "meanLevel": 1.62,
+        "meanActions": 223.05,
+        "meanFloorsGained": 1.4,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 4.46,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 37
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 21
+          },
+          {
+            "cause": "cut down by a Philly",
+            "count": 20
+          }
+        ]
+      },
+      {
+        "key": "Illusionist",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.2,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 4.6,
+        "reach10": 0,
+        "meanKills": 1.98,
+        "meanLevel": 1.39,
+        "meanActions": 211.13,
+        "meanFloorsGained": 1.2,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 4.45,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 38
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 38
+          },
+          {
+            "cause": "cut down by a Philly",
+            "count": 25
+          }
+        ]
+      },
+      {
+        "key": "Summoner",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 2.18,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 4.2,
+        "reach10": 0,
+        "meanKills": 3.48,
+        "meanLevel": 1.53,
+        "meanActions": 211.61,
+        "meanFloorsGained": 1.18,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 4.44,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 50
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 22
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 20
+          }
+        ]
+      }
+    ],
+    "byRace": [
+      {
+        "key": "Wilmsry",
+        "n": 960,
+        "completed": 960,
+        "stuck": 0,
+        "meanDepth": 3.93,
+        "p50Depth": 4,
+        "p90Depth": 6,
+        "reach5": 36.9,
+        "reach10": 0.9,
+        "meanKills": 4.38,
+        "meanLevel": 2.34,
+        "meanActions": 407.94,
+        "meanFloorsGained": 2.93,
+        "p50FloorsGained": 3,
+        "meanEncountersSurvived": 10.02,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 97
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 74
+          },
+          {
+            "cause": "cut down by a Werebeast",
+            "count": 68
+          }
+        ]
+      },
+      {
+        "key": "Troll",
+        "n": 960,
+        "completed": 960,
+        "stuck": 0,
+        "meanDepth": 3.25,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 16.9,
+        "reach10": 0.2,
+        "meanKills": 6.42,
+        "meanLevel": 2.09,
+        "meanActions": 329.28,
+        "meanFloorsGained": 2.25,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.7,
+        "topCauses": [
+          {
+            "cause": "starved in the dark",
+            "count": 254
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 78
+          },
+          {
+            "cause": "fell off a wall",
+            "count": 72
+          }
+        ]
+      },
+      {
+        "key": "Human",
+        "n": 960,
+        "completed": 960,
+        "stuck": 0,
+        "meanDepth": 2.88,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 12.1,
+        "reach10": 0.2,
+        "meanKills": 5.18,
+        "meanLevel": 1.91,
+        "meanActions": 295.19,
+        "meanFloorsGained": 1.88,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 7.06,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 167
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 88
+          },
+          {
+            "cause": "cut down by a Poltergeist",
+            "count": 61
+          }
+        ]
+      },
+      {
+        "key": "Elven",
+        "n": 960,
+        "completed": 960,
+        "stuck": 0,
+        "meanDepth": 2.84,
+        "p50Depth": 3,
+        "p90Depth": 5,
+        "reach5": 15,
+        "reach10": 0.1,
+        "meanKills": 5.67,
+        "meanLevel": 1.98,
+        "meanActions": 273.3,
+        "meanFloorsGained": 1.84,
+        "p50FloorsGained": 2,
+        "meanEncountersSurvived": 6.65,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 115
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 101
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 64
+          }
+        ]
+      },
+      {
+        "key": "Fridgian",
+        "n": 920,
+        "completed": 920,
+        "stuck": 0,
+        "meanDepth": 2.46,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 7.1,
+        "reach10": 0,
+        "meanKills": 3.58,
+        "meanLevel": 1.61,
+        "meanActions": 238.86,
+        "meanFloorsGained": 1.46,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 5.84,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 200
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 80
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 64
+          }
+        ]
+      },
+      {
+        "key": "Dwarven",
+        "n": 960,
+        "completed": 960,
+        "stuck": 0,
+        "meanDepth": 2.45,
+        "p50Depth": 2,
+        "p90Depth": 4,
+        "reach5": 8.8,
+        "reach10": 0.1,
+        "meanKills": 3.92,
+        "meanLevel": 1.61,
+        "meanActions": 234.37,
+        "meanFloorsGained": 1.45,
+        "p50FloorsGained": 1,
+        "meanEncountersSurvived": 5.61,
+        "topCauses": [
+          {
+            "cause": "cut down by a Dante",
+            "count": 243
+          },
+          {
+            "cause": "cut down by a Gremlin",
+            "count": 120
+          },
+          {
+            "cause": "undone by a trap",
+            "count": 65
+          }
+        ]
+      }
+    ]
+  }
+}
