@@ -100,6 +100,23 @@ function stripBagField(c) {
   return rest;
 }
 
+/** stripFoeEffectField — the `c.foeEffect` carve-out. Phase 19 (FOE-03/D-09/D-14) adds `c.foeEffect`, a
+ * brand-new engine-only debuff slot (`{ kind, rounds }`, written only by
+ * engine/foeAbilities.js when a foe ability lands a debuff, cleared only
+ * when set) with NO prototype-side equivalent at all — the frozen prototype
+ * (test/parity/prototype-master.js.txt — DO NOT EDIT) never sets this
+ * field, and no fixture drives a foe with an `abilities` kit, so no fixture
+ * would ever actually carry it. It is carved out here, mirroring
+ * stripDarkForField/stripFlightFields/stripBagField immediately above,
+ * purely as a tripwire: so a FUTURE caster fixture (or a determinism test
+ * reusing this comparable) never reaches the diff on this genuinely new,
+ * permanent, deliberate divergence. */
+function stripFoeEffectField(c) {
+  if (!c || !("foeEffect" in c)) return c;
+  const { foeEffect, ...rest } = c;
+  return rest;
+}
+
 /** stripNameField(c) — DR-name-generator (2026-09-09) makes `c.name` a
  * GENERATIVE first × surname build (engine/character.js's nameFor over the new
  * content/names.js { first, sur } banks) instead of the frozen prototype's
@@ -147,7 +164,11 @@ export function movementComparable(state) {
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
   const rest = reconcilePendingFind(state0, pendingFind);
-  if (rest.c) rest.c = stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))));
+  // Phase 19 (FOE-01/D-14): a no-op for every movement fixture (movement
+  // never carries a live combat), added so D-14's "all three comparables"
+  // carve-out holds structurally, not just for combatComparable.
+  if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
+  if (rest.c) rest.c = stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))));
   return rest;
 }
 
@@ -172,6 +193,28 @@ export function stripFoeDamageClosures(combat) {
   return { ...combat, foes };
 }
 
+/** stripFoeAbilityState — the per-foe kit/cooldown/summon-queue carve-out. Phase 19 (FOE-01/FOE-04/FOE-06/D-14) adds
+ * per-foe kit/cooldown/uses state (`f.abilities`/`f.cd`/`f.uses`, copied
+ * from the bestiary entry at `startCombat` and mutated by
+ * engine/foeAbilities.js) and a combat-level summon queue
+ * (`combat.pendingFoes`) — both engine-only, written only for the eight
+ * caster rows (content/foe-abilities.js), none of which is fixture-exposed
+ * (test/parity/FIXTURE-INVENTORY.md: only Bat/Rat, Shriek, Viper, Dante at
+ * L1 are fixture-exposed, and none of them carries an `abilities` kit). A
+ * no-op on a null/foes-less combat, or on a combat/foe that carries none of
+ * these fields (every fixture today) — returned exactly as-is so the
+ * `stripFoeDamageClosures` composition immediately below stays the sole
+ * source of any actual foe-shape change for those fixtures. */
+export function stripFoeAbilityState(combat) {
+  if (!combat || !Array.isArray(combat.foes)) return combat;
+  const { pendingFoes, ...combatRest } = combat;
+  const foes = combatRest.foes.map((f) => {
+    const { abilities, cd, uses, ...rest } = f;
+    return rest;
+  });
+  return { ...combatRest, foes };
+}
+
 /** combatComparable(state) — combat/magic-parity's shared comparable(). */
 export function combatComparable(state) {
   // PARTY-02 (Phase 7): strip the new top-level `state.party` — see
@@ -186,9 +229,9 @@ export function combatComparable(state) {
   const rest = reconcilePendingFind(state0, pendingFind);
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
-    rest.combat = stripFoeDamageClosures(combatRest);
+    rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
-  if (rest.c) rest.c = stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))));
+  if (rest.c) rest.c = stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))));
   return rest;
 }
 
@@ -285,7 +328,11 @@ export function economyComparable(state) {
   // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.
   const rest = reconcilePendingFind(state0, pendingFind);
   if (rest.store) rest.store = stripStoreClosures(rest.store);
-  if (rest.c) rest.c = stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))));
+  // Phase 19 (FOE-01/D-14): a no-op for every economy/encounters fixture
+  // (neither family carries a live combat), added so D-14's "all three
+  // comparables" carve-out holds structurally, not just for combatComparable.
+  if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
+  if (rest.c) rest.c = stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c)))))));
   return rest;
 }
 

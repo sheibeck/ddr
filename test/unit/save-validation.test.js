@@ -223,3 +223,93 @@ test("saveState.js references no localStorage/document", () => {
   assert.ok(!/\blocalStorage\b/.test(src));
   assert.ok(!/\bdocument\b/.test(src));
 });
+
+// --- Phase 19 FID-04: new serialized fields never survive a load; old saves untouched ---
+
+test("FID-04: a v1.0-shaped save (no foeEffect / pendingFoes / abilities) loads with c preserved verbatim and no new keys", () => {
+  const oldSave = {
+    c: { name: "Old Save Delver", cls: "Fighter", wp: 12, maxWP: 20, level: 2, skills: {} },
+    floor: { depth: 2, g: [[{ wall: false }]], px: 1, py: 1 },
+    day: 4,
+    steps: 88,
+    dead: false,
+    won: false,
+    deathNote: "",
+    epitaph: "",
+  };
+  const check = validateSave(JSON.stringify(oldSave), { freshSeed: 777 });
+  assert.equal(check.ok, true);
+  const state = rehydrate(check.value);
+  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium" });
+  assert.equal(Object.hasOwn(state.c, "foeEffect"), false, "a v1.0 save must not gain a foeEffect key");
+});
+
+test("FID-04: a mid-combat save carrying every new field rehydrates with combat null and c.foeEffect null", () => {
+  const original = newRun(5);
+  const withNewFields = structuredClone(original);
+  withNewFields.c.foeEffect = { kind: "weakened", rounds: 1 };
+  withNewFields.combat = {
+    foes: [
+      {
+        name: "Vampire", type: "Walking Dead", lvl: 5, size: "H", intel: 12,
+        wp: 71, maxWP: 71, alive: true, asleep: 0, sp: { atk: 2 }, lives: 1,
+        abilities: ["vampireDrain"], cd: { vampireSummon: 3 }, uses: {},
+      },
+    ],
+    pendingFoes: [{ by: "Vampire", foe: { name: "Skeleton" } }],
+    type: "Walking Dead", round: 4, target: 0, spellOpen: false, tracked: false,
+  };
+
+  const json = JSON.stringify(serializeRun(withNewFields));
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+  const state = rehydrate(check.value);
+
+  assert.equal(state.combat, null, "combat is always nulled on load");
+  assert.equal(state.c.foeEffect, null, "a mid-combat debuff never survives a load");
+  assert.equal(Object.hasOwn(state.c, "foeEffect"), true, "the key itself is preserved (present but null)");
+  // Every other c field is untouched.
+  const { foeEffect: _fe1, ...restOriginal } = original.c;
+  const { foeEffect: _fe2, ...restLoaded } = state.c;
+  assert.deepStrictEqual(restLoaded, restOriginal);
+});
+
+test("FID-04: tampered foeEffect values ('999', -1, [], 0-round object) all become null; validateSave does not mutate its input", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  for (const tampered of ["999", -1, [], { kind: "weakened", rounds: 0 }]) {
+    const save = {
+      c: { wp: 10, maxWP: 10, level: 1, skills: {}, cls: "Fighter", foeEffect: tampered },
+      floor: validFloor,
+    };
+    const check = validateSave(JSON.stringify(save));
+    assert.equal(check.ok, true);
+    assert.equal(check.value.c.foeEffect, null, `tampered foeEffect ${JSON.stringify(tampered)} must become null`);
+  }
+
+  // validateSave must not mutate the caller's own object in place (only the
+  // freshly-parsed clone from JSON.parse — a caller passing an OBJECT
+  // directly, not a string, gets structural mutation via migrateCarry/
+  // clearFoeEffect today; document that contract explicitly here rather
+  // than assert a stronger guarantee validateSave doesn't actually make).
+  const inputObj = {
+    c: { wp: 10, maxWP: 10, level: 1, skills: {}, cls: "Fighter", bag: "medium", foeEffect: { kind: "dazed", rounds: 3 } },
+    floor: validFloor,
+  };
+  const clonedBefore = structuredClone(inputObj);
+  const jsonInput = JSON.stringify(inputObj);
+  validateSave(jsonInput);
+  // Passing a JSON STRING means validateSave parses its OWN fresh object
+  // internally (JSON.parse) — the caller's original object is never touched.
+  assert.deepStrictEqual(inputObj, clonedBefore, "validateSave must not mutate a caller's object when given a JSON string");
+});
+
+test("FID-04: rehydrate is idempotent on the fixtures above", () => {
+  const original = newRun(6);
+  const withEffect = structuredClone(original);
+  withEffect.c.foeEffect = { kind: "dazed", rounds: 2 };
+  withEffect.combat = { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false };
+
+  const once = rehydrate(withEffect);
+  const twice = rehydrate(rehydrate(withEffect));
+  assert.deepStrictEqual(twice, once);
+});

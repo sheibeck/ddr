@@ -104,6 +104,30 @@ function migrateCarry(c) {
 }
 
 /**
+ * clearFoeEffect(c) — Phase 19 FID-04 (D-14 / RESEARCH Pitfall 5): `c.foeEffect`
+ * is a combat-scoped debuff slot written only by engine/foeAbilities.js.
+ * Since load always nulls `combat` (see rehydrate below), a debuff must
+ * never survive a load either — a stale `weakened`/`dazed` value (or a
+ * tampered non-object) would otherwise silently nerf the hero forever with
+ * no fight left to tick it down.
+ *
+ * When `c` is a non-null, non-array object AND the `"foeEffect"` key is
+ * PRESENT, this sets `c.foeEffect = null` (this also neutralises a
+ * tampered non-object value like `"999"`, `-1`, or `[]`). When the key is
+ * ABSENT this does NOTHING — a v1.0 save and a fresh run must not gain a
+ * new key (the round-trip test is deepStrictEqual). Per-foe `abilities`/
+ * `cd`/`uses` and `combat.pendingFoes` need no handling here because
+ * `combat` is already unconditionally reset to null on every load. Mutates
+ * and returns the passed `c`.
+ */
+function clearFoeEffect(c) {
+  if (c && typeof c === "object" && !Array.isArray(c) && "foeEffect" in c) {
+    c.foeEffect = null;
+  }
+  return c;
+}
+
+/**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
  * shape. Never throws: malformed JSON or a save with a malformed/missing
@@ -160,9 +184,10 @@ export function validateSave(raw, options = {}) {
     seed,
     rngState,
     // ECON-01 (Phase 12): default a missing c.bag by class (see migrateCarry).
+    // Phase 19 FID-04: null a present-but-stale c.foeEffect (see clearFoeEffect).
     // pendingFind is transient (like combat/store) — not carried through
     // validateSave's value; rehydrate() nulls it below.
-    c: migrateCarry(obj.c),
+    c: clearFoeEffect(migrateCarry(obj.c)),
     floor: obj.floor,
     day,
     steps,
@@ -195,8 +220,10 @@ export function rehydrate(obj) {
     rngState: obj.rngState,
     // ECON-01 (Phase 12): default a missing c.bag by class (migrateCarry),
     // mirroring the validateSave side so a save loaded through either entry
-    // point lands with a bag.
-    c: migrateCarry(obj.c),
+    // point lands with a bag. Phase 19 FID-04: null a present-but-stale
+    // c.foeEffect (see clearFoeEffect) — combat is already reset to null
+    // below, so a mid-combat debuff must not survive either.
+    c: clearFoeEffect(migrateCarry(obj.c)),
     floor: obj.floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
