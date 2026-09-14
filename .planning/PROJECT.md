@@ -69,6 +69,10 @@
 
 **Progress:** Phase 18 complete (2026-09-13) — `engine/foeDamage.js#damageFoe` is now the ONE damage-to-foe seam (multiplier → halfDmg → gated d20 armor soak → apply); foe natural armor, Sterling halving, Cleric/spell/Fighter type multipliers, Philly `slow` live; 9 bestiary rows retuned (Drake 135→38, Werebeast, 7 pre-ability caster discounts) with the before/after ledger in `content/BESTIARY-REBALANCE.md` + `tools/bestiary-yardstick.mjs`; zero carve-outs; 796/796 tests.
 
+**Progress:** Phase 19 complete (2026-09-14) — data-driven foe abilities: `content/foe-abilities.js` (19 descriptors) + kits on the 8 caster rows, `engine/foeAbilities.js` resolver gated in `foeTurn` (zero draws for ability-less foes), bolts/drains/debuffs/heals/summons, Spectre pursuit, Djinni low-HP flee; symmetric INT resistance via one shared `resistRoll` (`derived.js`, draw-neutral for player casting); "Weakened"/"Dazed" chip; D-15 determinism suite for the five caster encounters; 882/882 tests, parity byte-identical, zero fixture regeneration. One on-device check (chip renders/counts down) deferred to `/gsd-verify-work 19`.
+
+**Progress:** Phase 20 complete (2026-09-14) — parley rebalanced: one attempt per encounter (`C.parleyTried`), failed attempts insult the group (+1 to every foe swing incl. the pursuit strike), Con Artist +6→+4 (~60% at even level), `need` clamped ≤17, payout = ½ the exact kill-SP formula via shared `killSpFor`, Humans wilmst bonus on d6=6 only; Language is a fluency system (`fluency(c)` 0/1/2 from the skill + Helm of Knowledge, +2/tier, tier 2 opens Magical, the Wilmsry-vs-Magical grudge line now reachable). The ONE deliberate parity divergence (seed-303 parley scenario) is a scenario-scoped carve-out with a before/after table (need 19→17, sp 13→7, gold 250→50); 200-seed readout in `docs/PARLEY-REBALANCE.md` (attempts 151→97, success 57.6%→60.8%, SP share 3.7%→2.3%); 912/912 tests.
+
 **Scope boundaries:** engine/data/narration only — no new screens. Backlogged (not this milestone): DR16-G "squares of opponents" / Amulet of Stone, foe inspect / threat hint on the encounter panel, a browsable bestiary screen. Research-first: foe casting vs. RNG order/parity, how abilities move the tuned curve, which abilities fit tone + canon.
 
 ## Context
@@ -133,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-13 — Phase 18 complete (v1.1)*
+*Last updated: 2026-09-14 — Phase 20 complete (v1.1); Phase 21 (consolidated retune) is next*
