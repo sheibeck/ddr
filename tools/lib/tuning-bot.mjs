@@ -14,17 +14,20 @@
 // Talks to the engine through the public applyAction/newRun/makeRng surface,
 // plus READ-ONLY helpers with an existing precedent (both tools already
 // import canParley from engine/combat.js): canCast (engine/derived.js),
-// maxCharges (engine/movement.js), SPELLS/RACES (content/index.js). There is
-// exactly ONE write-path bypass — forceParty, below — which mirrors
-// test/parity/harness/comparables.js's applyStartCombat precedent for
-// calling an engine internal directly outside applyAction. HARNESS-ONLY:
-// never shipped, never a pattern for UI/presentation code.
+// maxCharges (engine/movement.js), songReady/liveFoes (engine/combat.js,
+// Phase 22 HARN-02), canRead (engine/magic.js, Phase 22 HARN-02),
+// SPELLS/RACES (content/index.js). There is exactly ONE write-path bypass —
+// forceParty, below — which mirrors test/parity/harness/comparables.js's
+// applyStartCombat precedent for calling an engine internal directly outside
+// applyAction. HARNESS-ONLY: never shipped, never a pattern for UI/
+// presentation code.
 
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
-import { canParley } from "../../engine/combat.js";
+import { canParley, songReady, liveFoes } from "../../engine/combat.js";
 import { canCast } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
+import { canRead } from "../../engine/magic.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES } from "../../content/index.js";
 
@@ -68,6 +71,7 @@ export const BOT_DEFAULTS = Object.freeze({
   exploreBudget: 50, // D-05 + Claude's Discretion: actions explored per floor before heading to the exit
   maxActions: 20000, // Pitfall 4: hard safety stop, prevents a runaway loop from hanging the harness
   party: false, // D-12/D-20: --party forces one member at run start via forceParty
+  startDepth: 1, // HARN-04: reuses newRun's dev-only start-at-depth option exactly as the Settings toggle does; no extra kit/gear grants
 });
 
 /**
@@ -184,25 +188,21 @@ export function liveFoesHaveAbilities(state) {
   return !!state.combat && state.combat.foes.some((f) => f.alive && Array.isArray(f.abilities) && f.abilities.length > 0);
 }
 
+/** expectedDamage(sp) — mean damage of a spell's dice notation (no dmg field -> 0). */
+function expectedDamage(sp) {
+  return sp.dmg ? (sp.dmg.n * (sp.dmg.sides + 1)) / 2 + sp.dmg.bonus : 0;
+}
+
 /**
- * findCastableAttackSpell(state) — the index in SPELLS of the highest-level
- * castable `kind: "thrown"` spell the character can cast right now, or null.
- * D-05's own decision text scopes this policy to Magic Users ("cast an
- * attack spell when the character has charges (Magic Users)"); engine/
- * derived.js#canCast itself has no class check (a non-caster class with a
- * spell name sitting in an empty grimoire array would otherwise still pass
- * the school-gate default), so the explicit `cls` guard below is required to
- * honor that decision, not merely an accident of what canCast happens to
- * allow.
+ * bestCastableSummonIdx(state) — the index of the highest-lvl castable
+ * `kind: "summon"` spell (Summon or Phantom Host), or null. Shared by
+ * decideAction's in-combat and out-of-combat Summon branches (HARN-02).
  */
-export function findCastableAttackSpell(state) {
-  const c = state.c;
-  if (c.cls !== "Magic User") return null;
-  if (maxCharges(c) - c.spellsUsed <= 0) return null;
+function bestCastableSummonIdx(state) {
   let best = null;
   for (let i = 0; i < SPELLS.length; i++) {
     const sp = SPELLS[i];
-    if (sp.kind !== "thrown") continue;
+    if (sp.kind !== "summon") continue;
     if (!canCast(state, sp)) continue;
     if (best === null || sp.lvl > SPELLS[best].lvl) best = i;
   }
@@ -210,55 +210,279 @@ export function findCastableAttackSpell(state) {
 }
 
 /**
+ * lowestCastableUtilitySpellIdx(state) — HARN-02's Wizard-fallback pick: the
+ * lowest-lvl castable spell that is not `kind` quake (self-damage) or death
+ * (a refused-strike Wizard reacting like a human burns whatever charge is
+ * cheapest, not the riskiest one). Ties keep the lowest SPELLS index (first
+ * found), matching chooseSpell's own tie-break direction.
+ */
+function lowestCastableUtilitySpellIdx(state) {
+  let best = null;
+  for (let i = 0; i < SPELLS.length; i++) {
+    const sp = SPELLS[i];
+    if (sp.kind === "quake" || sp.kind === "death") continue;
+    if (!canCast(state, sp)) continue;
+    if (best === null || sp.lvl < SPELLS[best].lvl) best = i;
+  }
+  return best;
+}
+
+/**
+ * chooseSpell(state, ctx) — HARN-02: the ONE scoring table replacing
+ * findCastableAttackSpell's thrown-only rule. Evaluates every castable spell
+ * and returns the highest-scoring pick as `{ idx, tier, score }`, or `null`
+ * if nothing is worth casting. Gated to Magic Users with charges remaining
+ * (D-05's own scoping — engine/derived.js#canCast itself has no class
+ * check).
+ *
+ * NUMBERS LIVE HERE — the ledger's Bot proxy section (Plan 22-04) transcribes
+ * this table verbatim. Per 22-02-PLAN.md's flagged_planner_assumption, these
+ * thresholds/constants are Claude's discretion, NOT a verified balance
+ * target; only "every branch fires under a synthetic state" is asserted.
+ *
+ *   KILL    (400+): "Freeze" 410 (frozenSolid on hit); `kind==="death"` 405
+ *           only when the post-cost wp stays above the flee line
+ *           (`c.wp - 25 > fleeAt * c.maxWP` — the engine itself refuses at
+ *           wp<=26 anyway); `kind==="turn"` 402 only vs Walking Dead;
+ *           `kind==="gate"` 402 only vs Demons/Walking Dead.
+ *   DAMAGE  (300 + expected damage, ties -> higher sp.lvl): expected(sp) =
+ *           sp.dmg.n * (sp.dmg.sides + 1) / 2 + sp.dmg.bonus.
+ *           `kind==="thrown"` (Mangle/Lightning/Fireball/Ice — Freeze is
+ *           already KILL): Lightning's expected is multiplied by
+ *           liveFoes(state).length (it hits every foe). `kind==="volley"`
+ *           (Fireballs) x4.5 (mean d8 balls). `kind==="acid"` (Acid) x2 (a
+ *           documented "two rounds of ticks" constant — NOTE: this makes
+ *           Acid score 318 vs 1 foe, not the 309 a plain-expected reading of
+ *           22-02-PLAN.md's illustrative "Resulting order" text would give;
+ *           the x2 multiplier is this function's actual, documented
+ *           behavior — Claude's Discretion per the flagged assumption above);
+ *           skipped when the current target already carries `acid`.
+ *   DISABLE (200+, only when liveFoes(state).length >= 2): `kind==="stun"`
+ *           230, `kind==="weaken"` 220 (skipped when `C.weakened`),
+ *           `kind==="shrink"` 215, `kind==="status"` (Doze) 210,
+ *           `kind==="stupid"` 205.
+ *   HEAL    (100 + expected heal, only when `c.wp / c.maxWP <
+ *           ctx.opts.potionThreshold` — potions are drunk earlier in
+ *           decideAction, so this fires once potions run out): `kind==="heal"`
+ *           (Major Heal 3d10 outranks Heal d10).
+ *   WARD-OPENER (50, only when `C.round === 1` and `!c.ward`): `kind==="ward"`
+ *           (Shield, Bubble) — sits below every other tier, including KILL,
+ *           so an Illusionist who can also learn Freeze still opens with the
+ *           kill spell if one is castable (Mirror Self's own opener rule in
+ *           decideAction handles the "must go first" illusion case instead).
+ *
+ * Never auto-cast (no branch below ever scores them): quake (self-damage),
+ * vapor/insane (random outcome table), blind, petrify, might, regen, reveal,
+ * foresee, senses, summon and mirror (handled by decideAction's opener rules,
+ * not this table). On equal scores, prefer the higher `sp.lvl`, then the
+ * lower SPELLS index (first found is kept).
+ */
+export function chooseSpell(state, ctx) {
+  const c = state.c;
+  const C = state.combat;
+  if (c.cls !== "Magic User") return null;
+  if (maxCharges(c) - c.spellsUsed <= 0) return null;
+  const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold; // D-06
+  const target = C ? C.foes[C.target] : null;
+  const nFoes = liveFoes(state).length;
+  let best = null;
+  for (let i = 0; i < SPELLS.length; i++) {
+    const sp = SPELLS[i];
+    if (!canCast(state, sp)) continue;
+    let score;
+    let tier;
+    if (sp.n === "Freeze") {
+      score = 410;
+      tier = "kill";
+    } else if (sp.kind === "death") {
+      if (!C || !(c.wp - 25 > fleeAt * c.maxWP)) continue;
+      score = 405;
+      tier = "kill";
+    } else if (sp.kind === "turn") {
+      if (!C || C.type !== "Walking Dead") continue;
+      score = 402;
+      tier = "kill";
+    } else if (sp.kind === "gate") {
+      if (!C || (C.type !== "Demons" && C.type !== "Walking Dead")) continue;
+      score = 402;
+      tier = "kill";
+    } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid") {
+      if (sp.kind === "acid" && target && target.acid) continue; // already ticking
+      let expected = expectedDamage(sp);
+      if (sp.n === "Lightning") expected *= Math.max(1, nFoes);
+      else if (sp.kind === "volley") expected *= 4.5;
+      else if (sp.kind === "acid") expected *= 2; // two rounds of ticks
+      score = 300 + expected;
+      tier = "damage";
+    } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {
+      if (!C || nFoes < 2) continue;
+      if (sp.kind === "weaken" && C.weakened) continue;
+      score = { stun: 230, weaken: 220, shrink: 215, status: 210, stupid: 205 }[sp.kind];
+      tier = "disable";
+    } else if (sp.kind === "heal") {
+      if (!(c.maxWP > 0 && c.wp / c.maxWP < ctx.opts.potionThreshold)) continue;
+      score = 100 + expectedDamage(sp);
+      tier = "heal";
+    } else if (sp.kind === "ward") {
+      if (!C || C.round !== 1 || c.ward) continue;
+      score = 50;
+      tier = "ward-opener";
+    } else {
+      continue; // never auto-cast (see JSDoc list above)
+    }
+    if (best === null || score > best.score || (score === best.score && sp.lvl > SPELLS[best.idx].lvl)) {
+      best = { idx: i, tier, score };
+    }
+  }
+  return best;
+}
+
+/**
+ * isTalkFirst(state) — HARN-02: is the current combatant's identity one that
+ * tries talking BEFORE fighting (round 1), regardless of wp? `canParley`
+ * still decides whether the attempt is actually AVAILABLE (fluency, Walking
+ * Dead's unconditional refusal, etc.) — this only names WHO talks first:
+ * Con Artist (any talkable encounter), Woodsman vs Beasts/Lair Beasts, Bard
+ * vs Humans, Wilmsry vs anything non-Magical, Elven vs Humans.
+ */
+export function isTalkFirst(state) {
+  if (!state.combat) return false;
+  const c = state.c;
+  const C = state.combat;
+  if (c.sub === "Con Artist") return true;
+  if (c.sub === "Woodsman" && (C.type === "Beasts" || C.type === "Lair Beasts")) return true;
+  if (c.sub === "Bard" && C.type === "Humans") return true;
+  if (c.race === "Wilmsry" && C.type !== "Magical") return true;
+  if (c.race === "Elven" && C.type === "Humans") return true;
+  return false;
+}
+
+/**
  * makeBotContext(opts) — per-run mutable bot state: resolved options, the
- * per-floor action counter, the full-bag flag, and `parleyBlocked` (Rule 1
- * fix — see decideAction).
+ * per-floor action counter, the full-bag flag, `parleyBlocked` (Rule 1 fix)
+ * and `fleeBlocked`/`strikeBlocked` (HARN-02 Rule-1 fixes — see decideAction).
  */
 export function makeBotContext(opts = {}) {
-  return { opts: { ...BOT_DEFAULTS, ...opts }, floorActions: 0, findFull: false, parleyBlocked: false };
+  return {
+    opts: { ...BOT_DEFAULTS, ...opts },
+    floorActions: 0,
+    findFull: false,
+    parleyBlocked: false,
+    fleeBlocked: false,
+    strikeBlocked: false,
+  };
 }
 
 /**
  * decideAction(state, policyRng, ctx) — the shared, deterministic auto-play
- * policy (D-05/D-06/D-12/D-20), in priority order:
- *   (a) in combat: caster-aware flee/parley threshold, then drink, then cast,
- *       then attack;
- *   (b) a pending Joiner is always declined — hiring policy is a Deferred
- *       Idea, `--party` is the only member source;
- *   (c) a pending find is taken unless the bag is currently full;
- *   (d) a store is always left immediately;
- *   (e) out of combat: drink, else camp (rations permitting);
- *   (f) the floor is cleared of dots, or the exploration budget is spent:
- *       head toward the exit;
- *   (g) otherwise: explore toward the nearest unseen tile.
- * `policyRng` is a SEPARATE rng stream from the engine's own (see playRun),
- * so harness decisions never perturb engine determinism.
+ * policy (D-05/D-06/D-12/D-20, extended HARN-02). In combat, priority order:
+ *   (a) caster-aware flee/parley threshold (D-06): parley if available, else
+ *       flee — UNLESS the character is a Samurai (canon: never flees) or a
+ *       flee attempt was already refused this encounter (`ctx.fleeBlocked`),
+ *       in which case fall through to fight instead of looping the refusal;
+ *   (b) drink below potionThreshold (D-05);
+ *   (c) talk-first (HARN-02): the identity talkers (`isTalkFirst`) try
+ *       parley once at round 1, before anything else;
+ *   (d) sing (HARN-02): a Bard's song, once ready, every round 1 (level 1
+ *       only vs Beasts/Lair Beasts — the level-1 song does nothing else);
+ *   (e) Summon in combat (HARN-02): round 1, no ally yet, charges remain;
+ *   (f) Mirror Self opener (HARN-02): round 1, no active mirror — must
+ *       precede the scoring table because an Illusionist can also learn
+ *       Freeze (a KILL-tier spell);
+ *   (g) Wizard fallback (HARN-02 Rule-1 fix): a strike-refused Wizard casts
+ *       something else while charges remain (any castable non-quake/death
+ *       spell — a human would rather burn a charge than stand still),
+ *       otherwise flees (unless flee is also blocked, in which case attack —
+ *       once charges hit 0 the melee refusal lifts on its own);
+ *   (h) the scoring table (`chooseSpell`, HARN-02);
+ *   (i) attack.
+ * Out of combat: (j) decline every pending Joiner (D-20); (k) take/leave a
+ * pending find; (l) always leave a store; (m) drink below potionThreshold;
+ * (n) camp below campThreshold (rations permitting); (o) Summon out of
+ * combat (HARN-02) when no ally is pending and charges exceed half of
+ * maxCharges; (p) read a carried scroll when able (Claude's Discretion —
+ * `useItem` is deliberately NOT used for potions: found potions are
+ * unidentified, one of the ten is Death, so a blind quaff is not
+ * human-like); (q) head to the exit once the floor's dots are cleared or the
+ * exploration budget is spent; (r) otherwise explore toward the nearest
+ * unseen tile. `policyRng` is a SEPARATE rng stream from the engine's own
+ * (see playRun), so harness decisions never perturb engine determinism.
  *
- * Bug found during the BEFORE readout (auto-fixed, Rule 1): `canParley`
- * stays true forever for a fluency-2 Wilmsry vs a Magical encounter, but
- * `parley()`'s `wilmsryVsMagical` branch REFUSES without ever setting
- * `C.parleyTried` (Phase 20, D-12 — a refusal is not a spent attempt, by
- * canon design). A bot that always prefers parley over flee below the flee
- * threshold therefore re-picks `{ type: "parley" }` forever, burning the
- * entire `maxActions` budget on a no-progress loop instead of fleeing — a
- * human player would simply try something else after being refused once.
- * `ctx.parleyBlocked` (set by `observe` on a `parleyRefused` event, cleared
- * on the next `encounterStarted`) makes the bot do exactly that: fall
- * through to flee for the REST of this encounter once a parley attempt has
- * been refused rather than spent.
+ * Two refusal-loop bugs found during the BEFORE readout (both auto-fixed,
+ * Rule 1 — see 22-02-PLAN.md's stuck-investigation writeup):
+ *   1. `canParley` stays true forever for a fluency-2 Wilmsry vs a Magical
+ *      encounter, but `parley()`'s `wilmsryVsMagical` branch REFUSES without
+ *      ever setting `C.parleyTried` (Phase 20, D-12 — a refusal is not a
+ *      spent attempt, by canon design). `ctx.parleyBlocked` (set by
+ *      `observe` on `parleyRefused`, cleared on the next `encounterStarted`)
+ *      makes the bot fall through to flee for the rest of the encounter.
+ *   2. A Samurai below the flee threshold picks flee; `flee()` emits
+ *      `fleeRefused` (reason samurai) WITHOUT a foe turn — the bot re-picks
+ *      flee forever. A Wizard with charges left and no castable attack spell
+ *      picks attack; `playerStrike` emits `strikeRefused` (reason wizard),
+ *      also without a foe turn — same shape. Both refusals return with NO
+ *      foe turn, so a bot that repeats the refused action loops until the
+ *      action cap. `ctx.fleeBlocked`/`ctx.strikeBlocked` (set by `observe`
+ *      on `fleeRefused`/`strikeRefused`, cleared on `encounterStarted`) make
+ *      the bot react like a human would instead: a Samurai simply fights
+ *      (step a's explicit `c.sub === "Samurai"` check also handles this
+ *      structurally, not just reactively); a blocked Wizard casts something
+ *      else or flees (step g).
  */
 export function decideAction(state, policyRng, ctx) {
   if (state.combat) {
     const c = state.c;
+    const C = state.combat;
     const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
     const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold; // D-06
+    const chargesLeft = c.cls === "Magic User" ? maxCharges(c) - c.spellsUsed : 0;
+
+    // (a)
     if (ratio < fleeAt) {
       if (!ctx.parleyBlocked && canParley(state)) return { type: "parley" };
-      return { type: "flee" };
+      if (!(c.sub === "Samurai" || ctx.fleeBlocked)) return { type: "flee" };
+      // Samurai never runs (canon); a flee refused this encounter is not
+      // retried (Rule-1 fix) — fall through to the rest of the chain below.
     }
-    if (c.potions > 0 && ratio < ctx.opts.potionThreshold) return { type: "drinkPotion" }; // D-05
-    const castIdx = findCastableAttackSpell(state);
-    if (castIdx !== null) return { type: "castSpell", idx: castIdx }; // D-05
+
+    // (b) D-05
+    if (c.potions > 0 && ratio < ctx.opts.potionThreshold) return { type: "drinkPotion" };
+
+    // (c) HARN-02 talk-first
+    if (C.round === 1 && isTalkFirst(state) && !ctx.parleyBlocked && canParley(state)) return { type: "parley" };
+
+    // (d) HARN-02 sing
+    if (songReady(state) && (c.level >= 2 || C.type === "Beasts" || C.type === "Lair Beasts")) return { type: "sing" };
+
+    // (e) HARN-02 Summon in combat
+    if (C.round === 1 && !C.ally && chargesLeft > 0) {
+      const summonIdx = bestCastableSummonIdx(state);
+      if (summonIdx !== null) return { type: "castSpell", idx: summonIdx };
+    }
+
+    // (f) HARN-02 Mirror Self opener — chargesLeft > 0 is required here (not
+    // just canCast, which never checks charges): without it, a
+    // charges-exhausted caster whose grimoire still contains Mirror Self
+    // would have castSpell refuse with `noChargesLeft` (no foe turn, round
+    // never advances) and decideAction would re-pick the same action forever
+    // — the exact refusal-loop shape this plan's other Rule-1 fixes target.
+    if (C.round === 1 && !(c.mirror > 0) && chargesLeft > 0) {
+      const mirrorIdx = SPELLS.findIndex((sp) => sp.kind === "mirror" && canCast(state, sp));
+      if (mirrorIdx !== -1) return { type: "castSpell", idx: mirrorIdx };
+    }
+
+    // (g) HARN-02 Wizard fallback (Rule-1 fix)
+    if (ctx.strikeBlocked && chargesLeft > 0) {
+      const utilIdx = lowestCastableUtilitySpellIdx(state);
+      if (utilIdx !== null) return { type: "castSpell", idx: utilIdx };
+      return ctx.fleeBlocked ? { type: "attack" } : { type: "flee" };
+    }
+
+    // (h) HARN-02 scoring table
+    const pick = chooseSpell(state, ctx);
+    if (pick) return { type: "castSpell", idx: pick.idx };
+
+    // (i)
     return { type: "attack" };
   }
   if (state.pendingJoiner) return { type: "resolveJoiner", accept: false }; // D-20
@@ -269,6 +493,21 @@ export function decideAction(state, policyRng, ctx) {
   const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
   if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
   if (ratio < ctx.opts.campThreshold && c.rations >= (RACES[c.race]?.eats || 1)) return { type: "camp" }; // D-05
+
+  // HARN-02: Summon out of combat — bank charges for the fight unless there
+  // is plenty to spare (no pendingAlly, more than half of maxCharges left).
+  if (c.cls === "Magic User" && !c.pendingAlly) {
+    const chargesLeft = maxCharges(c) - c.spellsUsed;
+    if (chargesLeft > maxCharges(c) / 2) {
+      const summonIdx = bestCastableSummonIdx(state);
+      if (summonIdx !== null) return { type: "castSpell", idx: summonIdx };
+    }
+  }
+  // HARN-02 / Claude's Discretion: read a carried scroll out of combat when
+  // able. `useItem` is deliberately NOT used for potions here — found
+  // potions are unidentified (one of the ten is Death), so a blind quaff is
+  // not human-like; kept simple per 22-CONTEXT.md.
+  if (c.scrolls > 0 && canRead(state)) return { type: "readScroll" };
 
   if (dotsRemaining(state.floor) === 0 || ctx.floorActions >= ctx.opts.exploreBudget) {
     const dir = dirTowardExit(state) || nearestUnseenDir(state) || pickFallbackDir(state, policyRng);
@@ -364,9 +603,12 @@ export function tallyEvents(tallies, events, stateAfter) {
  * turn: the per-floor action counter resets on any `floorChanged` event
  * (else increments once), the full-bag flag tracks `bagFull` / `findTaken` /
  * `findLeft` so the bot never loops offering/declining a find against a
- * full bag, and `parleyBlocked` tracks a `parleyRefused` (see decideAction's
- * Rule-1 bugfix comment) — set the instant a refusal lands, cleared the
- * instant a fresh encounter starts.
+ * full bag, and `parleyBlocked`/`fleeBlocked`/`strikeBlocked` track a
+ * `parleyRefused`/`fleeRefused`/`strikeRefused` event (see decideAction's
+ * Rule-1 bugfix comment — both refusals return WITHOUT a foe turn, so a bot
+ * that repeats the refused action loops until the action cap, the exact
+ * shape of the v1.1 wilmsryVsMagical parley loop) — set the instant a
+ * refusal lands, cleared the instant a fresh encounter starts.
  */
 export function observe(ctx, events) {
   let floorChangedThisStep = false;
@@ -375,7 +617,13 @@ export function observe(ctx, events) {
     else if (e.type === "bagFull") ctx.findFull = true;
     else if (e.type === "findTaken" || e.type === "findLeft") ctx.findFull = false;
     else if (e.type === "parleyRefused") ctx.parleyBlocked = true;
-    else if (e.type === "encounterStarted") ctx.parleyBlocked = false;
+    else if (e.type === "fleeRefused") ctx.fleeBlocked = true;
+    else if (e.type === "strikeRefused") ctx.strikeBlocked = true;
+    else if (e.type === "encounterStarted") {
+      ctx.parleyBlocked = false;
+      ctx.fleeBlocked = false;
+      ctx.strikeBlocked = false;
+    }
   }
   if (floorChangedThisStep) ctx.floorActions = 0;
   else ctx.floorActions++;

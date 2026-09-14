@@ -156,7 +156,7 @@ test("D-05: potion in combat drinks below potionThreshold when carried; flee sti
   assert.deepStrictEqual(decideAction(fleeWinsState, fixedPolicyRng, ctx), { type: "flee" });
 });
 
-test("D-05: cast the highest-lvl castable thrown spell; no charges or non-Magic-User falls to attack", () => {
+test("HARN-02: chooseSpell casts the highest-scoring castable spell; no charges or non-Magic-User falls to attack", () => {
   const ctx = makeBotContext();
   const foe = { name: "x", alive: true, wp: 5, maxWP: 5 };
   const combat = { type: "Beasts", foes: [foe], round: 1 };
@@ -176,11 +176,23 @@ test("D-05: cast the highest-lvl castable thrown spell; no charges or non-Magic-
   const fighterState = mkState({ combat, c: { cls: "Fighter", sub: "Soldier", grimoire: ["Freeze", "Heal"], level: 1, spellsUsed: 0, wp: 40, maxWP: 40 } });
   assert.deepStrictEqual(decideAction(fighterState, fixedPolicyRng, ctx), { type: "attack" });
 
+  // HARN-02: under the scoring table Freeze is KILL-tier (410) and wins over
+  // any DAMAGE-tier spell regardless of level — this is the OLD thrown-only
+  // rule's level-3 case ([Freeze, Fireball] used to pick the higher-lvl
+  // Fireball; the table now picks Freeze).
   const highLevelState = mkState({
     combat,
     c: { cls: "Magic User", sub: "Sorcerer", grimoire: ["Freeze", "Fireball"], level: 3, spellsUsed: 0, wp: 40, maxWP: 40, items: [] },
   });
-  assert.deepStrictEqual(decideAction(highLevelState, fixedPolicyRng, ctx), { type: "castSpell", idx: fireballIdx });
+  assert.deepStrictEqual(decideAction(highLevelState, fixedPolicyRng, ctx), { type: "castSpell", idx: freezeIdx });
+
+  // DAMAGE-tier ordering with no KILL-tier spell in the grimoire: Fireball's
+  // expected damage (15) outscores Ice's (3.5).
+  const damageOnlyState = mkState({
+    combat,
+    c: { cls: "Magic User", sub: "Sorcerer", grimoire: ["Fireball", "Ice"], level: 3, spellsUsed: 0, wp: 40, maxWP: 40, items: [] },
+  });
+  assert.deepStrictEqual(decideAction(damageOnlyState, fixedPolicyRng, ctx), { type: "castSpell", idx: fireballIdx });
 });
 
 test("D-05: camp needs rations >= the race's eats; potion drinking wins over camp", () => {
