@@ -9,7 +9,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   WEAPONS, CLASSES, RACES, RACE_D8, ARMORS, BESTIARY, ENC_TYPES, SPELLS,
-  POTIONS, TRAPS, EPITAPHS, CAUSE_TEXT, DAMAGE_MULTIPLIERS,
+  POTIONS, TRAPS, EPITAPHS, CAUSE_TEXT, DAMAGE_MULTIPLIERS, FOE_ABILITIES,
 } from "../../content/index.js";
 
 test("content/index.js exposes WEAPONS/CLASSES/RACES/BESTIARY/SPELLS", () => {
@@ -239,8 +239,12 @@ test("BESTIARY Phase 18 / D-17: no creature added, removed, or reordered — tie
   assert.equal(Object.values(BESTIARY).flat(2).length, 53);
 });
 
-test("BESTIARY Phase 18 / D-17: every entry keeps the flat shape — allowed top-level keys n/sz/i/wp/sp only, and sp.dmg where present is {n,sides,bonus}", () => {
-  const allowedTopKeys = new Set(["n", "sz", "i", "wp", "sp"]);
+test("BESTIARY Phase 18/19 / D-17: every entry keeps the flat shape — allowed top-level keys n/sz/i/wp/sp/abilities only, and sp.dmg where present is {n,sides,bonus}", () => {
+  // Phase 19 (FOE-01/D-17 extension): the allowlist gains exactly one key,
+  // `abilities` — a non-empty array of unique string ids, each resolving to a
+  // real FOE_ABILITIES entry (never an empty array; absence is the gate).
+  const allowedTopKeys = new Set(["n", "sz", "i", "wp", "sp", "abilities"]);
+  const abilityIds = new Set(FOE_ABILITIES.map((a) => a.id));
   for (const row of Object.values(BESTIARY).flat(2)) {
     for (const key of Object.keys(row)) {
       assert.ok(allowedTopKeys.has(key), `${row.n} has unexpected top-level key ${key}`);
@@ -252,5 +256,174 @@ test("BESTIARY Phase 18 / D-17: every entry keeps the flat shape — allowed top
       assert.ok(Number.isInteger(sides), `${row.n} sp.dmg.sides must be an integer`);
       assert.ok(Number.isInteger(bonus), `${row.n} sp.dmg.bonus must be an integer`);
     }
+    if (Object.hasOwn(row, "abilities")) {
+      assert.ok(Array.isArray(row.abilities) && row.abilities.length > 0, `${row.n} abilities must be a non-empty array`);
+      assert.equal(new Set(row.abilities).size, row.abilities.length, `${row.n} abilities must have no duplicate ids`);
+      for (const id of row.abilities) {
+        assert.ok(abilityIds.has(id), `${row.n} abilities id "${id}" must resolve to a FOE_ABILITIES entry`);
+      }
+    }
+  }
+});
+
+// --- Phase 19: foe-ability registry + kits (FOE-01/FOE-05/FOE-06/CANON-02) ---
+
+test("FOE_ABILITIES: 19 descriptors, unique ids, valid kinds, valid shapes", () => {
+  assert.equal(FOE_ABILITIES.length, 19);
+  const ids = FOE_ABILITIES.map((a) => a.id);
+  assert.equal(new Set(ids).size, ids.length, "every FOE_ABILITIES id must be unique");
+  const VALID_KINDS = new Set(["bolt", "drain", "debuff", "heal", "summon"]);
+  for (const a of FOE_ABILITIES) {
+    assert.ok(VALID_KINDS.has(a.kind), `${a.id} has invalid kind ${a.kind}`);
+    if (a.kind === "bolt" || a.kind === "drain" || a.kind === "heal") {
+      assert.ok(a.dmg && typeof a.dmg === "object", `${a.id} (${a.kind}) must carry dmg`);
+      assert.ok(Number.isInteger(a.dmg.n), `${a.id}.dmg.n must be an integer`);
+      assert.ok(Number.isInteger(a.dmg.sides), `${a.id}.dmg.sides must be an integer`);
+      assert.ok(Number.isInteger(a.dmg.bonus), `${a.id}.dmg.bonus must be an integer`);
+    }
+    if (a.kind === "debuff") {
+      assert.ok(["weakened", "dazed"].includes(a.effect), `${a.id} debuff effect must be weakened or dazed`);
+    }
+    if (a.kind === "summon") {
+      assert.equal(a.effect.type, "Walking Dead");
+      assert.equal(a.effect.tier, 2);
+      assert.ok(Array.isArray(BESTIARY["Walking Dead"][1]) && BESTIARY["Walking Dead"][1].length > 0, "Walking Dead tier 2 roster must be non-empty");
+    }
+    if (Object.hasOwn(a, "every")) assert.ok(Number.isInteger(a.every) && a.every > 0, `${a.id}.every must be a positive integer`);
+    if (Object.hasOwn(a, "uses")) assert.ok(Number.isInteger(a.uses) && a.uses > 0, `${a.id}.uses must be a positive integer`);
+    assert.equal(typeof a.txt, "string");
+    assert.ok(a.txt.length > 0 && a.txt.endsWith("."), `${a.id}.txt must be a non-empty sentence ending in a period`);
+  }
+});
+
+test("BESTIARY Phase 19 / D-03: exact kits per caster row", () => {
+  const krupke = BESTIARY["Humans"][1][1];
+  const drudgeT4 = BESTIARY["Magical"][3][0];
+  const drudgeT5 = BESTIARY["Magical"][4][0];
+  const djinniT4 = BESTIARY["Demons"][3][0];
+  const djinniT5 = BESTIARY["Demons"][4][0];
+  const vampire = BESTIARY["Walking Dead"][4][0];
+  const stalka = BESTIARY["Beasts"][4][1];
+  const drake = BESTIARY["Beasts"][3][0];
+
+  assert.deepStrictEqual(krupke.abilities, ["krupkeWeaken", "krupkeFreeze"]);
+  assert.deepStrictEqual(drudgeT4.abilities, ["drudgeLightning", "drudgeFireball", "drudgeWeaken", "drudgeFreeze"]);
+  assert.deepStrictEqual(drudgeT5.abilities, ["drudgeLightning", "drudgeFireball", "drudgeWeaken", "drudgeFreeze"]);
+  assert.deepStrictEqual(djinniT4.abilities, ["djinniFireball", "djinniDaze", "djinniLightning", "djinniFreeze"]);
+  assert.deepStrictEqual(djinniT5.abilities, ["djinniFireball", "djinniDaze", "djinniLightning", "djinniFreeze"]);
+  assert.deepStrictEqual(vampire.abilities, ["vampireSummon", "vampireFireball", "vampireLightning", "vampireDrain"]);
+  assert.deepStrictEqual(stalka.abilities, ["stalkaHeal", "stalkaLightning", "stalkaFireball", "stalkaFreeze"]);
+  assert.deepStrictEqual(drake.abilities, ["drakeBreath"]);
+});
+
+test("BESTIARY Phase 19 / D-01: abilities is ABSENT (not empty) on every non-caster row — 45 of 53", () => {
+  const rows = Object.values(BESTIARY).flat(2);
+  assert.equal(rows.length, 53);
+  const withAbilities = rows.filter((row) => Object.hasOwn(row, "abilities"));
+  assert.equal(withAbilities.length, 8);
+  const withoutAbilities = rows.filter((row) => !Object.hasOwn(row, "abilities"));
+  assert.equal(withoutAbilities.length, 45);
+  for (const row of rows) {
+    if (Object.hasOwn(row, "abilities")) continue;
+    assert.equal(row.abilities, undefined, `${row.n} must not have an abilities key at all`);
+  }
+  const spectre = BESTIARY["Demons"][3][2];
+  const ghost = BESTIARY["Demons"][3][1];
+  const werebeast = BESTIARY["Magical"][2][0];
+  const dreadLock = BESTIARY["Beasts"][4][0];
+  assert.equal(spectre.n, "Spectre");
+  assert.equal(ghost.n, "Ghost");
+  assert.equal(werebeast.n, "Werebeast");
+  assert.equal(dreadLock.n, "Dread Lock");
+  for (const row of [spectre, ghost, werebeast, dreadLock]) {
+    assert.equal(Object.hasOwn(row, "abilities"), false, `${row.n} must not have an abilities key`);
+  }
+});
+
+// Any diff here means a fixture-exposed creature moved and BEST-03 requires a
+// named carve-out — which this plan forbids (no fixture-exposed row touched).
+test("BESTIARY Phase 19 / D-14: the four fixture-exposed rows are still byte-identical", () => {
+  assert.deepStrictEqual(BESTIARY["Beasts"][0], [
+    { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 wp each" } },
+    { n: "Shriek", sz: "T", i: 1, wp: 3, sp: { shriek: true, note: "a scream deafens; half damage after" } },
+    { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 wp a round for d10 rounds" } },
+  ]);
+  assert.deepStrictEqual(BESTIARY["Humans"][0], [
+    { n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } },
+  ]);
+});
+
+test("BESTIARY Phase 19 / D-03: Djinni x2 carry sp.fleesBelow 0.25 and no other row does", () => {
+  const djinniT4 = BESTIARY["Demons"][3][0];
+  const djinniT5 = BESTIARY["Demons"][4][0];
+  assert.equal(djinniT4.n, "Djinni");
+  assert.equal(djinniT5.n, "Djinni");
+  assert.equal(djinniT4.sp.fleesBelow, 0.25);
+  assert.equal(djinniT5.sp.fleesBelow, 0.25);
+  const rows = Object.values(BESTIARY).flat(2);
+  const withFleesBelow = rows.filter((row) => row.sp && Object.hasOwn(row.sp, "fleesBelow"));
+  assert.equal(withFleesBelow.length, 2);
+});
+
+test("FOE_ABILITIES Phase 19 / D-03 cap: every bolt/drain referenced at tier t has expected damage <= 0.5 * HERO_HP[t]", () => {
+  // Mirrors tools/bestiary-yardstick.mjs's HERO_HP table (composite hero
+  // expected WP per tier, 18-RESEARCH.md "Hero-side formulas").
+  const HERO_HP = [41.7, 46.2, 50.0, 54.5, 60.0];
+  const byId = Object.fromEntries(FOE_ABILITIES.map((a) => [a.id, a]));
+  let maxExpected = 0;
+  for (const [, tiers] of Object.entries(BESTIARY)) {
+    tiers.forEach((tier, t) => {
+      for (const row of tier) {
+        if (!Object.hasOwn(row, "abilities")) continue;
+        for (const id of row.abilities) {
+          const ability = byId[id];
+          if (ability.kind !== "bolt" && ability.kind !== "drain") continue;
+          const { n, sides, bonus } = ability.dmg;
+          const expected = (n * (sides + 1)) / 2 + bonus;
+          maxExpected = Math.max(maxExpected, expected);
+          assert.ok(expected <= 0.5 * HERO_HP[t], `${row.n}'s ${id} expected damage ${expected} exceeds 50% of tier-${t} hero HP (${HERO_HP[t]})`);
+          assert.notEqual(sides, 20, `${id} must not use Mangle-class d20 dice`);
+        }
+      }
+    });
+  }
+  assert.equal(maxExpected, 15, "the registry's largest expected bolt/drain damage must be exactly 15 (2d10+4)");
+});
+
+test("CANON-02 Phase 19 / D-08: Drake breath descriptor every 4; Drake sp.dmg/sp.every unchanged; Drudge never_melee; Spectre pursues and has no abilities", () => {
+  const drakeBreath = FOE_ABILITIES.find((a) => a.id === "drakeBreath");
+  assert.equal(drakeBreath.every, 4);
+  assert.deepStrictEqual(drakeBreath.dmg, { n: 2, sides: 10, bonus: 4 });
+
+  const drake = BESTIARY["Beasts"][3][0];
+  assert.equal(drake.sp.every, 4);
+  assert.deepStrictEqual(drake.sp.dmg, { n: 2, sides: 10, bonus: 4 });
+
+  const drudgeT4 = BESTIARY["Magical"][3][0];
+  const drudgeT5 = BESTIARY["Magical"][4][0];
+  assert.equal(drudgeT4.sp.never_melee, true);
+  assert.equal(drudgeT5.sp.never_melee, true);
+
+  const spectre = BESTIARY["Demons"][3][2];
+  assert.equal(spectre.n, "Spectre");
+  assert.equal(spectre.sp.pursues, true);
+  assert.equal(Object.hasOwn(spectre, "abilities"), false);
+});
+
+// D-06 "planner discretion resolved" note: a kit with a single, unbounded
+// weak bolt (Krupke's krupkeFreeze, 1d6, E[dmg]=3.5 — the dice-budget table's
+// own "—" bound) is not a spam risk and is excluded; this invariant targets
+// kits shaped with a bounded primary bolt PLUS an unbounded weak fallback
+// (Drudge/Djinni/Vampire/Stalka/Drake), where the STRONG bolt must be capped.
+test("FOE-06 Phase 19: the strongest bolt in every multi-bolt kit is bounded (every >= 2 or uses)", () => {
+  const byId = Object.fromEntries(FOE_ABILITIES.map((a) => [a.id, a]));
+  const rows = Object.values(BESTIARY).flat(2).filter((row) => Object.hasOwn(row, "abilities"));
+  for (const row of rows) {
+    const bolts = row.abilities.map((id) => byId[id]).filter((a) => a.kind === "bolt");
+    if (bolts.length < 2) continue;
+    const expectedOf = (a) => (a.dmg.n * (a.dmg.sides + 1)) / 2 + a.dmg.bonus;
+    const strongest = bolts.reduce((best, a) => (expectedOf(a) > expectedOf(best) ? a : best), bolts[0]);
+    const bounded = (Object.hasOwn(strongest, "every") && strongest.every >= 2) || Object.hasOwn(strongest, "uses");
+    assert.ok(bounded, `${row.n}'s strongest bolt ${strongest.id} must be bounded (every >= 2 or uses)`);
   }
 });

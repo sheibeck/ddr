@@ -18,6 +18,15 @@
 // see test/parity/FIXTURE-INVENTORY.md) are untouched and must stay so
 // without a named comparables.js carve-out (BEST-03/FID-05); array order
 // within each tier is load-bearing for rng.pick.
+//
+// Phase 19 (FOE-01/FOE-05/D-01/D-03) adds a top-level `abilities` id-array kit
+// to eight rows (Krupke, Drudge x2, Djinni x2, Vampire, Stalka Beast, Drake)
+// referencing content/foe-abilities.js by id — absent, never an empty array,
+// on every other row (the structural zero-draw gate the 19-03 engine resolver
+// depends on) — and adds a `fleesBelow` flee-threshold flag to the Djinni x2
+// (the <25% HP flee threshold the 19-03 foeTurn check reads). `sp.caster`
+// remains exactly what it always was: an inert flavor flag never read by any
+// engine code.
 
 export const BESTIARY = {
   "Beasts": [
@@ -39,13 +48,17 @@ export const BESTIARY = {
     ],
     [
       // DELIBERATE RULES CHANGE (Phase 18, BEST-01/D-18 outlier fix): wp 135 -> 38
-      { n: "Drake", sz: "B", i: 15, wp: 38, sp: { dmg: { n: 2, sides: 10, bonus: 4 }, every: 4, note: "breathes fire every four rounds" } },
+      // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+      // sp.every stays inert (unread by engine code); the engine reads `every`
+      // from the drakeBreath descriptor instead (CANON-02).
+      { n: "Drake", sz: "B", i: 15, wp: 38, sp: { dmg: { n: 2, sides: 10, bonus: 4 }, every: 4, note: "breathes fire every four rounds" }, abilities: ["drakeBreath"] },
       { n: "Stink Bug", sz: "S", i: 1, wp: 4, sp: { toHit: 2, phobia: true, note: "small: strike as one level lower, 2 to hit" } },
     ],
     [
       { n: "Dread Lock", sz: "XL", i: 4, wp: 40 },
       // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount — revisit Phase 21): wp 125 -> 94, added dmg 1d4+0
-      { n: "Stalka Beast", sz: "XL", i: 15, wp: 94, sp: { atk: 2, dmg: { n: 1, sides: 4, bonus: 0 }, note: "sees the invisible, hears the silenced" } },
+      // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+      { n: "Stalka Beast", sz: "XL", i: 15, wp: 94, sp: { atk: 2, dmg: { n: 1, sides: 4, bonus: 0 }, note: "sees the invisible, hears the silenced" }, abilities: ["stalkaHeal", "stalkaLightning", "stalkaFireball", "stalkaFreeze"] },
     ],
   ],
   "Demons": [
@@ -54,19 +67,22 @@ export const BESTIARY = {
     [{ n: "Rinkle", sz: "L", i: 1, wp: 16, sp: { age: true, note: "its toxin convinces you that you are old" } }],
     [
       // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount — revisit Phase 21): wp 86 -> 65, added dmg 1d4+0
-      { n: "Djinni", sz: "G", i: 16, wp: 65, sp: { caster: true, dmg: { n: 1, sides: 4, bonus: 0 }, note: "casts every spell of levels 1 to 4" } },
+      // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+      { n: "Djinni", sz: "G", i: 16, wp: 65, sp: { caster: true, dmg: { n: 1, sides: 4, bonus: 0 }, fleesBelow: 0.25, note: "casts every spell of levels 1 to 4" }, abilities: ["djinniFireball", "djinniDaze", "djinniLightning", "djinniFreeze"] },
       { n: "Ghost", sz: "H", i: 3, wp: 28, sp: { magicOnly: true, noArmor: true, phobia: true, note: "only magic touches it" } },
       { n: "Spectre", sz: "H", i: 5, wp: 32, sp: { magicOnly: true, noArmor: true, pursues: true, note: "only magic touches it, and it follows" } },
     ],
     // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount — revisit Phase 21): wp 86 -> 65, added dmg 1d4+0
-    [{ n: "Djinni", sz: "G", i: 16, wp: 65, sp: { caster: true, dmg: { n: 1, sides: 4, bonus: 0 }, note: "casts every spell of levels 1 to 4" } }],
+    // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+    [{ n: "Djinni", sz: "G", i: 16, wp: 65, sp: { caster: true, dmg: { n: 1, sides: 4, bonus: 0 }, fleesBelow: 0.25, note: "casts every spell of levels 1 to 4" }, abilities: ["djinniFireball", "djinniDaze", "djinniLightning", "djinniFreeze"] }],
   ],
   "Humans": [
     [{ n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } }],
     [
       { n: "China Wolf", sz: "H", i: 5, wp: 16, sp: { atk: 2, dmg: { n: 1, sides: 6, bonus: 0 }, note: "hunts in pairs, two attacks" } },
       // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount — revisit Phase 21): wp 23 -> 17, dmg 1d8+2 -> 1d6+2
-      { n: "Krupke", sz: "H", i: 8, wp: 17, sp: { caster: true, ar: 12, dmg: { n: 1, sides: 6, bonus: 2 }, note: "a sorcerer in mail with a long sword" } },
+      // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+      { n: "Krupke", sz: "H", i: 8, wp: 17, sp: { caster: true, ar: 12, dmg: { n: 1, sides: 6, bonus: 2 }, note: "a sorcerer in mail with a long sword" }, abilities: ["krupkeWeaken", "krupkeFreeze"] },
     ],
     [
       { n: "Frank", sz: "H", i: 10, wp: 20, sp: { steals: true, dmg: { n: 1, sides: 8, bonus: 6 }, note: "a con-man; may take everything and vanish" } },
@@ -100,9 +116,11 @@ export const BESTIARY = {
     // DELIBERATE RULES CHANGE (Phase 18, BEST-01/D-18 outlier fix): dmg bonus 1d10+5 -> 1d10+0, note updated to match
     [{ n: "Werebeast", sz: "L", i: 6, wp: 32, sp: { atk: 2, dmg: { n: 1, sides: 10, bonus: 0 }, note: "two attacks at d10" } }],
     // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount, HP-only — revisit Phase 21): wp 12 -> 9
-    [{ n: "Drudge", sz: "H", i: 5, wp: 9, sp: { caster: true, never_melee: true, note: "casts every offensive spell, 1 to 4, without limit" } }],
+    // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+    [{ n: "Drudge", sz: "H", i: 5, wp: 9, sp: { caster: true, never_melee: true, note: "casts every offensive spell, 1 to 4, without limit" }, abilities: ["drudgeLightning", "drudgeFireball", "drudgeWeaken", "drudgeFreeze"] }],
     // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount, HP-only — revisit Phase 21): wp 12 -> 9
-    [{ n: "Drudge", sz: "H", i: 5, wp: 9, sp: { caster: true, never_melee: true, note: "casts every offensive spell, 1 to 4, without limit" } }],
+    // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+    [{ n: "Drudge", sz: "H", i: 5, wp: 9, sp: { caster: true, never_melee: true, note: "casts every offensive spell, 1 to 4, without limit" }, abilities: ["drudgeLightning", "drudgeFireball", "drudgeWeaken", "drudgeFreeze"] }],
   ],
   "Walking Dead": [
     [{ n: "Philly", sz: "H", i: 3, wp: 5, sp: { twice: true, slow: true, dmg: { n: 1, sides: 4, bonus: 2 }, note: "you have to kill it twice" } }],
@@ -120,7 +138,8 @@ export const BESTIARY = {
       { n: "Undead", sz: "H", i: 3, wp: 18, sp: { possess: true, note: "its spirit may take you over when it dies" } },
     ],
     // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount — revisit Phase 21): wp 95 -> 71, added dmg 1d4+0
-    [{ n: "Vampire", sz: "H", i: 12, wp: 71, sp: { atk: 2, awe: true, caster: true, seesInvis: true, noTurn: true, dmg: { n: 1, sides: 4, bonus: 0 }, note: "awe on a d12; two attacks; master of every offensive spell" } }],
+    // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
+    [{ n: "Vampire", sz: "H", i: 12, wp: 71, sp: { atk: 2, awe: true, caster: true, seesInvis: true, noTurn: true, dmg: { n: 1, sides: 4, bonus: 0 }, note: "awe on a d12; two attacks; master of every offensive spell" }, abilities: ["vampireSummon", "vampireFireball", "vampireLightning", "vampireDrain"] }],
   ],
 };
 
