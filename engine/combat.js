@@ -56,6 +56,7 @@ import { die } from "./death.js";
 import { checkLevel } from "./character.js";
 import { takeItem, gainWilmst, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
 import { maxCharges } from "./movement.js";
+import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE } from "../content/index.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
