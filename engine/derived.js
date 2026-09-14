@@ -162,6 +162,12 @@ export function conditionsOf(state) {
   if (c.affliction && c.affliction.kind) {
     out.push({ key: "affliction", polarity: "bad", kind: c.affliction.kind });
   }
+  // Phase 19 FOE-08/D-09: a foe-inflicted timed debuff (c.foeEffect), one
+  // slot, combat-scoped. The chip renderer maps `kind` to "Weakened"/"Dazed"
+  // (D-21, 19-04) — this is a pure data surface, no new UI here.
+  if (c.foeEffect && c.foeEffect.rounds > 0) {
+    out.push({ key: "foeEffect", polarity: "bad", kind: c.foeEffect.kind, remaining: c.foeEffect.rounds });
+  }
   // Persistent Darkness (04.1) — this is ALSO the active-phobia surface DR15-B
   // asks for: show it while darkFor > 0 (actively in effect), not merely
   // because the character has the Darkness phobia.
@@ -291,6 +297,9 @@ export function toHit(state) {
   if (skill(c, "Kata")) h = Math.max(h, c.cls === "Fighter" ? 6 : 5);
   if (state.combat && state.combat.inspired) h += state.combat.inspired;
   h += eff(c, "toHit");
+  // Phase 19 D-10: dazed — you need 2 lower to hit, never below 1; the
+  // weakened kind is applied at playerStrike's damage line in combat.js, not here.
+  if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - 2);
   if (inDark(state) && !skill(c, "Night Vision") && !c.senses) h = Math.min(h, 2);
   return h;
 }
@@ -391,6 +400,38 @@ export function upkeep(c) {
 export function intelBonus(c) {
   const intel = c.intel || 0;
   return clamp(Math.floor((intel - 10) / 5), 0, 2);
+}
+
+/**
+ * resistRoll(rng, intel) — p.25's intelligent-target spell/ability
+ * resistance, the ONE shared helper for BOTH directions (FOE-07): the
+ * player's `castSpell` reads a FOE's `intel` (magic.js), and Phase 19's
+ * foe-ability resolver reads the HERO's `c.intel` (engine/foeAbilities.js).
+ * Homed here (D-07, relocated by D-17) because `engine/derived.js` is the
+ * only cycle-free leaf module — `engine/magic.js` already imports from
+ * `engine/combat.js`, and `engine/combat.js` will import
+ * `engine/foeAbilities.js`, so a helper living in either `magic.js` or
+ * `combat.js` would create an import cycle once both callers exist.
+ *
+ * Canon rule (p.25): a target with intel >= 12 gets a resistance check — a
+ * single d20 that resists the effect on a roll strictly less than its
+ * intel. Below that threshold, NOTHING is rolled at all — this early-out is
+ * the DETERMINISM GATE: callers are expected to invoke this only when a
+ * resistible spell/ability is actually firing, so the draw stays fully
+ * gated (e.g. the cast-damage parity fixture's Shriek has intel 1, so it
+ * never enters the `rolled` branch and consumes zero extra rng).
+ *
+ * Returns `{ rolled, resisted, roll }`: `rolled` is an additive field beyond
+ * p.25's `{ resisted, roll }` so a caller can tell "no roll happened"
+ * (intel < 12) apart from "rolled and failed to resist" (`roll` would
+ * otherwise be indistinguishable from `undefined` in an untyped caller).
+ * Pure w.r.t. everything but the single gated rng.d(20) draw; never mutates
+ * its arguments.
+ */
+export function resistRoll(rng, intel) {
+  if ((intel ?? 0) < 12) return { rolled: false, resisted: false, roll: undefined };
+  const roll = rng.d(20);
+  return { rolled: true, resisted: roll < intel, roll };
 }
 
 /**

@@ -173,3 +173,35 @@ test("conditionsOf: the phobia read stays PURE (no mutation) inside combat", () 
   conditionsOf(state);
   assert.equal(JSON.stringify(state), before, "conditionsOf must not mutate state or combat");
 });
+
+// --- Phase 19: foe-inflicted debuff chip (FOE-08 / D-09) ---
+
+test("conditionsOf: a live foeEffect surfaces one BAD chip with its kind and remaining rounds", () => {
+  const weakened = conditionsOf({ c: cleanChar({ foeEffect: { kind: "weakened", rounds: 3 } }) });
+  assert.deepStrictEqual(byKey(weakened, "foeEffect"), { key: "foeEffect", polarity: "bad", kind: "weakened", remaining: 3 });
+
+  const dazed = conditionsOf({ c: cleanChar({ foeEffect: { kind: "dazed", rounds: 1 } }) });
+  assert.deepStrictEqual(byKey(dazed, "foeEffect"), { key: "foeEffect", polarity: "bad", kind: "dazed", remaining: 1 });
+});
+
+test("conditionsOf: no foeEffect key, foeEffect null, and rounds 0 all produce no chip", () => {
+  const noKey = conditionsOf({ c: cleanChar() });
+  const nullEffect = conditionsOf({ c: cleanChar({ foeEffect: null }) });
+  const zeroRounds = conditionsOf({ c: cleanChar({ foeEffect: { kind: "weakened", rounds: 0 } }) });
+  for (const conds of [noKey, nullEffect, zeroRounds]) {
+    assert.ok(!keys(conds).includes("foeEffect"));
+    assert.deepStrictEqual(conds, []);
+  }
+});
+
+test("conditionsOf: affliction then foeEffect then darkness — stable BAD order, pure read", () => {
+  const c = cleanChar({
+    affliction: { kind: "Poison" },
+    foeEffect: { kind: "dazed", rounds: 2 },
+    darkFor: 3,
+  });
+  const before = structuredClone(c);
+  const conds = conditionsOf({ c });
+  assert.deepStrictEqual(keys(conds), ["affliction", "foeEffect", "darkness"]);
+  assert.deepStrictEqual(c, before, "conditionsOf must not mutate the character");
+});
