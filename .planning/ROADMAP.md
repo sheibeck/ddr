@@ -95,9 +95,17 @@ See `.planning/milestones/v1.1-ROADMAP.md`.
 **Plans**: 4 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 22-01-PLAN.md — Dev-only `force` option on `rollCharacter`/`newRun` (substitutes class/sub/race draw RESULTS, consumes the draws) + forced-chargen determinism test (HARN-01)
 - [ ] 22-02-PLAN.md — Sub-class-aware bot policy (`chooseSpell` scoring table, openers, talk-first parley, sing, summon), Samurai/Wizard refusal-loop fixes, `stuck` bucket, `startDepth`/`force` through `playRun` (HARN-02, HARN-04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 22-03-PLAN.md — `tools/lib/class-matrix.mjs` + `tools/tune-classes.mjs` (143-cell worker_threads matrix, `--json`/`--out`, `--cls/--sub/--race`, `--start-depth`) + `tune-difficulty` `--start-depth`/stuck bucket (HARN-03, HARN-04, HARN-01)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 22-04-PLAN.md — BEFORE capture LAST: pinned engine, 143x40 natural matrix + 143x10 depth-20 slice, `docs/CLASS-PASS.md` + `docs/class-pass/before*.json` (PLAY-01)
 
 **Engine gate reminder**: the harness lives entirely in `tools/` — dev-only, never shipped, never a CI gate; it must not add new engine RNG draws outside existing feature guards, and the forced-chargen seam must not perturb the RNG order Fighters/Thieves already rely on.
