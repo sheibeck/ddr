@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 19
 current_phase_name: Foe Abilities, Spellcasting & Symmetric INT Resistance
 status: executing
-stopped_at: Completed 19-02-PLAN.md
-last_updated: "2026-09-14T03:26:28.185Z"
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-09-14T03:52:32.059Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 19 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 40
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 ## Current Position
 
 Phase: 19 (Foe Abilities, Spellcasting & Symmetric INT Resistance) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 19 execution started
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 92%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T03:26:28.162Z
-Stopped at: Completed 19-02-PLAN.md
+Last session: 2026-09-14T03:52:32.035Z
+Stopped at: Completed 19-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -105,6 +105,7 @@ Resume file: None
 | Phase 18 P06 | 45min | 2 tasks | 3 files |
 | Phase 19 P01 | 25min | 2 tasks | 5 files |
 | Phase 19 P02 | 30min | 3 tasks | 9 files |
+| Phase 19 P03 | 45min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -129,3 +130,5 @@ Resume file: None
 - [Phase ?]: 19-02: resistRoll homed in engine/derived.js (not magic.js as D-07 literally says) per D-17 — the only cycle-free leaf, avoiding the combat.js/foeAbilities.js/magic.js import cycle
 - [Phase ?]: 19-02: clearFoeEffect nulls a PRESENT c.foeEffect on load but never injects the key onto a save lacking it, mirroring migrateCarry's additive-with-default discipline
 - [Phase ?]: 19-02: stripFoeAbilityState wired into all three parity comparables (movement/combat/economy), not just combatComparable, so D-14 holds structurally even where no fixture currently drives a live combat
+- [Phase ?]: 19-03: heroResist pushes heroResisted/heroResistFailed via literal type strings (not a ternary) so the plan's grep-based acceptance check finds both distinct event types
+- [Phase ?]: 19-03: test 16 (summoned foe accounting) calls killFoe directly on the joined Skeleton rather than chaining playerStrike through a full rng-heavy kill, proving the same 'ordinary foe entry' claim with a far shorter sequence

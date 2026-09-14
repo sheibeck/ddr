@@ -263,3 +263,7 @@ None - no external service configuration required.
 ---
 *Phase: 19-foe-abilities-spellcasting-symmetric-int-resistance*
 *Completed: 2026-09-13*
+
+## Self-Check: PASSED
+
+All created/modified files and all four commit hashes (`a730fb9`, `96b3fc8`, `c48cdbb`, `23dcbe3`) verified present.
