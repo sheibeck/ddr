@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 22
 current_phase_name: Class-Aware Harness & BEFORE Matrix
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-09-14T19:31:45.588Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-09-14T19:56:05.449Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 22 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 22 (Class-Aware Harness & BEFORE Matrix) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 22 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T19:31:45.560Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-09-14T19:56:05.425Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -118,6 +118,7 @@ Resume file: None
 | Phase 21 P04 | 70min | 2 tasks | 4 files |
 | Phase 21 P05 | 35min | 2 tasks | 1 files |
 | Phase 22 P01 | 25min | 2 tasks | 3 files |
+| Phase 22 P02 | 40min | 3 tasks | 2 files |
 
 ## Decisions
 
@@ -169,6 +170,8 @@ Resume file: None
 - [Phase ?]: 21-05: the 21-30/31-50 depth bands have zero bot samples in every readout across the phase's ledger, so Run 2/3's 'What to expect here' lines say so explicitly rather than inventing a caster-encounter-rate expectation
 - [Phase ?]: 21-05: adb was unreachable from this shell and this plan's own project notes forbid the executor from deploying to the device itself — recorded the debug APK's build success and path instead of attempting adb install
 - [Phase ?]: 22-01: normalizeForce infers cls from sub, guards sub-forced/race-natural-Fridgian before the reroll loop; pinned seeds 7920/23758/31677 (one per class) proven byte-identical to forced-with-own-combo
+- [Phase ?]: 22-02: chooseSpell (kill/damage/disable/heal/ward-opener tiers) replaces the thrown-only cast rule; ctx.fleeBlocked/strikeBlocked mirror the parleyBlocked Rule-1 pattern to fix the Samurai/Wizard refusal loops plus a third loop (Mirror Self opener missing a charges-left guard) found during self-verification
+- [Phase ?]: 22-02: playRun forwards opts.startDepth/opts.force to newRun (HARN-04) and returns stuck/outcome/startDepth/floorsGained/encountersSurvived; reachTable/actionsPerFloorDist exclude stuck runs, botLine is the single emitter of the ledger's Bot: line
 
 ### Blockers
 
