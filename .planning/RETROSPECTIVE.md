@@ -47,6 +47,24 @@
 
 ---
 
+## Milestone: v1.1 — Monster Balancing & Abilities
+
+**Shipped:** 2026-09-14 (override closeout) · 5 phases / 21 plans / 50 tasks · 683 → 951 tests
+
+### What Worked
+- Baseline-first phases (fixture inventory, draw-count pins, BEFORE readouts captured before any engine change) made every deliberate rule change provable and every parity break attributable within minutes.
+- Smart-discuss batch tables + research-resolved follow-ups: research corrected four CONTEXT premises (parley was never 2.5×; no hire cost; no store depth-pricing; foe count physically capped at 3) before a single plan was written.
+- Code review + verifier earned their cost twice (Vampire-summon level bug; the pursuit-strike insult gap, where the verifier caught the orchestrator's own wrong "unreachable" call — the Spectre is a Demon).
+
+### What Didn't
+- Harness targets (D-09) were set for a bot that can survive floors 1–5; it can't, so the deep-scaling dials were invisible to the proxy and the retune shipped untested by the bot — then failed the human round (depth 20 instant death). Lesson: validate the proxy's reach before setting targets on it, or tune with the dev start-at-depth harness from the start.
+- Usage: verification agents ≈ 28% of per-phase tokens and the Opus planner ≈ 20%; the user hit weekly limits mid-Phase-21 and turned verification off globally.
+
+### Cost Observations
+- Sessions: 1 long autonomous session for Phases 19–21 (Opus 1M orchestrator; Sonnet executors; Opus planner). Verification agents disabled from Phase 21 wave 1 onward.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -54,12 +72,14 @@
 | Milestone | Sessions | Phases | Key Change |
 |-----------|----------|--------|------------|
 | v1.0 | ~8 | 17 | GSD phases for systems + on-device DR rounds for UX; autonomous runs per inserted milestone; human UAT deferred to milestone end |
+| v1.1 | 1 (autonomous) | 5 | Baseline-first phases; smart discuss + research-resolved follow-ups; verification agents switched off for cost; retune deferred after human tune-again |
 
 ### Cumulative Quality
 
 | Milestone | Tests | Coverage | Zero-Dep Additions |
 |-----------|-------|----------|-------------------|
 | v1.0 | 683 | parity byte-identical (solo); every event type narrated (guarded); all copy safety-scanned | 0 runtime deps beyond Capacitor plugins |
+| v1.1 | 951 | parity 30/30 with one documented divergence (seed-303 parley); determinism suites for caster encounters; draw-count pins | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 

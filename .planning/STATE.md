@@ -2,38 +2,36 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Monster Balancing & Abilities
-current_phase: 20
-current_phase_name: Parley Balance & Language System
-status: planning
-stopped_at: Completed 21-05-PLAN.md — phase 21 automated work done, awaiting human DR round verdict (TUNE-04)
-last_updated: "2026-09-14T17:35:48.283Z"
+status: Awaiting next milestone
+stopped_at: Milestone v1.1 archived (override closeout — TUNE-04 retune deferred)
+last_updated: "2026-09-14T17:36:38.626Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 19 complete, transitioned to Phase 20
+last_activity_desc: Milestone v1.1 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 21
   completed_plans: 21
   percent: 100
+current_phase: 21
+current_phase_name: Consolidated Difficulty Retune
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
+See: .planning/PROJECT.md (updated 2026-09-14 after v1.1)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 21 — Consolidated Difficulty Retune
+**Current focus:** v1.1 shipped — next: `/gsd-new-milestone` for "Feedback, Feel & Polish" (`.planning/proposed-milestone-feedback-feel-polish.md`)
 
 ## Current Position
 
-Phase: 20 — Parley Balance & Language System
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-14 — Phase 19 complete, transitioned to Phase 20
-
-Progress: [██████████] 100%
+Phase: Milestone v1.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-14 — Milestone v1.1 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +85,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-1. Upload the signed versionCode-2 AAB to the internal-testing track (Play Console → Testing → Internal testing → Create new release), if not already done.
-2. Review/approve `.planning/ROADMAP.md` for v1.1, then `/gsd-plan-phase 17`.
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 

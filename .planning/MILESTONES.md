@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.1 Monster Balancing & Abilities (Shipped: 2026-09-14)
+
+**Phases completed:** 5 phases (17–21), 21 plans, 50 tasks · 82 commits, 2026-09-13 → 2026-09-14 · tests 683 → 951 · parity 30/30 byte-identical with ONE documented deliberate divergence (seed-303 parley scenario, scenario-scoped carve-out)
+
+**Closeout:** override closeout — Known verification overrides: 1 (TUNE-04 human DR sign-off: verdict tune-again at depth 20; retune deferred by the user to a later milestone after cleanup + class fixes). Two v1.0-era quick-task stubs re-acknowledged. See STATE.md Deferred Items.
+
+**Key accomplishments:**
+
+- **Foes fight back with magic** — a pure-data ability registry (19 descriptors) + `engine/foeAbilities.js` resolver: bolts, drains, debuffs, heals, summons, Spectre pursuit, Djinni low-HP flee, all narrated; the player's Intelligence resists via one shared `resistRoll` (symmetric with the canon foe rule).
+- **Bestiary rebalanced on a yardstick** — `engine/foeDamage.js#damageFoe` is the single damage-to-foe seam (natural armor, Sterling halving, damage-type multipliers, Philly slow); nine outlier rows retuned with a committed before/after ledger (`content/BESTIARY-REBALANCE.md`).
+- **Parley is a decision, not a spam button** — one attempt per encounter with insulted aggro on failure, Con Artist retuned (+6→+4, need ≤17), payout structurally ≤ half a kill, Humans wilmst bonus on a 6 only; Language is a fluency system (skill + Helm of Knowledge) feeding the same bonus term (`docs/PARLEY-REBALANCE.md`).
+- **Depth finally scales** — `engine/difficulty.js` owns foe count / foe power / ability cadence past floor 5 (identity ≤ 5), a smarter tuning bot with reach/ability readouts, and a hidden dev start-at-depth toggle for deep testing (`docs/DIFFICULTY-RETUNE.md`).
+- **Parity discipline held under real rule changes** — fixture inventory, RNG draw-count pins, determinism suites for caster encounters, and the frozen prototype master never touched.
+
+**Archive:** `.planning/milestones/v1.1-ROADMAP.md`, `.planning/milestones/v1.1-REQUIREMENTS.md`, `.planning/milestones/v1.1-phases/`
+
 ## v1.0 Delve, Die, Repeat — Android build & internal testing (Shipped: 2026-09-13)
 
 **Closeout type:** override_closeout (known verification overrides: 5 — see STATE.md Deferred Items)

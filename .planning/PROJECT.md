@@ -55,6 +55,19 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
+## Current State (v1.1 shipped 2026-09-14)
+
+**Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
+
+**Known deferrals carried forward:** the consolidated difficulty retune's human sign-off (TUNE-04) came back **tune-again** — depth 20 is instant death — and is deferred until after the upcoming cleanup + class-fixes milestones move player power (`docs/DIFFICULTY-RETUNE.md`). First-run tutorial (UX-06) and the Google Play production launch (STR-01..04, STR-06) remain deferred by the user.
+
+## Next Milestone Goals
+
+Proposed: **"Feedback, Feel & Polish"** (`.planning/proposed-milestone-feedback-feel-polish.md`, §A–§G captured 2026-09-13/14) — nothing happens silently (class/race/sub-class/spell/scroll/item feedback, red enemy-hit toasts, "X of N hits", varied early-miss narration), class/sub-class/racial "feels horrible" audit (Wizard attack-spell rule), inventory integrity (armor-durability exploit, bag cap, bigger bags, Cloak of Armor, G16 squares + Amulet of Stone ending combat), UI feel (gear panel Use/Drop, map recenter, default zoom, tutorial toggle, Make Camp row, handedness), combat start only on Fight!, "not ready yet" audit, combat potions from Gear, depth-appropriate store stock, Shield chip, round-based effects expiring outside combat. The retune re-attempt follows those.
+
+<details>
+<summary>Archived: v1.1 milestone section</summary>
+
 ## Current Milestone: v1.1 Monster Balancing & Abilities
 
 **Goal:** Make fights fair and interesting at depth — give foes real abilities (spellcasting and specials), rebalance the bestiary, fix parley's dominance, and run the ONE consolidated difficulty retune across party, economy, and monster power.
@@ -74,6 +87,8 @@
 **Progress:** Phase 20 complete (2026-09-14) — parley rebalanced: one attempt per encounter (`C.parleyTried`), failed attempts insult the group (+1 to every foe swing incl. the pursuit strike), Con Artist +6→+4 (~60% at even level), `need` clamped ≤17, payout = ½ the exact kill-SP formula via shared `killSpFor`, Humans wilmst bonus on d6=6 only; Language is a fluency system (`fluency(c)` 0/1/2 from the skill + Helm of Knowledge, +2/tier, tier 2 opens Magical, the Wilmsry-vs-Magical grudge line now reachable). The ONE deliberate parity divergence (seed-303 parley scenario) is a scenario-scoped carve-out with a before/after table (need 19→17, sp 13→7, gold 250→50); 200-seed readout in `docs/PARLEY-REBALANCE.md` (attempts 151→97, success 57.6%→60.8%, SP share 3.7%→2.3%); 912/912 tests.
 
 **Scope boundaries:** engine/data/narration only — no new screens. Backlogged (not this milestone): DR16-G "squares of opponents" / Amulet of Stone, foe inspect / threat hint on the encounter panel, a browsable bestiary screen. Research-first: foe casting vs. RNG order/parity, how abilities move the tuned curve, which abilities fit tone + canon.
+
+</details>
 
 ## Context
 
@@ -137,4 +152,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-14 — Phase 20 complete (v1.1); Phase 21 (consolidated retune) is next*
+*Last updated: 2026-09-14 — v1.1 shipped (override closeout); next: Feedback, Feel & Polish*
