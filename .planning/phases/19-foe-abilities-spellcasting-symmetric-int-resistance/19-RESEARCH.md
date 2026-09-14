@@ -632,7 +632,7 @@ Not applicable — this is a greenfield feature-addition phase (new abilities, n
 
 **If this table is empty:** N/A — see rows above; every assumption is either a structural necessity (A6) or an explicitly-deferred discretionary choice CONTEXT.md itself flags as open (A1, A3, A4, A5, A7, A8), or a reasonable default that should be confirmed once (A2).
 
-## Open Questions
+## Open Questions (RESOLVED — see CONTEXT.md D-17..D-21)
 
 1. **Does a foe bolt roll its own to-hit, or is INT resistance its only counterplay?**
    - What we know: D-02 only says "dice damage delivered through `applyFoeDamageToPlayer`"; the player's own `thrown` spells DO roll a separate accuracy check.
