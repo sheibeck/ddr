@@ -53,7 +53,7 @@ The ONE retune that closes PARTY-10, ECON deep tuning, and Phase 3 feel-tuning.
 - [x] **TUNE-01**: `engine/difficulty.js` is extended from floor-generation-only knobs to also own combat-scaling knobs (foe count / level / ability threat by depth) so monster power has one source of truth
 - [x] **TUNE-02**: `tools/tune-difficulty.mjs` and `tools/tune-economy.mjs` are extended to tally foe-ability events and their heuristic bot policy reacts to caster foes, so harness output is a usable proxy after abilities exist
 - [x] **TUNE-03**: The curve is retuned ONCE across party power, economy (loot/wilmst/store), monster power, and ability threat so a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+
-- [x] **TUNE-04**: Final constants are signed off by a human on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion (UAT deferred to milestone end)
+- [ ] **TUNE-04** (DEFERRED — DR verdict tune-again 2026-09-14; retune moved to a post-cleanup/class-fixes milestone): Final constants are signed off by a human on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion (UAT deferred to milestone end)
 
 ### Parley Balance (PARLEY)
 
@@ -127,7 +127,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | TUNE-01 | Phase 21 | Complete |
 | TUNE-02 | Phase 21 | Complete |
 | TUNE-03 | Phase 21 | Complete |
-| TUNE-04 | Phase 21 | Complete |
+| TUNE-04 | Phase 21 | Deferred (tune-again; retune in a later milestone) |
 | PARLEY-01 | Phase 20 | Complete |
 | PARLEY-02 | Phase 20 | Complete |
 | PARLEY-03 | Phase 20 | Complete |

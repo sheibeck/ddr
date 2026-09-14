@@ -1155,7 +1155,7 @@ round's own judgment carries the most weight here.
 
 ### Verdict
 
-**Overall verdict:** (to be filled by the tester) — pass / tune-again
+**Overall verdict:** **tune-again** (user, 2026-09-14) — "Level 20, way overtuned. It's instant death on any combat." Run 1 (depth 20) was enough to call it; runs 2/3 not played. **Retune deferred by the user** to a later milestone, after upcoming cleanup and class fixes/updates land (those change player power, so tuning now would be tuned twice). The shipping constants stay as landed in 21-04 until then; the dev start-at-depth toggle remains the test harness for the next attempt. Concrete lead for that pass: the depth-20 band (foe cap 4, power ≈1.21×, cadence ≈1.39×) is already lethal for a level-5 hero with a 6,000-wilmst purse — start by pulling `FOE_POWER_MAX`/`ABILITY_THREAT_MAX` down and/or pushing `*_SOFT_K` out, and consider capping foes-per-encounter growth below 5.
 
 **Per-run notes above complete:** (to be filled by the tester)
 **Gate at hand-off:** npm test 951/951, parity 30/30, frozen files identical to 04eb229, build stamped 1.0.1 (2), APK: android/app/build/outputs/apk/debug/app-debug.apk (build succeeded, no wireless adb device reachable from this shell — install per "Getting the build on the device" above) — 2026-09-14.

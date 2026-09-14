@@ -55,7 +55,7 @@ Progress: [██████████] 100%
 
 ### Blockers/Concerns (open)
 
-- [Balance]: The consolidated difficulty retune (Phase-3 feel-tuning to floor 30–50+, PARTY-10 party power, ECON deep tuning, foe abilities, parley economy) has NOT happened — it runs ONCE in Phase 21 using `tools/tune-difficulty.mjs` / `tools/tune-economy.mjs`, closed by a human DR-round sign-off (TUNE-04).
+- [Balance]: Phase 21 landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until after the upcoming cleanup + class fixes/updates milestones (player power will move). Next attempt: lower `FOE_POWER_MAX`/`ABILITY_THREAT_MAX`, push `*_SOFT_K` out, cap foe-count growth; use the Settings long-press dev start at 20/35/50. Ledger: `docs/DIFFICULTY-RETUNE.md`.
 - [Play launch]: target-API level, Data Safety fields, and IARC questions shift yearly — re-verify against current Play Console Help right before the production phase. Repo-side: a dependency/SDK audit proving "no data collected" is still owed.
 - [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
 - [Play testers]: internal testers are on the pre-DR18 build until the versionCode-2 AAB is uploaded.
