@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 23
-current_phase_name: Casters Can Act
-status: verifying
+current_phase: 24
+current_phase_name: "Every Sub-class and Race: One Good, One Bad"
+status: planning
 stopped_at: Completed 23-04-PLAN.md
-last_updated: "2026-09-14T22:50:18.372Z"
+last_updated: "2026-09-14T22:52:45.146Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 23 execution started
+last_activity_desc: Phase 23 complete, transitioned to Phase 24
 progress:
   total_phases: 6
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 23 (Casters Can Act) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-14 — Phase 23 execution started
+Phase: 24 — Every Sub-class and Race: One Good, One Bad
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-14 — Phase 23 complete, transitioned to Phase 24
 
 ## Ground Truth (durable facts every session needs)
 
