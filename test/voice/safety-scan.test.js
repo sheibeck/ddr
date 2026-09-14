@@ -51,6 +51,7 @@ import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 import { BESTIARY } from "../../content/bestiary.js";
+import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
 import { RACES } from "../../content/races.js";
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS } from "../../content/flavor.js";
@@ -209,6 +210,9 @@ function collectAuthoredStrings() {
   for (const [bank, arr] of Object.entries({ JEWELRY, CLOAKS, STAVES })) {
     arr.forEach((it) => { push(`${bank}.${it.n}(name)`, it.n); push(`${bank}.${it.n}.txt`, it.txt); });
   }
+  // Phase 19 (D-16 / RESEARCH Pitfall 7) — new content banks are NOT
+  // auto-discovered here; every foe-ability telegraph line must be scanned.
+  FOE_ABILITIES.forEach((a) => { push(`FOE_ABILITIES.${a.id}(id)`, a.id); push(`FOE_ABILITIES.${a.id}.txt`, a.txt); });
 
   // Authored proper-noun / result banks
   BLADE_NAMES.forEach((s, i) => push(`BLADE_NAMES[${i}]`, s));
