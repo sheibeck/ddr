@@ -36,6 +36,7 @@ import assert from "node:assert/strict";
 import { makeRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/engine.js";
 import { startCombat, playerStrike, foeTurn } from "../../engine/combat.js";
+import { BESTIARY } from "../../content/index.js";
 
 // --- countingRng: the ONLY rng object the engine sees in every test below --
 
@@ -394,3 +395,170 @@ for (const row of FULL_FIGHTS) {
     );
   });
 }
+
+// --- Section 4: Phase 19 — the ability gate (FOE-01/FOE-06, D-04/D-05/D-15) --
+//
+// PROVENANCE: every draw count and event-type array below was MEASURED
+// against the post-19-03 engine (engine/foeAbilities.js + engine/combat.js's
+// D-04 ability gate) on 2026-09-13/14, by running the exact fixtures below
+// through the real `foeTurn`/`runFullFight` and recording what came out.
+// Sections 1-3 above are re-asserted UNCHANGED by this same test run — this
+// file's own trailing `for (const row of FULL_FIGHTS)` loop still runs and
+// still passes, byte-identical to before Phase 19.
+//
+// THE RULE (restated, same as Sections 1-3): a mismatch anywhere in this
+// section means engine/foeAbilities.js's or foeTurn's ability gating CHANGED
+// — that is a defect in 19-01..03's engine code to report, never a reason to
+// "adjust" a number below to make a red run green.
+
+test("Phase 19 / FOE-01 identity: abilities: [] reproduces the six Section-1 micro pins (0/1/2/2/3/6) with identical event types", () => {
+  const IDENTITY_ROWS = [
+    {
+      label: "asleep foe draws 0",
+      foes: [fixedFoe({ asleep: 2, abilities: [] })],
+      seq: [],
+      draws: 0,
+      types: ["foeSlept"],
+    },
+    {
+      label: "one swing that misses draws 1 (to-hit only)",
+      foes: [fixedFoe({ abilities: [] })],
+      seq: [7],
+      draws: 1,
+      types: ["foeMissed"],
+    },
+    {
+      label: "one swing that hits an unarmoured hero draws 2 (to-hit + d6 damage)",
+      foes: [fixedFoe({ abilities: [] })],
+      seq: [3, 4],
+      draws: 2,
+      types: ["struckByFoe"],
+    },
+    {
+      label: "Bat/Rat shape (atk 2, flat damage) draws 2 — two to-hit rolls, ZERO damage dice",
+      foes: [
+        fixedFoe({
+          name: "Bat/Rat",
+          wp: 1,
+          maxWP: 1,
+          sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 } },
+          abilities: [],
+        }),
+      ],
+      seq: [3, 3],
+      draws: 2,
+      types: ["struckByFoe", "struckByFoe"],
+    },
+    {
+      label: "hit on an armoured hero draws 3 (to-hit + d6 + d20 soak)",
+      foes: [fixedFoe({ abilities: [] })],
+      c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" },
+      seq: [3, 4, 10],
+      draws: 3,
+      types: ["armorSoaked"],
+    },
+    {
+      label: "two Dante-shaped foes (atk 3 each), all six swings miss, draws 6",
+      foes: [
+        fixedFoe({ name: "Dante", type: "Humans", wp: 20, maxWP: 20, sp: { atk: 3 }, abilities: [] }),
+        fixedFoe({ name: "Dante", type: "Humans", wp: 20, maxWP: 20, sp: { atk: 3 }, abilities: [] }),
+      ],
+      seq: [7, 7, 7, 7, 7, 7],
+      draws: 6,
+      types: ["foeMissed", "foeMissed", "foeMissed", "foeMissed", "foeMissed", "foeMissed"],
+    },
+  ];
+  for (const row of IDENTITY_ROWS) {
+    for (const f of row.foes) {
+      assert.ok(Array.isArray(f.abilities) && f.abilities.length === 0, `${row.label}: foe missing abilities: []`);
+    }
+    const state = fixedState({ combat: fixedCombat(row.foes), c: row.c });
+    const rng = countingRng(fakeRng(row.seq));
+    const events = foeTurn(state, rng, []);
+    assert.equal(rng.draws, row.draws, row.label);
+    assert.deepEqual(events.map((e) => e.type), row.types, row.label);
+  }
+});
+
+test("Phase 19 / RESEARCH Pitfall 3: a caster with nothing ready draws only its melee to-hit (1) — never the d6; never_melee with nothing ready draws 0", () => {
+  {
+    // an exhausted `uses` cap: 1 draw (the melee to-hit), never the d6.
+    const foe = fixedFoe({ abilities: ["djinniLightning"], uses: { djinniLightning: 0 } });
+    const state = fixedState({ combat: fixedCombat([foe]) });
+    const rng = countingRng(fakeRng([7]));
+    const events = foeTurn(state, rng, []);
+    assert.equal(rng.draws, 1, "exhausted uses cap");
+    assert.deepEqual(events.map((e) => e.type), ["foeMissed"]);
+  }
+  {
+    // an every:4 ability's FIRST visit lazily initializes cd to 4, then ticks
+    // to 3 — not ready yet, so this visit also melees for exactly 1 draw.
+    const foe = fixedFoe({ abilities: ["drakeBreath"] });
+    const state = fixedState({ combat: fixedCombat([foe]) });
+    const rng = countingRng(fakeRng([7]));
+    const events = foeTurn(state, rng, []);
+    assert.equal(rng.draws, 1, "cooling every:4 ability, first visit");
+    assert.deepEqual(events.map((e) => e.type), ["foeMissed"]);
+    assert.equal(foe.cd.drakeBreath, 3, "cd lazily initialized to 4 then ticked to 3");
+  }
+  {
+    // never_melee with nothing ready: 0 draws, foeOutOfSpells, no melee fallback.
+    const foe = fixedFoe({ abilities: ["drakeBreath"], sp: { never_melee: true } });
+    const state = fixedState({ combat: fixedCombat([foe]) });
+    const rng = countingRng(fakeRng([]));
+    const events = foeTurn(state, rng, []);
+    assert.equal(rng.draws, 0);
+    assert.deepEqual(events, [{ type: "foeOutOfSpells", name: "Target" }]);
+  }
+});
+
+// D-04 gated-draw table — the exact rng cost of each ability kind, measured
+// via countingRng on the fixed unarmoured intel-1 Fighter (unless a row
+// overrides `c`). Mirrors 19-03-SUMMARY.md's "Draws per fired ability" table
+// exactly; a mismatch here is a 19-03 engine defect to report, never a pin
+// to edit.
+const GATED_DRAWS = [
+  { label: "bolt cast: d6 + d6 dmg = 2", foe: { abilities: ["krupkeFreeze"] }, seq: [1, 4], draws: 2, types: ["foeCast", "foeBolted"] },
+  { label: "bolt declined by the d6 (5): d6 + to-hit miss = 2", foe: { abilities: ["krupkeFreeze"] }, seq: [5, 7], draws: 2, types: ["foeMissed"] },
+  { label: "drain: d6 + 2d6 = 3", foe: { abilities: ["vampireDrain"], wp: 5, maxWP: 10 }, seq: [1, 3, 4], draws: 3, types: ["foeCast", "foeBolted", "foeDrained"] },
+  { label: "debuff: d6 + d4 = 2", foe: { abilities: ["krupkeWeaken"], cd: { krupkeWeaken: 1 } }, seq: [1, 2], draws: 2, types: ["foeCast", "foeDebuffed"] },
+  { label: "heal: d6 + d10 = 2", foe: { abilities: ["stalkaHeal"], wp: 5, maxWP: 10, cd: { stalkaHeal: 1 } }, seq: [1, 6], draws: 2, types: ["foeCast", "foeHealed"] },
+  { label: "summon: d6 + pick = 2", foe: { abilities: ["vampireSummon"], lvl: 5, cd: { vampireSummon: 1 } }, seq: [1], pick: (arr) => arr[0], draws: 2, types: ["foeCast", "foeSummoned"] },
+  { label: "never_melee bolt: dmg only = 1", foe: { abilities: ["drudgeFreeze"], sp: { never_melee: true } }, seq: [3], draws: 1, types: ["foeCast", "foeBolted"] },
+  { label: "intel-12 hero resists: d6 + d20 = 2", foe: { abilities: ["krupkeFreeze"] }, c: { intel: 12 }, seq: [1, 11], draws: 2, types: ["foeCast", "heroResisted"] },
+  { label: "intel-12 hero fails to resist: d6 + d20 + dmg = 3", foe: { abilities: ["krupkeFreeze"] }, c: { intel: 12 }, seq: [1, 12, 4], draws: 3, types: ["foeCast", "heroResistFailed", "foeBolted"] },
+  { label: "armoured hero bolt: d6 + dmg + soak d20 = 3", foe: { abilities: ["krupkeFreeze"] }, c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" }, seq: [1, 4, 10], draws: 3, types: ["foeCast", "armorSoaked"] },
+];
+
+for (const row of GATED_DRAWS) {
+  test(`Phase 19 / D-04 gated draws: ${row.label}`, () => {
+    const foe = fixedFoe(row.foe);
+    const state = fixedState({ combat: fixedCombat([foe]), c: row.c });
+    const rng = countingRng(fakeRng(row.seq, row.pick ? { pick: row.pick } : {}));
+    const events = foeTurn(state, rng, []);
+    assert.equal(rng.draws, row.draws, row.label);
+    assert.deepEqual(events.map((e) => e.type), row.types, row.label);
+    assert.throws(() => rng.d(1), /sequence exhausted/, `${row.label}: fakeRng should be fully consumed`);
+  });
+}
+
+test("FID-02 restated post-Phase-19: the five FULL_FIGHTS totals (12/101/111/66/32) are unchanged and no fixture-roster creature carries a kit", () => {
+  for (const row of FULL_FIGHTS) {
+    const r = runFullFight(row.seed, row.forced);
+    assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);
+    assert.deepEqual(r.foeNames, row.foeNames, `seed ${row.seed}/${row.forced} roster`);
+  }
+  const FIXTURE_NAMES = ["Bat/Rat", "Shriek", "Viper", "Dante"];
+  let kitCount = 0;
+  for (const type of Object.keys(BESTIARY)) {
+    for (const tier of BESTIARY[type]) {
+      for (const row of tier) {
+        if (Object.hasOwn(row, "abilities")) kitCount++;
+        if (FIXTURE_NAMES.includes(row.n)) {
+          assert.equal(Object.hasOwn(row, "abilities"), false, `${row.n} (${type}) unexpectedly carries an abilities kit`);
+        }
+      }
+    }
+  }
+  assert.equal(kitCount, 8, "expected exactly 8 bestiary rows to carry an abilities kit (19-01's pin)");
+});

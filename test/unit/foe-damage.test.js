@@ -286,8 +286,11 @@ function stripComments(source) {
 
 const FOE_WP_DECREMENT_RE = /\b(?:foe|t|f|o)\.wp -= /g;
 
-test("invariant: engine/combat.js, engine/magic.js and engine/items.js contain zero foe-side wp decrements on code lines", () => {
-  for (const file of ["combat.js", "magic.js", "items.js"]) {
+// Phase 19 (FOE-03/D-11) — the resolver heals by capped assignment and
+// delivers hero damage through applyFoeDamageToPlayer, so it must contain
+// zero foe-side decrements too.
+test("invariant: engine/combat.js, engine/magic.js, engine/items.js and engine/foeAbilities.js contain zero foe-side wp decrements on code lines", () => {
+  for (const file of ["combat.js", "magic.js", "items.js", "foeAbilities.js"]) {
     const src = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", file), "utf8"));
     const matches = src.match(FOE_WP_DECREMENT_RE) || [];
     assert.equal(
