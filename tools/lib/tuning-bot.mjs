@@ -654,24 +654,53 @@ export function forceParty(state) {
  * engine's seeded determinism. `onStep(events, state)`, if supplied, lets a
  * caller layer its own per-tool tallies (e.g. the Phase 20 parley readout,
  * or tune-economy's gold readout) on top of the shared D-07 tallies below.
+ *
+ * `opts.startDepth`/`opts.force` (HARN-04, 22-CONTEXT.md "Start-at-depth for
+ * the bot") pass straight through to `newRun` unchanged — a deep-start
+ * character is exactly what the dev Settings toggle already produces (SP set
+ * to the depth's threshold -> level via checkLevel, capped at 5; a
+ * depth-scaled purse); no extra kit or gear grants. `startDepth`/`force`
+ * omitted (or `startDepth: 1`, `force: undefined`) is byte-identical to the
+ * old bare `newRun(seed)` call, since `newRun` itself defaults both.
+ * `startDepth` on the RETURNED result is the SANITIZED value (`state.floor.depth`
+ * right after `newRun`, before any action runs) — not the raw requested number.
+ *
+ * Result gains four new fields beyond the pre-Phase-22 shape:
+ *   `stuck` — true iff the run hit `maxActions` without dying or winning (its
+ *     own outcome bucket, excluded from every depth-stat readout below);
+ *   `outcome` — one of "dead" | "won" | "stuck" | "unknown" (`cause` is
+ *     UNCHANGED — stuck runs keep `cause: "maxActionsHit"` for any older
+ *     consumer reading that field);
+ *   `floorsGained` — `state.floor.depth - startDepth` (a deep-start run's own
+ *     "how far did it get FROM there" reading, HARN-04);
+ *   `encountersSurvived` — `tallies.encounters` minus one iff the run's final
+ *     death happened while `state.combat` was non-null at the top of that
+ *     step (computed from the PRE-action state each step, since `die()`
+ *     nulls `state.combat` before this loop can inspect it after the fact).
  */
 export function playRun(seed, opts, onStep) {
   const policyRng = makeRng(seed ^ 0x9e3779b9);
-  let state = newRun(seed);
+  let state = newRun(seed, [], { startDepth: opts.startDepth, force: opts.force });
+  const startDepth = state.floor.depth; // the sanitized value newRun actually used
   if (opts.party) forceParty(state);
   const memberAtStart = opts.party ? state.party.length : 0;
   const ctx = makeBotContext(opts);
   const tallies = makeTallies();
   let actions = 0;
+  let diedInCombat = false;
   while (!state.dead && !state.won && actions < ctx.opts.maxActions) {
     const action = decideAction(state, policyRng, ctx);
+    const inCombat = !!state.combat;
     let events;
     ({ state, events } = applyAction(state, action));
+    if (state.dead && inCombat) diedInCombat = true;
     tallyEvents(tallies, events, state);
     observe(ctx, events);
     if (onStep) onStep(events, state);
     actions++;
   }
+  const stuck = !state.dead && !state.won && actions >= ctx.opts.maxActions;
+  const outcome = state.dead ? "dead" : state.won ? "won" : stuck ? "stuck" : "unknown";
   return {
     seed,
     state,
@@ -680,6 +709,11 @@ export function playRun(seed, opts, onStep) {
     deathDepth: state.floor.depth,
     dead: state.dead,
     won: state.won,
+    stuck,
+    outcome,
+    startDepth,
+    floorsGained: state.floor.depth - startDepth,
+    encountersSurvived: tallies.encounters - (diedInCombat ? 1 : 0),
     cause: state.deathNote || (state.won ? "walked out" : actions >= ctx.opts.maxActions ? "maxActionsHit" : "unknown"),
     actionsPerFloor: actions / Math.max(1, state.floor.depth),
     memberAtStart,
@@ -707,20 +741,37 @@ export function distribution(values) {
   };
 }
 
-/** reachTable(results) — % of runs (one decimal) with deathDepth >= each REACH_FLOORS entry. */
+/**
+ * reachTable(results) — % of runs (one decimal) with deathDepth >= each
+ * REACH_FLOORS entry. HARN-02: a `stuck` run (action cap hit, no
+ * death/win) is EXCLUDED first — its depth is a mid-run action-cap
+ * measurement, not a death depth, and folding it in would corrupt this
+ * readout (a run missing `stuck` entirely, e.g. an older synthetic-state
+ * fixture, is treated as not-stuck and counted normally).
+ */
 export function reachTable(results) {
+  const counted = results.filter((r) => !r.stuck);
   const out = {};
-  const n = results.length || 1;
+  const n = counted.length || 1;
   for (const floor of REACH_FLOORS) {
-    const count = results.filter((r) => r.deathDepth >= floor).length;
+    const count = counted.filter((r) => r.deathDepth >= floor).length;
     out[String(floor)] = Math.round((count / n) * 1000) / 10;
   }
   return out;
 }
 
-/** actionsPerFloorDist(results) — distribution of each run's actions/deathDepth (rounded). */
+/**
+ * actionsPerFloorDist(results) — distribution of each run's
+ * actions/deathDepth (rounded), excluding `stuck` runs (same rationale as
+ * reachTable — a stuck run's actions-per-floor is dominated by the action
+ * cap, not real progress).
+ */
 export function actionsPerFloorDist(results) {
-  return distribution(results.map((r) => Math.round(r.actionsPerFloor)));
+  return distribution(
+    results
+      .filter((r) => !r.stuck)
+      .map((r) => Math.round(r.actionsPerFloor)),
+  );
 }
 
 /** casterRateByBand(results) — per-band { band, encounters, casterEncounters, rate } in DEPTH_BANDS order. */
@@ -768,13 +819,22 @@ export function partySummary(results) {
   };
 }
 
-/** sharedJson(results, opts) — the D-07/D-08 JSON block both tools splice into their own --json output. */
+/**
+ * sharedJson(results, opts) — the D-07/D-08 JSON block both tools splice
+ * into their own --json output. `stuck`/`completed` (HARN-02) are top-level
+ * counts so a machine consumer never has to re-derive the stuck bucket from
+ * `results` itself; `bot.startDepth` (HARN-04) rounds out the parameter
+ * block so BEFORE/AFTER JSON snapshots record it too.
+ */
 export function sharedJson(results, opts) {
+  const stuckCount = results.filter((r) => r.stuck).length;
   const out = {
     reach: reachTable(results),
     actionsPerFloor: actionsPerFloorDist(results),
     casterRateByBand: casterRateByBand(results),
     abilities: abilitySummary(results),
+    stuck: stuckCount,
+    completed: results.length - stuckCount,
     bot: {
       exploreBudget: opts.exploreBudget,
       maxActions: opts.maxActions,
@@ -783,6 +843,7 @@ export function sharedJson(results, opts) {
       casterFleeThreshold: opts.casterFleeThreshold,
       potionThreshold: opts.potionThreshold,
       campThreshold: opts.campThreshold,
+      startDepth: opts.startDepth,
     },
   };
   if (opts.party) out.party = partySummary(results);
@@ -790,11 +851,29 @@ export function sharedJson(results, opts) {
 }
 
 /**
+ * botLine(opts) — HARN-04: the single emitter of the ledger's grep-stable
+ * "Bot:" parameter line, so tune-difficulty/tune-economy/tune-classes can
+ * never drift out of sync. The original D-08 prefix stays byte-for-byte;
+ * `seeds`/`workers` (tune-classes' worker_threads flags) are appended ONLY
+ * when present on `opts` (so tune-difficulty/tune-economy's line, which
+ * never sets `workers`, stays unchanged apart from the new trailing
+ * `startDepth`), and `startDepth` is always appended last.
+ */
+export function botLine(opts) {
+  let line = `Bot: exploreBudget=${opts.exploreBudget}  maxActions=${opts.maxActions}  party=${opts.party ? "on" : "off"}  flee=${opts.fleeThreshold}/${opts.casterFleeThreshold}(caster)  potion<${opts.potionThreshold}  camp<${opts.campThreshold}`;
+  if (opts.seeds !== undefined) line += `  seeds=${opts.seeds}`;
+  if (opts.workers !== undefined) line += `  workers=${opts.workers}`;
+  line += `  startDepth=${opts.startDepth}`;
+  return line;
+}
+
+/**
  * printSharedReadout(results, opts) — the D-07/D-08 text blocks both tools
  * print after their own tool-specific report. Wording/order is kept STABLE
  * (the ledger transcribes this verbatim), including the final "Bot:" line's
  * two-space field separators — the ledger greps that exact line to prove
- * BEFORE/AFTER used identical parameters.
+ * BEFORE/AFTER used identical parameters. HARN-02 adds a "Stuck:" line
+ * directly before it, reporting the excluded-from-depth-stats bucket.
  */
 export function printSharedReadout(results, opts) {
   const reach = reachTable(results);
@@ -829,7 +908,10 @@ export function printSharedReadout(results, opts) {
     console.log(`  member forced at run start in ${ps.memberAtStart}/${ps.runs} runs; member alive at run end: ${ps.memberAtEnd} (${alivePct}%)`);
   }
 
+  const stuckCount = results.filter((r) => r.stuck).length;
   console.log(
-    `\nBot: exploreBudget=${opts.exploreBudget}  maxActions=${opts.maxActions}  party=${opts.party ? "on" : "off"}  flee=${opts.fleeThreshold}/${opts.casterFleeThreshold}(caster)  potion<${opts.potionThreshold}  camp<${opts.campThreshold}`,
+    `\nStuck: ${stuckCount} of ${results.length} runs hit maxActions=${opts.maxActions} (own bucket; excluded from depth stats)`,
   );
+
+  console.log(`\n${botLine(opts)}`);
 }
