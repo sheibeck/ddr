@@ -183,7 +183,28 @@ Plans:
   3. The curve is retuned once across party power, economy (loot/wilmst/store), monster power, and ability threat; harness runs confirm a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+.
   4. A human signs off via an on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion — as the milestone's single deferred UAT checkpoint (last thing in the milestone).
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 21-01-PLAN.md — TUNE-02: shared bot module `tools/lib/tuning-bot.mjs` (D-05/D-06 policies, D-07 tallies, D-08 reach/actions-per-floor/caster-rate readout, `--party` D-12/D-20, D-23), both tools rewired, BEFORE readout (3 × 200 seeds, backgrounded, engine untouched) into `docs/DIFFICULTY-RETUNE.md` (wave 1)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 21-02-PLAN.md — TUNE-01: `difficultyCurve` gains foeCap/foeBonus/foeLvlBias/foePower/abilityThreat (softCapFloat, identity ≤ 5 — D-01/D-04/D-17/D-19), startCombat count/wp/dmgBonus wiring, `tickAbilityCooldowns(state, f)` + cadence via `abilityCadenceFor` (D-03/D-18); constants land at identity; combat-scaling tests; parity 30/30, zero carve-outs (wave 2)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 21-03-PLAN.md — TUNE-04 infra: `newRun(seed, exclude, { startDepth })` + `state.dev` (D-13/D-14/D-23), save coercion + the one `dev` carve-out, adapter graveyard/best-depth exclusion, Settings version line + long-press dev field + DEV chip (D-22), build-www version stamp (wave 3)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 21-04-PLAN.md — TUNE-03: the ONE retune — dials set, AFTER readouts (same bot parameters), ≤ 2 iterations (D-09/D-11), conditional depth-gated economy `lootDepth` (D-10/D-21) and party `memberUpkeepScale` (D-12/D-20), ledger change table / AFTER / comparison / not-changed (wave 4)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 21-05-PLAN.md — TUNE-04 sign-off packaging: DR checklist (3 runs at depths 20/35/50, D-15), debug-build/adb how-to, D-16 outcomes, phase gate; the phase ends `human_needed` on the DR verdict (wave 5)
 
 ## Carried-forward work (not yet phases)
 
@@ -203,5 +224,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
 | 20. Parley Balance & Language System | v1.1 | 3/3 | Complete    | 2026-09-14 |
-| 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
+| 21. Consolidated Difficulty Retune | v1.1 | 0/5 | Planned | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |

@@ -379,7 +379,7 @@ export function startCombat(state, wandering, forced, rng, events = []) {
 
 **If this table is empty:** N/A — see rows above; A1/A2/A3 in particular should be raised with the user (or at minimum stated explicitly in the plan's own assumptions) before task-level planning locks them in.
 
-## Open Questions
+## Open Questions (RESOLVED — see CONTEXT.md D-20, D-23)
 
 1. **Should `tools/tune-difficulty.mjs` and `tools/tune-economy.mjs` share one policy module, or stay independently duplicated?**
    - What we know: both already implement nearly identical `decideAction`/`nearestUnseenDir`/`canStep`/`legalDirs` functions (confirmed by direct diff-reading both files this session); they have already drifted slightly (the economy tool also handles `state.pendingFind`, the difficulty tool does not).
