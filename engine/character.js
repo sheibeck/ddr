@@ -15,6 +15,17 @@
 // test): class d6 → subclass d8 → race d8 → Fridgian/Samurai reroll → intel
 // d20 → baseWP roll → rollSkills shuffle → phobia d10 → temperament d12 →
 // motive d12 → potions d6 (MU) → cloak d8 (Thief) → grimoire (MU) → name pick.
+//
+// Phase 22 (HARN-01): rollCharacter's optional third argument, `force`, is a
+// DEV-ONLY harness seam (precedent: Phase 21 D-13/D-14's newRun `startDepth`
+// option) that substitutes the RESULTS of the first three draws — class d6,
+// sub d8, race d8 — while still CONSUMING those draws exactly as before. So
+// every later chargen draw (intel, baseWP, skills shuffle, phobia,
+// temperament, motive, potions, cloak, grimoire, name) sits at the identical
+// rng cursor whether or not a combo was forced, and a forced combo that a
+// seed also rolls naturally is byte-identical to the natural roll. `force`
+// is `null`/omitted by every real caller — the default path is completely
+// untouched.
 
 import { rollDice } from "./dice.js";
 import { leveled } from "./events.js";
@@ -39,6 +50,88 @@ import {
 /** skillTable(cls) — the special-skill pool for a class (Magic Users have none). */
 function skillTable(cls) {
   return cls === "Fighter" ? FIGHTER_SKILLS : cls === "Thief" ? THIEF_SKILLS : null;
+}
+
+/** The only keys `force` may carry (Phase 22, HARN-01). */
+const FORCE_KEYS = new Set(["cls", "sub", "race"]);
+
+/**
+ * normalizeForce(force) — dev-only `force` validator for rollCharacter
+ * (Phase 22, HARN-01). `null`, `undefined`, or an object with no own keys
+ * means "no forcing" and returns `null` (the default natural-roll path).
+ * Otherwise every present key must be an exact CANONICAL string:
+ *   - `cls` must be a key of CLASSES.
+ *   - `sub` must be a member of CLASSES[cls].subs when `cls` is also given;
+ *     when `cls` is omitted, `cls` is INFERRED as the unique class whose
+ *     `subs` array contains `sub`.
+ *   - `race` must be a key of RACES.
+ * Case-insensitive matching is NOT done here — canonical keys only (a
+ * friendly CLI resolver lives in the harness, Plan 22-03). Any unknown key,
+ * non-string value, or unresolvable/mismatched name throws an Error naming
+ * the offending value and the valid keys. A resolved `race === "Fridgian"`
+ * together with a resolved `sub === "Samurai"` throws — that combo is
+ * canon-impossible ("Fridges don't wear any armor") and the caller must omit
+ * that cell rather than have it silently rerolled.
+ *
+ * @param {{cls?: string, sub?: string, race?: string}|null|undefined} force
+ * @returns {{cls?: string, sub?: string, race?: string}|null}
+ */
+function normalizeForce(force) {
+  if (force == null) return null;
+  const keys = Object.keys(force);
+  if (keys.length === 0) return null;
+  for (const k of keys) {
+    if (!FORCE_KEYS.has(k)) {
+      throw new Error(`rollCharacter force: unknown key "${k}" — valid keys are cls, sub, race`);
+    }
+  }
+  let { cls, sub, race } = force;
+
+  if (cls !== undefined) {
+    if (typeof cls !== "string" || !Object.prototype.hasOwnProperty.call(CLASSES, cls)) {
+      throw new Error(
+        `rollCharacter force.cls: ${JSON.stringify(cls)} is not a valid class — valid classes are ${Object.keys(CLASSES).join(", ")}`,
+      );
+    }
+  }
+
+  if (sub !== undefined) {
+    if (typeof sub !== "string") {
+      throw new Error(`rollCharacter force.sub: must be a string — got ${typeof sub}`);
+    }
+    if (cls !== undefined) {
+      if (!CLASSES[cls].subs.includes(sub)) {
+        throw new Error(
+          `rollCharacter force.sub: ${JSON.stringify(sub)} is not a valid subclass of ${cls} — valid subs are ${CLASSES[cls].subs.join(", ")}`,
+        );
+      }
+    } else {
+      const owner = Object.keys(CLASSES).find((c) => CLASSES[c].subs.includes(sub));
+      if (!owner) {
+        const allSubs = Object.values(CLASSES).flatMap((c) => c.subs);
+        throw new Error(
+          `rollCharacter force.sub: ${JSON.stringify(sub)} is not a valid subclass of any class — valid subs are ${allSubs.join(", ")}`,
+        );
+      }
+      cls = owner;
+    }
+  }
+
+  if (race !== undefined) {
+    if (typeof race !== "string" || !Object.prototype.hasOwnProperty.call(RACES, race)) {
+      throw new Error(
+        `rollCharacter force.race: ${JSON.stringify(race)} is not a valid race — valid races are ${Object.keys(RACES).join(", ")}`,
+      );
+    }
+  }
+
+  if (race === "Fridgian" && sub === "Samurai") {
+    throw new Error(
+      `rollCharacter force: cannot force a Fridgian Samurai — "Fridges don't wear any armor." Omit this cell from the harness.`,
+    );
+  }
+
+  return { cls, sub, race };
 }
 
 /**
@@ -142,11 +235,11 @@ export const nameFor = (rng, r, exclude = []) => {
 };
 
 /**
- * rollCharacter(rng) — the 100%-dice-rolled adventurer. Consumes the injected
- * rng in the exact order of the prototype (see the module header) and returns
- * the plain, serializable character object. No player choice, no logging.
- * Ports mazeworld.html rollCharacter() (lines 1042-1111) sans its `if(log)`
- * narration branch.
+ * rollCharacter(rng, exclude, force) — the 100%-dice-rolled adventurer.
+ * Consumes the injected rng in the exact order of the prototype (see the
+ * module header) and returns the plain, serializable character object. No
+ * player choice, no logging. Ports mazeworld.html rollCharacter() (lines
+ * 1042-1111) sans its `if(log)` narration branch.
  *
  * `exclude` (audit-batch E12, part 4) is an optional, additive recent-names
  * list threaded in from the NON-engine persistence layer (the adapter reads it
@@ -154,14 +247,38 @@ export const nameFor = (rng, r, exclude = []) => {
  * very last chargen step and only affects which name is chosen — never the rng
  * draw count or order — so `rollCharacter(rng)` with no/empty `exclude` stays
  * byte-identical to the prototype and the parity suite needs no carve-out.
+ *
+ * `force` (Phase 22, HARN-01; precedent: Phase 21 D-13/D-14's `startDepth`)
+ * is a DEV-ONLY harness seam, `null`/omitted by every real caller. It
+ * substitutes the RESULTS of the class d6 / sub d8 / race d8 draws while
+ * still CONSUMING those draws, so every subsequent draw sits at the
+ * identical rng cursor and `rollCharacter(rng, exclude, X)` is
+ * byte-identical to `rollCharacter(rng, exclude)` for any seed that
+ * naturally rolls `X`. Invalid keys/values and a forced Fridgian Samurai
+ * throw (see normalizeForce above); the canon Fridgian/Samurai reroll loop
+ * is never bypassed for a NATURAL sub — it is only ever skipped because a
+ * forced sub replaces the loop's condition entirely.
+ *
+ * @param {*} rng - the seeded rng surface (engine/rng.js#makeRng)
+ * @param {string[]} [exclude] - recent character names to avoid reusing
+ * @param {{cls?: string, sub?: string, race?: string}|null} [force] - dev-only draw-result override (HARN-01)
  */
-export function rollCharacter(rng, exclude = []) {
+export function rollCharacter(rng, exclude = [], force = null) {
+  const f = normalizeForce(force);
   const cd = rng.d(6);
-  const cls = cd <= 2 ? "Magic User" : cd <= 4 ? "Fighter" : "Thief";
+  const cls = f?.cls ?? (cd <= 2 ? "Magic User" : cd <= 4 ? "Fighter" : "Thief");
   let sd = rng.d(8);
-  let sub = CLASSES[cls].subs[sd - 1];
+  let sub = f?.sub ?? CLASSES[cls].subs[sd - 1];
   const rd = rng.d(8);
-  const race = RACE_D8[rd - 1];
+  let race = f?.race ?? RACE_D8[rd - 1];
+  // A forced Samurai matched against a NATURALLY-rolled Fridgian race (the
+  // both-forced combo is already rejected by normalizeForce above) — throw
+  // BEFORE the reroll loop so a forced sub is never silently overwritten.
+  if (f?.sub === "Samurai" && race === "Fridgian") {
+    throw new Error(
+      `rollCharacter force: a forced Samurai cannot be honored against a Fridgian race — "Fridges don't wear any armor." Force a non-Fridgian race as well.`,
+    );
+  }
   // "You cannot be a Fridgian Samurai because Fridges don't wear any armor."
   while (race === "Fridgian" && sub === "Samurai") { sd = rng.d(8); sub = CLASSES[cls].subs[sd - 1]; }
   const R = RACES[race];

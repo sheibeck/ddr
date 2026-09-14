@@ -95,14 +95,22 @@ export function addPartyMember(state, member) {
  * draws push are discarded — the caller (the hidden Settings toggle) prints
  * its own banner instead of replaying them.
  *
+ * `options.force` (Phase 22, HARN-01) is a second DEV-ONLY affordance,
+ * `null`/omitted by every real caller, forwarded straight through to
+ * rollCharacter as its third argument. It substitutes the RESULTS of the
+ * class/sub/race draws only (adds NO serialized field, consumes the exact
+ * same draws) and is REJECTED (throws) for unknown/mismatched keys or a
+ * forced Fridgian Samurai — see engine/character.js#normalizeForce. `force`
+ * never flips `dev` on its own; `dev` stays exactly `startAt > 1`.
+ *
  * @param {number} seed - an integer seed
  * @param {string[]} [exclude] - recent character names to avoid reusing
- * @param {{ startDepth?: number }} [options] - startDepth: dev-only start-at-depth (default 1)
+ * @param {{ startDepth?: number, force?: {cls?: string, sub?: string, race?: string}|null }} [options] - startDepth: dev-only start-at-depth (default 1); force: dev-only chargen draw-result override (HARN-01, default null)
  * @returns {object} a serializable GameState
  */
-export function newRun(seed, exclude = [], { startDepth = 1 } = {}) {
+export function newRun(seed, exclude = [], { startDepth = 1, force = null } = {}) {
   const rng = makeRng(seed);
-  const c = rollCharacter(rng, exclude);
+  const c = rollCharacter(rng, exclude, force);
   // Phase 21 (TUNE-04, D-13): Math.min(DEV_START_DEPTH_MAX, difficultyCurve(startDepth).depth)
   // sanitizes ANY input — difficultyCurve's own safeDepth() already floors/
   // clamps 0, negative, NaN, non-integer and ±Infinity down to 1 (the exact
