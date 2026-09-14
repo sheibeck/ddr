@@ -50,12 +50,15 @@ BEFORE: `bonus` = 6 (Con Artist) + 4 (Wilmsry) + 1 (level) − 1 (top) = 10 →
 wilmst check `5 >= 4` fires, amount `2 × 100 × 1 = 200`; final `c.sp = 13`,
 `c.gold = 250`.
 
-The AFTER column is **computed** from the locked D-01/D-02/D-03/D-07/D-08
-formulas against the SAME draws above (need 17, sp 7, gold unchanged at 50,
-only 3 draws since the wilmst check no longer fires) and will be
-re-measured against the landed code and pinned in
-`test/parity/FIXTURE-INVENTORY.md`'s "Phase 20 parley divergence" section by
-20-03 — see that heading there for the final numbers.
+The AFTER column was **re-measured against the landed code** (not
+computed) by `test/unit/parley.test.js`'s D-21 test, which calls
+`newRun(303)` → `startCombat` → `parley` live: draws `d20=2, d6=5, d6=5`
+(three draws, the old fourth draw gone), `parleyRolled{roll:2,need:17,fluency:0}`,
+`spGained{amount:7}`, no `goldGained`, `combatEnded`; final `c.sp = 7`,
+`c.gold = 50`, `c.combat = null` — confirming the RESEARCH.md computation
+exactly. See `test/parity/FIXTURE-INVENTORY.md`'s "Phase 20 parley
+divergence" section for the full before/after table and the carve-out
+rationale.
 
 ## tune-difficulty BEFORE (pre-Phase-20 engine)
 
@@ -117,11 +120,98 @@ exist until 20-02 lands.
 
 ## tune-difficulty AFTER (Phase 20 engine)
 
-_Pending — filled by 20-03 after the engine rules land._
+Measured with `node tools/tune-difficulty.mjs --seeds=200` against the
+landed Phase 20 engine (`engine/combat.js`/`engine/derived.js` carrying
+20-02's `canParley`/`parley`/`killSpFor`/`fluency` rewrite; confirmed via
+`grep -c 'killSpFor' engine/combat.js` >= 2 and `git diff --quiet 04eb229 --
+engine/combat.js` exiting non-zero), captured 2026-09-14.
+
+```
+tune-difficulty: 200 seeded auto-play run(s)
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=1  p90=2  max=4
+
+Action-count distribution:
+  min=12  p50=185  p90=4094  max=20000
+
+Death-cause breakdown:
+  starved in the dark  40 (20.0%)
+  fell off a wall      28 (14.0%)
+  undone by a trap     27 (13.5%)
+  cut down by a Dante  24 (12.0%)
+  maxActionsHit        16 (8.0%)
+  cut down by a Gremlin 13 (6.5%)
+  came up short on a leap 11 (5.5%)
+  spent by the dungeon itself 10 (5.0%)
+  cut down by a Pogo   6 (3.0%)
+  cut down by a Philly 6 (3.0%)
+  cut down by a Drekk  6 (3.0%)
+  cut down by a Shadow 2 (1.0%)
+  cut down by a Viper  2 (1.0%)
+  cut down by a Bat/Rat 1 (0.5%)
+  cut down by a Trachea 1 (0.5%)
+  cut down by a Werebeast 1 (0.5%)
+  cut down by a China Wolf 1 (0.5%)
+  cut down by a Poltergeist 1 (0.5%)
+  cut down by a Shriek 1 (0.5%)
+  cut down by a Hair   1 (0.5%)
+  cut down by a Drake  1 (0.5%)
+  cut down by a Hobgoblin 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=97  successes=59 (60.8%)  failures=38  refused=0  exhausted=0
+  runs with >=1 attempt: 52 of 200
+  SP from parley: 543 of 24061 total SP (2.3%)
+
+Outcome: 184 dead, 0 won (legacy floor-5 Gate), 16 hit MAX_ACTIONS
+```
+
+**Headline AFTER numbers:** across the same 200 seeds, the same 52 runs (26%)
+attempted at least one parley, but total attempts dropped from 151 to 97
+(the one-attempt-per-encounter cap, D-05, removes the unlimited-retry
+free-scouting loop the BEFORE readout exercised), the success rate held at
+60.8% (vs. 57.6% before — within noise, consistent with the documented
+~60-65% Con Artist target, D-07), and parley's total SP contribution fell
+from 1010/27008 (3.7%) to 543/24061 (2.3%) of all SP earned.
 
 ## Comparison
 
-_Pending — 20-03._
+Parley attempts per run dropped from 151 to 97 (a 36% reduction) across the
+identical 52 runs that ever attempted one — exactly the effect predicted by
+D-05's one-attempt cap: the bot's old free-retry-after-failure loop (an
+unlimited number of parley attempts against the same encounter) is gone,
+replaced by "try once, then fight or flee." `parleyExhausted` and `refused`
+both read 0 in both readouts, which is expected — the bot's own policy never
+re-sends a `parley` action after its first result, so the dispatcher-level
+exhausted rejection and the Wilmsry-vs-Magical refusal are never exercised
+by this particular bot (they are exercised by `test/unit/parley.test.js`
+instead). The success rate is essentially unchanged (57.6% → 60.8%,
+well within seed-to-seed noise for 52 samples) — consistent with the D-07
+target of "the best talker in the game stays roughly as good," since the
+Con Artist bonus dropped from +6 to +4 but the Humans wilmst odds also
+tightened independently (a different lever, D-03), and the two changes were
+never tuned against each other. SP-from-parley share fell from 3.7% to
+2.3% of total SP — the direct, expected consequence of D-01/D-02's
+structural half-of-kill payout replacing the old flat `× 2.5` multiplier,
+compounded by fewer total attempts. Death-depth and death-cause
+distributions are within noise of the BEFORE readout (same min=1/p50=1/p90=2/max=4
+depth spread; the death-cause list reorders slightly at the single-digit
+tail, which 18-06 already established is expected sampling noise at n=200).
+
+This comparison is **informational only, not a gate**: the bot's own policy
+parleys only below 30% HP (`tools/tune-difficulty.mjs`'s `decideAction`,
+unchanged this phase), so it systematically under-samples the deliberate,
+early, opportunistic parley use a human player makes — these numbers say
+"the mechanism behaves as designed," not "the numbers are final." No dial
+or economy-number changed in this phase (the `git diff --quiet 04eb229 --
+engine/difficulty.js content` check at the end of this plan confirms it);
+Phase 21 owns the one consolidated retune, and can fold any of this
+readout's signal (fewer, lower-value parleys; a slightly lower overall SP
+income) into that pass alongside every other power-changing milestone. See
+"Deferred to Phase 21" below for the specific items this phase deliberately
+left untouched.
 
 ## Deferred to Phase 21
 

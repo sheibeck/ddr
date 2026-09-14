@@ -155,3 +155,82 @@ behave identically to an absent field — zero extra draws either way. Only a
 foe carrying a non-empty ability kit may draw more, and any such extra draw
 must be carved out per FID-04 (a narrow, named gate on that kit's presence,
 matching every other zero-draw gate in this engine).
+
+## Phase 20 parley divergence (PARLEY-01..04, LANG-01/02 — D-13 / D-21)
+
+`action-script.combat.json`'s `parley` scenario (seed 303) is the ONLY
+fixture that ever calls `parley()`. Phase 20 deliberately rewrites parley's
+payout formula and odds (PARLEY-01/02/03, LANG-01/02), so this one
+scenario's `c.sp` / `c.gold` — plus the two new combat-scoped flags
+`combat.parleyTried` / `combat.parleyInsulted` — are carved out by
+`stripParleyDivergence` (`test/parity/harness/comparables.js`, landed in
+20-01) at BOTH of its independent replay sites: `test/parity/combat-parity.test.js`
+(its own local `comparable()`) and `test/parity/full-suite.test.js` (the
+shared `combatComparable`), scoped strictly to `scenario.name === "parley"`.
+Everything else in that scenario — the `canParley` gate, the two Dante foes
+rolled, `combatEnded`, and the draw positions themselves — is still compared
+byte-for-byte against the frozen prototype.
+
+**Headline numbers (re-measured against the landed engine, not computed):**
+need 19 → 17, sp 13 → 7, gold 250 → 50, draws 4 → 3 — the first three dice
+unchanged.
+
+### Before / after (measured)
+
+| Field | BEFORE (pre-Phase-20 engine, `[VERIFIED: engine run]`) | AFTER (Phase 20 engine, `[VERIFIED: test/unit/parley.test.js test 14, passing]`) |
+|---|---|---|
+| Character | Wilmsry Con Artist L1, fluency 0 | same |
+| Live foes at parley | 1 (Dante, Humans lvl 1) | same |
+| Draw 1 (d20) | 2 | 2 |
+| Draw 2 (d6, per-foe SP) | 5 | 5 |
+| Draw 3 (d6, wilmst check) | 5 | 5 |
+| Draw 4 (d6, wilmst amount) | 2 | not drawn |
+| Bonus | 6 (Con Artist) + 4 (Wilmsry) + 1 (level) − 1 (top) = 10 | 4 (Con Artist, D-07) + 4 (Wilmsry) + 1 (level) − 1 (top) + 0 (fluency 0) = 8 |
+| Need | 9 + 10 = **19** | min(9 + 8, 17) = **17** (D-08 clamp lands exactly at the ceiling, a no-op here) |
+| Outcome | roll 2 ≤ 19 → success | roll 2 ≤ 17 → success |
+| SP formula | `round((5×1) × 2.5)` | `round(killSpFor(c, Dante, 5) × 0.5)` = `round(round(5×1×5) × 0.5)` = `round(25 × 0.5)` — see note below |
+| `sp` | 13 | 7 |
+| `gold` | 250 (starting 50 + wilmst 200) | 50 (no wilmst payout; same starting 50) |
+| Draws total | 4 | 3 |
+| Events | `parleyRolled{roll:2,need:19}`, `spGained{amount:13}`, `goldGained{amount:200}`, `combatEnded` | `parleyRolled{roll:2,need:17,fluency:0}`, `spGained{amount:7}`, `combatEnded` |
+
+Note on the SP formula: `killSpFor(c, Dante, 5) = round(5 × 1 × 5 × 1 × 1 × 1) = 25`
+is the same 25 the AFTER-formula's raw/mul arithmetic previously produced
+inline as `5 × 1 × 5 = 25`; `round(25 × 0.5) = round(12.5) = 13` is the
+`killFoe`-equivalent a kill would pay for the same die, and parley's own
+payout is `round(13 × 0.5) = 7` (D-01/D-02's structural half-of-half:
+0.5 of the combat-equivalent, which itself already halves nothing extra —
+the executor re-measured all of this live against `newRun(303)` via
+`test/unit/parley.test.js`'s D-21 test, which is the number of record, not
+this table's arithmetic restatement).
+
+### Why the draw count changed
+
+The wilmst check (draw #3, value 5) fired under the OLD `>= 4` rule but no
+longer fires under the NEW `=== 6` rule (Pitfall 5 / D-03) — so the
+conditional 4th draw (the wilmst amount die) is simply never reached. The
+first three draws keep their exact positions and values; only whether a
+4th draw happens, and what every value MEANS, changed (D-04: draw shape is
+unchanged in shape, only in whether the optional draw fires).
+
+### Flags never visible here
+
+Because this scenario is a *successful* parley, `state.combat` is nulled by
+`endCombat()` before any post-action comparison ever runs — both before and
+after this phase's changes (the prototype also nulls `S.combat` on
+success). The `combat.parleyTried` / `combat.parleyInsulted` strip inside
+`stripParleyDivergence` is therefore defensive/forward-looking here — it
+protects any FUTURE fixture that captures state mid-fight or after a failed
+attempt, not something this particular fixture's diff would ever surface
+without it.
+
+### Byte-identical elsewhere
+
+The other three combat scenarios (win, lose, flee), every magic /
+movement / chargen / economy / encounters fixture, `test/parity/prototype-master.js.txt`,
+and the FID-02 draw-count pins (`test/unit/foe-turn-draw-count.test.js` — its
+"combat/parley, seed 303, 6 attacks, 66 draws" row measures repeated
+`playerStrike()` calls against the 2 Dantes and never invokes `parley()` at
+all) are unchanged, with no carve-out. The roster table above (the generated
+block) is unchanged because no bestiary creature moved — only the numbers
+inside this one scenario's behavior changed.
