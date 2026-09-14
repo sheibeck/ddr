@@ -57,15 +57,15 @@ The ONE retune that closes PARTY-10, ECON deep tuning, and Phase 3 feel-tuning.
 
 ### Parley Balance (PARLEY)
 
-- [ ] **PARLEY-01**: Successful parley pays XP ≤ the combat-equivalent value of the group (no longer 2.5× the kill value); the Humans wilmst bonus amount is left to the economy numbers but its odds are tuned here
-- [ ] **PARLEY-02**: Parley has a real cost of failure — a per-encounter attempt cap and/or an aggro penalty on a failed attempt — so it cannot be spammed until success
-- [ ] **PARLEY-03**: Con Artist's baseline odds are retuned to a stated post-rebalance win-rate target that keeps the subclass identity viable ("play the hand you're dealt"), not gutted
-- [ ] **PARLEY-04**: The dead `parleyRefused` Wilmsry-vs-Magical branch is removed or made reachable, with tests covering every `canParley` gate
+- [x] **PARLEY-01**: Successful parley pays XP ≤ the combat-equivalent value of the group (no longer 2.5× the kill value); the Humans wilmst bonus amount is left to the economy numbers but its odds are tuned here
+- [x] **PARLEY-02**: Parley has a real cost of failure — a per-encounter attempt cap and/or an aggro penalty on a failed attempt — so it cannot be spammed until success
+- [x] **PARLEY-03**: Con Artist's baseline odds are retuned to a stated post-rebalance win-rate target that keeps the subclass identity viable ("play the hand you're dealt"), not gutted
+- [x] **PARLEY-04**: The dead `parleyRefused` Wilmsry-vs-Magical branch is removed or made reachable, with tests covering every `canParley` gate
 
 ### Language System (LANG)
 
-- [ ] **LANG-01**: Language is a graduated fluency system: the Language skill and the Helm of Knowledge (`tongue`) contribute a fluency bonus to the SAME parley `bonus` term (Option B), tuned in the same pass as PARLEY-01..03 so it isn't balanced twice
-- [ ] **LANG-02**: Fluency widens which encounter types a character can parley (per the rulebook's language/tongue rules) with an availability test per race/class/skill/Helm combination
+- [x] **LANG-01**: Language is a graduated fluency system: the Language skill and the Helm of Knowledge (`tongue`) contribute a fluency bonus to the SAME parley `bonus` term (Option B), tuned in the same pass as PARLEY-01..03 so it isn't balanced twice
+- [x] **LANG-02**: Fluency widens which encounter types a character can parley (per the rulebook's language/tongue rules) with an availability test per race/class/skill/Helm combination
 
 ## v2 Requirements
 
@@ -128,12 +128,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 | TUNE-02 | Phase 21 | Pending |
 | TUNE-03 | Phase 21 | Pending |
 | TUNE-04 | Phase 21 | Pending |
-| PARLEY-01 | Phase 20 | Pending |
-| PARLEY-02 | Phase 20 | Pending |
-| PARLEY-03 | Phase 20 | Pending |
-| PARLEY-04 | Phase 20 | Pending |
-| LANG-01 | Phase 20 | Pending |
-| LANG-02 | Phase 20 | Pending |
+| PARLEY-01 | Phase 20 | Complete |
+| PARLEY-02 | Phase 20 | Complete |
+| PARLEY-03 | Phase 20 | Complete |
+| PARLEY-04 | Phase 20 | Complete |
+| LANG-01 | Phase 20 | Complete |
+| LANG-02 | Phase 20 | Complete |
 
 **Coverage:**
 

@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 20
 current_phase_name: Parley Balance & Language System
 status: executing
-stopped_at: Completed 20-01-PLAN.md
-last_updated: "2026-09-14T12:27:08.806Z"
+stopped_at: Completed 20-02-PLAN.md
+last_updated: "2026-09-14T12:41:01.351Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 20 execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 60
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 ## Current Position
 
 Phase: 20 (Parley Balance & Language System) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 20 execution started
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +87,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T12:27:08.783Z
-Stopped at: Completed 20-01-PLAN.md
+Last session: 2026-09-14T12:41:01.326Z
+Stopped at: Completed 20-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -114,6 +114,7 @@ Resume file: None
 | Phase 19 P03 | 45min | 3 tasks | 5 files |
 | Phase 19 P04 | 55min | 3 tasks | 5 files |
 | Phase 20 P01 | 35min | 3 tasks | 6 files |
+| Phase 20 P02 | 55min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -145,3 +146,7 @@ Resume file: None
 - [Phase ?]: 20-01: stripParleyDivergence placed directly after stripRationsField in comparables.js, mirroring its exact deliberate-permanent-divergence JSDoc shape
 - [Phase ?]: 20-01: full-suite.test.js's carve-out comment avoids the literal function name a third time so grep -c 'stripParleyDivergence' stays exactly 2 (import + wrapper) per the plan's acceptance criteria
 - [Phase ?]: 20-01: tools/tune-difficulty.mjs's parley tally is a new counter block + separate parleySummary aggregator beside causeBreakdown; decideAction's policy, MAX_ACTIONS, and the seed stride are byte-for-byte unchanged
+- [Phase ?]: 20-02: killSpFor/fluency homed in engine/derived.js directly after resistRoll (cycle-free leaf precedent)
+- [Phase ?]: 20-02: parley's wilmsryVsMagical refusal fires BEFORE C.parleyTried=true so a refusal never consumes the one attempt (D-12)
+- [Phase ?]: 20-02: C.parleyTried/C.parleyInsulted are lazily written, never initialised in startCombat -- startCombat/pursuitStrike md5 pins unchanged (D-16/D-19)
+- [Phase ?]: 20-02: mazeworld.html's classic canParley()/fluency() mirror landed in the same commit as the engine rewrite (D-17); the dead classic parley() re-verified hash-identical
