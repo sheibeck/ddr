@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 21
 current_phase_name: Consolidated Difficulty Retune
 status: executing
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-09-14T15:49:32.646Z"
+stopped_at: Completed 21-03-PLAN.md
+last_updated: "2026-09-14T16:07:15.211Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 21 execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 80
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 ## Current Position
 
 Phase: 21 (Consolidated Difficulty Retune) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 21 execution started
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 90%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +87,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T15:49:32.621Z
-Stopped at: Completed 21-02-PLAN.md
+Last session: 2026-09-14T16:07:15.182Z
+Stopped at: Completed 21-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -118,6 +118,7 @@ Resume file: None
 | Phase 20 P03 | 50min | 3 tasks | 4 files |
 | Phase 21 P01 | 50min | 3 tasks | 5 files |
 | Phase 21 P02 | 45min | 2 tasks | 4 files |
+| Phase 21 P03 | 15min | 3 tasks | 13 files |
 
 ## Decisions
 
@@ -162,3 +163,5 @@ Resume file: None
 - [Phase ?]: 21-02: every new constant (FOE_CAP_MAX/FOE_POWER_MAX/ABILITY_THREAT_MAX) is identity (=== its BASE) in this plan — difficultyCurve(depth) returns foeCap:3/foePower:1/abilityThreat:1 at EVERY depth until 21-04 retunes
 - [Phase ?]: 21-02: foeDmgBonusFor scales the lvl*lvl base term of a foe melee swing (not sp.dmg dice), keeping damageFoe the one foe-wp decrement seam and adding zero new draws
 - [Phase ?]: 21-02: the summon literal in foeAbilities.js#resolveFoeAbility is deliberately not routed through foeWpFor — reinforcements are already tier-limited weak foes; scaling them is a 21-04-only option
+- [Phase ?]: 21-03: startAt sanitisation reuses difficultyCurve's own safeDepth clamp rather than a bespoke clamp — 0/-3/NaN/1.5/Infinity/'abc'/undefined all sanitize to 1 for free
+- [Phase ?]: 21-03: three per-domain parity test files (movement/combat/magic-parity.test.js) carry their own local comparable() duplicates predating the shared harness extraction — these needed the same dev carve-out or parity dropped to 21/30 (Rule 1 fix)
