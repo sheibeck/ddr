@@ -25,10 +25,10 @@
     "auto_advance": false,
     "node_repair": true,
     "node_repair_budget": 2,
-    "ui_phase": true,
-    "ui_safety_gate": true,
-    "ai_integration_phase": true,
-    "api_coverage_gate": true,
+    "ui_phase": false,
+    "ui_safety_gate": false,
+    "ai_integration_phase": false,
+    "api_coverage_gate": false,
     "human_verify_mode": "end-of-phase",
     "context_guard_mode": "warn",
     "text_mode": false,
@@ -47,7 +47,8 @@
     "security_enforcement": false,
     "security_asvs_level": 1,
     "security_block_on": "high",
-    "_auto_chain_active": false
+    "_auto_chain_active": false,
+    "ui_review": false
   },
   "ship": {
     "pr_body_sections": [
@@ -84,7 +85,7 @@
   "agent_skills": {},
   "claude_md_path": "./.claude/CLAUDE.md",
   "plan_review": {
-    "source_grounding": true,
+    "source_grounding": false,
     "source_grounding_authority": "grep"
   },
   "mode": "yolo",
