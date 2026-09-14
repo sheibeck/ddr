@@ -127,13 +127,13 @@ Plans:
   4. Every ability is bounded (per-day caps / every-N-turn cooldowns per canon) and telegraphed in the Oracle the turn it fires; every new event type has a sarcastic, family-friendly `EVENT_NARRATION` entry passing the voice safety scan (coverage guard stays green).
   5. Spectre pursues a fleeing player, Drudge never melees, and Drake's breath is gated by an every-N cooldown; every new serialized field (per-foe ability state, `c.foeEffect`, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load, including a v1.0 internal-tester save loading without data loss.
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 19-01-PLAN.md — FOE-01/05/06, CANON-02 (data half): `content/foe-abilities.js` registry (19 pure-data descriptors), `abilities` kits on the 8 caster rows + Djinni `sp.fleesBelow`, content pins, safety-scan corpus line
-- [ ] 19-02-PLAN.md — FOE-07/08, FID-04 (leaf half): `resistRoll` in `engine/derived.js` + draw-neutral `castSpell` refactor, `conditionsOf` foeEffect chip + `toHit` dazed penalty, `saveState` foeEffect clear, named strippers in all three comparables
+- [x] 19-02-PLAN.md — FOE-07/08, FID-04 (leaf half): `resistRoll` in `engine/derived.js` + draw-neutral `castSpell` refactor, `conditionsOf` foeEffect chip + `toHit` dazed penalty, `saveState` foeEffect clear, named strippers in all three comparables
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -188,7 +188,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
-| 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 1/4 | In Progress|  |
+| 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 2/4 | In Progress|  |
 | 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |

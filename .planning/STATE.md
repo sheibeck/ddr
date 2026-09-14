@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 19
 current_phase_name: Foe Abilities, Spellcasting & Symmetric INT Resistance
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-09-14T03:13:00.240Z"
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-09-14T03:26:28.185Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 19 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 40
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 ## Current Position
 
 Phase: 19 (Foe Abilities, Spellcasting & Symmetric INT Resistance) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 19 execution started
 
-Progress: [████████░░] 77%
+Progress: [█████████░] 85%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T03:13:00.217Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-09-14T03:26:28.162Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -104,6 +104,7 @@ Resume file: None
 | Phase 18 P05 | 20min | 2 tasks | 2 files |
 | Phase 18 P06 | 45min | 2 tasks | 3 files |
 | Phase 19 P01 | 25min | 2 tasks | 5 files |
+| Phase 19 P02 | 30min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -125,3 +126,6 @@ Resume file: None
 - [Phase ?]: 18-06: tune-difficulty AFTER readout is within noise of BEFORE (informational only, D-16) — bot never reaches the tier-4/5 creatures this phase retuned
 - [Phase ?]: 19-01: lvl on each FOE_ABILITIES descriptor assigned per the canon SPELLS level it borrows (Freeze 1, Weaken/Daze 1-2, Fireball 3, Lightning 4, drain/heal/summon 5, breath 4) — informational only, never read by engine code
 - [Phase ?]: 19-01: FOE-06's bounded-strongest-bolt test scoped to kits with 2+ bolt descriptors — Krupke's single bolt (krupkeFreeze, 1d6) is the plan's own locked dice-budget-table unbounded case, not a spam risk
+- [Phase ?]: 19-02: resistRoll homed in engine/derived.js (not magic.js as D-07 literally says) per D-17 — the only cycle-free leaf, avoiding the combat.js/foeAbilities.js/magic.js import cycle
+- [Phase ?]: 19-02: clearFoeEffect nulls a PRESENT c.foeEffect on load but never injects the key onto a save lacking it, mirroring migrateCarry's additive-with-default discipline
+- [Phase ?]: 19-02: stripFoeAbilityState wired into all three parity comparables (movement/combat/economy), not just combatComparable, so D-14 holds structurally even where no fixture currently drives a live combat

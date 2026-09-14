@@ -15,7 +15,7 @@ The non-negotiable engine gate, made explicit for this milestone because every f
 - [x] **FID-01**: A written fixture inventory documents exactly which `content/bestiary.js` creatures each parity fixture seed rolls (combat/magic/full-suite), BEFORE any bestiary number or foe-turn behavior changes land
 - [x] **FID-02**: A foe without the new `abilities` field draws exactly zero additional RNG in any fight — verified by a draw-count regression test on non-ability fixtures — so solo/empty-party play stays byte-identical to the frozen prototype master
 - [x] **FID-03**: The foe-turn targeting and player-damage pipeline (ward/armor/damage) is extracted into shared helpers (`pickFoeTarget`, `applyFoeDamageToPlayer`) with behavior-preserving tests, so foe abilities reuse the melee path instead of duplicating it
-- [ ] **FID-04**: Every new serialized field (per-foe ability state, foe-inflicted player effects, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load; a v1.0 internal-tester save loads without data loss
+- [x] **FID-04**: Every new serialized field (per-foe ability state, foe-inflicted player effects, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load; a v1.0 internal-tester save loads without data loss
 - [x] **FID-05**: Deliberate divergences from the prototype (bestiary numbers, parley formula) regenerate only their specific fixtures, each with a before/after table and rationale — never a blanket fixture regeneration
 
 ### Foe Abilities & Spellcasting (FOE)
@@ -26,8 +26,8 @@ The non-negotiable engine gate, made explicit for this milestone because every f
 - [ ] **FOE-04**: Foes can summon reinforcements (summon kind) that join the fight on the following round, appended to the foe list via a designed mutation pattern (mirrors the `C.ally` next-round precedent) so mid-loop targeting, kill accounting, and XP split stay correct
 - [x] **FOE-05**: The five canon casters are wired rulebook-first — Drudge (pure caster, never melees, lvl 1–4), Krupke (lvl 1–2 hybrid), Djinni (lvl 1–4, capped casts per day, flees when losing), Vampire (lvl 1–5 capstone), Stalka Beast (unlimited casting + its elemental/weapon kit) — with abilities drawn from the existing offensive `SPELLS` subset; invented abilities only where a depth band has no canon caster
 - [x] **FOE-06**: Per-foe ability usage is bounded (per-day caps / every-N-turn cooldowns per canon) so a caster cannot spam its strongest effect every round, and every ability is telegraphed in the Oracle the turn it fires (no untelegraphed one-shots)
-- [ ] **FOE-07**: The player's Intelligence resists incoming foe spells with the SAME canon rule foes already use (`intel ≥ 12`, `d20 < intel` negates), implemented as one shared resistance helper reused in both directions — and the resistance roll fires only when a foe actually casts
-- [ ] **FOE-08**: Foe-inflicted debuffs appear in the existing condition tracker via `conditionsOf` (no new UI), and every new event type has a sarcastic, family-friendly `EVENT_NARRATION` entry that passes the voice safety scan (coverage guard stays green)
+- [x] **FOE-07**: The player's Intelligence resists incoming foe spells with the SAME canon rule foes already use (`intel ≥ 12`, `d20 < intel` negates), implemented as one shared resistance helper reused in both directions — and the resistance roll fires only when a foe actually casts
+- [x] **FOE-08**: Foe-inflicted debuffs appear in the existing condition tracker via `conditionsOf` (no new UI), and every new event type has a sarcastic, family-friendly `EVENT_NARRATION` entry that passes the voice safety scan (coverage guard stays green)
 - [ ] **FOE-09**: A live party member can be targeted by foe abilities through the shared `pickFoeTarget` path, with each ability's plan stating explicitly how it applies to the member; new determinism tests force Magical / Demons / Walking Dead encounters (the types parity fixtures never exercise)
 
 ### Canon Fixes (CANON)
@@ -105,7 +105,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FID-01 | Phase 17 | Complete |
 | FID-02 | Phase 17 | Complete |
 | FID-03 | Phase 17 | Complete |
-| FID-04 | Phase 19 | Pending |
+| FID-04 | Phase 19 | Complete |
 | FID-05 | Phase 18 | Complete |
 | FOE-01 | Phase 19 | Complete |
 | FOE-02 | Phase 19 | Pending |
@@ -113,8 +113,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FOE-04 | Phase 19 | Pending |
 | FOE-05 | Phase 19 | Complete |
 | FOE-06 | Phase 19 | Complete |
-| FOE-07 | Phase 19 | Pending |
-| FOE-08 | Phase 19 | Pending |
+| FOE-07 | Phase 19 | Complete |
+| FOE-08 | Phase 19 | Complete |
 | FOE-09 | Phase 19 | Pending |
 | CANON-01 | Phase 18 | Complete |
 | CANON-02 | Phase 19 | Complete |
