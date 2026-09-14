@@ -2,14 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-status: planning
-last_updated: "2026-09-14T19:30:00.000Z"
+current_phase: 22
+current_phase_name: Class-Aware Harness & BEFORE Matrix
+status: executing
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-09-14T19:31:45.588Z"
 last_activity: 2026-09-14
+last_activity_desc: Phase 22 execution started
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.2 Class Pass & Mass Playtest — roadmap created (Phases 22–27); next up: discuss/plan Phase 22 (Class-Aware Harness & BEFORE Matrix)
+**Current focus:** Phase 22 — Class-Aware Harness & BEFORE Matrix
 
 ## Current Position
 
-Phase: 22 (Class-Aware Harness & BEFORE Matrix) — not started
-Plan: —
-Status: Roadmap created, ready for `/gsd-discuss-phase 22` or `/gsd-plan-phase 22`
-Last activity: 2026-09-14 — v1.2 ROADMAP.md written (Phases 22–27), REQUIREMENTS.md traceability filled (28/28 mapped)
+Phase: 22 (Class-Aware Harness & BEFORE Matrix) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-09-14 — Phase 22 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -78,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T19:30:00.000Z
-Stopped at: v1.2 ROADMAP.md written (Phases 22–27, 100% requirement coverage), REQUIREMENTS.md traceability filled — awaiting discuss/plan on Phase 22
+Last session: 2026-09-14T19:31:45.560Z
+Stopped at: Completed 22-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -113,6 +117,7 @@ Resume file: None
 | Phase 21 P03 | 15min | 3 tasks | 13 files |
 | Phase 21 P04 | 70min | 2 tasks | 4 files |
 | Phase 21 P05 | 35min | 2 tasks | 1 files |
+| Phase 22 P01 | 25min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -163,6 +168,7 @@ Resume file: None
 - [Phase ?]: 21-05: curve values for the DR checklist's three run tables (depth 20/35/50) were computed by running difficultyCurve() directly against the frozen engine via node -e, not hand-derived
 - [Phase ?]: 21-05: the 21-30/31-50 depth bands have zero bot samples in every readout across the phase's ledger, so Run 2/3's 'What to expect here' lines say so explicitly rather than inventing a caster-encounter-rate expectation
 - [Phase ?]: 21-05: adb was unreachable from this shell and this plan's own project notes forbid the executor from deploying to the device itself — recorded the debug APK's build success and path instead of attempting adb install
+- [Phase ?]: 22-01: normalizeForce infers cls from sub, guards sub-forced/race-natural-Fridgian before the reroll loop; pinned seeds 7920/23758/31677 (one per class) proven byte-identical to forced-with-own-combo
 
 ### Blockers
 
