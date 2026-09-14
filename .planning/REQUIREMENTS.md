@@ -14,17 +14,17 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 The non-negotiable engine gate (see `ROADMAP.md` preamble), made explicit for the parts this milestone touches: chargen and combat RNG.
 
-- [ ] **FID-06**: Any change to character generation (guaranteed attack spell, sub-class kit tweaks) is a DELIBERATE divergence: the affected chargen-parity fixtures regenerate narrowly, each with a before/after note and rationale; every fixture NOT touched by the change stays byte-identical; the rng-consumption order for Fighters and Thieves is unchanged
+- [x] **FID-06**: Any change to character generation (guaranteed attack spell, sub-class kit tweaks) is a DELIBERATE divergence: the affected chargen-parity fixtures regenerate narrowly, each with a before/after note and rationale; every fixture NOT touched by the change stays byte-identical; the rng-consumption order for Fighters and Thieves is unchanged
 - [ ] **FID-07**: Every new serialized field (e.g., a Bard "marked" flag, a Guard stance counter) is carved out in all three `*Comparable()` functions and round-trips through save/load; every new event type gets an `EVENT_NARRATION` entry; the voice safety scan stays green
 
 ### Identity Pass (IDENT)
 
 One solid good, one solid bad, for every sub-class and race — verified in code, not in prose.
 
-- [ ] **IDENT-01**: A Wizard refuses to strike only while an attack spell is castable RIGHT NOW (charges remain AND a known, level-legal, school-legal attack spell is in the grimoire); a Wizard with no castable attack spell fights with the staff, and the refusal names its reason when it fires
+- [x] **IDENT-01**: A Wizard refuses to strike only while an attack spell is castable RIGHT NOW (charges remain AND a known, level-legal, school-legal attack spell is in the grimoire); a Wizard with no castable attack spell fights with the staff, and the refusal names its reason when it fires
 - [ ] **IDENT-02**: Every freshly rolled Magic User has at least one level-1, day-one-castable ATTACK spell in the grimoire (attack = a spell that damages, disables, or kills a foe: thrown/status/stun/weaken kinds), drawn from the sub-class's own legal schools — so no Magic User is ever dealt a grimoire that cannot hurt anything
-- [ ] **IDENT-03**: A Summoner can cast Summon from level 1 (Summon treated as a level-1 spell for the Summoner sub-class, or an equivalent Summoner-only grant), keeping the doubled strength, the out-of-combat pending ally, and the one-in-eight backfire as the bad
-- [ ] **IDENT-04**: An Illusionist has a level-1 illusion-school way to WIN a fight, not only stall it (an illusion attack/pressure spell or Phantom Host usable at level 1), while keeping the d20 strike die until level 3 as the bad
+- [x] **IDENT-03**: A Summoner can cast Summon from level 1 (Summon treated as a level-1 spell for the Summoner sub-class, or an equivalent Summoner-only grant), keeping the doubled strength, the out-of-combat pending ally, and the one-in-eight backfire as the bad
+- [x] **IDENT-04**: An Illusionist has a level-1 illusion-school way to WIN a fight, not only stall it (an illusion attack/pressure spell or Phantom Host usable at level 1), while keeping the d20 strike die until level 3 as the bad
 - [ ] **IDENT-05**: Each sub-class currently missing a bad has one implemented, taken from its own flavor text where the text promises one — Knight (big things come straight for you), Ninja (never speaks: cannot parley), Bard (stupid creatures come for you first), Master of Arms (attacks without question) — and designed fresh where it does not (Court Mage, Pickpocket, Cutthroat); each bad is felt in play, not cosmetic
 - [ ] **IDENT-06**: Guard gains a real good (from "the profession is standing there" — e.g., a defensive stance: never surprised, or damage soaked) and Court Mage's good is made felt (the boredom kill rate or an always-available talk-down), so no sub-class is penalties-only
 - [ ] **IDENT-07**: Flavor-only restrictions are either enforced in the engine or reworded out of the flavor — Woodsman (no mail/plate/shield), Pilfer (no magic items that don't heal), Cloaker (a bad that is actually a bad) — so every promise on the sheet is true
@@ -105,12 +105,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FID-06 | Phase 23 | Pending |
+| FID-06 | Phase 23 | Complete |
 | FID-07 | Phase 24 | Pending |
-| IDENT-01 | Phase 23 | Pending |
+| IDENT-01 | Phase 23 | Complete |
 | IDENT-02 | Phase 23 | Pending |
-| IDENT-03 | Phase 23 | Pending |
-| IDENT-04 | Phase 23 | Pending |
+| IDENT-03 | Phase 23 | Complete |
+| IDENT-04 | Phase 23 | Complete |
 | IDENT-05 | Phase 24 | Pending |
 | IDENT-06 | Phase 24 | Pending |
 | IDENT-07 | Phase 24 | Pending |

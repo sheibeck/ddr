@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 23
-current_phase_name: Wizard/Summoner/Illusionist + Guaranteed Attack Spell
+current_phase_name: Casters Can Act
 status: executing
-stopped_at: Completed 22-04-PLAN.md
-last_updated: "2026-09-14T21:49:37.588Z"
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-09-14T21:58:59.031Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 22 complete, transitioned to Phase 23
+last_activity_desc: Phase 23 execution started
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 8
+  completed_plans: 5
   percent: 17
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 22 — Class-Aware Harness & BEFORE Matrix
+**Current focus:** Phase 23 — Casters Can Act
 
 ## Current Position
 
-Phase: 23 — Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)
-Plan: Not started
+Phase: 23 (Casters Can Act) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-09-14 — Phase 22 complete, transitioned to Phase 23
+Last activity: 2026-09-14 — Phase 23 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:42:07.156Z
-Stopped at: Completed 22-04-PLAN.md
+Last session: 2026-09-14T21:58:45.395Z
+Stopped at: Completed 23-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -121,6 +121,7 @@ Resume file: None
 | Phase 22 P02 | 40min | 3 tasks | 2 files |
 | Phase 22 P03 | 20min | 3 tasks | 4 files |
 | Phase 22 P04 | 21min | 3 tasks | 3 files |
+| Phase 23 P01 | 25min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -180,6 +181,9 @@ Resume file: None
 - [Phase ?]: 22-03: matrix work distributed BY CELL through a main-thread worker_threads queue -- confirmed byte-identical cells/rollups under --workers 1 vs 4 (--race Troll --seeds 2); JSON carries no timing field (elapsed goes to stderr only)
 - [Phase ?]: 22-03: tune-difficulty's death-cause pct denominator kept as results.length (unchanged wording); only the underlying cause/depth source switched to completed (non-stuck) runs
 - [Phase ?]: 22-04: BEFORE matrix captured 0 stuck across 5720+1430 runs (Plan 22-02's fixes hold at full scale); pin 5565b22 proven byte-identical to 1b4daed except the dev-only force option; IDENT-01 finding (Wizard/caster cannot melee with charges but no attack spell) documented, deferred to Phase 23
+- [Phase ?]: 23-01: spellLevelFor/ATTACK_SPELL_KINDS/isAttackSpell/castableAttackSpells homed in engine/derived.js (cycle-free leaf) so Plan 02/character.js and Plan 03/combat.js can both import them without an import cycle
+- [Phase ?]: 23-01: castableAttackSpells deliberately ignores remaining charges; the charge check stays at Plan 03's Wizard-refusal call site
+- [Phase ?]: 23-01: rng-pin test (Task 1) committed strictly before any engine/content edit; all 20 rollCharacter/newRun cursor pins and 8 per-sub rollGrimoire draw-count pins independently re-measured against the untouched engine and matched the plan's table exactly
 
 ### Blockers
 
