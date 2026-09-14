@@ -12,14 +12,14 @@
 // 03-RESEARCH.md's architecture diagram: difficultyCurve sits BEFORE genFloor
 // in the call chain but consumes none of its rng stream).
 //
-// The constants below are the 03-RESEARCH.md starting-point defaults, not a
-// locked design decision — they are exactly the knobs the deferred human
-// playtest (03-CONTEXT.md, criterion 3: "needs human play to floor 30-50+")
-// will retune.
-//
-// No consumer wires this module yet — that is Plan 02's job (rewiring
-// genFloor to consume difficultyCurve() in place of its inline formulas).
-// This plan (03-01) lands only the module, its guards, and property tests.
+// Since Phase 21 (TUNE-01, D-01), this module also owns the COMBAT-scaling
+// knobs consumed by engine/combat.js#startCombat (foe count / level bias /
+// hit points / flat melee bonus) and engine/foeAbilities.js (caster
+// cadence). The identity band for every combat field is depth <= 5 (D-19 —
+// proven by test/determinism/foe-abilities.test.js's tier 2/4/5 seeds and
+// every depth-1 parity fixture); the dial VALUES are set by the Phase 21
+// retune and recorded in docs/DIFFICULTY-RETUNE.md. This module still
+// consumes no rng and reads no DOM.
 
 /** Every BREATHER_EVERY-th floor after floor 1 is a lighter "breather" floor. */
 export const BREATHER_EVERY = 5;
@@ -37,6 +37,34 @@ export const DARK_BLOB_CAP = 6;
 export const DARK_RADIUS_BASE = 3;
 /** DARK_RADIUS_CAP — never darkens more than this BFS radius per blob. */
 export const DARK_RADIUS_CAP = 9;
+
+// --- Phase 21 (TUNE-01, D-01/D-19): combat-scaling knobs -------------------
+// Identity band: depth <= 5 (see difficultyCurve's `over` computation below).
+// Every MAX below equals its BASE in this plan (21-02) — the retune (21-04)
+// is the only thing allowed to move a MAX; this plan's own diff is provably
+// inert at EVERY depth until that happens.
+
+/** COMBAT_SCALE_FROM_DEPTH — the first floor on which the combat knobs may
+ * leave identity (D-19); `over = max(0, depth - (COMBAT_SCALE_FROM_DEPTH - 1))`
+ * is the soft cap's argument, so depths 1..5 always compute `over === 0`. */
+export const COMBAT_SCALE_FROM_DEPTH = 6;
+/** FOE_CAP_BASE — the canon `c.level <= 2 ? 2 : 3` ceiling's level->=3 value. */
+export const FOE_CAP_BASE = 3;
+/** FOE_CAP_MAX — 21-02 IDENTITY (equals FOE_CAP_BASE); 21-04 sets the D-02 target (~5). */
+export const FOE_CAP_MAX = 3;
+export const FOE_CAP_SOFT_K = 20;
+/** FOE_POWER_BASE — the multiplier applied to a foe's starting wp/maxWP. */
+export const FOE_POWER_BASE = 1.0;
+/** FOE_POWER_MAX — 21-02 IDENTITY (equals FOE_POWER_BASE); 21-04 sets the D-02 target (~1.6). */
+export const FOE_POWER_MAX = 1.0;
+export const FOE_POWER_SOFT_K = 25;
+/** ABILITY_THREAT_BASE — the cadence scalar for caster kits (every/uses). */
+export const ABILITY_THREAT_BASE = 1.0;
+/** ABILITY_THREAT_MAX — 21-02 IDENTITY (equals ABILITY_THREAT_BASE); 21-04 sets the D-03 target (~2). */
+export const ABILITY_THREAT_MAX = 1.0;
+export const ABILITY_THREAT_SOFT_K = 20;
+/** FOE_LVL_BIAS — reserved (D-01): 0 unless the retune needs it. */
+export const FOE_LVL_BIAS = 0;
 
 /**
  * safeDepth(depth) — clamps an arbitrary input to a positive integer BEFORE
@@ -65,6 +93,21 @@ function safeDepth(depth) {
  */
 function softCap(base, cap, depth, k) {
   return Math.round(base + (cap - base) * (1 - Math.exp(-depth / k)));
+}
+
+/**
+ * softCapFloat(base, cap, over, k) — the NON-rounding sibling of softCap, for
+ * fractional multipliers (RESEARCH A4): softCap's Math.round would flatten a
+ * smooth 1.0->1.6 curve into whole steps, which is wrong for foePower/
+ * abilityThreat. Exactness argument: at `over === 0`, `Math.exp(-0) === 1`
+ * so the product is exactly 0 and the result is exactly `base` — no
+ * floating-point drift — which is what makes the depth<=5 identity band a
+ * STRUCTURAL guarantee rather than a rounding accident. With `cap === base`
+ * (this plan's own constants) the result is `base` at every depth. Not
+ * exported — internal helper only.
+ */
+function softCapFloat(base, cap, over, k) {
+  return base + (cap - base) * (1 - Math.exp(-over / k));
 }
 
 /**
@@ -104,15 +147,84 @@ export function isBreather(depth) {
  *   - darkRadius: per-blob BFS reveal radius — hard-capped at DARK_RADIUS_CAP
  *     (not forced to zero on a breather floor: darkBlobs already being zero
  *     means no blob is ever seeded to apply this radius to)
+ *   - foeCap: soft-capped max foes per encounter (Phase 21, D-01/D-19) —
+ *     identity (FOE_CAP_BASE) through depth <= 5; combat knobs do NOT dip on
+ *     breather floors (a breather is lighter in density/darkness, not in the
+ *     power of what you meet)
+ *   - foeBonus: `foeCap - FOE_CAP_BASE` (D-17) — added AFTER the canon count
+ *     roll, before the foeCap clamp, so startCombat's d4/d4 draw shape never
+ *     changes; 0 at depth <= 5
+ *   - foeLvlBias: reserved (D-01) — always FOE_LVL_BIAS (0) unless a future
+ *     retune needs it
+ *   - foePower: soft-capped multiplier (Phase 21, D-02) applied to a foe's
+ *     starting wp/maxWP and its flat melee damage bonus — identity (1.0)
+ *     through depth <= 5
+ *   - abilityThreat: soft-capped cadence scalar (Phase 21, D-03) for caster
+ *     kits (every/uses) — identity (1.0) through depth <= 5
  */
 export function difficultyCurve(depth) {
   const d = safeDepth(depth);
   const breather = isBreatherOfSafeDepth(d); // IN-02: d is already sanitized — skip isBreather's redundant re-clamp
+  const over = Math.max(0, d - (COMBAT_SCALE_FROM_DEPTH - 1));
+  const foeCap = Math.round(softCapFloat(FOE_CAP_BASE, FOE_CAP_MAX, over, FOE_CAP_SOFT_K));
   return {
     depth: d,
     breather,
     dots: breather ? ENCOUNTER_DOT_BASE : softCap(ENCOUNTER_DOT_BASE, ENCOUNTER_DOT_CAP, d, ENCOUNTER_DOT_SOFT_K),
     darkBlobs: breather ? 0 : Math.min(Math.max(0, d - 1), DARK_BLOB_CAP),
     darkRadius: Math.min(DARK_RADIUS_BASE + d, DARK_RADIUS_CAP),
+    foeCap,
+    foeBonus: foeCap - FOE_CAP_BASE,
+    foeLvlBias: FOE_LVL_BIAS,
+    foePower: softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K),
+    abilityThreat: softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K),
+  };
+}
+
+// --- Phase 21 (TUNE-01): pure application helpers --------------------------
+// No rng; the curve object is the only input besides plain numbers/
+// descriptors — this keeps every consumer's arithmetic testable with a
+// synthetic curve, independent of the real difficultyCurve() constants.
+
+/**
+ * foeCountFor(canonCount, curve) — D-17: applies the curve's zero-new-draw
+ * `foeBonus` AFTER the canon count roll (already capped by the level-1
+ * `cap = 2` rule), clamped at `foeCap`. `canonCount` is the prototype's own
+ * `Math.min(cap, d4-ternary)` result — the d4/d4 draw shape never changes.
+ */
+export function foeCountFor(canonCount, curve) {
+  return Math.min(curve.foeCap, canonCount + curve.foeBonus);
+}
+
+/**
+ * foeWpFor(baseWp, curve) — D-02: copy-time wp/maxWP scaling. The strict
+ * `=== 1` fast path makes identity structural even for a non-integer wp
+ * (never rounds away from `baseWp` when `foePower` is exactly 1).
+ */
+export function foeWpFor(baseWp, curve) {
+  return curve.foePower === 1 ? baseWp : Math.round(baseWp * curve.foePower);
+}
+
+/**
+ * foeDmgBonusFor(lvl, curve) — Claude's Discretion (resolved): the flat
+ * bonus scales the `lvl * lvl` base term of every foe melee swing, never the
+ * `sp.dmg` dice — so no draw shape changes and damageFoe stays the one
+ * foe-wp decrement seam. 0 (never a `dmgBonus` key) when `foePower === 1`.
+ */
+export function foeDmgBonusFor(lvl, curve) {
+  return curve.foePower === 1 ? 0 : Math.round((curve.foePower - 1) * lvl * lvl);
+}
+
+/**
+ * abilityCadenceFor(a, curve) — D-03/D-18: scales a kit descriptor's
+ * `every`/`uses` by the curve's `abilityThreat`. The kits in
+ * content/foe-abilities.js are unchanged data; at `abilityThreat === 1` both
+ * fields are the descriptor's own numbers (`undefined` stays `undefined`).
+ */
+export function abilityCadenceFor(a, curve) {
+  const t = curve.abilityThreat;
+  return {
+    every: a.every === undefined ? undefined : Math.max(1, Math.round(a.every / t)),
+    uses: a.uses === undefined ? undefined : Math.max(1, Math.round(a.uses * t)),
   };
 }
