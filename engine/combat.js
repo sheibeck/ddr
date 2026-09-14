@@ -597,23 +597,42 @@ export function flee(state, rng, events = []) {
 /**
  * canParley(state) — can the current encounter be talked down? Ports
  * mazeworld.html canParley() (lines 2701-2714).
+ *
+ * DELIBERATE RULES CHANGE (Phase 20, LANG-01/LANG-02/PARLEY-02, D-05/D-09/
+ * D-10/D-11): the Phase 15 boolean "Language skill OR Helm of Knowledge"
+ * gate line is REPLACED by a graduated `fluency(c)` read
+ * (engine/derived.js#fluency) that feeds BOTH this availability gate and
+ * parley()'s bonus term — a Language/Helm carrier is never balanced twice.
+ * fluency 1 opens the existing TALKATIVE set; fluency 2 (full fluency, both
+ * skill AND item) additionally opens Magical for EVERY race/sub, including
+ * Con Artist. Walking Dead is refused unconditionally, for everyone,
+ * regardless of fluency (canon, unchanged). `C.parleyTried` (D-05) hides the
+ * button once the encounter's one attempt is spent. Pure read (no rng):
+ * canParley is a boolean gate; parley() only draws rng once talking is
+ * attempted, so this never shifts the rng stream for a non-carrier.
+ *
+ * IMPORTANT — mazeworld.html's classic (non-module) `canParley()` duplicate
+ * (D-17, ~line 4200) and test/unit/parley-button-mirror.test.js (20-03) MUST
+ * mirror this exact decision order line for line: change one, change both.
  */
 export function canParley(state) {
   if (!state.combat) return false;
   const c = state.c;
-  const t = state.combat.type;
-  if (t === "Walking Dead" || t === "Magical") return false;
+  const C = state.combat;
+  const t = C.type;
+  if (C.parleyTried) return false; // D-05: the encounter's one attempt is spent
+  if (t === "Walking Dead") return false; // canon, unconditional, for everyone
+  const flu = fluency(c);
+  if (t === "Magical" && flu < 2) return false; // D-11: Magical opens ONLY at full fluency
   if (c.sub === "Con Artist") return true;
   if (c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
   if (c.sub === "Bard" && t === "Humans") return true;
-  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, DR15-A / ECON-08): the Helm
-  // of Knowledge (content/treasure-tables.js, eff:{tongue:1}, "perfect fluency
-  // in one language") was inert — `tongue` was READ NOWHERE. Carrying it now
-  // grants the Language capability (parley the TALKATIVE encounter types),
-  // OR-ed with the trained Language skill here. Pure read (no rng): canParley
-  // is a boolean gate; parley() only draws rng once talking is attempted, so
-  // this never shifts the rng stream for a non-carrier (eff tongue === 0).
-  if ((skill(c, "Language") || eff(c, "tongue") > 0) && TALKATIVE.includes(t)) return true;
+  // D-10/D-11: replaces the old boolean skill-or-Helm gate line — fluency 1
+  // opens TALKATIVE, fluency 2 additionally opens Magical (even for a
+  // Wilmsry, which is exactly why a fluency-2 Wilmsry vs Magical reaches
+  // this branch instead of the racial one below — see D-12 in parley()).
+  const talkable = flu >= 2 ? [...TALKATIVE, "Magical"] : TALKATIVE;
+  if (flu >= 1 && talkable.includes(t)) return true;
   // "All good and evil creatures recognize the Wilmsry and often desire to barter with them."
   if (c.race === "Wilmsry" && t !== "Magical") return true;
   // "Most humans treasure the sighting of an elf as a good omen."
@@ -625,11 +644,32 @@ export function canParley(state) {
  * parley(state, rng, events) — talk the encounter down. Ports mazeworld.html
  * parley() (lines 2715-2734): a d20 vs 9+bonus, awarding half the skill
  * points (and a Humans-only bonus payout) on success, ending combat cleanly.
+ *
+ * DELIBERATE RULES CHANGE (Phase 20, PARLEY-01/02/03, D-01..D-08): the
+ * literal `x 2.5` SP multiplier is retired in favor of a STRUCTURAL half of
+ * killFoe's own combat-equivalent (killSpFor, D-01/D-02); the Humans wilmst
+ * bonus now fires on a natural 6 instead of >= 4 (D-03); the Con Artist
+ * bonus drops from +6 to +4 (D-07, still the best talker: need 13 at even
+ * level vs a solo foe, ~65%); `need` is clamped to <= 17 so no bonus stack is
+ * an auto-win (D-08); one attempt per encounter is enforced via
+ * `C.parleyTried` (D-05), and a failed attempt insults the group
+ * (`C.parleyInsulted`, D-06) for the rest of the fight (foeTurn's `need`/
+ * `mNeed += 1`, below). See test/parity/FIXTURE-INVENTORY.md's Phase 20
+ * section and the 20-01 scenario-scoped carve-out (stripParleyDivergence)
+ * for the seed-303 fixture's documented before/after.
  */
 export function parley(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
-  if (!C || !canParley(state)) return events;
+  if (!C) return events;
+  if (C.parleyTried) {
+    // D-05: a re-sent action after the encounter's one attempt (canParley is
+    // already false once tried, hiding the button — this is the direct-
+    // dispatch rejection for an action that bypassed the button). Zero draws.
+    events.push({ type: "parleyExhausted" });
+    return events;
+  }
+  if (!canParley(state)) return events; // unchanged silent path for never-eligible cases
   // LO-03: guard the empty-foes edge defensively. Currently unreachable
   // (state.combat is nulled the instant liveFoes empties on every path that
   // could produce it), but Math.max(...[]) === -Infinity would otherwise
@@ -639,24 +679,35 @@ export function parley(state, rng, events = []) {
   if (!foes.length) return events;
   const top = Math.max(...foes.map((f) => f.lvl));
   if (c.race === "Wilmsry" && C.type === "Magical") {
+    // PARLEY-04 / D-12: now REACHABLE — a fluency-2 Wilmsry passes canParley
+    // for Magical (the fluency branch above, not this racial branch). Zero
+    // draws, and this deliberately sits BEFORE C.parleyTried is set: a
+    // refusal never consumes the one attempt.
     events.push({ type: "parleyRefused", reason: "wilmsryVsMagical" });
     return events;
   }
+  C.parleyTried = true; // D-05: the one attempt is spent here — lazily written, never initialised in startCombat
+  const flu = fluency(c);
   const bonus =
-    (c.sub === "Con Artist" ? 6 : 0) +
+    (c.sub === "Con Artist" ? 4 : 0) + // D-07: was 6
     (c.sub === "Woodsman" ? 3 : 0) +
     (c.race === "Wilmsry" ? 4 : 0) + // noted for their bargaining
     (c.race === "Elven" && C.type === "Humans" ? 3 : 0) + // a good omen
+    2 * flu + // D-10
     c.level -
     top;
   const roll = rng.d(20);
-  const need = 9 + bonus;
-  events.push({ type: "parleyRolled", roll, need });
+  const need = Math.min(9 + bonus, 17); // D-08: an 85% ceiling — no stack is an auto-win
+  events.push({ type: "parleyRolled", roll, need, fluency: flu });
   if (roll <= need) {
-    const sp = Math.round(liveFoes(state).reduce((sum, f) => sum + rng.d(6) * f.lvl, 0) * 2.5);
+    // D-01/D-02: parley's payout is now STRUCTURALLY half of the same
+    // combat-equivalent killFoe pays (killSpFor), not a second formula.
+    const combatEquivalent = liveFoes(state).reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0);
+    const sp = Math.round(combatEquivalent * 0.5);
     c.sp += sp;
     events.push({ type: "spGained", amount: sp, reason: "parley" });
-    if (C.type === "Humans" && rng.d(6) >= 4) {
+    if (C.type === "Humans" && rng.d(6) === 6) {
+      // D-03: was >= 4 (50%); the AMOUNT formula stays untouched (economy owns it).
       const wm = rng.d(6) * 100 * state.floor.depth;
       c.gold += wm;
       events.push({ type: "goldGained", amount: wm, why: "parley" });
@@ -666,6 +717,10 @@ export function parley(state, rng, events = []) {
     return events;
   }
   events.push({ type: "parleyFailed" });
+  // D-06: the group takes it personally for the rest of the fight — the flag
+  // dies with state.combat at endCombat/die (D-19: never persisted).
+  C.parleyInsulted = true;
+  events.push({ type: "parleyInsulted" });
   afterPlayerAction(state, rng, events);
   return events;
 }
@@ -1198,6 +1253,7 @@ export function foeTurn(state, rng, events = []) {
         let mNeed = foeToHitVs(state);
         if (f.blind) mNeed = 1;
         if (C.foeToHitPenalty) mNeed = Math.min(mNeed, C.foeToHitPenalty);
+        if (C.parleyInsulted) mNeed += 1; // PARLEY-02 / D-06 / D-20: insulted aggro, post-draw arithmetic, zero extra draws
         if (mRoll > mNeed) {
           // name the member as the intended target so a whiff at a party
           // member reads distinctly from a whiff at the hero (PARTY: Oracle
@@ -1220,6 +1276,7 @@ export function foeTurn(state, rng, events = []) {
       let need = foeToHitVs(state);
       if (f.blind) need = 1;
       if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
+      if (C.parleyInsulted) need += 1; // PARLEY-02 / D-06 / D-20: same placement, same reasoning
       if (roll > need) {
         events.push({ type: "foeMissed", name: f.name, roll, need });
         continue;

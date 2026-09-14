@@ -785,7 +785,7 @@ test("canParley: Con Artist/Woodsman/Bard/Language/Wilmsry/Elven gates match the
     state.combat = fixedCombat([], { type });
     return state;
   };
-  assert.equal(canParley(mk({ sub: "Con Artist" }, "Magical")), false, "Magical is never talkative");
+  assert.equal(canParley(mk({ sub: "Con Artist" }, "Magical")), false, "Magical needs fluency 2 (D-11); fluency 0 here");
   assert.equal(canParley(mk({ sub: "Con Artist" }, "Humans")), true);
   assert.equal(canParley(mk({ sub: "Woodsman" }, "Beasts")), true);
   assert.equal(canParley(mk({ sub: "Woodsman" }, "Humans")), false);
@@ -796,18 +796,29 @@ test("canParley: Con Artist/Woodsman/Bard/Language/Wilmsry/Elven gates match the
   assert.equal(canParley(mk({ race: "Elven" }, "Beasts")), false);
   assert.equal(canParley(mk({ skills: { Language: 1 } }, "Demons")), true);
   assert.equal(canParley(mk({}, "Humans")), false);
+  // D-11: Walking Dead is refused for everyone, even a Con Artist.
+  assert.equal(canParley(mk({ sub: "Con Artist" }, "Walking Dead")), false);
+  // D-11/D-12: full fluency (skill + Helm) opens Magical, even for a Con
+  // Artist — canParley's gate is race/sub-agnostic at fluency 2.
+  assert.equal(
+    canParley(mk({ sub: "Con Artist", skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }, "Magical")),
+    true,
+  );
 });
 
 test("parley: a Con Artist can always parley, and success ends combat with skill points", () => {
   const state = fixedState({ c: { sub: "Con Artist" } });
   const foe = fixedFoe({ type: "Humans" });
   state.combat = fixedCombat([foe]);
-  // bonus = 6 (Con Artist) + level(1) - top(1) = 6; need = 15. roll=10 <=
-  // 15 -> success. per-foe sp roll d6=3 -> sp=round(3*1*2.5)=8. Humans
-  // bonus-payout check d6=2 (<4, skipped).
+  // D-07: bonus = 4 (Con Artist) + level(1) - top(1) = 4; need = min(9+4,17)
+  // = 13. roll=10 <= 13 -> success. per-foe sp roll d6=3 -> combatEquivalent
+  // = killSpFor(Human, lvl 1, 3) = round(3*1 * 5*1*1*1) = 15 -> sp =
+  // round(15 * 0.5) = 8 (D-01/D-02 — the same 8 the old formula happened to
+  // give). Humans wilmst check d6=2 (not 6, skipped — D-03).
   const rng = fakeRng([10, 3, 2]);
   const events = parley(state, rng, []);
   assert.ok(events.some((e) => e.type === "spGained" && e.reason === "parley" && e.amount === 8));
+  assert.ok(events.some((e) => e.type === "parleyRolled" && e.need === 13 && e.fluency === 0));
   assert.equal(state.combat, null);
 });
 
@@ -815,13 +826,54 @@ test("parley: a failing roll triggers the foe's turn instead of ending combat", 
   const state = fixedState({ c: { sub: "Con Artist" } });
   const foe = fixedFoe({ type: "Humans", asleep: 5 });
   state.combat = fixedCombat([foe]);
-  // 20 > need(15) -> fails; the failure runs afterPlayerAction, whose
-  // asleep-foe foeTurn draws nothing, but the round-advance always rolls a
-  // fresh initiative (mine=15, theirs=10 -> "you", no second foe turn).
+  // D-07/D-08: 20 > need(13) -> fails; the failure runs afterPlayerAction,
+  // whose asleep-foe foeTurn draws nothing, but the round-advance always
+  // rolls a fresh initiative (mine=15, theirs=10 -> "you", no second foe
+  // turn).
   const rng = fakeRng([20, 15, 10]);
   const events = parley(state, rng, []);
   assert.ok(events.some((e) => e.type === "parleyFailed"));
   assert.ok(state.combat, "combat is still active after a failed parley");
+  const failedIdx = events.findIndex((e) => e.type === "parleyFailed");
+  const insultedIdx = events.findIndex((e) => e.type === "parleyInsulted");
+  assert.ok(insultedIdx > failedIdx, "parleyInsulted comes AFTER parleyFailed");
+  assert.equal(state.combat.parleyInsulted, true);
+  assert.equal(state.combat.parleyTried, true);
+});
+
+test("D-05: the second parley in the same encounter is refused with parleyExhausted and draws nothing", () => {
+  const state = fixedState({ c: { sub: "Con Artist" } });
+  const foe = fixedFoe({ type: "Humans", asleep: 5 });
+  state.combat = fixedCombat([foe]);
+  parley(state, fakeRng([20, 15, 10]), []); // first attempt: fails, sets parleyTried/parleyInsulted
+  assert.equal(canParley(state), false, "the button hides once tried");
+  const snapshot = structuredClone(state);
+  const events = parley(state, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "parleyExhausted" }]);
+  assert.deepStrictEqual(state, snapshot, "no further state change on a re-sent parley");
+});
+
+test("D-06/D-20: parleyInsulted widens the foe's need by exactly 1 on the hero branch, the roll is untouched", () => {
+  const baseline = fixedState();
+  const foe = fixedFoe({ type: "Beasts", lvl: 1 });
+  baseline.combat = fixedCombat([foe]);
+  const baselineEvents = foeTurn(baseline, fakeRng([6, 3]), []);
+  const missed = baselineEvents.find((e) => e.type === "foeMissed");
+  assert.ok(missed, "baseline: foeToHitVs is 5, roll 6 misses");
+  assert.equal(missed.need, 5);
+  assert.equal(missed.roll, 6);
+  assert.equal(baseline.c.wp, 55);
+
+  const insulted = fixedState();
+  const insultedFoe = fixedFoe({ type: "Beasts", lvl: 1 });
+  insulted.combat = fixedCombat([insultedFoe], { parleyInsulted: true });
+  const insultedEvents = foeTurn(insulted, fakeRng([6, 3]), []);
+  const struck = insultedEvents.find((e) => e.type === "struckByFoe");
+  assert.ok(struck, "insulted: need widens to 6, the same roll 6 now hits");
+  assert.ok(struck.need === 6, "D-06/D-20: struck.need === 6 (5 + the insulted +1)");
+  assert.equal(struck.roll, 6, "the narrated roll is the literal die, unmodified");
+  assert.equal(struck.dmg, 4, "1 + d6(3)");
+  assert.equal(insulted.c.wp, 51);
 });
 
 // LO-03 regression: Math.max(...liveFoes(state).map(...)) would evaluate to
