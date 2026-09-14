@@ -79,6 +79,12 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
 | v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
 
+## Deferred Verification
+
+| Phase | State | Resume |
+|-------|-------|--------|
+| 19 | verification_deferred_human | /gsd-verify-work 19 |
+
 ## Session Continuity
 
 Last session: 2026-09-14T04:06:49.016Z
