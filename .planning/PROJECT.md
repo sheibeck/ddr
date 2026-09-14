@@ -149,6 +149,7 @@
 | Human UAT deferred to milestone end; user's device play IS the UAT | Autonomous run 2026-09-07 | ✓ Good — v1.0 closed as an override closeout on that basis |
 | Every engine change parity-gated (rng draws behind feature guards, new fields carved out of comparators, master never edited) | Protects "prototype is canon" while adding systems | ✓ Good — byte-identical through Joiners, Economy, phobias, flight |
 | ONE consolidated difficulty retune after all power-changing milestones (not per-milestone) | Avoid triple-tuning across Joiners/Economy/Monsters | — Pending — lands in Monster Balancing |
+| Difficulty is tuned toward **depth 20**, not infinite depth; past 20 the curve is left alone — no dial-back, no artificial death | User decision 2026-09-14 (v1.2 Phase 22): a bounded, honest target replaces "endless survivability"; the score chase is reaching and pushing slightly past 20 | — Pending — governs Phase 27's TUNE-05 target band |
 | Tutorial built LAST, after the UI settles | A UI change forces a tutorial redo | — Pending |
 
 ## Evolution

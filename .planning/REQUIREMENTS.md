@@ -62,7 +62,7 @@ Dev-only, zero-dependency, never shipped — extends `tools/lib/tuning-bot.mjs`.
 
 Continues v1.1's TUNE-01..04 (TUNE-04 verdict: tune-again).
 
-- [ ] **TUNE-05**: A delve-to-death target band is agreed with the user before tuning (median death depth, reach-table shape, and what "survivable at depth 20" means for a mid-level character), recorded in `docs/DIFFICULTY-RETUNE.md`
+- [ ] **TUNE-05**: A delve-to-death target band is agreed with the user before tuning and recorded in `docs/DIFFICULTY-RETUNE.md` — framed around **depth 20 as THE target** (user decision 2026-09-14): what fraction of runs should reach 20, how survivable a level-5 character is AT 20, and "floors gained past 20" as the wrap-up measure. Past 20 the curve is NOT dialed back and NO mechanic forces death — the run ends naturally on the existing curve; the game is not tuned for infinite depth
 - [ ] **TUNE-06**: `engine/difficulty.js` is retuned on the post-pass engine so the class matrix and the start-at-depth readout land inside the agreed band, with the BEFORE/AFTER transcripts appended to the ledger under identical bot parameters
 - [ ] **TUNE-07**: A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict; the milestone closes only on "tuned" or a user-recorded deferral
 

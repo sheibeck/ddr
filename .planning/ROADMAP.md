@@ -177,6 +177,7 @@ Plans:
 ### Phase 27: Delve-to-Death Retune
 
 **Goal**: The deferred TUNE-04 retune (v1.1 verdict: tune-again) lands on the corrected player power from the identity pass, targeting a band agreed with the user, and closes on a human DR-round verdict.
+**Target (user decision 2026-09-14):** tune toward **depth 20**, not infinite depth. Past 20, expect imminent death but do not engineer it — no softening of `engine/difficulty.js` beyond 20 and no forced-death mechanic; let the run wrap up naturally. The class matrix's `--start-depth 20` slice (`docs/class-pass/before-depth20.json`) is the deep yardstick.
 **Depends on**: Phase 26 — the AFTER matrix and ledger are the retune's yardstick.
 **Requirements**: TUNE-05, TUNE-06, TUNE-07
 **Research flag**: `--research-phase` recommended during planning, mirroring v1.1 Phase 21's precedent. TUNE-05 (agreeing the target band) and TUNE-07 (the human DR round, `human_verify_mode: end-of-phase`) are both flagged as `/gsd-discuss-phase` candidates before planning this phase.
