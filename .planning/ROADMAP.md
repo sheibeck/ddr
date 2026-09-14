@@ -45,7 +45,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 17: Fixture Inventory & Foe-Turn Refactors** - Document which bestiary creatures each parity fixture rolls and extract shared foe-turn helpers before any bestiary or ability behavior changes land (completed 2026-09-13)
 - [x] **Phase 18: Bestiary Rebalance & Canon Combat Fixes** - Review every creature's stats against its intended depth band and land canon-accurate combat modifiers (armor, half-damage, type multipliers, slow) (completed 2026-09-13)
 - [ ] **Phase 19: Foe Abilities, Spellcasting & Symmetric INT Resistance** - Foes cast, drain, debuff, heal, and summon via a data-driven ability system; the player's Intelligence resists incoming foe magic
-- [ ] **Phase 20: Parley Balance & Language System** - Fix parley's payout/spam dominance and wire Language/Helm-of-Knowledge fluency into the same bonus term
+- [x] **Phase 20: Parley Balance & Language System** - Fix parley's payout/spam dominance and wire Language/Helm-of-Knowledge fluency into the same bonus term (completed 2026-09-14)
 - [ ] **Phase 21: Consolidated Difficulty Retune** - The ONE retune across party power, economy, monster power, ability threat, and parley numbers, closed out by a human DR-round sign-off
 
 ## Phase Details
@@ -155,7 +155,7 @@ Plans:
   3. Con Artist's baseline parley odds are retuned to a stated, documented post-rebalance win-rate target that keeps the subclass identity viable rather than gutted.
   4. The Language skill and the Helm of Knowledge (`tongue`) both contribute a fluency bonus to the same parley `bonus` term (Option B), and fluency widens which encounter types a character can parley, verified by an availability test per race/class/skill/Helm combination.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -202,6 +202,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
-| 20. Parley Balance & Language System | v1.1 | 3/3 | In Progress|  |
+| 20. Parley Balance & Language System | v1.1 | 3/3 | Complete    | 2026-09-14 |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |
