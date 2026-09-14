@@ -124,7 +124,7 @@ Resume file: None
 
 ## Decisions
 
-- 2026-09-14 (v1.2, Phase 22): **Difficulty target is depth 20, not infinite depth.** Past 20: imminent death expected, but no dial-back and no artificial death — the run wraps up naturally on the existing curve. Governs Phase 27 TUNE-05's target band; the depth-20 matrix slice is the yardstick.
+- 2026-09-14 (v1.2, Phase 22): **Difficulty target is depth 20, not infinite depth — and reaching 20 is a unicorn run, rare not expected** (too much RNG to define a "competent player"; band = median death depth well below 20 + a small reach-20 rate). Past 20: imminent death expected, but no dial-back and no artificial death — the run wraps up naturally on the existing curve. Governs Phase 27 TUNE-05's target band; the depth-20 matrix slice is the yardstick.
 
 - [Phase ?]: 17-01: fixtureRoster.js replays fixtures via applyStartCombat/applyAction/runEconomyAction rather than re-deriving startCombat math; foes snapshotted only on the null->non-null state.combat transition (once per script/scenario)
 - [Phase ?]: 17-02: applyFoeDamageToPlayer avoids an internal f=foe alias so its killFoe/die call sites read as the literal parameter name, matching the plan's textual acceptance-criteria greps
