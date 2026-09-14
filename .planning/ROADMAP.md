@@ -46,7 +46,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 18: Bestiary Rebalance & Canon Combat Fixes** - Review every creature's stats against its intended depth band and land canon-accurate combat modifiers (armor, half-damage, type multipliers, slow) (completed 2026-09-13)
 - [ ] **Phase 19: Foe Abilities, Spellcasting & Symmetric INT Resistance** - Foes cast, drain, debuff, heal, and summon via a data-driven ability system; the player's Intelligence resists incoming foe magic
 - [x] **Phase 20: Parley Balance & Language System** - Fix parley's payout/spam dominance and wire Language/Helm-of-Knowledge fluency into the same bonus term (completed 2026-09-14)
-- [ ] **Phase 21: Consolidated Difficulty Retune** - The ONE retune across party power, economy, monster power, ability threat, and parley numbers, closed out by a human DR-round sign-off
+- [x] **Phase 21: Consolidated Difficulty Retune** - The ONE retune across party power, economy, monster power, ability threat, and parley numbers, closed out by a human DR-round sign-off (completed 2026-09-14)
 
 ## Phase Details
 
@@ -183,7 +183,7 @@ Plans:
   3. The curve is retuned once across party power, economy (loot/wilmst/store), monster power, and ability threat; harness runs confirm a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+.
   4. A human signs off via an on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion — as the milestone's single deferred UAT checkpoint (last thing in the milestone).
 
-**Plans:** 5/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -224,5 +224,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
 | 20. Parley Balance & Language System | v1.1 | 3/3 | Complete    | 2026-09-14 |
-| 21. Consolidated Difficulty Retune | v1.1 | 5/5 | In Progress|  |
+| 21. Consolidated Difficulty Retune | v1.1 | 5/5 | Complete    | 2026-09-14 |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |
