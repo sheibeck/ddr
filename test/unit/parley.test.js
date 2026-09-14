@@ -12,7 +12,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { canParley, parley, foeTurn, endCombat, startCombat, liveFoes } from "../../engine/combat.js";
+import { canParley, parley, foeTurn, endCombat, startCombat, liveFoes, flee } from "../../engine/combat.js";
 import { fluency, killSpFor, foeToHitVs } from "../../engine/derived.js";
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
@@ -577,4 +577,32 @@ test("D-19 old-save probe: mid-fight flags round-trip losslessly through JSON an
   const rehydrated = rehydrate(check.value);
   assert.equal(rehydrated.combat, null);
   assert.deepStrictEqual(rehydrated.c, preSaveC, "the character is intact, minus nothing");
+});
+
+// --- Test 16 (review WR-01): parleyInsulted also widens the PURSUIT strike ---
+// The only `sp.pursues` creature (Spectre) is filed under Demons — a talkable
+// type at fluency >= 1 (and for Con Artists / Wilmsry) — so an insulted group
+// with a pursuer is reachable. The parting strike on a flee exit gets the same
+// post-draw `need += 1` as the two foeTurn sites; the roll itself is untouched.
+test("PARLEY-02 / D-06 / D-20 (WR-01): parleyInsulted widens pursuitStrike's need by exactly 1, zero extra draws", () => {
+  const probe = fixedState();
+  probe.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })]);
+  const probeEvents = flee(probe, fakeRng([15, 20]), []);
+  const probeMiss = probeEvents.find((e) => e.type === "foeMissed");
+  assert.ok(probeMiss, "roll 20 misses the baseline pursuit");
+  const N = probeMiss.need;
+
+  const baseline = fixedState();
+  baseline.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })]);
+  const baseEvents = flee(baseline, fakeRng([15, N + 1]), []);
+  assert.deepEqual(baseEvents.map((e) => e.type), ["fleeRolled", "foePursued", "foeMissed", "fled", "combatEnded"]);
+  assert.equal(baseEvents.find((e) => e.type === "foeMissed").need, N);
+
+  const insulted = fixedState();
+  insulted.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })], { parleyInsulted: true });
+  const insEvents = flee(insulted, fakeRng([15, N + 1, 4]), []);
+  assert.deepEqual(insEvents.map((e) => e.type), ["fleeRolled", "foePursued", "struckByFoe", "fled", "combatEnded"]);
+  const struck = insEvents.find((e) => e.type === "struckByFoe");
+  assert.equal(struck.need, N + 1, "N + the insulted +1");
+  assert.equal(struck.roll, N + 1, "the same literal roll");
 });

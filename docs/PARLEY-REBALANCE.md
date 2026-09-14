@@ -223,6 +223,6 @@ left untouched.
   power-changing milestone's numbers get folded together, so this phase's
   parley change is measured, not compensated for, here.
 
-## Latent follow-ups
+## Review follow-up (WR-01, fixed)
 
-- Insulted `+1` (D-06/D-20) is applied at both `foeTurn` melee sites only. `pursuitStrike` is untouched because no parleyable encounter can contain a pursuer today (the only `pursues` creature is the Walking Dead Spectre). Add `need += 1` there if a non-Walking-Dead pursuer is ever introduced.
+- Insulted `+1` (D-06/D-20) is applied at both `foeTurn` melee sites AND in `pursuitStrike` (the parting strike on a flee exit). The Spectre — the only `pursues` creature — is a Demon, so an insulted group with a pursuer is reachable by any fluency-1+ talker, Con Artist, or Wilmsry. Post-draw arithmetic, zero extra draws; pinned by `test/unit/parley.test.js` test 16.

@@ -173,7 +173,7 @@ _Reviewed: 2026-09-14T13:17:18Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
 
-## Orchestrator disposition (2026-09-14)
+## Orchestrator disposition (2026-09-14, corrected)
 
-- **WR-01 — no fix (unreachable):** the only `sp.pursues` creature is the Spectre (`content/bestiary.js:73`, type Walking Dead), and `canParley` refuses Walking Dead unconditionally for everyone (`engine/combat.js:624`), so `C.parleyInsulted` can never be set in an encounter that contains a pursuer (encounters are single-type; Phase 19 summons are same-type). The literal D-06/D-20 wording ("in `foeTurn`") stands. If a non-Walking-Dead pursuer is ever added, apply `need += 1` in `pursuitStrike` at that time — noted in `docs/PARLEY-REBALANCE.md`'s ledger as a latent follow-up.
+- **WR-01 — FIXED (after a corrected premise):** the first disposition claimed the Spectre (the only `sp.pursues` creature) was Walking Dead and therefore unreachable by an insulted group. That was wrong — the Spectre is filed under **Demons** (`content/bestiary.js` ~L64-73), a TALKATIVE type at fluency >= 1 and for Con Artists / Wilmsry, so a failed parley followed by a flee past a Spectre IS reachable. Fix: `pursuitStrike` now applies the same post-draw `if (C.parleyInsulted) need += 1` as the two `foeTurn` sites (zero extra draws); `test/unit/parley.test.js` test 16 pins it (need N -> N+1 with the same literal roll). The 20-02 `pursuitStrike` md5 pin was a same-plan no-change guard and is intentionally superseded by this fix. Caught by the Phase 20 verifier.
 - **IN-01 — accepted as-is:** the generic `parleyRefused` fallback line is defensive dead code behind a single push site; harmless, left for future refusal reasons.

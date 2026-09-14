@@ -528,6 +528,7 @@ function pursuitStrike(state, rng, events) {
   let need = foeToHitVs(state);
   if (pursuer.blind) need = 1;
   if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
+  if (C.parleyInsulted) need += 1; // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe swing too — post-draw, zero extra draws
   if (roll > need) {
     events.push({ type: "foeMissed", name: pursuer.name, roll, need });
     return { died: false };
