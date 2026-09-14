@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 19
 current_phase_name: Foe Abilities, Spellcasting & Symmetric INT Resistance
 status: executing
-stopped_at: Completed 18-06-PLAN.md (Phase 18 complete)
-last_updated: "2026-09-14T03:00:57.226Z"
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-09-14T03:13:00.240Z"
 last_activity: 2026-09-13
-last_activity_desc: Phase 18 complete, transitioned to Phase 19
+last_activity_desc: Phase 19 execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 13
+  completed_plans: 10
   percent: 40
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 18 — Bestiary Rebalance & Canon Combat Fixes
+**Current focus:** Phase 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance
 
 ## Current Position
 
-Phase: 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance
-Plan: Not started
+Phase: 19 (Foe Abilities, Spellcasting & Symmetric INT Resistance) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-09-13 — Phase 18 complete, transitioned to Phase 19
+Last activity: 2026-09-13 — Phase 19 execution started
 
-Progress: [██████████] 100%
+Progress: [████████░░] 77%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T00:23:26.433Z
-Stopped at: Completed 18-06-PLAN.md (Phase 18 complete)
+Last session: 2026-09-14T03:13:00.217Z
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -103,6 +103,7 @@ Resume file: None
 | Phase 18 P04 | 30min | 2 tasks | 4 files |
 | Phase 18 P05 | 20min | 2 tasks | 2 files |
 | Phase 18 P06 | 45min | 2 tasks | 3 files |
+| Phase 19 P01 | 25min | 2 tasks | 5 files |
 
 ## Decisions
 
@@ -122,3 +123,5 @@ Resume file: None
 - [Phase ?]: 18-06: seam-only invariant test (D-09 promote) proves damageFoe is the ONLY foe-wp decrement site; zero violations found
 - [Phase ?]: 18-06: AFTER yardstick table generated verbatim and machine-checked (D-04 doc-consistency test); change ledger records every measured ratio and defers canon-mode consequences (Sterling, five sp.ar creatures) to Phase 21
 - [Phase ?]: 18-06: tune-difficulty AFTER readout is within noise of BEFORE (informational only, D-16) — bot never reaches the tier-4/5 creatures this phase retuned
+- [Phase ?]: 19-01: lvl on each FOE_ABILITIES descriptor assigned per the canon SPELLS level it borrows (Freeze 1, Weaken/Daze 1-2, Fireball 3, Lightning 4, drain/heal/summon 5, breath 4) — informational only, never read by engine code
+- [Phase ?]: 19-01: FOE-06's bounded-strongest-bolt test scoped to kits with 2+ bolt descriptors — Krupke's single bolt (krupkeFreeze, 1d6) is the plan's own locked dice-budget-table unbounded case, not a spam risk
