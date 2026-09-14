@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll } from "./derived.js";
+import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction } from "./combat.js";
@@ -58,8 +58,13 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   if (!c.scrollCast && !canCast(state, sp)) {
     if (!c.grimoire || !c.grimoire.includes(sp.n)) {
       events.push({ type: "spellNotKnown", spell: sp.n });
-    } else if (sp.lvl > c.level) {
-      events.push({ type: "spellAboveLevel", spell: sp.n, need: sp.lvl, have: c.level });
+    } else if (spellLevelFor(c.sub, sp) > c.level) {
+      // Phase 23 (IDENT-03/IDENT-04): one definition of "effective level" —
+      // spellLevelFor honors the per-sub override table (Summoner/Summon,
+      // Illusionist/Phantom Host) so this diagnostic can never disagree with
+      // canCast; byte-identical to the old `sp.lvl > c.level` check for
+      // every (sub, spell) pair that has no override.
+      events.push({ type: "spellAboveLevel", spell: sp.n, need: spellLevelFor(c.sub, sp), have: c.level });
     } else {
       events.push({ type: "spellSchoolLocked", spell: sp.n, school: sp.s, need: schoolGate(c.sub, sp.s), have: c.level });
     }
@@ -363,10 +368,25 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
         events.push({ type: "spellHit", target: t.name, dmg: hit.applied, mult });
         if (freeze) {
-          t.alive = false;
+          // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, user decision): Freeze kills awarded nothing in the prototype — a bug, not a rule.
+          // The prototype marked a frozen foe dead (alive=false, frozen=true, wp=0) and
+          // never called killFoe — a Freeze kill paid no experience, coin, treasure
+          // roll, kill count, or party split, even though Ice (level 3, the same
+          // "thrown, then frozen" flavor) was never special-cased this way. Now the
+          // same frozenSolid event and t.frozen flag still narrate the kill, but the
+          // kill itself routes through killFoe like any other, so it pays like a
+          // melee kill. Determinism: the extra draws (killFoe's d6 sp roll, d10 coin
+          // roll, d20 treasure check, and the Beasts cooking d6) happen ONLY after a
+          // successful Freeze hit — a miss draws exactly as before, and nothing draws
+          // outside this branch. The only parity scenario that casts Freeze is
+          // action-script.magic.json's cast-damage scenario (seed 8), declared under
+          // FID-06 in this phase's Plan 04. Kill-twice note: a lives-2 creature now
+          // shrugs off a Freeze once, per canon ("you have to kill it twice") — the
+          // prototype let Freeze bypass the lives rule entirely.
           t.frozen = true;
-          t.wp = 0;
           events.push({ type: "frozenSolid", target: t.name });
+          killFoe(state, t, rng, events);
+          if (t.alive) t.frozen = false; // killFoe's kill-twice `lives` rule revived it — a standing foe is not frozen
           continue;
         }
         if (t.wp <= 0) {

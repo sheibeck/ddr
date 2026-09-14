@@ -234,3 +234,81 @@ and the FID-02 draw-count pins (`test/unit/foe-turn-draw-count.test.js` — its
 all) are unchanged, with no carve-out. The roster table above (the generated
 block) is unchanged because no bestiary creature moved — only the numbers
 inside this one scenario's behavior changed.
+
+## Phase 23 caster divergences (IDENT-01..04 / FID-06)
+
+Phase 23 ("Casters Can Act") lands four narrow, deliberate rules changes
+(IDENT-01..04) plus one user-requested spell fix ("Freeze pays out"). Of
+those, exactly two touch a parity fixture: `rollGrimoire`'s guaranteed
+day-one attack spell (IDENT-02) measurably changes two chargen-parity
+seeds' grimoire content (Plan 02), and Freeze now paying out via `killFoe`
+measurably changes the one magic-parity scenario that ever casts it
+(Plan 04). Everything else in this phase — the Wizard melee rule
+(IDENT-01), Summoner/Illusionist casting at level 1 (IDENT-03/IDENT-04),
+and `spellAboveLevel`'s `spellLevelFor` diagnostic — changes zero fixture
+bytes (no fixture exercises those branches).
+
+### Chargen: seeds 15 and 24 (Plan 02, IDENT-02/IDENT-03)
+
+`action-script.chargen.json` gained a `divergences` map (`chargenDivergenceFor`/
+`stripDeclaredFields`, `test/parity/harness/comparables.js`) declaring exactly
+two seeds' `grimoire` content — every other of the 20 rng-pin seeds'
+grimoire (and rng cursor) is unchanged.
+
+| Seed | Class/Sub/Race | BEFORE grimoire `[VERIFIED: engine run]` | AFTER grimoire `[VERIFIED: engine run]` | Cause |
+|---|---|---|---|---|
+| 15 | Magic User / Summoner / Human | `["Stupidity","Stun","Shield","Summon","Heal"]` | `["Stupidity","Stun","Shield","Summon"]` | IDENT-03: Summon now counts as usable-now via the `SPELL_LEVEL_OVERRIDES` table, so the existing "two usable-now spells" top-up loop stops one spell earlier — Heal is never added. |
+| 24 | Magic User / Apprentice / Wilmsry | `["Heal","Strength","Stupidity","Detect Magic","Sense Presence"]` | `["Heal","Strength","Stupidity","Detect Magic","Sense Presence","Freeze"]` | IDENT-02: the new zero-draw attack top-up appends the first attack-kind spell (Freeze) from the already-shuffled `spare` list — this Apprentice's day-one book had no usable-now attack spell before this phase. |
+
+`newRun(seed).rngState` is unchanged for all 20 fixture seeds (pinned by
+`test/unit/chargen-rng-pin.test.js`, unedited by this phase) — the top-up
+walks the SAME already-shuffled `spare` array with zero new rng draws; only
+the grimoire CONTENT changes for the two seeds above.
+
+### Magic: `cast-damage` scenario, seed 8 (Plan 04, "Freeze pays out")
+
+`action-script.magic.json`'s `cast-damage` scenario is the ONLY scenario in
+that fixture — and the only fixture-exposed cast in the entire parity suite —
+that ever casts Freeze (seed 8, an Illusionist, `startCombat(false, "Beasts")`
+then `castSpell(4)`). Declared via a per-scenario `divergence` record and the
+new `stripScenarioDivergence` helper (`test/parity/harness/comparables.js`),
+applied at both magic replay sites (`test/parity/magic-parity.test.js`,
+`test/parity/full-suite.test.js`).
+
+| Field | BEFORE (frozen prototype, `[VERIFIED: engine run]`) | AFTER (Phase 23 engine, `[VERIFIED: engine run]`) |
+|---|---|---|
+| `c.sp` | 0 | 5 |
+| `c.gold` | 50 | 51 |
+| `c.kills` | 0 | 1 |
+| `c.rations` | 4 | 5 |
+| `c.items.length` | 0 | 0 (unchanged) |
+| `c.wp` | 31 | 31 (unchanged) |
+| `c.level` | 1 | 1 (unchanged) |
+| `combat` | null after the action | null after the action (unchanged on both sides) |
+| Events (engine) | (pre-Phase-23 engine) `spellThrown, spellHit, frozenSolid, encounterCleared, combatEnded` — no payout | (Phase 23 engine) `spellThrown, spellHit, frozenSolid, foeKilled, goldGained, cooked, encounterCleared, combatEnded` |
+
+**Draw accounting:** the prototype's `castSpell` for this cast draws exactly
+2 dice (d10 to-hit, d6 damage) and stops — the old Freeze branch set
+`alive=false`/`frozen=true`/`wp=0` inline with no further draws. The engine's
+`castSpell` draws the SAME 2 dice for the identical to-hit/damage result,
+then (because the hit routes through `killFoe`) 4 more: `killFoe`'s d6 (sp
+roll, value 4), d10 (coin roll, value 5), d20 (treasure check, value 20 —
+skips, since `20 > 2 + f.lvl`), and the Beasts cooking check d6 (value 1 —
+skips, since `1 < 4`, no Cooking skill). All 4 extra draws happen strictly
+AFTER the two compared to-hit/damage draws, so no earlier draw position in
+this scenario (or any other scenario, since each fixture scenario is an
+independent `newRun(seed)`) moves.
+
+### Byte-identical elsewhere
+
+Every other chargen seed (18 of 20), the heal/potion/scroll magic scenarios,
+every combat/movement/economy/encounters fixture, `test/parity/prototype-master.js.txt`
+(NEVER edited), the generated roster table in this file (regenerated via
+`node tools/fixture-inventory.mjs` and confirmed unchanged — no bestiary
+creature moved), and the FID-02 draw-count pins
+(`test/unit/foe-turn-draw-count.test.js` measures repeated `playerStrike()`
+loops against fixture foes and never invokes `castSpell()`, so it is
+untouched by this phase's Freeze change) are all unchanged, with no
+carve-out. `npm test` is fully green (>= 1028 pass, 0 fail) and
+`node --test "test/parity/**/*.test.js"` is 32/32 (30 baseline + Plan 02's
+chargen well-formedness test + this plan's magic well-formedness test).

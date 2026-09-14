@@ -41,6 +41,7 @@ import {
   stripParleyDivergence,
   chargenDivergenceFor,
   stripDeclaredFields,
+  stripScenarioDivergence,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -163,26 +164,50 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
 
   await t.test("magic: every magic scenario matches the frozen prototype", () => {
     for (const scenario of MAGIC_FIXTURE.scenarios) {
+      // FID-06 (Phase 23, "Freeze pays out"): the `cast-damage` scenario
+      // (seed 8) carries a declared, measured `divergence` record — select
+      // the scenario-scoped stripper only for it, mirroring
+      // magic-parity.test.js's identical selection.
+      const cmp = scenario.divergence ? (s) => stripScenarioDivergence(combatComparable(s), scenario.divergence) : combatComparable;
+
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
-      assert.equal(diffState(combatComparable(ctx.S), combatComparable(engineState)), null);
+      assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
+      const allEventTypes = [];
       scenario.actions.forEach((action, i) => {
         if (action.type === "startCombat") {
           ctx.startCombat(action.wandering, action.forced);
-          const { state } = applyStartCombat(engineState, action.wandering, action.forced);
+          const { state, events } = applyStartCombat(engineState, action.wandering, action.forced);
           engineState = state;
+          allEventTypes.push(...events.map((e) => e.type));
         } else if (action.type === "castSpell") {
           ctx.castSpell(action.idx);
-          const { state } = applyAction(engineState, { type: "castSpell", idx: action.idx });
+          const { state, events } = applyAction(engineState, { type: "castSpell", idx: action.idx });
           engineState = state;
+          allEventTypes.push(...events.map((e) => e.type));
         } else {
           ctx[action.type]();
-          const { state } = applyAction(engineState, { type: action.type });
+          const { state, events } = applyAction(engineState, { type: action.type });
           engineState = state;
+          allEventTypes.push(...events.map((e) => e.type));
         }
-        const d = diffState(combatComparable(ctx.S), combatComparable(engineState));
+        const d = diffState(cmp(ctx.S), cmp(engineState));
         assert.equal(d, null, `magic scenario ${scenario.name}, action ${i}: diverged at ${d}`);
       });
+
+      if (scenario.divergence) {
+        const protoC = combatComparable(ctx.S).c;
+        const engineC = combatComparable(engineState).c;
+        for (const field of scenario.divergence.fields) {
+          assert.equal(diffState(protoC[field], scenario.divergence.before[field]), null, `magic scenario ${scenario.name}: prototype ${field} != declared before`);
+          assert.equal(diffState(engineC[field], scenario.divergence.after[field]), null, `magic scenario ${scenario.name}: engine ${field} != declared after`);
+        }
+      }
+
+      if (scenario.name === "cast-damage") {
+        assert.ok(allEventTypes.includes("frozenSolid"), "the frozen foe was narrated");
+        assert.ok(allEventTypes.includes("foeKilled"), "the Freeze kill paid out via killFoe");
+      }
     }
   });
 

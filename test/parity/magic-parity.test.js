@@ -24,6 +24,7 @@ import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
+import { stripScenarioDivergence } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.magic.json"), "utf8"));
@@ -100,10 +101,16 @@ function applyStartCombat(state, wandering, forced) {
 
 for (const scenario of FIXTURE.scenarios) {
   test(`magic parity (${scenario.name}): engine matches the frozen prototype after every action`, () => {
+    // FID-06 (Phase 23, "Freeze pays out"): the `cast-damage` scenario (seed
+    // 8) carries a declared, measured `divergence` record — select the
+    // scenario-scoped stripper only for it; every other scenario keeps
+    // comparing on the bare `comparable()`.
+    const cmp = scenario.divergence ? (s) => stripScenarioDivergence(comparable(s), scenario.divergence) : comparable;
+
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
 
-    const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+    const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(
       initialDivergence,
       null,
@@ -136,7 +143,7 @@ for (const scenario of FIXTURE.scenarios) {
         assert.fail(`unhandled magic fixture action type: ${action.type}`);
       }
 
-      const divergence = diffState(comparable(ctx.S), comparable(engineState));
+      const divergence = diffState(cmp(ctx.S), cmp(engineState));
       assert.equal(
         divergence,
         null,
@@ -144,11 +151,33 @@ for (const scenario of FIXTURE.scenarios) {
       );
     });
 
+    if (scenario.divergence) {
+      // The record's own before/after values are machine-checked on BOTH
+      // sides — the prototype must still be exactly the declared "before",
+      // and the engine must be exactly the declared "after" — before the
+      // strip above is trusted to hide anything.
+      const protoC = comparable(ctx.S).c;
+      const engineC = comparable(engineState).c;
+      for (const field of scenario.divergence.fields) {
+        assert.equal(
+          diffState(protoC[field], scenario.divergence.before[field]),
+          null,
+          `scenario ${scenario.name}: prototype ${field} does not match the declared "before" value`,
+        );
+        assert.equal(
+          diffState(engineC[field], scenario.divergence.after[field]),
+          null,
+          `scenario ${scenario.name}: engine ${field} does not match the declared "after" value`,
+        );
+      }
+    }
+
     if (scenario.name === "cast-damage") {
-      assert.ok(
-        allEventTypes.some((t) => t === "spellHit" || t === "spellMissed" || t === "frozenSolid" || t === "foeKilled"),
-        "the damage spell resolved one way or another",
-      );
+      // FID-06: Freeze now pays out via killFoe — a hit must show BOTH
+      // frozenSolid (the narration) and foeKilled (the payout), not "one way
+      // or another" as before this phase.
+      assert.ok(allEventTypes.includes("frozenSolid"), "the frozen foe was narrated");
+      assert.ok(allEventTypes.includes("foeKilled"), "the Freeze kill paid out via killFoe");
     } else if (scenario.name === "heal") {
       assert.ok(allEventTypes.includes("healed"));
     } else if (scenario.name === "potion") {
@@ -158,3 +187,23 @@ for (const scenario of FIXTURE.scenarios) {
     }
   });
 }
+
+test("magic fixture divergence records are narrow and well-formed (FID-06)", () => {
+  const withDivergence = FIXTURE.scenarios.filter((s) => s.divergence);
+  assert.ok(withDivergence.length <= 1, `expected at most 1 scenario with a divergence record, got ${withDivergence.length}`);
+  for (const scenario of withDivergence) {
+    const record = scenario.divergence;
+    assert.ok(record.phase, `scenario ${scenario.name}: missing phase`);
+    assert.ok(Array.isArray(record.fields) && record.fields.length > 0, `scenario ${scenario.name}: fields must be a non-empty array`);
+    assert.ok(record.before && typeof record.before === "object", `scenario ${scenario.name}: missing before`);
+    assert.ok(record.after && typeof record.after === "object", `scenario ${scenario.name}: missing after`);
+    assert.ok(typeof record.rationale === "string" && record.rationale.length > 0, `scenario ${scenario.name}: missing rationale`);
+    for (const field of record.fields) {
+      assert.notDeepStrictEqual(
+        record.before[field],
+        record.after[field],
+        `scenario ${scenario.name}: field "${field}" has no real before/after difference — this looks like a blanket regeneration, not a declared divergence`,
+      );
+    }
+  }
+});

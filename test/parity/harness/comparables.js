@@ -363,6 +363,40 @@ export function stripParleyDivergence(state) {
 }
 
 /**
+ * stripScenarioDivergence(state, divergence) — FID-06 (Phase 23, "Freeze
+ * pays out"): the scenario-scoped analog of `stripParleyDivergence` above,
+ * for a fixture whose divergence is declared PER-SCENARIO (an object on the
+ * scenario itself) rather than per-seed (a fixture-level map, see
+ * `chargenDivergenceFor` below). `test/parity/fixtures/action-script.magic.json`'s
+ * `cast-damage` scenario (seed 8) is the ONLY scenario in that fixture that
+ * ever casts Freeze — Phase 23 routes a successful Freeze kill through
+ * `killFoe` (see `engine/magic.js`'s thrown branch), which legitimately
+ * changes `c.sp`/`c.gold`/`c.kills`/`c.rations` versus the frozen prototype.
+ * That scenario's own `divergence` record (`fields`/`before`/`after`/
+ * `rationale`) is the single source of truth for which fields differ and by
+ * how much; this helper is a pure, generic strip — it does not know
+ * anything about Freeze specifically, only about "which fields a scenario
+ * declared as divergent."
+ *
+ * Applied at BOTH magic replay sites (`test/parity/magic-parity.test.js`'s
+ * local `comparable()` and `test/parity/full-suite.test.js`'s magic
+ * sub-test, via `combatComparable`) by selecting this stripper only when
+ * `scenario.divergence` is truthy — every other magic scenario (heal,
+ * potion, scroll) and every other fixture stays byte-identical with NO
+ * strip. Returns `state` completely unchanged when `divergence` is falsy,
+ * so a caller can unconditionally do `divergence ? stripScenarioDivergence(s, divergence) : s`.
+ * Reuses `stripDeclaredFields` for the actual field removal — the same
+ * primitive `chargenDivergenceFor`'s callers already use, just applied to
+ * `state.c` after a shallow copy of `state` rather than mutating in place.
+ */
+export function stripScenarioDivergence(state, divergence) {
+  if (!divergence) return state;
+  const rest = { ...state };
+  if (rest.c) rest.c = stripDeclaredFields(rest.c, divergence.fields);
+  return rest;
+}
+
+/**
  * chargenDivergenceFor(fixture, seed) — FID-06 (Phase 23, CONTEXT "Fixture
  * handling"): looks up the seed-scoped divergence record (if any) from a
  * chargen fixture's top-level `divergences` map (see
