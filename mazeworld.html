@@ -4197,14 +4197,30 @@ function flee() {
 
 /* ---------------- talking, singing, reading ---------------- */
 const TALKATIVE = ["Humans", "Demons", "Lair Beasts", "Beasts"];
+// Phase 20 (D-17, LANG-01/LANG-02, PARLEY-02) — this classic canParley()/
+// fluency() pair is LIVE (it gates the "5 · Parley" button in
+// renderEncounter and the "5" key — see the DR8 note above) and is a
+// hand-maintained mirror of engine/combat.js#canParley / engine/derived.js#
+// fluency. test/unit/parley-button-mirror.test.js (20-03) extracts these two
+// functions from this file and replays the engine's availability matrix
+// through them, so any drift fails npm test. The classic parley() below
+// stays dead code and is deliberately left untouched.
+function fluency() {
+  return (skill("Language") ? 1 : 0) + (eff("tongue") > 0 ? 1 : 0);
+}
 function canParley() {
   if (!S.combat) return false;
-  const t = S.combat.type;
-  if (t === "Walking Dead" || t === "Magical") return false;
+  const C = S.combat;
+  if (C.parleyTried) return false;
+  const t = C.type;
+  if (t === "Walking Dead") return false;
+  const flu = fluency();
+  if (t === "Magical" && flu < 2) return false;
   if (S.c.sub === "Con Artist") return true;
   if (S.c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
   if (S.c.sub === "Bard" && t === "Humans") return true;
-  if (skill("Language") && TALKATIVE.includes(t)) return true;
+  const talkable = flu >= 2 ? [...TALKATIVE, "Magical"] : TALKATIVE;
+  if (flu >= 1 && talkable.includes(t)) return true;
   // "All good and evil creatures recognize the Wilmsry and often desire to barter with them."
   if (S.c.race === "Wilmsry" && t !== "Magical") return true;
   // "Most humans treasure the sighting of an elf as a good omen."

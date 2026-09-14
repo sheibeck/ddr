@@ -116,6 +116,9 @@ const BASE_EVENT = {
   result: "something", spells: ["Heal"], what: "a cloak", gift: "Magic Weapon", first: 2,
   mult: 2, remaining: 1, motive: "Blood", level: 2, wpGain: 3, depth: 3, steps: 40, total: 8,
   troll: true, elfOrDwarf: true, untouchable: true,
+  // Phase 20 (D-14): fluency annotation on parleyRolled; why on goldGained
+  // (distinguishes the rare parley wilmst payout from every other source).
+  fluency: 2, why: "parley",
 };
 
 // Branch-discriminator overrides so every ternary path in every builder renders.
@@ -124,6 +127,9 @@ const BRANCH_TOGGLES = [
   { reason: "wizard" }, { reason: "descend" }, { reason: "cloaker" }, { reason: "tracked" },
   { critical: false }, { wp: 0 }, { mult: 1 }, { troll: false, elfOrDwarf: false },
   { troll: false, elfOrDwarf: true }, { roll: null }, { amount: 1 }, { untouchable: false },
+  // Phase 20 (D-14): both sides of parleyRolled's fluency ternary, goldGained's
+  // why ternary, and parleyRefused's wilmsryVsMagical branch.
+  { fluency: 0 }, { why: null }, { reason: "wilmsryVsMagical" },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

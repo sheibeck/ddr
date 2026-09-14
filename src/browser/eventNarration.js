@@ -179,14 +179,33 @@ export const EVENT_NARRATION = {
         : `<span class="hit">You get clear.</span>`,
   fleeRolled: (e) => `Flee: <span class="roll">${e.roll ?? "?"}</span>+${e.bonus ?? 0} vs ${e.need ?? "?"}.`,
   fleeFailed: () => `<span class="miss">You do not make it.</span>`,
-  parleyRefused: () => `<span class="miss">Not this time, not with them.</span>`,
-  parleyRolled: (e) => `Talk it down: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}.`,
+  // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a
+  // fluency-2 Wilmsry facing Magical) and gets the canon grudge line; every
+  // other refusal keeps the prior text.
+  parleyRefused: (e) =>
+    e.reason === "wilmsryVsMagical"
+      ? `<span class="miss">Magic Users hate the Wilmsry. There is nothing to discuss.</span>`
+      : `<span class="miss">Not this time, not with them.</span>`,
+  // Phase 20 (D-14): appends the fluency bonus (2 per point) whenever it is
+  // non-zero, e.g. "need 15 (+2 <the literal below>)".
+  parleyRolled: (e) =>
+    `Talk it down: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${e.fluency ? ` (+${e.fluency * 2} for the tongue)` : ""}.`,
+  // Phase 20 (D-06): a failed parley marks the group insulted for the rest
+  // of the fight — unmistakable, never silent.
+  parleyInsulted: () => `<span class="miss">You have made it personal.</span> They will be aiming with real intent from here on.`,
+  // Phase 20 (D-05): a re-sent parley after the encounter's one attempt.
+  parleyExhausted: () => `<span class="miss">You already said your piece.</span> They are done listening; try the pointy end.`,
   // E10/P2 (04.2 Text batch): the trailing `(${why})` used to leak the engine's
   // internal source tag ("tableFour", "chest", "faerie"…) straight to the
   // player; NONE of those tags are player-friendly, so the suffix is dropped
   // entirely (the surrounding beats already say where the gold came from). The
   // currency also reads "wilmst" now, the game's canonical spelling, not "wm".
-  goldGained: (e) => `<span class="hit">+${e.amount ?? 0} wilmst.</span>`,
+  // Phase 20 (D-14): the parley wilmst payout is rare now (d6===6, D-03) —
+  // the success line reflects that it is a windfall, not the routine cut.
+  goldGained: (e) =>
+    e.why === "parley"
+      ? `One of them, against the odds, pays you to forget the whole thing. <span class="hit">+${e.amount ?? 0} wilmst.</span>`
+      : `<span class="hit">+${e.amount ?? 0} wilmst.</span>`,
   parleyFailed: () => `<span class="miss">They are not buying it.</span>`,
   sang: (e) => `You strike up "${e.song ?? "a tune"}".`,
   beastsSoothed: (e) => `<span class="hit">${e.count ?? 0} calm right down.</span>`,
