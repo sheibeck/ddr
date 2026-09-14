@@ -301,11 +301,11 @@ test("weaponDamage: Master of Arms deals exactly +2 versus an identical non-Mast
 
 // --- playerStrike ------------------------------------------------------
 
-test("playerStrike: a Wizard refuses to melee while a spell charge remains", () => {
-  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", spellsUsed: 0 } });
+test("playerStrike: a Wizard refuses to melee while an attack spell is castable", () => {
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", spellsUsed: 0, grimoire: ["Freeze"], level: 1 } });
   state.combat = fixedCombat([fixedFoe({ wp: 10 })]);
   const events = playerStrike(state, fakeRng([]), []);
-  assert.deepStrictEqual(events, [{ type: "strikeRefused", reason: "wizard" }]);
+  assert.deepStrictEqual(events, [{ type: "strikeRefused", reason: "wizard", spell: "Freeze" }]);
 });
 
 test("playerStrike: a hit applies weaponDamage, kills the foe on lethal wp, and clears the encounter", () => {

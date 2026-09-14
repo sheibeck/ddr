@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
@@ -323,8 +323,8 @@ export function startCombat(state, wandering, forced, rng, events = []) {
 /**
  * playerStrike(state, rng, events) — the player's attack action. Ports
  * mazeworld.html playerStrike() (lines 2331-2408): Wizard's melee refusal
- * while a spell charge remains, the frozen-round skip, the attack count
- * (Barbarian/Ambidextrous/haste/Fridgian frenzy, including the
+ * while an attack spell is castable right now, the frozen-round skip, the
+ * attack count (Barbarian/Ambidextrous/haste/Fridgian frenzy, including the
  * wasted-swing-on-a-corpse roll), per-attack toHit vs strikeDie, all the
  * critical-strike rules (Stealth/Cat Burglar/Cutthroat/Ninja/Death-touch/
  * Guard/Soldier no-crit), weaponDamage, and killFoe on lethal.
@@ -333,10 +333,23 @@ export function playerStrike(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
   if (!C) return events;
-  // a Wizard does not lower himself to hand-to-hand while a spell remains
+  // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-01): the prototype
+  // (mazeworld.html lines 2331-2408) refused a Wizard's melee strike while
+  // ANY spell charge remained, even if the whole grimoire was Heal/Shield —
+  // a Wizard could be left with nothing to do (Phase 22's ledger recorded
+  // this as the "cannot act" state). The new rule: refuse to melee only
+  // while a charge remains AND an attack-kind spell is castable RIGHT NOW
+  // (known, level-legal, school-legal, override-aware via
+  // castableAttackSpells) — a Wizard holding only utility spells, or one who
+  // has spent every attack spell for the day, fights with the staff. The
+  // event now names the spell the Wizard should cast instead, so a later UI
+  // pass can tell the player exactly what to do.
   if (c.sub === "Wizard" && maxCharges(c) - c.spellsUsed > 0) {
-    events.push({ type: "strikeRefused", reason: "wizard" });
-    return events;
+    const castable = castableAttackSpells(state);
+    if (castable.length) {
+      events.push({ type: "strikeRefused", reason: "wizard", spell: castable[0].n });
+      return events;
+    }
   }
   if (C.frozen) {
     C.frozen = false;

@@ -144,9 +144,13 @@ export const EVENT_NARRATION = {
   encounterCleared: () => `<span class="hit">Nothing left standing.</span>`,
   phobiaFrozen: () => `<span class="hurt">Your phobia has you rooted to the spot.</span>`,
   combatInDark: () => `<span class="beat">You cannot see what you are fighting.</span>`,
+  // Phase 23 (IDENT-01): the refusal now names the attack spell the Wizard
+  // should cast instead, when the engine supplies one.
   strikeRefused: (e) =>
     e.reason === "wizard"
-      ? `<span class="miss">A Wizard does not stoop to fisticuffs while a spell remains.</span>`
+      ? e.spell
+        ? `<span class="miss">A Wizard does not stoop to fisticuffs while ${e.spell} is still in the book.</span>`
+        : `<span class="miss">A Wizard does not stoop to fisticuffs while a spell remains.</span>`
       : `<span class="miss">You hold back.</span>`,
   shookOffFrozen: () => `<span class="hit">You shake it off.</span>`,
   frenzy: () => `<span class="hurt">Something in your blood takes over. Frenzy.</span>`,
