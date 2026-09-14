@@ -372,19 +372,311 @@ Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion
 
 ## Change table (21-04)
 
-*Filled by plan 21-04.*
+| Knob | File | Before | After | Rationale | Decision |
+|---|---|---|---|---|---|
+| `FOE_CAP_MAX` | `engine/difficulty.js` | 3 (identity) | 5 | Bigger fights deep — the count ceiling soft-caps toward 5 (≈4 by the mid-teens, ≈5 by the low thirties), applied as a zero-new-draw additive bonus on top of the canon `d4`/`d4` roll (D-17). Identity at depth ≤ 5. | D-02 |
+| `FOE_POWER_MAX` | `engine/difficulty.js` | 1.0 (identity) | 1.6 | ≈ +35% hit points and flat melee damage at depth 20, ≈ +50% at depth 40, never above +60%. Applied at `startCombat` copy time to `wp`/`maxWP` and a `dmgBonus` key consumed as post-draw arithmetic in the three melee sites. Identity at depth ≤ 5. | D-02 |
+| `ABILITY_THREAT_MAX` | `engine/difficulty.js` | 1.0 (identity) | 2.0 | A caster kit's `every: 2` effectively becomes "every visit" (every: 1) from ≈ depth 25 onward; `uses` doubles at the asymptote. Read via `abilityCadenceFor` in `tickAbilityCooldowns`/`firstReadyAbility`/`resolveFoeAbility`. Identity at depth ≤ 5. | D-03 |
+| `FOE_CAP_SOFT_K` | `engine/difficulty.js` | 20 | 20 (unchanged) | 21-02's illustrative k already gives the intended ≈4-by-mid-teens/≈5-by-low-thirties ramp against `FOE_CAP_MAX=5`; iteration 1's readout did not ask for a steeper/gentler ramp. | D-02 / Claude's Discretion |
+| `FOE_POWER_SOFT_K` | `engine/difficulty.js` | 25 | 25 (unchanged) | Same reasoning — the ≈+35%@20 / ≈+50%@40 shape the RESEARCH.md example already targets held up against iteration 1's numbers. | D-02 / Claude's Discretion |
+| `ABILITY_THREAT_SOFT_K` | `engine/difficulty.js` | 20 | 20 (unchanged) | Same reasoning — `every:2→1` from ≈depth 25 is the intended cadence; no readout signal asked for a change. | D-03 / Claude's Discretion |
+| `FOE_LVL_BIAS` | `engine/difficulty.js` | 0 | 0 (reserved, unused) | No signal in the iteration-1 readout asked for a tier bias on top of the canon `maxLvl` clamp; left reserved for a future D-16 pass if the DR round asks. | D-01 |
+| `ENCOUNTER_DOT_CAP` / `ENCOUNTER_DOT_SOFT_K` / `DARK_*` | `engine/difficulty.js` | unchanged | unchanged | Iteration 1's median actions-per-floor number (see below) did not miss the D-09 band in the direction that this table's "what to turn" guidance ties to dot density; no change made. | D-10 |
+| `lootDepth` (economy counterweight) | `engine/difficulty.js` / `engine/encounters.js` / `engine/combat.js` | — | pending trigger (Task 2) | Depends on iteration 1's tune-economy `peakGold p50` vs. the 5000 trigger. | D-10 / D-21 |
+| `memberUpkeepScale` (party counterweight) | `engine/difficulty.js` / `engine/movement.js` | — | pending trigger (Task 2) | Depends on iteration 1's `--party` p50 vs. 1.5 × solo p50 trigger. | D-12 / D-20 |
 
-## AFTER readout (21-04)
+### Iteration log
 
-*Filled by plan 21-04.*
+**Iteration 1** — constants: `FOE_CAP_MAX=5` (k=20), `FOE_POWER_MAX=1.6` (k=25), `ABILITY_THREAT_MAX=2.0` (k=20), `FOE_LVL_BIAS=0` (reserved). Three 200-seed background runs launched with the exact BEFORE command lines and bot parameters (`tools/tune-difficulty.mjs --seeds=200`, `--seeds=200 --party`, `tools/tune-economy.mjs --seeds=200`), each ending in an `EXIT=<code>` sentinel, polled in bounded checks. Result (see the readout below): median death depth 3 (missed, target 8-15), p90 5 (missed, target ≥25), runs past floor 50 0% (met, target <2%), median actions/floor 98 (missed, target 40-80) — byte-for-byte unchanged from BEFORE. Neither conditional trigger fired (economy peakGold p50=249, nowhere near the 5000 trigger; `--party` p50=3 vs. solo p50=3, nowhere near the 1.5x-solo trigger). Reading: the retuned dials are identity through depth 5 (D-19) and only 0.5-2.0% of runs ever reach depth 10 — a dial that only activates past floor 5 cannot move a distribution whose median/p90 sit at floors 3/5. Proceeding to Iteration 2 per D-11 with the one directed, identity-safe knob (raise `FOE_POWER_SOFT_K`/`ABILITY_THREAT_SOFT_K`) to confirm this reading before stopping.
+
+## AFTER readout — retuned engine (iteration 1)
+
+Captured 2026-09-14 against the retuned engine (`FOE_CAP_MAX=5`, `FOE_POWER_MAX=1.6`,
+`ABILITY_THREAT_MAX=2.0`; `*_SOFT_K` unchanged from 21-02's illustrative values).
+Same three background-run/EXIT=/bounded-poll discipline as BEFORE; all three
+completed with `EXIT=0` within the poll window.
+
+### tune-difficulty --seeds=200
+
+```
+tune-difficulty: 200 seeded auto-play run(s)
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=3  p90=5  max=10
+
+Action-count distribution:
+  min=15  p50=293  p90=659  max=20000
+
+Death-cause breakdown:
+  cut down by a Dante  34 (17.0%)
+  cut down by a Poltergeist 15 (7.5%)
+  starved in the dark  15 (7.5%)
+  undone by a trap     12 (6.0%)
+  cut down by a Gremlin 12 (6.0%)
+  fell off a wall      10 (5.0%)
+  maxActionsHit        10 (5.0%)
+  cut down by a Werebeast 9 (4.5%)
+  spent by the dungeon itself 7 (3.5%)
+  cut down by a Drarl  6 (3.0%)
+  cut down by a Pogo   5 (2.5%)
+  cut down by a Philly 5 (2.5%)
+  came up short on a leap 5 (2.5%)
+  cut down by a Hair   4 (2.0%)
+  cut down by a China Wolf 4 (2.0%)
+  cut down by a Drekk  3 (1.5%)
+  cut down by a Shadow 3 (1.5%)
+  cut down by a Blumble 3 (1.5%)
+  cut down by a Skeleton 3 (1.5%)
+  cut down by a Rinkle 3 (1.5%)
+  cut down by a Herman 3 (1.5%)
+  cut down by a Cave Bear 3 (1.5%)
+  cut down by a Dog Face 2 (1.0%)
+  cut down by a Shriek 2 (1.0%)
+  cut down by a Trachea 2 (1.0%)
+  cut down by a M&M    2 (1.0%)
+  cut down by a Goblin 2 (1.0%)
+  cut down by a Frank  2 (1.0%)
+  cut down by a Zombie 2 (1.0%)
+  cut down by a Sterling 2 (1.0%)
+  cut down by a Zit    2 (1.0%)
+  cut down by a Google 1 (0.5%)
+  cut down by a Drat   1 (0.5%)
+  cut down by a Primp  1 (0.5%)
+  cut down by a Ghost  1 (0.5%)
+  cut down by a Wolf   1 (0.5%)
+  cut down by a Flube  1 (0.5%)
+  cut down by a Hobgoblin 1 (0.5%)
+  cut down by a Ghoul  1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=159  successes=94 (59.1%)  failures=65  refused=1  exhausted=0
+  runs with >=1 attempt: 74 of 200
+  SP from parley: 1493 of 73026 total SP (2.0%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 15.0%  >=10: 0.5%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=15  p50=98  p90=137  max=20000
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 36/1461 (2.5%)
+  6-10: 21/68 (30.9%)
+  11-20: 0/0 (0.0%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=181  foeBolted=41  foeDrained=1  foeDebuffed=26  foeHealed=3  foeSummoned=0
+  heroResisted=74  heroResistFailed=24
+  ability damage: 190 of 19559 total damage taken (1.0%)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5
+
+Outcome: 190 dead, 0 won, 10 hit maxActions
+```
+
+### tune-difficulty --seeds=200 --party
+
+```
+tune-difficulty: 200 seeded auto-play run(s)
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=3  p90=6  max=15
+
+Action-count distribution:
+  min=21  p50=368  p90=670  max=20000
+
+Death-cause breakdown:
+  starved in the dark  63 (31.5%)
+  undone by a trap     21 (10.5%)
+  cut down by a Werebeast 12 (6.0%)
+  cut down by a Dante  11 (5.5%)
+  spent by the dungeon itself 7 (3.5%)
+  maxActionsHit        7 (3.5%)
+  fell off a wall      7 (3.5%)
+  cut down by a Drake  5 (2.5%)
+  cut down by a Poltergeist 5 (2.5%)
+  cut down by a Spectre 5 (2.5%)
+  cut down by a Cave Bear 5 (2.5%)
+  cut down by a Google 4 (2.0%)
+  cut down by a Frank  4 (2.0%)
+  cut down by a Drarl  3 (1.5%)
+  cut down by a Primp  3 (1.5%)
+  cut down by a Pogo   3 (1.5%)
+  cut down by a Sterling 3 (1.5%)
+  cut down by a Trachea 3 (1.5%)
+  cut down by a Herman 2 (1.0%)
+  cut down by a Blumble 2 (1.0%)
+  cut down by a Vampire 2 (1.0%)
+  cut down by a China Wolf 2 (1.0%)
+  came up short on a leap 2 (1.0%)
+  cut down by a Shadow 2 (1.0%)
+  cut down by a Skeleton 2 (1.0%)
+  cut down by a Dread Lock 2 (1.0%)
+  cut down by a Ghoul  2 (1.0%)
+  cut down by a Craig  1 (0.5%)
+  cut down by a Drudge 1 (0.5%)
+  cut down by a Drekk  1 (0.5%)
+  cut down by a Rast   1 (0.5%)
+  cut down by a Goblin 1 (0.5%)
+  cut down by a Philly 1 (0.5%)
+  cut down by a Zit    1 (0.5%)
+  cut down by a Wolf   1 (0.5%)
+  cut down by a Gremlin 1 (0.5%)
+  cut down by a Rinkle 1 (0.5%)
+  cut down by a Krupke 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=90  successes=63 (70.0%)  failures=27  refused=0  exhausted=0
+  runs with >=1 attempt: 51 of 200
+  SP from parley: 1660 of 104611 total SP (1.6%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 31.5%  >=10: 2.0%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=21  p50=101  p90=134  max=20000
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 48/1846 (2.6%)
+  6-10: 37/111 (33.3%)
+  11-20: 15/21 (71.4%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=263  foeBolted=88  foeDrained=5  foeDebuffed=26  foeHealed=3  foeSummoned=3
+  heroResisted=102  heroResistFailed=35
+  ability damage: 295 of 12432 total damage taken (2.4%)
+
+Party (--party, D-12/D-20):
+  member forced at run start in 200/200 runs; member alive at run end: 131 (65.5%)
+
+Bot: exploreBudget=50  maxActions=20000  party=on  flee=0.3/0.5(caster)  potion<0.5  camp<0.5
+
+Outcome: 193 dead, 0 won, 7 hit maxActions
+```
+
+### tune-economy --seeds=200
+
+```
+tune-economy: 200 seeded auto-play run(s)
+(SCAFFOLD STUB / TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Wilmst earned per run:
+  min=0  p50=218  p90=1134  max=5725
+
+Peak wilmst held per run:
+  min=50  p50=249  p90=1184  max=5775
+
+Wilmst held at run end:
+  min=50  p50=249  p90=1184  max=5775
+
+Reached depth:
+  min=1  p50=3  p90=5  max=10
+
+Income by source (goldGained.why):
+  chest               48805 (57.5%)
+  tableFour           19500 (23.0%)
+  off the body         6336 (7.5%)
+  grimoire             5733 (6.8%)
+  parley               1900 (2.2%)
+  pickpocket           1337 (1.6%)
+  faerie               1300 (1.5%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 15.0%  >=10: 0.5%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=15  p50=98  p90=137  max=20000
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 36/1461 (2.5%)
+  6-10: 21/68 (30.9%)
+  11-20: 0/0 (0.0%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=181  foeBolted=41  foeDrained=1  foeDebuffed=26  foeHealed=3  foeSummoned=0
+  heroResisted=74  heroResistFailed=24
+  ability damage: 190 of 19559 total damage taken (1.0%)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5
+```
+
+**Headline iteration-1 AFTER numbers (vs. BEFORE):**
+
+- Death depth (solo): min=1, p50=3, p90=5, max=10 — **byte-for-byte identical
+  to BEFORE's solo distribution.** Party (`--party`): p50=3, p90=6 (was 6),
+  max=15 (was 14) — a slightly higher max but the same p50/p90 story.
+- Reach table (solo): ≥5 15.0% (unchanged), ≥10 0.5% (unchanged), ≥20/≥30/≥50
+  all 0.0% (unchanged). The retuned dials (`foeCap`/`foePower`/
+  `abilityThreat`) are identity through depth 5 by construction (D-19) and
+  **only 0.5% of solo runs, 2.0% of `--party` runs, ever reach depth 10** —
+  the vast majority of the death/action distribution never leaves the
+  identity band, so the retuned dials have essentially nothing to act on yet.
+- Median actions per floor: 98 (solo), 101 (`--party`) — unchanged from
+  BEFORE. Confirms the same read: this metric is computed as actions ÷
+  death-depth, and with p50 death depth pinned at 3, the number is a depth
+  1-5 exploration/lethality characteristic, not something the depth 6+ dials
+  can move.
+- Economy: peak wilmst p50=249 (unchanged), p90=1184 (unchanged); max rose
+  from 3865 to 5775 (one long `--party`-adjacent run reaching depth 10 with a
+  bigger purse) — **p50 is nowhere near the 5000 economy trigger.**
+- Caster-encounter rate by band: 1-5 unchanged (2.5%/2.6%); 6-10 rose slightly
+  (27.4%→30.9% solo, 36.6%→33.3% party — noise at this sample size); 11-20
+  only sampled in `--party` (60.9%→71.4%, still noisy — n=21-23). Ability
+  damage share ticked up (0.6%→1.0% solo, 2.1%→2.4% party) — a small, expected
+  effect of `abilityThreat` leaving identity at depth 6, but the encounters
+  that see it remain rare (this same 6-10 band the BEFORE readout already
+  flagged).
+- **This is the expected, structurally-explained result, not a bug:** the
+  retuned combat dials only diverge from identity at depth ≥ 6 (D-19), and
+  the upgraded bot's own BEFORE readout already showed 0% of runs reaching
+  floor 10+ and 0% reaching floor 20+. A dial that only activates past floor
+  5 cannot move a distribution whose median/p90 sit at floors 3/5. The four
+  D-09 targets (median 8-15, p90 ≥25, <2% past 50, actions/floor 40-80) are
+  themselves computed over the SAME distribution — see the Iteration-1 D-09
+  check below.
+
+**Iteration-1 D-09 check (informational — Task 2 finalises the Comparison table):**
+
+| Target | BEFORE | Iteration 1 AFTER | Met? |
+|---|---|---|---|
+| Median death depth 8-15 | 3 | 3 | **Missed** |
+| p90 death depth ≥ 25 | 5 | 5 | **Missed** |
+| Runs past floor 50 < 2% | 0% | 0% | Met |
+| Median actions/floor 40-80 | 98 | 98 | **Missed** |
+
+**Iteration-1 trigger check (D-10/D-12/D-20/D-21):**
+
+- Economy trigger (peakGold p50 > 5000): p50 = 249. **Not triggered.**
+- Party trigger (`--party` p50 > 1.5 × solo p50): 3 > 1.5×3=4.5? No.
+  **Not triggered.**
+
+**Iteration 2 decision (recorded in the Iteration log below):** three of the
+four D-09 targets missed and both conditional triggers stayed cold. Per D-11
+("at most two harness iterations... then stop"), Task 2 applies the "median
+< 8 / p90 < 25" guidance (raise `FOE_POWER_SOFT_K`/`ABILITY_THREAT_SOFT_K`)
+as the one directed, identity-safe adjustment, re-takes the readout once, and
+then finalises the ledger's honest reading regardless of whether the numbers
+move — this is exactly D-11's designed stopping point, not a bug to keep
+chasing.
 
 ## Comparison vs D-09 (21-04)
 
-*Filled by plan 21-04.*
+*Filled by Task 2, once the final AFTER readout (iteration 1 or 2) is settled.*
 
 ## Not changed, and why (21-04)
 
-*Filled by plan 21-04.*
+*Filled by Task 2.*
 
 ## DR checklist — TUNE-04 sign-off (21-05)
 

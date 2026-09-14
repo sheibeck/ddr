@@ -40,9 +40,19 @@ export const DARK_RADIUS_CAP = 9;
 
 // --- Phase 21 (TUNE-01, D-01/D-19): combat-scaling knobs -------------------
 // Identity band: depth <= 5 (see difficultyCurve's `over` computation below).
-// Every MAX below equals its BASE in this plan (21-02) — the retune (21-04)
-// is the only thing allowed to move a MAX; this plan's own diff is provably
-// inert at EVERY depth until that happens.
+//
+// DELIBERATE RULES CHANGE (Phase 21, TUNE-03, D-09/D-11): the three MAX
+// constants below were set by the ONE consolidated retune pass, iteration 1,
+// against the 200-seed upgraded-bot readout recorded in
+// docs/DIFFICULTY-RETUNE.md (change table + AFTER readout + comparison vs.
+// the D-09 targets). Every constant stays identity at depth <= 5 by
+// construction (`over = max(0, depth - (COMBAT_SCALE_FROM_DEPTH - 1))` is 0
+// for depth 1..5) — this is proven structurally, not by convention, so the
+// depth-1..5 fixtures and the D-15/FID-02 pins never see a different number.
+// A future D-16 "tune again" follow-up may edit ONLY these three MAX values
+// (and their *_SOFT_K siblings) plus append a ledger addendum — it must not
+// touch the wiring in startCombat/foeAbilities.js, which 21-02 already
+// proved correct against identity values.
 
 /** COMBAT_SCALE_FROM_DEPTH — the first floor on which the combat knobs may
  * leave identity (D-19); `over = max(0, depth - (COMBAT_SCALE_FROM_DEPTH - 1))`
@@ -50,18 +60,25 @@ export const DARK_RADIUS_CAP = 9;
 export const COMBAT_SCALE_FROM_DEPTH = 6;
 /** FOE_CAP_BASE — the canon `c.level <= 2 ? 2 : 3` ceiling's level->=3 value. */
 export const FOE_CAP_BASE = 3;
-/** FOE_CAP_MAX — 21-02 IDENTITY (equals FOE_CAP_BASE); 21-04 sets the D-02 target (~5). */
-export const FOE_CAP_MAX = 3;
+/** FOE_CAP_MAX — 21-04 retune (D-02): bigger fights deep — the count ceiling
+ * soft-caps toward 5 (≈4 from the mid-teens, ≈5 by the low thirties, via
+ * FOE_CAP_SOFT_K), never above 5. Identity (3) at depth <= 5. */
+export const FOE_CAP_MAX = 5;
 export const FOE_CAP_SOFT_K = 20;
 /** FOE_POWER_BASE — the multiplier applied to a foe's starting wp/maxWP. */
 export const FOE_POWER_BASE = 1.0;
-/** FOE_POWER_MAX — 21-02 IDENTITY (equals FOE_POWER_BASE); 21-04 sets the D-02 target (~1.6). */
-export const FOE_POWER_MAX = 1.0;
+/** FOE_POWER_MAX — 21-04 retune (D-02): ≈ +35% hit points and flat melee
+ * damage at depth 20, ≈ +50% at depth 40, never above +60% (soft-capped via
+ * FOE_POWER_SOFT_K). Identity (1.0) at depth <= 5. */
+export const FOE_POWER_MAX = 1.6;
 export const FOE_POWER_SOFT_K = 25;
 /** ABILITY_THREAT_BASE — the cadence scalar for caster kits (every/uses). */
 export const ABILITY_THREAT_BASE = 1.0;
-/** ABILITY_THREAT_MAX — 21-02 IDENTITY (equals ABILITY_THREAT_BASE); 21-04 sets the D-03 target (~2). */
-export const ABILITY_THREAT_MAX = 1.0;
+/** ABILITY_THREAT_MAX — 21-04 retune (D-03): a caster kit's `every: 2`
+ * effectively becomes "every visit" (every: 1) from ≈ depth 25 onward, and
+ * `uses` doubles at the asymptote (via ABILITY_THREAT_SOFT_K). Identity
+ * (1.0) at depth <= 5. */
+export const ABILITY_THREAT_MAX = 2.0;
 export const ABILITY_THREAT_SOFT_K = 20;
 /** FOE_LVL_BIAS — reserved (D-01): 0 unless the retune needs it. */
 export const FOE_LVL_BIAS = 0;

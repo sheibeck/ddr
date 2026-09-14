@@ -156,18 +156,18 @@ test("D-19 identity: difficultyCurve(1..5) deep-equals the exact pre-Phase-21 ob
   }
 });
 
-test("21-02 constants are identity (MAX === BASE) — the retune (21-04) is the only thing allowed to move them", () => {
-  // 21-04 rewrites the three MAX pins (FOE_CAP_MAX/FOE_POWER_MAX/ABILITY_THREAT_MAX)
-  // to the retuned values and re-records them in docs/DIFFICULTY-RETUNE.md.
+test("21-04 retune values — recorded in docs/DIFFICULTY-RETUNE.md", () => {
+  // 21-04 rewrote the three MAX pins (FOE_CAP_MAX/FOE_POWER_MAX/ABILITY_THREAT_MAX)
+  // to the retuned values and recorded them in docs/DIFFICULTY-RETUNE.md.
   assert.equal(COMBAT_SCALE_FROM_DEPTH, 6);
   assert.equal(FOE_CAP_BASE, 3);
-  assert.equal(FOE_CAP_MAX, 3);
+  assert.equal(FOE_CAP_MAX, 5);
   assert.equal(FOE_CAP_SOFT_K, 20);
   assert.equal(FOE_POWER_BASE, 1);
-  assert.equal(FOE_POWER_MAX, 1);
+  assert.equal(FOE_POWER_MAX, 1.6);
   assert.equal(FOE_POWER_SOFT_K, 25);
   assert.equal(ABILITY_THREAT_BASE, 1);
-  assert.equal(ABILITY_THREAT_MAX, 1);
+  assert.equal(ABILITY_THREAT_MAX, 2.0);
   assert.equal(ABILITY_THREAT_SOFT_K, 20);
   assert.equal(FOE_LVL_BIAS, 0);
 });
@@ -348,3 +348,84 @@ test("the D-15 / FID-02 contract is untouched by Phase 21 wiring", () => {
   assert.ok(!detFile.includes("Phase 21"));
   assert.ok(!drawCountFile.includes("Phase 21"));
 });
+
+// --- Task 1 (21-04) tests ----------------------------------------------------
+
+test("depth-6 first divergence (D-19): identity ends exactly at depth 5", () => {
+  for (let d = 1; d <= 5; d++) {
+    const dc = difficultyCurve(d);
+    assert.deepStrictEqual(dc, {
+      depth: d,
+      breather: false,
+      dots: 9 + d,
+      darkBlobs: d - 1,
+      darkRadius: 3 + d,
+      foeCap: 3,
+      foeBonus: 0,
+      foeLvlBias: 0,
+      foePower: 1,
+      abilityThreat: 1,
+    });
+  }
+  const dc5 = difficultyCurve(5);
+  assert.ok(Object.is(dc5.foePower, 1), "depth 5: foePower must be exactly 1");
+  assert.ok(Object.is(dc5.abilityThreat, 1), "depth 5: abilityThreat must be exactly 1");
+  assert.equal(dc5.foeCap, 3);
+
+  const dc6 = difficultyCurve(6);
+  assert.ok(dc6.foePower > 1, "depth 6: foePower must have left identity");
+  assert.ok(dc6.abilityThreat > 1, "depth 6: abilityThreat must have left identity");
+});
+
+test("the caps are reached: foeCap === FOE_CAP_MAX at some depth <= 100; foePower and abilityThreat are within 0.05 of their MAX at depth 200", () => {
+  let reached = false;
+  for (let d = 1; d <= 100; d++) {
+    if (difficultyCurve(d).foeCap === FOE_CAP_MAX) {
+      reached = true;
+      break;
+    }
+  }
+  assert.ok(reached, "foeCap never reaches FOE_CAP_MAX by depth 100");
+
+  const dc200 = difficultyCurve(200);
+  if (FOE_POWER_MAX > FOE_POWER_BASE) {
+    assert.ok(
+      Math.abs(dc200.foePower - FOE_POWER_MAX) <= 0.05,
+      `foePower at depth 200 (${dc200.foePower}) not within 0.05 of MAX (${FOE_POWER_MAX})`,
+    );
+  }
+  if (ABILITY_THREAT_MAX > ABILITY_THREAT_BASE) {
+    assert.ok(
+      Math.abs(dc200.abilityThreat - ABILITY_THREAT_MAX) <= 0.05,
+      `abilityThreat at depth 200 (${dc200.abilityThreat}) not within 0.05 of MAX (${ABILITY_THREAT_MAX})`,
+    );
+  }
+});
+
+test("startCombat at depth 30 builds more than 3 foes when the canon roll is 3 and foeBonus >= 1", () => {
+  const curve30 = difficultyCurve(30);
+  const state = fixedState({ c: { level: 5 }, floor: { depth: 30 } });
+  // d4=3 (>2, second roll needed), d4=4 (>3 -> canon count 3); then per-foe
+  // lvl/pick draws, then 2 initiative draws. Sequence sized generously so
+  // however many foes foeCountFor(3, curve30) produces, the run never
+  // exhausts (fakeRng throws on underflow, which would fail the test loudly).
+  const seq = [3, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10, 5];
+  const rng = fakeRng(seq);
+  startCombat(state, false, "Beasts", rng, []);
+
+  const expectedCount = foeCountFor(3, curve30);
+  assert.equal(state.combat.foes.length, expectedCount);
+  if (curve30.foeBonus >= 1) {
+    assert.ok(expectedCount > 3, `expected more than 3 foes at depth 30 when foeBonus (${curve30.foeBonus}) >= 1`);
+  }
+  for (const f of state.combat.foes) {
+    assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve30));
+    const expectedBonus = foeDmgBonusFor(f.lvl, curve30);
+    if (expectedBonus > 0) {
+      assert.equal(f.dmgBonus, expectedBonus);
+    } else {
+      assert.equal("dmgBonus" in f, false);
+    }
+  }
+});
+
