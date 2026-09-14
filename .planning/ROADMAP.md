@@ -155,7 +155,20 @@ Plans:
   3. Con Artist's baseline parley odds are retuned to a stated, documented post-rebalance win-rate target that keeps the subclass identity viable rather than gutted.
   4. The Language skill and the Helm of Knowledge (`tongue`) both contribute a fluency bonus to the same parley `bonus` term (Option B), and fluency widens which encounter types a character can parley, verified by an availability test per race/class/skill/Helm combination.
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 20-01-PLAN.md — PARLEY-01..03 baseline (D-13/D-15/D-18): `stripParleyDivergence` in the harness applied scenario-scoped at BOTH seed-303 replay sites (combat-parity local comparable + full-suite shared comparable) + carve-out test; `tools/tune-difficulty.mjs` parley tally; `docs/PARLEY-REBALANCE.md` with the BEFORE readout measured on the pre-Phase-20 engine
+
+**Wave 2** *(blocked on Wave 1 — the carve-out must precede the divergence and the BEFORE readout must precede the engine change)*
+
+- [ ] 20-02-PLAN.md — PARLEY-01..04, LANG-01/02 (D-01..D-12, D-14, D-16, D-17, D-20): `fluency` + `killSpFor` in `engine/derived.js`, `killFoe` via `killSpFor` (byte-identical), `canParley`/`parley` rewrite (one attempt, insulted aggro, Con Artist +4, need ≤ 17, +2×fluency, ×0.5 combat-equivalent, wilmst on a 6, reachable Wilmsry-vs-Magical refusal), `foeTurn` `need += 1` at both sites, narration + safety-scan tokens, `mazeworld.html` classic `canParley()` mirror, `test/unit/fluency.test.js`
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 20-03-PLAN.md — PARLEY-01..04, LANG-01/02 proof (D-02, D-04, D-05..D-08, D-10..D-13, D-15, D-17, D-19, D-21): `test/unit/parley.test.js` (576-case availability matrix vs an independent oracle, every gate, refusal, exhausted, insulted incl. member branch, odds 13/12, clamp 17, payout property, wilmst odds, countingRng draw shape, seed-303 pin, save/load edge), `test/unit/parley-button-mirror.test.js`, FIXTURE-INVENTORY.md Phase 20 before/after table, AFTER readout + comparison, phase gate
 
 ### Phase 21: Consolidated Difficulty Retune
 
@@ -189,6 +202,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
-| 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |
+| 20. Parley Balance & Language System | v1.1 | 0/3 | Planned | - |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |

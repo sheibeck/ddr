@@ -454,14 +454,14 @@ for (let lvl = 1; lvl <= 5; lvl++) {
 
 **If this table is empty:** N/A — see entries above; all three are implementation-detail risks (not data-integrity/compliance risks), each with a stated low-to-medium blast radius that a first test run will surface immediately.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should the classic `parley()` duplicate in mazeworld.html (confirmed dead code) also be updated for documentation consistency?**
+1. **RESOLVED (CONTEXT D-17; plans 20-02/20-03):** the LIVE `canParley()` duplicate is mirrored and guarded by `test/unit/parley-button-mirror.test.js`; the dead classic `parley()` is optional hygiene, not gated. Original question: **Should the classic `parley()` duplicate in mazeworld.html (confirmed dead code) also be updated for documentation consistency?**
    - What we know: it is unreachable from the live UI (DR8 comment confirms `window.mzParley` is the real call path); updating it has zero behavioral effect.
    - What's unclear: whether the team prefers dead-code hygiene (update it so a future reader isn't confused by a doubly-stale duplicate) vs. minimal diff (leave dead code alone, per the DR8 precedent of "don't delete a classic rule cluster in the same commit that rewires its call sites").
    - Recommendation: low priority; the plan should treat this as optional polish, not a gated task. The LIVE `canParley()` duplicate (Pitfall 1) is the one that must change.
 
-2. **Exact wording of the `parleyRolled` fluency annotation (D-14: "need 15 (+2 tongue)")** — cosmetic only, left to Claude's Discretion per CONTEXT.md; no research risk.
+2. **RESOLVED (CONTEXT "Claude's Discretion"; 20-02 Task 3 fixes the strings):** Exact wording of the `parleyRolled` fluency annotation (D-14: "need 15 (+2 tongue)")** — cosmetic only, left to Claude's Discretion per CONTEXT.md; no research risk.
 
 ## Validation Architecture
 
