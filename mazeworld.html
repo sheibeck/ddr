@@ -2778,7 +2778,13 @@ const CONDITION_COPY = {
   flight: { label: "Flying"                  },  // detail comes from the flight sub-state
   darkness: { label: "In the dark", unit: "sq" },
   phobia: { label: "Phobia"                  },  // DR17: names its own fear (see paintConditions)
+  foeEffect: { label: "Hexed", unit: "rds" },  // Phase 19 D-21 — foe-inflicted debuff; the KIND-specific label comes from FOE_EFFECT_LABEL below, this row is the fallback label for an unmapped kind and the rounds unit the detail renders.
 };
+
+// Phase 19, FOE-08 / D-21: a foe debuff chip names its KIND, not its key — in
+// voice, family-friendly; keys mirror content/foe-abilities.js debuff `effect`
+// values and test/unit/foe-effect-chip.test.js cross-checks the two sets.
+const FOE_EFFECT_LABEL = { weakened: "Weakened", dazed: "Dazed" };
 
 // Render the unified good/bad condition tracker from conditionsOf(S). Reads the
 // shared engine helper (bridged) so the active SET is single-sourced; maps each
@@ -2796,8 +2802,12 @@ function paintConditions(c) {
   host.innerHTML = conds.map((cn) => {
     // Affliction has no fixed copy row — it names its own kind (Poison/Disease).
     // DR17 item 1: the phobia chip names the active fear — "Phobia: <fear>".
+    // Phase 19 D-21 — the foeEffect chip labels its kind ("Weakened" /
+    // "Dazed"); the detail branch below already renders `remaining` with the
+    // row's `rds` unit, so nothing else changes.
     let label = cn.key === "affliction" ? (cn.kind || "Afflicted")
       : cn.key === "phobia" ? `Phobia: ${cn.phobia || "Fear"}`
+      : cn.key === "foeEffect" ? (FOE_EFFECT_LABEL[cn.kind] || CONDITION_COPY.foeEffect.label)
       : (CONDITION_COPY[cn.key]?.label || cn.key);
     let detail = "";
     if (cn.key === "flight") {
