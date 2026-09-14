@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 23
 current_phase_name: Casters Can Act
 status: executing
-stopped_at: Completed 23-01-PLAN.md
-last_updated: "2026-09-14T21:58:59.031Z"
+stopped_at: Completed 23-02-PLAN.md
+last_updated: "2026-09-14T22:14:32.580Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 23 execution started
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 17
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 23 (Casters Can Act) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 23 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T21:58:45.395Z
-Stopped at: Completed 23-01-PLAN.md
+Last session: 2026-09-14T22:14:32.552Z
+Stopped at: Completed 23-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -122,6 +122,7 @@ Resume file: None
 | Phase 22 P03 | 20min | 3 tasks | 4 files |
 | Phase 22 P04 | 21min | 3 tasks | 3 files |
 | Phase 23 P01 | 25min | 3 tasks | 5 files |
+| Phase 23 P02 | 13min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -184,6 +185,10 @@ Resume file: None
 - [Phase ?]: 23-01: spellLevelFor/ATTACK_SPELL_KINDS/isAttackSpell/castableAttackSpells homed in engine/derived.js (cycle-free leaf) so Plan 02/character.js and Plan 03/combat.js can both import them without an import cycle
 - [Phase ?]: 23-01: castableAttackSpells deliberately ignores remaining charges; the charge check stays at Plan 03's Wizard-refusal call site
 - [Phase ?]: 23-01: rng-pin test (Task 1) committed strictly before any engine/content edit; all 20 rollCharacter/newRun cursor pins and 8 per-sub rollGrimoire draw-count pins independently re-measured against the untouched engine and matched the plan's table exactly
+- [Phase ?]: 23-02: dayOnePool (spare pool predicate) frozen byte-identical; usableNow (ready-count only) routed through spellLevelFor; attack top-up walks the already-shuffled spare list with zero new rng draws
+- [Phase ?]: 23-02: Summoner exempt from attack top-up (belt-and-braces guard; spare structurally never has an attack-kind spell for it anyway)
+- [Phase ?]: 23-02: fixed cross-realm assert.deepStrictEqual failure comparing vm-sandboxed prototype values against plain JSON values in the new chargen divergence assertions -- switched to diffState (structuredClone-based), matching the rest of the parity harness
+- [Phase ?]: 23-02: measured chargen fixture divergence set is exactly {15, 24} as predicted; declared in a new divergences block (chargenDivergenceFor/stripDeclaredFields) rather than a blanket regeneration
 
 ### Blockers
 
