@@ -4,9 +4,9 @@ milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 23
 current_phase_name: Wizard/Summoner/Illusionist + Guaranteed Attack Spell
-status: planning
+status: executing
 stopped_at: Completed 22-04-PLAN.md
-last_updated: "2026-09-14T20:46:45.160Z"
+last_updated: "2026-09-14T21:49:37.588Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 22 complete, transitioned to Phase 23
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 Phase: 23 — Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-14 — Phase 22 complete, transitioned to Phase 23
 
 ## Ground Truth (durable facts every session needs)
