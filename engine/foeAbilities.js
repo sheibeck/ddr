@@ -163,7 +163,12 @@ export function resolveFoeAbility(state, f, a, rng, events) {
     const foe = {
       name: picked.n,
       type: a.effect.type,
-      lvl: Math.max(1, f.lvl - 1),
+      // WR-01 (19-REVIEW.md): lvl must match the roster TIER the stats were
+      // drawn from, not the summoner's own level — the summoner's level was
+      // silently inflating the reinforcement's to-hit die, melee damage, and
+      // XP payout (all keyed off f.lvl elsewhere in the engine) to the
+      // summoner's own tier instead of the declared weak tier.
+      lvl: a.effect.tier,
       size: picked.sz,
       intel: picked.i,
       wp: picked.wp,

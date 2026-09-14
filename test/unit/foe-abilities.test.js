@@ -374,7 +374,7 @@ test("heal (D-02): capped at maxWP, not ready at full HP", () => {
 
 // --- 14/15: summon (D-12) --------------------------------------------------------
 
-test("summon (D-12): queues one pending reinforcement, joins next foeTurn, has no abilities, lvl = summoner - 1, lives per twice", () => {
+test("summon (D-12): queues one pending reinforcement, joins next foeTurn, has no abilities, lvl = the roster tier its stats were drawn from, lives per twice", () => {
   const state = fixedState();
   const summoner = fixedFoe({ name: "Target", abilities: ["vampireSummon"], lvl: 5, cd: { vampireSummon: 1 } });
   state.combat = fixedCombat([summoner]);
@@ -389,7 +389,10 @@ test("summon (D-12): queues one pending reinforcement, joins next foeTurn, has n
       foe: {
         name: "Skeleton",
         type: "Walking Dead",
-        lvl: 4,
+        // WR-01 (19-REVIEW.md): lvl matches the tier-2 roster its stats came
+        // from, NOT the summoner's own lvl (5) — the to-hit die/melee
+        // damage/XP payout all key off f.lvl elsewhere in the engine.
+        lvl: 2,
         size: skeletonBase.sz,
         intel: skeletonBase.i,
         wp: skeletonBase.wp,
@@ -409,11 +412,14 @@ test("summon (D-12): queues one pending reinforcement, joins next foeTurn, has n
   assert.equal(events2[0].pending, false);
   assert.equal(state.combat.foes.length, 2);
 
+  // WR-01 regression guard: a summoner's OWN lvl must never leak into the
+  // reinforcement's lvl — a lvl-1 summoner still spawns a lvl-2 (tier-2)
+  // Skeleton, proving the two are fully decoupled.
   const state3 = fixedState();
   const weakSummoner = fixedFoe({ name: "Weak", abilities: ["vampireSummon"], lvl: 1, cd: { vampireSummon: 1 } });
   state3.combat = fixedCombat([weakSummoner]);
   foeTurn(state3, fakeRng([1], { pick: (arr) => arr[1] }), []);
-  assert.equal(state3.combat.pendingFoes[0].foe.lvl, 1, "a lvl-1 summoner floors at lvl 1");
+  assert.equal(state3.combat.pendingFoes[0].foe.lvl, 2, "the summoned foe's lvl equals the tier-2 roster level, independent of the summoner's own lvl");
 });
 
 test("summon caps: not ready while one is pending or when live foes >= 4 (falls to the next kit entry)", () => {

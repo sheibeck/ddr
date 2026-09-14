@@ -207,7 +207,18 @@ const PER_VISIT_PINS = {
   "humans-t2": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
   "magical-t4": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4],
   "demons-t5": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
-  "walking-dead-t5": [4, 6, 4, 6, 7, 5, 11, 10, 10, 9, 9, 8],
+  // RE-MEASURED (WR-01, 19-REVIEW-FIX.md): the vampireSummon reinforcement's
+  // `lvl` now correctly matches the tier-2 roster it was drawn from (2)
+  // instead of the summoner's own lvl (5, via `Math.max(1, f.lvl - 1)` = 4).
+  // This is a LEGITIMATE downstream draw-count change, not a regression: the
+  // reinforcement's to-hit die (`foeDie`, STRIKE_DICE[lvl-1]) is now a d12
+  // instead of a d8, so the SAME underlying rng float at each of its own
+  // to-hit rolls (from visit 7 onward, once the Skeleton/Google reinforcements
+  // start swinging) now lands on a different side of the hit/miss threshold,
+  // cascading into a different damage-roll draw or not. Draws 1-6 (before any
+  // reinforcement has taken its own swing) are unchanged. Old pin (pre-fix):
+  // [4, 6, 4, 6, 7, 5, 11, 10, 10, 9, 9, 8].
+  "walking-dead-t5": [4, 6, 4, 6, 7, 5, 10, 10, 8, 8, 7, 10],
   "beasts-t5": [4, 6, 4, 6, 5, 4, 6, 8, 6, 4, 7, 5],
 };
 
