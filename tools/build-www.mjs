@@ -29,6 +29,13 @@
 //      storage.js), which is always false/absent in the plain dev loop, so
 //      the dev loop never needs this import map and mazeworld.html itself
 //      is left untouched on disk.
+//   5. Phase 21 (TUNE-04, D-22): stamp the real app version into
+//      www/index.html's Settings-sheet version line — read
+//      android/version.properties' versionName/versionCode and replace the
+//      `#mw-app-version` placeholder span's text ("dev" in the plain dev
+//      loop) with "<versionName> (<versionCode>)". Throws if either
+//      property or the placeholder itself is missing, so a stale/renamed
+//      element can never silently ship an unstamped "dev" string.
 //
 // Run: node tools/build-www.mjs  (also wired as `npm run build:www`)
 
@@ -241,6 +248,24 @@ function vendorCapacitorPackages() {
   return { imports };
 }
 
+// Phase 21 (TUNE-04, D-22): read android/version.properties the SAME way
+// tools/bump-version.mjs does (mirrored regex, not re-imported — that script
+// is a one-shot CLI, not a module) so build-www.mjs's version stamp can never
+// silently drift from the file bump-version.mjs writes.
+function readVersionProperties() {
+  const file = path.join(ROOT, "android", "version.properties");
+  if (!existsSync(file)) {
+    throw new Error(`${file} does not exist — expected versionCode/versionName for the build-www version stamp`);
+  }
+  const text = readFileSync(file, "utf8");
+  const codeMatch = text.match(/^versionCode=(\d+)\s*$/m);
+  const nameMatch = text.match(/^versionName=(.+?)\s*$/m);
+  if (!codeMatch || !nameMatch) {
+    throw new Error(`${file} is missing versionCode= or versionName= — cannot stamp www/index.html's version line`);
+  }
+  return { versionCode: codeMatch[1], versionName: nameMatch[1] };
+}
+
 function writeIndexHtml(importMap) {
   const htmlSrcPath = path.join(ROOT, "mazeworld.html");
   let html = readFileSync(htmlSrcPath, "utf8");
@@ -250,6 +275,19 @@ function writeIndexHtml(importMap) {
   const importMapTag =
     `<script type="importmap">\n${JSON.stringify(importMap, null, 2)}\n</script>\n`;
   html = html.replace("</head>", `${importMapTag}</head>`);
+
+  // Phase 21 (TUNE-04, D-22): stamp the built app's real version into the
+  // Settings sheet's version line, replacing the "dev" placeholder the plain
+  // dev loop shows. Throws if the exact placeholder span is missing — a
+  // stale/renamed element must never silently ship an unstamped "dev" string.
+  const { versionName, versionCode } = readVersionProperties();
+  const placeholder = '<span id="mw-app-version">dev</span>';
+  if (!html.includes(placeholder)) {
+    throw new Error("mazeworld.html is missing the #mw-app-version placeholder — cannot stamp the version");
+  }
+  html = html.replace(placeholder, `<span id="mw-app-version">${versionName} (${versionCode})</span>`);
+  step(`stamped version ${versionName} (${versionCode}) into www/index.html`);
+
   writeFileSync(path.join(WWW, "index.html"), html, "utf8");
   step("wrote www/index.html (mazeworld.html + injected import map)");
 }

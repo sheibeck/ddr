@@ -1069,6 +1069,18 @@ html,body{height:100%}
   background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px);
 }
 
+/* Phase 21 (TUNE-04, D-13/D-22): the version row is a flex container via
+   .mw-settings-row, so the `hidden` attribute alone would not hide the dev
+   row — this rule makes it actually collapse. .mw-settings-version disables
+   text-selection/callout so a long-press doesn't pop a selection/context
+   menu mid-hold. #mw-dev-start-depth mirrors the settings sheet's dark
+   input chrome. .mw-dev-chip reuses the --ditto accent the floor number
+   already uses. */
+.mw-settings-row[hidden]{display:none}
+.mw-settings-version{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;opacity:.75}
+#mw-dev-start-depth{width:5.5em;font:inherit;padding:4px 6px;background:transparent;color:inherit;border:1px solid currentColor;border-radius:4px}
+.mw-dev-chip{font:700 10px/1 inherit;letter-spacing:.08em;padding:3px 6px;border-radius:4px;background:var(--ditto);color:#000;margin-left:8px}
+
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
   background:var(--paper);color:var(--ink);
@@ -1225,6 +1237,14 @@ html,body{height:100%}
           <button type="button" class="mw-settings-opt" data-value="false">Off</button>
         </div>
       </div>
+      <!-- Phase 21 (TUNE-04, D-13/D-22) — the version line is a real
+           setting-sheet row (build-www.mjs replaces the `dev` placeholder
+           with versionName (versionCode) from android/version.properties);
+           the dev row is hidden and revealed ONLY by a ~1.2 s long-press on
+           the version label — a dev run is flagged state.dev, marked by the
+           HUD DEV chip, and never buried or recorded as a best depth. -->
+      <div class="mw-settings-row" id="mw-settings-version-row"><span class="mw-settings-label mw-settings-version" id="mw-settings-version">Version <span id="mw-app-version">dev</span></span></div>
+      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div></div>
     </div>
   </div>
 </div>
@@ -1243,6 +1263,10 @@ html,body{height:100%}
              just the label+number now (see .mw-hud-rations CSS comment). -->
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
+      <!-- Phase 21 (TUNE-04, D-13): a dev start-at-depth run is visibly
+           marked — toggled from state.dev in paint(), never reachable from
+           normal play. -->
+      <span class="mw-dev-chip" id="mw-dev-chip" hidden>DEV</span>
       <!-- 04-DR9: config gear — opens the Settings sheet (#mw-settings-sheet,
            below the MARKS legend sheet markup). -->
       <button type="button" class="mw-gear-btn" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
@@ -2829,6 +2853,11 @@ function paintConditions(c) {
 function paint() {
   const c = S.c;
   document.getElementById("m-floor").textContent = S.floor.depth;
+  // Phase 21 (TUNE-04, D-13): a presentation-only read of the serialized
+  // state.dev flag — toggles the HUD's DEV chip so a start-at-depth run is
+  // always visibly marked.
+  const devChip = document.getElementById("mw-dev-chip");
+  if (devChip) devChip.hidden = !S.dev;
   document.getElementById("m-day").textContent = S.day;
   document.getElementById("m-steps").textContent = S.steps;
   document.getElementById("m-rations").textContent = c.rations;
@@ -5547,6 +5576,31 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
   document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
 
+  // Phase 21 (TUNE-04, D-13/D-22): a small, LOCAL long-press handler for the
+  // hidden dev row — deliberately NOT the maze viewport's own tap-vs-drag
+  // gesture classifier (src/browser/controls.js), which is scoped to D-pad
+  // movement thresholds and explicitly leaves long-press unbound anyway. A
+  // ~1.2 s pointer hold on the version label reveals #mw-dev-row; releasing/
+  // cancelling early clears the timer so a normal tap does nothing.
+  const DEV_LONG_PRESS_MS = 1200;
+  let devPressTimer = null;
+  const mwSettingsVersion = document.getElementById("mw-settings-version");
+  mwSettingsVersion?.addEventListener("pointerdown", () => {
+    devPressTimer = setTimeout(() => {
+      const row = document.getElementById("mw-dev-row");
+      if (row) row.hidden = false;
+    }, DEV_LONG_PRESS_MS);
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
+    mwSettingsVersion?.addEventListener(ev, () => clearTimeout(devPressTimer)),
+  );
+  mwSettingsVersion?.addEventListener("contextmenu", (e) => e.preventDefault());
+  document.getElementById("mw-dev-start-btn")?.addEventListener("click", () => {
+    const raw = parseInt(document.getElementById("mw-dev-start-depth")?.value, 10);
+    const depth = Number.isInteger(raw) ? Math.min(999, Math.max(1, raw)) : 20;
+    window.mzDevStartAtDepth?.(depth);
+  });
+
   // 04-DR9: one delegated click handler for every settings row — reads
   // which setting/value was tapped from the button's own data-setting
   // (its .mw-settings-options ancestor)/data-value, writes it through
@@ -5868,6 +5922,25 @@ window.__mzClassicBoot = async function classicBoot() {
     document.getElementById("log").innerHTML = "";
     window.mzCenterMap?.(); // Pass B1 item 4: center on the party for the new run
     window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
+    window.paint();
+    window.draw();
+  };
+
+  // Phase 21 (TUNE-04, D-13) — the ONE entry point for a dev start-at-depth
+  // run, reached solely from the hidden Settings row's Start button
+  // (mw-dev-start-btn's click handler above). Mirrors window.newGame's
+  // engineNewRun shape (clear log, center map, banner, paint, draw) but
+  // threads startDepth through startNewRun() and closes the Settings sheet
+  // first (closeSettingsSheet is in this same module scope).
+  window.mzDevStartAtDepth = async function devStartAtDepth(depth) {
+    closeSettingsSheet();
+    const state = await startNewRun(undefined, { startDepth: depth });
+    window.__mzState.set(state);
+    document.getElementById("log").innerHTML = "";
+    window.mzCenterMap?.();
+    window.logLine(
+      `<span class="banner">Floor ${state.floor.depth}.</span> A dev run. The graveyard has agreed to look the other way.`,
+    );
     window.paint();
     window.draw();
   };
