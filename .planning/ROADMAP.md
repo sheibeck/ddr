@@ -183,7 +183,7 @@ Plans:
   3. The curve is retuned once across party power, economy (loot/wilmst/store), monster power, and ability threat; harness runs confirm a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+.
   4. A human signs off via an on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion — as the milestone's single deferred UAT checkpoint (last thing in the milestone).
 
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 
 Plans:
 **Wave 1**
@@ -192,7 +192,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 21-02-PLAN.md — TUNE-01: `difficultyCurve` gains foeCap/foeBonus/foeLvlBias/foePower/abilityThreat (softCapFloat, identity ≤ 5 — D-01/D-04/D-17/D-19), startCombat count/wp/dmgBonus wiring, `tickAbilityCooldowns(state, f)` + cadence via `abilityCadenceFor` (D-03/D-18); constants land at identity; combat-scaling tests; parity 30/30, zero carve-outs (wave 2)
+- [x] 21-02-PLAN.md — TUNE-01: `difficultyCurve` gains foeCap/foeBonus/foeLvlBias/foePower/abilityThreat (softCapFloat, identity ≤ 5 — D-01/D-04/D-17/D-19), startCombat count/wp/dmgBonus wiring, `tickAbilityCooldowns(state, f)` + cadence via `abilityCadenceFor` (D-03/D-18); constants land at identity; combat-scaling tests; parity 30/30, zero carve-outs (wave 2)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -224,5 +224,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
 | 20. Parley Balance & Language System | v1.1 | 3/3 | Complete    | 2026-09-14 |
-| 21. Consolidated Difficulty Retune | v1.1 | 1/5 | In Progress|  |
+| 21. Consolidated Difficulty Retune | v1.1 | 2/5 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |

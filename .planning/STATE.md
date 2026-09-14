@@ -5,15 +5,15 @@ milestone_name: Monster Balancing & Abilities
 current_phase: 21
 current_phase_name: Consolidated Difficulty Retune
 status: executing
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-09-14T15:36:53.659Z"
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-09-14T15:49:32.646Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 21 execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 21
-  completed_plans: 17
+  completed_plans: 18
   percent: 80
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 ## Current Position
 
 Phase: 21 (Consolidated Difficulty Retune) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 21 execution started
 
-Progress: [████████░░] 81%
+Progress: [█████████░] 86%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +87,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T15:36:53.629Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-09-14T15:49:32.621Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -117,6 +117,7 @@ Resume file: None
 | Phase 20 P02 | 55min | 3 tasks | 7 files |
 | Phase 20 P03 | 50min | 3 tasks | 4 files |
 | Phase 21 P01 | 50min | 3 tasks | 5 files |
+| Phase 21 P02 | 45min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -158,3 +159,6 @@ Resume file: None
 - [Phase ?]: 20-03: tune-difficulty AFTER readout (200 seeds) measured attempts 151->97, success 57.6%->60.8%, SP share 3.7%->2.3% -- informational only, no dial changed, Phase 21 owns the retune
 - [Phase ?]: 21-01: findCastableAttackSpell scoped to cls==="Magic User" — canCast itself has no class check, so the guard is required to honor D-05's own (Magic Users) wording
 - [Phase ?]: 21-01: bot decideAction gained ctx.parleyBlocked (Rule 1 fix) — the wilmsryVsMagical parley branch refuses without consuming C.parleyTried by design, so the bot must fall through to flee instead of retrying parley forever
+- [Phase ?]: 21-02: every new constant (FOE_CAP_MAX/FOE_POWER_MAX/ABILITY_THREAT_MAX) is identity (=== its BASE) in this plan — difficultyCurve(depth) returns foeCap:3/foePower:1/abilityThreat:1 at EVERY depth until 21-04 retunes
+- [Phase ?]: 21-02: foeDmgBonusFor scales the lvl*lvl base term of a foe melee swing (not sp.dmg dice), keeping damageFoe the one foe-wp decrement seam and adding zero new draws
+- [Phase ?]: 21-02: the summon literal in foeAbilities.js#resolveFoeAbility is deliberately not routed through foeWpFor — reinforcements are already tier-limited weak foes; scaling them is a 21-04-only option

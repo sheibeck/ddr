@@ -50,7 +50,7 @@ Cheap rulebook-described mechanics with existing engine seams.
 
 The ONE retune that closes PARTY-10, ECON deep tuning, and Phase 3 feel-tuning.
 
-- [ ] **TUNE-01**: `engine/difficulty.js` is extended from floor-generation-only knobs to also own combat-scaling knobs (foe count / level / ability threat by depth) so monster power has one source of truth
+- [x] **TUNE-01**: `engine/difficulty.js` is extended from floor-generation-only knobs to also own combat-scaling knobs (foe count / level / ability threat by depth) so monster power has one source of truth
 - [x] **TUNE-02**: `tools/tune-difficulty.mjs` and `tools/tune-economy.mjs` are extended to tally foe-ability events and their heuristic bot policy reacts to caster foes, so harness output is a usable proxy after abilities exist
 - [ ] **TUNE-03**: The curve is retuned ONCE across party power, economy (loot/wilmst/store), monster power, and ability threat so a run still targets a 5–10 minute session and a bounded soft-cap descent to floor 30–50+
 - [ ] **TUNE-04**: Final constants are signed off by a human on-device DR round at depth 20–50+ against caster foes — harness numbers are a sanity floor, not the exit criterion (UAT deferred to milestone end)
@@ -124,7 +124,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | BEST-01 | Phase 18 | Complete |
 | BEST-02 | Phase 18 | Complete |
 | BEST-03 | Phase 18 | Complete |
-| TUNE-01 | Phase 21 | Pending |
+| TUNE-01 | Phase 21 | Complete |
 | TUNE-02 | Phase 21 | Complete |
 | TUNE-03 | Phase 21 | Pending |
 | TUNE-04 | Phase 21 | Pending |
