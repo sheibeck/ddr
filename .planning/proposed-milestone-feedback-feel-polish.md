@@ -39,6 +39,12 @@
 - **"Not ready yet" audit:** some spells always report "not ready yet." Every spell and every piece of equipment must be usable under its proper circumstances — audit all loot, gear, spells, and items that claim to be usable and prove each one actually is (cooldown/readiness logic, class gates, combat-vs-explore gates). Each blocked use must say *why* (ties back to §A).
 - **Combat-only potions usable from the Gear page too:** the standard "combat" potions should be drinkable from the gear panel outside combat, not only during a fight.
 
+### G. On-device bugs & UI layout (added 2026-09-14)
+- **Amulet of Stone leaves you stuck in combat:** it sets the enemy to 0 hit points, but combat doesn't end — you have to flee to get out. Stoned foes should count as defeated/removed so the encounter clears (and pays out) like any other kill. (`content/treasure-tables.js` `use: "stone"`, `aoe: 4`; ties to the G16 "squares of opponents" item in §C.)
+- **Shield spell needs a chit:** Shield (`content/spells.js` — `kind: "ward"`, `pool: 50`, `rounds: 5`) should show a condition chip with **how much shield is left** (remaining pool, and rounds), in the existing condition row.
+- **Acuteness potion effect never expires outside combat:** the potion ("strike on a d6 for d8 rounds", `eff: "acute"`) shows a chip with a round countdown, but after defeating the enemy and leaving combat the to-hit die stayed at d6 **permanently**, with "4 rounds left" frozen on the timer. Rounds only tick during combat — the effect must either tick down on exploration steps too or be cleared at `endCombat`. Audit every round-based condition (haste, might, ward/Shield, acute, etc.) for the same "timer only ticks in combat" trap.
+- **Map toolbar / movement layout:** move the **Make Camp** button up into the row with the Marks / Centre buttons, placed **all the way to the right**. Then **remove the right/left-handed option** from the options menu and **center the movement buttons** (no more handedness offset).
+
 ### E. Store
 - **Store stock should be random and floor-appropriate** — items rolled for the current depth rather than a fixed list (`engine/economy.js#openStore` builds `state.store.stock`; stock entries are plain data with `effectId`).
 
@@ -50,6 +56,7 @@
 5. **UI feel** — gear panel Use/Drop layout + drop confirm; map recenter on panel return; default zoom midpoint; tutorial off/on setting.
 6. **Store stock** — depth-appropriate random inventory.
 7. **Combat start & usability** — initiative/first-strike only after Fight! is pressed; "not ready yet" audit proving every usable spell/item/gear piece is usable in its proper circumstances; combat potions usable from the Gear page.
+8. **On-device bugs & layout** — Amulet of Stone must end combat; Shield chip (pool + rounds left); round-based effects (Acuteness etc.) must expire outside combat; Make Camp into the Marks/Centre row (far right), drop the handedness option, center the movement buttons.
 
 ## Constraints / interactions
 - **Engine gate applies as always:** pure/deterministic engine, parity byte-identical for solo/empty-party play, new rng draws only behind new-feature guards, new serialized fields carved out in all 3 `*Comparable()` fns, every new event type gets an `EVENT_NARRATION` entry. Random store stock and loot-table bags are new rng draws → guard them.
