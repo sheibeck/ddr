@@ -536,7 +536,7 @@ test("applyFoeDamageToPlayer: a plain hit with no armour lands on the hero, key 
   state.combat = fixedCombat([foe]);
   const events = [];
   const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
-  assert.deepEqual(result, { died: false, onArmour: false });
+  assert.deepEqual(result, { died: false, onArmour: false, applied: 5 });
   assert.equal(state.c.wp, 50);
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.deepStrictEqual(struck, { type: "struckByFoe", name: "Target", roll: 3, need: 5, dmg: 5, ignoresArmor: false, critical: false });
@@ -586,7 +586,7 @@ test("applyFoeDamageToPlayer: a ward absorbs the blow fully, no struckByFoe, zer
   assert.equal(state.c.wp, 55, "the hero took no damage");
   assert.equal(state.c.ward.pool, 5);
   assert.equal(events.some((e) => e.type === "struckByFoe"), false);
-  assert.deepEqual(result, { died: false, onArmour: false });
+  assert.deepEqual(result, { died: false, onArmour: false, applied: 0 });
 });
 
 test("applyFoeDamageToPlayer: a ward shatters partway and the remainder lands", () => {
@@ -611,7 +611,7 @@ test("applyFoeDamageToPlayer: a ward reflect kills the FOE and returns died:fals
   assert.ok(events.some((e) => e.type === "wardReflected" && e.target === "Target" && e.amount === 5));
   assert.equal(foe.alive, false);
   assert.equal(state.c.wp, 55, "the hero took no damage from a foe's own reflect-death");
-  assert.deepEqual(result, { died: false, onArmour: false });
+  assert.deepEqual(result, { died: false, onArmour: false, applied: 0 });
   assert.notEqual(state.combat, null, "state.combat is untouched — only the hero's own death nulls it");
 });
 
@@ -622,7 +622,7 @@ test("applyFoeDamageToPlayer: armour soaks the blow", () => {
   const events = [];
   const rng = fakeRng([10]);
   const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 3, need: 5 });
-  assert.deepEqual(result, { died: false, onArmour: true });
+  assert.deepEqual(result, { died: false, onArmour: true, applied: 0 });
   assert.ok(events.some((e) => e.type === "armorSoaked" && e.name === "Target" && e.amount === 5));
   assert.equal(state.c.armorWP, 15);
   assert.equal(state.c.wp, 55, "the hero took no damage");
@@ -668,7 +668,7 @@ test("applyFoeDamageToPlayer: lethal damage returns died:true and die() ran", ()
   state.combat = fixedCombat([foe]);
   const events = [];
   const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
-  assert.deepEqual(result, { died: true, onArmour: false });
+  assert.deepEqual(result, { died: true, onArmour: false, applied: 5 });
   assert.equal(state.dead, true);
   assert.equal(state.combat, null);
   assert.deepEqual(events.map((e) => e.type), ["struckByFoe", "died"]);
@@ -1104,7 +1104,7 @@ test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soake
   const events = [];
   const rng = fakeRng([5]);
   const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 3, need: 5 });
-  assert.deepEqual(result, { died: false, onArmour: false });
+  assert.deepEqual(result, { died: false, onArmour: false, applied: 0 });
   assert.deepStrictEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 5 }]);
   assert.equal(foe.wp, 10);
   assert.equal(state.c.ward.pool, 5);
@@ -1138,4 +1138,186 @@ test("foeTurn: an acid tick on a halfDmg foe is halved (ceil)", () => {
   const events = foeTurn(state, rng, []);
   assert.ok(events.some((e) => e.type === "acidTick" && e.dmg === 3));
   assert.equal(foe.wp, 17);
+});
+
+// --- Phase 19: combat.js seams (FOE-02/03/04, CANON-02, D-09/D-10/D-18/D-19) ---
+
+test("applyFoeDamageToPlayer: applied reports the landed amount; ignoresArmor:true skips the soak d20; ability switches the event to foeBolted", () => {
+  const armoredState = fixedState({ c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" } });
+  const foe = fixedFoe();
+  let result = applyFoeDamageToPlayer(armoredState, foe, fakeRng([10]), [], { dmg: 5, roll: 3, need: 5 });
+  assert.deepEqual(result, { died: false, onArmour: true, applied: 0 });
+
+  const events1 = [];
+  result = applyFoeDamageToPlayer(armoredState, foe, fakeRng([]), events1, { dmg: 5, ignoresArmor: true, ability: "vampireDrain" });
+  assert.deepEqual(result, { died: false, onArmour: false, applied: 5 });
+  assert.deepStrictEqual(events1, [{ type: "foeBolted", name: "Target", ability: "vampireDrain", dmg: 5, ignoresArmor: true }]);
+  assert.equal(armoredState.c.wp, 50);
+
+  const unarmoredState = fixedState();
+  const events2 = [];
+  applyFoeDamageToPlayer(unarmoredState, foe, fakeRng([]), events2, { dmg: 5, ability: "krupkeFreeze" });
+  assert.deepStrictEqual(events2, [{ type: "foeBolted", name: "Target", ability: "krupkeFreeze", dmg: 5, ignoresArmor: false }]);
+
+  const events3 = [];
+  applyFoeDamageToPlayer(unarmoredState, foe, fakeRng([]), events3, { dmg: 5, roll: 3, need: 5 });
+  assert.equal(events3[0].type, "struckByFoe");
+  assert.equal(events3[0].dmg, 5);
+});
+
+test("applyFoeDamageToPlayer: a warded drain heals nothing — applied is the post-ward amount", () => {
+  const state1 = fixedState({ c: { ward: { pool: 10, reflect: false, rounds: 3 } } });
+  const foe1 = fixedFoe();
+  const events1 = [];
+  const result1 = applyFoeDamageToPlayer(state1, foe1, fakeRng([]), events1, { dmg: 4, ignoresArmor: true, ability: "vampireDrain" });
+  assert.equal(result1.applied, 0);
+  assert.deepStrictEqual(events1, [{ type: "wardAbsorbed", amount: 4, remaining: 6 }]);
+
+  const state2 = fixedState({ c: { ward: { pool: 10, reflect: false, rounds: 3 } } });
+  const foe2 = fixedFoe();
+  const events2 = [];
+  const result2 = applyFoeDamageToPlayer(state2, foe2, fakeRng([]), events2, { dmg: 15, ignoresArmor: true, ability: "vampireDrain" });
+  assert.equal(result2.applied, 5);
+  assert.deepEqual(events2.map((e) => e.type), ["wardAbsorbed", "wardShattered", "foeBolted"]);
+  assert.equal(events2[2].dmg, 5);
+});
+
+test("playerStrike: weakened halves the hero's damage (ceil) before the seam; a dazed foeEffect does not", () => {
+  const state = fixedState({ c: { foeEffect: { kind: "weakened", rounds: 2 } } });
+  const foe = fixedFoe({ wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  const events = playerStrike(state, fakeRng([3, 4, 7, 15, 10]), []);
+  assert.ok(events.some((e) => e.type === "struck" && e.dmg === 3));
+  assert.equal(foe.wp, 17);
+
+  const state2 = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
+  const foe2 = fixedFoe({ wp: 20, maxWP: 20 });
+  state2.combat = fixedCombat([foe2]);
+  const events2 = playerStrike(state2, fakeRng([3, 4, 7, 15, 10]), []);
+  assert.ok(events2.some((e) => e.type === "struck" && e.dmg === 5));
+  assert.equal(foe2.wp, 15);
+
+  const state3 = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
+  const foe3 = fixedFoe({ wp: 20, maxWP: 20 });
+  state3.combat = fixedCombat([foe3]);
+  const events3 = playerStrike(state3, fakeRng([4, 7, 15, 10]), []);
+  assert.ok(events3.some((e) => e.type === "strikeMissed" && e.need === 3));
+});
+
+test("foeTurn: foeEffect ticks at the end of a foeTurn that did NOT apply it, fades at 0, and endCombat clears a set one without adding the key", () => {
+  const state = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 1 } } });
+  const foe = fixedFoe({ asleep: 3 });
+  state.combat = fixedCombat([foe]);
+  const events = foeTurn(state, fakeRng([]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeSlept", "foeEffectFaded"]);
+  assert.equal(state.c.foeEffect, null);
+
+  endCombat(state, []);
+  assert.equal(state.c.foeEffect, null);
+
+  const fresh = fixedState();
+  endCombat(fresh, []);
+  assert.equal(Object.hasOwn(fresh.c, "foeEffect"), false);
+
+  const state2 = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
+  const foe2 = fixedFoe({ asleep: 3 });
+  state2.combat = fixedCombat([foe2]);
+  const events2 = foeTurn(state2, fakeRng([]), []);
+  assert.equal(events2.some((e) => e.type === "foeEffectFaded"), false);
+  assert.equal(state2.c.foeEffect.rounds, 1);
+});
+
+test("foeTurn: sp.fleesBelow — wp under the threshold flees with no draw and no XP; at exactly the threshold it fights", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { fleesBelow: 0.25 }, wp: 15, maxWP: 64 });
+  state.combat = fixedCombat([foe]);
+  const events = foeTurn(state, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "foeFled", name: "Target", reason: "lowHp" }]);
+  assert.equal(foe.alive, false);
+  assert.equal(foe.fled, true);
+  assert.equal(state.c.sp, 0);
+  assert.equal(state.c.kills, 0);
+
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ sp: { fleesBelow: 0.25 }, wp: 16, maxWP: 64 });
+  state2.combat = fixedCombat([foe2]);
+  const events2 = foeTurn(state2, fakeRng([7]), []);
+  assert.ok(events2.some((e) => e.type === "foeMissed"));
+});
+
+test("flee: a live pursues foe strikes once on the roll-based escape — foePursued, hit, then fled", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { pursues: true, noArmor: true } });
+  state.combat = fixedCombat([foe]);
+  const events = flee(state, fakeRng([15, 3, 4]), []);
+  assert.deepEqual(events.map((e) => e.type), ["fleeRolled", "foePursued", "struckByFoe", "fled", "combatEnded"]);
+  assert.equal(state.c.wp, 50);
+  assert.equal(state.combat, null);
+
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ sp: { pursues: true, noArmor: true } });
+  state2.combat = fixedCombat([foe2]);
+  const events2 = flee(state2, fakeRng([15, 7]), []);
+  assert.deepEqual(events2.map((e) => e.type), ["fleeRolled", "foePursued", "foeMissed", "fled", "combatEnded"]);
+});
+
+test("flee: the pursuit also fires on the Cloaker and tracked-round-1 exits (D-19), and never without a pursues foe", () => {
+  const state = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
+  const foe = fixedFoe({ sp: { pursues: true, noArmor: true } });
+  state.combat = fixedCombat([foe]);
+  const events = flee(state, fakeRng([3, 4]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foePursued", "struckByFoe", "fled", "combatEnded"]);
+
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ sp: { pursues: true, noArmor: true } });
+  state2.combat = fixedCombat([foe2], { tracked: true, round: 1 });
+  const events2 = flee(state2, fakeRng([3, 4]), []);
+  assert.deepEqual(events2.map((e) => e.type), ["foePursued", "struckByFoe", "fled", "combatEnded"]);
+
+  const state3 = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
+  const foe3 = fixedFoe();
+  state3.combat = fixedCombat([foe3]);
+  const events3 = flee(state3, fakeRng([]), []);
+  assert.deepEqual(events3.map((e) => e.type), ["fled", "combatEnded"]);
+});
+
+test("flee: a lethal pursuit strike kills the hero mid-escape — no fled, no combatEnded, died", () => {
+  const state = fixedState({ c: { wp: 3 } });
+  const foe = fixedFoe({ sp: { pursues: true, noArmor: true } });
+  state.combat = fixedCombat([foe]);
+  const events = flee(state, fakeRng([15, 3, 4]), []);
+  assert.equal(state.dead, true);
+  assert.ok(events.some((e) => e.type === "died"));
+  assert.equal(events.some((e) => e.type === "fled"), false);
+  assert.equal(events.some((e) => e.type === "combatEnded"), false);
+});
+
+test("flee: a failed flee whose foeTurn leaves no live foe ends the encounter instead of stranding it", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { fleesBelow: 0.25 }, wp: 10, maxWP: 64 });
+  state.combat = fixedCombat([foe]);
+  const events = flee(state, fakeRng([1]), []);
+  assert.deepEqual(events.map((e) => e.type), ["fleeRolled", "fleeFailed", "foeFled", "encounterCleared", "combatEnded"]);
+  assert.equal(state.combat, null);
+
+  // the existing "failed roll triggers the foe's turn" shape (an asleep,
+  // still-alive foe) still advances the round rather than clearing.
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ asleep: 5 });
+  state2.combat = fixedCombat([foe2]);
+  const events2 = flee(state2, fakeRng([1]), []);
+  assert.ok(events2.some((e) => e.type === "fleeFailed"));
+  assert.equal(state2.combat.round, 2);
+});
+
+test("foeTurn: a pending summon joins at the top, before regen, and acts as an ordinary foe", () => {
+  const state = fixedState({ c: { regen: true, wp: 50 } });
+  const sleepingFoe = fixedFoe({ asleep: 5 });
+  const skeleton = fixedFoe({ name: "Skeleton", type: "Walking Dead", lvl: 4 });
+  state.combat = fixedCombat([sleepingFoe], { pendingFoes: [{ by: "Vampire", foe: skeleton }] });
+  const events = foeTurn(state, fakeRng([5, 7]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeSummoned", "regenerated", "foeSlept", "foeMissed"]);
+  assert.deepStrictEqual(events[0], { type: "foeSummoned", name: "Skeleton", by: "Vampire", pending: false });
+  assert.equal(state.combat.foes.length, 2);
+  assert.equal(state.combat.pendingFoes, null);
 });

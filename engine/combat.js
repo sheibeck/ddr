@@ -37,6 +37,17 @@
 // engine/foeDamage.js#damageFoe, and `sp.slow` by playerStrike's to-hit
 // roll below — every other flag in the list above stays flavor-only until
 // Phase 19.
+//
+// Since Phase 19 (FOE-01..09, CANON-02), a handful more of those flags turn
+// mechanical: the `abilities` kit (content/foe-abilities.js ids, resolved by
+// engine/foeAbilities.js), `never_melee` (the caster never falls back to a
+// swing), `pursues` (a Spectre-style flee-punishing melee strike, see
+// `pursuitStrike` below), and `fleesBelow` (a caster who leaves the fight
+// once its own wp drops under a fraction of maxWP). The Drake's cooldown is
+// read from the drakeBreath descriptor's own `every` field
+// (content/foe-abilities.js) — `sp.every` on the bestiary row stays inert,
+// unread by any engine code. `sp.caster` remains exactly what it always
+// was: an inert flavor flag.
 
 import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
@@ -139,6 +150,12 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       asleep: 0,
       sp: picked.sp || {},
       lives: picked.sp && picked.sp.twice ? 2 : 1,
+      // DETERMINISM GATE (Phase 19, FOE-01/D-01/D-14): the kit key is added
+      // ONLY for the eight caster rows that carry one in content/bestiary.js
+      // — every fixture-exposed creature lacks it, so this foe object stays
+      // byte-identical for parity. `f.abilities` (present vs absent) is the
+      // structural zero-draw gate foeTurn reads below.
+      ...(picked.abilities ? { abilities: picked.abilities.slice() } : {}),
     });
   }
   state.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };
@@ -404,6 +421,10 @@ export function playerStrike(state, rng, events = []) {
       C.cut = true;
     }
     if (crit) dmg *= 2;
+    // Phase 19 D-10: weakened is the hero-side mirror of the foe-side
+    // C.weakened halving below (same ceil rounding, opposite direction) —
+    // pure read, 0 draws, false for every fixture.
+    if (c.foeEffect && c.foeEffect.kind === "weakened" && c.foeEffect.rounds > 0) dmg = Math.ceil(dmg / 2);
     // CANON-01/03/04 (D-05..D-11): route the hero's weapon hit through the
     // seam. `casterClass`/`casterSub` let the multiplier table identify a
     // Fighter's melee vs Trachea (D-11/D-20 — hero-only); `crit` lets a
@@ -479,10 +500,52 @@ export function killFoe(state, f, rng, events = []) {
 }
 
 /**
+ * pursuitStrike(state, rng, events) — CANON-02/D-08/D-19: a live `sp.pursues`
+ * foe (the Spectre) gets ONE hero-targeted melee strike as the hero leaves,
+ * mirroring foeTurn's own hero swing exactly (foeDie/foeToHitVs, blind/
+ * foeToHitPenalty overrides, sp.dmg-or-d6 damage, C.weakened halving, crit
+ * doubling) — but with no `pickFoeTarget` (the hero is the one leaving, so a
+ * party member can never be the pursuit's target). Module-private: `flee`
+ * calls this on all three success exits, before pushing `fled`.
+ *
+ * DETERMINISM GATE: `!pursuer` returns `{ died: false }` immediately, 0
+ * draws — no fixture-exposed foe carries `sp.pursues`.
+ *
+ * Returns `{ died }` (mirroring applyFoeDamageToPlayer's contract): a lethal
+ * strike already ran `die()` (which nulls `state.combat`) — the caller MUST
+ * return without pushing `fled`/calling `endCombat` again.
+ */
+function pursuitStrike(state, rng, events) {
+  const pursuer = liveFoes(state).find((f) => f.sp && f.sp.pursues);
+  if (!pursuer) return { died: false };
+  events.push({ type: "foePursued", name: pursuer.name });
+  const c = state.c;
+  const C = state.combat;
+  const dieN = foeDie(c, pursuer);
+  const roll = rng.d(dieN);
+  let need = foeToHitVs(state);
+  if (pursuer.blind) need = 1;
+  if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
+  if (roll > need) {
+    events.push({ type: "foeMissed", name: pursuer.name, roll, need });
+    return { died: false };
+  }
+  let dmg = pursuer.lvl * pursuer.lvl + (pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6));
+  if (C.weakened) dmg = Math.ceil(dmg / 2);
+  if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
+  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need });
+}
+
+/**
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
  * (lines 2684-2697): Samurai never runs, a Cloaker always gets away for
  * free, a tracked round-1 withdrawal is clean, otherwise d20 (+5 Thief) vs
- * 11; failure triggers a foeTurn and advances the round.
+ * 11; failure triggers a foeTurn and advances the round. Phase 19
+ * (CANON-02/D-19): a live pursuing foe gets one melee strike on every
+ * success exit, BEFORE the `fled` event; a lethal strike returns without
+ * `endCombat`. Phase 19 (CANON-02/D-03) also adds a cleared-check after a
+ * failed flee's foeTurn, since a fleesBelow caster can now leave the fight
+ * mid-turn and would otherwise strand the combat screen.
  */
 export function flee(state, rng, events = []) {
   const c = state.c;
@@ -493,11 +556,13 @@ export function flee(state, rng, events = []) {
     return events;
   }
   if (c.sub === "Cloaker") {
+    if (pursuitStrike(state, rng, events).died) return events;
     events.push({ type: "fled", reason: "cloaker" });
     endCombat(state, events);
     return events;
   }
   if (C.tracked && C.round === 1) {
+    if (pursuitStrike(state, rng, events).died) return events;
     events.push({ type: "fled", reason: "tracked" });
     endCombat(state, events);
     return events;
@@ -506,12 +571,23 @@ export function flee(state, rng, events = []) {
   const roll = rng.d(20);
   events.push({ type: "fleeRolled", roll, bonus, need: 11 });
   if (roll + bonus >= 11) {
+    if (pursuitStrike(state, rng, events).died) return events;
     events.push({ type: "fled", reason: "escaped" });
     endCombat(state, events);
     return events;
   }
   events.push({ type: "fleeFailed" });
   foeTurn(state, rng, events);
+  // DELIBERATE RULES CHANGE (Phase 19, CANON-02/D-03): a Djinni (or any
+  // fleesBelow caster) can now leave the fight during this foeTurn — mirrors
+  // afterPlayerAction's own post-foeTurn cleared-check so the player is never
+  // stranded on a combat screen with no live foe left. Pure read; cannot
+  // fire on any fixture (no fixture foe leaves mid-foeTurn).
+  if (state.combat && !liveFoes(state).length) {
+    events.push({ type: "encounterCleared" });
+    endCombat(state, events);
+    return events;
+  }
   if (!state.dead) C.round++;
   return events;
 }
@@ -677,6 +753,12 @@ export function endCombat(state, events = []) {
   state.c.ward = null;
   state.c.mirror = 0;
   state.c.senses = 0;
+  // Phase 19 D-09: combat-scoped, never leaks between fights; CONDITIONAL so
+  // the key is never ADDED to a character that never had a debuff (unlike
+  // `senses` above) — keeps every solo parity fixture's `c` byte-identical
+  // without touching the per-file parity comparables; the harness strippers
+  // (19-02) cover the case where it IS set.
+  if (state.c.foeEffect) state.c.foeEffect = null;
   events.push({ type: "combatEnded" });
   return events;
 }
@@ -816,8 +898,11 @@ export function alliesTurn(state, rng, events = []) {
  * endCombat drops it from the run. It emits a `memberDowned` event and — the
  * critical fork — NEVER calls die() (that terminator ends the HERO's run); a
  * companion falling must not end the run.
+ *
+ * Exported for engine/foeAbilities.js's member-targeted bolt/drain (D-13),
+ * exactly as pickFoeTarget/applyFoeDamageToPlayer were exported in Phase 17.
  */
-function downMember(state, member, events) {
+export function downMember(state, member, events) {
   member.wp = 0;
   const C = state.combat;
   if (C && Array.isArray(C.allies)) {
@@ -892,8 +977,22 @@ export function pickFoeTarget(state, rng) {
  * no ward/armor/Hardiness/die) is deliberately NOT routed through this
  * helper — that asymmetry is intentional (Phase 17 CONTEXT.md), not an
  * oversight.
+ *
+ * Phase 19 (D-02/D-18) additive options — existing callers pass neither and
+ * read neither:
+ *   - `ignoresArmor` (boolean|undefined): an explicit `true`/`false`
+ *     overrides the foe's own `sp.noArmor` flag; `undefined` keeps today's
+ *     behaviour of reading `foe.sp.noArmor`.
+ *   - `ability` (string|undefined): when set, the landed event is
+ *     `foeBolted { name, ability, dmg, ignoresArmor }` instead of
+ *     `struckByFoe` (a foe-ability bolt has no to-hit roll, so there is no
+ *     `roll`/`need` to narrate — RESEARCH Pitfall 2).
+ *   - `applied` (additive return field, on EVERY branch): the amount
+ *     actually subtracted from `c.wp` this call (0 on every early-return
+ *     branch — reflect-kill, `dmg <= 0`, armor-soaked — and the final landed
+ *     `dmg` on both tail returns).
  */
-export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need }) {
+export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need, ignoresArmor, ability }) {
   const c = state.c;
   if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
 
@@ -925,7 +1024,7 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
       if (!bounce.soaked) events.push({ type: "wardReflected", target: foe.name, amount: bounce.applied });
       if (foe.wp <= 0) {
         killFoe(state, foe, rng, events);
-        return { died: false, onArmour: false }; // the FOE died to reflect, not the hero
+        return { died: false, onArmour: false, applied: 0 }; // the FOE died to reflect, not the hero
       }
     } else if (warded > 0) {
       events.push({ type: "wardAbsorbed", amount: warded, remaining: c.ward.pool });
@@ -935,13 +1034,15 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
       c.ward = null;
     }
   }
-  if (dmg <= 0) return { died: false, onArmour: false };
+  if (dmg <= 0) return { died: false, onArmour: false, applied: 0 };
 
   // p.44: roll d20; at or under your AR the blow lands on the armour
   // instead of you
   let onArmour = false;
   let blocked = 0;
-  const ignores = foe.sp && foe.sp.noArmor;
+  // Phase 19 (D-18): an explicit true/false override wins over the foe's own
+  // flag; `undefined` keeps today's behaviour exactly (reads foe.sp.noArmor).
+  const ignores = ignoresArmor ?? (foe.sp && foe.sp.noArmor);
   // E8: read EFFECTIVE armour (worn armour, or PLATE when the Cloak of
   // Armor is carried — see engine/derived.js armorSoak). For any character
   // WITHOUT the cloak av === the worn c.ar/c.armorWP/c.armorMin values, so
@@ -961,38 +1062,62 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
   }
   if (onArmour) {
     events.push({ type: "armorSoaked", name: foe.name, amount: blocked });
-    return { died: false, onArmour: true };
+    return { died: false, onArmour: true, applied: 0 };
   }
   c.wp -= dmg;
-  events.push({
-    type: "struckByFoe",
-    name: foe.name,
-    roll,
-    need,
-    dmg,
-    ignoresArmor: !!ignores,
-    critical: roll === 1,
-  });
+  if (ability) {
+    // Phase 19 (D-02/D-18): a foe-ability bolt has no to-hit roll, so it
+    // narrates as foeBolted instead of struckByFoe (never both).
+    events.push({ type: "foeBolted", name: foe.name, ability, dmg, ignoresArmor: !!ignores });
+  } else {
+    events.push({
+      type: "struckByFoe",
+      name: foe.name,
+      roll,
+      need,
+      dmg,
+      ignoresArmor: !!ignores,
+      critical: roll === 1,
+    });
+  }
   if (c.wp <= 0) {
     die(state, "combat", foe.name, rng, events);
-    return { died: true, onArmour: false };
+    return { died: true, onArmour: false, applied: dmg };
   }
-  return { died: false, onArmour: false };
+  return { died: false, onArmour: false, applied: dmg };
 }
 
 /**
- * foeTurn(state, rng, events) — every live foe's attack: regen tick, an
- * acid-over-time tick, sleep, per-swing foeDie vs foeToHitVs (blind/weakened
- * overrides), damage (sp.dmg dice, criticals, Hardiness reduction), a ward's
- * absorb/reflect/shatter, armor soak, and die() on wp<=0. Ports
- * mazeworld.html foeTurn() (lines 2838-2903). Uses pickFoeTarget for target
- * selection and applyFoeDamageToPlayer (Hardiness onward) for the hero-
- * damage pipeline.
+ * foeTurn(state, rng, events) — every live foe's attack. Step order (Phase
+ * 19 additions marked *NEW*): *NEW* a queued summon joins C.foes -> regen
+ * tick -> per foe: acid-over-time tick, alive check, sleep, *NEW* fleesBelow
+ * check, *NEW* the ability gate (cast or fall through to melee), the melee
+ * swings (per-swing foeDie vs foeToHitVs with blind/weakened overrides,
+ * sp.dmg dice, criticals, Hardiness reduction, a ward's absorb/reflect/
+ * shatter, armor soak, die() on wp<=0) -> ward/mirror ticks -> *NEW* the
+ * c.foeEffect tick. Ports mazeworld.html foeTurn() (lines 2838-2903). Uses
+ * pickFoeTarget for target selection and applyFoeDamageToPlayer (Hardiness
+ * onward) for the hero-damage pipeline.
  */
 export function foeTurn(state, rng, events = []) {
   const C = state.combat;
   if (!C) return events;
   const c = state.c;
+  // Phase 19 (D-09/A8): identity guard for the end-of-turn foeEffect tick —
+  // captured BEFORE anything this turn could set/refresh it, so a debuff
+  // applied THIS turn never ticks down on the same turn it landed.
+  const foeEffectAtStart = c.foeEffect;
+  // Phase 19 (FOE-04/D-12): a queued summon joins at the very top of the
+  // NEXT foeTurn — before c.regen, before any foe acts — so it never acts
+  // mid-loop the turn it was queued. 0 draws; the newcomer's identity was
+  // already picked at queue time; absent on every fixture.
+  if (C.pendingFoes && C.pendingFoes.length) {
+    for (const p of C.pendingFoes) {
+      C.foes.push(p.foe);
+      events.push({ type: "foeSummoned", name: p.foe.name, by: p.by, pending: false });
+    }
+    C.pendingFoes = null;
+  }
   if (c.regen) {
     const r = rng.d(8);
     if (c.wp < c.maxWP) {
@@ -1020,6 +1145,38 @@ export function foeTurn(state, rng, events = []) {
       f.asleep--;
       events.push({ type: "foeSlept", name: f.name });
       continue;
+    }
+    // Phase 19 (CANON-02/D-03): a caster that has dropped below its own
+    // flee threshold leaves without a swing and without XP — the
+    // Knight/Con-Artist fled-without-XP shape, checked at the start of the
+    // foe's own visit (after the asleep check, before the ability gate). 0
+    // draws; strict `<` (exactly at the threshold still fights).
+    if (f.sp && f.sp.fleesBelow && f.wp < f.maxWP * f.sp.fleesBelow) {
+      f.alive = false;
+      f.fled = true;
+      events.push({ type: "foeFled", name: f.name, reason: "lowHp" });
+      continue;
+    }
+    // Phase 19 (FOE-01..09, D-04): the ability gate — a structural
+    // zero-draw guard (FID-02): a foe lacking a non-empty `abilities` key
+    // runs the exact pre-Phase-19 melee path below with zero extra draws.
+    // The tick happens BEFORE readiness (D-20/A3). The d6 cast check is
+    // drawn ONLY when something is ready AND the foe is not never_melee
+    // (RESEARCH Pitfall 3); the ability REPLACES the whole melee turn (every
+    // sp.atk swing) when it fires; `.died` mirrors the `hit.died` contract
+    // applyFoeDamageToPlayer already uses.
+    if (f.abilities && f.abilities.length) {
+      tickAbilityCooldowns(f);
+      const ready = firstReadyAbility(state, f);
+      const neverMelee = !!(f.sp && f.sp.never_melee);
+      if (ready && (neverMelee || rng.d(6) <= 4)) {
+        if (resolveFoeAbility(state, f, ready, rng, events).died) return events;
+        continue;
+      }
+      if (neverMelee) {
+        events.push({ type: "foeOutOfSpells", name: f.name });
+        continue;
+      }
     }
     const swings = (f.frenzied ? 2 : 1) * ((f.sp && f.sp.atk) || 1);
     for (let s = 0; s < swings; s++) {
@@ -1078,5 +1235,12 @@ export function foeTurn(state, rng, events = []) {
     c.ward = null;
   }
   if (c.mirror > 0 && --c.mirror <= 0) events.push({ type: "mirrorFaded" });
+  // Phase 19 (D-09/A8): ticks once per foeTurn like ward/mirror, but never
+  // on the turn that applied/refreshed it (resolveFoeAbility always assigns
+  // a NEW object to c.foeEffect), so `rounds: 1` is never a no-op.
+  if (c.foeEffect && c.foeEffect === foeEffectAtStart && --c.foeEffect.rounds <= 0) {
+    events.push({ type: "foeEffectFaded", kind: c.foeEffect.kind });
+    c.foeEffect = null;
+  }
   return events;
 }
