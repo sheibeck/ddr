@@ -19,6 +19,15 @@
 //   node tools/tune-difficulty.mjs --seeds=200 --json
 //   node tools/tune-difficulty.mjs --seeds=200 --party
 //   node tools/tune-difficulty.mjs --seeds=200 --max-actions=5000 --explore-budget=30
+//   node tools/tune-difficulty.mjs --seeds=50 --start-depth=20
+//
+// HARN-04 (22-CONTEXT.md "Start-at-depth for the bot"): `--start-depth=N`
+// reuses newRun's existing dev-only start-at-depth option exactly as the
+// Settings toggle does, threaded straight through playRun's opts.startDepth
+// (default 1, BOT_DEFAULTS.startDepth). No extra kit or gear grants — a
+// deep-start character is exactly what the dev path already produces (SP
+// set to the depth's threshold, leveled via checkLevel, capped at 5; a
+// depth-scaled purse).
 
 import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
 
@@ -99,14 +108,18 @@ function parleySummary(results) {
 }
 
 function printReport(results, opts) {
-  const depths = distribution(results.map((r) => r.deathDepth));
-  const actions = distribution(results.map((r) => r.actions));
-  const causes = causeBreakdown(results);
+  // HARN-02: a `stuck` run (hit maxActions without dying or winning) is its
+  // own outcome bucket — excluded from every depth stat below so a 5% stuck
+  // rate never silently corrupts the death-depth/cause readout.
+  const completed = results.filter((r) => !r.stuck);
+  const stuckCount = results.length - completed.length;
+  const depths = distribution(completed.map((r) => r.deathDepth));
+  const actions = distribution(results.map((r) => r.actions)); // action-count is not a depth stat — stays over ALL runs
+  const causes = causeBreakdown(completed);
   const wonCount = results.filter((r) => r.won).length;
   const deadCount = results.filter((r) => r.dead).length;
-  const stoppedCount = results.filter((r) => !r.dead && !r.won).length;
 
-  console.log(`\ntune-difficulty: ${results.length} seeded auto-play run(s)`);
+  console.log(`\ntune-difficulty: ${results.length} seeded auto-play run(s), start depth ${opts.startDepth}`);
   console.log("(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)\n");
 
   console.log("Death-depth distribution:");
@@ -134,7 +147,7 @@ function printReport(results, opts) {
 
   printSharedReadout(results, opts);
 
-  console.log(`\nOutcome: ${deadCount} dead, ${wonCount} won, ${stoppedCount} hit maxActions`);
+  console.log(`\nOutcome: ${deadCount} dead, ${wonCount} won, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
   console.log("");
 }
 
@@ -156,6 +169,12 @@ function parseArgs(argv) {
     } else if (arg.startsWith("--explore-budget=")) {
       const n = parseInt(arg.slice("--explore-budget=".length), 10);
       if (Number.isFinite(n) && n >= 0) opts.exploreBudget = n;
+    } else if (arg.startsWith("--start-depth=")) {
+      // HARN-04 (22-CONTEXT.md "Start-at-depth for the bot"): reuses
+      // newRun's dev-only start-at-depth option exactly, via playRun's
+      // opts.startDepth. Default comes from BOT_DEFAULTS.startDepth (1).
+      const n = parseInt(arg.slice("--start-depth=".length), 10);
+      if (Number.isFinite(n) && n >= 1) opts.startDepth = n;
     }
   }
   return opts;
@@ -168,15 +187,19 @@ function main() {
   // with the same --seeds=N always samples the identical set of runs).
   const seeds = Array.from({ length: opts.seeds }, (_, i) => i * 7919 + 1);
   const results = seeds.map((seed) => autoPlayOnce(seed, opts));
+  // HARN-02: stuck runs are their own outcome bucket, excluded from every
+  // depth stat (deathDepth/causes) in the JSON output too — a stuck run's
+  // "death depth" is a mid-run action-cap measurement, not a real death.
+  const completedResults = results.filter((r) => !r.stuck);
 
   if (opts.json) {
     console.log(
       JSON.stringify(
         {
           runs: results.length,
-          deathDepth: distribution(results.map((r) => r.deathDepth)),
+          deathDepth: distribution(completedResults.map((r) => r.deathDepth)),
           actions: distribution(results.map((r) => r.actions)),
-          causes: causeBreakdown(results),
+          causes: causeBreakdown(completedResults),
           won: results.filter((r) => r.won).length,
           dead: results.filter((r) => r.dead).length,
           parley: parleySummary(results),
