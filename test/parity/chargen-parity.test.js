@@ -19,6 +19,7 @@ import url from "node:url";
 import { newRun } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
+import { chargenDivergenceFor, stripDeclaredFields } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -104,12 +105,67 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
     // still compares byte-identical.
     const { name: _engineName, darkFor, flightLeft, flightCooldown, bag, ...engineCForDiff } = engineC;
     const { name: _protoName, ...protoCForDiff } = protoC;
-    const divergence = diffState(protoCForDiff, engineCForDiff);
+
+    // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
+    // divergence (see test/parity/fixtures/action-script.chargen.json's
+    // `divergences` map) — assert the before/after values BEFORE stripping
+    // the declared fields from both sides. Every other seed has no record
+    // and is compared byte-identically with NO strip.
+    const record = chargenDivergenceFor(FIXTURE, seed);
+    let strippedProto = protoCForDiff;
+    let strippedEngine = engineCForDiff;
+    if (record) {
+      for (const field of record.fields) {
+        // NOTE: `protoCForDiff` fields live in the vm sandbox's realm (see
+        // sandboxPrototype.js), so a bare assert.deepStrictEqual against a
+        // main-realm value (record.before/after, from JSON.parse) fails
+        // Node's cross-realm reference-equality check even when the values
+        // are structurally identical. diffState (used everywhere else in
+        // this harness for exactly this prototype-vs-engine comparison)
+        // strips via structuredClone first, sidestepping that; reuse it here.
+        assert.equal(
+          diffState(protoCForDiff[field], record.before[field]),
+          null,
+          `seed ${seed}: prototype ${field} does not match the fixture's declared "before" value`,
+        );
+        assert.equal(
+          diffState(engineCForDiff[field], record.after[field]),
+          null,
+          `seed ${seed}: engine ${field} does not match the fixture's declared "after" value`,
+        );
+      }
+      strippedProto = stripDeclaredFields(protoCForDiff, record.fields);
+      strippedEngine = stripDeclaredFields(engineCForDiff, record.fields);
+    }
+
+    const divergence = diffState(strippedProto, strippedEngine);
     assert.equal(
       divergence,
       null,
       `seed ${seed} (${protoC.cls}/${protoC.sub}/${protoC.race}): character diverges at ${divergence}`,
     );
+  }
+});
+
+test("chargen fixture divergence records are narrow and well-formed (FID-06)", () => {
+  const divergences = FIXTURE.divergences || {};
+  const keys = Object.keys(divergences);
+  assert.ok(keys.length <= 2, `expected at most 2 divergence records, got ${keys.length}`);
+  for (const key of keys) {
+    assert.ok(SEEDS.includes(Number(key)), `divergence key ${key} is not in the fixture's seeds array`);
+    const record = divergences[key];
+    assert.ok(record.phase, `divergence ${key}: missing phase`);
+    assert.ok(Array.isArray(record.fields) && record.fields.length > 0, `divergence ${key}: fields must be a non-empty array`);
+    assert.ok(record.before && typeof record.before === "object", `divergence ${key}: missing before`);
+    assert.ok(record.after && typeof record.after === "object", `divergence ${key}: missing after`);
+    assert.ok(typeof record.rationale === "string" && record.rationale.length > 0, `divergence ${key}: missing rationale`);
+    for (const field of record.fields) {
+      assert.notDeepStrictEqual(
+        record.before[field],
+        record.after[field],
+        `divergence ${key}: field "${field}" has no real before/after difference — this looks like a blanket regeneration, not a declared divergence`,
+      );
+    }
   }
 });
 

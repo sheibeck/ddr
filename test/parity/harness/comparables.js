@@ -362,6 +362,45 @@ export function stripParleyDivergence(state) {
   return rest;
 }
 
+/**
+ * chargenDivergenceFor(fixture, seed) — FID-06 (Phase 23, CONTEXT "Fixture
+ * handling"): looks up the seed-scoped divergence record (if any) from a
+ * chargen fixture's top-level `divergences` map (see
+ * test/parity/fixtures/action-script.schema.md). Mirrors
+ * `stripParleyDivergence`'s precedent — this phase's chargen fixture
+ * (`action-script.chargen.json`) carries exactly two such records (seeds 15
+ * and 24), each declaring a MEASURED, deliberate grimoire content change
+ * (IDENT-02's guaranteed-attack top-up; IDENT-03's Summoner-at-level-1
+ * override), never a blanket carve-out. Every seed without a record — every
+ * Fighter/Thief seed, and every Magic User whose book already had an attack
+ * spell — is compared byte-identically with NO strip. Applied at BOTH
+ * chargen replay sites (test/parity/chargen-parity.test.js's main loop and
+ * test/parity/full-suite.test.js's chargen sub-test) so neither site can
+ * silently drift from the other's divergence handling. Returns `null` when
+ * the fixture has no `divergences` map or no record for this seed.
+ */
+export function chargenDivergenceFor(fixture, seed) {
+  return fixture?.divergences?.[String(seed)] ?? null;
+}
+
+/**
+ * stripDeclaredFields(c, fields) — the seed-scoped/field-scoped strip that
+ * pairs with chargenDivergenceFor above: returns a shallow copy of `c`
+ * without the keys named in `fields` (a record's own `fields` array). A
+ * no-op (returns `c` unchanged) when `fields` is empty/undefined/null, or
+ * when `c` itself is falsy. Applied to BOTH sides (prototype and engine)
+ * immediately AFTER the record's own before/after assertions have already
+ * proven the divergence is exactly what was declared — so this never masks
+ * an UNDECLARED difference, it only removes a field whose declared,
+ * measured divergence has already been asserted.
+ */
+export function stripDeclaredFields(c, fields) {
+  if (!c || !fields || fields.length === 0) return c;
+  const rest = { ...c };
+  for (const f of fields) delete rest[f];
+  return rest;
+}
+
 /** economyComparable(state) — economy/encounters-parity's shared comparable(). */
 export function economyComparable(state) {
   // PARTY-02 (Phase 7): strip the new top-level `state.party` — see

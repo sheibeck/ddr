@@ -28,6 +28,31 @@ exact same ordered action list, so any divergence in resulting state (per
   in order. Each action's own fields depend on `type` (see vocabulary below).
   An empty `actions` array is valid (a fixture that only exercises chargen +
   boot).
+- `divergences` (object, optional; Phase 23, FID-06) — a top-level map, keyed
+  by seed (as a string), for a SEED-SET fixture (e.g.
+  `action-script.chargen.json`) whose per-seed result was DELIBERATELY
+  changed by a documented rules change. Each record is
+  `{ phase, requirements, fields, before, after, rationale }`:
+  `fields` names the exact top-level character/state fields that diverge
+  (e.g. `["grimoire"]`); `before`/`after` carry ONLY those fields, taken
+  verbatim from `loadPrototypeSandbox({seed}).S.c`/`newRun(seed).c`, never
+  hand-typed; `rationale` is a one-paragraph explanation naming the
+  requirement(s) that justify the change. The harness asserts
+  `prototype === before` and `engine === after` for each named field BEFORE
+  stripping them from both sides ahead of `diffState` — so a divergence
+  record is a stronger check than a blanket carve-out, not a weaker one. A
+  seed with no record in `divergences` is compared byte-identically with NO
+  strip.
+- `divergence` (object, optional) — the same shape as one entry of
+  `divergences` above, but attached directly to a single SCENARIO object
+  (used by scenario-based fixtures, e.g. `action-script.magic.json`, where
+  fixtures are keyed by scenario name rather than by seed).
+- **The rule:** a `divergences`/`divergence` record is the ONLY sanctioned
+  way to keep a deliberately-changed fixture result in the parity suite.
+  `test/parity/prototype-master.js.txt` (the frozen golden master) is NEVER
+  edited, and a fixture's `seeds`/`actions`/`scenarios` are NEVER trimmed or
+  rewritten just to dodge a diff — every changed result must be declared,
+  measured, and asserted before it is stripped.
 
 ## Reserved `type` Vocabulary
 

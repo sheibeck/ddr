@@ -39,6 +39,8 @@ import {
   economyComparable,
   runEconomyAction,
   stripParleyDivergence,
+  chargenDivergenceFor,
+  stripDeclaredFields,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -95,7 +97,26 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // deliberate cosmetic divergence with no rng-order effect.
       const { name: _en, darkFor, flightLeft, flightCooldown, bag, ...engineCForDiff } = engineC;
       const { name: _pn, ...protoCForDiff } = ctx.S.c;
-      assert.equal(diffState(protoCForDiff, engineCForDiff), null, `chargen seed ${seed} diverged`);
+
+      // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
+      // divergence (see the chargen fixture's `divergences` map) — assert the
+      // before/after values, then strip only the declared fields. Every
+      // other seed has no record and is compared byte-identically.
+      const record = chargenDivergenceFor(CHARGEN_FIXTURE, seed);
+      let strippedProto = protoCForDiff;
+      let strippedEngine = engineCForDiff;
+      if (record) {
+        for (const field of record.fields) {
+          // See chargen-parity.test.js's identical comment: protoCForDiff
+          // lives in the vm sandbox's realm, so diffState (structuredClone
+          // first) is used instead of a bare assert.deepStrictEqual.
+          assert.equal(diffState(protoCForDiff[field], record.before[field]), null, `chargen seed ${seed}: prototype ${field} != declared before`);
+          assert.equal(diffState(engineCForDiff[field], record.after[field]), null, `chargen seed ${seed}: engine ${field} != declared after`);
+        }
+        strippedProto = stripDeclaredFields(protoCForDiff, record.fields);
+        strippedEngine = stripDeclaredFields(engineCForDiff, record.fields);
+      }
+      assert.equal(diffState(strippedProto, strippedEngine), null, `chargen seed ${seed} diverged`);
     }
   });
 
