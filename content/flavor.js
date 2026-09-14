@@ -55,12 +55,12 @@ export const SUB_NOTE = {
   "Con Artist": "You talk first, and anything with wit of 6 or under simply declines to fight you. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
   "Acrobat": "Everything needs a 3 to lay a hand on you and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
 
-  "Wizard": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand until the last spell is spent. Two wizards in a party fight each other; there is only one of you, which helps.",
+  "Wizard": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. Two wizards in a party fight each other; there is only one of you, which helps.",
   "Warlock": "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
   "Sorcerer": "Two dozen spells to start and two more each level, nearly all of it fire, with a one-in-eight chance per level of simply forgetting the ones that aren't. Your arm caps out at 9 damage. Nobody hired the arm.",
   "Court Mage": "You talk. Through encounters, through corridors, through other people's turns. One creature in twelve dies of boredom before the fighting starts, and the book counts that as a kill.",
-  "Illusionist": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
+  "Illusionist": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. A Phantom Host from day one, three illusions, and a d20 to strike until level three — let the host do the hitting.",
   "Cleric": "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
-  "Summoner": "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
+  "Summoner": "You can call something up from your very first day. Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
   "Apprentice": "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there.",
 };
