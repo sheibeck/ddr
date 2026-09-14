@@ -133,7 +133,13 @@ export const EVENT_NARRATION = {
   trackable: () => `<span class="beat">They have not noticed you yet.</span>`,
   allyJoined: (e) => `<span class="hit">${e.name ?? "An ally"} falls in beside you.</span>`,
   warlockBoost: (e) => `The Warlock's presence stiffens the dead. <span class="hurt">+${e.amount ?? 0} hp to every corpse in the room.</span>`,
-  foeFled: (e) => `<span class="hit">${e.name ?? "It"} thinks better of it and leaves.</span>`,
+  // Phase 19 (CANON-02/D-03): a caster fleeing below its own HP threshold
+  // gets its own line — the "recalls an urgent appointment on another
+  // Plane" flourish from CONTEXT's "Specific Ideas" (the Djinni flee).
+  foeFled: (e) =>
+    e.reason === "lowHp"
+      ? `<span class="hit">${e.name ?? "It"} recalls an urgent appointment on another Plane.</span>`
+      : `<span class="hit">${e.name ?? "It"} thinks better of it and leaves.</span>`,
   foeBored: (e) => `<span class="hit">${e.name ?? "It"} loses interest entirely.</span>`,
   encounterCleared: () => `<span class="hit">Nothing left standing.</span>`,
   phobiaFrozen: () => `<span class="hurt">Your phobia has you rooted to the spot.</span>`,
@@ -218,6 +224,37 @@ export const EVENT_NARRATION = {
     `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
+
+  // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
+  // second. Every builder here defends a bare `{ type }` call (the coverage
+  // guard's own invocation shape) and never leaks an engine identifier
+  // (ability ids are not player-facing — the telegraph uses `e.txt`, a
+  // content string already scanned by the safety corpus).
+  foeCast: (e) => `<span class="beat">${e.txt ?? `${e.name ?? "It"} does something unpleasant and magical.`}</span>`,
+  foeBolted: (e) =>
+    e.member
+      ? `${e.name ?? "It"} lands it on ${e.member} for <span class="hurt">${e.dmg ?? 0} hp</span>. Better them than you.`
+      : `It lands. <span class="hurt">${e.dmg ?? 0} hp</span>${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
+  foeDrained: (e) => `${e.name ?? "It"} looks better for it. <span class="hurt">+${e.stolen ?? 0} hp</span> — yours, formerly.`,
+  foeDebuffed: (e) =>
+    e.kind === "dazed"
+      ? `<span class="hurt">The room keeps moving after you stop. Dazed for ${e.rounds ?? "?"} rounds.</span>`
+      : `<span class="hurt">Your arms feel like someone else's. Weakened for ${e.rounds ?? "?"} rounds.</span>`,
+  foeHealed: (e) => `${e.name ?? "It"} knits itself back together. <span class="miss">+${e.amount ?? 0} hp.</span> Rude.`,
+  foeSummoned: (e) =>
+    e.pending
+      ? `<span class="miss">${e.by ?? "It"} calls, and something answers from a little way off.</span>`
+      : `<span class="miss">${e.name ?? "Something"} shuffles in, late and unbothered.</span>`,
+  foeEffectFaded: (e) =>
+    e.kind === "dazed"
+      ? `<span class="hit">The room settles. You are no longer dazed.</span>`
+      : `<span class="hit">Your strength comes back. It was only borrowed.</span>`,
+  heroResisted: (e) =>
+    `<span class="hit">You think very hard about not being affected, and it works.</span> <span class="roll">${e.roll ?? "?"} vs intel ${e.intel ?? "?"}.</span>`,
+  heroResistFailed: (e) =>
+    `You try to shrug it off. <span class="roll">${e.roll ?? "?"} vs intel ${e.intel ?? "?"}.</span> <span class="miss">You do not.</span>`,
+  foePursued: (e) => `<span class="hurt">${e.name ?? "It"} follows you out. Of course it does.</span>`,
+  foeOutOfSpells: (e) => `${e.name ?? "It"} gestures grandly. Nothing happens. <span class="miss">It appears to be out of spells.</span>`,
 
   /* ---------------- magic.js ---------------- */
 

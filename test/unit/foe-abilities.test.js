@@ -18,6 +18,7 @@ import { newRun } from "../../engine/state.js";
 import { foeTurn, startCombat, playerStrike, endCombat, killFoe } from "../../engine/combat.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "../../engine/foeAbilities.js";
 import { FOE_ABILITIES, BESTIARY } from "../../content/index.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
  * on underflow, which doubles as a "no more rng draws expected" assertion. */
@@ -543,4 +544,55 @@ test("startCombat copies the kit only for caster rows (real bestiary)", () => {
   assert.notEqual(krupke.abilities, bestiaryRow.abilities, "the kit array is a copy, not the same reference");
   assert.ok(chinaWolf, "expected a China Wolf to roll within 200 seeds");
   assert.equal(Object.hasOwn(chinaWolf, "abilities"), false);
+});
+
+// --- 20: narration builder coverage (Task 3) --------------------------------
+
+test("narration: every new event builder returns a non-empty string for a bare { type } and for a full payload", () => {
+  const NEW_KEYS = [
+    "foeCast",
+    "foeBolted",
+    "foeDrained",
+    "foeDebuffed",
+    "foeHealed",
+    "foeSummoned",
+    "foeEffectFaded",
+    "heroResisted",
+    "heroResistFailed",
+    "foePursued",
+    "foeOutOfSpells",
+  ];
+  const FULL_PAYLOADS = {
+    foeCast: { type: "foeCast", name: "Krupke", ability: "krupkeFreeze", kind: "bolt", txt: "Krupke flicks a chill at you." },
+    foeBolted: { type: "foeBolted", name: "Krupke", ability: "krupkeFreeze", dmg: 4, ignoresArmor: false },
+    foeDrained: { type: "foeDrained", name: "Vampire", ability: "vampireDrain", stolen: 5, wp: 65, maxWP: 65 },
+    foeDebuffed: { type: "foeDebuffed", name: "Krupke", ability: "krupkeWeaken", kind: "weakened", rounds: 2 },
+    foeHealed: { type: "foeHealed", name: "Stalka Beast", ability: "stalkaHeal", amount: 4, wp: 94, maxWP: 94 },
+    foeSummoned: { type: "foeSummoned", name: "Skeleton", by: "Vampire", pending: true },
+    foeEffectFaded: { type: "foeEffectFaded", kind: "dazed" },
+    heroResisted: { type: "heroResisted", name: "Krupke", ability: "krupkeFreeze", roll: 11, intel: 12 },
+    heroResistFailed: { type: "heroResistFailed", name: "Krupke", ability: "krupkeFreeze", roll: 12, intel: 12 },
+    foePursued: { type: "foePursued", name: "Spectre" },
+    foeOutOfSpells: { type: "foeOutOfSpells", name: "Drudge" },
+  };
+
+  for (const key of NEW_KEYS) {
+    assert.equal(typeof EVENT_NARRATION[key], "function", `${key} must be a function`);
+    const bare = EVENT_NARRATION[key]({ type: key });
+    assert.equal(typeof bare, "string");
+    assert.ok(bare.trim().length > 0, `${key} must render something for a bare { type }`);
+
+    const full = EVENT_NARRATION[key](FULL_PAYLOADS[key]);
+    assert.equal(typeof full, "string");
+    assert.ok(full.trim().length > 0, `${key} must render something for a full payload`);
+    const ability = FULL_PAYLOADS[key].ability;
+    if (ability) {
+      assert.equal(full.includes(ability), false, `${key} must not leak the engine ability id "${ability}"`);
+    }
+  }
+
+  const lowHp = EVENT_NARRATION.foeFled({ type: "foeFled", name: "Djinni", reason: "lowHp" });
+  const plain = EVENT_NARRATION.foeFled({ type: "foeFled", name: "Djinni" });
+  assert.notEqual(lowHp, plain);
+  assert.ok(lowHp.includes("Plane"));
 });
