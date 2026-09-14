@@ -124,10 +124,11 @@ _Note: no TDD tasks in this plan._
 - `full-suite.test.js`'s inline comment describing the carve-out avoids repeating the literal function name a third time, since the plan's acceptance criteria require `grep -c 'stripParleyDivergence'` to print exactly 2 (import + wrapper) in that file.
 - `tools/tune-difficulty.mjs`'s parley tally is a new counter block + a separate `parleySummary` aggregator beside the existing `causeBreakdown`, keeping `autoPlayOnce`'s existing control flow (and `decideAction`'s policy) completely untouched.
 - The 200-seed BEFORE run was launched with `run_in_background` writing to a scratchpad file with an `EXIT=<code>` sentinel, then polled in bounded ≤90s checks (per the 18-06 precedent) rather than blocking in the foreground — it took just under the documented 5-6 minute window.
+- `.planning/REQUIREMENTS.md`'s PARLEY-01/02/03 checkboxes are intentionally left unchecked ("Pending") after this plan, even though they appear in this plan's frontmatter `requirements` field. This plan lays the parity/tooling/doc groundwork ONLY — the actual payout formula, Con Artist odds, and failure-cost mechanics land in 20-02. Marking them complete here would be a false signal in the traceability table; they will be marked complete when 20-02's SUMMARY runs `requirements mark-complete` after the engine rules actually change.
 
 ## Deviations from Plan
 
-None — plan executed exactly as written. All three tasks' acceptance criteria (grep gates, unit tests, parity suite, `npm test` count, `git diff --quiet` engine-unchanged checks) passed without needing a fix-up pass.
+None — plan executed exactly as written. All three tasks' acceptance criteria (grep gates, unit tests, parity suite, `npm test` count, `git diff --quiet` engine-unchanged checks) passed without needing a fix-up pass. One process deviation: `requirements mark-complete` was deliberately NOT run for PARLEY-01/02/03 (see Decisions Made) — the requirement text describes the finished behavior, which this baseline plan does not yet deliver.
 
 ## Issues Encountered
 None.
@@ -141,3 +142,17 @@ None - no external service configuration required.
 ---
 *Phase: 20-parley-balance-language-system*
 *Completed: 2026-09-14*
+
+## Self-Check: PASSED
+
+- FOUND: test/parity/harness/comparables.js
+- FOUND: test/parity/combat-parity.test.js
+- FOUND: test/parity/full-suite.test.js
+- FOUND: test/unit/parley-carveout.test.js
+- FOUND: tools/tune-difficulty.mjs
+- FOUND: docs/PARLEY-REBALANCE.md
+- FOUND: .planning/phases/20-parley-balance-language-system/20-01-SUMMARY.md
+- FOUND commit: dc69aa5
+- FOUND commit: fc1b6aa
+- FOUND commit: aa52a02
+- FOUND commit: 7ede251

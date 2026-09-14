@@ -155,12 +155,12 @@ Plans:
   3. Con Artist's baseline parley odds are retuned to a stated, documented post-rebalance win-rate target that keeps the subclass identity viable rather than gutted.
   4. The Language skill and the Helm of Knowledge (`tongue`) both contribute a fluency bonus to the same parley `bonus` term (Option B), and fluency widens which encounter types a character can parley, verified by an availability test per race/class/skill/Helm combination.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 20-01-PLAN.md — PARLEY-01..03 baseline (D-13/D-15/D-18): `stripParleyDivergence` in the harness applied scenario-scoped at BOTH seed-303 replay sites (combat-parity local comparable + full-suite shared comparable) + carve-out test; `tools/tune-difficulty.mjs` parley tally; `docs/PARLEY-REBALANCE.md` with the BEFORE readout measured on the pre-Phase-20 engine
+- [x] 20-01-PLAN.md — PARLEY-01..03 baseline (D-13/D-15/D-18): `stripParleyDivergence` in the harness applied scenario-scoped at BOTH seed-303 replay sites (combat-parity local comparable + full-suite shared comparable) + carve-out test; `tools/tune-difficulty.mjs` parley tally; `docs/PARLEY-REBALANCE.md` with the BEFORE readout measured on the pre-Phase-20 engine
 
 **Wave 2** *(blocked on Wave 1 — the carve-out must precede the divergence and the BEFORE readout must precede the engine change)*
 
@@ -202,6 +202,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
-| 20. Parley Balance & Language System | v1.1 | 0/3 | Planned | - |
+| 20. Parley Balance & Language System | v1.1 | 1/3 | In Progress|  |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |

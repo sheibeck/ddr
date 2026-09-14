@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Monster Balancing & Abilities
-current_phase: 19
-current_phase_name: Foe Abilities, Spellcasting & Symmetric INT Resistance
+current_phase: 20
+current_phase_name: Parley Balance & Language System
 status: executing
-stopped_at: Completed 19-04-PLAN.md
-last_updated: "2026-09-14T12:11:57.070Z"
-last_activity: 2026-09-13
-last_activity_desc: Phase 19 execution started
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-09-14T12:27:08.806Z"
+last_activity: 2026-09-14
+last_activity_desc: Phase 20 execution started
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
+  total_plans: 16
+  completed_plans: 14
   percent: 60
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance
+**Current focus:** Phase 20 — Parley Balance & Language System
 
 ## Current Position
 
-Phase: 19 (Foe Abilities, Spellcasting & Symmetric INT Resistance) — EXECUTING
-Plan: 4 of 4
+Phase: 20 (Parley Balance & Language System) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-13 — Phase 19 execution started
+Last activity: 2026-09-14 — Phase 20 execution started
 
-Progress: [██████████] 100%
+Progress: [█████████░] 88%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +87,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T04:06:49.016Z
-Stopped at: Completed 19-04-PLAN.md
+Last session: 2026-09-14T12:27:08.783Z
+Stopped at: Completed 20-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -113,6 +113,7 @@ Resume file: None
 | Phase 19 P02 | 30min | 3 tasks | 9 files |
 | Phase 19 P03 | 45min | 3 tasks | 5 files |
 | Phase 19 P04 | 55min | 3 tasks | 5 files |
+| Phase 20 P01 | 35min | 3 tasks | 6 files |
 
 ## Decisions
 
@@ -141,3 +142,6 @@ Resume file: None
 - [Phase ?]: 19-03: test 16 (summoned foe accounting) calls killFoe directly on the joined Skeleton rather than chaining playerStrike through a full rng-heavy kill, proving the same 'ordinary foe entry' claim with a far shorter sequence
 - [Phase ?]: 19-04: all five D-15 pinned seeds measured to seed 1 (self-derived by the suite's own firstCasterSeed test, never hand-adjusted); VISITS stayed at 12 (bolt/drain/debuff/summon all covered, no need to raise to 24)
 - [Phase ?]: 19-04: Section 4 of test/unit/foe-turn-draw-count.test.js is the append-only home for the D-04 gated-draw-per-ability-kind table; Sections 1-3 remain byte-unchanged since d5fc90a
+- [Phase ?]: 20-01: stripParleyDivergence placed directly after stripRationsField in comparables.js, mirroring its exact deliberate-permanent-divergence JSDoc shape
+- [Phase ?]: 20-01: full-suite.test.js's carve-out comment avoids the literal function name a third time so grep -c 'stripParleyDivergence' stays exactly 2 (import + wrapper) per the plan's acceptance criteria
+- [Phase ?]: 20-01: tools/tune-difficulty.mjs's parley tally is a new counter block + separate parleySummary aggregator beside causeBreakdown; decideAction's policy, MAX_ACTIONS, and the seed stride are byte-for-byte unchanged
