@@ -2,126 +2,53 @@
 // tools/tune-economy.mjs
 //
 // Dev-only, zero-dependency Node ESM script — NOT shipped, NOT a node:test
-// file (it makes no assertions, so `node --test` never picks it up). Imports
-// only from engine/ through the public applyAction/newRun/makeRng surface,
-// never engine internals directly, and Node builtins.
+// file (it makes no assertions, so `node --test` never picks it up). The
+// bot policy lives in tools/lib/tuning-bot.mjs (Phase 21, TUNE-02) — cast/
+// drink/camp/descend + caster-aware flee (D-05/D-06), tallies (D-07),
+// readout (D-08) — imported here, not duplicated.
 //
 // ============================ SCOPE / STATUS ============================
 // SCAFFOLD STUB ONLY (Phase 16, Economy E, Task 4 — "optional"). This harness
 // is intentionally LIGHTWEIGHT and is NOT driven to set final balance in
 // Phase 16. The phase's number changes (the depth-scaled "wilmst cache" row,
 // the confirmed bag caps) were made CONSERVATIVELY by inspection, not by this
-// script. It exists so the LATER deep-tune (deferred to the consolidated
-// cross-milestone pass) has a ready place to simulate N seeded runs and read
-// gold-earned / gold-by-source / gold-at-death distributions.
+// script. It exists so the LATER deep-tune (Phase 21, this pass) has a ready
+// place to simulate N seeded runs and read gold-earned / gold-by-source /
+// gold-at-death distributions.
 //
 // THIS IS A TUNING PROXY, NOT A PASS/FAIL GATE, and NOT a substitute for a
-// human playtest. A heuristic bot's play skill is arbitrary (it explores
-// blindly and never shops), so its gold curves are a rough sanity signal only.
-// Do NOT gate any build or CI check on this script's output.
+// human playtest. A heuristic bot's play skill is arbitrary, so its gold
+// curves are a rough sanity signal only. Do NOT gate any build or CI check
+// on this script's output.
 //
-// It shares tune-difficulty.mjs's auto-play policy skeleton (explore via BFS,
-// attack/flee/parley in combat, leave any store). The ONLY difference is what
-// it measures: wilmst (gold) flow rather than death depth. Gold sources are
-// read from the `goldGained` event's `why` tag that gainWilmst() already
-// emits (engine/items.js), so no engine change is needed to attribute income.
+// The bot now takes finds (leaveFind only on a full bag), casts/drinks/
+// camps, and heads for the exit once a floor's dots are cleared or the
+// exploration budget is spent — it still never shops (Deferred Idea), so
+// store income/spend stays out of the signal.
 //
 // Run:
 //   node tools/tune-economy.mjs --seeds=200
 //   node tools/tune-economy.mjs --seeds=200 --json
+//   node tools/tune-economy.mjs --seeds=200 --party
+//   node tools/tune-economy.mjs --seeds=200 --max-actions=5000 --explore-budget=30
 
-import { newRun, applyAction } from "../engine/engine.js";
-import { makeRng } from "../engine/rng.js";
-import { canParley } from "../engine/combat.js";
-
-const MAX_ACTIONS = 20000; // hard safety stop — prevents a runaway loop bug from hanging the harness
-
-const DIRS = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
-
-// --- auto-play policy (mirrors tune-difficulty.mjs; black-box engine use) ---
-
-function canStep(f, x, y, dir) {
-  const [dx, dy] = DIRS[dir];
-  const nx = x + dx;
-  const ny = y + dy;
-  const there = f.g[ny] && f.g[ny][nx];
-  if (!there || there.wall) return false;
-  if (there.feat === "one" && there.dir !== dir) return false;
-  const here = f.g[y][x];
-  if (here.feat === "one" && here.dir !== dir) return false;
-  return true;
-}
-
-function nearestUnseenDir(state) {
-  const f = state.floor;
-  const visited = new Set([`${f.px},${f.py}`]);
-  const queue = [{ x: f.px, y: f.py, first: null }];
-  let qi = 0;
-  while (qi < queue.length) {
-    const { x, y, first } = queue[qi++];
-    const cell = f.g[y] && f.g[y][x];
-    if (cell && !cell.seen && !(x === f.px && y === f.py)) return first;
-    for (const dir of Object.keys(DIRS)) {
-      if (!canStep(f, x, y, dir)) continue;
-      const [dx, dy] = DIRS[dir];
-      const nx = x + dx;
-      const ny = y + dy;
-      const key = `${nx},${ny}`;
-      if (visited.has(key)) continue;
-      visited.add(key);
-      queue.push({ x: nx, y: ny, first: first || dir });
-    }
-  }
-  return null;
-}
-
-function legalDirs(state) {
-  const f = state.floor;
-  const legal = [];
-  for (const dir of Object.keys(DIRS)) if (canStep(f, f.px, f.py, dir)) legal.push(dir);
-  return legal;
-}
-
-function pickFallbackDir(state, policyRng) {
-  const legal = legalDirs(state);
-  return legal.length ? policyRng.pick(legal) : policyRng.pick(["N", "S", "E", "W"]);
-}
-
-function decideAction(state, policyRng) {
-  if (state.combat) {
-    const c = state.c;
-    const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
-    if (ratio < 0.3) {
-      if (canParley(state)) return { type: "parley" };
-      return { type: "flee" };
-    }
-    return { type: "attack" };
-  }
-  // The economy harness declines any offered find and leaves any store (buy/
-  // sell strategy is out of scope for this first-pass income-curve signal).
-  if (state.pendingFind) return { type: "leaveFind" };
-  if (state.store) return { type: "leaveStore" };
-  const dir = nearestUnseenDir(state) || pickFallbackDir(state, policyRng);
-  return { type: "move", dir };
-}
+import { newRun } from "../engine/engine.js";
+import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
 
 /**
- * autoPlayOnce(seed) — one full run; accumulates the gold (wilmst) economy
- * signal. policyRng is a SEPARATE stream (seed ^ 0x9e3779b9) so harness
- * decisions never perturb the engine's seeded determinism.
+ * autoPlayOnce(seed, opts) — one full run via the shared playRun loop
+ * (tools/lib/tuning-bot.mjs), layering the gold (wilmst) economy tally on
+ * top via playRun's onStep hook. `startGold` is read from a SEPARATE
+ * `newRun(seed)` call before playRun (newRun is pure, so one extra chargen
+ * per seed is cheap) — with `--party` the forced member changes nothing
+ * about the hero's own purse. `state` is dropped from the returned record.
  */
-function autoPlayOnce(seed) {
-  const policyRng = makeRng(seed ^ 0x9e3779b9);
-  let state = newRun(seed);
-  let actions = 0;
-  const startGold = state.c.gold;
+function autoPlayOnce(seed, opts) {
+  const startGold = newRun(seed).c.gold;
   let peakGold = startGold;
   let earned = 0; // sum of positive goldGained amounts
   const bySource = {}; // why -> total amount
-  while (!state.dead && !state.won && actions < MAX_ACTIONS) {
-    const action = decideAction(state, policyRng);
-    let events;
-    ({ state, events } = applyAction(state, action));
+  const run = playRun(seed, opts, (events, state) => {
     for (const e of events) {
       if (e.type === "goldGained" && typeof e.amount === "number") {
         earned += e.amount;
@@ -130,14 +57,10 @@ function autoPlayOnce(seed) {
       }
     }
     if (state.c.gold > peakGold) peakGold = state.c.gold;
-    actions++;
-  }
+  });
+  const { state, ...rest } = run;
   return {
-    seed,
-    deathDepth: state.floor.depth,
-    dead: state.dead,
-    won: state.won,
-    actions,
+    ...rest,
     startGold,
     endGold: state.c.gold,
     peakGold,
@@ -148,22 +71,6 @@ function autoPlayOnce(seed) {
 
 // --- reporting -----------------------------------------------------------
 
-function percentile(sortedArr, p) {
-  if (!sortedArr.length) return 0;
-  const idx = Math.min(sortedArr.length - 1, Math.floor(p * sortedArr.length));
-  return sortedArr[idx];
-}
-
-function distribution(values) {
-  const sorted = [...values].sort((a, b) => a - b);
-  return {
-    min: sorted[0] ?? 0,
-    p50: percentile(sorted, 0.5),
-    p90: percentile(sorted, 0.9),
-    max: sorted[sorted.length - 1] ?? 0,
-  };
-}
-
 function sourceBreakdown(results) {
   const totals = {};
   for (const r of results) for (const [why, amt] of Object.entries(r.bySource)) totals[why] = (totals[why] || 0) + amt;
@@ -173,7 +80,7 @@ function sourceBreakdown(results) {
     .map(([why, amt]) => ({ why, amt, pct: (amt / grand) * 100 }));
 }
 
-function printReport(results) {
+function printReport(results, opts) {
   const earned = distribution(results.map((r) => r.earned));
   const peak = distribution(results.map((r) => r.peakGold));
   const end = distribution(results.map((r) => r.endGold));
@@ -197,18 +104,29 @@ function printReport(results) {
     console.log(`  ${String(why).padEnd(14)} ${String(amt).padStart(10)} (${pct.toFixed(1)}%)`);
   }
   console.log("");
+
+  printSharedReadout(results, opts);
+  console.log("");
 }
 
 // --- CLI -----------------------------------------------------------------
 
 function parseArgs(argv) {
-  const opts = { seeds: 200, json: false };
+  const opts = { seeds: 200, json: false, ...BOT_DEFAULTS };
   for (const arg of argv) {
     if (arg.startsWith("--seeds=")) {
       const n = parseInt(arg.slice("--seeds=".length), 10);
       if (Number.isFinite(n) && n > 0) opts.seeds = n;
     } else if (arg === "--json") {
       opts.json = true;
+    } else if (arg === "--party") {
+      opts.party = true;
+    } else if (arg.startsWith("--max-actions=")) {
+      const n = parseInt(arg.slice("--max-actions=".length), 10);
+      if (Number.isFinite(n) && n > 0) opts.maxActions = n;
+    } else if (arg.startsWith("--explore-budget=")) {
+      const n = parseInt(arg.slice("--explore-budget=".length), 10);
+      if (Number.isFinite(n) && n >= 0) opts.exploreBudget = n;
     }
   }
   return opts;
@@ -217,7 +135,7 @@ function parseArgs(argv) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const seeds = Array.from({ length: opts.seeds }, (_, i) => i * 7919 + 1);
-  const results = seeds.map((seed) => autoPlayOnce(seed));
+  const results = seeds.map((seed) => autoPlayOnce(seed, opts));
 
   if (opts.json) {
     console.log(
@@ -229,13 +147,14 @@ function main() {
           endGold: distribution(results.map((r) => r.endGold)),
           deathDepth: distribution(results.map((r) => r.deathDepth)),
           bySource: sourceBreakdown(results),
+          ...sharedJson(results, opts),
         },
         null,
         2,
       ),
     );
   } else {
-    printReport(results);
+    printReport(results, opts);
   }
 }
 
