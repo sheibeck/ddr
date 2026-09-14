@@ -123,7 +123,7 @@ Plans:
   4. A level-1 Illusionist has an illusion-school way to WIN a fight (an attack/pressure spell or Phantom Host usable at level 1), while keeping the d20 strike die until level 3 as the bad.
   5. Chargen-parity fixtures affected by the guaranteed-attack-spell change are regenerated narrowly, each with a before/after note and rationale; every fixture NOT touched stays byte-identical, and Fighter/Thief RNG-consumption order is unchanged.
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -133,7 +133,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion; 02 and 03 run in parallel)*
 
 - [x] 23-02-PLAN.md — `rollGrimoire` zero-draw guaranteed day-one attack top-up (Summoner exempt; `spare` pool predicate frozen so the shuffle draw count is unchanged) + >=200-forced-seed tests + FID-06 chargen `divergences` records (measured: seeds 24 gains Freeze, 15 drops Heal) asserted at both chargen parity sites (IDENT-02, IDENT-03, FID-06)
-- [ ] 23-03-PLAN.md — Wizard refuses to strike only while a castable attack spell exists and charges remain; `strikeRefused` gains `spell`; narration names it; L1 Summon (doubled/backfire kept) and L1 Phantom Host (not doubled, d20 kept) tests; Wizard/Summoner/Illusionist `SUB_NOTE` (IDENT-01, IDENT-03, IDENT-04)
+- [x] 23-03-PLAN.md — Wizard refuses to strike only while a castable attack spell exists and charges remain; `strikeRefused` gains `spell`; narration names it; L1 Summon (doubled/backfire kept) and L1 Phantom Host (not doubled, d20 kept) tests; Wizard/Summoner/Illusionist `SUB_NOTE` (IDENT-01, IDENT-03, IDENT-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -222,7 +222,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
-| 23. Casters Can Act | v1.2 | 2/4 | In Progress|  |
+| 23. Casters Can Act | v1.2 | 3/4 | In Progress|  |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 0/TBD | Not started | - |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |

@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 23
 current_phase_name: Casters Can Act
 status: executing
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-09-14T22:14:32.580Z"
+stopped_at: Completed 23-03-PLAN.md
+last_updated: "2026-09-14T22:28:44.732Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 23 execution started
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 17
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 23 (Casters Can Act) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 23 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T22:14:32.552Z
-Stopped at: Completed 23-02-PLAN.md
+Last session: 2026-09-14T22:28:44.707Z
+Stopped at: Completed 23-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -123,6 +123,7 @@ Resume file: None
 | Phase 22 P04 | 21min | 3 tasks | 3 files |
 | Phase 23 P01 | 25min | 3 tasks | 5 files |
 | Phase 23 P02 | 13min | 3 tasks | 7 files |
+| Phase 23 P03 | 12min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -189,6 +190,9 @@ Resume file: None
 - [Phase ?]: 23-02: Summoner exempt from attack top-up (belt-and-braces guard; spare structurally never has an attack-kind spell for it anyway)
 - [Phase ?]: 23-02: fixed cross-realm assert.deepStrictEqual failure comparing vm-sandboxed prototype values against plain JSON values in the new chargen divergence assertions -- switched to diffState (structuredClone-based), matching the rest of the parity harness
 - [Phase ?]: 23-02: measured chargen fixture divergence set is exactly {15, 24} as predicted; declared in a new divergences block (chargenDivergenceFor/stripDeclaredFields) rather than a blanket regeneration
+- [Phase ?]: 23-03: castableAttackSpells(state) is the single Wizard-refusal gate; combat.js imports it rather than re-declaring the attack-kind set
+- [Phase ?]: 23-03: IDENT-03/04 in-combat Summon/Phantom Host tests use an empty foe list so afterPlayerAction's encounterCleared short-circuit keeps the rng sequence to exactly the summon-branch draws, while still exercising the real C.ally assignment via a locally-captured combat reference
+- [Phase ?]: 23-03: reused test/unit/combat.test.js's lethal-hit rng sequence ([1,3,4,5,20,1]) verbatim for every 'the caster still swings' assertion -- sub-agnostic since cls Magic User never enters the Thief-only backstab/heavy-armor branches
 
 ### Blockers
 
