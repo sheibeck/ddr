@@ -209,9 +209,13 @@ export function findCastableAttackSpell(state) {
   return best;
 }
 
-/** makeBotContext(opts) — per-run mutable bot state: resolved options, the per-floor action counter, and the full-bag flag. */
+/**
+ * makeBotContext(opts) — per-run mutable bot state: resolved options, the
+ * per-floor action counter, the full-bag flag, and `parleyBlocked` (Rule 1
+ * fix — see decideAction).
+ */
 export function makeBotContext(opts = {}) {
-  return { opts: { ...BOT_DEFAULTS, ...opts }, floorActions: 0, findFull: false };
+  return { opts: { ...BOT_DEFAULTS, ...opts }, floorActions: 0, findFull: false, parleyBlocked: false };
 }
 
 /**
@@ -229,6 +233,19 @@ export function makeBotContext(opts = {}) {
  *   (g) otherwise: explore toward the nearest unseen tile.
  * `policyRng` is a SEPARATE rng stream from the engine's own (see playRun),
  * so harness decisions never perturb engine determinism.
+ *
+ * Bug found during the BEFORE readout (auto-fixed, Rule 1): `canParley`
+ * stays true forever for a fluency-2 Wilmsry vs a Magical encounter, but
+ * `parley()`'s `wilmsryVsMagical` branch REFUSES without ever setting
+ * `C.parleyTried` (Phase 20, D-12 — a refusal is not a spent attempt, by
+ * canon design). A bot that always prefers parley over flee below the flee
+ * threshold therefore re-picks `{ type: "parley" }` forever, burning the
+ * entire `maxActions` budget on a no-progress loop instead of fleeing — a
+ * human player would simply try something else after being refused once.
+ * `ctx.parleyBlocked` (set by `observe` on a `parleyRefused` event, cleared
+ * on the next `encounterStarted`) makes the bot do exactly that: fall
+ * through to flee for the REST of this encounter once a parley attempt has
+ * been refused rather than spent.
  */
 export function decideAction(state, policyRng, ctx) {
   if (state.combat) {
@@ -236,7 +253,7 @@ export function decideAction(state, policyRng, ctx) {
     const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
     const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold; // D-06
     if (ratio < fleeAt) {
-      if (canParley(state)) return { type: "parley" };
+      if (!ctx.parleyBlocked && canParley(state)) return { type: "parley" };
       return { type: "flee" };
     }
     if (c.potions > 0 && ratio < ctx.opts.potionThreshold) return { type: "drinkPotion" }; // D-05
@@ -345,9 +362,11 @@ export function tallyEvents(tallies, events, stateAfter) {
 /**
  * observe(ctx, events) — per-step bookkeeping the policy itself reads next
  * turn: the per-floor action counter resets on any `floorChanged` event
- * (else increments once), and the full-bag flag tracks `bagFull` /
- * `findTaken` / `findLeft` so the bot never loops offering/declining a find
- * against a full bag.
+ * (else increments once), the full-bag flag tracks `bagFull` / `findTaken` /
+ * `findLeft` so the bot never loops offering/declining a find against a
+ * full bag, and `parleyBlocked` tracks a `parleyRefused` (see decideAction's
+ * Rule-1 bugfix comment) — set the instant a refusal lands, cleared the
+ * instant a fresh encounter starts.
  */
 export function observe(ctx, events) {
   let floorChangedThisStep = false;
@@ -355,6 +374,8 @@ export function observe(ctx, events) {
     if (e.type === "floorChanged") floorChangedThisStep = true;
     else if (e.type === "bagFull") ctx.findFull = true;
     else if (e.type === "findTaken" || e.type === "findLeft") ctx.findFull = false;
+    else if (e.type === "parleyRefused") ctx.parleyBlocked = true;
+    else if (e.type === "encounterStarted") ctx.parleyBlocked = false;
   }
   if (floorChangedThisStep) ctx.floorActions = 0;
   else ctx.floorActions++;

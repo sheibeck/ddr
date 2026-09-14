@@ -122,6 +122,23 @@ test("D-06: caster threshold raises flee/parley to 0.5 vs any kit-bearing live f
     c: { wp: 24, maxWP: 40 },
   });
   assert.deepStrictEqual(decideAction(aboveCasterThresholdState, fixedPolicyRng, ctx), { type: "attack" });
+
+  // D-12/Rule-1 bugfix (found during the BEFORE readout): parley()'s
+  // wilmsryVsMagical branch REFUSES a fluency-2 Wilmsry vs a Magical foe
+  // without ever setting C.parleyTried, so canParley stays true forever —
+  // a bot that always prefers parley over flee would retry it every turn
+  // for the rest of the fight. ctx.parleyBlocked (set by observe() on a
+  // parleyRefused event) makes decideAction fall through to flee instead.
+  const wilmsryC = {
+    race: "Wilmsry", cls: "Fighter", sub: "Soldier", level: 1, wp: 8, maxWP: 40,
+    potions: 0, rations: 0, spellsUsed: 0, grimoire: [], items: [{ eff: { tongue: 1 } }],
+    skills: { Language: 1 }, gold: 0,
+  };
+  const magicalCombat = { type: "Magical", foes: [plainFoe], round: 1 };
+  const wilmsryState = mkState({ combat: magicalCombat, c: wilmsryC });
+  assert.deepStrictEqual(decideAction(wilmsryState, fixedPolicyRng, ctx), { type: "parley" });
+  ctx.parleyBlocked = true;
+  assert.deepStrictEqual(decideAction(wilmsryState, fixedPolicyRng, ctx), { type: "flee" });
 });
 
 test("D-05: potion in combat drinks below potionThreshold when carried; flee still wins below fleeThreshold", () => {
