@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Monster Balancing & Abilities
 current_phase: 18
 current_phase_name: Bestiary Rebalance & Canon Combat Fixes
-status: executing
-stopped_at: Completed 18-05-PLAN.md
-last_updated: "2026-09-13T23:46:26.204Z"
+status: verifying
+stopped_at: Completed 18-06-PLAN.md (Phase 18 complete)
+last_updated: "2026-09-14T00:23:26.461Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 18 execution started
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 8
-  percent: 20
+  completed_plans: 9
+  percent: 40
 ---
 
 # Project State
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 Phase: 18 (Bestiary Rebalance & Canon Combat Fixes) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-13 — Phase 18 execution started
 
-Progress: [█████████░] 89%
+Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -81,8 +81,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-13T23:46:26.164Z
-Stopped at: Completed 18-05-PLAN.md
+Last session: 2026-09-14T00:23:26.433Z
+Stopped at: Completed 18-06-PLAN.md (Phase 18 complete)
 Resume file: None
 
 ## Operator Next Steps
@@ -102,6 +102,7 @@ Resume file: None
 | Phase 18 P03 | 25min | 2 tasks | 3 files |
 | Phase 18 P04 | 30min | 2 tasks | 4 files |
 | Phase 18 P05 | 20min | 2 tasks | 2 files |
+| Phase 18 P06 | 45min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -118,3 +119,6 @@ Resume file: None
 - [Phase ?]: 18-04: insaneStruckAlly is now guarded on !hit.soaked — a fully-soaked foe-on-foe blow emits only foeArmorSoaked
 - [Phase ?]: D-18: Drake wp 135->38, Werebeast dmg bonus 5->0 (outlier fixes)
 - [Phase ?]: D-03: five caster foes (Djinni x2, Krupke, Drudge x2, Vampire, Stalka Beast) get -25% wp pre-ability discount, one dice-step lower melee
+- [Phase ?]: 18-06: seam-only invariant test (D-09 promote) proves damageFoe is the ONLY foe-wp decrement site; zero violations found
+- [Phase ?]: 18-06: AFTER yardstick table generated verbatim and machine-checked (D-04 doc-consistency test); change ledger records every measured ratio and defers canon-mode consequences (Sterling, five sp.ar creatures) to Phase 21
+- [Phase ?]: 18-06: tune-difficulty AFTER readout is within noise of BEFORE (informational only, D-16) — bot never reaches the tier-4/5 creatures this phase retuned

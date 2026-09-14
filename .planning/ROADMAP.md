@@ -95,7 +95,7 @@ Plans:
   4. Only named, narrow `comparables.js` carve-outs cover fixture-exercised creatures that changed numbers — no blanket fixture regeneration — with a documented rationale per carve-out.
   5. Ability-bearing foes (Djinni, Krupke, Drudge, Vampire, Stalka Beast) carry proportionally lower raw stats than their pre-rebalance baseline, anticipating the ability kits landing in Phase 19.
 
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans executed
 
 Plans:
 **Wave 1**
@@ -111,7 +111,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 18-06-PLAN.md — seam-only invariant test (no foe-wp decrement outside `engine/foeDamage.js`); `BESTIARY-REBALANCE.md` AFTER table (canon mode, consistency-tested), tune-difficulty AFTER readout, change ledger with deferred canon consequences (Sterling, the five `sp.ar` creatures); phase parity gate
+- [x] 18-06-PLAN.md — seam-only invariant test (no foe-wp decrement outside `engine/foeDamage.js`); `BESTIARY-REBALANCE.md` AFTER table (canon mode, consistency-tested), tune-difficulty AFTER readout, change ledger with deferred canon consequences (Sterling, the five `sp.ar` creatures); phase parity gate
 
 ### Phase 19: Foe Abilities, Spellcasting & Symmetric INT Resistance
 
@@ -173,7 +173,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
-| 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 5/6 | In Progress|  |
+| 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | In Progress|  |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 0/TBD | Not started | - |
 | 20. Parley Balance & Language System | v1.1 | 0/TBD | Not started | - |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
