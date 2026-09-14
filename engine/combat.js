@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak, DEATH_PANIC_THRESHOLD } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
@@ -279,7 +279,9 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   // and it reuses the identical frozen/shookOffFrozen seam and single
   // Hardiness rng.d(2) mitigation roll — never a second roll, never for a
   // non-Death-phobic or non-near-death character, never during chargen.
-  const DEATH_PANIC_THRESHOLD = 0.25; // near-death: at/below 25% of maxWP
+  // WR-02 (19-REVIEW.md): DEATH_PANIC_THRESHOLD now lives as a single
+  // source of truth in engine/derived.js (imported below), so this check and
+  // conditionsOf's phobia chip can never drift out of sync again.
   const nearDeathPanic = c.phobia === "Death" && c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD;
   if (
     (c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic) &&

@@ -12,6 +12,16 @@ import { rollDice } from "./dice.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// WR-02 (19-REVIEW.md): the single source of truth for the Death-phobia
+// near-death panic threshold — a character at/below this fraction of their
+// own maxWP counts as "near death" for both the combat-freeze check
+// (engine/combat.js#startCombat) and this module's own phobia chip
+// (conditionsOf below). Previously duplicated as two independent literals
+// that had to be kept in sync by hand; exported here (the leaf module) and
+// imported by engine/combat.js so a future balance tweak only ever touches
+// one place.
+export const DEATH_PANIC_THRESHOLD = 0.25; // near-death: at/below 25% of maxWP
+
 // --- skills (state-scoped, not global) -------------------------------------
 
 /** skill(c, name) — does the character have skill `name` at all? */
@@ -186,7 +196,6 @@ export function conditionsOf(state) {
   // already-computed state (no rng, no mutation) — zero parity impact, exactly
   // like every other condition above.
   if (state && state.combat && c.phobia) {
-    const DEATH_PANIC_THRESHOLD = 0.25; // mirror engine/combat.js's constant
     const phobiaActive =
       !!state.combat.frozen ||
       c.phobiaType === state.combat.type ||
