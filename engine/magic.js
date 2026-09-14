@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { skill, eff, canCast, canLearn, schoolBonus, schoolGate } from "./derived.js";
+import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction } from "./combat.js";
@@ -85,17 +85,24 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     return events;
   }
 
-  // p.25: a non-thrown spell can be resisted by an intelligent target
+  // p.25: a non-thrown spell can be resisted by an intelligent target.
+  // Phase 19 FOE-07 (D-07/D-17): the intel>=12 gate and the single d20 now
+  // live in derived.js's resistRoll, shared with engine/foeAbilities.js's
+  // hero-side check; byte-identical control flow and events (the gate is
+  // the same boolean, relocated), so parity's cast-damage fixture (Shriek,
+  // intel 1) never enters the rolled branch on either side.
   if (C && !RESIST_IMMUNE_KINDS.has(sp.kind)) {
     const t = liveFoes(state)[0];
-    if (t && (t.intel ?? 0) >= 12) {
-      const r = rng.d(20);
-      if (r < t.intel) {
-        events.push({ type: "spellResisted", target: t.name, spell: sp.n, roll: r, intel: t.intel });
-        afterPlayerAction(state, rng, events);
-        return events;
+    if (t) {
+      const res = resistRoll(rng, t.intel);
+      if (res.rolled) {
+        if (res.resisted) {
+          events.push({ type: "spellResisted", target: t.name, spell: sp.n, roll: res.roll, intel: t.intel });
+          afterPlayerAction(state, rng, events);
+          return events;
+        }
+        events.push({ type: "resistFailed", target: t.name, roll: res.roll });
       }
-      events.push({ type: "resistFailed", target: t.name, roll: r });
     }
   }
 

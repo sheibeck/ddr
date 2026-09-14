@@ -268,6 +268,53 @@ test("castSpell: Sense Danger (non-combat) sets foresight and picks the next enc
   assert.ok(events.some((e) => e.type === "senseDanger"));
 });
 
+// --- Phase 19: resistance via the shared resistRoll (FOE-07) ---------------
+
+test("castSpell: an intel-12 foe resists Weaken on a d20 of 11 — spellResisted payload unchanged, one d20 then the foe turn", () => {
+  const foe = fixedFoe({ intel: 12, wp: 10, maxWP: 10 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
+    combat: fixedCombat([foe]),
+  });
+  // 11 -> resistRoll resists (11 < 12); tail 7/15/10 = foe miss + two
+  // initiative draws inside afterPlayerAction (traced against this exact
+  // fixture — exactly 4 draws total, no more).
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([11, 7, 15, 10]), []);
+  assert.ok(
+    events.some((e) => e.type === "spellResisted" && e.target === "Target" && e.spell === "Weaken" && e.roll === 11 && e.intel === 12),
+  );
+  assert.ok(!events.some((e) => e.type === "weakened"));
+  assert.ok(!state.combat.weakened, "the resisted Weaken never lands");
+  assert.equal(state.c.spellsUsed, 1);
+});
+
+test("castSpell: a d20 of 12 fails to resist — resistFailed { target, roll: 12 } then Weaken lands", () => {
+  const foe = fixedFoe({ intel: 12, wp: 10, maxWP: 10 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
+    combat: fixedCombat([foe]),
+  });
+  // 12 -> resistRoll fails to resist (12 is NOT < 12); same 7/15/10 tail.
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 7, 15, 10]), []);
+  assert.ok(events.some((e) => e.type === "resistFailed" && e.target === "Target" && e.roll === 12));
+  assert.ok(events.some((e) => e.type === "weakened"));
+  assert.equal(state.combat.weakened, true, "an unresisted Weaken sets the foe-side weakened flag");
+});
+
+test("castSpell: an intel-1 foe never triggers a resist roll (the cast-damage fixture shape)", () => {
+  const foe = fixedFoe({ intel: 1, wp: 10, maxWP: 10 });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
+    combat: fixedCombat([foe]),
+  });
+  // No leading d20 in the sequence at all — a resist draw here would throw
+  // (fakeRng underflow), proving zero draws for an intel-below-12 target.
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([7, 15, 10]), []);
+  assert.ok(!events.some((e) => e.type === "spellResisted"));
+  assert.ok(!events.some((e) => e.type === "resistFailed"));
+  assert.ok(events.some((e) => e.type === "weakened"));
+});
+
 test("castSpell: Summon (non-combat) queues a pendingAlly instead of C.ally when there is no encounter", () => {
   const state = fixedState({ c: { grimoire: ["Summon"], level: 2 }, combat: null });
   const events = castSpell(state, SPELL_IDX.Summon, fakeRng([4]), []); // rounds d4=4
