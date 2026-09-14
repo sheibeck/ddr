@@ -8,6 +8,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { newRun } from "../../engine/engine.js";
+import { DEV_START_DEPTH_MAX } from "../../engine/state.js";
+import { THRESHOLDS, CLASSES } from "../../content/index.js";
+import { eff } from "../../engine/derived.js";
 
 test("newRun(seed) takes only a seed — a single-argument, choice-free entry point", () => {
   // Arity proves the factory accepts no player-choice parameters beyond the
@@ -65,4 +68,81 @@ test("newRun is deterministic: the same seed reproduces the same character", () 
   const a = newRun(777);
   const b = newRun(777);
   assert.deepStrictEqual(a.c, b.c, "the same seed rolls the identical character — 100% dice, zero randomness outside the seed");
+});
+
+// --- Phase 21 (TUNE-04, D-13/D-14): dev-only start-at-depth ---
+
+test("D-14: newRun(seed) === newRun(seed, [], { startDepth: 1 }) deep-equal, dev false, arity still 1", () => {
+  for (const seed of [1, 42, 303]) {
+    const a = newRun(seed);
+    const b = newRun(seed, [], { startDepth: 1 });
+    assert.deepStrictEqual(a, b, `seed ${seed}: newRun(seed) must equal newRun(seed, [], { startDepth: 1 }), including rngState`);
+    assert.equal(a.dev, false, "a default run is never flagged dev");
+  }
+  assert.equal(newRun.length, 1, "newRun's declared arity is still exactly one parameter (seed)");
+});
+
+test("D-13: startDepth 20 -> floor 20, level 5, sp 1501, dev true, purse +6000, rngState advanced", () => {
+  const base = newRun(42);
+  const dev = newRun(42, [], { startDepth: 20 });
+  assert.equal(dev.floor.depth, 20);
+  assert.equal(dev.c.level, 5);
+  assert.equal(dev.c.sp, THRESHOLDS[4]);
+  assert.equal(dev.dev, true);
+  assert.ok(dev.c.maxWP > base.c.maxWP, "the dev run leveled up, gaining maxWP");
+  assert.ok(dev.c.gold >= base.c.gold + 6000, "the dev run's purse gained at least the flat 6000 wilmst-cache amount");
+  if (base.c.sub !== "Pickpocket") {
+    const expectedGain = Math.round(6000 * (1 + 0.5 * eff(base.c, "greed")));
+    assert.equal(dev.c.gold, base.c.gold + expectedGain, "non-Pickpocket dev purse is exactly the greed-scaled wilmst-cache grant");
+  }
+  assert.notEqual(dev.rngState, base.rngState, "the dev branch's extra draws advance rngState past the default run's cursor");
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(dev)), dev, "a dev state is still fully JSON-serializable");
+});
+
+test("D-13: chargen is untouched -- the dev run rolls the SAME adventurer", () => {
+  for (const seed of [1, 42, 303]) {
+    const base = newRun(seed).c;
+    const dev = newRun(seed, [], { startDepth: 20 }).c;
+    assert.equal(dev.name, base.name);
+    assert.equal(dev.race, base.race);
+    assert.equal(dev.temperament, base.temperament);
+    assert.equal(dev.motive, base.motive);
+    assert.equal(dev.phobia, base.phobia);
+    assert.equal(dev.cls, base.cls);
+    if (base.sub !== "Soldier" && base.sub !== "Apprentice") {
+      assert.equal(dev.sub, base.sub, "a non-promoting subclass must be identical between the default and dev rolls");
+    } else {
+      assert.ok(CLASSES[base.cls].subs.includes(dev.sub), "a Soldier/Apprentice promotion still lands on a valid CLASSES sub for the rolled class");
+    }
+  }
+});
+
+test("D-13: startDepth 3 -> level 3 / sp 501 / floor 3; startDepth 50 -> level 5 / sp 1501 / floor 50 / purse +15000", () => {
+  const base3 = newRun(9);
+  const dev3 = newRun(9, [], { startDepth: 3 });
+  assert.equal(dev3.floor.depth, 3);
+  assert.equal(dev3.c.level, 3);
+  assert.equal(dev3.c.sp, THRESHOLDS[2]);
+
+  const base50 = newRun(9);
+  const dev50 = newRun(9, [], { startDepth: 50 });
+  assert.equal(dev50.floor.depth, 50);
+  assert.equal(dev50.c.level, 5);
+  assert.equal(dev50.c.sp, THRESHOLDS[4]);
+  assert.ok(dev50.c.gold >= base50.c.gold + 15000, "startDepth 50's purse grants at least the flat 15000 wilmst-cache amount");
+});
+
+test("sanitisation: 0, -3, NaN, 1.5, Infinity, 'abc', undefined all equal newRun(seed); 5000 clamps to DEV_START_DEPTH_MAX", () => {
+  for (const v of [0, -3, NaN, 1.5, Infinity, "abc", undefined]) {
+    assert.deepStrictEqual(newRun(7, [], { startDepth: v }), newRun(7), `startDepth ${v} must sanitize to a plain newRun(seed)`);
+  }
+  const clamped = newRun(7, [], { startDepth: 5000 });
+  assert.equal(clamped.floor.depth, DEV_START_DEPTH_MAX);
+  assert.equal(clamped.dev, true);
+});
+
+test("purity: a dev run reads no wall clock and is reproducible", () => {
+  const a = newRun(9, [], { startDepth: 12 });
+  const b = newRun(9, [], { startDepth: 12 });
+  assert.deepStrictEqual(a, b);
 });

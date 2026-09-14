@@ -313,3 +313,37 @@ test("FID-04: rehydrate is idempotent on the fixtures above", () => {
   const twice = rehydrate(rehydrate(withEffect));
   assert.deepStrictEqual(twice, once);
 });
+
+// --- Phase 21 (TUNE-04, D-14/D-23): the `dev` flag ---
+
+test("D-14/D-23: a pre-Phase-21 save with no dev key loads with dev === false", () => {
+  const obj = serializeRun(newRun(5));
+  delete obj.dev;
+  const check = validateSave(JSON.stringify(obj));
+  assert.equal(check.ok, true);
+  assert.equal(check.value.dev, false, "a save missing the dev key validates to dev: false");
+  assert.equal(rehydrate(check.value).dev, false, "rehydrate also defaults the missing key to false");
+});
+
+test("D-14: dev: true survives serializeRun -> JSON -> validateSave -> rehydrate", () => {
+  const state = newRun(5, [], { startDepth: 20 });
+  const json = JSON.stringify(serializeRun(state));
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+  const rehydrated = rehydrate(check.value);
+  assert.equal(rehydrated.dev, true);
+  assert.equal(rehydrated.floor.depth, 20);
+  assert.equal(rehydrated.c.level, 5);
+});
+
+test("D-23: dev is coerced to a strict boolean", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  for (const [raw, expected] of [["yes", true], [1, true], [0, false], [null, false]]) {
+    const save = { c: validChar, floor: validFloor, dev: raw };
+    const check = validateSave(JSON.stringify(save));
+    assert.equal(check.ok, true);
+    assert.equal(check.value.dev, expected, `dev: ${JSON.stringify(raw)} must coerce to ${expected} via validateSave`);
+    assert.equal(rehydrate({ ...check.value, dev: raw }).dev, expected, `dev: ${JSON.stringify(raw)} must coerce to ${expected} via rehydrate`);
+  }
+});

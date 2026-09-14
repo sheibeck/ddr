@@ -160,7 +160,11 @@ export function movementComparable(state) {
   // third top-level analog of `party`/`pendingJoiner`, with no prototype-side
   // equivalent (set only by Phase 13's gated find handlers). Strip it beside
   // them so a stashed find never reaches the diff.
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, ...state0 } = state;
+  // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
+  // fourth analog of party/pendingJoiner/pendingFind; always false on a
+  // fixture (every fixture calls newRun(seed)); the prototype master has no
+  // such field.
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, dev, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
   const rest = reconcilePendingFind(state0, pendingFind);
@@ -224,7 +228,11 @@ export function combatComparable(state) {
   // movementComparable's rationale (top-level analog of `party`).
   // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — see
   // movementComparable's rationale (top-level analog of `party`/`pendingJoiner`).
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, ...state0 } = state;
+  // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
+  // fourth analog of party/pendingJoiner/pendingFind; always false on a
+  // fixture (every fixture calls newRun(seed)); the prototype master has no
+  // such field.
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find (no-op when none pending).
   const rest = reconcilePendingFind(state0, pendingFind);
   if (rest.combat) {
@@ -363,7 +371,11 @@ export function economyComparable(state) {
   // movementComparable's rationale (top-level analog of `party`).
   // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — see
   // movementComparable's rationale (top-level analog of `party`/`pendingJoiner`).
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, ...state0 } = state;
+  // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
+  // fourth analog of party/pendingJoiner/pendingFind; always false on a
+  // fixture (every fixture calls newRun(seed)); the prototype master has no
+  // such field.
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing — the `chest` (seed 2) and `faerie` (seed 38)
   // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.

@@ -60,7 +60,10 @@ function comparable(state) {
   // second top-level analog of `party`, mirroring harness combatComparable.
   // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — third
   // top-level analog of `party`/`pendingJoiner`, mirroring harness combatComparable.
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, ...rest } = state;
+  // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
+  // fourth analog of party/pendingJoiner/pendingFind, mirroring harness
+  // combatComparable, since this file defines its own local comparable().
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...rest } = state;
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);

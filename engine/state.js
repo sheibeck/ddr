@@ -8,11 +8,38 @@
 
 import { makeRng } from "./rng.js";
 import { genFloor, reveal } from "./maze.js";
-import { rollCharacter } from "./character.js";
+import { rollCharacter, checkLevel } from "./character.js";
 import { revealRadius } from "./derived.js";
+// Phase 21 (TUNE-04, D-13): the dev-only start-at-depth branch below needs
+// difficultyCurve (to sanitize the requested startDepth, mirroring
+// movement.js#descend's own safeDepth precedent) and gainWilmst/
+// WILMST_CACHE_PER_DEPTH (to grant a depth-scaled purse via the existing
+// wilmst-cache row). These two imports close an ESM cycle back to THIS
+// module — items.js does not import state.js, but encounters.js already
+// does (addPartyMember, above the cycle this file has always had); the new
+// edge is state.js -> items.js/difficulty.js and state.js -> encounters.js
+// (for WILMST_CACHE_PER_DEPTH). Both are inert: engine.js imports state.js
+// first, and by the time any CALLER actually invokes newRun(), every module
+// in the graph has finished evaluating its top-level body — only the
+// (already-hoisted) function declarations and this call-time const read are
+// ever touched inside newRun's body, so no half-initialized binding is ever
+// observed.
+import { difficultyCurve } from "./difficulty.js";
+import { gainWilmst } from "./items.js";
+import { WILMST_CACHE_PER_DEPTH } from "./encounters.js";
+import { THRESHOLDS } from "../content/index.js";
 
 /** Save-schema version, bumped when the GameState shape changes (see 01-06). */
 export const STATE_VERSION = 1;
+
+/**
+ * DEV_START_DEPTH_MAX — Phase 21 (TUNE-04, D-13): a hard ceiling on the
+ * dev-only startDepth option, mirroring the safeDepth() posture elsewhere in
+ * the engine (Security V5) — no untrusted/malformed input can ever push a
+ * dev run past this floor, regardless of what the hidden Settings field is
+ * told to submit.
+ */
+export const DEV_START_DEPTH_MAX = 999;
 
 /**
  * PARTY_CAP — v1 caps the persistent roster at a single Joiner (PARTY-08), but
@@ -56,17 +83,39 @@ export function addPartyMember(state, member) {
  * choice and never adds/reorders an rng draw, so newRun(seed) with no/empty
  * `exclude` still produces the byte-identical run the parity suite freezes.
  *
+ * `options.startDepth` (Phase 21, TUNE-04, D-13/D-14) is a DEV-ONLY affordance
+ * — omitted (or `1`) by every existing caller, so the default path (character
+ * roll → genFloor(1) → reveal) is completely untouched and byte-identical to
+ * every parity fixture. When `startDepth > 1`, a SECOND branch runs AFTER the
+ * literal below: it levels the already-rolled character to the SP threshold
+ * for the sanitized start depth via the ordinary `checkLevel` path (the exact
+ * same gain-dice/promotion logic a real climb takes) and grants a depth-scaled
+ * purse via the existing wilmst-cache row, then re-captures `rngState` (the
+ * literal below captures the cursor BEFORE these draws). The events those
+ * draws push are discarded — the caller (the hidden Settings toggle) prints
+ * its own banner instead of replaying them.
+ *
  * @param {number} seed - an integer seed
  * @param {string[]} [exclude] - recent character names to avoid reusing
+ * @param {{ startDepth?: number }} [options] - startDepth: dev-only start-at-depth (default 1)
  * @returns {object} a serializable GameState
  */
-export function newRun(seed, exclude = []) {
+export function newRun(seed, exclude = [], { startDepth = 1 } = {}) {
   const rng = makeRng(seed);
   const c = rollCharacter(rng, exclude);
-  const floor = genFloor(1, rng);
+  // Phase 21 (TUNE-04, D-13): Math.min(DEV_START_DEPTH_MAX, difficultyCurve(startDepth).depth)
+  // sanitizes ANY input — difficultyCurve's own safeDepth() already floors/
+  // clamps 0, negative, NaN, non-integer and ±Infinity down to 1 (the exact
+  // descend()/movement.js precedent), so a malformed dev field can never reach
+  // genFloor or index THRESHOLDS out of range; DEV_START_DEPTH_MAX then caps
+  // an absurdly large request. At startDepth 1 (the default), this is
+  // Math.min(999, 1) === 1 — genFloor(1, rng) below is byte-identical to
+  // every existing call site.
+  const startAt = Math.min(DEV_START_DEPTH_MAX, difficultyCurve(startDepth).depth);
+  const floor = genFloor(startAt, rng);
   reveal(floor, revealRadius({ floor, c }));
 
-  return {
+  const state = {
     version: STATE_VERSION,
     seed,
     rngState: rng.getState(),
@@ -99,7 +148,29 @@ export function newRun(seed, exclude = []) {
     pendingFind: null,
     dead: false,
     won: false,
+    // Phase 21 (TUNE-04, D-13/D-14): dev — true only for a start-at-depth run;
+    // a plain boolean present on EVERY fresh state exactly like dead/won
+    // above (so serializeRun/validateSave/rehydrate round-trip it and the
+    // fresh-run round-trip test stays deepStrictEqual). The parity harness
+    // strips it in all three comparables. A dev run is never written to the
+    // graveyard or the best-depth record (src/browser/engineAdapter.js).
+    dev: startAt > 1,
     deathNote: "",
     epitaph: "",
   };
+
+  if (startAt > 1) {
+    // DEV-ONLY PATH (D-14): never reached by any fixture or any default
+    // caller (every fixture/every existing caller calls newRun(seed) with no
+    // options, so startAt === 1 there), so the rng draws below are safe —
+    // they cannot shift the seeded stream any byte-identical comparison
+    // depends on.
+    const events = [];
+    // content/misc-tables.js THRESHOLDS = [0, 201, 501, 901, 1501].
+    c.sp = THRESHOLDS[Math.min(startAt, 5) - 1];
+    checkLevel(state, rng, events); // the same level-up path a real climb takes
+    gainWilmst(state, WILMST_CACHE_PER_DEPTH * startAt, "dev start", rng, events); // D-13: depth-scaled purse
+    state.rngState = rng.getState(); // re-capture: the literal above captured the cursor BEFORE these draws
+  }
+  return state;
 }

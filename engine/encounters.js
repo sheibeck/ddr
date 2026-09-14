@@ -241,7 +241,10 @@ export function encounterDot(state, rng, events = []) {
 // before (gainWilmst only rolls for a Pickpocket, independent of the amount),
 // and a new draw here would shift the entire downstream seeded stream and break
 // same-seed-same-result + parity. Keep it flat.
-const WILMST_CACHE_PER_DEPTH = 300;
+// Phase 21 (TUNE-04, D-13): also read by engine/state.js#newRun's dev
+// start-at-depth purse — exported (was module-private) so the dev branch
+// reuses this exact row rather than duplicating the constant.
+export const WILMST_CACHE_PER_DEPTH = 300;
 
 /**
  * tableFour(state, result, rng, events) — Table 4 on p.45, a straight list

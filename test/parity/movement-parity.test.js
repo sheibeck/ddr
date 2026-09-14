@@ -48,7 +48,10 @@ function comparable(state) {
   // second top-level analog of `party`, mirroring harness movementComparable.
   // ECON-02 (Phase 12): strip the new top-level `state.pendingFind` too — third
   // top-level analog of `party`/`pendingJoiner`, mirroring harness movementComparable.
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, ...rest } = state;
+  // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
+  // fourth analog of party/pendingJoiner/pendingFind, mirroring harness
+  // movementComparable, since this file defines its own local comparable().
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, dev, ...rest } = state;
   // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field (see
   // engine/character.js's rollCharacter) with no prototype-side equivalent
   // at all — strip it the same way test/parity/harness/comparables.js's

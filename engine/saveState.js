@@ -194,6 +194,9 @@ export function validateSave(raw, options = {}) {
     party: sanitizeParty(obj.party),
     dead: !!obj.dead,
     won: !!obj.won,
+    // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
+    // pre-Phase-21 save → false.
+    dev: !!obj.dev,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
@@ -243,6 +246,9 @@ export function rehydrate(obj) {
     party: sanitizeParty(obj.party),
     dead: !!obj.dead,
     won: !!obj.won,
+    // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
+    // pre-Phase-21 save → false.
+    dev: !!obj.dev,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
