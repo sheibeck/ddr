@@ -37,14 +37,15 @@
 - ✓ **Foe abilities + spellcasting** — v1.1 (19 data-driven ability descriptors, symmetric INT resistance)
 - ✓ **Bestiary rebalance** on a yardstick behind one damage seam — v1.1
 - ✓ **Parley balance + Language system** — v1.1 (one attempt per encounter, fluency feeds the bonus)
+- ✓ **Class-aware playtest harness** — v1.2 Phase 22 (dev-only `force` chargen seam, sub-class-aware bot with `chooseSpell` scoring table, `tools/tune-classes.mjs` 143-cell matrix on worker threads, `--start-depth`, `stuck` bucket; 989 tests, parity untouched)
+- ✓ **BEFORE class matrix captured** — v1.2 Phase 22 (`docs/CLASS-PASS.md` + `docs/class-pass/before*.json`, engine pinned `5565b22`; 0 stuck in 7,150 runs)
 - ✓ **Depth scaling past floor 5** (`engine/difficulty.js`, tuning bot, dev start-at-depth) — v1.1 (human sign-off TUNE-04 came back tune-again → v1.2)
 
 ### Active
 
 - [ ] **Class / sub-class / race identity pass** — every one of the 24 sub-classes and 6 races has a code-verified "one solid good, one solid bad"; no combination can be dealt a character that cannot act (Wizard attack-spell rule, Summoner summons at level 1, Illusionist has a damage source); flavor-only promises either implemented or reworded. — v1.2
 - [ ] **Feature feedback** — every class/sub-class/racial feature that fires or blocks the player is narrated (Oracle + toast), enemy hits toast red, multi-attack foes aggregate "X of N". — v1.2
-- [ ] **Class-aware playtest harness** — force any class/sub/race, sub-class-aware bot policy (summon, sing, Mirror Self, Doze/Stun, parley), per-combination performance matrix. — v1.2
-- [ ] **Mass playtest + findings ledger** — all 144 combinations at volume, ranked over/under-performers, before/after ledger. — v1.2
+- [ ] **Mass playtest AFTER matrix + findings ledger** — all 143 valid combinations at volume post-identity-pass, ranked over/under-performers with fun-band verdicts, before/after ledger (`docs/CLASS-PASS.md`). — v1.2 (BEFORE half validated in Phase 22)
 - [ ] **Delve-to-death retune** — the deferred TUNE-04 re-attempt on corrected player power, human DR sign-off. — v1.2
 - [ ] **Quick 5–10 minute session feel** — mechanically bounded; validated only by the retune + playtest
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
@@ -62,6 +63,8 @@
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
 ## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
+
+**v1.2 progress:** Phase 22 complete (2026-09-14) — class-aware harness + BEFORE matrix committed. Headline: Magic Users reach floor 5 in 7.7% of runs vs 24.6% for Thieves; bottom five subs are all casters; at a forced depth-20 start, level-5 characters gain 0.15 floors on average. Next: Phase 23 Casters Can Act.
 
 **Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
@@ -170,4 +173,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-14 — v1.2 Class Pass & Mass Playtest started (Fable planning pass)*
+*Last updated: 2026-09-14 — v1.2 Phase 22 complete; depth-20 unicorn-run target recorded*
