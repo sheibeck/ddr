@@ -127,7 +127,21 @@ Plans:
   4. Every ability is bounded (per-day caps / every-N-turn cooldowns per canon) and telegraphed in the Oracle the turn it fires; every new event type has a sarcastic, family-friendly `EVENT_NARRATION` entry passing the voice safety scan (coverage guard stays green).
   5. Spectre pursues a fleeing player, Drudge never melees, and Drake's breath is gated by an every-N cooldown; every new serialized field (per-foe ability state, `c.foeEffect`, summoned foes) is carved out in all three `*Comparable()` functions and round-trips through save/load, including a v1.0 internal-tester save loading without data loss.
 
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 19-01-PLAN.md — FOE-01/05/06, CANON-02 (data half): `content/foe-abilities.js` registry (19 pure-data descriptors), `abilities` kits on the 8 caster rows + Djinni `sp.fleesBelow`, content pins, safety-scan corpus line
+- [ ] 19-02-PLAN.md — FOE-07/08, FID-04 (leaf half): `resistRoll` in `engine/derived.js` + draw-neutral `castSpell` refactor, `conditionsOf` foeEffect chip + `toHit` dazed penalty, `saveState` foeEffect clear, named strippers in all three comparables
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 19-03-PLAN.md — FOE-01..04/06/07/08, FOE-09 (member-targeting half), CANON-02: `engine/foeAbilities.js` resolver + every `engine/combat.js` seam (ability gate, summon join, fleesBelow flee, pursuit strike, foeEffect tick/clear, applyFoeDamageToPlayer options), 11 event types + narration, behavioural tests
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 19-04-PLAN.md — FOE-09 (D-15 determinism suite at pinned seeds), FOE-01/06 draw-count Section 4 + seam-invariant extension, FOE-08 D-21 chip labels ("Weakened"/"Dazed") in `mazeworld.html` + chip test, FID-04 mid-fight JSON round-trip, phase gate
 
 ### Phase 20: Parley Balance & Language System
 
