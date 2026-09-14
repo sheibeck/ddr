@@ -165,10 +165,10 @@ test("21-04 retune values — recorded in docs/DIFFICULTY-RETUNE.md", () => {
   assert.equal(FOE_CAP_SOFT_K, 20);
   assert.equal(FOE_POWER_BASE, 1);
   assert.equal(FOE_POWER_MAX, 1.6);
-  assert.equal(FOE_POWER_SOFT_K, 25);
+  assert.equal(FOE_POWER_SOFT_K, 35);
   assert.equal(ABILITY_THREAT_BASE, 1);
   assert.equal(ABILITY_THREAT_MAX, 2.0);
-  assert.equal(ABILITY_THREAT_SOFT_K, 20);
+  assert.equal(ABILITY_THREAT_SOFT_K, 30);
   assert.equal(FOE_LVL_BIAS, 0);
 });
 

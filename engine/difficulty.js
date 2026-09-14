@@ -71,7 +71,12 @@ export const FOE_POWER_BASE = 1.0;
  * damage at depth 20, ≈ +50% at depth 40, never above +60% (soft-capped via
  * FOE_POWER_SOFT_K). Identity (1.0) at depth <= 5. */
 export const FOE_POWER_MAX = 1.6;
-export const FOE_POWER_SOFT_K = 25;
+/** FOE_POWER_SOFT_K — iteration 2 (D-11): raised 25->35 per the "median < 8
+ * / p90 < 25" guidance (slower ramp, tried before lowering a MAX). Recorded
+ * in docs/DIFFICULTY-RETUNE.md: this had no measurable effect on median/p90
+ * because those are dominated by depth <= 5 deaths the retune deliberately
+ * does not touch — kept anyway as the honest, tried-and-recorded value. */
+export const FOE_POWER_SOFT_K = 35;
 /** ABILITY_THREAT_BASE — the cadence scalar for caster kits (every/uses). */
 export const ABILITY_THREAT_BASE = 1.0;
 /** ABILITY_THREAT_MAX — 21-04 retune (D-03): a caster kit's `every: 2`
@@ -79,7 +84,9 @@ export const ABILITY_THREAT_BASE = 1.0;
  * `uses` doubles at the asymptote (via ABILITY_THREAT_SOFT_K). Identity
  * (1.0) at depth <= 5. */
 export const ABILITY_THREAT_MAX = 2.0;
-export const ABILITY_THREAT_SOFT_K = 20;
+/** ABILITY_THREAT_SOFT_K — iteration 2 (D-11): raised 20->30, same rationale
+ * as FOE_POWER_SOFT_K above. */
+export const ABILITY_THREAT_SOFT_K = 30;
 /** FOE_LVL_BIAS — reserved (D-01): 0 unless the retune needs it. */
 export const FOE_LVL_BIAS = 0;
 
