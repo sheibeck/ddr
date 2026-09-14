@@ -92,7 +92,7 @@ See `.planning/milestones/v1.1-ROADMAP.md`.
   4. The harness can start a run at a chosen depth (`--start-depth`) using the same seam as the Settings dev toggle, so deep-floor lethality is measurable by the bot.
   5. A BEFORE matrix is run against the commit-pinned pre-identity-pass engine and committed to the class-pass ledger before Phase 23's changes land.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed
 
 Plans:
 **Wave 1**
@@ -106,7 +106,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 22-04-PLAN.md — BEFORE capture LAST: pinned engine, 143x40 natural matrix + 143x10 depth-20 slice, `docs/CLASS-PASS.md` + `docs/class-pass/before*.json` (PLAY-01)
+- [x] 22-04-PLAN.md — BEFORE capture LAST: pinned engine, 143x40 natural matrix + 143x10 depth-20 slice, `docs/CLASS-PASS.md` + `docs/class-pass/before*.json` (PLAY-01)
 
 **Engine gate reminder**: the harness lives entirely in `tools/` — dev-only, never shipped, never a CI gate; it must not add new engine RNG draws outside existing feature guards, and the forced-chargen seam must not perturb the RNG order Fighters/Thieves already rely on.
 
@@ -205,7 +205,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
-| 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 3/4 | In Progress|  |
+| 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | In Progress|  |
 | 23. Casters Can Act | v1.2 | 0/TBD | Not started | - |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 0/TBD | Not started | - |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |

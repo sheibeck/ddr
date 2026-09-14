@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 22
 current_phase_name: Class-Aware Harness & BEFORE Matrix
-status: executing
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-09-14T20:16:15.201Z"
+status: verifying
+stopped_at: Completed 22-04-PLAN.md
+last_updated: "2026-09-14T20:42:07.179Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 22 execution started
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 0
+  completed_plans: 4
+  percent: 17
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 Phase: 22 (Class-Aware Harness & BEFORE Matrix) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-14 — Phase 22 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:16:15.157Z
-Stopped at: Completed 22-03-PLAN.md
+Last session: 2026-09-14T20:42:07.156Z
+Stopped at: Completed 22-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -120,6 +120,7 @@ Resume file: None
 | Phase 22 P01 | 25min | 2 tasks | 3 files |
 | Phase 22 P02 | 40min | 3 tasks | 2 files |
 | Phase 22 P03 | 20min | 3 tasks | 4 files |
+| Phase 22 P04 | 21min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -176,6 +177,7 @@ Resume file: None
 - [Phase ?]: 22-03: resolveForce (CLI-facing) lives in class-matrix.mjs, infers cls from sub, refuses Fridgian Samurai before newRun; distinct from engine/character.js's normalizeForce
 - [Phase ?]: 22-03: matrix work distributed BY CELL through a main-thread worker_threads queue -- confirmed byte-identical cells/rollups under --workers 1 vs 4 (--race Troll --seeds 2); JSON carries no timing field (elapsed goes to stderr only)
 - [Phase ?]: 22-03: tune-difficulty's death-cause pct denominator kept as results.length (unchanged wording); only the underlying cause/depth source switched to completed (non-stuck) runs
+- [Phase ?]: 22-04: BEFORE matrix captured 0 stuck across 5720+1430 runs (Plan 22-02's fixes hold at full scale); pin 5565b22 proven byte-identical to 1b4daed except the dev-only force option; IDENT-01 finding (Wizard/caster cannot melee with charges but no attack spell) documented, deferred to Phase 23
 
 ### Blockers
 

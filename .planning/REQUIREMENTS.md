@@ -54,7 +54,7 @@ Dev-only, zero-dependency, never shipped — extends `tools/lib/tuning-bot.mjs`.
 
 ### Mass Playtest (PLAY)
 
-- [ ] **PLAY-01**: A BEFORE matrix is captured with the new harness against the pre-identity-pass engine (commit-pinned) and committed to the ledger, so every identity change has a paired baseline
+- [x] **PLAY-01**: A BEFORE matrix is captured with the new harness against the pre-identity-pass engine (commit-pinned) and committed to the ledger, so every identity change has a paired baseline
 - [ ] **PLAY-02**: An AFTER matrix is captured on the post-pass engine; over- and under-performers are ranked by sub-class and by race with a written "fun band" verdict per row (fine / too strong / too weak / cannot act), and every "cannot act" row is zero
 - [ ] **PLAY-03**: `docs/CLASS-PASS.md` ledger: per sub-class/race good+bad table, before/after numbers, every ruling (IDENT-05/06/07/10) with rationale, and the remaining outliers listed as candidates for the next milestone
 
@@ -127,7 +127,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | HARN-02 | Phase 22 | Complete |
 | HARN-03 | Phase 22 | Complete |
 | HARN-04 | Phase 22 | Complete |
-| PLAY-01 | Phase 22 | Pending |
+| PLAY-01 | Phase 22 | Complete |
 | PLAY-02 | Phase 26 | Pending |
 | PLAY-03 | Phase 26 | Pending |
 | TUNE-05 | Phase 27 | Pending |
