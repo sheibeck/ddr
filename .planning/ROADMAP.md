@@ -123,7 +123,7 @@ Plans:
   4. A level-1 Illusionist has an illusion-school way to WIN a fight (an attack/pressure spell or Phantom Host usable at level 1), while keeping the d20 strike die until level 3 as the bad.
   5. Chargen-parity fixtures affected by the guaranteed-attack-spell change are regenerated narrowly, each with a before/after note and rationale; every fixture NOT touched stays byte-identical, and Fighter/Thief RNG-consumption order is unchanged.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed
 
 Plans:
 **Wave 1**
@@ -137,7 +137,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 23-04-PLAN.md — Freeze kills route through `killFoe` (user decision: Freeze pays out) + `spellAboveLevel` via `spellLevelFor` + FID-06 magic `cast-damage` (seed 8) `divergence` record at both magic parity sites + FIXTURE-INVENTORY.md "Phase 23 caster divergences" + smoke readout note in docs/CLASS-PASS.md (IDENT-01..04, FID-06)
+- [x] 23-04-PLAN.md — Freeze kills route through `killFoe` (user decision: Freeze pays out) + `spellAboveLevel` via `spellLevelFor` + FID-06 magic `cast-damage` (seed 8) `divergence` record at both magic parity sites + FIXTURE-INVENTORY.md "Phase 23 caster divergences" + smoke readout note in docs/CLASS-PASS.md (IDENT-01..04, FID-06)
 
 **Engine gate reminder**: chargen changes are narrow, documented fixture regenerations only (FID-06) — the frozen prototype master is never edited, and parity for untouched fixtures stays byte-identical.
 
@@ -222,7 +222,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
-| 23. Casters Can Act | v1.2 | 3/4 | In Progress|  |
+| 23. Casters Can Act | v1.2 | 4/4 | In Progress|  |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 0/TBD | Not started | - |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
