@@ -1,37 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Monster Balancing & Abilities
-status: Awaiting next milestone
-stopped_at: Milestone v1.1 archived (override closeout — TUNE-04 retune deferred)
-last_updated: "2026-09-14T17:36:38.626Z"
+milestone: v1.2
+milestone_name: Class Pass & Mass Playtest
+status: planning
+last_updated: "2026-09-14T18:00:32.850Z"
 last_activity: 2026-09-14
-last_activity_desc: Milestone v1.1 completed and archived
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 21
-  completed_plans: 21
-  percent: 100
-current_phase: 21
-current_phase_name: Consolidated Difficulty Retune
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-14 after v1.1)
+See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.1 shipped — next: `/gsd-new-milestone` for "Feedback, Feel & Polish" (`.planning/proposed-milestone-feedback-feel-polish.md`)
+**Current focus:** v1.2 Class Pass & Mass Playtest — defining requirements (class/sub/race identity pass → class-aware harness → mass playtest → TUNE-04 retune)
 
 ## Current Position
 
-Phase: Milestone v1.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-14 — Milestone v1.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-14 — Milestone v1.2 started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -85,7 +81,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Continue /gsd-new-milestone: requirements → roadmap for v1.2
 
 ## Performance Metrics
 

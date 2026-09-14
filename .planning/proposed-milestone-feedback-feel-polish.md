@@ -1,7 +1,7 @@
 # Proposed Milestone: "Feedback, Feel & Polish"
 
 **Captured:** 2026-09-13 (from user via `/gsd-new-milestone`, while v1.1 Phase 19 was still executing)
-**Status:** PROPOSED — stand up via `/gsd-new-milestone` AFTER v1.1 (Phases 19–21) closes. Captured here so the active milestone's STATE/ROADMAP/REQUIREMENTS were not reset mid-flight. Mostly UX/feedback + a handful of rules fixes; a light research pass (class/sub-class/racial feature audit) is warranted, the rest is direct.
+**Status:** PARTIALLY CONSUMED 2026-09-14 — §A (feedback through-line: class/race/sub feature feedback, red enemy-hit toasts, "X of N hits", varied early-miss narration, effect legibility) and §B (Wizard attack-spell rule + the class/sub-class/racial "feels horrible" audit) folded into **v1.2 Class Pass & Mass Playtest** (user decision: "overlap only"). §C–§G (inventory integrity, UI feel, combat start, "not ready yet" audit, store, on-device bugs/layout) remain PROPOSED for the next milestone (v1.3).
 
 ## Vision
 

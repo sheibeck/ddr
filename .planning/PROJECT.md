@@ -34,17 +34,23 @@
 - ✓ Signed Android App Bundle via Play App Signing, validated on the **internal testing track** — v1.0 (STR-05)
 - ✓ NPC **Joiner party system** (1-member cap, model built for N) — v1.0 (Phases 7–11; pulled forward from "post-MVP" because the engine seam made it cheap)
 - ✓ **Loot economy**: class bags/carry, manual take/leave/drop/equip, sell-back store, 9 inert items wired — v1.0 (Phases 12–16)
+- ✓ **Foe abilities + spellcasting** — v1.1 (19 data-driven ability descriptors, symmetric INT resistance)
+- ✓ **Bestiary rebalance** on a yardstick behind one damage seam — v1.1
+- ✓ **Parley balance + Language system** — v1.1 (one attempt per encounter, fluency feeds the bonus)
+- ✓ **Depth scaling past floor 5** (`engine/difficulty.js`, tuning bot, dev start-at-depth) — v1.1 (human sign-off TUNE-04 came back tune-again → v1.2)
 
 ### Active
 
-- [ ] **Foe abilities + spellcasting** — data-driven monster ability system (offensive spells generalized from `engine/magic.js`, summons, drains, status inflicts); pure/deterministic, parity-gated, narrated via Oracle/toasts/condition tracker. Rulebook-first, invent only to fill depth-band gaps. — v1.1
-- [ ] **Bestiary rebalance** — every creature's HP/damage/to-hit/AR/special reviewed vs. its intended depth; outliers fixed. — v1.1
-- [ ] **Consolidated difficulty retune** — the ONE `difficulty.js` retune across party/economy/monster power (PARTY-10, ECON deep tuning, Phase 3 feel-tuning) via `tools/tune-difficulty.mjs` / `tools/tune-economy.mjs`. — v1.1
-- [ ] **Parley balance + Language system + symmetric INT resistance** — parley XP/odds/failure-cost pass, DR15-A Language as a real system (Helm of Knowledge `tongue` wired), player Intelligence resists incoming foe spells. — v1.1
-- [ ] **Quick 5–10 minute session feel** — mechanically bounded; the *feel* is validated only by the consolidated retune + playtest
+- [ ] **Class / sub-class / race identity pass** — every one of the 24 sub-classes and 6 races has a code-verified "one solid good, one solid bad"; no combination can be dealt a character that cannot act (Wizard attack-spell rule, Summoner summons at level 1, Illusionist has a damage source); flavor-only promises either implemented or reworded. — v1.2
+- [ ] **Feature feedback** — every class/sub-class/racial feature that fires or blocks the player is narrated (Oracle + toast), enemy hits toast red, multi-attack foes aggregate "X of N". — v1.2
+- [ ] **Class-aware playtest harness** — force any class/sub/race, sub-class-aware bot policy (summon, sing, Mirror Self, Doze/Stun, parley), per-combination performance matrix. — v1.2
+- [ ] **Mass playtest + findings ledger** — all 144 combinations at volume, ranked over/under-performers, before/after ledger. — v1.2
+- [ ] **Delve-to-death retune** — the deferred TUNE-04 re-attempt on corrected player power, human DR sign-off. — v1.2
+- [ ] **Quick 5–10 minute session feel** — mechanically bounded; validated only by the retune + playtest
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
 - [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
 - [ ] Automate the Play upload (Developer API service account) — see `docs/RELEASING.md`
+- [ ] **Feedback, Feel & Polish remainder** (v1.3 candidate) — inventory integrity, store stock, UI layout, combat start on Fight!, "not ready yet" audit; see `.planning/proposed-milestone-feedback-feel-polish.md`
 
 ### Out of Scope
 
@@ -55,15 +61,26 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current State (v1.1 shipped 2026-09-14)
+## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
 
 **Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
 **Known deferrals carried forward:** the consolidated difficulty retune's human sign-off (TUNE-04) came back **tune-again** — depth 20 is instant death — and is deferred until after the upcoming cleanup + class-fixes milestones move player power (`docs/DIFFICULTY-RETUNE.md`). First-run tutorial (UX-06) and the Google Play production launch (STR-01..04, STR-06) remain deferred by the user.
 
-## Next Milestone Goals
+## Current Milestone: v1.2 Class Pass & Mass Playtest
 
-Proposed: **"Feedback, Feel & Polish"** (`.planning/proposed-milestone-feedback-feel-polish.md`, §A–§G captured 2026-09-13/14) — nothing happens silently (class/race/sub-class/spell/scroll/item feedback, red enemy-hit toasts, "X of N hits", varied early-miss narration), class/sub-class/racial "feels horrible" audit (Wizard attack-spell rule), inventory integrity (armor-durability exploit, bag cap, bigger bags, Cloak of Armor, G16 squares + Amulet of Stone ending combat), UI feel (gear panel Use/Drop, map recenter, default zoom, tutorial toggle, Make Camp row, handedness), combat start only on Fight!, "not ready yet" audit, combat potions from Gear, depth-appropriate store stock, Shield chip, round-based effects expiring outside combat. The retune re-attempt follows those.
+**Goal:** Every class, sub-class, and race is fun to be dealt — one solid good, one solid bad, no "cannot act" states — then a class-aware mass playtest ranks who over/under-performs, and the deferred difficulty retune (TUNE-04) lands on the corrected player power.
+
+**Target features:**
+- Sub-class and race identity pass (24 subs × 6 races): code-verified good + bad for each; headline fixes — Wizard melee refusal only while an attack spell is castable and an attack spell is guaranteed at chargen; Summoner can summon at level 1; Illusionist has a level-1 damage source; missing "bads" (Knight, Master of Arms, Court Mage, Pickpocket, Cutthroat, Ninja, Bard) and missing "good" (Guard) implemented from their own flavor text; unenforced flavor (Woodsman armor, Pilfer magic items) enforced or reworded. Human stays the neutral control race (user decision 2026-09-14).
+- Feature feedback (folded in from the Feedback/Feel/Polish proposal §A/§B): every class/sub/race feature that fires or blocks is narrated; enemy hits toast red; "X of N hits" aggregation; effect legibility for spells/items in both directions.
+- Class-aware playtest harness: force any class/sub/race deterministically; sub-class-aware bot policy (Summon out of combat, Bard sings, Illusionist Mirror Self, Doze/Stun/Weaken casts, Con Artist parleys); per-combination matrix report.
+- Mass playtest + findings ledger: all 144 combinations at volume, ranked over/under-performers, committed before/after ledger (`docs/CLASS-PASS.md`).
+- Delve-to-death retune: TUNE-04 re-attempt (`engine/difficulty.js`) using the matrix as the yardstick, closed by a human DR round.
+
+**Baseline (2026-09-14, 400-seed tuning bot, pre-milestone):** mean death depth Thief 3.2 / Fighter 3.1 / Magic User 2.1; Magic Users reach floor 5 in 4% of runs vs 20% for Thieves; bottom five subs all Magic Users (Summoner 1.3, Wizard 1.7, Apprentice 1.7, Warlock 1.8, Illusionist 2.1); top three Barbarian 4.1, Ninja 4.1, Cat Burglar 3.8. Caveat: the v1.1 bot casts only thrown spells, so caster subs are under-measured — the harness fix is itself a target feature.
+
+**Out of this milestone (parked for v1.3 "Feedback, Feel & Polish" remainder):** inventory integrity (armor durability, bag cap, bigger bags, Cloak of Armor, G16 squares + Amulet of Stone), UI layout (gear panel, recenter, zoom, tutorial toggle, Make Camp row/handedness), combat start only on Fight!, "not ready yet" audit, combat potions from Gear, store stock, Shield chip, round-based effects expiring outside combat.
 
 <details>
 <summary>Archived: v1.1 milestone section</summary>
@@ -152,4 +169,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-14 — v1.1 shipped (override closeout); next: Feedback, Feel & Polish*
+*Last updated: 2026-09-14 — v1.2 Class Pass & Mass Playtest started (Fable planning pass)*
