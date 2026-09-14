@@ -222,3 +222,7 @@ left untouched.
   move to compensate) — the consolidated retune (Phase 21) is where every
   power-changing milestone's numbers get folded together, so this phase's
   parley change is measured, not compensated for, here.
+
+## Latent follow-ups
+
+- Insulted `+1` (D-06/D-20) is applied at both `foeTurn` melee sites only. `pursuitStrike` is untouched because no parleyable encounter can contain a pursuer today (the only `pursues` creature is the Walking Dead Spectre). Add `need += 1` there if a non-Walking-Dead pursuer is ever introduced.
