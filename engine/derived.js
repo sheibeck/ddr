@@ -444,6 +444,39 @@ export function resistRoll(rng, intel) {
 }
 
 /**
+ * killSpFor(c, f, roll) — PARLEY-01 (Phase 20, D-01): the ONE kill-skill-
+ * point formula shared by `engine/combat.js#killFoe` and `#parley`, so
+ * parley's "half the skill points" is STRUCTURALLY half of the same number a
+ * kill pays (never a second formula that drifts). Homed here because
+ * `derived.js` is the cycle-free leaf (`combat.js` imports it; it imports
+ * nothing from `combat.js`). Verbatim two-step raw/mul arithmetic — a
+ * re-associated single product could round differently in floating point and
+ * break parity, so this must stay the exact expression `killFoe` used
+ * inline. Pure: no rng, no mutation — the caller draws the d6 and passes it
+ * in as `roll`.
+ */
+export function killSpFor(c, f, roll) {
+  const R = RACES[c.race];
+  const raw = roll * f.lvl;
+  const mul = 5 * (R.spMul || 1) * (c.sub === "Barbarian" ? 0.5 : 1) * (c.sub === "Apprentice" && c.level < 3 ? 2 : 1);
+  return Math.round(raw * mul);
+}
+
+/**
+ * fluency(c) — LANG-01 (Phase 20, D-09): the single source of truth for
+ * language fluency, read by BOTH `engine/combat.js#canParley`'s availability
+ * gate and `#parley`'s bonus term (never balanced twice). Returns 0
+ * (neither), 1 (the Language skill OR a tongue-effect item such as the Helm
+ * of Knowledge), 2 (both) — skill TIER does not matter (a raised Language is
+ * still 1). The data keys `Language` (content/skills.js) / `tongue`
+ * (content/treasure-tables.js) are unchanged. Pure read (`skill`/`eff`), no
+ * rng, no mutation.
+ */
+export function fluency(c) {
+  return (skill(c, "Language") ? 1 : 0) + (eff(c, "tongue") > 0 ? 1 : 0);
+}
+
+/**
  * levelFromSP(sp) — skill level for a given skill-point total. Ports
  * mazeworld.html levelFromSP() (line 1498).
  */

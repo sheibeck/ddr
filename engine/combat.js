@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak, DEATH_PANIC_THRESHOLD } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
@@ -459,18 +459,17 @@ export function killFoe(state, f, rng, events = []) {
   f.wp = 0;
   c.kills = (c.kills || 0) + 1;
   const roll = rng.d(6);
-  const raw = roll * f.lvl;
-  const R = RACES[c.race];
-  const mul = 5 * (R.spMul || 1) * (c.sub === "Barbarian" ? 0.5 : 1) * (c.sub === "Apprentice" && c.level < 3 ? 2 : 1);
-  const gained = Math.round(raw * mul);
+  // PARLEY-01 / D-01 (Phase 20): same draw, same call site, same arithmetic —
+  // now shared with parley() via engine/derived.js#killSpFor.
+  const gained = killSpFor(c, f, roll);
   // PARTY-06 (Phase 8): canon splits the XP award among participants (hero +
   // members present). Members are hired muscle in v1 (no XP progression), so
   // their shares are simply DISCARDED — the split's only effect is to damp the
   // hero's gain, the built-in counterweight to a party's faster clears. Loot
   // and wilmst (below) stay 100% the hero's.
   //
-  // DETERMINISM GATE: the `rng.d(6)` that produced `raw` above is UNCHANGED and
-  // still drawn unconditionally (it must be — every combat fixture pins it).
+  // DETERMINISM GATE: the `rng.d(6)` that produced `roll` above is UNCHANGED
+  // and still drawn unconditionally (it must be — every combat fixture pins it).
   // The split is pure post-draw arithmetic, applied ONLY when `shares > 1`
   // (i.e. live members are present). With no members `shares === 1` and
   // `heroShare === gained` exactly, so both `c.sp` and the `foeKilled` event
