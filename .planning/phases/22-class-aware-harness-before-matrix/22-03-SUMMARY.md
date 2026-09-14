@@ -170,3 +170,14 @@ None - no external service configuration required.
 ---
 *Phase: 22-class-aware-harness-before-matrix*
 *Completed: 2026-09-14*
+
+## Self-Check: PASSED
+
+- FOUND: tools/lib/class-matrix.mjs
+- FOUND: tools/tune-classes.mjs
+- FOUND: test/unit/class-matrix.test.js
+- FOUND: tools/tune-difficulty.mjs
+- FOUND: SUMMARY.md
+- FOUND commit: b41ea7c
+- FOUND commit: 63f1bba
+- FOUND commit: 08b8ebd

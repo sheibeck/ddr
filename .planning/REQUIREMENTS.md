@@ -49,7 +49,7 @@ Dev-only, zero-dependency, never shipped — extends `tools/lib/tuning-bot.mjs`.
 
 - [x] **HARN-01**: The bot can force class, sub-class, and race for a run (`--cls`, `--sub`, `--race`) through a documented, harness-only chargen seam that leaves every other rng draw in order, so a forced Troll Summoner and a naturally rolled one are the same character
 - [x] **HARN-02**: The bot's policy is sub-class-aware: casts Summon before or at combat start, sings as a Bard when the song is ready, opens with Mirror Self as an Illusionist, uses non-thrown combat spells (Doze/Stun/Weaken/Acid/Shield/Heal) at sane thresholds, parleys when the sub-class or race makes it available, and still drinks/camps/flees as before — so casters are no longer under-measured
-- [ ] **HARN-03**: `tools/tune-classes.mjs` runs every sub-class × race combination (144) for N seeds each and prints a ranked matrix (mean/p50 death depth, reach ≥5/≥10, kills, level reached, top death causes) as text and `--json`, reproducible from the same seed list
+- [x] **HARN-03**: `tools/tune-classes.mjs` runs every sub-class × race combination (144) for N seeds each and prints a ranked matrix (mean/p50 death depth, reach ≥5/≥10, kills, level reached, top death causes) as text and `--json`, reproducible from the same seed list
 - [x] **HARN-04**: The harness can start a run at a chosen depth (`--start-depth`) using the same seam the Settings dev toggle uses, so deep-floor lethality (the TUNE-04 "depth 20 is instant death" finding) is measurable by the bot, not only by hand
 
 ### Mass Playtest (PLAY)
@@ -125,7 +125,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FEED-06 | Phase 25 | Pending |
 | HARN-01 | Phase 22 | Complete |
 | HARN-02 | Phase 22 | Complete |
-| HARN-03 | Phase 22 | Pending |
+| HARN-03 | Phase 22 | Complete |
 | HARN-04 | Phase 22 | Complete |
 | PLAY-01 | Phase 22 | Pending |
 | PLAY-02 | Phase 26 | Pending |

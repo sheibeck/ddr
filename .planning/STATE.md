@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 22
 current_phase_name: Class-Aware Harness & BEFORE Matrix
 status: executing
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-09-14T19:56:05.449Z"
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-09-14T20:16:15.201Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 22 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 22 (Class-Aware Harness & BEFORE Matrix) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 22 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T19:56:05.425Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-09-14T20:16:15.157Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -119,6 +119,7 @@ Resume file: None
 | Phase 21 P05 | 35min | 2 tasks | 1 files |
 | Phase 22 P01 | 25min | 2 tasks | 3 files |
 | Phase 22 P02 | 40min | 3 tasks | 2 files |
+| Phase 22 P03 | 20min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -172,6 +173,9 @@ Resume file: None
 - [Phase ?]: 22-01: normalizeForce infers cls from sub, guards sub-forced/race-natural-Fridgian before the reroll loop; pinned seeds 7920/23758/31677 (one per class) proven byte-identical to forced-with-own-combo
 - [Phase ?]: 22-02: chooseSpell (kill/damage/disable/heal/ward-opener tiers) replaces the thrown-only cast rule; ctx.fleeBlocked/strikeBlocked mirror the parleyBlocked Rule-1 pattern to fix the Samurai/Wizard refusal loops plus a third loop (Mirror Self opener missing a charges-left guard) found during self-verification
 - [Phase ?]: 22-02: playRun forwards opts.startDepth/opts.force to newRun (HARN-04) and returns stuck/outcome/startDepth/floorsGained/encountersSurvived; reachTable/actionsPerFloorDist exclude stuck runs, botLine is the single emitter of the ledger's Bot: line
+- [Phase ?]: 22-03: resolveForce (CLI-facing) lives in class-matrix.mjs, infers cls from sub, refuses Fridgian Samurai before newRun; distinct from engine/character.js's normalizeForce
+- [Phase ?]: 22-03: matrix work distributed BY CELL through a main-thread worker_threads queue -- confirmed byte-identical cells/rollups under --workers 1 vs 4 (--race Troll --seeds 2); JSON carries no timing field (elapsed goes to stderr only)
+- [Phase ?]: 22-03: tune-difficulty's death-cause pct denominator kept as results.length (unchanged wording); only the underlying cause/depth source switched to completed (non-stuck) runs
 
 ### Blockers
 
