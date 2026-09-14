@@ -11,8 +11,10 @@
 // This module's only rng draw is the natural-armor d20 soak, and it is
 // gated so that any creature without `sp.ar` set — including all four
 // fixture-exposed creatures (Bat/Rat, Shriek, Viper, Dante) — draws nothing,
-// keeping the parity suite byte-identical (no call site is routed through
-// this seam yet in this plan; 18-03/18-04 do that wiring).
+// keeping the parity suite byte-identical. Every foe-damage site in
+// engine/combat.js, engine/magic.js, and engine/items.js is routed through
+// this seam (wired by 18-03/18-04); test/unit/foe-damage.test.js's
+// "invariant" tests enforce it stays that way.
 //
 // Pure, deterministic, no DOM/Math.random/localStorage. Imports only the
 // content barrel — never `./combat.js` (combat.js/magic.js/items.js will
