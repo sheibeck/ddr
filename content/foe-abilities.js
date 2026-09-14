@@ -29,8 +29,18 @@
 // largest expected value in this registry is 15 (2d10+4, well under the
 // tier-2 floor of 20.85), so no Mangle-class (2d20+15) one-shot exists here.
 // Kit order (as referenced from content/bestiary.js) is the D-04 cast
-// priority: every kit lists its bounded (every/uses) abilities first and an
-// unbounded fallback last, so a caster always has something to cast.
+// priority: every kit lists its bounded (every/uses) abilities first. Every
+// `never_melee` caster's kit (Drudge/Vampire/Stalka Beast/Krupke) ends in a
+// truly unbounded ability (no `every`, no `uses`), so a never_melee caster
+// always has something to cast and never goes permanently silent. This does
+// NOT hold for the Djinni's kit below — every one of its four entries
+// carries `uses: 4` — but that is harmless today because the Djinni is not
+// `never_melee` (its bestiary row carries an `sp.dmg` melee fallback), so
+// engine/combat.js#foeTurn's ability gate falls through to a normal melee
+// swing once its uses are exhausted (`foeOutOfSpells` is never reached). If
+// a FUTURE `never_melee` caster is modeled on the Djinni's all-`uses` kit
+// shape, it would go silent forever once spent — give it a genuine unbounded
+// fallback, matching every other never_melee kit above (WR-03, 19-REVIEW.md).
 export const FOE_ABILITIES = [
   { id: "krupkeWeaken", kind: "debuff", lvl: 1, effect: "weakened", every: 3, txt: "Krupke mutters something unkind about your arms, and they agree with him." },
   { id: "krupkeFreeze", kind: "bolt", lvl: 1, dmg: { n: 1, sides: 6, bonus: 0 }, txt: "Krupke flicks a chill at you from behind his shield. Economical." },
