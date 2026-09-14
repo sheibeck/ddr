@@ -11,6 +11,9 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import {
   difficultyCurve,
@@ -34,6 +37,9 @@ import {
 import { startCombat, foeTurn } from "../../engine/combat.js";
 import { tickAbilityCooldowns, firstReadyAbility } from "../../engine/foeAbilities.js";
 import { BESTIARY, FOE_ABILITIES } from "../../content/index.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // --- local test fixtures (mirror test/unit/foe-turn-draw-count.test.js) ----
 
@@ -239,4 +245,106 @@ test("synthetic-curve helper pins", () => {
   for (const a of FOE_ABILITIES) {
     assert.deepStrictEqual(abilityCadenceFor(a, { abilityThreat: 1 }), { every: a.every, uses: a.uses });
   }
+});
+
+// --- Task 2 tests -----------------------------------------------------------
+
+test("D-19 wiring identity: at depth 1..5 every foe built by startCombat has wp === maxWP === the roster row's wp and NO dmgBonus key", () => {
+  for (const depth of [1, 5]) {
+    const state = fixedState({ c: { level: 5 }, floor: { depth } });
+    const rng = fakeRng([3, 3, 2, 2, 10, 5]);
+    startCombat(state, false, "Beasts", rng, []);
+    assert.equal(state.combat.foes.length, 2);
+    for (const f of state.combat.foes) {
+      assert.equal(f.wp, BESTIARY.Beasts[f.lvl - 1][0].wp);
+      assert.equal(f.maxWP, f.wp);
+      assert.equal("dmgBonus" in f, false);
+    }
+  }
+});
+
+test("draw-shape equality (D-17/D-19): startCombat draws 8 at depth 1 and at depth 5, and 2 + foeCountFor(2, difficultyCurve(30)) * 2 + 2 at depth 30", () => {
+  const seq = [3, 3, 2, 2, 2, 2, 2, 10, 5];
+  const state1 = fixedState({ c: { level: 5 }, floor: { depth: 1 } });
+  const rng1 = countingRng(fakeRng(seq));
+  startCombat(state1, false, "Beasts", rng1, []);
+  const draws1 = rng1.draws;
+
+  const state5 = fixedState({ c: { level: 5 }, floor: { depth: 5 } });
+  const rng5 = countingRng(fakeRng(seq));
+  startCombat(state5, false, "Beasts", rng5, []);
+  const draws5 = rng5.draws;
+
+  const state30 = fixedState({ c: { level: 5 }, floor: { depth: 30 } });
+  const rng30 = countingRng(fakeRng(seq));
+  startCombat(state30, false, "Beasts", rng30, []);
+  const draws30 = rng30.draws;
+
+  assert.equal(draws1, 8);
+  assert.equal(draws5, 8);
+  assert.equal(draws30, 2 + foeCountFor(2, difficultyCurve(30)) * 2 + 2);
+
+  const curve30 = difficultyCurve(30);
+  for (const f of state30.combat.foes) {
+    assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve30));
+    assert.equal("dmgBonus" in f, foeDmgBonusFor(f.lvl, curve30) > 0);
+  }
+});
+
+test("wandering encounters still draw no count dice", () => {
+  for (const depth of [1, 30]) {
+    const state = fixedState({ c: { level: 5 }, floor: { depth } });
+    const rng = countingRng(fakeRng([2, 10, 5]));
+    startCombat(state, true, "Beasts", rng, []);
+    assert.equal(state.combat.foes.length, 1);
+    assert.equal(rng.draws, 1 + 1 + 2);
+  }
+});
+
+test("dmgBonus is post-draw arithmetic on the hero swing", () => {
+  const foe1 = fixedFoe({ type: "Beasts", lvl: 1 });
+  const state1 = fixedState({ combat: { foes: [foe1], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
+  const rng1 = countingRng(fakeRng([3, 4]));
+  const events1 = foeTurn(state1, rng1, []);
+  const struck1 = events1.find((e) => e.type === "struckByFoe");
+  assert.ok(struck1);
+  assert.equal(struck1.roll, 3);
+  assert.equal(struck1.dmg, 5);
+  assert.equal(state1.c.wp, 50);
+  assert.equal(rng1.draws, 2);
+
+  const foe2 = fixedFoe({ type: "Beasts", lvl: 1, dmgBonus: 5 });
+  const state2 = fixedState({ combat: { foes: [foe2], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
+  const rng2 = countingRng(fakeRng([3, 4]));
+  const events2 = foeTurn(state2, rng2, []);
+  const struck2 = events2.find((e) => e.type === "struckByFoe");
+  assert.ok(struck2);
+  assert.equal(struck2.dmg, 10);
+  assert.equal(state2.c.wp, 45);
+  assert.equal(rng2.draws, 2);
+});
+
+test("D-18: tickAbilityCooldowns(state, f) lazily inits from the cadence and counts down; identity at depth 5", () => {
+  assert.equal(tickAbilityCooldowns.length, 2);
+
+  const state = fixedState({ floor: { depth: 5 }, combat: { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
+  const f = fixedFoe({ abilities: ["drudgeFireball"] });
+  tickAbilityCooldowns(state, f);
+  assert.equal(f.cd.drudgeFireball, 1);
+  assert.equal(firstReadyAbility(state, f), null);
+  tickAbilityCooldowns(state, f);
+  assert.equal(f.cd.drudgeFireball, 0);
+  assert.equal(firstReadyAbility(state, f).id, "drudgeFireball");
+
+  const g = fixedFoe({ abilities: ["djinniFreeze"] });
+  assert.equal(firstReadyAbility(state, g).id, "djinniFreeze");
+  g.uses = { djinniFreeze: 0 };
+  assert.equal(firstReadyAbility(state, g), null);
+});
+
+test("the D-15 / FID-02 contract is untouched by Phase 21 wiring", () => {
+  const detFile = fs.readFileSync(path.join(REPO_ROOT, "test/determinism/foe-abilities.test.js"), "utf8");
+  const drawCountFile = fs.readFileSync(path.join(REPO_ROOT, "test/unit/foe-turn-draw-count.test.js"), "utf8");
+  assert.ok(!detFile.includes("Phase 21"));
+  assert.ok(!drawCountFile.includes("Phase 21"));
 });

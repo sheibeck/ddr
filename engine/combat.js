@@ -57,6 +57,7 @@ import { checkLevel } from "./character.js";
 import { takeItem, gainWilmst, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
+import { difficultyCurve, foeCountFor, foeWpFor, foeDmgBonusFor } from "./difficulty.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE } from "../content/index.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -112,9 +113,19 @@ export function rollInitiative(state, rng) {
  * Warlock's walking-dead boost, Knight/Con Artist/Court Mage foe removals,
  * phobia freeze, ally join, and first-move via rollInitiative. Ports
  * mazeworld.html startCombat() (lines 2257-2315).
+ *
+ * DELIBERATE RULES CHANGE (Phase 21, TUNE-01, D-01/D-02/D-17): reads the
+ * ONE combat-scaling curve for this encounter (`difficultyCurve`, 0 draws)
+ * and applies two additive terms: a zero-new-draw foe-count bonus (D-17,
+ * `foeCountFor`) added AFTER the canon d4/d4 roll, and a copy-time
+ * wp/maxWP power scale + conditional flat melee `dmgBonus` (D-02,
+ * `foeWpFor`/`foeDmgBonusFor`) on each foe instance. Both are identity
+ * (no-ops) at depth <= 5 (D-19) — see docs/DIFFICULTY-RETUNE.md for the
+ * tuned values.
  */
 export function startCombat(state, wandering, forced, rng, events = []) {
   const c = state.c;
+  const curve = difficultyCurve(state.floor.depth);
   const type = forced || rng.pick(ENC_TYPES);
   let tracked = false;
   if (skill(c, "Tracking")) {
@@ -122,14 +133,20 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     tracked = r <= 5;
     events.push({ type: "trackingRolled", roll: r, tracked });
   }
-  const maxLvl = clamp(Math.min(c.level, state.floor.depth), 1, 5);
+  const maxLvl = clamp(Math.min(c.level, state.floor.depth) + curve.foeLvlBias, 1, 5);
   // a level I delver never faces a mob; the maze scales up as you do
   const cap = c.level <= 2 ? 2 : 3;
   // NOTE: this ternary chain can consume ONE or TWO d4 rolls, exactly like
   // the prototype's `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` — the second D(4) is
   // only rolled if the first roll was > 2. Preserve the short-circuit shape
   // verbatim; do not hoist to a single pre-rolled value.
-  const n = wandering ? 1 : Math.min(cap, rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3);
+  //
+  // Phase 21 (D-17): foeCountFor adds the curve's zero-draw `foeBonus`
+  // AFTER the canon roll and clamps at `foeCap`; the d4/d4 short-circuit is
+  // untouched and a wandering encounter still draws nothing here; at depth
+  // <= 5 `foeBonus === 0` and `foeCap === 3`, so `n` is byte-identical to
+  // the prototype.
+  const n = wandering ? 1 : foeCountFor(Math.min(cap, rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3), curve);
   const foes = [];
   for (let i = 0; i < n; i++) {
     const lvl = clamp(maxLvl - (rng.d(4) === 1 ? 1 : 0), 1, 5);
@@ -139,14 +156,16 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     // BESTIARY[type][lvl - 1] can never be undefined.
     const roster = BESTIARY[type][lvl - 1];
     const picked = rng.pick(roster);
+    const wp = foeWpFor(picked.wp, curve);
+    const dmgBonus = foeDmgBonusFor(lvl, curve);
     foes.push({
       name: picked.n,
       type,
       lvl,
       size: picked.sz,
       intel: picked.i,
-      wp: picked.wp,
-      maxWP: picked.wp,
+      wp,
+      maxWP: wp,
       alive: true,
       asleep: 0,
       sp: picked.sp || {},
@@ -157,6 +176,12 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       // byte-identical for parity. `f.abilities` (present vs absent) is the
       // structural zero-draw gate foeTurn reads below.
       ...(picked.abilities ? { abilities: picked.abilities.slice() } : {}),
+      // Phase 21 (TUNE-01, D-02): copy-time power scaling; the key is added
+      // ONLY when the curve's foePower is above 1 (never at depth <= 5), so
+      // every fixture-exposed foe object is byte-identical; `damageFoe`
+      // (engine/foeDamage.js) is still the only place a foe's wp ever
+      // decreases — this only changes the STARTING number.
+      ...(dmgBonus > 0 ? { dmgBonus } : {}),
     });
   }
   state.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };
@@ -533,7 +558,8 @@ function pursuitStrike(state, rng, events) {
     events.push({ type: "foeMissed", name: pursuer.name, roll, need });
     return { died: false };
   }
-  let dmg = pursuer.lvl * pursuer.lvl + (pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6));
+  // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
+  let dmg = pursuer.lvl * pursuer.lvl + (pursuer.dmgBonus || 0) + (pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6));
   if (C.weakened) dmg = Math.ceil(dmg / 2);
   if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
   return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need });
@@ -1223,8 +1249,10 @@ export function foeTurn(state, rng, events = []) {
     // (RESEARCH Pitfall 3); the ability REPLACES the whole melee turn (every
     // sp.atk swing) when it fires; `.died` mirrors the `hit.died` contract
     // applyFoeDamageToPlayer already uses.
+    // Phase 21 (D-18) — the tick now takes `state` so the cadence can read
+    // the curve; still 0 draws.
     if (f.abilities && f.abilities.length) {
-      tickAbilityCooldowns(f);
+      tickAbilityCooldowns(state, f);
       const ready = firstReadyAbility(state, f);
       const neverMelee = !!(f.sp && f.sp.never_melee);
       if (ready && (neverMelee || rng.d(6) <= 4)) {
@@ -1263,7 +1291,8 @@ export function foeTurn(state, rng, events = []) {
           events.push({ type: "foeMissed", name: f.name, roll: mRoll, need: mNeed, member: member.name });
           continue;
         }
-        let mDmg = f.lvl * f.lvl + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
+        // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
+        let mDmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         if (mRoll === 1) mDmg *= 2;
         member.wp -= mDmg;
@@ -1282,7 +1311,8 @@ export function foeTurn(state, rng, events = []) {
         events.push({ type: "foeMissed", name: f.name, roll, need });
         continue;
       }
-      let dmg = f.lvl * f.lvl + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
+      // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
+      let dmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
 

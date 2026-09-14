@@ -26,6 +26,7 @@
 import { FOE_ABILITIES, BESTIARY } from "../content/index.js";
 import { rollDice } from "./dice.js";
 import { resistRoll } from "./derived.js";
+import { difficultyCurve, abilityCadenceFor } from "./difficulty.js";
 import { pickFoeTarget, applyFoeDamageToPlayer, downMember, liveFoes } from "./combat.js";
 
 const BY_ID = new Map(FOE_ABILITIES.map((a) => [a.id, a]));
@@ -35,20 +36,30 @@ const RESISTIBLE = new Set(["bolt", "drain", "debuff"]);
 const SUMMON_MAX_LIVE = 4; // FOE-04/D-12: a room never holds more than 4 live foes
 
 /**
- * tickAbilityCooldowns(f) — advances every `every`-bearing kit entry's
- * cooldown by one visit (D-20/A3): lazily initializes `f.cd[id]` to the
- * descriptor's `every` on the FIRST evaluation, then decrements (floored at
- * 0). An `every: N` ability is therefore ready on the foe's Nth visit,
- * resets to N on cast (resolveFoeAbility), and fires again on the (N*2)th.
- * Entries without `every` (uses-only or unbounded abilities) and unknown ids
- * are skipped. Pure arithmetic — 0 rng draws, always.
+ * tickAbilityCooldowns(state, f) — advances every `every`-bearing kit
+ * entry's cooldown by one visit (D-20/A3): lazily initializes `f.cd[id]` to
+ * `abilityCadenceFor(a, curve).every` on the FIRST evaluation, then
+ * decrements (floored at 0). An `every: N` ability is therefore ready on
+ * the foe's Nth visit, resets to N on cast (resolveFoeAbility), and fires
+ * again on the (N*2)th. Entries without `every` (uses-only or unbounded
+ * abilities) and unknown ids are skipped. Pure arithmetic — 0 rng draws,
+ * always.
+ *
+ * DELIBERATE RULES CHANGE (Phase 21, TUNE-01, D-03/D-18): the signature
+ * grew a `state` parameter so the lazy-init can read `abilityThreat` off
+ * the curve — deep floors shorten `every` (raise `uses`, read at the
+ * resolveFoeAbility/firstReadyAbility call sites); the kits in
+ * content/foe-abilities.js are unchanged data. At `abilityThreat === 1`
+ * (depth <= 5, D-19) this reproduces `a.every` exactly, so every D-15
+ * pinned cooldown number is untouched.
  */
-export function tickAbilityCooldowns(f) {
+export function tickAbilityCooldowns(state, f) {
+  const curve = difficultyCurve(state.floor.depth);
   for (const id of f.abilities) {
     const a = BY_ID.get(id);
     if (!a || a.every === undefined) continue;
     if (!f.cd) f.cd = {};
-    if (f.cd[id] === undefined) f.cd[id] = a.every; // D-20 lazy init
+    if (f.cd[id] === undefined) f.cd[id] = abilityCadenceFor(a, curve).every; // D-20 lazy init
     f.cd[id] = Math.max(0, f.cd[id] - 1);
   }
 }
@@ -58,19 +69,20 @@ export function tickAbilityCooldowns(f) {
  * that is ready to fire this visit (D-04 kit-order cast priority), or `null`
  * if nothing is. Not ready when: the id is unknown (skipped silently, never
  * throws); `every` is defined and the cooldown (post-tick) is still above 0;
- * `uses` is defined and the remaining-uses counter has reached 0; the kind
- * is `heal` and the foe is already at full wp; or the kind is `summon` and
- * either a summon is already pending or the room already holds
- * `SUMMON_MAX_LIVE` live foes. A capped summon/heal never wastes the foe's
- * turn — it simply falls through to the next kit entry (or the melee path).
- * Pure read — 0 rng draws.
+ * `uses` is defined and the remaining-uses counter (scaled by
+ * `abilityCadenceFor`, D-03) has reached 0; the kind is `heal` and the foe
+ * is already at full wp; or the kind is `summon` and either a summon is
+ * already pending or the room already holds `SUMMON_MAX_LIVE` live foes. A
+ * capped summon/heal never wastes the foe's turn — it simply falls through
+ * to the next kit entry (or the melee path). Pure read — 0 rng draws.
  */
 export function firstReadyAbility(state, f) {
+  const curve = difficultyCurve(state.floor.depth);
   for (const id of f.abilities) {
     const a = BY_ID.get(id);
     if (!a) continue; // unknown id: skip silently
     if (a.every !== undefined && f.cd && f.cd[id] > 0) continue;
-    if (a.uses !== undefined && (f.uses?.[id] ?? a.uses) <= 0) continue;
+    if (a.uses !== undefined && (f.uses?.[id] ?? abilityCadenceFor(a, curve).uses) <= 0) continue;
     if (a.kind === "heal" && f.wp >= f.maxWP) continue;
     if (a.kind === "summon") {
       const C = state.combat;
@@ -136,17 +148,25 @@ function heroResist(rng, c, f, a, events) {
  * draw their own dice (`a.dmg`/`d4`), plus one gated `resistRoll` d20 (hero
  * intel >= 12 only) and one gated `pickFoeTarget` die (a live party member
  * only); summon draws exactly one `rng.pick`.
+ *
+ * DELIBERATE RULES CHANGE (Phase 21, TUNE-01, D-03/D-18): the cooldown
+ * reset and uses decrement now go through `abilityCadenceFor` (curve-scaled
+ * `every`/`uses`) instead of the descriptor's own raw numbers. The summon
+ * literal's hit points are deliberately NOT scaled here (Claude's
+ * Discretion: reinforcements are already tier-limited weak foes; scaling
+ * them is a 21-04 option only if the DR round asks).
  */
 export function resolveFoeAbility(state, f, a, rng, events) {
   const c = state.c;
+  const cad = abilityCadenceFor(a, difficultyCurve(state.floor.depth));
   events.push({ type: "foeCast", name: f.name, ability: a.id, kind: a.kind, txt: a.txt });
   if (a.every !== undefined) {
     if (!f.cd) f.cd = {};
-    f.cd[a.id] = a.every;
+    f.cd[a.id] = cad.every;
   }
   if (a.uses !== undefined) {
     f.uses = f.uses || {};
-    f.uses[a.id] = (f.uses[a.id] ?? a.uses) - 1;
+    f.uses[a.id] = (f.uses[a.id] ?? cad.uses) - 1;
   }
 
   if (a.kind === "heal") {
