@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Monster Balancing & Abilities
-current_phase: 19
-current_phase_name: Foe Abilities, Spellcasting & Symmetric INT Resistance
+current_phase: 20
+current_phase_name: Parley Balance & Language System
 status: planning
 stopped_at: Completed 21-05-PLAN.md — phase 21 automated work done, awaiting human DR round verdict (TUNE-04)
-last_updated: "2026-09-14T17:34:33.738Z"
+last_updated: "2026-09-14T17:35:48.283Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 21 complete, transitioned to Phase 19
+last_activity_desc: Phase 19 complete, transitioned to Phase 20
 progress:
   total_phases: 5
   completed_phases: 5
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 ## Current Position
 
-Phase: 19 — Foe Abilities, Spellcasting & Symmetric INT Resistance
+Phase: 20 — Parley Balance & Language System
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-14 — Phase 21 complete, transitioned to Phase 19
+Last activity: 2026-09-14 — Phase 19 complete, transitioned to Phase 20
 
 Progress: [██████████] 100%
 
@@ -78,12 +78,6 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | requirement | PARTY-10 consolidated difficulty retune | now Phase 21 (v1.1) |
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
 | v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
-
-## Deferred Verification
-
-| Phase | State | Resume |
-|-------|-------|--------|
-| 19 | verification_deferred_human | /gsd-verify-work 19 |
 
 ## Session Continuity
 

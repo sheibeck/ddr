@@ -1,7 +1,7 @@
 ---
 phase: 19-foe-abilities-spellcasting-symmetric-int-resistance
 verified: 2026-09-14T00:00:00Z
-status: human_needed
+status: passed
 score: 10/10 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -15,7 +15,7 @@ human_verification:
 
 **Phase Goal:** Foes can cast, drain, debuff, heal, and summon via a data-driven ability system resolved deterministically; the player's Intelligence resists incoming foe magic using the same canon rule foes already use against players.
 **Verified:** 2026-09-14
-**Status:** human_needed
+**Status:** passed (human item approved by the user on-device, 2026-09-14)
 **Re-verification:** No — initial verification
 
 ## Goal Achievement
@@ -120,3 +120,8 @@ No gaps. Every must-have truth across all 4 plans (19-01 through 19-04) is verif
 
 *Verified: 2026-09-14*
 *Verifier: Claude (gsd-verifier)*
+
+
+## Resolution note (2026-09-14)
+
+The single human_verification item (Weakened/Dazed chip renders and counts down) was **approved by the user** after on-device play of the Phase 19–21 builds ("close Phase 19 as approved"). Phase marked passed.
