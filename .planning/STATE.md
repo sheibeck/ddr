@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 status: planning
-last_updated: "2026-09-14T18:00:32.850Z"
+last_updated: "2026-09-14T19:30:00.000Z"
 last_activity: 2026-09-14
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.2 Class Pass & Mass Playtest — defining requirements (class/sub/race identity pass → class-aware harness → mass playtest → TUNE-04 retune)
+**Current focus:** v1.2 Class Pass & Mass Playtest — roadmap created (Phases 22–27); next up: discuss/plan Phase 22 (Class-Aware Harness & BEFORE Matrix)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 22 (Class-Aware Harness & BEFORE Matrix) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-14 — Milestone v1.2 started
+Status: Roadmap created, ready for `/gsd-discuss-phase 22` or `/gsd-plan-phase 22`
+Last activity: 2026-09-14 — v1.2 ROADMAP.md written (Phases 22–27), REQUIREMENTS.md traceability filled (28/28 mapped)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -35,13 +35,15 @@ Last activity: 2026-09-14 — Milestone v1.2 started
 
 **Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers (first upload 2026-09-10, versionCode 1, built BEFORE DR18). **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`). A signed versionCode-2 AAB with DR17+DR18 was built 2026-09-13 13:48 and handed to the user to upload.
 
-**Build/env:** `npm test` (683/683) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
+**Build/env:** `npm test` (951/951 as of v1.1 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
 
 **Device:** Pixel 7 wireless adb (`adb-28051FDH200H0R`, 10.0.0.175:<port rotates>; rediscover via `adb mdns services`). Deploy = `adb install -r` + `am force-stop` + `monkey` relaunch (install alone doesn't reload the WebView). A Play-installed build and a local build have different signers — uninstall one before installing the other (Preferences data is lost on uninstall). Screenshots via screencap usually hit the lock screen — the user reviews and reports.
 
-**Engine gate (non-negotiable, every change):** engine pure/deterministic; parity byte-identical for solo/empty-party play; new rng draws only behind new-feature guards; new serialized fields carved out in all 3 `*Comparable()` fns (`test/parity/harness/comparables.js`); `test/parity/prototype-master.js.txt` NEVER edited; every new event type gets an `EVENT_NARRATION` entry (coverage guard). Deliberate divergences regenerate only their specific fixtures, with rationale. (Also stated in `ROADMAP.md` as the v1.1 preamble gate.)
+**Engine gate (non-negotiable, every change):** engine pure/deterministic; parity byte-identical for solo/empty-party play; new rng draws only behind new-feature guards; new serialized fields carved out in all 3 `*Comparable()` fns (`test/parity/harness/comparables.js`); `test/parity/prototype-master.js.txt` NEVER edited; every new event type gets an `EVENT_NARRATION` entry (coverage guard). Deliberate divergences regenerate only their specific fixtures, with rationale. (Also stated in `ROADMAP.md` as the Engine Gate preamble.)
 
-**v1.1 phase order (ROADMAP.md):** 17 Fixture Inventory & Foe-Turn Refactors → 18 Bestiary Rebalance & Canon Combat Fixes → 19 Foe Abilities/Spellcasting/Symmetric INT Resistance (`--research-phase` recommended) → 20 Parley Balance & Language System → 21 Consolidated Difficulty Retune (`--research-phase` recommended; TUNE-04 human DR sign-off is the milestone's last step, UAT deferred to milestone end).
+**v1.1 phase order (ROADMAP.md, archived):** 17 Fixture Inventory & Foe-Turn Refactors → 18 Bestiary Rebalance & Canon Combat Fixes → 19 Foe Abilities/Spellcasting/Symmetric INT Resistance (`--research-phase` recommended) → 20 Parley Balance & Language System → 21 Consolidated Difficulty Retune (`--research-phase` recommended; TUNE-04 human DR sign-off came back tune-again, deferred to v1.2).
+
+**v1.2 phase order (ROADMAP.md):** 22 Class-Aware Harness & BEFORE Matrix (HARN-01..04, PLAY-01 — must land first; the BEFORE matrix is impossible to recover later without git archaeology) → 23 Casters Can Act (IDENT-01..04, FID-06 — Wizard/Summoner/Illusionist "cannot act" fixes + guaranteed attack spell) → 24 Every Sub-class and Race: One Good, One Bad (IDENT-05..10, FID-07; `--research-phase` recommended) → 25 Nothing Happens Silently / Feature Feedback (FEED-01..06) → 26 Mass Playtest & Class-Pass Ledger (PLAY-02/03) → 27 Delve-to-Death Retune (TUNE-05..07; `--research-phase` recommended; TUNE-05 target band + TUNE-07 human DR round are both `/gsd-discuss-phase` candidates before planning).
 
 **Working method:** GSD phases (autonomous runs) for systems work; on-device DR rounds (small user-directed batches, each with a `DR*-SUMMARY.md`) for UX. Commit per batch — do not let the tree sit uncommitted for days. Remote: `origin` = https://github.com/sheibeck/ddr (public). Push is a user-run step (`! git push`) — the auto-mode classifier blocks pushes from Claude.
 
@@ -49,10 +51,11 @@ Last activity: 2026-09-14 — Milestone v1.2 started
 
 ### Blockers/Concerns (open)
 
-- [Balance]: Phase 21 landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until after the upcoming cleanup + class fixes/updates milestones (player power will move). Next attempt: lower `FOE_POWER_MAX`/`ABILITY_THREAT_MAX`, push `*_SOFT_K` out, cap foe-count growth; use the Settings long-press dev start at 20/35/50. Ledger: `docs/DIFFICULTY-RETUNE.md`.
+- [Balance]: Phase 21 (v1.1) landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until player power moves. This retune now lands as **Phase 27 of v1.2**, after the identity pass (Phases 23–24) and mass playtest (Phase 26) give it a corrected yardstick. Ledger: `docs/DIFFICULTY-RETUNE.md`.
 - [Play launch]: target-API level, Data Safety fields, and IARC questions shift yearly — re-verify against current Play Console Help right before the production phase. Repo-side: a dependency/SDK audit proving "no data collected" is still owed.
 - [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
 - [Play testers]: internal testers are on the pre-DR18 build until the versionCode-2 AAB is uploaded.
+- [Baseline caveat]: the 400-seed pre-milestone bot baseline (`docs/CLASS-PASS.md` once written) casts only thrown spells, so caster sub-classes were under-measured before Phase 22's harness fix — treat pre-Phase-22 numbers as a floor, not a true reading.
 
 ### Pending Todos
 
@@ -67,21 +70,23 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | verification | Phases 01/02/03 VERIFICATION.md `human_needed` | accepted — end-of-milestone UAT satisfied by DR1–DR18 on-device play + Play internal testers |
 | quick_task | rules-text-audit-pass (20260909) | missing SUMMARY → shipped as Phase 04.2 |
 | quick_task | 260908-kkq-rename-product-to-delve-die-repeat-and-s | partial → landed in f81942f |
-| requirement | UX-06 first-run tutorial (04-10) | user-deferred until the UI settles (build LAST, after v1.1) |
-| requirement | STR-01..04, STR-06 production launch | in progress by the user; repo-side audit owed; after v1.1 |
-| requirement | PARTY-10 consolidated difficulty retune | now Phase 21 (v1.1) |
+| requirement | UX-06 first-run tutorial (04-10) | user-deferred until the UI settles (build LAST, after v1.1/v1.2) |
+| requirement | STR-01..04, STR-06 production launch | in progress by the user; repo-side audit owed; after v1.1/v1.2 |
+| requirement | PARTY-10 consolidated difficulty retune | landed in Phase 21 (v1.1); TUNE-04 re-attempt now Phase 27 (v1.2) |
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
 | v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
 
 ## Session Continuity
 
-Last session: 2026-09-14T17:01:17.973Z
-Stopped at: Completed 21-05-PLAN.md — phase 21 automated work done, awaiting human DR round verdict (TUNE-04)
+Last session: 2026-09-14T19:30:00.000Z
+Stopped at: v1.2 ROADMAP.md written (Phases 22–27, 100% requirement coverage), REQUIREMENTS.md traceability filled — awaiting discuss/plan on Phase 22
 Resume file: None
 
 ## Operator Next Steps
 
-- Continue /gsd-new-milestone: requirements → roadmap for v1.2
+- Start Phase 22 (Class-Aware Harness & BEFORE Matrix): `/gsd-plan-phase 22` (or `/gsd-discuss-phase 22` first if more context is wanted — it's dev-tooling, discuss is optional here).
+- Phase 24 and Phase 27 are flagged `--research-phase` at planning time.
+- Phase 27 is also a `/gsd-discuss-phase` candidate before planning: TUNE-05 needs a target band agreed with the user, and TUNE-07 is a human DR round (`human_verify_mode: end-of-phase`).
 
 ## Performance Metrics
 
@@ -161,4 +166,4 @@ Resume file: None
 
 ### Blockers
 
-- Phase 21 human_needed: TUNE-04 sign-off — user must play the DR round (3 dev-start runs at depth 20/35/50 per docs/DIFFICULTY-RETUNE.md's DR checklist) and record a pass/tune-again verdict before the phase/milestone can close
+- None open for v1.2 planning — Phase 21's TUNE-04 human_needed blocker resolved into the v1.2 milestone itself (retune now scheduled as Phase 27, after the identity pass gives it a corrected yardstick).

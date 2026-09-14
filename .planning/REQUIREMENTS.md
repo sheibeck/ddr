@@ -105,40 +105,40 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FID-06 | — | Pending |
-| FID-07 | — | Pending |
-| IDENT-01 | — | Pending |
-| IDENT-02 | — | Pending |
-| IDENT-03 | — | Pending |
-| IDENT-04 | — | Pending |
-| IDENT-05 | — | Pending |
-| IDENT-06 | — | Pending |
-| IDENT-07 | — | Pending |
-| IDENT-08 | — | Pending |
-| IDENT-09 | — | Pending |
-| IDENT-10 | — | Pending |
-| FEED-01 | — | Pending |
-| FEED-02 | — | Pending |
-| FEED-03 | — | Pending |
-| FEED-04 | — | Pending |
-| FEED-05 | — | Pending |
-| FEED-06 | — | Pending |
-| HARN-01 | — | Pending |
-| HARN-02 | — | Pending |
-| HARN-03 | — | Pending |
-| HARN-04 | — | Pending |
-| PLAY-01 | — | Pending |
-| PLAY-02 | — | Pending |
-| PLAY-03 | — | Pending |
-| TUNE-05 | — | Pending |
-| TUNE-06 | — | Pending |
-| TUNE-07 | — | Pending |
+| FID-06 | Phase 23 | Pending |
+| FID-07 | Phase 24 | Pending |
+| IDENT-01 | Phase 23 | Pending |
+| IDENT-02 | Phase 23 | Pending |
+| IDENT-03 | Phase 23 | Pending |
+| IDENT-04 | Phase 23 | Pending |
+| IDENT-05 | Phase 24 | Pending |
+| IDENT-06 | Phase 24 | Pending |
+| IDENT-07 | Phase 24 | Pending |
+| IDENT-08 | Phase 24 | Pending |
+| IDENT-09 | Phase 24 | Pending |
+| IDENT-10 | Phase 24 | Pending |
+| FEED-01 | Phase 25 | Pending |
+| FEED-02 | Phase 25 | Pending |
+| FEED-03 | Phase 25 | Pending |
+| FEED-04 | Phase 25 | Pending |
+| FEED-05 | Phase 25 | Pending |
+| FEED-06 | Phase 25 | Pending |
+| HARN-01 | Phase 22 | Pending |
+| HARN-02 | Phase 22 | Pending |
+| HARN-03 | Phase 22 | Pending |
+| HARN-04 | Phase 22 | Pending |
+| PLAY-01 | Phase 22 | Pending |
+| PLAY-02 | Phase 26 | Pending |
+| PLAY-03 | Phase 26 | Pending |
+| TUNE-05 | Phase 27 | Pending |
+| TUNE-06 | Phase 27 | Pending |
+| TUNE-07 | Phase 27 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 28 total
-- Mapped to phases: 0
-- Unmapped: 28 ⚠️ (roadmap pending)
+- Mapped to phases: 28
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-14*
-*Last updated: 2026-09-14 after initial definition (Fable planning pass)*
+*Last updated: 2026-09-14 after roadmap creation (Phases 22–27, 100% coverage)*
