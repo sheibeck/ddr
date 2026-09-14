@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Monster Balancing & Abilities
 current_phase: 20
 current_phase_name: Parley Balance & Language System
-status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-09-14T12:41:01.351Z"
+status: verifying
+stopped_at: Completed 20-03-PLAN.md
+last_updated: "2026-09-14T13:10:35.546Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 20 execution started
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
-  percent: 60
+  completed_plans: 16
+  percent: 80
 ---
 
 # Project State
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-13 after v1.0)
 
 Phase: 20 (Parley Balance & Language System) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-14 — Phase 20 execution started
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,8 +87,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-14T12:41:01.326Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-09-14T13:10:35.523Z
+Stopped at: Completed 20-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -115,6 +115,7 @@ Resume file: None
 | Phase 19 P04 | 55min | 3 tasks | 5 files |
 | Phase 20 P01 | 35min | 3 tasks | 6 files |
 | Phase 20 P02 | 55min | 3 tasks | 7 files |
+| Phase 20 P03 | 50min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -150,3 +151,7 @@ Resume file: None
 - [Phase ?]: 20-02: parley's wilmsryVsMagical refusal fires BEFORE C.parleyTried=true so a refusal never consumes the one attempt (D-12)
 - [Phase ?]: 20-02: C.parleyTried/C.parleyInsulted are lazily written, never initialised in startCombat -- startCombat/pursuitStrike md5 pins unchanged (D-16/D-19)
 - [Phase ?]: 20-02: mazeworld.html's classic canParley()/fluency() mirror landed in the same commit as the engine rewrite (D-17); the dead classic parley() re-verified hash-identical
+- [Phase ?]: 20-03: expectedCanParley oracle is a prose restatement of D-11/D-12 (never calls canParley), verified against all 576 live cases (mismatches=0, magicalTrue=24, wdTrue=0, plainHumanSoldierTrue=0)
+- [Phase ?]: 20-03: parley-button-mirror.test.js extracts mazeworld.html's LIVE classic fluency()/canParley() with fs.readFileSync+new Function and replays the same 576-case matrix — zero disagreements; tripwire confirmed on a scratch copy (flu<2 -> flu<1 drift caught)
+- [Phase ?]: 20-03: seed-303 AFTER numbers (need 17, sp 7, gold 50, draws d20=2 d6=5 d6=5) taken from the passing test/unit/parley.test.js D-21 test, not hand-computed, before writing FIXTURE-INVENTORY.md's divergence table
+- [Phase ?]: 20-03: tune-difficulty AFTER readout (200 seeds) measured attempts 151->97, success 57.6%->60.8%, SP share 3.7%->2.3% -- informational only, no dial changed, Phase 21 owns the retune

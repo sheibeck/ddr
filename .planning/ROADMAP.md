@@ -155,7 +155,7 @@ Plans:
   3. Con Artist's baseline parley odds are retuned to a stated, documented post-rebalance win-rate target that keeps the subclass identity viable rather than gutted.
   4. The Language skill and the Helm of Knowledge (`tongue`) both contribute a fluency bonus to the same parley `bonus` term (Option B), and fluency widens which encounter types a character can parley, verified by an availability test per race/class/skill/Helm combination.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -168,7 +168,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 20-03-PLAN.md — PARLEY-01..04, LANG-01/02 proof (D-02, D-04, D-05..D-08, D-10..D-13, D-15, D-17, D-19, D-21): `test/unit/parley.test.js` (576-case availability matrix vs an independent oracle, every gate, refusal, exhausted, insulted incl. member branch, odds 13/12, clamp 17, payout property, wilmst odds, countingRng draw shape, seed-303 pin, save/load edge), `test/unit/parley-button-mirror.test.js`, FIXTURE-INVENTORY.md Phase 20 before/after table, AFTER readout + comparison, phase gate
+- [x] 20-03-PLAN.md — PARLEY-01..04, LANG-01/02 proof (D-02, D-04, D-05..D-08, D-10..D-13, D-15, D-17, D-19, D-21): `test/unit/parley.test.js` (576-case availability matrix vs an independent oracle, every gate, refusal, exhausted, insulted incl. member branch, odds 13/12, clamp 17, payout property, wilmst odds, countingRng draw shape, seed-303 pin, save/load edge), `test/unit/parley-button-mirror.test.js`, FIXTURE-INVENTORY.md Phase 20 before/after table, AFTER readout + comparison, phase gate
 
 ### Phase 21: Consolidated Difficulty Retune
 
@@ -202,6 +202,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning now land in Phase 21. D
 | 17. Fixture Inventory & Foe-Turn Refactors | v1.1 | 3/3 | Complete    | 2026-09-13 |
 | 18. Bestiary Rebalance & Canon Combat Fixes | v1.1 | 6/6 | Complete    | 2026-09-13 |
 | 19. Foe Abilities, Spellcasting & Symmetric INT Resistance | v1.1 | 4/4 | In Progress|  |
-| 20. Parley Balance & Language System | v1.1 | 2/3 | In Progress|  |
+| 20. Parley Balance & Language System | v1.1 | 3/3 | In Progress|  |
 | 21. Consolidated Difficulty Retune | v1.1 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1 | - |
