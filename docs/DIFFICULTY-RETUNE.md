@@ -1158,6 +1158,7 @@ round's own judgment carries the most weight here.
 **Overall verdict:** (to be filled by the tester) — pass / tune-again
 
 **Per-run notes above complete:** (to be filled by the tester)
+**Gate at hand-off:** npm test 951/951, parity 30/30, frozen files identical to 04eb229, build stamped 1.0.1 (2), APK: android/app/build/outputs/apk/debug/app-debug.apk (build succeeded, no wireless adb device reachable from this shell — install per "Getting the build on the device" above) — 2026-09-14.
 
 ### What happens next (D-16)
 
