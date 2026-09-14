@@ -593,6 +593,47 @@ document's numbers as a floor for caster sub-classes, not a true reading;
 this ledger's natural-start and depth-20 tables above are the corrected
 yardstick going forward.
 
+**Phase 23 note (2026-09-14, smoke readout — NOT the AFTER matrix).** The
+IDENT-01..04 fixes this finding pointed at have landed, at commit `0056625`:
+a Wizard now fights with the staff once no attack spell is castable (and the
+refusal names the spell it should have cast instead), every non-Summoner
+Magic User's day-one grimoire is guaranteed at least one usable-now attack
+spell (Doze/Freeze/Stun/Weaken), Summon is castable at level 1 for a
+Summoner (doubled, per canon), Phantom Host is castable at level 1 for an
+Illusionist (undoubled), and — a user-added rule riding along — a Freeze
+kill now pays experience/coin/treasure/kill-count/party-split via `killFoe`
+exactly like any other kill, instead of awarding nothing.
+
+A 120-run smoke (6 races x 20 seeds, default flags) was run for each of the
+three worst subs this finding names:
+
+```
+node tools/tune-classes.mjs --sub Wizard --seeds 20
+node tools/tune-classes.mjs --sub Summoner --seeds 20
+node tools/tune-classes.mjs --sub Illusionist --seeds 20
+```
+
+| Sub | BEFORE mean depth (143x40 matrix) | Phase 23 smoke (6 races x 20 seeds) | Stuck |
+|---|---|---|---|
+| Wizard | 2.48 | 2.44 | 0 of 120 |
+| Summoner | 2.18 | 2.78 | 0 of 120 |
+| Illusionist | 2.20 | 2.42 | 0 of 120 |
+
+**Caveat, explicit:** this is a 120-run smoke at the tool's default flags
+(`seeds=20`, `exploreBudget=50`, `maxActions=5000`), not the pinned 40-seed/
+143-cell `Bot:` line the BEFORE matrix above used — different sample size,
+different `seeds=` value, no `--workers`/`--max-actions` parity with the
+matrix run. Read it as a directional signal only (Summoner and Illusionist
+both moved up; Wizard is flat within noise, plausibly because a Wizard who
+already had an attack spell was never the failure case IDENT-01 targeted —
+the failure case was "charges left, nothing castable," which this smoke's
+aggregate mean does not isolate). The paired, rigorous AFTER matrix
+(same 143 cells, same seed count, same flags as BEFORE) is Phase 26
+(PLAY-02); the per-sub Rulings entries (including "Freeze pays out") are
+Phase 24 (PLAY-03) — a draft of that entry is in this plan's SUMMARY
+(`.planning/phases/23-casters-can-act-wizard-summoner-illusionist-guaranteed-attack-spell/23-04-SUMMARY.md`)
+for Phase 24 to paste.
+
 ## Rulings (Phase 24 — PLAY-03)
 
 Every sub-class and race good/bad ruling — what stays as-is, what gets an
