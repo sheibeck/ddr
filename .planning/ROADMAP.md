@@ -56,7 +56,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`. Phase artifacts: `.plannin
 
 **Milestone Goal:** Every class, sub-class, and race is fun to be dealt — one solid good, one solid bad, no "cannot act" states — then a class-aware mass playtest ranks who over/under-performs, and the deferred difficulty retune (TUNE-04) lands on the corrected player power. Balance is NOT the goal — fun is.
 
-- [ ] **Phase 22: Class-Aware Harness & BEFORE Matrix** - Force any class/sub-class/race through the bot with a sub-class-aware policy, print a ranked 144-combo matrix, and capture the BEFORE snapshot before any identity change lands
+- [x] **Phase 22: Class-Aware Harness & BEFORE Matrix** - Force any class/sub-class/race through the bot with a sub-class-aware policy, print a ranked 144-combo matrix, and capture the BEFORE snapshot before any identity change lands (completed 2026-09-14)
 - [ ] **Phase 23: Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)** - Fix the three "cannot act" states and guarantee every fresh Magic User a day-one attack spell
 - [ ] **Phase 24: Every Sub-class and Race: One Good, One Bad** - Every sub-class and race gets a code-verified good and bad, flavor text matches the mechanics, and an identity-contract test proves it
 - [ ] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses
@@ -206,7 +206,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 |-------|-----------|----------------|--------|-----------|
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
-| 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | In Progress|  |
+| 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 0/TBD | Not started | - |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 0/TBD | Not started | - |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 22
-current_phase_name: Class-Aware Harness & BEFORE Matrix
-status: verifying
+current_phase: 23
+current_phase_name: Wizard/Summoner/Illusionist + Guaranteed Attack Spell
+status: planning
 stopped_at: Completed 22-04-PLAN.md
-last_updated: "2026-09-14T20:42:07.179Z"
+last_updated: "2026-09-14T20:46:45.160Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 22 execution started
+last_activity_desc: Phase 22 complete, transitioned to Phase 23
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 22 (Class-Aware Harness & BEFORE Matrix) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-14 — Phase 22 execution started
+Phase: 23 — Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-14 — Phase 22 complete, transitioned to Phase 23
 
 ## Ground Truth (durable facts every session needs)
 
