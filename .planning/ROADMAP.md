@@ -123,7 +123,22 @@ Plans:
   4. A level-1 Illusionist has an illusion-school way to WIN a fight (an attack/pressure spell or Phantom Host usable at level 1), while keeping the d20 strike die until level 3 as the bad.
   5. Chargen-parity fixtures affected by the guaranteed-attack-spell change are regenerated narrowly, each with a before/after note and rationale; every fixture NOT touched stays byte-identical, and Fighter/Thief RNG-consumption order is unchanged.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 23-01-PLAN.md — Pre-change chargen rng pins (20 fixture seeds + per-sub rollGrimoire draw counts, committed BEFORE any engine edit) + `content/spell-level-overrides.js` (Summoner/Summon 1, Illusionist/Phantom Host 1) + `engine/derived.js` `spellLevelFor`/`ATTACK_SPELL_KINDS`/`castableAttackSpells`, `canCast` override-aware; canCast diff-walk test (IDENT-01 helper, IDENT-03, IDENT-04, FID-06)
+
+**Wave 2** *(blocked on Wave 1 completion; 02 and 03 run in parallel)*
+
+- [ ] 23-02-PLAN.md — `rollGrimoire` zero-draw guaranteed day-one attack top-up (Summoner exempt; `spare` pool predicate frozen so the shuffle draw count is unchanged) + >=200-forced-seed tests + FID-06 chargen `divergences` records (measured: seeds 24 gains Freeze, 15 drops Heal) asserted at both chargen parity sites (IDENT-02, IDENT-03, FID-06)
+- [ ] 23-03-PLAN.md — Wizard refuses to strike only while a castable attack spell exists and charges remain; `strikeRefused` gains `spell`; narration names it; L1 Summon (doubled/backfire kept) and L1 Phantom Host (not doubled, d20 kept) tests; Wizard/Summoner/Illusionist `SUB_NOTE` (IDENT-01, IDENT-03, IDENT-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 23-04-PLAN.md — Freeze kills route through `killFoe` (user decision: Freeze pays out) + `spellAboveLevel` via `spellLevelFor` + FID-06 magic `cast-damage` (seed 8) `divergence` record at both magic parity sites + FIXTURE-INVENTORY.md "Phase 23 caster divergences" + smoke readout note in docs/CLASS-PASS.md (IDENT-01..04, FID-06)
+
 **Engine gate reminder**: chargen changes are narrow, documented fixture regenerations only (FID-06) — the frozen prototype master is never edited, and parity for untouched fixtures stays byte-identical.
 
 ### Phase 24: Every Sub-class and Race: One Good, One Bad
