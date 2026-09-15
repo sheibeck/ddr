@@ -31,14 +31,28 @@ import {
   parley,
   pickFoeTarget,
   foeTurn,
+  applyFoeDamageToPlayer,
 } from "../../engine/combat.js";
-import { foeToHitVs, toHit, weaponDamage, killSpFor } from "../../engine/derived.js";
+import {
+  foeToHitVs,
+  toHit,
+  weaponDamage,
+  killSpFor,
+  strikeDie,
+  foeDie,
+  schoolBonus,
+  schoolGate,
+  canLearn,
+  canCast,
+  spellLevelFor,
+} from "../../engine/derived.js";
 import { canEquipArmor, canEquipWeapon, armorRefusalReason, useItem, gainWilmst } from "../../engine/items.js";
 import { meetJoiner, springTrap, openChest } from "../../engine/encounters.js";
 import { priceFor, sellPriceFor } from "../../engine/economy.js";
-import { newDay } from "../../engine/movement.js";
+import { newDay, makeCamp } from "../../engine/movement.js";
+import { castSpell, canRead } from "../../engine/magic.js";
 import { makeRng } from "../../engine/rng.js";
-import { CLASSES, RACES, ARMORS, ENC_TYPES, WEAPON_MAX } from "../../content/index.js";
+import { CLASSES, RACES, ARMORS, ENC_TYPES, WEAPON_MAX, SPELLS, STRIKE_DICE } from "../../content/index.js";
 
 /* ============================================================
  * Scaffold — local helpers, mirroring test/unit/identity-combat.test.js /
@@ -204,6 +218,216 @@ function expectEvent(events, type, fields = {}) {
  * ============================================================ */
 
 const CONTRACT = [
+  // ---------------- Magic User (content/classes.js order) ----------------
+
+  {
+    key: "Wizard",
+    kind: "sub",
+    good: {
+      name: "the most versatile school reader — full offense bonus, learns every spell",
+      run() {
+        assert.equal(schoolBonus("Wizard", "offense"), 3);
+        assert.ok(SPELLS.every((sp) => canLearn("Wizard", sp)), "a Wizard can learn every school");
+      },
+    },
+    bad: {
+      name: "refuses to melee while a castable attack spell sits unused",
+      run() {
+        const state = hero("Wizard");
+        state.c.grimoire = ["Freeze"];
+        state.c.spellsUsed = 0;
+        withCombat(state, [fixedFoe({ wp: 999, maxWP: 999 })]);
+        const events = playerStrike(state, fakeRng([]), []);
+        expectEvent(events, "strikeRefused", { reason: "wizard" });
+      },
+    },
+  },
+
+  {
+    key: "Warlock",
+    kind: "sub",
+    good: {
+      name: "a nightly potion duplicates itself",
+      run() {
+        const state = hero("Warlock");
+        state.c.potions = 1;
+        state.c.rations = 10;
+        const events = newDay(state, false, fakeRng([5, 3, 3, 3, 3, 3, 3, 3, 3]), []);
+        expectEvent(events, "potionDuplicated");
+        assert.equal(state.c.potions, 2);
+      },
+    },
+    bad: {
+      name: "props up every Walking Dead foe in the room",
+      run() {
+        const state = hero("Warlock");
+        const events = startCombat(state, false, "Walking Dead", fakeRng([1, 2, 10, 10]), []);
+        const boost = expectEvent(events, "warlockBoost");
+        assert.equal(boost.amount, state.c.level);
+
+        const control = hero("Soldier");
+        startCombat(control, false, "Walking Dead", fakeRng([1, 2, 10, 10]), []);
+        assert.equal(state.combat.foes[0].maxWP, control.combat.foes[0].maxWP + boost.amount);
+      },
+    },
+  },
+
+  {
+    key: "Sorcerer",
+    kind: "sub",
+    good: {
+      name: "a grimoire guaranteed to carry Freeze and Fireball",
+      run() {
+        const state = hero("Sorcerer");
+        assert.ok(state.c.grimoire.includes("Freeze"));
+        assert.ok(state.c.grimoire.includes("Fireball"));
+      },
+    },
+    bad: {
+      name: "a Sorcerer's own arm caps at 9 damage",
+      run() {
+        const state = withWeapon(hero("Sorcerer"), "Claymore", 0, 0);
+        state.c.level = 5;
+        const dmg = weaponDamage(state.c, fakeRng([12]));
+        assert.equal(dmg, 9);
+      },
+    },
+  },
+
+  {
+    key: "Summoner",
+    kind: "sub",
+    good: {
+      name: "summons at level one instead of level two",
+      run() {
+        const summon = SPELLS.find((sp) => sp.n === "Summon");
+        assert.equal(spellLevelFor("Summoner", summon), 1);
+        const state = hero("Summoner");
+        state.c.grimoire = ["Summon"];
+        const events = castSpell(state, SPELLS.indexOf(summon), fakeRng([5, 3]), []);
+        assert.ok(!events.some((e) => e.type === "spellAboveLevel"));
+        expectEvent(events, "allyPending");
+      },
+    },
+    bad: {
+      name: "gated out of offense at level one even when a spell is known",
+      run() {
+        assert.equal(schoolGate("Summoner", "offense"), 3);
+        const freeze = SPELLS.find((sp) => sp.n === "Freeze");
+        const state = hero("Summoner");
+        state.c.grimoire = ["Freeze"];
+        assert.equal(canCast(state, freeze), false, "level 1 < the offense gate of 3");
+      },
+    },
+  },
+
+  {
+    key: "Cleric",
+    kind: "sub",
+    good: {
+      name: "heals 3 more than anyone else, rolls 4 to hit",
+      run() {
+        const heal = SPELLS.find((sp) => sp.n === "Heal");
+        const cleric = hero("Cleric");
+        cleric.c.grimoire = ["Heal"];
+        const clericEvents = castSpell(cleric, SPELLS.indexOf(heal), fakeRng([5]), []);
+        const clericHealed = expectEvent(clericEvents, "healed");
+
+        const control = hero("Wizard");
+        control.c.grimoire = ["Heal"];
+        const controlEvents = castSpell(control, SPELLS.indexOf(heal), fakeRng([5]), []);
+        const controlHealed = expectEvent(controlEvents, "healed");
+
+        assert.equal(clericHealed.amount, controlHealed.amount + 3);
+        assert.equal(toHit(cleric), 4);
+      },
+    },
+    bad: {
+      name: "no offensive bonus at all — the audit's soft bad",
+      run() {
+        assert.equal(schoolBonus("Cleric", "offense"), 0);
+      },
+    },
+  },
+
+  {
+    key: "Illusionist",
+    kind: "sub",
+    good: {
+      name: "a Phantom Host summonable at level one instead of level three",
+      run() {
+        const phantomHost = SPELLS.find((sp) => sp.n === "Phantom Host");
+        assert.equal(spellLevelFor("Illusionist", phantomHost), 1);
+      },
+    },
+    bad: {
+      name: "strikes on a d20 until level three",
+      run() {
+        const state = hero("Illusionist");
+        assert.equal(strikeDie(state.c), STRIKE_DICE[0]);
+        state.c.level = 3;
+        assert.equal(strikeDie(state.c), STRIKE_DICE[2]);
+      },
+    },
+  },
+
+  {
+    key: "Court Mage",
+    kind: "sub",
+    good: {
+      name: "boredom kills 1-in-6 (d12 <= 2); always parleys Humans",
+      run() {
+        const fires = hero("Court Mage");
+        const eventsFires = startCombat(fires, false, "Beasts", looseRng([1, 2, 20, 1, 2]), []);
+        expectEvent(eventsFires, "foeBored");
+
+        const noFire = hero("Court Mage");
+        const eventsNoFire = startCombat(noFire, false, "Beasts", looseRng([1, 2, 20, 1, 3]), []);
+        assert.ok(!eventsNoFire.some((e) => e.type === "foeBored"), "d12 === 3 never fires");
+
+        const parleyState = hero("Court Mage");
+        withCombat(parleyState, [fixedFoe({ type: "Humans" })], { type: "Humans" });
+        assert.equal(canParley(parleyState), true);
+      },
+    },
+    bad: {
+      name: "you talk first — foes act first in round one only",
+      run() {
+        const state = hero("Court Mage");
+        withCombat(state, [fixedFoe()], { round: 1 });
+        assert.equal(rollInitiative(state, fakeRng([20, 1])), "foe");
+
+        const round2 = hero("Court Mage");
+        withCombat(round2, [fixedFoe()], { round: 2 });
+        assert.equal(rollInitiative(round2, fakeRng([20, 1])), "you", "round 2+ rolls normally");
+      },
+    },
+  },
+
+  {
+    key: "Apprentice",
+    kind: "sub",
+    good: {
+      name: "double skill points off a kill at level one",
+      run() {
+        const foe = fixedFoe({ lvl: 2 });
+        const apprentice = hero("Apprentice").c;
+        const control = hero("Wizard").c;
+        assert.equal(killSpFor(apprentice, foe, 4), killSpFor(control, foe, 4) * 2);
+      },
+    },
+    bad: {
+      name: "one spell in eight backfires",
+      run() {
+        const heal = SPELLS.find((sp) => sp.n === "Heal");
+        const state = hero("Apprentice");
+        state.c.grimoire = ["Heal"];
+        const events = castSpell(state, SPELLS.indexOf(heal), fakeRng([1]), []);
+        expectEvent(events, "spellBackfired", { spell: "Heal" });
+      },
+    },
+  },
+
   // ---------------- Fighter (content/classes.js order) ----------------
 
   {
@@ -696,6 +920,230 @@ const CONTRACT = [
         const acrobat = { race: "Human", cls: "Thief", sub: "Acrobat" };
         assert.equal(canEquipWeapon(acrobat, { base: "Long Sword" }), false);
         assert.equal(canEquipWeapon(acrobat, { base: "Dagger" }), true);
+      },
+    },
+  },
+
+  // ---------------- Races (content/races.js / Object.keys(RACES) order) --
+
+  {
+    key: "Human",
+    kind: "race",
+    neutral: {
+      name: "the neutral control — no race modifier anywhere",
+      run() {
+        assert.deepEqual(Object.keys(RACES.Human), ["size", "upkeep", "note"]);
+
+        const state = hero("Soldier", "Human");
+        assert.equal(foeToHitVs(state), 5);
+        assert.equal(priceFor(100, "Human"), 100);
+        assert.equal(sellPriceFor({ kind: "picks", n: "Lockpicks" }, "Human"), 225, "half of the 450 base, no race adjustment");
+
+        assert.equal(strikeDie(state.c), STRIKE_DICE[0]);
+        assert.equal(foeDie(state.c, fixedFoe({ lvl: 1 })), Math.max(8, STRIKE_DICE[0]));
+
+        const youFirst = hero("Soldier", "Human");
+        withCombat(youFirst, [fixedFoe()]);
+        assert.equal(rollInitiative(youFirst, fakeRng([20, 1])), "you");
+        const foeFirst = hero("Soldier", "Human");
+        withCombat(foeFirst, [fixedFoe()]);
+        assert.equal(rollInitiative(foeFirst, fakeRng([1, 20])), "foe");
+
+        const armorState = { race: "Human", cls: "Fighter", sub: "Soldier", skills: {} };
+        const MAIL = ARMORS.find((a) => a.name === "Mail");
+        assert.equal(canEquipArmor(armorState, MAIL), true);
+
+        const joinerState = hero("Soldier", "Human");
+        const joinerEvents = meetJoiner(joinerState, makeRng(1), []);
+        assert.equal(joinerState.c.joiner.cls, "Magic User", "the pinned seed rolls a Magic User joiner");
+        assert.ok(joinerState.pendingJoiner, "a Human recruits the same joiner a Wilmsry would refuse");
+        assert.ok(!joinerEvents.some((e) => e.type === "joinerRefused"));
+
+        const dmgState = hero("Soldier", "Human");
+        dmgState.c.ar = 0;
+        dmgState.c.armorWP = 0;
+        const events = [];
+        applyFoeDamageToPlayer(dmgState, fixedFoe(), fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+        assert.equal(dmgState.c.wp, dmgState.c.maxWP - 5, "no hide, no Hardiness — full damage");
+
+        const wornState = hero("Soldier", "Human");
+        wornState.c.armor = "Leather";
+        wornState.c.ar = 6;
+        wornState.c.armorMin = 1;
+        wornState.c.armorWP = 15;
+        wornState.c.armorMax = 15;
+        applyFoeDamageToPlayer(wornState, fixedFoe(), fakeRng([1]), [], { dmg: 5, roll: 3, need: 5 });
+        assert.equal(wornState.c.armorWP, 10, "a soaked blow costs the full dmg — no Dwarven halving");
+      },
+    },
+  },
+
+  {
+    key: "Elven",
+    kind: "race",
+    good: {
+      name: "strikes a die better and hits at 5 whatever the class",
+      run() {
+        const elven = hero("Soldier", "Elven");
+        const control = hero("Soldier", "Human");
+        assert.equal(strikeDie(elven.c), STRIKE_DICE[1]);
+        assert.equal(strikeDie(control.c), STRIKE_DICE[0]);
+        assert.equal(toHit(elven), 5);
+      },
+    },
+    bad: {
+      name: "0.6x wp and easier to hit",
+      run() {
+        const elven = hero("Soldier", "Elven", 7);
+        const control = hero("Soldier", "Human", 7);
+        assert.equal(elven.c.maxWP, Math.round(control.c.maxWP * 0.6));
+        assert.equal(foeToHitVs(elven), 4);
+      },
+    },
+  },
+
+  {
+    key: "Dwarven",
+    kind: "race",
+    good: {
+      name: "+2 damage; armour built to be hit wears at half the rate",
+      run() {
+        const dwarven = withWeapon(hero("Soldier", "Dwarven"), "Club", 0, 0);
+        const control = withWeapon(hero("Soldier", "Human"), "Club", 0, 0);
+        assert.equal(weaponDamage(dwarven.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 2);
+
+        const state = hero("Soldier", "Dwarven");
+        state.c.armor = "Leather";
+        state.c.ar = 6;
+        state.c.armorMin = 1;
+        state.c.armorWP = 15;
+        state.c.armorMax = 15;
+        applyFoeDamageToPlayer(state, fixedFoe(), fakeRng([1]), [], { dmg: 5, roll: 3, need: 5 });
+        assert.equal(state.c.armorWP, 12, "15 - ceil(5*0.5)=3 = 12");
+
+        const oneOver = hero("Soldier", "Dwarven");
+        oneOver.c.armor = "Leather";
+        oneOver.c.ar = 6;
+        oneOver.c.armorMin = 1;
+        oneOver.c.armorWP = 15;
+        oneOver.c.armorMax = 15;
+        applyFoeDamageToPlayer(oneOver, fixedFoe(), fakeRng([1]), [], { dmg: 4, roll: 3, need: 5 });
+        assert.equal(oneOver.c.armorWP, 13, "15 - ceil(4*0.5)=2 = 13");
+      },
+    },
+    bad: {
+      name: "foes strike at a better die",
+      run() {
+        const dwarven = hero("Soldier", "Dwarven");
+        const control = hero("Soldier", "Human");
+        assert.equal(foeDie(dwarven.c, fixedFoe({ lvl: 1 })), Math.max(8, STRIKE_DICE[1]));
+        assert.equal(foeDie(control.c, fixedFoe({ lvl: 1 })), Math.max(8, STRIKE_DICE[0]));
+      },
+    },
+  },
+
+  {
+    key: "Wilmsry",
+    kind: "race",
+    good: {
+      name: "camp heals twice as fast; parleys Beasts at fluency 0",
+      run() {
+        const wilmsry = hero("Knight", "Wilmsry");
+        wilmsry.c.wp = wilmsry.c.maxWP - 50;
+        wilmsry.c.rations = 10;
+        const control = hero("Knight", "Human");
+        control.c.wp = control.c.maxWP - 50;
+        control.c.rations = 10;
+        const seq = () => fakeRng([5, 3, 3, 3, 3, 3, 3, 3, 3]);
+        const wilmsryEvents = newDay(wilmsry, false, seq(), []);
+        const controlEvents = newDay(control, false, seq(), []);
+        assert.equal(
+          findEvent(wilmsryEvents, "rested").amount,
+          findEvent(controlEvents, "rested").amount * 2,
+        );
+
+        const parleyState = hero("Soldier", "Wilmsry");
+        withCombat(parleyState, [fixedFoe({ type: "Beasts" })], { type: "Beasts" });
+        assert.equal(canParley(parleyState), true);
+      },
+    },
+    bad: {
+      name: "half skill points; Magic User Joiners refuse to travel with you",
+      run() {
+        const foe = fixedFoe({ lvl: 2 });
+        const wilmsry = hero("Soldier", "Wilmsry").c;
+        const control = hero("Soldier", "Human").c;
+        assert.equal(killSpFor(wilmsry, foe, 4), killSpFor(control, foe, 4) / 2);
+
+        const state = hero("Soldier", "Wilmsry");
+        const events = meetJoiner(state, makeRng(1), []);
+        assert.equal(state.c.joiner.cls, "Magic User", "pinned seed rolls a Magic User joiner");
+        expectEvent(events, "joinerRefused", { reason: "wilmsry" });
+        assert.equal(state.pendingJoiner, null);
+      },
+    },
+  },
+
+  {
+    key: "Fridgian",
+    kind: "race",
+    good: {
+      name: "frenzy never wastes its second swing; thick hide soaks 2 from every blow",
+      run() {
+        const state = hero("Soldier", "Fridgian");
+        withCombat(
+          state,
+          [fixedFoe({ name: "Corpse", wp: 0, alive: false }), fixedFoe({ name: "Target", wp: 999, maxWP: 999 })],
+          { target: 1 },
+        );
+        const seq = [5, 20, 20, 20, 15, 10, 20];
+        const rng = countingRng(fakeRng(seq));
+        const events = playerStrike(state, rng, []);
+        expectEvent(events, "frenzy");
+        assert.equal(rng.draws, seq.length, "no corpse-whiff draw — every scripted draw is consumed, none skipped");
+
+        const hideState = hero("Soldier", "Fridgian");
+        hideState.c.skills = { Hardiness: 1 };
+        applyFoeDamageToPlayer(hideState, fixedFoe(), fakeRng([]), [], { dmg: 7, roll: 3, need: 5 });
+        assert.equal(hideState.c.wp, hideState.c.maxWP - 2, "max(1, max(1, 7-3) - 2) = 2");
+      },
+    },
+    bad: {
+      name: "never wears armor, always strikes last",
+      run() {
+        const armorless = { race: "Fridgian", cls: "Fighter", sub: "Soldier", skills: {} };
+        const LEATHER = ARMORS.find((a) => a.name === "Leather");
+        assert.equal(armorRefusalReason(armorless, LEATHER), "noArmor");
+        assert.equal(canEquipArmor(armorless, LEATHER), false);
+
+        const state = hero("Soldier", "Fridgian");
+        withCombat(state, [fixedFoe()]);
+        assert.equal(rollInitiative(state, fakeRng([20, 1])), "foe");
+      },
+    },
+  },
+
+  {
+    key: "Troll",
+    kind: "race",
+    good: {
+      name: "75 wp regardless of class; +9 damage",
+      run() {
+        const troll = withWeapon(hero("Soldier", "Troll"), "Club", 0, 0);
+        assert.equal(troll.c.maxWP, 75);
+        const control = withWeapon(hero("Soldier", "Human"), "Club", 0, 0);
+        assert.equal(weaponDamage(troll.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 9);
+      },
+    },
+    bad: {
+      name: "prices triple, eats two rations a night",
+      run() {
+        assert.equal(priceFor(100, "Troll"), 300);
+        assert.equal(RACES.Troll.eats, 2);
+        const state = hero("Soldier", "Troll");
+        state.c.rations = 1;
+        const events = makeCamp(state, fakeRng([]), []);
+        expectEvent(events, "campFailed", { reason: "noRations" });
       },
     },
   },
