@@ -547,3 +547,10 @@ export const EVENT_NARRATION = {
         ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
         : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
 };
+
+// Phase 25: the toast table lives beside this table in ./toasts.js and is
+// re-exported here per the phase decision (25-CONTEXT.md's "Mapping lives in
+// a pure, testable toast table beside the narration table"); toasts.js never
+// imports this module, so this stays a one-directional re-export with no
+// import cycle.
+export { TOAST_FOR, ORACLE_ONLY, FEATURE_EVENTS, toastsForAction } from "./toasts.js";

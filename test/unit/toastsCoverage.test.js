@@ -218,3 +218,38 @@ test("toastsForAction is exported from toasts.js and behaves as a pure function 
   assert.deepStrictEqual(toastsForAction("attack", [], {}), []);
   assert.deepStrictEqual(toastsForAction("attack", null, {}), []);
 });
+
+// ─── purity tripwire (T-25-23) ──────────────────────────────────────────────
+
+const PURE_MODULE_FILES = ["src/browser/toasts.js", "src/browser/missLines.js"];
+const IMPURITY_PATTERNS = [/Math\.random/, /Date\.now/, /\bdocument\./, /\bwindow\./, /\bglobalThis\./, /\blocalStorage\b/, /from\s+["'][^"']*engine\//];
+
+test("presentation toast modules are pure (no Math.random/Date.now/DOM/engine import)", () => {
+  const offenses = [];
+  for (const rel of PURE_MODULE_FILES) {
+    const full = path.join(REPO_ROOT, rel);
+    const lines = stripComments(fs.readFileSync(full, "utf8")).split("\n");
+    lines.forEach((line, i) => {
+      for (const pattern of IMPURITY_PATTERNS) {
+        if (pattern.test(line)) {
+          offenses.push(`${rel}:${i + 1}: ${line.trim()}`);
+          break;
+        }
+      }
+    });
+  }
+  assert.deepStrictEqual(offenses, [], `Found impurity in a presentation module:\n${offenses.join("\n")}`);
+});
+
+test("the narration table re-exports the toast surface without a cycle", async () => {
+  const mod = await import("../../src/browser/eventNarration.js");
+  const direct = await import("../../src/browser/toasts.js");
+
+  assert.strictEqual(mod.TOAST_FOR, direct.TOAST_FOR, "eventNarration.js must re-export the SAME TOAST_FOR object, not a copy");
+  assert.strictEqual(mod.ORACLE_ONLY, direct.ORACLE_ONLY, "eventNarration.js must re-export the SAME ORACLE_ONLY object, not a copy");
+  assert.strictEqual(mod.FEATURE_EVENTS, direct.FEATURE_EVENTS, "eventNarration.js must re-export the SAME FEATURE_EVENTS array, not a copy");
+  assert.strictEqual(typeof mod.toastsForAction, "function");
+
+  const toastsSource = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "toasts.js"), "utf8");
+  assert.ok(!stripComments(toastsSource).includes('from "./eventNarration.js"'), "toasts.js must never import eventNarration.js (would create an import cycle)");
+});
