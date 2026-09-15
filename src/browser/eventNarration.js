@@ -128,7 +128,13 @@ export const EVENT_NARRATION = {
       : `They keep their lead, for now. <span class="roll">Tracking roll ${e.roll ?? "?"} — no luck.</span>`,
   encounterStarted: (e) => {
     const names = (e.foes ?? []).map((f) => f.name).join(", ") || "something";
-    return `<span class="banner">${e.wandering ? "A wandering encounter." : "An encounter."}</span> ${names}.`;
+    let line = `<span class="banner">${e.wandering ? "A wandering encounter." : "An encounter."}</span> ${names}.`;
+    // Phase 24 (IDENT-05): the two new never-first flags get their own
+    // clause, appended after the existing banner/names text (unchanged when
+    // neither flag is set).
+    if (e.knightBigFoe) line += ` Something with real heft has noticed the Knight. It moves first.`;
+    if (e.courtMageTalksFirst) line += ` You open with a few words. They open with everything else.`;
+    return line;
   },
   trackable: () => `<span class="beat">They have not noticed you yet.</span>`,
   allyJoined: (e) => `<span class="hit">${e.name ?? "An ally"} falls in beside you.</span>`,
@@ -175,6 +181,12 @@ export const EVENT_NARRATION = {
       ? `You cook what is left. <span class="hit">+${e.wp} hp, +${e.rations ?? 1} ration.</span>`
       : `You salvage a ration off the carcass. <span class="hit">+${e.rations ?? 1} ration.</span>`,
   fleeRefused: () => `<span class="miss">A Samurai does not run.</span>`,
+  // Phase 24 (IDENT-05): a Master of Arms' tracked round-1 withdrawal is
+  // denied — they fall through to the ordinary flee roll below instead.
+  withdrawalDenied: () => `<span class="miss">Slipping away untouched would mean not attacking. You attack. Roll like everyone else.</span>`,
+  // Phase 24 (IDENT-07): a Cloaker who has already landed a blow this fight
+  // loses the free vanish and falls through to the ordinary Thief roll.
+  vanishDenied: () => `<span class="miss">You can always vanish — as long as nobody has seen your face. They have now seen your face.</span>`,
   fled: (e) =>
     e.reason === "cloaker"
       ? `<span class="hit">You vanish. Clean escape.</span>`
@@ -186,10 +198,17 @@ export const EVENT_NARRATION = {
   // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a
   // fluency-2 Wilmsry facing Magical) and gets the canon grudge line; every
   // other refusal keeps the prior text.
+  // Phase 24 (IDENT-05): a Ninja and a Master of Arms carry their own direct-
+  // refusal lines; every other reason (including the generic fallback) is
+  // byte-identical to before.
   parleyRefused: (e) =>
     e.reason === "wilmsryVsMagical"
       ? `<span class="miss">Magic Users hate the Wilmsry. There is nothing to discuss.</span>`
-      : `<span class="miss">Not this time, not with them.</span>`,
+      : e.reason === "ninja"
+        ? `<span class="miss">A Ninja does not speak. Least of all to them.</span>`
+        : e.reason === "masterOfArms"
+          ? `<span class="miss">A Master of Arms has one answer to a question like that, and it is not a sentence.</span>`
+          : `<span class="miss">Not this time, not with them.</span>`,
   // Phase 20 (D-14): appends the fluency bonus (2 per point) whenever it is
   // non-zero, e.g. "need 15 (+2 <the literal below>)".
   parleyRolled: (e) =>
