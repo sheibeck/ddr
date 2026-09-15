@@ -34,6 +34,7 @@ intent artifact).
 | action-script.movement.json | (script) | 256 | none | — | — |
 | action-script.combat.json | win | 3 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
+| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | parley | 303 | startCombat | Humans | Dante (Humans lvl 1, wp 20); Dante (Humans lvl 1, wp 20) |
 | action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |

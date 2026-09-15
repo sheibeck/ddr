@@ -30,7 +30,7 @@ const DOC_PATH = path.resolve(__dirname, "FIXTURE-INVENTORY.md");
 // Enumerate ONCE at module top and share the rows across every test below.
 const rows = enumerateFixtureRoster();
 
-test("FID-01: the five fixture fights roll exactly the pinned creatures, in order", () => {
+test("FID-01: the six fixture fights roll exactly the pinned creatures, in order", () => {
   const fightRows = rows
     .filter((r) => r.foes.length)
     .map(({ fixture, scenario, seed, forced, foes }) => ({ fixture, scenario, seed, forced, foes }));
@@ -47,6 +47,20 @@ test("FID-01: the five fixture fights roll exactly the pinned creatures, in orde
       fixture: "action-script.combat.json",
       scenario: "lose",
       seed: 14,
+      forced: "Beasts",
+      foes: [
+        { name: "Bat/Rat", type: "Beasts", lvl: 1, wp: 1 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
+      ],
+    },
+    // Phase 24 (2026-09-14, race pass, FID-07): added alongside `lose`'s
+    // declared action-path divergence (the removed Fridgian corpse-whiff
+    // draw + hide -2 mean the engine no longer dies at seed 14) — this row
+    // (a plain Human, seed 127) restores byte-identical death-path coverage.
+    {
+      fixture: "action-script.combat.json",
+      scenario: "lose-apprentice",
+      seed: 127,
       forced: "Beasts",
       foes: [
         { name: "Bat/Rat", type: "Beasts", lvl: 1, wp: 1 },
@@ -84,7 +98,7 @@ test("FID-01: the five fixture fights roll exactly the pinned creatures, in orde
 
   // trigger is asserted separately: every fight row starts via startCombat.
   const fightTriggers = rows.filter((r) => r.foes.length).map((r) => r.trigger);
-  assert.deepStrictEqual(fightTriggers, Array(5).fill("startCombat"));
+  assert.deepStrictEqual(fightTriggers, Array(6).fill("startCombat"));
 });
 
 test("FID-01: the parity-exposed surface is exactly 2 types x 4 names, all level 1", () => {

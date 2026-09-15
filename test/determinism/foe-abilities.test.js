@@ -195,12 +195,25 @@ function runVisits(spec, visits) {
 
 // --- Pinned constants (measured, see PROVENANCE above) ----------------------
 
+// Phase 24 (2026-09-14, race pass, IDENT-08 collateral): seed 1's hero is a
+// Fridgian Knight (test/parity/FIXTURE-INVENTORY.md/CONTEXT.md both note this
+// seed as "a Fridgian Knight (1)"). Three of these five full-fight totals
+// (humans-t2, demons-t5, beasts-t5) changed because the frenzy corpse-whiff
+// draw was DELIBERATELY removed (engine/combat.js playerStrike) — each of
+// these fights kills one of its two same-named foes mid-fight, leaving a
+// corpse the OLD code could roll a whiff against on a later frenzy; that
+// draw (and the round it could waste) no longer happens, so each fight now
+// also resolves one attack sooner. magical-t4 and walking-dead-t5 are
+// unaffected (unchanged) and re-measured to confirm. Every number below was
+// re-measured live against the patched engine via this file's own
+// runFullFight helper, never hand-computed — same "pins are measured, not
+// adjusted" rule as test/unit/foe-turn-draw-count.test.js.
 const FULL_FIGHT_PINS = {
-  "humans-t2": { foeNames: ["Krupke", "Krupke"], totalDraws: 76, attacks: 6, outcome: "won" },
+  "humans-t2": { foeNames: ["Krupke", "Krupke"], totalDraws: 59, attacks: 4, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 46, attacks: 4, outcome: "won" },
-  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 63, attacks: 5, outcome: "won" },
+  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 55, attacks: 4, outcome: "won" },
   "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 36, attacks: 2, outcome: "died" },
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 71, attacks: 5, outcome: "died" },
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 64, attacks: 4, outcome: "died" },
 };
 
 const PER_VISIT_PINS = {
