@@ -23,6 +23,7 @@ import { springTrap, openChest, encounterDot } from "../../../engine/encounters.
 import { descend } from "../../../engine/movement.js";
 import { takeItem } from "../../../engine/items.js";
 import { applyAction } from "../../../engine/engine.js";
+import { diffState } from "./diffState.js";
 
 /** reconcilePendingFind(rest, pendingFind) — ECON-03/04/05 (Phase 13) carve-out
  * for the ONE deliberate divergence this phase introduces. The find callers
@@ -394,6 +395,162 @@ export function stripScenarioDivergence(state, divergence) {
   const rest = { ...state };
   if (rest.c) rest.c = stripDeclaredFields(rest.c, divergence.fields);
   return rest;
+}
+
+/**
+ * actionPathDivergenceOf(holder) — FID-07 (Phase 24, plan 24-02): looks up an
+ * "action-path" divergence record on any holder object (a combat scenario, or
+ * a script fixture's top level for economy). Unlike Phase 23's field-strip
+ * records (`chargenDivergenceFor`/`stripScenarioDivergence` above), an
+ * action-path record declares a divergence whose CONSEQUENCE is a changed
+ * action path — a flipped combat outcome (Fridgian frenzy no longer whiffing
+ * on a corpse), an unaffordable purchase (Pickpocket markup pricing a hero out
+ * of a line item) — which cannot be expressed as "these end-of-scenario fields
+ * differ" alone, because the per-action byte diff itself would fail partway
+ * through the scenario, before the end is ever reached.
+ *
+ * Returns `holder.divergence` only when its `kind` is exactly `"action-path"`;
+ * returns `null` for a missing/falsy `divergence`, and — critically — for a
+ * Phase 23-shaped record that has no `kind` field at all (e.g. the magic
+ * fixture's `cast-damage` scenario), so `stripScenarioDivergence`'s existing
+ * per-action comparison keeps working unmodified for that record. The two
+ * record kinds are mutually exclusive on any one holder: a holder either
+ * declares "these fields differ at the end" (Phase 23) or "the action path
+ * itself diverges from this index on, and these fields differ at the end"
+ * (Phase 24), never a hybrid.
+ */
+export function actionPathDivergenceOf(holder) {
+  return holder?.divergence?.kind === "action-path" ? holder.divergence : null;
+}
+
+/**
+ * skipsByteDiffAt(divergence, actionIndex) — true when the per-action byte
+ * diff for `actionIndex` should be SKIPPED because an action-path divergence
+ * record (see `actionPathDivergenceOf` above) declares the action path itself
+ * diverges from `divergence.fromAction` onward (inclusive). `false` for every
+ * index before `fromAction`, and `false` whenever no record is present (or
+ * `fromAction` is not a plain integer) — a caller can therefore always write
+ * `if (!skipsByteDiffAt(pathDiv, i)) { assert the byte diff }` unconditionally,
+ * with zero behavior change when `pathDiv` is null (the no-op case this plan
+ * must prove for every fixture today).
+ */
+export function skipsByteDiffAt(divergence, actionIndex) {
+  return !!divergence && Number.isInteger(divergence.fromAction) && actionIndex >= divergence.fromAction;
+}
+
+/**
+ * pickFields(obj, keys) — internal helper for declaredEndDiffs: a shallow
+ * `{ key: obj?.[key] }` snapshot for each name in `keys`. A no-op-shaped
+ * `{}` when `keys` is empty/undefined.
+ */
+function pickFields(obj, keys) {
+  const out = {};
+  for (const key of keys ?? []) out[key] = obj?.[key];
+  return out;
+}
+
+/**
+ * declaredEndDiffs(protoState, engineState, divergence) — FID-07 (Phase 24,
+ * plan 24-02): the end-of-scenario half of an action-path record's contract.
+ * An action-path record skips the PER-ACTION byte diff from `fromAction`
+ * onward (see `skipsByteDiffAt`), so it must instead prove — machine-checked,
+ * not merely stripped — that both sides ended up exactly where the record
+ * says they would: the prototype's declared `fields` (read from `state.c`,
+ * optionally merged with `stateFields` read from the top-level state, e.g.
+ * `dead`) must equal the record's `before`/`stateBefore`, and the engine's
+ * must equal `after`/`stateAfter`.
+ *
+ * Returns `{ before, after }`, where each is the result of `diffState` (never
+ * a bare `assert.deepStrictEqual` — see 23-02's cross-realm lesson: the
+ * prototype's `c` fields can live in a `node:vm` sandbox realm) comparing the
+ * MEASURED snapshot against the DECLARED one; a caller asserts both are
+ * `null`. A record with an empty (or missing) `fields` array is malformed —
+ * it declares nothing to check — and throws a clear `Error` rather than
+ * silently passing.
+ */
+export function declaredEndDiffs(protoState, engineState, divergence) {
+  const fields = divergence?.fields;
+  if (!fields || fields.length === 0) {
+    throw new Error("declaredEndDiffs: an action-path divergence record must declare a non-empty `fields` array");
+  }
+  const stateFields = divergence.stateFields ?? [];
+
+  const measuredBefore = { ...pickFields(protoState?.c, fields), ...pickFields(protoState, stateFields) };
+  const measuredAfter = { ...pickFields(engineState?.c, fields), ...pickFields(engineState, stateFields) };
+  const declaredBefore = { ...divergence.before, ...divergence.stateBefore };
+  const declaredAfter = { ...divergence.after, ...divergence.stateAfter };
+
+  return {
+    before: diffState(measuredBefore, declaredBefore),
+    after: diffState(measuredAfter, declaredAfter),
+  };
+}
+
+/**
+ * PRICEFOR_ROUTED_EFFECTS — FID-07 (Phase 24, plan 24-02): the `openStore`
+ * (engine/economy.js) stock lines whose cost is computed via `priceFor(base,
+ * race)` — the same race-price hook a sub-class markup (e.g. the Pickpocket
+ * bad, 24-04) would also apply to. Food (`eatRation`), potions
+ * (`givePotion`), lockpicks (`giveLockpicks`), and a Magic User's scroll
+ * (`buyScroll`) are all flat-priced for every race (never passed through
+ * `priceFor`), so they are deliberately excluded from this list — a sub-class
+ * price markup must never apply to them.
+ */
+export const PRICEFOR_ROUTED_EFFECTS = ["buyWeapon", "buyArmor", "buyPremium", "buyRations", "repairArmor"];
+
+/**
+ * stockMarkupDiff(protoStore, engineStore, mul) — FID-07 (Phase 24, plan
+ * 24-02): proves an engine store's stock is the prototype's IDENTICAL roll
+ * (same names, same order, same subs) with EVERY `PRICEFOR_ROUTED_EFFECTS`
+ * line's cost multiplied by `mul` and every other line's cost unchanged.
+ * Reuses `stripStoreClosures` on both sides (same buyRations-drop / wp-hp
+ * normalization / n-sub-cost-sold reduction economy-parity.test.js's own
+ * comparable already relies on), so a markup fixture's store-roll identity is
+ * checked with the exact same rigor as an unmarked-up one. The "is this line
+ * routed?" flag is read from the RAW engine stock (filtered the same
+ * buyRations-drop way `stripStoreClosures` applies) since only the engine
+ * side carries an `effectId` at all.
+ *
+ * Returns `null` when the two stripped stocks have the same length and,
+ * for every index `i`: `n`/`sub`/`sold` are equal, and `cost` satisfies —
+ * a routed line: `engine.cost === Math.max(1, Math.round(proto.cost * mul))`;
+ * any other line: `engine.cost === proto.cost`. Otherwise returns a
+ * human-readable string naming the first mismatching index, e.g.
+ * `"stock[8].cost: expected 656 (525 x 1.25), got 525"`.
+ *
+ * Assumes the prototype's cost is an integer at every routed index — true for
+ * every non-Elven/Dwarven hero (the only race case a markup record may
+ * declare; Elven/Dwarven's own `priceFor` halving already produces a
+ * `Math.round`-ed integer on the prototype side too, so this holds generally,
+ * but a markup declaration should stick to non-Elven/Dwarven seeds per the
+ * plan's note).
+ */
+export function stockMarkupDiff(protoStore, engineStore, mul) {
+  const protoStock = stripStoreClosures(protoStore)?.stock ?? [];
+  const engineStock = stripStoreClosures(engineStore)?.stock ?? [];
+  const engineRouted = (engineStore?.stock ?? [])
+    .filter((s) => s.effectId !== "buyRations")
+    .map((s) => PRICEFOR_ROUTED_EFFECTS.includes(s.effectId));
+
+  if (protoStock.length !== engineStock.length) {
+    return `stock.length: expected ${protoStock.length}, got ${engineStock.length}`;
+  }
+
+  for (let i = 0; i < protoStock.length; i++) {
+    const p = protoStock[i];
+    const e = engineStock[i];
+    if (p.n !== e.n) return `stock[${i}].n: expected ${JSON.stringify(p.n)}, got ${JSON.stringify(e.n)}`;
+    if (p.sub !== e.sub) return `stock[${i}].sub: expected ${JSON.stringify(p.sub)}, got ${JSON.stringify(e.sub)}`;
+    if (p.sold !== e.sold) return `stock[${i}].sold: expected ${p.sold}, got ${e.sold}`;
+    const routed = !!engineRouted[i];
+    const expectedCost = routed ? Math.max(1, Math.round(p.cost * mul)) : p.cost;
+    if (e.cost !== expectedCost) {
+      return routed
+        ? `stock[${i}].cost: expected ${expectedCost} (${p.cost} x ${mul}), got ${e.cost}`
+        : `stock[${i}].cost: expected ${expectedCost}, got ${e.cost}`;
+    }
+  }
+  return null;
 }
 
 /**
