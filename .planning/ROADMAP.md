@@ -192,8 +192,24 @@ Plans:
   4. A multi-attack foe's round aggregates into one toast — "X hits you 2 of 4 times (N)" — instead of one toast per swing; early-combat misses draw from a varied, voice-safe corpus instead of repeating "Miss".
   5. Every spell, scroll, and item effect in EITHER direction (yours on them, theirs on you) is legible as an event + toast, including resisted/failed/nothing-to-target outcomes.
 
-**Plans**: TBD
-**Engine gate reminder**: every new event type gets an `EVENT_NARRATION` entry and the voice safety scan stays green; this is presentation/narration work — it must not introduce new engine RNG draws.
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 25-01-PLAN.md — Engine ADDITIVE payload + Oracle clauses: foeToHitBreakdown → needMods on every foe swing event, struckByFoe/foeBolted `soaked` (Hardiness/hide/ward), soldierCrit, armorSoaked wear + Dwarven halving, struck need + critBy, rested/potionDrunk `doubled`, armorPatched `by`, new `scrollRefused` (pilfer/noRunes/noScrolls), weaponRefusalReason "acrobat"; zero draws, parity byte-identical (FEED-01/02/06) — wave 1
+- [ ] 25-02-PLAN.md — Pure presentation modules: src/browser/missLines.js (>= 12 quips <= 40 chars, integer rotation, decorateMisses level <= 2, wired into engineAdapter.dispatch) + src/browser/toasts.js (TONES hit/miss/hurt/dodge/magic/block/beat, PRIORITY, ORACLE_ONLY, FEATURE_EVENTS, TOAST_FOR for every toasting event type with locked combat/refusal wordings); voice scan extended (FEED-01/02/03/05/06) — wave 1
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 25-03-PLAN.md — toastsForAction pipeline: per-foe enemy-round aggregation ("X hits you K of M (N)", 3+ foes collapse, member hits low priority), your-round mirror (+ first quip), spell/flee/parley/chest chains, one combined encounter-start toast, kill fold, dedupe per type, refusals → you → them → features → other, cap 4; >= 40 pipeline tests incl. every probe truth (FEED-01/02/03/04/06) — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 25-04-PLAN.md — Shell wiring in mazeworld.html: explicit CSS for all seven tones (miss → muted moss; dodge/block/beat new), host cap 4, `dispatchWithToasts(action)` at every dispatch call site, old switch + spell-name helper + DR18 equip toast removed, full-health guards → block; source-assertion wiring test; NON-BLOCKING Pixel 7 checklist in the SUMMARY (FEED-01..06) — wave 3
+- [ ] 25-05-PLAN.md — Standing guards: toastsCoverage.test.js (TOAST_FOR ⊎ ORACLE_ONLY = every engine event type, no dead entries; FEATURE_EVENTS ⊆ TOAST_FOR ∩ EVENT_NARRATION and ⊇ identity-contract names derived from source; purity scan of the two modules) + eventNarration.js re-export of the toast surface (FEED-01/02/06) — wave 3
+
+**Engine gate reminder**: every new event type gets an `EVENT_NARRATION` entry and the voice safety scan stays green; this is presentation/narration work — it must not introduce new engine RNG draws. Phase 25 adds exactly ONE new event type (`scrollRefused`, zero draws, no state change) and only conditional additive fields elsewhere; every parity fixture stays byte-identical.
 
 ### Phase 26: Mass Playtest & Class-Pass Ledger
 
