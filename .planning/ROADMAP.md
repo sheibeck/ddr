@@ -192,7 +192,7 @@ Plans:
   4. A multi-attack foe's round aggregates into one toast — "X hits you 2 of 4 times (N)" — instead of one toast per swing; early-combat misses draw from a varied, voice-safe corpus instead of repeating "Miss".
   5. Every spell, scroll, and item effect in EITHER direction (yours on them, theirs on you) is legible as an event + toast, including resisted/failed/nothing-to-target outcomes.
 
-**Plans**: 2/5 plans executed
+**Plans**: 3/5 plans executed
 
 Plans:
 **Wave 1**
@@ -202,7 +202,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 25-03-PLAN.md — toastsForAction pipeline: per-foe enemy-round aggregation ("X hits you K of M (N)", 3+ foes collapse, member hits low priority), your-round mirror (+ first quip), spell/flee/parley/chest chains, one combined encounter-start toast, kill fold, dedupe per type, refusals → you → them → features → other, cap 4; >= 40 pipeline tests incl. every probe truth (FEED-01/02/03/04/06) — wave 2
+- [x] 25-03-PLAN.md — toastsForAction pipeline: per-foe enemy-round aggregation ("X hits you K of M (N)", 3+ foes collapse, member hits low priority), your-round mirror (+ first quip), spell/flee/parley/chest chains, one combined encounter-start toast, kill fold, dedupe per type, refusals → you → them → features → other, cap 4; >= 40 pipeline tests incl. every probe truth (FEED-01/02/03/04/06) — wave 2
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -261,7 +261,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
-| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 2/5 | In Progress|  |
+| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 3/5 | In Progress|  |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
