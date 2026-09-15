@@ -290,7 +290,7 @@ Plans:
   3. A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict.
   4. The milestone closes only on "tuned" or a user-recorded deferral.
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 **Wave 1**
@@ -299,7 +299,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 27-02-PLAN.md — Dante demoted to Humans tier 2 (stats/note byte-identical), new plain tier-1 Humans row Ned (wp 8) — chosen by the recorded rule (floor-1 Humans death rate ≤ the next-deadliest tier-1 type; Form C 14.3 % vs canon 59.8 %), `DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06)`; every pin re-measured; seed-303 parley scenario gets a declared `kind: "action-path"` divergence record (fromAction 0) + FIXTURE-INVENTORY Phase 27 section with the escalation records pre-enumerated, parity 33/33, prototype-master/comparables untouched; the widened early-floor levers landed in their parity-clean form, each behind its own draw-free field — foe grace at floors 2-4 (`FOE_GRACE_AT_2` 0.75, floor 1 exactly 1.0), trap/wall-fall `hazardScale` ramp from floor 2 (movement.js + encounters.js consumers), darkness held at one blob through floor 3, dots cap 24→15 / dark 6/9→3/7 behind `DENSITY_CANON_THROUGH_DEPTH = 2`; tests restructured (`PHASE_27_PINS`, split PARITY GUARD); iteration 0 smoke + the planner's per-lever calibration logged (TUNE-06) — wave 2
+- [x] 27-02-PLAN.md — Dante demoted to Humans tier 2 (stats/note byte-identical), new plain tier-1 Humans row Ned (wp 8) — chosen by the recorded rule (floor-1 Humans death rate ≤ the next-deadliest tier-1 type; Form C 14.3 % vs canon 59.8 %), `DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06)`; every pin re-measured; seed-303 parley scenario gets a declared `kind: "action-path"` divergence record (fromAction 0) + FIXTURE-INVENTORY Phase 27 section with the escalation records pre-enumerated, parity 33/33, prototype-master/comparables untouched; the widened early-floor levers landed in their parity-clean form, each behind its own draw-free field — foe grace at floors 2-4 (`FOE_GRACE_AT_2` 0.75, floor 1 exactly 1.0), trap/wall-fall `hazardScale` ramp from floor 2 (movement.js + encounters.js consumers), darkness held at one blob through floor 3, dots cap 24→15 / dark 6/9→3/7 behind `DENSITY_CANON_THROUGH_DEPTH = 2`; tests restructured (`PHASE_27_PINS`, split PARITY GUARD); iteration 0 smoke + the planner's per-lever calibration logged (TUNE-06) — wave 2
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -331,5 +331,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | Complete    | 2026-09-15 |
-| 27. Delve-to-Death Retune | v1.2 | 1/4 | In Progress|  |
+| 27. Delve-to-Death Retune | v1.2 | 2/4 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
