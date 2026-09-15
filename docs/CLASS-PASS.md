@@ -857,23 +857,455 @@ regressed, and 0 of 1560 total smoke runs got stuck. No dial or bot policy
 was changed based on this readout. The paired, rigorous AFTER matrix (same
 143 cells, same seed count, same flags as BEFORE) is Phase 26 (PLAY-02).
 
-## AFTER — commit `<hash>` (Phase 26 — PLAY-02)
+## AFTER — commit d1e32357474a0f232515a19660ea3ed12c3f8b07 (Phase 26 — PLAY-02)
 
-The AFTER matrix (post-identity-pass engine, after Phases 23-25 land) is
-captured here once Phase 26 ("Mass Playtest & Class-Pass Ledger") runs:
+### Pin and provenance (Phase 26 capture)
+
+Captured 2026-09-15. Full hash `d1e32357474a0f232515a19660ea3ed12c3f8b07`
+(short `d1e3235`). `git diff --quiet d1e32357474a0f232515a19660ea3ed12c3f8b07
+-- engine content src mazeworld.html tools` exited 0 immediately before both
+runs below and again after this ledger's own commit — the engine, content,
+`src/`, `mazeworld.html`, and `tools/` are byte-identical to the pin for
+this entire capture. `git diff --quiet 5565b22 -- tools/tune-classes.mjs
+tools/lib` also exited 0 — the harness (bot policy, cell enumeration,
+ranking, JSON shape) is byte-identical to the BEFORE pin, so
+`seeds=40/10, workers=4, maxActions=5000, exploreBudget=50, startDepth=1/20`
+and the seed list `i*7919+1` are the same runs re-played on the new engine.
+The engine/content/shell commits between `5565b22` and this pin are Phases
+23 (casters can act), 24 (one good, one bad per sub-class and race), 25
+(feature feedback), 25.1 (device feedback batch), and this phase's own
+gap-closure fix (`d1e3235` — startCombat now checks for a cleared encounter
+before the opening foe turn resolves, closing a hang where a ward-reflect
+or acid kill on the last foe left combat open with nothing alive) — 32
+commits total touching `engine`, `content`, `src`, or `mazeworld.html`,
+diffstat `18 files changed, 2844 insertions(+), 298 deletions(-)` versus
+`5565b22`. Both `Bot:` lines below are byte-identical to the BEFORE
+section's two `Bot:` lines apart from `seeds=`/`startDepth=` (verified via
+a `node -e` equality check against `before.json`/`before-depth20.json`,
+which printed `true` for both). Wall times: the natural-start matrix took
+1108.5s (~18.5 minutes); the depth-20 slice took 59.4s. The cannot-act hard
+gate — `node tools/class-pass-diff.mjs --gate --after docs/class-pass/after.json`
+— printed `cannot-act cells: 0 of 143` (exit 0); the depth-20 slice's stuck
+total is 0 of 1430 runs.
+
+This pin's AFTER matrix supersedes an earlier, blocked capture attempt at
+pin `620e1df` (this same plan's first run), which found
+`cannot-act cells: 1 of 143` — Fighter/Samurai/Dwarven, `stuck=1` — a
+regression from `5565b22`'s 0-stuck baseline. That regression was root-
+caused to `startCombat`'s foe-first opener having no cleared-encounter
+check (a foe killed by a Bubble ward reflection could leave combat open
+with nothing alive) and fixed in `d1e3235`; the blocked attempt's evidence
+JSON remains in git history for reference, but this section is the only
+AFTER matrix wired into the ledger.
+
+The machine-derived comparison tables, the fun-band verdicts, and the Phase
+27 handoff are rendered by `node tools/class-pass-diff.mjs --verdicts
+docs/class-pass/verdicts.json --out-verdicts docs/class-pass/verdicts.json
+--section after` (and `--section outliers`, `--section handoff`) and pasted
+verbatim above this sub-heading by Plan 26-03 — numbers are never retyped,
+the accept/revisit sentences in `verdicts.json` are the one hand-written
+column.
+
+### AFTER transcript — tune-classes --seeds 40 --workers 4 --max-actions 5000
 
 ```
-node tools/tune-classes.mjs --seeds 40 --workers 4 --max-actions 5000 --out docs/class-pass/after.json
-node tools/tune-classes.mjs --seeds 10 --workers 4 --max-actions 5000 --start-depth 20 --out docs/class-pass/after-depth20.json
+tune-classes: 143 cells x 40 seeds (5720 runs) — start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+#  class  sub  race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+1  Thief  Acrobat  Wilmsry  40  0  5.10  5.0  8.0  55.0  5.0  7.65  2.80  550.17  undone by a trap(5),cut down by a China Wolf(4),cut down by a Drarl(4)
+2  Thief  Ninja  Wilmsry  40  0  5.00  5.0  7.0  67.5  0.0  16.88  3.23  537.05  cut down by a Werebeast(9),undone by a trap(3),cut down by a Drarl(2)
+3  Thief  Con Artist  Wilmsry  40  0  4.97  5.0  7.0  65.0  0.0  1.58  2.75  514.50  cut down by a Werebeast(7),undone by a trap(5),cut down by a Google(4)
+4  Fighter  Barbarian  Wilmsry  40  0  4.90  5.0  7.0  62.5  2.5  7.38  2.85  522.53  fell off a wall(4),cut down by a Blumble(2),cut down by a Dante(2)
+5  Thief  Ninja  Human  40  0  4.80  4.0  8.0  45.0  2.5  15.88  3.33  502.38  undone by a trap(7),cut down by a China Wolf(3),cut down by a Dante(3)
+6  Thief  Acrobat  Troll  40  0  4.60  4.0  7.0  45.0  2.5  11.98  3.08  477.13  starved in the dark(15),cut down by a Herman(5),undone by a trap(4)
+7  Fighter  Guard  Wilmsry  40  0  4.60  4.0  8.0  45.0  2.5  5.90  2.63  487.28  starved in the dark(6),cut down by a Google(5),cut down by a Werebeast(4)
+8  Thief  Ninja  Troll  40  0  4.60  4.0  7.0  45.0  2.5  13.68  3.10  454.30  starved in the dark(12),undone by a trap(5),fell off a wall(4)
+9  Fighter  Woodsman  Wilmsry  40  0  4.45  5.0  7.0  50.0  0.0  4.72  2.73  452.83  cut down by a Werebeast(4),undone by a trap(4),cut down by a China Wolf(3)
+10  Fighter  Knight  Wilmsry  40  0  4.43  5.0  6.0  55.0  0.0  4.43  2.58  467.60  spent by the dungeon itself(7),cut down by a Werebeast(6),cut down by a China Wolf(5)
+11  Thief  Con Artist  Human  40  0  4.30  4.0  7.0  40.0  0.0  1.78  2.53  452.28  undone by a trap(10),came up short on a leap(3),cut down by a Werebeast(3)
+12  Thief  Cutthroat  Wilmsry  40  0  4.15  4.0  6.0  42.5  0.0  5.50  2.58  437.08  cut down by a Werebeast(5),cut down by a Dante(4),cut down by a Frank(3)
+13  Fighter  Barbarian  Elven  40  0  4.10  4.0  6.0  47.5  0.0  11.73  2.55  429.95  cut down by a Werebeast(10),undone by a trap(6),cut down by a Poltergeist(4)
+14  Thief  Pickpocket  Wilmsry  40  0  4.08  4.0  6.0  40.0  0.0  5.03  2.38  437.05  cut down by a Dante(4),cut down by a Rinkle(3),fell off a wall(3)
+15  Thief  Cloaker  Wilmsry  40  0  4.08  4.0  7.0  27.5  2.5  4.93  2.35  447.75  undone by a trap(6),cut down by a Dante(4),cut down by a Poltergeist(4)
+16  Fighter  Master of Arms  Wilmsry  40  0  4.05  4.0  7.0  35.0  0.0  11.85  2.53  454.40  cut down by a Dante(6),undone by a trap(6),cut down by a Drarl(4)
+17  Thief  Cat Burglar  Troll  40  0  3.98  4.0  6.0  27.5  0.0  11.95  2.88  392.60  starved in the dark(11),undone by a trap(6),cut down by a Werebeast(4)
+18  Thief  Pilfer  Wilmsry  40  0  3.95  4.0  7.0  37.5  0.0  4.80  2.30  445.05  cut down by a Dante(8),came up short on a leap(3),cut down by a Cave Bear(2)
+19  Thief  Ninja  Fridgian  40  0  3.95  4.0  6.0  35.0  0.0  11.38  2.83  383.15  cut down by a Drarl(5),cut down by a Werebeast(4),undone by a trap(4)
+20  Thief  Ninja  Dwarven  40  0  3.93  4.0  6.0  35.0  2.5  11.93  2.58  384.40  cut down by a Dante(4),starved in the dark(4),cut down by a Zit(3)
+21  Thief  Con Artist  Dwarven  40  0  3.93  4.0  5.0  32.5  0.0  1.73  2.42  405.00  undone by a trap(6),cut down by a Frank(4),cut down by a Blumble(2)
+22  Fighter  Bard  Wilmsry  40  0  3.90  4.0  6.0  32.5  0.0  4.60  2.28  403.23  undone by a trap(6),cut down by a Gremlin(5),cut down by a Google(4)
+23  Fighter  Soldier  Wilmsry  40  0  3.90  4.0  6.0  30.0  0.0  4.47  2.35  390.83  cut down by a Poltergeist(4),starved in the dark(4),cut down by a Hair(3)
+24  Thief  Con Artist  Fridgian  40  0  3.83  4.0  5.0  27.5  0.0  1.73  2.17  395.63  cut down by a Poltergeist(6),undone by a trap(6),cut down by a China Wolf(4)
+25  Thief  Con Artist  Troll  40  0  3.78  4.0  6.0  25.0  0.0  1.95  2.13  387.95  starved in the dark(11),undone by a trap(5),cut down by a Poltergeist(4)
+26  Thief  Cat Burglar  Wilmsry  40  0  3.75  4.0  7.0  37.5  0.0  6.00  2.30  380.85  undone by a trap(10),cut down by a Dante(4),cut down by a Rinkle(3)
+27  Thief  Ninja  Elven  40  0  3.68  4.0  6.0  27.5  2.5  12.45  2.70  356.18  cut down by a Cave Bear(5),cut down by a Dante(5),cut down by a Herman(4)
+28  Thief  Acrobat  Dwarven  40  0  3.65  4.0  6.0  22.5  0.0  9.07  2.53  371.38  undone by a trap(5),cut down by a Dante(4),cut down by a Poltergeist(4)
+29  Thief  Con Artist  Elven  40  0  3.63  3.0  5.0  32.5  0.0  1.75  2.25  366.45  cut down by a Werebeast(7),undone by a trap(7),fell off a wall(4)
+30  Magic User  Summoner  Wilmsry  40  0  3.60  3.0  6.0  25.0  2.5  5.15  2.13  383.25  fell off a wall(6),cut down by a Gremlin(5),cut down by a Google(4)
+31  Thief  Cloaker  Troll  40  0  3.58  3.0  6.0  20.0  2.5  8.75  2.35  390.45  starved in the dark(21),undone by a trap(4),came up short on a leap(2)
+32  Thief  Pilfer  Troll  40  0  3.53  4.0  5.0  32.5  0.0  7.93  2.23  384.65  starved in the dark(9),spent by the dungeon itself(7),fell off a wall(4)
+33  Magic User  Cleric  Wilmsry  40  0  3.53  3.0  6.0  25.0  0.0  4.90  2.17  379.48  cut down by a Dante(5),starved in the dark(5),undone by a trap(3)
+34  Thief  Cutthroat  Troll  40  0  3.48  4.0  5.0  22.5  0.0  8.38  2.30  364.28  starved in the dark(12),fell off a wall(5),cut down by a Werebeast(3)
+35  Fighter  Samurai  Wilmsry  40  0  3.48  3.0  5.0  32.5  0.0  5.60  2.25  346.60  cut down by a Dante(6),cut down by a Werebeast(5),cut down by a Philly(3)
+36  Thief  Acrobat  Human  40  0  3.43  4.0  5.0  22.5  0.0  9.23  2.35  364.23  cut down by a Dante(8),fell off a wall(6),cut down by a Poltergeist(4)
+37  Magic User  Sorcerer  Wilmsry  40  0  3.43  3.0  5.0  27.5  0.0  4.53  2.08  341.65  undone by a trap(7),fell off a wall(5),cut down by a Dante(3)
+38  Fighter  Barbarian  Fridgian  40  0  3.38  3.0  7.0  20.0  0.0  9.35  2.15  343.08  cut down by a Dante(8),cut down by a Drarl(3),cut down by a China Wolf(2)
+39  Thief  Cat Burglar  Human  40  0  3.35  3.0  6.0  22.5  2.5  8.13  2.28  329.40  undone by a trap(9),cut down by a Dante(5),starved in the dark(4)
+40  Thief  Pickpocket  Troll  40  0  3.33  3.0  7.0  17.5  0.0  6.58  2.08  338.25  starved in the dark(13),undone by a trap(5),fell off a wall(4)
+41  Thief  Acrobat  Elven  40  0  3.30  3.0  6.0  22.5  0.0  8.60  2.48  331.73  cut down by a Dante(4),cut down by a Poltergeist(4),undone by a trap(4)
+42  Fighter  Barbarian  Troll  40  0  3.30  3.0  5.0  20.0  0.0  8.15  1.95  318.15  starved in the dark(11),cut down by a Dante(4),cut down by a China Wolf(3)
+43  Fighter  Knight  Elven  40  0  3.30  3.0  5.0  20.0  0.0  5.68  2.15  322.70  cut down by a Poltergeist(5),cut down by a Gremlin(4),cut down by a Cave Bear(3)
+44  Fighter  Knight  Fridgian  40  0  3.30  3.0  5.0  15.0  0.0  4.88  2.08  321.52  cut down by a Dante(5),undone by a trap(5),cut down by a Cave Bear(3)
+45  Thief  Pilfer  Fridgian  40  0  3.30  3.0  6.0  15.0  0.0  7.35  2.25  353.30  cut down by a Dante(5),cut down by a Poltergeist(4),spent by the dungeon itself(4)
+46  Fighter  Master of Arms  Human  40  0  3.28  3.0  5.0  15.0  0.0  8.15  2.28  349.93  cut down by a Dante(4),cut down by a Poltergeist(4),cut down by a Primp(3)
+47  Fighter  Barbarian  Human  40  0  3.28  3.0  4.0  7.5  0.0  9.13  1.98  355.70  cut down by a Dante(5),cut down by a China Wolf(3),cut down by a Poltergeist(3)
+48  Thief  Cat Burglar  Dwarven  40  0  3.25  3.0  7.0  27.5  0.0  8.13  2.25  319.50  cut down by a Dante(8),undone by a trap(8),cut down by a Drarl(3)
+49  Thief  Acrobat  Fridgian  40  0  3.25  3.0  5.0  22.5  0.0  8.50  2.23  321.63  undone by a trap(5),cut down by a China Wolf(4),cut down by a Gremlin(4)
+50  Fighter  Guard  Elven  40  0  3.23  3.0  5.0  10.0  2.5  7.38  2.10  324.85  cut down by a Poltergeist(7),undone by a trap(5),cut down by a Gremlin(4)
+51  Thief  Pilfer  Dwarven  40  0  3.18  3.0  6.0  25.0  0.0  6.03  2.08  322.93  cut down by a Dante(10),cut down by a Drarl(3),starved in the dark(3)
+52  Fighter  Master of Arms  Elven  40  0  3.18  3.0  5.0  12.5  0.0  9.13  2.35  317.43  cut down by a Werebeast(6),cut down by a Blumble(4),cut down by a Poltergeist(4)
+53  Fighter  Bard  Troll  40  0  3.18  3.0  5.0  10.0  0.0  5.70  2.08  313.43  starved in the dark(10),cut down by a Cave Bear(4),cut down by a Dante(4)
+54  Thief  Cat Burglar  Fridgian  40  0  3.15  3.0  6.0  17.5  2.5  7.50  2.10  296.30  undone by a trap(8),cut down by a Dante(6),cut down by a Frank(3)
+55  Magic User  Sorcerer  Troll  40  0  3.15  3.0  5.0  12.5  0.0  8.20  2.03  324.65  starved in the dark(9),undone by a trap(5),fell off a wall(4)
+56  Fighter  Master of Arms  Fridgian  40  0  3.15  3.0  5.0  10.0  0.0  8.28  2.17  322.43  cut down by a Dante(8),cut down by a Poltergeist(6),cut down by a China Wolf(3)
+57  Magic User  Illusionist  Wilmsry  40  0  3.10  3.0  5.0  20.0  0.0  3.65  2.00  340.08  cut down by a Dante(5),cut down by a Zombie(5),came up short on a leap(4)
+58  Thief  Pilfer  Human  40  0  3.10  3.0  6.0  20.0  0.0  5.65  2.03  346.08  cut down by a Dante(8),cut down by a Philly(4),cut down by a Poltergeist(4)
+59  Magic User  Court Mage  Wilmsry  40  0  3.05  3.0  5.0  17.5  0.0  4.75  1.93  321.48  cut down by a Poltergeist(6),cut down by a Dante(4),fell off a wall(4)
+60  Fighter  Knight  Troll  40  0  3.05  3.0  5.0  17.5  0.0  4.68  1.88  285.35  starved in the dark(10),cut down by a Dante(5),cut down by a Poltergeist(4)
+61  Fighter  Bard  Elven  40  0  3.05  3.0  5.0  12.5  0.0  6.13  2.30  299.98  cut down by a Poltergeist(6),cut down by a Dante(3),cut down by a Zit(3)
+62  Thief  Pilfer  Elven  40  0  3.03  3.0  5.0  15.0  2.5  7.40  2.10  309.68  cut down by a Dante(7),cut down by a Skeleton(3),spent by the dungeon itself(3)
+63  Fighter  Woodsman  Elven  40  0  3.03  3.0  5.0  15.0  0.0  4.85  2.15  292.95  cut down by a Dante(4),cut down by a Gremlin(4),cut down by a Poltergeist(4)
+64  Thief  Cutthroat  Fridgian  40  0  3.03  3.0  5.0  12.5  0.0  6.63  1.95  300.73  cut down by a Dante(6),spent by the dungeon itself(4),undone by a trap(4)
+65  Magic User  Wizard  Troll  40  0  3.03  3.0  5.0  12.5  0.0  6.35  1.98  311.08  starved in the dark(9),cut down by a Dante(5),fell off a wall(5)
+66  Fighter  Guard  Troll  40  0  3.03  3.0  4.0  7.5  0.0  6.78  2.08  297.58  starved in the dark(14),cut down by a Dante(7),undone by a trap(4)
+67  Fighter  Barbarian  Dwarven  40  0  3.00  3.0  5.0  20.0  0.0  8.60  1.88  300.90  cut down by a Dante(10),cut down by a Gremlin(3),fell off a wall(3)
+68  Magic User  Apprentice  Wilmsry  40  0  3.00  3.0  5.0  15.0  0.0  2.65  2.05  281.88  cut down by a Poltergeist(7),undone by a trap(5),fell off a wall(4)
+69  Fighter  Woodsman  Fridgian  40  0  3.00  3.0  5.0  10.0  0.0  4.35  1.93  284.68  cut down by a China Wolf(4),cut down by a Google(4),cut down by a Poltergeist(4)
+70  Magic User  Cleric  Troll  40  0  2.98  3.0  5.0  12.5  0.0  5.95  1.93  305.20  fell off a wall(6),starved in the dark(6),cut down by a Dante(4)
+71  Magic User  Apprentice  Troll  40  0  2.98  3.0  5.0  10.0  0.0  5.55  2.17  301.70  starved in the dark(12),undone by a trap(3),cut down by a Dante(2)
+72  Thief  Cat Burglar  Elven  40  0  2.95  3.0  5.0  20.0  0.0  7.20  2.08  281.13  undone by a trap(12),cut down by a Dante(5),cut down by a Dread Lock(2)
+73  Fighter  Soldier  Troll  40  0  2.95  3.0  5.0  12.5  0.0  6.60  2.03  281.88  starved in the dark(10),cut down by a Dante(5),cut down by a Poltergeist(4)
+74  Fighter  Woodsman  Troll  40  0  2.95  3.0  5.0  10.0  0.0  4.53  1.78  286.43  undone by a trap(7),starved in the dark(6),cut down by a Gremlin(4)
+75  Fighter  Knight  Human  40  0  2.95  3.0  4.0  5.0  0.0  4.68  1.88  298.40  cut down by a Dante(7),cut down by a Poltergeist(5),cut down by a Gremlin(4)
+76  Thief  Cutthroat  Elven  40  0  2.93  3.0  5.0  15.0  0.0  7.93  2.20  285.25  cut down by a Dante(6),spent by the dungeon itself(5),undone by a trap(5)
+77  Fighter  Bard  Human  40  0  2.93  3.0  5.0  12.5  0.0  6.40  2.03  290.83  cut down by a Dante(8),cut down by a Google(5),cut down by a Poltergeist(4)
+78  Fighter  Master of Arms  Troll  40  0  2.93  3.0  4.0  7.5  0.0  7.28  2.00  293.10  starved in the dark(10),cut down by a Blumble(3),cut down by a Poltergeist(3)
+79  Fighter  Guard  Human  40  0  2.90  3.0  5.0  10.0  0.0  6.50  2.00  312.65  cut down by a Poltergeist(7),undone by a trap(6),cut down by a Dante(3)
+80  Thief  Pickpocket  Elven  40  0  2.88  3.0  5.0  20.0  0.0  5.53  1.90  276.60  cut down by a Dante(5),undone by a trap(5),fell off a wall(4)
+81  Magic User  Warlock  Troll  40  0  2.88  3.0  5.0  15.0  0.0  6.40  1.95  295.68  starved in the dark(11),came up short on a leap(4),cut down by a Poltergeist(4)
+82  Magic User  Summoner  Troll  40  0  2.88  3.0  5.0  10.0  0.0  8.63  2.10  316.38  starved in the dark(6),eaten by their own summoning(5),undone by a trap(4)
+83  Magic User  Sorcerer  Elven  40  0  2.88  2.0  5.0  17.5  0.0  7.20  1.95  285.90  cut down by a Dante(5),undone by a trap(5),cut down by a Gremlin(4)
+84  Magic User  Illusionist  Troll  40  0  2.85  3.0  5.0  10.0  0.0  5.78  1.83  302.75  starved in the dark(11),undone by a trap(5),cut down by a Dante(4)
+85  Magic User  Warlock  Wilmsry  40  0  2.85  2.0  5.0  17.5  0.0  3.93  1.85  296.65  cut down by a Dante(7),cut down by a Gremlin(3),fell off a wall(3)
+86  Fighter  Soldier  Elven  40  0  2.83  3.0  5.0  15.0  0.0  6.13  2.00  269.33  cut down by a Dante(7),cut down by a Poltergeist(7),cut down by a Google(3)
+87  Fighter  Soldier  Fridgian  40  0  2.83  3.0  5.0  15.0  0.0  6.28  1.93  282.15  cut down by a Dante(9),cut down by a Gremlin(4),cut down by a Blumble(3)
+88  Magic User  Wizard  Wilmsry  40  0  2.83  3.0  5.0  10.0  0.0  3.08  1.80  269.13  cut down by a Dante(5),fell off a wall(5),cut down by a Gremlin(4)
+89  Thief  Cloaker  Fridgian  40  0  2.80  3.0  5.0  10.0  0.0  5.73  1.88  297.38  cut down by a Dante(6),cut down by a Google(3),cut down by a Gremlin(3)
+90  Fighter  Knight  Dwarven  40  0  2.80  3.0  4.0  7.5  0.0  3.53  1.73  271.73  cut down by a Dante(11),cut down by a Poltergeist(5),cut down by a China Wolf(3)
+91  Fighter  Soldier  Human  40  0  2.78  3.0  4.0  7.5  0.0  5.43  1.90  282.85  cut down by a Dante(9),cut down by a China Wolf(5),cut down by a Poltergeist(4)
+92  Magic User  Sorcerer  Human  40  0  2.78  3.0  4.0  7.5  0.0  7.40  1.93  267.68  cut down by a Dante(7),cut down by a Gremlin(6),cut down by a Blumble(4)
+93  Fighter  Woodsman  Human  40  0  2.75  3.0  5.0  10.0  0.0  4.88  2.00  282.13  cut down by a Dante(7),undone by a trap(7),cut down by a Trachea(3)
+94  Fighter  Samurai  Elven  40  0  2.73  3.0  4.0  7.5  0.0  7.80  2.13  260.40  cut down by a Dante(5),cut down by a Poltergeist(5),undone by a trap(5)
+95  Fighter  Master of Arms  Dwarven  40  0  2.73  3.0  4.0  5.0  0.0  6.93  1.88  270.23  cut down by a Gremlin(8),cut down by a Dante(4),undone by a trap(4)
+96  Magic User  Summoner  Fridgian  40  0  2.70  3.0  4.0  5.0  0.0  7.40  1.98  281.55  cut down by a Dante(6),cut down by a Werebeast(5),fell off a wall(4)
+97  Thief  Pickpocket  Fridgian  40  0  2.70  2.0  5.0  15.0  0.0  5.25  1.88  275.52  cut down by a Dante(6),starved in the dark(4),undone by a trap(4)
+98  Fighter  Guard  Fridgian  40  0  2.68  3.0  4.0  7.5  0.0  5.20  1.83  276.02  cut down by a Dante(5),cut down by a Poltergeist(4),undone by a trap(4)
+99  Thief  Cutthroat  Human  40  0  2.68  3.0  4.0  5.0  0.0  4.90  1.78  290.50  cut down by a Dante(9),cut down by a Gremlin(3),starved in the dark(3)
+100  Thief  Cloaker  Elven  40  0  2.65  3.0  5.0  12.5  0.0  6.88  2.00  267.73  cut down by a Dante(7),spent by the dungeon itself(5),undone by a trap(5)
+101  Fighter  Bard  Fridgian  40  0  2.65  3.0  4.0  5.0  0.0  4.63  1.70  252.15  cut down by a Dante(7),cut down by a Gremlin(4),starved in the dark(4)
+102  Fighter  Samurai  Troll  40  0  2.65  3.0  4.0  0.0  0.0  7.40  1.98  251.58  starved in the dark(7),cut down by a Dante(4),cut down by a Poltergeist(4)
+103  Magic User  Court Mage  Troll  40  0  2.63  3.0  4.0  5.0  0.0  5.53  1.80  271.90  starved in the dark(9),cut down by a Dante(5),came up short on a leap(4)
+104  Magic User  Warlock  Fridgian  40  0  2.63  2.0  4.0  7.5  0.0  5.75  1.85  245.23  cut down by a Dante(5),cut down by a Gremlin(5),fell off a wall(4)
+105  Magic User  Court Mage  Fridgian  40  0  2.63  2.0  4.0  5.0  0.0  7.18  1.83  260.73  cut down by a Dante(6),cut down by a Poltergeist(6),undone by a trap(5)
+106  Magic User  Sorcerer  Fridgian  40  0  2.60  3.0  4.0  5.0  0.0  6.08  1.83  230.08  cut down by a Dante(7),cut down by a Gremlin(4),undone by a trap(4)
+107  Fighter  Woodsman  Dwarven  40  0  2.60  2.0  5.0  10.0  0.0  3.30  1.75  248.20  cut down by a Dante(10),fell off a wall(5),cut down by a Gremlin(4)
+108  Thief  Cloaker  Human  40  0  2.58  3.0  4.0  7.5  0.0  5.00  1.78  288.18  cut down by a Dante(6),came up short on a leap(4),cut down by a Gremlin(4)
+109  Magic User  Wizard  Fridgian  40  0  2.58  3.0  4.0  5.0  0.0  4.90  1.70  262.85  cut down by a Dante(5),cut down by a Poltergeist(5),undone by a trap(4)
+110  Fighter  Soldier  Dwarven  40  0  2.58  2.0  5.0  12.5  0.0  5.15  1.75  248.93  cut down by a Dante(11),cut down by a Gremlin(7),cut down by a China Wolf(2)
+111  Magic User  Court Mage  Human  40  0  2.58  2.0  4.0  7.5  0.0  6.08  1.73  254.80  cut down by a Dante(7),cut down by a Gremlin(4),cut down by a Blumble(3)
+112  Thief  Pickpocket  Human  40  0  2.55  2.0  5.0  10.0  0.0  4.75  1.70  263.93  cut down by a Dante(5),cut down by a Poltergeist(5),starved in the dark(4)
+113  Fighter  Samurai  Dwarven  40  0  2.53  2.0  4.0  5.0  0.0  6.88  1.80  224.13  cut down by a Dante(9),cut down by a Philly(6),cut down by a Shadow(3)
+114  Magic User  Summoner  Human  40  0  2.50  2.0  4.0  7.5  0.0  7.53  1.80  263.40  cut down by a Dante(9),cut down by a Drekk(4),cut down by a Poltergeist(4)
+115  Magic User  Cleric  Human  40  0  2.48  3.0  4.0  0.0  0.0  5.93  1.70  263.75  cut down by a Dante(7),fell off a wall(4),undone by a trap(4)
+116  Fighter  Bard  Dwarven  40  0  2.48  2.0  4.0  7.5  0.0  5.20  1.73  236.78  cut down by a Dante(7),cut down by a Gremlin(7),starved in the dark(4)
+117  Magic User  Summoner  Elven  40  0  2.45  2.0  5.0  10.0  0.0  5.75  1.78  242.60  cut down by a Dante(5),cut down by a Gremlin(5),eaten by their own summoning(5)
+118  Magic User  Warlock  Human  40  0  2.45  2.0  4.0  5.0  0.0  4.78  1.73  229.68  cut down by a Dante(10),cut down by a Gremlin(4),cut down by a Philly(3)
+119  Thief  Cutthroat  Dwarven  40  0  2.42  2.0  5.0  10.0  0.0  4.22  1.65  235.35  cut down by a Dante(10),cut down by a Gremlin(4),spent by the dungeon itself(4)
+120  Magic User  Sorcerer  Dwarven  40  0  2.42  2.0  4.0  5.0  0.0  6.00  1.78  220.35  cut down by a Dante(10),cut down by a Poltergeist(5),fell off a wall(5)
+121  Magic User  Warlock  Elven  40  0  2.40  2.0  4.0  5.0  0.0  4.58  1.73  212.98  cut down by a Gremlin(5),came up short on a leap(4),cut down by a Dante(4)
+122  Fighter  Samurai  Human  40  0  2.40  2.0  4.0  0.0  0.0  6.55  1.78  225.60  cut down by a Dante(11),cut down by a Google(4),cut down by a Poltergeist(4)
+123  Magic User  Cleric  Fridgian  40  0  2.33  2.0  4.0  7.5  0.0  5.30  1.55  224.43  cut down by a Dante(10),cut down by a Poltergeist(4),cut down by a Philly(3)
+124  Fighter  Guard  Dwarven  40  0  2.33  2.0  4.0  7.5  0.0  4.50  1.58  219.80  cut down by a Dante(8),cut down by a Gremlin(5),undone by a trap(5)
+125  Magic User  Cleric  Elven  40  0  2.30  2.0  4.0  7.5  0.0  4.65  1.68  213.63  cut down by a Gremlin(5),undone by a trap(5),cut down by a Dante(4)
+126  Magic User  Illusionist  Elven  40  0  2.28  2.0  5.0  10.0  0.0  4.47  1.68  214.18  cut down by a Dante(10),cut down by a Gremlin(4),cut down by a Drekk(3)
+127  Thief  Cloaker  Dwarven  40  0  2.25  2.0  4.0  5.0  0.0  4.47  1.63  230.13  cut down by a Dante(10),cut down by a Gremlin(4),cut down by a Philly(4)
+128  Magic User  Apprentice  Human  40  0  2.25  2.0  4.0  2.5  0.0  3.78  1.75  220.95  cut down by a Gremlin(7),fell off a wall(7),cut down by a Dante(6)
+129  Magic User  Wizard  Elven  40  0  2.17  2.0  4.0  7.5  0.0  3.50  1.43  200.30  cut down by a Gremlin(8),cut down by a Dante(7),fell off a wall(5)
+130  Magic User  Apprentice  Fridgian  40  0  2.17  2.0  4.0  5.0  0.0  3.38  1.75  194.53  cut down by a Dante(9),undone by a trap(5),cut down by a Drekk(4)
+131  Magic User  Warlock  Dwarven  40  0  2.15  2.0  4.0  5.0  0.0  3.23  1.43  199.20  cut down by a Dante(14),cut down by a Gremlin(5),undone by a trap(5)
+132  Thief  Pickpocket  Dwarven  40  0  2.13  2.0  4.0  5.0  0.0  3.95  1.53  216.50  cut down by a Dante(10),cut down by a Cave Bear(4),cut down by a Gremlin(4)
+133  Magic User  Wizard  Human  40  0  2.13  2.0  4.0  5.0  0.0  3.38  1.53  199.50  cut down by a Dante(9),fell off a wall(6),cut down by a Gremlin(4)
+134  Magic User  Cleric  Dwarven  40  0  2.13  2.0  4.0  2.5  0.0  5.13  1.65  207.58  cut down by a Dante(10),undone by a trap(4),cut down by a Poltergeist(3)
+135  Magic User  Summoner  Dwarven  40  0  2.13  2.0  4.0  0.0  0.0  4.53  1.43  194.00  cut down by a Dante(10),cut down by a Gremlin(5),undone by a trap(3)
+136  Magic User  Illusionist  Dwarven  40  0  2.10  2.0  4.0  7.5  0.0  3.18  1.40  196.58  cut down by a Dante(11),cut down by a Drekk(5),cut down by a Gremlin(5)
+137  Magic User  Illusionist  Fridgian  40  0  2.08  2.0  4.0  2.5  0.0  3.75  1.38  200.13  cut down by a Dante(9),cut down by a Gremlin(7),undone by a trap(4)
+138  Magic User  Illusionist  Human  40  0  2.08  2.0  3.0  2.5  0.0  4.15  1.45  210.93  cut down by a Dante(11),cut down by a Gremlin(6),cut down by a Shadow(3)
+139  Magic User  Wizard  Dwarven  40  0  2.05  2.0  4.0  2.5  0.0  2.70  1.45  187.93  cut down by a Dante(7),cut down by a Gremlin(6),cut down by a Werebeast(3)
+140  Magic User  Court Mage  Dwarven  40  0  1.98  2.0  4.0  5.0  0.0  3.95  1.43  185.28  cut down by a Dante(12),cut down by a Drekk(4),cut down by a Gremlin(3)
+141  Magic User  Apprentice  Elven  40  0  1.88  2.0  4.0  0.0  0.0  2.30  1.58  152.40  cut down by a Dante(9),undone by a trap(7),cut down by a Philly(3)
+142  Magic User  Apprentice  Dwarven  40  0  1.85  2.0  3.0  0.0  0.0  2.23  1.48  149.20  cut down by a Dante(10),cut down by a Philly(5),cut down by a Gremlin(4)
+143  Magic User  Court Mage  Elven  40  0  1.83  2.0  3.0  0.0  0.0  4.20  1.45  160.35  cut down by a Poltergeist(5),spent by the dungeon itself(5),cut down by a Dante(4)
+
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  1920  0  3.51  3.0  6.0  26.3  0.6  7.09  2.30  361.66  cut down by a Dante(209),undone by a trap(201),starved in the dark(187)
+Fighter  1880  0  3.16  3.0  5.0  16.9  0.2  6.33  2.07  316.41  cut down by a Dante(253),cut down by a Poltergeist(157),starved in the dark(140)
+Magic User  1920  0  2.55  2.0  4.0  8.5  0.1  4.99  1.76  251.57  cut down by a Dante(313),cut down by a Gremlin(161),undone by a trap(153)
+
+BY SUBCLASS:
+sub  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Ninja  240  0  4.33  4.0  7.0  42.5  1.7  13.70  2.96  436.24  undone by a trap(25),starved in the dark(24),cut down by a Werebeast(20)
+Con Artist  240  0  4.07  4.0  6.0  37.1  0.0  1.75  2.38  420.30  undone by a trap(39),cut down by a Werebeast(24),starved in the dark(20)
+Acrobat  240  0  3.89  4.0  6.0  31.7  1.3  9.17  2.58  402.71  undone by a trap(26),starved in the dark(21),cut down by a Dante(18)
+Barbarian  240  0  3.66  3.0  6.0  29.6  0.4  9.05  2.23  378.38  cut down by a Dante(30),starved in the dark(19),fell off a wall(16)
+Cat Burglar  240  0  3.40  3.0  6.0  25.4  0.8  8.15  2.31  333.30  undone by a trap(53),cut down by a Dante(29),starved in the dark(20)
+Pilfer  240  0  3.35  3.0  6.0  24.2  0.4  6.53  2.16  360.28  cut down by a Dante(40),starved in the dark(22),spent by the dungeon itself(16)
+Knight  240  0  3.30  3.0  5.0  20.0  0.0  4.64  2.05  327.88  cut down by a Dante(34),cut down by a Poltergeist(23),starved in the dark(21)
+Master of Arms  240  0  3.22  3.0  5.0  14.2  0.0  8.60  2.20  334.58  cut down by a Dante(26),cut down by a Poltergeist(21),undone by a trap(20)
+Woodsman  240  0  3.13  3.0  5.0  17.5  0.0  4.44  2.05  307.87  cut down by a Dante(28),undone by a trap(24),cut down by a Poltergeist(18)
+Guard  240  0  3.13  3.0  5.0  14.6  0.8  6.04  2.03  319.70  starved in the dark(27),undone by a trap(26),cut down by a Dante(25)
+Cutthroat  240  0  3.11  3.0  5.0  17.9  0.0  6.26  2.08  318.86  cut down by a Dante(37),starved in the dark(21),spent by the dungeon itself(17)
+Bard  240  0  3.03  3.0  5.0  13.3  0.0  5.44  2.02  299.40  cut down by a Dante(32),starved in the dark(23),cut down by a Poltergeist(20)
+Cloaker  240  0  2.99  3.0  5.0  13.8  0.8  5.96  2.00  320.27  cut down by a Dante(34),starved in the dark(33),undone by a trap(23)
+Soldier  240  0  2.98  3.0  5.0  15.4  0.0  5.68  1.99  292.66  cut down by a Dante(43),cut down by a Poltergeist(24),cut down by a Gremlin(18)
+Pickpocket  240  0  2.94  3.0  5.0  17.9  0.0  5.18  1.91  301.31  cut down by a Dante(31),starved in the dark(26),undone by a trap(20)
+Sorcerer  240  0  2.88  3.0  5.0  12.5  0.0  6.57  1.93  278.38  cut down by a Dante(35),undone by a trap(26),cut down by a Gremlin(19)
+Samurai  200  0  2.76  3.0  4.0  9.0  0.0  6.85  1.99  261.66  cut down by a Dante(35),cut down by a Poltergeist(16),cut down by a Google(13)
+Summoner  240  0  2.71  3.0  4.0  9.6  0.4  6.50  1.87  280.20  cut down by a Dante(32),cut down by a Gremlin(20),undone by a trap(19)
+Cleric  240  0  2.62  2.0  4.0  9.2  0.0  5.31  1.78  265.68  cut down by a Dante(40),undone by a trap(22),fell off a wall(17)
+Warlock  240  0  2.56  2.0  4.0  9.2  0.0  4.78  1.75  246.57  cut down by a Dante(41),cut down by a Gremlin(23),undone by a trap(20)
+Wizard  240  0  2.46  2.0  4.0  7.1  0.0  3.98  1.65  238.46  cut down by a Dante(38),cut down by a Gremlin(26),fell off a wall(26)
+Court Mage  240  0  2.45  2.0  4.0  6.7  0.0  5.28  1.69  242.42  cut down by a Dante(38),cut down by a Poltergeist(23),starved in the dark(15)
+Illusionist  240  0  2.41  2.0  4.0  8.8  0.0  4.16  1.62  244.10  cut down by a Dante(50),cut down by a Gremlin(25),starved in the dark(17)
+Apprentice  240  0  2.35  2.0  4.0  5.4  0.0  3.31  1.80  216.78  cut down by a Dante(39),undone by a trap(21),cut down by a Gremlin(20)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Wilmsry  960  0  3.92  4.0  6.0  36.4  0.6  5.58  2.37  412.01  cut down by a Dante(85),undone by a trap(85),cut down by a Werebeast(69)
+Troll  960  0  3.26  3.0  5.0  17.0  0.3  7.28  2.15  331.10  starved in the dark(255),undone by a trap(78),fell off a wall(67)
+Fridgian  920  0  2.90  3.0  5.0  12.2  0.1  6.12  1.95  287.18  cut down by a Dante(137),undone by a trap(83),cut down by a Poltergeist(66)
+Human  960  0  2.89  3.0  5.0  11.6  0.2  6.25  1.97  297.74  cut down by a Dante(164),cut down by a Poltergeist(73),undone by a trap(72)
+Elven  960  0  2.86  3.0  5.0  15.1  0.3  6.38  2.03  278.11  cut down by a Dante(114),undone by a trap(101),cut down by a Poltergeist(72)
+Dwarven  960  0  2.61  2.0  5.0  11.0  0.1  5.19  1.78  251.91  cut down by a Dante(211),cut down by a Gremlin(90),undone by a trap(66)
+
+* Fighter Samurai Fridgian omitted: canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)
+Stuck: 0 of 5720 runs hit maxActions=5000 (own bucket; excluded from depth stats)
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=40  workers=4  startDepth=1
+elapsed: 1108.5s  workers=4  runs=5720
+EXIT=0
 ```
 
-Grep-diff each AFTER transcript's `Bot:` line against the two `Bot:` lines
-in the BEFORE section above (they must be byte-identical apart from the
-`seeds=`/`startDepth=` fields) to prove the two snapshots used identical bot
-parameters. Machine-diff `docs/class-pass/after.json` /
-`after-depth20.json` against their BEFORE counterparts for the per-cell
-deltas. **Fun-band verdicts per row are written here, not in the tool** —
-`tools/tune-classes.mjs` and `tools/lib/class-matrix.mjs` deliberately never
-emit editorial language (no "fun"/"strong"/"weak"/"over"/"under" wording
-anywhere in their output); that judgment is Phase 26's own editorial work.
-Nothing recorded yet.
+### AFTER transcript — tune-classes --seeds 10 --workers 4 --max-actions 5000 --start-depth 20
+
+```
+tune-classes: 143 cells x 10 seeds (1430 runs) — start depth 20
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+#  class  sub  race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  gained(mean)  gained(p50)  survived  top causes
+1  Thief  Cat Burglar  Wilmsry  10  0  21.00  21.0  23.0  100.0  100.0  3.20  5.00  138.20  1.00  1.0  4.90  cut down by a Vampire(2),cut down by a Djinni(1),cut down by a Drake(1)
+2  Fighter  Guard  Wilmsry  10  0  20.90  20.0  23.0  100.0  100.0  1.00  5.00  137.10  0.90  0.0  2.90  cut down by a Djinni(4),cut down by a Herman(2),cut down by a Vampire(2)
+3  Thief  Con Artist  Troll  10  0  20.80  21.0  22.0  100.0  100.0  1.20  5.00  142.50  0.80  1.0  4.60  cut down by a Drarl(2),cut down by a Herman(2),cut down by a Craig(1)
+4  Thief  Acrobat  Wilmsry  10  0  20.80  20.0  23.0  100.0  100.0  1.80  5.00  113.30  0.80  0.0  3.10  cut down by a Drarl(3),cut down by a Herman(2),cut down by a Djinni(1)
+5  Thief  Con Artist  Wilmsry  10  0  20.80  20.0  23.0  100.0  100.0  2.60  5.00  192.00  0.80  0.0  5.90  cut down by a Herman(3),cut down by a Stalka Beast(2),cut down by a Vampire(2)
+6  Fighter  Woodsman  Wilmsry  10  0  20.60  20.0  23.0  100.0  100.0  1.30  5.00  129.70  0.60  0.0  4.10  cut down by a Djinni(3),cut down by a Herman(3),cut down by a Craig(1)
+7  Thief  Ninja  Troll  10  0  20.50  20.0  23.0  100.0  100.0  3.50  5.00  76.50  0.50  0.0  2.80  cut down by a Drarl(3),cut down by a Djinni(2),cut down by a Stalka Beast(2)
+8  Magic User  Wizard  Wilmsry  10  0  20.50  20.0  23.0  100.0  100.0  0.70  5.00  88.90  0.50  0.0  1.80  cut down by a Djinni(2),cut down by a Herman(2),cut down by a Bones(1)
+9  Fighter  Bard  Wilmsry  10  0  20.40  20.0  23.0  100.0  100.0  0.50  5.00  98.60  0.40  0.0  2.50  cut down by a Drarl(3),cut down by a Djinni(2),cut down by a Herman(2)
+10  Thief  Cloaker  Dwarven  10  0  20.40  20.0  22.0  100.0  100.0  2.10  5.00  87.60  0.40  0.0  2.70  cut down by a Drarl(3),cut down by a Craig(1),cut down by a Djinni(1)
+11  Thief  Cutthroat  Dwarven  10  0  20.40  20.0  22.0  100.0  100.0  1.60  5.00  76.00  0.40  0.0  1.50  cut down by a Drarl(3),cut down by a Dread Lock(2),cut down by a Djinni(1)
+12  Thief  Cutthroat  Human  10  0  20.40  20.0  22.0  100.0  100.0  1.60  5.00  76.00  0.40  0.0  1.50  cut down by a Drarl(3),cut down by a Dread Lock(2),cut down by a Djinni(1)
+13  Thief  Acrobat  Human  10  0  20.30  20.0  21.0  100.0  100.0  1.30  5.00  39.50  0.30  0.0  0.80  cut down by a Drarl(6),cut down by a Djinni(1),cut down by a Dread Lock(1)
+14  Fighter  Barbarian  Wilmsry  10  0  20.30  20.0  23.0  100.0  100.0  1.40  5.00  100.30  0.30  0.0  2.70  cut down by a Djinni(3),cut down by a Drarl(3),cut down by a Stalka Beast(2)
+15  Thief  Cat Burglar  Elven  10  0  20.30  20.0  21.0  100.0  100.0  1.20  5.00  42.00  0.30  0.0  1.10  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Herman(2)
+16  Thief  Cloaker  Human  10  0  20.30  20.0  22.0  100.0  100.0  1.90  5.00  77.20  0.30  0.0  1.90  cut down by a Drarl(3),cut down by a Herman(2),cut down by a Craig(1)
+17  Thief  Con Artist  Dwarven  10  0  20.30  20.0  22.0  100.0  100.0  1.40  5.00  104.80  0.30  0.0  3.30  cut down by a Drarl(2),cut down by a Herman(2),cut down by a Craig(1)
+18  Thief  Con Artist  Human  10  0  20.30  20.0  22.0  100.0  100.0  1.40  5.00  104.10  0.30  0.0  3.00  cut down by a Herman(2),cut down by a Vampire(2),cut down by a Craig(1)
+19  Fighter  Guard  Troll  10  0  20.30  20.0  22.0  100.0  100.0  0.50  5.00  67.50  0.30  0.0  1.90  cut down by a Herman(3),cut down by a Dread Lock(2),cut down by a Craig(1)
+20  Thief  Ninja  Dwarven  10  0  20.30  20.0  22.0  100.0  100.0  1.70  5.00  57.60  0.30  0.0  1.30  cut down by a Drarl(4),cut down by a Dread Lock(2),cut down by a Herman(2)
+21  Thief  Ninja  Fridgian  10  0  20.30  20.0  21.0  100.0  100.0  1.30  5.00  47.90  0.30  0.0  1.10  cut down by a Drarl(4),cut down by a Herman(3),cut down by a Djinni(2)
+22  Thief  Pickpocket  Wilmsry  10  0  20.30  20.0  22.0  100.0  100.0  0.80  5.00  67.30  0.30  0.0  1.70  cut down by a Herman(3),cut down by a Stalka Beast(3),cut down by a Drarl(2)
+23  Thief  Pilfer  Dwarven  10  0  20.30  20.0  22.0  100.0  100.0  1.50  5.00  63.10  0.30  0.0  1.40  cut down by a Djinni(2),cut down by a Drarl(2),cut down by a Dread Lock(1)
+24  Thief  Pilfer  Human  10  0  20.30  20.0  22.0  100.0  100.0  1.50  5.00  63.10  0.30  0.0  1.40  cut down by a Djinni(2),cut down by a Drarl(2),cut down by a Dread Lock(1)
+25  Thief  Pilfer  Wilmsry  10  0  20.30  20.0  22.0  100.0  100.0  1.70  5.00  97.60  0.30  0.0  3.10  cut down by a Drarl(3),cut down by a Dread Lock(2),cut down by a Drudge(2)
+26  Magic User  Sorcerer  Dwarven  10  0  20.30  20.0  22.0  100.0  100.0  2.50  5.00  70.40  0.30  0.0  1.50  cut down by a Dread Lock(2),cut down by a Herman(2),cut down by a Vampire(2)
+27  Magic User  Sorcerer  Elven  10  0  20.30  20.0  23.0  100.0  100.0  2.20  5.00  47.30  0.30  0.0  1.20  cut down by a Dread Lock(3),cut down by a Drudge(2),cut down by a Djinni(1)
+28  Magic User  Sorcerer  Human  10  0  20.30  20.0  22.0  100.0  100.0  2.50  5.00  70.40  0.30  0.0  1.50  cut down by a Vampire(3),cut down by a Dread Lock(2),cut down by a Herman(2)
+29  Magic User  Wizard  Elven  10  0  20.30  20.0  22.0  100.0  100.0  0.60  5.00  66.40  0.30  0.0  0.50  cut down by a Dread Lock(2),cut down by a Stalka Beast(2),cut down by a Djinni(1)
+30  Thief  Acrobat  Dwarven  10  0  20.20  20.0  21.0  100.0  100.0  0.70  5.00  32.90  0.20  0.0  0.60  cut down by a Drarl(5),cut down by a Djinni(1),cut down by a Dread Lock(1)
+31  Thief  Acrobat  Elven  10  0  20.20  20.0  21.0  100.0  100.0  0.80  5.00  34.20  0.20  0.0  0.90  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Herman(1)
+32  Thief  Acrobat  Fridgian  10  0  20.20  20.0  21.0  100.0  100.0  0.50  5.00  26.50  0.20  0.0  0.80  cut down by a Drarl(4),cut down by a Herman(3),cut down by a Djinni(1)
+33  Magic User  Apprentice  Troll  10  0  20.20  20.0  21.0  100.0  100.0  2.30  5.00  79.40  0.20  0.0  1.70  cut down by a Djinni(3),cut down by a Drarl(3),cut down by a Dread Lock(1)
+34  Thief  Cat Burglar  Dwarven  10  0  20.20  20.0  21.0  100.0  100.0  0.90  5.00  41.10  0.20  0.0  0.80  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Herman(2)
+35  Thief  Cat Burglar  Fridgian  10  0  20.20  20.0  21.0  100.0  100.0  0.00  5.00  31.00  0.20  0.0  0.80  cut down by a Drarl(6),cut down by a Herman(2),cut down by a Djinni(1)
+36  Thief  Cat Burglar  Human  10  0  20.20  20.0  21.0  100.0  100.0  0.90  5.00  43.40  0.20  0.0  0.90  cut down by a Drarl(4),cut down by a Herman(2),cut down by a Dread Lock(1)
+37  Thief  Con Artist  Elven  10  0  20.20  20.0  21.0  100.0  100.0  1.00  5.00  66.50  0.20  0.0  2.40  cut down by a Drudge(3),cut down by a Djinni(2),cut down by a Craig(1)
+38  Thief  Cutthroat  Elven  10  0  20.20  20.0  22.0  100.0  100.0  1.70  5.00  49.60  0.20  0.0  1.30  cut down by a Djinni(2),cut down by a Drarl(2),cut down by a Dread Lock(2)
+39  Thief  Cutthroat  Wilmsry  10  0  20.20  20.0  21.0  100.0  100.0  1.10  5.00  82.90  0.20  0.0  2.80  cut down by a Herman(3),cut down by a Dread Lock(2),cut down by a Stalka Beast(2)
+40  Fighter  Knight  Wilmsry  10  0  20.20  20.0  21.0  100.0  100.0  0.80  5.00  47.70  0.20  0.0  1.20  cut down by a Drarl(5),cut down by a Djinni(2),cut down by a Drudge(1)
+41  Thief  Ninja  Elven  10  0  20.20  20.0  21.0  100.0  100.0  1.20  5.00  33.40  0.20  0.0  1.00  cut down by a Herman(4),cut down by a Drarl(3),cut down by a Djinni(1)
+42  Thief  Ninja  Human  10  0  20.20  20.0  21.0  100.0  100.0  1.20  5.00  47.40  0.20  0.0  0.90  cut down by a Drarl(4),cut down by a Dread Lock(2),cut down by a Drudge(1)
+43  Thief  Pickpocket  Troll  10  0  20.20  20.0  22.0  100.0  100.0  2.10  5.00  51.50  0.20  0.0  1.40  cut down by a Herman(4),cut down by a Drarl(2),cut down by a Craig(1)
+44  Fighter  Soldier  Wilmsry  10  0  20.20  20.0  21.0  100.0  100.0  0.80  5.00  47.70  0.20  0.0  1.20  cut down by a Drarl(5),cut down by a Djinni(2),cut down by a Drudge(1)
+45  Magic User  Sorcerer  Wilmsry  10  0  20.20  20.0  22.0  100.0  100.0  0.50  5.00  65.30  0.20  0.0  2.10  cut down by a Djinni(2),cut down by a Herman(2),cut down by a Stalka Beast(2)
+46  Magic User  Wizard  Troll  10  0  20.20  20.0  22.0  100.0  100.0  0.50  5.00  60.80  0.20  0.0  0.90  cut down by a Herman(3),cut down by a Drarl(2),cut down by a Dread Lock(2)
+47  Thief  Acrobat  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.80  5.00  41.30  0.10  0.0  1.30  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Dread Lock(1)
+48  Magic User  Apprentice  Elven  10  0  20.10  20.0  21.0  100.0  100.0  1.10  5.00  43.90  0.10  0.0  1.20  cut down by a Stalka Beast(3),cut down by a Drudge(2),cut down by a Herman(2)
+49  Fighter  Barbarian  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  40.20  0.10  0.0  1.30  cut down by a Drarl(4),cut down by a Herman(2),cut down by a Djinni(1)
+50  Fighter  Barbarian  Human  10  0  20.10  20.0  21.0  100.0  100.0  1.90  5.00  42.30  0.10  0.0  1.40  cut down by a Drarl(4),cut down by a Stalka Beast(2),cut down by a Djinni(1)
+51  Fighter  Barbarian  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  50.00  0.10  0.0  0.90  cut down by a Herman(3),came up short on a leap(1),cut down by a Djinni(1)
+52  Fighter  Bard  Elven  10  0  20.10  20.0  21.0  100.0  100.0  0.20  5.00  42.10  0.10  0.0  0.80  cut down by a Drarl(5),cut down by a Herman(3),cut down by a Djinni(1)
+53  Fighter  Bard  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.40  5.00  60.80  0.10  0.0  1.90  cut down by a Dread Lock(2),cut down by a Vampire(2),cut down by a Craig(1)
+54  Thief  Cat Burglar  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.90  5.00  29.70  0.10  0.0  0.90  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Herman(2)
+55  Thief  Cloaker  Troll  10  0  20.10  20.0  21.0  100.0  100.0  1.90  5.00  47.30  0.10  0.0  1.10  cut down by a Drarl(3),cut down by a Herman(2),cut down by a Djinni(1)
+56  Thief  Cloaker  Wilmsry  10  0  20.10  20.0  21.0  100.0  100.0  0.80  5.00  60.10  0.10  0.0  1.90  cut down by a Drarl(2),cut down by a Herman(2),cut down by a Craig(1)
+57  Magic User  Court Mage  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.70  5.00  43.40  0.10  0.0  1.10  cut down by a Drake(2),cut down by a Herman(2),cut down by a Craig(1)
+58  Magic User  Court Mage  Wilmsry  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  47.10  0.10  0.0  1.20  cut down by a Djinni(2),cut down by a Drake(2),cut down by a Bones(1)
+59  Thief  Cutthroat  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  1.50  5.00  49.60  0.10  0.0  1.80  cut down by a Drarl(3),cut down by a Dread Lock(3),cut down by a Herman(2)
+60  Fighter  Guard  Dwarven  10  0  20.10  20.0  21.0  100.0  100.0  1.30  5.00  52.50  0.10  0.0  1.30  cut down by a Drarl(3),cut down by a Stalka Beast(3),cut down by a Vampire(2)
+61  Fighter  Guard  Human  10  0  20.10  20.0  21.0  100.0  100.0  1.10  5.00  41.10  0.10  0.0  0.60  cut down by a Drarl(3),cut down by a Djinni(2),cut down by a Stink Bug(2)
+62  Magic User  Illusionist  Dwarven  10  0  20.10  20.0  21.0  100.0  100.0  1.50  5.00  52.40  0.10  0.0  1.30  cut down by a Herman(4),cut down by a Drudge(2),cut down by a Craig(1)
+63  Magic User  Illusionist  Human  10  0  20.10  20.0  21.0  100.0  100.0  1.50  5.00  52.40  0.10  0.0  1.30  cut down by a Herman(4),cut down by a Drudge(2),cut down by a Craig(1)
+64  Magic User  Illusionist  Wilmsry  10  0  20.10  20.0  21.0  100.0  100.0  0.70  5.00  56.20  0.10  0.0  1.90  cut down by a Herman(4),cut down by a Stalka Beast(2),cut down by a Bones(1)
+65  Fighter  Knight  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  37.20  0.10  0.0  1.20  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Dread Lock(1)
+66  Fighter  Knight  Human  10  0  20.10  20.0  21.0  100.0  100.0  0.90  5.00  38.00  0.10  0.0  0.60  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Dread Lock(1)
+67  Fighter  Master of Arms  Human  10  0  20.10  20.0  21.0  100.0  100.0  1.10  5.00  40.50  0.10  0.0  0.70  cut down by a Drarl(5),cut down by a Djinni(1),cut down by a Drudge(1)
+68  Fighter  Master of Arms  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.30  5.00  38.60  0.10  0.0  0.70  cut down by a Dread Lock(2),cut down by a Herman(2),cut down by a Vampire(2)
+69  Fighter  Master of Arms  Wilmsry  10  0  20.10  20.0  21.0  100.0  100.0  1.10  5.00  39.90  0.10  0.0  0.60  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Drudge(1)
+70  Thief  Ninja  Wilmsry  10  0  20.10  20.0  21.0  100.0  100.0  0.80  5.00  35.00  0.10  0.0  0.60  cut down by a Drarl(3),cut down by a Dread Lock(2),cut down by a Herman(2)
+71  Thief  Pickpocket  Elven  10  0  20.10  20.0  21.0  100.0  100.0  1.30  5.00  46.50  0.10  0.0  1.20  cut down by a Drarl(3),cut down by a Herman(3),cut down by a Vampire(2)
+72  Thief  Pickpocket  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  36.20  0.10  0.0  0.90  cut down by a Herman(4),cut down by a Drarl(3),cut down by a Dread Lock(2)
+73  Thief  Pilfer  Elven  10  0  20.10  20.0  21.0  100.0  100.0  1.30  5.00  34.90  0.10  0.0  1.10  cut down by a Djinni(3),cut down by a Drarl(3),cut down by a Dread Lock(1)
+74  Thief  Pilfer  Troll  10  0  20.10  20.0  21.0  100.0  100.0  1.80  5.00  58.10  0.10  0.0  2.00  cut down by a Drarl(2),cut down by a Herman(2),cut down by a Spectre(2)
+75  Fighter  Samurai  Dwarven  10  0  20.10  20.0  21.0  100.0  100.0  0.70  5.00  37.90  0.10  0.0  0.60  cut down by a Drarl(5),cut down by a Djinni(2),cut down by a Dread Lock(2)
+76  Fighter  Soldier  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  37.20  0.10  0.0  1.20  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Dread Lock(1)
+77  Fighter  Soldier  Human  10  0  20.10  20.0  21.0  100.0  100.0  0.90  5.00  38.00  0.10  0.0  0.60  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Dread Lock(1)
+78  Magic User  Warlock  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.90  5.00  50.10  0.10  0.0  1.00  cut down by a Herman(3),cut down by a Djinni(2),cut down by a Drake(2)
+79  Magic User  Warlock  Wilmsry  10  0  20.10  20.0  21.0  100.0  100.0  0.30  5.00  90.00  0.10  0.0  1.70  cut down by a Drarl(4),cut down by a Herman(2),cut down by a Vampire(2)
+80  Magic User  Wizard  Dwarven  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  52.00  0.10  0.0  0.40  cut down by a Djinni(2),cut down by a Dread Lock(2),cut down by a Stalka Beast(2)
+81  Magic User  Wizard  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.60  5.00  56.60  0.10  0.0  1.40  cut down by a Djinni(3),cut down by a Dread Lock(2),cut down by a Herman(2)
+82  Magic User  Wizard  Human  10  0  20.10  20.0  21.0  100.0  100.0  0.50  5.00  52.80  0.10  0.0  0.70  cut down by a Djinni(2),cut down by a Drarl(2),cut down by a Stalka Beast(2)
+83  Fighter  Woodsman  Fridgian  10  0  20.10  20.0  21.0  100.0  100.0  0.40  5.00  47.00  0.10  0.0  1.60  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Dread Lock(1)
+84  Fighter  Woodsman  Troll  10  0  20.10  20.0  21.0  100.0  100.0  0.20  5.00  59.60  0.10  0.0  1.60  cut down by a Herman(3),cut down by a Vampire(3),cut down by a Dread Lock(2)
+85  Magic User  Apprentice  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  47.60  0.00  0.0  1.30  cut down by a Dread Lock(3),cut down by a Djinni(2),cut down by a Herman(2)
+86  Magic User  Apprentice  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  40.10  0.00  0.0  1.10  cut down by a Herman(4),cut down by a Djinni(2),cut down by a Vampire(2)
+87  Magic User  Apprentice  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  47.60  0.00  0.0  1.30  cut down by a Dread Lock(3),cut down by a Djinni(2),cut down by a Herman(2)
+88  Magic User  Apprentice  Wilmsry  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  31.10  0.00  0.0  0.80  cut down by a Djinni(3),cut down by a Herman(3),cut down by a Dread Lock(1)
+89  Fighter  Barbarian  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  1.80  5.00  39.50  0.00  0.0  1.50  cut down by a Stalka Beast(4),cut down by a Drarl(3),cut down by a Dread Lock(1)
+90  Fighter  Barbarian  Elven  10  0  20.00  20.0  20.0  100.0  100.0  1.20  5.00  33.90  0.00  0.0  0.50  cut down by a Drarl(4),cut down by a Djinni(2),cut down by a Herman(2)
+91  Fighter  Bard  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.60  5.00  39.60  0.00  0.0  0.80  cut down by a Drarl(7),cut down by a Dread Lock(1),cut down by a Herman(1)
+92  Fighter  Bard  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  41.10  0.00  0.0  1.50  cut down by a Drarl(6),cut down by a Djinni(2),cut down by a Dread Lock(1)
+93  Fighter  Bard  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.30  5.00  41.70  0.00  0.0  0.80  cut down by a Drarl(6),cut down by a Dread Lock(2),cut down by a Herman(2)
+94  Magic User  Cleric  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.50  5.00  53.90  0.00  0.0  0.50  cut down by a Drarl(3),cut down by a Herman(2),cut down by a Djinni(1)
+95  Magic User  Cleric  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  37.80  0.00  0.0  0.30  cut down by a Vampire(3),cut down by a Drarl(2),cut down by a Herman(2)
+96  Magic User  Cleric  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.00  5.00  38.20  0.00  0.0  0.50  cut down by a Djinni(2),cut down by a Stalka Beast(2),cut down by a Vampire(2)
+97  Magic User  Cleric  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.30  5.00  54.70  0.00  0.0  0.50  cut down by a Herman(3),cut down by a Drarl(2),cut down by a Djinni(1)
+98  Magic User  Cleric  Troll  10  0  20.00  20.0  20.0  100.0  100.0  0.50  5.00  53.70  0.00  0.0  0.90  cut down by a Herman(2),cut down by a Stalka Beast(2),cut down by a Djinni(1)
+99  Magic User  Cleric  Wilmsry  10  0  20.00  20.0  20.0  100.0  100.0  0.20  5.00  70.50  0.00  0.0  1.40  cut down by a Herman(4),cut down by a Drudge(2),cut down by a Vampire(2)
+100  Thief  Cloaker  Elven  10  0  20.00  20.0  20.0  100.0  100.0  1.10  5.00  28.60  0.00  0.0  0.70  cut down by a Djinni(3),cut down by a Dread Lock(2),cut down by a Drarl(1)
+101  Thief  Cloaker  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  1.60  5.00  40.60  0.00  0.0  1.20  cut down by a Drarl(2),cut down by a Dread Lock(2),cut down by a Herman(2)
+102  Thief  Con Artist  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  44.60  0.00  0.0  1.90  cut down by a Drarl(3),cut down by a Stalka Beast(2),cut down by a Craig(1)
+103  Magic User  Court Mage  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.60  5.00  40.30  0.00  0.0  1.10  cut down by a Djinni(2),cut down by a Stalka Beast(2),cut down by a Craig(1)
+104  Magic User  Court Mage  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.40  5.00  31.60  0.00  0.0  1.10  cut down by a Dread Lock(2),cut down by a Herman(2),cut down by a Djinni(1)
+105  Magic User  Court Mage  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.60  5.00  33.30  0.00  0.0  1.00  cut down by a Djinni(2),cut down by a Stalka Beast(2),cut down by a Craig(1)
+106  Magic User  Court Mage  Troll  10  0  20.00  20.0  20.0  100.0  100.0  1.50  5.00  57.00  0.00  0.0  1.50  cut down by a Herman(4),cut down by a Djinni(2),cut down by a Stalka Beast(2)
+107  Thief  Cutthroat  Troll  10  0  20.00  20.0  20.0  100.0  100.0  1.60  5.00  46.10  0.00  0.0  0.80  cut down by a Herman(3),cut down by a Dread Lock(2),cut down by a Stalka Beast(2)
+108  Fighter  Guard  Elven  10  0  20.00  20.0  20.0  100.0  100.0  2.00  5.00  43.00  0.00  0.0  1.00  cut down by a Drarl(3),cut down by a Djinni(2),cut down by a Herman(2)
+109  Fighter  Guard  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.50  5.00  34.90  0.00  0.0  0.90  cut down by a Drarl(3),cut down by a Djinni(2),cut down by a Bones(1)
+110  Magic User  Illusionist  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.80  5.00  42.40  0.00  0.0  0.90  cut down by a Drarl(3),cut down by a Herman(3),cut down by a Drudge(1)
+111  Magic User  Illusionist  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  32.00  0.00  0.0  1.10  cut down by a Herman(4),cut down by a Drarl(2),cut down by a Craig(1)
+112  Magic User  Illusionist  Troll  10  0  20.00  20.0  20.0  100.0  100.0  1.00  5.00  47.00  0.00  0.0  0.90  cut down by a Herman(4),cut down by a Dread Lock(2),cut down by a Drarl(1)
+113  Fighter  Knight  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  1.10  5.00  34.30  0.00  0.0  1.00  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Dread Lock(2)
+114  Fighter  Knight  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.80  5.00  36.30  0.00  0.0  0.90  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Drudge(1)
+115  Fighter  Knight  Troll  10  0  20.00  20.0  20.0  100.0  100.0  0.00  5.00  36.50  0.00  0.0  0.70  cut down by a Djinni(2),cut down by a Dread Lock(2),cut down by a Craig(1)
+116  Fighter  Master of Arms  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  1.50  5.00  36.90  0.00  0.0  0.90  cut down by a Drarl(5),cut down by a Djinni(1),cut down by a Dread Lock(1)
+117  Fighter  Master of Arms  Elven  10  0  20.00  20.0  20.0  100.0  100.0  1.20  5.00  37.40  0.00  0.0  1.00  cut down by a Drarl(5),cut down by a Herman(2),cut down by a Djinni(1)
+118  Fighter  Master of Arms  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.40  5.00  35.40  0.00  0.0  1.00  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Dread Lock(1)
+119  Thief  Pickpocket  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  1.30  5.00  45.90  0.00  0.0  1.10  cut down by a Drarl(2),cut down by a Herman(2),cut down by a Craig(1)
+120  Thief  Pickpocket  Human  10  0  20.00  20.0  20.0  100.0  100.0  1.30  5.00  42.00  0.00  0.0  0.80  cut down by a Drarl(2),cut down by a Herman(2),cut down by a Stalka Beast(2)
+121  Thief  Pilfer  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  1.40  5.00  49.10  0.00  0.0  1.60  cut down by a Drarl(3),cut down by a Dread Lock(2),cut down by a Herman(2)
+122  Fighter  Samurai  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  27.60  0.00  0.0  0.60  cut down by a Drarl(5),cut down by a Djinni(2),cut down by a Drudge(2)
+123  Fighter  Samurai  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.80  5.00  38.70  0.00  0.0  0.90  cut down by a Drarl(6),cut down by a Drudge(2),cut down by a Djinni(1)
+124  Fighter  Samurai  Troll  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  37.60  0.00  0.0  0.30  cut down by a Djinni(2),cut down by a Drudge(2),cut down by a Herman(2)
+125  Fighter  Samurai  Wilmsry  10  0  20.00  20.0  20.0  100.0  100.0  0.90  5.00  35.40  0.00  0.0  1.00  cut down by a Drarl(5),cut down by a Drudge(3),cut down by a Djinni(1)
+126  Fighter  Soldier  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  1.10  5.00  34.30  0.00  0.0  1.00  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Dread Lock(2)
+127  Fighter  Soldier  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.80  5.00  36.30  0.00  0.0  0.90  cut down by a Drarl(4),cut down by a Djinni(3),cut down by a Drudge(1)
+128  Fighter  Soldier  Troll  10  0  20.00  20.0  20.0  100.0  100.0  0.00  5.00  36.50  0.00  0.0  0.70  cut down by a Djinni(2),cut down by a Dread Lock(2),cut down by a Craig(1)
+129  Magic User  Sorcerer  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.50  5.00  28.70  0.00  0.0  1.20  cut down by a Drarl(3),cut down by a Herman(3),cut down by a Djinni(1)
+130  Magic User  Sorcerer  Troll  10  0  20.00  20.0  20.0  100.0  100.0  1.00  5.00  36.70  0.00  0.0  0.50  cut down by a Drarl(3),cut down by a Herman(3),cut down by a Drake(1)
+131  Magic User  Summoner  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  36.70  0.00  0.0  0.90  cut down by a Drarl(4),cut down by a Herman(2),cut down by a Stalka Beast(2)
+132  Magic User  Summoner  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.60  5.00  22.30  0.00  0.0  0.40  cut down by a Drarl(3),cut down by a Herman(2),cut down by a Vampire(2)
+133  Magic User  Summoner  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.40  5.00  24.80  0.00  0.0  0.60  cut down by a Drarl(3),cut down by a Herman(2),eaten by their own summoning(2)
+134  Magic User  Summoner  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  36.70  0.00  0.0  0.90  cut down by a Drarl(4),cut down by a Herman(2),cut down by a Stalka Beast(2)
+135  Magic User  Summoner  Troll  10  0  20.00  20.0  20.0  100.0  100.0  1.50  5.00  44.60  0.00  0.0  1.30  cut down by a Herman(4),cut down by a Vampire(2),cut down by a Djinni(1)
+136  Magic User  Summoner  Wilmsry  10  0  20.00  20.0  20.0  100.0  100.0  1.10  5.00  58.80  0.00  0.0  2.10  cut down by a Drarl(3),cut down by a Herman(2),cut down by a Stalka Beast(2)
+137  Magic User  Warlock  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.80  5.00  44.80  0.00  0.0  0.50  cut down by a Herman(3),cut down by a Drake(2),cut down by a Djinni(1)
+138  Magic User  Warlock  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.50  5.00  45.30  0.00  0.0  0.40  cut down by a Herman(4),cut down by a Djinni(1),cut down by a Drake(1)
+139  Magic User  Warlock  Fridgian  10  0  20.00  20.0  20.0  100.0  100.0  0.10  5.00  53.40  0.00  0.0  1.30  cut down by a Herman(4),cut down by a Drarl(2),cut down by a Djinni(1)
+140  Magic User  Warlock  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.80  5.00  44.80  0.00  0.0  0.50  cut down by a Herman(3),cut down by a Drake(2),cut down by a Djinni(1)
+141  Fighter  Woodsman  Dwarven  10  0  20.00  20.0  20.0  100.0  100.0  0.60  5.00  41.40  0.00  0.0  1.10  cut down by a Drarl(3),cut down by a Djinni(2),cut down by a Dread Lock(1)
+142  Fighter  Woodsman  Elven  10  0  20.00  20.0  20.0  100.0  100.0  0.20  5.00  32.30  0.00  0.0  0.80  cut down by a Djinni(3),cut down by a Drarl(2),cut down by a Drudge(2)
+143  Fighter  Woodsman  Human  10  0  20.00  20.0  20.0  100.0  100.0  0.70  5.00  44.60  0.00  0.0  1.20  cut down by a Drarl(4),cut down by a Djinni(1),cut down by a Dread Lock(1)
+
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  gained(mean)  gained(p50)  survived  top causes
+Thief  480  0  20.25  20.0  21.0  100.0  100.0  1.36  5.00  61.30  0.25  0.0  1.72  cut down by a Drarl(135),cut down by a Herman(91),cut down by a Dread Lock(51)
+Fighter  470  0  20.10  20.0  20.0  100.0  100.0  0.77  5.00  47.38  0.10  0.0  1.17  cut down by a Drarl(162),cut down by a Djinni(83),cut down by a Herman(57)
+Magic User  480  0  20.07  20.0  20.0  100.0  100.0  0.79  5.00  49.63  0.07  0.0  1.07  cut down by a Herman(115),cut down by a Drarl(69),cut down by a Djinni(53)
+
+BY SUBCLASS:
+sub  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  gained(mean)  gained(p50)  survived  top causes
+Con Artist  60  0  20.40  20.0  22.0  100.0  100.0  1.28  5.00  109.08  0.40  0.0  3.52  cut down by a Herman(11),cut down by a Drarl(9),cut down by a Drudge(8)
+Cat Burglar  60  0  20.33  20.0  21.0  100.0  100.0  1.18  5.00  54.23  0.33  0.0  1.57  cut down by a Drarl(23),cut down by a Herman(11),cut down by a Djinni(9)
+Acrobat  60  0  20.30  20.0  21.0  100.0  100.0  0.98  5.00  47.95  0.30  0.0  1.25  cut down by a Drarl(26),cut down by a Djinni(9),cut down by a Herman(9)
+Ninja  60  0  20.27  20.0  21.0  100.0  100.0  1.62  5.00  49.63  0.27  0.0  1.28  cut down by a Drarl(21),cut down by a Herman(13),cut down by a Djinni(6)
+Guard  60  0  20.23  20.0  21.0  100.0  100.0  1.07  5.00  62.68  0.23  0.0  1.43  cut down by a Drarl(13),cut down by a Djinni(11),cut down by a Herman(8)
+Cutthroat  60  0  20.22  20.0  21.0  100.0  100.0  1.52  5.00  63.37  0.22  0.0  1.62  cut down by a Drarl(13),cut down by a Dread Lock(13),cut down by a Herman(11)
+Wizard  60  0  20.22  20.0  21.0  100.0  100.0  0.57  5.00  62.92  0.22  0.0  0.95  cut down by a Djinni(10),cut down by a Dread Lock(10),cut down by a Herman(10)
+Pilfer  60  0  20.18  20.0  21.0  100.0  100.0  1.53  5.00  60.98  0.18  0.0  1.77  cut down by a Drarl(15),cut down by a Djinni(8),cut down by a Herman(8)
+Sorcerer  60  0  20.18  20.0  21.0  100.0  100.0  1.53  5.00  53.13  0.18  0.0  1.33  cut down by a Herman(13),cut down by a Drarl(9),cut down by a Vampire(9)
+Cloaker  60  0  20.15  20.0  21.0  100.0  100.0  1.57  5.00  56.90  0.15  0.0  1.58  cut down by a Drarl(14),cut down by a Herman(10),cut down by a Djinni(8)
+Woodsman  60  0  20.13  20.0  21.0  100.0  100.0  0.57  5.00  59.10  0.13  0.0  1.73  cut down by a Drarl(15),cut down by a Djinni(11),cut down by a Herman(11)
+Pickpocket  60  0  20.12  20.0  20.0  100.0  100.0  1.22  5.00  48.23  0.12  0.0  1.18  cut down by a Herman(18),cut down by a Drarl(14),cut down by a Stalka Beast(9)
+Barbarian  60  0  20.10  20.0  20.0  100.0  100.0  1.22  5.00  51.03  0.10  0.0  1.38  cut down by a Drarl(19),cut down by a Herman(10),cut down by a Djinni(8)
+Bard  60  0  20.10  20.0  20.0  100.0  100.0  0.35  5.00  53.98  0.10  0.0  1.38  cut down by a Drarl(28),cut down by a Herman(10),cut down by a Djinni(6)
+Knight  60  0  20.07  20.0  20.0  100.0  100.0  0.68  5.00  38.33  0.07  0.0  0.93  cut down by a Drarl(21),cut down by a Djinni(15),cut down by a Dread Lock(6)
+Soldier  60  0  20.07  20.0  20.0  100.0  100.0  0.68  5.00  38.33  0.07  0.0  0.93  cut down by a Drarl(21),cut down by a Djinni(15),cut down by a Dread Lock(6)
+Apprentice  60  0  20.05  20.0  20.0  100.0  100.0  0.93  5.00  48.28  0.05  0.0  1.23  cut down by a Herman(14),cut down by a Djinni(13),cut down by a Dread Lock(9)
+Illusionist  60  0  20.05  20.0  20.0  100.0  100.0  0.93  5.00  47.07  0.05  0.0  1.23  cut down by a Herman(23),cut down by a Drarl(9),cut down by a Drudge(7)
+Master of Arms  60  0  20.05  20.0  20.0  100.0  100.0  0.93  5.00  38.12  0.05  0.0  0.82  cut down by a Drarl(24),cut down by a Djinni(9),cut down by a Herman(6)
+Court Mage  60  0  20.03  20.0  20.0  100.0  100.0  0.72  5.00  42.12  0.03  0.0  1.17  cut down by a Djinni(9),cut down by a Stalka Beast(9),cut down by a Herman(8)
+Warlock  60  0  20.03  20.0  20.0  100.0  100.0  0.57  5.00  54.73  0.03  0.0  0.90  cut down by a Herman(19),cut down by a Drarl(9),cut down by a Drake(8)
+Samurai  50  0  20.02  20.0  20.0  100.0  100.0  0.64  5.00  35.44  0.02  0.0  0.68  cut down by a Drarl(21),cut down by a Drudge(10),cut down by a Djinni(8)
+Cleric  60  0  20.00  20.0  20.0  100.0  100.0  0.27  5.00  51.47  0.00  0.0  0.68  cut down by a Herman(14),cut down by a Drarl(10),cut down by a Vampire(9)
+Summoner  60  0  20.00  20.0  20.0  100.0  100.0  0.83  5.00  37.32  0.00  0.0  1.03  cut down by a Drarl(17),cut down by a Herman(14),cut down by a Stalka Beast(8)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  gained(mean)  gained(p50)  survived  top causes
+Wilmsry  240  0  20.30  20.0  21.0  100.0  100.0  1.05  5.00  80.45  0.30  0.0  2.22  cut down by a Drarl(53),cut down by a Herman(47),cut down by a Djinni(32)
+Human  240  0  20.13  20.0  21.0  100.0  100.0  1.10  5.00  50.43  0.13  0.0  1.07  cut down by a Drarl(73),cut down by a Herman(33),cut down by a Djinni(26)
+Troll  240  0  20.13  20.0  20.0  100.0  100.0  1.04  5.00  54.56  0.13  0.0  1.35  cut down by a Herman(57),cut down by a Drarl(36),cut down by a Djinni(28)
+Dwarven  240  0  20.12  20.0  20.0  100.0  100.0  1.15  5.00  50.98  0.12  0.0  1.18  cut down by a Drarl(71),cut down by a Herman(32),cut down by a Djinni(30)
+Elven  240  0  20.09  20.0  20.0  100.0  100.0  0.96  5.00  40.07  0.09  0.0  0.93  cut down by a Drarl(63),cut down by a Herman(45),cut down by a Djinni(39)
+Fridgian  230  0  20.07  20.0  20.0  100.0  100.0  0.53  5.00  39.81  0.07  0.0  1.18  cut down by a Drarl(70),cut down by a Herman(49),cut down by a Djinni(30)
+
+* Fighter Samurai Fridgian omitted: canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)
+Stuck: 0 of 1430 runs hit maxActions=5000 (own bucket; excluded from depth stats)
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=10  workers=4  startDepth=20
+elapsed: 59.4s  workers=4  runs=1430
+EXIT=0
+```
+
+The two machine-diffable aggregates for Phase 26 are `docs/class-pass/after.json`
+(natural start, 143 cells x 40 seeds) and `docs/class-pass/after-depth20.json`
+(depth-20 slice, 143 cells x 10 seeds) — aggregates only, no per-run rows.
