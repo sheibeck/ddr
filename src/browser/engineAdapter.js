@@ -29,6 +29,10 @@ import { bury } from "../../engine/death.js";
 // (a silently-dropped combat/economy log line once those domains route
 // through dispatch() — 04-07).
 import { EVENT_NARRATION } from "./eventNarration.js";
+// Phase 25 (FEED-05): the fledgling-miss quip corpus + its pure decorator.
+// dispatch() below is the ONE site that stamps a quip onto a strikeMissed
+// event, so the Oracle line and (25-03) the toast share the same quip.
+import { decorateMisses } from "./missLines.js";
 // 02-03: the shared async Storage abstraction (window.mzStorage) — closes
 // 02-RESEARCH.md's dual-write hazard (this adapter and mazeworld.html's
 // classic script previously each hand-rolled their own raw localStorage
@@ -83,6 +87,14 @@ const GRAVE_CAP = 5;
 const RECENT_NAMES_CAP = 25;
 
 let currentState = null;
+
+// Phase 25 (FEED-05): the presentation-side rotation counter for the
+// fledgling-miss quip corpus (missLines.js#decorateMisses). Deliberately a
+// plain module-level integer, NOT serialized into GameState and NOT part of
+// state.rngState — it resets to 0 on every page reload by design (the quip
+// sequence is flavor, not a game rule) and is never advanced by, or fed
+// into, the engine's own seeded rng.
+let missSeq = 0;
 
 /** getState() — the adapter's current engine GameState (or null before boot). */
 export function getState() {
@@ -347,6 +359,11 @@ function persist() {
  * it, and pre-formats its events into the HTML lines `logLine()` expects.
  * Returns `{ state, events, html }` so a caller can render from `state`,
  * inspect the structured `events`, or just push `html` straight to the log.
+ *
+ * Phase 25 (FEED-05): the returned `events` (and therefore `html`) have
+ * already been passed through missLines.js#decorateMisses — a strikeMissed
+ * event may carry a presentation-only `quip` field the engine itself never
+ * sets, present only while the hero's level is <= QUIP_MAX_LEVEL.
  */
 export function dispatch(action) {
   if (!currentState) {
@@ -379,7 +396,13 @@ export function dispatch(action) {
     // its death must not enter the graveyard, the all-time total, or the
     // recent-names window.
     if (diedEvent && !currentState.dev) track(persistGrave(currentState, diedEvent.cause));
-    return { state: currentState, events, html: formatEvents(events) };
+    // Phase 25 (FEED-05): stamp the rotating fledgling-miss quip onto any
+    // strikeMissed event, gated on the hero's post-action level, BEFORE
+    // formatting the Oracle html — so the Oracle line and the toast
+    // (25-03/25-04) read the exact same quip from this one assignment site.
+    const { events: decorated, seq: nextMissSeq } = decorateMisses(events, currentState.c?.level ?? 1, missSeq);
+    missSeq = nextMissSeq;
+    return { state: currentState, events: decorated, html: formatEvents(decorated) };
   } catch (err) {
     // Defense in depth (CR-01): engine/saveState.js#validateSave already
     // rejects a structurally-malformed save before it ever reaches here, but

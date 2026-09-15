@@ -42,6 +42,7 @@ import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
 import { openStore } from "../../engine/economy.js";
 import { makeRng } from "../../engine/rng.js";
+import { MISS_LINES } from "../../src/browser/missLines.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -411,6 +412,72 @@ test("E9: a COMBAT death through dispatch({type:'attack'}) writes the dead chara
     assert.ok(Array.isArray(graves) && graves.length >= 1, "the combat death was written to GRAVE_KEY");
     assert.equal(graves[0].cause, "combat", "the tombstone records the combat death cause");
     assert.equal(graves[0].name, charName, "the tombstone matches the dead character");
+  });
+});
+
+// Phase 25 (FEED-05): dispatch() decorates strikeMissed events with a
+// rotating fledgling-miss quip (missLines.js#decorateMisses) while the hero
+// is level <= QUIP_MAX_LEVEL, and stops once the hero levels past it. A
+// plain melee Fighter (mirrors E9's setup) vs a foe whose sp.toHit pins the
+// player's need very low (`need = Math.min(need, t.sp.toHit)`, playerStrike
+// combat.js ~L430) makes strikeMissed events common. The hero's wp/armor are
+// kept effectively infinite (re-healed every loop) so the run never ends
+// mid-scan; the foe's own wp is left unkillable so it never falls either.
+test("Phase 25 (FEED-05): dispatch() stamps a rotating quip on strikeMissed at level <= 2, and stops at level 3", async () => {
+  await withFakeLocalStorage(async () => {
+    initRun(2025);
+    const state = getState();
+    state.c.cls = "Fighter";
+    state.c.sub = "Guard"; // not Cat Burglar/Ninja/Con Artist — no auto-hit, no opener bail
+    state.c.race = "Human";
+    state.c.wp = 9999;
+    state.c.maxWP = 9999;
+    state.c.invis = 0;
+    state.c.mirror = 0;
+    state.combat = {
+      foes: [
+        // sp.toHit pins the player's need to 1 — only a roll of 1 lands, so
+        // strikeMissed dominates. wp is effectively unkillable.
+        { name: "Practice Dummy", type: "Beasts", lvl: 1, size: "M", intel: 1, wp: 999999, maxWP: 999999, alive: true, asleep: 0, sp: { toHit: 1 }, lives: 1 },
+      ],
+      type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false,
+    };
+
+    const seenQuips = [];
+    for (let i = 0; i < 500 && seenQuips.length < 2; i++) {
+      const { state: after, events, html } = dispatch({ type: "attack" });
+      // Re-heal every loop so a stray foe swing never ends the run mid-scan.
+      if (!after.dead) after.c.wp = 9999;
+      const missEvent = events.find((e) => e.type === "strikeMissed");
+      if (missEvent) {
+        assert.ok(MISS_LINES.includes(missEvent.quip), "the stamped quip is a real corpus entry");
+        assert.ok(
+          html.some((h) => /<span class="roll">\d+<\/span> vs \d+\..*You miss .*\.<\/span> .+/.test(h)),
+          "the Oracle html carries the roll first, then the miss sentence, then the quip",
+        );
+        seenQuips.push(missEvent.quip);
+      }
+    }
+    assert.ok(seenQuips.length >= 2, "expected at least two strikeMissed events within the loop bound");
+    assert.notEqual(seenQuips[0], seenQuips[1], "the rotation counter advances between misses");
+
+    // Now level the hero past QUIP_MAX_LEVEL and confirm the quip disappears.
+    getState().c.level = 3;
+    let plainMissSeen = false;
+    for (let i = 0; i < 500 && !plainMissSeen; i++) {
+      const { state: after, events, html } = dispatch({ type: "attack" });
+      if (!after.dead) after.c.wp = 9999;
+      const missEvent = events.find((e) => e.type === "strikeMissed");
+      if (missEvent) {
+        assert.equal("quip" in missEvent, false, "no quip is stamped once level > QUIP_MAX_LEVEL");
+        assert.ok(
+          html.some((h) => /vs \d+\. <span class="miss">You miss [^.]*\.<\/span>$/.test(h)),
+          "the Oracle html ends at the plain miss sentence with no trailing quip",
+        );
+        plainMissSeen = true;
+      }
+    }
+    assert.ok(plainMissSeen, "expected at least one plain (unquipped) strikeMissed after leveling to 3");
   });
 });
 
