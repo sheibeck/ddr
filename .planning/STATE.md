@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 25
 current_phase_name: Nothing Happens Silently (Feature Feedback
 status: executing
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-09-15T05:01:21.258Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-09-15T05:25:01.474Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 25 execution started
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 20
-  completed_plans: 16
+  completed_plans: 17
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 25 (Nothing Happens Silently (Feature Feedback)) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-15 — Phase 25 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T05:01:21.226Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-09-15T05:25:01.447Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -133,6 +133,7 @@ Resume file: None
 | Phase 24 P06 | 70min | 3 tasks | 1 files |
 | Phase 24 P07 | 40min | 3 tasks | 2 files |
 | Phase 25 P01 | 30min | 3 tasks | 9 files |
+| Phase 25 P02 | 25min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -221,6 +222,8 @@ Resume file: None
 - [Phase ?]: 25-01: foeToHitVs left untouched; foeToHitBreakdown added as a proven-identical narration twin instead
 - [Phase ?]: 25-01: weaponRefusalReason mirrors armorRefusalReason; Acrobat dagger-only rule now reports reason 'acrobat' instead of generic 'wrongClass'
 - [Phase ?]: 25-01: readScroll's combined silent guard split into two named scrollRefused reasons (noScrolls/pilfer/noRunes), zero draws, no mutation
+- [Phase ?]: heroResistFailed's toast text starts with the foe's name (must_haves FEED-03 contract), not the action-body's 'You fail to resist' illustrative wording
+- [Phase ?]: TOAST_FOR is exactly 189 entries — the verified set-complement of ORACLE_ONLY (21) within EVENT_NARRATION's 209-type universe
 
 ### Blockers
 

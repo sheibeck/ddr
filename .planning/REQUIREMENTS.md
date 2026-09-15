@@ -38,9 +38,9 @@ Folded in from the "Feedback, Feel & Polish" proposal §A/§B (user decision 202
 
 - [x] **FEED-01**: Every class/sub-class/racial feature that fires (frenzy, Warlock boost, Knight/Con Artist talk-down, boredom kill, backstab, Ninja opener, Cutthroat crit, Pickpocket take, Pilfer disarm, potion duplication, Soldier double heal, Samurai never-first, and every new v1.2 good/bad) produces an Oracle line AND an on-screen toast that says what happened and why
 - [x] **FEED-02**: Every action a class/sub-class/race BLOCKS (Wizard won't strike, Samurai won't flee, Ninja won't parley, Acrobat can't equip, Pilfer can't read, Fridgian can't wear armor, Woodsman can't wear mail) tells the player what was refused and why, in voice
-- [ ] **FEED-03**: Enemy hits toast RED and read "X hits you (N)"; player hits and misses stay green and read "You hit / You miss X"; the two are never confusable
+- [x] **FEED-03**: Enemy hits toast RED and read "X hits you (N)"; player hits and misses stay green and read "You hit / You miss X"; the two are never confusable
 - [ ] **FEED-04**: A multi-attack foe's round aggregates into one toast — "X hits you 2 of 4 times (N)" — instead of one toast per swing
-- [ ] **FEED-05**: Early-combat misses draw from a varied, voice-safe corpus of fledgling-adventurer call-outs instead of repeating "Miss", so brutal first floors read as narrative
+- [x] **FEED-05**: Early-combat misses draw from a varied, voice-safe corpus of fledgling-adventurer call-outs instead of repeating "Miss", so brutal first floors read as narrative
 - [x] **FEED-06**: Every spell, scroll, and item effect in EITHER direction (yours on them, theirs on you) is legible as an event + toast, including the resisted/failed/nothing-to-target outcomes
 
 ### Class-Aware Playtest Harness (HARN)
@@ -119,9 +119,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | IDENT-10 | Phase 24 | Complete |
 | FEED-01 | Phase 25 | Complete |
 | FEED-02 | Phase 25 | Complete |
-| FEED-03 | Phase 25 | Pending |
+| FEED-03 | Phase 25 | Complete |
 | FEED-04 | Phase 25 | Pending |
-| FEED-05 | Phase 25 | Pending |
+| FEED-05 | Phase 25 | Complete |
 | FEED-06 | Phase 25 | Complete |
 | HARN-01 | Phase 22 | Complete |
 | HARN-02 | Phase 22 | Complete |
