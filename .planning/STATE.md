@@ -6,7 +6,7 @@ status: executing
 stopped_at: Completed 25-05-PLAN.md
 last_updated: "2026-09-15T13:40:49.479Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 25.1 planned and execution started
 progress:
   total_phases: 7
   completed_phases: 4
@@ -14,7 +14,7 @@ progress:
   completed_plans: 20
   percent: 57
 current_phase: 25.1
-current_phase_name: Mass Playtest & Class-Pass Ledger
+current_phase_name: Device Feedback Batch (INSERTED; runs before Phase 26)
 ---
 
 # Project State
@@ -24,14 +24,14 @@ current_phase_name: Mass Playtest & Class-Pass Ledger
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase null
+**Current focus:** Phase 25.1 — Device Feedback Batch (card vs toast, Joiner swap, class-based allies, camp numbers, Oracle scroll)
 
 ## Current Position
 
-Phase: null — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase null
-Last activity: 2026-09-15 — Phase null execution started
+Phase: 25.1 — Device Feedback Batch (INSERTED; runs before Phase 26)
+Plan: 1 of 3
+Status: Executing (wave 1 of 3)
+Last activity: 2026-09-15 — Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
 
 ## Ground Truth (durable facts every session needs)
 
