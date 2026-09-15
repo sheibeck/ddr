@@ -76,6 +76,14 @@
   --stamp:#e07260;
   --moss:#8fae6a;
   --rule:#3a3226;
+
+  /* Phase 25 (FEED-03): toast-tone family colors beyond hit/hurt/magic —
+     muted siblings so YOU (green family: hit/miss) and THEM (red family:
+     hurt/dodge) stay distinct even when muted, plus one amber for refusals.
+     See the DR13 toast CSS block below for how these map to data-tone. */
+  --moss-soft:#6f8556;
+  --stamp-soft:#a8695e;
+  --amber:#d99a2b;
   --grid:#9FBDB4;
   --shadow:0 1px 0 rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.45);
   --mono:"Courier Prime",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -678,10 +686,17 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   animation:mwToastIn .18s cubic-bezier(.2,1.25,.35,1) both;
 }
 .mw-toast.out{animation:mwToastOut .3s ease forwards}
+/* Phase 25 (FEED-03): YOU green family (hit/miss), THEM red family
+   (hurt/dodge), plus two utilities (magic gold, block amber) and beat
+   (the neutral default, made explicit). All seven tones resolve to
+   explicit colors — miss is no longer the ink-soft grey. */
 .mw-toast[data-tone="hit"]{border-color:var(--moss);border-left-color:var(--moss);color:var(--moss)}
-.mw-toast[data-tone="miss"]{border-color:var(--ink-soft);border-left-color:var(--ink-soft);color:var(--ink-soft)}
+.mw-toast[data-tone="miss"]{border-color:var(--moss-soft);border-left-color:var(--moss-soft);color:var(--moss-soft)}
 .mw-toast[data-tone="hurt"]{border-color:var(--stamp);border-left-color:var(--stamp);color:var(--stamp)}
+.mw-toast[data-tone="dodge"]{border-color:var(--stamp-soft);border-left-color:var(--stamp-soft);color:var(--stamp-soft)}
 .mw-toast[data-tone="magic"]{border-color:var(--ditto);border-left-color:var(--ditto);color:var(--ditto)}
+.mw-toast[data-tone="block"]{border-color:var(--amber);border-left-color:var(--amber);color:var(--amber)}
+.mw-toast[data-tone="beat"]{border-color:var(--ink-soft);border-left-color:var(--ink-soft);color:var(--ink)}
 @keyframes mwToastIn{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:none}}
 @keyframes mwToastOut{to{opacity:0;transform:translateY(-8px)}}
 @media (prefers-reduced-motion:reduce){.mw-toast,.mw-toast.out{animation:none}}
