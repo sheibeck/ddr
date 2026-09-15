@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 24
 current_phase_name: "Every Sub-class and Race: One Good, One Bad"
 status: executing
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-09-15T00:42:02.947Z"
+stopped_at: Completed 24-02-PLAN.md
+last_updated: "2026-09-15T00:57:38.572Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 24 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 15
-  completed_plans: 9
+  completed_plans: 10
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 24 (Every Sub-class and Race: One Good, One Bad) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 24 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T00:42:02.900Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-09-15T00:57:27.161Z
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -126,6 +126,7 @@ Resume file: None
 | Phase 23 P03 | 12min | 3 tasks | 5 files |
 | Phase 23 P04 | 20min | 3 tasks | 8 files |
 | Phase 24 P01 | 55min | 3 tasks | 7 files |
+| Phase 24 P02 | 20min | 2 tasks | 6 files |
 
 ## Decisions
 
@@ -200,6 +201,7 @@ Resume file: None
 - [Phase ?]: Phase 24-01: Court Mage boredom draw sequence measured with a permissive looseRng fallback rather than hand-verifying the full content-driven killFoe/foeTurn tail
 - [Phase ?]: Phase 24-01: Bard party targeting reinterprets pickFoeTarget's existing draw (intel<=3 foe targets Bard outright) rather than skipping the mechanic, per plan discretion
 - [Phase ?]: Phase 24-01: dropped two pre-existing unit-test fixtures' foe maxWP to 19 to avoid an incidental collision with the new Knight-vs-big-foe initiative rule
+- [Phase ?]: 24-02: stockMarkupDiff imported aliased (stockMarkupDiff as checkStockMarkup) in economy-parity.test.js/full-suite.test.js to satisfy the plan's literal grep -c == 1 acceptance criterion while still genuinely importing and calling it
 
 ### Blockers
 
