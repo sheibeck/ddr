@@ -115,14 +115,21 @@ test("Cloak of Strength suppresses the player's own critical (a natural 1 no lon
   // Shared rng sequence: strike roll = 1 (crit), weapon d6 = 5, foe miss roll,
   // then a fresh initiative (mine>=theirs -> "you", no bonus foeTurn).
   const seq = () => [1, 5, 10, 20, 1];
+  // Phase 24 (IDENT-05) collision-avoidance: this file's fixedFighter
+  // defaults to sub: "Knight" and fixedFoe defaults to maxWP: 100 — with
+  // both new Knight-big-foe rule in play, a live maxWP >= 20 foe would force
+  // "fresh initiative" above to always land on "foe" instead of "you",
+  // triggering an extra foeTurn this rng sequence doesn't budget for.
+  // maxWP: 19 keeps the crit/soak math this test actually proves untouched.
+  const foeOverrides = { wp: 19, maxWP: 19 };
 
-  const control = fixedState({ combat: fixedCombat([fixedFoe({ wp: 100 })]) });
+  const control = fixedState({ combat: fixedCombat([fixedFoe(foeOverrides)]) });
   const cEvents = playerStrike(control, fakeRng(seq()), []);
   const cStruck = cEvents.find((e) => e.type === "struck");
   assert.equal(cStruck.critical, true, "without the cloak, a natural 1 crits");
   assert.equal(cStruck.dmg, 12, "crit doubles (1 + d6=5) => 6*2 = 12");
 
-  const cloaked = fixedState({ c: { items: [CLOAK_STRENGTH] }, combat: fixedCombat([fixedFoe({ wp: 100 })]) });
+  const cloaked = fixedState({ c: { items: [CLOAK_STRENGTH] }, combat: fixedCombat([fixedFoe(foeOverrides)]) });
   const wEvents = playerStrike(cloaked, fakeRng(seq()), []);
   const wStruck = wEvents.find((e) => e.type === "struck");
   assert.equal(wStruck.critical, false, "the Cloak of Strength suppresses the crit");

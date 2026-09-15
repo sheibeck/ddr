@@ -327,6 +327,12 @@ export function foeDie(c, f) {
 /**
  * foeToHitVs(state) — what a creature needs to land on this character. Reads
  * state.c and state.floor; ports mazeworld.html foeToHitVs() (lines 1473-1483).
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-06): "the profession
+ * is standing there" made real — a Guard is flat-out harder to land a blow
+ * on. Stacks with Agility (both -1s apply), still floors at 1 via the
+ * Math.max below, and still loses to the dark/mirror/invis overrides (those
+ * assign h=1 directly, after this line). Zero draws — pure arithmetic.
  */
 export function foeToHitVs(state) {
   const c = state.c;
@@ -335,6 +341,7 @@ export function foeToHitVs(state) {
   if (R.foeToHit) h += R.foeToHit;
   if (c.sub === "Acrobat") h = 3;
   if (skill(c, "Agility")) h -= 1;
+  if (c.sub === "Guard") h -= 1;
   h += eff(c, "foeToHit");
   if (inDark(state) && skill(c, "Silence")) h = 1; // a silent thief in the dark
   if (c.mirror > 0) h = 1; // Mirror Self

@@ -80,10 +80,35 @@ export function liveFoes(state) {
 }
 
 /**
+ * knightFacesBigFoe(state) — true when a Knight is up against something with
+ * real heft this encounter: any still-live foe with maxWP >= 20. Exported so
+ * rollInitiative and startCombat's encounterStarted flag share one
+ * definition instead of two copies of the same read.
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): backs the
+ * Knight's "everything over 20 comes straight at you" bad — see
+ * rollInitiative below. Pure read of already-rolled foe data; 0 draws.
+ */
+export function knightFacesBigFoe(state) {
+  return state.c.sub === "Knight" && !!state.combat && state.combat.foes.some((f) => f.alive && f.maxWP >= 20);
+}
+
+/**
  * rollInitiative(state, rng) — a fresh d20 each side; a Samurai/Fridgian is
  * last unless foreseen; foresight/Acute Hearing move first. Ports
  * mazeworld.html rollInitiative() (lines 2317-2327), minus its narration
  * string (a presentation concern — see the module header).
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): extends the
+ * never-first clause with two more zero-draw cases, both still overridden
+ * AFTER the two d20s above are drawn (never skipped, never re-rolled):
+ * a Knight facing any live foe with maxWP >= 20 (`knightFacesBigFoe`,
+ * re-evaluated every round — it switches off once every such foe is
+ * dead/fled) and a Court Mage in round 1 only ("you talk first" — foes act
+ * first at encounter start; afterPlayerAction increments `C.round` BEFORE
+ * re-rolling initiative each subsequent round, so `C.round === 1` is true
+ * only for the encounter-start call). A foreseen character still always
+ * goes first, exactly as the Samurai/Fridgian case already does.
  */
 export function rollInitiative(state, rng) {
   const C = state.combat;
@@ -94,10 +119,12 @@ export function rollInitiative(state, rng) {
   const theirs = rng.d(20);
   const samurai = c.sub === "Samurai";
   const slow = !!R.slow;
+  const knightBig = knightFacesBigFoe(state);
+  const courtMage = c.sub === "Court Mage" && C.round === 1;
   const foreseen = c.foresight;
   c.foresight = false;
   C.first =
-    (samurai || slow) && !foreseen
+    (samurai || slow || knightBig || courtMage) && !foreseen
       ? "foe"
       : foreseen || skill(c, "Acute Hearing")
         ? "you"
@@ -207,6 +234,11 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     samuraiNeverFirst: c.sub === "Samurai",
     fridgianSlow: !!R.slow,
     acuteHearing: skill(c, "Acute Hearing"),
+    // Phase 24 (IDENT-05): additive narration flags for rollInitiative's two
+    // new never-first cases — see rollInitiative's JSDoc. No test pins this
+    // event's exact key set.
+    knightBigFoe: knightFacesBigFoe(state),
+    courtMageTalksFirst: c.sub === "Court Mage",
   });
   if (tracked) events.push({ type: "trackable" });
   if (c.pendingAlly) {
@@ -262,7 +294,10 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       f.alive = false;
       f.fled = true;
       events.push({ type: "foeFled", name: f.name, reason: "conArtist" });
-    } else if (c.sub === "Court Mage" && rng.d(12) === 1) {
+      // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-06): the
+      // Court Mage's boredom kill widens from a 1-in-12 chance to 1-in-6
+      // (d12 <= 2) — same single draw, nothing else in this branch changes.
+    } else if (c.sub === "Court Mage" && rng.d(12) <= 2) {
       f.lives = 1;
       events.push({ type: "foeBored", name: f.name });
       killFoe(state, f, rng, events);
@@ -580,14 +615,19 @@ function pursuitStrike(state, rng, events) {
 
 /**
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
- * (lines 2684-2697): Samurai never runs, a Cloaker always gets away for
- * free, a tracked round-1 withdrawal is clean, otherwise d20 (+5 Thief) vs
- * 11; failure triggers a foeTurn and advances the round. Phase 19
- * (CANON-02/D-19): a live pursuing foe gets one melee strike on every
- * success exit, BEFORE the `fled` event; a lethal strike returns without
- * `endCombat`. Phase 19 (CANON-02/D-03) also adds a cleared-check after a
- * failed flee's foeTurn, since a fleesBelow caster can now leave the fight
- * mid-turn and would otherwise strand the combat screen.
+ * (lines 2684-2697): Samurai never runs, a Cloaker gets away for free while
+ * unseen, a tracked round-1 withdrawal is clean (denied for a Master of
+ * Arms), otherwise d20 (+5 Thief) vs 11; failure triggers a foeTurn and
+ * advances the round. Phase 19 (CANON-02/D-19): a live pursuing foe gets one
+ * melee strike on every success exit, BEFORE the `fled` event; a lethal
+ * strike returns without `endCombat`. Phase 19 (CANON-02/D-03) also adds a
+ * cleared-check after a failed flee's foeTurn, since a fleesBelow caster can
+ * now leave the fight mid-turn and would otherwise strand the combat screen.
+ *
+ * DECISION ORDER (Phase 24, IDENT-05/IDENT-07): Samurai refusal first ->
+ * Cloaker free vanish while `!C.opened2` (denied + narrated once seen) ->
+ * tracked round-1 clean withdrawal (denied + narrated for a Master of
+ * Arms, who falls through) -> the ordinary d20 roll.
  */
 export function flee(state, rng, events = []) {
   const c = state.c;
@@ -597,17 +637,34 @@ export function flee(state, rng, events = []) {
     events.push({ type: "fleeRefused", reason: "samurai" });
     return events;
   }
-  if (c.sub === "Cloaker") {
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): the Cloaker's
+  // free vanish only works before it has struck this fight — "you can
+  // always vanish, as long as nobody has seen your face". Once `C.opened2`
+  // is set (playerStrike's first LANDED blow), a Cloaker narrates the
+  // denial and falls through to the ordinary Thief roll below (d20+5 vs 11)
+  // instead of returning here. Zero new draws; `opened2` already exists.
+  if (c.sub === "Cloaker" && !C.opened2) {
     if (pursuitStrike(state, rng, events).died) return events;
     events.push({ type: "fled", reason: "cloaker" });
     endCombat(state, events);
     return events;
   }
+  if (c.sub === "Cloaker") events.push({ type: "vanishDenied", reason: "seen" });
   if (C.tracked && C.round === 1) {
-    if (pursuitStrike(state, rng, events).died) return events;
-    events.push({ type: "fled", reason: "tracked" });
-    endCombat(state, events);
-    return events;
+    // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): "you attack
+    // creatures without question" — a Master of Arms gets no clean
+    // round-1 tracked withdrawal; they narrate the denial and fall through
+    // to the ordinary flee roll below like any other Fighter past round 1.
+    // Every other Fighter's clean exit stays byte-identical (same three
+    // statements, same order).
+    if (c.sub === "Master of Arms") {
+      events.push({ type: "withdrawalDenied", reason: "masterOfArms" });
+    } else {
+      if (pursuitStrike(state, rng, events).died) return events;
+      events.push({ type: "fled", reason: "tracked" });
+      endCombat(state, events);
+      return events;
+    }
   }
   const bonus = c.cls === "Thief" ? 5 : 0; // getting out is the Thief's whole trade
   const roll = rng.d(20);
@@ -1031,13 +1088,28 @@ export function downMember(state, member, events) {
  * Phase 19's foe-ability resolver (`engine/foeAbilities.js`) reuses this
  * helper so `bolt`/`drain`-style abilities target the same pool as a melee
  * swing.
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): "creatures too
+ * stupid to know better come for you first" — a Bard's party bad. Added a
+ * third, OPTIONAL `foe` argument (only foeTurn's melee swing passes it;
+ * engine/foeAbilities.js's bolt/drain call stays two-argument and unchanged
+ * — an ability-casting foe is not "too stupid to know better"). Any zero-
+ * draw reinterpretation that merely BIASES the (n+1)-sided pick toward the
+ * hero would have to take a slot from one specific member (asymmetric); the
+ * only symmetric zero-draw design is "the dumb creature goes for the Bard
+ * outright" when a live party stands beside them — so an intel<=3 foe
+ * targets the Bard unconditionally instead of drawing normally. The pool/
+ * draw code above this line is byte-identical, and `pick` is still consumed
+ * (the party-mode rng stream is unchanged) even when this clause overrides
+ * its result.
  */
-export function pickFoeTarget(state, rng) {
+export function pickFoeTarget(state, rng, foe = null) {
   const C = state.combat;
   if (!C) return null;
   const liveMembers = C.allies ? C.allies.filter((a) => a.wp > 0) : [];
   if (!liveMembers.length) return null;
   const pick = rng.d(liveMembers.length + 1);
+  if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
 }
 
@@ -1284,8 +1356,10 @@ export function foeTurn(state, rng, events = []) {
       // PARTY-04/PARTY-05 (Phase 8): each foe swing chooses a target from the
       // pool [hero] + live party members, via pickFoeTarget's DETERMINISM
       // GATE (the single hottest parity loop in the engine) — see its JSDoc
-      // above for the exact zero-draw rationale this call preserves.
-      const member = pickFoeTarget(state, rng);
+      // above for the exact zero-draw rationale this call preserves. Phase
+      // 24 (IDENT-05): passing `f` lets the Bard's low-wit clause fire only
+      // for this melee swing, not foeAbilities.js's bolt/drain call.
+      const member = pickFoeTarget(state, rng, f);
       if (member) {
         // SIMPLIFIED member branch: no ward/armor/mirror/Hardiness (all
         // hero-only machinery), no die(). Same to-hit shape, then straight to

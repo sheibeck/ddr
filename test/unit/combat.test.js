@@ -1051,7 +1051,12 @@ test("playerStrike: a soak roll above sp.ar lets the blow land", () => {
 
 test("playerStrike: a critical ignores the soak (D-07) — no d20 drawn", () => {
   const state = fixedState({ c: { sub: "Knight" } });
-  const foe = fixedFoe({ sp: { ar: 12 }, wp: 20, maxWP: 20 });
+  // Phase 24 (IDENT-05) collision-avoidance: maxWP is kept at 19, not 20 —
+  // 20 would now make this foe trip the Knight's new "never wins initiative
+  // vs a live maxWP >= 20 foe" bad (engine/combat.js#knightFacesBigFoe),
+  // forcing an extra foeTurn this test's rng sequence doesn't budget for.
+  // Unrelated to what this test actually proves (D-07's soak bypass).
+  const foe = fixedFoe({ sp: { ar: 12 }, wp: 19, maxWP: 19 });
   state.combat = fixedCombat([foe]);
   // strike d20=1 -> natural-1 crit (Knight is not noCrit); club d6=4 -> base
   // dmg=5, doubled to 10; the crit bypasses the armor soak entirely (no d20
@@ -1059,7 +1064,7 @@ test("playerStrike: a critical ignores the soak (D-07) — no d20 drawn", () => 
   const rng = fakeRng([1, 4, 7, 15, 10]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "struck" && e.critical === true && e.dmg === 10));
-  assert.equal(foe.wp, 10);
+  assert.equal(foe.wp, 9);
   assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 5 draws total — no soak roll for a crit");
 });
 
