@@ -36,7 +36,7 @@ intent artifact).
 | action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | parley | 303 | startCombat | Humans | Dante (Humans lvl 1, wp 20); Dante (Humans lvl 1, wp 20) |
+| action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 8); Ned (Humans lvl 1, wp 8) |
 | action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.magic.json | heal | 7 | none | — | — |
 | action-script.magic.json | potion | 1 | none | — | — |
@@ -61,7 +61,9 @@ names, all level 1**:
   `Dante` — the only level-1 Humans entry (there is only one in that tier, so
   it is unconditionally exposed by any Humans-forced fixture). Seed 303
   (`parley`) rolls Dante twice — that's two rolled instances of the SAME
-  bestiary entry, not two distinct creatures.
+  bestiary entry, not two distinct creatures. (Phase 27: Dante moved to tier
+  2 — see the Phase 27 section; the row above is kept as the Phase 17
+  measurement. The live tier-1 Humans row seed 303 now rolls is `Ned`.)
 
 **Why only level 1:** every fixture starts a level-1 character on floor 1.
 `startCombat`'s level math (`engine/combat.js:98-135`) is:
@@ -136,6 +138,12 @@ Fixture scenario / seed / forced type / foes match the roster table above.
 | combat/flee | 17 | Beasts | Viper, Shriek | 11 | 111 | won |
 | combat/parley | 303 | Humans | Dante x2 | 6 | 66 | won |
 | magic/cast-damage | 8 | Beasts | Shriek | 4 | 32 | won |
+
+(Phase 27, TUNE-06: Dante moved to tier 2 — the `combat/parley` row above is
+kept as the Phase 17 measurement. The live roster this seed now rolls is
+Ned x2; re-measured via `test/unit/foe-turn-draw-count.test.js`'s
+`runFullFight`: 66 total draws (unchanged), 10 attacks to resolve — see the
+"Draw-count pin re-measured" note in the Phase 27 section below.)
 
 ### Per-foeTurn micro pins
 
@@ -461,3 +469,188 @@ Joiner); Woodsman/Pilfer gates (seed 13 Woodsman is chargen-only; fixture
 Pilfers only exercise `springTrap`/`encounterDot`); Fridgian hide on
 `combat/flee` seed 17 (the flee never reaches a landed pursuit blow —
 byte-identical, confirmed by Plan 24-03's replay).
+
+## Phase 27 early-floor divergences (TUNE-06)
+
+27-CONTEXT.md's Lever 3 widens the retune to include, in addition to the
+Dante demotion: foe grace at floors 2-4 (`FOE_GRACE_AT_2`, `foePower` below
+1.0 only at depths 2..`FOE_GRACE_CANON_FROM_DEPTH`-1), a trap/wall-fall
+hazard ramp starting at floor 2 (`hazardScale`, consumed post-draw by
+`engine/movement.js`'s fall damage and `engine/encounters.js`'s
+`springTrap`), and darkness held at one blob through floor 3
+(`DARK_HOLD_THROUGH_DEPTH`). Every lever this plan (27-02) LANDS is
+parity-clean by construction:
+
+- **Foe grace, floors 2-4** — `FOE_GRACE_AT_1` stays exactly `1.0` (floor 1
+  is canon by construction); every fixture fights on floor 1 only (the
+  movement fixture never fights at all), so no fixture ever sees a graced
+  foe.
+- **Hazard ramp from floor 2** — `HAZARD_FROM_DEPTH` is `2`; no fixture
+  springs a trap or falls (climb/gorge) past floor 1, so `hazardScale` is
+  exactly `1` (the `=== 1` fast path) at every fixture-exposed depth.
+- **Darkness held through floor 3** — floor 2 keeps its single canon dark
+  blob (`DARK_HOLD_THROUGH_DEPTH` = 3 only changes what happens at floors
+  4+); the movement fixture's seed 256 descends to floor 2 and its darkness
+  is unchanged.
+- **Dots restructured behind `DENSITY_CANON_THROUGH_DEPTH` = 2** — floors 1
+  and 2 reproduce the prototype's exact `9 + depth` formula by construction;
+  only floors 3+ (which no fixture reaches) see the eased cap.
+
+So the seed-303 record below is this phase's ONLY parity divergence, unless
+27-03 escalates past the parity-clean set (see "Escalation records" below).
+
+### Combat: parley scenario, seed 303 (Dante -> Ned)
+
+Measured by replaying both sides action-by-action (prototype sandbox vs.
+engine), mirroring `test/parity/combat-parity.test.js`'s own replay loop:
+
+| | Prototype (frozen) | Engine (Phase 27) |
+|---|---|---|
+| Action 0: `startCombat(false, "Humans")` — foes rolled | Dante (wp 20); Dante (wp 20) | Ned (wp 8); Ned (wp 8) |
+| `c` after action 0 | wp 40, sp 0, gold 50, kills 0, rations 5 | wp 40, sp 0, gold 50, kills 0, rations 5 |
+| `dead` / `combat` after action 0 | false / non-null | false / non-null |
+| Action 1: `parley()` | — | — |
+| `c` after action 1 | wp 40, sp **13**, gold **250**, kills 0, rations 5 | wp 40, sp **7**, gold **50**, kills 0, rations 5 |
+| `dead` / `combat` after action 1 | false / null | false / null |
+
+The declared record on the `parley` scenario
+(`test/parity/fixtures/action-script.combat.json`):
+
+```json
+"divergence": {
+  "phase": "27",
+  "requirements": ["TUNE-06"],
+  "kind": "action-path",
+  "fromAction": 0,
+  "fields": ["wp", "sp", "gold", "kills", "rations"],
+  "before": { "wp": 40, "sp": 13, "gold": 250, "kills": 0, "rations": 5 },
+  "after": { "wp": 40, "sp": 7, "gold": 50, "kills": 0, "rations": 5 },
+  "stateFields": ["dead"],
+  "stateBefore": { "dead": false },
+  "stateAfter": { "dead": false }
+}
+```
+
+`fromAction` is `0` (not `1`, like the Phase 24 `lose` record) because the
+foe OBJECTS already differ inside the `startCombat` action itself (Dante
+x2 vs. Ned x2) — the `c` fields happen to still match byte-for-byte
+immediately after action 0 (nothing about `c` changes on either side merely
+by rolling foes), but `state.combat.foes` (name/wp) diverges right there,
+so the per-action byte diff is skipped from action 0 onward, machine-checked
+at both replay sites (`test/parity/combat-parity.test.js`,
+`test/parity/full-suite.test.js`) via the existing
+`actionPathDivergenceOf`/`skipsByteDiffAt`/`declaredEndDiffs` helpers — zero
+edits to `test/parity/harness/comparables.js`.
+
+#### Draw-count pin re-measured
+
+`test/unit/foe-turn-draw-count.test.js`'s `FULL_FIGHTS` seed-303 row (was
+`foeNames: ["Dante", "Dante"]`, `totalDraws: 66`, `attacks: 6`, `won`) is
+now `foeNames: ["Ned", "Ned"]`, `totalDraws: 66` (unchanged — coincidence,
+re-measured live), `attacks: 10`, `won`. `test/determinism/foe-abilities.test.js`'s
+`humans-t2` spec (the tier-2 `rng.pick` roster grew from `[China Wolf,
+Krupke]` to `[China Wolf, Krupke, Dante]` once Dante was appended) moves its
+pinned seed from `1` (which now rolls Dante x2 with no Krupke) to `3` (the
+new first seed whose tier-2 roll contains Krupke); its full-fight and
+per-visit pins are re-measured at the new seed. The other four determinism
+specs (`magical-t4`, `demons-t5`, `walking-dead-t5`, `beasts-t5`) are
+byte-unchanged.
+
+### Escalation records (declared only if 27-03 turns the lever)
+
+27-CONTEXT.md's ladder cap (user decision 2026-09-15, third round) lands
+ONLY the parity-clean set in this plan. The four widened-lever rungs below
+are NOT climbed in 27-02 — they are pre-enumerated here so that IF 27-03
+escalates past the parity-clean set, the exact record shape and wiring is
+already known and reviewable, never invented ad hoc under time pressure.
+
+#### Trap/wall-fall ramp from floor 1
+
+If `HAZARD_FROM_DEPTH` moves from `2` to `1` (canon floor 1 no longer
+exempt), the `encounters` fixture's `trap` scenario (seed 1: a Knight,
+`Darts`, roll 4, canon dmg 3) would diverge: `dmg` scales to `2`
+(`Math.max(1, Math.round(3 * 0.5))`), so `c.wp` moves `55 -> 56`. This is a
+Phase 23-style field-strip record (not an action-path record — the trap
+roll itself is unaffected, only the resulting damage number), added to the
+scenario object: `{ "phase": "27", "requirements": ["TUNE-06"], "fields":
+["wp"], "before": { "wp": 55 }, "after": { "wp": 56 }, "rationale": "..." }`.
+Wiring: `test/parity/full-suite.test.js`'s encounters loop would select
+`stripScenarioDivergence(economyComparable(s), scenario.divergence)` when a
+record is present and assert the declared before/after with `diffState`
+before stripping — mirroring `magic-parity.test.js`'s existing
+`cast-damage` (seed 8) wiring. Roughly a dozen unit pins at `fixedState`
+depth 1 (`test/unit/encounters.test.js`'s trap-dmg tests,
+`test/unit/movement.test.js`'s fall-hurt tests, and the identity-contract
+test in `test/unit/combat-scaling.test.js`) would also need re-measuring.
+
+#### Darkness from floor 4
+
+If darkness is eased to `DARK_FROM_DEPTH` = 4 (blobs `0 / 0 / 0 / 1 / 2` on
+floors 1-5) instead of the landed "hold through 3" form, the `movement`
+fixture's seed 256 would diverge: it descends to floor 2, which currently
+carries one canon dark blob; under the from-4 form floor 2 has zero blobs
+— one fewer `rng.pick(open)` draw, producing a different floor-2 grid from
+the descend action onward. This is an action-path record at the fixture's
+TOP level (mirroring the combat fixture's per-scenario placement, but this
+fixture has no `scenarios` array): `{ "kind": "action-path", "fromAction":
+<the descend action index — measured, the action whose engine events
+include "floorChanged">, "fields": [<measured c fields>], "stateFields":
+["day", "steps", "dead"], "before": {...}, "after": {...}, "rationale":
+"..." }`. Wiring: `test/parity/movement-parity.test.js` and
+`test/parity/full-suite.test.js`'s movement sub-test would add
+`actionPathDivergenceOf(FIXTURE)` / `skipsByteDiffAt` / `declaredEndDiffs`
+exactly as `combat-parity.test.js` already does, and the hard-coded
+`floor.depth === 2 / day === 2 / steps === 100` post-assertions would need
+to gate on `!pathDiv`.
+
+#### Starting rations +N
+
+If `engine/character.js`'s `rollCharacter` grants `+1` or `+2` starting
+rations, the `chargen` fixture's all 14 seeds would each need a per-seed
+`divergences` record: `{ "phase": "27", "requirements": ["TUNE-06"],
+"fields": ["rations"], "before": { "rations": <canon> }, "after": {
+"rations": <canon + N> }, "rationale": "..." }` (seeds 15 and 24 would MERGE
+this into their existing grimoire records: `fields: ["grimoire",
+"rations"]`). The combat `lose` scenario (seed 14, `after.rations` 8 ->
+`8+N`) and the magic `cast-damage` scenario (seed 8, `after.rations` 5 ->
+`5+N`) would need their existing records re-measured; every other
+comparable already strips `c.rations` via `stripRationsField`.
+
+#### Floor-1 foe grace (last resort)
+
+If `FOE_GRACE_AT_1` drops below `1.0` (the LAST RESORT rung — 27-CONTEXT.md
+is explicit this is only taken if the smoke still misses median 5 after
+every other rung), floor 1 stops being canon-by-construction and the blast
+radius is broad: the combat fixture's `win` (seed 3), `flee` (seed 17), and
+`lose-apprentice` (seed 127) scenarios would each gain an action-path
+record from action 0 (mirroring the `parley` record's shape above); `lose`
+(seed 14) and `parley` (seed 303, this plan's own record) would need
+re-measuring against the new `foePower`; the magic fixture's `cast-damage`
+(seed 8) field-strip record would need re-measuring, or converting to an
+action-path record if its action path itself flips. `test/parity/FIXTURE-INVENTORY.md`'s
+own `FID-02` `FULL_FIGHTS` (5 rows) and the generated roster's `wp` values
+would all need re-measuring, and the ledger would need a note that the
+fidelity contract now carries broad early-floor exceptions rather than a
+single named one.
+
+### Byte-identical elsewhere
+
+Every parity scenario other than `parley` (seed 303) is byte-identical to
+the frozen prototype after this plan: `win`, `lose`, `lose-apprentice`,
+`flee` (combat), every magic scenario, the movement script (seed 256,
+including its floor-2 descent — floors 1-2 stay canon by construction, see
+above), the chargen fixture (all 14 seeds), the economy script, and every
+encounters scenario. `node --test "test/parity/**/*.test.js"` is 33/33.
+
+**Gate check (measured, quoted verbatim):**
+
+```
+$ git diff --stat 4e4b3e7..HEAD -- test/parity/prototype-master.js.txt test/parity/harness/comparables.js
+(empty — no output)
+```
+
+Neither `test/parity/prototype-master.js.txt` nor
+`test/parity/harness/comparables.js` was touched by this plan; the seed-303
+divergence is checked entirely through the pre-existing, generic
+`actionPathDivergenceOf`/`skipsByteDiffAt`/`declaredEndDiffs` helpers Phase
+24 already wired into both combat replay sites.

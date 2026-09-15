@@ -77,14 +77,18 @@ test("FID-01: the six fixture fights roll exactly the pinned creatures, in order
         { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
       ],
     },
+    // Phase 27 (2026-09-15, TUNE-06): was Dante x2 (wp 20) — Dante demoted
+    // to tier 2, Ned is now the tier-1 Humans row this seed rolls (a
+    // declared action-path divergence — see FIXTURE-INVENTORY.md's Phase 27
+    // section).
     {
       fixture: "action-script.combat.json",
       scenario: "parley",
       seed: 303,
       forced: "Humans",
       foes: [
-        { name: "Dante", type: "Humans", lvl: 1, wp: 20 },
-        { name: "Dante", type: "Humans", lvl: 1, wp: 20 },
+        { name: "Ned", type: "Humans", lvl: 1, wp: 8 },
+        { name: "Ned", type: "Humans", lvl: 1, wp: 8 },
       ],
     },
     {
@@ -103,7 +107,9 @@ test("FID-01: the six fixture fights roll exactly the pinned creatures, in order
 
 test("FID-01: the parity-exposed surface is exactly 2 types x 4 names, all level 1", () => {
   const names = [...new Set(rows.flatMap((r) => r.foes.map((f) => `${f.type}:${f.name}`)))].sort();
-  assert.deepStrictEqual(names, ["Beasts:Bat/Rat", "Beasts:Shriek", "Beasts:Viper", "Humans:Dante"]);
+  // Phase 27 (2026-09-15, TUNE-06): was "Humans:Dante" — Dante moved to
+  // tier 2, no fixture forces it anymore; Ned is the new tier-1 row.
+  assert.deepStrictEqual(names, ["Beasts:Bat/Rat", "Beasts:Shriek", "Beasts:Viper", "Humans:Ned"]);
 
   for (const row of rows) {
     for (const foe of row.foes) {
@@ -200,7 +206,9 @@ test("FID-01: FIXTURE-INVENTORY.md's generated block matches the live replay", (
 
   assert.equal(generatedBlock, rosterToMarkdown(rows));
 
-  for (const name of ["Bat/Rat", "Shriek", "Viper", "Dante"]) {
+  // Phase 27 (2026-09-15, TUNE-06): the doc mentions both Ned (the new
+  // tier-1 exposed row) and Dante (kept for the Phase 27 section's record).
+  for (const name of ["Bat/Rat", "Shriek", "Viper", "Ned", "Dante"]) {
     assert.ok(doc.includes(name), `FIXTURE-INVENTORY.md should mention ${name}`);
   }
   assert.ok(doc.includes("## What this means for Phase 18"));

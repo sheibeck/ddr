@@ -74,7 +74,20 @@
       "actions": [
         { "type": "startCombat", "wandering": false, "forced": "Humans" },
         { "type": "parley" }
-      ]
+      ],
+      "divergence": {
+        "phase": "27",
+        "requirements": ["TUNE-06"],
+        "kind": "action-path",
+        "fromAction": 0,
+        "fields": ["wp", "sp", "gold", "kills", "rations"],
+        "before": { "wp": 40, "sp": 13, "gold": 250, "kills": 0, "rations": 5 },
+        "after": { "wp": 40, "sp": 7, "gold": 50, "kills": 0, "rations": 5 },
+        "stateFields": ["dead"],
+        "stateBefore": { "dead": false },
+        "stateAfter": { "dead": false },
+        "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes."
+      }
     }
   ]
 }
