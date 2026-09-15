@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 25.1
-current_phase_name: Device Feedback Batch (INSERTED; runs before Phase 26)
+current_phase: 26
+current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
 stopped_at: Completed 25.1-03-PLAN.md
-last_updated: "2026-09-15T14:25:09.166Z"
+last_updated: "2026-09-15T14:28:02.865Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
+last_activity_desc: Phase 25.1 complete, transitioned to Phase 26
 progress:
   total_phases: 7
   completed_phases: 5
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 25.1 — Device Feedback Batch (INSERTED; runs before Phase 26)
-Plan: 3 of 3
-Status: Executing (wave 1 of 3)
-Last activity: 2026-09-15 — Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
+Phase: 26 — Mass Playtest & Class-Pass Ledger
+Plan: 4 plans ready (planned 2026-09-15, ee89cce)
+Status: Ready to execute
+Last activity: 2026-09-15 — Phase 25.1 complete, transitioned to Phase 26
 
 ## Ground Truth (durable facts every session needs)
 

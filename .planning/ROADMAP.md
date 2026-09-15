@@ -60,7 +60,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 23: Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)** - Fix the three "cannot act" states and guarantee every fresh Magic User a day-one attack spell (completed 2026-09-14)
 - [x] **Phase 24: Every Sub-class and Race: One Good, One Bad** - Every sub-class and race gets a code-verified good and bad, flavor text matches the mechanics, and an identity-contract test proves it (completed 2026-09-14)
 - [x] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses (completed 2026-09-15)
-- [ ] **Phase 25.1: Device Feedback Batch (INSERTED 2026-09-15)** - Card only for decisions/big updates, minor events toast-only with the narrative sentence, readable toasts, Oracle fills the screen and opens at the newest line, Joiner swap with snark, Joiners fight by class, camp refusal states the numbers
+- [x] **Phase 25.1: Device Feedback Batch (INSERTED 2026-09-15)** - Card only for decisions/big updates, minor events toast-only with the narrative sentence, readable toasts, Oracle fills the screen and opens at the newest line, Joiner swap with snark, Joiners fight by class, camp refusal states the numbers (completed 2026-09-15)
 - [ ] **Phase 26: Mass Playtest & Class-Pass Ledger** - An AFTER matrix on the post-pass engine ranks over/under-performers with a fun-band verdict per row, committed to `docs/CLASS-PASS.md`
 - [ ] **Phase 27: Delve-to-Death Retune** - The deferred TUNE-04 re-attempt on the corrected player power, closed by a human DR round on the Pixel 7
 
@@ -226,7 +226,7 @@ Plans:
   5. A Magic User member casts, a Thief member backstabs, a Fighter member swings its weapon — narrated and toasted; solo parity byte-identical.
   6. Make Camp with too little food says "you eat N a night, you have M", counting party appetites; the automatic new day is unchanged.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**

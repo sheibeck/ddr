@@ -38,6 +38,7 @@
 - ✓ **Bestiary rebalance** on a yardstick behind one damage seam — v1.1
 - ✓ **Parley balance + Language system** — v1.1 (one attempt per encounter, fluency feeds the bonus)
 - ✓ **Nothing happens silently** — v1.2 Phase 25 (pure toast table exactly partitioning all 209 engine event types with a 21-entry Oracle-only allowlist; red-for-them/green-for-you tone families plus amber refusals; per-foe "K of M" aggregation and the 3-foe collapse; 15 fledgling miss quips at levels 1–2; passive modifiers surfaced as additive event payload; one dispatch seam in the shell; 1330 tests, parity untouched)
+- ✓ **Device feedback batch (inserted Phase 25.1)** — v1.2 Phase 25.1 (the "Move on" card only for floorChanged/leveled plus the existing Fight!/Joiner/find/death cards; every other move-path event is a toast carrying the Oracle sentence; toasts 3000 + 60/char capped at 9 s, +1.2 s per visible toast, tap to dismiss; Oracle fills the screen, opens at the newest line, "↑ newer" pill; a full party swaps its Joiner with one of five exit lines, zero rng; party members fight by class — Fighter weapon, Thief backstab, Magic User attack spell on own charges; Make Camp refuses with "You eat N a night, you have M" counting party appetites like newDay; 1397 tests, parity untouched)
 - ✓ **Every sub-class and race has one good and one bad** — v1.2 Phase 24 (11 sub-class mechanics + a 3-race pass, all zero-draw; Woodsman/Pilfer/Cloaker restrictions enforced; 30 blurbs truthful; identity-contract test over 24 subs + 5 races with Human neutral; dagger ruling KEEP; 1188 tests, 2 declared action-path divergences, prototype master untouched)
 - ✓ **Casters can act** — v1.2 Phase 23 (Wizard refuses melee only while an attack spell is castable and names it; every non-Summoner caster rolls a day-one attack spell with zero new rng draws; Summon at level 1 for Summoners and Phantom Host at level 1 for Illusionists via a data-driven override table; Freeze kills pay out like any kill; 1036 tests, three declared parity divergences, prototype master untouched)
 - ✓ **Class-aware playtest harness** — v1.2 Phase 22 (dev-only `force` chargen seam, sub-class-aware bot with `chooseSpell` scoring table, `tools/tune-classes.mjs` 143-cell matrix on worker threads, `--start-depth`, `stuck` bucket; 989 tests, parity untouched)
@@ -65,7 +66,7 @@
 
 ## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
 
-**v1.2 progress:** Phases 22–25 complete (2026-09-15). Phase 22: harness + BEFORE matrix. Phase 23: casters can act. Phase 24: every sub-class and race has one good and one bad. Phase 25: nothing happens silently (toasts + Oracle for every feature, refusal, and effect). Next: Phase 26, the AFTER matrix and class-pass ledger.
+**v1.2 progress:** Phases 22–25 and inserted 25.1 complete (2026-09-15). Phase 22: harness + BEFORE matrix. Phase 23: casters can act. Phase 24: every sub-class and race has one good and one bad. Phase 25: nothing happens silently. Phase 25.1: device feedback batch (card vs toast, lingering toasts, Oracle scroll, Joiner swap, Joiners fight by class, camp numbers). Next: Phase 26, the AFTER matrix and class-pass ledger (already planned, 4 plans).
 
 **Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
@@ -175,4 +176,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 — v1.2 Phase 25 complete (feature feedback)*
+*Last updated: 2026-09-15 — v1.2 Phase 25.1 complete (device feedback batch)*
