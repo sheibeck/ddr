@@ -199,6 +199,24 @@ test("startCombat: a Court Mage's boredom kill fires on d12 in {1,2} and nothing
   assert.equal(eventsNoFire.some((e) => e.type === "foeBored"), false, "d12 === 3 never fires");
 });
 
+test("startCombat: encounterStarted carries knightBigFoe/courtMageTalksFirst, additive to the existing flags", () => {
+  const knight = fixedState({ c: { sub: "Knight" } });
+  const knightEvents = startCombat(knight, false, "Beasts", looseRng([1, 2, 20, 1, 3]), []);
+  const knightStarted = knightEvents.find((e) => e.type === "encounterStarted");
+  // A level-1 Bat/Rat (Beasts roster row 0) has maxWP 1 -- not a big foe, and
+  // also below the pre-existing "beneath the notice of small things" (< 5)
+  // Knight flee, so it survives to be read here.
+  assert.equal(knightStarted.knightBigFoe, false);
+  assert.equal(knightStarted.courtMageTalksFirst, false);
+  assert.equal(knightStarted.samuraiNeverFirst, false, "additive — the existing flags are untouched");
+
+  const courtMage = fixedState({ c: { sub: "Court Mage" } });
+  const cmEvents = startCombat(courtMage, false, "Beasts", looseRng([1, 2, 20, 1, 3]), []);
+  const cmStarted = cmEvents.find((e) => e.type === "encounterStarted");
+  assert.equal(cmStarted.knightBigFoe, false);
+  assert.equal(cmStarted.courtMageTalksFirst, true);
+});
+
 // --- Guard: -1 to be hit, stacking with Agility, floored/overridden -------
 
 test("foeToHitVs: a Guard needs one better, stacking with Agility, never beating a hard override", () => {
@@ -210,14 +228,16 @@ test("foeToHitVs: a Guard needs one better, stacking with Agility, never beating
 
 // --- Cloaker: free vanish only before the first landed blow ----------------
 
-test("flee: a Cloaker vanishes free only while unseen (!opened2)", () => {
+test("flee: a Cloaker vanishes free while unseen (!opened2), zero vanishDenied", () => {
   const unseen = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
   unseen.combat = fixedCombat([fixedFoe()]);
   const eventsUnseen = flee(unseen, fakeRng([]), []);
   assert.ok(eventsUnseen.some((e) => e.type === "fled" && e.reason === "cloaker"));
   assert.equal(eventsUnseen.some((e) => e.type === "fleeRolled"), false);
   assert.equal(eventsUnseen.some((e) => e.type === "vanishDenied"), false);
+});
 
+test("flee: a Cloaker who has already struck (opened2) is denied the free vanish and escapes on the ordinary roll", () => {
   const seenEscape = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
   seenEscape.combat = fixedCombat([fixedFoe()], { opened2: true });
   const eventsEscape = flee(seenEscape, fakeRng([20]), []);
@@ -225,7 +245,9 @@ test("flee: a Cloaker vanishes free only while unseen (!opened2)", () => {
     eventsEscape.map((e) => e.type),
     ["vanishDenied", "fleeRolled", "fled", "combatEnded"],
   );
+});
 
+test("flee: a Cloaker who has already struck (opened2) can also fail the ordinary roll", () => {
   const seenFail = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
   seenFail.combat = fixedCombat([fixedFoe({ asleep: 5 })], { opened2: true });
   const eventsFail = flee(seenFail, fakeRng([1]), []);
@@ -237,19 +259,22 @@ test("flee: a Cloaker vanishes free only while unseen (!opened2)", () => {
 
 // --- Master of Arms: no clean tracked round-1 withdrawal --------------------
 
-test("flee: a Master of Arms gets no clean tracked round-1 withdrawal; every other Fighter does", () => {
+test("flee: a Master of Arms gets no clean tracked round-1 withdrawal — narrated, then the ordinary roll", () => {
   const moa = fixedState({ c: { sub: "Master of Arms" } });
   moa.combat = fixedCombat([fixedFoe({ asleep: 5 })], { tracked: true, round: 1 });
   const moaEvents = flee(moa, fakeRng([1]), []);
   assert.ok(moaEvents.some((e) => e.type === "withdrawalDenied" && e.reason === "masterOfArms"));
   assert.ok(moaEvents.some((e) => e.type === "fleeRolled"));
   assert.equal(moaEvents.some((e) => e.type === "fled" && e.reason === "tracked"), false);
+});
 
+test("flee: every other Fighter's tracked round-1 clean exit stays byte-identical", () => {
   const soldier = fixedState(); // default sub: "Soldier"
   soldier.combat = fixedCombat([fixedFoe()], { tracked: true, round: 1 });
   const soldierEvents = flee(soldier, fakeRng([]), []);
   assert.ok(soldierEvents.some((e) => e.type === "fled" && e.reason === "tracked"));
   assert.equal(soldierEvents.some((e) => e.type === "fleeRolled"), false);
+  assert.equal(soldierEvents.some((e) => e.type === "withdrawalDenied"), false);
 });
 
 // --- Bard: dumb foes in a party come for the Bard -------------------------
