@@ -822,6 +822,41 @@ fixture divergences exist (`combat/lose`, seed 14; `economy`, seed 3) plus
 one restored death-path scenario (`lose-apprentice`, seed 127) — full
 detail in `test/parity/FIXTURE-INVENTORY.md`'s "Phase 24" section.
 
+### Phase 24 note (2026-09-14, smoke readout — NOT the AFTER matrix)
+
+Six smoke runs (`tools/tune-classes.mjs`, 20 seeds each — 120 runs per
+`--sub`, 460/480 runs per `--race` since a race run covers every sub in
+that race) were taken for the six mechanics changed in this phase with the
+largest measured shift in either direction (Knight/Court Mage/Guard/
+Pickpocket subs; Fridgian/Dwarven races):
+
+```
+node tools/tune-classes.mjs --sub Knight --seeds 20
+node tools/tune-classes.mjs --sub "Court Mage" --seeds 20
+node tools/tune-classes.mjs --sub Guard --seeds 20
+node tools/tune-classes.mjs --sub Pickpocket --seeds 20
+node tools/tune-classes.mjs --race Fridgian --seeds 20
+node tools/tune-classes.mjs --race Dwarven --seeds 20
+```
+
+| Sub / Race | BEFORE mean depth (roll-up) | Phase 24 smoke (20 seeds) | Stuck |
+| --- | --- | --- | --- |
+| Knight | 3.19 | 3.48 | 0 of 120 |
+| Court Mage | 2.52 | 2.49 | 0 of 120 |
+| Guard | 2.80 | 3.22 | 0 of 120 |
+| Pickpocket | 2.88 | 3.01 | 0 of 120 |
+| Fridgian | 2.46 | 2.97 | 0 of 460 |
+| Dwarven | 2.45 | 2.73 | 0 of 480 |
+
+**Caveat, explicit:** this is a smoke readout at the tool's default flags
+(`exploreBudget=50`, `maxActions=5000`), not the pinned 40-seed/143-cell
+`Bot:` line the BEFORE matrix above used — different sample size, no
+`--workers`/`--max-actions` parity with the matrix run. Read it as a
+directional signal only: every sub/race here moved up or held flat, none
+regressed, and 0 of 1560 total smoke runs got stuck. No dial or bot policy
+was changed based on this readout. The paired, rigorous AFTER matrix (same
+143 cells, same seed count, same flags as BEFORE) is Phase 26 (PLAY-02).
+
 ## AFTER — commit `<hash>` (Phase 26 — PLAY-02)
 
 The AFTER matrix (post-identity-pass engine, after Phases 23-25 land) is
