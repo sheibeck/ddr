@@ -1157,7 +1157,7 @@ round's own judgment carries the most weight here.
 
 **Overall verdict:** **tune-again** (user, 2026-09-14) — "Level 20, way overtuned. It's instant death on any combat." Run 1 (depth 20) was enough to call it; runs 2/3 not played. **Retune deferred by the user** to a later milestone, after upcoming cleanup and class fixes/updates land (those change player power, so tuning now would be tuned twice). The shipping constants stay as landed in 21-04 until then; the dev start-at-depth toggle remains the test harness for the next attempt. Concrete lead for that pass: the depth-20 band (foe cap 4, power ≈1.21×, cadence ≈1.39×) is already lethal for a level-5 hero with a 6,000-wilmst purse — start by pulling `FOE_POWER_MAX`/`ABILITY_THREAT_MAX` down and/or pushing `*_SOFT_K` out, and consider capping foes-per-encounter growth below 5.
 
-**Per-run notes above complete:** (to be filled by the tester)
+**Per-run notes above complete:** not played — the user was away from the Pixel 7 at hand-off (device unreachable over wireless adb); the four runs stay in this checklist for the next tuning pass, to be played on whichever build carries it.
 **Gate at hand-off:** npm test 951/951, parity 30/30, frozen files identical to 04eb229, build stamped 1.0.1 (2), APK: android/app/build/outputs/apk/debug/app-debug.apk (build succeeded, no wireless adb device reachable from this shell — install per "Getting the build on the device" above) — 2026-09-14.
 
 ### What happens next (D-16)
@@ -2984,11 +2984,11 @@ thresholds, should typically outlast it.
 
 ### Verdict (TUNE-07)
 
-**Overall verdict:** (to be filled by the tester — exactly one of: tuned / tune-again / deferred)
+**Overall verdict:** **deferred** (user, 2026-09-15)
 
 **Per-run notes above complete:** (to be filled by the tester)
 
-**If deferred — the user's reason, verbatim:** (to be filled by the tester)
+**If deferred — the user's reason, verbatim:** "Let's defer. We'll have more tuning eventually. For now, what is left to wrap up? I have another milestone of fixes, questions that might affect tuning to sure degree, so let's move on for now. I'm away and so my phone isn't available until i return." — The retuned constants (pin 39bfecf: canon through depth 20, foe grace ×0.5 at floors 2–4, dot cap 13, Dante tier 2 / Ned tier 1) SHIP as landed; the two recorded bot misses (forced-20 floors gained p50 0 / mean 0.84; reach ≥ 20 0.1 %) and the unplayed DR round carry into the next tuning pass after the user's next milestone of fixes.
 
 **Gate at hand-off:** npm test 1448/1448, parity 33/33, pin 91c5b13, APK
 2026-09-15 18:21:05 (build succeeded; NOT installed — device unreachable this
