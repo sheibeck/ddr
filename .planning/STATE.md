@@ -5,16 +5,16 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 25.1
 current_phase_name: Device Feedback Batch (INSERTED; runs before Phase 26)
 status: executing
-stopped_at: Completed 25.1-02-PLAN.md
-last_updated: "2026-09-15T14:07:40.033Z"
+stopped_at: Completed 25.1-03-PLAN.md
+last_updated: "2026-09-15T14:25:09.166Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 27
-  completed_plans: 22
-  percent: 57
+  completed_plans: 23
+  percent: 71
 ---
 
 # Project State
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T14:07:40.005Z
-Stopped at: Completed 25.1-02-PLAN.md
+Last session: 2026-09-15T14:25:09.140Z
+Stopped at: Completed 25.1-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -143,6 +143,7 @@ Resume file: None
 | Phase 25 P05 | 20min | 2 tasks | 2 files |
 | Phase 25.1 P01 | 35min | 3 tasks | 6 files |
 | Phase 25.1 P02 | 50min | 3 tasks | 9 files |
+| Phase 25.1 P03 | 65min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -243,6 +244,7 @@ Resume file: None
 - [Phase ?]: tableFour/tableFourNoop toast the engine's own prose result unchanged rather than deriving a shorter table phrase
 - [Phase ?]: campFailed.members is conditionally spread so the solo event shape stays byte-identical to the pre-plan payload
 - [Phase ?]: The camp button is dimmed via data-short/CSS, never disabled, so a refused tap still surfaces the campFailed toast
+- [Phase ?]: DFB-05: memberView read pattern (default sparse sheet fields) + self-contained allyCast mirror of castSpell's dice shapes in combat.js (magic.js already imports combat.js) + transient C.allies backstabUsed flag
 
 ### Blockers
 

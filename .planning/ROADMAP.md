@@ -226,7 +226,7 @@ Plans:
   5. A Magic User member casts, a Thief member backstabs, a Fighter member swings its weapon — narrated and toasted; solo parity byte-identical.
   6. Make Camp with too little food says "you eat N a night, you have M", counting party appetites; the automatic new day is unchanged.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -239,7 +239,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 25.1-03-PLAN.md — Party members fight by class (DFB-05): `memberToHit`/`bestAttackSpell` in derived.js; alliesTurn reads the persistent sheet — Fighter weapon/to-hit/crit-on-1, Thief one backstab per combat (transient `backstabUsed` on the C.allies entry), Magic User self-contained `allyCast` (thrown d8/4, Freeze d10/6, status/stun/weaken with resistRoll) on its own charges (reset in newDay) else staff swing; legacy strike for sheet-less entries; `allyCast` Oracle-only + `allySpellHit`/`allySpellMissed` toasts, additive `allyStruck`/`allyMissed` flags, FEATURE_EVENTS; parity 33/33, bot `--party` smoke, build — wave 3
+- [x] 25.1-03-PLAN.md — Party members fight by class (DFB-05): `memberToHit`/`bestAttackSpell` in derived.js; alliesTurn reads the persistent sheet — Fighter weapon/to-hit/crit-on-1, Thief one backstab per combat (transient `backstabUsed` on the C.allies entry), Magic User self-contained `allyCast` (thrown d8/4, Freeze d10/6, status/stun/weaken with resistRoll) on its own charges (reset in newDay) else staff swing; legacy strike for sheet-less entries; `allyCast` Oracle-only + `allySpellHit`/`allySpellMissed` toasts, additive `allyStruck`/`allyMissed` flags, FEATURE_EVENTS; parity 33/33, bot `--party` smoke, build — wave 3
 
 **Engine gate reminder**: DFB-04/05/06 touch the engine — zero rng for the swap and the camp gate; ally-combat draws only behind the existing `state.party?.length` gate; no new serialized field; parity byte-identical for every fixture; every new event narrated and toasted (Phase 25 coverage guards).
 
