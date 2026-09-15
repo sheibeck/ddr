@@ -30,7 +30,7 @@ One solid good, one solid bad, for every sub-class and race — verified in code
 - [x] **IDENT-07**: Flavor-only restrictions are either enforced in the engine or reworded out of the flavor — Woodsman (no mail/plate/shield), Pilfer (no magic items that don't heal), Cloaker (a bad that is actually a bad) — so every promise on the sheet is true
 - [x] **IDENT-08**: An identity-contract test table asserts, for all 24 sub-classes and the 5 non-Human races, that the named good AND the named bad each fire under a forced scenario; Human is asserted neutral (deliberate: the control race, user decision 2026-09-14)
 - [x] **IDENT-09**: `SUB_NOTE` / `RACE_NOTE` flavor text matches the implemented mechanics for every sub-class and race — sarcastic, family-friendly, and now truthful
-- [ ] **IDENT-10**: Level-1 Thief dagger damage (d6/2 → 2–4 a hit against 25-wp beasts) gets a deliberate ruling — change or keep — recorded with rationale in the class-pass ledger, so the class-wide tax is a decision and not an accident
+- [x] **IDENT-10**: Level-1 Thief dagger damage (d6/2 → 2–4 a hit against 25-wp beasts) gets a deliberate ruling — change or keep — recorded with rationale in the class-pass ledger, so the class-wide tax is a decision and not an accident
 
 ### Feature Feedback (FEED)
 
@@ -116,7 +116,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | IDENT-07 | Phase 24 | Complete |
 | IDENT-08 | Phase 24 | Complete |
 | IDENT-09 | Phase 24 | Complete |
-| IDENT-10 | Phase 24 | Pending |
+| IDENT-10 | Phase 24 | Complete |
 | FEED-01 | Phase 25 | Pending |
 | FEED-02 | Phase 25 | Pending |
 | FEED-03 | Phase 25 | Pending |

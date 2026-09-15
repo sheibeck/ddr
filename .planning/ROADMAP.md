@@ -155,7 +155,7 @@ Plans:
   4. An identity-contract test table asserts, for all 24 sub-classes and the 5 non-Human races, that the named good AND the named bad each fire under a forced scenario; Human is asserted neutral (control race, user decision 2026-09-14).
   5. `SUB_NOTE`/`RACE_NOTE` text matches implemented mechanics for every sub-class and race; the level-1 Thief dagger-damage question is recorded as a deliberate ruling with rationale in the class-pass ledger; every new serialized field is carved out in all three `*Comparable()` functions and every new event type gets an `EVENT_NARRATION` entry, voice safety scan green.
 
-**Plans**: 6/7 plans executed
+**Plans**: 7/7 plans executed
 
 Plans:
 **Wave 1**
@@ -175,7 +175,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 24-06-PLAN.md — Identity-contract test: ONE table, 24 subs + 5 races good/bad + Human neutral, forced heroes via newRun(seed, [], { force }), boundaries at the decided thresholds, completeness meta-test vs CLASSES/RACES (IDENT-08) — wave 4
-- [ ] 24-07-PLAN.md — Ledger: docs/CLASS-PASS.md Rulings section (every decision + rationale, IDENT-10 dagger KEEP ruling, Freeze-pays-out entry, good/bad table, FID-07 posture, smoke readout — AFTER untouched) + FIXTURE-INVENTORY.md Phase 24 divergences section (IDENT-10, FID-07) — wave 4
+- [x] 24-07-PLAN.md — Ledger: docs/CLASS-PASS.md Rulings section (every decision + rationale, IDENT-10 dagger KEEP ruling, Freeze-pays-out entry, good/bad table, FID-07 posture, smoke readout — AFTER untouched) + FIXTURE-INVENTORY.md Phase 24 divergences section (IDENT-10, FID-07) — wave 4
 
 **Engine gate reminder**: every new serialized field carved out in all 3 `*Comparable()` fns (FID-07), every new event type narrated, voice safety scan green, parity byte-identical throughout. Phase 24 planning MEASURED two fixture action-path divergences (combat/lose seed 14 — Fridgian hide + whiff removal; economy seed 3 — Pickpocket markup); both are declared records, never regenerations; every other fixture stays byte-identical.
 
@@ -244,7 +244,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
-| 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 6/7 | In Progress|  |
+| 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | In Progress|  |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |

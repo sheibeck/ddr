@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 24
 current_phase_name: "Every Sub-class and Race: One Good, One Bad"
-status: executing
-stopped_at: Completed 24-06-PLAN.md
-last_updated: "2026-09-15T02:39:50.633Z"
+status: verifying
+stopped_at: Completed 24-07-PLAN.md
+last_updated: "2026-09-15T02:55:56.821Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 24 execution started
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 33
+  completed_plans: 15
+  percent: 50
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 Phase: 24 (Every Sub-class and Race: One Good, One Bad) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-14 — Phase 24 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T02:39:50.588Z
-Stopped at: Completed 24-06-PLAN.md
+Last session: 2026-09-15T02:55:56.790Z
+Stopped at: Completed 24-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -131,6 +131,7 @@ Resume file: None
 | Phase 24 P04 | 35min | 2 tasks | 4 files |
 | Phase 24 P05 | 45min | 3 tasks | 7 files |
 | Phase 24 P06 | 70min | 3 tasks | 1 files |
+| Phase 24 P07 | 40min | 3 tasks | 2 files |
 
 ## Decisions
 
@@ -215,6 +216,7 @@ Resume file: None
 - [Phase ?]: 24-05: openStore's armour filter gates on canEquipArmor directly so a Woodsman is never offered an illegal armour line (vs. buy-then-reject)
 - [Phase ?]: Race rows in the identity-contract table are ordered Human-first (matching Object.keys(RACES)'s real declaration order), not narrative Human-last
 - [Phase ?]: identity-contract's hero() neutralizes only cosmetic/transient chargen fields (skills, phobia, buffs, pendingJoiner); sub/race/class-driven rollCharacter output stays real
+- [Phase ?]: 24-07: good/bad table and smoke-readout table separator rows use spaced '| --- |' cells (not the doc's usual bare '|---|') so the plan's literal grep -c line-count acceptance criteria count them correctly
 
 ### Blockers
 
