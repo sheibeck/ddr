@@ -2648,9 +2648,9 @@ const say = logLine;
 /* ---------------- DR13: transient toast feedback ----------------
    A fixed-position, non-layout toast so action feedback (hit/miss, potion,
    spell, flee, …) never shuffles a panel or causes CLS. mzToast is global so
-   any script/module can raise one; mzCombatFeedback turns a dispatched action's
-   events into a short toast string+tone (all game vocab lives here in the
-   classic scope where SPELLS / event names are known). */
+   any script/module can raise one; the tone vocabulary (TONES) and every
+   toast's text now live in src/browser/toasts.js (TOAST_FOR / toastsForAction),
+   raised by the module script's dispatchWithToasts(action) (Phase 25). */
 window.mzToast = function (text, tone) {
   if (!text) return;
   const host = document.getElementById("mw-toast-host");
@@ -2660,67 +2660,12 @@ window.mzToast = function (text, tone) {
   if (tone) t.dataset.tone = tone;
   t.textContent = text;
   host.appendChild(t);
-  while (host.children.length > 3) host.removeChild(host.firstChild);
+  while (host.children.length > 4) host.removeChild(host.firstChild);
   const life = Math.min(4200, 1500 + text.length * 45);
   setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, life);
 };
-window.mzSpellName = (idx) => (SPELLS[idx] ? SPELLS[idx].n : "a spell");
 window.mzSpellCharges = () => (S && S.c && S.c.cls === "Magic User")
   ? { left: Math.max(0, maxCharges() - S.c.spellsUsed), max: maxCharges() } : null;
-window.mzCombatFeedback = function (type, events, html, extra) {
-  events = events || []; html = html || [];
-  const has = t => events.some(e => e.type === t);
-  const first = html.length ? String(html[0]) : "";
-  let text = "", tone = "info";
-  if (/class="hurt"/.test(first)) tone = "hurt";
-  else if (/class="miss"/.test(first)) tone = "miss";
-  else if (/class="hit"/.test(first)) tone = "hit";
-  switch (type) {
-    case "attack": {
-      const strikes = events.filter(e => e.type === "struck" || e.type === "strikeMissed");
-      const hits = strikes.filter(e => e.type === "struck");
-      if (strikes.length) {
-        if (hits.length) {
-          const dmg = hits.reduce((s, e) => s + (e.dmg || 0), 0);
-          text = `Hit — ${dmg} HP${hits.some(e => e.critical) ? " · CRIT" : ""}`; tone = "hit";
-        } else { text = "Miss"; tone = "miss"; }
-      }
-      break;
-    }
-    case "drinkPotion": {
-      const heal = events.find(e => e.type === "healed");
-      text = (heal && heal.amount != null) ? `Potion — +${heal.amount} HP` : "Drank a potion"; tone = "hit";
-      break;
-    }
-    case "castSpell": {
-      if (has("noChargesLeft")) { text = "No charges left"; tone = "miss"; }
-      else { text = `Cast ${window.mzSpellName(extra && extra.idx)}`; tone = "magic"; }
-      break;
-    }
-    case "flee":
-      if (has("fled")) { text = "You slip away"; tone = "hit"; }
-      else if (has("fleeFailed")) { text = "Flee failed"; tone = "miss"; }
-      else if (has("fleeRefused")) { text = "Can't break away yet"; tone = "miss"; }
-      else { text = "You try to flee"; }
-      break;
-    case "parley":
-      if (has("beastsSoothed")) { text = "They stand down"; tone = "hit"; }
-      else if (has("parleyFailed")) { text = "Parley failed"; tone = "miss"; }
-      else if (has("parleyRefused")) { text = "They won't talk"; tone = "miss"; }
-      else { text = "You parley"; }
-      break;
-    case "sing": text = "You sing"; tone = "magic"; break;
-    case "readScroll": text = "Read a scroll"; tone = "magic"; break;
-    case "useItem": {
-      // Phase 14 (ECON-07): the combat-bar use-list toast.
-      const used = events.find(e => e.type === "itemUsed");
-      text = used && used.item ? `Used ${used.item.n}` : "Used an item"; tone = "hit";
-      break;
-    }
-  }
-  if (!text) text = first ? first.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 90) : "";
-  return { text, tone };
-};
 /* DR13: end-of-combat report — a beats group summarizing the fight (who, how
    long, felled, HP taken, loot, level-ups) shown before returning to the map.
    Fed pre-computed deltas by the module's noteCombat(); ROMAN etc. live here. */
@@ -5103,7 +5048,7 @@ function renderEncounter() {
   // the key-2 path and any programmatic click, no-opping with a clear toast
   // instead of dispatching the (parity-sensitive, rng-drawing) engine drink.
   document.getElementById("a-potion").onclick = () => {
-    if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "miss"); return; }
+    if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "block"); return; }
     window.mzDrinkPotion?.();
   };
   document.getElementById("a-flee").onclick = () => window.mzFlee?.();
@@ -5393,7 +5338,7 @@ addEventListener("keydown", e => {
       // own doc comment for why the classic functions these once called are
       // now dead code.
       if (k === "1") { e.preventDefault(); window.mzAttack?.(); }
-      else if (k === "2") { e.preventDefault(); if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "miss"); } else { window.mzDrinkPotion?.(); } }
+      else if (k === "2") { e.preventDefault(); if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "block"); } else { window.mzDrinkPotion?.(); } }
       else if (k === "3") { e.preventDefault(); window.mzFlee?.(); }
       else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
       else if (k === "5" && canParley()) { e.preventDefault(); window.mzParley?.(); }
@@ -5442,6 +5387,14 @@ window.__mzClassicBoot = async function classicBoot() {
 </script>
 
 <script type="module">
+  // Phase 25 (FEED-01..06): hoisted ahead of the storage.js/engineAdapter.js
+  // import block below purely to avoid a source-scan false positive — a
+  // later comment in this same block documents `@capacitor/*` (an asterisk
+  // right after a slash), which a naive `/\*...*\/` comment-stripper reads
+  // as an unterminated block-comment opener and swallows everything up to
+  // the next unrelated `*/`. Placing this import before that comment keeps
+  // it outside that swallowed span for any such source-assertion test.
+  import { toastsForAction } from "./src/browser/toasts.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — dpad clicks and arrow/WASD
   // keydown, both of which already call the plain `move(dir)` global
@@ -5844,6 +5797,24 @@ window.__mzClassicBoot = async function classicBoot() {
     if (style) maybeHaptic(currentSettings, style);
   }
 
+  // Phase 25 (FEED-01/02/06): the single post-dispatch seam every action
+  // flows through — exploration (move), camp, store (buyItem/leaveStore),
+  // Joiner (resolveJoiner), inventory (takeFind/leaveFind/dropItem/equipItem/
+  // unequipSlot/sellItem/useItem), and combat/magic (engineCombatAction) all
+  // call this instead of the bare dispatch() the engineAdapter exports.
+  // dispatch(action) already returns events decorated with a fledgling-miss
+  // quip (missLines.js, wired in engineAdapter.dispatch) and html formatted
+  // from those SAME decorated events (src/browser/eventNarration.js) — so the
+  // Oracle line and the toasts this raises always agree on wording. Returns
+  // the dispatch result unchanged; callers keep their existing render tail
+  // (state set, logLine, paint, renderEncounter, noteCombat, hapticForEvents,
+  // beats synthesis) byte-identical.
+  function dispatchWithToasts(action) {
+    const result = dispatch(action);
+    for (const t of toastsForAction(action.type, result.events, {})) window.mzToast?.(t.text, t.tone);
+    return result;
+  }
+
   window.move = function engineMove(dir) {
     // Device-review revision #5 (extended): this is the single choke point
     // every movement path (D-pad clicks, keydown, any future tap) funnels
@@ -5852,7 +5823,7 @@ window.__mzClassicBoot = async function classicBoot() {
     // forgets its own check.
     if (hasActiveEncounter()) return;
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
-    const { state, events, html } = dispatch({ type: "move", dir });
+    const { state, events, html } = dispatchWithToasts({ type: "move", dir });
     window.__mzState.set(state);
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
@@ -6196,7 +6167,7 @@ window.__mzClassicBoot = async function classicBoot() {
       const ok = window.confirm(`Abandon ${S.c.name}? They go in the graveyard for good — there is no undo.`);
       if (!ok) return;
     }
-    const { state, html } = dispatch({ type: "abandon" });
+    const { state, html } = dispatchWithToasts({ type: "abandon" });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     showTitleScreen();
@@ -6214,14 +6185,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // effectParams}, never a `buy` closure) — buyItem/leaveStore already know
   // how to read that shape; no plain-data/closure mismatch is possible here.
   window.mzBuyItem = function buyItemFromShop(idx) {
-    const { state, html } = dispatch({ type: "buyItem", idx });
+    const { state, html } = dispatchWithToasts({ type: "buyItem", idx });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
     window.renderEncounter();
   };
   window.mzLeaveStore = function closeStore() {
-    const { state, html } = dispatch({ type: "leaveStore" });
+    const { state, html } = dispatchWithToasts({ type: "leaveStore" });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
@@ -6241,7 +6212,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // and renderEncounter() (the overlay dismisses itself now that pendingJoiner
   // is cleared), mirroring the buy/leave bridges' render tail exactly.
   window.mzResolveJoiner = function resolveJoinerBridge(accept) {
-    const { state, html } = dispatch({ type: "resolveJoiner", accept: !!accept });
+    const { state, html } = dispatchWithToasts({ type: "resolveJoiner", accept: !!accept });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
@@ -6259,7 +6230,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // the keep/drop chooser after a Drop frees a slot). Mirrors the buy/leave
   // bridges' render tail exactly.
   function inventoryAction(action) {
-    const result = dispatch(action);
+    const result = dispatchWithToasts(action);
     const { state, html } = result;
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
@@ -6270,18 +6241,12 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzTakeFind = () => inventoryAction({ type: "takeFind" });
   window.mzLeaveFind = () => inventoryAction({ type: "leaveFind" });
   window.mzDropItem = (i) => inventoryAction({ type: "dropItem", i });
-  // DR18 (Fix 3): equip that the engine REJECTS (illegal class/subclass/race/
-  // Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
-  // `equipRejected` event) was previously a silent no-op in the UI. The
-  // rejection narration still flows to the Oracle via `html`; this adds the
-  // immediate fixed toast (window.mzToast, same "miss" tone as a whiffed
-  // strike). Engine unchanged — we only READ the events dispatch() returned.
-  window.mzEquipItem = (i) => {
-    const { events } = inventoryAction({ type: "equipItem", i });
-    if (events && events.some((e) => e.type === "equipRejected")) {
-      window.mzToast?.("You cannot use that.", "miss");
-    }
-  };
+  // Phase 25 (FEED-02): an equip the engine REJECTS (illegal class/subclass/
+  // race/Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
+  // `equipRejected` event) now toasts from the TOAST_FOR table (block tone,
+  // reason-specific text) via inventoryAction's own dispatchWithToasts call —
+  // the DR18 hand-written rejection toast is gone.
+  window.mzEquipItem = (i) => inventoryAction({ type: "equipItem", i });
   window.mzUnequip = (slot) => inventoryAction({ type: "unequipSlot", slot });
   // Phase 14 (ECON-06/07): USE a carried item (potions/staves/… — the already-
   // wired useItem action, engine/engine.js) and SELL a carried item at a store
@@ -6319,7 +6284,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // narrate, then re-render — mirroring window.mzBuyItem/mzLeaveStore above.
   function engineCombatAction(type, extra) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
-    const { state, events, html } = dispatch({ type, ...extra });
+    const { state, events, html } = dispatchWithToasts({ type, ...extra });
     window.__mzState.set(state);
     // DR2's HIT/MISS strike badge (renderEncounter()'s `C.lastStrike`) was a
     // field the classic playerStrike() populated directly; engine/combat.js
@@ -6345,10 +6310,6 @@ window.__mzClassicBoot = async function classicBoot() {
     for (const line of html) window.logLine(line);
     window.paint();
     window.renderEncounter();
-    // DR13: transient toast feedback for EVERY combat/spell action — a fixed,
-    // non-layout notification (no CLS) describing what the tap just did.
-    const fb = window.mzCombatFeedback ? window.mzCombatFeedback(type, events, html, extra) : null;
-    if (fb && fb.text) window.mzToast(fb.text, fb.tone);
   }
   window.mzAttack = () => engineCombatAction("attack");
   // DR17 item 4: the "Fight!" gate release. Purely presentation — flips the
@@ -6446,7 +6407,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // monster ambush) still surfaces its own overlay via the SAME beats-
   // synthesis path window.move (engineMove) uses, not a duplicate here.
   window.mzMakeCamp = () => {
-    const { state, html } = dispatch({ type: "camp" });
+    const { state, html } = dispatchWithToasts({ type: "camp" });
     window.__mzState.set(state);
     // DR17 item 4: a wandering-monster ambush during camp is a fresh combat
     // START (camp only runs outside combat), so gate it behind the same Fight!
