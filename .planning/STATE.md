@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 26
 current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
-stopped_at: Completed 25.1-03-PLAN.md
-last_updated: "2026-09-15T14:28:02.865Z"
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-09-15T14:47:38.991Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 25.1 complete, transitioned to Phase 26
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 27
-  completed_plans: 23
+  completed_plans: 24
   percent: 71
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 25.1 — Device Feedback Batch (card vs toast, Joiner swap, class-based allies, camp numbers, Oracle scroll)
+**Current focus:** Phase 26 — Mass Playtest & Class-Pass Ledger (Plan 01 of 4 complete: `tools/class-pass-diff.mjs` diff/verdicts/Markdown script)
 
 ## Current Position
 
 Phase: 26 — Mass Playtest & Class-Pass Ledger
-Plan: 4 plans ready (planned 2026-09-15, ee89cce)
-Status: Ready to execute
-Last activity: 2026-09-15 — Phase 25.1 complete, transitioned to Phase 26
+Plan: 01 of 4 complete (`tools/class-pass-diff.mjs` + tests); 02-04 pending
+Status: Executing
+Last activity: 2026-09-15 — Plan 26-01 complete (class-pass-diff.mjs, PLAY-02 machine layer)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T14:25:09.140Z
-Stopped at: Completed 25.1-03-PLAN.md
+Last session: 2026-09-15T14:47:38.963Z
+Stopped at: Completed 26-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -144,6 +144,7 @@ Resume file: None
 | Phase 25.1 P01 | 35min | 3 tasks | 6 files |
 | Phase 25.1 P02 | 50min | 3 tasks | 9 files |
 | Phase 25.1 P03 | 65min | 3 tasks | 7 files |
+| Phase 26 P01 | 40min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -245,6 +246,7 @@ Resume file: None
 - [Phase ?]: campFailed.members is conditionally spread so the solo event shape stays byte-identical to the pre-plan payload
 - [Phase ?]: The camp button is dimmed via data-short/CSS, never disabled, so a refused tap still surfaces the campFailed toast
 - [Phase ?]: DFB-05: memberView read pattern (default sparse sheet fields) + self-contained allyCast mirror of castSpell's dice shapes in combat.js (magic.js already imports combat.js) + transient C.allies backstabUsed flag
+- [Phase ?]: 26-01: verdicts.json carries supplementary classes/rollups fields beyond the documented schema so renderMarkdown(verdicts, section) never needs the raw before/after reports
 
 ### Blockers
 

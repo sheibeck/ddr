@@ -255,12 +255,12 @@ Plans:
   3. Every "cannot act" row is zero.
   4. `docs/CLASS-PASS.md` documents the per-sub-class/race good+bad table, before/after numbers, every ruling (IDENT-05/06/07/10) with rationale, and lists the remaining outliers as candidates for the next milestone.
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 26-01-PLAN.md — `tools/class-pass-diff.mjs` (dev-only, zero deps): mu over runs, fun bands (too weak < 0.75mu / fine closed [0.75mu, 1.35mu] / too strong > 1.35mu / cannot act = kills < 0.5 or stuck > 0), 24-sub + 6-race BEFORE/AFTER/delta/reach5/band rows, out-of-band cell appendix, depth-20 roll-ups (no verdicts), Markdown `--section after|outliers|handoff`, `verdicts.json` with null editorial placeholders, `--gate` (exit 3 on any cannot-act cell); ordering through class-matrix.mjs's rankCells; byte-stable + `test/unit/class-pass-diff.test.js` (edges, null-not-NaN, ordering, determinism run-twice, gate, purity) (PLAY-02) — wave 1
+- [x] 26-01-PLAN.md — `tools/class-pass-diff.mjs` (dev-only, zero deps): mu over runs, fun bands (too weak < 0.75mu / fine closed [0.75mu, 1.35mu] / too strong > 1.35mu / cannot act = kills < 0.5 or stuck > 0), 24-sub + 6-race BEFORE/AFTER/delta/reach5/band rows, out-of-band cell appendix, depth-20 roll-ups (no verdicts), Markdown `--section after|outliers|handoff`, `verdicts.json` with null editorial placeholders, `--gate` (exit 3 on any cannot-act cell); ordering through class-matrix.mjs's rankCells; byte-stable + `test/unit/class-pass-diff.test.js` (edges, null-not-NaN, ordering, determinism run-twice, gate, purity) (PLAY-02) — wave 1
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -312,6 +312,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
-| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
+| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 1/4 | In Progress|  |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
