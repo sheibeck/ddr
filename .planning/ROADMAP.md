@@ -223,8 +223,26 @@ Plans:
   3. Every "cannot act" row is zero.
   4. `docs/CLASS-PASS.md` documents the per-sub-class/race good+bad table, before/after numbers, every ruling (IDENT-05/06/07/10) with rationale, and lists the remaining outliers as candidates for the next milestone.
 
-**Plans**: TBD
-**Engine gate reminder**: the harness is dev-only (`tools/`), never shipped, never a CI gate — bot numbers are a sanity floor, not a substitute for the human DR round in Phase 27.
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 26-01-PLAN.md — `tools/class-pass-diff.mjs` (dev-only, zero deps): mu over runs, fun bands (too weak < 0.75mu / fine closed [0.75mu, 1.35mu] / too strong > 1.35mu / cannot act = kills < 0.5 or stuck > 0), 24-sub + 6-race BEFORE/AFTER/delta/reach5/band rows, out-of-band cell appendix, depth-20 roll-ups (no verdicts), Markdown `--section after|outliers|handoff`, `verdicts.json` with null editorial placeholders, `--gate` (exit 3 on any cannot-act cell); ordering through class-matrix.mjs's rankCells; byte-stable + `test/unit/class-pass-diff.test.js` (edges, null-not-NaN, ordering, determinism run-twice, gate, purity) (PLAY-02) — wave 1
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 26-02-PLAN.md — AFTER capture at BEFORE volume: pin HEAD, prove `git diff --quiet <pin> -- engine content src mazeworld.html tools` and harness parity vs 5565b22, natural 143x40 + depth-20 143x10 in the background with EXIT sentinels, Bot: lines byte-identical to BEFORE, cannot-act hard gate (STOP + report on any cell), AFTER heading replaced in place + provenance + verbatim transcripts, one commit with both JSONs (PLAY-02) — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 26-03-PLAN.md — Editorial verdicts in `docs/class-pass/verdicts.json` (accept/revisit + one-sentence reason on every out-of-band sub/race row; v1.3 lever on every revisit row; Wilmsry by its AFTER number; too strong is not bad; no verdict on the depth-20 slice) and the ledger's AFTER comparison block (zero-cannot-act headline, by-class roll-up, bottom/top five subs, race table, all 24 subs, reach table, depth-20 yardstick, out-of-band appendix), `## Outliers (Phase 26 — revisit list)`, `## Handoff to Phase 27` — all machine-rendered and pasted verbatim (PLAY-02, PLAY-03) — wave 3
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 26-04-PLAN.md — `test/unit/class-pass-ledger.test.js` standing guard: eight sections in fixed order, AFTER placeholder replaced in place, Rulings anchors + IDENT-05/06/07/09/10, 30-row good/bad table exactly once, AFTER hash == both AFTER meta.commit, meta parity modulo commit, identical 143 cell keys, ZERO cannot-act cells (hard), verdicts rules, Outliers rows == revisit rows, blocks byte-identical to a fresh render; full suite + final pin proof (PLAY-03, PLAY-02) — wave 4
+
+**Engine gate reminder**: the harness is dev-only (`tools/`), never shipped, never a CI gate — bot numbers are a sanity floor, not a substitute for the human DR round in Phase 27. Phase 26 changes no engine, content, shell or harness code: `tools/tune-classes.mjs` and `tools/lib/` stay byte-identical to the BEFORE pin `5565b22`; the only new tools/ file is the diff script, which never plays a run.
 
 ### Phase 27: Delve-to-Death Retune
 
