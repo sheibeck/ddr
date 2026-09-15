@@ -23,6 +23,7 @@ import {
   seedList,
   rowFromRun,
   summarizeRows,
+  pooledSummary,
   rankCells,
   rollups,
   buildReport,
@@ -125,6 +126,66 @@ test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from
   assert.equal(mixed.topCauses[0].count >= mixed.topCauses[mixed.topCauses.length - 1].count, true);
 });
 
+// --- (6b) reach20 (Phase 27, TUNE-05) -------------------------------------------------------
+
+test("summarizeRows: reach20 is null when all rows are stuck, 0.0 when no completed run reaches 20, and counts a run at exactly deathDepth 20", () => {
+  const stuckRow = { seed: 1, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 2, encounters: 1, encountersSurvived: 1, won: false };
+  const allStuck = summarizeRows([stuckRow]);
+  assert.equal(allStuck.reach20, null);
+
+  const completedRow = (seed, deathDepth, cause) => ({
+    seed, deathDepth, stuck: false, cause, kills: 2, level: 2, actions: 100, floorsGained: deathDepth - 1, encounters: 3, encountersSurvived: 2, won: false,
+  });
+
+  const belowTwenty = summarizeRows([completedRow(1, 6, "trap"), completedRow(2, 9, "trap")]);
+  assert.equal(belowTwenty.reach20, 0.0);
+
+  const withExactTwenty = summarizeRows([completedRow(1, 19, "trap"), completedRow(2, 20, "combat"), completedRow(3, 25, "combat")]);
+  // 2 of 3 completed runs have deathDepth >= 20 (the exact-20 run and the 25 run) -> 66.7%
+  assert.equal(withExactTwenty.reach20, Math.round((2 / 3) * 1000) / 10);
+  assert.ok(withExactTwenty.reach20 > 0);
+});
+
+// --- (6c) pooledSummary (Phase 27, TUNE-05) -------------------------------------------------------
+
+test("pooledSummary: run-weighted over cells — pooled p50Depth is the median over ALL rows, not the mean of per-cell p50s; key ALL; null-not-NaN when all-stuck", () => {
+  const completedRow = (seed, deathDepth) => ({
+    seed, deathDepth, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: deathDepth - 1, encounters: 1, encountersSurvived: 1, won: false,
+  });
+  const cellA = { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: [completedRow(1, 9)] };
+  const cellB = { cell: { cls: "Thief", sub: "Ninja", race: "Elven" }, rows: [completedRow(2, 1), completedRow(3, 1), completedRow(4, 2)] };
+
+  const pooled = pooledSummary([cellA, cellB]);
+  assert.equal(pooled.key, "ALL");
+  assert.equal(pooled.n, 4);
+  assert.equal(pooled.completed, 4);
+
+  // pooled over the concatenation [1,1,2,9] must equal summarizeRows' own percentile of that set.
+  const expected = summarizeRows([...cellA.rows, ...cellB.rows]);
+  assert.equal(pooled.p50Depth, expected.p50Depth);
+
+  // and it must differ from the naive mean of the two cells' own p50Depths (9 and 1 -> mean 5),
+  // proving pooling is run-weighted, not cell-averaged.
+  const cellAp50 = summarizeRows(cellA.rows).p50Depth;
+  const cellBp50 = summarizeRows(cellB.rows).p50Depth;
+  const naiveMeanOfP50s = (cellAp50 + cellBp50) / 2;
+  assert.notEqual(pooled.p50Depth, naiveMeanOfP50s);
+
+  // all-stuck pair -> null, never NaN, walked recursively.
+  const stuckRow = { seed: 5, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 0, encounters: 0, encountersSurvived: 0, won: false };
+  const allStuckPooled = pooledSummary([{ cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: [stuckRow] }]);
+  assert.equal(allStuckPooled.p50Depth, null);
+  const walk = (obj, seen = new Set()) => {
+    if (obj === null || typeof obj !== "object" || seen.has(obj)) return;
+    seen.add(obj);
+    for (const v of Object.values(obj)) {
+      if (typeof v === "number") assert.ok(!Number.isNaN(v), "pooledSummary produced a NaN");
+      walk(v, seen);
+    }
+  };
+  walk(allStuckPooled);
+});
+
 // --- (7) rankCells -------------------------------------------------------
 
 test("rankCells: meanDepth desc, p50 desc, reach5 desc, then sub asc/race asc; null meanDepth ranks last", () => {
@@ -193,6 +254,9 @@ test("buildReport: correct meta.cells/excluded, no timing fields; formatText con
   };
   walk(report);
 
+  assert.equal(report.rollups.pooled.key, "ALL");
+  assert.equal(report.rollups.pooled.n, rowsA.length + rowsB.length);
+
   const text = formatText(report);
   assert.ok(text.includes("Fridgian"));
   assert.ok(text.includes("Stuck:"));
@@ -200,6 +264,13 @@ test("buildReport: correct meta.cells/excluded, no timing fields; formatText con
   for (const word of ["fun", "strong", "weak"]) {
     assert.ok(!text.toLowerCase().includes(word), `formatText should not contain "${word}"`);
   }
+
+  // (Phase 27, TUNE-05) a POOLED block appears after BY RACE and before the
+  // Bot line, which must still be the very last line of the text.
+  const byRaceIdx = text.indexOf("BY RACE:");
+  const pooledIdx = text.indexOf("POOLED (all cells, run-weighted over completed runs):");
+  assert.ok(byRaceIdx !== -1 && pooledIdx !== -1 && pooledIdx > byRaceIdx, "POOLED block must appear after the BY RACE table");
+  assert.ok(pooledIdx < text.indexOf(report.meta.bot), "POOLED block must appear before the Bot line");
 });
 
 // --- (10) force pass-through smoke (HARN-01 via the bot) -------------------------------------------------------

@@ -26,11 +26,15 @@
 //       workers, maxActions, startDepth, exploreBudget, bot, cells,
 //       excluded, filter: { cls, sub, race } },
 //     cells: [{ rank, cls, sub, race, n, completed, stuck, meanDepth,
-//       p50Depth, p90Depth, reach5, reach10, meanKills, meanLevel,
+//       p50Depth, p90Depth, reach5, reach10, reach20, meanKills, meanLevel,
 //       meanActions, meanFloorsGained, p50FloorsGained,
 //       meanEncountersSurvived, topCauses }],
-//     rollups: { byClass, bySub, byRace }
+//     rollups: { byClass, bySub, byRace, pooled }
 //   }
+// `reach20` (per cell) and `rollups.pooled` (key "ALL", the full
+// summarizeRows shape over every cell's rows, run-weighted) are Phase 27's
+// (TUNE-05) additive band readout — see tools/lib/class-matrix.mjs's header
+// and docs/DIFFICULTY-RETUNE.md's `## v1.2 retune (Phase 27)`.
 // NO timing field ever appears in this shape — elapsed time is printed to
 // STDERR ONLY (`elapsed: <seconds>s  workers=<n>  runs=<cells*seeds>`), so a
 // BEFORE/AFTER JSON snapshot pair diffs cleanly (22-CONTEXT.md, Claude's

@@ -29,15 +29,21 @@
 //       { cls, sub, race } (each null when unset by the CLI)
 //     },
 //     cells: [{ rank, cls, sub, race, n, completed, stuck, meanDepth,
-//       p50Depth, p90Depth, reach5, reach10, meanKills, meanLevel,
+//       p50Depth, p90Depth, reach5, reach10, reach20, meanKills, meanLevel,
 //       meanActions, meanFloorsGained, p50FloorsGained,
 //       meanEncountersSurvived, topCauses }],
-//     rollups: { byClass, bySub, byRace } — each an array of
-//       { key, n, completed, stuck, meanDepth, ... (same summarizeRows shape) }
+//     rollups: { byClass, bySub, byRace, pooled } — byClass/bySub/byRace are
+//       each an array of { key, n, completed, stuck, meanDepth, ...
+//       (same summarizeRows shape) }; pooled is a single object
+//       { key: "ALL", ...summarizeRows(every cell's rows concatenated) } —
+//       Phase 27's (TUNE-05) run-weighted band readout (docs/DIFFICULTY-
+//       RETUNE.md's `## v1.2 retune (Phase 27)`), added by pooledSummary().
 //   }
 // NO timing fields (elapsed/ms/time) appear ANYWHERE in this shape — the
 // CLI tool prints elapsed to stderr only, so BEFORE/AFTER JSON snapshots
-// diff cleanly (22-CONTEXT.md, Claude's Discretion).
+// diff cleanly (22-CONTEXT.md, Claude's Discretion). `reach20`/`pooled` are
+// an ADDITIVE Phase 27 readout change — no run, no rng draw, no Bot: line
+// is affected; tools/lib/tuning-bot.mjs is untouched.
 
 import { CLASSES, RACES } from "../../content/index.js";
 import { percentile, botLine } from "./tuning-bot.mjs";
@@ -206,10 +212,12 @@ function mean(arr) {
  * result never depends on which order the rows arrived in). Every
  * depth/kill/level/actions/floors/encounters metric is computed over
  * `completed` (non-stuck) rows ONLY, and is `null` — never NaN — when there
- * are zero completed rows. `reach5`/`reach10` are percentages (one decimal)
- * of completed runs whose deathDepth is >= 5 / >= 10. `topCauses` is the
- * three most frequent `cause` strings among completed runs, sorted by count
- * desc then cause asc.
+ * are zero completed rows. `reach5`/`reach10`/`reach20` are percentages
+ * (one decimal) of completed runs whose deathDepth is >= 5 / >= 10 / >= 20
+ * (`reach20` added by Phase 27, TUNE-05 — same `reachPct` closure, same
+ * null-in-the-zero-completed-branch discipline as reach5/reach10).
+ * `topCauses` is the three most frequent `cause` strings among completed
+ * runs, sorted by count desc then cause asc.
  */
 export function summarizeRows(rows) {
   const sorted = [...rows].sort((a, b) => a.seed - b.seed);
@@ -227,6 +235,7 @@ export function summarizeRows(rows) {
       p90Depth: null,
       reach5: null,
       reach10: null,
+      reach20: null,
       meanKills: null,
       meanLevel: null,
       meanActions: null,
@@ -257,6 +266,7 @@ export function summarizeRows(rows) {
     p90Depth: percentile(depths, 0.9),
     reach5: reachPct(5),
     reach10: reachPct(10),
+    reach20: reachPct(20),
     meanKills: mean(completed.map((r) => r.kills)),
     meanLevel: mean(completed.map((r) => r.level)),
     meanActions: mean(completed.map((r) => r.actions)),
@@ -265,6 +275,25 @@ export function summarizeRows(rows) {
     meanEncountersSurvived: mean(completed.map((r) => r.encountersSurvived)),
     topCauses,
   };
+}
+
+/**
+ * pooledSummary(cellRows) — Phase 27's (TUNE-05) band-measurement seam:
+ * `{ key: "ALL", ...summarizeRows(every cell's rows concatenated) }`, i.e.
+ * the harness's OWN summarizer applied once over the full set of runs
+ * rather than averaged per-cell — every pooled metric (p50Depth, p90Depth,
+ * reach5/10/20, meanEncountersSurvived, p50FloorsGained,
+ * meanFloorsGained, topCauses, ...) is therefore run-weighted by
+ * construction and `null` (never NaN) when nothing completed. This closes
+ * the exact gap Phase 26's own handoff (docs/CLASS-PASS.md `## Handoff to
+ * Phase 27`) named: "the natural matrix's >= 20 rate and its overall
+ * median are not carried per cell by the harness JSON." Referenced by
+ * docs/DIFFICULTY-RETUNE.md's `## v1.2 retune (Phase 27)` band table's
+ * "how measured" column. Additive only — no play, no rng draw, no Bot:
+ * line change.
+ */
+export function pooledSummary(cellRows) {
+  return { key: "ALL", ...summarizeRows(cellRows.flatMap(({ rows }) => rows)) };
 }
 
 /** nullLast(v) — sentinel so a null metric always sorts LAST in a desc comparator. */
@@ -336,15 +365,19 @@ function groupAndSummarize(cellRows, keyFn) {
 
 /**
  * rollups(cellRows) — `cellRows` is `[{ cell: {cls,sub,race}, rows }]`.
- * Returns `{ byClass, bySub, byRace }`, each an array of
- * `{ key, ...summarizeRows(pooled rows) }` grouped by cls/sub/race
- * respectively and ranked by the shared tie-break (key asc final tiebreak).
+ * Returns `{ byClass, bySub, byRace, pooled }`: byClass/bySub/byRace are
+ * each an array of `{ key, ...summarizeRows(pooled rows) }` grouped by
+ * cls/sub/race respectively and ranked by the shared tie-break (key asc
+ * final tiebreak); `pooled` is `pooledSummary(cellRows)` — Phase 27's
+ * (TUNE-05) single run-weighted summary over every cell's rows, key
+ * `"ALL"`, added alongside (not replacing) the three grouped roll-ups.
  */
 export function rollups(cellRows) {
   return {
     byClass: groupAndSummarize(cellRows, (cell) => cell.cls),
     bySub: groupAndSummarize(cellRows, (cell) => cell.sub),
     byRace: groupAndSummarize(cellRows, (cell) => cell.race),
+    pooled: pooledSummary(cellRows),
   };
 }
 
@@ -384,6 +417,41 @@ function fmt(v, digits = 2) {
 /** causesStr(topCauses) — compact "cause(count),cause(count)" text, "-" when empty. */
 function causesStr(topCauses) {
   return topCauses && topCauses.length ? topCauses.map((c) => `${c.cause}(${c.count})`).join(",") : "-";
+}
+
+/** reachStr(v) — ">=X%" column value: "n/a" for null, else one decimal. */
+function reachStr(v) {
+  return v === null || v === undefined ? "n/a" : v.toFixed(1);
+}
+
+/**
+ * formatPooledBlock(ru, deep) — the Phase 27 (TUNE-05) `POOLED` text block:
+ * a header row and one value row for `ru.pooled`, adding a `>=20%` column
+ * (never added to BASE_HEADERS/rowValues, so the ranked/roll-up tables keep
+ * their Phase 26 columns for visual BEFORE/AFTER comparability). Reuses
+ * `fmt`/`causesStr`; never contains "fun"/"strong"/"weak".
+ */
+function formatPooledBlock(ru, deep) {
+  const headers = ["n", "stuck", "mean", "p50", "p90", ">=5%", ">=10%", ">=20%", "kills", "lvl", "actions", ...(deep ? DEEP_HEADERS : []), "top causes"];
+  const p = ru.pooled;
+  const cols = [
+    String(p.n),
+    String(p.stuck),
+    fmt(p.meanDepth),
+    fmt(p.p50Depth, 1),
+    fmt(p.p90Depth, 1),
+    reachStr(p.reach5),
+    reachStr(p.reach10),
+    reachStr(p.reach20),
+    fmt(p.meanKills),
+    fmt(p.meanLevel),
+    fmt(p.meanActions),
+  ];
+  if (deep) {
+    cols.push(fmt(p.meanFloorsGained), fmt(p.p50FloorsGained, 1), fmt(p.meanEncountersSurvived));
+  }
+  cols.push(causesStr(p.topCauses));
+  return ["POOLED (all cells, run-weighted over completed runs):", headers.join("  "), cols.join("  ")].join("\n");
 }
 
 const BASE_HEADERS = ["n", "stuck", "mean", "p50", "p90", ">=5%", ">=10%", "kills", "lvl", "actions"];
@@ -433,11 +501,12 @@ function formatRollupTable(title, keyLabel, rows, deep) {
 /**
  * formatText(report) — the deterministic text rendering of buildReport's
  * output: header line, the TUNING PROXY warning, the ranked cells table,
- * the three roll-up tables (BY CLASS / BY SUBCLASS / BY RACE), a footnote
- * per `meta.excluded` entry, the Stuck bucket line, and finally `meta.bot`
- * verbatim as the LAST line (the ledger greps this exact line). No fun-band
- * verdicts, no "fun"/"strong"/"weak"/"over"/"under" editorializing anywhere
- * — numbers only (Phase 26/PLAY-02 owns editorial verdicts).
+ * the three roll-up tables (BY CLASS / BY SUBCLASS / BY RACE), the Phase 27
+ * (TUNE-05) POOLED block, a footnote per `meta.excluded` entry, the Stuck
+ * bucket line, and finally `meta.bot` verbatim as the LAST line (the ledger
+ * greps this exact line). No fun-band verdicts, no
+ * "fun"/"strong"/"weak"/"over"/"under" editorializing anywhere — numbers
+ * only (Phase 26/PLAY-02 owns editorial verdicts).
  */
 export function formatText(report) {
   const { meta, cells, rollups: ru } = report;
@@ -456,6 +525,8 @@ export function formatText(report) {
   lines.push(formatRollupTable("BY SUBCLASS", "sub", ru.bySub, deep));
   lines.push("");
   lines.push(formatRollupTable("BY RACE", "race", ru.byRace, deep));
+  lines.push("");
+  lines.push(formatPooledBlock(ru, deep));
   lines.push("");
   for (const ex of meta.excluded) {
     lines.push(`* ${ex.cls} ${ex.sub} ${ex.race} omitted: ${ex.reason}`);
