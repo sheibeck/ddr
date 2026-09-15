@@ -192,7 +192,7 @@ Plans:
   4. A multi-attack foe's round aggregates into one toast — "X hits you 2 of 4 times (N)" — instead of one toast per swing; early-combat misses draw from a varied, voice-safe corpus instead of repeating "Miss".
   5. Every spell, scroll, and item effect in EITHER direction (yours on them, theirs on you) is legible as an event + toast, including resisted/failed/nothing-to-target outcomes.
 
-**Plans**: 3/5 plans executed
+**Plans**: 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -206,7 +206,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 25-04-PLAN.md — Shell wiring in mazeworld.html: explicit CSS for all seven tones (miss → muted moss; dodge/block/beat new), host cap 4, `dispatchWithToasts(action)` at every dispatch call site, old switch + spell-name helper + DR18 equip toast removed, full-health guards → block; source-assertion wiring test; NON-BLOCKING Pixel 7 checklist in the SUMMARY (FEED-01..06) — wave 3
+- [x] 25-04-PLAN.md — Shell wiring in mazeworld.html: explicit CSS for all seven tones (miss → muted moss; dodge/block/beat new), host cap 4, `dispatchWithToasts(action)` at every dispatch call site, old switch + spell-name helper + DR18 equip toast removed, full-health guards → block; source-assertion wiring test; NON-BLOCKING Pixel 7 checklist in the SUMMARY (FEED-01..06) — wave 3
 - [ ] 25-05-PLAN.md — Standing guards: toastsCoverage.test.js (TOAST_FOR ⊎ ORACLE_ONLY = every engine event type, no dead entries; FEATURE_EVENTS ⊆ TOAST_FOR ∩ EVENT_NARRATION and ⊇ identity-contract names derived from source; purity scan of the two modules) + eventNarration.js re-export of the toast surface (FEED-01/02/06) — wave 3
 
 **Engine gate reminder**: every new event type gets an `EVENT_NARRATION` entry and the voice safety scan stays green; this is presentation/narration work — it must not introduce new engine RNG draws. Phase 25 adds exactly ONE new event type (`scrollRefused`, zero draws, no state change) and only conditional additive fields elsewhere; every parity fixture stays byte-identical.
@@ -261,7 +261,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
-| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 3/5 | In Progress|  |
+| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 4/5 | In Progress|  |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
