@@ -1185,16 +1185,9 @@ against a fixed, committed target rather than a moving one.
 
 ### Why again — the v1.1 verdict, verbatim
 
-**Verdict (user, 2026-09-14):** "Level 20, way overtuned. It's instant death
-on any combat." Run 1 (depth 20) was enough to call it; runs 2/3 not
-played. Retune deferred until player power moved (Phases 23–25.1); it has
-now moved (Phase 26 handoff above).
+**Verdict (user, 2026-09-14):** "Level 20, way overtuned. It's instant death on any combat." Run 1 (depth 20) was enough to call it; runs 2/3 not played. Retune deferred until player power moved (Phases 23–25.1); it has now moved (Phase 26 handoff above).
 
-**D-16 lead (carried forward from the v1.1 ledger's "What happens next"):**
-"the depth-20 band (foe cap 4, power ≈1.21×, cadence ≈1.39×) is already
-lethal for a level-5 hero with a 6,000-wilmst purse — start by pulling
-`FOE_POWER_MAX`/`ABILITY_THREAT_MAX` down and/or pushing `*_SOFT_K` out, and
-consider capping foes-per-encounter growth below 5."
+**D-16 lead (carried forward from the v1.1 ledger's "What happens next"):** "the depth-20 band (foe cap 4, power ≈1.21×, cadence ≈1.39×) is already lethal for a level-5 hero with a 6,000-wilmst purse — start by pulling `FOE_POWER_MAX`/`ABILITY_THREAT_MAX` down and/or pushing `*_SOFT_K` out, and consider capping foes-per-encounter growth below 5."
 
 **Acceptance bar at 20, in the user's own words:** a level-5 hero at depth
 20 should get 3–5 fights, not one.
