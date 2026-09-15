@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
@@ -451,6 +451,10 @@ export function playerStrike(state, rng, events = []) {
     const noCrit =
       c.sub === "Guard" || c.sub === "Soldier" || (inDark(state) && !skill(c, "Night Vision")) || eff(c, "noCrit") > 0;
     let crit = roll === 1 && !noCrit;
+    // Phase 25 (FEED-01, additive payload): why THIS crit is a crit, so the
+    // Oracle can name the reason instead of a bare "Critical!"; later
+    // assignments win (most-specific reason, matching code order below).
+    let critBy = crit ? "roll" : null;
     const opening = !C.opened2;
     C.opened2 = true;
 
@@ -476,16 +480,22 @@ export function playerStrike(state, rng, events = []) {
     if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
       if (skill(c, "Silence")) {
         crit = true;
+        critBy = "silence";
         events.push({ type: "silenceStrike" });
       } else if (skill(c, "Stealth") && roll <= 2 && c.armor !== "Plate") {
         crit = true;
+        critBy = "stealth";
         events.push({ type: "stealthStrike" });
       } else if (c.cls === "Thief") {
         crit = true;
+        critBy = "backstab";
         events.push({ type: "backstab" });
       }
     }
-    if (c.sub === "Ninja" && !opening && roll <= 2) crit = true;
+    if (c.sub === "Ninja" && !opening && roll <= 2) {
+      crit = true;
+      critBy = "ninja";
+    }
     // a Con Artist's first blow is a warning, not an injury
     if (opening && c.sub === "Con Artist") {
       events.push({ type: "conArtistOpener" });
@@ -497,6 +507,7 @@ export function playerStrike(state, rng, events = []) {
     }
     if (c.sub === "Cutthroat" && !C.cut) {
       crit = true;
+      critBy = "cutthroat";
       C.cut = true;
     }
     if (crit) dmg *= 2;
@@ -510,7 +521,8 @@ export function playerStrike(state, rng, events = []) {
     // critical bypass the armor soak (D-07). On a soak the seam's own
     // `foeArmorSoaked` is the only narration for this blow — no `struck`.
     const landed = damageFoe(state, t, dmg, { kind: "melee", casterClass: c.cls, casterSub: c.sub, crit }, rng, events);
-    if (!landed.soaked) events.push({ type: "struck", target: t.name, roll, dmg: landed.applied, critical: crit });
+    if (!landed.soaked)
+      events.push({ type: "struck", target: t.name, roll, need, dmg: landed.applied, critical: crit, ...(crit && critBy ? { critBy } : {}) });
     if (t.wp <= 0) killFoe(state, t, rng, events);
   }
   afterPlayerAction(state, rng, events);
@@ -602,18 +614,35 @@ function pursuitStrike(state, rng, events) {
   const dieN = foeDie(c, pursuer);
   const roll = rng.d(dieN);
   let need = foeToHitVs(state);
-  if (pursuer.blind) need = 1;
-  if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
-  if (C.parleyInsulted) need += 1; // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe swing too — post-draw, zero extra draws
+  // Phase 25 (FEED-01, additive payload): the passive breakdown, plus this
+  // site's own post-mods (blind/penalty/insulted) recorded the same way —
+  // narration-only, zero new draws.
+  const needMods = foeToHitBreakdown(state).mods.slice();
+  if (pursuer.blind) {
+    const before = need;
+    need = 1;
+    if (need !== before) needMods.push({ name: "blind", delta: need - before });
+  }
+  if (C.foeToHitPenalty) {
+    const before = need;
+    need = Math.min(need, C.foeToHitPenalty);
+    if (need !== before) needMods.push({ name: "penalty", delta: need - before });
+  }
+  if (C.parleyInsulted) {
+    // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe swing too — post-draw, zero extra draws
+    const before = need;
+    need += 1;
+    needMods.push({ name: "insulted", delta: need - before });
+  }
   if (roll > need) {
-    events.push({ type: "foeMissed", name: pursuer.name, roll, need });
+    events.push({ type: "foeMissed", name: pursuer.name, roll, need, ...(needMods.length ? { needMods } : {}) });
     return { died: false };
   }
   // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
   let dmg = pursuer.lvl * pursuer.lvl + (pursuer.dmgBonus || 0) + (pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6));
   if (C.weakened) dmg = Math.ceil(dmg / 2);
   if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
-  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need });
+  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need, needMods });
 }
 
 /**
@@ -1186,16 +1215,29 @@ export function pickFoeTarget(state, rng, foe = null) {
  *     branch — reflect-kill, `dmg <= 0`, armor-soaked — and the final landed
  *     `dmg` on both tail returns).
  */
-export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need, ignoresArmor, ability }) {
+export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need, needMods, ignoresArmor, ability }) {
   const c = state.c;
   const R = RACES[c.race];
-  if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
+  // Phase 25 (FEED-01, additive payload): what passive soak actually reduced
+  // this blow — only the keys that fired, each the integer amount removed.
+  // Narration-only bookkeeping; every reduction below was already computed
+  // by the existing arithmetic, this just records the delta.
+  const soaked = {};
+  if (skill(c, "Hardiness")) {
+    const before = dmg;
+    dmg = Math.max(1, dmg - 3);
+    if (before - dmg > 0) soaked.hardiness = before - dmg;
+  }
   // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-09): a
   // Fridgian's hide soaks 2 flat from every blow that reaches this pipeline
   // (foe swing, pursuit strike, foe ability bolt), stacking with Hardiness's
   // -3 above and flooring at 1 exactly like Hardiness — content/races.js
   // `hide` flag, zero rng draws.
-  if (R.hide) dmg = Math.max(1, dmg - R.hide);
+  if (R.hide) {
+    const before = dmg;
+    dmg = Math.max(1, dmg - R.hide);
+    if (before - dmg > 0) soaked.hide = before - dmg;
+  }
 
   // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Pendant of
   // Fortitude (content/treasure-tables.js, use:"half") sets `c.halfNext`
@@ -1216,6 +1258,8 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
     warded = Math.min(c.ward.pool, dmg);
     c.ward.pool -= warded;
     dmg -= warded;
+    // Phase 25 (FEED-01, additive payload): the ward's share of this blow.
+    if (warded > 0) soaked.ward = warded;
     if (c.ward.reflect && warded > 0) {
       // Reflected damage is treated as physical (18-RESEARCH A2 — soakable
       // by the foe's own natural armor, never subject to the multiplier
@@ -1241,6 +1285,7 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
   // instead of you
   let onArmour = false;
   let blocked = 0;
+  let wear = 0;
   // Phase 19 (D-18): an explicit true/false override wins over the foe's own
   // flag; `undefined` keeps today's behaviour exactly (reads foe.sp.noArmor).
   const ignores = ignoresArmor ?? (foe.sp && foe.sp.noArmor);
@@ -1262,20 +1307,41 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
       // instead of the full dmg (content/races.js `armorWear` flag); every
       // other race's expression is value-identical to before (dmg * 1,
       // unrounded by Math.ceil on an already-integer dmg).
-      if (!av.magic && dmg > av.min) c.armorWP = Math.max(0, c.armorWP - (R.armorWear ? Math.ceil(dmg * R.armorWear) : dmg));
+      if (!av.magic && dmg > av.min) {
+        // Phase 25 (FEED-01, additive payload): `wear` is the durability
+        // ACTUALLY subtracted this blow (never more than what remained),
+        // narrating what today's Math.max(0, ...) expression already does —
+        // that expression itself is untouched below.
+        const rawWear = R.armorWear ? Math.ceil(dmg * R.armorWear) : dmg;
+        wear = Math.min(c.armorWP, rawWear);
+        c.armorWP = Math.max(0, c.armorWP - rawWear);
+      }
       dmg = 0;
       if (!av.magic && c.armorWP <= 0) events.push({ type: "armorDestroyed" });
     }
   }
   if (onArmour) {
-    events.push({ type: "armorSoaked", name: foe.name, amount: blocked });
+    events.push({
+      type: "armorSoaked",
+      name: foe.name,
+      amount: blocked,
+      wear,
+      ...(R.armorWear && wear > 0 ? { halved: true } : {}),
+    });
     return { died: false, onArmour: true, applied: 0 };
   }
   c.wp -= dmg;
   if (ability) {
     // Phase 19 (D-02/D-18): a foe-ability bolt has no to-hit roll, so it
     // narrates as foeBolted instead of struckByFoe (never both).
-    events.push({ type: "foeBolted", name: foe.name, ability, dmg, ignoresArmor: !!ignores });
+    events.push({
+      type: "foeBolted",
+      name: foe.name,
+      ability,
+      dmg,
+      ignoresArmor: !!ignores,
+      ...(Object.keys(soaked).length ? { soaked } : {}),
+    });
   } else {
     events.push({
       type: "struckByFoe",
@@ -1285,6 +1351,12 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
       dmg,
       ignoresArmor: !!ignores,
       critical: roll === 1,
+      // Phase 25 (FEED-01, additive payload): conditional trailing fields —
+      // absent for a plain hero, so the pinned key order/shape above never
+      // moves for the parity/combat.test.js fixtures.
+      ...(Object.keys(soaked).length ? { soaked } : {}),
+      ...(needMods && needMods.length ? { needMods } : {}),
+      ...(roll === 2 && c.sub === "Soldier" ? { soldierCrit: true } : {}),
     });
   }
   if (c.wp <= 0) {
@@ -1405,15 +1477,38 @@ export function foeTurn(state, rng, events = []) {
         const mDieN = foeDie(c, f);
         const mRoll = rng.d(mDieN);
         let mNeed = foeToHitVs(state);
-        if (f.blind) mNeed = 1;
-        if (C.foeToHitPenalty) mNeed = Math.min(mNeed, C.foeToHitPenalty);
-        if (C.parleyInsulted) mNeed += 1; // PARLEY-02 / D-06 / D-20: insulted aggro, post-draw arithmetic, zero extra draws
+        // Phase 25 (FEED-01, additive payload): same breakdown + post-mods
+        // pattern as the hero branch below — narration only, 0 new draws.
+        const mNeedMods = foeToHitBreakdown(state).mods.slice();
+        if (f.blind) {
+          const before = mNeed;
+          mNeed = 1;
+          if (mNeed !== before) mNeedMods.push({ name: "blind", delta: mNeed - before });
+        }
+        if (C.foeToHitPenalty) {
+          const before = mNeed;
+          mNeed = Math.min(mNeed, C.foeToHitPenalty);
+          if (mNeed !== before) mNeedMods.push({ name: "penalty", delta: mNeed - before });
+        }
+        if (C.parleyInsulted) {
+          // PARLEY-02 / D-06 / D-20: insulted aggro, post-draw arithmetic, zero extra draws
+          const before = mNeed;
+          mNeed += 1;
+          mNeedMods.push({ name: "insulted", delta: mNeed - before });
+        }
         if (mRoll > mNeed) {
           // name the member as the intended target so a whiff at a party
           // member reads distinctly from a whiff at the hero (PARTY: Oracle
           // shows who was targeted). `member` field is additive + only set in
           // this live-member branch, which never runs in solo parity fixtures.
-          events.push({ type: "foeMissed", name: f.name, roll: mRoll, need: mNeed, member: member.name });
+          events.push({
+            type: "foeMissed",
+            name: f.name,
+            roll: mRoll,
+            need: mNeed,
+            member: member.name,
+            ...(mNeedMods.length ? { needMods: mNeedMods } : {}),
+          });
           continue;
         }
         // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
@@ -1421,7 +1516,16 @@ export function foeTurn(state, rng, events = []) {
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         if (mRoll === 1) mDmg *= 2;
         member.wp -= mDmg;
-        events.push({ type: "memberStruck", name: f.name, member: member.name, dmg: mDmg, roll: mRoll, need: mNeed, critical: mRoll === 1 });
+        events.push({
+          type: "memberStruck",
+          name: f.name,
+          member: member.name,
+          dmg: mDmg,
+          roll: mRoll,
+          need: mNeed,
+          critical: mRoll === 1,
+          ...(mNeedMods.length ? { needMods: mNeedMods } : {}),
+        });
         if (member.wp <= 0) downMember(state, member, events);
         continue;
       }
@@ -1429,11 +1533,27 @@ export function foeTurn(state, rng, events = []) {
       const dieN = foeDie(c, f);
       const roll = rng.d(dieN);
       let need = foeToHitVs(state);
-      if (f.blind) need = 1;
-      if (C.foeToHitPenalty) need = Math.min(need, C.foeToHitPenalty);
-      if (C.parleyInsulted) need += 1; // PARLEY-02 / D-06 / D-20: same placement, same reasoning
+      // Phase 25 (FEED-01, additive payload): the passive breakdown, plus
+      // this site's own post-mods recorded the same way — narration only.
+      const needMods = foeToHitBreakdown(state).mods.slice();
+      if (f.blind) {
+        const before = need;
+        need = 1;
+        if (need !== before) needMods.push({ name: "blind", delta: need - before });
+      }
+      if (C.foeToHitPenalty) {
+        const before = need;
+        need = Math.min(need, C.foeToHitPenalty);
+        if (need !== before) needMods.push({ name: "penalty", delta: need - before });
+      }
+      if (C.parleyInsulted) {
+        // PARLEY-02 / D-06 / D-20: same placement, same reasoning
+        const before = need;
+        need += 1;
+        needMods.push({ name: "insulted", delta: need - before });
+      }
       if (roll > need) {
-        events.push({ type: "foeMissed", name: f.name, roll, need });
+        events.push({ type: "foeMissed", name: f.name, roll, need, ...(needMods.length ? { needMods } : {}) });
         continue;
       }
       // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
@@ -1441,7 +1561,7 @@ export function foeTurn(state, rng, events = []) {
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
 
-      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need });
+      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need, needMods });
       if (hit.died) return events;
     }
   }

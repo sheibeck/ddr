@@ -350,6 +350,72 @@ export function foeToHitVs(state) {
 }
 
 /**
+ * foeToHitBreakdown(state) — Phase 25 (FEED-01, additive payload): a
+ * narration-only breakdown of foeToHitVs's own arithmetic, reproducing every
+ * step in the SAME order and recording a `{ name, delta }` entry for every
+ * step that actually changed the running value (delta = after − before, so
+ * an override such as Acrobat's `h = 3` records `3 - hBefore`, not a raw
+ * assignment). Returns `{ need, mods }` where `need` MUST always equal
+ * `foeToHitVs(state)` — this function reads exactly the same fields
+ * (`c.race`, `c.sub`, skill/eff reads, `inDark(state)`, `c.mirror`,
+ * `c.invis`) via the same helpers, so the two can never diverge for any
+ * (race, sub, skill, override) combination; test/unit/feedback-payload.test.js
+ * proves this by matrix. Pure (no rng, no mutation) — this is a narration
+ * helper, not a second source of truth: foeToHitVs's own body is left
+ * untouched (zero risk) rather than delegating to this function.
+ */
+export function foeToHitBreakdown(state) {
+  const c = state.c;
+  const R = RACES[c.race];
+  const mods = [];
+  let h = 5;
+  if (R.foeToHit) {
+    const before = h;
+    h += R.foeToHit;
+    if (h !== before) mods.push({ name: c.race, delta: h - before });
+  }
+  if (c.sub === "Acrobat") {
+    const before = h;
+    h = 3;
+    if (h !== before) mods.push({ name: "Acrobat", delta: h - before });
+  }
+  if (skill(c, "Agility")) {
+    const before = h;
+    h -= 1;
+    if (h !== before) mods.push({ name: "Agility", delta: h - before });
+  }
+  if (c.sub === "Guard") {
+    const before = h;
+    h -= 1;
+    if (h !== before) mods.push({ name: "Guard", delta: h - before });
+  }
+  const gear = eff(c, "foeToHit");
+  if (gear) {
+    const before = h;
+    h += gear;
+    if (h !== before) mods.push({ name: "gear", delta: h - before });
+  }
+  if (inDark(state) && skill(c, "Silence")) {
+    const before = h;
+    h = 1; // a silent thief in the dark
+    if (h !== before) mods.push({ name: "Silence", delta: h - before });
+  }
+  if (c.mirror > 0) {
+    const before = h;
+    h = 1; // Mirror Self
+    if (h !== before) mods.push({ name: "Mirror Self", delta: h - before });
+  }
+  if (c.invis > 0) {
+    const before = h;
+    h = 1; // invisible
+    if (h !== before) mods.push({ name: "invisible", delta: h - before });
+  }
+  const floored = Math.max(1, h);
+  if (floored !== h) mods.push({ name: "floor", delta: floored - h });
+  return { need: floored, mods };
+}
+
+/**
  * weaponDamage(c, rng) — a single strike's damage. The weapon's dice notation
  * is resolved here via the injected rng (the ONLY randomness in this module),
  * so this stays deterministic given (c, rng). Ports mazeworld.html
