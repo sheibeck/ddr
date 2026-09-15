@@ -676,7 +676,7 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   padding:0 14px;pointer-events:none;
 }
 .mw-toast{
-  pointer-events:none;max-width:360px;
+  pointer-events:auto;cursor:pointer;touch-action:manipulation;max-width:360px;
   font-family:var(--mono);font-size:14px;letter-spacing:.05em;font-weight:700;
   text-transform:uppercase;
   color:var(--ink);background:var(--paper-3);
@@ -2650,19 +2650,35 @@ const say = logLine;
    spell, flee, …) never shuffles a panel or causes CLS. mzToast is global so
    any script/module can raise one; the tone vocabulary (TONES) and every
    toast's text now live in src/browser/toasts.js (TOAST_FOR / toastsForAction),
-   raised by the module script's dispatchWithToasts(action) (Phase 25). */
+   raised by the module script's dispatchWithToasts(action) (Phase 25).
+   Phase 25.1 (DFB-02): lifetime = toasts.js#toastLifetime via the
+   window.__mzToastLifetime bridge (3000 + 60/char, cap 9000, +1200 per
+   toast already visible) so the formula lives in one place and is
+   unit-tested there. Tap/click dismisses early and clears the pending
+   timer; a timer that later fires after a tap is a harmless no-op
+   (classList.add is idempotent, and Element.remove on an already-detached
+   node is a no-op). Reduced motion is CSS-only — see the
+   prefers-reduced-motion rule, untouched. */
 window.mzToast = function (text, tone) {
   if (!text) return;
   const host = document.getElementById("mw-toast-host");
   if (!host) return;
+  const visible = host.children.length;
   const t = document.createElement("div");
   t.className = "mw-toast";
   if (tone) t.dataset.tone = tone;
   t.textContent = text;
   host.appendChild(t);
   while (host.children.length > 4) host.removeChild(host.firstChild);
-  const life = Math.min(4200, 1500 + text.length * 45);
-  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, life);
+  const life = window.__mzToastLifetime ? window.__mzToastLifetime(text.length, visible) : 4200;
+  let timer = null;
+  const dismiss = () => {
+    if (timer !== null) { clearTimeout(timer); timer = null; }
+    t.classList.add("out");
+    setTimeout(() => t.remove(), 300);
+  };
+  timer = setTimeout(dismiss, life);
+  t.addEventListener("click", dismiss);
 };
 window.mzSpellCharges = () => (S && S.c && S.c.cls === "Magic User")
   ? { left: Math.max(0, maxCharges() - S.c.spellsUsed), max: maxCharges() } : null;
@@ -5395,6 +5411,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // the next unrelated `*/`. Placing this import before that comment keeps
   // it outside that swallowed span for any such source-assertion test.
   import { toastsForAction } from "./src/browser/toasts.js";
+  // Phase 25.1 (DFB-01/02): CARD_EVENTS gates the generic html-to-beats
+  // fallback in engineMove/mzMakeCamp; NARRATIVE_ACTIONS gates ctx.narrate in
+  // dispatchWithToasts; toastLifetime is bridged to the classic script below.
+  import { CARD_EVENTS, NARRATIVE_ACTIONS, toastLifetime } from "./src/browser/toasts.js";
+  import { narrateEvent } from "./src/browser/eventNarration.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — dpad clicks and arrow/WASD
   // keydown, both of which already call the plain `move(dir)` global
@@ -5455,6 +5476,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzState / window.__mzSettings above). Pure display data — never fed
   // into anything rng-touching; the ENGINE alone enforces the real cap.
   window.__mzBags = BAGS;
+
+  // Phase 25.1 (DFB-02): bridge toastLifetime so the classic script's
+  // mzToast reads the lifetime formula through this read-only bridge — the
+  // formula itself lives in toasts.js and is unit-tested there, not
+  // duplicated here (same bridge pattern as window.__mzBags above).
+  window.__mzToastLifetime = toastLifetime;
 
   // Phase 14 (ECON-06): a pure, read-only price probe so the store sell section
   // can LABEL each Sell button with what the shop will pay. sellPriceFor draws no
@@ -5706,6 +5733,7 @@ window.__mzClassicBoot = async function classicBoot() {
     climbedOver: ["A wall", "ink"], fellClimbing: ["A wall", "ink"],
     leaptOver: ["A crevice", "ink"], fellInGorge: ["A crevice", "ink"],
     floorChanged: ["The stair down", "ditto"],
+    leveled: ["Skill level up", "moss"],
     oneWayBlocked: ["A one-way door", "moss"],
     encounterRolled: ["Encounter", "stamp"],
   };
@@ -5809,9 +5837,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // the dispatch result unchanged; callers keep their existing render tail
   // (state set, logLine, paint, renderEncounter, noteCombat, hapticForEvents,
   // beats synthesis) byte-identical.
+  // Phase 25.1 (DFB-01 decision 2): for NARRATIVE_ACTIONS (move/camp/
+  // resolveJoiner) each direct-mapped toast carries the Oracle sentence via
+  // narrateEvent (dice stripped); every other action keeps Phase 25's short
+  // table text unchanged.
   function dispatchWithToasts(action) {
     const result = dispatch(action);
-    for (const t of toastsForAction(action.type, result.events, {})) window.mzToast?.(t.text, t.tone);
+    const ctx = NARRATIVE_ACTIONS.has(action.type) ? { narrate: narrateEvent } : {};
+    for (const t of toastsForAction(action.type, result.events, ctx)) window.mzToast?.(t.text, t.tone);
     return result;
   }
 
@@ -5861,7 +5894,12 @@ window.__mzClassicBoot = async function classicBoot() {
         state.beats.combatType = (es && es.combatType) || "";
       }
     } else if (!state.combat && !state.store && !state.dead && !state.won && !state.beats
-               && !state.pendingJoiner && !state.pendingFind && html.length) {
+               && !state.pendingJoiner && !state.pendingFind && html.length
+               && events.some((e) => CARD_EVENTS.has(e.type))) {
+      // Phase 25.1 (DFB-01): the "Move on" card is now gated on CARD_EVENTS
+      // (floorChanged, leveled) — every other feature landing on the move
+      // path is a narrative toast already raised by dispatchWithToasts
+      // above; FEATURE_EVENT_TITLE is only consulted for card events.
       const [title, tone] = beatsTitleFor(events);
       state.beats = { groups: [{ title, tone, lines: stripRollDetail(html) }], i: 0, action: null };
     }
@@ -6407,13 +6445,19 @@ window.__mzClassicBoot = async function classicBoot() {
   // monster ambush) still surfaces its own overlay via the SAME beats-
   // synthesis path window.move (engineMove) uses, not a duplicate here.
   window.mzMakeCamp = () => {
-    const { state, html } = dispatchWithToasts({ type: "camp" });
+    const { state, events, html } = dispatchWithToasts({ type: "camp" });
     window.__mzState.set(state);
     // DR17 item 4: a wandering-monster ambush during camp is a fresh combat
     // START (camp only runs outside combat), so gate it behind the same Fight!
     // roster as any other combat start. Presentation-only flag; parity untouched.
     if (state.combat) state.combat.awaitingFight = true;
-    if (!state.combat && !state.store && !state.dead && !state.won && html.length) {
+    // Phase 25.1 (DFB-01): camp results are toast-only too — the SAME
+    // CARD_EVENTS gate as engineMove, so rested/wentHungry/afflictionCured/
+    // armorPatched/potionDuplicated/wanderingMonster arrive as narrative
+    // toasts instead of a "Camp" card (in practice this gate never matches
+    // on camp, since CARD_EVENTS only names move-path events).
+    if (!state.combat && !state.store && !state.dead && !state.won && html.length
+        && events.some((e) => CARD_EVENTS.has(e.type))) {
       state.beats = { groups: [{ title: "Camp", tone: "moss", lines: stripRollDetail(html) }], i: 0, action: null };
     }
     for (const line of html) window.logLine(line);

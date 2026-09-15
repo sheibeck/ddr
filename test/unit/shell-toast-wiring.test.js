@@ -18,7 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { TONES, toastsForAction } from "../../src/browser/toasts.js";
+import { TONES, toastsForAction, CARD_EVENTS, NARRATIVE_ACTIONS } from "../../src/browser/toasts.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -194,4 +194,61 @@ test("an equipRejected(reason: woodsman) event yields one block toast via toasts
   assert.equal(toasts.length, 1);
   assert.equal(toasts[0].tone, "block");
   assert.match(toasts[0].text, /Woodsman/i);
+});
+
+// ─── Phase 25.1 (DFB-01/02) additions ─────────────────────────────────────
+
+test("DFB-01: the module imports CARD_EVENTS/NARRATIVE_ACTIONS/toastLifetime and narrateEvent on their own lines, and the original toastsForAction import is untouched", () => {
+  assert.match(CODE, /import \{ toastsForAction \} from "\.\/src\/browser\/toasts\.js";/);
+  assert.match(CODE, /import \{ CARD_EVENTS, NARRATIVE_ACTIONS, toastLifetime \} from "\.\/src\/browser\/toasts\.js";/);
+  assert.match(CODE, /import \{ narrateEvent \} from "\.\/src\/browser\/eventNarration\.js";/);
+});
+
+test("DFB-01: dispatchWithToasts passes ctx.narrate only for NARRATIVE_ACTIONS", () => {
+  assert.match(CODE, /NARRATIVE_ACTIONS\.has\(action\.type\) \? \{ narrate: narrateEvent \} : \{\}/);
+});
+
+test("DFB-01: the html-to-beats fallback in engineMove AND mzMakeCamp is gated on CARD_EVENTS", () => {
+  const gates = CODE.match(/events\.some\(\(e\) => CARD_EVENTS\.has\(e\.type\)\)/g) || [];
+  assert.equal(gates.length, 2, `expected exactly 2 CARD_EVENTS gates, found ${gates.length}`);
+  assert.match(
+    CODE,
+    /&& !state\.pendingJoiner && !state\.pendingFind && html\.length\s*&& events\.some\(\(e\) => CARD_EVENTS\.has\(e\.type\)\)/,
+  );
+});
+
+test("DFB-01: the preDeath and ambush branches survive byte-identical", () => {
+  const preDeathHits = CODE.match(/preDeath: true/g) || [];
+  assert.equal(preDeathHits.length, 1, "preDeath: true must appear exactly once");
+  assert.match(CODE, /state\.beats\.awaitingFight = true;/);
+});
+
+test("DFB-02: mzToast reads the lifetime through window.__mzToastLifetime, measures visible before appending, and dismisses on tap with a cleared timer", () => {
+  const start = CODE.indexOf("window.mzToast = function");
+  const end = CODE.indexOf("window.mzSpellCharges");
+  assert.ok(start !== -1 && end !== -1 && end > start, "mzToast..mzSpellCharges region must be found");
+  const region = CODE.slice(start, end);
+  assert.match(region, /const visible = host\.children\.length;/);
+  assert.match(region, /window\.__mzToastLifetime\(text\.length, visible\)/);
+  assert.match(region, /clearTimeout\(timer\)/);
+  assert.match(region, /t\.addEventListener\("click", dismiss\)/);
+  const deadRate = ["text.length * ", "45"].join("");
+  assert.ok(!region.includes(deadRate), "the old 45-per-character rate must be gone");
+  assert.match(CODE, /window\.__mzToastLifetime = toastLifetime;/);
+});
+
+test("DFB-02: toasts are tappable while the host stays non-blocking", () => {
+  const toastRule = HTML.match(/\.mw-toast\{([^}]*)\}/);
+  assert.ok(toastRule, ".mw-toast{...} rule must exist");
+  assert.match(toastRule[1], /pointer-events:auto/);
+  assert.match(toastRule[1], /cursor:pointer/);
+  const hostRule = HTML.match(/\.mw-toast-host\{([^}]*)\}/);
+  assert.ok(hostRule, ".mw-toast-host{...} rule must exist");
+  assert.match(hostRule[1], /pointer-events:none/);
+});
+
+test("DFB-01: FEATURE_EVENT_TITLE carries a title for both CARD_EVENTS", () => {
+  for (const t of CARD_EVENTS) {
+    assert.match(CODE, new RegExp(t + ": \\["), `FEATURE_EVENT_TITLE must have an entry for ${t}`);
+  }
 });
