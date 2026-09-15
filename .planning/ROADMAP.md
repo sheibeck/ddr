@@ -290,7 +290,7 @@ Plans:
   3. A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict.
   4. The milestone closes only on "tuned" or a user-recorded deferral.
 
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -303,7 +303,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 27-03-PLAN.md — Bounded iterations (≤ 4): the early-floor escalation ladder in the user's order (grace deeper → darkness from 4 [movement record] → hazard from floor 1 [encounters record] → rations +1/+2 [14 chargen records] → floor-1 grace 0.85 as last resort), one rung per iteration only while the pooled smoke median < 5 and only where a gain is predicted (calibration: the full ladder tops out near 35 % reach ≥ 5 / bot median 4), plus the deep ramp in parallel (start `COMBAT_SCALE_FROM_DEPTH` 16, `FOE_CAP_MAX` 4, `FOE_POWER_MAX` 1.3, `ABILITY_THREAT_MAX` 1.5; "what to turn" table; smoke via `rollups.pooled`; every iteration and record logged), final constants commit = pin; FULL AFTER on the pin into NEW `docs/class-pass/retune-after.json` / `retune-after-depth20.json` (143×40 + 143×10, Bot lines identical to Phase 26) + `tune-difficulty --seeds=200` natural / 20 / 35 / 50 + party/economy trigger readouts; cannot-act gate FIRST; ledger: change table, AFTER transcripts + class-pass-diff rendering, comparison vs band (honest in/out, misses handed to the DR round), triggers, not-changed; guard extended; `npm test` + parity + `build:www` (TUNE-06) — wave 3
+- [x] 27-03-PLAN.md — Bounded iterations (≤ 4): the early-floor escalation ladder in the user's order (grace deeper → darkness from 4 [movement record] → hazard from floor 1 [encounters record] → rations +1/+2 [14 chargen records] → floor-1 grace 0.85 as last resort), one rung per iteration only while the pooled smoke median < 5 and only where a gain is predicted (calibration: the full ladder tops out near 35 % reach ≥ 5 / bot median 4), plus the deep ramp in parallel (start `COMBAT_SCALE_FROM_DEPTH` 16, `FOE_CAP_MAX` 4, `FOE_POWER_MAX` 1.3, `ABILITY_THREAT_MAX` 1.5; "what to turn" table; smoke via `rollups.pooled`; every iteration and record logged), final constants commit = pin; FULL AFTER on the pin into NEW `docs/class-pass/retune-after.json` / `retune-after-depth20.json` (143×40 + 143×10, Bot lines identical to Phase 26) + `tune-difficulty --seeds=200` natural / 20 / 35 / 50 + party/economy trigger readouts; cannot-act gate FIRST; ledger: change table, AFTER transcripts + class-pass-diff rendering, comparison vs band (honest in/out, misses handed to the DR round), triggers, not-changed; guard extended; `npm test` + parity + `build:www` (TUNE-06) — wave 3
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -331,5 +331,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | Complete    | 2026-09-15 |
-| 27. Delve-to-Death Retune | v1.2 | 2/4 | In Progress|  |
+| 27. Delve-to-Death Retune | v1.2 | 3/4 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |

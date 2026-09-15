@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 27
 current_phase_name: Delve-to-Death Retune
 status: executing
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-09-15T21:16:09.240Z"
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-09-15T22:17:02.721Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 26 complete, transitioned to Phase 27
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 31
-  completed_plans: 29
+  completed_plans: 30
   percent: 86
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 27 — Delve-to-Death Retune
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Executing (wave 1 of 4; planned 2b3def8, band amended 4d18e80)
 Last activity: 2026-09-15 — Phase 26 complete, transitioned to Phase 27
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T21:16:09.215Z
-Stopped at: Completed 27-02-PLAN.md
+Last session: 2026-09-15T22:17:02.695Z
+Stopped at: Completed 27-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -150,6 +150,7 @@ Resume file: None
 | Phase 26 P04 | 40min | 2 tasks | 1 files |
 | Phase 27 P01 | 55min | 3 tasks | 5 files |
 | Phase 27 P02 | 65min | 4 tasks | 20 files |
+| Phase 27 P03 | 72min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -257,6 +258,7 @@ Resume file: None
 - [Phase ?]: 26-04: no ledger fix needed; the plan's own f7f294b-based commit-range check is stale (Phase 25.1 interleaved before Phase 26's real execution) — the true engine-touch is the single, already-reviewed d1e3235 gap-closure fix, which IS the AFTER pin; documented in SUMMARY rather than worked around.
 - [Phase ?]: 27-01: band substitution per amended 27-CONTEXT.md (4d18e80) — bot median 4 / pooled reach>=5 >=25%, human 5-6 judged by DR round, replacing the plan's original flat 5-6 bot target
 - [Phase ?]: Landed Dante Form C (tier-2 demotion + Ned at tier 1) — the only form meeting the decision rule; followed Task 3's literal dial values (FOE_GRACE_AT_2 0.75) over the calibration table's stronger T2 row (0.5).
+- [Phase ?]: 27-03: bounded 4-iteration retune landed COMBAT_SCALE_FROM_DEPTH 6->21, FOE_GRACE_AT_2 0.75->0.5, ENCOUNTER_DOT_CAP 15->13, FOE_POWER_MAX/ABILITY_THREAT_MAX flattened to 1.15/1.3 — natural median/reach and forced-20 encounters-survived in band; forced-20 floors-gained recorded as a miss for the DR round
 
 ### Blockers
 
