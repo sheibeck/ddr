@@ -636,11 +636,191 @@ for Phase 24 to paste.
 
 ## Rulings (Phase 24 — PLAY-03)
 
-Every sub-class and race good/bad ruling — what stays as-is, what gets an
-engine-verified GOOD or BAD it currently lacks (per the FLAVOR-ONLY and
-NO-BAD/NO-GOOD findings in `.planning/research/CLASS-AUDIT-2026-09-14.md`),
-and the rationale for each — lands here once Phase 24 ("Every Sub-class and
-Race: One Good, One Bad") closes. Nothing recorded yet.
+Every sub-class and race good/bad ruling landed in Phase 24 ("Every
+Sub-class and Race: One Good, One Bad"), commits `d28c3ed`..`28de35c`
+(Plans 24-01 through 24-06). Every rule change below carries a
+`// DELIBERATE RULES CHANGE (Phase 24, ...)` comment in the engine naming
+the prototype's old behavior and this phase's rationale — this section
+records the design decision and its one-line rationale, never re-derives
+the mechanic.
+
+### Sub-class rulings
+
+- **Knight — bad: never-first vs a live big foe.** Against any encounter
+  containing a live foe with `maxWP >= 20`, a Knight never wins initiative
+  (unless foreseen); rationale: "everything over 20 comes straight at
+  you" — the flavor's own line, now a real `rollInitiative` override
+  (IDENT-05).
+- **Ninja — bad: cannot parley, ever.** `canParley` refuses a Ninja for any
+  encounter type at any fluency, mirrored in `mazeworld.html`'s classic
+  `canParley()`; rationale: "you never speak" is now literal, not a joke
+  (IDENT-05).
+- **Bard — bad: camp wake on 1-2; party clause.** Camping's eight hourly
+  wake rolls hit a Bard on a d20 of 1 OR 2 (same eight draws, wider hit),
+  and in party play an intel<=3 foe targets the Bard hero outright;
+  rationale: "creatures too stupid to know better come for you first" —
+  any biased zero-draw re-pick of the existing target draw would have to
+  exclude some other party member to make room for the Bard, so outright
+  targeting (not a re-roll) is the only symmetric zero-draw design
+  (IDENT-05).
+- **Master of Arms — bad: cannot parley + no clean round-1 exit.** Same
+  `canParley` gate as Ninja, and the Tracking round-1 clean withdrawal is
+  denied — falls to the ordinary Fighter flee roll; rationale: "you attack
+  creatures without question," including the ones you'd rather flee from
+  (IDENT-05).
+- **Court Mage — bad: foes act first in round one; good: 1-in-6 boredom +
+  always parleys Humans.** `rollInitiative` never lets a Court Mage win
+  round-1 initiative (unless foreseen); boredom kill widened from
+  `rng.d(12) === 1` to `rng.d(12) <= 2` (1-in-6, same single draw); `canParley`
+  always allows a Court Mage to parley Humans (courtly manners); rationale:
+  "you talk first" cuts both ways — foes act first, but courtesy earns a
+  free pass with Humans and a better chance the fight never needed to
+  happen (IDENT-05/06).
+- **Pickpocket — bad: buy x1.25 / sell x0.75.** Every `priceFor`-routed
+  store line (weapons, armour, premium, rations, repair) costs 25% more to
+  buy and pays 25% less to sell back, floor 1; flat-priced lines (food,
+  potions, lockpicks, scrolls) stay untouched; rationale: "never been
+  thanked" — shopkeepers remember a Pickpocket's face (IDENT-05).
+- **Cutthroat — bad: Joiners refuse, rolled first.** A Joiner is still
+  rolled with the exact same draws, then refused (`joinerRefused`, reason
+  `cutthroat`) with `pendingJoiner` left null; rationale: "one member of
+  every party dies by your hand" is replaced with the real, testable
+  mechanic — nobody signs up to find out (IDENT-05).
+- **Guard — good: -1 to be hit.** `foeToHitVs` subtracts 1 for a Guard,
+  stacking with Agility, floor 1; rationale: "the profession is standing
+  there" — a Guard's whole training is not getting hit (IDENT-06).
+- **Woodsman — enforced: no armour over ar 10.** `canEquipArmor` (via the
+  new `armorRefusalReason` helper) refuses Mail/Plate — anything heavier
+  than Studded — across take, equip, AND the store's own stock filter (a
+  Woodsman is never even offered the line); rationale: a forester in tin
+  is a target, not a hunter (IDENT-07).
+- **Pilfer — enforced: heal-kind items only.** `useItem` refuses any item
+  whose `kind` is not `"heal"` or `"full"` before any side effect fires
+  (`useRefused`, reason `pilfer`); drinkPotion and the existing scroll
+  block (`canRead`) are untouched; rationale: "does not heal, so as far as
+  a Pilfer is concerned it does not work" (IDENT-07).
+- **Cloaker — bad made real: vanish only before the first landed blow.**
+  The free vanish now gates on `!C.opened2`; once the Cloaker has struck
+  this fight, `flee` falls through to the ordinary d20+5-vs-11 Thief roll
+  (`vanishDenied` narrated); rationale: "you can always vanish — as long
+  as nobody has seen your face yet" (IDENT-07).
+
+### Race rulings
+
+- **Human** — neutral control, no change (user decision, 2026-09-14).
+- **Elven** — no mechanic change; the 0.6x wp / strikes-a-die-better
+  blurb was checked true against `content/races.js` and left as-is.
+- **Dwarven — good: armour wears at half rate.** Armour durability loses
+  `Math.ceil(dmg / 2)` instead of the full `dmg` on a soaked blow; keeps
+  the existing +2 damage, upkeep 1, half prices, and foes-strike-a-die-
+  better bad; rationale: "built to be hit" deserved a mechanic, not just a
+  blurb (IDENT-09).
+- **Wilmsry — bad made real: Magic User Joiners refuse.** Same
+  `joinerRefused` mechanism as the Cutthroat (reason `wilmsry`), checked
+  after the joiner is fully rolled; heal 2x, parley +4, haggle, and half sp
+  are unchanged; rationale: "Magic Users despise you" is now literal
+  (IDENT-09). The Wilmsry numeric trim (parley +4, heal 2x) is explicitly
+  deferred to after Phase 26's AFTER matrix, per `24-CONTEXT.md`.
+- **Fridgian — two changes.** (a) The frenzy's second swing is never
+  wasted on a corpse — the `corpse && rng.d(10) <= 5` whiff branch is
+  deleted, removing one draw whenever a Fridgian frenzies with a corpse
+  present (the one rng-cursor change of the phase); (b) a Fridgian's hide
+  soaks 2 flat from every blow, floor 1, stacking with Hardiness's -3;
+  rationale: the frenzy fix closes a canon annoyance (wasting a swing on
+  something already dead) and the hide gives the "no armor, always last"
+  bad a real, offsetting good (IDENT-09).
+- **Troll** — no mechanic change; the 75wp/+9dmg/double-rations/triple-
+  cost blurb was checked true and left as-is.
+
+### Ruling: level-1 Thief dagger (IDENT-10) — KEEP
+
+The level-1 Thief's starting dagger stays exactly as-is — no engine
+change. Rationale, per `24-CONTEXT.md`'s recorded decision: Thieves already
+lead the BEFORE matrix (this ledger's own BY SUBCLASS roll-up above shows
+Ninja at mean depth 4.22, Con Artist at 4.08, and Acrobat at 3.71 — the top
+three subs in the entire 143-cell matrix); the opener backstab doubles the
+dagger's 2-4 damage on the first landed blow of a fight; and a better
+weapon is one find away on any floor. The dagger is the price of the
+class's escape/stealth kit, not an accident of the port. Revisit only if
+Phase 26's AFTER matrix shows Thieves sliding below the class median.
+
+### Ruling: Freeze pays out (landed Phase 23)
+
+**Ruling: Freeze pays out (landed Phase 23, commit `0056625`).** The
+prototype's Freeze spell marked its target dead and frozen without ever
+calling `killFoe` — a Freeze kill awarded zero experience, coin, treasure
+roll, kill count, or party split, even though every other lethal action in
+the game (a melee strike, any other thrown spell, Insanity's roll-1 kill,
+the death spell) pays through the same routine. This was ruled a bug in
+the port, not an intentional rule, because Freeze is the level-1 thrown
+spell most casters' guaranteed day-one attack spell (Plan 22-02, IDENT-02)
+resolves to — without this fix, a caster's "guaranteed way to win a fight"
+would have been a guaranteed way to win a fight for free XP. The fix:
+Freeze still narrates with `frozenSolid` (and the target still ends up
+`alive: false, frozen: true, wp: 0`), but the kill now routes through
+`killFoe` exactly like a melee kill — same sp formula (`killSpFor`), same
+coin roll, same treasure check, same kill count increment, same party-XP
+split. One canon consequence: a kill-twice (`lives: 2`) creature (e.g.,
+Philly, Skeleton) now correctly shrugs off a single Freeze and stands back
+up at full wp, per the rulebook's "you have to kill it twice" — the
+prototype let Freeze bypass the lives rule entirely, one-shotting even a
+kill-twice creature.
+
+Petrify/Turn/Gate v1.3 candidate note: `petrify`, `turn` (Walking Dead
+only), and `gate` (Walking Dead/Demons only) all bypass `killFoe` in the
+same shape Freeze used to; the user asked for Freeze only, so these three
+are deliberately left as-is and flagged as a v1.3 spell-audit candidate.
+
+### Good / bad table (source: test/unit/identity-contract.test.js)
+
+| Sub / Race | GOOD | BAD |
+| --- | --- | --- |
+| Wizard | Full offense-school bonus (3), learns every school | Refuses to melee while a castable attack spell sits unused |
+| Warlock | A nightly potion duplicates itself | Props up every Walking Dead foe in the room |
+| Sorcerer | Grimoire guaranteed to carry Freeze and Fireball | Own arm caps at 9 damage |
+| Summoner | Summons at level one instead of level two | Gated out of offense at level one even when a spell is known |
+| Cleric | Heals 3 more than anyone else, rolls 4 to hit | No offensive bonus at all (soft bad) |
+| Illusionist | Phantom Host summonable at level one instead of level three | Strikes on a d20 until level three |
+| Court Mage | Boredom kills 1-in-6 (d12<=2); always parleys Humans | Talks first — foes act first in round one only |
+| Apprentice | Double skill points off a kill at level one | One spell in eight backfires |
+| Knight | Beneath the notice of small things — a foe under 5 maxWP flees | Everything over 20 comes straight at you — never wins initiative vs a live maxWP >= 20 foe |
+| Guard | The profession is standing there — every foe needs one better to land a blow | Own blow is weaker and never crits |
+| Woodsman | The professional forester — parleys Beasts/Lair Beasts | No mail, no plate — refused anything heavier than Studded |
+| Soldier | Camp heals twice as fast | A foe's roll of 2 crits, doubling the blow |
+| Barbarian | Two attacks every strike | Half skill points off a kill |
+| Master of Arms | Plus two with every weapon ever forged | Cannot parley, ever; no clean round-1 tracked withdrawal |
+| Samurai | Born in plate, wielding a magic katana | Never wins initiative, never runs |
+| Bard | Courtly enough to talk to anyone — parleys Humans at fluency 0 | Camp wakes wandering monsters twice as often; dumb foes come for the Bard |
+| Pickpocket | An extra take off every kill/chest | Shopkeepers know your face — buys x1.25, sells x0.75 |
+| Pilfer | Disarms every trap, opens every chest for free | Cannot use a single item that does not heal |
+| Cat Burglar | The first strike of any fight always lands | Every trap that catches them deals double damage |
+| Cutthroat | The first landed blow always crits, even in armor a backstab would refuse | No Joiner will ever travel with you |
+| Cloaker | A free vanish while nobody has seen your face | Once seen, the vanish is denied |
+| Ninja | The opener always lands for max weapon damage; a later roll of 2 crits | You never speak — canParley is false unconditionally |
+| Con Artist | Can talk anyone down except Magical/Walking Dead; a weak foe leaves before the fight starts | The opening blow is a warning, not an injury |
+| Acrobat | Harder to land a blow on, easier to land one | A dagger, and only a dagger |
+| Elven | Strikes a die better and hits at 5 whatever the class | 0.6x wp and easier to hit |
+| Dwarven | +2 damage; armour built to be hit wears at half the rate | Foes strike at a better die |
+| Wilmsry | Camp heals twice as fast; parleys Beasts at fluency 0 | Half skill points; Magic User Joiners refuse to travel with them |
+| Fridgian | Frenzy never wastes its second swing; thick hide soaks 2 from every blow | Never wears armor, always strikes last |
+| Troll | 75 wp regardless of class; +9 damage | Prices triple, eats two rations a night |
+| Human | *(neutral — no race modifier anywhere)* | *(neutral)* |
+
+### Fidelity posture (FID-07)
+
+Zero new serialized fields were introduced by this phase — every mechanic
+above reads `c.sub`, `c.race`, or an existing combat flag (`C.opened2`),
+so no `*Comparable()` carve-out is needed and a v1.0/v1.1 save loads
+unchanged; `git diff --stat 4ba2edd..HEAD -- test/parity/harness/comparables.js`
+shows only Plan 24-02's declared-divergence helpers landing (`1 file
+changed, 157 insertions(+)`), and `test/parity/prototype-master.js.txt` is
+untouched over the same range. Every new event type is narrated:
+`withdrawalDenied`, `vanishDenied`, `joinerRefused`, `useRefused`; one
+event type was removed (the Fridgian corpse-whiff `frenzyWasted` entry,
+since its underlying draw no longer exists). Two declared action-path
+fixture divergences exist (`combat/lose`, seed 14; `economy`, seed 3) plus
+one restored death-path scenario (`lose-apprentice`, seed 127) — full
+detail in `test/parity/FIXTURE-INVENTORY.md`'s "Phase 24" section.
 
 ## AFTER — commit `<hash>` (Phase 26 — PLAY-02)
 
