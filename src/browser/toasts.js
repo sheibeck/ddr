@@ -191,6 +191,280 @@ function equipRejectText(e) {
   return EQUIP_REJECT_TEXT[e?.reason] ?? "Not for the likes of you.";
 }
 
+// ─── toastsForAction pipeline (25-03) ─────────────────────────────────────
+//
+// `toastsForAction(type, events, ctx = {})` is the per-action pipeline the
+// shell (25-04) calls once per dispatched action, after the events have
+// already been decorated by decorateMisses (engineAdapter.js). Order:
+//   1. encounterStart  — folds encounterStarted + its same-action followers
+//      (trackable, allyJoined, warlockBoost, foeFled knight/conArtist,
+//      foeBored, phobiaFrozen, combatInDark) into ONE toast.
+//   2. enemyRound       — groups struckByFoe/foeMissed(hero) by foe name
+//      into one toast per foe (3+ distinct names collapse into one), and
+//      memberStruck/foeMissed(member) by (name, member) into their own
+//      lower-priority toasts.
+//   3. yourRound        — groups struck/strikeMissed(non-untouchable) by
+//      target into one toast per target; untouchable misses stay separate.
+//   4. spellChain       — folds spellThrown->spellHit/spellMissed/
+//      frozenSolid/foeKilled per target (3+ targets collapse into one
+//      Lightning-style toast), and folds a bare resistFailed away when a
+//      resisted-but-failed effect event follows in the same action.
+//   5. fleeChain / parleyChain / chestChain — fold a *Rolled event into its
+//      outcome, appending the roll detail to the outcome's own text.
+//   6. killFold         — appends the felled suffix (middle-dot + "felled")
+//      to any your-round/spell-chain toast whose target a still-unconsumed
+//      foeKilled names.
+//   7. every remaining unconsumed, non-ORACLE_ONLY event is mapped through
+//      TOAST_FOR directly.
+//   8. dedupe per event type (table-mapped toasts only; aggregated toasts
+//      are never deduped against each other), stable-sort ascending by
+//      priority (ties keep engine order), then cap at MAX_TOASTS — so a
+//      priority-0 refusal is never dropped and the cap always drops the
+//      lowest-priority (highest number), latest-engine-order toasts first.
+//
+// `ctx` is accepted and reserved for a future consumer; it is currently
+// unread (a strikeMissed's quip already arrives on the event itself, via
+// engineAdapter.js's decorateMisses — see missLines.js).
+
+const CRIT_SUFFIX = " · CRIT";
+
+/** sumSoaked(list) — per-key integer sums across a group's hit events' `soaked`. */
+function sumSoaked(list) {
+  const result = {};
+  for (const s of list) {
+    if (!s) continue;
+    if (s.hardiness) result.hardiness = (result.hardiness || 0) + s.hardiness;
+    if (s.hide) result.hide = (result.hide || 0) + s.hide;
+    if (s.ward) result.ward = (result.ward || 0) + s.ward;
+  }
+  return result;
+}
+
+/**
+ * enemyRound(events, consumed) — struckByFoe/foeMissed(hero, no `member`)
+ * grouped by foe name into one toast per foe (M===1 reuses the locked
+ * single-swing TOAST_FOR builder verbatim; M>=2 uses the "K of M" wording);
+ * 3+ distinct foe names collapse into ONE "${F} foes swing, ..." toast.
+ * memberStruck/foeMissed(member) group by (name, member) separately, at
+ * PRIORITY.feature (25-CONTEXT.md: "party-member hits ... lower priority").
+ */
+function enemyRound(events, consumed) {
+  const built = [];
+  const heroGroups = new Map();
+  const memberGroups = new Map();
+
+  const addTo = (map, key, entry) => {
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(entry);
+  };
+
+  events.forEach((e, i) => {
+    if (consumed.has(i)) return;
+    if (e.type === "struckByFoe") {
+      addTo(heroGroups, e.name, { idx: i, e, hit: true });
+    } else if (e.type === "foeMissed" && !e.member) {
+      addTo(heroGroups, e.name, { idx: i, e, hit: false });
+    } else if (e.type === "memberStruck") {
+      addTo(memberGroups, `${e.name}::${e.member}`, { idx: i, e, hit: true, name: e.name, member: e.member });
+    } else if (e.type === "foeMissed" && e.member) {
+      addTo(memberGroups, `${e.name}::${e.member}`, { idx: i, e, hit: false, name: e.name, member: e.member });
+    }
+  });
+
+  const heroNames = [...heroGroups.keys()];
+  if (heroNames.length >= 3) {
+    let K = 0;
+    let sum = 0;
+    let crit = false;
+    let firstIdx = Infinity;
+    const hitSoaks = [];
+    heroNames.forEach((name) => {
+      heroGroups.get(name).forEach(({ idx, e, hit }) => {
+        consumed.add(idx);
+        if (idx < firstIdx) firstIdx = idx;
+        if (hit) {
+          K++;
+          sum += e.dmg ?? 0;
+          if (e.critical || e.soldierCrit) crit = true;
+          if (e.soaked) hitSoaks.push(e.soaked);
+        }
+      });
+    });
+    const F = heroNames.length;
+    let text = `${F} foes swing, ${K > 0 ? `${K} land (${sum})` : "none land"}`;
+    if (crit) text += CRIT_SUFFIX;
+    text += soakSuffix(sumSoaked(hitSoaks));
+    built.push({ text, tone: K > 0 ? "hurt" : "dodge", priority: PRIORITY.them, idx: firstIdx });
+  } else {
+    for (const name of heroNames) {
+      const entries = heroGroups.get(name);
+      const M = entries.length;
+      const K = entries.filter((x) => x.hit).length;
+      const firstIdx = entries[0].idx;
+      entries.forEach(({ idx }) => consumed.add(idx));
+      if (M === 1) {
+        built.push({ ...TOAST_FOR[entries[0].e.type](entries[0].e), idx: firstIdx });
+        continue;
+      }
+      const hits = entries.filter((x) => x.hit);
+      const sum = hits.reduce((s, x) => s + (x.e.dmg ?? 0), 0);
+      const crit = hits.some((x) => x.e.critical || x.e.soldierCrit);
+      let text = K > 0 ? `${name} hits you ${K} of ${M} (${sum})` : `${name} misses you ${M} times`;
+      if (crit) text += CRIT_SUFFIX;
+      text += soakSuffix(sumSoaked(hits.map((x) => x.e.soaked)));
+      built.push({ text, tone: K > 0 ? "hurt" : "dodge", priority: PRIORITY.them, idx: firstIdx });
+    }
+  }
+
+  for (const key of memberGroups.keys()) {
+    const entries = memberGroups.get(key);
+    const M = entries.length;
+    const K = entries.filter((x) => x.hit).length;
+    const firstIdx = entries[0].idx;
+    const { name, member } = entries[0];
+    entries.forEach(({ idx }) => consumed.add(idx));
+    if (M === 1) {
+      built.push({ ...TOAST_FOR[entries[0].e.type](entries[0].e), idx: firstIdx });
+      continue;
+    }
+    const hits = entries.filter((x) => x.hit);
+    const sum = hits.reduce((s, x) => s + (x.e.dmg ?? 0), 0);
+    const crit = hits.some((x) => x.e.critical);
+    let text = K > 0 ? `${name} hits ${member} ${K} of ${M} (${sum})` : `${name} misses ${member} ${M} times`;
+    if (crit) text += CRIT_SUFFIX;
+    built.push({ text, tone: K > 0 ? "hurt" : "dodge", priority: PRIORITY.feature, idx: firstIdx });
+  }
+
+  return built;
+}
+
+/**
+ * yourRound(events, consumed) — struck/strikeMissed(non-untouchable) grouped
+ * by target (M===1 reuses the locked single-swing builder; M>=2 uses the
+ * "K of M" wording, carrying the first quipped miss's quip when K===0).
+ * Untouchable misses are never grouped — TOAST_FOR.strikeMissed's own
+ * untouchable branch handles them individually via the generic mapping step.
+ */
+function yourRound(events, consumed) {
+  const built = [];
+  const groups = new Map();
+  events.forEach((e, i) => {
+    if (consumed.has(i)) return;
+    if (e.type === "struck") {
+      if (!groups.has(e.target)) groups.set(e.target, []);
+      groups.get(e.target).push({ idx: i, e, hit: true });
+    } else if (e.type === "strikeMissed" && !e.untouchable) {
+      if (!groups.has(e.target)) groups.set(e.target, []);
+      groups.get(e.target).push({ idx: i, e, hit: false });
+    }
+  });
+
+  for (const target of groups.keys()) {
+    const entries = groups.get(target);
+    const M = entries.length;
+    const K = entries.filter((x) => x.hit).length;
+    const firstIdx = entries[0].idx;
+    entries.forEach(({ idx }) => consumed.add(idx));
+    if (M === 1) {
+      const { e } = entries[0];
+      built.push({ ...TOAST_FOR[e.type](e), idx: firstIdx, ...(e.type === "struck" ? { _target: target } : {}) });
+      continue;
+    }
+    const hits = entries.filter((x) => x.hit);
+    const sum = hits.reduce((s, x) => s + (x.e.dmg ?? 0), 0);
+    const anyCrit = hits.some((x) => x.e.critical);
+    if (K > 0) {
+      let text = `You hit ${target} ${K} of ${M} (${sum})`;
+      if (anyCrit) {
+        text += CRIT_SUFFIX;
+        const firstCrit = hits.find((x) => x.e.critical && CRIT_BY_TEXT[x.e.critBy]);
+        if (firstCrit) text += ` (${CRIT_BY_TEXT[firstCrit.e.critBy]})`;
+      }
+      built.push({ text, tone: "hit", priority: PRIORITY.you, idx: firstIdx, _target: target });
+    } else {
+      let text = `You miss ${target} ${M} times`;
+      const firstQuip = entries.find((x) => x.e.quip);
+      if (firstQuip) text += ` — ${firstQuip.e.quip}`;
+      built.push({ text, tone: "miss", priority: PRIORITY.you, idx: firstIdx });
+    }
+  }
+  return built;
+}
+
+/**
+ * killFold(events, consumed, built) — shared by yourRound/spellChain: any
+ * still-unconsumed `foeKilled` whose `name` matches a built toast's
+ * `_target` (a landed hit on that name) gets folded into that toast's felled
+ * suffix, once. A foeKilled with no matching `_target` (a ward reflect,
+ * an ally's kill, an acid tick) is left unconsumed for its own builder.
+ */
+function killFold(events, consumed, built) {
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "foeKilled") return;
+    const target = built.find((t) => t._target === e.name);
+    if (target) {
+      target.text += " · felled";
+      delete target._target;
+      consumed.add(i);
+    }
+  });
+}
+
+/**
+ * dedupeByType(list) — keeps the first toast of each event `type` in engine
+ * order; a later toast of the SAME type with DIFFERENT text appends
+ * ` ×${N}` to the kept toast. Aggregated toasts (no `.type` tag) are never
+ * deduped against each other or against table-mapped toasts.
+ */
+function dedupeByType(list) {
+  const seen = new Map();
+  const result = [];
+  for (const item of list) {
+    if (!item.type) {
+      result.push(item);
+      continue;
+    }
+    if (!seen.has(item.type)) {
+      seen.set(item.type, item);
+      result.push(item);
+    } else {
+      const first = seen.get(item.type);
+      first._count = (first._count || 1) + 1;
+      if (item.text !== first.text) {
+        first.text = first.text.replace(/ ×\d+$/, "") + ` ×${first._count}`;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * toastsForAction(type, events, ctx = {}) — the exported per-action
+ * pipeline. See the header comment above this section for the full order.
+ */
+export function toastsForAction(type, events, ctx = {}) {
+  if (!Array.isArray(events) || events.length === 0) return [];
+  const consumed = new Set();
+  const built = [];
+
+  built.push(...enemyRound(events, consumed));
+  built.push(...yourRound(events, consumed));
+  killFold(events, consumed, built);
+
+  events.forEach((e, idx) => {
+    if (consumed.has(idx)) return;
+    if (ORACLE_ONLY.has(e.type)) return;
+    const builder = TOAST_FOR[e.type];
+    if (!builder) return;
+    const { text, tone, priority } = builder(e, ctx);
+    built.push({ text, tone, priority, idx, type: e.type });
+  });
+
+  const deduped = dedupeByType(built);
+  deduped.sort((a, b) => a.priority - b.priority || a.idx - b.idx);
+  return deduped.slice(0, MAX_TOASTS).map(({ text, tone, priority }) => ({ text, tone, priority }));
+}
+
 export const TOAST_FOR = {
   /* ---------------- movement.js ---------------- */
 
