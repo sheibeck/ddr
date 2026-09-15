@@ -878,7 +878,11 @@ export const TOAST_FOR = {
     tone: "hurt",
     priority: PRIORITY.feature,
   }),
-  campFailed: () => block("Not enough food to make camp."),
+  // Phase 25.1 (DFB-06): still an amber block, priority 0, non-empty for a
+  // bare payload; on the camp action the narrative ctx (NARRATIVE_ACTIONS)
+  // shows the Oracle sentence instead — this is the fallback/coverage text.
+  campFailed: (e) =>
+    block(e?.need != null && e?.have != null ? `You eat ${e.need} a night, you have ${e.have}. Find rations first.` : "Not enough food to make camp."),
   teleported: () => ({ text: "You teleport to an unknown location.", tone: "beat", priority: PRIORITY.other }),
   leveled: (e) => ({ text: `Skill level ${e?.level ?? "?"} (+${e?.wpGain ?? 0} hp).`, tone: "hit", priority: PRIORITY.feature }),
 

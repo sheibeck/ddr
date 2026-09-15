@@ -26,7 +26,10 @@ import {
   descend,
   winGame,
   maxCharges,
+  nightlyEats,
 } from "../../engine/movement.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { TOAST_FOR } from "../../src/browser/toasts.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
 
@@ -901,6 +904,105 @@ test("makeCamp: camps successfully and runs a camped newDay", () => {
   const events = makeCamp(state, rng, []);
   assert.equal(state.day, 2);
   assert.ok(events.some((e) => e.type === "dayBegan" && e.camped === true));
+});
+
+// --- nightlyEats / makeCamp DFB-06 (Phase 25.1) --------------------------
+
+test("nightlyEats: solo hero = own appetite (Human 1, Troll 2); no party field and party [] agree", () => {
+  assert.equal(nightlyEats(fixedState()), 1, "solo Human = 1");
+  assert.equal(nightlyEats(fixedState({ c: { race: "Troll" } })), 2, "solo Troll = 2");
+  assert.equal(nightlyEats(fixedState({ party: [] })), 1, "empty party array agrees with no party field");
+  const noPartyField = fixedState();
+  delete noPartyField.party;
+  assert.equal(nightlyEats(noPartyField), 1, "a missing party field agrees too");
+});
+
+test("nightlyEats: every live member adds its race appetite; a member with an unknown race counts as 1", () => {
+  assert.equal(nightlyEats(fixedState({ party: [member({ race: "Human" })] })), 2, "Human + Human member = 2");
+  assert.equal(nightlyEats(fixedState({ party: [member({ race: "Troll" })] })), 3, "Human + Troll member = 3");
+  assert.equal(nightlyEats(fixedState({ party: [member({ race: "Nonesuch" })] })), 2, "unknown race defaults to 1");
+});
+
+test("makeCamp DFB-06: a Troll with 1 ration is refused with need 2 have 1, drawing nothing and changing nothing", () => {
+  const state = fixedState({ c: { race: "Troll", rations: 1, wp: 40 } });
+  const events = makeCamp(state, fakeRng([]), []);
+  assert.deepStrictEqual(
+    events.find((e) => e.type === "campFailed"),
+    { type: "campFailed", reason: "noRations", need: 2, have: 1 },
+    "exact solo shape — no members key",
+  );
+  assert.equal(state.day, 1, "no day advanced");
+  assert.equal(state.c.rations, 1, "rations unchanged");
+  assert.equal(state.c.wp, 40, "wp unchanged");
+});
+
+test("makeCamp DFB-06: a Troll with exactly 2 rations camps (strict less-than) and eats both", () => {
+  const state = fixedState({ c: { race: "Troll", rations: 2 } });
+  const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]); // heal roll + 8 safe monster-check draws
+  const events = makeCamp(state, rng, []);
+  assert.equal(state.day, 2);
+  assert.equal(state.c.rations, 0);
+  assert.ok(!events.some((e) => e.type === "campFailed"));
+});
+
+test("makeCamp DFB-06: a Human hero with a Human member and 1 ration is refused with need 2 have 1 and names the member", () => {
+  const state = fixedState({ c: { rations: 1 }, party: [member({ name: "Bram", race: "Human" })] });
+  const partyBefore = state.party.slice();
+  const events = makeCamp(state, fakeRng([]), []);
+  const failed = events.find((e) => e.type === "campFailed");
+  assert.equal(failed.need, 2);
+  assert.equal(failed.have, 1);
+  assert.deepStrictEqual(failed.members, [{ name: "Bram", eats: 1 }]);
+  assert.deepStrictEqual(state.party, partyBefore, "party untouched");
+});
+
+test("makeCamp DFB-06: a solo Human with 1 ration still camps (the gate is unchanged for solo heroes)", () => {
+  const state = fixedState({ c: { rations: 1 } });
+  const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]);
+  const events = makeCamp(state, rng, []);
+  assert.equal(state.day, 2);
+  assert.equal(state.c.rations, 0);
+  assert.ok(!events.some((e) => e.type === "campFailed"));
+});
+
+test("makeCamp DFB-06: zero rations refuses with have 0", () => {
+  const state = fixedState({ c: { rations: 0 } });
+  const events = makeCamp(state, fakeRng([]), []);
+  const failed = events.find((e) => e.type === "campFailed");
+  assert.equal(failed.have, 0);
+  assert.equal(failed.need, 1);
+});
+
+test("newDay DFB-06: the rations delta equals nightlyEats(state) for solo and for hero + member (arithmetic unchanged)", () => {
+  for (const overrides of [{ c: { rations: 6 } }, { c: { rations: 6 }, party: [member({ race: "Troll" })] }]) {
+    const state = fixedState(overrides);
+    const before = state.c.rations;
+    const need = nightlyEats(state);
+    newDay(state, false, fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]), []);
+    assert.equal(before - state.c.rations, need, `${JSON.stringify(overrides)}: rations delta equals nightlyEats`);
+  }
+});
+
+test("campFailed narration and toast render the numbers and the member clause", () => {
+  const withMember = EVENT_NARRATION.campFailed({
+    type: "campFailed",
+    reason: "noRations",
+    need: 2,
+    have: 1,
+    members: [{ name: "Bram", eats: 1 }],
+  }).replace(/<[^>]+>/g, "");
+  assert.equal(withMember, "You eat 2 a night (Bram eats 1 more). You have 1. Find rations first.");
+
+  const solo = EVENT_NARRATION.campFailed({ type: "campFailed", need: 2, have: 1 }).replace(/<[^>]+>/g, "");
+  assert.equal(solo, "You eat 2 a night. You have 1. Find rations first.");
+
+  const toast = TOAST_FOR.campFailed({ type: "campFailed", need: 2, have: 1 });
+  assert.equal(toast.tone, "block");
+  assert.ok(toast.text.includes("2") && toast.text.includes("1"));
+
+  const bare = TOAST_FOR.campFailed({ type: "campFailed" });
+  assert.equal(bare.tone, "block");
+  assert.ok(typeof bare.text === "string" && bare.text.length > 0);
 });
 
 // --- teleport -----------------------------------------------------------

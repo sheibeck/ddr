@@ -370,6 +370,22 @@ export function move(state, dir, rng, events = [], now = Date.now) {
 /* ---------------- day cycle / camp ---------------- */
 
 /**
+ * nightlyEats(state) — Phase 25.1 (DFB-06): the ONE definition of "how much
+ * this party eats per night", read by newDay AND makeCamp (and, read-only,
+ * by the shell's camp button through window.__mzNightlyEats), so the camp
+ * gate and the automatic new day can never disagree. Pure read, zero rng;
+ * with no party it equals the hero's own appetite exactly as before.
+ */
+export function nightlyEats(state) {
+  const c = state.c;
+  let eats = RACES[c.race].eats || 1;
+  if (state.party?.length) {
+    for (const m of state.party) eats += RACES[m.race]?.eats || 1;
+  }
+  return eats;
+}
+
+/**
  * newDay(state, camped, rng, events, now) — ports mazeworld.html newDay()
  * (lines 1717-1772). Advances the day counter, resolves upkeep/rations
  * (starving into `die("starve")` when unfed and out of wp), rests, and rolls
@@ -388,17 +404,18 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   }
   const R = RACES[c.race];
   let cost = upkeep(c);
-  let eats = R.eats || 1;
+  const eats = nightlyEats(state);
   // PARTY-10 (Phase 11, party-LOCAL balance): a joiner is a real resource cost,
   // not free power — the canon counterweight is that a party EATS MORE. Each
   // LIVE party member folds its own hunger into the daily food math: the
-  // member's rations into `eats` (a fed party drains rations faster) and the
-  // member's `upkeep()` into `cost` (an unfed party burns the hero's wp faster,
-  // starving into the same die("starve") path). Members are full
-  // rollCharacter()-shaped sheets and are already pruned to LIVE-only in
-  // endCombat (downed/departed members are removed from state.party), so every
-  // member present here genuinely eats. Reuses upkeep()/`R.eats` for
-  // consistency with the hero's own model — pure post-state arithmetic, NO rng.
+  // member's rations into `eats` (a fed party drains rations faster, now via
+  // nightlyEats — shared with makeCamp, DFB-06) and the member's `upkeep()`
+  // into `cost` (an unfed party burns the hero's wp faster, starving into the
+  // same die("starve") path). Members are full rollCharacter()-shaped sheets
+  // and are already pruned to LIVE-only in endCombat (downed/departed members
+  // are removed from state.party), so every member present here genuinely
+  // eats. Reuses upkeep()/`R.eats` for consistency with the hero's own model
+  // — pure post-state arithmetic, NO rng.
   //
   // DETERMINISM GATE: gated behind `state.party?.length`. With no party the
   // loop never runs and `cost`/`eats`/`c.rations` stay byte-identical to the
@@ -408,7 +425,6 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   if (state.party?.length) {
     for (const m of state.party) {
       cost += upkeep(m);
-      eats += RACES[m.race]?.eats || 1;
     }
   }
   events.push({ type: "dayBegan", day: state.day, camped: !!camped });
@@ -522,10 +538,18 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
  */
 export function makeCamp(state, rng, events = [], now = Date.now) {
   if (state.combat || state.store || state.dead || state.won) return events;
-  const R = RACES[state.c.race];
-  const eats = R.eats || 1;
-  if (state.c.rations < eats) {
-    events.push({ type: "campFailed", reason: "noRations" });
+  // DELIBERATE RULES CHANGE, Phase 25.1, 2026-09-15 (DFB-06): the gate now
+  // counts every live member's appetite exactly as newDay does (the old
+  // gate counted the hero only, so a hero with a member could pass the gate
+  // and still go hungry). The refusal states the numbers; solo heroes keep
+  // need === RACES[race].eats||1 so every fixture's camp is byte-identical;
+  // `members` is spread in only when a party exists so the solo event shape
+  // stays exactly `{ type, reason, need, have }`.
+  const need = nightlyEats(state);
+  const have = state.c.rations;
+  if (have < need) {
+    const members = (state.party ?? []).map((m) => ({ name: m.name, eats: RACES[m.race]?.eats || 1 }));
+    events.push({ type: "campFailed", reason: "noRations", need, have, ...(members.length ? { members } : {}) });
     return events;
   }
   return newDay(state, true, rng, events, now);

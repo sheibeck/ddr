@@ -145,7 +145,16 @@ export const EVENT_NARRATION = {
   // byte-identical.
   wanderingMonster: (e) =>
     `Something in the dark takes an interest in you. <span class="roll">${e.hours ?? 0} of 8 night-hours disturbed.</span>${e.bard ? " Something too stupid to know better heard the singing." : ""}`,
-  campFailed: () => `<span class="miss">Not enough food to make camp.</span> Find rations first.`,
+  // Phase 25.1 (DFB-06): the refusal states the numbers — the hero's need,
+  // what's on hand, and (when a party exists) who else is eating. A bare
+  // `{type}` payload (the coverage test's shape) renders "?" rather than
+  // undefined/NaN.
+  campFailed: (e) => {
+    const need = e.need ?? "?";
+    const have = e.have ?? "?";
+    const extra = (e.members ?? []).map((m) => `${m.name ?? "Your companion"} eats ${m.eats ?? 1} more`).join(", ");
+    return `<span class="miss">You eat ${need} a night${extra ? ` (${extra})` : ""}. You have ${have}.</span> Find rations first.`;
+  },
   teleported: () =>
     `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`,
   spGained: (e) => {
