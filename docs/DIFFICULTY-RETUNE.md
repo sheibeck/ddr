@@ -1459,7 +1459,50 @@ move (only `humans-t2`'s tier-2 roster grew).
 
 ### Change table (27-02 / 27-03)
 
-(filled by plan 27-03)
+| Knob | File | Before (Phase 26 AFTER, pin d1e3235) | After (final, pin 39bfecf) | Rationale | Record |
+|---|---|---|---|---|---|
+| `COMBAT_SCALE_FROM_DEPTH` | engine/difficulty.js | 6 | 21 | forced-20 band: identity-from-6 gave depth 20 only 1.3 encounters survived / 0.14 floors gained; pushing identity through depth 20 entirely is the calibrated ceiling of this dial | 27-03 iterations 1-2, parity-clean |
+| `FOE_CAP_MAX` | engine/difficulty.js | 5 | 4 | paired with COMBAT_SCALE_FROM_DEPTH's move — a smaller foes-per-encounter ceiling so the softened deep band isn't also facing more bodies | 27-03 iteration 1, parity-clean |
+| `FOE_CAP_SOFT_K` | engine/difficulty.js | 20 | 20 (unchanged) | tried-and-kept — no change needed once FOE_CAP_MAX moved | unchanged |
+| `FOE_POWER_MAX` | engine/difficulty.js | 1.6 | 1.15 | iteration 1 (1.6->1.3) paired with the COMBAT_SCALE_FROM_DEPTH move; iteration 4 (1.3->1.15) flattens the post-20 ramp further after floors-gained still missed | 27-03 iterations 1 and 4, parity-clean |
+| `FOE_POWER_SOFT_K` | engine/difficulty.js | 35 | 35 (unchanged) | same K, gentler MAX already softens the curve | unchanged |
+| `ABILITY_THREAT_MAX` | engine/difficulty.js | 2.0 | 1.3 | iteration 1 (2.0->1.5) paired with the COMBAT_SCALE_FROM_DEPTH move; iteration 4 (1.5->1.3) same rationale as FOE_POWER_MAX | 27-03 iterations 1 and 4, parity-clean |
+| `ABILITY_THREAT_SOFT_K` | engine/difficulty.js | 30 | 30 (unchanged) | same K, gentler MAX already softens the curve | unchanged |
+| `FOE_LVL_BIAS` | engine/difficulty.js | 0 | 0 (unchanged, reserved) | not needed this retune | unchanged |
+| `DENSITY_CANON_THROUGH_DEPTH` | engine/difficulty.js | — (new) | 2 | structural-identity gate so floors 1-2 reproduce the canon `9+depth` dot formula by construction | 27-02, parity-clean |
+| `ENCOUNTER_DOT_CAP` | engine/difficulty.js | 24 | 13 | 27-02 (24->15): smaller ceiling for the widened early-floor easing; 27-03 iteration 3 (15->13): forced-20 floors-gained still missed after the deep-dial moves — fewer encounter triggers per floor from depth 3 on gives more of the bot's action budget to descending | 27-02 + 27-03 iteration 3, parity-clean (no fixture reaches depth 3+) |
+| `ENCOUNTER_DOT_SOFT_K` | engine/difficulty.js | 12 | 12 (unchanged) | tried-and-kept | unchanged |
+| `ENCOUNTER_DOT_BASE` | engine/difficulty.js | 9 | 9 (unchanged, canon literal) | matches the prototype's original `9` | unchanged |
+| `DARK_BLOB_CAP` | engine/difficulty.js | 6 | 3 | fewer dark-zone seed blobs at the eased depths | 27-02, parity-clean |
+| `DARK_RADIUS_CAP` | engine/difficulty.js | 9 | 7 | smaller per-blob reveal radius ceiling at the eased depths | 27-02, parity-clean |
+| `DARK_RADIUS_BASE` | engine/difficulty.js | 3 | 3 (unchanged, canon literal) | matches the prototype's original `3` | unchanged |
+| `DARK_HOLD_THROUGH_DEPTH` | engine/difficulty.js | — (new) | 3 | landed form (darkness holds its floor-2 canon blob count through depth 3, then resumes growth) — the parity-clean form; the from-floor-4 form (`DARK_FROM_DEPTH`) was considered but NOT taken (see "Not changed, and why") | 27-02, parity-clean; movement fixture seed 256 confirmed byte-unchanged |
+| `BREATHER_EVERY` | engine/difficulty.js | 5 | 5 (unchanged) | not part of this retune | unchanged |
+| `FOE_GRACE_AT_1` | engine/difficulty.js | — (new) | 1.0 (canon, unchanged this plan) | floor 1 stays exactly canon — the structural guarantee that Dante->Ned is the only parity divergence | 27-02, MUST stay 1.0 |
+| `FOE_GRACE_AT_2` | engine/difficulty.js | — (new) | 0.5 | 27-02 landed 0.75; 27-03 iteration 2 took the ladder's second notch (0.75->0.5) — the natural median was still 3 (< the target 4) after iteration 1's deep-dial-only move; this notch alone reached the target (median 4, reach>=5 25.9-29.0%) | 27-02 (0.75) + 27-03 iteration 2 (0.5), parity-clean; `humans-t2`/`magical-t4` determinism pins re-measured live, no draws/attacks/outcome changed |
+| `FOE_GRACE_CANON_FROM_DEPTH` | engine/difficulty.js | — (new) | 5 (unchanged this plan) | the grace band's canon floor | 27-02 |
+| `HAZARD_FROM_DEPTH` | engine/difficulty.js | — (new) | 2 (unchanged this plan) | floor 1 stays canon; the ladder's cap explicitly excludes the from-floor-1 rung this plan | 27-02; NOT escalated (available, not taken) |
+| `HAZARD_SCALE_AT_START` | engine/difficulty.js | — (new) | 0.5 (unchanged this plan) | landed value held; not re-tuned this plan | 27-02 |
+| `HAZARD_FLAT_THROUGH_DEPTH` | engine/difficulty.js | — (new) | 3 (unchanged this plan) | landed value held | 27-02 |
+| `HAZARD_CANON_FROM_DEPTH` | engine/difficulty.js | — (new) | 5 (unchanged this plan) | landed value held | 27-02 |
+| `STARTING_RATIONS_BONUS` | engine/character.js | — (never added) | 0 (rung not taken) | the ladder cap (orchestrator decision, context commit `4d18e80`) explicitly excludes the rations rung regardless of what the smoke reads | NOT taken (available, not taken) |
+| Dante (bestiary) | content/bestiary.js | tier 1 Humans, `wp 20, sp.atk 3` | tier 2 Humans, byte-identical stats/note | 27-02's landed decision (Form C) — unchanged by this plan | 27-02, declared divergence (seed 303) |
+| Ned (bestiary) | content/bestiary.js | — (did not exist) | tier 1 Humans, `wp 8`, one swing a round | 27-02's landed decision — unchanged by this plan | 27-02, declared divergence (seed 303) |
+
+**Curve at 1..5 / 10 / 15 / 20 / 35 / 50 (final, pin 39bfecf)** — dots / darkBlobs / darkRadius / foePower / hazardScale / foeCap / abilityThreat:
+
+| d | dots | darkBlobs | darkRadius | foePower | hazardScale | foeCap | abilityThreat |
+|---|---|---|---|---|---|---|---|
+| 1 | 10 | 0 | 4 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 |
+| 2 | 11 | 1 | 5 | 0.5000 | 0.5000 | 3 | 1.0000 |
+| 3 | 11 | 1 | 6 | 0.6667 | 0.5000 | 3 | 1.0000 |
+| 4 | 11 | 2 | 7 | 0.8333 | 0.7500 | 3 | 1.0000 |
+| 5 | 11 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 |
+| 10 | 12 | 3 | 7 | 1.0000 | 1.0000 | 3 | 1.0000 |
+| 15 | 12 | 3 | 7 | 1.0000 | 1.0000 | 3 | 1.0000 |
+| 20 | 13 | 3 | 7 | 1.0000 (exact) | 1.0000 | 3 | 1.0000 (exact) |
+| 35 | 13 | 3 | 7 | 1.0523 | 1.0000 | 4 | 1.1180 |
+| 50 | 13 | 3 | 7 | 1.0863 | 1.0000 | 4 | 1.1896 |
 
 ### Iteration log
 
@@ -2720,15 +2763,61 @@ In band: 117 of 143 cells (fine).
 
 ### Comparison vs band
 
-(filled by plan 27-03)
+| Measure | JSON path | Phase 26 AFTER (d1e3235) | Retune AFTER (39bfecf) | Target | In band? |
+|---|---|---|---|---|---|
+| Natural median death depth (bot) | `retune-after.json` `rollups.pooled.p50Depth` | 3 | **4** | exactly 4 | **IN** |
+| Natural pooled reach >= 5 | `retune-after.json` `rollups.pooled.reach5` | 17.2 % | **30.6 %** | >= 25 % | **IN** |
+| Forced-20 encounters survived (mean) | `retune-after-depth20.json` `rollups.pooled.meanEncountersSurvived` | 1.32 | **3.17** | 3.0-5.0 | **IN** |
+| Forced-20 floors gained (p50) | `retune-after-depth20.json` `rollups.pooled.p50FloorsGained` | 0 | **0** | >= 1 | **OUT** |
+| Forced-20 floors gained (mean) | `retune-after-depth20.json` `rollups.pooled.meanFloorsGained` | 0.14 | **0.84** | 1.0-2.0 | **OUT** |
+| Cannot-act cells | `tools/class-pass-diff.mjs --gate --after retune-after.json` | 0 of 143 | **0 of 143** | 0 (hard gate) | **IN** |
+
+Informational rows (never pass/fail):
+
+- Reach >= 10 (pooled, natural) — `rollups.pooled.reach10` — 0.3 % (Phase 26) -> **0.9 %** (retune). ADVISORY corridor 10-20 %; still well below it, as expected (this corridor is consistency-derived, not itself a lever this plan turns).
+- Reach >= 20 (pooled, natural) — `rollups.pooled.reach20` — n/a in the Phase 26 JSON (0.0 % in every v1.1 200-seed readout) -> **0.1 %** (retune, 5720 runs — 1 dp resolution ≈ 0.02 %, so this reading is real, not rounding noise). Target 1.0-2.0 %; **OUT** — recorded as a miss (see "Per-measure reading" below). The 200-seed `tune-difficulty` natural sample separately read 1.0 % (directional, coarser resolution); the class-pass matrix's finer-grained 5720-run pooled figure (0.1 %) is the number of record per the plan's own "every band number is copied from rollups.pooled" rule.
+- Pooled mean depth (mu) and p90 — `rollups.pooled.meanDepth`/`p90Depth` — 3.08 / p90 n/a (Phase 26 handoff cites mu only) -> **3.77 / p90 6** (retune; `tools/class-pass-diff.mjs --section after`'s own mu computation reads 3.78, a rounding-path difference from `rollups.pooled.meanDepth`'s 3.77 — both cited, `rollups.pooled` is the number of record).
+- By-class means and rank order — Phase 26: Thief 3.51 > Fighter 3.16 > Magic User 2.55. Retune: **Thief 4.35 > Fighter 3.92 > Magic User 3.06** — the rank order SURVIVED (every class gained, Thief the most in absolute terms but the smallest relative gain; Magic User gained the largest relative jump, 2.55 -> 3.06, +20 %).
+- Floors 1-4 kill share — the CONTEXT kill table (Phase 26 AFTER cells) read 20 % dead by floor 1, 66 % by floor 3, 85 % by floor 4. The retune AFTER JSON does not carry a per-depth cumulative death table (only `reach5`/`reach10`/`reach20`), so the closest available proxy is "died before reaching floor 5" = `100 - reach5`: Phase 26 82.8 % -> retune **69.4 %** — directionally consistent with the CONTEXT table's shape (most deaths still cluster in floors 1-4, but a meaningfully smaller share of them). The pooled top-3 causes shifted from "cut down by a Dante" (724, Phase 26's #1 at scale) to **starved in the dark (474), undone by a trap (394), cut down by a Werebeast (381)** — Dante no longer appears in the natural pooled top 3 (27-02's demotion holds at full AFTER scale).
+- The 200-seed `tune-difficulty` natural sample (a DIFFERENT, smaller sample than the 5720-run pooled matrix above): death-depth p50 **4** (was 3 in the v1.1-era readout), reach table >=5 28.5 % / >=10 1.0 % / >=20 1.0 % / >=30 0.5 % / >=50 0.0 %. Top-5 causes: starved in the dark and fell off a wall tied at 17 (8.5 % each), cut down by a Werebeast and a Poltergeist tied at 12 (6.0 % each), spent by the dungeon itself 12 (6.0 %) — "cut down by a Dante" drops to 8 (4.0 %), well down from its Phase-26-era dominance and now a mid-table cause among many canon tier-2/3/4/5 foes, exactly the intended shape of the demotion (Dante still kills, just not disproportionately on floor 1).
+- Forced 35 / 50 (`tune-difficulty --seeds=200 --start-depth=35`/`=50`) — DESCRIPTIVE ONLY, no target, no move made: at 35, death-depth p50 **35** (min 35, p90 36, max 39 — i.e. floors gained p50 **0**, max **4**), top causes Drarl 23.5 % / Herman 20.0 % / Vampire 13.0 % / Djinni 13.0 % / Dread Lock 9.5 %. At 50, death-depth p50 **50** (min 50, p90 51, max 54 — floors gained p50 **0**, max **4**), top causes Drarl 26.0 % / Herman 18.0 % / Vampire 12.5 % / Djinni 12.5 % / Dread Lock 11.0 %. Both bands are dominated by the same handful of canon tier-4/5 foes as the forced-20 slice (Herman, Drarl, Vampire, Djinni, Dread Lock, Stalka Beast) — the curve's own monotone-past-20 guarantee (no dial-back, no forced death) holds by construction; these numbers are reported for the DR round, not judged.
+
+**What the numbers say:** every sanctioned lever this plan was permitted to turn (foe-grace notches, the deep combat dials, `ENCOUNTER_DOT_CAP`) landed exactly where the bounded 4-iteration loop's smoke predicted at full AFTER scale — the natural median hit its target (4) and reach >= 5 cleared its edge by a wide margin (30.6 % vs the 25 % floor), and forced-20 encounters-survived crossed into its band (3.17, up from 1.32). The by-class rank order (Thief > Fighter > Magic User) survived the retune unchanged, and Dante's demotion holds at scale — it no longer appears in the natural pooled top-3 causes at all.
+
+**What the numbers cannot say:** a heuristic bot's play skill is arbitrary (it is a PROXY, not a gate) — these numbers say the mechanical curve moved in the intended direction and by roughly the calibrated amount, not that a human will find depth 20 "dangerous, not hopeless" in the way the user's v1.1 verdict demanded. The two remaining forced-20 misses (floors gained mean 0.84, p50 0) mean the bot rarely survives to a NEW floor past depth 20 even though it now survives more fights there — that gap between "more encounters survived" and "more floors gained" is a real, measured signal, but only the DR round (TUNE-07, 27-04) can say whether a human, playing better than the bot's fixed flee/potion/camp thresholds, actually experiences depth 20 as survivable-with-effort rather than a wall.
+
+**Per-measure reading for every miss:**
+
+- Forced-20 floors gained, p50 (target >= 1, measured 0): every sanctioned lever available to this plan (COMBAT_SCALE_FROM_DEPTH pushed to full identity at depth 20, ENCOUNTER_DOT_CAP eased twice, FOE_POWER_MAX/ABILITY_THREAT_MAX flattened past identity) moved the MEAN (0.14 -> 0.84) without moving the MEDIAN off zero — more than half of forced-20 runs still die on floor 20 itself before ever reaching floor 21. The residual lethality is canon tier-4/5 combat (Herman, Drarl, Vampire — none of them "starved in the dark", so the ladder cap's excluded darkness/rations rungs would not have helped this row even if taken) — handed to the DR round (TUNE-07, 27-04).
+- Forced-20 floors gained, mean (target 1.0-2.0, measured 0.84): short of the lower edge by 0.16 after every sanctioned move; same root cause as the p50 miss above — handed to the DR round.
+- Reach >= 20 (target 1.0-2.0 %, measured 0.1 % at 5720 runs): reaching depth 20 naturally requires surviving floors 1-19 first, which this plan deliberately did NOT ease past floor 5 (the deep dials only soften depths >= `COMBAT_SCALE_FROM_DEPTH`, now 21, so depths 6-20 are still full canon-plus-Phase-21 combat) — the natural median row and the reach>=20 row pull in different directions by design (the user's own priority order puts the median/reach5 shallow rows and the forced-20 rows ahead of reach>=20). Handed to the DR round with the ladder's ceiling stated: reaching reach>=20's 1.0-2.0% target without also raising the natural median further would require a lever this plan's ladder cap does not sanction (e.g. easing depths 6-19, which was never in scope — only depths 2-4's early-floor levers and the >=`COMBAT_SCALE_FROM_DEPTH` deep dials were).
 
 ### Counterweight triggers (measured)
 
-(filled by plan 27-03)
+| Trigger | Measured (AFTER, pin 39bfecf) | Threshold (v1.1) | Fired? |
+|---|---|---|---|
+| Economy | `tune-economy --seeds=200` peak wilmst held, p50 = **456** | > 5000 | **NOT fired** (well below — 456 vs 5000) |
+| Party | `tune-difficulty --seeds=200 --party` death-depth p50 = **5**; solo (`--seeds=200`, no `--party`) death-depth p50 = **4**; 1.5x solo p50 = 6 | party p50 > 1.5x solo p50 | **NOT fired** (5 < 6) |
+
+Neither counterweight trigger fired — no upkeep/economy dial is touched this plan (CONTEXT lever 4). If a future DR round or a later milestone re-measures either trigger and finds it fired, the v1.1 recipe (lootDepth routing for the economy trigger, memberUpkeepScale for the party trigger — both documented at 21-04 Task 2) is the follow-up; it is out of scope for this constants-only pass.
 
 ### Not changed, and why
 
-(filled by plan 27-03)
+- **Darkness from floor 4** (`DARK_FROM_DEPTH` form) — NOT taken. The ladder cap (orchestrator decision, context commit `4d18e80`) permits only the landed "hold through floor 3" form, which is parity-clean; the from-floor-4 form was never on the table for 27-03 regardless of the smoke reading. Planner calibration: this rung alone (on top of S0) measured ≈ 21.7 % reach5 / p50 3 — a smaller gain than the grace notches actually taken.
+- **Trap/wall-fall ramp from floor 1** (`HAZARD_FROM_DEPTH` 2 -> 1) — NOT taken. Excluded by the same ladder cap regardless of the smoke reading; this plan only tunes the hazard ramp's VALUES from floor 2 (unchanged this plan: `HAZARD_SCALE_AT_START` 0.5, `HAZARD_FLAT_THROUGH_DEPTH` 3, `HAZARD_CANON_FROM_DEPTH` 5), never `HAZARD_FROM_DEPTH` itself. Planner calibration: hazard-from-1 alone measured ≈ 24.0 % reach5 / p50 4 (a real gain, but the excluded rung's own fixture cost — the encounters `trap` scenario, seed 1, plus ~12 depth-1 unit pins — was never worth paying once the grace notch alone reached the target).
+- **Starting rations +1/+2** (`STARTING_RATIONS_BONUS`) — NOT taken. Excluded by the ladder cap; would have diverged all 14 chargen fixture seeds. Planner calibration: rations+2 on top of the strongest parity-clean set measured ≈ 30.8 % reach5 / p50 4 — a real gain, but again not needed once the grace notch alone met the target, and the ladder cap forbids it regardless.
+- **Floor-1 foe grace** (`FOE_GRACE_AT_1` < 1.0, the LAST RESORT rung) — NOT taken (and never would have been reached even under the plan's own unrestricted ladder: the planner's own calibration note already flagged that this rung "adds nothing measurable once Dante is gone" — 34.7 % reach5 at T5 vs 35.4 % at T4, i.e. a small REGRESSION, not a gain). `FOE_GRACE_AT_1` stays exactly 1.0; floor 1 remains canon-by-construction, the single structural guarantee that Dante->Ned (seed 303) is still the phase's only declared parity divergence.
+- **`FOE_GRACE_AT_2`'s third notch** (0.5 -> 0.35) — available (permitted by the ladder cap, which allows up to three notches) but NOT taken: the natural band was already IN (median 4, reach5 30.6 %) after the second notch (0.5); turning a third notch risked overshooting past the "back off if > 6" guidance for no required gain.
+- **Bot parameters and `tools/lib/tuning-bot.mjs`** — byte-identical to `5565b22` (verified via `git diff --quiet`); the only harness change across Phase 27 is 27-01's additive `rollups.pooled`/`reach20` readout, which changes no run, no draw, and no `Bot:` line.
+- **Floor 1-2 non-combat knobs and floor-1 combat** — canon by construction (`DENSITY_CANON_THROUGH_DEPTH` = 2, `FOE_GRACE_AT_1` = 1.0, `HAZARD_FROM_DEPTH` >= 2); the movement fixture's floor-2 darkness is unchanged (`DARK_HOLD_THROUGH_DEPTH`'s landed form holds floor 2's canon single blob).
+- **Class / race / sub-class features** — Phase 26's revisit list was empty; this plan issues no class-specific verdicts (the class-pass-diff `--section after` rendering's Verdict/Reason columns are deliberately blank). If the DR round names a specific class or sub-class as an outlier, that is a v1.3 follow-up, not this plan's scope.
+- **Spells, items** — untouched; out of scope for a constants-only difficulty retune.
+- **Upkeep / economy code** — untouched; both counterweight triggers measured above did NOT fire, so no v1.1 recipe (lootDepth routing, memberUpkeepScale) was implemented.
+- **`FOE_LVL_BIAS`** — stays reserved at 0; not needed this retune.
+- **`BREATHER_EVERY`** — stays 5; not part of this retune.
+- **The curve past depth 20** — monotone non-decreasing by construction (verified by Task 1's automated monotone check across depths 1-200); no dial-back, no forced death — the user's standing rule, upheld structurally, not by convention.
+- **The bestiary beyond Dante/Ned** — untouched this plan; 27-02's landed demotion (Form C) is unchanged.
+- **Con Artist's talk-heavy runs** — watched, not touched (Deferred Ideas); the retune AFTER's by-sub-class table shows Con Artist at 4.60 mean depth (was 4.07), a modest gain in line with every other sub-class, not a special case requiring intervention.
 
 ### DR checklist — TUNE-07
 
