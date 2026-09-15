@@ -155,7 +155,7 @@ Plans:
   4. An identity-contract test table asserts, for all 24 sub-classes and the 5 non-Human races, that the named good AND the named bad each fire under a forced scenario; Human is asserted neutral (control race, user decision 2026-09-14).
   5. `SUB_NOTE`/`RACE_NOTE` text matches implemented mechanics for every sub-class and race; the level-1 Thief dagger-damage question is recorded as a deliberate ruling with rationale in the class-pass ledger; every new serialized field is carved out in all three `*Comparable()` functions and every new event type gets an `EVENT_NARRATION` entry, voice safety scan green.
 
-**Plans**: 3/7 plans executed
+**Plans**: 4/7 plans executed
 
 Plans:
 **Wave 1**
@@ -166,7 +166,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 24-03-PLAN.md — Race pass in combat.js as RACES flags (Fridgian `hide: 2`, frenzy never wasted on a corpse — d10 removed; Dwarven `armorWear: 0.5`) + MEASURED combat/lose (seed 14) action-path divergence declared + new `lose-apprentice` (seed 127) death-path scenario + FID-02 pins re-measured + inventory roster regenerated (IDENT-08/09, FID-07) — wave 2
-- [ ] 24-04-PLAN.md — Pickpocket bad: buy x1.25 / sell x0.75 via priceFor/sellPriceFor (+ sell-label bridge) + MEASURED economy fixture (seed 3) action-path divergence declared with store-roll relation check (IDENT-05, FID-07) — wave 2
+- [x] 24-04-PLAN.md — Pickpocket bad: buy x1.25 / sell x0.75 via priceFor/sellPriceFor (+ sell-label bridge) + MEASURED economy fixture (seed 3) action-path divergence declared with store-roll relation check (IDENT-05, FID-07) — wave 2
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -244,7 +244,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
-| 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 3/7 | In Progress|  |
+| 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 4/7 | In Progress|  |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |

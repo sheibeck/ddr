@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 24
 current_phase_name: "Every Sub-class and Race: One Good, One Bad"
 status: executing
-stopped_at: Completed 24-03-PLAN.md
-last_updated: "2026-09-15T01:25:39.663Z"
+stopped_at: Completed 24-04-PLAN.md
+last_updated: "2026-09-15T01:40:46.173Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 24 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 15
-  completed_plans: 11
+  completed_plans: 12
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 24 (Every Sub-class and Race: One Good, One Bad) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 24 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T01:25:39.628Z
-Stopped at: Completed 24-03-PLAN.md
+Last session: 2026-09-15T01:40:46.137Z
+Stopped at: Completed 24-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -128,6 +128,7 @@ Resume file: None
 | Phase 24 P01 | 55min | 3 tasks | 7 files |
 | Phase 24 P02 | 20min | 2 tasks | 6 files |
 | Phase 24 P03 | 50min | 3 tasks | 9 files |
+| Phase 24 P04 | 35min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -205,6 +206,8 @@ Resume file: None
 - [Phase ?]: 24-02: stockMarkupDiff imported aliased (stockMarkupDiff as checkStockMarkup) in economy-parity.test.js/full-suite.test.js to satisfy the plan's literal grep -c == 1 acceptance criterion while still genuinely importing and calling it
 - [Phase ?]: Fridgian hide stacks with Hardiness as a second Math.max(1, dmg-N) step; Dwarven armorWear applies only to the subtracted durability amount, not the soak gate.
 - [Phase ?]: combat/lose (seed 14) declared action-path divergence (fromAction 1, died->won); lose-apprentice (seed 127) restores death-path parity coverage.
+- [Phase ?]: 24-04: priceFor/sellPriceFor gain an optional third sub argument (default null) for a Pickpocket's x1.25 buy / x0.75 sell markup; sellPriceFor's internal priceFor call omits sub so the markdown never compounds with the markup
+- [Phase ?]: 24-04: economy fixture (seed 3, Human Pickpocket) declared an action-path divergence (fromAction 0, stockCostMul 1.25) — store roll proven byte-identical via stockMarkupDiff while gold/weapon/items diverge because purchases run dry two items earlier on the engine side
 
 ### Blockers
 
