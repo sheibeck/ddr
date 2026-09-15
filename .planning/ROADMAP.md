@@ -158,11 +158,22 @@ Plans:
 **Plans**: 7 plans (4 waves)
 
 Plans:
+**Wave 1**
+
 - [ ] 24-01-PLAN.md — Combat-side sub-class mechanics: Knight never-first vs maxWP >= 20, Court Mage talk-first + boredom 1-in-6 + parley Humans, Ninja/MoA cannot parley (+ mazeworld.html mirror, 1008-case mirror test), MoA no clean withdrawal, Guard -1 to be hit, Cloaker vanish only while unseen, Bard party targeting; narration (IDENT-05/06/07, FID-07) — wave 1
 - [ ] 24-02-PLAN.md — Parity harness: generic `kind: "action-path"` divergence record (actionPathDivergenceOf / skipsByteDiffAt / declaredEndDiffs / stockMarkupDiff) wired at every replay site as a no-op + schema doc + synthetic unit test (FID-07) — wave 1
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 24-03-PLAN.md — Race pass in combat.js as RACES flags (Fridgian `hide: 2`, frenzy never wasted on a corpse — d10 removed; Dwarven `armorWear: 0.5`) + MEASURED combat/lose (seed 14) action-path divergence declared + new `lose-apprentice` (seed 127) death-path scenario + FID-02 pins re-measured + inventory roster regenerated (IDENT-08/09, FID-07) — wave 2
 - [ ] 24-04-PLAN.md — Pickpocket bad: buy x1.25 / sell x0.75 via priceFor/sellPriceFor (+ sell-label bridge) + MEASURED economy fixture (seed 3) action-path divergence declared with store-roll relation check (IDENT-05, FID-07) — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 24-05-PLAN.md — World-side mechanics: Cutthroat / Wilmsry-vs-Magic-User joinerRefused (rolled first), Woodsman ar > 10 gate (take/equip/store), Pilfer heal-kind-only useItem, Bard camp wake on 1-2; narration; the 30-blurb SUB_NOTE/RACE_NOTE sweep (IDENT-05/07/09, FID-07) — wave 3
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 24-06-PLAN.md — Identity-contract test: ONE table, 24 subs + 5 races good/bad + Human neutral, forced heroes via newRun(seed, [], { force }), boundaries at the decided thresholds, completeness meta-test vs CLASSES/RACES (IDENT-08) — wave 4
 - [ ] 24-07-PLAN.md — Ledger: docs/CLASS-PASS.md Rulings section (every decision + rationale, IDENT-10 dagger KEEP ruling, Freeze-pays-out entry, good/bad table, FID-07 posture, smoke readout — AFTER untouched) + FIXTURE-INVENTORY.md Phase 24 divergences section (IDENT-10, FID-07) — wave 4
 

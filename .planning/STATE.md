@@ -4,9 +4,9 @@ milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 24
 current_phase_name: "Every Sub-class and Race: One Good, One Bad"
-status: planning
+status: executing
 stopped_at: Completed 23-04-PLAN.md
-last_updated: "2026-09-14T22:52:45.146Z"
+last_updated: "2026-09-15T00:06:38.249Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 23 complete, transitioned to Phase 24
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 Phase: 24 — Every Sub-class and Race: One Good, One Bad
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-14 — Phase 23 complete, transitioned to Phase 24
 
 ## Ground Truth (durable facts every session needs)
