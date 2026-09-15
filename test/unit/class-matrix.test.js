@@ -273,6 +273,35 @@ test("buildReport: correct meta.cells/excluded, no timing fields; formatText con
   assert.ok(pooledIdx < text.indexOf(report.meta.bot), "POOLED block must appear before the Bot line");
 });
 
+// --- (9b) rollups.pooled + POOLED block (Phase 27, TUNE-05) -------------------------------------------------------
+
+test("buildReport: rollups.pooled present with key ALL; formatText's POOLED block carries a >=20% column and the deep gained/survived columns at a deep start depth", () => {
+  const rowsA = [
+    { seed: 1, deathDepth: 22, stuck: false, cause: "combat", kills: 3, level: 5, actions: 400, floorsGained: 2, encounters: 4, encountersSurvived: 3, won: false },
+  ];
+  const rowsB = [
+    { seed: 2, deathDepth: 20, stuck: false, cause: "trap", kills: 1, level: 5, actions: 200, floorsGained: 0, encounters: 1, encountersSurvived: 1, won: false },
+  ];
+  const cellRows = [
+    { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: rowsA },
+    { cell: { cls: "Thief", sub: "Ninja", race: "Elven" }, rows: rowsB },
+  ];
+  const opts = { ...BOT_DEFAULTS, seeds: 1, workers: 2, startDepth: 20, cls: null, sub: null, race: null };
+  const report = buildReport({ cellRows, opts, commit: "abc1234" });
+
+  assert.equal(report.rollups.pooled.key, "ALL");
+  assert.equal(report.rollups.pooled.completed, 2);
+  // both runs reached deathDepth >= 20 -> pooled reach20 is 100%.
+  assert.equal(report.rollups.pooled.reach20, 100.0);
+
+  const text = formatText(report);
+  const pooledBlockStart = text.indexOf("POOLED (all cells, run-weighted over completed runs):");
+  assert.ok(pooledBlockStart !== -1, "POOLED block missing");
+  const pooledBlock = text.slice(pooledBlockStart, text.indexOf("\n\n", pooledBlockStart));
+  assert.ok(pooledBlock.includes(">=20%"), "POOLED block header is missing the >=20% column");
+  assert.ok(pooledBlock.includes("survived"), "POOLED block at a deep start depth is missing the deep 'survived' column");
+});
+
 // --- (10) force pass-through smoke (HARN-01 via the bot) -------------------------------------------------------
 
 test("force pass-through: resolveForce output feeds playRun's force option and produces the requested character", () => {
