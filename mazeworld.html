@@ -625,6 +625,25 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .log .banner{font-family:var(--disp);font-size:14px;color:var(--ink);border-top:1px solid var(--rule);padding-top:7px;margin-top:4px;text-indent:0;padding-left:0}
 .log .banner::before{content:""}
 
+/* ---------- Phase 25.1 (DFB-03): the Oracle fills the screen ---------- */
+/* Mirrors #screen-maze's own fill precedent above: a definite-height flex
+   chain (#app -> .mw-screens -> #screen-oracle) so the log panel can grow
+   to fill the available viewport instead of leaving empty space below it. */
+#screen-oracle{display:flex;flex-direction:column;height:100%;min-height:0}
+/* The panel grows to fill the available height; position:relative anchors
+   the "↑ newer" pill to its own bottom edge. */
+#log-panel{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+/* The LIST scrolls inside the panel — the page itself never scrolls. */
+#log-panel .log{flex:1;min-height:0;max-height:none;overflow-y:auto}
+.mw-log-newer{
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  min-height:44px;padding:0 18px;border-radius:22px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--paper-3);color:var(--ditto);border:1px solid var(--ditto);
+  box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:2;
+}
+.mw-log-newer[hidden]{display:none}
+
 /* DR18 (DR15-E): dice-roll detail now lives EXCLUSIVELY in the Oracle log.
    Every say()/evt() call site still emits the SAME
    `<span class="roll">...</span>` markup into both #log and #enc-body, and
@@ -1477,6 +1496,9 @@ html,body{height:100%}
       <section class="panel" id="log-panel">
         <h2>The Oracle <span id="log-count"></span></h2>
         <div class="log" id="log"></div>
+        <!-- DFB-03: shown only while the reader has scrolled away from the
+             newest line; newest is at the TOP because logLine prepends. -->
+        <button type="button" class="mw-log-newer" id="log-newer" hidden>↑ newer</button>
       </section>
     </section>
 
@@ -1563,6 +1585,24 @@ html,body{height:100%}
    it only toggles which screen container is visible. Exposed as
    window.__mzShowTab so a later slice (e.g. the death card's "THE
    GRAVEYARD" link) can jump tabs programmatically. */
+// DFB-03: newest line is at the top (logLine prepends — see the real
+// insertBefore call further down); the pill appears past a 24px threshold
+// and hides at the top; tapping it returns to the newest line. An empty
+// log has scrollTop 0 so the pill stays hidden and nothing throws. Placed
+// immediately before initTabs so window.__mzOracleToNewest exists before
+// showTab's first call.
+(function initOracleScroll() {
+  const log = document.getElementById("log");
+  const pill = document.getElementById("log-newer");
+  if (!log || !pill) return;
+  const NEWER_THRESHOLD_PX = 24;
+  const sync = () => { pill.hidden = log.scrollTop <= NEWER_THRESHOLD_PX; };
+  log.addEventListener("scroll", sync, { passive: true });
+  pill.addEventListener("click", () => { log.scrollTop = 0; sync(); });
+  window.__mzOracleToNewest = () => { log.scrollTop = 0; sync(); };
+  sync();
+})();
+
 (function initTabs() {
   const tabs = Array.from(document.querySelectorAll(".mw-tab"));
   const screens = {
@@ -1580,6 +1620,8 @@ html,body{height:100%}
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-current", on ? "true" : "false");
     }
+    // DFB-03: every open of the Oracle lands on the most recent line.
+    if (name === "oracle") window.__mzOracleToNewest?.();
     // E9 (04.2 Bugs B): re-fetch the graveyard from storage every time the Dead
     // tab is opened. The Dead screen renders from the classic in-memory `graves`
     // array, which is only synced from storage at BOOT (loadGraves() inside
