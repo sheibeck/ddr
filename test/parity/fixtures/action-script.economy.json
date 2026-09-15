@@ -1,16 +1,107 @@
 {
-  "_note": "Seed 3 rolls a Thief Pickpocket Human — a normal (non-Troll/Elven/Dwarven) race so priceFor's multipliers don't complicate the arithmetic, and a class that can legally buy every weapon/armor slot openStore might roll. The test bumps state.c.gold to 5000 identically on BOTH the prototype and engine sides right after boot (before opening the store) so the scenario can afford a full spread of purchase categories (food/potion/weapon/armor/premium/lockpicks) and still land on a genuine insufficient-gold case at the end — openStore itself is deterministic from the seed, so this gold bump changes nothing about which stock rolls, only what's affordable. 'openStore'/'buyItem'/'leaveStore' indices below were hand-verified against this exact seed's rolled stock (see test/parity/economy-parity.test.js's harness note).",
+  "_note": "Seed 3 rolls a Thief Pickpocket Human — a normal (non-Troll/Elven/Dwarven) race so priceFor's multipliers don't complicate the arithmetic, and a class that can legally buy every weapon/armor slot openStore might roll. The test bumps state.c.gold to 5000 identically on BOTH the prototype and engine sides right after boot (before opening the store) so the scenario can afford a full spread of purchase categories (food/potion/weapon/armor/premium/lockpicks) and still land on a genuine insufficient-gold case at the end — openStore itself is deterministic from the seed, so this gold bump changes nothing about which stock rolls, only what's affordable. 'openStore'/'buyItem'/'leaveStore' indices below were hand-verified against this exact seed's rolled stock (see test/parity/economy-parity.test.js's harness note). A top-level `divergence` record (kind action-path, fromAction 0, stockCostMul 1.25) is declared for this fixture's Pickpocket hero (Phase 24, IDENT-05/FID-07): the store roll is proven byte-identical to the prototype while gold, weapon, and items diverge because every routed store line costs 1.25x more, making the Set-of-lockpicks and Katana purchases (actions 6-7) unaffordable on the engine side two purchases before the prototype runs dry.",
   "seed": 3,
   "actions": [
-    { "type": "openStore" },
-    { "type": "buyItem", "idx": 0 },
-    { "type": "buyItem", "idx": 3 },
-    { "type": "buyItem", "idx": 9 },
-    { "type": "buyItem", "idx": 10 },
-    { "type": "buyItem", "idx": 11 },
-    { "type": "buyItem", "idx": 7 },
-    { "type": "buyItem", "idx": 8 },
-    { "type": "buyItem", "idx": 6 },
-    { "type": "leaveStore" }
-  ]
+    {
+      "type": "openStore"
+    },
+    {
+      "type": "buyItem",
+      "idx": 0
+    },
+    {
+      "type": "buyItem",
+      "idx": 3
+    },
+    {
+      "type": "buyItem",
+      "idx": 9
+    },
+    {
+      "type": "buyItem",
+      "idx": 10
+    },
+    {
+      "type": "buyItem",
+      "idx": 11
+    },
+    {
+      "type": "buyItem",
+      "idx": 7
+    },
+    {
+      "type": "buyItem",
+      "idx": 8
+    },
+    {
+      "type": "buyItem",
+      "idx": 6
+    },
+    {
+      "type": "leaveStore"
+    }
+  ],
+  "divergence": {
+    "phase": "24",
+    "requirements": [
+      "IDENT-05",
+      "FID-07"
+    ],
+    "kind": "action-path",
+    "fromAction": 0,
+    "stockCostMul": 1.25,
+    "fields": [
+      "gold",
+      "weapon",
+      "items"
+    ],
+    "before": {
+      "gold": 55,
+      "weapon": "Katana",
+      "items": [
+        {
+          "kind": "cloak",
+          "n": "Cloak of Ether",
+          "eff": {},
+          "use": "ether",
+          "every": 100,
+          "txt": "walk through walls, once every 100 squares"
+        },
+        {
+          "kind": "potion",
+          "n": "Healing potion",
+          "txt": "+d10+2 wp",
+          "eff2": "heal",
+          "uses": 1
+        },
+        {
+          "kind": "picks",
+          "n": "Lockpicks",
+          "txt": "1–5 on d10 against any lock"
+        }
+      ]
+    },
+    "after": {
+      "gold": 79,
+      "weapon": "Axe",
+      "items": [
+        {
+          "kind": "cloak",
+          "n": "Cloak of Ether",
+          "eff": {},
+          "use": "ether",
+          "every": 100,
+          "txt": "walk through walls, once every 100 squares"
+        },
+        {
+          "kind": "potion",
+          "n": "Healing potion",
+          "txt": "+d10+2 wp",
+          "eff2": "heal",
+          "uses": 1
+        }
+      ]
+    },
+    "rationale": "The seed-3 hero is a Human Pickpocket; Phase 24 marks up every priceFor-routed store line (buyWeapon/buyArmor/buyPremium/buyRations/repairArmor) x1.25 for a Pickpocket, floor 1, so the openStore ROLL itself is byte-identical to the frozen prototype (names, order, and subs unchanged, asserted via stockMarkupDiff at action 0) while every routed cost is 1.25x higher. With the same 5000-gold bump on both sides, the engine simply runs out of gold two purchases earlier than the prototype: both sides buy Chicken, Healing potion, Axe, Studded and reject the over-priced Casket at actions 1-5, but action 6 (Set of lockpicks, 450) still fits the prototype's gold (580) while the engine's higher spend on the Axe/Studded/Casket-rejection path leaves it short (79 gold); action 7 (Katana, marked up to 656) then also fails on the engine while the prototype affords it and equips it. Seed/actions/gold bump are deliberately untouched — the divergence is declared, not dodged. Purchase mechanics parity for a non-Pickpocket hero is unchanged code (buyFrom/takeItem/sellItem's arithmetic paths are untouched for a non-Pickpocket sub) and is covered instead by test/unit/economy.test.js's priceFor/sellPriceFor/seed-3-stock-pin cases."
+  }
 }
