@@ -228,7 +228,21 @@ Plans:
   5. A Magic User member casts, a Thief member backstabs, a Fighter member swings its weapon — narrated and toasted; solo parity byte-identical.
   6. Make Camp with too little food says "you eat N a night, you have M", counting party appetites; the automatic new day is unchanged.
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 25.1-01-PLAN.md — Shell + toast module (DFB-01/02/03): exported `CARD_EVENTS` (floorChanged, leveled) gates the "Move on" card in engineMove and mzMakeCamp; `NARRATIVE_ACTIONS` (move/camp/resolveJoiner) + a `ctx.narrate` hook in toastsForAction make every toast-only event carry the Oracle sentence via `narrativeToastText` (tags/roll/entities stripped, one decision point); `toastLifetime` (3000 + 60/char, cap 9000, +1200 per visible toast) bridged to mzToast with tap-to-dismiss; tableFour/tableFourNoop become toasts; Oracle panel fills the screen, opens at the newest line, "↑ newer" pill; `narrativeToasts` + `shell-oracle-panel` tests, shell-toast-wiring additions — wave 1
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 25.1-02-PLAN.md — Joiner swap + camp numbers (DFB-04/06, zero rng): `swapPartyMember` + `resolveJoiner` emitting `joinerLeft {name, sub, replacedBy}` before `joinerJoined`, five family-friendly exit lines in `content/flavor.js#JOINER_EXIT_LINES` picked by name length (escaped, voice-scanned), offer head "Take X along? Y walks."; `nightlyEats(state)` shared by newDay and makeCamp, `campFailed {reason, need, have, members?}` narrated/toasted as "You eat N a night (Bram eats 1 more). You have M. Find rations first."; camp button short-state from the same helper; joiner-acquisition/party-model/movement/shell-party-camp tests; parity 33/33 — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 25.1-03-PLAN.md — Party members fight by class (DFB-05): `memberToHit`/`bestAttackSpell` in derived.js; alliesTurn reads the persistent sheet — Fighter weapon/to-hit/crit-on-1, Thief one backstab per combat (transient `backstabUsed` on the C.allies entry), Magic User self-contained `allyCast` (thrown d8/4, Freeze d10/6, status/stun/weaken with resistRoll) on its own charges (reset in newDay) else staff swing; legacy strike for sheet-less entries; `allyCast` Oracle-only + `allySpellHit`/`allySpellMissed` toasts, additive `allyStruck`/`allyMissed` flags, FEATURE_EVENTS; parity 33/33, bot `--party` smoke, build — wave 3
+
 **Engine gate reminder**: DFB-04/05/06 touch the engine — zero rng for the swap and the camp gate; ally-combat draws only behind the existing `state.party?.length` gate; no new serialized field; parity byte-identical for every fixture; every new event narrated and toasted (Phase 25 coverage guards).
 
 ### Phase 26: Mass Playtest & Class-Pass Ledger
