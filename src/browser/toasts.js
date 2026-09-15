@@ -509,7 +509,9 @@ function spellChain(events, consumed) {
     }
     if (missedIdx !== -1) {
       consumed.add(missedIdx);
-      built.push({ ...TOAST_FOR.spellMissed(events[missedIdx]), idx: ti });
+      // spellMissed carries no `spell` field of its own (engine/magic.js) —
+      // borrow it from the spellThrown that started this chain.
+      built.push({ ...TOAST_FOR.spellMissed({ ...events[missedIdx], spell: e0.spell }), idx: ti });
       continue;
     }
     if (hitIdx === -1) continue;
@@ -521,7 +523,9 @@ function spellChain(events, consumed) {
       built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: ti });
       continue;
     }
-    built.push({ ...TOAST_FOR.spellHit(hitE), idx: ti, _target: target });
+    // spellHit likewise carries no `spell` field (engine/magic.js) — borrow
+    // it from the spellThrown that started this chain.
+    built.push({ ...TOAST_FOR.spellHit({ ...hitE, spell: e0.spell }), idx: ti, _target: target });
   }
   return built;
 }
