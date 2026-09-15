@@ -48,7 +48,7 @@
 ### Active
 
 - ✓ **Mass playtest AFTER matrix + findings ledger** — v1.2 Phase 26 (AFTER 143 × 40 + 143 × 10 on pin d1e3235 at BEFORE parameters; μ 3.08, bands 2.31–4.15; 0 cannot-act cells; every caster sub in band; one out-of-band row — Ninja, too strong, accepted; Wilmsry in band; revisit list empty; `tools/class-pass-diff.mjs` + `docs/class-pass/verdicts.json` + standing ledger test; the gate caught a pre-existing stranded-combat bug (foe killed by ward reflect on its opening turn) fixed as a gap closure)
-- [ ] **Delve-to-death retune** — the deferred TUNE-04 re-attempt on corrected player power, human DR sign-off. — v1.2
+- ✓ **Delve-to-death retune** — v1.2 Phase 27 (band agreed over three user rounds and recorded first; pin 39bfecf: canon combat through depth 20 (`COMBAT_SCALE_FROM_DEPTH` 21), gentle ramp past it (power 1.15, threat 1.3, cap 4), foe grace ×0.5 at floors 2–4, dot cap 13, darkness held through 3, hazard ×0.5 from floor 2, Dante → tier 2 / Ned tier 1 as the one declared parity divergence; AFTER: bot median 4, reach-5 30.6 %, forced-20 3.17 fights — IN; forced-20 floors 0.84 / reach-20 0.1 % — recorded misses; TUNE-07 closed by user deferral 2026-09-15, DR round carried forward)
 - [ ] **Quick 5–10 minute session feel** — mechanically bounded; validated only by the retune + playtest
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
 - [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
@@ -66,7 +66,7 @@
 
 ## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
 
-**v1.2 progress:** Phases 22–26 (incl. inserted 25.1) complete (2026-09-15). Phase 26 answered the milestone question: rank order Thief 3.51 > Fighter 3.16 > Magic User 2.55 mean death depth, gap narrowed, Magic User kills doubled, no sub-class or race too weak, one too-strong row accepted (Ninja). Next: Phase 27, the delve-to-death retune toward the depth-20 unicorn target (handoff block in docs/CLASS-PASS.md).
+**v1.2 progress:** ALL phases complete (22–27 incl. inserted 25.1) as of 2026-09-15. Milestone closed on a user-recorded TUNE-07 deferral: the retuned constants ship as landed; the human DR round (forced 20/35/50 + natural), the two bot misses (forced-20 floors gained, reach ≥ 20 — canon tier-3/5 combat, would need roster decisions), the untaken early-floor rungs, and the Play internal upload (versionCode 4) carry into the next milestone.
 
 **Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
@@ -176,4 +176,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 — v1.2 Phase 26 complete (AFTER matrix + ledger)*
+*Last updated: 2026-09-15 — v1.2 Phase 27 complete (retune, deferred DR); milestone closing*

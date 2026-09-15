@@ -62,7 +62,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses (completed 2026-09-15)
 - [x] **Phase 25.1: Device Feedback Batch (INSERTED 2026-09-15)** - Card only for decisions/big updates, minor events toast-only with the narrative sentence, readable toasts, Oracle fills the screen and opens at the newest line, Joiner swap with snark, Joiners fight by class, camp refusal states the numbers (completed 2026-09-15)
 - [x] **Phase 26: Mass Playtest & Class-Pass Ledger** - An AFTER matrix on the post-pass engine ranks over/under-performers with a fun-band verdict per row, committed to `docs/CLASS-PASS.md` (completed 2026-09-15)
-- [ ] **Phase 27: Delve-to-Death Retune** - The deferred TUNE-04 re-attempt on the corrected player power, closed by a human DR round on the Pixel 7
+- [x] **Phase 27: Delve-to-Death Retune** - The deferred TUNE-04 re-attempt on the corrected player power, closed by a human DR round on the Pixel 7 (completed 2026-09-15)
 
 ## Phase Details
 
@@ -290,7 +290,7 @@ Plans:
   3. A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict.
   4. The milestone closes only on "tuned" or a user-recorded deferral.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -307,7 +307,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 27-04-PLAN.md — `npm run android:debug` from the pin → `adb install -r` → force-stop → LAUNCHER relaunch on the Pixel 7 (build hash + APK timestamp + dumpsys proof); `### DR checklist — TUNE-07` appended (forced 20 / 35 / 50 via the dev toggle + a natural run, per-run "what should be true" from the band + AFTER, verdict blank: tuned / tune-again / deferred, what-happens-next incl. the Play internal-build ASK); ends on a BLOCKING `checkpoint:human-verify` — the user writes the verdict (TUNE-07) — wave 4
+- [x] 27-04-PLAN.md — `npm run android:debug` from the pin → `adb install -r` → force-stop → LAUNCHER relaunch on the Pixel 7 (build hash + APK timestamp + dumpsys proof); `### DR checklist — TUNE-07` appended (forced 20 / 35 / 50 via the dev toggle + a natural run, per-run "what should be true" from the band + AFTER, verdict blank: tuned / tune-again / deferred, what-happens-next incl. the Play internal-build ASK); ends on a BLOCKING `checkpoint:human-verify` — the user writes the verdict (TUNE-07) — wave 4
 
 **Engine gate reminder**: engine stays pure/deterministic and parity byte-identical throughout the retune — these are dial changes only, no new rng draws (the one declared exception is the seed-303 Dante scenario, handled as a Phase 23/24-style divergence record).
 
@@ -331,5 +331,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | Complete    | 2026-09-15 |
-| 27. Delve-to-Death Retune | v1.2 | 3/4 | In Progress|  |
+| 27. Delve-to-Death Retune | v1.2 | 4/4 | Complete    | 2026-09-15 |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
