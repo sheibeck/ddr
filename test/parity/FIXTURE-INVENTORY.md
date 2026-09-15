@@ -313,3 +313,151 @@ untouched by this phase's Freeze change) are all unchanged, with no
 carve-out. `npm test` is fully green (>= 1028 pass, 0 fail) and
 `node --test "test/parity/**/*.test.js"` is 32/32 (30 baseline + Plan 02's
 chargen well-formedness test + this plan's magic well-formedness test).
+
+## Phase 24 identity-pass divergences (IDENT-05..10 / FID-07)
+
+Phase 24 ("Every Sub-class and Race: One Good, One Bad") lands 14
+sub-class mechanics and 3 race mechanics (IDENT-05..10). Of those, exactly
+two touch a parity fixture's action path — the Fridgian race pass on
+`combat/lose` (seed 14: hide lowers every landed blow; the removed corpse-
+whiff d10 shifts the cursor from action 7) and the Pickpocket markup on
+the economy script (seed 3) — both declared with the new `kind:
+"action-path"` record (Plan 24-02's `actionPathDivergenceOf`/
+`skipsByteDiffAt`/`declaredEndDiffs`/`stockMarkupDiff`), never a rewrite of
+a seed or action list; plus one ADDED scenario (`lose-apprentice`, seed
+127) restoring death-path parity coverage that seed 14 no longer provides
+post-patch. Every other one of the 14 sub-class + 3 race mechanics
+(Knight's never-first, Ninja's parley refusal, Bard's camp wake/targeting,
+Master of Arms' parley/withdrawal refusal, Court Mage's never-first/
+boredom/parley, Cutthroat's Joiner refusal, Guard's -1 to be hit,
+Woodsman's armour gate, Pilfer's heal-only gate, Cloaker's vanish gate,
+Dwarven's half-wear, Wilmsry's Joiner refusal) touches zero fixture bytes
+— none is exercised by any parity fixture's roster/action list.
+
+### Combat: lose scenario, seed 14
+
+Measured live (Plan 24-03) via a scratch replay of
+`loadPrototypeSandbox({ seed: 14 })` against the patched engine, action by
+action (action 0 = `startCombat`; actions 1-10 = the ten scripted `attack`
+actions):
+
+| action | prototype (frozen master) | engine (Phase 24, patched) | note |
+|---|---|---|---|
+| 0 startCombat | wp 52, sp 0, kills 0, rations 6, gold 50 | identical | roster: Bat/Rat (wp 1), Shriek (wp 3) |
+| 1 attack | wp 32 | wp 38 | first divergence — hide -2 shaves this and every subsequent landed foe blow |
+| 2 attack | wp 16 | wp 26 | |
+| 3 attack | wp 14 | wp 25 | |
+| 4 attack | wp 8 | wp 22 | |
+| 5 attack | wp 5, sp 5, kills 1, rations 7, gold 51 | wp 21, sp 5, kills 1, rations 7, gold 51 | Bat/Rat killed on both sides, same action, same kill |
+| 6 attack | unchanged (miss) | unchanged (miss) | |
+| 7 attack | unchanged (miss) | unchanged (miss) | frenzy with the Bat/Rat corpse present: prototype drew (and lost) the whiff d10; engine drew no such die — both swings still miss this round on different underlying rolls |
+| 8 attack | unchanged, combat still open | **wp 22, sp 30, kills 2, rations 8, combat null** | engine kills the Shriek here — the encounter clears; prototype's Shriek is still alive |
+| 9 attack | unchanged, combat still open | unchanged (combat already null, no-op) | |
+| 10 attack | **wp 0, dead true, combat null** | unchanged (combat already null, no-op) | prototype's Fridgian dies to the Shriek here |
+
+**Draw accounting:** the cursor is identical through action 6; at action 7,
+the prototype draws one extra d10 (the corpse whiff, lost) that the engine
+no longer draws — every draw from action 8 onward is at a shifted cursor
+position on the two sides, which is exactly why the outcome flips.
+
+**End-state pins written into the declared record:** prototype (`before`):
+`wp: 0, sp: 5, kills: 1, rations: 7`, `stateBefore: { dead: true }`; engine
+(`after`): `wp: 22, sp: 30, kills: 2, rations: 8`, `stateAfter: { dead:
+false }`; `gold` (51) and `combat === null` are identical on both sides and
+intentionally omitted from the declared `fields`.
+
+**FID-02 pin changes** (`test/unit/foe-turn-draw-count.test.js`):
+
+| seed | forced | roster | before (draws/attacks/outcome) | after (measured, live) |
+|---|---|---|---|---|
+| 14 | Beasts | Bat/Rat, Shriek | 101 / 10 / died | **87 / 8 / won** |
+| 17 | Beasts | Viper, Shriek | 111 / 11 / won | **101 / 9 / won** |
+| 127 | Beasts | Bat/Rat, Shriek | (new row) | **119 / 14 / died** |
+
+Seeds 14 and 17 are both Fridgian heroes (Soldier and Pilfer respectively)
+whose full-fight replay includes a frenzy with a corpse present — same
+root cause as the parity divergence.
+
+### Combat: lose-apprentice scenario, seed 127 (added)
+
+Rolls **Magic User / Apprentice / Human**, Cloth armor, wp 33, against the
+same roster as seed 14 (Bat/Rat wp 1 + Shriek wp 3) — the same roster, an
+unaffected race. Confirmed byte-identical between prototype and engine
+after every one of the 14 scripted `attack` actions; **dies on attack 14**
+on both sides (`wp 0, dead true, combat null`), restoring death-path
+parity coverage that seed 14 no longer provides post-patch.
+
+### Economy: store visit, seed 3
+
+`action-script.economy.json`'s only scenario rolls a **Human Pickpocket**.
+The store roll itself (names, order, subs) is byte-identical on both sides
+— proven live by `stockMarkupDiff(ctx.S.store, engineState.store, 1.25)`
+returning `null` at the `openStore` action — only the 5
+`PRICEFOR_ROUTED_EFFECTS` lines move, each to
+`Math.max(1, Math.round(cost * 1.25))`:
+
+| idx | item | prototype cost | engine cost | effectId (engine) |
+|---|---|---|---|---|
+| 8 | Katana | 525 | **656** | buyWeapon |
+| 9 | Axe | 50 | **63** | buyWeapon |
+| 10 | Studded | 750 | **938** | buyArmor |
+| 11 | Casket, a broadsword | 3000 | **3750** | buyPremium |
+| 12 (engine-only) | Rations (+1 ration) | — | 38 | buyRations |
+
+(Every other line — food, potions, lockpicks — is flat-priced and
+unchanged on both sides.)
+
+The purchase path splits at **action 6** (`buyItem 7`, Set of lockpicks,
+450 gold): the prototype can still afford it (gold 580), the engine cannot
+(gold 79, already spent more on the marked-up Axe/Studded/Casket lines) —
+`buyFailed` on the engine side from that action forward. Both sides had
+already bought-then-rejected the Casket (a 2-hand upgrade on an
+already-good weapon) identically at action 5.
+
+**End pins written into the declared record:** prototype (`before`):
+`gold: 55, weapon: "Katana", items: [Cloak of Ether, Healing potion,
+Lockpicks]`; engine (`after`): `gold: 79, weapon: "Axe", items: [Cloak of
+Ether, Healing potion]`; `armor: "Studded"` and `store: null` are
+identical on both sides and intentionally omitted from `fields`.
+
+The `divergence` record (`kind: "action-path"`, `fromAction: 0`,
+`stockCostMul: 1.25`) is declared at the top level of
+`test/parity/fixtures/action-script.economy.json`, asserted via
+`declaredEndDiffs` + `stockMarkupDiff` at both `economy-parity.test.js`
+and `full-suite.test.js`.
+
+### Byte-identical elsewhere
+
+Every other combat/magic/movement/chargen/encounters scenario is
+unchanged, with no carve-out. `test/parity/prototype-master.js.txt` is
+NEVER edited (`git diff --stat 4ba2edd..HEAD -- test/parity/prototype-master.js.txt`
+prints nothing). The generated roster block above is regenerated only for
+the added `lose-apprentice` row (`node tools/fixture-inventory.mjs`
+confirms it, byte-for-byte, against this file's current generated block).
+
+**FID-07 gate check (measured, quoted verbatim):**
+
+```
+$ git diff --stat 4ba2edd70ca3be04c49fd1ba74ae5c77dc593703..HEAD -- test/parity/harness/comparables.js
+ test/parity/harness/comparables.js | 157 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 157 insertions(+)
+
+$ git diff --stat 4ba2edd70ca3be04c49fd1ba74ae5c77dc593703..HEAD -- test/parity/prototype-master.js.txt
+(empty — no output)
+```
+
+The 157-insertion comparables.js diff is entirely Plan 24-02's
+declared-divergence helpers (`actionPathDivergenceOf`, `skipsByteDiffAt`,
+`declaredEndDiffs`, `PRICEFOR_ROUTED_EFFECTS`, `stockMarkupDiff`) — no
+existing comparable function was modified.
+
+**Checks measured and found NOT to change any fixture** (mechanic present
+in this phase, but no fixture ever exercises it): Knight never-first
+(fixture Knights, seeds 1/6, never fight); Court Mage boredom (no fixture
+Court Mage); Bard wake (no fixture Bard); Guard -1 (no fixture Guard);
+Cloaker gate (no fixture Cloaker); Dwarven wear (Dwarven seed 4 is
+chargen-only); Wilmsry Magic User joiner refusal (no fixture meets a
+Joiner); Woodsman/Pilfer gates (seed 13 Woodsman is chargen-only; fixture
+Pilfers only exercise `springTrap`/`encounterDot`); Fridgian hide on
+`combat/flee` seed 17 (the flee never reaches a landed pursuit blow —
+byte-identical, confirmed by Plan 24-03's replay).
