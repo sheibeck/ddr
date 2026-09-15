@@ -351,7 +351,23 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     events.push({ type: "phobiaFrozen" });
   }
   if (inDark(state) && !skill(c, "Night Vision")) events.push({ type: "combatInDark" });
-  if (first === "foe") foeTurn(state, rng, events);
+  if (first === "foe") {
+    foeTurn(state, rng, events);
+    // BUG FIX (Phase 26 gap closure, 2026-09-15): the opening foe turn can
+    // KILL the last foe without touching the hero — a ward reflecting its own
+    // blow back (Bubble) or an acid tick — and this was the one foeTurn call
+    // site with no cleared-encounter check after it (afterPlayerAction has
+    // one at both of its foeTurn calls). Combat stayed open with nothing
+    // alive to fight: the AFTER matrix found Fighter/Samurai/Dwarven seed
+    // 197976 stranded for 4,600 no-op actions behind a dead Shadow. Mirror
+    // the afterPlayerAction check exactly. Zero rng — endCombat draws none —
+    // and unreachable on every parity fixture (none has a foe die during the
+    // opener; the suite stays 33/33 byte-identical).
+    if (state.combat && !liveFoes(state).length) {
+      events.push({ type: "encounterCleared" });
+      endCombat(state, events);
+    }
+  }
   return events;
 }
 

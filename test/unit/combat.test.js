@@ -1404,3 +1404,29 @@ test("foeTurn: a pending summon joins at the top, before regen, and acts as an o
   assert.equal(state.combat.foes.length, 2);
   assert.equal(state.combat.pendingFoes, null);
 });
+
+// --- Phase 26 gap closure (2026-09-15): the opening foe turn can clear the ---
+// encounter. A Samurai NEVER strikes first (Phase 24), so the foe's turn runs
+// inline in startCombat; with a reflecting ward (Bubble) up, a low-hp foe's own
+// blow bounces back and kills it. startCombat returned with state.combat still
+// open and no live foe — the AFTER matrix found seed 197976 stranded there for
+// 4,600 no-op actions. The test scans seeds for that exact shape (foe first,
+// wardReflected + foeKilled in the opener) so it survives future dice-shape
+// changes, and asserts combat is closed with encounterCleared.
+test("startCombat: a foe killed by ward reflection during its opening turn ends the encounter (no stranded combat)", () => {
+  let hits = 0;
+  for (let seed = 1; seed <= 400 && hits < 3; seed++) {
+    const state = fixedState({ c: { sub: "Samurai", ward: { pool: 100, reflect: true, rounds: 12, name: "Bubble" } } });
+    const events = startCombat(state, false, "Beasts", makeRng(seed), []);
+    const started = events.find((e) => e.type === "encounterStarted");
+    if (!started || started.first !== "foe") continue;
+    if (!events.some((e) => e.type === "wardReflected") || !events.some((e) => e.type === "foeKilled")) continue;
+    if (state.dead) continue;
+    if (state.combat && liveFoes(state).length) continue; // a foe survived — not the shape under test
+    hits++;
+    assert.equal(state.combat, null, `seed ${seed}: combat must close when the opener leaves no live foe`);
+    assert.ok(events.some((e) => e.type === "encounterCleared"), `seed ${seed}: encounterCleared must be emitted`);
+    assert.ok(events.indexOf(events.find((e) => e.type === "foeKilled")) < events.indexOf(events.find((e) => e.type === "encounterCleared")));
+  }
+  assert.ok(hits >= 1, "the seed scan must find at least one reflect-kill opener (else the test proves nothing)");
+});
