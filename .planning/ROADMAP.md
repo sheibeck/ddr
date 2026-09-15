@@ -214,8 +214,6 @@ Plans:
 
 ### Phase 25.1: Device Feedback Batch: card vs toast, Joiner swap, class-based allies, camp numbers, Oracle scroll (INSERTED)
 
-
-
 **Goal**: Act on the first on-device feedback from the Phase 25 build — the narrative delivery is tuned (the dismissible card only for decisions and big updates; minor events toast-only with the narrative sentence; toasts readable; the Oracle fills the screen and opens at the newest line) and three party/camp rules land (Joiner swap with snark, Joiners fight by class, camp refusal states the numbers and counts the party).
 **Depends on**: Phase 25 (the toast table and single dispatch seam this batch builds on). Runs BEFORE Phase 26 so the AFTER matrix sees the class-based ally combat.
 **Requirements**: DFB-01, DFB-02, DFB-03, DFB-04, DFB-05, DFB-06
@@ -228,12 +226,12 @@ Plans:
   5. A Magic User member casts, a Thief member backstabs, a Fighter member swings its weapon — narrated and toasted; solo parity byte-identical.
   6. Make Camp with too little food says "you eat N a night, you have M", counting party appetites; the automatic new day is unchanged.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 25.1-01-PLAN.md — Shell + toast module (DFB-01/02/03): exported `CARD_EVENTS` (floorChanged, leveled) gates the "Move on" card in engineMove and mzMakeCamp; `NARRATIVE_ACTIONS` (move/camp/resolveJoiner) + a `ctx.narrate` hook in toastsForAction make every toast-only event carry the Oracle sentence via `narrativeToastText` (tags/roll/entities stripped, one decision point); `toastLifetime` (3000 + 60/char, cap 9000, +1200 per visible toast) bridged to mzToast with tap-to-dismiss; tableFour/tableFourNoop become toasts; Oracle panel fills the screen, opens at the newest line, "↑ newer" pill; `narrativeToasts` + `shell-oracle-panel` tests, shell-toast-wiring additions — wave 1
+- [x] 25.1-01-PLAN.md — Shell + toast module (DFB-01/02/03): exported `CARD_EVENTS` (floorChanged, leveled) gates the "Move on" card in engineMove and mzMakeCamp; `NARRATIVE_ACTIONS` (move/camp/resolveJoiner) + a `ctx.narrate` hook in toastsForAction make every toast-only event carry the Oracle sentence via `narrativeToastText` (tags/roll/entities stripped, one decision point); `toastLifetime` (3000 + 60/char, cap 9000, +1200 per visible toast) bridged to mzToast with tap-to-dismiss; tableFour/tableFourNoop become toasts; Oracle panel fills the screen, opens at the newest line, "↑ newer" pill; `narrativeToasts` + `shell-oracle-panel` tests, shell-toast-wiring additions — wave 1
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

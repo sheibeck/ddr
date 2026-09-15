@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
+current_phase: 25.1
+current_phase_name: Device Feedback Batch (INSERTED; runs before Phase 26)
 status: executing
-stopped_at: Completed 25-05-PLAN.md
-last_updated: "2026-09-15T13:40:49.479Z"
+stopped_at: Completed 25.1-01-PLAN.md
+last_updated: "2026-09-15T13:54:17.315Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase 25.1 planned and execution started
+last_activity_desc: Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 27
-  completed_plans: 20
+  completed_plans: 21
   percent: 57
-current_phase: 25.1
-current_phase_name: Device Feedback Batch (INSERTED; runs before Phase 26)
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 25.1 — Device Feedback Batch (INSERTED; runs before Phase 26)
-Plan: 1 of 3
+Plan: 2 of 3
 Status: Executing (wave 1 of 3)
 Last activity: 2026-09-15 — Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T06:35:26.266Z
-Stopped at: Completed 25-05-PLAN.md
+Last session: 2026-09-15T13:54:17.289Z
+Stopped at: Completed 25.1-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -141,6 +141,7 @@ Resume file: None
 | Phase 25 P03 | 20min | 3 tasks | 2 files |
 | Phase 25 P04 | 35min | 3 tasks | 2 files |
 | Phase 25 P05 | 20min | 2 tasks | 2 files |
+| Phase 25.1 P01 | 35min | 3 tasks | 6 files |
 
 ## Decisions
 
@@ -237,6 +238,8 @@ Resume file: None
 - [Phase ?]: Split the CSS-tone and dispatchWithToasts/switch-deletion work into two commits along the diff's natural hunk boundaries rather than exact plan task numbering — all acceptance criteria still satisfied
 - [Phase ?]: 25-05: No toasts.js fix needed — 25-02/25-03 already satisfied the exact TOAST_FOR/ORACLE_ONLY partition and FEATURE_EVENTS coverage this plan's guards assert; toastsCoverage.test.js turns those one-off facts into standing tests.
 - [Phase ?]: 25-05: eventNarration.js re-exports TOAST_FOR/ORACLE_ONLY/FEATURE_EVENTS/toastsForAction from toasts.js (one-directional, no import cycle) so both tables are reachable from one module.
+- [Phase ?]: narrativeToastText decodes entities amp-last so escaped markup never re-decodes into a live tag; tags stripped before entities decoded
+- [Phase ?]: tableFour/tableFourNoop toast the engine's own prose result unchanged rather than deriving a shorter table phrase
 
 ### Blockers
 
