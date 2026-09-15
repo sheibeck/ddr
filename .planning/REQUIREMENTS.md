@@ -110,3 +110,32 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| ARMOR-01 | Phase 28 | Pending |
+| ARMOR-02 | Phase 28 | Pending |
+| ARMOR-03 | Phase 28 | Pending |
+| ARMOR-04 | Phase 28 | Pending |
+| ARMOR-05 | Phase 28 | Pending |
+| LOOT-01 | Phase 29 | Pending |
+| LOOT-02 | Phase 29 | Pending |
+| LOOT-03 | Phase 29 | Pending |
+| LOOT-04 | Phase 29 | Pending |
+| LOOT-05 | Phase 29 | Pending |
+| LOOT-06 | Phase 29 | Pending |
+| CMBUI-01 | Phase 30 | Pending |
+| CMB-01 | Phase 31 | Pending |
+| CMB-02 | Phase 31 | Pending |
+| CMB-03 | Phase 31 | Pending |
+| CMB-04 | Phase 31 | Pending |
+| CMB-05 | Phase 31 | Pending |
+| CMB-06 | Phase 31 | Pending |
+| CMBUI-02 | Phase 32 | Pending |
+| CMBUI-03 | Phase 32 | Pending |
+| CMBUI-04 | Phase 32 | Pending |
+| CMBUI-05 | Phase 32 | Pending |
+| CMBUI-06 | Phase 32 | Pending |
+| UIF-01 | Phase 33 | Pending |
+| UIF-02 | Phase 33 | Pending |
+| UIF-03 | Phase 33 | Pending |
+| UIF-04 | Phase 33 | Pending |
+| UIF-05 | Phase 33 | Pending |
+| STORE-01 | Phase 33 | Pending |

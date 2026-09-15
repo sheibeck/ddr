@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-15T22:59:06.507Z"
 last_activity: 2026-09-15
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-15 for v1.3)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started — ROADMAP.md created (Phases 28–33); Phase 28 (Armor Integrity & Durability) is next
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-15 — Milestone v1.3 started
+Status: Roadmap created, awaiting phase planning
+Last activity: 2026-09-15 — v1.3 ROADMAP.md created (Phases 28: Armor Integrity & Durability, 29: End-of-Combat Loot & Bag Cap, 30: Combat Narrative & Input — Research, 31: Combat Start Gating & Effect Hygiene, 32: Combat Narrative & Input UI Build, 33: UI Feel & Store Polish)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -74,8 +74,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | verification | Phases 01/02/03 VERIFICATION.md `human_needed` | accepted — end-of-milestone UAT satisfied by DR1–DR18 on-device play + Play internal testers |
 | quick_task | rules-text-audit-pass (20260909) | missing SUMMARY → shipped as Phase 04.2 |
 | quick_task | 260908-kkq-rename-product-to-delve-die-repeat-and-s | partial → landed in f81942f |
-| requirement | UX-06 first-run tutorial (04-10) | user-deferred until the UI settles (build LAST, after v1.1/v1.2) |
-| requirement | STR-01..04, STR-06 production launch | in progress by the user; repo-side audit owed; after v1.1/v1.2 |
+| requirement | UX-06 first-run tutorial (04-10) | user-deferred until the UI settles (build LAST, after v1.1/v1.2/v1.3) |
+| requirement | STR-01..04, STR-06 production launch | in progress by the user; repo-side audit owed; after v1.1/v1.2/v1.3 |
 | requirement | PARTY-10 consolidated difficulty retune | landed in Phase 21 (v1.1); TUNE-04 re-attempt now Phase 27 (v1.2) |
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
 | v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
@@ -88,7 +88,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- v1.3 in flight — see ROADMAP.md once created.
+- v1.3 in flight — see ROADMAP.md (Phases 28–33 defined; Phase 28 next for planning).
 - When the Pixel 7 is back (NOT a v1.3 item — later tuning milestone): install the retune debug build (`android/app/build/outputs/apk/debug/app-debug.apk`, from 91c5b13) and play the four-run DR checklist in `docs/DIFFICULTY-RETUNE.md`; then ASK about a versionCode-4 Play internal upload (`node tools/bump-version.mjs` + `npm run android:release`).
 
 ## Performance Metrics
