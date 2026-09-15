@@ -1163,3 +1163,111 @@ for (const entry of CONTRACT) {
     test(`identity-contract ${entry.key} BAD: ${entry.bad.name}`, entry.bad.run);
   }
 }
+
+/* ============================================================
+ * Task 3 — the completeness meta-test, negative cases (probe IDENT-05/
+ * IDENT-07 empty), and idempotency proofs (probe FID-07).
+ * ============================================================ */
+
+test("IDENT-08: the contract table is complete and canonically ordered", () => {
+  const subKeys = CONTRACT.filter((e) => e.kind === "sub").map((e) => e.key);
+  const expectedSubs = [...CLASSES["Magic User"].subs, ...CLASSES.Fighter.subs, ...CLASSES.Thief.subs];
+  assert.deepEqual(subKeys, expectedSubs, "sub-class rows are in CLASSES[*].subs order, one per key");
+
+  const raceKeys = CONTRACT.filter((e) => e.kind === "race").map((e) => e.key);
+  assert.deepEqual(raceKeys, Object.keys(RACES), "race rows are in Object.keys(RACES) order, one per key");
+
+  for (const entry of CONTRACT) {
+    if (entry.key === "Human") {
+      assert.ok(entry.neutral && typeof entry.neutral.name === "string" && entry.neutral.name.length > 0);
+      assert.equal(entry.good, undefined, "Human carries neutral, not good/bad");
+      assert.equal(entry.bad, undefined);
+    } else {
+      assert.ok(entry.good && typeof entry.good.name === "string" && entry.good.name.length > 0, `${entry.key} good has a name`);
+      assert.ok(entry.bad && typeof entry.bad.name === "string" && entry.bad.name.length > 0, `${entry.key} bad has a name`);
+    }
+  }
+
+  const keys = CONTRACT.map((e) => e.key);
+  assert.equal(new Set(keys).size, keys.length, "no duplicate keys");
+});
+
+// --- Negative cases (probe IDENT-05/IDENT-07 empty) -------------------
+
+test("negative: a Knight vs foes all under maxWP 20 rolls initiative purely by dice", () => {
+  const state = hero("Knight");
+  withCombat(state, [fixedFoe({ wp: 19, maxWP: 19 })]);
+  assert.equal(rollInitiative(state, fakeRng([20, 1])), "you");
+  const foeWins = hero("Knight");
+  withCombat(foeWins, [fixedFoe({ wp: 19, maxWP: 19 })]);
+  assert.equal(rollInitiative(foeWins, fakeRng([1, 20])), "foe");
+});
+
+test("negative: a solo Bard's pickFoeTarget returns null without drawing (no allies present)", () => {
+  const bardState = { c: { sub: "Bard" }, combat: { foes: [], allies: [] } };
+  assert.equal(pickFoeTarget(bardState, fakeRng([]), fixedFoe({ intel: 1 })), null);
+  const noAlliesKey = { c: { sub: "Bard" }, combat: { foes: [] } };
+  assert.equal(pickFoeTarget(noAlliesKey, fakeRng([]), fixedFoe({ intel: 1 })), null);
+});
+
+test("negative: a Cutthroat/Wilmsry who never meets a Joiner has pendingJoiner and c.joiner both null", () => {
+  const cutthroat = hero("Cutthroat");
+  assert.equal(cutthroat.c.joiner, null);
+  assert.equal(cutthroat.pendingJoiner, null);
+  const wilmsry = hero("Soldier", "Wilmsry");
+  assert.equal(wilmsry.c.joiner, null);
+  assert.equal(wilmsry.pendingJoiner, null);
+});
+
+test("negative: a Pickpocket who never opens a store keeps chargen gold unchanged", () => {
+  const state = hero("Pickpocket");
+  assert.equal(state.c.gold, 50);
+});
+
+test("negative: a Woodsman offered no armour equips nothing and emits nothing", () => {
+  const state = hero("Woodsman");
+  assert.equal(state.c.armor, "Leather", "unchanged starting kit");
+});
+
+test("negative: a Pilfer with an empty items array calling useItem emits nothing", () => {
+  const state = hero("Pilfer");
+  state.c.items = [];
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.deepEqual(events, []);
+});
+
+test("negative: a Cloaker with no active combat calling flee emits nothing", () => {
+  const state = hero("Cloaker");
+  const events = flee(state, fakeRng([]), []);
+  assert.deepEqual(events, []);
+});
+
+// --- Idempotency (probe FID-07) ----------------------------------------
+
+test("idempotency: hero(\"Cutthroat\") built twice from the same seed is deep-equal", () => {
+  assert.deepEqual(hero("Cutthroat"), hero("Cutthroat"));
+});
+
+test("idempotency: the Cutthroat joiner scenario replays byte-identical event lists and rng cursors", () => {
+  const first = hero("Cutthroat");
+  const firstRng = makeRng(555);
+  const firstEvents = meetJoiner(first, firstRng, []);
+
+  const second = hero("Cutthroat");
+  const secondRng = makeRng(555);
+  const secondEvents = meetJoiner(second, secondRng, []);
+
+  assert.deepEqual(firstEvents, secondEvents);
+  assert.deepEqual(first.c.joiner, second.c.joiner);
+  assert.equal(firstRng.getState(), secondRng.getState());
+});
+
+test("idempotency: a Cutthroat's meetJoiner refusal consumes the identical rng cursor as an accepted Soldier control", () => {
+  const control = makeRng(777);
+  meetJoiner(hero("Soldier"), control, []);
+  const controlNext = control.d(20);
+
+  const cutthroat = makeRng(777);
+  meetJoiner(hero("Cutthroat"), cutthroat, []);
+  assert.equal(cutthroat.d(20), controlNext, "the draw following a refused meetJoiner matches an accepted one");
+});
