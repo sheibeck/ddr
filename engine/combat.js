@@ -708,6 +708,13 @@ export function flee(state, rng, events = []) {
  * canParley is a boolean gate; parley() only draws rng once talking is
  * attempted, so this never shifts the rng stream for a non-carrier.
  *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05/IDENT-06): two more
+ * decision-order lines, both zero-draw. Right after `C.parleyTried` (the sub
+ * gate wins over every other rule, including fluency): a Ninja or a Master
+ * of Arms can never parley, for any encounter type, at any fluency. Right
+ * after the Bard-vs-Humans line: a Court Mage can always parley Humans
+ * ("courtly manners"), even at fluency 0.
+ *
  * IMPORTANT — mazeworld.html's classic (non-module) `canParley()` duplicate
  * (D-17, ~line 4200) and test/unit/parley-button-mirror.test.js (20-03) MUST
  * mirror this exact decision order line for line: change one, change both.
@@ -718,12 +725,14 @@ export function canParley(state) {
   const C = state.combat;
   const t = C.type;
   if (C.parleyTried) return false; // D-05: the encounter's one attempt is spent
+  if (c.sub === "Ninja" || c.sub === "Master of Arms") return false; // Phase 24 IDENT-05: a Ninja never speaks; a Master of Arms attacks without question
   if (t === "Walking Dead") return false; // canon, unconditional, for everyone
   const flu = fluency(c);
   if (t === "Magical" && flu < 2) return false; // D-11: Magical opens ONLY at full fluency
   if (c.sub === "Con Artist") return true;
   if (c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
   if (c.sub === "Bard" && t === "Humans") return true;
+  if (c.sub === "Court Mage" && t === "Humans") return true; // Phase 24 IDENT-06: courtly manners
   // D-10/D-11: replaces the old boolean skill-or-Helm gate line — fluency 1
   // opens TALKATIVE, fluency 2 additionally opens Magical (even for a
   // Wilmsry, which is exactly why a fluency-2 Wilmsry vs Magical reaches
@@ -764,6 +773,19 @@ export function parley(state, rng, events = []) {
     // already false once tried, hiding the button — this is the direct-
     // dispatch rejection for an action that bypassed the button). Zero draws.
     events.push({ type: "parleyExhausted" });
+    return events;
+  }
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Ninja or a
+  // Master of Arms narrates a direct refusal (same posture as the Wilmsry-
+  // vs-Magical refusal below — BEFORE `C.parleyTried` is set, so a refusal
+  // never spends the encounter's one attempt) rather than falling through to
+  // canParley's silent no-op path. Zero draws.
+  if (c.sub === "Ninja") {
+    events.push({ type: "parleyRefused", reason: "ninja" });
+    return events;
+  }
+  if (c.sub === "Master of Arms") {
+    events.push({ type: "parleyRefused", reason: "masterOfArms" });
     return events;
   }
   if (!canParley(state)) return events; // unchanged silent path for never-eligible cases

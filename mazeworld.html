@@ -4241,6 +4241,7 @@ function canParley() {
   if (!S.combat) return false;
   const C = S.combat;
   if (C.parleyTried) return false;
+  if (S.c.sub === "Ninja" || S.c.sub === "Master of Arms") return false;
   const t = C.type;
   if (t === "Walking Dead") return false;
   const flu = fluency();
@@ -4248,6 +4249,7 @@ function canParley() {
   if (S.c.sub === "Con Artist") return true;
   if (S.c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
   if (S.c.sub === "Bard" && t === "Humans") return true;
+  if (S.c.sub === "Court Mage" && t === "Humans") return true;
   const talkable = flu >= 2 ? [...TALKATIVE, "Magical"] : TALKATIVE;
   if (flu >= 1 && talkable.includes(t)) return true;
   // "All good and evil creatures recognize the Wilmsry and often desire to barter with them."

@@ -274,3 +274,43 @@ test("pickFoeTarget: an intel<=3 foe always targets a Bard hero when a live part
 
   assert.equal(pickFoeTarget(bardState, fakeRng([2])).name, "Ada", "no foe argument -> today's behaviour");
 });
+
+// --- canParley / parley: Ninja + Master of Arms bads, Court Mage good -----
+
+test("canParley: a Ninja and a Master of Arms are refused for every encounter type, even at fluency 2", () => {
+  const types = ["Beasts", "Demons", "Humans", "Lair Beasts", "Magical", "Walking Dead"];
+  for (const sub of ["Ninja", "Master of Arms"]) {
+    for (const type of types) {
+      const state = fixedState({ c: { sub, skills: { Language: 1 } } });
+      state.combat = fixedCombat([fixedFoe({ type })], { type });
+      assert.equal(canParley(state), false, `${sub} vs ${type}`);
+    }
+  }
+});
+
+test("canParley: a Court Mage can parley Humans at fluency 0, but not Beasts or Walking Dead", () => {
+  const mk = (type) => {
+    const state = fixedState({ c: { sub: "Court Mage" } });
+    state.combat = fixedCombat([fixedFoe({ type })], { type });
+    return state;
+  };
+  assert.equal(canParley(mk("Humans")), true);
+  assert.equal(canParley(mk("Beasts")), false);
+  assert.equal(canParley(mk("Walking Dead")), false, "canon, unconditional, for everyone");
+});
+
+test("parley: a Ninja's direct parley narrates a refusal, spends no attempt, draws no rng", () => {
+  const state = fixedState({ c: { sub: "Ninja" } });
+  state.combat = fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" });
+  const events = parley(state, fakeRng([]), []);
+  assert.deepEqual(events, [{ type: "parleyRefused", reason: "ninja" }]);
+  assert.equal(state.combat.parleyTried, undefined, "a refusal never spends the one attempt");
+});
+
+test("parley: a Master of Arms' direct parley narrates a refusal, spends no attempt, draws no rng", () => {
+  const state = fixedState({ c: { sub: "Master of Arms" } });
+  state.combat = fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" });
+  const events = parley(state, fakeRng([]), []);
+  assert.deepEqual(events, [{ type: "parleyRefused", reason: "masterOfArms" }]);
+  assert.equal(state.combat.parleyTried, undefined, "a refusal never spends the one attempt");
+});

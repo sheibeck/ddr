@@ -105,10 +105,10 @@ function mk(cOverrides, type, combatOverrides = {}) {
 
 // --- tests --------------------------------------------------------------
 
-test("D-17: the classic canParley() agrees with engine/combat.js#canParley on all 576 matrix cases", () => {
+test("D-17: the classic canParley() agrees with engine/combat.js#canParley on all 1008 matrix cases", () => {
   let cases = 0;
   for (const race of Object.keys(RACES)) {
-    for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier"]) {
+    for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier", "Ninja", "Master of Arms", "Court Mage"]) {
       for (const lang of [false, true]) {
         for (const helm of [false, true]) {
           for (const t of ENC_TYPES) {
@@ -122,7 +122,23 @@ test("D-17: the classic canParley() agrees with engine/combat.js#canParley on al
       }
     }
   }
-  assert.equal(cases, 576);
+  assert.equal(cases, 1008);
+});
+
+test("Phase 24 (IDENT-05): a Ninja and a Master of Arms never parley, even at fluency 2 (Language + Helm)", () => {
+  for (const sub of ["Ninja", "Master of Arms"]) {
+    for (const t of ENC_TYPES) {
+      const state = mk({ sub, skills: { Language: 1 }, items: [HELM] }, t);
+      assert.equal(canParley(state), false, `engine: ${sub} vs ${t}`);
+      assert.equal(classicFor(state)(), false, `classic: ${sub} vs ${t}`);
+    }
+  }
+});
+
+test("Phase 24 (IDENT-06): a Court Mage can always parley Humans, even at fluency 0", () => {
+  const state = mk({ sub: "Court Mage" }, "Humans");
+  assert.equal(canParley(state), true);
+  assert.equal(classicFor(state)(), true);
 });
 
 test("D-17: the classic gate hides the button after the one attempt and with no combat, exactly like the engine", () => {
@@ -150,4 +166,9 @@ test("D-17 source pins: the classic canParley reads parleyTried and opens Magica
   assert.equal(cpSrc.includes('"Walking Dead" || t === "Magical"'), false);
   assert.ok(fluSrc.includes('skill("Language")'));
   assert.ok(fluSrc.includes('eff("tongue")'));
+});
+
+test("Phase 24 source pins: the classic canParley carries both new mirror lines verbatim", () => {
+  assert.ok(cpSrc.includes('if (S.c.sub === "Ninja" || S.c.sub === "Master of Arms") return false;'));
+  assert.ok(cpSrc.includes('if (S.c.sub === "Court Mage" && t === "Humans") return true;'));
 });
