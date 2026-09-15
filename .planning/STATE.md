@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 24
-current_phase_name: "Every Sub-class and Race: One Good, One Bad"
-status: verifying
+current_phase: 25
+current_phase_name: Feature Feedback
+status: planning
 stopped_at: Completed 24-07-PLAN.md
-last_updated: "2026-09-15T02:55:56.821Z"
+last_updated: "2026-09-15T02:58:35.697Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 24 execution started
+last_activity_desc: Phase 24 complete, transitioned to Phase 25
 progress:
   total_phases: 6
   completed_phases: 3
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 24 (Every Sub-class and Race: One Good, One Bad) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-09-14 — Phase 24 execution started
+Phase: 25 — Nothing Happens Silently (Feature Feedback)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-14 — Phase 24 complete, transitioned to Phase 25
 
 ## Ground Truth (durable facts every session needs)
 
