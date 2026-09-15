@@ -245,3 +245,21 @@ None - no external service configuration required.
 ---
 *Phase: 24-every-sub-class-and-race-one-good-one-bad*
 *Completed: 2026-09-14*
+
+## Self-Check: PASSED
+
+- FOUND: content/races.js
+- FOUND: engine/combat.js
+- FOUND: src/browser/eventNarration.js
+- FOUND: test/unit/combat.test.js
+- FOUND: test/unit/identity-race.test.js
+- FOUND: test/parity/fixtures/action-script.combat.json
+- FOUND: test/unit/foe-turn-draw-count.test.js
+- FOUND: test/parity/fixture-inventory.test.js
+- FOUND: test/parity/FIXTURE-INVENTORY.md
+- FOUND: test/determinism/foe-abilities.test.js
+- FOUND: .planning/phases/24-every-sub-class-and-race-one-good-one-bad/24-03-SUMMARY.md
+- FOUND commit: 2c4f153 (Task 1)
+- FOUND commit: c3ba036 (Task 2)
+- FOUND commit: 0083626 (Task 3)
+- FOUND commit: ddacb1b (plan summary)
