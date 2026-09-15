@@ -859,6 +859,170 @@ was changed based on this readout. The paired, rigorous AFTER matrix (same
 
 ## AFTER — commit d1e32357474a0f232515a19660ea3ed12c3f8b07 (Phase 26 — PLAY-02)
 
+**Zero cannot-act cells.** 0 of 143 AFTER natural-start cells have meanKills < 0.5 or stuck > 0 (0 of 5720 natural-start runs stuck; depth-20 slice: 0 of 1430 runs stuck).
+**Parameter parity (BEFORE vs AFTER, modulo commit):** natural pair identical; deep pair identical.
+**mu (mean death depth over all completed AFTER natural-start runs) = 3.08** (BEFORE mu 2.97, delta +0.10). Bands relative to AFTER mu: too weak < 2.31 (0.75mu) · fine 2.31–4.15 (closed) · too strong > 4.15 (1.35mu) · cannot act = meanKills < 0.5 or stuck > 0. mu is run-weighted: sum(meanDepth x completed) / sum(completed) over the 143 cells.
+
+### By class — BEFORE → AFTER
+| # | Class | BEFORE mean | AFTER mean | Δ | BEFORE p50 | AFTER p50 | BEFORE ≥5 | AFTER ≥5 | AFTER ≥10 | AFTER kills |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Thief | 3.42 | 3.51 | +0.09 | 3.0 | 3.0 | 24.6 | 26.3 | 0.6 | 7.09 |
+| 2 | Fighter | 3.05 | 3.16 | +0.11 | 3.0 | 3.0 | 16.2 | 16.9 | 0.2 | 6.33 |
+| 3 | Magic User | 2.44 | 2.55 | +0.11 | 2.0 | 2.0 | 7.7 | 8.5 | 0.1 | 4.99 |
+
+### Sub-classes — bottom five and top five (AFTER)
+**Bottom five**
+
+| # | Sub | Class | BEFORE | AFTER | Δ | Band | Verdict | Reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 20 | Warlock | Magic User | 2.58 | 2.56 | -0.02 | fine |  |  |
+| 21 | Wizard | Magic User | 2.48 | 2.46 | -0.02 | fine |  |  |
+| 22 | Court Mage | Magic User | 2.52 | 2.45 | -0.07 | fine |  |  |
+| 23 | Illusionist | Magic User | 2.20 | 2.41 | +0.21 | fine |  |  |
+| 24 | Apprentice | Magic User | 2.40 | 2.35 | -0.05 | fine |  |  |
+
+**Top five**
+
+| # | Sub | Class | BEFORE | AFTER | Δ | Band | Verdict | Reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Ninja | Thief | 4.22 | 4.33 | +0.11 | too strong | accept | Too strong at AFTER 4.33 (BEFORE 4.22): the opener is the whole fantasy -- ordinary deaths (Werebeasts, traps, starvation) still end most runs, and canParley-false still forces every fight. |
+| 2 | Con Artist | Thief | 4.08 | 4.07 | -0.01 | fine |  |  |
+| 3 | Acrobat | Thief | 3.71 | 3.89 | +0.18 | fine |  |  |
+| 4 | Barbarian | Fighter | 3.44 | 3.66 | +0.22 | fine |  |  |
+| 5 | Cat Burglar | Thief | 3.23 | 3.40 | +0.17 | fine |  |  |
+
+### Races — BEFORE → AFTER (Human is the control)
+| # | Race | BEFORE | AFTER | Δ | ≥5 BEFORE | ≥5 AFTER | Band | Verdict | Reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Wilmsry | 3.93 | 3.92 | -0.01 | 36.9 | 36.4 | fine | accept | in band at AFTER 3.92 (BEFORE 3.93) -- the Joiner refusal closed the gap; deferred numeric trim closed |
+| 2 | Troll | 3.25 | 3.26 | +0.01 | 16.9 | 17.0 | fine |  |  |
+| 3 | Fridgian | 2.46 | 2.90 | +0.44 | 7.1 | 12.2 | fine |  |  |
+| 4 | Human | 2.88 | 2.89 | +0.01 | 12.1 | 11.6 | fine |  |  |
+| 5 | Elven | 2.84 | 2.86 | +0.02 | 15.0 | 15.1 | fine |  |  |
+| 6 | Dwarven | 2.45 | 2.61 | +0.16 | 8.8 | 11.0 | fine |  |  |
+
+### Sub-classes — all 24 rows (AFTER rank order)
+| # | Sub | Class | BEFORE | AFTER | Δ | ≥5 BEFORE | ≥5 AFTER | Band | Verdict | Reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Ninja | Thief | 4.22 | 4.33 | +0.11 | 37.1 | 42.5 | too strong | accept | Too strong at AFTER 4.33 (BEFORE 4.22): the opener is the whole fantasy -- ordinary deaths (Werebeasts, traps, starvation) still end most runs, and canParley-false still forces every fight. |
+| 2 | Con Artist | Thief | 4.08 | 4.07 | -0.01 | 35.8 | 37.1 | fine |  |  |
+| 3 | Acrobat | Thief | 3.71 | 3.89 | +0.18 | 27.9 | 31.7 | fine |  |  |
+| 4 | Barbarian | Fighter | 3.44 | 3.66 | +0.22 | 25.0 | 29.6 | fine |  |  |
+| 5 | Cat Burglar | Thief | 3.23 | 3.40 | +0.17 | 23.8 | 25.4 | fine |  |  |
+| 6 | Pilfer | Thief | 3.20 | 3.35 | +0.15 | 22.1 | 24.2 | fine |  |  |
+| 7 | Knight | Fighter | 3.19 | 3.30 | +0.11 | 23.3 | 20.0 | fine |  |  |
+| 8 | Master of Arms | Fighter | 3.25 | 3.22 | -0.03 | 18.3 | 14.2 | fine |  |  |
+| 9 | Woodsman | Fighter | 3.02 | 3.13 | +0.11 | 17.1 | 17.5 | fine |  |  |
+| 10 | Guard | Fighter | 2.80 | 3.13 | +0.33 | 10.4 | 14.6 | fine |  |  |
+| 11 | Cutthroat | Thief | 2.98 | 3.11 | +0.13 | 16.3 | 17.9 | fine |  |  |
+| 12 | Bard | Fighter | 3.04 | 3.03 | -0.01 | 12.1 | 13.3 | fine |  |  |
+| 13 | Cloaker | Thief | 3.04 | 2.99 | -0.05 | 17.5 | 13.8 | fine |  |  |
+| 14 | Soldier | Fighter | 2.95 | 2.98 | +0.03 | 13.3 | 15.4 | fine |  |  |
+| 15 | Pickpocket | Thief | 2.88 | 2.94 | +0.06 | 16.7 | 17.9 | fine |  |  |
+| 16 | Sorcerer | Magic User | 2.72 | 2.88 | +0.16 | 9.6 | 12.5 | fine |  |  |
+| 17 | Samurai | Fighter | 2.69 | 2.76 | +0.07 | 8.5 | 9.0 | fine |  |  |
+| 18 | Summoner | Magic User | 2.18 | 2.71 | +0.53 | 4.2 | 9.6 | fine |  |  |
+| 19 | Cleric | Magic User | 2.42 | 2.62 | +0.20 | 8.8 | 9.2 | fine |  |  |
+| 20 | Warlock | Magic User | 2.58 | 2.56 | -0.02 | 10.4 | 9.2 | fine |  |  |
+| 21 | Wizard | Magic User | 2.48 | 2.46 | -0.02 | 8.8 | 7.1 | fine |  |  |
+| 22 | Court Mage | Magic User | 2.52 | 2.45 | -0.07 | 8.8 | 6.7 | fine |  |  |
+| 23 | Illusionist | Magic User | 2.20 | 2.41 | +0.21 | 4.6 | 8.8 | fine |  |  |
+| 24 | Apprentice | Magic User | 2.40 | 2.35 | -0.05 | 6.7 | 5.4 | fine |  |  |
+
+### Reach table (AFTER natural, pooled over completed runs)
+| Floor | BEFORE | AFTER |
+| --- | --- | --- |
+| ≥5 | 16.2 | 17.2 |
+| ≥10 | 0.3 | 0.3 |
+| ≥20 | n/a | n/a |
+
+≥20 is not carried per cell by the Phase 22 harness JSON (reach5/reach10 only); the highest per-cell p90 in the AFTER matrix is 8.0, so no cell reaches 20 in 10% or more of its runs; the depth-20 slice below is the ≥20 yardstick.
+
+### Depth-20 slice — Phase 27's yardstick (no verdicts)
+**By class**
+
+| # | Class | floors gained BEFORE | AFTER | Δ | encounters survived BEFORE | AFTER | Δ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Thief | 0.26 | 0.25 | -0.01 | 1.81 | 1.72 | -0.09 |
+| 2 | Fighter | 0.10 | 0.10 | +0.00 | 1.08 | 1.17 | +0.09 |
+| 3 | Magic User | 0.08 | 0.07 | -0.01 | 1.06 | 1.07 | +0.01 |
+
+**By sub-class**
+
+| # | Sub | floors gained BEFORE | AFTER | Δ | encounters survived BEFORE | AFTER | Δ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Con Artist | 0.40 | 0.40 | +0.00 | 3.53 | 3.52 | -0.01 |
+| 2 | Cat Burglar | 0.33 | 0.33 | +0.00 | 1.58 | 1.57 | -0.01 |
+| 3 | Acrobat | 0.32 | 0.30 | -0.02 | 1.28 | 1.25 | -0.03 |
+| 4 | Ninja | 0.37 | 0.27 | -0.10 | 1.82 | 1.28 | -0.54 |
+| 5 | Guard | 0.12 | 0.23 | +0.11 | 0.90 | 1.43 | +0.53 |
+| 6 | Cutthroat | 0.22 | 0.22 | +0.00 | 1.55 | 1.62 | +0.07 |
+| 7 | Wizard | 0.22 | 0.22 | +0.00 | 1.00 | 0.95 | -0.05 |
+| 8 | Pilfer | 0.18 | 0.18 | +0.00 | 1.75 | 1.77 | +0.02 |
+| 9 | Sorcerer | 0.18 | 0.18 | +0.00 | 1.32 | 1.33 | +0.01 |
+| 10 | Cloaker | 0.15 | 0.15 | +0.00 | 1.83 | 1.58 | -0.25 |
+| 11 | Woodsman | 0.13 | 0.13 | +0.00 | 1.70 | 1.73 | +0.03 |
+| 12 | Pickpocket | 0.12 | 0.12 | +0.00 | 1.15 | 1.18 | +0.03 |
+| 13 | Barbarian | 0.10 | 0.10 | +0.00 | 1.30 | 1.38 | +0.08 |
+| 14 | Bard | 0.08 | 0.10 | +0.02 | 1.28 | 1.38 | +0.10 |
+| 15 | Knight | 0.12 | 0.07 | -0.05 | 0.90 | 0.93 | +0.03 |
+| 16 | Soldier | 0.12 | 0.07 | -0.05 | 0.90 | 0.93 | +0.03 |
+| 17 | Apprentice | 0.07 | 0.05 | -0.02 | 1.32 | 1.23 | -0.09 |
+| 18 | Illusionist | 0.05 | 0.05 | +0.00 | 1.20 | 1.23 | +0.03 |
+| 19 | Master of Arms | 0.12 | 0.05 | -0.07 | 0.85 | 0.82 | -0.03 |
+| 20 | Court Mage | 0.02 | 0.03 | +0.01 | 1.00 | 1.17 | +0.17 |
+| 21 | Warlock | 0.05 | 0.03 | -0.02 | 1.07 | 0.90 | -0.17 |
+| 22 | Samurai | 0.00 | 0.02 | +0.02 | 0.74 | 0.68 | -0.06 |
+| 23 | Cleric | 0.00 | 0.00 | +0.00 | 0.68 | 0.68 | +0.00 |
+| 24 | Summoner | 0.05 | 0.00 | -0.05 | 0.92 | 1.03 | +0.11 |
+
+**By race**
+
+| # | Race | floors gained BEFORE | AFTER | Δ | encounters survived BEFORE | AFTER | Δ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Wilmsry | 0.36 | 0.30 | -0.06 | 2.48 | 2.22 | -0.26 |
+| 2 | Human | 0.13 | 0.13 | +0.00 | 1.05 | 1.07 | +0.02 |
+| 3 | Troll | 0.13 | 0.13 | +0.00 | 1.35 | 1.35 | +0.00 |
+| 4 | Dwarven | 0.13 | 0.12 | -0.01 | 1.06 | 1.18 | +0.12 |
+| 5 | Elven | 0.08 | 0.09 | +0.01 | 0.85 | 0.93 | +0.08 |
+| 6 | Fridgian | 0.06 | 0.07 | +0.01 | 1.12 | 1.18 | +0.06 |
+
+### Out-of-band cells (appendix)
+In band: 113 of 143 cells (fine).
+
+| Band | # | Class | Sub | Race | BEFORE | AFTER | Δ | AFTER kills |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| too weak | 125 | Magic User | Cleric | Elven | 2.03 | 2.30 | +0.27 | 4.65 |
+| too weak | 126 | Magic User | Illusionist | Elven | 1.83 | 2.28 | +0.45 | 4.47 |
+| too weak | 127 | Thief | Cloaker | Dwarven | 2.70 | 2.25 | -0.45 | 4.47 |
+| too weak | 128 | Magic User | Apprentice | Human | 2.20 | 2.25 | +0.05 | 3.78 |
+| too weak | 129 | Magic User | Wizard | Elven | 2.35 | 2.17 | -0.18 | 3.50 |
+| too weak | 130 | Magic User | Apprentice | Fridgian | 2.03 | 2.17 | +0.14 | 3.38 |
+| too weak | 131 | Magic User | Warlock | Dwarven | 2.28 | 2.15 | -0.13 | 3.23 |
+| too weak | 132 | Thief | Pickpocket | Dwarven | 2.17 | 2.13 | -0.04 | 3.95 |
+| too weak | 133 | Magic User | Wizard | Human | 2.23 | 2.13 | -0.10 | 3.38 |
+| too weak | 134 | Magic User | Cleric | Dwarven | 1.70 | 2.13 | +0.43 | 5.13 |
+| too weak | 135 | Magic User | Summoner | Dwarven | 1.88 | 2.13 | +0.25 | 4.53 |
+| too weak | 136 | Magic User | Illusionist | Dwarven | 1.63 | 2.10 | +0.47 | 3.18 |
+| too weak | 137 | Magic User | Illusionist | Fridgian | 1.80 | 2.08 | +0.28 | 3.75 |
+| too weak | 138 | Magic User | Illusionist | Human | 2.20 | 2.08 | -0.12 | 4.15 |
+| too weak | 139 | Magic User | Wizard | Dwarven | 2.05 | 2.05 | +0.00 | 2.70 |
+| too weak | 140 | Magic User | Court Mage | Dwarven | 2.10 | 1.98 | -0.12 | 3.95 |
+| too weak | 141 | Magic User | Apprentice | Elven | 2.03 | 1.88 | -0.15 | 2.30 |
+| too weak | 142 | Magic User | Apprentice | Dwarven | 1.98 | 1.85 | -0.13 | 2.23 |
+| too weak | 143 | Magic User | Court Mage | Elven | 1.90 | 1.83 | -0.07 | 4.20 |
+| too strong | 1 | Thief | Acrobat | Wilmsry | 5.03 | 5.10 | +0.07 | 7.65 |
+| too strong | 2 | Thief | Ninja | Wilmsry | 5.38 | 5.00 | -0.38 | 16.88 |
+| too strong | 3 | Thief | Con Artist | Wilmsry | 5.00 | 4.97 | -0.03 | 1.58 |
+| too strong | 4 | Fighter | Barbarian | Wilmsry | 4.90 | 4.90 | +0.00 | 7.38 |
+| too strong | 5 | Thief | Ninja | Human | 4.80 | 4.80 | +0.00 | 15.88 |
+| too strong | 6 | Thief | Acrobat | Troll | 4.60 | 4.60 | +0.00 | 11.98 |
+| too strong | 7 | Fighter | Guard | Wilmsry | 3.88 | 4.60 | +0.72 | 5.90 |
+| too strong | 8 | Thief | Ninja | Troll | 4.63 | 4.60 | -0.03 | 13.68 |
+| too strong | 9 | Fighter | Woodsman | Wilmsry | 4.43 | 4.45 | +0.02 | 4.72 |
+| too strong | 10 | Fighter | Knight | Wilmsry | 4.72 | 4.43 | -0.29 | 4.43 |
+| too strong | 11 | Thief | Con Artist | Human | 4.30 | 4.30 | +0.00 | 1.78 |
+
 ### Pin and provenance (Phase 26 capture)
 
 Captured 2026-09-15. Full hash `d1e32357474a0f232515a19660ea3ed12c3f8b07`
@@ -1309,3 +1473,117 @@ EXIT=0
 The two machine-diffable aggregates for Phase 26 are `docs/class-pass/after.json`
 (natural start, 143 cells x 40 seeds) and `docs/class-pass/after-depth20.json`
 (depth-20 slice, 143 cells x 10 seeds) — aggregates only, no per-run rows.
+
+## Outliers (Phase 26 — revisit list)
+
+No revisit rows — every out-of-band row was accepted.
+
+## Handoff to Phase 27
+
+### Yardstick summary
+mu (AFTER, run-weighted) = 3.08 — bands: too weak < 2.31, fine 2.31–4.15, too strong > 4.15.
+Reach (AFTER, pooled): ≥5 17.2, ≥10 0.3, ≥20 n/a (see depth-20 slice below).
+Cannot-act cells: 0 of 143.
+Commits: before 5565b22, after d1e3235, before-deep 5565b22, after-deep d1e3235.
+
+### AFTER natural roll-ups — by class
+| # | Class | mean | p50 | p90 | ≥5 | ≥10 | kills | lvl | actions |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Thief | 3.51 | 3.0 | 6.0 | 26.3 | 0.6 | 7.09 | 2.30 | 361.66 |
+| 2 | Fighter | 3.16 | 3.0 | 5.0 | 16.9 | 0.2 | 6.33 | 2.07 | 316.41 |
+| 3 | Magic User | 2.55 | 2.0 | 4.0 | 8.5 | 0.1 | 4.99 | 1.76 | 251.57 |
+
+### AFTER natural roll-ups — by sub-class
+| # | Sub | mean | p50 | p90 | ≥5 | ≥10 | kills | lvl | actions |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Ninja | 4.33 | 4.0 | 7.0 | 42.5 | 1.7 | 13.70 | 2.96 | 436.24 |
+| 2 | Con Artist | 4.07 | 4.0 | 6.0 | 37.1 | 0.0 | 1.75 | 2.38 | 420.30 |
+| 3 | Acrobat | 3.89 | 4.0 | 6.0 | 31.7 | 1.3 | 9.17 | 2.58 | 402.71 |
+| 4 | Barbarian | 3.66 | 3.0 | 6.0 | 29.6 | 0.4 | 9.05 | 2.23 | 378.38 |
+| 5 | Cat Burglar | 3.40 | 3.0 | 6.0 | 25.4 | 0.8 | 8.15 | 2.31 | 333.30 |
+| 6 | Pilfer | 3.35 | 3.0 | 6.0 | 24.2 | 0.4 | 6.53 | 2.16 | 360.28 |
+| 7 | Knight | 3.30 | 3.0 | 5.0 | 20.0 | 0.0 | 4.64 | 2.05 | 327.88 |
+| 8 | Master of Arms | 3.22 | 3.0 | 5.0 | 14.2 | 0.0 | 8.60 | 2.20 | 334.58 |
+| 9 | Woodsman | 3.13 | 3.0 | 5.0 | 17.5 | 0.0 | 4.44 | 2.05 | 307.87 |
+| 10 | Guard | 3.13 | 3.0 | 5.0 | 14.6 | 0.8 | 6.04 | 2.03 | 319.70 |
+| 11 | Cutthroat | 3.11 | 3.0 | 5.0 | 17.9 | 0.0 | 6.26 | 2.08 | 318.86 |
+| 12 | Bard | 3.03 | 3.0 | 5.0 | 13.3 | 0.0 | 5.44 | 2.02 | 299.40 |
+| 13 | Cloaker | 2.99 | 3.0 | 5.0 | 13.8 | 0.8 | 5.96 | 2.00 | 320.27 |
+| 14 | Soldier | 2.98 | 3.0 | 5.0 | 15.4 | 0.0 | 5.68 | 1.99 | 292.66 |
+| 15 | Pickpocket | 2.94 | 3.0 | 5.0 | 17.9 | 0.0 | 5.18 | 1.91 | 301.31 |
+| 16 | Sorcerer | 2.88 | 3.0 | 5.0 | 12.5 | 0.0 | 6.57 | 1.93 | 278.38 |
+| 17 | Samurai | 2.76 | 3.0 | 4.0 | 9.0 | 0.0 | 6.85 | 1.99 | 261.66 |
+| 18 | Summoner | 2.71 | 3.0 | 4.0 | 9.6 | 0.4 | 6.50 | 1.87 | 280.20 |
+| 19 | Cleric | 2.62 | 2.0 | 4.0 | 9.2 | 0.0 | 5.31 | 1.78 | 265.68 |
+| 20 | Warlock | 2.56 | 2.0 | 4.0 | 9.2 | 0.0 | 4.78 | 1.75 | 246.57 |
+| 21 | Wizard | 2.46 | 2.0 | 4.0 | 7.1 | 0.0 | 3.98 | 1.65 | 238.46 |
+| 22 | Court Mage | 2.45 | 2.0 | 4.0 | 6.7 | 0.0 | 5.28 | 1.69 | 242.42 |
+| 23 | Illusionist | 2.41 | 2.0 | 4.0 | 8.8 | 0.0 | 4.16 | 1.62 | 244.10 |
+| 24 | Apprentice | 2.35 | 2.0 | 4.0 | 5.4 | 0.0 | 3.31 | 1.80 | 216.78 |
+
+### AFTER natural roll-ups — by race
+| # | Race | mean | p50 | p90 | ≥5 | ≥10 | kills | lvl | actions |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Wilmsry | 3.92 | 4.0 | 6.0 | 36.4 | 0.6 | 5.58 | 2.37 | 412.01 |
+| 2 | Troll | 3.26 | 3.0 | 5.0 | 17.0 | 0.3 | 7.28 | 2.15 | 331.10 |
+| 3 | Fridgian | 2.90 | 3.0 | 5.0 | 12.2 | 0.1 | 6.12 | 1.95 | 287.18 |
+| 4 | Human | 2.89 | 3.0 | 5.0 | 11.6 | 0.2 | 6.25 | 1.97 | 297.74 |
+| 5 | Elven | 2.86 | 3.0 | 5.0 | 15.1 | 0.3 | 6.38 | 2.03 | 278.11 |
+| 6 | Dwarven | 2.61 | 2.0 | 5.0 | 11.0 | 0.1 | 5.19 | 1.78 | 251.91 |
+
+### Depth-20 roll-ups — by class
+| # | Class | floors gained (mean) | floors gained (p50) | encounters survived | kills |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Thief | 0.25 | 0.0 | 1.72 | 1.36 |
+| 2 | Fighter | 0.10 | 0.0 | 1.17 | 0.77 |
+| 3 | Magic User | 0.07 | 0.0 | 1.07 | 0.79 |
+
+### Depth-20 roll-ups — by sub-class
+| # | Sub | floors gained (mean) | floors gained (p50) | encounters survived | kills |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Con Artist | 0.40 | 0.0 | 3.52 | 1.28 |
+| 2 | Cat Burglar | 0.33 | 0.0 | 1.57 | 1.18 |
+| 3 | Acrobat | 0.30 | 0.0 | 1.25 | 0.98 |
+| 4 | Ninja | 0.27 | 0.0 | 1.28 | 1.62 |
+| 5 | Guard | 0.23 | 0.0 | 1.43 | 1.07 |
+| 6 | Cutthroat | 0.22 | 0.0 | 1.62 | 1.52 |
+| 7 | Wizard | 0.22 | 0.0 | 0.95 | 0.57 |
+| 8 | Pilfer | 0.18 | 0.0 | 1.77 | 1.53 |
+| 9 | Sorcerer | 0.18 | 0.0 | 1.33 | 1.53 |
+| 10 | Cloaker | 0.15 | 0.0 | 1.58 | 1.57 |
+| 11 | Woodsman | 0.13 | 0.0 | 1.73 | 0.57 |
+| 12 | Pickpocket | 0.12 | 0.0 | 1.18 | 1.22 |
+| 13 | Barbarian | 0.10 | 0.0 | 1.38 | 1.22 |
+| 14 | Bard | 0.10 | 0.0 | 1.38 | 0.35 |
+| 15 | Knight | 0.07 | 0.0 | 0.93 | 0.68 |
+| 16 | Soldier | 0.07 | 0.0 | 0.93 | 0.68 |
+| 17 | Apprentice | 0.05 | 0.0 | 1.23 | 0.93 |
+| 18 | Illusionist | 0.05 | 0.0 | 1.23 | 0.93 |
+| 19 | Master of Arms | 0.05 | 0.0 | 0.82 | 0.93 |
+| 20 | Court Mage | 0.03 | 0.0 | 1.17 | 0.72 |
+| 21 | Warlock | 0.03 | 0.0 | 0.90 | 0.57 |
+| 22 | Samurai | 0.02 | 0.0 | 0.68 | 0.64 |
+| 23 | Cleric | 0.00 | 0.0 | 0.68 | 0.27 |
+| 24 | Summoner | 0.00 | 0.0 | 1.03 | 0.83 |
+
+### Depth-20 roll-ups — by race
+| # | Race | floors gained (mean) | floors gained (p50) | encounters survived | kills |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Wilmsry | 0.30 | 0.0 | 2.22 | 1.05 |
+| 2 | Human | 0.13 | 0.0 | 1.07 | 1.10 |
+| 3 | Troll | 0.13 | 0.0 | 1.35 | 1.04 |
+| 4 | Dwarven | 0.12 | 0.0 | 1.18 | 1.15 |
+| 5 | Elven | 0.09 | 0.0 | 0.93 | 0.96 |
+| 6 | Fridgian | 0.07 | 0.0 | 1.18 | 0.53 |
+
+### Accepted-but-strong rows
+- Ninja (sub): AFTER 4.33 — Too strong at AFTER 4.33 (BEFORE 4.22): the opener is the whole fantasy -- ordinary deaths (Werebeasts, traps, starvation) still end most runs, and canParley-false still forces every fight.
+
+### Revisit rows
+None.
+
+### Caveats
+- This is a tuning proxy, not a gate, and not a substitute for the Phase 27 human DR round.
+- Pairing is by seed, not by path — engine changes shift downstream dice.
+- The natural matrix's ≥20 rate and its overall median are not carried per cell by the harness JSON, so Phase 27's own readout supplies them.
+- Bands are relative to the AFTER mu and the AFTER mu only.
