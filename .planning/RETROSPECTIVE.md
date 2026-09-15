@@ -65,6 +65,23 @@
 
 ---
 
+## v1.2 Class Pass & Mass Playtest (2026-09-14 → 2026-09-15)
+
+**What worked**
+- Baseline-first again: the BEFORE matrix (Phase 22) made every later class change measurable, and the AFTER matrix answered the milestone question with numbers instead of impressions.
+- A hard gate that stops the phase (cannot-act = 0) found a real player-facing bug (a foe killed by ward reflection on its opening turn left combat open with nothing alive) that no test and no play session had caught.
+- Inserting a device-feedback phase (25.1) between 25 and 26 kept the on-device notes from piling up and let the AFTER matrix see the party changes.
+- Declared, machine-checked parity divergences scaled: four deliberate canon deviations across the milestone, each one scenario, each provable — the fidelity contract still means something.
+- Putting the planner's calibration in front of the user BEFORE execution (three rounds on the retune band) avoided an hour of bot runs chasing a target the proxy could not reach.
+
+**What did not**
+- The retune band was set before anyone knew the shallow game's ceiling; two user rounds were spent walking the target back. Next time: calibrate the levers' ceiling first, then ask for the band.
+- The bot proxy plays the early floors badly (walks off walls, starves in the dark), so its median under-reads a human's; the human DR round is the only real verdict and it was deferred twice (v1.1 and v1.2) — build the round into the milestone's middle, not its tail, when the phone is available.
+- Executors pause when their own background bot run outlives a turn (three times this milestone); the orchestrator has to poll and nudge.
+- GSD state tools do not resolve decimal phase numbers (25.1); STATE.md was patched by hand twice.
+
+**Numbers:** 7 phases, 31 plans, 85 tasks, 161 commits; tests 951 → 1448; parity 33/33; matrix runs 7,150 BEFORE + 7,150 AFTER + 7,150 retune AFTER.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -73,6 +90,7 @@
 |-----------|----------|--------|------------|
 | v1.0 | ~8 | 17 | GSD phases for systems + on-device DR rounds for UX; autonomous runs per inserted milestone; human UAT deferred to milestone end |
 | v1.1 | 1 (autonomous) | 5 | Baseline-first phases; smart discuss + research-resolved follow-ups; verification agents switched off for cost; retune deferred after human tune-again |
+| v1.2 | 1 (autonomous, compacted once) | 7 (one inserted) | Hard gates that stop the phase; planner calibration before user decisions; device-feedback phases inserted mid-milestone; DR verdict deferred by the user |
 
 ### Cumulative Quality
 
@@ -80,6 +98,7 @@
 |-----------|-------|----------|-------------------|
 | v1.0 | 683 | parity byte-identical (solo); every event type narrated (guarded); all copy safety-scanned | 0 runtime deps beyond Capacitor plugins |
 | v1.1 | 951 | parity 30/30 with one documented divergence (seed-303 parley); determinism suites for caster encounters; draw-count pins | 0 |
+| v1.2 | 1448 | parity 33/33 with four declared divergences (chargen 15/24, combat 14, economy 3, parley 303); class identity contract (70); toast-table partition guard; ledger guards for class pass and retune | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 

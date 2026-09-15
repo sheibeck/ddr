@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 27
-status: completed
+status: Awaiting next milestone
 stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-09-15T22:48:55.807Z"
+last_updated: "2026-09-15T22:49:56.293Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase 27 complete
+last_activity_desc: Milestone v1.2 completed and archived
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 31
   completed_plans: 31
   percent: 100
+current_phase: 27
 current_phase_name: Delve-to-Death Retune
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 27
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-15 — Phase 27 complete
+Phase: Milestone v1.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-15 — Milestone v1.2 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -92,9 +92,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start Phase 22 (Class-Aware Harness & BEFORE Matrix): `/gsd-plan-phase 22` (or `/gsd-discuss-phase 22` first if more context is wanted — it's dev-tooling, discuss is optional here).
-- Phase 24 and Phase 27 are flagged `--research-phase` at planning time.
-- Phase 27 is also a `/gsd-discuss-phase` candidate before planning: TUNE-05 needs a target band agreed with the user, and TUNE-07 is a human DR round (`human_verify_mode: end-of-phase`).
+- Start the next milestone with `/gsd-new-milestone` (user: another milestone of fixes and tuning-adjacent questions).
+- When the Pixel 7 is back: install the retune debug build (`android/app/build/outputs/apk/debug/app-debug.apk`, from 91c5b13) and play the four-run DR checklist in `docs/DIFFICULTY-RETUNE.md`; then ASK about a versionCode-4 Play internal upload (`node tools/bump-version.mjs` + `npm run android:release`).
 
 ## Performance Metrics
 

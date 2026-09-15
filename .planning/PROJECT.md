@@ -64,15 +64,19 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
+## Current State (v1.2 shipped 2026-09-15)
 
 **v1.2 progress:** ALL phases complete (22–27 incl. inserted 25.1) as of 2026-09-15. Milestone closed on a user-recorded TUNE-07 deferral: the retuned constants ship as landed; the human DR round (forced 20/35/50 + natural), the two bot misses (forced-20 floors gained, reach ≥ 20 — canon tier-3/5 combat, would need roster decisions), the untaken early-floor rungs, and the Play internal upload (versionCode 4) carry into the next milestone.
 
-**Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
+**Shipped:** v1.0 (Android build, internal testing), v1.1 (Monster Balancing & Abilities) and v1.2 (Class Pass & Mass Playtest — every sub-class and race with a code-verified good and bad, casters that can act, a toast/Oracle feedback layer for every feature, a device-feedback batch, a 143-cell class matrix ledger with fun-band verdicts, and a depth-20-targeted retune that made the game canon through depth 20 with an eased early game). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
-**Known deferrals carried forward:** the consolidated difficulty retune's human sign-off (TUNE-04) came back **tune-again** — depth 20 is instant death — and is deferred until after the upcoming cleanup + class-fixes milestones move player power (`docs/DIFFICULTY-RETUNE.md`). First-run tutorial (UX-06) and the Google Play production launch (STR-01..04, STR-06) remain deferred by the user.
+**Known deferrals carried forward:** the human DR verdict on the retune (TUNE-04 in v1.1 → TUNE-07 in v1.2) has been deferred twice by the user — the v1.2 constants ship as landed, and the four-run DR checklist waits in `docs/DIFFICULTY-RETUNE.md` for the next tuning pass (after the user's next milestone of fixes). Two bot band rows stay short (forced-20 floors gained; reach ≥ 20) and would need canon tier-3/5 roster decisions. The Play internal track is on versionCode 3 (pre-25.1); a versionCode-4 upload is pending the user's return. v1.0 tail (tutorial, production launch) still deferred.
 
-## Current Milestone: v1.2 Class Pass & Mass Playtest
+## Next Milestone (not yet defined — user: "another milestone of fixes, questions that might affect tuning")
+
+Candidates: the Feedback, Feel & Polish remainder (`.planning/proposed-milestone-feedback-feel-polish.md`), the carried-forward DR round and roster decisions, the Play versionCode-4 upload, and the v1.0 tail. Start with `/gsd-new-milestone`.
+
+## Last Milestone: v1.2 Class Pass & Mass Playtest (shipped 2026-09-15)
 
 **Goal:** Every class, sub-class, and race is fun to be dealt — one solid good, one solid bad, no "cannot act" states — then a class-aware mass playtest ranks who over/under-performs, and the deferred difficulty retune (TUNE-04) lands on the corrected player power.
 
@@ -176,4 +180,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 — v1.2 Phase 27 complete (retune, deferred DR); milestone closing*
+*Last updated: 2026-09-15 — v1.2 shipped (closeout on a user-recorded TUNE-07 deferral)*

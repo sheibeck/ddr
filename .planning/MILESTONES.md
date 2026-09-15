@@ -1,5 +1,31 @@
 # Milestones
 
+## v1.2 Class Pass & Mass Playtest (Shipped: 2026-09-15)
+
+**Phases completed:** 7 phases (22–27 + inserted 25.1), 31 plans, 85 tasks · 161 commits, 2026-09-14 → 2026-09-15 · tests 951 → 1448 · parity 33/33 byte-identical with declared, machine-checked divergences (chargen seeds 15/24 grimoire top-up; combat/lose seed 14 Fridgian; economy seed 3 Pickpocket markup; combat/parley seed 303 Dante → Ned) · closed on a user-recorded TUNE-07 deferral (DR round carried forward)
+
+**Key accomplishments:**
+
+1. **Class-aware playtest harness** — dev-only `force` chargen seam, sub-class-aware bot (`chooseSpell` scoring table, talk-first openers, stuck bucket), `tools/tune-classes.mjs` 143-cell class × race matrix on worker threads, `tools/class-pass-diff.mjs` fun-band diff with a cannot-act hard gate; BEFORE and AFTER matrices captured at identical parameters (5,720 + 1,430 runs each) and ledgered in `docs/CLASS-PASS.md`.
+2. **Casters can act** — a Wizard refuses melee only while an attack spell is castable and names it; every non-Summoner Magic User rolls a day-one attack spell (zero new draws); Summon level 2, Phantom Host level 1; Freeze kills now pay out through `killFoe`. Magic User mean kills doubled (2.41 → 4.99); all eight caster sub-classes landed in the fun band.
+3. **Every sub-class and race has one good and one bad** — 11 sub-class mechanics + a 3-race pass (Knight/Court Mage never-first, Court Mage boredom 1-in-6, Ninja/MoA never parley, Guard −1, Cloaker unseen-only, Fridgian hide/frenzy, Dwarven half armour wear, Pickpocket markup, Woodsman armour gate, Pilfer heal-only, Bard camp wake, Cutthroat/Wilmsry Joiner refusals), all zero-draw, all narrated, all blurbs truthful, proven by a 70-test identity contract. Human stays neutral.
+4. **Nothing happens silently** — a pure `toasts.js` table exactly partitioning all 209 engine event types (189 toasts ⊎ 21 Oracle-only), red-for-them/green-for-you tone families plus amber refusals, "K of M" multi-attack aggregation, level-1 miss quips, additive event payload for every passive modifier, one `dispatchWithToasts` seam; then the device batch: the "Move on" card only for decisions/big updates, narrative toasts that linger and tap away, the Oracle filling the screen and opening at the newest line, Joiner swap with snark, party members fighting by class, Make Camp refusing with the numbers.
+5. **Mass playtest verdicts** — μ 3.08, bands 2.31–4.15: 29 of 30 sub-class/race rows in band, Ninja too strong and accepted (the opener is the identity), Wilmsry in band after the Joiner refusal, revisit list empty; the hard gate caught a pre-existing stranded-combat bug (foe killed by ward reflect on its opening turn) and it was fixed as a gap closure.
+6. **Delve-to-death retune toward the depth-20 unicorn** — band agreed over three user rounds and recorded first; the game is now canon through depth 20 (`COMBAT_SCALE_FROM_DEPTH` 21) with a gentle ramp past it, foe grace ×0.5 at floors 2–4, encounter density cap 13, darkness held through floor 3, trap/fall ×0.5 from floor 2, and Dante demoted to tier 2 (Ned holds floor 1). AFTER: bot median 4 (from 3), reach-5 30.6 % (from 17 %), forced-20 3.17 fights survived (from 1.3) — in band; forced-20 floors gained (0.84, p50 0) and reach-20 (0.1 %) recorded as misses that only canon tier-3/5 rosters could close.
+
+### Known Gaps (carried forward)
+
+| Req | Gap | Where it lands |
+|-----|-----|----------------|
+| TUNE-07 | Human DR round (forced 20/35/50 + natural) not played — user away from the Pixel 7; verdict **deferred** with reason recorded in `docs/DIFFICULTY-RETUNE.md` | Next tuning pass, after the user's next milestone of fixes |
+| TUNE-06 (two band rows) | Forced-20 floors gained p50 0 / mean 0.84 (target ≥ 1 / 1–2); reach ≥ 20 0.1 % (target 1–2 %) — residual lethality is canon tier-3/5 combat (Herman, Drarl, Vampire, Djinni); untaken rungs (rations +2, hazard from floor 1, darkness from 4, floor-1 grace, grace ×0.35) recorded with calibration numbers | Needs a roster decision; next tuning pass |
+| Play internal upload | Last uploaded build is versionCode 3 (pre-25.1); 25.1 + the retune are not yet on the internal track | Offer a versionCode-4 signed AAB when the user is back with the phone |
+| v1.3 candidates | Feedback, Feel & Polish remainder (inventory integrity incl. buy-then-reject gold loss, UI layout, combat-start gating, store stock), narrative-toast case/wrap on device, `mazeworld.html` `/*`-in-`//` comment cleanup, GSD state tools not resolving decimal phase numbers | `.planning/proposed-milestone-feedback-feel-polish.md` / next milestone |
+
+**Archived:** `milestones/v1.2-ROADMAP.md`, `milestones/v1.2-REQUIREMENTS.md`, `milestones/v1.2-phases/`
+
+---
+
 ## v1.1 Monster Balancing & Abilities (Shipped: 2026-09-14)
 
 **Phases completed:** 5 phases (17–21), 21 plans, 50 tasks · 82 commits, 2026-09-13 → 2026-09-14 · tests 683 → 951 · parity 30/30 byte-identical with ONE documented deliberate divergence (seed-303 parley scenario, scenario-scoped carve-out)
