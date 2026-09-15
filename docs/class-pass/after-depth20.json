@@ -1,0 +1,5922 @@
+{
+  "meta": {
+    "tool": "tune-classes",
+    "commit": "d1e3235",
+    "seeds": 10,
+    "seedList": "i*7919+1",
+    "workers": 4,
+    "maxActions": 5000,
+    "startDepth": 20,
+    "exploreBudget": 50,
+    "bot": "Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=10  workers=4  startDepth=20",
+    "cells": 143,
+    "excluded": [
+      {
+        "cls": "Fighter",
+        "sub": "Samurai",
+        "race": "Fridgian",
+        "reason": "canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)"
+      }
+    ],
+    "filter": {
+      "cls": null,
+      "sub": null,
+      "race": null
+    }
+  },
+  "cells": [
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 21,
+      "p50Depth": 21,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 3.2,
+      "meanLevel": 5,
+      "meanActions": 138.2,
+      "meanFloorsGained": 1,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 1
+        }
+      ],
+      "rank": 1
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.9,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1,
+      "meanLevel": 5,
+      "meanActions": 137.1,
+      "meanFloorsGained": 0.9,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 2
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.8,
+      "p50Depth": 21,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.2,
+      "meanLevel": 5,
+      "meanActions": 142.5,
+      "meanFloorsGained": 0.8,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 4.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 3
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.8,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.8,
+      "meanLevel": 5,
+      "meanActions": 113.3,
+      "meanFloorsGained": 0.8,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 4
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.8,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.6,
+      "meanLevel": 5,
+      "meanActions": 192,
+      "meanFloorsGained": 0.8,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 5.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 5
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.6,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 129.7,
+      "meanFloorsGained": 0.6,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 4.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 6
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.5,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 3.5,
+      "meanLevel": 5,
+      "meanActions": 76.5,
+      "meanFloorsGained": 0.5,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 7
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.5,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 88.9,
+      "meanFloorsGained": 0.5,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Bones",
+          "count": 1
+        }
+      ],
+      "rank": 8
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.4,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 98.6,
+      "meanFloorsGained": 0.4,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 9
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.4,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.1,
+      "meanLevel": 5,
+      "meanActions": 87.6,
+      "meanFloorsGained": 0.4,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 10
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.4,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.6,
+      "meanLevel": 5,
+      "meanActions": 76,
+      "meanFloorsGained": 0.4,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 11
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.4,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.6,
+      "meanLevel": 5,
+      "meanActions": 76,
+      "meanFloorsGained": 0.4,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 12
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 39.5,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 13
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.4,
+      "meanLevel": 5,
+      "meanActions": 100.3,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 14
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.2,
+      "meanLevel": 5,
+      "meanActions": 42,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 15
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.9,
+      "meanLevel": 5,
+      "meanActions": 77.2,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 16
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.4,
+      "meanLevel": 5,
+      "meanActions": 104.8,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 17
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.4,
+      "meanLevel": 5,
+      "meanActions": 104.1,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 18
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 67.5,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 19
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.7,
+      "meanLevel": 5,
+      "meanActions": 57.6,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 20
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 47.9,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        }
+      ],
+      "rank": 21
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 67.3,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        }
+      ],
+      "rank": 22
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 63.1,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 23
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 63.1,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 24
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.7,
+      "meanLevel": 5,
+      "meanActions": 97.6,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 3.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        }
+      ],
+      "rank": 25
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.5,
+      "meanLevel": 5,
+      "meanActions": 70.4,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 26
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 23,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.2,
+      "meanLevel": 5,
+      "meanActions": 47.3,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 27
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.5,
+      "meanLevel": 5,
+      "meanActions": 70.4,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Vampire",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 28
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.3,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 66.4,
+      "meanFloorsGained": 0.3,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 29
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 32.9,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 30
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 34.2,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 1
+        }
+      ],
+      "rank": 31
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 26.5,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 32
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.3,
+      "meanLevel": 5,
+      "meanActions": 79.4,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 33
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 41.1,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 34
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0,
+      "meanLevel": 5,
+      "meanActions": 31,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 35
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 43.4,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 36
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1,
+      "meanLevel": 5,
+      "meanActions": 66.5,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drudge",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 37
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.7,
+      "meanLevel": 5,
+      "meanActions": 49.6,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 38
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 82.9,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 39
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 47.7,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 40
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.2,
+      "meanLevel": 5,
+      "meanActions": 33.4,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 41
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.2,
+      "meanLevel": 5,
+      "meanActions": 47.4,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 42
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2.1,
+      "meanLevel": 5,
+      "meanActions": 51.5,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 43
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 47.7,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 44
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 65.3,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 45
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.2,
+      "p50Depth": 20,
+      "p90Depth": 22,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 60.8,
+      "meanFloorsGained": 0.2,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 46
+    },
+    {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 41.3,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 47
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 43.9,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 48
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 40.2,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 49
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.9,
+      "meanLevel": 5,
+      "meanActions": 42.3,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 50
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 50,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "came up short on a leap",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 51
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.2,
+      "meanLevel": 5,
+      "meanActions": 42.1,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 52
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.4,
+      "meanLevel": 5,
+      "meanActions": 60.8,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 53
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cat Burglar",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 29.7,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 54
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.9,
+      "meanLevel": 5,
+      "meanActions": 47.3,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 55
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 60.1,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 56
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 43.4,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drake",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 57
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 47.1,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Bones",
+          "count": 1
+        }
+      ],
+      "rank": 58
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 49.6,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 59
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 52.5,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 60
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 41.1,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stink Bug",
+          "count": 2
+        }
+      ],
+      "rank": 61
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 52.4,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 62
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 52.4,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 63
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 56.2,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Bones",
+          "count": 1
+        }
+      ],
+      "rank": 64
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 37.2,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 65
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 38,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 66
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 40.5,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 67
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.3,
+      "meanLevel": 5,
+      "meanActions": 38.6,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 68
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 39.9,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 69
+    },
+    {
+      "cls": "Thief",
+      "sub": "Ninja",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 35,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 70
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 46.5,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 71
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 36.2,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 72
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 34.9,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 73
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.8,
+      "meanLevel": 5,
+      "meanActions": 58.1,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Spectre",
+          "count": 2
+        }
+      ],
+      "rank": 74
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 37.9,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 75
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 37.2,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 76
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 38,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 77
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 50.1,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 2
+        }
+      ],
+      "rank": 78
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.3,
+      "meanLevel": 5,
+      "meanActions": 90,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 79
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 52,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 80
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 56.6,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 81
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Wizard",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 52.8,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 82
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.4,
+      "meanLevel": 5,
+      "meanActions": 47,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 83
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20.1,
+      "p50Depth": 20,
+      "p90Depth": 21,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.2,
+      "meanLevel": 5,
+      "meanActions": 59.6,
+      "meanFloorsGained": 0.1,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 84
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 47.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 85
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 40.1,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 86
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 47.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 87
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Apprentice",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 31.1,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 88
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.8,
+      "meanLevel": 5,
+      "meanActions": 39.5,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 89
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Barbarian",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.2,
+      "meanLevel": 5,
+      "meanActions": 33.9,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 90
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 39.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 7
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 1
+        }
+      ],
+      "rank": 91
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 41.1,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 92
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Bard",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.3,
+      "meanLevel": 5,
+      "meanActions": 41.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 93
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 53.9,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 94
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 37.8,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Vampire",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 95
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0,
+      "meanLevel": 5,
+      "meanActions": 38.2,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 96
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.3,
+      "meanLevel": 5,
+      "meanActions": 54.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 97
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 53.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 98
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Cleric",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.2,
+      "meanLevel": 5,
+      "meanActions": 70.5,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 99
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 28.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 1
+        }
+      ],
+      "rank": 100
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cloaker",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.6,
+      "meanLevel": 5,
+      "meanActions": 40.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 101
+    },
+    {
+      "cls": "Thief",
+      "sub": "Con Artist",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 44.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 102
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 40.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 103
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.4,
+      "meanLevel": 5,
+      "meanActions": 31.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 104
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 33.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 105
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Court Mage",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 57,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 106
+    },
+    {
+      "cls": "Thief",
+      "sub": "Cutthroat",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.6,
+      "meanLevel": 5,
+      "meanActions": 46.1,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 107
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 2,
+      "meanLevel": 5,
+      "meanActions": 43,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 108
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Guard",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 34.9,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Bones",
+          "count": 1
+        }
+      ],
+      "rank": 109
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 42.4,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 110
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 32,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 111
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Illusionist",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1,
+      "meanLevel": 5,
+      "meanActions": 47,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 1
+        }
+      ],
+      "rank": 112
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 34.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 113
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 36.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 114
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Knight",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0,
+      "meanLevel": 5,
+      "meanActions": 36.5,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 115
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 36.9,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 116
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.2,
+      "meanLevel": 5,
+      "meanActions": 37.4,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 117
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Master of Arms",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.4,
+      "meanLevel": 5,
+      "meanActions": 35.4,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 118
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 45.9,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 119
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pickpocket",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.3,
+      "meanLevel": 5,
+      "meanActions": 42,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 120
+    },
+    {
+      "cls": "Thief",
+      "sub": "Pilfer",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.4,
+      "meanLevel": 5,
+      "meanActions": 49.1,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 121
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 27.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        }
+      ],
+      "rank": 122
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 38.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 123
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 37.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        }
+      ],
+      "rank": 124
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.9,
+      "meanLevel": 5,
+      "meanActions": 35.4,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 5
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 125
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 34.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        }
+      ],
+      "rank": 126
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 36.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 1
+        }
+      ],
+      "rank": 127
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Soldier",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0,
+      "meanLevel": 5,
+      "meanActions": 36.5,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.7,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Craig",
+          "count": 1
+        }
+      ],
+      "rank": 128
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 28.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 129
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Sorcerer",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1,
+      "meanLevel": 5,
+      "meanActions": 36.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 1
+        }
+      ],
+      "rank": 130
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 36.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 131
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 22.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        }
+      ],
+      "rank": 132
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.4,
+      "meanLevel": 5,
+      "meanActions": 24.8,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.6,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "eaten by their own summoning",
+          "count": 2
+        }
+      ],
+      "rank": 133
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 36.7,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.9,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 134
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Troll",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.5,
+      "meanLevel": 5,
+      "meanActions": 44.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Vampire",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 135
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Summoner",
+      "race": "Wilmsry",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 1.1,
+      "meanLevel": 5,
+      "meanActions": 58.8,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 2.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Herman",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Stalka Beast",
+          "count": 2
+        }
+      ],
+      "rank": 136
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 44.8,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 137
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.5,
+      "meanLevel": 5,
+      "meanActions": 45.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.4,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 1
+        }
+      ],
+      "rank": 138
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Fridgian",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.1,
+      "meanLevel": 5,
+      "meanActions": 53.4,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.3,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 139
+    },
+    {
+      "cls": "Magic User",
+      "sub": "Warlock",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.8,
+      "meanLevel": 5,
+      "meanActions": 44.8,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.5,
+      "topCauses": [
+        {
+          "cause": "cut down by a Herman",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drake",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        }
+      ],
+      "rank": 140
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Dwarven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.6,
+      "meanLevel": 5,
+      "meanActions": 41.4,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.1,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 141
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Elven",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.2,
+      "meanLevel": 5,
+      "meanActions": 32.3,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 0.8,
+      "topCauses": [
+        {
+          "cause": "cut down by a Djinni",
+          "count": 3
+        },
+        {
+          "cause": "cut down by a Drarl",
+          "count": 2
+        },
+        {
+          "cause": "cut down by a Drudge",
+          "count": 2
+        }
+      ],
+      "rank": 142
+    },
+    {
+      "cls": "Fighter",
+      "sub": "Woodsman",
+      "race": "Human",
+      "n": 10,
+      "completed": 10,
+      "stuck": 0,
+      "meanDepth": 20,
+      "p50Depth": 20,
+      "p90Depth": 20,
+      "reach5": 100,
+      "reach10": 100,
+      "meanKills": 0.7,
+      "meanLevel": 5,
+      "meanActions": 44.6,
+      "meanFloorsGained": 0,
+      "p50FloorsGained": 0,
+      "meanEncountersSurvived": 1.2,
+      "topCauses": [
+        {
+          "cause": "cut down by a Drarl",
+          "count": 4
+        },
+        {
+          "cause": "cut down by a Djinni",
+          "count": 1
+        },
+        {
+          "cause": "cut down by a Dread Lock",
+          "count": 1
+        }
+      ],
+      "rank": 143
+    }
+  ],
+  "rollups": {
+    "byClass": [
+      {
+        "key": "Thief",
+        "n": 480,
+        "completed": 480,
+        "stuck": 0,
+        "meanDepth": 20.25,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.36,
+        "meanLevel": 5,
+        "meanActions": 61.3,
+        "meanFloorsGained": 0.25,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.72,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 135
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 91
+          },
+          {
+            "cause": "cut down by a Dread Lock",
+            "count": 51
+          }
+        ]
+      },
+      {
+        "key": "Fighter",
+        "n": 470,
+        "completed": 470,
+        "stuck": 0,
+        "meanDepth": 20.1,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.77,
+        "meanLevel": 5,
+        "meanActions": 47.38,
+        "meanFloorsGained": 0.1,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.17,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 162
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 83
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 57
+          }
+        ]
+      },
+      {
+        "key": "Magic User",
+        "n": 480,
+        "completed": 480,
+        "stuck": 0,
+        "meanDepth": 20.07,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.79,
+        "meanLevel": 5,
+        "meanActions": 49.63,
+        "meanFloorsGained": 0.07,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.07,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 115
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 69
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 53
+          }
+        ]
+      }
+    ],
+    "bySub": [
+      {
+        "key": "Con Artist",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.4,
+        "p50Depth": 20,
+        "p90Depth": 22,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.28,
+        "meanLevel": 5,
+        "meanActions": 109.08,
+        "meanFloorsGained": 0.4,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 3.52,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 11
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Drudge",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Cat Burglar",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.33,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.18,
+        "meanLevel": 5,
+        "meanActions": 54.23,
+        "meanFloorsGained": 0.33,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.57,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 23
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 11
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 9
+          }
+        ]
+      },
+      {
+        "key": "Acrobat",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.3,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.98,
+        "meanLevel": 5,
+        "meanActions": 47.95,
+        "meanFloorsGained": 0.3,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.25,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 26
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 9
+          }
+        ]
+      },
+      {
+        "key": "Ninja",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.27,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.62,
+        "meanLevel": 5,
+        "meanActions": 49.63,
+        "meanFloorsGained": 0.27,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.28,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 21
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 13
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "key": "Guard",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.23,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.07,
+        "meanLevel": 5,
+        "meanActions": 62.68,
+        "meanFloorsGained": 0.23,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.43,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 13
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 11
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Cutthroat",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.22,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.52,
+        "meanLevel": 5,
+        "meanActions": 63.37,
+        "meanFloorsGained": 0.22,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.62,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 13
+          },
+          {
+            "cause": "cut down by a Dread Lock",
+            "count": 13
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 11
+          }
+        ]
+      },
+      {
+        "key": "Wizard",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.22,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.57,
+        "meanLevel": 5,
+        "meanActions": 62.92,
+        "meanFloorsGained": 0.22,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.95,
+        "topCauses": [
+          {
+            "cause": "cut down by a Djinni",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Dread Lock",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 10
+          }
+        ]
+      },
+      {
+        "key": "Pilfer",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.18,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.53,
+        "meanLevel": 5,
+        "meanActions": 60.98,
+        "meanFloorsGained": 0.18,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.77,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 15
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 8
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Sorcerer",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.18,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.53,
+        "meanLevel": 5,
+        "meanActions": 53.13,
+        "meanFloorsGained": 0.18,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.33,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 13
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Vampire",
+            "count": 9
+          }
+        ]
+      },
+      {
+        "key": "Cloaker",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.15,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.57,
+        "meanLevel": 5,
+        "meanActions": 56.9,
+        "meanFloorsGained": 0.15,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.58,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 14
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Woodsman",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.13,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.57,
+        "meanLevel": 5,
+        "meanActions": 59.1,
+        "meanFloorsGained": 0.13,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.73,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 15
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 11
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 11
+          }
+        ]
+      },
+      {
+        "key": "Pickpocket",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.12,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.22,
+        "meanLevel": 5,
+        "meanActions": 48.23,
+        "meanFloorsGained": 0.12,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.18,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 18
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 14
+          },
+          {
+            "cause": "cut down by a Stalka Beast",
+            "count": 9
+          }
+        ]
+      },
+      {
+        "key": "Barbarian",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.1,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.22,
+        "meanLevel": 5,
+        "meanActions": 51.03,
+        "meanFloorsGained": 0.1,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.38,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 19
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Bard",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.1,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.35,
+        "meanLevel": 5,
+        "meanActions": 53.98,
+        "meanFloorsGained": 0.1,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.38,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 28
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "key": "Knight",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.07,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.68,
+        "meanLevel": 5,
+        "meanActions": 38.33,
+        "meanFloorsGained": 0.07,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.93,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 21
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 15
+          },
+          {
+            "cause": "cut down by a Dread Lock",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "key": "Soldier",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.07,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.68,
+        "meanLevel": 5,
+        "meanActions": 38.33,
+        "meanFloorsGained": 0.07,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.93,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 21
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 15
+          },
+          {
+            "cause": "cut down by a Dread Lock",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "key": "Apprentice",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.05,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.93,
+        "meanLevel": 5,
+        "meanActions": 48.28,
+        "meanFloorsGained": 0.05,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.23,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 14
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 13
+          },
+          {
+            "cause": "cut down by a Dread Lock",
+            "count": 9
+          }
+        ]
+      },
+      {
+        "key": "Illusionist",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.05,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.93,
+        "meanLevel": 5,
+        "meanActions": 47.07,
+        "meanFloorsGained": 0.05,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.23,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 23
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Drudge",
+            "count": 7
+          }
+        ]
+      },
+      {
+        "key": "Master of Arms",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.05,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.93,
+        "meanLevel": 5,
+        "meanActions": 38.12,
+        "meanFloorsGained": 0.05,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.82,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 24
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "key": "Court Mage",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.03,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.72,
+        "meanLevel": 5,
+        "meanActions": 42.12,
+        "meanFloorsGained": 0.03,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.17,
+        "topCauses": [
+          {
+            "cause": "cut down by a Djinni",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Stalka Beast",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Warlock",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20.03,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.57,
+        "meanLevel": 5,
+        "meanActions": 54.73,
+        "meanFloorsGained": 0.03,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.9,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 19
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 9
+          },
+          {
+            "cause": "cut down by a Drake",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Samurai",
+        "n": 50,
+        "completed": 50,
+        "stuck": 0,
+        "meanDepth": 20.02,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.64,
+        "meanLevel": 5,
+        "meanActions": 35.44,
+        "meanFloorsGained": 0.02,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.68,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 21
+          },
+          {
+            "cause": "cut down by a Drudge",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 8
+          }
+        ]
+      },
+      {
+        "key": "Cleric",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.27,
+        "meanLevel": 5,
+        "meanActions": 51.47,
+        "meanFloorsGained": 0,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.68,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 14
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 10
+          },
+          {
+            "cause": "cut down by a Vampire",
+            "count": 9
+          }
+        ]
+      },
+      {
+        "key": "Summoner",
+        "n": 60,
+        "completed": 60,
+        "stuck": 0,
+        "meanDepth": 20,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.83,
+        "meanLevel": 5,
+        "meanActions": 37.32,
+        "meanFloorsGained": 0,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.03,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 17
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 14
+          },
+          {
+            "cause": "cut down by a Stalka Beast",
+            "count": 8
+          }
+        ]
+      }
+    ],
+    "byRace": [
+      {
+        "key": "Wilmsry",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 20.3,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.05,
+        "meanLevel": 5,
+        "meanActions": 80.45,
+        "meanFloorsGained": 0.3,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 2.22,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 53
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 47
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 32
+          }
+        ]
+      },
+      {
+        "key": "Human",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 20.13,
+        "p50Depth": 20,
+        "p90Depth": 21,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.1,
+        "meanLevel": 5,
+        "meanActions": 50.43,
+        "meanFloorsGained": 0.13,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.07,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 73
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 33
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 26
+          }
+        ]
+      },
+      {
+        "key": "Troll",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 20.13,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.04,
+        "meanLevel": 5,
+        "meanActions": 54.56,
+        "meanFloorsGained": 0.13,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.35,
+        "topCauses": [
+          {
+            "cause": "cut down by a Herman",
+            "count": 57
+          },
+          {
+            "cause": "cut down by a Drarl",
+            "count": 36
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 28
+          }
+        ]
+      },
+      {
+        "key": "Dwarven",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 20.12,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 1.15,
+        "meanLevel": 5,
+        "meanActions": 50.98,
+        "meanFloorsGained": 0.12,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.18,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 71
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 32
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 30
+          }
+        ]
+      },
+      {
+        "key": "Elven",
+        "n": 240,
+        "completed": 240,
+        "stuck": 0,
+        "meanDepth": 20.09,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.96,
+        "meanLevel": 5,
+        "meanActions": 40.07,
+        "meanFloorsGained": 0.09,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 0.93,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 63
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 45
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 39
+          }
+        ]
+      },
+      {
+        "key": "Fridgian",
+        "n": 230,
+        "completed": 230,
+        "stuck": 0,
+        "meanDepth": 20.07,
+        "p50Depth": 20,
+        "p90Depth": 20,
+        "reach5": 100,
+        "reach10": 100,
+        "meanKills": 0.53,
+        "meanLevel": 5,
+        "meanActions": 39.81,
+        "meanFloorsGained": 0.07,
+        "p50FloorsGained": 0,
+        "meanEncountersSurvived": 1.18,
+        "topCauses": [
+          {
+            "cause": "cut down by a Drarl",
+            "count": 70
+          },
+          {
+            "cause": "cut down by a Herman",
+            "count": 49
+          },
+          {
+            "cause": "cut down by a Djinni",
+            "count": 30
+          }
+        ]
+      }
+    ]
+  }
+}
