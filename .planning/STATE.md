@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 24
 current_phase_name: "Every Sub-class and Race: One Good, One Bad"
 status: executing
-stopped_at: Completed 24-05-PLAN.md
-last_updated: "2026-09-15T02:07:42.713Z"
+stopped_at: Completed 24-06-PLAN.md
+last_updated: "2026-09-15T02:39:50.633Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 24 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 24 (Every Sub-class and Race: One Good, One Bad) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-14 — Phase 24 execution started
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T02:07:42.678Z
-Stopped at: Completed 24-05-PLAN.md
+Last session: 2026-09-15T02:39:50.588Z
+Stopped at: Completed 24-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -130,6 +130,7 @@ Resume file: None
 | Phase 24 P03 | 50min | 3 tasks | 9 files |
 | Phase 24 P04 | 35min | 2 tasks | 4 files |
 | Phase 24 P05 | 45min | 3 tasks | 7 files |
+| Phase 24 P06 | 70min | 3 tasks | 1 files |
 
 ## Decisions
 
@@ -212,6 +213,8 @@ Resume file: None
 - [Phase ?]: 24-05: pinned Wilmsry-vs-Magic-User joiner seeds (1 refused, 5 accepted) via a live 1..500 scan, following the project's measured-not-hand-computed pin convention
 - [Phase ?]: 24-05: armorRefusalReason checks noArmor -> woodsman -> tooHeavy -> null in that order so a Woodsman's Mail/Plate refusal fires even though the generic class/Heft rule would otherwise call it legal
 - [Phase ?]: 24-05: openStore's armour filter gates on canEquipArmor directly so a Woodsman is never offered an illegal armour line (vs. buy-then-reject)
+- [Phase ?]: Race rows in the identity-contract table are ordered Human-first (matching Object.keys(RACES)'s real declaration order), not narrative Human-last
+- [Phase ?]: identity-contract's hero() neutralizes only cosmetic/transient chargen fields (skills, phobia, buffs, pendingJoiner); sub/race/class-driven rollCharacter output stays real
 
 ### Blockers
 
