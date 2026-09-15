@@ -10,16 +10,19 @@ export const RACES = {
     note: "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit.",
   },
   "Dwarven": {
-    size: "Small", upkeep: 1, dmg: 2, foeStrikeStep: 1,
-    note: "+2 damage and 1 wp/day upkeep; foes strike at a better die.",
+    // armorWear: fraction of a soaked blow charged to armour durability,
+    // Math.ceil'd, read by applyFoeDamageToPlayer.
+    size: "Small", upkeep: 1, dmg: 2, foeStrikeStep: 1, armorWear: 0.5,
+    note: "+2 damage and 1 wp/day upkeep; foes strike at a better die; armor wears at half the rate.",
   },
   "Wilmsry": {
     size: "Human", upkeep: 4, heal2x: true, spMul: 0.5,
     note: "Heals twice as fast, learns half as quickly. Magic Users despise them.",
   },
   "Fridgian": {
-    size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true,
-    note: "Never wears armor, strikes last, frenzies into a second wild swing.",
+    // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer.
+    size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true, hide: 2,
+    note: "Never wears armor, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
   },
   "Troll": {
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,

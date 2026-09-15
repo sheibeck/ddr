@@ -160,7 +160,6 @@ export const EVENT_NARRATION = {
       : `<span class="miss">You hold back.</span>`,
   shookOffFrozen: () => `<span class="hit">You shake it off.</span>`,
   frenzy: () => `<span class="hurt">Something in your blood takes over. Frenzy.</span>`,
-  frenzyWasted: (e) => `The frenzy swings wide and finds only ${e.target ?? "a corpse"}. <span class="miss">Wasted.</span>`,
   strikeMissed: (e) =>
     e.untouchable
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`

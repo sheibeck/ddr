@@ -359,10 +359,11 @@ export function startCombat(state, wandering, forced, rng, events = []) {
  * playerStrike(state, rng, events) — the player's attack action. Ports
  * mazeworld.html playerStrike() (lines 2331-2408): Wizard's melee refusal
  * while an attack spell is castable right now, the frozen-round skip, the
- * attack count (Barbarian/Ambidextrous/haste/Fridgian frenzy, including the
- * wasted-swing-on-a-corpse roll), per-attack toHit vs strikeDie, all the
- * critical-strike rules (Stealth/Cat Burglar/Cutthroat/Ninja/Death-touch/
- * Guard/Soldier no-crit), weaponDamage, and killFoe on lethal.
+ * attack count (Barbarian/Ambidextrous/haste/Fridgian frenzy — the second
+ * wild swing always targets the live foe; see the Phase 24 note below),
+ * per-attack toHit vs strikeDie, all the critical-strike rules
+ * (Stealth/Cat Burglar/Cutthroat/Ninja/Death-touch/Guard/Soldier no-crit),
+ * weaponDamage, and killFoe on lethal.
  */
 export function playerStrike(state, rng, events = []) {
   const c = state.c;
@@ -402,15 +403,17 @@ export function playerStrike(state, rng, events = []) {
   if (c.sub === "Barbarian") attacks = 2;
   if (skill(c, "Ambidextrous")) attacks = Math.max(attacks, 2);
   if (c.haste > 0) attacks = Math.max(attacks, 2);
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-08): the
+  // prototype's frenzy could roll a d10 <= 5 against a dead foe and waste
+  // BOTH swings on a corpse (mazeworld.html playerStrike, the wasted-swing
+  // branch). The new rule: a Fridgian's frenzy always spends its second wild
+  // swing on the live target `t` (the attack loop below already targets `t`,
+  // never a corpse) — no corpse lookup, no whiff roll. This REMOVES one
+  // rng.d(10) draw whenever a Fridgian frenzies with a dead foe present; the
+  // sole parity consequence is the declared combat/lose (seed 14) divergence.
   if (R.frenzy && rng.d(8) <= 5) {
     attacks = 2;
     events.push({ type: "frenzy" });
-    const corpse = C.foes.find((f) => !f.alive);
-    if (corpse && rng.d(10) <= 5) {
-      events.push({ type: "frenzyWasted", target: corpse.name });
-      afterPlayerAction(state, rng, events);
-      return events;
-    }
   }
 
   for (let a = 0; a < attacks && t.alive; a++) {
@@ -1185,7 +1188,14 @@ export function pickFoeTarget(state, rng, foe = null) {
  */
 export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need, ignoresArmor, ability }) {
   const c = state.c;
+  const R = RACES[c.race];
   if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-09): a
+  // Fridgian's hide soaks 2 flat from every blow that reaches this pipeline
+  // (foe swing, pursuit strike, foe ability bolt), stacking with Hardiness's
+  // -3 above and flooring at 1 exactly like Hardiness — content/races.js
+  // `hide` flag, zero rng draws.
+  if (R.hide) dmg = Math.max(1, dmg - R.hide);
 
   // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Pendant of
   // Fortitude (content/treasure-tables.js, use:"half") sets `c.halfNext`
@@ -1246,7 +1256,13 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
     if (soak <= av.ar) {
       onArmour = true;
       blocked = dmg;
-      if (!av.magic && dmg > av.min) c.armorWP = Math.max(0, c.armorWP - dmg);
+      // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-09):
+      // a Dwarf's armour is built to be hit — it wears at half the rate. A
+      // soaked blow charges only Math.ceil(dmg * armorWear) durability
+      // instead of the full dmg (content/races.js `armorWear` flag); every
+      // other race's expression is value-identical to before (dmg * 1,
+      // unrounded by Math.ceil on an already-integer dmg).
+      if (!av.magic && dmg > av.min) c.armorWP = Math.max(0, c.armorWP - (R.armorWear ? Math.ceil(dmg * R.armorWear) : dmg));
       dmg = 0;
       if (!av.magic && c.armorWP <= 0) events.push({ type: "armorDestroyed" });
     }

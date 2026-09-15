@@ -355,22 +355,42 @@ test("playerStrike: Barbarian, Ambidextrous, and haste each grant two attacks", 
   }
 });
 
-test("playerStrike: Fridgian frenzy grants a second wild swing, which can be wasted on a corpse", () => {
+test("playerStrike: Fridgian frenzy grants a second wild swing that always targets a live foe", () => {
   const state = fixedState({ c: { race: "Fridgian" } });
   state.combat = fixedCombat([
     fixedFoe({ name: "Corpse", wp: 0, alive: false }),
     fixedFoe({ name: "Target", wp: 999, maxWP: 999 }),
   ], { target: 1 });
-  // frenzy roll d8=5 (<=5, triggers); corpse-waste roll d10=5 (<=5, wastes
-  // the whole round); the still-alive Target swings back and misses (foeDie
-  // 20 vs need 5); a Fridgian's `slow` race flag forces rollInitiative to
-  // ALWAYS resolve "foe" regardless of the mine(15)/theirs(10) roll values
-  // (both still drawn), so a second foeTurn miss (20) follows.
-  const rng = fakeRng([5, 5, 20, 15, 10, 20]);
+  // DELIBERATE RULES CHANGE (Phase 24, race pass / IDENT-08): the prototype
+  // could roll a d10 <= 5 against a dead foe here and waste the whole round
+  // ("frenzyWasted") — that branch and its rng.d(10) draw are both gone.
+  // frenzy roll d8=5 (<=5, triggers); both swings target the live Target and
+  // miss (need 5 for the first swing, need 3 for the frenzy swing — 20 beats
+  // both); the still-alive Target swings back and misses (foeDie 20 vs need
+  // 5); a Fridgian's `slow` race flag forces rollInitiative to ALWAYS
+  // resolve "foe" regardless of the mine(15)/theirs(10) roll values (both
+  // still drawn), so a second foeTurn miss (20) follows. Seven draws total —
+  // one fewer than the old (now-removed) whiff-branch sequence would have
+  // needed for the same number of foe turns.
+  const rng = fakeRng([5, 20, 20, 20, 15, 10, 20]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "frenzy"));
-  assert.ok(events.some((e) => e.type === "frenzyWasted" && e.target === "Corpse"));
-  assert.equal(events.some((e) => e.type === "struck"), false, "the round was wasted, nothing landed");
+  const misses = events.filter((e) => e.type === "strikeMissed");
+  assert.equal(misses.length, 2, "both frenzy swings are attempted against the live foe");
+  assert.ok(
+    misses.every((e) => e.target === "Target"),
+    "neither swing ever targets the corpse",
+  );
+  assert.equal(
+    events.some((e) => e.type.toLowerCase().includes("wasted")),
+    false,
+    "the corpse-whiff branch no longer exists",
+  );
+  assert.throws(
+    () => rng.d(10),
+    /sequence exhausted/,
+    "the fakeRng is fully consumed — the whiff draw is gone, not merely unused",
+  );
 });
 
 // audit-bugs (2026-09-09, E7): a Con Artist's opening blow is a deliberate
