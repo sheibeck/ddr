@@ -273,7 +273,11 @@ const FULL_FIGHTS = [
   // Fridgian Pilfer): the corpse-whiff draw is gone and hide -2 shortens the
   // fight by two rounds. Re-measured live.
   { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 101, attacks: 9, outcome: "won" },
-  { seed: 303, forced: "Humans", foeNames: ["Dante", "Dante"], totalDraws: 66, attacks: 6, outcome: "won" },
+  // Phase 27 (2026-09-15, TUNE-06): was foeNames ["Dante", "Dante"], attacks
+  // 6 — Dante demoted to tier 2, Ned is now the tier-1 Humans row; total
+  // draws happens to stay 66 (re-measured live via runFullFight, never
+  // hand-computed).
+  { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 66, attacks: 10, outcome: "won" },
   { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 32, attacks: 4, outcome: "won" },
   // Phase 24 (2026-09-14, race pass): new row. A plain Human Apprentice
   // (unaffected by the race pass — no Fridgian/Dwarven mechanic in play),
@@ -569,7 +573,10 @@ test("FID-02 restated post-Phase-24: the six FULL_FIGHTS totals (12/87/101/66/32
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);
     assert.deepEqual(r.foeNames, row.foeNames, `seed ${row.seed}/${row.forced} roster`);
   }
-  const FIXTURE_NAMES = ["Bat/Rat", "Shriek", "Viper", "Dante"];
+  // Phase 27 (2026-09-15, TUNE-06): was ["Bat/Rat", "Shriek", "Viper",
+  // "Dante"] — Dante moved to tier 2 and no fixture rolls it anymore; Ned is
+  // the new tier-1 Humans fixture-exposed row.
+  const FIXTURE_NAMES = ["Bat/Rat", "Shriek", "Viper", "Ned"];
   let kitCount = 0;
   for (const type of Object.keys(BESTIARY)) {
     for (const tier of BESTIARY[type]) {

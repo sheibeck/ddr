@@ -206,9 +206,10 @@ test("precision: toMarkdown prints two decimals and 'inf'", () => {
   }
 });
 
-test("live bestiary smoke (prototype mode): 53 rows; only Ghost and Spectre are infinite; prototype tier medians are pinned", () => {
+test("live bestiary smoke (prototype mode): 54 rows; only Ghost and Spectre are infinite; prototype tier medians are pinned", () => {
   const result = computeYardstick(BESTIARY, { mechanics: "prototype" });
-  assert.equal(result.rows.length, 53);
+  // Phase 27 (2026-09-15, TUNE-06): was 53 — Ned added (Dante moved, not removed).
+  assert.equal(result.rows.length, 54);
 
   const infiniteNames = result.rows.filter((r) => !Number.isFinite(r.ttk)).map((r) => r.name);
   assert.deepEqual(infiniteNames.sort(), ["Ghost", "Spectre"]);
@@ -224,14 +225,19 @@ test("live bestiary smoke (prototype mode): 53 rows; only Ghost and Spectre are 
   closeTo(result.tiers[5].medianTTK, 1.62);
   closeTo(result.tiers[5].medianRTD, 2.81);
 
+  // Phase 27 (2026-09-15, TUNE-06): the tier-1 fixture-exposed row is now
+  // Ned, not Dante (Dante moved to tier 2 — asserted separately below).
   const fixtureRows = result.rows.filter(
-    (r) => r.tier === 1 && ["Bat/Rat", "Shriek", "Viper", "Dante"].includes(r.name),
+    (r) => r.tier === 1 && ["Bat/Rat", "Shriek", "Viper", "Ned"].includes(r.name),
   );
   const wpByName = Object.fromEntries(fixtureRows.map((r) => [r.name, r.wp]));
   assert.equal(wpByName["Bat/Rat"], 1);
   assert.equal(wpByName.Shriek, 3);
   assert.equal(wpByName.Viper, 3);
-  assert.equal(wpByName.Dante, 20);
+  assert.equal(wpByName.Ned, 8);
+
+  const danteT2 = result.rows.find((r) => r.name === "Dante" && r.tier === 2);
+  assert.equal(danteT2.wp, 20, "Dante stays recognisably Dante deeper");
 });
 
 test("live bestiary smoke (canon mode): Philly's TTK drops below 4.0 (slow), Sterling's TTK exceeds 9.0 (halfDmg), and every sp.ar row has a canon TTK strictly greater than its prototype TTK", () => {

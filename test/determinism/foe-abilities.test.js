@@ -86,7 +86,12 @@ function countingRng(inner) {
 // 1 below re-derives this from scratch every run.
 
 const ENCOUNTERS = [
-  { key: "humans-t2", type: "Humans", tier: 2, want: "Krupke", seed: 1 },
+  // Phase 27 (2026-09-15, TUNE-06): was seed 1 — Dante was appended to
+  // Humans tier 2, so the tier-2 rng.pick roster grew from [China Wolf,
+  // Krupke] to [China Wolf, Krupke, Dante]; seed 1 now rolls Dante x2, and
+  // the first seed whose tier-2 roster contains Krupke moved to 3
+  // (re-derived live by test 1 below, never hand-computed).
+  { key: "humans-t2", type: "Humans", tier: 2, want: "Krupke", seed: 3 },
   { key: "magical-t4", type: "Magical", tier: 4, want: "Drudge", seed: 1 },
   { key: "demons-t5", type: "Demons", tier: 5, want: "Djinni", seed: 1 },
   { key: "walking-dead-t5", type: "Walking Dead", tier: 5, want: "Vampire", seed: 1 },
@@ -209,7 +214,11 @@ function runVisits(spec, visits) {
 // runFullFight helper, never hand-computed — same "pins are measured, not
 // adjusted" rule as test/unit/foe-turn-draw-count.test.js.
 const FULL_FIGHT_PINS = {
-  "humans-t2": { foeNames: ["Krupke", "Krupke"], totalDraws: 59, attacks: 4, outcome: "won" },
+  // Phase 27 (2026-09-15, TUNE-06): was seed 1, foeNames ["Krupke",
+  // "Krupke"], totalDraws 59, attacks 4 — Dante appended to Humans tier 2
+  // shifted the first-Krupke seed to 3, whose tier-2 roll is a single
+  // Krupke (re-measured live via runFullFight, never hand-computed).
+  "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 46, attacks: 4, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 55, attacks: 4, outcome: "won" },
   "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 36, attacks: 2, outcome: "died" },
@@ -217,7 +226,9 @@ const FULL_FIGHT_PINS = {
 };
 
 const PER_VISIT_PINS = {
-  "humans-t2": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
+  // Phase 27 (2026-09-15, TUNE-06): was seed 1's [4,4,4,4,5,4,4,4,4,4,5,5] —
+  // re-measured at the new seed 3 (single Krupke, not two).
+  "humans-t2": [3, 2, 2, 3, 3, 4, 2, 3, 3, 2, 2, 3],
   "magical-t4": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4],
   "demons-t5": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
   // RE-MEASURED (WR-01, 19-REVIEW-FIX.md): the vampireSummon reinforcement's

@@ -533,7 +533,10 @@ test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 7 
   next.rngState = rng.getState();
   const foes = liveFoes(next);
   assert.equal(foes.length, 1);
-  assert.ok(foes.every((f) => f.name === "Dante"));
+  // Phase 27 (2026-09-15, TUNE-06): was "Dante" — Dante demoted to tier 2,
+  // Ned is now the tier-1 Humans row this seed rolls (re-measured live; the
+  // dice log/need/sp/gold below are unchanged by the swap, also re-measured).
+  assert.ok(foes.every((f) => f.name === "Ned"));
 
   const counting = countingRng(makeRng(next.rngState));
   const events = parley(next, counting, []);

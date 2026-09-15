@@ -16,8 +16,12 @@
 // methodology and per-creature rationale live in content/BESTIARY-REBALANCE.md
 // (D-04). The four fixture-exposed creatures (Bat/Rat, Shriek, Viper, Dante —
 // see test/parity/FIXTURE-INVENTORY.md) are untouched and must stay so
-// without a named comparables.js carve-out (BEST-03/FID-05); array order
-// within each tier is load-bearing for rng.pick.
+// without a named comparables.js carve-out (BEST-03/FID-05) — superseded for
+// Dante by Phase 27 (TUNE-06): Dante moved to tier 2, the tier-1 Humans row
+// is Ned, and the seed-303 scenario carries a declared action-path
+// divergence record instead of a comparables.js carve-out; the other three
+// rows are still untouched; array order within each tier is load-bearing for
+// rng.pick.
 //
 // Phase 19 (FOE-01/FOE-05/D-01/D-03) adds a top-level `abilities` id-array kit
 // to eight rows (Krupke, Drudge x2, Djinni x2, Vampire, Stalka Beast, Drake)
@@ -76,13 +80,25 @@ export const BESTIARY = {
     // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
     [{ n: "Djinni", sz: "G", i: 16, wp: 65, sp: { caster: true, dmg: { n: 1, sides: 4, bonus: 0 }, fleesBelow: 0.25, note: "casts every spell of levels 1 to 4" }, abilities: ["djinniFireball", "djinniDaze", "djinniLightning", "djinniFreeze"] }],
   ],
+  // DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06): Dante demoted
+  // from tier 1 to tier 2 (stats and note unchanged: sz H, i 12, wp 20, atk
+  // 3); tier-1 Humans is now Ned (sz H, i 8, wp 8, one swing a round). Why:
+  // "cut down by a Dante" was the #1 death cause at scale (724 of 5,720
+  // Phase 26 runs) — three strikes a round and 20 wp against level-1
+  // characters on floor 1; floor-1 Humans death rate 61.57 % -> 14.73 %
+  // (attack-only sim, 2,000 seeds; Demons, the next-deadliest tier-1 type,
+  // measures 25.72 % on the same seeds). The seed-303 parley parity scenario now
+  // rolls Ned and carries a declared action-path divergence
+  // (test/parity/FIXTURE-INVENTORY.md, Phase 27 section). Ledger:
+  // docs/DIFFICULTY-RETUNE.md, "## v1.2 retune (Phase 27)".
   "Humans": [
-    [{ n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } }],
+    [{ n: "Ned", sz: "H", i: 8, wp: 8, sp: { note: "a bandit: one knife, one grudge, no plan" } }],
     [
       { n: "China Wolf", sz: "H", i: 5, wp: 16, sp: { atk: 2, dmg: { n: 1, sides: 6, bonus: 0 }, note: "hunts in pairs, two attacks" } },
       // DELIBERATE RULES CHANGE (Phase 18, BEST-02/D-03 pre-ability discount — revisit Phase 21): wp 23 -> 17, dmg 1d8+2 -> 1d6+2
       // DELIBERATE RULES CHANGE (Phase 19, FOE-01/FOE-05/D-03): abilities kit — see content/foe-abilities.js
       { n: "Krupke", sz: "H", i: 8, wp: 17, sp: { caster: true, ar: 12, dmg: { n: 1, sides: 6, bonus: 2 }, note: "a sorcerer in mail with a long sword" }, abilities: ["krupkeWeaken", "krupkeFreeze"] },
+      { n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } },
     ],
     [
       { n: "Frank", sz: "H", i: 10, wp: 20, sp: { steals: true, dmg: { n: 1, sides: 8, bonus: 6 }, note: "a con-man; may take everything and vanish" } },

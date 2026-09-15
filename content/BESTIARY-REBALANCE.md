@@ -298,9 +298,10 @@ Mechanics: canon | T1 med TTK=3.51 RTD=30.89 | T2 med TTK=3.31 RTD=10.87 | T3 me
 | 4 | Demons | Ghost | 28.00 | 1 | d6* |  |  | magicOnly | 0.00 | inf | inf | 14.63 | 3.73 | 1.00 | infinite |
 | 4 | Demons | Spectre | 32.00 | 1 | d6* |  |  | magicOnly | 0.00 | inf | inf | 14.63 | 3.73 | 1.00 | infinite |
 | 5 | Demons | Djinni | 65.00 | 1 | 1d4+0 |  |  | caster | 24.74 | 2.63 | 1.00 | 20.63 | 2.91 | 0.96 |  |
-| 1 | Humans | Dante | 20.00 | 3 | d6* |  |  |  | 1.42 | 14.06 | 4.00 | 4.05 | 10.30 | 3.00 | over-tier |
+| 1 | Humans | Ned | 8.00 | 1 | d6* |  |  |  | 1.42 | 5.62 | 1.60 | 1.35 | 30.89 | 1.00 |  |
 | 2 | Humans | China Wolf | 16.00 | 2 | 1d6+0 |  |  |  | 3.62 | 4.42 | 1.33 | 7.50 | 6.16 | 1.76 |  |
 | 2 | Humans | Krupke | 17.00 | 1 | 1d6+2 |  | 12.00 | caster | 2.32 | 7.34 | 2.21 | 4.75 | 9.73 | 1.12 | over-tier |
+| 2 | Humans | Dante | 20.00 | 3 | d6* |  |  |  | 3.62 | 5.52 | 1.67 | 11.25 | 4.11 | 2.65 | over-tier |
 | 3 | Humans | Frank | 20.00 | 1 | 1d8+6 |  |  |  | 6.85 | 2.92 | 1.25 | 11.70 | 4.27 | 1.30 |  |
 | 3 | Humans | Primp | 18.00 | 1 | 1d8+2 |  |  |  | 6.85 | 2.63 | 1.13 | 9.30 | 5.38 | 1.03 |  |
 | 4 | Humans | Craig | 24.00 | 1 | 1d12+0 |  | 15.00 |  | 7.11 | 3.37 | 2.36 | 16.88 | 3.23 | 1.15 | over-tier |
@@ -448,3 +449,52 @@ use the STABLE prototype-mode medians (unaffected by CANON-01/03/05 landing)
 so the D-03/D-18 number-only fixes are measured against a fixed yardstick,
 while the AFTER table's own `xTTKmed`/`xLethal` columns are relative to the
 live canon-mode medians printed in its own header.
+
+### Phase 27 addendum (TUNE-06, 2026-09-15)
+
+Dante T1 → T2, unchanged (`sz H, i 12, wp 20, atk 3` — byte-identical stats
+and note). Ned added at T1: `{ n: "Ned", sz: "H", i: 8, wp: 8, sp: { note:
+"a bandit: one knife, one grudge, no plan" } }`. This is the first
+DELIBERATE RULES CHANGE landed against a fixture-exposed creature (Dante) —
+handled via a declared, machine-checked parity divergence record
+(`test/parity/FIXTURE-INVENTORY.md`'s "## Phase 27 early-floor divergences
+(TUNE-06)" section) instead of a `comparables.js` carve-out, since the
+change moves WHICH creature the fixture rolls, not merely a stat on the
+still-rolled row.
+
+**Why:** "cut down by a Dante" was the #1 death cause at scale (724 of 5,720
+Phase 26 runs) — three strikes a round and 20 wp against level-1 characters
+on floor 1. The decision rule (recorded by 27-01's ledger): the landed form
+must bring the floor-1 Humans death rate to <= the next-deadliest tier-1
+type's rate (Demons). Measured live via a 2,000-seed attack-only sim
+(`newRun(seed)` → `startCombat(state, false, TYPE, rng, [])` → `playerStrike`
+until resolution): canon Humans 61.57 %, landed (Ned) Humans 14.73 %, Demons
+(reference) 25.72 % — the rule is met with room to spare.
+
+**Yardstick rows (canon mode, from the regenerated AFTER block above):**
+
+| Creature | Tier | wp | TTK | xTTKmed | RTD | xLethal | Flag |
+|---|---|---|---|---|---|---|---|
+| Ned | T1 Humans | 8.00 | 5.62 | 1.60x | 30.89 | 1.00 | (unflagged) |
+| Dante | T2 Humans | 20.00 | 5.52 | 1.67x | 4.11 | 2.65 | over-tier |
+
+Tier medians are UNCHANGED by this move (T1 med TTK=3.51 RTD=30.89; T2 med
+TTK=3.31 RTD=10.87) — Ned's tier-1 TTK and Dante's tier-2 TTK both happen to
+land close to their tiers' existing medians, so neither median shifts.
+Dante was already flagged `over-tier` at tier 1 (4.00x, RTD 3.00x) and stays
+flagged `over-tier` one tier deeper (1.67x, lethality 2.65x) — consistent
+with "keeps Dante recognisably Dante, just no longer punching three tiers
+down."
+
+**Fixture-exposed set:** now Bat/Rat, Shriek, Viper, Ned (Dante is no longer
+fixture-exposed at tier 1; it is still reachable at tier 2, which no fixture
+forces — see `test/parity/FIXTURE-INVENTORY.md`'s Phase 27 section for the
+full parity accounting).
+
+The 53-row tables above (BEFORE/AFTER-before-Phase-27, the pre-ability
+discount table, the Phase 18 change ledger) are the Phase 18 record and are
+**not** regenerated — only the `<!-- yardstick:after:* -->` block (which
+always reflects the LIVE bestiary) was regenerated for this addendum.
+
+Pointer: `docs/DIFFICULTY-RETUNE.md`, `## v1.2 retune (Phase 27)` —
+`### Dante demotion — landed (27-02)`.

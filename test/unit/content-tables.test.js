@@ -218,25 +218,39 @@ test("BESTIARY Phase 18 / D-19: Sterling keeps wp 35 and halfDmg (TTK doubling r
 });
 
 // Any diff here means a fixture-exposed creature moved and BEST-03 requires a
-// named carve-out — which Phase 18 forbids (D-14).
-test("BESTIARY Phase 18 / D-14 (BEST-03, FID-05): the four fixture-exposed rows are byte-identical to the prototype", () => {
+// named carve-out — which Phase 18 forbids (D-14). Phase 27 (TUNE-06)
+// supersedes this for Dante specifically: Dante is now tier 2 (still
+// byte-identical wherever it sits — see the assertion below), and Ned is
+// the new tier-1 Humans exposed row.
+test("BESTIARY Phase 18 / D-14 (BEST-03, FID-05): the four fixture-exposed rows are byte-identical to the prototype (Dante now tier 2, Ned is the exposed tier-1 row)", () => {
   assert.deepStrictEqual(BESTIARY["Beasts"][0], [
     { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 wp each" } },
     { n: "Shriek", sz: "T", i: 1, wp: 3, sp: { shriek: true, note: "a scream deafens; half damage after" } },
     { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 wp a round for d10 rounds" } },
   ]);
+  // Phase 27 (2026-09-15, TUNE-06): was BESTIARY["Humans"][0] === [Dante] —
+  // Dante moved to tier 2, Ned is the tier-1 Humans row (re-measured live).
   assert.deepStrictEqual(BESTIARY["Humans"][0], [
-    { n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } },
+    { n: "Ned", sz: "H", i: 8, wp: 8, sp: { note: "a bandit: one knife, one grudge, no plan" } },
   ]);
+  // Dante stays recognisably Dante deeper: byte-identical stats/note as the
+  // LAST entry of Humans tier 2.
+  assert.deepStrictEqual(BESTIARY["Humans"][1].at(-1), {
+    n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" },
+  });
 });
 
 test("BESTIARY Phase 18 / D-17: no creature added, removed, or reordered — tier lengths per type", () => {
   assert.deepStrictEqual(Object.keys(BESTIARY), ["Beasts", "Demons", "Humans", "Lair Beasts", "Magical", "Walking Dead"]);
+  // Phase 27 (2026-09-15, TUNE-06): Humans tier lengths were [1, 2, 2, 2, 1]
+  // — Dante moved from tier 1 to the end of tier 2, so tier 1 shrinks to 1
+  // (Ned) and tier 2 grows to 3 (China Wolf, Krupke, Dante).
   assert.deepStrictEqual(
     Object.values(BESTIARY).map((tiers) => tiers.map((t) => t.length)),
-    [[3, 2, 5, 2, 2], [1, 1, 1, 3, 1], [1, 2, 2, 2, 1], [5, 2, 1, 1, 1], [1, 1, 1, 1, 1], [1, 2, 2, 3, 1]],
+    [[3, 2, 5, 2, 2], [1, 1, 1, 3, 1], [1, 3, 2, 2, 1], [5, 2, 1, 1, 1], [1, 1, 1, 1, 1], [1, 2, 2, 3, 1]],
   );
-  assert.equal(Object.values(BESTIARY).flat(2).length, 53);
+  // Phase 27 (2026-09-15, TUNE-06): was 53 — Ned added, Dante count unchanged (moved, not removed).
+  assert.equal(Object.values(BESTIARY).flat(2).length, 54);
 });
 
 test("BESTIARY Phase 18/19 / D-17: every entry keeps the flat shape — allowed top-level keys n/sz/i/wp/sp/abilities only, and sp.dmg where present is {n,sides,bonus}", () => {
@@ -316,13 +330,15 @@ test("BESTIARY Phase 19 / D-03: exact kits per caster row", () => {
   assert.deepStrictEqual(drake.abilities, ["drakeBreath"]);
 });
 
-test("BESTIARY Phase 19 / D-01: abilities is ABSENT (not empty) on every non-caster row — 45 of 53", () => {
+test("BESTIARY Phase 19 / D-01: abilities is ABSENT (not empty) on every non-caster row — 46 of 54", () => {
   const rows = Object.values(BESTIARY).flat(2);
-  assert.equal(rows.length, 53);
+  // Phase 27 (2026-09-15, TUNE-06): was 53 — Ned added (no abilities kit).
+  assert.equal(rows.length, 54);
   const withAbilities = rows.filter((row) => Object.hasOwn(row, "abilities"));
   assert.equal(withAbilities.length, 8);
   const withoutAbilities = rows.filter((row) => !Object.hasOwn(row, "abilities"));
-  assert.equal(withoutAbilities.length, 45);
+  // Phase 27 (2026-09-15, TUNE-06): was 45 — Ned added, no abilities kit.
+  assert.equal(withoutAbilities.length, 46);
   for (const row of rows) {
     if (Object.hasOwn(row, "abilities")) continue;
     assert.equal(row.abilities, undefined, `${row.n} must not have an abilities key at all`);
@@ -342,14 +358,15 @@ test("BESTIARY Phase 19 / D-01: abilities is ABSENT (not empty) on every non-cas
 
 // Any diff here means a fixture-exposed creature moved and BEST-03 requires a
 // named carve-out — which this plan forbids (no fixture-exposed row touched).
-test("BESTIARY Phase 19 / D-14: the four fixture-exposed rows are still byte-identical", () => {
+test("BESTIARY Phase 19 / D-14: the four fixture-exposed rows are still byte-identical (Dante now tier 2, Ned is the exposed tier-1 row)", () => {
   assert.deepStrictEqual(BESTIARY["Beasts"][0], [
     { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 wp each" } },
     { n: "Shriek", sz: "T", i: 1, wp: 3, sp: { shriek: true, note: "a scream deafens; half damage after" } },
     { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 wp a round for d10 rounds" } },
   ]);
+  // Phase 27 (2026-09-15, TUNE-06): was BESTIARY["Humans"][0] === [Dante].
   assert.deepStrictEqual(BESTIARY["Humans"][0], [
-    { n: "Dante", sz: "H", i: 12, wp: 20, sp: { atk: 3, note: "twins, four arms: three strikes a round" } },
+    { n: "Ned", sz: "H", i: 8, wp: 8, sp: { note: "a bandit: one knife, one grudge, no plan" } },
   ]);
 });
 
