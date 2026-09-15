@@ -1391,7 +1391,71 @@ iteration.
 
 ### Dante demotion — landed (27-02)
 
-(filled by plan 27-02)
+**Landed form: C (recommended).** Dante is moved to the END of Humans tier
+2 (stats and note byte-identical: `sz H, i 12, wp 20, sp.atk 3, "twins, four
+arms: three strikes a round"`); the new tier-1 Humans row is `Ned`: `{ n:
+"Ned", sz: "H", i: 8, wp: 8, sp: { note: "a bandit: one knife, one grudge,
+no plan" } }`.
+
+**Decision-rule sim (executor's own scratch sim, `newRun(seed) ->
+startCombat(state, false, TYPE, rng, []) -> playerStrike` until resolution
+or death, cap 200 strikes, seeds 1..2000):**
+
+| | Floor-1 death rate |
+|---|---|
+| Canon (Dante, tier 1) | 61.57 % |
+| Landed (Ned, tier 1) | **14.73 %** |
+| Demons (reference, next-deadliest tier-1 type) | 25.72 % |
+
+The rule (landed form must bring the floor-1 Humans death rate to <= the
+Demons reference) is met with 11 points to spare.
+
+**Yardstick rows (canon mode, `tools/bestiary-yardstick.mjs`):**
+
+| Creature | Tier | wp | TTK | xTTKmed | RTD | xLethal | Flag |
+|---|---|---|---|---|---|---|---|
+| Ned | T1 Humans | 8.00 | 5.62 | 1.60x | 30.89 | 1.00 | (unflagged) |
+| Dante | T2 Humans | 20.00 | 5.52 | 1.67x | 4.11 | 2.65 | over-tier |
+
+Tier medians are UNCHANGED (T1 med TTK=3.51 RTD=30.89; T2 med TTK=3.31
+RTD=10.87) — Dante keeps its `over-tier` flag one tier deeper (was 4.00x/
+RTD 3.00x at T1; now 1.67x/lethality 2.65x at T2), consistent with "keeps
+Dante recognisably Dante, just no longer punching three tiers down."
+
+**Parity record (the phase's only declared divergence — seed 303,
+`parley` scenario, `test/parity/fixtures/action-script.combat.json`):**
+
+```
+kind: "action-path", fromAction: 0
+fields: ["wp", "sp", "gold", "kills", "rations"]
+before (prototype, Dante x2): { wp: 40, sp: 13, gold: 250, kills: 0, rations: 5 }
+after  (engine, Ned x2):      { wp: 40, sp: 7,  gold: 50,  kills: 0, rations: 5 }
+stateFields: ["dead"] — before/after both false
+```
+
+Full per-action table, rationale, and the four pre-enumerated escalation
+records (hazard-from-1, darkness-from-4, rations+N, floor-1 grace) live in
+`test/parity/FIXTURE-INVENTORY.md`'s "## Phase 27 early-floor divergences
+(TUNE-06)" section. `node --test "test/parity/**/*.test.js"`: 33/33, with
+this the ONLY divergence.
+
+**Re-measured pins (file: old -> new, cause):**
+
+| File | Pin | Old | New | Cause |
+|---|---|---|---|---|
+| `test/unit/content-tables.test.js` | Humans tier lengths | `[1,2,2,2,1]` | `[1,3,2,2,1]` | Dante appended to tier 2 |
+| `test/unit/content-tables.test.js` | total rows | 53 | 54 | Ned added |
+| `test/unit/content-tables.test.js` | rows without abilities | 45 | 46 | Ned (no kit) added |
+| `test/unit/bestiary-yardstick.test.js` | `rows.length` | 53 | 54 | Ned added |
+| `test/unit/bestiary-yardstick.test.js` | tier-1 fixture filter | `Dante` (wp 20) | `Ned` (wp 8) | Dante no longer tier 1 |
+| `test/unit/foe-turn-draw-count.test.js` | `FULL_FIGHTS[303]` | `["Dante","Dante"]`, 66 draws, 6 attacks, won | `["Ned","Ned"]`, 66 draws (unchanged), 10 attacks, won | seed 303 now rolls Ned |
+| `test/unit/parley.test.js` | Test 14 foe name | `Dante` | `Ned` | same seed, new tier-1 roll; dice/need/sp/gold unchanged |
+| `test/determinism/foe-abilities.test.js` | `humans-t2` seed | 1 (Dante x2, no Krupke) | 3 (Krupke) | tier-2 `rng.pick` roster grew — re-measured TWICE: once here for the Dante move (Krupke x1, 17 draws, 1 attack, won), once more in Task 3 for foe grace (wp 17->13, dmgBonus -1, draws/attacks unchanged) |
+| `test/parity/fixture-inventory.test.js` | FID-01 roster/names | `Humans:Dante`, wp 20 x2 | `Humans:Ned`, wp 8 x2 | seed 303 rolls Ned |
+
+The other four determinism specs (`magical-t4`, `demons-t5`,
+`walking-dead-t5`, `beasts-t5`) were confirmed byte-unchanged by the Dante
+move (only `humans-t2`'s tier-2 roster grew).
 
 ### Change table (27-02 / 27-03)
 
@@ -1399,7 +1463,136 @@ iteration.
 
 ### Iteration log
 
-(filled by plans 27-02 and 27-03)
+**Iteration 0 (27-02) — Dante demotion + the parity-clean early-floor set;
+deep combat dials untouched.**
+
+Constants landed this iteration (`engine/difficulty.js`):
+
+| Constant | Old | New |
+|---|---|---|
+| `ENCOUNTER_DOT_CAP` | 24 | 15 |
+| `DARK_BLOB_CAP` | 6 | 3 |
+| `DARK_RADIUS_CAP` | 9 | 7 |
+| `DENSITY_CANON_THROUGH_DEPTH` | — (new) | 2 |
+| `DARK_HOLD_THROUGH_DEPTH` | — (new) | 3 |
+| `FOE_GRACE_AT_2` | — (new) | 0.75 |
+| `FOE_GRACE_CANON_FROM_DEPTH` | — (new) | 5 |
+| `FOE_GRACE_AT_1` | — (new) | 1.0 (canon) |
+| `HAZARD_FROM_DEPTH` | — (new) | 2 |
+| `HAZARD_SCALE_AT_START` | — (new) | 0.5 |
+| `HAZARD_FLAT_THROUGH_DEPTH` | — (new) | 3 |
+| `HAZARD_CANON_FROM_DEPTH` | — (new) | 5 |
+
+Combat dials (`COMBAT_SCALE_FROM_DEPTH` 6, `FOE_CAP_MAX` 5, `FOE_POWER_MAX`
+1.6, `ABILITY_THREAT_MAX` 2.0) are the 21-04 values, untouched.
+
+**Curve table** (`difficultyCurve(d)`, dots / darkBlobs / darkRadius /
+foePower / hazardScale / foeCap / abilityThreat):
+
+| d | dots | darkBlobs | darkRadius | foePower | hazardScale | foeCap | abilityThreat |
+|---|---|---|---|---|---|---|---|
+| 1 | 10 | 0 | 4 | 1 (exact) | 1 (exact) | 3 | 1 |
+| 2 | 11 | 1 | 5 | 0.75 | 0.5 | 3 | 1 |
+| 3 | 11 | 1 | 6 | 0.8333 | 0.5 | 3 | 1 |
+| 4 | 12 | 2 | 7 | 0.9167 | 0.75 | 3 | 1 |
+| 5 | 12 | 3 | 7 | 1 (exact) | 1 (exact) | 3 | 1 |
+| 10 | 13 | 3 | 7 | 1.0799 | 1 | 3 | 1.1535 |
+| 20 | 14 | 3 | 7 | 1.2091 | 1 | 4 | 1.3935 |
+| 35 | 15 | 3 | 7 | 1.3454 | 1 | 5 | 1.6321 |
+| 50 | 15 | 3 | 7 | 1.4341 | 1 | 5 | 1.7769 |
+
+**Iteration-0 smoke readout** (`tools/tune-classes.mjs --seeds 3 --workers 4
+--max-actions 5000`, 143 x 3 pooled; `tools/tune-difficulty.mjs
+--seeds=200`; all read via `rollups.pooled` / the tune-difficulty text
+report — directional only, per the iteration protocol above):
+
+*Natural (`rollups.pooled`, n=429):* meanDepth 3.56, **p50Depth 3**, p90Depth
+6, **reach5 23.3 %**, reach10 0.9 %, reach20 0 %, meanFloorsGained 2.56 /
+p50 2, meanEncountersSurvived 8.83. Top causes: starved in the dark (53),
+undone by a trap (31), cut down by a Poltergeist (30) — **"cut down by a
+Dante" no longer appears in the pooled top 3** (it was the #1 Phase-26
+cause at scale, 724 tallies).
+
+*Forced start at 20 (`rollups.pooled`, n=429):* meanDepth 20.37 (p50 20,
+p90 21 — the harness always starts at 20, so these confirm the dev-start
+clamp), reach5/10/20 all 100 % (trivially true — the run already starts at
+20), **meanEncountersSurvived 1.56**, **meanFloorsGained 0.37 / p50
+FloorsGained 0**. Top causes at 20: cut down by a Drarl (102), a Herman
+(99), a Stalka Beast (49) — canon tier-4/5 Humans/Lair-Beasts bodies, not
+the eased early-floor mechanics (expected: this band is owned by the deep
+combat dials, untouched this plan).
+
+*`tune-difficulty --seeds=200` (natural, single-run cause table, a
+DIFFERENT 200-seed sample than the pooled 429 above):* Death-depth
+min=1 p50=3 p90=6 max=10. Reach table: >=5 28.0 %, >=10 1.0 %, >=20/30/50
+0.0 %. Top 5 causes: Werebeast 18 (9.0 %), Poltergeist 15 (7.5 %), "spent
+by the dungeon itself" 13 (6.5 %), Dante 12 (6.0 %, tied with "starved in
+the dark" and "fell off a wall"). Parley: 322 attempts, 66.5 % success
+rate, 3.1 % of total SP. Cannot-act: not measured this iteration (smoke
+only; the full gate runs on the eventual retune AFTER).
+
+**Honest note on Dante's residual presence:** the sim/pooled readouts show
+Dante's floor-1 spike is gone (not in the pooled top 3 of 429 runs), but
+this 200-seed tune-difficulty sample still shows 12 Dante deaths (6.0 %) —
+Dante is now a TIER-2 creature, reachable by any level-2+ hero on floor 2+
+(and, per its yardstick row, still `over-tier` there by design — "twins,
+four arms" stays a real threat one tier deeper, just no longer a floor-1
+ambush for a level-1 character). This is the intended outcome of Form C,
+not a residual bug.
+
+**What moved vs. the Phase 26 AFTER (BEFORE-by-reference above):** pooled
+reach >= 5 17.2 % -> 23.3 % (+6.1 pts, still short of the amended 25 %
+target — expected, see the planner calibration note above); pooled reach
+>= 10 0.3 % -> 0.9 %; forced-20 meanEncountersSurvived 1.32 -> 1.56;
+forced-20 meanFloorsGained 0.14 -> 0.37 (p50 FloorsGained stays 0). Median
+death depth stays 3 (natural pooled p50Depth 3, tune-difficulty p50 3) —
+the amended band's "bot median 4" row is NOT yet reached at this smoke
+scale; per the target band's own note, the widened-lever ladder's
+calibrated CEILING is bot median 4 / reach>=5 ≈ 35 %, so 27-03's job is to
+confirm this reading at full scale and escalate only as far as the smoke
+justifies, recording a miss/near-miss honestly if the ceiling is not
+enough.
+
+#### Planner calibration (2026-09-15, directional)
+
+Copied verbatim from this plan's `<early_floor_levers>` table (each lever
+added on top of S0 = Dante Form C + dots cap 15 / dark 3/7 + the 27-03 deep-
+dial start values; matrix reach5/mu is the 143 x 3 pooled readout, td200 is
+`tune-difficulty --seeds=200`):
+
+| Set | reach5 (matrix) | mu | td200 p50 / reach5 |
+|---|---|---|---|
+| S0: Dante + dots 15 / dark 3-7 + deep-dial start values | 17.0 % | 3.24 | 3 / 24.0 % |
+| S0 + grace 0.75 (2-4) | 22.8 % | 3.48 | 3 / 23.0 % |
+| S0 + darkness from 4 | 21.7 % | 3.39 | 3 / 23.5 % |
+| S0 + hazard 0.5 on floors 1-3 (0.75 at 4) | 24.0 % | 3.51 | 4 / 31.5 % |
+| S0 + grace 0.75 + darkness from 4 | 25.9 % | 3.58 | 4 / 28.5 % |
+| S0 + grace 0.75 + darkness held through 3 | 18.4 % | 3.32 | 3 / 20.0 % |
+| T1: S0 + hazard from floor 2 (1 / 0.5 / 0.5 / 0.75) | 22.4 % | 3.44 | 4 / 29.5 % |
+| T2: S0 + grace 0.5 (0.5 / 0.65 / 0.85) + hold through 3 + hazard from 2 — the strongest parity-clean set | 24.7 % | 3.60 | 4 / 27.5 % |
+| T3: T2 + starting rations +2 | 30.8 % | 3.76 | 4 / 31.5 % |
+| T4: grace 0.5 + darkness from 4 + hazard from floor 1 + rations +2 (every rung but floor-1 grace) | 35.4 % | 3.96 | 4 / 36.0 % |
+| T5: T4 + floor-1 grace 0.85 (last resort) | 34.7 % | 4.00 | 4 / 34.0 % |
+
+**Reading:** each lever adds ≈ 3-7 points of reach5 and the FULL ladder —
+every rung including the last resort — tops out near 35 % reach5 (bot
+median 4, mean ≈ 4.0); floor-1 grace adds nothing measurable once Dante is
+gone (its spike WAS Dante). This plan lands the set actually specified in
+Task 3 (grace 0.75 at floors 2-4 + darkness held through 3 + hazard ramp
+from floor 2 at 0.5) — a slightly milder grace than the T2 row's 0.5, so
+this iteration's OWN measured smoke (23.3 % pooled reach5, td200 28.0 %)
+is the number of record for what actually landed, not a table lookup.
+
+**What to turn next:** iteration 1 (27-03) confirms this set at full scale
+(143 x 40 natural, 143 x 10 forced-20), then escalates in the user's order
+only while the smoke median is < 5 — grace deeper (`FOE_GRACE_AT_2` 0.75 ->
+0.5) -> darkness from 4 (movement record) -> hazard from floor 1
+(encounters record) -> rations +1/+2 (14 chargen records) -> floor-1 grace
+0.85 (last resort) — and turns the deep ramp (`COMBAT_SCALE_FROM_DEPTH` 16,
+`FOE_CAP_MAX` 4, `FOE_POWER_MAX` 1.3, `ABILITY_THREAT_MAX` 1.5) for the
+forced-20 band in parallel.
+
+(iterations 1..N are appended below by plan 27-03)
 
 ### AFTER readouts — retuned engine
 
