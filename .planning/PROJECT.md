@@ -47,7 +47,7 @@
 
 ### Active
 
-- [ ] **Mass playtest AFTER matrix + findings ledger** — all 143 valid combinations at volume post-identity-pass, ranked over/under-performers with fun-band verdicts, before/after ledger (`docs/CLASS-PASS.md`). — v1.2 (BEFORE half validated in Phase 22)
+- ✓ **Mass playtest AFTER matrix + findings ledger** — v1.2 Phase 26 (AFTER 143 × 40 + 143 × 10 on pin d1e3235 at BEFORE parameters; μ 3.08, bands 2.31–4.15; 0 cannot-act cells; every caster sub in band; one out-of-band row — Ninja, too strong, accepted; Wilmsry in band; revisit list empty; `tools/class-pass-diff.mjs` + `docs/class-pass/verdicts.json` + standing ledger test; the gate caught a pre-existing stranded-combat bug (foe killed by ward reflect on its opening turn) fixed as a gap closure)
 - [ ] **Delve-to-death retune** — the deferred TUNE-04 re-attempt on corrected player power, human DR sign-off. — v1.2
 - [ ] **Quick 5–10 minute session feel** — mechanically bounded; validated only by the retune + playtest
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
@@ -66,7 +66,7 @@
 
 ## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
 
-**v1.2 progress:** Phases 22–25 and inserted 25.1 complete (2026-09-15). Phase 22: harness + BEFORE matrix. Phase 23: casters can act. Phase 24: every sub-class and race has one good and one bad. Phase 25: nothing happens silently. Phase 25.1: device feedback batch (card vs toast, lingering toasts, Oracle scroll, Joiner swap, Joiners fight by class, camp numbers). Next: Phase 26, the AFTER matrix and class-pass ledger (already planned, 4 plans).
+**v1.2 progress:** Phases 22–26 (incl. inserted 25.1) complete (2026-09-15). Phase 26 answered the milestone question: rank order Thief 3.51 > Fighter 3.16 > Magic User 2.55 mean death depth, gap narrowed, Magic User kills doubled, no sub-class or race too weak, one too-strong row accepted (Ninja). Next: Phase 27, the delve-to-death retune toward the depth-20 unicorn target (handoff block in docs/CLASS-PASS.md).
 
 **Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
@@ -176,4 +176,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 — v1.2 Phase 25.1 complete (device feedback batch)*
+*Last updated: 2026-09-15 — v1.2 Phase 26 complete (AFTER matrix + ledger)*

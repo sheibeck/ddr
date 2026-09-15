@@ -61,7 +61,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 24: Every Sub-class and Race: One Good, One Bad** - Every sub-class and race gets a code-verified good and bad, flavor text matches the mechanics, and an identity-contract test proves it (completed 2026-09-14)
 - [x] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses (completed 2026-09-15)
 - [x] **Phase 25.1: Device Feedback Batch (INSERTED 2026-09-15)** - Card only for decisions/big updates, minor events toast-only with the narrative sentence, readable toasts, Oracle fills the screen and opens at the newest line, Joiner swap with snark, Joiners fight by class, camp refusal states the numbers (completed 2026-09-15)
-- [ ] **Phase 26: Mass Playtest & Class-Pass Ledger** - An AFTER matrix on the post-pass engine ranks over/under-performers with a fun-band verdict per row, committed to `docs/CLASS-PASS.md`
+- [x] **Phase 26: Mass Playtest & Class-Pass Ledger** - An AFTER matrix on the post-pass engine ranks over/under-performers with a fun-band verdict per row, committed to `docs/CLASS-PASS.md` (completed 2026-09-15)
 - [ ] **Phase 27: Delve-to-Death Retune** - The deferred TUNE-04 re-attempt on the corrected player power, closed by a human DR round on the Pixel 7
 
 ## Phase Details
@@ -255,7 +255,7 @@ Plans:
   3. Every "cannot act" row is zero.
   4. `docs/CLASS-PASS.md` documents the per-sub-class/race good+bad table, before/after numbers, every ruling (IDENT-05/06/07/10) with rationale, and lists the remaining outliers as candidates for the next milestone.
 
-**Plans:** 4/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -312,6 +312,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
-| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | In Progress|  |
+| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | Complete    | 2026-09-15 |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 26
-current_phase_name: Mass Playtest & Class-Pass Ledger
-status: executing
+current_phase: 27
+current_phase_name: Delve-to-Death Retune
+status: planning
 stopped_at: Completed 26-04-PLAN.md — Phase 26 closed
-last_updated: "2026-09-15T16:21:51.095Z"
+last_updated: "2026-09-15T16:24:57.915Z"
 last_activity: 2026-09-15
-last_activity_desc: Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
+last_activity_desc: Phase 26 complete, transitioned to Phase 27
 progress:
   total_phases: 7
   completed_phases: 6
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 26 — Mass Playtest & Class-Pass Ledger
-Plan: 4 of 4 complete (`tools/class-pass-diff.mjs` + tests; AFTER matrix capture); 03-04 pending
-Status: Ready to execute
-Last activity: 2026-09-15 — Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
+Phase: 27 — Delve-to-Death Retune
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-15 — Phase 26 complete, transitioned to Phase 27
 
 ## Ground Truth (durable facts every session needs)
 
