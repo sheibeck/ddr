@@ -37,6 +37,7 @@
 - ✓ **Foe abilities + spellcasting** — v1.1 (19 data-driven ability descriptors, symmetric INT resistance)
 - ✓ **Bestiary rebalance** on a yardstick behind one damage seam — v1.1
 - ✓ **Parley balance + Language system** — v1.1 (one attempt per encounter, fluency feeds the bonus)
+- ✓ **Every sub-class and race has one good and one bad** — v1.2 Phase 24 (11 sub-class mechanics + a 3-race pass, all zero-draw; Woodsman/Pilfer/Cloaker restrictions enforced; 30 blurbs truthful; identity-contract test over 24 subs + 5 races with Human neutral; dagger ruling KEEP; 1188 tests, 2 declared action-path divergences, prototype master untouched)
 - ✓ **Casters can act** — v1.2 Phase 23 (Wizard refuses melee only while an attack spell is castable and names it; every non-Summoner caster rolls a day-one attack spell with zero new rng draws; Summon at level 1 for Summoners and Phantom Host at level 1 for Illusionists via a data-driven override table; Freeze kills pay out like any kill; 1036 tests, three declared parity divergences, prototype master untouched)
 - ✓ **Class-aware playtest harness** — v1.2 Phase 22 (dev-only `force` chargen seam, sub-class-aware bot with `chooseSpell` scoring table, `tools/tune-classes.mjs` 143-cell matrix on worker threads, `--start-depth`, `stuck` bucket; 989 tests, parity untouched)
 - ✓ **BEFORE class matrix captured** — v1.2 Phase 22 (`docs/CLASS-PASS.md` + `docs/class-pass/before*.json`, engine pinned `5565b22`; 0 stuck in 7,150 runs)
@@ -44,7 +45,6 @@
 
 ### Active
 
-- [ ] **Class / sub-class / race identity pass (remaining)** — every one of the 24 sub-classes and 6 races has a code-verified "one solid good, one solid bad"; flavor-only promises implemented or reworded; identity-contract test. — v1.2 Phase 24 (the "cannot act" half — Wizard rule, guaranteed attack spell, level-1 Summon/Phantom Host — validated in Phase 23)
 - [ ] **Feature feedback** — every class/sub-class/racial feature that fires or blocks the player is narrated (Oracle + toast), enemy hits toast red, multi-attack foes aggregate "X of N". — v1.2
 - [ ] **Mass playtest AFTER matrix + findings ledger** — all 143 valid combinations at volume post-identity-pass, ranked over/under-performers with fun-band verdicts, before/after ledger (`docs/CLASS-PASS.md`). — v1.2 (BEFORE half validated in Phase 22)
 - [ ] **Delve-to-death retune** — the deferred TUNE-04 re-attempt on corrected player power, human DR sign-off. — v1.2
@@ -65,7 +65,7 @@
 
 ## Current State (v1.1 shipped 2026-09-14; v1.2 started 2026-09-14)
 
-**v1.2 progress:** Phases 22–23 complete (2026-09-14). Phase 22: harness + BEFORE matrix. Phase 23: casters can act (smoke: Summoner mean depth 2.18 → 2.78, Illusionist 2.20 → 2.42, Wizard 2.48 → 2.44). Next: Phase 24, every sub-class and race gets one good and one bad.
+**v1.2 progress:** Phases 22–24 complete (2026-09-14). Phase 22: harness + BEFORE matrix. Phase 23: casters can act. Phase 24: every sub-class and race has one good and one bad (smoke: Guard 2.80 → 3.22, Fridgian 2.46 → 2.97, Dwarven 2.45 → 2.73, Knight 3.19 → 3.48). Next: Phase 25, nothing happens silently.
 
 **Shipped:** v1.0 (Android build, internal testing) and v1.1 (Monster Balancing & Abilities). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
 
@@ -175,4 +175,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-14 — v1.2 Phase 23 complete (casters can act)*
+*Last updated: 2026-09-14 — v1.2 Phase 24 complete (identity pass)*
