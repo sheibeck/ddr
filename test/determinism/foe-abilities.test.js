@@ -225,6 +225,13 @@ const FULL_FIGHT_PINS = {
   // nor attacks/outcome changes (the fight still resolves in one hit either
   // way) — confirmed live, not assumed. magical-t4 (depth 4, foePower
   // 0.9167) was re-measured the same way with the same result.
+  //
+  // 27-03 iteration 2 (FOE_GRACE_AT_2 0.75 -> 0.5): re-measured a THIRD
+  // time (humans-t2 depth-2 foePower now 0.5, magical-t4 depth-4 foePower
+  // now 0.8333) — both fights still resolve at the same totalDraws/attacks/
+  // outcome, confirmed live via this file's own runFullFight/runVisits
+  // helpers (the deeper wp cut still rounds to a fight that resolves the
+  // same way).
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 46, attacks: 4, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 55, attacks: 4, outcome: "won" },

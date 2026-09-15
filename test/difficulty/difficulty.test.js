@@ -35,9 +35,9 @@ import {
 test("named constants match the research starting-point defaults", () => {
   assert.equal(BREATHER_EVERY, 5);
   assert.equal(ENCOUNTER_DOT_BASE, 9);
-  // Phase 27 (2026-09-15, TUNE-06): was 24 — a smaller ceiling for the
-  // widened early-floor easing.
-  assert.equal(ENCOUNTER_DOT_CAP, 15);
+  // Phase 27 (2026-09-15, TUNE-06): was 24 -> 15 (27-02) -> 13 (27-03
+  // iteration 3, against the forced-20 band).
+  assert.equal(ENCOUNTER_DOT_CAP, 13);
   assert.equal(ENCOUNTER_DOT_SOFT_K, 12);
   assert.equal(DENSITY_CANON_THROUGH_DEPTH, 2);
   // Phase 27 (2026-09-15, TUNE-06): was 6 — fewer dark-zone seed blobs at
@@ -79,10 +79,12 @@ test("PARITY GUARD: depths 1-2 reproduce the prototype's exact 9+depth/depth-1/3
 // values — this IS the intentional retune signal the comment above refers
 // to; no fixture reaches these depths.
 test("Phase 27 deliberate easing (TUNE-06): depths 3-5 are pinned to the retune values", () => {
+  // 27-03 iteration 3 (ENCOUNTER_DOT_CAP 15 -> 13, against the forced-20
+  // band): depths 4-5's dots drop by one (12 -> 11) — re-measured live.
   const PINS = {
     3: { dots: 11, darkBlobs: 1, darkRadius: 6 },
-    4: { dots: 12, darkBlobs: 2, darkRadius: 7 },
-    5: { dots: 12, darkBlobs: 3, darkRadius: 7 },
+    4: { dots: 11, darkBlobs: 2, darkRadius: 7 },
+    5: { dots: 11, darkBlobs: 3, darkRadius: 7 },
   };
   for (const [depth, expected] of Object.entries(PINS)) {
     const dc = difficultyCurve(Number(depth));

@@ -1592,7 +1592,132 @@ only while the smoke median is < 5 — grace deeper (`FOE_GRACE_AT_2` 0.75 ->
 `FOE_CAP_MAX` 4, `FOE_POWER_MAX` 1.3, `ABILITY_THREAT_MAX` 1.5) for the
 forced-20 band in parallel.
 
-(iterations 1..N are appended below by plan 27-03)
+**Orchestrator ladder cap (2026-09-15, context commit `4d18e80`):** 27-03
+climbs ONLY the parity-clean rungs — foe grace at floors 2-4 may take its
+notches (0.75 -> 0.5 -> 0.35; floor 1 stays exactly 1.0), plus the deep
+dials, dots/darkness caps, and hazard ramp VALUES from floor 2 (not
+`HAZARD_FROM_DEPTH` itself). The rations rung, the hazard-from-floor-1
+rung, the darkness-from-4 rung and the floor-1-grace rung are NOT taken
+this plan regardless of what the smoke reads — recorded under "Not
+changed, and why" below as "available, not taken" with the planner's
+calibration numbers. Because none of the rungs actually turned this plan
+touch a fixture, parity stays 33/33 with the same single declared
+divergence (seed 303, Dante -> Ned) throughout every iteration below — no
+new divergence record was needed.
+
+**Iteration 1 (27-03)** — rung turned: none (confirms 27-02's landed
+parity-clean set at full smoke scale); deep dials: set to the planner's
+iteration-1 start values (`COMBAT_SCALE_FROM_DEPTH` 6 -> 16,
+`FOE_CAP_MAX` 5 -> 4, `FOE_POWER_MAX` 1.6 -> 1.3, `ABILITY_THREAT_MAX`
+2.0 -> 1.5; the three `*_SOFT_K` siblings unchanged). Constants: early-floor
+levers unchanged from iteration 0 (`FOE_GRACE_AT_2` 0.75, `HAZARD_FROM_DEPTH`
+2, `HAZARD_SCALE_AT_START` 0.5, `DARK_HOLD_THROUGH_DEPTH` 3,
+`ENCOUNTER_DOT_CAP` 15). Curve at d=20/35/50: foePower 1.0399/1.3454/1.4341,
+abilityThreat 1.3935/1.6321/1.7769, foeCap 4/5/5 (matches the planner's
+calibration almost exactly at these start values). Smoke (143 x 3 pooled,
+n=429; `tools/tune-difficulty.mjs --seeds=200`): natural p50Depth **3**
+(OUT — target exactly 4), reach5 23.3 % (OUT — target >= 25 %), reach20
+0.0 % (OUT — target 1.0-2.0 %, but 0.2 % resolution at this scale); forced-20
+meanEncountersSurvived **2.85** (OUT — target 3.0-5.0), meanFloorsGained
+**0.78** / p50FloorsGained **0** (OUT — target mean 1.0-2.0, p50 >= 1).
+What moved vs iteration 0: forced-20 meanEncountersSurvived 1.56 -> 2.85,
+meanFloorsGained 0.37 -> 0.78 (deep-dial softening working as calibrated);
+natural median/reach5 unchanged (deep dials don't touch depths <= 15).
+What to turn next: natural median still short of 4 -> turn ladder rung 1
+(`FOE_GRACE_AT_2` deeper, parity-clean, permitted by the ladder cap);
+forced-20 still short on all three sub-rows, priority is the user's actual
+complaint -> turn `COMBAT_SCALE_FROM_DEPTH` up (option 1 of the miss table)
+to push depth 20 fully into identity.
+
+**Iteration 2 (27-03)** — rung turned: 1, notch 2 (`FOE_GRACE_AT_2`
+0.75 -> 0.5 — parity-clean, floor 1 stays exactly `FOE_GRACE_AT_1` 1.0;
+`humans-t2`/`magical-t4` determinism pins re-measured live, no draws/
+attacks/outcome changed at either depth); deep dials: `COMBAT_SCALE_FROM_DEPTH`
+16 -> 21 (depth 20 is now fully canon combat identity — the calibrated
+ceiling of what these dials alone can give that depth). Constants: as
+iteration 1 plus the two moves above. Curve at d=20/35/50: foePower
+1.0000/1.1046/1.1727, abilityThreat 1.0000/1.1967/1.3161, foeCap 3/4/4 (depth
+20 is now exact identity by construction). Smoke: natural p50Depth **4**
+(**IN** — hits the target exactly), reach5 25.9 % pooled / 29.0 % td200
+(**IN** — both clear the >= 25 % edge), reach20 0.0 % pooled / 2.0 % td200
+(directional; OUT at pooled resolution, borderline-high at td200 — noise at
+this scale); forced-20 meanEncountersSurvived **2.87** (OUT, but within
+noise of the 3.0 edge), meanFloorsGained **0.76** / p50FloorsGained **0**
+(OUT). What moved vs iteration 1: natural median 3 -> 4, reach5 23.3 % ->
+25.9 % (rung 1 alone crossed both natural band rows); forced-20 barely
+moved (meanEncountersSurvived 2.85 -> 2.87 — pushing identity through depth
+20 mostly helped iteration 1's earlier move already; this iteration's
+COMBAT_SCALE_FROM_DEPTH change mattered more for isolating depth 20 as a
+clean baseline than for moving the number further). What to turn next: the
+natural row is now IN BAND — no further early-floor rung is needed (rung 1
+notch 3, 0.5 -> 0.35, stays available but unused, per "back off/stop once
+in band"); forced-20 still misses on all three sub-rows -> turn the next
+miss-table option: `ENCOUNTER_DOT_CAP` down by 2 (fewer encounter triggers
+per floor from depth 3 on, more of the bot's action budget spent
+descending instead of fighting).
+
+**Iteration 3 (27-03)** — rung turned: none this iteration (the natural
+row stays in band with iteration 2's landed rung 1; no further early-floor
+escalation needed); deep dials: `ENCOUNTER_DOT_CAP` 15 -> 13 (miss-table
+option 2 for the forced-20 band — parity-clean, no fixture reaches depth
+3+; depths 4-5's dots drop 12 -> 11, re-measured live in
+`test/unit/maze.test.js`/`combat-scaling.test.js`/`difficulty.test.js`).
+Curve dots at d=4/5/10/20/35/50: 11/11/12/13/13/13 (was 12/12/13/14/15/15).
+Smoke: natural p50Depth **4** (**IN**), reach5 26.8 % pooled / 28.5 % td200
+(**IN**), reach20 0.0 % pooled / **1.0 %** td200 (directional; the td200
+reading now sits inside the 1.0-2.0 % target, pooled 429 is still 0 % —
+resolution noise, the full AFTER decides); forced-20
+meanEncountersSurvived **3.24** (**IN** — clears the 3.0 edge),
+meanFloorsGained **0.83** / p50FloorsGained **0** (OUT — closer to the 1.0
+mean edge but still short, p50 still 0). What moved vs iteration 2:
+forced-20 meanEncountersSurvived 2.87 -> 3.24 (now in band), meanFloorsGained
+0.76 -> 0.83; reach20 (td200) 2.0 % -> 1.0 % (still in the target corridor,
+noise); natural unchanged (dot-cap easing at depth 3+ barely touches the
+natural pooled numbers, which are dominated by depths <= 5). What to turn
+next: encounters-survived is now in band; floors-gained still misses on
+both sub-rows -> the forced-20 top causes (Herman/Drarl/Vampire, all
+canon tier-4/5 combat, no "starved in the dark" in the top 3) rule out the
+dark-cap option (miss-table option 3 is conditioned on that cause
+appearing); turn option 4 instead — `FOE_POWER_MAX`/`ABILITY_THREAT_MAX`
+down, now that `COMBAT_SCALE_FROM_DEPTH` is >= 21 — to flatten the ramp a
+level-5 hero faces immediately past depth 20, giving the post-20 floors a
+better chance to be gained at all.
+
+**Iteration 4 (27-03)** — rung turned: none (natural stays in band); deep
+dials: `FOE_POWER_MAX` 1.3 -> 1.15, `ABILITY_THREAT_MAX` 1.5 -> 1.3 (paired
+move, miss-table option 4). Curve at d=20/25/30/35/50: foePower
+1.0000/1.0200/1.0373/1.0523/1.0863, abilityThreat
+1.0000/1.0461/1.0850/1.1180/1.1896, foeCap 3/3/3/4/4 (a visibly flatter
+ramp than iteration 3's). Smoke: natural unchanged (p50Depth 4, reach5
+26.8 %/28.5 %, both **IN** — this move doesn't touch depths <= 15);
+forced-20 meanEncountersSurvived **3.35** (**IN**), meanFloorsGained
+**0.87** / p50FloorsGained **0** (OUT — inched up from 0.83 but still short
+of the 1.0 mean edge and the p50 >= 1 edge); reach20 0.0 % pooled / 1.0 %
+td200 (unchanged, still directional). What moved vs iteration 3:
+meanEncountersSurvived 3.24 -> 3.35, meanFloorsGained 0.83 -> 0.87 — a real
+but small gain; the deep-ramp softening is now well past the point of
+diminishing returns for this metric within the sanctioned dial set (the
+remaining floors-gained shortfall is dominated by canon tier-4/5 combat
+lethality just past depth 20, not by the *_MAX/*_SOFT_K dials, which are
+already close to their BASE values through the 21-30 range).
+
+**STOP: iteration cap reached (4 of 4) — proceeding to the full AFTER.**
+Final readout at this smoke scale: natural median death depth **IN band**
+(p50 4, reach >= 5 26.8-29.0 %, both clearing their edges); reach >= 20
+**directional, likely in band** (td200 1.0 %, pooled 0 % — resolution
+noise at 429/200 runs, the 40-seed x 143-cell full AFTER has ~17x finer
+resolution and decides); forced-20 encounters survived **IN band** (3.24-3.35
+across iterations 3-4); forced-20 floors gained **RECORDED AS A MISS** —
+mean 0.87 (target 1.0-2.0) and p50 0 (target >= 1) both fall short after
+every sanctioned lever available to this plan (COMBAT_SCALE_FROM_DEPTH
+pushed through depth 20, ENCOUNTER_DOT_CAP eased, FOE_POWER_MAX/
+ABILITY_THREAT_MAX flattened) — handed to the DR round (TUNE-07, 27-04)
+with the ladder's ceiling stated: the residual lethality just past depth 20
+is canon tier-4/5 combat (Herman, Drarl, Vampire — none of them "starved in
+the dark", so the darkness/rations rungs the ladder cap already excludes
+would not have helped this row even if taken). No early-floor rung beyond
+notch 2 (`FOE_GRACE_AT_2` 0.5) was needed — the natural band was met after
+iteration 2's single notch.
 
 ### AFTER readouts — retuned engine
 

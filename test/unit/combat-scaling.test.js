@@ -148,19 +148,19 @@ function fixedFoe(overrides = {}) {
 // TUNE-06). 27-03 edits ONLY these numbers per iteration; values recorded in
 // docs/DIFFICULTY-RETUNE.md's v1.2 change table.
 const PHASE_27_PINS = {
-  COMBAT_SCALE_FROM_DEPTH: 6,
+  COMBAT_SCALE_FROM_DEPTH: 21,
   FOE_CAP_BASE: 3,
-  FOE_CAP_MAX: 5,
+  FOE_CAP_MAX: 4,
   FOE_CAP_SOFT_K: 20,
   FOE_POWER_BASE: 1,
-  FOE_POWER_MAX: 1.6,
+  FOE_POWER_MAX: 1.15,
   FOE_POWER_SOFT_K: 35,
   ABILITY_THREAT_BASE: 1,
-  ABILITY_THREAT_MAX: 2.0,
+  ABILITY_THREAT_MAX: 1.3,
   ABILITY_THREAT_SOFT_K: 30,
   FOE_LVL_BIAS: 0,
   FOE_GRACE_AT_1: 1,
-  FOE_GRACE_AT_2: 0.75,
+  FOE_GRACE_AT_2: 0.5,
   FOE_GRACE_CANON_FROM_DEPTH: 5,
   HAZARD_FROM_DEPTH: 2,
   HAZARD_SCALE_AT_START: 0.5,
@@ -170,12 +170,14 @@ const PHASE_27_PINS = {
 
 // NON_COMBAT_PINS — depths 1-5's dots/darkBlobs/darkRadius after Phase 27's
 // early-floor easing (floors 1-2 canon by construction; floors 3-5 eased).
+// 27-03 iteration 3 (ENCOUNTER_DOT_CAP 15 -> 13, against the forced-20
+// band): depths 4-5's dots drop by one (12 -> 11) — re-measured live.
 const NON_COMBAT_PINS = {
   1: { dots: 10, darkBlobs: 0, darkRadius: 4 },
   2: { dots: 11, darkBlobs: 1, darkRadius: 5 },
   3: { dots: 11, darkBlobs: 1, darkRadius: 6 },
-  4: { dots: 12, darkBlobs: 2, darkRadius: 7 },
-  5: { dots: 12, darkBlobs: 3, darkRadius: 7 },
+  4: { dots: 11, darkBlobs: 2, darkRadius: 7 },
+  5: { dots: 11, darkBlobs: 3, darkRadius: 7 },
 };
 
 test("Phase 27 retune pins match engine/difficulty.js — recorded in docs/DIFFICULTY-RETUNE.md", () => {

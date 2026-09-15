@@ -15,11 +15,14 @@
 // Since Phase 21 (TUNE-01, D-01), this module also owns the COMBAT-scaling
 // knobs consumed by engine/combat.js#startCombat (foe count / level bias /
 // hit points / flat melee bonus) and engine/foeAbilities.js (caster
-// cadence). The identity band for every combat field is depth <= 5 (D-19 —
-// proven by test/determinism/foe-abilities.test.js's tier 2/4/5 seeds and
-// every depth-1 parity fixture); the dial VALUES are set by the Phase 21
-// retune and recorded in docs/DIFFICULTY-RETUNE.md. This module still
-// consumes no rng and reads no DOM.
+// cadence). The identity band for every combat field is depth <
+// COMBAT_SCALE_FROM_DEPTH (D-19 — proven by test/determinism/foe-abilities.test.js's
+// tier 2/4/5 seeds and every depth-1 parity fixture, all well inside the
+// band regardless of where COMBAT_SCALE_FROM_DEPTH sits); the dial VALUES
+// are set by the Phase 21 retune (identity-from-6) and Phase 27's v1.2
+// retune (identity-from-16, TUNE-06) and recorded in
+// docs/DIFFICULTY-RETUNE.md. This module still consumes no rng and reads no
+// DOM.
 //
 // DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06) — early-floor
 // levers and non-combat knobs: 27-CONTEXT.md's widened Lever 3, landed at
@@ -46,10 +49,15 @@ export const BREATHER_EVERY = 5;
 
 /** ENCOUNTER_DOT_BASE — matches the prototype's original literal "9". */
 export const ENCOUNTER_DOT_BASE = 9;
-/** ENCOUNTER_DOT_CAP — Phase 27 (TUNE-06): 24 -> 15 — a smaller ceiling for
- * the widened early-floor easing (see DENSITY_CANON_THROUGH_DEPTH below).
- * Floors 1-2 are canon by construction and never reach this cap. */
-export const ENCOUNTER_DOT_CAP = 15;
+/** ENCOUNTER_DOT_CAP — Phase 27 (TUNE-06): 24 -> 15 (27-02) -> 13 (27-03
+ * iteration 3) — DELIBERATE RULES CHANGE (2026-09-15): the forced-20 band
+ * (docs/DIFFICULTY-RETUNE.md's v1.2 section) still missed after iteration
+ * 2 pushed COMBAT_SCALE_FROM_DEPTH through depth 20 (2.87 encounters
+ * survived / 0.76 floors gained, targets 3.0-5.0 / 1.0-2.0) — fewer
+ * encounter-triggering dots per floor from depth 3 on gives every depth a
+ * better chance to gain a floor within the bot's action budget. Floors 1-2
+ * are canon by construction and never reach this cap. */
+export const ENCOUNTER_DOT_CAP = 13;
 /** ENCOUNTER_DOT_SOFT_K — the soft-cap curve's "bend" depth; see softCap(). */
 export const ENCOUNTER_DOT_SOFT_K = 12;
 /** DENSITY_CANON_THROUGH_DEPTH — Phase 27 (TUNE-06): floors 1..this value
@@ -77,56 +85,88 @@ export const DARK_RADIUS_CAP = 7;
  * eases floors 4+ while keeping floor 2's single canon blob untouched. */
 export const DARK_HOLD_THROUGH_DEPTH = 3;
 
-// --- Phase 21 (TUNE-01, D-01/D-19): combat-scaling knobs -------------------
-// Identity band: depth <= 5 (see difficultyCurve's `over` computation below).
+// --- Phase 21/27 (TUNE-01/06, D-01/D-19): combat-scaling knobs -------------
+// Identity band: depth < COMBAT_SCALE_FROM_DEPTH (see difficultyCurve's
+// `over` computation below) — grace band floors 2..FOE_GRACE_CANON_FROM_DEPTH-1,
+// identity through COMBAT_SCALE_FROM_DEPTH - 1 by construction ("over").
 //
-// DELIBERATE RULES CHANGE (Phase 21, TUNE-03, D-09/D-11): the three MAX
-// constants below were set by the ONE consolidated retune pass, iteration 1,
-// against the 200-seed upgraded-bot readout recorded in
-// docs/DIFFICULTY-RETUNE.md (change table + AFTER readout + comparison vs.
-// the D-09 targets). Every constant stays identity at depth <= 5 by
+// DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06) — combat dials:
+// this block replaces the Phase 21 wording. Set by the v1.2 retune against
+// the forced-20 band in docs/DIFFICULTY-RETUNE.md's "## v1.2 retune (Phase
+// 27)" section (iteration log below): the Phase 26 handoff measured a
+// level-5 hero forced to depth 20 surviving only ~1.3 encounters / 0.14
+// floors gained against Phase 21's identity-from-6 dials — "instant death
+// on any combat" per the user's v1.1 verdict. `COMBAT_SCALE_FROM_DEPTH` may
+// only ever move UP from its Phase 21 value (6), never below it; every
+// deep MAX stays >= its BASE; the curve stays monotone non-decreasing past
+// depth 20 by construction (no dial-back, no forced death — user rule).
+// Every constant stays identity for depth < COMBAT_SCALE_FROM_DEPTH by
 // construction (`over = max(0, depth - (COMBAT_SCALE_FROM_DEPTH - 1))` is 0
-// for depth 1..5) — this is proven structurally, not by convention, so the
-// depth-1..5 fixtures and the D-15/FID-02 pins never see a different number.
-// A future D-16 "tune again" follow-up may edit ONLY these three MAX values
-// (and their *_SOFT_K siblings) plus append a ledger addendum — it must not
-// touch the wiring in startCombat/foeAbilities.js, which 21-02 already
-// proved correct against identity values.
+// through that depth) — proven structurally, not by convention, so the
+// depth <= 5 fixtures and the D-15/FID-02 pins never see a different
+// number regardless of where COMBAT_SCALE_FROM_DEPTH sits. A future
+// "tune-again" follow-up may edit ONLY these constants (the three MAX
+// values, their *_SOFT_K siblings, and COMBAT_SCALE_FROM_DEPTH itself) plus
+// append a ledger addendum — it must not touch the wiring in
+// startCombat/foeAbilities.js, which 21-02 already proved correct against
+// identity values.
 
 /** COMBAT_SCALE_FROM_DEPTH — the first floor on which the combat knobs may
  * leave identity (D-19); `over = max(0, depth - (COMBAT_SCALE_FROM_DEPTH - 1))`
- * is the soft cap's argument, so depths 1..5 always compute `over === 0`. */
-export const COMBAT_SCALE_FROM_DEPTH = 6;
+ * is the soft cap's argument. DELIBERATE RULES CHANGE (Phase 27, TUNE-06) —
+ * combat dials: 6 -> 16 (iteration 1) -> 21 (iteration 2) against the
+ * forced-20 band in docs/DIFFICULTY-RETUNE.md's v1.2 section — the Phase 26
+ * handoff measured a level-5 hero forced to depth 20 surviving only ~1.3
+ * encounters / 0.14 floors gained at Phase 21 identity-from-6; iteration 1's
+ * identity-from-16 raised that to 2.85 encounters / 0.78 floors, still
+ * short of the 3.0-5.0 / >=1.0 band, so iteration 2 pushes identity through
+ * depth 20 entirely (COMBAT_SCALE_FROM_DEPTH = 21) — depth 20 is now fully
+ * canon combat, the calibrated ceiling of what these dials alone can give
+ * that depth (see the iteration log's "what to turn next" for the
+ * non-combat levers that still apply beyond this ceiling). May only ever
+ * move UP from here (never below 6); a future "tune-again" follow-up may
+ * move it again. */
+export const COMBAT_SCALE_FROM_DEPTH = 21;
 /** FOE_CAP_BASE — the canon `c.level <= 2 ? 2 : 3` ceiling's level->=3 value. */
 export const FOE_CAP_BASE = 3;
-/** FOE_CAP_MAX — 21-04 retune (D-02): bigger fights deep — the count ceiling
- * soft-caps toward 5 (≈4 from the mid-teens, ≈5 by the low thirties, via
- * FOE_CAP_SOFT_K), never above 5. Identity (3) at depth <= 5. */
-export const FOE_CAP_MAX = 5;
+/** FOE_CAP_MAX — DELIBERATE RULES CHANGE (Phase 27, TUNE-06): 5 -> 4
+ * (iteration 1) — paired with COMBAT_SCALE_FROM_DEPTH's move, a smaller
+ * ceiling on foes-per-encounter growth so the forced-20 band isn't also
+ * facing more bodies at once. At depth 20: foeCap 3 (exact identity — see
+ * COMBAT_SCALE_FROM_DEPTH's iteration-2 move); at depth 35: 4; at depth 50:
+ * 4 (via FOE_CAP_SOFT_K 20, unchanged). Identity (3) through
+ * depth < COMBAT_SCALE_FROM_DEPTH. */
+export const FOE_CAP_MAX = 4;
 export const FOE_CAP_SOFT_K = 20;
 /** FOE_POWER_BASE — the multiplier applied to a foe's starting wp/maxWP,
  * used from COMBAT_SCALE_FROM_DEPTH onward (below that depth, Phase 27's
  * `graceFor(d)` supplies the multiplier instead — see FOE_GRACE_* below). */
 export const FOE_POWER_BASE = 1.0;
-/** FOE_POWER_MAX — 21-04 retune (D-02): ≈ +35% hit points and flat melee
- * damage at depth 20, ≈ +50% at depth 40, never above +60% (soft-capped via
- * FOE_POWER_SOFT_K). Identity (1.0) at depth <= 5. */
-export const FOE_POWER_MAX = 1.6;
-/** FOE_POWER_SOFT_K — iteration 2 (D-11): raised 25->35 per the "median < 8
- * / p90 < 25" guidance (slower ramp, tried before lowering a MAX). Recorded
- * in docs/DIFFICULTY-RETUNE.md: this had no measurable effect on median/p90
- * because those are dominated by depth <= 5 deaths the retune deliberately
- * does not touch — kept anyway as the honest, tried-and-recorded value. */
+/** FOE_POWER_MAX — DELIBERATE RULES CHANGE (Phase 27, TUNE-06): 1.6 -> 1.3
+ * (iteration 1) -> 1.15 (iteration 4) — depth 20 was fully identity by
+ * iteration 2 (COMBAT_SCALE_FROM_DEPTH = 21) but the forced-20 band's
+ * floors-gained row still missed after iteration 3 (mean 0.83, p50 0;
+ * target mean 1.0-2.0, p50 >= 1) — a level-5 hero surviving depth 20 dies
+ * again almost immediately in the still-ramping 21+ band, so this iteration
+ * flattens that ramp: at depth 20: exact identity; at depth 35: ≈ +5.3%
+ * hit points and flat melee damage; at depth 50: ≈ +8.6%; never above
+ * +15%. Identity (1.0) through depth < COMBAT_SCALE_FROM_DEPTH. */
+export const FOE_POWER_MAX = 1.15;
+/** FOE_POWER_SOFT_K — iteration 2 (D-11, Phase 21): raised 25->35 per the
+ * "median < 8 / p90 < 25" guidance (slower ramp, tried before lowering a
+ * MAX). Unchanged by Phase 27 — the same K paired with the smaller MAX
+ * above gives depth 20 a gentler start than Phase 21's identity-from-6. */
 export const FOE_POWER_SOFT_K = 35;
 /** ABILITY_THREAT_BASE — the cadence scalar for caster kits (every/uses). */
 export const ABILITY_THREAT_BASE = 1.0;
-/** ABILITY_THREAT_MAX — 21-04 retune (D-03): a caster kit's `every: 2`
- * effectively becomes "every visit" (every: 1) from ≈ depth 25 onward, and
- * `uses` doubles at the asymptote (via ABILITY_THREAT_SOFT_K). Identity
- * (1.0) at depth <= 5. */
-export const ABILITY_THREAT_MAX = 2.0;
-/** ABILITY_THREAT_SOFT_K — iteration 2 (D-11): raised 20->30, same rationale
- * as FOE_POWER_SOFT_K above. */
+/** ABILITY_THREAT_MAX — DELIBERATE RULES CHANGE (Phase 27, TUNE-06): 2.0 ->
+ * 1.5 (iteration 1) -> 1.3 (iteration 4), same rationale as FOE_POWER_MAX
+ * above — at depth 20: exact identity; at depth 35: ≈ +11.8% cadence; at
+ * depth 50: ≈ +19%; never above +30%. Identity (1.0) through
+ * depth < COMBAT_SCALE_FROM_DEPTH. */
+export const ABILITY_THREAT_MAX = 1.3;
+/** ABILITY_THREAT_SOFT_K — iteration 2 (D-11, Phase 21): raised 20->30, same
+ * rationale as FOE_POWER_SOFT_K above. Unchanged by Phase 27. */
 export const ABILITY_THREAT_SOFT_K = 30;
 /** FOE_LVL_BIAS — reserved (D-01): 0 unless the retune needs it. */
 export const FOE_LVL_BIAS = 0;
@@ -142,10 +182,15 @@ export const FOE_LVL_BIAS = 0;
  * structural guarantee that Dante's demotion is (today) this phase's only
  * parity divergence. */
 export const FOE_GRACE_AT_1 = 1.0;
-/** FOE_GRACE_AT_2 — Phase 27 (TUNE-06): floor 2's foePower multiplier (below
- * identity — foes hit/hold less hard at floors 2-4). Rises linearly to
- * exactly 1.0 at FOE_GRACE_CANON_FROM_DEPTH. */
-export const FOE_GRACE_AT_2 = 0.75;
+/** FOE_GRACE_AT_2 — DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06):
+ * floor 2's foePower multiplier (below identity — foes hit/hold less hard at
+ * floors 2-4). Rises linearly to exactly 1.0 at FOE_GRACE_CANON_FROM_DEPTH.
+ * Ladder rung 1, notch 2 (27-03 iteration 2): 0.75 -> 0.5 — the pooled smoke
+ * median was still 3 (< the target band's 4) after iteration 1; this notch
+ * is parity-clean (every fixture fights on floor 1 only; FOE_GRACE_AT_1
+ * stays exactly 1.0). A third notch (-> 0.35) is the ladder cap's ceiling
+ * for this rung — see docs/DIFFICULTY-RETUNE.md's iteration log. */
+export const FOE_GRACE_AT_2 = 0.5;
 /** FOE_GRACE_CANON_FROM_DEPTH — the first depth whose foePower returns to
  * exactly 1.0 (the literal, not merely a float that rounds to it — see
  * graceFor()'s `>=` guard below, the same structural-identity technique
@@ -269,12 +314,12 @@ function graceFor(d) {
  *     (not forced to zero on a breather floor: darkBlobs already being zero
  *     means no blob is ever seeded to apply this radius to)
  *   - foeCap: soft-capped max foes per encounter (Phase 21, D-01/D-19) —
- *     identity (FOE_CAP_BASE) through depth <= 5; combat knobs do NOT dip on
- *     breather floors (a breather is lighter in density/darkness, not in the
- *     power of what you meet)
+ *     identity (FOE_CAP_BASE) through depth < COMBAT_SCALE_FROM_DEPTH;
+ *     combat knobs do NOT dip on breather floors (a breather is lighter in
+ *     density/darkness, not in the power of what you meet)
  *   - foeBonus: `foeCap - FOE_CAP_BASE` (D-17) — added AFTER the canon count
  *     roll, before the foeCap clamp, so startCombat's d4/d4 draw shape never
- *     changes; 0 at depth <= 5
+ *     changes; 0 through depth < COMBAT_SCALE_FROM_DEPTH
  *   - foeLvlBias: reserved (D-01) — always FOE_LVL_BIAS (0) unless a future
  *     retune needs it
  *   - foePower: below COMBAT_SCALE_FROM_DEPTH, Phase 27's `graceFor(d)` (foe
@@ -288,7 +333,7 @@ function graceFor(d) {
  *     on, HAZARD_SCALE_AT_START flat through HAZARD_FLAT_THROUGH_DEPTH, then
  *     eased linearly back to 1.0
  *   - abilityThreat: soft-capped cadence scalar (Phase 21, D-03) for caster
- *     kits (every/uses) — identity (1.0) through depth <= 5
+ *     kits (every/uses) — identity (1.0) through depth < COMBAT_SCALE_FROM_DEPTH
  */
 export function difficultyCurve(depth) {
   const d = safeDepth(depth);
