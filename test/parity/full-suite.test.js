@@ -42,6 +42,10 @@ import {
   chargenDivergenceFor,
   stripDeclaredFields,
   stripScenarioDivergence,
+  actionPathDivergenceOf,
+  skipsByteDiffAt,
+  declaredEndDiffs,
+  stockMarkupDiff as checkStockMarkup,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -142,6 +146,10 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // ./harness/comparables.js. Every other scenario (win/lose/flee) keeps
       // comparing on the bare combatComparable.
       const cmp = scenario.name === "parley" ? (s) => stripParleyDivergence(combatComparable(s)) : combatComparable;
+      // FID-07 (Phase 24, plan 24-02): the identical consult/skip/end-assert
+      // logic as combat-parity.test.js — both replay sites must agree (the
+      // Phase 23 rule). `null` for every scenario today (no-op).
+      const pathDiv = actionPathDivergenceOf(scenario);
 
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
@@ -156,9 +164,17 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
           const { state } = applyAction(engineState, { type: action.type });
           engineState = state;
         }
-        const d = diffState(cmp(ctx.S), cmp(engineState));
-        assert.equal(d, null, `combat scenario ${scenario.name}, action ${i}: diverged at ${d}`);
+        if (!skipsByteDiffAt(pathDiv, i)) {
+          const d = diffState(cmp(ctx.S), cmp(engineState));
+          assert.equal(d, null, `combat scenario ${scenario.name}, action ${i}: diverged at ${d}`);
+        }
       });
+
+      if (pathDiv) {
+        const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+        assert.equal(ends.before, null, `combat scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
+        assert.equal(ends.after, null, `combat scenario ${scenario.name}: engine end-state != declared after at ${ends.after}`);
+      }
     }
   });
 
@@ -213,6 +229,11 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
 
   await t.test("economy + encounters: the store visit and every encounters scenario match the frozen prototype", () => {
     {
+      // FID-07 (Phase 24, plan 24-02): the identical consult/skip/end-assert/
+      // markup logic as economy-parity.test.js — both replay sites must
+      // agree. `null` today (no-op).
+      const pathDiv = actionPathDivergenceOf(ECONOMY_FIXTURE);
+
       const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
       let engineState = newRun(ECONOMY_FIXTURE.seed);
       assert.equal(diffState(economyComparable(ctx.S), economyComparable(engineState)), null);
@@ -221,9 +242,23 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       ECONOMY_FIXTURE.actions.forEach((action, i) => {
         const { state } = runEconomyAction(ctx, engineState, action);
         engineState = state;
-        const d = diffState(economyComparable(ctx.S), economyComparable(engineState));
-        assert.equal(d, null, `economy action ${i}: diverged at ${d}`);
+
+        if (pathDiv?.stockCostMul != null && action.type === "openStore") {
+          const markupDivergence = checkStockMarkup(ctx.S.store, engineState.store, pathDiv.stockCostMul);
+          assert.equal(markupDivergence, null, `economy action ${i}: store markup diverged at ${markupDivergence}`);
+        }
+
+        if (!skipsByteDiffAt(pathDiv, i)) {
+          const d = diffState(economyComparable(ctx.S), economyComparable(engineState));
+          assert.equal(d, null, `economy action ${i}: diverged at ${d}`);
+        }
       });
+
+      if (pathDiv) {
+        const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+        assert.equal(ends.before, null, `economy fixture: prototype end-state != declared before at ${ends.before}`);
+        assert.equal(ends.after, null, `economy fixture: engine end-state != declared after at ${ends.after}`);
+      }
     }
     for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });

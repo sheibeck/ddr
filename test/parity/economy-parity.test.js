@@ -41,7 +41,14 @@ import url from "node:url";
 import { newRun } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { economyComparable as comparable, runEconomyAction as runAction } from "./harness/comparables.js";
+import {
+  economyComparable as comparable,
+  runEconomyAction as runAction,
+  actionPathDivergenceOf,
+  skipsByteDiffAt,
+  declaredEndDiffs,
+  stockMarkupDiff as checkStockMarkup,
+} from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const ECONOMY_FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.economy.json"), "utf8"));
@@ -50,6 +57,12 @@ const ENCOUNTERS_FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "f
 // --- economy: a full store visit -------------------------------------------
 
 test("economy parity (store visit): engine matches the frozen prototype after every action", () => {
+  // FID-07 (Phase 24, plan 24-02): a script fixture (unlike a scenario-keyed
+  // fixture) carries its action-path record, if any, at the fixture's own
+  // top level. `null` today (no record declared yet) — a no-op until Plan
+  // 24-04 declares the Pickpocket markup here.
+  const pathDiv = actionPathDivergenceOf(ECONOMY_FIXTURE);
+
   const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
   let engineState = newRun(ECONOMY_FIXTURE.seed);
 
@@ -78,9 +91,29 @@ test("economy parity (store visit): engine matches the frozen prototype after ev
       assert.doesNotThrow(() => structuredClone(engineState), `action ${i}: structuredClone must not throw on an open store`);
     }
 
-    const divergence = diffState(comparable(ctx.S), comparable(engineState));
-    assert.equal(divergence, null, `action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`);
+    // FID-07: when the record declares a store-roll markup, the openStore
+    // action must prove the store ROLL itself (names, order, subs) is still
+    // byte-identical and every routed line's cost is exactly the declared
+    // multiplier off the prototype's cost — before the per-action byte diff
+    // is skipped for this and later actions.
+    if (pathDiv?.stockCostMul != null && action.type === "openStore") {
+      const markupDivergence = checkStockMarkup(ctx.S.store, engineState.store, pathDiv.stockCostMul);
+      assert.equal(markupDivergence, null, `action ${i}: store markup diverged at ${markupDivergence}`);
+    }
+
+    if (!skipsByteDiffAt(pathDiv, i)) {
+      const divergence = diffState(comparable(ctx.S), comparable(engineState));
+      assert.equal(divergence, null, `action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`);
+    }
   });
+
+  // FID-07: end-of-scenario before/after pins, machine-checked, when a
+  // record is declared. No-op when pathDiv is null.
+  if (pathDiv) {
+    const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+    assert.equal(ends.before, null, `economy fixture: prototype end-state != declared before at ${ends.before}`);
+    assert.equal(ends.after, null, `economy fixture: engine end-state != declared after at ${ends.after}`);
+  }
 
   assert.ok(allEventTypes.includes("storeOpened"));
   assert.ok(allEventTypes.includes("bought"), "at least one purchase succeeded");

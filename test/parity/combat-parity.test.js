@@ -29,7 +29,7 @@ import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { stripParleyDivergence } from "./harness/comparables.js";
+import { stripParleyDivergence, actionPathDivergenceOf, skipsByteDiffAt, declaredEndDiffs } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -143,6 +143,14 @@ for (const scenario of FIXTURE.scenarios) {
     // see stripParleyDivergence's JSDoc in ./harness/comparables.js. Every other
     // scenario keeps comparing on the bare comparable().
     const cmp = scenario.name === "parley" ? (s) => stripParleyDivergence(comparable(s)) : comparable;
+    // FID-07 (Phase 24, plan 24-02): a scenario MAY carry a generic
+    // "action-path" divergence record — declares that the per-action byte
+    // diff is skipped from a given action index on (the action path itself
+    // diverges), and that both sides' end-of-scenario c-fields (and optional
+    // top-level stateFields) equal the record's before/after, machine-checked
+    // via declaredEndDiffs below. `null` for every scenario today (no fixture
+    // declares one yet), so this is a no-op until Plan 24-03 declares one.
+    const pathDiv = actionPathDivergenceOf(scenario);
 
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
@@ -180,28 +188,46 @@ for (const scenario of FIXTURE.scenarios) {
         assert.fail(`unhandled combat fixture action type: ${action.type}`);
       }
 
-      const divergence = diffState(cmp(ctx.S), cmp(engineState));
-      assert.equal(
-        divergence,
-        null,
-        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
-      );
+      // FID-07: skip the per-action byte diff only when a declared
+      // action-path record says the path diverges from this index on.
+      if (!skipsByteDiffAt(pathDiv, i)) {
+        const divergence = diffState(cmp(ctx.S), cmp(engineState));
+        assert.equal(
+          divergence,
+          null,
+          `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
+        );
+      }
     });
 
-    if (scenario.name === "win") {
-      assert.equal(engineState.dead, false);
-      assert.equal(engineState.combat, null, "the encounter cleared");
-      assert.ok(allEventTypes.includes("foeKilled"));
-      assert.ok(allEventTypes.includes("encounterCleared"));
-    } else if (scenario.name === "lose") {
-      assert.equal(engineState.dead, true);
-      assert.ok(allEventTypes.includes("died"));
-    } else if (scenario.name === "flee") {
-      assert.equal(engineState.combat, null, "fleeing ends combat");
-      assert.ok(allEventTypes.includes("fled"));
-    } else if (scenario.name === "parley") {
-      assert.equal(engineState.combat, null, "a successful parley ends combat");
-      assert.ok(allEventTypes.includes("spGained"));
+    // FID-07: when an action-path record is declared, both sides' end state
+    // must equal the record's own before/after — machine-checked, not merely
+    // stripped. No-op (both `ctx`/`engineState` untouched) when pathDiv is null.
+    if (pathDiv) {
+      const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+      assert.equal(ends.before, null, `scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
+      assert.equal(ends.after, null, `scenario ${scenario.name}: engine end-state != declared after at ${ends.after}`);
+    }
+
+    // A record-bearing scenario's outcome is pinned by the record's own
+    // stateFields (asserted above via declaredEndDiffs) instead of these
+    // hard-coded per-name checks, which assume the byte-identical outcome.
+    if (!pathDiv) {
+      if (scenario.name === "win") {
+        assert.equal(engineState.dead, false);
+        assert.equal(engineState.combat, null, "the encounter cleared");
+        assert.ok(allEventTypes.includes("foeKilled"));
+        assert.ok(allEventTypes.includes("encounterCleared"));
+      } else if (scenario.name === "lose") {
+        assert.equal(engineState.dead, true);
+        assert.ok(allEventTypes.includes("died"));
+      } else if (scenario.name === "flee") {
+        assert.equal(engineState.combat, null, "fleeing ends combat");
+        assert.ok(allEventTypes.includes("fled"));
+      } else if (scenario.name === "parley") {
+        assert.equal(engineState.combat, null, "a successful parley ends combat");
+        assert.ok(allEventTypes.includes("spGained"));
+      }
     }
   });
 }

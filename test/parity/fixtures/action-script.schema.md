@@ -47,6 +47,56 @@ exact same ordered action list, so any divergence in resulting state (per
   `divergences` above, but attached directly to a single SCENARIO object
   (used by scenario-based fixtures, e.g. `action-script.magic.json`, where
   fixtures are keyed by scenario name rather than by seed).
+- `divergence` with `kind: "action-path"` (object, optional; Phase 24, FID-07)
+  — a second, generic `divergence` shape for a divergence whose consequence
+  is a CHANGED ACTION PATH (a flipped combat outcome, an unaffordable
+  purchase) rather than a field that simply differs at the end while the
+  action-by-action byte diff still holds throughout. This is the one case
+  Phase 23's field-strip records (`divergences`/`divergence` above) cannot
+  express, because the per-action byte diff itself would fail partway through
+  the scenario — before any end-of-scenario field comparison is ever reached.
+  It may sit on a scenario object (e.g. a combat fixture's scenario) OR on a
+  script fixture's own top level (e.g. the economy fixture, which is keyed by
+  a single `seed`/`actions` pair, not by scenario). Fields:
+  - `kind` (required) — the literal string `"action-path"`. A record without
+    this field (every Phase 23 record) is NOT an action-path record — the
+    two kinds are mutually exclusive on any one holder.
+  - `phase`, `requirements`, `rationale` — same meaning as the Phase 23
+    record shape above.
+  - `fromAction` (integer, required) — the 0-based index into `actions` from
+    which the per-action byte diff is declared off (inclusive); every action
+    before this index is still compared byte-for-byte as normal.
+  - `fields` (array of strings, required, non-empty) — the `state.c`-level
+    field names pinned at the end of the scenario, taken verbatim from both
+    sides, never hand-typed.
+  - `before` / `after` — objects carrying ONLY the keys named in `fields`:
+    the prototype's measured end-of-scenario values (`before`) and the
+    engine's (`after`).
+  - `stateFields` (array of strings, optional) — additional TOP-LEVEL state
+    field names to pin alongside `fields` (e.g. `"dead"`), for a divergence
+    whose consequence reaches outside `state.c`.
+  - `stateBefore` / `stateAfter` (optional) — the same shape as `before`/
+    `after`, but for the keys named in `stateFields`.
+  - `stockCostMul` (number, optional; economy fixtures only) — the exact
+    store-roll price-multiplier relation checked at the `openStore` action:
+    every `PRICEFOR_ROUTED_EFFECTS` line's engine cost must equal
+    `Math.max(1, Math.round(prototypeCost * stockCostMul))`, every other
+    line's cost must be unchanged, and the store roll itself (names, order,
+    subs) must be byte-identical — see `stockMarkupDiff` in
+    `test/parity/harness/comparables.js`.
+
+  The harness helpers for this record kind live in
+  `test/parity/harness/comparables.js`: `actionPathDivergenceOf(holder)` looks
+  up the record (returning `null` for a holder with no `divergence` or a
+  Phase-23-shaped one lacking `kind`); `skipsByteDiffAt(divergence, i)` tells a
+  replay loop whether to skip the per-action byte diff at index `i`;
+  `declaredEndDiffs(protoState, engineState, divergence)` machine-checks both
+  sides' end-of-scenario state against the declared `before`/`after` (and
+  `stateBefore`/`stateAfter`) — a caller asserts both results are `null`
+  BEFORE relying on the record at all, exactly like the Phase 23 record
+  shape's own before/after assertions. It is declared, measured, and
+  asserted — never a blanket skip, and never a substitute for comparing every
+  action before `fromAction` byte-for-byte as normal.
 - **The rule:** a `divergences`/`divergence` record is the ONLY sanctioned
   way to keep a deliberately-changed fixture result in the parity suite.
   `test/parity/prototype-master.js.txt` (the frozen golden master) is NEVER
