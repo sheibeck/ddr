@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 25.1
 current_phase_name: Device Feedback Batch (INSERTED; runs before Phase 26)
 status: executing
-stopped_at: Completed 25.1-01-PLAN.md
-last_updated: "2026-09-15T13:54:17.315Z"
+stopped_at: Completed 25.1-02-PLAN.md
+last_updated: "2026-09-15T14:07:40.033Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 27
-  completed_plans: 21
+  completed_plans: 22
   percent: 57
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 25.1 — Device Feedback Batch (INSERTED; runs before Phase 26)
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Executing (wave 1 of 3)
 Last activity: 2026-09-15 — Phase 25.1 planned (3 plans, 3 waves, 65fb83c); execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T13:54:17.289Z
-Stopped at: Completed 25.1-01-PLAN.md
+Last session: 2026-09-15T14:07:40.005Z
+Stopped at: Completed 25.1-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -142,6 +142,7 @@ Resume file: None
 | Phase 25 P04 | 35min | 3 tasks | 2 files |
 | Phase 25 P05 | 20min | 2 tasks | 2 files |
 | Phase 25.1 P01 | 35min | 3 tasks | 6 files |
+| Phase 25.1 P02 | 50min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -240,6 +241,8 @@ Resume file: None
 - [Phase ?]: 25-05: eventNarration.js re-exports TOAST_FOR/ORACLE_ONLY/FEATURE_EVENTS/toastsForAction from toasts.js (one-directional, no import cycle) so both tables are reachable from one module.
 - [Phase ?]: narrativeToastText decodes entities amp-last so escaped markup never re-decodes into a live tag; tags stripped before entities decoded
 - [Phase ?]: tableFour/tableFourNoop toast the engine's own prose result unchanged rather than deriving a shorter table phrase
+- [Phase ?]: campFailed.members is conditionally spread so the solo event shape stays byte-identical to the pre-plan payload
+- [Phase ?]: The camp button is dimmed via data-short/CSS, never disabled, so a refused tap still surfaces the campFailed toast
 
 ### Blockers
 

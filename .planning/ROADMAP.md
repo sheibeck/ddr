@@ -226,7 +226,7 @@ Plans:
   5. A Magic User member casts, a Thief member backstabs, a Fighter member swings its weapon — narrated and toasted; solo parity byte-identical.
   6. Make Camp with too little food says "you eat N a night, you have M", counting party appetites; the automatic new day is unchanged.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
@@ -235,7 +235,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 25.1-02-PLAN.md — Joiner swap + camp numbers (DFB-04/06, zero rng): `swapPartyMember` + `resolveJoiner` emitting `joinerLeft {name, sub, replacedBy}` before `joinerJoined`, five family-friendly exit lines in `content/flavor.js#JOINER_EXIT_LINES` picked by name length (escaped, voice-scanned), offer head "Take X along? Y walks."; `nightlyEats(state)` shared by newDay and makeCamp, `campFailed {reason, need, have, members?}` narrated/toasted as "You eat N a night (Bram eats 1 more). You have M. Find rations first."; camp button short-state from the same helper; joiner-acquisition/party-model/movement/shell-party-camp tests; parity 33/33 — wave 2
+- [x] 25.1-02-PLAN.md — Joiner swap + camp numbers (DFB-04/06, zero rng): `swapPartyMember` + `resolveJoiner` emitting `joinerLeft {name, sub, replacedBy}` before `joinerJoined`, five family-friendly exit lines in `content/flavor.js#JOINER_EXIT_LINES` picked by name length (escaped, voice-scanned), offer head "Take X along? Y walks."; `nightlyEats(state)` shared by newDay and makeCamp, `campFailed {reason, need, have, members?}` narrated/toasted as "You eat N a night (Bram eats 1 more). You have M. Find rations first."; camp button short-state from the same helper; joiner-acquisition/party-model/movement/shell-party-camp tests; parity 33/33 — wave 2
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
