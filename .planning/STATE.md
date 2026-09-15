@@ -1,37 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Class Pass & Mass Playtest
-status: Awaiting next milestone
-stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-09-15T22:49:56.293Z"
+milestone: v1.3
+milestone_name: Feel, Loot & Combat Flow
+status: planning
+last_updated: "2026-09-15T22:59:06.507Z"
 last_activity: 2026-09-15
-last_activity_desc: Milestone v1.2 completed and archived
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 31
-  completed_plans: 31
-  percent: 100
-current_phase: 27
-current_phase_name: Delve-to-Death Retune
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
+See: .planning/PROJECT.md (updated 2026-09-15 for v1.3)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 26 — Mass Playtest & Class-Pass Ledger (Plan 02 of 4 complete: AFTER matrix captured, cannot-act gate PASSED; 03-04 pending)
+**Current focus:** v1.3 Feel, Loot & Combat Flow — defining requirements (armor rework, end-of-combat loot, combat narrative/input research → build, combat start & usability, UI feel, store stock). Tuning (TUNE-06/07), Play upload, tutorial, launch explicitly out.
 
 ## Current Position
 
-Phase: Milestone v1.2 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-15 — Milestone v1.2 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-15 — Milestone v1.3 started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -39,7 +35,7 @@ Last activity: 2026-09-15 — Milestone v1.2 completed and archived
 
 **Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers (first upload 2026-09-10, versionCode 1, built BEFORE DR18). **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`). A signed versionCode-2 AAB with DR17+DR18 was built 2026-09-13 13:48 and handed to the user to upload.
 
-**Build/env:** `npm test` (951/951 as of v1.1 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
+**Build/env:** `npm test` (1448/1448 as of v1.2 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
 
 **Device:** Pixel 7 wireless adb (`adb-28051FDH200H0R`, 10.0.0.175:<port rotates>; rediscover via `adb mdns services`). Deploy = `adb install -r` + `am force-stop` + `monkey` relaunch (install alone doesn't reload the WebView). A Play-installed build and a local build have different signers — uninstall one before installing the other (Preferences data is lost on uninstall). Screenshots via screencap usually hit the lock screen — the user reviews and reports.
 
@@ -92,8 +88,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd-new-milestone` (user: another milestone of fixes and tuning-adjacent questions).
-- When the Pixel 7 is back: install the retune debug build (`android/app/build/outputs/apk/debug/app-debug.apk`, from 91c5b13) and play the four-run DR checklist in `docs/DIFFICULTY-RETUNE.md`; then ASK about a versionCode-4 Play internal upload (`node tools/bump-version.mjs` + `npm run android:release`).
+- v1.3 in flight — see ROADMAP.md once created.
+- When the Pixel 7 is back (NOT a v1.3 item — later tuning milestone): install the retune debug build (`android/app/build/outputs/apk/debug/app-debug.apk`, from 91c5b13) and play the four-run DR checklist in `docs/DIFFICULTY-RETUNE.md`; then ASK about a versionCode-4 Play internal upload (`node tools/bump-version.mjs` + `npm run android:release`).
 
 ## Performance Metrics
 

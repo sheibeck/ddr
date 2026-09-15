@@ -53,7 +53,13 @@
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
 - [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
 - [ ] Automate the Play upload (Developer API service account) — see `docs/RELEASING.md`
-- [ ] **Feedback, Feel & Polish remainder** (v1.3 candidate) — inventory integrity, store stock, UI layout, combat start on Fight!, "not ready yet" audit; see `.planning/proposed-milestone-feedback-feel-polish.md`
+- [ ] **Armor rework** — v1.3: the soak-vs-wear rule audited and decided (today a d20 ≤ AR soaks the whole blow and the full damage is charged to durability unless ≤ armor min; Cloak of Armor is never-wearing magic plate; Dwarves wear at half), the "Armor takes 39 / Wear 39 but the gear panel shows no damage" discrepancy fixed, durability carried on the item (INV-01), Cloak of Armor legible and real (INV-04), everything narrated
+- [ ] **End-of-combat loot** — v1.3: foe drops collected and presented after combat with take/leave per item, one bag-cap gate every pickup/buy/kit path routes through with feedback when full (INV-02), bigger bags as depth-appropriate treasure (INV-03); replaces the auto-reject "Not an upgrade" toast
+- [ ] **Combat narrative & input redesign** — v1.3 (research-first): survey known combat-feedback patterns, pick a design that delivers the round narrative in one place with fewer taps to move on, and guards Fight!/decision buttons against D-pad thumb-spam; then build it
+- [ ] **Combat start & usability** — v1.3: no initiative or enemy strike before Fight! (CMB-01), "not ready yet" audit with every refusal explained (CMB-02), combat potions from Gear + Shield chip + round-based effects expiring outside combat (CMB-03), G16 squares of opponents + Amulet of Stone ends combat
+- [ ] **UI feel** — v1.3 (UIF-01): gear panel Use/Drop side by side with drop confirm, map recenter on panel return, default zoom midpoint, tutorial on/off setting, Make Camp into the Marks/Centre row, handedness option removed
+- [ ] **Store stock random and floor-appropriate** — v1.3 (STORE-01)
+- [ ] **Next tuning pass** (deferred, not v1.3) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone
 
 ### Out of Scope
 
@@ -64,17 +70,27 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current State (v1.2 shipped 2026-09-15)
+## Current Milestone: v1.3 Feel, Loot & Combat Flow
 
-**v1.2 progress:** ALL phases complete (22–27 incl. inserted 25.1) as of 2026-09-15. Milestone closed on a user-recorded TUNE-07 deferral: the retuned constants ship as landed; the human DR round (forced 20/35/50 + natural), the two bot misses (forced-20 floors gained, reach ≥ 20 — canon tier-3/5 combat, would need roster decisions), the untaken early-floor rungs, and the Play internal upload (versionCode 4) carry into the next milestone.
+**Goal:** Make gear and combat legible and honest — armor behaves the way the screen says it does, kill drops become a real end-of-combat loot decision, and the combat narrative is delivered through a researched, less tap-heavy, tap-safe UI — while landing the parked Feel & Polish backlog (inventory integrity, UI feel, combat start, store stock).
 
-**Shipped:** v1.0 (Android build, internal testing), v1.1 (Monster Balancing & Abilities) and v1.2 (Class Pass & Mass Playtest — every sub-class and race with a code-verified good and bad, casters that can act, a toast/Oracle feedback layer for every feature, a device-feedback batch, a 143-cell class matrix ledger with fun-band verdicts, and a depth-20-targeted retune that made the game canon through depth 20 with an eased early game). The engine now has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 951 tests, parity 30/30 with one documented divergence (seed-303 parley).
+**Target features:**
+- **Armor rework** — audit and decide the soak-vs-wear rule; fix the "Armor takes N / Wear N" toast vs. gear-panel discrepancy; durability on the item (kills the re-equip full-repair exploit); Cloak of Armor legible and real; every armor outcome narrated
+- **End-of-combat loot** — foe drops collected during combat and presented afterward with take/leave per item; one bag-cap gate with feedback; bigger bags as depth-appropriate treasure; no more silent/auto-rejected drops
+- **Combat narrative & input research → design → build** — known-pattern survey (combat log/ledger, batched round summaries, auto-advance, mis-tap guards), a chosen design, then the implementation: less disjointed narrative, fewer taps to move on, Fight!/decision buttons protected from D-pad thumb-spam
+- **Combat start & usability** — no initiative before Fight!; "not ready yet" audit; combat potions from Gear; Shield chip; round-based effects expire outside combat; G16 squares of opponents + Amulet of Stone ends combat
+- **UI feel** — gear panel Use/Drop + drop confirm; map recenter; default zoom midpoint; tutorial on/off; Make Camp into the toolbar row; handedness removed
+- **Store stock** — random, floor-appropriate
 
-**Known deferrals carried forward:** the human DR verdict on the retune (TUNE-04 in v1.1 → TUNE-07 in v1.2) has been deferred twice by the user — the v1.2 constants ship as landed, and the four-run DR checklist waits in `docs/DIFFICULTY-RETUNE.md` for the next tuning pass (after the user's next milestone of fixes). Two bot band rows stay short (forced-20 floors gained; reach ≥ 20) and would need canon tier-3/5 roster decisions. The Play internal track is on versionCode 3 (pre-25.1); a versionCode-4 upload is pending the user's return. v1.0 tail (tutorial, production launch) still deferred.
+**Out of this milestone (user decision 2026-09-15):** the tuning pass (TUNE-07 human DR round, TUNE-06 roster decision — `docs/DIFFICULTY-RETUNE.md`), the Play versionCode-4 upload (pending the phone), the first-run tutorial (UX-06), production launch (STR-01..04/06), Developer API upload automation. Phase numbering continues from 27.
 
-## Next Milestone (not yet defined — user: "another milestone of fixes, questions that might affect tuning")
+**Engine gate applies as always:** pure/deterministic engine, parity byte-identical for solo/empty-party play, new rng draws (store stock, bag loot, drop collection) only behind new-feature guards, new serialized fields (item-carried durability, pending loot) carved out of all three `*Comparable()` fns, every new event type gets an `EVENT_NARRATION` + toast-table entry, prototype master never edited.
 
-Candidates: the Feedback, Feel & Polish remainder (`.planning/proposed-milestone-feedback-feel-polish.md`), the carried-forward DR round and roster decisions, the Play versionCode-4 upload, and the v1.0 tail. Start with `/gsd-new-milestone`.
+## Current State (v1.2 shipped 2026-09-15; v1.3 started 2026-09-15)
+
+**Shipped:** v1.0 (Android build, internal testing), v1.1 (Monster Balancing & Abilities) and v1.2 (Class Pass & Mass Playtest — every sub-class and race with a code-verified good and bad, casters that can act, a toast/Oracle feedback layer for every feature, a device-feedback batch, a 143-cell class matrix ledger with fun-band verdicts, and a depth-20-targeted retune that made the game canon through depth 20 with an eased early game). The engine has data-driven foe abilities with symmetric INT resistance, a yardstick-rebalanced bestiary behind one damage seam, a parley system with real cost and a fluency-based Language system, and depth scaling past floor 5 with a dev start-at-depth harness. 1448 tests, parity 33/33 with declared, machine-checked divergences.
+
+**Known deferrals carried forward:** the human DR verdict on the retune (TUNE-04 in v1.1 → TUNE-07 in v1.2) has been deferred twice by the user — the v1.2 constants ship as landed, and the four-run DR checklist waits in `docs/DIFFICULTY-RETUNE.md` for a later tuning milestone (explicitly NOT v1.3). Two bot band rows stay short (forced-20 floors gained; reach ≥ 20) and would need canon tier-3/5 roster decisions. The Play internal track is on versionCode 3 (pre-25.1); a versionCode-4 upload is pending the user's return. v1.0 tail (tutorial, production launch) still deferred.
 
 ## Last Milestone: v1.2 Class Pass & Mass Playtest (shipped 2026-09-15)
 
@@ -180,4 +196,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 — v1.2 shipped (closeout on a user-recorded TUNE-07 deferral)*
+*Last updated: 2026-09-15 — v1.3 Feel, Loot & Combat Flow started*
