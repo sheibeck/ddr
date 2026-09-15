@@ -4,9 +4,9 @@ milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 25
 current_phase_name: Feature Feedback
-status: planning
+status: executing
 stopped_at: Completed 24-07-PLAN.md
-last_updated: "2026-09-15T02:58:35.697Z"
+last_updated: "2026-09-15T04:29:34.244Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 24 complete, transitioned to Phase 25
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 Phase: 25 — Nothing Happens Silently (Feature Feedback)
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-14 — Phase 24 complete, transitioned to Phase 25
 
 ## Ground Truth (durable facts every session needs)
