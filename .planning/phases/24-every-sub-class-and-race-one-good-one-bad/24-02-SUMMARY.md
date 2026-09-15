@@ -156,3 +156,16 @@ None - no external service configuration required.
 ---
 *Phase: 24-every-sub-class-and-race-one-good-one-bad*
 *Completed: 2026-09-15*
+
+## Self-Check: PASSED
+
+- FOUND: test/parity/harness/comparables.js
+- FOUND: test/unit/parity-action-path-divergence.test.js
+- FOUND: test/parity/combat-parity.test.js
+- FOUND: test/parity/economy-parity.test.js
+- FOUND: test/parity/full-suite.test.js
+- FOUND: test/parity/fixtures/action-script.schema.md
+- FOUND: .planning/phases/24-every-sub-class-and-race-one-good-one-bad/24-02-SUMMARY.md
+- FOUND commit: 3ca3268 (Task 1)
+- FOUND commit: 633db60 (Task 2)
+- FOUND commit: e5ca774 (plan metadata/SUMMARY)
