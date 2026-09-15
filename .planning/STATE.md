@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 25
 current_phase_name: Nothing Happens Silently (Feature Feedback
-status: executing
-stopped_at: Completed 25-04-PLAN.md
-last_updated: "2026-09-15T06:17:05.101Z"
+status: verifying
+stopped_at: Completed 25-05-PLAN.md
+last_updated: "2026-09-15T06:35:26.292Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 25 execution started
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 20
-  completed_plans: 19
-  percent: 50
+  completed_plans: 20
+  percent: 67
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 Phase: 25 (Nothing Happens Silently (Feature Feedback)) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-15 — Phase 25 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T06:17:05.055Z
-Stopped at: Completed 25-04-PLAN.md
+Last session: 2026-09-15T06:35:26.266Z
+Stopped at: Completed 25-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -136,6 +136,7 @@ Resume file: None
 | Phase 25 P02 | 25min | 3 tasks | 7 files |
 | Phase 25 P03 | 20min | 3 tasks | 2 files |
 | Phase 25 P04 | 35min | 3 tasks | 2 files |
+| Phase 25 P05 | 20min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -230,6 +231,8 @@ Resume file: None
 - [Phase ?]: spellResisted's wording dropped its trailing period to match the no-period aggregate-format convention; toastTable.test.js's pin uses .includes() so it stays compatible
 - [Phase ?]: Hoisted the toasts.js import to the top of the module script to escape a pre-existing false block-comment span (a doc comment mentioning @capacitor/* reads as an unterminated /* to a naive comment-stripping source scan)
 - [Phase ?]: Split the CSS-tone and dispatchWithToasts/switch-deletion work into two commits along the diff's natural hunk boundaries rather than exact plan task numbering — all acceptance criteria still satisfied
+- [Phase ?]: 25-05: No toasts.js fix needed — 25-02/25-03 already satisfied the exact TOAST_FOR/ORACLE_ONLY partition and FEATURE_EVENTS coverage this plan's guards assert; toastsCoverage.test.js turns those one-off facts into standing tests.
+- [Phase ?]: 25-05: eventNarration.js re-exports TOAST_FOR/ORACLE_ONLY/FEATURE_EVENTS/toastsForAction from toasts.js (one-directional, no import cycle) so both tables are reachable from one module.
 
 ### Blockers
 
