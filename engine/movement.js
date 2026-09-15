@@ -496,10 +496,16 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   }
 
   // wandering monsters: d20 per hour slept, a 1 wakes you
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Bard's
+  // "creatures too stupid to know better come for you first" bad — camping
+  // draws wandering monsters twice as often. Same eight per-hour d20 draws
+  // in the same order; only the hit widens from ===1 to <=2 for a Bard.
+  // Every other sub wakes only on a bare 1, byte-identical to before.
+  const wakeOn = c.sub === "Bard" ? 2 : 1;
   let woke = 0;
-  for (let h = 0; h < 8; h++) if (rng.d(20) === 1) woke++;
+  for (let h = 0; h < 8; h++) if (rng.d(20) <= wakeOn) woke++;
   if (woke) {
-    events.push({ type: "wanderingMonster", hours: woke });
+    events.push({ type: "wanderingMonster", hours: woke, bard: c.sub === "Bard" });
     startCombat(state, true, null, rng, events);
   }
   return events;

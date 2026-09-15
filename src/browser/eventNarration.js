@@ -103,8 +103,11 @@ export const EVENT_NARRATION = {
   // clause moved inside the span; a clean, in-voice sentence stays outside.
   // (This event only fires when at least one night-hour was disturbed —
   // engine/movement.js only pushes it for woke > 0, then starts combat.)
+  // Phase 24 (IDENT-05): a Bard's camp draws visitors twice as often — an
+  // additive clause when the flag is set; every non-Bard sentence above is
+  // byte-identical.
   wanderingMonster: (e) =>
-    `Something in the dark takes an interest in you. <span class="roll">${e.hours ?? 0} of 8 night-hours disturbed.</span>`,
+    `Something in the dark takes an interest in you. <span class="roll">${e.hours ?? 0} of 8 night-hours disturbed.</span>${e.bard ? " Something too stupid to know better heard the singing." : ""}`,
   campFailed: () => `<span class="miss">Not enough food to make camp.</span> Find rations first.`,
   teleported: () =>
     `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`,
@@ -399,6 +402,12 @@ export const EVENT_NARRATION = {
     `<span class="hit">${e.name ?? "Someone"} falls in beside you</span>, already quietly revising their life expectancy downward.`,
   joinerDeclined: (e) =>
     `<span class="beat">You wave ${e.name ?? "them"} off.</span> The dungeon will find another use for them soon enough.`,
+  // Phase 24 (IDENT-05): a Joiner is rolled exactly as normal, then declines
+  // to travel with a Cutthroat, or (a Magic User Joiner) with a Wilmsry.
+  joinerRefused: (e) =>
+    e.reason === "wilmsry"
+      ? `<span class="beat">${e.name ?? "The Joiner"}, a Magic User, takes one look at a Wilmsry and remembers an appointment elsewhere.</span>`
+      : `<span class="beat">Word has reached the Joiners.</span> The Joiners have reached the exit.`,
   // A1 (04.2 Text batch): the old template left the roll span mid-sentence
   // ("...you: <roll>N</roll>, Poison."), so stripRollDetail (mazeworld.html,
   // the over-map overlay) removed the span and left the dangling ": , Poison."
@@ -428,9 +437,17 @@ export const EVENT_NARRATION = {
   /* ---------------- items.js ---------------- */
 
   itemGiven: (e) => `<span class="hit">Received:</span> ${e.item?.n ?? "something"}.`,
-  itemRejected: (e) => `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
+  // Phase 24 (IDENT-07): a Woodsman's "no mail, no plate" bad gets its own
+  // clause ahead of the generic reasons below, which stay byte-identical.
+  itemRejected: (e) =>
+    e.reason === "woodsman"
+      ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
+      : `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
   itemTaken: (e) => `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.`,
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
+  // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
+  // doesn't heal" bad — the refusal fires before any side effect.
+  useRefused: (e) => `<span class="miss">${e.item?.n ?? "That"} does not heal,</span> so as far as a Pilfer is concerned it does not work.`,
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,
   itemFizzled: () => `<span class="miss">Nothing happens.</span>`,
@@ -455,6 +472,10 @@ export const EVENT_NARRATION = {
   itemUnequipped: (e) =>
     `<span class="beat">You stow your ${e.slot ?? "gear"}</span> — ${e.item?.n ?? "it"} back in the bag, and you back to improvising.`,
   // Tried to wear/wield something your class, subclass, or race cannot.
+  // Phase 24 (IDENT-07): a Woodsman gets its own clause; every other reason
+  // (noArmor/wrongClass/notEquippable) stays byte-identical.
   equipRejected: (e) =>
-    `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+    e.reason === "woodsman"
+      ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
+      : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
 };

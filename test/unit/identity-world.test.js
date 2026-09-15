@@ -17,6 +17,7 @@ import { rollCharacter } from "../../engine/character.js";
 import { makeRng } from "../../engine/rng.js";
 import { canEquipArmor, armorRefusalReason, takeItem, equipItem, useItem } from "../../engine/items.js";
 import { openStore } from "../../engine/economy.js";
+import { newDay } from "../../engine/movement.js";
 import { ARMORS } from "../../content/index.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
@@ -186,6 +187,46 @@ test("takeItem: a Woodsman is refused Mail (reason woodsman), armour untouched; 
   assert.equal(soldier.c.armor, "Mail");
 });
 
+test("takeItem: a Woodsman takes Studded (ar <= 10) normally — the gate only blocks heavier pieces", () => {
+  const woodsman = fixedState({ c: { sub: "Woodsman", cls: "Fighter" } });
+  const events = takeItem(
+    woodsman,
+    { kind: "armor", n: "Studded", armor: "Studded", ar: STUDDED.ar, cls: STUDDED.cls, min: STUDDED.min, wp: STUDDED.wp },
+    [],
+  );
+  assert.ok(events.some((e) => e.type === "itemTaken"));
+  assert.equal(woodsman.c.armor, "Studded");
+});
+
+test("takeItem: a Woodsman is also refused Plate (reason woodsman)", () => {
+  const woodsman = fixedState({ c: { sub: "Woodsman", cls: "Fighter" } });
+  const events = takeItem(
+    woodsman,
+    { kind: "armor", n: "Plate", armor: "Plate", ar: PLATE.ar, cls: PLATE.cls, min: PLATE.min, wp: PLATE.wp },
+    [],
+  );
+  assert.ok(events.some((e) => e.type === "itemRejected" && e.reason === "woodsman"));
+  assert.equal(woodsman.c.armor, "Nothing");
+});
+
+test("equipItem: a Woodsman equips Leather normally, swapping the previously-worn piece back into the bag", () => {
+  const woodsman = fixedState({
+    c: {
+      sub: "Woodsman",
+      cls: "Fighter",
+      armor: "Cloth",
+      ar: 3,
+      armorMax: 12,
+      armorWP: 12,
+      items: [{ kind: "armor", n: "Leather", armor: "Leather", ar: LEATHER.ar, cls: LEATHER.cls, min: LEATHER.min, wp: LEATHER.wp }],
+    },
+  });
+  const events = equipItem(woodsman, 0, []);
+  assert.ok(events.some((e) => e.type === "itemEquipped"));
+  assert.equal(woodsman.c.armor, "Leather");
+  assert.equal(woodsman.c.items[0].armor, "Cloth", "the old Cloth drops back into the freed slot");
+});
+
 test("equipItem: a Woodsman is refused Mail (equipRejected reason woodsman)", () => {
   const woodsman = fixedState({
     c: {
@@ -217,6 +258,14 @@ test("openStore: a Woodsman wearing Studded gets no armour line; a Soldier in St
   const woodsmanWeapons = woodsman.store.stock.filter((s) => s.effectId === "buyWeapon").map((s) => s.n);
   const soldierWeapons = soldier.store.stock.filter((s) => s.effectId === "buyWeapon").map((s) => s.n);
   assert.deepEqual(woodsmanWeapons, soldierWeapons, "the weapon roll is identical for both — only the armour line differs");
+});
+
+test("openStore: a Woodsman wearing Leather still sees Studded offered (the gate blocks only heavier pieces)", () => {
+  const woodsman = fixedState({ c: { sub: "Woodsman", cls: "Fighter", armor: "Leather", ar: LEATHER.ar, armorMax: LEATHER.wp, armorWP: LEATHER.wp } });
+  openStore(woodsman, makeRng(1), []);
+  const armourLines = woodsman.store.stock.filter((s) => s.effectId === "buyArmor");
+  assert.equal(armourLines.length, 1, "Studded is still a legal upgrade from Leather");
+  assert.equal(armourLines[0].n, "Studded");
 });
 
 test("useItem: a Pilfer may drink a Healing (heal) or Xtra Healing (full) potion normally", () => {
@@ -256,4 +305,46 @@ test("canRead: a Pilfer still cannot read scrolls (unchanged)", async () => {
   const { canRead } = await import("../../engine/magic.js");
   const state = fixedState({ c: { sub: "Pilfer", cls: "Thief", scrolls: 1 } });
   assert.equal(canRead(state), false);
+});
+
+/* ============================================================
+ * Task 3 — Bard camp wake roll (double), wanderingMonster.bard flag
+ * ============================================================ */
+
+// heal d(10)=5, then eight wake draws (only the 8th, a 2, hits a Bard's
+// widened <=2 gate), then the forced-random combat's own draws: a foe-level
+// d(4)=3 (not a 1, no downgrade) and two initiative d(20)s (15 >= 10, the
+// player moves first, so no foeTurn draws follow).
+const BARD_WAKE_SEQ = [5, 3, 3, 3, 3, 3, 3, 3, 2, 3, 15, 10];
+
+test("newDay: a Bard wakes on a 1 OR a 2 — the eighth hour (a 2) starts a wandering encounter, flagged bard", () => {
+  const bard = fixedState({ c: { sub: "Bard", cls: "Fighter" } });
+  const events = newDay(bard, false, fakeRng(BARD_WAKE_SEQ), []);
+  const wm = events.find((e) => e.type === "wanderingMonster");
+  assert.ok(wm, "a Bard's wandering-monster check fires on a 2");
+  assert.equal(wm.hours, 1, "only the eighth hour rolled <=2");
+  assert.equal(wm.bard, true);
+  assert.ok(events.some((e) => e.type === "encounterStarted"), "combat actually starts");
+});
+
+test("newDay: a Soldier with the SAME eight-draw sequence does NOT wake (a 2 never wakes a non-Bard)", () => {
+  const soldier = fixedState({ c: { sub: "Soldier", cls: "Fighter" } });
+  const events = newDay(soldier, false, fakeRng(BARD_WAKE_SEQ), []);
+  assert.ok(!events.some((e) => e.type === "wanderingMonster"), "a Soldier only wakes on a bare 1");
+  assert.ok(!events.some((e) => e.type === "encounterStarted"));
+});
+
+test("newDay: a Bard whose eight draws are all 3s wakes on none, no further draws needed", () => {
+  const bard = fixedState({ c: { sub: "Bard", cls: "Fighter" } });
+  const events = newDay(bard, false, fakeRng([5, 3, 3, 3, 3, 3, 3, 3, 3]), []);
+  assert.ok(!events.some((e) => e.type === "wanderingMonster"));
+});
+
+test("newDay: exactly eight wake draws are consumed for a Bard — a 9th draw is never taken when nothing wakes", () => {
+  // Only 9 entries total (heal + 8 wake draws, all misses under <=2). If the
+  // wake loop ever drew a 9th die, or startCombat fired, fakeRng would throw
+  // "sequence exhausted" — it doesn't, proving exactly eight draws.
+  const bard = fixedState({ c: { sub: "Bard", cls: "Fighter" } });
+  const events = newDay(bard, false, fakeRng([5, 3, 3, 3, 3, 3, 3, 3, 3]), []);
+  assert.ok(!events.some((e) => e.type === "wanderingMonster"));
 });
