@@ -155,7 +155,7 @@ Plans:
   4. An identity-contract test table asserts, for all 24 sub-classes and the 5 non-Human races, that the named good AND the named bad each fire under a forced scenario; Human is asserted neutral (control race, user decision 2026-09-14).
   5. `SUB_NOTE`/`RACE_NOTE` text matches implemented mechanics for every sub-class and race; the level-1 Thief dagger-damage question is recorded as a deliberate ruling with rationale in the class-pass ledger; every new serialized field is carved out in all three `*Comparable()` functions and every new event type gets an `EVENT_NARRATION` entry, voice safety scan green.
 
-**Plans**: 4/7 plans executed
+**Plans**: 5/7 plans executed
 
 Plans:
 **Wave 1**
@@ -170,7 +170,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 24-05-PLAN.md — World-side mechanics: Cutthroat / Wilmsry-vs-Magic-User joinerRefused (rolled first), Woodsman ar > 10 gate (take/equip/store), Pilfer heal-kind-only useItem, Bard camp wake on 1-2; narration; the 30-blurb SUB_NOTE/RACE_NOTE sweep (IDENT-05/07/09, FID-07) — wave 3
+- [x] 24-05-PLAN.md — World-side mechanics: Cutthroat / Wilmsry-vs-Magic-User joinerRefused (rolled first), Woodsman ar > 10 gate (take/equip/store), Pilfer heal-kind-only useItem, Bard camp wake on 1-2; narration; the 30-blurb SUB_NOTE/RACE_NOTE sweep (IDENT-05/07/09, FID-07) — wave 3
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -244,7 +244,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
-| 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 4/7 | In Progress|  |
+| 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 5/7 | In Progress|  |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
