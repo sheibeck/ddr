@@ -49,6 +49,12 @@ import assert from "node:assert/strict";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+// Phase 25 (FEED-05/toast architecture): the toast table and the fledgling-
+// miss quip corpus are new player-facing authored copy — both are scanned
+// alongside EVENT_NARRATION so a new toast string or quip is voice-checked
+// automatically.
+import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { MISS_LINES } from "../../src/browser/missLines.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
@@ -130,6 +136,16 @@ const BRANCH_TOGGLES = [
   // Phase 20 (D-14): both sides of parleyRolled's fluency ternary, goldGained's
   // why ternary, and parleyRefused's wilmsryVsMagical branch.
   { fluency: 0 }, { why: null }, { reason: "wilmsryVsMagical" },
+  // Phase 25 (toast table / passive-modifier payload): every new reason/flag
+  // branch the toast builders (and their extended EVENT_NARRATION siblings)
+  // read, so each ternary/reason-map path renders under the scan.
+  { reason: "pilfer" }, { reason: "acrobat" }, { reason: "woodsman" }, { reason: "noRunes" },
+  { reason: "knight" }, { reason: "conArtist" }, { reason: "cutthroat" }, { reason: "wilmsry" },
+  { why: "pickpocket" }, { pickpocket: true }, { bard: true }, { doubled: "Soldier" },
+  { halved: true, wear: 2 }, { soaked: { hide: 2, hardiness: 3, ward: 1 } },
+  { needMods: [{ name: "Guard", delta: -1 }] }, { critBy: "cutthroat" }, { soldierCrit: true },
+  { quip: "X" }, { untouchable: true },
+  { knightBigFoe: true, courtMageTalksFirst: true, samuraiNeverFirst: true, fridgianSlow: true, acuteHearing: true },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every
@@ -162,6 +178,24 @@ test("EVENT_NARRATION: every voice builder renders family-friendly across all br
     }
   }
   assert.deepStrictEqual(offenders, [], `Banned copy in event narration:\n${offenders.join("\n")}`);
+});
+
+// Phase 25 (toast architecture): mirrors the EVENT_NARRATION scan above, but
+// TOAST_FOR builders return `{ text, tone, priority }` rather than a raw
+// HTML string — read `.text` (skip null/falsy results, matching this file's
+// own "builder guards its own fields" try/catch convention).
+test("TOAST_FOR: every toast builder renders family-friendly across all branches and tokens", () => {
+  const offenders = [];
+  for (const [type, fn] of Object.entries(TOAST_FOR)) {
+    assert.equal(typeof fn, "function", `TOAST_FOR.${type} should be a builder function`);
+    for (const out of renderEventVariants(type, (ev) => fn(ev, {})?.text)) {
+      if (!out) continue;
+      for (const { term, match } of findBannedTerms(out)) {
+        offenders.push(`TOAST_FOR.${type} → "${match}" (category term #${BANNED.indexOf(term)}) in: ${stripMarkup(out).trim()}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `Banned copy in toast table:\n${offenders.join("\n")}`);
 });
 
 // ─── Corpus 2: EPITAPHS + CAUSE_TEXT (every template × every token value) ────
@@ -233,6 +267,9 @@ function collectAuthoredStrings() {
   ARMORS.forEach((a) => push(`ARMOR`, a.name));
   FOODS.forEach((f) => push(`FOOD`, f.n));
   ENCOUNTER_TABLES.flat().forEach((s) => push(`ENCOUNTER`, s));
+  // Phase 25 (FEED-05): the fledgling-miss quip corpus — scanned AND counted
+  // here so it participates in the completeness/load-bearing meta-tests too.
+  MISS_LINES.forEach((s, i) => push(`MISS_LINES[${i}]`, s));
 
   return out;
 }
