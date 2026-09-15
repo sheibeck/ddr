@@ -28,8 +28,8 @@ One solid good, one solid bad, for every sub-class and race — verified in code
 - [x] **IDENT-05**: Each sub-class currently missing a bad has one implemented, taken from its own flavor text where the text promises one — Knight (big things come straight for you), Ninja (never speaks: cannot parley), Bard (stupid creatures come for you first), Master of Arms (attacks without question) — and designed fresh where it does not (Court Mage, Pickpocket, Cutthroat); each bad is felt in play, not cosmetic
 - [x] **IDENT-06**: Guard gains a real good (from "the profession is standing there" — e.g., a defensive stance: never surprised, or damage soaked) and Court Mage's good is made felt (the boredom kill rate or an always-available talk-down), so no sub-class is penalties-only
 - [x] **IDENT-07**: Flavor-only restrictions are either enforced in the engine or reworded out of the flavor — Woodsman (no mail/plate/shield), Pilfer (no magic items that don't heal), Cloaker (a bad that is actually a bad) — so every promise on the sheet is true
-- [ ] **IDENT-08**: An identity-contract test table asserts, for all 24 sub-classes and the 5 non-Human races, that the named good AND the named bad each fire under a forced scenario; Human is asserted neutral (deliberate: the control race, user decision 2026-09-14)
-- [ ] **IDENT-09**: `SUB_NOTE` / `RACE_NOTE` flavor text matches the implemented mechanics for every sub-class and race — sarcastic, family-friendly, and now truthful
+- [x] **IDENT-08**: An identity-contract test table asserts, for all 24 sub-classes and the 5 non-Human races, that the named good AND the named bad each fire under a forced scenario; Human is asserted neutral (deliberate: the control race, user decision 2026-09-14)
+- [x] **IDENT-09**: `SUB_NOTE` / `RACE_NOTE` flavor text matches the implemented mechanics for every sub-class and race — sarcastic, family-friendly, and now truthful
 - [ ] **IDENT-10**: Level-1 Thief dagger damage (d6/2 → 2–4 a hit against 25-wp beasts) gets a deliberate ruling — change or keep — recorded with rationale in the class-pass ledger, so the class-wide tax is a decision and not an accident
 
 ### Feature Feedback (FEED)
@@ -114,8 +114,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | IDENT-05 | Phase 24 | Complete |
 | IDENT-06 | Phase 24 | Complete |
 | IDENT-07 | Phase 24 | Complete |
-| IDENT-08 | Phase 24 | Pending |
-| IDENT-09 | Phase 24 | Pending |
+| IDENT-08 | Phase 24 | Complete |
+| IDENT-09 | Phase 24 | Complete |
 | IDENT-10 | Phase 24 | Pending |
 | FEED-01 | Phase 25 | Pending |
 | FEED-02 | Phase 25 | Pending |
