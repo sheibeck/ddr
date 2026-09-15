@@ -5,16 +5,16 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 26
 current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
-stopped_at: "26-02 complete: AFTER matrix (143x40 natural + 143x10 depth-20) committed on pin d1e3235, cannot-act gate PASSED"
-last_updated: "2026-09-15T15:55:40.486Z"
+stopped_at: Completed 26-03-PLAN.md
+last_updated: "2026-09-15T16:06:47.865Z"
 last_activity: 2026-09-15
-last_activity_desc: Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED)
+last_activity_desc: Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 27
   completed_plans: 26
-  percent: 74
+  percent: 71
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 26 — Mass Playtest & Class-Pass Ledger
-Plan: 2 of 4 complete (`tools/class-pass-diff.mjs` + tests; AFTER matrix capture); 03-04 pending
+Plan: 3 of 4 complete (`tools/class-pass-diff.mjs` + tests; AFTER matrix capture); 03-04 pending
 Status: Ready to execute
 Last activity: 2026-09-15 — Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T15:55:40.459Z
-Stopped at: 26-02 complete: AFTER matrix (143x40 natural + 143x10 depth-20) committed on pin d1e3235, cannot-act gate PASSED
+Last session: 2026-09-15T16:06:47.839Z
+Stopped at: Completed 26-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -146,6 +146,7 @@ Resume file: None
 | Phase 25.1 P03 | 65min | 3 tasks | 7 files |
 | Phase 26 P01 | 40min | 2 tasks | 2 files |
 | Phase 26 P02 | 50min | 3 tasks | 3 files |
+| Phase 26 P03 | 30min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -249,6 +250,7 @@ Resume file: None
 - [Phase ?]: DFB-05: memberView read pattern (default sparse sheet fields) + self-contained allyCast mirror of castSpell's dice shapes in combat.js (magic.js already imports combat.js) + transient C.allies backstabUsed flag
 - [Phase ?]: 26-01: verdicts.json carries supplementary classes/rollups fields beyond the documented schema so renderMarkdown(verdicts, section) never needs the raw before/after reports
 - [Phase ?]: 26-02: AFTER matrix re-captured on gap-closure pin d1e3235 — cannot-act gate PASSED (0 of 143), supersedes the blocked 620e1df attempt
+- [Phase ?]: Only Ninja (too strong) and Wilmsry (fine, named exception) carry an editorial verdict; both accepted -- the caster problem is gone (all 8 Magic User subs land in the fine band).
 
 ### Blockers
 
