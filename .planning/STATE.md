@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
 current_phase: 25
-current_phase_name: Feature Feedback
+current_phase_name: Nothing Happens Silently (Feature Feedback
 status: executing
-stopped_at: Completed 24-07-PLAN.md
-last_updated: "2026-09-15T04:29:34.244Z"
-last_activity: 2026-09-14
-last_activity_desc: Phase 24 complete, transitioned to Phase 25
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-09-15T05:01:21.258Z"
+last_activity: 2026-09-15
+last_activity_desc: Phase 25 execution started
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 20
+  completed_plans: 16
   percent: 50
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 24 — Every Sub-class and Race: One Good, One Bad
+**Current focus:** Phase 25 — Nothing Happens Silently (Feature Feedback)
 
 ## Current Position
 
-Phase: 25 — Nothing Happens Silently (Feature Feedback)
-Plan: Not started
+Phase: 25 (Nothing Happens Silently (Feature Feedback)) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-09-14 — Phase 24 complete, transitioned to Phase 25
+Last activity: 2026-09-15 — Phase 25 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -82,8 +82,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T02:55:56.790Z
-Stopped at: Completed 24-07-PLAN.md
+Last session: 2026-09-15T05:01:21.226Z
+Stopped at: Completed 25-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -132,6 +132,7 @@ Resume file: None
 | Phase 24 P05 | 45min | 3 tasks | 7 files |
 | Phase 24 P06 | 70min | 3 tasks | 1 files |
 | Phase 24 P07 | 40min | 3 tasks | 2 files |
+| Phase 25 P01 | 30min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -217,6 +218,9 @@ Resume file: None
 - [Phase ?]: Race rows in the identity-contract table are ordered Human-first (matching Object.keys(RACES)'s real declaration order), not narrative Human-last
 - [Phase ?]: identity-contract's hero() neutralizes only cosmetic/transient chargen fields (skills, phobia, buffs, pendingJoiner); sub/race/class-driven rollCharacter output stays real
 - [Phase ?]: 24-07: good/bad table and smoke-readout table separator rows use spaced '| --- |' cells (not the doc's usual bare '|---|') so the plan's literal grep -c line-count acceptance criteria count them correctly
+- [Phase ?]: 25-01: foeToHitVs left untouched; foeToHitBreakdown added as a proven-identical narration twin instead
+- [Phase ?]: 25-01: weaponRefusalReason mirrors armorRefusalReason; Acrobat dagger-only rule now reports reason 'acrobat' instead of generic 'wrongClass'
+- [Phase ?]: 25-01: readScroll's combined silent guard split into two named scrollRefused reasons (noScrolls/pilfer/noRunes), zero draws, no mutation
 
 ### Blockers
 

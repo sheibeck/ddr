@@ -192,12 +192,12 @@ Plans:
   4. A multi-attack foe's round aggregates into one toast — "X hits you 2 of 4 times (N)" — instead of one toast per swing; early-combat misses draw from a varied, voice-safe corpus instead of repeating "Miss".
   5. Every spell, scroll, and item effect in EITHER direction (yours on them, theirs on you) is legible as an event + toast, including resisted/failed/nothing-to-target outcomes.
 
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 25-01-PLAN.md — Engine ADDITIVE payload + Oracle clauses: foeToHitBreakdown → needMods on every foe swing event, struckByFoe/foeBolted `soaked` (Hardiness/hide/ward), soldierCrit, armorSoaked wear + Dwarven halving, struck need + critBy, rested/potionDrunk `doubled`, armorPatched `by`, new `scrollRefused` (pilfer/noRunes/noScrolls), weaponRefusalReason "acrobat"; zero draws, parity byte-identical (FEED-01/02/06) — wave 1
+- [x] 25-01-PLAN.md — Engine ADDITIVE payload + Oracle clauses: foeToHitBreakdown → needMods on every foe swing event, struckByFoe/foeBolted `soaked` (Hardiness/hide/ward), soldierCrit, armorSoaked wear + Dwarven halving, struck need + critBy, rested/potionDrunk `doubled`, armorPatched `by`, new `scrollRefused` (pilfer/noRunes/noScrolls), weaponRefusalReason "acrobat"; zero draws, parity byte-identical (FEED-01/02/06) — wave 1
 - [ ] 25-02-PLAN.md — Pure presentation modules: src/browser/missLines.js (>= 12 quips <= 40 chars, integer rotation, decorateMisses level <= 2, wired into engineAdapter.dispatch) + src/browser/toasts.js (TONES hit/miss/hurt/dodge/magic/block/beat, PRIORITY, ORACLE_ONLY, FEATURE_EVENTS, TOAST_FOR for every toasting event type with locked combat/refusal wordings); voice scan extended (FEED-01/02/03/05/06) — wave 1
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -261,7 +261,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
-| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 0/TBD | Not started | - |
+| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 1/5 | In Progress|  |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
