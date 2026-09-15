@@ -314,6 +314,24 @@ export function toHit(state) {
 }
 
 /**
+ * memberToHit(m) — DFB-05 (Phase 25.1): the class/race/sub part of `toHit`
+ * for a PARTY MEMBER sheet (`m`), not the hero. Deliberately omits every
+ * hero-only term toHit(state) reads (combat.inspired, eff(c,"toHit"), the
+ * dazed/darkness overrides) — a member fights on its own sheet's class/race/
+ * sub alone. `?? 5` keeps the pre-25.1 "hit on 5" fallback for a sheet with
+ * no recognized class (mirrors alliesTurn's legacy path). Pure read, no rng.
+ */
+export function memberToHit(m) {
+  let h = CLASSES[m.cls]?.toHit ?? 5;
+  const R = RACES[m.race];
+  if (R && R.toHit) h = Math.max(h, R.toHit);
+  if (m.sub === "Acrobat") h = 5;
+  if (m.sub === "Cleric") h = Math.max(h, 4);
+  if (skill(m, "Kata")) h = Math.max(h, m.cls === "Fighter" ? 6 : 5);
+  return h;
+}
+
+/**
  * foeDie(c, foe) — the die a creature of the foe's level strikes on against
  * this character; never lower than a d8 (p.24). Ports mazeworld.html foeDie()
  * (lines 1469-1472).
@@ -648,4 +666,32 @@ export function canCast(state, sp) {
   // identical to the old `sp.lvl > c.level` check for every other pair.
   if (spellLevelFor(c.sub, sp) > c.level) return false;
   return c.level >= schoolGate(c.sub, sp.s);
+}
+
+/**
+ * bestAttackSpell(state) — DFB-05 (Phase 25.1): of every currently-castable
+ * attack spell (`castableAttackSpells(state)`), the one a Magic User party
+ * member should cast — the highest EFFECTIVE level (spellLevelFor, honoring
+ * the override table), preferring `kind === "thrown"` at an equal level
+ * (damage beats a nap at parity), breaking any remaining tie by SPELLS array
+ * order (castableAttackSpells already filters SPELLS in that order, so the
+ * first candidate found stands unless a later one is a STRICT improvement).
+ * Returns the spell object, or `null` when nothing is castable. Pure read,
+ * no rng, no mutation — deterministic given `state.c`.
+ */
+export function bestAttackSpell(state) {
+  const options = castableAttackSpells(state);
+  let best = null;
+  let bestLevel = -1;
+  let bestThrown = false;
+  for (const sp of options) {
+    const lvl = spellLevelFor(state.c.sub, sp);
+    const thrown = sp.kind === "thrown";
+    if (lvl > bestLevel || (lvl === bestLevel && thrown && !bestThrown)) {
+      best = sp;
+      bestLevel = lvl;
+      bestThrown = thrown;
+    }
+  }
+  return best;
 }

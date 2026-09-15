@@ -233,7 +233,17 @@ test("swapPartyMember: fail-open on a missing party, splices index 0 when full, 
 // --- integration: a recruited joiner fights the next combat -----------------
 
 test("integration: a recruited joiner syncs into C.allies and lands a strike in the next combat", () => {
-  const state = fixedState({ pendingJoiner: fixedPending({ name: "Ada", lvl: 1, level: 1, wp: 20, maxWP: 20 }) });
+  // DFB-05 (Phase 25.1): fixedPending's seed (4321) rolls an Illusionist
+  // Magic User with Doze in its grimoire, which would CAST under the new
+  // class-based alliesTurn instead of swinging a weapon — pin an explicit
+  // Fighter sheet so this test still isolates the plain strike path.
+  const state = fixedState({
+    pendingJoiner: fixedPending({
+      name: "Ada", cls: "Fighter", sub: "Soldier", race: "Human", weapon: "Club",
+      prof: 0, magicWpn: 0, might: 0, items: [], skills: {}, grimoire: [],
+      lvl: 1, level: 1, wp: 20, maxWP: 20,
+    }),
+  });
   // 1) Accept the recruitment — the candidate joins the persistent roster.
   resolveJoiner(state, true, []);
   assert.equal(state.party.length, 1, "joiner is now a persistent party member");
@@ -246,10 +256,12 @@ test("integration: a recruited joiner syncs into C.allies and lands a strike in 
   assert.equal(ally.name, "Ada");
   assert.equal(ally.lvl, 1, "combat level came from the joiner lvl");
 
-  // 3) The member takes its swing: lvl 1 -> STRIKE_DICE[0] = d20; roll 3 (<=5
-  //    hit), dmg = 1*1 + d6(4) = 5 -> the recruit lands an allyStruck. Bump the
-  //    generated foe's wp first so the 5 damage does NOT kill it (which would
-  //    route into killFoe's extra draws) — this test isolates the strike path.
+  // 3) The member takes its swing (DFB-05, classed Fighter path): to-hit 5
+  //    (memberToHit's Fighter base), roll 3 (<=5 hit); Club d6 draw 4 -> dmg
+  //    = level^2(1) + base(4) + prof(0) = 5 -> the recruit lands an
+  //    allyStruck. Bump the generated foe's wp first so the 5 damage does
+  //    NOT kill it (which would route into killFoe's extra draws) — this
+  //    test isolates the strike path.
   state.combat.foes[0].wp = 30;
   state.combat.foes[0].maxWP = 30;
   const foeBefore = state.combat.foes[0].wp;

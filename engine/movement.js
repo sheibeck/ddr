@@ -425,6 +425,11 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   if (state.party?.length) {
     for (const m of state.party) {
       cost += upkeep(m);
+      // DFB-05 (Phase 25.1): a member's spell charges recover per day, like
+      // the hero's `c.spellsUsed = 0` above. Conditional so a sheet without
+      // the field (a Fighter/Thief member) never gains one — no new
+      // serialized field on a member that was never a Magic User.
+      if (m.spellsUsed) m.spellsUsed = 0;
     }
   }
   events.push({ type: "dayBegan", day: state.day, camped: !!camped });

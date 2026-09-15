@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
@@ -1060,16 +1060,27 @@ export function allyTurn(state, rng, events = []) {
 /**
  * alliesTurn(state, rng, events) — every persistent party member's strike this
  * round (PARTY-04). Generalizes allyTurn's single-`C.ally` striker over the
- * combat-scoped `C.allies` roster synced in at startCombat, reusing the exact
- * same STRIKE_DICE hit math and reusing the `allyStruck`/`allyMissed` event
- * family (so member strikes need no new narration entry). The summon `C.ally`
- * path (allyTurn) is left entirely untouched and still fires independently.
+ * combat-scoped `C.allies` roster synced in at startCombat. The summon
+ * `C.ally` path (allyTurn) is left entirely untouched and still fires
+ * independently.
+ *
+ * DFB-05 (Phase 25.1): a live member now fights BY CLASS, read from its
+ * persistent sheet (`state.party[ally.partyIdx]`) — a Fighter swings its
+ * real weapon on the class/race to-hit and crits on a natural 1
+ * (memberStrike below), a Thief opens the fight with a backstab, and a
+ * Magic User casts its best castable attack spell on its own daily charges
+ * (allyCast below) before falling back to a staff swing. A `C.allies` entry
+ * whose persistent sheet is missing or lacks a recognized `cls`/`race` (the
+ * defensive fallback — every real member has one) takes the pre-25.1 LEGACY
+ * strike verbatim.
  *
  * DETERMINISM GATE: the guard `!C.allies || !C.allies.length` returns
  * IMMEDIATELY drawing ZERO rng when there is no party — modeled on allyTurn's
  * own null-`C.ally` early return. An empty party (every parity fixture) never
  * enters the loop, so the seeded cursor is untouched and parity stays
- * byte-identical.
+ * byte-identical. EVERY new draw added by DFB-05 (memberStrike's/allyCast's
+ * dice) sits strictly inside this same gate — no new draw site exists
+ * outside the `for` loop below.
  *
  * LOOP SAFETY (PARTY-07): a bounded `for` over a SNAPSHOT (`C.allies.slice()`),
  * never a `while`; re-checks `liveFoes()` every iteration and BREAKS the
@@ -1083,20 +1094,169 @@ export function alliesTurn(state, rng, events = []) {
     if (ally.wp <= 0) continue; // a downed member takes no swing
     const foes = liveFoes(state);
     if (!foes.length) break; // nothing left to hit — end the party's turn
-    const t = foes[0];
-    const roll = rng.d(STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1]);
-    if (roll <= 5) {
-      const d = ally.lvl * ally.lvl + rng.d(6);
-      // D-06/D-20: a party member's blow is physical (soakable) and never
-      // matches a multiplier row (no cls on C.allies entries this phase).
-      const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
-      if (!hit.soaked) events.push({ type: "allyStruck", name: ally.name, target: t.name, dmg: hit.applied });
-      if (t.wp <= 0) killFoe(state, t, rng, events);
-    } else {
-      events.push({ type: "allyMissed", name: ally.name });
+
+    const sheet = Array.isArray(state.party) ? state.party[ally.partyIdx] : null;
+    const classed = !!(sheet && sheet.cls && RACES[sheet.race]);
+    if (!classed) {
+      // pre-25.1 LEGACY strike — an entry with no persistent sheet
+      // (defensive; every real member has one). Byte-identical to before.
+      const t = foes[0];
+      const roll = rng.d(STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1]);
+      if (roll <= 5) {
+        const d = ally.lvl * ally.lvl + rng.d(6);
+        // D-06/D-20: a party member's blow is physical (soakable) and never
+        // matches a multiplier row (no cls on a legacy C.allies entry).
+        const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
+        if (!hit.soaked) events.push({ type: "allyStruck", name: ally.name, target: t.name, dmg: hit.applied });
+        if (t.wp <= 0) killFoe(state, t, rng, events);
+      } else {
+        events.push({ type: "allyMissed", name: ally.name });
+      }
+      continue;
     }
+
+    // a READ view of the persistent sheet: the combat level wins (`ally.lvl`),
+    // every field weaponDamage/maxCharges/canCast touch is defaulted so a
+    // sparse sheet never produces NaN damage (T-25.1-14). Writes go to
+    // `sheet` (the persistent object), never to `view`.
+    const view = {
+      ...sheet,
+      level: ally.lvl,
+      prof: sheet.prof ?? 0,
+      magicWpn: sheet.magicWpn ?? 0,
+      might: sheet.might ?? 0,
+      items: sheet.items ?? [],
+      skills: sheet.skills ?? {},
+      grimoire: sheet.grimoire ?? [],
+      spellsUsed: sheet.spellsUsed ?? 0,
+    };
+
+    if (sheet.cls === "Magic User") {
+      const sp = bestAttackSpell({ c: view });
+      if (sp && maxCharges(view) - view.spellsUsed > 0) {
+        const cur = C.foes[C.target];
+        const target = cur && cur.alive ? cur : foes[0];
+        allyCast(state, ally, sheet, view, sp, target, rng, events);
+        continue;
+      }
+      // no castable attack spell or no charge left — fall through to the
+      // staff swing below, on the Magic User's own to-hit.
+    }
+    memberStrike(state, ally, sheet, view, foes[0], rng, events);
   }
   return events;
+}
+
+/**
+ * memberStrike(state, ally, sheet, view, t, rng, events) — DFB-05: a party
+ * member's melee swing (a Fighter's weapon, a Thief's dagger/backstab, or a
+ * Magic User's staff when it has nothing left to cast). Mirrors
+ * playerStrike's to-hit/crit/heavy-armor-denies-backstab shapes exactly
+ * (VERBATIM heavy-armor list), but always deals physical `kind: "ally"`
+ * damage (a member never takes the hero-only Fighter-vs-Trachea multiplier
+ * row, D-20).
+ *
+ * DELIBERATE RULES CHANGE (Phase 25.1, 2026-09-15, DFB-05): members fight by
+ * class. `backstabUsed` is transient COMBAT state on the `C.allies` entry
+ * (`ally`) — rebuilt by every startCombat, never synced to the persistent
+ * sheet (endCombat only syncs `wp` out), and nulled with combat on load
+ * (T-25.1-15: no new field on the persistent member sheet).
+ */
+function memberStrike(state, ally, sheet, view, t, rng, events) {
+  const need = memberToHit(view);
+  const roll = rng.d(strikeDie(view));
+  const weapon = sheet.weapon;
+  if (roll > need) {
+    events.push({ type: "allyMissed", name: ally.name, target: t.name, roll, need, ...(weapon ? { weapon } : {}) });
+    return;
+  }
+  let dmg = weaponDamage(view, rng);
+  const noCrit = view.sub === "Guard" || view.sub === "Soldier";
+  let crit = roll === 1 && !noCrit;
+  let backstab = false;
+  // "Heavy armor negates any advantages they may gain for stealthiness" —
+  // the hero's exact list (playerStrike), copied verbatim.
+  const heavy = view.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(view.armor);
+  if (view.cls === "Thief" && !ally.backstabUsed && !heavy) {
+    crit = true;
+    backstab = true;
+    ally.backstabUsed = true; // the transient combat entry, not the sheet
+  }
+  if (crit) dmg *= 2;
+  const hit = damageFoe(state, t, dmg, { kind: "ally", crit }, rng, events);
+  if (!hit.soaked)
+    events.push({
+      type: "allyStruck",
+      name: ally.name,
+      target: t.name,
+      dmg: hit.applied,
+      ...(weapon ? { weapon } : {}),
+      ...(crit ? { crit: true } : {}),
+      ...(backstab ? { backstab: true } : {}),
+    });
+  if (t.wp <= 0) killFoe(state, t, rng, events);
+}
+
+/**
+ * allyCast(state, ally, sheet, view, sp, t, rng, events) — DFB-05: a Magic
+ * User party member casting its best attack spell at the hero's current
+ * live target. SELF-CONTAINED (magic.js already imports combat.js, so a
+ * back-import here would be a cycle) — mirrors castSpell's dice shapes
+ * exactly: thrown = d8 vs 4 (Freeze d10 vs 6) with the subclass school bonus
+ * + eff(throw), damage = rollDice(sp.dmg) * max(1, level - sp.lvl) +
+ * eff(spellDmg) through damageFoe kind "spell" (no armor draw), Freeze
+ * freezes and routes through killFoe with the kill-twice unfreeze exactly
+ * like the hero's Phase 23 rule; status/stun/weaken resist-check first
+ * (resistRoll — only an intel >= 12 target draws) then sleep the target
+ * (max(asleep, d4) rounds) or weaken the party's `C.weakened`/
+ * `C.foeToHitPenalty`. The persistent sheet pays the charge
+ * (`sheet.spellsUsed++`), never the transient `view`.
+ */
+function allyCast(state, ally, sheet, view, sp, t, rng, events) {
+  sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
+  const base = { name: ally.name, spell: sp.n, target: t.name };
+  if (sp.kind === "thrown") {
+    const freeze = sp.n === "Freeze";
+    const dieN = freeze ? 10 : 8;
+    const need = freeze ? 6 : 4;
+    const bonus = schoolBonus(view.sub, sp.s) + eff(view, "throw");
+    const roll = rng.d(dieN);
+    events.push({ type: "allyCast", ...base, roll, need, bonus });
+    if (roll - bonus <= need) {
+      const mult = Math.max(1, view.level - sp.lvl);
+      const dmg = rollDice(rng, sp.dmg) * mult + eff(view, "spellDmg");
+      const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
+      events.push({ type: "allySpellHit", ...base, effect: freeze ? "frozen" : "damage", dmg: hit.applied });
+      if (freeze) {
+        t.frozen = true;
+        killFoe(state, t, rng, events);
+        if (t.alive) t.frozen = false; // kill-twice revived it — a standing foe is not frozen
+        return;
+      }
+      if (t.wp <= 0) killFoe(state, t, rng, events);
+    } else {
+      events.push({ type: "allySpellMissed", ...base, resisted: false });
+    }
+    return;
+  }
+  // status / stun / weaken — the only other ATTACK_SPELL_KINDS.
+  events.push({ type: "allyCast", ...base });
+  const res = resistRoll(rng, t.intel);
+  if (res.rolled && res.resisted) {
+    events.push({ type: "allySpellMissed", ...base, resisted: true, roll: res.roll });
+    return;
+  }
+  if (sp.kind === "weaken") {
+    const C = state.combat;
+    if (C) {
+      C.weakened = true;
+      C.foeToHitPenalty = 3;
+    }
+    events.push({ type: "allySpellHit", ...base, effect: "weakened" });
+  } else {
+    t.asleep = Math.max(t.asleep || 0, rng.d(4));
+    events.push({ type: "allySpellHit", ...base, effect: "asleep", rounds: t.asleep });
+  }
 }
 
 /**

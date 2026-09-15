@@ -22,6 +22,10 @@ import assert from "node:assert/strict";
 
 import { makeRng } from "../../engine/rng.js";
 import { startCombat, alliesTurn, foeTurn, killFoe, endCombat, afterPlayerAction, pickFoeTarget } from "../../engine/combat.js";
+import { memberToHit, bestAttackSpell } from "../../engine/derived.js";
+import { newDay } from "../../engine/movement.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { TOAST_FOR, ORACLE_ONLY, FEATURE_EVENTS, toastsForAction } from "../../src/browser/toasts.js";
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
  * on underflow, which doubles as a "no more rng draws expected" assertion. */
@@ -94,6 +98,23 @@ function fixedAlly(overrides = {}) {
 /** A persistent roster member (a rollCharacter-shaped sheet; `level` not `lvl`). */
 function fixedMember(overrides = {}) {
   return { name: "Ada", level: 1, sub: "Fighter", cls: "Fighter", race: "Human", wp: 20, maxWP: 20, status: "ok", ...overrides };
+}
+
+/** DFB-05: a fully class-shaped party sheet — Knight + Club + prof 2 by
+ * default (a classed Fighter fixture); override cls/sub/weapon/etc. for the
+ * Thief/Magic User scenarios below. */
+function classedMember(overrides = {}) {
+  return fixedMember({
+    cls: "Fighter", sub: "Knight", race: "Human", weapon: "Club", prof: 2, magicWpn: 0, might: 0,
+    items: [], skills: {}, armor: "Studded", grimoire: [], spellsUsed: 0,
+    ...overrides,
+  });
+}
+
+/** DFB-05: a Magic User party sheet, prof 0 (so weaponDamage's staff-swing
+ * math is exactly level^2 + weapon base, no proficiency term). */
+function muMember(overrides = {}) {
+  return classedMember({ cls: "Magic User", sub: "Wizard", weapon: "Quarter Staff", prof: 0, grimoire: [], spellsUsed: 0, ...overrides });
 }
 
 // --- startCombat: party sync into C.allies ---------------------------------
@@ -305,4 +326,299 @@ test("pickFoeTarget: the pool die has exactly (live members + 1) sides", () => {
   rng = recordingRng();
   pickFoeTarget({ combat: { foes: [], allies: one } }, rng);
   assert.deepEqual(rng.sides, [2], "one live member -> a 2-sided pool die");
+});
+
+// --- DFB-05 (Phase 25.1): party members fight by class ---------------------
+
+test("DFB-05 Fighter: strikes with its weapon on the class to-hit — Knight + Club + prof 2, roll 3 hits (need 5), d6 4 -> 7", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [classedMember()] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([3, 4]), []);
+  assert.equal(foe.wp, 23);
+  const ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 7);
+  assert.equal(ev.weapon, "Club");
+  assert.equal("crit" in ev, false);
+  assert.equal("backstab" in ev, false);
+});
+
+test("DFB-05 Fighter: a natural 1 is a critical (x2, crit: true) and bypasses the armor soak draw", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [classedMember()] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([1, 4]), []);
+  const ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 14);
+  assert.equal(ev.crit, true);
+
+  // A foe carrying sp.ar would normally draw an armor-soak d20 — a
+  // fakeRng of length 2 proves crit bypasses it (a third draw would throw).
+  const foe2 = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, sp: { ar: 10 } });
+  const state2 = fixedState({ party: [classedMember()] });
+  state2.combat = fixedCombat([foe2], { allies: [fixedAlly()] });
+  const events2 = alliesTurn(state2, fakeRng([1, 4]), []);
+  const ev2 = events2.find((e) => e.type === "allyStruck");
+  assert.equal(ev2.dmg, 14);
+});
+
+test("DFB-05 Fighter: a Guard or Soldier never crits", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [classedMember({ sub: "Soldier" })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([1, 4]), []);
+  const ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 7);
+  assert.equal("crit" in ev, false);
+});
+
+test("DFB-05 to-hit: memberToHit follows class, race floor, Acrobat, Cleric", () => {
+  assert.equal(memberToHit({ cls: "Fighter", race: "Human" }), 5);
+  assert.equal(memberToHit({ cls: "Magic User", race: "Human" }), 3);
+  assert.equal(memberToHit({ cls: "Thief", race: "Human" }), 4);
+  assert.equal(memberToHit({ cls: "Thief", race: "Elven" }), 5);
+  assert.equal(memberToHit({ cls: "Magic User", race: "Human", sub: "Cleric" }), 4);
+  assert.equal(memberToHit({ cls: "Thief", race: "Human", sub: "Acrobat" }), 5);
+  assert.equal(memberToHit({}), 5);
+});
+
+test("DFB-05 Thief: the first landed blow is a backstab (x2, backstab + crit flags), the next is normal", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [classedMember({ cls: "Thief", sub: "Pickpocket", weapon: "Dagger", prof: 0, armor: "Leather" })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  let events = alliesTurn(state, fakeRng([4, 4]), []);
+  let ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 6);
+  assert.equal(ev.backstab, true);
+  assert.equal(ev.crit, true);
+  assert.equal(state.combat.allies[0].backstabUsed, true);
+
+  events = alliesTurn(state, fakeRng([4, 4]), []);
+  ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 3);
+  assert.equal("backstab" in ev, false);
+});
+
+test("DFB-05 Thief: a missed opener keeps the backstab for the next landed blow", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [classedMember({ cls: "Thief", sub: "Pickpocket", weapon: "Dagger", prof: 0, armor: "Leather" })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  let events = alliesTurn(state, fakeRng([9]), []);
+  let ev = events.find((e) => e.type === "allyMissed");
+  assert.equal(ev.target, foe.name);
+  assert.equal(ev.roll, 9);
+  assert.equal(ev.need, 4);
+  assert.equal(ev.weapon, "Dagger");
+  assert.ok(!state.combat.allies[0].backstabUsed);
+
+  events = alliesTurn(state, fakeRng([4, 4]), []);
+  ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 6);
+  assert.equal(ev.backstab, true);
+});
+
+test("DFB-05 Thief: Plate armor denies the backstab (hero's rule mirrored)", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [classedMember({ cls: "Thief", sub: "Pickpocket", weapon: "Dagger", prof: 0, armor: "Plate" })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([4, 4]), []);
+  const ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 3);
+  assert.equal("backstab" in ev, false);
+});
+
+test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 with bonus 3 hits need 6, d6 4 damage, the target is frozen and killed through killFoe, the SHEET pays the charge", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([5, 4, 4, 1, 20]), []);
+  const cast = events.find((e) => e.type === "allyCast");
+  assert.equal(cast.roll, 5);
+  assert.equal(cast.need, 6);
+  assert.equal(cast.bonus, 3);
+  const hit = events.find((e) => e.type === "allySpellHit");
+  assert.equal(hit.effect, "frozen");
+  assert.equal(hit.dmg, 4);
+  assert.ok(events.indexOf(hit) > events.indexOf(cast), "allySpellHit follows allyCast");
+  assert.equal(foe.alive, false);
+  assert.equal(state.party[0].spellsUsed, 1);
+  assert.equal(events.some((e) => e.type === "allyStruck"), false);
+});
+
+test("DFB-05 Magic User: a Freeze miss (d10 10 - 3 > 6) is allySpellMissed { resisted: false } and still spends the charge", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([10]), []);
+  const miss = events.find((e) => e.type === "allySpellMissed");
+  assert.equal(miss.resisted, false);
+  assert.equal(foe.wp, 30);
+  assert.equal(state.party[0].spellsUsed, 1);
+});
+
+test("DFB-05 Magic User: Doze on a dim foe draws no resist roll and puts it to sleep d4", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
+  const state = fixedState({ party: [muMember({ grimoire: ["Doze"] })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  // A single-entry fakeRng proves NO resist roll is drawn (intel 1 < 12).
+  const events = alliesTurn(state, fakeRng([3]), []);
+  const cast = events.find((e) => e.type === "allyCast");
+  assert.equal("roll" in cast, false);
+  const hit = events.find((e) => e.type === "allySpellHit");
+  assert.equal(hit.effect, "asleep");
+  assert.equal(hit.rounds, 3);
+  assert.equal(foe.asleep, 3);
+});
+
+test("DFB-05 Magic User: an intelligent foe can resist Doze (d20 below its intel) -> allySpellMissed { resisted: true }", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 15 });
+  const state = fixedState({ party: [muMember({ grimoire: ["Doze"] })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([10]), []);
+  const miss = events.find((e) => e.type === "allySpellMissed");
+  assert.equal(miss.resisted, true);
+  assert.equal(foe.asleep, 0);
+  assert.equal(state.party[0].spellsUsed, 1);
+});
+
+test("DFB-05 Magic User: no charge left -> staff swing on the Magic User to-hit (3)", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [muMember({ grimoire: ["Freeze"], spellsUsed: 4 })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([2, 5]), []);
+  assert.equal(events.some((e) => e.type === "allyCast"), false);
+  const struck = events.find((e) => e.type === "allyStruck");
+  assert.equal(struck.dmg, 6);
+  assert.equal(struck.weapon, "Quarter Staff");
+
+  const foe2 = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state2 = fixedState({ party: [muMember({ grimoire: ["Freeze"], spellsUsed: 4 })] });
+  state2.combat = fixedCombat([foe2], { allies: [fixedAlly()] });
+  const events2 = alliesTurn(state2, fakeRng([4]), []);
+  assert.ok(events2.some((e) => e.type === "allyMissed"));
+});
+
+test("DFB-05 Magic User: an attack spell above the member's level is not castable -> staff swing", () => {
+  const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [muMember({ grimoire: ["Fireball"] })] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  assert.equal(bestAttackSpell({ c: state.party[0] }), null);
+  const events = alliesTurn(state, fakeRng([2, 5]), []);
+  assert.ok(events.some((e) => e.type === "allyStruck"));
+});
+
+test("DFB-05 bestAttackSpell: highest effective level wins, thrown beats status at equal level, none -> null", () => {
+  assert.equal(bestAttackSpell({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Doze", "Freeze"] } }).n, "Freeze");
+  assert.equal(bestAttackSpell({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Doze"] } }).n, "Doze");
+  assert.equal(bestAttackSpell({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: [] } }), null);
+  assert.equal(bestAttackSpell({ c: { cls: "Magic User", sub: "Wizard", level: 3, grimoire: ["Freeze", "Fireball"] } }).n, "Fireball");
+});
+
+test("DFB-05 legacy fallback: an allies entry with no persistent sheet strikes exactly as before", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const state = fixedState({ party: [] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  const events = alliesTurn(state, fakeRng([3, 4]), []);
+  const ev = events.find((e) => e.type === "allyStruck");
+  assert.equal(ev.dmg, 5);
+  assert.equal("weapon" in ev, false);
+
+  const foe2 = fixedFoe({ wp: 30, maxWP: 30 });
+  const state2 = fixedState({ party: [] });
+  state2.combat = fixedCombat([foe2], { allies: [fixedAlly()] });
+  const events2 = alliesTurn(state2, fakeRng([9]), []);
+  const ev2 = events2.find((e) => e.type === "allyMissed");
+  assert.deepEqual(ev2, { type: "allyMissed", name: "Ada" });
+});
+
+test("DFB-05 newDay: member spell charges reset with the day; a sheet without the field never gains one", () => {
+  const m1 = classedMember({ cls: "Magic User", sub: "Wizard", spellsUsed: 2 });
+  const m2 = classedMember({ cls: "Magic User", sub: "Wizard", spellsUsed: 0 });
+  delete m2.spellsUsed;
+  const state = fixedState({ c: { rations: 6 }, party: [m1, m2] });
+  // fed branch: heal d10(5); 8 wandering-monster checks at 2 (never <=1, no encounter).
+  newDay(state, false, fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]), []);
+  assert.equal(state.party[0].spellsUsed, 0);
+  assert.equal("spellsUsed" in state.party[1], false);
+});
+
+// --- DFB-05: narration + toasts for the class-based ally events -------------
+
+test("DFB-05 narration: legacy allyStruck/allyMissed lines are byte-identical without the new fields", () => {
+  assert.equal(
+    EVENT_NARRATION.allyStruck({ type: "allyStruck", name: "Ada", target: "Dante", dmg: 5 }),
+    `Ada lands a hit on Dante for <span class="roll">5</span> hp.`
+  );
+  assert.equal(EVENT_NARRATION.allyMissed({ type: "allyMissed", name: "Ada" }), "Ada swings and misses.");
+  assert.equal(TOAST_FOR.allyStruck({ type: "allyStruck", name: "Ada", target: "Dante", dmg: 5 }).text, "Ada lands a hit on Dante (5).");
+  assert.equal(TOAST_FOR.allyMissed({ type: "allyMissed", name: "Ada" }).text, "Ada swings and misses.");
+});
+
+test("DFB-05 narration + toast: backstab, crit and weapon render", () => {
+  const backstabEvent = { type: "allyStruck", name: "Bram", target: "Dante", dmg: 14, backstab: true, crit: true, weapon: "Dagger" };
+  assert.match(EVENT_NARRATION.allyStruck(backstabEvent), /backstabs Dante with a Dagger/);
+  assert.equal(TOAST_FOR.allyStruck(backstabEvent).text, "Bram backstabs Dante (14)");
+
+  const critEvent = { type: "allyStruck", name: "Bram", target: "Dante", dmg: 14, crit: true, weapon: "Club" };
+  assert.match(EVENT_NARRATION.allyStruck(critEvent), /Critical\./);
+  assert.ok(TOAST_FOR.allyStruck(critEvent).text.endsWith(" · CRIT"));
+});
+
+test("DFB-05 toast: a cast is exactly one toast naming the spell and the outcome", () => {
+  let toasts = toastsForAction(
+    "attack",
+    [
+      { type: "allyCast", name: "Ysolde", spell: "Freeze", target: "Goblin", roll: 5, need: 6, bonus: 3 },
+      { type: "allySpellHit", name: "Ysolde", spell: "Freeze", target: "Goblin", effect: "frozen", dmg: 4 },
+    ],
+    {}
+  );
+  assert.equal(toasts.length, 1);
+  assert.equal(toasts[0].text, "Ysolde casts Freeze — Goblin frozen solid");
+  assert.equal(toasts[0].tone, "magic");
+
+  toasts = toastsForAction(
+    "attack",
+    [
+      { type: "allyCast", name: "Ysolde", spell: "Doze", target: "Goblin" },
+      { type: "allySpellMissed", name: "Ysolde", spell: "Doze", target: "Goblin", resisted: true, roll: 10 },
+    ],
+    {}
+  );
+  assert.equal(toasts[0].text, "Ysolde casts Doze — Goblin resists");
+  assert.equal(toasts[0].tone, "miss");
+
+  toasts = toastsForAction(
+    "attack",
+    [
+      { type: "allyCast", name: "Ysolde", spell: "Fireball", target: "Goblin" },
+      { type: "allySpellMissed", name: "Ysolde", spell: "Fireball", target: "Goblin", resisted: false },
+    ],
+    {}
+  );
+  assert.equal(toasts[0].text, "Ysolde casts Fireball — misses Goblin");
+
+  toasts = toastsForAction(
+    "attack",
+    [
+      { type: "allyCast", name: "Ysolde", spell: "Fireball", target: "Goblin" },
+      { type: "allySpellHit", name: "Ysolde", spell: "Fireball", target: "Goblin", effect: "damage", dmg: 12 },
+    ],
+    {}
+  );
+  assert.equal(toasts[0].text, "Ysolde casts Fireball — Goblin (12)");
+});
+
+test("DFB-05 coverage: allyCast is Oracle-only, the other four ally events are FEATURE_EVENTS with narration and toast, and none throws on a bare payload", () => {
+  assert.ok(ORACLE_ONLY.has("allyCast"));
+  assert.equal(typeof EVENT_NARRATION.allyCast, "function");
+  for (const t of ["allyStruck", "allyMissed", "allySpellHit", "allySpellMissed"]) {
+    assert.ok(FEATURE_EVENTS.includes(t), `${t} is a FEATURE_EVENT`);
+    const toastText = TOAST_FOR[t]({ type: t }).text;
+    assert.ok(toastText && toastText.length > 0, `${t} toast text non-empty`);
+    const narr = EVENT_NARRATION[t]({ type: t });
+    assert.ok(narr && narr.length > 0, `${t} narration non-empty`);
+    assert.doesNotMatch(narr, /undefined/);
+    assert.doesNotMatch(narr, /NaN/);
+  }
 });
