@@ -60,6 +60,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 23: Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)** - Fix the three "cannot act" states and guarantee every fresh Magic User a day-one attack spell (completed 2026-09-14)
 - [x] **Phase 24: Every Sub-class and Race: One Good, One Bad** - Every sub-class and race gets a code-verified good and bad, flavor text matches the mechanics, and an identity-contract test proves it (completed 2026-09-14)
 - [x] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses (completed 2026-09-15)
+- [ ] **Phase 25.1: Device Feedback Batch (INSERTED 2026-09-15)** - Card only for decisions/big updates, minor events toast-only with the narrative sentence, readable toasts, Oracle fills the screen and opens at the newest line, Joiner swap with snark, Joiners fight by class, camp refusal states the numbers
 - [ ] **Phase 26: Mass Playtest & Class-Pass Ledger** - An AFTER matrix on the post-pass engine ranks over/under-performers with a fun-band verdict per row, committed to `docs/CLASS-PASS.md`
 - [ ] **Phase 27: Delve-to-Death Retune** - The deferred TUNE-04 re-attempt on the corrected player power, closed by a human DR round on the Pixel 7
 
@@ -210,6 +211,25 @@ Plans:
 - [x] 25-05-PLAN.md — Standing guards: toastsCoverage.test.js (TOAST_FOR ⊎ ORACLE_ONLY = every engine event type, no dead entries; FEATURE_EVENTS ⊆ TOAST_FOR ∩ EVENT_NARRATION and ⊇ identity-contract names derived from source; purity scan of the two modules) + eventNarration.js re-export of the toast surface (FEED-01/02/06) — wave 3
 
 **Engine gate reminder**: every new event type gets an `EVENT_NARRATION` entry and the voice safety scan stays green; this is presentation/narration work — it must not introduce new engine RNG draws. Phase 25 adds exactly ONE new event type (`scrollRefused`, zero draws, no state change) and only conditional additive fields elsewhere; every parity fixture stays byte-identical.
+
+### Phase 25.1: Device Feedback Batch: card vs toast, Joiner swap, class-based allies, camp numbers, Oracle scroll (INSERTED)
+
+
+
+**Goal**: Act on the first on-device feedback from the Phase 25 build — the narrative delivery is tuned (the dismissible card only for decisions and big updates; minor events toast-only with the narrative sentence; toasts readable; the Oracle fills the screen and opens at the newest line) and three party/camp rules land (Joiner swap with snark, Joiners fight by class, camp refusal states the numbers and counts the party).
+**Depends on**: Phase 25 (the toast table and single dispatch seam this batch builds on). Runs BEFORE Phase 26 so the AFTER matrix sees the class-based ally combat.
+**Requirements**: DFB-01, DFB-02, DFB-03, DFB-04, DFB-05, DFB-06
+**Success Criteria** (what must be TRUE):
+
+  1. Walking onto a trap, climbing, opening a chest, finding coin, or teleporting produces a toast carrying the Oracle's sentence and NO "Move on" card; a new floor, a level-up, a Joiner offer, a find, death, and the Fight! gate still produce the card.
+  2. A stack of four toasts is readable one by one (lifetime ~2×, stack-aware), and tapping a toast dismisses it.
+  3. The Oracle fills the screen, opens at the newest line, and shows a "newer" indicator when scrolled away.
+  4. Accepting a second Joiner swaps the first out with a snarky exit line; the offer names who would leave.
+  5. A Magic User member casts, a Thief member backstabs, a Fighter member swings its weapon — narrated and toasted; solo parity byte-identical.
+  6. Make Camp with too little food says "you eat N a night, you have M", counting party appetites; the automatic new day is unchanged.
+
+**Plans**: TBD
+**Engine gate reminder**: DFB-04/05/06 touch the engine — zero rng for the swap and the camp gate; ally-combat draws only behind the existing `state.party?.length` gate; no new serialized field; parity byte-identical for every fixture; every new event narrated and toasted (Phase 25 coverage guards).
 
 ### Phase 26: Mass Playtest & Class-Pass Ledger
 

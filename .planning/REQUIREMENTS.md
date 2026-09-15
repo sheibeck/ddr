@@ -43,6 +43,17 @@ Folded in from the "Feedback, Feel & Polish" proposal §A/§B (user decision 202
 - [x] **FEED-05**: Early-combat misses draw from a varied, voice-safe corpus of fledgling-adventurer call-outs instead of repeating "Miss", so brutal first floors read as narrative
 - [x] **FEED-06**: Every spell, scroll, and item effect in EITHER direction (yours on them, theirs on you) is legible as an event + toast, including the resisted/failed/nothing-to-target outcomes
 
+### Device Feedback Batch (DFB) — Phase 25.1, inserted 2026-09-15 from on-device play
+
+User feedback after the Phase 25 build: the narrative is right, the delivery needs tuning; plus three party/camp rules.
+
+- [ ] **DFB-01**: The dismissible "Move on" card appears ONLY for decisions and big updates — encounter start (Fight! gate), a Joiner offer, a find to keep/leave, death, a new floor, a level-up, and the end-of-fight report; every other move-path event (traps, climbs/leaps/falls, chests, gold/rations, darkness, afflictions, camp results, teleports) is toast-only and the toast carries the Oracle's narrative sentence (dice detail stripped), not a terse label
+- [ ] **DFB-02**: Toasts linger long enough to read a stack of four — lifetime roughly doubled (cap near 9 s), extended a little per toast already visible, tap to dismiss, reduced-motion respected, no layout shift
+- [ ] **DFB-03**: The Oracle panel fills the available screen height, opens scrolled to the most recent line, and shows a "newer" indicator whenever the reader has scrolled away from it (tap returns to the newest line)
+- [ ] **DFB-04**: Accepting a Joiner while the party is full replaces the existing member, who leaves with a snarky exit line (Oracle + toast); the offer card names who would leave; declining keeps the roster; zero rng, no new serialized field
+- [ ] **DFB-05**: Party members fight according to their class — Magic Users cast their best castable attack spell with their own daily charges (staff-swing when they can't), Thieves open with a backstab crit and use their weapon, Fighters strike with their real weapon damage — with narrated, toasted ally events; new rng draws only behind the existing party gate so solo parity stays byte-identical
+- [ ] **DFB-06**: Make Camp keeps refusing without enough food, but the refusal states the numbers ("you eat N a night, you have M") and the camp gate counts every live party member's appetite exactly as the automatic new day does; the automatic new day is unchanged
+
 ### Class-Aware Playtest Harness (HARN)
 
 Dev-only, zero-dependency, never shipped — extends `tools/lib/tuning-bot.mjs`.
@@ -123,6 +134,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FEED-04 | Phase 25 | Complete |
 | FEED-05 | Phase 25 | Complete |
 | FEED-06 | Phase 25 | Complete |
+| DFB-01 | Phase 25.1 | Pending |
+| DFB-02 | Phase 25.1 | Pending |
+| DFB-03 | Phase 25.1 | Pending |
+| DFB-04 | Phase 25.1 | Pending |
+| DFB-05 | Phase 25.1 | Pending |
+| DFB-06 | Phase 25.1 | Pending |
 | HARN-01 | Phase 22 | Complete |
 | HARN-02 | Phase 22 | Complete |
 | HARN-03 | Phase 22 | Complete |
@@ -136,8 +153,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 **Coverage:**
 
-- v1.2 requirements: 28 total
-- Mapped to phases: 28
+- v1.2 requirements: 34 total (28 + 6 DFB inserted 2026-09-15)
+- Mapped to phases: 34
 - Unmapped: 0 ✓
 
 ---

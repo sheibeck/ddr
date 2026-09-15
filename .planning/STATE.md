@@ -6,15 +6,15 @@ current_phase: 26
 current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
 stopped_at: Completed 25-05-PLAN.md
-last_updated: "2026-09-15T09:47:31.854Z"
+last_updated: "2026-09-15T09:48:51.050Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 25 complete, transitioned to Phase 26
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 4
-  total_plans: 20
+  total_plans: 24
   completed_plans: 20
-  percent: 67
+  percent: 57
 ---
 
 # Project State
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 ## Current Position
 
-Phase: 26 — Mass Playtest & Class-Pass Ledger
+Phase: 25.1 — Device Feedback Batch (INSERTED; runs before Phase 26)
 Plan: Not started
-Status: Ready to execute
+Status: Ready to plan
 Last activity: 2026-09-15 — Phase 25 complete, transitioned to Phase 26
 
 ## Ground Truth (durable facts every session needs)
@@ -64,6 +64,10 @@ Last activity: 2026-09-15 — Phase 25 complete, transitioned to Phase 26
 ### Pending Todos
 
 - Set up Play Developer API upload (service account) so `play:release` can push to the internal track without Console drag-and-drop — user steps in `docs/RELEASING.md`.
+
+### Roadmap Evolution
+
+- Phase 25.1 inserted after Phase 25: Device Feedback Batch (user, 2026-09-15): card only for decisions, toast-only minor events with narrative text, longer tap-to-dismiss toasts, teleport toast, Oracle fills screen + opens at newest, Joiner swap with snark, Joiners fight by class, camp refusal shows need/have and counts the party (URGENT)
 
 ## Deferred Items
 
