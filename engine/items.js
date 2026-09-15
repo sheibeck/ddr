@@ -194,16 +194,32 @@ export function canEquipWeapon(c, it) {
 }
 
 /**
+ * armorRefusalReason(c, it) — ECON-05 (Phase 13) + DELIBERATE RULES CHANGE
+ * (Phase 24, 2026-09-14, IDENT-07): the single source of truth for WHY armor
+ * item `it` is illegal for `c` to wear/be sold, or `null` if it is legal.
+ * Checked in order: `"noArmor"` (a noArmor race, e.g. Fridgian, can wear
+ * nothing), `"woodsman"` (a Woodsman's "no mail, no plate" bad — anything
+ * heavier than Studded, i.e. `it.ar > 10`, is refused even though a Fighter
+ * would otherwise be class-legal for it), then `"tooHeavy"` (the existing
+ * class/Heft rule fails), else `null`. `canEquipArmor` below is now a thin
+ * wrapper so takeItem/equipItem/the store filter all read this ONE rule.
+ * Pure, no rng, no mutation.
+ */
+export function armorRefusalReason(c, it) {
+  if (RACES[c.race].noArmor) return "noArmor";
+  if (c.sub === "Woodsman" && it.ar > 10) return "woodsman";
+  const legal = it.cls.includes(classLetter(c)) || (c.cls === "Thief" && skill(c, "Heft") && it.ar <= 12);
+  return legal ? null : "tooHeavy";
+}
+
+/**
  * canEquipArmor(c, it) — ECON-05 (Phase 13): is armor item `it` LEGAL for `c`
- * to wear? The race/class gate ONLY (not the strictly-better AR check). A
- * noArmor race (RACES[c.race].noArmor, e.g. a form that cannot wear armor) can
- * wear nothing; otherwise the class must be listed in `it.cls`, OR the wearer
- * is a Thief with the Heft skill and the piece is light enough (AR ≤ 12).
- * Extracted verbatim from takeItem's armor gate. Pure, no rng, no mutation.
+ * to wear? The race/class/sub gate ONLY (not the strictly-better AR check).
+ * Delegates entirely to armorRefusalReason above (byte-identical behaviour
+ * for everyone but a Woodsman offered Mail/Plate). Pure, no rng, no mutation.
  */
 export function canEquipArmor(c, it) {
-  if (RACES[c.race].noArmor) return false;
-  return !!(it.cls.includes(classLetter(c)) || (c.cls === "Thief" && skill(c, "Heft") && it.ar <= 12));
+  return armorRefusalReason(c, it) === null;
 }
 
 /* ---------------- equip / consume ---------------- */
@@ -239,12 +255,9 @@ export function takeItem(state, it, events = []) {
   }
 
   if (it.kind === "armor") {
-    if (RACES[c.race].noArmor) {
-      events.push({ type: "itemRejected", item: it, reason: "noArmor" });
-      return events;
-    }
-    if (!canEquipArmor(c, it)) {
-      events.push({ type: "itemRejected", item: it, reason: "tooHeavy" });
+    const armorReason = armorRefusalReason(c, it);
+    if (armorReason) {
+      events.push({ type: "itemRejected", item: it, reason: armorReason });
       return events;
     }
     if (it.ar <= c.ar) {
@@ -407,12 +420,9 @@ export function equipItem(state, i, events = []) {
   }
 
   if (it.kind === "armor") {
-    if (RACES[c.race].noArmor) {
-      events.push({ type: "equipRejected", item: it, reason: "noArmor" });
-      return events;
-    }
-    if (!canEquipArmor(c, it)) {
-      events.push({ type: "equipRejected", item: it, reason: "tooHeavy" });
+    const armorReason = armorRefusalReason(c, it);
+    if (armorReason) {
+      events.push({ type: "equipRejected", item: it, reason: armorReason });
       return events;
     }
     const worn = wornArmorItem(c);
@@ -493,10 +503,24 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
   const it = (c.items || [])[i];
   if (!it || !itemReady(state, it)) return events;
 
+  const kind = it.kind === "potion" ? it.eff2 : it.use;
+
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): a Pilfer's
+  // "cannot use a single magic item that doesn't heal" bad, enforced. Heal-
+  // kind is discretionarily scoped to the two wp-restoring potion effects
+  // (Healing "heal", Xtra Healing "full") — cures, buffs, staves, cloaks and
+  // every other `use:` item are refused BEFORE any side effect, so a refused
+  // use leaves usedAt/inventory/rng completely untouched. drinkPotion (the
+  // separate generic healing-draught action) and canRead (engine/magic.js)
+  // already gate a Pilfer independently and are untouched by this change.
+  if (c.sub === "Pilfer" && kind !== "heal" && kind !== "full") {
+    events.push({ type: "useRefused", item: it, reason: "pilfer" });
+    return events;
+  }
+
   it.usedAt = state.steps;
   events.push({ type: "itemUsed", item: it });
 
-  const kind = it.kind === "potion" ? it.eff2 : it.use;
   const combat = state.combat;
   const foes = combat && combat.foes ? combat.foes.filter((f) => f.alive) : [];
 

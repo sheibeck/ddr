@@ -15,7 +15,7 @@
 // No DOM, no localStorage, no Math.random — every roll goes through the
 // injected engine rng, in the prototype's exact consumption order.
 
-import { giveItem, takeItem, hasPicks, rollBlade, rollMailPiece } from "./items.js";
+import { giveItem, takeItem, hasPicks, rollBlade, rollMailPiece, canEquipArmor } from "./items.js";
 import { clampCarry } from "./derived.js";
 import { WEAPONS, ARMORS, FOODS, POTIONS, RACES } from "../content/index.js";
 
@@ -266,7 +266,12 @@ export function openStore(state, rng, events = []) {
       WEAPONS[w].lab,
     );
 
-  const mails = ARMORS.filter((a) => a.cls.includes(letter) && a.ar > c.ar);
+  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): a Woodsman's
+  // "no mail, no plate" bad — the store never even OFFERS an armour line
+  // the buyer cannot legally wear. canEquipArmor already covers the noArmor
+  // race gate (kept as an explicit `&&` below purely for readability), so
+  // every non-Woodsman hero's filtered result is unchanged.
+  const mails = ARMORS.filter((a) => a.cls.includes(letter) && a.ar > c.ar && canEquipArmor(c, a));
   if (mails.length && !RACES[race].noArmor) {
     const a = mails[0];
     add(

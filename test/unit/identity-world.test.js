@@ -15,6 +15,9 @@ import assert from "node:assert/strict";
 import { meetJoiner } from "../../engine/encounters.js";
 import { rollCharacter } from "../../engine/character.js";
 import { makeRng } from "../../engine/rng.js";
+import { canEquipArmor, armorRefusalReason, takeItem, equipItem, useItem } from "../../engine/items.js";
+import { openStore } from "../../engine/economy.js";
+import { ARMORS } from "../../content/index.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count; throws on underflow (doubles as a "no more rng
@@ -130,4 +133,127 @@ test("meetJoiner: a Human is neutral — the same Magic-User-joiner seed (1) set
   assert.equal(state.c.joiner.cls, "Magic User");
   assert.ok(state.pendingJoiner, "a Human meeting the same Magic User joiner still recruits it");
   assert.ok(!events.some((e) => e.type === "joinerRefused"));
+});
+
+/* ============================================================
+ * Task 2 — Woodsman armour gate (canEquipArmor/takeItem/equipItem/store) +
+ * Pilfer heal-only useItem
+ * ============================================================ */
+
+const STUDDED = ARMORS.find((a) => a.name === "Studded");
+const MAIL = ARMORS.find((a) => a.name === "Mail");
+const PLATE = ARMORS.find((a) => a.name === "Plate");
+const LEATHER = ARMORS.find((a) => a.name === "Leather");
+
+test("armorRefusalReason / canEquipArmor: a Woodsman may wear Studded/Leather but not Mail/Plate", () => {
+  const woodsman = { race: "Human", cls: "Fighter", sub: "Woodsman", skills: {} };
+  assert.equal(armorRefusalReason(woodsman, STUDDED), null);
+  assert.equal(armorRefusalReason(woodsman, LEATHER), null);
+  assert.equal(armorRefusalReason(woodsman, MAIL), "woodsman");
+  assert.equal(armorRefusalReason(woodsman, PLATE), "woodsman");
+  assert.equal(canEquipArmor(woodsman, STUDDED), true);
+  assert.equal(canEquipArmor(woodsman, MAIL), false);
+  assert.equal(canEquipArmor(woodsman, PLATE), false);
+  assert.equal(canEquipArmor(woodsman, LEATHER), true);
+});
+
+test("armorRefusalReason: tooHeavy for a Thief without Heft, noArmor for a Fridgian, null for a Soldier", () => {
+  const thief = { race: "Human", cls: "Thief", sub: "Pilfer", skills: {} };
+  assert.equal(armorRefusalReason(thief, MAIL), "tooHeavy");
+  const fridgian = { race: "Fridgian", cls: "Fighter", sub: "Soldier", skills: {} };
+  assert.equal(armorRefusalReason(fridgian, LEATHER), "noArmor");
+  const soldier = { race: "Human", cls: "Fighter", sub: "Soldier", skills: {} };
+  assert.equal(armorRefusalReason(soldier, MAIL), null);
+});
+
+test("takeItem: a Woodsman is refused Mail (reason woodsman), armour untouched; a Soldier takes it", () => {
+  const woodsman = fixedState({ c: { sub: "Woodsman", cls: "Fighter" } });
+  const events = takeItem(
+    woodsman,
+    { kind: "armor", n: "Mail", armor: "Mail", ar: MAIL.ar, cls: MAIL.cls, min: MAIL.min, wp: MAIL.wp },
+    [],
+  );
+  assert.ok(events.some((e) => e.type === "itemRejected" && e.reason === "woodsman"));
+  assert.equal(woodsman.c.armor, "Nothing", "armour left untouched");
+
+  const soldier = fixedState({ c: { sub: "Soldier", cls: "Fighter" } });
+  const events2 = takeItem(
+    soldier,
+    { kind: "armor", n: "Mail", armor: "Mail", ar: MAIL.ar, cls: MAIL.cls, min: MAIL.min, wp: MAIL.wp },
+    [],
+  );
+  assert.ok(events2.some((e) => e.type === "itemTaken"));
+  assert.equal(soldier.c.armor, "Mail");
+});
+
+test("equipItem: a Woodsman is refused Mail (equipRejected reason woodsman)", () => {
+  const woodsman = fixedState({
+    c: {
+      sub: "Woodsman",
+      cls: "Fighter",
+      items: [{ kind: "armor", n: "Mail", armor: "Mail", ar: MAIL.ar, cls: MAIL.cls, min: MAIL.min, wp: MAIL.wp }],
+    },
+  });
+  const events = equipItem(woodsman, 0, []);
+  assert.ok(events.some((e) => e.type === "equipRejected" && e.reason === "woodsman"));
+  assert.equal(woodsman.c.armor, "Nothing");
+});
+
+test("openStore: a Woodsman wearing Studded gets no armour line; a Soldier in Studded does; other lines match", () => {
+  const woodsman = fixedState({
+    c: { sub: "Woodsman", cls: "Fighter", armor: "Studded", ar: STUDDED.ar, armorMax: STUDDED.wp, armorWP: STUDDED.wp },
+  });
+  openStore(woodsman, makeRng(1), []);
+  const woodsmanArmourLines = woodsman.store.stock.filter((s) => s.effectId === "buyArmor");
+  assert.equal(woodsmanArmourLines.length, 0, "no armour line for a Woodsman who cannot upgrade legally");
+
+  const soldier = fixedState({
+    c: { sub: "Soldier", cls: "Fighter", armor: "Studded", ar: STUDDED.ar, armorMax: STUDDED.wp, armorWP: STUDDED.wp },
+  });
+  openStore(soldier, makeRng(1), []);
+  const soldierArmourLines = soldier.store.stock.filter((s) => s.effectId === "buyArmor");
+  assert.equal(soldierArmourLines.length, 1, "a Soldier in Studded still sees the Mail upgrade");
+
+  const woodsmanWeapons = woodsman.store.stock.filter((s) => s.effectId === "buyWeapon").map((s) => s.n);
+  const soldierWeapons = soldier.store.stock.filter((s) => s.effectId === "buyWeapon").map((s) => s.n);
+  assert.deepEqual(woodsmanWeapons, soldierWeapons, "the weapon roll is identical for both — only the armour line differs");
+});
+
+test("useItem: a Pilfer may drink a Healing (heal) or Xtra Healing (full) potion normally", () => {
+  const healing = { kind: "potion", n: "Healing potion", eff2: "heal", uses: 1 };
+  const state = fixedState({ c: { sub: "Pilfer", wp: 10, maxWP: 55, items: [healing] } });
+  const events = useItem(state, 0, fakeRng([3]), []);
+  assert.ok(state.c.wp > 10, "healed");
+  assert.ok(events.some((e) => e.type === "itemUsed"));
+  assert.ok(!events.some((e) => e.type === "useRefused"));
+
+  const full = { kind: "potion", n: "Xtra Healing potion", eff2: "full", uses: 1 };
+  const state2 = fixedState({ c: { sub: "Pilfer", wp: 10, maxWP: 55, items: [full] } });
+  useItem(state2, 0, fakeRng([]), []);
+  assert.equal(state2.c.wp, 55, "healed to max");
+});
+
+test("useItem: a Pilfer using a Strength potion is refused (useRefused reason pilfer) — no side effect", () => {
+  const strength = { kind: "potion", n: "Strength potion", eff2: "strength", uses: 1 };
+  const state = fixedState({ c: { sub: "Pilfer", might: 0, items: [strength] } });
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "useRefused" && e.reason === "pilfer"));
+  assert.ok(!events.some((e) => e.type === "itemUsed"), "no itemUsed on a refusal");
+  assert.equal(state.c.might, 0, "no side effect applied");
+  assert.equal(state.c.items.length, 1, "item still carried");
+  assert.equal(state.c.items[0].usedAt, undefined, "usedAt never set on a refusal");
+});
+
+test("useItem: a Cat Burglar using the same Strength potion is NOT refused", () => {
+  const strength = { kind: "potion", n: "Strength potion", eff2: "strength", uses: 1 };
+  const state = fixedState({ c: { sub: "Cat Burglar", might: 0, items: [strength] } });
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "itemUsed"));
+  assert.equal(state.c.might, 8);
+});
+
+test("canRead: a Pilfer still cannot read scrolls (unchanged)", async () => {
+  const { canRead } = await import("../../engine/magic.js");
+  const state = fixedState({ c: { sub: "Pilfer", cls: "Thief", scrolls: 1 } });
+  assert.equal(canRead(state), false);
 });
