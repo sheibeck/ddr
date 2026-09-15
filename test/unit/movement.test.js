@@ -271,6 +271,36 @@ test("move: a failed gorge leap deals 2d6 fall damage and leaves the gap open", 
   assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 7));
 });
 
+// Phase 27 (2026-09-15, TUNE-06): hazardScale — post-draw arithmetic, same
+// canon rolls as the two failed-fall tests above, but at floors where
+// hazardScale leaves identity. Zero extra rng draws either way.
+test("move: at depth 2, hazardScale (0.5) halves the canon climb-fall damage — Math.max(1, Math.round(4 * 0.5)) = 2", () => {
+  const state = fixedState({ floor: { depth: 2 } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  const rng = fakeRng([1, 9, 15, 4]);
+  const events = move(state, "N", rng, []);
+  assert.equal(state.c.wp, 53, "2 wp of fall damage (canon 4, hazardScale 0.5)");
+  assert.ok(events.some((e) => e.type === "fellClimbing" && e.hurt === 2));
+});
+
+test("move: at depth 2, hazardScale (0.5) halves the canon gorge-fall damage — Math.max(1, Math.round(7 * 0.5)) = 4", () => {
+  const state = fixedState({ floor: { depth: 2 } });
+  open(state.floor.g, 5, 4, { feat: "gorge" });
+  const rng = fakeRng([1, 11, 3, 4]);
+  const events = move(state, "N", rng, []);
+  assert.equal(state.c.wp, 51, "4 wp of fall damage (canon 7, hazardScale 0.5)");
+  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 4));
+});
+
+test("move: at depth 5, hazardScale is exactly 1 (canon) — the gorge-fall damage is unchanged", () => {
+  const state = fixedState({ floor: { depth: 5 } });
+  open(state.floor.g, 5, 4, { feat: "gorge" });
+  const rng = fakeRng([1, 11, 3, 4]);
+  const events = move(state, "N", rng, []);
+  assert.equal(state.c.wp, 48, "7 wp of fall damage (canon, hazardScale 1 at depth 5)");
+  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 7));
+});
+
 test("move: a successful gorge leap clears the feature", () => {
   const state = fixedState();
   open(state.floor.g, 5, 4, { feat: "gorge" });

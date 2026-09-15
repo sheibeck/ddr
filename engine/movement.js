@@ -26,7 +26,7 @@
 // comment for why.
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
-import { difficultyCurve } from "./difficulty.js";
+import { difficultyCurve, scaleHazard } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
@@ -197,6 +197,9 @@ export function move(state, dir, rng, events = [], now = Date.now) {
         }
       }
       if (!ok) {
+        // Phase 27 (TUNE-06): hazardScale — post-draw arithmetic, 0 new
+        // draws, identity outside floors HAZARD_FROM_DEPTH..HAZARD_CANON_FROM_DEPTH-1
+        hurt = scaleHazard(hurt, difficultyCurve(state.floor.depth));
         state.c.wp -= hurt;
         events.push({ type: climbing ? "fellClimbing" : "fellInGorge", hurt });
         if (state.c.wp <= 0) die(state, climbing ? "fall" : "gorge", null, rng, events, now);

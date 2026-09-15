@@ -132,6 +132,23 @@ test("springTrap: a Spike trap's `times` multiplier is applied after the roll", 
   assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 15));
 });
 
+// Phase 27 (2026-09-15, TUNE-06): hazardScale — post-draw arithmetic, same
+// canon roll as the Spike trap test above, but at floors where hazardScale
+// leaves identity. Zero extra rng draws either way.
+test("springTrap: at depth 2, hazardScale (0.5) halves the canon Spike damage — Math.max(1, Math.round(15 * 0.5)) = 8", () => {
+  const state = fixedState({ floor: { depth: 2 } });
+  const events = springTrap(state, fakeRng([20, 8, 3]), []);
+  assert.equal(state.c.wp, 32, "8 damage (canon 15, hazardScale 0.5)");
+  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 8));
+});
+
+test("springTrap: at depth 5, hazardScale is exactly 1 (canon) — the Spike damage is unchanged", () => {
+  const state = fixedState({ floor: { depth: 5 } });
+  const events = springTrap(state, fakeRng([20, 8, 3]), []);
+  assert.equal(state.c.wp, 25, "15 damage (canon, hazardScale 1 at depth 5)");
+  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 15));
+});
+
 // --- openChest ----------------------------------------------------------
 
 test("openChest: a Pilfer always opens the box for free", () => {

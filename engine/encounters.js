@@ -29,6 +29,7 @@
 import { skill, skillTier, canLearn, intelBonus } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
+import { difficultyCurve, scaleHazard } from "./difficulty.js";
 import { checkLevel, rollCharacter } from "./character.js";
 import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
@@ -81,6 +82,9 @@ export function springTrap(state, rng, events = []) {
     events.push({ type: "trapDoubled", reason: "catBurglar" });
   }
   if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
+  // Phase 27 (TUNE-06): hazardScale — post-draw arithmetic, 0 new draws,
+  // identity outside floors HAZARD_FROM_DEPTH..HAZARD_CANON_FROM_DEPTH-1
+  dmg = scaleHazard(dmg, difficultyCurve(state.floor.depth));
   c.wp -= dmg;
   events.push({ type: "trapSprung", roll: r, name: tr.n, dmg });
   if (tr.poison) {

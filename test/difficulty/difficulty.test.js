@@ -8,6 +8,12 @@
 // does not exist yet when this file is first run. No consumer wires this
 // module yet (that's Plan 02) — these tests exercise difficultyCurve() as a
 // pure function of `depth` alone, in isolation.
+//
+// Phase 27 (2026-09-15, TUNE-06): the PARITY GUARD below was split into a
+// floors-1-2 canon loop (fixture-exposed: every combat/magic/chargen/
+// economy/encounters fixture is floor 1; the movement fixture's seed 256
+// descends to floor 2) and a floors-3-5 Phase 27 pins loop (the retune's
+// deliberate early-floor easing — an intentional signal, not a regression).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -18,19 +24,30 @@ import {
   ENCOUNTER_DOT_BASE,
   ENCOUNTER_DOT_CAP,
   ENCOUNTER_DOT_SOFT_K,
+  DENSITY_CANON_THROUGH_DEPTH,
   DARK_BLOB_CAP,
   DARK_RADIUS_BASE,
   DARK_RADIUS_CAP,
+  DARK_HOLD_THROUGH_DEPTH,
+  HAZARD_SCALE_AT_START,
 } from "../../engine/difficulty.js";
 
 test("named constants match the research starting-point defaults", () => {
   assert.equal(BREATHER_EVERY, 5);
   assert.equal(ENCOUNTER_DOT_BASE, 9);
-  assert.equal(ENCOUNTER_DOT_CAP, 24);
+  // Phase 27 (2026-09-15, TUNE-06): was 24 — a smaller ceiling for the
+  // widened early-floor easing.
+  assert.equal(ENCOUNTER_DOT_CAP, 15);
   assert.equal(ENCOUNTER_DOT_SOFT_K, 12);
-  assert.equal(DARK_BLOB_CAP, 6);
+  assert.equal(DENSITY_CANON_THROUGH_DEPTH, 2);
+  // Phase 27 (2026-09-15, TUNE-06): was 6 — fewer dark-zone seed blobs at
+  // the eased depths.
+  assert.equal(DARK_BLOB_CAP, 3);
   assert.equal(DARK_RADIUS_BASE, 3);
-  assert.equal(DARK_RADIUS_CAP, 9);
+  // Phase 27 (2026-09-15, TUNE-06): was 9 — a smaller per-blob reveal
+  // radius ceiling at the eased depths.
+  assert.equal(DARK_RADIUS_CAP, 7);
+  assert.equal(DARK_HOLD_THROUGH_DEPTH, 3);
 });
 
 test("difficultyCurve never exceeds its documented caps at any sampled depth (1..10000)", () => {
@@ -42,19 +59,48 @@ test("difficultyCurve never exceeds its documented caps at any sampled depth (1.
   }
 });
 
-// PARITY-PRESERVATION GUARD (load-bearing): the bounded curve must reproduce
-// the prototype's original 9+depth / depth-1 / 3+depth formulas EXACTLY
-// across the already-tuned floors 1-5. This is what keeps Plan 02's
-// floors-1-5 parity/round-trip/determinism suites green once genFloor is
-// rewired to consume difficultyCurve(). If this test ever needs to change,
-// that is an INTENTIONAL, deliberate retune signal — not a silent regression
-// to wave through.
-test("PARITY GUARD: depths 1-5 reproduce the prototype's exact 9+depth/depth-1/3+depth formula", () => {
-  for (let depth = 1; depth <= 5; depth++) {
+// PARITY GUARD: depths 1-2 (load-bearing, fixture-exposed) -----------------
+// The bounded curve must reproduce the prototype's original 9+depth /
+// depth-1 / 3+depth formulas EXACTLY at floors 1-2 — every combat/magic/
+// chargen/economy/encounters fixture is floor 1, and the movement fixture's
+// seed 256 descends to floor 2. If this test ever needs to change, that is
+// an INTENTIONAL, deliberate retune signal touching a fixture-exposed floor
+// — not a silent regression to wave through.
+test("PARITY GUARD: depths 1-2 reproduce the prototype's exact 9+depth/depth-1/3+depth formula (fixture-exposed)", () => {
+  for (let depth = 1; depth <= 2; depth++) {
     const dc = difficultyCurve(depth);
     assert.equal(dc.dots, 9 + depth, `depth ${depth}: dots must equal 9+depth`);
     assert.equal(dc.darkBlobs, depth - 1, `depth ${depth}: darkBlobs must equal depth-1`);
     assert.equal(dc.darkRadius, 3 + depth, `depth ${depth}: darkRadius must equal 3+depth`);
+  }
+});
+
+// Phase 27 deliberate easing (TUNE-06): depths 3-5 are pinned to the retune
+// values — this IS the intentional retune signal the comment above refers
+// to; no fixture reaches these depths.
+test("Phase 27 deliberate easing (TUNE-06): depths 3-5 are pinned to the retune values", () => {
+  const PINS = {
+    3: { dots: 11, darkBlobs: 1, darkRadius: 6 },
+    4: { dots: 12, darkBlobs: 2, darkRadius: 7 },
+    5: { dots: 12, darkBlobs: 3, darkRadius: 7 },
+  };
+  for (const [depth, expected] of Object.entries(PINS)) {
+    const dc = difficultyCurve(Number(depth));
+    assert.equal(dc.dots, expected.dots, `depth ${depth}: dots`);
+    assert.equal(dc.darkBlobs, expected.darkBlobs, `depth ${depth}: darkBlobs`);
+    assert.equal(dc.darkRadius, expected.darkRadius, `depth ${depth}: darkRadius`);
+  }
+});
+
+test("hazardScale is exactly 1 at depths 1, 5, 6, 20 and never below HAZARD_SCALE_AT_START", () => {
+  for (const depth of [1, 5, 6, 20]) {
+    assert.equal(Object.is(difficultyCurve(depth).hazardScale, 1), true, `depth ${depth}: hazardScale must be exactly 1`);
+  }
+  for (let depth = 1; depth <= 200; depth++) {
+    assert.ok(
+      difficultyCurve(depth).hazardScale >= HAZARD_SCALE_AT_START,
+      `depth ${depth}: hazardScale ${difficultyCurve(depth).hazardScale} below HAZARD_SCALE_AT_START`,
+    );
   }
 });
 

@@ -63,16 +63,19 @@ test("genFloor: depth 4 still places 'exit', not 'gate' (Gate is depth >= 5 only
 
 test("genFloor: feature counts match the prototype's formula for seed 42, depths 1-5", () => {
   // Locked to actual genFloor(depth, makeRng(42)) output — dots sourced from
-  // difficultyCurve(depth), which reproduces the old 9+depth for depths 1-5;
-  // 2 each of tele/chest/trap/climb/gorge, up to 3 one-way doors. depth-5's
+  // difficultyCurve(depth); depths 1-2 reproduce the old 9+depth formula by
+  // construction (DENSITY_CANON_THROUGH_DEPTH); depths 3-5 carry Phase 27's
+  // (2026-09-15, TUNE-06) deliberate early-floor easing (was dot 12/13/14 —
+  // re-measured live against the patched engine, never hand-computed). 2
+  // each of tele/chest/trap/climb/gorge, up to 3 one-way doors. depth-5's
   // descent tile is now "exit" (endless descent, RUN-02) instead of "gate" —
-  // the phase's ONE intentional behavior change vs the frozen prototype.
+  // a separate, earlier intentional behavior change vs the frozen prototype.
   const expected = {
     1: { dot: 10, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
     2: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    3: { dot: 12, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    4: { dot: 13, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    5: { dot: 14, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
+    3: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
+    4: { dot: 12, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
+    5: { dot: 12, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
   };
   for (const depth of [1, 2, 3, 4, 5]) {
     const floor = genFloor(depth, makeRng(42));

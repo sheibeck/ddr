@@ -204,11 +204,15 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       // structural zero-draw gate foeTurn reads below.
       ...(picked.abilities ? { abilities: picked.abilities.slice() } : {}),
       // Phase 21 (TUNE-01, D-02): copy-time power scaling; the key is added
-      // ONLY when the curve's foePower is above 1 (never at depth <= 5), so
-      // every fixture-exposed foe object is byte-identical; `damageFoe`
+      // ONLY when the curve's foePower differs from 1 (never at depth <= 5),
+      // so every fixture-exposed foe object is byte-identical; `damageFoe`
       // (engine/foeDamage.js) is still the only place a foe's wp ever
-      // decreases — this only changes the STARTING number.
-      ...(dmgBonus > 0 ? { dmgBonus } : {}),
+      // decreases — this only changes the STARTING number. Phase 27
+      // (TUNE-06): a graced floor (foePower < 1, floors 2-4) legitimately
+      // produces a NEGATIVE dmgBonus, so the copy condition is `!== 0` (not
+      // `> 0`) — a grace floor's foes hit softer too; depth 1 still never
+      // carries the key (FOE_GRACE_AT_1 is exactly 1.0).
+      ...(dmgBonus !== 0 ? { dmgBonus } : {}),
     });
   }
   state.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };

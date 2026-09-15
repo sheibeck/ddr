@@ -20,23 +20,62 @@
 // every depth-1 parity fixture); the dial VALUES are set by the Phase 21
 // retune and recorded in docs/DIFFICULTY-RETUNE.md. This module still
 // consumes no rng and reads no DOM.
+//
+// DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06) — early-floor
+// levers and non-combat knobs: 27-CONTEXT.md's widened Lever 3, landed at
+// its PARITY-CLEAN values only (the ladder cap the user set 2026-09-15,
+// third round). Why: the planner's calibration showed dials + the Dante
+// demotion alone cannot move the bot median off 3 — floors 2-4 kill 66-85%
+// of runs (canon tier-2/3 foes, traps, wall-falls, starvation in the dark).
+// Floors 1-2 stay canon BY CONSTRUCTION (never by convention): dots are
+// restructured behind `DENSITY_CANON_THROUGH_DEPTH` (2), darkness holds its
+// canon growth through `DARK_HOLD_THROUGH_DEPTH` (3, so floor 2 keeps its
+// one canon blob), foe grace never dips below `FOE_GRACE_AT_1` (exactly 1.0)
+// at floor 1, and the hazard ramp never starts before `HAZARD_FROM_DEPTH`
+// (2). `FOE_GRACE_AT_1` dropping below 1.0, `HAZARD_FROM_DEPTH` dropping
+// below 2, and a "darkness from floor 4" form are escalation-only rungs
+// (27-03), each requiring its own declared parity divergence record (see
+// test/parity/FIXTURE-INVENTORY.md's "Phase 27 early-floor divergences"
+// section for the pre-enumerated records). The deep combat dials
+// (COMBAT_SCALE_FROM_DEPTH, FOE_*_MAX, ABILITY_THREAT_*) are NOT moved by
+// this plan. Values recorded in docs/DIFFICULTY-RETUNE.md's "## v1.2 retune
+// (Phase 27)" section (Iteration 0).
 
 /** Every BREATHER_EVERY-th floor after floor 1 is a lighter "breather" floor. */
 export const BREATHER_EVERY = 5;
 
 /** ENCOUNTER_DOT_BASE — matches the prototype's original literal "9". */
 export const ENCOUNTER_DOT_BASE = 9;
-/** ENCOUNTER_DOT_CAP — soft ceiling: ~11% of a 21x21 floor's ~220 open cells. */
-export const ENCOUNTER_DOT_CAP = 24;
+/** ENCOUNTER_DOT_CAP — Phase 27 (TUNE-06): 24 -> 15 — a smaller ceiling for
+ * the widened early-floor easing (see DENSITY_CANON_THROUGH_DEPTH below).
+ * Floors 1-2 are canon by construction and never reach this cap. */
+export const ENCOUNTER_DOT_CAP = 15;
 /** ENCOUNTER_DOT_SOFT_K — the soft-cap curve's "bend" depth; see softCap(). */
 export const ENCOUNTER_DOT_SOFT_K = 12;
+/** DENSITY_CANON_THROUGH_DEPTH — Phase 27 (TUNE-06): floors 1..this value
+ * reproduce the prototype's exact `9+depth` dot formula BY CONSTRUCTION (the
+ * soft-cap term's `over` argument is clamped to 0 through this depth), the
+ * same structural-identity technique COMBAT_SCALE_FROM_DEPTH already uses
+ * for the combat dials below. Floors beyond this depth ease toward
+ * ENCOUNTER_DOT_CAP instead of growing unbounded. */
+export const DENSITY_CANON_THROUGH_DEPTH = 2;
 
-/** DARK_BLOB_CAP — never more than this many dark-zone seed blobs per floor. */
-export const DARK_BLOB_CAP = 6;
+/** DARK_BLOB_CAP — Phase 27 (TUNE-06): 6 -> 3 — fewer dark-zone seed blobs
+ * at the eased depths (see DARK_HOLD_THROUGH_DEPTH below). */
+export const DARK_BLOB_CAP = 3;
 /** DARK_RADIUS_BASE — matches the prototype's original literal "3". */
 export const DARK_RADIUS_BASE = 3;
-/** DARK_RADIUS_CAP — never darkens more than this BFS radius per blob. */
-export const DARK_RADIUS_CAP = 9;
+/** DARK_RADIUS_CAP — Phase 27 (TUNE-06): 9 -> 7 — a smaller per-blob reveal
+ * radius ceiling at the eased depths. */
+export const DARK_RADIUS_CAP = 7;
+/** DARK_HOLD_THROUGH_DEPTH — Phase 27 (TUNE-06): darkness HOLDS at its
+ * floor-2 canon blob count (1) through this depth, then resumes canon growth
+ * (`d - DARK_HOLD_THROUGH_DEPTH + 1`, capped at DARK_BLOB_CAP) from the next
+ * floor on. At the identity value (2) this reduces exactly to the canon
+ * `min(max(0, d-1), cap)` formula for every depth — a STRUCTURAL identity,
+ * not a coincidence at this one value; the landed value (3) is what actually
+ * eases floors 4+ while keeping floor 2's single canon blob untouched. */
+export const DARK_HOLD_THROUGH_DEPTH = 3;
 
 // --- Phase 21 (TUNE-01, D-01/D-19): combat-scaling knobs -------------------
 // Identity band: depth <= 5 (see difficultyCurve's `over` computation below).
@@ -65,7 +104,9 @@ export const FOE_CAP_BASE = 3;
  * FOE_CAP_SOFT_K), never above 5. Identity (3) at depth <= 5. */
 export const FOE_CAP_MAX = 5;
 export const FOE_CAP_SOFT_K = 20;
-/** FOE_POWER_BASE — the multiplier applied to a foe's starting wp/maxWP. */
+/** FOE_POWER_BASE — the multiplier applied to a foe's starting wp/maxWP,
+ * used from COMBAT_SCALE_FROM_DEPTH onward (below that depth, Phase 27's
+ * `graceFor(d)` supplies the multiplier instead — see FOE_GRACE_* below). */
 export const FOE_POWER_BASE = 1.0;
 /** FOE_POWER_MAX — 21-04 retune (D-02): ≈ +35% hit points and flat melee
  * damage at depth 20, ≈ +50% at depth 40, never above +60% (soft-capped via
@@ -89,6 +130,42 @@ export const ABILITY_THREAT_MAX = 2.0;
 export const ABILITY_THREAT_SOFT_K = 30;
 /** FOE_LVL_BIAS — reserved (D-01): 0 unless the retune needs it. */
 export const FOE_LVL_BIAS = 0;
+
+// --- Phase 27 (TUNE-06): foe-grace + hazard-ramp knobs ---------------------
+// Both are draw-free difficulty.js fields, exactly like the Phase 21 combat
+// dials above; both stay structurally at identity outside their own bands.
+
+/** FOE_GRACE_AT_1 — floor 1's foePower multiplier. MUST stay exactly 1.0
+ * (canon, last-resort-only if ever lowered — 27-03 escalation, with a
+ * declared parity divergence record, see FIXTURE-INVENTORY.md). Every
+ * fixture-exposed fight is on floor 1, so this constant is the single
+ * structural guarantee that Dante's demotion is (today) this phase's only
+ * parity divergence. */
+export const FOE_GRACE_AT_1 = 1.0;
+/** FOE_GRACE_AT_2 — Phase 27 (TUNE-06): floor 2's foePower multiplier (below
+ * identity — foes hit/hold less hard at floors 2-4). Rises linearly to
+ * exactly 1.0 at FOE_GRACE_CANON_FROM_DEPTH. */
+export const FOE_GRACE_AT_2 = 0.75;
+/** FOE_GRACE_CANON_FROM_DEPTH — the first depth whose foePower returns to
+ * exactly 1.0 (the literal, not merely a float that rounds to it — see
+ * graceFor()'s `>=` guard below, the same structural-identity technique
+ * COMBAT_SCALE_FROM_DEPTH uses). */
+export const FOE_GRACE_CANON_FROM_DEPTH = 5;
+
+/** HAZARD_FROM_DEPTH — Phase 27 (TUNE-06): the first depth whose hazardScale
+ * may leave identity (1.0). MUST stay >= 2 (floor 1 canon — a from-floor-1
+ * ramp is a 27-03 escalation with a declared parity divergence record). */
+export const HAZARD_FROM_DEPTH = 2;
+/** HAZARD_SCALE_AT_START — Phase 27 (TUNE-06): the hazardScale value at
+ * HAZARD_FROM_DEPTH, held flat through HAZARD_FLAT_THROUGH_DEPTH, then
+ * eased linearly to exactly 1.0 by HAZARD_CANON_FROM_DEPTH. */
+export const HAZARD_SCALE_AT_START = 0.5;
+/** HAZARD_FLAT_THROUGH_DEPTH — the last depth still at HAZARD_SCALE_AT_START
+ * before the linear ease back to canon begins. */
+export const HAZARD_FLAT_THROUGH_DEPTH = 3;
+/** HAZARD_CANON_FROM_DEPTH — the first depth whose hazardScale returns to
+ * exactly 1.0 (the literal — see the `>=` guard in difficultyCurve below). */
+export const HAZARD_CANON_FROM_DEPTH = 5;
 
 /**
  * safeDepth(depth) — clamps an arbitrary input to a positive integer BEFORE
@@ -158,15 +235,35 @@ export function isBreather(depth) {
 }
 
 /**
+ * graceFor(d) — Phase 27 (TUNE-06): the foe-grace multiplier for depths
+ * below COMBAT_SCALE_FROM_DEPTH. Floor 1 is always exactly FOE_GRACE_AT_1
+ * (canon, 1.0). Depths FOE_GRACE_CANON_FROM_DEPTH and beyond are always
+ * exactly 1.0 via the `>=` guard (a literal, not a float that merely rounds
+ * to it — the same structural-identity technique COMBAT_SCALE_FROM_DEPTH
+ * uses for the deep combat dials). Depths 2..FOE_GRACE_CANON_FROM_DEPTH-1
+ * interpolate linearly from FOE_GRACE_AT_2 to 1.0. Not exported — internal
+ * helper only, consumed by difficultyCurve()'s `foePower` field below.
+ */
+function graceFor(d) {
+  if (d === 1) return FOE_GRACE_AT_1;
+  if (d >= FOE_GRACE_CANON_FROM_DEPTH) return 1;
+  return FOE_GRACE_AT_2 + (1 - FOE_GRACE_AT_2) * (d - 2) / (FOE_GRACE_CANON_FROM_DEPTH - 2);
+}
+
+/**
  * difficultyCurve(depth) — the single source of truth downstream floor
  * generation (Plan 02's genFloor rewiring) will consume. Pure function of
  * `depth` only: no RNG parameter, no RNG consumed, no side effects, no
  * module-level mutable state. Returns:
  *   - depth: the clamped, effective integer depth used to compute this curve
  *   - breather: whether this is a BREATHER_EVERY breather floor
- *   - dots: encounter-dot count — an asymptotic soft-cap toward
- *     ENCOUNTER_DOT_CAP, or floored to ENCOUNTER_DOT_BASE on a breather floor
- *   - darkBlobs: dark-zone blob count — hard-capped at DARK_BLOB_CAP, zeroed
+ *   - dots: encounter-dot count — canon (`9+depth`) by construction through
+ *     DENSITY_CANON_THROUGH_DEPTH (Phase 27), then an asymptotic soft-cap
+ *     toward ENCOUNTER_DOT_CAP; floored to ENCOUNTER_DOT_BASE on a breather
+ *     floor
+ *   - darkBlobs: dark-zone blob count — canon growth through
+ *     DARK_HOLD_THROUGH_DEPTH (Phase 27), then held at its floor-2 canon
+ *     count before resuming canon growth (capped at DARK_BLOB_CAP); zeroed
  *     on a breather floor
  *   - darkRadius: per-blob BFS reveal radius — hard-capped at DARK_RADIUS_CAP
  *     (not forced to zero on a breather floor: darkBlobs already being zero
@@ -180,9 +277,16 @@ export function isBreather(depth) {
  *     changes; 0 at depth <= 5
  *   - foeLvlBias: reserved (D-01) — always FOE_LVL_BIAS (0) unless a future
  *     retune needs it
- *   - foePower: soft-capped multiplier (Phase 21, D-02) applied to a foe's
- *     starting wp/maxWP and its flat melee damage bonus — identity (1.0)
- *     through depth <= 5
+ *   - foePower: below COMBAT_SCALE_FROM_DEPTH, Phase 27's `graceFor(d)` (foe
+ *     grace at floors 2-4, exactly 1.0 at floor 1 and from
+ *     FOE_GRACE_CANON_FROM_DEPTH on); from COMBAT_SCALE_FROM_DEPTH on, the
+ *     Phase 21 soft-capped multiplier (D-02) applied to a foe's starting
+ *     wp/maxWP and its flat melee damage bonus
+ *   - hazardScale: Phase 27 (TUNE-06) — the trap/wall-fall damage multiplier
+ *     consumed post-draw by engine/movement.js and engine/encounters.js;
+ *     exactly 1.0 below HAZARD_FROM_DEPTH and from HAZARD_CANON_FROM_DEPTH
+ *     on, HAZARD_SCALE_AT_START flat through HAZARD_FLAT_THROUGH_DEPTH, then
+ *     eased linearly back to 1.0
  *   - abilityThreat: soft-capped cadence scalar (Phase 21, D-03) for caster
  *     kits (every/uses) — identity (1.0) through depth <= 5
  */
@@ -191,16 +295,49 @@ export function difficultyCurve(depth) {
   const breather = isBreatherOfSafeDepth(d); // IN-02: d is already sanitized — skip isBreather's redundant re-clamp
   const over = Math.max(0, d - (COMBAT_SCALE_FROM_DEPTH - 1));
   const foeCap = Math.round(softCapFloat(FOE_CAP_BASE, FOE_CAP_MAX, over, FOE_CAP_SOFT_K));
+
+  // Phase 27 (TUNE-06): dots stay canon (9+depth) through
+  // DENSITY_CANON_THROUGH_DEPTH by construction (dOver clamped to 0), then
+  // ease toward ENCOUNTER_DOT_CAP. shallowDots + a soft-cap term is
+  // exactly the canon formula when `over === 0`.
+  const shallowDots = ENCOUNTER_DOT_BASE + Math.min(d, DENSITY_CANON_THROUGH_DEPTH);
+  const dOver = Math.max(0, d - DENSITY_CANON_THROUGH_DEPTH);
+  const dots = breather
+    ? ENCOUNTER_DOT_BASE
+    : shallowDots + Math.round(softCapFloat(0, ENCOUNTER_DOT_CAP - (ENCOUNTER_DOT_BASE + DENSITY_CANON_THROUGH_DEPTH), dOver, ENCOUNTER_DOT_SOFT_K));
+
+  // Phase 27 (TUNE-06): darkBlobs holds at its floor-2 canon count (1)
+  // through DARK_HOLD_THROUGH_DEPTH, then resumes canon growth. At the
+  // identity value (DARK_HOLD_THROUGH_DEPTH === 2) this is a STRUCTURAL
+  // identity with the canon `min(max(0,d-1),cap)` formula for every depth.
+  const darkBlobs = breather
+    ? 0
+    : d <= DARK_HOLD_THROUGH_DEPTH
+      ? Math.min(Math.max(0, d - 1), 1)
+      : Math.min(d - DARK_HOLD_THROUGH_DEPTH + 1, DARK_BLOB_CAP);
+
+  // Phase 27 (TUNE-06): hazardScale — literal 1 outside
+  // [HAZARD_FROM_DEPTH, HAZARD_CANON_FROM_DEPTH), flat at
+  // HAZARD_SCALE_AT_START through HAZARD_FLAT_THROUGH_DEPTH, then linear
+  // back to exactly 1.0.
+  const hazardScale =
+    d < HAZARD_FROM_DEPTH || d >= HAZARD_CANON_FROM_DEPTH
+      ? 1
+      : d <= HAZARD_FLAT_THROUGH_DEPTH
+        ? HAZARD_SCALE_AT_START
+        : HAZARD_SCALE_AT_START + (1 - HAZARD_SCALE_AT_START) * (d - HAZARD_FLAT_THROUGH_DEPTH) / (HAZARD_CANON_FROM_DEPTH - HAZARD_FLAT_THROUGH_DEPTH);
+
   return {
     depth: d,
     breather,
-    dots: breather ? ENCOUNTER_DOT_BASE : softCap(ENCOUNTER_DOT_BASE, ENCOUNTER_DOT_CAP, d, ENCOUNTER_DOT_SOFT_K),
-    darkBlobs: breather ? 0 : Math.min(Math.max(0, d - 1), DARK_BLOB_CAP),
+    dots,
+    darkBlobs,
     darkRadius: Math.min(DARK_RADIUS_BASE + d, DARK_RADIUS_CAP),
     foeCap,
     foeBonus: foeCap - FOE_CAP_BASE,
     foeLvlBias: FOE_LVL_BIAS,
-    foePower: softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K),
+    foePower: d < COMBAT_SCALE_FROM_DEPTH ? graceFor(d) : softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K),
+    hazardScale,
     abilityThreat: softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K),
   };
 }
@@ -223,10 +360,12 @@ export function foeCountFor(canonCount, curve) {
 /**
  * foeWpFor(baseWp, curve) — D-02: copy-time wp/maxWP scaling. The strict
  * `=== 1` fast path makes identity structural even for a non-integer wp
- * (never rounds away from `baseWp` when `foePower` is exactly 1).
+ * (never rounds away from `baseWp` when `foePower` is exactly 1). Phase 27
+ * (TUNE-06): `Math.max(1, ...)` on the non-identity path so a graced
+ * low-wp foe (foePower < 1) never rounds down to 0 hit points.
  */
 export function foeWpFor(baseWp, curve) {
-  return curve.foePower === 1 ? baseWp : Math.round(baseWp * curve.foePower);
+  return curve.foePower === 1 ? baseWp : Math.max(1, Math.round(baseWp * curve.foePower));
 }
 
 /**
@@ -234,9 +373,29 @@ export function foeWpFor(baseWp, curve) {
  * bonus scales the `lvl * lvl` base term of every foe melee swing, never the
  * `sp.dmg` dice — so no draw shape changes and damageFoe stays the one
  * foe-wp decrement seam. 0 (never a `dmgBonus` key) when `foePower === 1`.
+ * Phase 27 (TUNE-06): a graced floor (foePower < 1) legitimately returns a
+ * NEGATIVE bonus — engine/combat.js's startCombat copies it whenever it is
+ * `!== 0` (not merely `> 0`), so a grace floor's foes hit softer too. The
+ * `|| 0` normalizes a `-0` rounding result (e.g. lvl 1 at a mild grace) to
+ * plain `0`, since `-0` is a footgun for any future strict-equality/JSON
+ * consumer even though `-0 !== 0` is already `false` for the copy gate above.
  */
 export function foeDmgBonusFor(lvl, curve) {
-  return curve.foePower === 1 ? 0 : Math.round((curve.foePower - 1) * lvl * lvl);
+  return curve.foePower === 1 ? 0 : Math.round((curve.foePower - 1) * lvl * lvl) || 0;
+}
+
+/**
+ * scaleHazard(amount, curve) — Phase 27 (TUNE-06): post-draw trap/wall-fall
+ * damage scaling. The strict `=== 1` fast path makes identity structural
+ * (byte-identical `amount` back) outside the hazard-ramp band; `amount <= 0`
+ * is also passed through unscaled (nothing to floor). On the scaled path,
+ * `Math.max(1, Math.round(...))` guarantees a positive incoming hazard never
+ * scales down to 0 damage. Zero rng draws either way — pure arithmetic on an
+ * already-rolled number, consumed by engine/movement.js's fall `hurt` and
+ * engine/encounters.js's springTrap `dmg`.
+ */
+export function scaleHazard(amount, curve) {
+  return curve.hazardScale === 1 || amount <= 0 ? amount : Math.max(1, Math.round(amount * curve.hazardScale));
 }
 
 /**

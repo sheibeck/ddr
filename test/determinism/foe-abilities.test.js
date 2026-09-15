@@ -218,6 +218,13 @@ const FULL_FIGHT_PINS = {
   // "Krupke"], totalDraws 59, attacks 4 — Dante appended to Humans tier 2
   // shifted the first-Krupke seed to 3, whose tier-2 roll is a single
   // Krupke (re-measured live via runFullFight, never hand-computed).
+  //
+  // Phase 27 Task 3 (foe grace, floors 2-4): re-measured a SECOND time after
+  // landing FOE_GRACE_AT_2 (0.75) — this Krupke's copy-time wp drops 17 ->
+  // 13 and it now carries a negative dmgBonus (-1), but neither totalDraws
+  // nor attacks/outcome changes (the fight still resolves in one hit either
+  // way) — confirmed live, not assumed. magical-t4 (depth 4, foePower
+  // 0.9167) was re-measured the same way with the same result.
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 46, attacks: 4, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 55, attacks: 4, outcome: "won" },
