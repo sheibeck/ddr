@@ -33,7 +33,17 @@
 // 01-10, so the engine never emits them anymore — keeping stale entries here
 // would violate the coverage test's "no dead/typo entries" guard.
 
+// Phase 25.1 (DFB-04): JOINER_EXIT_LINES is pure DATA (no rng, no DOM, no
+// engine/ import) — importing it here does not violate this module's
+// presentation-only contract.
+import { JOINER_EXIT_LINES } from "../../content/flavor.js";
+
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// Phase 25.1 (DFB-04): a member/newcomer name is interpolated TWICE into
+// markup for the joinerLeft snark line — escape so a name containing '<'
+// renders as visible text, never a live tag.
+const escapeHtml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // Phase 25 (FEED-01, additive payload) shared render helpers — both are pure
 // string builders over the new additive event fields, reused by every
@@ -461,6 +471,19 @@ export const EVENT_NARRATION = {
   // especially the poor soul who just signed on.
   joinerJoined: (e) =>
     `<span class="hit">${e.name ?? "Someone"} falls in beside you</span>, already quietly revising their life expectancy downward.`,
+  // Phase 25.1 (DFB-04): fires when accepting a Joiner with a full roster
+  // swaps the longest-serving member out (engine/state.js#swapPartyMember).
+  // The line is picked WITHOUT rng — index derived from both names' lengths
+  // — and both names are html-escaped since they are interpolated into markup.
+  joinerLeft: (e) => {
+    const rawName = e.name ?? "Your companion";
+    const rawNew = e.replacedBy ?? "the new arrival";
+    const idx = (String(rawName).length + String(rawNew).length) % JOINER_EXIT_LINES.length;
+    const line = JOINER_EXIT_LINES[idx]
+      .replaceAll("{name}", escapeHtml(rawName))
+      .replaceAll("{new}", escapeHtml(rawNew));
+    return `<span class="beat">${line}</span>`;
+  },
   joinerDeclined: (e) =>
     `<span class="beat">You wave ${e.name ?? "them"} off.</span> The dungeon will find another use for them soon enough.`,
   // Phase 24 (IDENT-05): a Joiner is rolled exactly as normal, then declines

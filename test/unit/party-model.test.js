@@ -14,7 +14,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { newRun, addPartyMember, PARTY_CAP } from "../../engine/state.js";
+import { newRun, addPartyMember, swapPartyMember, PARTY_CAP } from "../../engine/state.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
 import { rollCharacter } from "../../engine/character.js";
 import { makeRng } from "../../engine/rng.js";
@@ -125,4 +125,17 @@ test("cap: addPartyMember enforces PARTY_CAP (1 in v1) and is written for N", ()
   delete bare.party;
   assert.equal(addPartyMember(bare, makeMember(9)), true);
   assert.equal(bare.party.length, 1);
+});
+
+test("swap: swapPartyMember replaces index 0 at PARTY_CAP and adds NO rng draw", () => {
+  const s = newRun(3);
+  const first = makeMember(1);
+  const second = makeMember(2);
+  addPartyMember(s, first);
+  const rngBefore = s.rngState;
+  const result = swapPartyMember(s, second);
+  assert.equal(s.party.length, PARTY_CAP, "the array never exceeds PARTY_CAP after a swap");
+  assert.deepStrictEqual(s.party[0], second, "the newcomer replaces the leaver");
+  assert.deepStrictEqual(result.left, first, "the leaver is returned");
+  assert.equal(s.rngState, rngBefore, "swapPartyMember draws no rng");
 });

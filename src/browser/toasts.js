@@ -212,6 +212,7 @@ export const FEATURE_EVENTS = [
   "encounterCleared",
   "wanderingMonster",
   "joinerRefused",
+  "joinerLeft",
   "storeOpened",
   "sang",
   "beastsSoothed",
@@ -1165,6 +1166,10 @@ export const TOAST_FOR = {
   faerieBoon: (e) => ({ text: `+${e?.amount ?? 0} base hp.`, tone: "hit", priority: PRIORITY.other }),
   faerieBane: (e) => ({ text: `−${e?.amount ?? 0} base hp.`, tone: "hurt", priority: PRIORITY.other }),
   joinerJoined: (e) => ({ text: `${e?.name ?? "Someone"} falls in beside you.`, tone: "hit", priority: PRIORITY.feature }),
+  // Phase 25.1 (DFB-04): fallback/coverage table text — on the resolveJoiner
+  // action the narrative ctx (NARRATIVE_ACTIONS) replaces this with the
+  // snark exit sentence from EVENT_NARRATION.joinerLeft instead.
+  joinerLeft: (e) => ({ text: `${e?.name ?? "Your companion"} walks. ${e?.replacedBy ?? "Someone new"} is in.`, tone: "beat", priority: PRIORITY.feature }),
   joinerDeclined: (e) => ({ text: `You wave ${e?.name ?? "them"} off.`, tone: "beat", priority: PRIORITY.feature }),
   joinerRefused: (e) => {
     const map = {

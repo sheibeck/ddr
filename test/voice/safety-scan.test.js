@@ -60,7 +60,7 @@ import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
 import { RACES } from "../../content/races.js";
-import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS } from "../../content/flavor.js";
+import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS, JOINER_EXIT_LINES } from "../../content/flavor.js";
 import { SPELLS } from "../../content/spells.js";
 import { POTIONS } from "../../content/potions.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/skills.js";
@@ -270,6 +270,10 @@ function collectAuthoredStrings() {
   // Phase 25 (FEED-05): the fledgling-miss quip corpus — scanned AND counted
   // here so it participates in the completeness/load-bearing meta-tests too.
   MISS_LINES.forEach((s, i) => push(`MISS_LINES[${i}]`, s));
+  // Phase 25.1 (DFB-04): the Joiner-swap snark exit lines — scanned AND
+  // counted here so they participate in the completeness/load-bearing
+  // meta-tests too.
+  JOINER_EXIT_LINES.forEach((s, i) => push(`JOINER_EXIT_LINES[${i}]`, s));
 
   return out;
 }

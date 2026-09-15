@@ -206,3 +206,25 @@ test("narrateEvent: '' for moved/unknown/null, the EVENT_NARRATION line otherwis
   assert.equal(narrateEvent(null), "");
   assert.equal(narrateEvent({ type: "teleported" }), EVENT_NARRATION.teleported({ type: "teleported" }));
 });
+
+// ─── joinerLeft (Phase 25.1, DFB-04) ───────────────────────────────────────
+
+test("joinerLeft: a name containing '<' renders escaped and the pick is deterministic", () => {
+  const html = EVENT_NARRATION.joinerLeft({ type: "joinerLeft", name: "<b>Ada", sub: "Knight", replacedBy: "Bo" });
+  assert.ok(html.includes("&lt;b&gt;Ada"), "the name is escaped");
+  assert.ok(!html.includes("<b>Ada"), "the raw tag never appears");
+  const again = EVENT_NARRATION.joinerLeft({ type: "joinerLeft", name: "<b>Ada", sub: "Knight", replacedBy: "Bo" });
+  assert.equal(html, again, "the pick is deterministic — same input, same line");
+});
+
+test("joinerLeft: every JOINER_EXIT_LINES entry contains {name}", async () => {
+  const { JOINER_EXIT_LINES } = await import("../../content/flavor.js");
+  assert.ok(JOINER_EXIT_LINES.length > 0);
+  for (const line of JOINER_EXIT_LINES) assert.ok(line.includes("{name}"), `missing {name} in: ${line}`);
+});
+
+test("joinerLeft: narrativeToastText starts with the leaver's name", () => {
+  const html = EVENT_NARRATION.joinerLeft({ type: "joinerLeft", name: "Ada", sub: "Knight", replacedBy: "Bo" });
+  const text = narrativeToastText(html);
+  assert.ok(text.startsWith("Ada "), `expected to start with "Ada ", got: ${text}`);
+});

@@ -21,7 +21,7 @@ import assert from "node:assert/strict";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { rollCharacter } from "../../engine/character.js";
 import { makeRng } from "../../engine/rng.js";
-import { PARTY_CAP } from "../../engine/state.js";
+import { PARTY_CAP, swapPartyMember } from "../../engine/state.js";
 import { startCombat, alliesTurn } from "../../engine/combat.js";
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
@@ -144,16 +144,50 @@ test("resolveJoiner{accept:false}: discards the candidate without recruiting", (
   assert.ok(events.some((e) => e.type === "joinerDeclined"), "joinerDeclined emitted");
 });
 
-test("resolveJoiner: a second accept is refused at PARTY_CAP and still clears the candidate", () => {
+test("resolveJoiner: a second accept SWAPS the roster — joinerLeft fires before joinerJoined, the newcomer is the only member", () => {
   assert.equal(PARTY_CAP, 1, "v1 caps the roster at a single joiner");
   const state = fixedState({ pendingJoiner: fixedPending({ name: "Ada" }) });
   resolveJoiner(state, true, []); // fills the single cap slot
   state.pendingJoiner = fixedPending({ name: "Bo" }); // a second candidate appears
   const events = resolveJoiner(state, true, []);
-  assert.equal(state.party.length, 1, "cap 1 respected — no second recruit");
-  assert.equal(state.party[0].name, "Ada", "the first recruit stays");
-  assert.equal(state.pendingJoiner, null, "candidate still cleared on the refused accept");
-  assert.ok(events.some((e) => e.type === "joinerDeclined"), "cap-full accept narrates as a decline");
+  assert.equal(state.party.length, 1, "cap 1 respected — one member after the swap");
+  assert.equal(state.party[0].name, "Bo", "the newcomer replaces the leaver");
+  assert.equal(state.pendingJoiner, null, "candidate cleared after the accept");
+  const left = events.find((e) => e.type === "joinerLeft");
+  assert.ok(left, "joinerLeft emitted");
+  assert.equal(left.name, "Ada", "the leaver is named");
+  assert.equal(left.replacedBy, "Bo", "the newcomer is named as the replacement");
+  assert.equal(left.sub, fixedPending({ name: "Ada" }).sub, "sub matches the leaver's sheet");
+  const joined = events.find((e) => e.type === "joinerJoined");
+  assert.ok(joined, "joinerJoined emitted");
+  assert.ok(events.indexOf(left) < events.indexOf(joined), "joinerLeft precedes joinerJoined");
+  assert.ok(!events.some((e) => e.type === "joinerDeclined"), "a swap is not narrated as a decline");
+  assert.deepStrictEqual(
+    Object.keys(state.party[0]).sort(),
+    Object.keys(fixedPending({ name: "Bo" })).sort(),
+    "the surviving member's sheet shape is unchanged — no new field",
+  );
+});
+
+test("resolveJoiner: declining with a full roster keeps the roster and emits only joinerDeclined", () => {
+  const state = fixedState({ pendingJoiner: fixedPending({ name: "Ada" }) });
+  resolveJoiner(state, true, []); // fills the single cap slot
+  state.pendingJoiner = fixedPending({ name: "Bo" }); // a second candidate appears
+  const events = resolveJoiner(state, false, []);
+  assert.equal(state.party.length, 1, "roster untouched on decline");
+  assert.equal(state.party[0].name, "Ada", "the original member stays");
+  assert.equal(state.pendingJoiner, null, "candidate cleared");
+  assert.ok(events.some((e) => e.type === "joinerDeclined"), "joinerDeclined emitted");
+  assert.ok(!events.some((e) => e.type === "joinerLeft"), "no joinerLeft on decline");
+  assert.ok(!events.some((e) => e.type === "joinerJoined"), "no joinerJoined on decline");
+});
+
+test("resolveJoiner: accepting into an EMPTY roster never emits joinerLeft", () => {
+  const state = fixedState({ pendingJoiner: fixedPending({ name: "Ada" }) });
+  const events = resolveJoiner(state, true, []);
+  assert.equal(state.party.length, 1, "recruited into the roster");
+  assert.ok(!events.some((e) => e.type === "joinerLeft"), "no leaver when the roster was under cap");
+  assert.ok(events.some((e) => e.type === "joinerJoined"), "joinerJoined still emitted");
 });
 
 test("resolveJoiner: an accept with NO candidate is a safe no-op decline", () => {
@@ -167,13 +201,33 @@ test("resolveJoiner: an accept with NO candidate is a safe no-op decline", () =>
 test("resolveJoiner: is rng-free — takes no rng argument and its rngState never shifts", () => {
   // resolveJoiner(state, accept, events) has no rng parameter at all, so the
   // seeded cursor cannot move across it. Assert the persisted rngState is
-  // untouched on both the accept and the decline paths.
+  // untouched on both the accept and the decline paths, including a swap.
   const accept = fixedState({ pendingJoiner: fixedPending(), rngState: 12345 });
   resolveJoiner(accept, true, []);
   assert.equal(accept.rngState, 12345, "accept path draws no rng");
   const decline = fixedState({ pendingJoiner: fixedPending(), rngState: 12345 });
   resolveJoiner(decline, false, []);
   assert.equal(decline.rngState, 12345, "decline path draws no rng");
+  const swap = fixedState({ pendingJoiner: fixedPending({ name: "Ada" }), rngState: 12345 });
+  resolveJoiner(swap, true, []); // fills the roster
+  swap.pendingJoiner = fixedPending({ name: "Bo" });
+  resolveJoiner(swap, true, []); // swaps
+  assert.equal(swap.rngState, 12345, "swap path draws no rng");
+});
+
+test("swapPartyMember: fail-open on a missing party, splices index 0 when full, returns the leaver", () => {
+  const bare = fixedState();
+  delete bare.party;
+  const first = { name: "Ada", sub: "Fighter" };
+  assert.deepStrictEqual(swapPartyMember(bare, first), { added: true, left: null }, "under-cap swap has no leaver");
+  assert.equal(bare.party.length, 1);
+
+  const second = { name: "Bo", sub: "Cleric" };
+  const result = swapPartyMember(bare, second);
+  assert.equal(result.added, true);
+  assert.equal(result.left.name, "Ada", "the first member is spliced out");
+  assert.equal(bare.party.length, 1, "the roster stays at cap 1");
+  assert.equal(bare.party[0].name, "Bo", "the newcomer is the only member");
 });
 
 // --- integration: a recruited joiner fights the next combat -----------------

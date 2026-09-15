@@ -71,6 +71,32 @@ export function addPartyMember(state, member) {
 }
 
 /**
+ * swapPartyMember(state, member) — DELIBERATE RULES CHANGE, Phase 25.1,
+ * 2026-09-15 (DFB-04): accepting a Joiner with a full roster replaces the
+ * LONGEST-SERVING member (index 0 — the only slot at PARTY_CAP 1, FIFO if
+ * the cap ever rises) instead of refusing the recruit outright.
+ * Fail-open: initializes a missing/non-array `party` to [] first (mirrors
+ * addPartyMember). When the roster is at or above PARTY_CAP, splices out
+ * index 0 and returns it as `left`; otherwise `left` is null and the
+ * member is simply appended (same as addPartyMember's under-cap path).
+ * Zero rng — a plain data mutation, exactly like addPartyMember, so it
+ * never shifts the seeded chargen/run cursor the determinism suite pins.
+ * The party array shape is unchanged (no new field on any member).
+ * addPartyMember's own refuse-when-full contract is untouched for every
+ * other caller — this is a NEW export, not a behavior change to it.
+ *
+ * @param {object} state - a GameState with a top-level `party` array
+ * @param {object} member - a full rollCharacter()-shaped sheet
+ * @returns {{added: true, left: object|null}} the member spliced out (or null)
+ */
+export function swapPartyMember(state, member) {
+  if (!Array.isArray(state.party)) state.party = [];
+  const left = state.party.length >= PARTY_CAP ? state.party.splice(0, 1)[0] : null;
+  state.party.push(member);
+  return { added: true, left };
+}
+
+/**
  * newRun(seed) — a fresh run. The CALLER supplies the seed (do not read the
  * wall clock here — that stays a presentation/boot concern so the engine
  * remains pure and deterministic). The RNG is threaded through character

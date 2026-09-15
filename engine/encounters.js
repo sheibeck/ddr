@@ -34,7 +34,7 @@ import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, LOOT_
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
 import { teleport } from "./movement.js";
-import { addPartyMember } from "./state.js";
+import { swapPartyMember } from "./state.js";
 import {
   TRAPS,
   AFFLICTIONS,
@@ -489,17 +489,25 @@ export function meetJoiner(state, rng, events = []) {
 
 /**
  * resolveJoiner(state, accept, events) — the pure (NO rng) accept/decline of a
- * pending recruitment stashed by meetJoiner (PARTY-01, Phase 9). On accept, if
- * a candidate exists and the roster is under PARTY_CAP, the full pending sheet
- * is appended via addPartyMember (Phase 7's bounded helper) and a `joinerJoined`
- * event is pushed; otherwise (declined, cap full, or no candidate) a
- * `joinerDeclined` event is pushed. `state.pendingJoiner` is ALWAYS cleared.
- * Draws zero rng — plain data bookkeeping — so it never shifts the seeded
- * cursor; it is not part of any parity fixture.
+ * pending recruitment stashed by meetJoiner (PARTY-01, Phase 9). DELIBERATE
+ * RULES CHANGE, Phase 25.1, 2026-09-15 (DFB-04): on accept with a candidate,
+ * swapPartyMember (engine/state.js) is always used instead of addPartyMember
+ * — under PARTY_CAP it just appends (no `left`); at PARTY_CAP it SWAPS the
+ * longest-serving member out. When a member is swapped out, a `joinerLeft`
+ * event (`{ name, sub, replacedBy }`) is pushed BEFORE `joinerJoined` so the
+ * presentation layer can narrate the exit first. Declining (or no candidate)
+ * pushes `joinerDeclined` and leaves the roster untouched. `state.pendingJoiner`
+ * is ALWAYS cleared. Still draws zero rng — plain data bookkeeping — so it
+ * never shifts the seeded cursor; it is not part of any parity fixture (no
+ * fixture ever meets a Joiner).
  */
 export function resolveJoiner(state, accept, events = []) {
   const pending = state.pendingJoiner;
-  if (accept && pending && addPartyMember(state, pending)) {
+  if (accept && pending) {
+    const { left } = swapPartyMember(state, pending);
+    if (left) {
+      events.push({ type: "joinerLeft", name: left.name, sub: left.sub, replacedBy: pending.name });
+    }
     events.push({ type: "joinerJoined", name: pending.name, sub: pending.sub, lvl: pending.lvl });
   } else {
     events.push({ type: "joinerDeclined", name: pending ? pending.name : undefined });

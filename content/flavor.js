@@ -64,3 +64,20 @@ export const SUB_NOTE = {
   "Summoner": "You can call something up from your very first day. Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
   "Apprentice": "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there.",
 };
+
+/**
+ * JOINER_EXIT_LINES — Phase 25.1 DFB-04: the snark exit lines for a
+ * departing party member when a full roster accepts a new Joiner
+ * (engine/state.js#swapPartyMember). `{name}` is the member who leaves,
+ * `{new}` is the newcomer arriving; picked by src/browser/eventNarration.js
+ * WITHOUT rng (an index derived from both names' lengths — deterministic,
+ * zero engine draw). Family-friendly sarcasm, scanned by
+ * test/voice/safety-scan.test.js.
+ */
+export const JOINER_EXIT_LINES = [
+  "{name} has heard how this ends and would rather it end for someone else.",
+  "{name} takes one look at {new}, does the arithmetic, and walks.",
+  "{name} wishes {new} the very best, from a safe and steadily increasing distance.",
+  "{name} has seen how this goes and would rather not be the one it goes to.",
+  "{name} leaves without a fuss. Somewhere out there is a longer life expectancy, and {name} intends to find it.",
+];
