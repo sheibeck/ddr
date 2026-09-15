@@ -411,6 +411,265 @@ function killFold(events, consumed, built) {
 }
 
 /**
+ * RESIST_FOLD_EFFECTS — the effect event types a `resistFailed` folds away
+ * behind: when one of these follows a `resistFailed` for the same target
+ * (or carries no `target` field at all — the AOE effects), the bare
+ * `resistFailed` toast is suppressed and only the effect's own toast shows.
+ */
+const RESIST_FOLD_EFFECTS = new Set([
+  "dozed",
+  "stunned",
+  "weakened",
+  "stupefied",
+  "blinded",
+  "shrunk",
+  "acidApplied",
+  "petrified",
+  "walkingDeadTurned",
+  "planeGated",
+  "insaneRolled",
+  "insaneFled",
+  "frozenSolid",
+]);
+
+/**
+ * spellChain(events, consumed) — folds `spellThrown` -> its per-target
+ * outcome (`spellHit`(+`frozenSolid`)(+`foeKilled`) | `spellMissed`) into
+ * ONE toast per target; 3+ distinct targets (Lightning) collapse into one
+ * "${spell}: ${T} targets, ${K} hit (${sum})" toast instead. Also consumes
+ * a bare `resistFailed` when a RESIST_FOLD_EFFECTS event follows it in this
+ * action (for the same target, or an untargeted AOE effect) — the effect's
+ * own toast is the only one that shows.
+ */
+function spellChain(events, consumed) {
+  const built = [];
+
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "resistFailed") return;
+    const matched = events.some((oe, j) => {
+      if (j <= i || consumed.has(j) || !RESIST_FOLD_EFFECTS.has(oe.type)) return false;
+      return oe.target === undefined || oe.target === e.target;
+    });
+    if (matched) consumed.add(i);
+  });
+
+  const throwIdxs = [];
+  events.forEach((e, i) => {
+    if (!consumed.has(i) && e.type === "spellThrown") throwIdxs.push(i);
+  });
+  if (!throwIdxs.length) return built;
+
+  const distinctTargets = new Set(throwIdxs.map((i) => events[i].target));
+  if (distinctTargets.size >= 3) {
+    const spell = events[throwIdxs[0]].spell;
+    const firstIdx = throwIdxs[0];
+    let hits = 0;
+    let sum = 0;
+    throwIdxs.forEach((ti) => {
+      consumed.add(ti);
+      const target = events[ti].target;
+      for (let j = ti + 1; j < events.length; j++) {
+        if (consumed.has(j)) continue;
+        const e = events[j];
+        if (e.type === "spellThrown") break;
+        if (e.target !== target) continue;
+        if (e.type === "spellHit") {
+          hits++;
+          sum += e.dmg ?? 0;
+          consumed.add(j);
+          break;
+        }
+        if (e.type === "spellMissed") {
+          consumed.add(j);
+          break;
+        }
+      }
+    });
+    const text = `${spell}: ${distinctTargets.size} targets, ${hits} hit (${sum})`;
+    built.push({ text, tone: hits > 0 ? "magic" : "miss", priority: PRIORITY.you, idx: firstIdx });
+    return built;
+  }
+
+  for (const ti of throwIdxs) {
+    const e0 = events[ti];
+    const target = e0.target;
+    consumed.add(ti);
+    let hitIdx = -1;
+    let missedIdx = -1;
+    let frozenIdx = -1;
+    let killedIdx = -1;
+    for (let j = ti + 1; j < events.length; j++) {
+      if (consumed.has(j)) continue;
+      const e = events[j];
+      if (e.type === "spellThrown") break;
+      if (e.type === "spellHit" && e.target === target && hitIdx === -1) hitIdx = j;
+      else if (e.type === "spellMissed" && e.target === target && missedIdx === -1) missedIdx = j;
+      else if (e.type === "frozenSolid" && e.target === target && frozenIdx === -1) frozenIdx = j;
+      else if (e.type === "foeKilled" && e.name === target && killedIdx === -1) killedIdx = j;
+    }
+    if (missedIdx !== -1) {
+      consumed.add(missedIdx);
+      built.push({ ...TOAST_FOR.spellMissed(events[missedIdx]), idx: ti });
+      continue;
+    }
+    if (hitIdx === -1) continue;
+    consumed.add(hitIdx);
+    const hitE = events[hitIdx];
+    if (frozenIdx !== -1) {
+      consumed.add(frozenIdx);
+      if (killedIdx !== -1) consumed.add(killedIdx);
+      built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: ti });
+      continue;
+    }
+    built.push({ ...TOAST_FOR.spellHit(hitE), idx: ti, _target: target });
+  }
+  return built;
+}
+
+/**
+ * fleeChain(events, consumed) — `fleeRolled` + (`fled` | `fleeFailed`) fold
+ * into ONE toast: the outcome's own text plus the roll detail
+ * `(${roll}+${bonus} vs ${need})` (the `+${bonus}` segment omitted when
+ * `bonus` is 0). A `fled` with no preceding `fleeRolled` (Cloaker/tracked)
+ * keeps its own builder untouched.
+ */
+function fleeChain(events, consumed) {
+  const built = [];
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "fleeRolled") return;
+    for (let j = i + 1; j < events.length; j++) {
+      if (consumed.has(j)) continue;
+      const oe = events[j];
+      if (oe.type === "fled" || oe.type === "fleeFailed") {
+        consumed.add(i);
+        consumed.add(j);
+        const b = TOAST_FOR[oe.type](oe);
+        const bonusPart = e.bonus ? `+${e.bonus}` : "";
+        built.push({ text: `${b.text} (${e.roll}${bonusPart} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
+        break;
+      }
+      if (oe.type === "fleeRolled") break;
+    }
+  });
+  return built;
+}
+
+/**
+ * parleyChain(events, consumed) — `parleyRolled` + (`goldGained` why
+ * "parley" | `parleyFailed` | `beastsSoothed`) fold into ONE toast: the
+ * outcome's own text plus `(${roll} vs ${need})`.
+ */
+function parleyChain(events, consumed) {
+  const built = [];
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "parleyRolled") return;
+    for (let j = i + 1; j < events.length; j++) {
+      if (consumed.has(j)) continue;
+      const oe = events[j];
+      const isOutcome =
+        (oe.type === "goldGained" && oe.why === "parley") || oe.type === "parleyFailed" || oe.type === "beastsSoothed";
+      if (isOutcome) {
+        consumed.add(i);
+        consumed.add(j);
+        const b = TOAST_FOR[oe.type](oe);
+        built.push({ text: `${b.text} (${e.roll} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
+        break;
+      }
+      if (oe.type === "parleyRolled") break;
+    }
+  });
+  return built;
+}
+
+/**
+ * chestChain(events, consumed) — `chestLockRolled` + (`chestOpened` |
+ * `chestLocked`) fold into ONE toast: the outcome's own text plus
+ * `(${roll} vs ${need})`. A Pilfer's roll-free `chestOpened` (reason
+ * "pilfer") has no preceding `chestLockRolled` and keeps its own builder.
+ */
+function chestChain(events, consumed) {
+  const built = [];
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "chestLockRolled") return;
+    for (let j = i + 1; j < events.length; j++) {
+      if (consumed.has(j)) continue;
+      const oe = events[j];
+      if (oe.type === "chestOpened" || oe.type === "chestLocked") {
+        consumed.add(i);
+        consumed.add(j);
+        const b = TOAST_FOR[oe.type](oe);
+        built.push({ text: `${b.text} (${e.roll} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
+        break;
+      }
+      if (oe.type === "chestLockRolled") break;
+    }
+  });
+  return built;
+}
+
+/**
+ * encounterStart(events, consumed) — when an `encounterStarted` is present,
+ * folds it plus its same-action followers (trackable, allyJoined,
+ * warlockBoost, foeFled reason knight/conArtist, foeBored, phobiaFrozen,
+ * combatInDark) into ONE toast; each follower appends a short clause and is
+ * consumed. Without an `encounterStarted` in the action, every one of those
+ * events keeps its own builder (this function simply returns null).
+ */
+function encounterStart(events, consumed) {
+  const idx = events.findIndex((e, i) => !consumed.has(i) && e.type === "encounterStarted");
+  if (idx === -1) return null;
+  const e = events[idx];
+  const base = TOAST_FOR.encounterStarted(e);
+  consumed.add(idx);
+  let text = base.text;
+  for (let j = idx + 1; j < events.length; j++) {
+    if (consumed.has(j)) continue;
+    const fe = events[j];
+    switch (fe.type) {
+      case "trackingRolled":
+        consumed.add(j);
+        break;
+      case "trackable":
+        text += " · unnoticed";
+        consumed.add(j);
+        break;
+      case "allyJoined":
+        text += ` · ${fe.name ?? "an ally"} joins`;
+        consumed.add(j);
+        break;
+      case "warlockBoost":
+        text += ` · the dead stiffen (+${fe.amount ?? 0})`;
+        consumed.add(j);
+        break;
+      case "foeFled":
+        if (fe.reason === "knight") {
+          text += ` · ${fe.name ?? "it"} flees a Knight`;
+          consumed.add(j);
+        } else if (fe.reason === "conArtist") {
+          text += ` · ${fe.name ?? "it"} talked out of it`;
+          consumed.add(j);
+        }
+        break;
+      case "foeBored":
+        text += ` · ${fe.name ?? "it"} loses interest`;
+        consumed.add(j);
+        break;
+      case "phobiaFrozen":
+        text += " · frozen by fear";
+        consumed.add(j);
+        break;
+      case "combatInDark":
+        text += " · in the dark";
+        consumed.add(j);
+        break;
+      default:
+        break;
+    }
+  }
+  return { text, tone: base.tone, priority: base.priority, idx };
+}
+
+/**
  * dedupeByType(list) — keeps the first toast of each event `type` in engine
  * order; a later toast of the SAME type with DIFFERENT text appends
  * ` ×${N}` to the kept toast. Aggregated toasts (no `.type` tag) are never
@@ -447,8 +706,14 @@ export function toastsForAction(type, events, ctx = {}) {
   const consumed = new Set();
   const built = [];
 
+  const enc = encounterStart(events, consumed);
+  if (enc) built.push(enc);
   built.push(...enemyRound(events, consumed));
   built.push(...yourRound(events, consumed));
+  built.push(...spellChain(events, consumed));
+  built.push(...fleeChain(events, consumed));
+  built.push(...parleyChain(events, consumed));
+  built.push(...chestChain(events, consumed));
   killFold(events, consumed, built);
 
   events.forEach((e, idx) => {
@@ -682,7 +947,10 @@ export const TOAST_FOR = {
   spellSchoolLocked: (e) => block(`${e?.spell ?? "That"} is not open to you yet.`),
   spellBackfired: (e) => ({ text: `${e?.spell ?? "The spell"} goes wrong.`, tone: "hurt", priority: PRIORITY.you }),
   backfireSelfDamage: (e) => ({ text: `It costs you ${e?.amount ?? 0} hp.`, tone: "hurt", priority: PRIORITY.you }),
-  spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.spell ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
+  // Phase 25 (25-03): no trailing period — matches the aggregate-format
+  // convention (struckByFoe/foeMissed/struck etc. carry none either) so a
+  // resisted-spell toast reads consistently with the rest of the pipeline.
+  spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.spell ?? "it"}`, tone: "miss", priority: PRIORITY.you }),
   resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist.`, tone: "hit", priority: PRIORITY.you }),
   summonBackfired: (e) => ({ text: `The summoning costs you ${e?.amount ?? 0} hp.`, tone: "hurt", priority: PRIORITY.you }),
   allySummoned: (e) => ({ text: `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
