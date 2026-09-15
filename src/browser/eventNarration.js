@@ -548,9 +548,27 @@ export const EVENT_NARRATION = {
         : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
 };
 
+/**
+ * narrateEvent(e) — Phase 25.1 (DFB-01 decision 2). Returns ONE event's
+ * Oracle HTML line (the same string EVENT_NARRATION[e.type](e) would
+ * produce), or "" for a null/undefined event, an event without a string
+ * `type`, or a type with no EVENT_NARRATION entry (so "moved" is ""). This
+ * exists because engineAdapter.js's formatEvents filters null lines — html
+ * is NOT 1:1 with events — and the toast layer needs exactly one event's
+ * line to pass through narrativeToastText (src/browser/toasts.js).
+ */
+export function narrateEvent(e) {
+  if (!e || typeof e.type !== "string") return "";
+  const builder = EVENT_NARRATION[e.type];
+  if (typeof builder !== "function") return "";
+  return builder(e) || "";
+}
+
 // Phase 25: the toast table lives beside this table in ./toasts.js and is
 // re-exported here per the phase decision (25-CONTEXT.md's "Mapping lives in
 // a pure, testable toast table beside the narration table"); toasts.js never
 // imports this module, so this stays a one-directional re-export with no
-// import cycle.
-export { TOAST_FOR, ORACLE_ONLY, FEATURE_EVENTS, toastsForAction } from "./toasts.js";
+// import cycle. Phase 25.1 additionally re-exports CARD_EVENTS and
+// NARRATIVE_ACTIONS beside the existing toast surface (same objects, no
+// copies — the cycle/identity guard in toastsCoverage keeps passing).
+export { TOAST_FOR, ORACLE_ONLY, FEATURE_EVENTS, CARD_EVENTS, NARRATIVE_ACTIONS, toastsForAction } from "./toasts.js";

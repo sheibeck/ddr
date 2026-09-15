@@ -50,6 +50,101 @@ export const PRIORITY = Object.freeze({ block: 0, you: 1, them: 2, feature: 3, o
 export const MAX_TOASTS = 4;
 
 /**
+ * CARD_EVENTS — Phase 25.1 (DFB-01 decision 1). The ONLY move-path events
+ * that still earn the dismissible "Move on" card: a NEW FLOOR and a
+ * LEVEL-UP. Every other decision/big-update card (the encounter Fight!
+ * gate, a Joiner offer, a find to keep/leave, death, the end-of-fight
+ * report) is handled by its own shell branch already, not by this set —
+ * this set exists only to gate the generic html-to-beats fallback the
+ * shell falls back to when none of those dedicated branches apply. The
+ * shell checks this set BEFORE that generic fallback; a dispatch whose
+ * events contain BOTH a card event and toast-only events shows the card
+ * AND raises the toasts (toasts are raised inside dispatchWithToasts
+ * before the card is ever built — the card never swallows a toast).
+ */
+export const CARD_EVENTS = new Set(["floorChanged", "leveled"]);
+
+/**
+ * NARRATIVE_ACTIONS — Phase 25.1 (DFB-01 decision 2). The action types
+ * whose direct-mapped toasts carry the Oracle's own sentence (dice
+ * stripped) instead of the terse Phase 25 table text: move, camp,
+ * resolveJoiner. The shell passes a `ctx.narrate` hook ONLY for these
+ * action types — every other action (combat, store, inventory) keeps the
+ * short Phase 25 table text unchanged.
+ */
+export const NARRATIVE_ACTIONS = new Set(["move", "camp", "resolveJoiner"]);
+
+/**
+ * Toast lifetime constants (Phase 25.1, DFB-02). `toastLifetime(len,
+ * visible)` = min(TOAST_CAP_MS, TOAST_BASE_MS + TOAST_PER_CHAR_MS * len) +
+ * TOAST_STACK_BONUS_MS * clamp(visible, 0, MAX_TOASTS - 1). Table: len 0 ->
+ * 3000, len 1 -> 3060, len 99 -> 8940, len 100 -> 9000 (cap reached), len
+ * 101 -> 9000; visible 3 -> +3600 (so the worst case is 9000 + 3600 =
+ * 12600 ms); visible 4 clamps to 3 (MAX_TOASTS - 1); visible -1 clamps to
+ * 0. Reduced motion never touches this number — it only shortens the CSS
+ * transition (mazeworld.html's `prefers-reduced-motion` rule).
+ */
+export const TOAST_BASE_MS = 3000;
+export const TOAST_PER_CHAR_MS = 60;
+export const TOAST_CAP_MS = 9000;
+export const TOAST_STACK_BONUS_MS = 1200;
+
+/**
+ * toastLifetime(len, visible) — integer milliseconds a toast should stay
+ * on screen before auto-dismissing. Both inputs are defended (non-numeric
+ * or negative collapses to 0; `visible` is additionally clamped to
+ * [0, MAX_TOASTS - 1] since a toast can never see more than MAX_TOASTS - 1
+ * siblings already on screen when it is raised).
+ */
+export function toastLifetime(len, visible) {
+  const n = Math.max(0, Math.floor(Number(len) || 0));
+  const v = Math.max(0, Math.min(MAX_TOASTS - 1, Math.floor(Number(visible) || 0)));
+  return Math.min(TOAST_CAP_MS, TOAST_BASE_MS + TOAST_PER_CHAR_MS * n) + TOAST_STACK_BONUS_MS * v;
+}
+
+// The exact roll-span regex the shell's stripRollDetail() uses (mazeworld.html)
+// so narrativeToastText strips dice detail identically to the over-map
+// overlay's own stripping.
+const ROLL_SPAN_RE = /<span class="roll">[\s\S]*?<\/span>\s*/g;
+
+// Numeric-entity decode (&#39; / &#x27;) plus the fixed named-entity table
+// narrativeToastText needs. &amp; is decoded LAST so a literal "&lt;" in the
+// source text (i.e. the text "&lt;" itself, already escaped once) renders as
+// the two characters "&lt;", never as a re-decoded "<" tag opener.
+function decodeEntities(str) {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&");
+}
+
+/**
+ * narrativeToastText(html) — Phase 25.1 (DFB-01 decision 2). Turns one
+ * Oracle HTML line into the plain-text sentence a toast shows: (a) drop
+ * every `<span class="roll">...</span>` block plus its trailing
+ * whitespace (the SAME regex the shell's stripRollDetail uses); (b) strip
+ * every remaining tag; (c) decode entities — tags are stripped BEFORE
+ * entities are decoded so a decoded "&lt;b&gt;" stays literal text, never
+ * becomes a real `<b>` tag; (d) collapse whitespace (including the
+ * non-breaking space already turned into a plain space above) to single
+ * spaces and trim. Returns "" when nothing prose-bearing is left (a
+ * roll-only line, an empty/undefined input). The shell always inserts the
+ * result via `textContent`, never `innerHTML` (T-25.1-01).
+ */
+export function narrativeToastText(html) {
+  const raw = String(html ?? "");
+  const noRoll = raw.replace(ROLL_SPAN_RE, "");
+  const noTags = noRoll.replace(/<[^>]+>/g, "");
+  const decoded = decodeEntities(noTags);
+  return decoded.replace(/\s+/g, " ").trim();
+}
+
+/**
  * ORACLE_ONLY — bookkeeping event types that already have a dedicated
  * screen, HUD field, prompt, or are pure step/roll detail whose outcome
  * sibling always follows. These get NO toast entry; the Oracle never loses
@@ -68,8 +163,6 @@ export const ORACLE_ONLY = new Set([
   "won", // dedicated victory banner
   "storeLeft", // the store screen closing IS the signal
   "encounterRolled", // internal table-roll bookkeeping; tableFour/tableFourNoop narrate the outcome
-  "tableFour", // dedicated over-map encounter overlay already narrates this
-  "tableFourNoop", // dedicated over-map encounter overlay already narrates this
   "findOffered", // the dedicated Take it/Leave it prompt IS the UI
   "findTaken", // the dedicated Take it/Leave it prompt IS the UI
   "findLeft", // the dedicated Take it/Leave it prompt IS the UI
@@ -222,9 +315,16 @@ function equipRejectText(e) {
 //      priority-0 refusal is never dropped and the cap always drops the
 //      lowest-priority (highest number), latest-engine-order toasts first.
 //
-// `ctx` is accepted and reserved for a future consumer; it is currently
-// unread (a strikeMissed's quip already arrives on the event itself, via
-// engineAdapter.js's decorateMisses — see missLines.js).
+// `ctx.narrate` (Phase 25.1, DFB-01 decision 2) — `(e) => html string | ""`,
+// supplied by the shell ONLY for NARRATIVE_ACTIONS (move/camp/resolveJoiner).
+// In step 7 (the direct-mapped-event loop below), when `ctx.narrate` is a
+// function AND the event's type is not in CARD_EVENTS, the toast text
+// becomes `narrativeToastText(ctx.narrate(e))` — the Oracle's own sentence,
+// dice stripped — with the table text as the fallback when the narration
+// strips to nothing (never a blank toast). Every other action type keeps
+// the short Phase 25 table text. CARD_EVENTS types are excluded here
+// because the "Move on" card already carries their sentence — this is the
+// ONE decision point where the narrative-vs-table choice is made.
 
 const CRIT_SUFFIX = " · CRIT";
 
@@ -726,7 +826,12 @@ export function toastsForAction(type, events, ctx = {}) {
     const builder = TOAST_FOR[e.type];
     if (!builder) return;
     const { text, tone, priority } = builder(e, ctx);
-    built.push({ text, tone, priority, idx, type: e.type });
+    // Phase 25.1 (DFB-01 decision 2) — the ONE narrative-vs-table decision
+    // point: for a narrative action's non-card event, prefer the Oracle's
+    // own sentence (dice stripped); fall back to the table text when the
+    // narration strips to nothing so a toast is never blank.
+    const narrative = typeof ctx.narrate === "function" && !CARD_EVENTS.has(e.type) ? narrativeToastText(ctx.narrate(e)) : "";
+    built.push({ text: narrative || text, tone, priority, idx, type: e.type });
   });
 
   const deduped = dedupeByType(built);
@@ -1036,6 +1141,12 @@ export const TOAST_FOR = {
 
   /* ---------------- encounters.js ---------------- */
 
+  // Phase 25.1 (DFB-01): tableFour/tableFourNoop left ORACLE_ONLY once the
+  // "Move on" card is gated to CARD_EVENTS — the over-map overlay no longer
+  // narrates these on the move path, so they need their own toast. `result`
+  // is already a full prose sentence (engine/encounters.js#tableFour).
+  tableFour: (e) => ({ text: e?.result ?? "Something happens.", tone: "beat", priority: PRIORITY.other }),
+  tableFourNoop: (e) => ({ text: e?.result ?? "Nothing much happens.", tone: "beat", priority: PRIORITY.other }),
   trapAvoided: (e) => ({ text: `You clock it early (${e?.roll ?? "?"} vs ${e?.need ?? "?"}).`, tone: "hit", priority: PRIORITY.other }),
   trapDisarmed: () => ({ text: "Pilfer: trap disarmed.", tone: "hit", priority: PRIORITY.feature }),
   trapDoubled: () => ({ text: "Cat Burglar: the trap hits twice as hard.", tone: "hurt", priority: PRIORITY.feature }),
