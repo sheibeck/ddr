@@ -59,7 +59,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 22: Class-Aware Harness & BEFORE Matrix** - Force any class/sub-class/race through the bot with a sub-class-aware policy, print a ranked 144-combo matrix, and capture the BEFORE snapshot before any identity change lands (completed 2026-09-14)
 - [x] **Phase 23: Casters Can Act (Wizard/Summoner/Illusionist + Guaranteed Attack Spell)** - Fix the three "cannot act" states and guarantee every fresh Magic User a day-one attack spell (completed 2026-09-14)
 - [x] **Phase 24: Every Sub-class and Race: One Good, One Bad** - Every sub-class and race gets a code-verified good and bad, flavor text matches the mechanics, and an identity-contract test proves it (completed 2026-09-14)
-- [ ] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses
+- [x] **Phase 25: Nothing Happens Silently (Feature Feedback)** - Every class/sub-class/racial feature that fires or blocks is narrated in the Oracle and as a toast; enemy hits are unmistakable from player hits/misses (completed 2026-09-15)
 - [ ] **Phase 26: Mass Playtest & Class-Pass Ledger** - An AFTER matrix on the post-pass engine ranks over/under-performers with a fun-band verdict per row, committed to `docs/CLASS-PASS.md`
 - [ ] **Phase 27: Delve-to-Death Retune** - The deferred TUNE-04 re-attempt on the corrected player power, closed by a human DR round on the Pixel 7
 
@@ -261,7 +261,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 22. Class-Aware Harness & BEFORE Matrix | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
-| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | In Progress|  |
+| 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 0/TBD | Not started | - |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |
