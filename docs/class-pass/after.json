@@ -1,7 +1,7 @@
 {
   "meta": {
     "tool": "tune-classes",
-    "commit": "620e1df",
+    "commit": "d1e3235",
     "seeds": 40,
     "seedList": "i*7919+1",
     "workers": 4,
@@ -3834,6 +3834,40 @@
       "rank": 112
     },
     {
+      "cls": "Fighter",
+      "sub": "Samurai",
+      "race": "Dwarven",
+      "n": 40,
+      "completed": 40,
+      "stuck": 0,
+      "meanDepth": 2.53,
+      "p50Depth": 2,
+      "p90Depth": 4,
+      "reach5": 5,
+      "reach10": 0,
+      "meanKills": 6.88,
+      "meanLevel": 1.8,
+      "meanActions": 224.13,
+      "meanFloorsGained": 1.53,
+      "p50FloorsGained": 1,
+      "meanEncountersSurvived": 5.33,
+      "topCauses": [
+        {
+          "cause": "cut down by a Dante",
+          "count": 9
+        },
+        {
+          "cause": "cut down by a Philly",
+          "count": 6
+        },
+        {
+          "cause": "cut down by a Shadow",
+          "count": 3
+        }
+      ],
+      "rank": 113
+    },
+    {
       "cls": "Magic User",
       "sub": "Summoner",
       "race": "Human",
@@ -3863,40 +3897,6 @@
         {
           "cause": "cut down by a Poltergeist",
           "count": 4
-        }
-      ],
-      "rank": 113
-    },
-    {
-      "cls": "Fighter",
-      "sub": "Samurai",
-      "race": "Dwarven",
-      "n": 40,
-      "completed": 39,
-      "stuck": 1,
-      "meanDepth": 2.49,
-      "p50Depth": 2,
-      "p90Depth": 4,
-      "reach5": 5.1,
-      "reach10": 0,
-      "meanKills": 6.82,
-      "meanLevel": 1.77,
-      "meanActions": 221.31,
-      "meanFloorsGained": 1.49,
-      "p50FloorsGained": 1,
-      "meanEncountersSurvived": 5.31,
-      "topCauses": [
-        {
-          "cause": "cut down by a Dante",
-          "count": 9
-        },
-        {
-          "cause": "cut down by a Philly",
-          "count": 6
-        },
-        {
-          "cause": "cut down by a Shadow",
-          "count": 3
         }
       ],
       "rank": 114
@@ -4924,8 +4924,8 @@
       {
         "key": "Fighter",
         "n": 1880,
-        "completed": 1879,
-        "stuck": 1,
+        "completed": 1880,
+        "stuck": 0,
         "meanDepth": 3.16,
         "p50Depth": 3,
         "p90Depth": 5,
@@ -4933,7 +4933,7 @@
         "reach10": 0.2,
         "meanKills": 6.33,
         "meanLevel": 2.07,
-        "meanActions": 316.4,
+        "meanActions": 316.41,
         "meanFloorsGained": 2.16,
         "p50FloorsGained": 2,
         "meanEncountersSurvived": 8.14,
@@ -5484,17 +5484,17 @@
       {
         "key": "Samurai",
         "n": 200,
-        "completed": 199,
-        "stuck": 1,
-        "meanDepth": 2.75,
+        "completed": 200,
+        "stuck": 0,
+        "meanDepth": 2.76,
         "p50Depth": 3,
         "p90Depth": 4,
         "reach5": 9,
         "reach10": 0,
-        "meanKills": 6.83,
-        "meanLevel": 1.98,
-        "meanActions": 261.3,
-        "meanFloorsGained": 1.75,
+        "meanKills": 6.85,
+        "meanLevel": 1.99,
+        "meanActions": 261.66,
+        "meanFloorsGained": 1.76,
         "p50FloorsGained": 2,
         "meanEncountersSurvived": 6.1,
         "topCauses": [
@@ -5889,17 +5889,17 @@
       {
         "key": "Dwarven",
         "n": 960,
-        "completed": 959,
-        "stuck": 1,
-        "meanDepth": 2.6,
+        "completed": 960,
+        "stuck": 0,
+        "meanDepth": 2.61,
         "p50Depth": 2,
         "p90Depth": 5,
-        "reach5": 11.1,
+        "reach5": 11,
         "reach10": 0.1,
-        "meanKills": 5.18,
+        "meanKills": 5.19,
         "meanLevel": 1.78,
-        "meanActions": 251.83,
-        "meanFloorsGained": 1.6,
+        "meanActions": 251.91,
+        "meanFloorsGained": 1.61,
         "p50FloorsGained": 1,
         "meanEncountersSurvived": 6.11,
         "topCauses": [
