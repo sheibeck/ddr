@@ -1,7 +1,7 @@
 # Proposed Milestone: "Feedback, Feel & Polish"
 
 **Captured:** 2026-09-13 (from user via `/gsd-new-milestone`, while v1.1 Phase 19 was still executing)
-**Status:** PARTIALLY CONSUMED 2026-09-14 — §A (feedback through-line: class/race/sub feature feedback, red enemy-hit toasts, "X of N hits", varied early-miss narration, effect legibility) and §B (Wizard attack-spell rule + the class/sub-class/racial "feels horrible" audit) folded into **v1.2 Class Pass & Mass Playtest** (user decision: "overlap only"). §C–§G (inventory integrity, UI feel, combat start, "not ready yet" audit, store, on-device bugs/layout) remain PROPOSED for the next milestone (v1.3).
+**Status:** FULLY CONSUMED 2026-09-15 — §C–§G stood up as **v1.3 Feel, Loot & Combat Flow** (Phases 28–33; G16 squares-of-opponents model stays future). Earlier: PARTIALLY CONSUMED 2026-09-14 — §A (feedback through-line: class/race/sub feature feedback, red enemy-hit toasts, "X of N hits", varied early-miss narration, effect legibility) and §B (Wizard attack-spell rule + the class/sub-class/racial "feels horrible" audit) folded into **v1.2 Class Pass & Mass Playtest** (user decision: "overlap only"). §C–§G (inventory integrity, UI feel, combat start, "not ready yet" audit, store, on-device bugs/layout) remain PROPOSED for the next milestone (v1.3).
 
 ## Vision
 
