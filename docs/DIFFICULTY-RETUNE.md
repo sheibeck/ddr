@@ -1173,3 +1173,261 @@ round's own judgment carries the most weight here.
   under the Change table above, with before/after values and a
   rationale), then a second DR round using this same checklist. No
   re-plan.
+
+## v1.2 retune (Phase 27) — TUNE-05..07
+
+The deferred TUNE-04 retune lands on the corrected player power from Phases
+23–25.1 (Phase 26 handoff: mu 3.08, rank order Thief 3.51 > Fighter 3.16 >
+Magic User 2.55, 0 cannot-act, depth-20 forced start survives 1.3
+encounters / gains 0.14 floors). This section records the target band
+(TUNE-05) BEFORE any constant or bestiary change lands, so 27-02/27-03 tune
+against a fixed, committed target rather than a moving one.
+
+### Why again — the v1.1 verdict, verbatim
+
+**Verdict (user, 2026-09-14):** "Level 20, way overtuned. It's instant death
+on any combat." Run 1 (depth 20) was enough to call it; runs 2/3 not
+played. Retune deferred until player power moved (Phases 23–25.1); it has
+now moved (Phase 26 handoff above).
+
+**D-16 lead (carried forward from the v1.1 ledger's "What happens next"):**
+"the depth-20 band (foe cap 4, power ≈1.21×, cadence ≈1.39×) is already
+lethal for a level-5 hero with a 6,000-wilmst purse — start by pulling
+`FOE_POWER_MAX`/`ABILITY_THREAT_MAX` down and/or pushing `*_SOFT_K` out, and
+consider capping foes-per-encounter growth below 5."
+
+**Acceptance bar at 20, in the user's own words:** a level-5 hero at depth
+20 should get 3–5 fights, not one.
+
+### Standing rules (user, 2026-09-14 / 2026-09-15)
+
+- Depth 20 is THE tuning target, not infinite depth.
+- Reaching 20 is a unicorn run — rare, celebrated, not expected.
+- Past 20, nothing is dialed back and no mechanic forces death — the run
+  wraps up naturally on the existing curve.
+- "Competent player" cannot be quantified in a game this RNG-heavy, so the
+  bot proxy sets rarity floors and the human DR round (TUNE-07) is the real
+  verdict — never the proxy alone.
+- Keep the opening honest: floor 1 still kills careless level-1 characters
+  (traps, starvation, a bad fight). The change this phase makes is that ONE
+  canon foe no longer does it three times a round.
+- The tail matters more than the middle: 1–2 % reach 20 means the curve
+  keeps steepening past ~10 while the median sits at 5–6.
+
+### Target band (TUNE-05) — supersedes D-09
+
+| Measure | Phase 26 AFTER (pin d1e3235) | Target | How measured | Edge rule |
+|---|---|---|---|---|
+| Natural median death depth | 3 (class p50 Thief 3 / Fighter 3 / Magic User 2; pooled mean 3.08) | **Bot: median 4, pooled reach >= 5 at >= 25 %** — the measured ceiling of the sanctioned levers (planner calibration 2026-09-15: every rung of the widened ladder, floor-1 grace included, tops out at bot median 4 / reach >= 5 ≈ 35 %; what remains at floors 2-4 is canon tier-2/3 combat, starvation and falls, which the bot plays badly). **Human expectation: median 5-6**, judged by the DR round (TUNE-07), not the bot proxy. (User decision 2026-09-15, third round: "Bot median 4, human 5-6" — this supersedes this row's original "5-6" bot target from the plan; the context's amendment wins.) | `rollups.pooled.p50Depth` (bot median) and `rollups.pooled.reach5` (>= 25 % threshold) of `docs/class-pass/retune-after.json` — `tools/tune-classes.mjs --seeds 40 --workers 4 --max-actions 5000` (143 x 40, seeds `i*7919+1`, Bot line identical to Phase 26); the human median 5-6 is read from the TUNE-07 DR checklist, never from this JSON | bot median: pass at exactly 4 (a measured ceiling, not a range); reach >= 5: closed, >= 25 % passes, 1 dp; human median 5-6 is a DR-round qualitative judgment, not a numeric pass/fail edge |
+| Reach >= 10 (pooled) | 0.3 % | ≈ 10-20 % | `rollups.pooled.reach10` | ADVISORY corridor, consistency-derived from the two user pins on either side — never pass/fail |
+| Reach >= 20 (pooled, bot) | n/a in the Phase 26 JSON (0.0 % in every v1.1 200-seed readout) | **1.0-2.0 %** (the unicorn; the bot's number is a rarity floor — humans play better) | `rollups.pooled.reach20` (added by this plan) | closed: 1.0 and 2.0 pass; 1 dp |
+| Forced start at 20, level-5 hero: encounters survived | 1.32 (pooled mean; Thief 1.72 / Fighter 1.17 / Magic User 1.07) | **3.0-5.0** ("dangerous, not hopeless") | `rollups.pooled.meanEncountersSurvived` of `docs/class-pass/retune-after-depth20.json` — `tools/tune-classes.mjs --seeds 10 --workers 4 --max-actions 5000 --start-depth 20` (143 x 10) | closed; 2 dp |
+| Forced start at 20: floors gained | mean 0.14, p50 0 | **p50 >= 1 AND mean 1.0-2.0** | `rollups.pooled.p50FloorsGained` / `rollups.pooled.meanFloorsGained` (same file) | both conditions; closed; p50 integer, mean 2 dp |
+| Past 20 (forced 35 / 50) | — | descriptive only: floors gained (= death depth − start) and causes are REPORTED; no target, no dial-back, no forced death | `node tools/tune-difficulty.mjs --seeds=200 --start-depth=35` and `--start-depth=50` death-depth distribution + cause table | none (reported) |
+| Cannot-act cells | 0 of 143 | **0** (hard gate) | `node tools/class-pass-diff.mjs --gate --after docs/class-pass/retune-after.json` exits 0 | evaluated FIRST; a failing gate stops the retune before the band is read |
+
+(a) **Precision:** numbers are compared at the precision the harness prints
+— means 2 dp, reach 1 dp, p50 integer; no hidden rounding.
+
+(b) **Pooling:** every pooled number is run-weighted — `summarizeRows` over
+the concatenation of all 143 cells' rows (`rollups.pooled`, added by
+27-01); a cell with zero completed runs contributes nothing, never NaN; the
+cannot-act gate runs before the band is evaluated.
+
+(c) **Superseding:** the Phase 21 D-09 targets above (median death depth
+8-15, p90 >= 25, < 2 % of runs past floor 50, median 40-80 actions per
+floor) are SUPERSEDED by this table as of 2026-09-15 — they were set for an
+infinite-depth curve the user has since rejected; only this band is
+evaluated from here on.
+
+(d) **Cheap smoke proxy note:** during iterations `node
+tools/tune-difficulty.mjs --seeds=200` (natural) and `tools/tune-classes.mjs
+--seeds 3` slices are directional readouts only; the band is judged on the
+full AFTER.
+
+**Note on this row's provenance:** 27-CONTEXT.md was amended AFTER this
+plan was written (commit `4d18e80`) to replace the natural median death
+depth row's original "5-6" bot target with the two-part reading above (bot
+median 4 / reach >= 5 >= 25 %, human 5-6 judged by the DR round). This
+ledger records the amended band, not the plan's original text — see this
+plan's SUMMARY for the substitution note.
+
+### Bot proxy and parameters (identical to Phase 26)
+
+The harness is `tools/tune-classes.mjs` on `tools/lib/tuning-bot.mjs`
+(Phase 22, byte-identical to pin `5565b22` — no bot policy changes this
+phase). The two Phase 26 Bot lines, quoted verbatim from
+`docs/class-pass/after.json` / `after-depth20.json`'s `meta.bot`:
+
+```
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=40  workers=4  startDepth=1
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=10  workers=4  startDepth=20
+```
+
+27-03's AFTER JSONs must carry these strings byte-for-byte (`metaParity`
+modulo commit). This plan's only harness change is the additive pooled
+readout (`reach20`, `rollups.pooled`, the `POOLED` text block), which
+changes no run, no draw and no Bot line.
+
+### BEFORE — by reference (not re-run)
+
+BEFORE for this retune IS the Phase 26 AFTER: `docs/class-pass/after.json`
+and `after-depth20.json` (meta.commit `d1e3235`), their verbatim
+transcripts under `## AFTER — commit d1e3235...` in `docs/CLASS-PASS.md`,
+and the `## Handoff to Phase 27` yardstick (mu 3.08; Thief 3.51 > Fighter
+3.16 > Magic User 2.55; reach >= 5 17.2 / >= 10 0.3; depth-20 floors gained
+0.25 / 0.10 / 0.07, encounters survived 1.72 / 1.17 / 1.07 by class;
+cannot-act 0). Top death causes at scale (from the Phase 26 AFTER cells'
+topCauses — quoted from the Phase 26 handoff/CONTEXT figures): "cut down by
+a Dante" 724 tallies, "undone by a trap" 333, "starved in the dark" 300.
+
+### Levers and the Dante decision (TUNE-06)
+
+Three levers, in escalation order:
+
+1. **Global depth dials in `engine/difficulty.js` — the whole curve.**
+   Combat knobs (`COMBAT_SCALE_FROM_DEPTH` may only move UP, never below 6;
+   `FOE_CAP_MAX`/`_SOFT_K`, `FOE_POWER_MAX`/`_SOFT_K`,
+   `ABILITY_THREAT_MAX`/`_SOFT_K`) for the ramp toward 20, identity through
+   at least depth 5. Non-combat knobs (`ENCOUNTER_DOT_*`, `DARK_BLOB_CAP`,
+   `DARK_RADIUS_*`) may ease depths 3-5 — NOT depth 2: the movement parity
+   fixture (seed 256) descends to floor 2 and compares that floor
+   byte-for-byte, so floors 1-2 are canon by construction (a
+   `DENSITY_CANON_THROUGH_DEPTH = 2` gate, landed in 27-02).
+
+2. **The Dante demotion (a deliberate canon deviation).** See the decision
+   rule below.
+
+3. **The WIDENED early-floor levers (user decision 2026-09-15, CONTEXT
+   Levers §3 — after the planner's calibration showed dials + Dante alone
+   leave the bot median at 3: kill table 20 % dead on floor 1, 66 % by
+   floor 3, 85 % by floor 4)**, as further deliberate canon deviations,
+   each behind its own draw-free `difficultyCurve` field and each with a
+   declared divergence record where it touches a fixture:
+   - **Foe grace at floors 2-4** (`foePower` < 1 only at depths 2-4; floor
+     1 exactly 1.0).
+   - **A trap/wall-fall damage ramp** (a new `hazardScale` field consumed
+     by `movement.js` and `encounters.js`; starts at floor 2 unless the
+     median still misses — a floor-1 start diverges the encounters trap
+     scenario, seed 1, and is declared).
+   - **Starvation relief** (darkness later — the parity-clean form holds
+     one blob through floor 3; the from-floor-4 form diverges the movement
+     fixture, seed 256, and is declared — then starting rations +1/+2 only
+     if the median still misses, 14 chargen records).
+   - **Floor-1 foe grace as LAST RESORT only** (orchestrator decision),
+     after everything else has been tried and measured.
+   - **Escalation order** (smallest set that reaches median >= 5): Dante →
+     foe grace 2-4 → darkness later → trap/fall ramp → rations → floor-1
+     grace, one rung per iteration, each measured with the smoke and
+     recorded with a `DELIBERATE RULES CHANGE (Phase 27, 2026-09-15,
+     TUNE-06)` comment, a change-table row and its divergence record.
+   - **Ladder cap (user decision 2026-09-15, third round):** land the
+     PARITY-CLEAN set only — Dante Form C, foe grace at floors 2-4 (up to
+     x0.5 permitted, floor 1 exactly 1.0), darkness HELD through floor 3
+     (not the from-floor-4 form, which diverges movement seed 256),
+     trap/fall hazard ramp FROM FLOOR 2 (floor 1 canon). The rations rung,
+     the hazard-from-floor-1 rung, the darkness-from-4 rung and the
+     floor-1 grace rung are NOT climbed — recorded here as "available, not
+     taken" with the calibration numbers below, so the fidelity contract
+     keeps exactly one declared divergence (seed 303).
+
+4. **Nothing else.** No class change, no upkeep/economy dial unless a v1.1
+   counterweight trigger fires (economy: tune-economy `peakGold p50 >
+   5000`; party: `--party` p50 > 1.5 x solo p50 — both are MEASURED in the
+   AFTER and recorded; if one fires it is reported to the orchestrator as a
+   follow-up, not implemented inside the constants-only pass), no change to
+   `engine/character.js`, spells or items.
+
+**Dante — the decision rule (recorded before the change):** Dante is the
+only tier-1 Humans entry (sz H, i 12, wp 20, `sp.atk 3` — three strikes a
+round) and the #1 killer; the demotion form is chosen by ONE measurable
+rule — an attack-only level-1 hero on floor 1 forced into a Humans
+encounter (2,000 seeds, `newRun(seed)` → `startCombat(state, false,
+"Humans", rng)` → `playerStrike` until resolved) must die no more often
+than against the next-deadliest tier-1 type (Demons, ≈ 25 %) — with the
+planner's calibration table (2026-09-15, same sim): canon wp 20 / atk 3 →
+hero dies 59.8 % (two-Dante fights are 51 % of Humans encounters and are
+won 16.7 %); Form A `sp.atk` 3 → 2 → 51.4 %; Form B wp 20 → 12 → 46.8 % (wp
+10 → 42.8 %); A+B (atk 2, wp 12) → 37.4 %; Form C — Dante moved to tier 2
+with stats and note byte-identical, and a plain new tier-1 Humans entry (wp
+8, one swing a round) → 14.3 % (Beasts 6.8 / Lair Beasts 13.2 / Magical
+13.3 / Walking Dead 15.6 / Demons 25.1), while depth-2 Humans fights for a
+level-2 hero move 40.8 % → 42.2 % (Dante fits tier 2 without opening a new
+spike). Only Form C satisfies the rule; it is the planner's recommendation
+and 27-02's default; 27-02 records the landed numbers under `### Dante
+demotion — landed (27-02)`.
+
+### Iteration protocol (TUNE-06)
+
+Cap of FOUR constant iterations after iteration 0 (27-02: Dante +
+non-combat easing, combat untouched); each iteration = change constants →
+update the test pins → `node --test test/difficulty test/unit/combat-scaling.test.js
+test/unit/maze.test.js` → smoke (background + `EXIT=` sentinel, bounded
+polling): `tools/tune-classes.mjs --seeds 3 --workers 4 --max-actions 5000
+--json --out <scratch>/iterN-nat.json` (pooled p50 / reach10 / reach20 /
+causes) and `--start-depth 20 --seeds 3 ... --out <scratch>/iterN-d20.json`
+(pooled encounters survived / floors gained), plus `tools/tune-difficulty.mjs
+--seeds=200` for the cause table → read against the band → log entry
+(constants; readout numbers; what moved; what to turn next, one rationale
+sentence per knob) → stop when the smoke lands inside the band or at
+iteration 4, then the FULL AFTER on a proven pin. Missed measures after the
+cap are RECORDED with the executor's one-line reading and handed to the DR
+round — never chased with a fifth iteration.
+
+**Planner's calibration note (directional, 143 x 3 + 200-seed natural,
+2026-09-15):** at full combat identity the level-5 bot at depth 20 survives
+≈ 3.0 encounters and gains ≈ 0.4 floors (p50 0) — identity is the ceiling
+of what the deep combat dials can do; fewer deep encounter dots and less
+darkness lift floors gained toward ≈ 1 (dots 12, blobs 3, radius 7 → ≈ 0.97
+floors, ≈ 3.1 encounters). For the median: with dials + Dante alone the bot
+median stayed 3 (pooled reach >= 5 ≈ 17 %); the widened early-floor levers
+each add ≈ 3-7 points of reach >= 5 (foe grace 0.75 at 2-4: 22.8 %;
+darkness from 4: 21.7 %; trap/fall ramp 0.5: 24.0 %; grace 0.5 + darkness
+hold + ramp from floor 2: 24.7 %; + rations +2: 30.8 %; + darkness from 4 +
+ramp from floor 1: 35.4 %; + floor-1 grace 0.85: 34.7 %) — the full ladder
+tops out near 35 % (bot median 4, mean ≈ 4.0), so the median row is
+expected to be recorded as a miss (or a near-miss, per the amended target
+band above) with the ladder's ceiling stated unless the executor's smoke
+says otherwise. The parity-clean set (grace 0.5 + darkness hold + ramp from
+floor 2, WITHOUT rations/darkness-from-4/floor-1-grace) measures ≈ 24.7 %
+reach >= 5 — just under the amended 25 % target, and is the set actually
+landed per the ladder cap decision above. The escalation order and the
+"turn a rung only where a gain is predicted" rule live in 27-03. A median
+miss after the cap is a recorded outcome, not a reason for a fifth
+iteration.
+
+### Dante demotion — landed (27-02)
+
+(filled by plan 27-02)
+
+### Change table (27-02 / 27-03)
+
+(filled by plan 27-03)
+
+### Iteration log
+
+(filled by plans 27-02 and 27-03)
+
+### AFTER readouts — retuned engine
+
+(filled by plan 27-03)
+
+### Comparison vs band
+
+(filled by plan 27-03)
+
+### Counterweight triggers (measured)
+
+(filled by plan 27-03)
+
+### Not changed, and why
+
+(filled by plan 27-03)
+
+### DR checklist — TUNE-07
+
+(filled by plan 27-04)
+
+### Verdict (TUNE-07)
+
+**Overall verdict:** (to be filled by the tester — tuned / tune-again / deferred)
