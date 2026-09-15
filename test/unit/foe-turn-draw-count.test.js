@@ -263,10 +263,24 @@ function runFullFight(seed, forced) {
 
 const FULL_FIGHTS = [
   { seed: 3, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 12, attacks: 1, outcome: "won" },
-  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 101, attacks: 10, outcome: "died" },
-  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 111, attacks: 11, outcome: "won" },
+  // Phase 24 (2026-09-14, race pass): was 101/10/died — this seed's hero is a
+  // Fridgian Soldier; the frenzy corpse-whiff draw was removed and hide -2
+  // now shaves every landed foe blow (IDENT-08/09), so the fight now KILLS
+  // the Shriek instead of dying to it. Re-measured live via runFullFight
+  // against the patched engine (never hand-computed).
+  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 87, attacks: 8, outcome: "won" },
+  // Phase 24 (2026-09-14, race pass): was 111/11/won — same cause (a
+  // Fridgian Pilfer): the corpse-whiff draw is gone and hide -2 shortens the
+  // fight by two rounds. Re-measured live.
+  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 101, attacks: 9, outcome: "won" },
   { seed: 303, forced: "Humans", foeNames: ["Dante", "Dante"], totalDraws: 66, attacks: 6, outcome: "won" },
   { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 32, attacks: 4, outcome: "won" },
+  // Phase 24 (2026-09-14, race pass): new row. A plain Human Apprentice
+  // (unaffected by the race pass — no Fridgian/Dwarven mechanic in play),
+  // added to restore death-path FID-02 coverage now that seed 14's Fridgian
+  // no longer dies; pairs with the parity fixture's new lose-apprentice
+  // scenario (same seed, same roster, same reason).
+  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 119, attacks: 14, outcome: "died" },
 ];
 
 // --- Section 3: Phase 18 seam + slow — gated draws (D-13) ------------------
@@ -542,7 +556,14 @@ for (const row of GATED_DRAWS) {
   });
 }
 
-test("FID-02 restated post-Phase-19: the five FULL_FIGHTS totals (12/101/111/66/32) are unchanged and no fixture-roster creature carries a kit", () => {
+// Phase 24 (2026-09-14, race pass, IDENT-08/09): two of the five original
+// totals (seed 14, seed 17 — both Fridgian heroes) changed because the
+// frenzy corpse-whiff draw was DELIBERATELY removed and hide -2 now shaves
+// every landed foe blow; that is a rules change, not a seam bug. Seed 127
+// is a new sixth row (a plain Human, unaffected by the race pass) restoring
+// death-path coverage. See the FULL_FIGHTS array above for the full
+// rationale on each changed/added row.
+test("FID-02 restated post-Phase-24: the six FULL_FIGHTS totals (12/87/101/66/32/119) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);

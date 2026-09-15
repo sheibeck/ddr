@@ -1,5 +1,5 @@
 {
-  "_note": "Combat parity fixture (01-08): four independent scenarios, each its own seed + forced encounter, so every outcome (win/lose/flee/parley) is deterministic and reachable in a small, fixed action count. `startCombat` is NOT in engine/actions.js's validated ACTION_TYPES (it is an internal function other rule domains call, not a player-facing action) -- test/parity/combat-parity.test.js special-cases it, calling engine/combat.js's startCombat directly (state/rng managed the same way applyAction does) and the prototype's `ctx.startCombat(wandering, forced)` directly, exactly mirroring the encounter the wandering-monster check or an encounter dot would eventually trigger. Every scenario's seed was found by a throwaway discovery script that simulated the engine directly against a forced encounter type until it produced the desired outcome (same method 01-05/01-07 used for chargen/movement fixture seeds), then cross-checked for prototype parity before being committed here.",
+  "_note": "Combat parity fixture (01-08): five independent scenarios, each its own seed + forced encounter, so every outcome (win/lose/flee/parley) is deterministic and reachable in a small, fixed action count. `startCombat` is NOT in engine/actions.js's validated ACTION_TYPES (it is an internal function other rule domains call, not a player-facing action) -- test/parity/combat-parity.test.js special-cases it, calling engine/combat.js's startCombat directly (state/rng managed the same way applyAction does) and the prototype's `ctx.startCombat(wandering, forced)` directly, exactly mirroring the encounter the wandering-monster check or an encounter dot would eventually trigger. Every scenario's seed was found by a throwaway discovery script that simulated the engine directly against a forced encounter type until it produced the desired outcome (same method 01-05/01-07 used for chargen/movement fixture seeds), then cross-checked for prototype parity before being committed here. Phase 24 (2026-09-14, race pass, FID-07): `lose`'s seed-14 Fridgian Soldier now carries a declared `divergence` (kind action-path) — the frenzy corpse-whiff removal + hide -2 flip its outcome from died to won, measured live and asserted via test/parity/harness/comparables.js's actionPathDivergenceOf/skipsByteDiffAt/declaredEndDiffs; the new `lose-apprentice` scenario (seed 127, a plain Human, unaffected by the race pass) restores byte-identical death-path coverage.",
   "scenarios": [
     {
       "name": "win",
@@ -14,6 +14,40 @@
       "seed": 14,
       "actions": [
         { "type": "startCombat", "wandering": false, "forced": "Beasts" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" }
+      ],
+      "divergence": {
+        "phase": "24",
+        "requirements": ["FID-07", "IDENT-08"],
+        "kind": "action-path",
+        "fromAction": 1,
+        "fields": ["wp", "sp", "kills", "rations"],
+        "before": { "wp": 0, "sp": 5, "kills": 1, "rations": 7 },
+        "after": { "wp": 22, "sp": 30, "kills": 2, "rations": 8 },
+        "stateFields": ["dead"],
+        "stateBefore": { "dead": true },
+        "stateAfter": { "dead": false },
+        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage."
+      }
+    },
+    {
+      "name": "lose-apprentice",
+      "seed": 127,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
         { "type": "attack" },
         { "type": "attack" },
         { "type": "attack" },
