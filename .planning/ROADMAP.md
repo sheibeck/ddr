@@ -290,12 +290,12 @@ Plans:
   3. A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict.
   4. The milestone closes only on "tuned" or a user-recorded deferral.
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 27-01-PLAN.md — Band recorded BEFORE tuning: `docs/DIFFICULTY-RETUNE.md` gains `## v1.2 retune (Phase 27) — TUNE-05..07` (band table with closed edges + "how measured" JSON paths, D-09 marked SUPERSEDED, the v1.1 verdict verbatim, standing rules, Bot lines, BEFORE = Phase 26 AFTER by reference, levers + the Dante decision rule with the planner's sim calibration, the bounded iteration protocol, placeholders); additive harness readout `reach20` + `rollups.pooled` in `tools/lib/class-matrix.mjs` (bot byte-identical to 5565b22) so the pooled median / reach ≥ 20 / forced-20 p50 are the harness's own numbers; `test/unit/difficulty-retune-ledger.test.js` standing guard (TUNE-05) — wave 1
+- [x] 27-01-PLAN.md — Band recorded BEFORE tuning: `docs/DIFFICULTY-RETUNE.md` gains `## v1.2 retune (Phase 27) — TUNE-05..07` (band table with closed edges + "how measured" JSON paths, D-09 marked SUPERSEDED, the v1.1 verdict verbatim, standing rules, Bot lines, BEFORE = Phase 26 AFTER by reference, levers + the Dante decision rule with the planner's sim calibration, the bounded iteration protocol, placeholders); additive harness readout `reach20` + `rollups.pooled` in `tools/lib/class-matrix.mjs` (bot byte-identical to 5565b22) so the pooled median / reach ≥ 20 / forced-20 p50 are the harness's own numbers; `test/unit/difficulty-retune-ledger.test.js` standing guard (TUNE-05) — wave 1
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -331,5 +331,5 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
 | 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | Complete    | 2026-09-15 |
-| 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
+| 27. Delve-to-Death Retune | v1.2 | 1/4 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |

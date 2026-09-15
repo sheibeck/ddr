@@ -73,7 +73,7 @@ Dev-only, zero-dependency, never shipped — extends `tools/lib/tuning-bot.mjs`.
 
 Continues v1.1's TUNE-01..04 (TUNE-04 verdict: tune-again).
 
-- [ ] **TUNE-05**: A delve-to-death target band is agreed with the user before tuning and recorded in `docs/DIFFICULTY-RETUNE.md` — framed around **depth 20 as THE target** (user decision 2026-09-14): reaching 20 is a **unicorn run** — rare, celebrated, not the expectation ("competent player" cannot be quantified in a game this RNG-heavy) — so the band fixes a median death depth well below 20, a small reach-20 rate, how survivable a level-5 character is AT 20, and "floors gained past 20" as the wrap-up measure. Past 20 the curve is NOT dialed back and NO mechanic forces death — the run ends naturally on the existing curve; the game is not tuned for infinite depth
+- [x] **TUNE-05**: A delve-to-death target band is agreed with the user before tuning and recorded in `docs/DIFFICULTY-RETUNE.md` — framed around **depth 20 as THE target** (user decision 2026-09-14): reaching 20 is a **unicorn run** — rare, celebrated, not the expectation ("competent player" cannot be quantified in a game this RNG-heavy) — so the band fixes a median death depth well below 20, a small reach-20 rate, how survivable a level-5 character is AT 20, and "floors gained past 20" as the wrap-up measure. Past 20 the curve is NOT dialed back and NO mechanic forces death — the run ends naturally on the existing curve; the game is not tuned for infinite depth
 - [ ] **TUNE-06**: `engine/difficulty.js` is retuned on the post-pass engine so the class matrix and the start-at-depth readout land inside the agreed band, with the BEFORE/AFTER transcripts appended to the ledger under identical bot parameters
 - [ ] **TUNE-07**: A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict; the milestone closes only on "tuned" or a user-recorded deferral
 
@@ -147,7 +147,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PLAY-01 | Phase 22 | Complete |
 | PLAY-02 | Phase 26 | Complete |
 | PLAY-03 | Phase 26 | Complete |
-| TUNE-05 | Phase 27 | Pending |
+| TUNE-05 | Phase 27 | Complete |
 | TUNE-06 | Phase 27 | Pending |
 | TUNE-07 | Phase 27 | Pending |
 

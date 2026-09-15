@@ -5,15 +5,15 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 27
 current_phase_name: Delve-to-Death Retune
 status: executing
-stopped_at: Completed 26-04-PLAN.md — Phase 26 closed
-last_updated: "2026-09-15T16:24:57.915Z"
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-09-15T20:31:35.724Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 26 complete, transitioned to Phase 27
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 27
-  completed_plans: 27
+  total_plans: 31
+  completed_plans: 28
   percent: 86
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 27 — Delve-to-Death Retune
-Plan: 1 of 4
+Plan: 2 of 4
 Status: Executing (wave 1 of 4; planned 2b3def8, band amended 4d18e80)
 Last activity: 2026-09-15 — Phase 26 complete, transitioned to Phase 27
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T16:21:51.063Z
-Stopped at: Completed 26-04-PLAN.md — Phase 26 closed
+Last session: 2026-09-15T20:31:35.698Z
+Stopped at: Completed 27-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -148,6 +148,7 @@ Resume file: None
 | Phase 26 P02 | 50min | 3 tasks | 3 files |
 | Phase 26 P03 | 30min | 2 tasks | 2 files |
 | Phase 26 P04 | 40min | 2 tasks | 1 files |
+| Phase 27 P01 | 55min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -253,6 +254,7 @@ Resume file: None
 - [Phase ?]: 26-02: AFTER matrix re-captured on gap-closure pin d1e3235 — cannot-act gate PASSED (0 of 143), supersedes the blocked 620e1df attempt
 - [Phase ?]: Only Ninja (too strong) and Wilmsry (fine, named exception) carry an editorial verdict; both accepted -- the caster problem is gone (all 8 Magic User subs land in the fine band).
 - [Phase ?]: 26-04: no ledger fix needed; the plan's own f7f294b-based commit-range check is stale (Phase 25.1 interleaved before Phase 26's real execution) — the true engine-touch is the single, already-reviewed d1e3235 gap-closure fix, which IS the AFTER pin; documented in SUMMARY rather than worked around.
+- [Phase ?]: 27-01: band substitution per amended 27-CONTEXT.md (4d18e80) — bot median 4 / pooled reach>=5 >=25%, human 5-6 judged by DR round, replacing the plan's original flat 5-6 bot target
 
 ### Blockers
 
