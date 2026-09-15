@@ -172,6 +172,7 @@ export const ORACLE_ONLY = new Set([
   "faerieMet", // the dedicated faerie encounter prompt IS the UI; faerieBoon/faerieBane toast the real outcome
   "grimoireSold", // the sell-flow's own confirmation is the UI signal
   "itemConsumed", // pure bookkeeping (a charge spent); the effect event itself already toasted
+  "allyCast", // the allySpellHit/allySpellMissed sibling that always follows in the same action toasts the outcome and names the spell (one toast per cast)
 ]);
 
 /**
@@ -206,6 +207,12 @@ export const FEATURE_EVENTS = [
   "spellBackfired",
   "allySummoned",
   "allyPending",
+  // DFB-05 (Phase 25.1): class-based ally combat — a member's weapon
+  // strike/miss and a Magic User member's spell outcome.
+  "allyStruck",
+  "allyMissed",
+  "allySpellHit",
+  "allySpellMissed",
   "phobiaFrozen",
   "shookOffFrozen",
   "encounterStarted",
@@ -985,9 +992,36 @@ export const TOAST_FOR = {
   songIgnored: () => ({ text: "They do not care for music.", tone: "miss", priority: PRIORITY.feature }),
   lullabyRolled: (e) => ({ text: `${e?.n ?? 0} nod off.`, tone: "magic", priority: PRIORITY.feature }),
   thunderRolled: (e) => ({ text: `Thunder rolls — ${e?.n ?? 0} freeze (${e?.r ?? 0}).`, tone: "magic", priority: PRIORITY.feature }),
-  allyStruck: (e) => ({ text: `${e?.name ?? "Your ally"} lands a hit on ${e?.target ?? "it"} (${e?.dmg ?? 0}).`, tone: "hit", priority: PRIORITY.feature }),
-  allyMissed: (e) => ({ text: `${e?.name ?? "Your ally"} swings and misses.`, tone: "miss", priority: PRIORITY.feature }),
+  // DFB-05 (Phase 25.1): legacy text (no `backstab`/`crit`/`target`) stays
+  // byte-identical; a classed member's blow names the target and calls out
+  // a backstab/crit.
+  allyStruck: (e) => {
+    const who = e?.name ?? "Your ally";
+    const t = e?.target ?? "it";
+    const text = e?.backstab ? `${who} backstabs ${t} (${e?.dmg ?? 0})` : `${who} lands a hit on ${t} (${e?.dmg ?? 0}).${e?.crit ? CRIT_SUFFIX : ""}`;
+    return { text, tone: "hit", priority: PRIORITY.feature };
+  },
+  allyMissed: (e) => ({
+    text: e?.target ? `${e?.name ?? "Your ally"} misses ${e.target}` : `${e?.name ?? "Your ally"} swings and misses.`,
+    tone: "miss",
+    priority: PRIORITY.feature,
+  }),
   allyDeparted: (e) => ({ text: `${e?.name ?? "Your ally"} slips away, obligation met.`, tone: "beat", priority: PRIORITY.feature }),
+  // DFB-05 (Phase 25.1): a Magic User member's cast outcome — one toast per
+  // cast (allyCast itself is ORACLE_ONLY).
+  allySpellHit: (e) => {
+    const who = e?.name ?? "Your ally";
+    const sp = e?.spell ?? "a spell";
+    const t = e?.target ?? "it";
+    const tail =
+      e?.effect === "frozen" ? `${t} frozen solid` : e?.effect === "asleep" ? `${t} nods off` : e?.effect === "weakened" ? "the foes weaken" : `${t} (${e?.dmg ?? 0})`;
+    return { text: `${who} casts ${sp} — ${tail}`, tone: "magic", priority: PRIORITY.feature };
+  },
+  allySpellMissed: (e) => ({
+    text: `${e?.name ?? "Your ally"} casts ${e?.spell ?? "a spell"} — ${e?.resisted ? `${e?.target ?? "it"} resists` : `misses ${e?.target ?? "it"}`}`,
+    tone: "miss",
+    priority: PRIORITY.feature,
+  }),
   // Phase 25 (FEED-01): `needMods` names the reason a swing that should have
   // landed did not — only when the roll would have hit without the modifier.
   memberStruck: (e) => {

@@ -300,9 +300,41 @@ export const EVENT_NARRATION = {
   lullabyRolled: (e) => `<span class="roll">${e.n ?? 0}</span> nod off.`,
   thunderRolled: (e) => `Thunder rolls; <span class="roll">${e.n ?? 0}</span> freeze for <span class="roll">${e.r ?? 0}</span> rounds.`,
   combatEnded: () => `<span class="beat">The fight is over.</span>`,
-  allyStruck: (e) => `${e.name ?? "Your ally"} lands a hit on ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.`,
-  allyMissed: (e) => `${e.name ?? "Your ally"} swings and misses.`,
+  // DFB-05 (Phase 25.1): extended additively — `weapon`/`crit`/`backstab` on
+  // allyStruck and `target`/`roll`/`need`/`weapon` on allyMissed render only
+  // when present, so a legacy/summoned-ally payload (no new fields) narrates
+  // byte-identical to before.
+  allyStruck: (e) => {
+    const who = e.name ?? "Your ally";
+    const t = e.target ?? "it";
+    const w = e.weapon ? ` with a ${e.weapon}` : "";
+    if (e.backstab)
+      return `<span class="hit">${who} backstabs ${t}${w}</span> — <span class="roll">${e.dmg ?? 0}</span> hp. A blade in the back, as advertised.`;
+    return `${who} lands a hit on ${t}${w} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.crit ? ` <span class="hit">Critical.</span>` : ""}`;
+  },
+  allyMissed: (e) =>
+    e.target
+      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}.</span>` : ""}`
+      : `${e.name ?? "Your ally"} swings and misses.`,
   allyDeparted: (e) => `${e.name ?? "Your ally"} slips away, obligation met.`,
+  // DFB-05 (Phase 25.1): a Magic User party member's cast — allyCast is the
+  // announcement (Oracle-only; toasts.js's ORACLE_ONLY entry), always
+  // followed in the same action by exactly one of allySpellHit/allySpellMissed.
+  allyCast: (e) =>
+    `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}${e.bonus ? ` (+${e.bonus})` : ""}.</span>` : ""}`,
+  allySpellHit: (e) => {
+    const who = e.name ?? "Your ally";
+    const sp = e.spell ?? "The spell";
+    const t = e.target ?? "the foe";
+    if (e.effect === "frozen") return `<span class="hit">${who}'s ${sp} — ${t} frozen solid.</span> It will keep.`;
+    if (e.effect === "asleep") return `<span class="hit">${who}'s ${sp} — ${t} nods off.</span> <span class="roll">${e.rounds ?? "?"} rounds.</span>`;
+    if (e.effect === "weakened") return `<span class="hit">${who}'s ${sp} — the foes' arms go soft.</span>`;
+    return `<span class="hit">${who}'s ${sp} hits ${t}</span> for <span class="roll">${e.dmg ?? 0}</span> hp.`;
+  },
+  allySpellMissed: (e) =>
+    e.resisted
+      ? `<span class="miss">${e.target ?? "The foe"} shrugs off ${e.name ?? "your ally"}'s ${e.spell ?? "spell"}.</span>${e.roll != null ? ` <span class="roll">${e.roll} against its wits.</span>` : ""}`
+      : `<span class="miss">${e.name ?? "Your ally"}'s ${e.spell ?? "spell"} goes wide of ${e.target ?? "the foe"}.</span> The maze absorbs the effort without comment.`,
   // PARTY-04/PARTY-05 (Phase 8): a foe lands on a party member instead of you —
   // better them than you, frankly. `name` is the foe, `member` the companion.
   memberStruck: (e) =>
