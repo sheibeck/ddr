@@ -20,14 +20,20 @@ import { clampCarry } from "./derived.js";
 import { WEAPONS, ARMORS, FOODS, POTIONS, RACES } from "../content/index.js";
 
 /**
- * priceFor(base, race) — "Costs are triple for trolls, and half for elves
- * or dwarves." Ports mazeworld.html priceFor() (line 564). Pure arithmetic,
- * no RNG.
+ * priceFor(base, race, sub = null) — "Costs are triple for trolls, and half
+ * for elves or dwarves." Ports mazeworld.html priceFor() (line 564). Pure
+ * arithmetic, no RNG.
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Pickpocket's
+ * bad — "shopkeepers know your face" — marks up every routed store line
+ * x1.25 AFTER the race multiplier, floored at 1 like every other price. A
+ * non-Pickpocket (including every existing caller that omits the third
+ * argument) gets a value-identical result to before this change.
  */
-export function priceFor(base, race) {
-  if (race === "Troll") return base * 3;
-  if (race === "Elven" || race === "Dwarven") return Math.round(base / 2);
-  return base;
+export function priceFor(base, race, sub = null) {
+  const p = race === "Troll" ? base * 3 : race === "Elven" || race === "Dwarven" ? Math.round(base / 2) : base;
+  if (sub === "Pickpocket") return Math.max(1, Math.round(p * 1.25));
+  return p;
 }
 
 // ECON-06 (Phase 14, Economy C): the buy/sell spread. A store buys any carried
@@ -124,15 +130,23 @@ function baseValueFor(item) {
 }
 
 /**
- * sellPriceFor(item, race) — what a store PAYS for a carried item: ~50% of its
- * buy value (SELL_SPREAD), race-adjusted through the existing priceFor (trolls
- * pay/receive triple, elves/dwarves half). Always at least 1 so a sale never
- * yields nothing. Pure, no rng. Phase 16 tunes SELL_SPREAD; Phase 15 refines the
- * treasure base values baseValueFor falls back on.
+ * sellPriceFor(item, race, sub = null) — what a store PAYS for a carried
+ * item: ~50% of its buy value (SELL_SPREAD), race-adjusted through the
+ * existing priceFor (trolls pay/receive triple, elves/dwarves half). Always
+ * at least 1 so a sale never yields nothing. Pure, no rng. Phase 16 tunes
+ * SELL_SPREAD; Phase 15 refines the treasure base values baseValueFor falls
+ * back on.
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Pickpocket
+ * sells back at x0.75 of the ORDINARY sell price (never applied to the
+ * marked-up buy value — `priceFor(..., race)` here deliberately omits
+ * `sub`, since the markdown rides the same base every other race sells
+ * from). A non-Pickpocket (including every existing 2-argument caller) gets
+ * a value-identical result to before this change.
  */
-export function sellPriceFor(item, race) {
+export function sellPriceFor(item, race, sub = null) {
   const buy = priceFor(baseValueFor(item), race);
-  return Math.max(1, Math.round(buy * SELL_SPREAD));
+  return Math.max(1, Math.round(buy * SELL_SPREAD * (sub === "Pickpocket" ? 0.75 : 1)));
 }
 
 /**
@@ -147,7 +161,7 @@ export function sellItem(state, i, events = []) {
   const c = state.c;
   const it = (c.items || [])[i];
   if (!it) return events;
-  const price = sellPriceFor(it, c.race);
+  const price = sellPriceFor(it, c.race, c.sub);
   c.items.splice(i, 1);
   c.gold += price;
   // Phase-12 gated clamp: shrinks c.gold to BAGS[c.bag].wilmst when over-cap,
@@ -238,7 +252,7 @@ export function openStore(state, rng, events = []) {
   if (c.armorWP > 0 && c.armorWP < c.armorMax) {
     const base = (ARMORS.find((a) => a.name === c.armor) || ARMORS[0]).cost;
     const pts = c.armorMax - c.armorWP;
-    add(`Repair your ${c.armor.toLowerCase()}`, (priceFor(base, race) / 10) * pts, "repairArmor", null, `${pts} points at a tenth of its cost each`);
+    add(`Repair your ${c.armor.toLowerCase()}`, (priceFor(base, race, c.sub) / 10) * pts, "repairArmor", null, `${pts} points at a tenth of its cost each`);
   }
 
   const arms = Object.keys(WEAPONS).filter((w) => WEAPONS[w].cls.includes(letter));
@@ -246,7 +260,7 @@ export function openStore(state, rng, events = []) {
   for (const w of arms.slice(0, 2))
     add(
       w,
-      priceFor(WEAPONS[w].cost, race) * (race === "Troll" ? 2 : 1),
+      priceFor(WEAPONS[w].cost, race, c.sub) * (race === "Troll" ? 2 : 1),
       "buyWeapon",
       { item: { kind: "weapon", n: w, base: w, bonus: 0, txt: WEAPONS[w].lab } },
       WEAPONS[w].lab,
@@ -257,7 +271,7 @@ export function openStore(state, rng, events = []) {
     const a = mails[0];
     add(
       a.name,
-      priceFor(a.cost, race),
+      priceFor(a.cost, race, c.sub),
       "buyArmor",
       { item: { kind: "armor", n: a.name, armor: a.name, ar: a.ar, wp: a.wp, min: a.min, cls: a.cls, txt: `AR ${a.ar}` } },
       `AR ${a.ar}, ${a.wp} hp`,
@@ -270,8 +284,8 @@ export function openStore(state, rng, events = []) {
   const premium = rng.d(2) === 1 ? rollBlade(rng, d, true) : rollMailPiece(rng);
   const pCost =
     premium.kind === "weapon"
-      ? priceFor((WEAPONS[premium.base] || { cost: 500 }).cost, race) * (2 + premium.bonus)
-      : priceFor((ARMORS.find((a) => a.name === premium.armor) || ARMORS[0]).cost, race) * 2;
+      ? priceFor((WEAPONS[premium.base] || { cost: 500 }).cost, race, c.sub) * (2 + premium.bonus)
+      : priceFor((ARMORS.find((a) => a.name === premium.armor) || ARMORS[0]).cost, race, c.sub) * 2;
   add(premium.n, pCost, "buyPremium", { item: premium }, `${premium.txt} · enchanted`);
 
   // RATION-01: Rations are their own store line, decoupled from HP-restoring
@@ -282,7 +296,7 @@ export function openStore(state, rng, events = []) {
   // test/parity/fixtures/action-script.economy.json's buyItem actions
   // reference by hand-verified index against the frozen prototype's stock
   // (which has no Rations line at all — see comparables.js's stripStoreClosures).
-  add("Rations (+1 ration)", priceFor(RATIONS_BASE_PRICE, race), "buyRations", { amount: 1 });
+  add("Rations (+1 ration)", priceFor(RATIONS_BASE_PRICE, race, c.sub), "buyRations", { amount: 1 });
 
   const haggle = race === "Wilmsry" ? 0.7 : 1;
   if (haggle < 1) stock.forEach((x) => (x.cost = Math.round(x.cost * haggle)));
@@ -296,6 +310,7 @@ export function openStore(state, rng, events = []) {
     haggle,
     troll: race === "Troll",
     elfOrDwarf: race === "Elven" || race === "Dwarven",
+    pickpocket: c.sub === "Pickpocket",
   });
   return events;
 }

@@ -5493,7 +5493,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // rng and mutates nothing (engine/economy.js) — the same read-only-helper
   // bridge pattern as __mzBags. The actual sale still goes through the engine
   // action (window.mzSellItem → applyAction), never this display helper.
-  window.__mzSellPrice = (item) => sellPriceFor(item, (window.__mzState?.get?.() || {})?.c?.race);
+  window.__mzSellPrice = (item) => {
+    const st = window.__mzState?.get?.() || {};
+    return sellPriceFor(item, st?.c?.race, st?.c?.sub);
+  };
 
   // DR15-B (2026-09-10): bridge the PURE conditionsOf(state) derived enumerator
   // so the classic paint()'s top-of-screen condition tracker maps its DATA-only

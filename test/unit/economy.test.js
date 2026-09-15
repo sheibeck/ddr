@@ -16,7 +16,8 @@ import path from "node:path";
 import url from "node:url";
 
 import { makeRng } from "../../engine/rng.js";
-import { openStore, buyFrom, leaveStore, STORE_EFFECTS, priceFor } from "../../engine/economy.js";
+import { openStore, buyFrom, leaveStore, STORE_EFFECTS, priceFor, sellPriceFor, sellItem } from "../../engine/economy.js";
+import { newRun } from "../../engine/engine.js";
 
 function fixedFighter(overrides = {}) {
   return {
@@ -62,6 +63,26 @@ test("priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchang
   assert.equal(priceFor(100, "Human"), 100);
 });
 
+// --- Pickpocket bad (IDENT-05): store buy x1.25, sell-back x0.75 ----------
+
+test("priceFor: Pickpocket marks up x1.25 (rounded) AFTER the race multiplier, floored at 1", () => {
+  assert.equal(priceFor(100, "Human", "Pickpocket"), 125);
+  assert.equal(priceFor(101, "Elven", "Pickpocket"), 64); // round(51 x 1.25 = 63.75)
+  assert.equal(priceFor(100, "Troll", "Pickpocket"), 375); // 300 x 1.25
+  assert.equal(priceFor(1, "Elven", "Pickpocket"), 1); // round(round(0.5)*1.25)=round(1*1.25)=1, floored either way
+});
+
+test("priceFor: a non-Pickpocket sub (or omitted sub) is value-identical to before this change", () => {
+  assert.equal(priceFor(100, "Human", "Cutthroat"), 100);
+  assert.equal(priceFor(100, "Human"), 100);
+});
+
+test("sellPriceFor: Pickpocket sells at x0.75 of the ordinary sell price, floored at 1", () => {
+  const cloak = { kind: "cloak", n: "Cloak of Armor" };
+  assert.equal(sellPriceFor(cloak, "Human"), 1250); // 2500 x 0.5, non-Pickpocket baseline
+  assert.equal(sellPriceFor(cloak, "Human", "Pickpocket"), 938); // round(2500 x 0.5 x 0.75 = 937.5)
+});
+
 // --- openStore: plain-data stock, no closures --------------------------
 
 test("openStore: builds plain-data stock with no function-typed leaves anywhere in state.store", () => {
@@ -90,6 +111,18 @@ test("openStore emits a storeOpened event and clears beats", () => {
   const events = openStore(state, makeRng(5), []);
   assert.ok(events.some((e) => e.type === "storeOpened"));
   assert.equal(state.beats, null);
+});
+
+test("openStore: storeOpened.pickpocket is true only for a Pickpocket hero", () => {
+  const pickpocketState = fixedState({ c: { sub: "Pickpocket" } });
+  const pickpocketEvents = openStore(pickpocketState, makeRng(5), []);
+  const pickpocketEvent = pickpocketEvents.find((e) => e.type === "storeOpened");
+  assert.equal(pickpocketEvent.pickpocket, true);
+
+  const cutthroatState = fixedState({ c: { sub: "Cutthroat" } });
+  const cutthroatEvents = openStore(cutthroatState, makeRng(5), []);
+  const cutthroatEvent = cutthroatEvents.find((e) => e.type === "storeOpened");
+  assert.equal(cutthroatEvent.pickpocket, false);
 });
 
 // --- TERM-02: engine-generated store-row labels read "hp", not "wp" -------
@@ -220,6 +253,52 @@ test("a GameState with an open store round-trips JSON deepStrictEqual (the closu
   // structuredClone throws immediately on any function-typed leaf (applyAction's
   // own clone strategy, per engine/engine.js) — the strongest possible proof.
   assert.doesNotThrow(() => structuredClone(state));
+});
+
+// --- seed-3 stock pin (IDENT-05, FID-07): the economy fixture's hero -------
+// Proves the exact Pickpocket-marked-up store numbers this plan declares as
+// a parity divergence in test/parity/fixtures/action-script.economy.json,
+// and that the SAME seed's store ROLL (names/order/subs) is unchanged when
+// forced to a non-Pickpocket sub — only the routed line costs move.
+
+test("seed 3 (a Human Pickpocket): store roll pins Katana 656 / Axe 63 / Studded 938 / Casket 3750 / Rations 38; flat lines unchanged", () => {
+  const state = newRun(3);
+  assert.equal(state.c.sub, "Pickpocket", "seed 3's hero must be a Pickpocket for this pin to prove anything");
+  const rng = makeRng(state.rngState);
+  openStore(state, rng, []);
+  const byName = Object.fromEntries(state.store.stock.map((s) => [s.n, s.cost]));
+  assert.equal(byName["Katana"], 656);
+  assert.equal(byName["Axe"], 63);
+  assert.equal(byName["Studded"], 938);
+  assert.equal(byName["Casket, a broadsword"], 3750);
+  assert.equal(byName["Rations (+1 ration)"], 38);
+  // flat lines (food/potions/lockpicks) are never routed through priceFor's
+  // Pickpocket markup — unchanged regardless of sub.
+  assert.equal(byName["Chicken (+12 hp)"], 20);
+  assert.equal(byName["Healing potion"], 150);
+  assert.equal(byName["Set of lockpicks"], 450);
+});
+
+test("seed 3 forced to a Cutthroat: same store roll (names/order/subs), un-marked-up costs", () => {
+  const state = newRun(3, [], { force: { sub: "Cutthroat" } });
+  assert.equal(state.c.sub, "Cutthroat");
+  const rng = makeRng(state.rngState);
+  openStore(state, rng, []);
+  const byName = Object.fromEntries(state.store.stock.map((s) => [s.n, s.cost]));
+  assert.equal(byName["Katana"], 525);
+  assert.equal(byName["Axe"], 50);
+  assert.equal(byName["Studded"], 750);
+  assert.equal(byName["Rations (+1 ration)"], 30);
+});
+
+test("seed 3: sellItem on a Pickpocket credits the Pickpocket sell price for a Cloak of Armor", () => {
+  const state = newRun(3);
+  assert.equal(state.c.sub, "Pickpocket");
+  state.c.items = [{ kind: "cloak", n: "Cloak of Armor" }];
+  const before = state.c.gold;
+  const events = sellItem(state, 0, []);
+  assert.equal(state.c.gold, before + 938);
+  assert.ok(events.some((e) => e.type === "itemSold" && e.price === 938));
 });
 
 // --- purity ---------------------------------------------------------------
