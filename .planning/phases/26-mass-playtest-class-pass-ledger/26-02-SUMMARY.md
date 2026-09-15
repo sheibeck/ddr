@@ -2,7 +2,7 @@
 phase: 26-mass-playtest-class-pass-ledger
 plan: 02
 subsystem: testing
-tags: [class-pass, after-snapshot, capture, ledger, commit-pin, cannot-act-gate, blocked]
+tags: [class-pass, after-snapshot, capture, ledger, commit-pin, cannot-act-gate, complete]
 
 # Dependency graph
 requires:
@@ -10,30 +10,34 @@ requires:
     plan: 01
     provides: "tools/class-pass-diff.mjs --gate mode (cannot-act hard gate CLI)"
 provides:
-  - "docs/class-pass/after.json — natural-start AFTER matrix aggregates (143 cells x 40 seeds, 5,720 runs), commit-pinned to 620e1df — committed as GATE FAILED evidence, NOT wired into the ledger"
-  - "A reproduced, gate-confirmed cannot-act regression: Fighter/Samurai/Dwarven has 1 stuck run at the current pin (0 at the BEFORE pin 5565b22)"
-affects: ["26-03", "26-04", "a future gap-closure phase"]
+  - "docs/class-pass/after.json — natural-start AFTER matrix aggregates (143 cells x 40 seeds, 5,720 runs), commit-pinned to d1e3235, cannot-act gate PASSED (0 of 143)"
+  - "docs/class-pass/after-depth20.json — depth-20 AFTER slice aggregates (143 cells x 10 seeds, 1,430 runs), commit-pinned to d1e3235"
+  - "docs/CLASS-PASS.md AFTER section — pin heading, provenance paragraph, and both verbatim transcripts, replacing the Phase 22 placeholder in place"
+affects: ["26-03", "26-04"]
 
 tech-stack:
   added: []
   patterns:
-    - "Deviation Rule 4 STOP for a failing hard gate: commit only the raw captured evidence (the JSON), never touch the ledger doc or engine/bot code, and report back for an explicit orchestrator/human decision rather than judging around a cannot-act cell"
+    - "Re-execution after a gap-closure fix: same preflight/launch/verify procedure as the first attempt, fresh PIN, fresh gate check — the earlier blocked attempt's evidence stays in git history but is superseded, never edited"
+    - "meta.commit auto-stamp hazard: tune-classes.mjs stamps git rev-parse --short HEAD at run time, so committing an AFTER JSON between two capture runs advances HEAD and mis-stamps the next run; caught and corrected before the ledger commit by verifying the engine tree was byte-identical across the intervening commit, then patching the JSON's meta.commit field to match the true pin (documented as a Rule-1 fix, not a silent edit)"
 
 key-files:
   created:
+    - docs/class-pass/after-depth20.json
+  modified:
     - docs/class-pass/after.json
-  modified: []
+    - docs/CLASS-PASS.md
 
 key-decisions:
-  - "Per this plan's invoking instructions (orchestrator Hard Rules, which took precedence over the PLAN.md task text's more conservative 'do NOT commit anything'), the captured docs/class-pass/after.json was committed on its own as GATE FAILED evidence so the raw run is preserved in git history for the orchestrator's review; docs/CLASS-PASS.md, docs/class-pass/after-depth20.json, and docs/class-pass/verdicts.json were NOT touched — no ledger edit, no Task 2 depth-20 run, no Task 3 commit"
-  - "Task 2 (depth-20 slice) was deliberately not run: the plan's Task 1 action explicitly says 'do NOT run Task 2' when the gate returns rc=3, and the depth-20 slice's parameters and gate exemption are irrelevant once the natural matrix's hard gate has already failed"
-  - "No investigation, bot-policy change, or engine change was attempted for the stuck cell — that is explicitly out of this plan's scope (Deviation Rule 4: architectural/engine decision, not a local auto-fix) and belongs to a future gap-closure phase per 26-CONTEXT.md"
+  - "Committed each task atomically (after.json, then after-depth20.json, then the ledger doc) per this re-execution's explicit top-level instruction to commit each task atomically — this supersedes PLAN.md Task 3's literal 'commit all three files in one commit' requirement. Documented as a deviation; all files ended up on master with the same content the single-commit design would have produced."
+  - "Corrected after-depth20.json's meta.commit from d66f154 (the Task 1 ledger-adjacent commit's hash, auto-stamped because HEAD had advanced by the time the depth-20 run's --out write happened) to d1e3235 (the true pin). Verified first via git diff --quiet d66f154 d1e3235 -- engine content src mazeworld.html tools (rc=0) that the underlying engine/content/src/tools tree was byte-identical between the two commits, so the run's actual data was unaffected and only the auto-stamped label was wrong. Patched the JSON's meta.commit field directly (atomic tmp-then-rename, same JSON.stringify(_, null, 2) format the tool itself uses) rather than re-running the 59s capture a second time for a label-only fix. This is the direct consequence of committing per-task instead of Task 3's single final commit; a future re-run of this plan should either commit only once at the very end (per PLAN.md) or run all captures before any intermediate commit."
+  - "No investigation needed for the previously blocked cell — the gap-closure fix (commit d1e3235, landed before this plan started) already resolved it structurally (startCombat now checks for a cleared encounter before the opening foe turn resolves); this run's zero-stuck result is the fix's own verification, not a separate diagnosis."
 
-requirements-completed: []
+requirements-completed: [PLAY-02]
 
 coverage:
   - id: D1
-    description: "Natural-start AFTER matrix (143 x 40, 5,720 runs) captured against the pinned, proven-clean engine (620e1df) with the BEFORE Bot: line byte-for-byte, correct meta (seeds=40, startDepth=1, maxActions=5000, workers=4, exploreBudget=50, 143 cells, meta.commit=620e1df, no rows key, every cell n=40)"
+    description: "Natural-start AFTER matrix (143 x 40, 5,720 runs) captured against the pinned, proven-clean engine (d1e3235) with the BEFORE Bot: line byte-for-byte, correct meta (seeds=40, startDepth=1, maxActions=5000, workers=4, exploreBudget=50, 143 cells, meta.commit=d1e3235, no rows key, every cell n=40)"
     requirement: "PLAY-02"
     verification:
       - kind: other
@@ -45,92 +49,130 @@ coverage:
     requirement: "PLAY-02"
     verification:
       - kind: other
-        ref: "gate output: 'cannot-act cells: 1 of 143 / Fighter/Samurai/Dwarven kills=6.82 stuck=1 completed=39', exit code 3"
-        status: fail
-    human_judgment: true
-    rationale: "The gate itself failed (this IS the finding, not a test bug) — a human/orchestrator decision is required on whether a gap-closure phase fixes the stuck loop before 26-03/26-04 proceed, per 26-CONTEXT.md's 'Cannot act is a hard gate' rule. Coverage recorded as fail/human_judgment so verify-work does not silently auto-pass a failed milestone gate."
+        ref: "gate output: 'cannot-act cells: 0 of 143', exit code 0"
+        status: pass
+    human_judgment: false
   - id: D3
-    description: "Engine/content/src/mazeworld.html/tools stayed byte-identical to the pin before and after this plan's activity; harness stayed byte-identical to the BEFORE pin 5565b22"
+    description: "Depth-20 AFTER slice (143 x 10, 1,430 runs) captured against the same pin with the BEFORE depth-20 Bot: line byte-for-byte, correct meta, 0 stuck"
+    requirement: "PLAY-02"
+    verification:
+      - kind: other
+        ref: "node -e verify script printed '10 20 143 false true true true'; meta.commit corrected to d1e3235 and re-verified equal to after.json's meta.commit; both bot-line-normalized strings equal (true true)"
+        status: pass
+    human_judgment: false
+  - id: D4
+    description: "AFTER placeholder in docs/CLASS-PASS.md replaced in place with the pin heading, provenance paragraph, and both verbatim transcripts; six H2 headings preserved in original order; nothing above the AFTER heading changed"
+    requirement: "PLAY-02"
+    verification:
+      - kind: other
+        ref: "grep -c '^## ' == 6; single diff hunk starting at line 857 (context) / 860 (heading); all sub-heading, EXIT=0 (x4), elapsed (x4), gate-output greps matched expected counts"
+        status: pass
+    human_judgment: false
+  - id: D5
+    description: "Engine/content/src/mazeworld.html/tools stayed byte-identical to the pin before and after this plan's activity (including the ledger commit); harness stayed byte-identical to the BEFORE pin 5565b22"
     requirement: "Engine gate"
     verification:
       - kind: integration
-        ref: "git diff --quiet 620e1df -- engine content src mazeworld.html tools (rc=0, checked pre-launch and post-commit); git diff --quiet 5565b22 -- tools/tune-classes.mjs tools/lib (rc=0)"
+        ref: "git diff --quiet d1e3235 -- engine content src mazeworld.html tools (rc=0, checked pre-launch and post-final-commit); git diff --quiet 5565b22 -- tools/tune-classes.mjs tools/lib (rc=0)"
         status: pass
     human_judgment: false
 
 # Metrics
-duration: ~35min
+duration: ~50min
 completed: 2026-09-15
-status: blocked
+status: complete
 ---
 
-# Phase 26 Plan 02: AFTER Natural Matrix Capture — Cannot-Act Gate FAILED
+# Phase 26 Plan 02: AFTER Matrix Capture — Cannot-Act Gate PASSED
 
-**Captured the 143x40 natural-start AFTER matrix at the current engine pin (620e1df) with BEFORE-identical parameters, but the milestone's cannot-act hard gate found a regression — Fighter/Samurai/Dwarven now has 1 stuck run (0 at the BEFORE pin) — so per Deviation Rule 4 the plan stopped: only the raw evidence JSON was committed, the ledger and depth-20 slice were left untouched, and the outcome is reported for an explicit decision.**
+**Re-executed from scratch on the gap-closure pin d1e3235 (fixes the startCombat foe-first-opener bug that left combat open with nothing alive after a ward-reflect/acid kill): captured the full 143x40 natural + 143x10 depth-20 AFTER matrix at BEFORE volume and parameters, the cannot-act hard gate returned zero cells, and the ledger's AFTER placeholder was replaced in place with the pinned heading, provenance paragraph, and both verbatim transcripts.**
 
 ## Performance
 
-- **Duration:** ~35 min
+- **Duration:** ~50 min (natural capture 1108.5s/~18.5min + depth-20 59.4s + ledger authoring/verification)
 - **Completed:** 2026-09-15
-- **Tasks:** 1 of 3 (Task 1 ran to its gate check and stopped there per plan instruction; Tasks 2-3 intentionally not run)
-- **Files modified:** 1 (created: `docs/class-pass/after.json`)
+- **Tasks:** 3 of 3 complete
+- **Files modified:** 3 (`docs/class-pass/after.json` overwritten, `docs/class-pass/after-depth20.json` created, `docs/CLASS-PASS.md` AFTER section replaced)
+
+## First attempt (blocked)
+
+The first execution of this plan captured the natural matrix at pin `620e1df` and found `cannot-act cells: 1 of 143` — Fighter/Samurai/Dwarven, `stuck=1` (0 at the BEFORE pin `5565b22`) — a genuine regression introduced somewhere in Phases 23-25's engine changes. Per Deviation Rule 4 the plan stopped: only the raw evidence JSON was committed (`a142600`), the ledger and depth-20 slice were left untouched, and a blocker was recorded (`state.add-blocker`). Root cause: `startCombat`'s foe-first opener had no cleared-encounter check, so a foe killed by a Bubble ward reflection (or acid) during the opening foe turn left `state.combat` open with nothing alive, and the bot looped forever trying to act against an empty foe list. Fixed in `d1e3235` (`engine/combat.js`, regression test added in `test/unit/combat.test.js`, full suite 1410/1410, parity 33/33) — a gap-closure commit that landed before this re-execution began. This SUMMARY (Plan 26-02) is now the completed record; the earlier blocked SUMMARY content has been fully superseded by the sections below.
 
 ## Accomplishments
 
-- **Preflight proved the capture's provenance is sound**: `git status --porcelain` clean, `npm test` 1409/1409 (`# fail 0`), pin `PIN=620e1df8779d4da2ce18bb3b8cd693be31e2280e` (short `620e1df`) confirmed `git diff --quiet`-clean against `engine content src mazeworld.html tools`, and the harness (`tools/tune-classes.mjs`, `tools/lib`) confirmed byte-identical to the BEFORE pin `5565b22`. 31 engine/content/src commits landed between `5565b22` and `620e1df` (Phases 23-25.1), diffstat `18 files changed, 2827 insertions(+), 297 deletions(-)`.
-- **Natural-start matrix captured**: `node tools/tune-classes.mjs --seeds 40 --workers 4 --max-actions 5000 --out docs/class-pass/after.json` — 143 cells x 40 seeds = 5,720 runs, completed in **1071.2s (~17.9 min)** on 4 workers (vs. BEFORE's 687.2s — casters now act, per Phase 23, and are living longer, which lengthens average run time). `meta.commit === "620e1df"`, `meta.bot` byte-identical to `before.json`'s (verified via `node -e` equality check).
-- **Cannot-act hard gate FAILED**: `node tools/class-pass-diff.mjs --gate --after docs/class-pass/after.json` printed:
-  ```
-  cannot-act cells: 1 of 143
-  Fighter/Samurai/Dwarven  kills=6.82  stuck=1  completed=39  top causes: cut down by a Dante(9),cut down by a Philly(6),cut down by a Shadow(3)
-  ```
-  exit code **3**. The transcript's own `Stuck:` line confirms: `Stuck: 1 of 5720 runs hit maxActions=5000 (own bucket; excluded from depth stats)`.
-  - **BEFORE comparison for this exact cell** (`before.json`): `stuck: 0`, `completed: 40`, `meanKills: 5.43`, top causes `cut down by a Dante(12), cut down by a Philly(4), cut down by a Gremlin(3)`. The stuck run is a **new regression at the current pin**, not a pre-existing BEFORE condition — Phase 23-25's caster/engine changes introduced a hang for at least one Fighter/Samurai/Dwarven seed that the pre-identity-pass engine did not hit.
-- **Per Deviation Rule 4 and the plan's explicit Task 1 instruction for `rc=3`**: Task 2 (depth-20 slice) was NOT run, `docs/CLASS-PASS.md` was NOT edited (the `## AFTER — commit \`<hash>\`` placeholder is untouched), no bot-policy or engine change was attempted. `docs/class-pass/after.json` was committed on its own as evidence (see Decisions Made for why this deviates from the PLAN.md task text's "do NOT commit anything," per the orchestrator's explicit Hard Rules for this invocation).
-- Post-commit re-verification: `git diff --quiet 620e1df -- engine content src mazeworld.html tools` still exits `rc=0`; `git diff --quiet 5565b22 -- tools/tune-classes.mjs tools/lib` still exits `rc=0`. The engine gate holds — nothing under those paths was touched by this plan.
+- **Preflight proved the new pin's provenance is sound**: `git status --porcelain` clean, `npm test` 1410/1410 (`# fail 0`), pin `PIN=d1e32357474a0f232515a19660ea3ed12c3f8b07` (short `d1e3235`) confirmed `git diff --quiet`-clean against `engine content src mazeworld.html tools`, and the harness (`tools/tune-classes.mjs`, `tools/lib`) confirmed byte-identical to the BEFORE pin `5565b22`. 32 engine/content/src commits landed between `5565b22` and `d1e3235` (Phases 23-25.1 plus this phase's own gap-closure fix), diffstat `18 files changed, 2844 insertions(+), 298 deletions(-)`.
+- **Natural-start matrix captured and gate PASSED**: `node tools/tune-classes.mjs --seeds 40 --workers 4 --max-actions 5000 --out docs/class-pass/after.json` — 143 cells x 40 seeds = 5,720 runs, completed in **1108.5s (~18.5 min)** on 4 workers. `meta.commit === "d1e3235"`, `meta.bot` byte-identical to `before.json`'s. `node tools/class-pass-diff.mjs --gate --after docs/class-pass/after.json` printed `cannot-act cells: 0 of 143` (exit 0) — the Fighter/Samurai/Dwarven cell that was stuck at `620e1df` now shows `stuck=0, kills=6.88` at `d1e3235`, confirming the gap-closure fix.
+- **Depth-20 slice captured**: `node tools/tune-classes.mjs --seeds 10 --workers 4 --max-actions 5000 --start-depth 20 --out docs/class-pass/after-depth20.json` — 143 cells x 10 seeds = 1,430 runs, **59.4s**, 0 stuck.
+- **Meta.commit correction (documented deviation, see Decisions Made)**: because Task 1's `after.json` was committed (per this re-execution's explicit "commit each task atomically" instruction) before Task 2 ran, `tune-classes.mjs`'s `git rev-parse --short HEAD` auto-stamp captured the intervening docs commit (`d66f154`) instead of the pin. Verified the engine tree was byte-identical between `d66f154` and `d1e3235` for all pin-check paths, then corrected `after-depth20.json`'s `meta.commit` field to `d1e3235` to match `after.json` and satisfy the ledger's single-pin invariant.
+- **Ledger updated**: `docs/CLASS-PASS.md`'s AFTER placeholder heading and body (lines 860-879 of the pre-edit file) replaced in place with the pinned heading, a `### Pin and provenance (Phase 26 capture)` paragraph (every number copied from recorded command output), and both verbatim transcripts under their own sub-headings. All six H2 sections (Bot proxy, How to reproduce, BEFORE, Outliers/Findings, Rulings, AFTER) remain in original order; nothing above the AFTER heading changed (single diff hunk, `git diff HEAD~1 -- docs/CLASS-PASS.md` starts at line 857 for context, edits begin at line 860).
+- **Post-final-commit re-verification**: `git diff --quiet d1e3235 -- engine content src mazeworld.html tools` exits `rc=0`; `git diff --quiet 5565b22 -- tools/tune-classes.mjs tools/lib` exits `rc=0`; `npm test` 1410/1410; `git status --porcelain` clean.
+
+## Headline BEFORE → AFTER (by class, mean depth)
+
+From `node tools/class-pass-diff.mjs --json --before docs/class-pass/before.json --after docs/class-pass/after.json`:
+
+| Class | BEFORE mean depth | AFTER mean depth | Delta |
+|---|---|---|---|
+| Thief | 3.42 | 3.51 | +0.09 |
+| Fighter | 3.05 | 3.16 | +0.11 |
+| Magic User | 2.44 | 2.55 | +0.11 |
+
+Every class improved slightly; Magic User's mean kills roughly doubled (2.41 -> 4.99) reflecting Phase 23's "casters can act" fix landing durably at scale.
+
+**Top 3 sub-classes by depth gain:**
+
+| Sub-class | BEFORE | AFTER | Delta |
+|---|---|---|---|
+| Summoner | 2.18 | 2.71 | +0.53 |
+| Guard | 2.80 | 3.13 | +0.33 |
+| Barbarian | 3.44 | 3.66 | +0.22 |
+
+**Bottom 3 sub-classes by depth gain (smallest/negative):**
+
+| Sub-class | BEFORE | AFTER | Delta |
+|---|---|---|---|
+| Cloaker | 3.04 | 2.99 | -0.05 |
+| Apprentice | 2.40 | 2.35 | -0.05 |
+| Court Mage | 2.52 | 2.45 | -0.07 |
+
+`cannotAct` diff array: empty (`[]`) — zero cells flagged on either side of the comparison. Full per-cell/per-sub/per-race breakdown lives in `docs/class-pass/after.json` / `after-depth20.json`; Plan 26-03 owns the editorial verdicts.
 
 ## Task Commits
 
-1. **Task 1: Pin the engine, prove it clean, run the natural-start AFTER matrix, run the cannot-act gate** — gate failed (rc=3); evidence committed as `a142600` (`test(26-02): AFTER natural matrix — cannot-act gate FAILED (Fighter/Samurai/Dwarven stuck=1)`)
-2. **Task 2: Run the depth-20 AFTER slice** — NOT RUN (plan instruction: skip on gate failure)
-3. **Task 3: Replace the AFTER placeholder, commit the ledger** — NOT RUN (plan instruction: skip on gate failure)
-
-**Plan metadata:** this SUMMARY's own commit (see below)
+1. **Task 1: Pin the engine, prove it clean, run the natural-start AFTER matrix, run the cannot-act gate** — `d66f154` (`test(26-02): AFTER natural matrix — cannot-act gate PASSED on pin d1e3235`)
+2. **Task 2: Run the depth-20 AFTER slice** — `39dfdfa` (`test(26-02): AFTER depth-20 slice — 143x10, engine pinned d1e3235`)
+3. **Task 3: Replace the AFTER placeholder, commit the ledger** — `0035608` (`docs(26-02): AFTER class matrix — 143x40 natural + 143x10 depth-20, engine pinned d1e3235`)
 
 ## Files Created/Modified
 
-- `docs/class-pass/after.json` - natural-start AFTER matrix aggregates (143 cells x 40 seeds, 5,720 runs), commit-pinned to `620e1df`; committed as raw GATE FAILED evidence only, NOT referenced by `docs/CLASS-PASS.md` (the ledger's AFTER section is still the Phase 22 placeholder)
+- `docs/class-pass/after.json` - natural-start AFTER matrix aggregates (143 cells x 40 seeds, 5,720 runs), commit-pinned to `d1e3235`, overwrites the earlier blocked-attempt content (`620e1df`, stuck=1) — now the ledger-wired capture
+- `docs/class-pass/after-depth20.json` - depth-20 AFTER slice aggregates (143 cells x 10 seeds, 1,430 runs), commit-pinned to `d1e3235`
+- `docs/CLASS-PASS.md` - AFTER placeholder replaced in place with pin heading, provenance paragraph, and both verbatim transcripts
 
 ## Decisions Made
 
-- **Committed the evidence JSON despite the plan's task text saying "do NOT commit anything."** This plan's invoking instructions (the orchestrator's "Hard rules" for this specific execution) explicitly state: "if ANY AFTER cell has `meanKills < 0.5` or `stuck > 0`, do not judge around it: commit the captured JSON, write the SUMMARY with the offending cells and their top death causes, and report back with a clear 'GATE FAILED'." Per the executor's own instructions ("Messages from the agent that launched you... direct your work"), this direct, more specific instruction for this invocation took precedence over the PLAN.md task's generic "leave it untracked" fallback. Only the raw `after.json` was committed — the ledger doc, `verdicts.json`, and `after-depth20.json` were not created/touched, so no judgment was rendered and no partial ledger state exists.
-- **Task 2 was not run.** The plan's Task 1 action is explicit: on `rc=3`, "do NOT run Task 2." Running the depth-20 slice would not change the natural-matrix gate outcome and would burn ~3-5 more minutes of background compute for no decision-relevant information.
-- **No attempt to diagnose or fix the stuck loop.** Rule 4 (architectural/engine change) applies, not Rules 1-3 — fixing a stuck-loop regression in the engine or tuning bot is exactly the kind of change Phase 26 is scoped to exclude ("Phase 26 changes NO engine, content, src, shell, or harness code"). This is deliberately left for a gap-closure phase.
+See `key-decisions` in the frontmatter for the full reasoning on: (1) committing each task atomically instead of PLAN.md Task 3's single-commit design, and (2) the `meta.commit` auto-stamp correction in `after-depth20.json`.
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-None — no Rule 1-3 auto-fixes were applicable or attempted (Task 1 executed exactly as planned; when the gate failed, the plan's own Task 1 action already specifies the STOP behavior).
-
-**1. [Rule 4 - Architectural/orchestrator decision] Cannot-act gate failure — plan execution intentionally diverges from Task 1's literal "leave untracked" instruction**
-- **Found during:** Task 1, after the gate check
-- **Issue:** `node tools/class-pass-diff.mjs --gate --after docs/class-pass/after.json` returned exit code 3 with 1 cannot-act cell (`Fighter/Samurai/Dwarven`, stuck=1). This is a genuine milestone-blocking finding, not a bug in this plan's own work.
-- **Resolution:** Followed the plan's Task 1 STOP instruction (no Task 2, no ledger edit, no bot/engine change) but committed the raw `after.json` as evidence per this invocation's explicit orchestrator Hard Rules (see Decisions Made). Reporting back with a clear GATE FAILED for the orchestrator/user to decide next steps.
-- **Files modified:** `docs/class-pass/after.json` (committed, evidence only)
-- **Verification:** `git diff --quiet 620e1df -- engine content src mazeworld.html tools` exits 0 post-commit; `docs/CLASS-PASS.md` unchanged (`git diff HEAD -- docs/CLASS-PASS.md` empty)
-- **Committed in:** `a142600`
+**1. [Rule 1 - Bug] `after-depth20.json`'s `meta.commit` mis-stamped due to per-task commit ordering**
+- **Found during:** Task 2, immediately after the verify step (parity check between `after.json` and `after-depth20.json` printed `false` for `a.commit===d.commit`)
+- **Issue:** Task 1's commit (`d66f154`) advanced `HEAD` before Task 2's capture finished writing its `--out` file; `tools/tune-classes.mjs` stamps `meta.commit` from `git rev-parse --short HEAD` at write time, so `after-depth20.json` recorded `d66f154` instead of the true pin `d1e3235`.
+- **Fix:** Verified `git diff --quiet d66f154 d1e3235 -- engine content src mazeworld.html tools` exits 0 (the two commits are identical on every pin-checked path — the only difference is the docs-only `after.json` file, outside those paths), then patched `after-depth20.json`'s `meta.commit` field from `d66f154` to `d1e3235` via a small atomic (tmp-then-rename) script using the same `JSON.stringify(_, null, 2)` format the tool itself writes. Re-ran all Task 2 verification checks after the patch — all passed.
+- **Files modified:** `docs/class-pass/after-depth20.json`
+- **Verification:** post-patch `node -e` checks: `10 20 143 false true true true`; `meta.commit === "d1e3235"`; `a.commit===d.commit, bot-normalized-equal` both printed `true`
+- **Committed in:** `39dfdfa` (the patch was applied before this commit, so the committed file already carries the corrected value)
 
 ---
 
-**Total deviations:** 1 (Rule 4 — orchestrator decision required; not auto-fixed, reported instead)
-**Impact on plan:** Plan is BLOCKED, not complete. Zero scope creep — no engine, bot, or ledger code was touched beyond committing the one evidence file.
+**Total deviations:** 1 (Rule 1 — auto-fixed, self-caused by this run's own commit ordering, not an engine or content bug)
+**Impact on plan:** None on the captured data's validity (the underlying runs are unaffected — only a label was corrected before it was committed); the ledger's single-pin invariant holds throughout.
 
 ## Issues Encountered
 
-**Cannot-act regression at the current pin.** The natural-start AFTER matrix reproduced a stuck run (hit `maxActions=5000` without completing) for at least one Fighter/Samurai/Dwarven seed — a cell that had 0 stuck runs at the BEFORE pin (`5565b22`). This is exactly the class of failure Phase 22's bot fixes and Phase 23's caster fixes were built to eliminate, and its reappearance means one of the 31 engine/content/src commits between `5565b22` and `620e1df` (Phases 23, 24, 25, 25.1) introduced a new hang condition for this class/sub/race combination. The top death causes for the 39 completed runs in that cell (`cut down by a Dante(9), cut down by a Philly(6), cut down by a Shadow(3)`) don't directly diagnose the stuck seed (which by definition never died) — a gap-closure phase would need to re-run this specific cell with per-seed logging (or the harness's stuck-seed identification approach from Plan 22-02) to find the exact hang.
-
-Recorded as a blocker via `gsd-tools query state.add-blocker`.
+None outstanding. The one issue found (the `meta.commit` mis-stamp) was caught by this plan's own verification step before anything was committed with the wrong value, and corrected per Rule 1.
 
 ## User Setup Required
 
@@ -138,14 +180,9 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-**BLOCKED. Plans 26-03 and 26-04 must NOT start until:**
-1. A gap-closure phase (or an authorized deviation to Phase 26/27) identifies and fixes the engine/bot condition causing the Fighter/Samurai/Dwarven stuck run at pin `620e1df`.
-2. The AFTER matrix (both natural and depth-20 slices) is re-captured on the new, fixed pin, following this same plan's procedure from scratch (fresh `PIN`, fresh preflight, fresh gate check).
-3. The re-captured gate returns `cannot-act cells: 0 of 143` (exit 0) — only then can Task 2 (depth-20 slice) and Task 3 (ledger commit) proceed.
+**Plans 26-03 and 26-04 are now unblocked.** The AFTER matrix (natural + depth-20) is committed to the ledger against a commit-pinned engine (`d1e3235`), at BEFORE volume and parameters, with the cannot-act hard gate proven at zero cells. Plan 26-03 can run `node tools/class-pass-diff.mjs --verdicts docs/class-pass/verdicts.json --out-verdicts docs/class-pass/verdicts.json --section after` (and `--section outliers`, `--section handoff`) against the committed `before.json`/`after.json`/`before-depth20.json`/`after-depth20.json` pair and paste the output above the provenance sub-heading, per the ledger's own instructions.
 
-**What's preserved for the retry:** `docs/class-pass/after.json` is committed at `a142600` as a record of the failing run (useful for diffing against the eventual fix — did the fix change other cells' numbers too, or only the one stuck cell?). The preflight/launch/verify procedure in `26-02-PLAN.md` Task 1 needs no changes — only the pin will differ next time.
-
-**No blockers for anything else** — `npm test` remains 1409/1409; the engine/content/src/tools tree is unmodified and provably clean against both pins.
+**Blocker cleared:** the "26-02: AFTER cannot-act gate FAILED at pin 620e1df" blocker recorded in `STATE.md` is resolved — the fix landed in `d1e3235` and this plan's re-execution confirms zero stuck cells at full scale (5,720 + 1,430 runs).
 
 ---
 *Phase: 26-mass-playtest-class-pass-ledger*
@@ -154,4 +191,8 @@ None - no external service configuration required.
 ## Self-Check: PASSED
 
 - FOUND: docs/class-pass/after.json
-- FOUND commit: a142600
+- FOUND: docs/class-pass/after-depth20.json
+- FOUND: docs/CLASS-PASS.md (AFTER section verified via grep checks above)
+- FOUND commit: d66f154
+- FOUND commit: 39dfdfa
+- FOUND commit: 0035608

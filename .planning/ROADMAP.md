@@ -255,7 +255,7 @@ Plans:
   3. Every "cannot act" row is zero.
   4. `docs/CLASS-PASS.md` documents the per-sub-class/race good+bad table, before/after numbers, every ruling (IDENT-05/06/07/10) with rationale, and lists the remaining outliers as candidates for the next milestone.
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 **Wave 1**
@@ -264,7 +264,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 26-02-PLAN.md — AFTER capture at BEFORE volume: pin HEAD, prove `git diff --quiet <pin> -- engine content src mazeworld.html tools` and harness parity vs 5565b22, natural 143x40 + depth-20 143x10 in the background with EXIT sentinels, Bot: lines byte-identical to BEFORE, cannot-act hard gate (STOP + report on any cell), AFTER heading replaced in place + provenance + verbatim transcripts, one commit with both JSONs (PLAY-02) — wave 2
+- [x] 26-02-PLAN.md — AFTER capture at BEFORE volume: pin HEAD, prove `git diff --quiet <pin> -- engine content src mazeworld.html tools` and harness parity vs 5565b22, natural 143x40 + depth-20 143x10 in the background with EXIT sentinels, Bot: lines byte-identical to BEFORE, cannot-act hard gate (STOP + report on any cell), AFTER heading replaced in place + provenance + verbatim transcripts, one commit with both JSONs (PLAY-02) — wave 2
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -312,6 +312,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
-| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 1/4 | In Progress|  |
+| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 2/4 | In Progress|  |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |

@@ -5,16 +5,16 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 26
 current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
-stopped_at: "26-02: AFTER natural matrix cannot-act gate FAILED (Fighter/Samurai/Dwarven stuck=1) — blocked, awaiting gap-closure"
-last_updated: "2026-09-15T15:14:26.523Z"
+stopped_at: "26-02 complete: AFTER matrix (143x40 natural + 143x10 depth-20) committed on pin d1e3235, cannot-act gate PASSED"
+last_updated: "2026-09-15T15:55:40.486Z"
 last_activity: 2026-09-15
-last_activity_desc: Plan 26-01 complete (class-pass-diff.mjs, PLAY-02 machine layer)
+last_activity_desc: Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED)
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 27
-  completed_plans: 25
-  percent: 71
+  completed_plans: 26
+  percent: 74
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 26 — Mass Playtest & Class-Pass Ledger (Plan 01 of 4 complete: `tools/class-pass-diff.mjs` diff/verdicts/Markdown script)
+**Current focus:** Phase 26 — Mass Playtest & Class-Pass Ledger (Plan 02 of 4 complete: AFTER matrix captured, cannot-act gate PASSED; 03-04 pending)
 
 ## Current Position
 
 Phase: 26 — Mass Playtest & Class-Pass Ledger
-Plan: 01 of 4 complete (`tools/class-pass-diff.mjs` + tests); 02-04 pending
-Status: Executing
-Last activity: 2026-09-15 — Plan 26-01 complete (class-pass-diff.mjs, PLAY-02 machine layer)
+Plan: 2 of 4 complete (`tools/class-pass-diff.mjs` + tests; AFTER matrix capture); 03-04 pending
+Status: Ready to execute
+Last activity: 2026-09-15 — Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,9 +86,9 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T15:14:26.496Z
-Stopped at: 26-02: AFTER natural matrix cannot-act gate FAILED (Fighter/Samurai/Dwarven stuck=1) — blocked, awaiting gap-closure
-Resume file: 26-02-SUMMARY.md
+Last session: 2026-09-15T15:55:40.459Z
+Stopped at: 26-02 complete: AFTER matrix (143x40 natural + 143x10 depth-20) committed on pin d1e3235, cannot-act gate PASSED
+Resume file: None
 
 ## Operator Next Steps
 
@@ -145,6 +145,7 @@ Resume file: 26-02-SUMMARY.md
 | Phase 25.1 P02 | 50min | 3 tasks | 9 files |
 | Phase 25.1 P03 | 65min | 3 tasks | 7 files |
 | Phase 26 P01 | 40min | 2 tasks | 2 files |
+| Phase 26 P02 | 50min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -247,8 +248,8 @@ Resume file: 26-02-SUMMARY.md
 - [Phase ?]: The camp button is dimmed via data-short/CSS, never disabled, so a refused tap still surfaces the campFailed toast
 - [Phase ?]: DFB-05: memberView read pattern (default sparse sheet fields) + self-contained allyCast mirror of castSpell's dice shapes in combat.js (magic.js already imports combat.js) + transient C.allies backstabUsed flag
 - [Phase ?]: 26-01: verdicts.json carries supplementary classes/rollups fields beyond the documented schema so renderMarkdown(verdicts, section) never needs the raw before/after reports
+- [Phase ?]: 26-02: AFTER matrix re-captured on gap-closure pin d1e3235 — cannot-act gate PASSED (0 of 143), supersedes the blocked 620e1df attempt
 
 ### Blockers
 
 - open for v1.2 planning — Phase 21's TUNE-04 human_needed blocker resolved into the v1.2 milestone itself (retune now scheduled as Phase 27, after the identity pass gives it a corrected yardstick).
-- 26-02: AFTER cannot-act gate FAILED at pin 620e1df — Fighter/Samurai/Dwarven has 1 stuck run (0 at BEFORE pin 5565b22). Plans 26-03/26-04 blocked until a gap-closure phase fixes the stuck-loop regression and the AFTER matrix is re-captured on a new pin. Evidence: docs/class-pass/after.json (commit a142600).
