@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Class Pass & Mass Playtest
-current_phase: 26
-current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
 stopped_at: Completed 25-05-PLAN.md
-last_updated: "2026-09-15T09:48:51.050Z"
+last_updated: "2026-09-15T13:40:49.479Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase 25 complete, transitioned to Phase 26
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 24
+  total_plans: 27
   completed_plans: 20
   percent: 57
+current_phase: 25.1
+current_phase_name: Mass Playtest & Class-Pass Ledger
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 25 — Nothing Happens Silently (Feature Feedback)
+**Current focus:** Phase null
 
 ## Current Position
 
-Phase: 25.1 — Device Feedback Batch (INSERTED; runs before Phase 26)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-15 — Phase 25 complete, transitioned to Phase 26
+Phase: null — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase null
+Last activity: 2026-09-15 — Phase null execution started
 
 ## Ground Truth (durable facts every session needs)
 
