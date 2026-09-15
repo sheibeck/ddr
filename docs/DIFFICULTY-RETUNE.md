@@ -2821,8 +2821,189 @@ Neither counterweight trigger fired — no upkeep/economy dial is touched this p
 
 ### DR checklist — TUNE-07
 
-(filled by plan 27-04)
+This round is the phase's exit criterion (D-16) — the retuned constants under
+test are the final `### Change table (27-02 / 27-03)` values: `COMBAT_SCALE_FROM_DEPTH` 21,
+`FOE_CAP_MAX` 4, `FOE_POWER_MAX` 1.15, `ABILITY_THREAT_MAX` 1.3 (with their unchanged
+`*_SOFT_K` pairs: `FOE_CAP_SOFT_K` 20, `FOE_POWER_SOFT_K` 35, `ABILITY_THREAT_SOFT_K` 30),
+plus the non-combat caps `ENCOUNTER_DOT_CAP` 13, `DARK_BLOB_CAP` 3, `DARK_RADIUS_CAP` 7,
+and `FOE_GRACE_AT_2` 0.5. The curve this produces at 20 / 35 / 50 (foeCap / foePower /
+abilityThreat / dots / darkBlobs / darkRadius, from the change table's curve row):
+
+| d | foeCap | foePower | abilityThreat | dots | darkBlobs | darkRadius |
+|---|---|---|---|---|---|---|
+| 20 | 3 | 1.0000 (exact) | 1.0000 (exact) | 13 | 3 | 7 |
+| 35 | 4 | 1.0523 | 1.1180 | 13 | 3 | 7 |
+| 50 | 4 | 1.0863 | 1.1896 | 13 | 3 | 7 |
+
+The retune AFTER band verdicts (from `### Comparison vs band` above), one line each:
+
+- Natural median death depth (bot): **4** — target exactly 4 — **IN**
+- Natural pooled reach >= 5: **30.6%** — target >= 25% — **IN**
+- Forced-20 encounters survived (mean): **3.17** — target 3.0-5.0 — **IN**
+- Forced-20 floors gained (p50): **0** — target >= 1 — **OUT**
+- Forced-20 floors gained (mean): **0.84** — target 1.0-2.0 — **OUT**
+- Cannot-act cells: **0 of 143** — hard gate — **IN**
+- Reach >= 20 (pooled, informational): **0.1%** — target 1.0-2.0% — **OUT**
+
+The bot is a rarity floor, not the verdict — a human plays better than its fixed
+flee/potion/camp thresholds. The tester is the user, on the Pixel 7, and only
+the tester fills in the Verdict block below.
+
+#### Build under test
+
+- Commit: `91c5b13064e9b33d8670d42729ee13a9be4deebb` (full hash; this plan makes NO
+  engine/content/src/mazeworld.html/tools/test change — `git diff --quiet 39bfecf -- engine content src mazeworld.html tools test`
+  exits 0, so this is the 27-03 pin's tree).
+- APK: `android/app/build/outputs/apk/debug/app-debug.apk` — 9,452,268 bytes,
+  2026-09-15 18:21:05.114258600 -0400.
+- Version: 1.2.0 (3) (`android/version.properties`).
+- `npm test`: 1448/1448 green; parity: 33/33 green (`node --test test/parity/*.test.js test/parity/harness/*.test.js`).
+- **Device unreachable this session:** `adb devices` and `adb mdns services` both
+  returned empty lists (retried once after `adb kill-server`/`start-server`, per
+  protocol) — the Pixel 7 (`adb-28051FDH200H0R`) did not answer over wireless adb.
+  The build was NOT installed or relaunched. Per the no-uninstall prohibition,
+  nothing was touched on the phone. No signer mismatch was observed (install
+  was never attempted). To install once the phone is reachable again (wake
+  the screen / re-enable wireless debugging on the Pixel 7), run:
+  1. `"C:/Users/Dell/AppData/Local/Android/Sdk/platform-tools/adb.exe" devices` (or
+     `adb mdns services` if the port rotated — rediscover per STATE.md's Device notes)
+  2. `"C:/Users/Dell/AppData/Local/Android/Sdk/platform-tools/adb.exe" -s <serial> install -r android/app/build/outputs/apk/debug/app-debug.apk`
+  3. `"C:/Users/Dell/AppData/Local/Android/Sdk/platform-tools/adb.exe" -s <serial> shell am force-stop com.darktierstudios.delvedierepeat`
+     then `"C:/Users/Dell/AppData/Local/Android/Sdk/platform-tools/adb.exe" -s <serial> shell monkey -p com.darktierstudios.delvedierepeat -c android.intent.category.LAUNCHER 1`
+  4. Verify: `"C:/Users/Dell/AppData/Local/Android/Sdk/platform-tools/adb.exe" -s <serial> shell dumpsys package com.darktierstudios.delvedierepeat | grep -E "versionName|lastUpdateTime"`
+     — `lastUpdateTime` should read later than the APK's 2026-09-15 18:21 timestamp
+     and `versionName` should read `1.2.0`.
+
+#### Starting a run at depth N
+
+1. Start (or resume) a run.
+2. Tap the HUD gear icon → **Settings**.
+3. Press and **HOLD** the last row, "Version 1.2.0 (3)" (≈ 1.2 s — a plain tap
+   does nothing).
+4. The hidden **"Start at depth (dev)"** row appears.
+5. Type the depth (20, 35, or 50).
+6. Tap **Start**.
+7. The sheet closes, the log shows "Floor N." with the dev banner ("A dev
+   run. The graveyard has agreed to look the other way."), and the HUD
+   shows a **DEV chip**. The hero is level 5 with a `300 x N` wilmst purse.
+   This run is never buried and never counts as a best depth.
+
+Each forced run below is a **fresh dev start** — die or abandon the current
+run between them; don't chain all three off one dev start.
+
+#### Run 1 — forced 20 (the acceptance bar)
+
+**what should be true:** the v1.1 words "instant death on any combat" must no
+longer be true — a level-5 hero should get 3-5 fights, not one (band:
+encounters survived 3.0-5.0; retune AFTER **3.17**); clearing floor 20 should
+be possible but not expected (band: floors gained p50 >= 1, mean 1.0-2.0;
+retune AFTER p50 **0** / mean **0.84** — both recorded misses, so clearing
+even one floor already beats the bot). The curve here (from the change
+table): cap **3**, power **1.0000 (exact)**, cadence **1.0000 (exact)**, dots
+**13**, blobs **3**, radius **7** — depth 20 is now full canon identity, no
+combat bonus at all.
+
+| Check | Tester's notes |
+|---|---|
+| Fights before death (count) | (to be filled by the tester) |
+| Floors cleared from 20 | (to be filled by the tester) |
+| Did any single fight feel like a coin flip or a wall? (name the foe) | (to be filled by the tester) |
+| Session length (start/end clock) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+#### Run 2 — forced 35
+
+**what should be true:** descriptive only — the run should wrap up naturally
+(no dial-back, no forced death); death should come from the curve (foe cap
+**4**, power **1.0523**, cadence **1.1180**, from the change table), not from
+a cliff; report floors gained and fights survived. The bot's tune-difficulty
+readout at this depth is the yardstick: death-depth p50 **35** (min 35, p90
+36, max 39 — floors gained p50 **0**, max **4**), top causes Drarl 23.5% /
+Herman 20.0% / Vampire 13.0% / Djinni 13.0% / Dread Lock 9.5% — expect the
+same handful of canon tier-4/5 foes.
+
+| Check | Tester's notes |
+|---|---|
+| Fights before death (count) | (to be filled by the tester) |
+| Floors cleared from 35 | (to be filled by the tester) |
+| Did any single fight feel like a coin flip or a wall? (name the foe) | (to be filled by the tester) |
+| Session length (start/end clock) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+#### Run 3 — forced 50
+
+**what should be true:** descriptive only — the run should wrap up naturally
+(no dial-back, no forced death); death should come from the curve (foe cap
+**4**, power **1.0863**, cadence **1.1896**, from the change table), not from
+a cliff; report floors gained and fights survived. The bot's tune-difficulty
+readout at this depth is the yardstick: death-depth p50 **50** (min 50, p90
+51, max 54 — floors gained p50 **0**, max **4**), top causes Drarl 26.0% /
+Herman 18.0% / Vampire 12.5% / Djinni 12.5% / Dread Lock 11.0% — same
+handful of canon tier-4/5 foes as the forced-20/35 slices.
+
+| Check | Tester's notes |
+|---|---|
+| Fights before death (count) | (to be filled by the tester) |
+| Floors cleared from 50 | (to be filled by the tester) |
+| Did any single fight feel like a coin flip or a wall? (name the foe) | (to be filled by the tester) |
+| Session length (start/end clock) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+#### Run 4 — natural (floor 1 onward)
+
+**what should be true:** floor 1 still kills careless level-1 characters
+(traps, starvation, a bad fight), but no longer three-strikes-a-round from
+one canon foe — Dante is now met from tier 2 (level 2+ / depth 2+) and Ned
+holds tier 1; darkness arrives smaller from floor 3 (blobs capped at 3,
+radius capped at 7) and density ramps a floor later (dots hold at floor-2's
+canon count through floor 3). The band's natural median is 5-6 in the
+human's own words (retune AFTER pooled bot p50 **4**, reach >= 10 **0.9%**,
+reach >= 20 **0.1%**) — a human, playing better than the bot's fixed
+thresholds, should typically outlast it.
+
+| Check | Tester's notes |
+|---|---|
+| Death depth | (to be filled by the tester) |
+| First Humans encounter (who, which floor, how did it go) | (to be filled by the tester) |
+| Darkness / starvation felt (floors 3-5) | (to be filled by the tester) |
+| First fight that felt like the ramp (floor) | (to be filled by the tester) |
+| Session length (start/end clock) | (to be filled by the tester) |
+| Ended for a reason I understood — yes/no + epitaph | (to be filled by the tester) |
+| Free notes | (to be filled by the tester) |
+
+#### Flag if noticed (observations, not tasks)
+
+- Any class that feels wrong at depth 20 (Phase 26's revisit list is empty —
+  name it here and it becomes a v1.3 candidate).
+- Con Artist talk-heavy runs (watch, don't touch — a Deferred Idea).
+- The Oracle voice slipping out of family-friendly sarcasm.
+- Ned's line landing flat.
 
 ### Verdict (TUNE-07)
 
-**Overall verdict:** (to be filled by the tester — tuned / tune-again / deferred)
+**Overall verdict:** (to be filled by the tester — exactly one of: tuned / tune-again / deferred)
+
+**Per-run notes above complete:** (to be filled by the tester)
+
+**If deferred — the user's reason, verbatim:** (to be filled by the tester)
+
+**Gate at hand-off:** npm test 1448/1448, parity 33/33, pin 91c5b13, APK
+2026-09-15 18:21:05 (build succeeded; NOT installed — device unreachable this
+session, see `#### Build under test` above for the install commands) —
+2026-09-15.
+
+**What happens next:** tuned → TUNE-07 closes the milestone's deferred
+TUNE-04 verdict; the phase's VERIFICATION flips to passed on the user's
+word; per the standing rule the assistant then ASKS whether to push a
+versionCode-bumped signed AAB to the Play internal-testing track (`node tools/bump-version.mjs`
++ `npm run android:release`) — never unasked. tune-again → ONE more bounded
+iteration inside this phase: 27-03's iteration protocol on `engine/difficulty.js`
+constants only (+ `PHASE_27_PINS`), a `#### Addendum — tune-again iteration`
+under the change table with before/after values and a rationale, a fresh
+smoke, a rebuild, and a second round of this same checklist; no re-plan.
+deferred → the user's reason is recorded verbatim above and the milestone
+closes on it; the shipping constants stay as pinned. The phase cannot be
+marked complete while the verdict is blank.
