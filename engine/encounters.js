@@ -446,6 +446,17 @@ export function meetFaerie(state, rng, events = []) {
  * immediately overwrites `maxWP` with `wp`, discarding the second roll's
  * computed value — but the roll itself is still consumed from the stream.
  * Preserved verbatim so the same seed draws the same subsequent rolls.
+ *
+ * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Cutthroat's
+ * "one member of every party dies by your hand" bad, and a Wilmsry's
+ * "Magic Users despise you" made real — after the joiner is rolled EXACTLY
+ * as above (all four draws unchanged, `c.joiner` set identically either
+ * way), a pure read decides whether the joiner will travel with this hero.
+ * No Joiner ever agrees to travel with a Cutthroat; a Magic User Joiner
+ * refuses a Wilmsry (any other class still joins a Wilmsry normally). On a
+ * refusal `state.pendingJoiner` is simply left null (never touched — every
+ * caller reaches this function with it already null) and a `joinerRefused`
+ * event is pushed after `joinerMet`. Zero new rng draws either way.
  */
 export function meetJoiner(state, rng, events = []) {
   const c = state.c;
@@ -455,6 +466,12 @@ export function meetJoiner(state, rng, events = []) {
   // eslint-disable-next-line no-unused-vars -- consumed for RNG-order fidelity only
   const discardedMaxWP = 20 * lvl + rng.d(20);
   c.joiner = { name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, cls: joinerChar.cls, lvl, wp, maxWP: wp };
+  const refusal = c.sub === "Cutthroat" ? "cutthroat" : c.race === "Wilmsry" && joinerChar.cls === "Magic User" ? "wilmsry" : null;
+  events.push({ type: "joinerMet", name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, lvl });
+  if (refusal) {
+    events.push({ type: "joinerRefused", reason: refusal, name: joinerChar.name, sub: joinerChar.sub, cls: joinerChar.cls, lvl });
+    return events;
+  }
   // PARTY-01 (Phase 9): stash the FULL already-rolled joiner sheet as a pending
   // recruitment candidate for resolveJoiner to accept/decline — NO new rng
   // draw. We reuse the already-rolled `joinerChar` (spread whole so the member
@@ -467,7 +484,6 @@ export function meetJoiner(state, rng, events = []) {
   // same way `state.party` is, so it never shifts the frozen master and adds no
   // draw. `c.joiner` + the `joinerMet` event above stay byte-identical.
   state.pendingJoiner = { ...joinerChar, lvl, level: lvl, wp, maxWP: wp };
-  events.push({ type: "joinerMet", name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, lvl });
   return events;
 }
 
