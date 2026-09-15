@@ -290,8 +290,26 @@ Plans:
   3. A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run) re-issues the TUNE-04 verdict.
   4. The milestone closes only on "tuned" or a user-recorded deferral.
 
-**Plans**: TBD
-**Engine gate reminder**: engine stays pure/deterministic and parity byte-identical throughout the retune — these are dial changes only, no new rng draws.
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 27-01-PLAN.md — Band recorded BEFORE tuning: `docs/DIFFICULTY-RETUNE.md` gains `## v1.2 retune (Phase 27) — TUNE-05..07` (band table with closed edges + "how measured" JSON paths, D-09 marked SUPERSEDED, the v1.1 verdict verbatim, standing rules, Bot lines, BEFORE = Phase 26 AFTER by reference, levers + the Dante decision rule with the planner's sim calibration, the bounded iteration protocol, placeholders); additive harness readout `reach20` + `rollups.pooled` in `tools/lib/class-matrix.mjs` (bot byte-identical to 5565b22) so the pooled median / reach ≥ 20 / forced-20 p50 are the harness's own numbers; `test/unit/difficulty-retune-ledger.test.js` standing guard (TUNE-05) — wave 1
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 27-02-PLAN.md — The ONE canon deviation: Dante demoted to Humans tier 2 (stats/note byte-identical), new plain tier-1 Humans row Ned (wp 8) — chosen by the recorded rule (floor-1 Humans death rate ≤ the next-deadliest tier-1 type; Form C 14.3 % vs canon 59.8 %), `DELIBERATE RULES CHANGE (Phase 27, 2026-09-15, TUNE-06)`; every pin re-measured; seed-303 parley scenario gets a declared `kind: "action-path"` divergence record (fromAction 0) + FIXTURE-INVENTORY Phase 27 section, parity 33/33, prototype-master/comparables untouched; shallow non-combat easing behind `DENSITY_CANON_THROUGH_DEPTH = 2` (floors 1-2 canon by construction; dots cap 24→15, dark 6/9→3/7 from floor 3); tests restructured (`PHASE_27_PINS`, split PARITY GUARD); iteration 0 smoke logged (TUNE-06) — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 27-03-PLAN.md — Bounded combat-ramp iterations (≤ 4; start `COMBAT_SCALE_FROM_DEPTH` 16, `FOE_CAP_MAX` 4, `FOE_POWER_MAX` 1.3, `ABILITY_THREAT_MAX` 1.5; "what to turn" table; smoke via `rollups.pooled`; every iteration logged), final constants commit = pin; FULL AFTER on the pin into NEW `docs/class-pass/retune-after.json` / `retune-after-depth20.json` (143×40 + 143×10, Bot lines identical to Phase 26) + `tune-difficulty --seeds=200` natural / 20 / 35 / 50 + party/economy trigger readouts; cannot-act gate FIRST; ledger: change table, AFTER transcripts + class-pass-diff rendering, comparison vs band (honest in/out, misses handed to the DR round), triggers, not-changed; guard extended; `npm test` + parity + `build:www` (TUNE-06) — wave 3
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 27-04-PLAN.md — `npm run android:debug` from the pin → `adb install -r` → force-stop → LAUNCHER relaunch on the Pixel 7 (build hash + APK timestamp + dumpsys proof); `### DR checklist — TUNE-07` appended (forced 20 / 35 / 50 via the dev toggle + a natural run, per-run "what should be true" from the band + AFTER, verdict blank: tuned / tune-again / deferred, what-happens-next incl. the Play internal-build ASK); ends on a BLOCKING `checkpoint:human-verify` — the user writes the verdict (TUNE-07) — wave 4
+
+**Engine gate reminder**: engine stays pure/deterministic and parity byte-identical throughout the retune — these are dial changes only, no new rng draws (the one declared exception is the seed-303 Dante scenario, handled as a Phase 23/24-style divergence record).
 
 ## Carried-forward work (not yet phases)
 
