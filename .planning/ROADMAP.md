@@ -255,7 +255,7 @@ Plans:
   3. Every "cannot act" row is zero.
   4. `docs/CLASS-PASS.md` documents the per-sub-class/race good+bad table, before/after numbers, every ruling (IDENT-05/06/07/10) with rationale, and lists the remaining outliers as candidates for the next milestone.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans executed
 
 Plans:
 **Wave 1**
@@ -272,7 +272,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 26-04-PLAN.md — `test/unit/class-pass-ledger.test.js` standing guard: eight sections in fixed order, AFTER placeholder replaced in place, Rulings anchors + IDENT-05/06/07/09/10, 30-row good/bad table exactly once, AFTER hash == both AFTER meta.commit, meta parity modulo commit, identical 143 cell keys, ZERO cannot-act cells (hard), verdicts rules, Outliers rows == revisit rows, blocks byte-identical to a fresh render; full suite + final pin proof (PLAY-03, PLAY-02) — wave 4
+- [x] 26-04-PLAN.md — `test/unit/class-pass-ledger.test.js` standing guard: eight sections in fixed order, AFTER placeholder replaced in place, Rulings anchors + IDENT-05/06/07/09/10, 30-row good/bad table exactly once, AFTER hash == both AFTER meta.commit, meta parity modulo commit, identical 143 cell keys, ZERO cannot-act cells (hard), verdicts rules, Outliers rows == revisit rows, blocks byte-identical to a fresh render; full suite + final pin proof (PLAY-03, PLAY-02) — wave 4
 
 **Engine gate reminder**: the harness is dev-only (`tools/`), never shipped, never a CI gate — bot numbers are a sanity floor, not a substitute for the human DR round in Phase 27. Phase 26 changes no engine, content, shell or harness code: `tools/tune-classes.mjs` and `tools/lib/` stay byte-identical to the BEFORE pin `5565b22`; the only new tools/ file is the diff script, which never plays a run.
 
@@ -312,6 +312,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 23. Casters Can Act | v1.2 | 4/4 | Complete    | 2026-09-14 |
 | 24. Every Sub-class and Race: One Good, One Bad | v1.2 | 7/7 | Complete    | 2026-09-14 |
 | 25. Nothing Happens Silently (Feature Feedback) | v1.2 | 5/5 | Complete    | 2026-09-15 |
-| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 3/4 | In Progress|  |
+| 26. Mass Playtest & Class-Pass Ledger | v1.2 | 4/4 | In Progress|  |
 | 27. Delve-to-Death Retune | v1.2 | 0/TBD | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.1/v1.2 | - |

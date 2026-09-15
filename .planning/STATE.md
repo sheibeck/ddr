@@ -5,16 +5,16 @@ milestone_name: Class Pass & Mass Playtest
 current_phase: 26
 current_phase_name: Mass Playtest & Class-Pass Ledger
 status: executing
-stopped_at: Completed 26-03-PLAN.md
-last_updated: "2026-09-15T16:06:47.865Z"
+stopped_at: Completed 26-04-PLAN.md — Phase 26 closed
+last_updated: "2026-09-15T16:21:51.095Z"
 last_activity: 2026-09-15
 last_activity_desc: Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 27
-  completed_plans: 26
-  percent: 71
+  completed_plans: 27
+  percent: 86
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-14 for v1.2)
 ## Current Position
 
 Phase: 26 — Mass Playtest & Class-Pass Ledger
-Plan: 3 of 4 complete (`tools/class-pass-diff.mjs` + tests; AFTER matrix capture); 03-04 pending
+Plan: 4 of 4 complete (`tools/class-pass-diff.mjs` + tests; AFTER matrix capture); 03-04 pending
 Status: Ready to execute
 Last activity: 2026-09-15 — Plan 26-02 complete (AFTER matrix captured on pin d1e3235, cannot-act gate PASSED, 0 of 143)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T16:06:47.839Z
-Stopped at: Completed 26-03-PLAN.md
+Last session: 2026-09-15T16:21:51.063Z
+Stopped at: Completed 26-04-PLAN.md — Phase 26 closed
 Resume file: None
 
 ## Operator Next Steps
@@ -147,6 +147,7 @@ Resume file: None
 | Phase 26 P01 | 40min | 2 tasks | 2 files |
 | Phase 26 P02 | 50min | 3 tasks | 3 files |
 | Phase 26 P03 | 30min | 2 tasks | 2 files |
+| Phase 26 P04 | 40min | 2 tasks | 1 files |
 
 ## Decisions
 
@@ -251,6 +252,7 @@ Resume file: None
 - [Phase ?]: 26-01: verdicts.json carries supplementary classes/rollups fields beyond the documented schema so renderMarkdown(verdicts, section) never needs the raw before/after reports
 - [Phase ?]: 26-02: AFTER matrix re-captured on gap-closure pin d1e3235 — cannot-act gate PASSED (0 of 143), supersedes the blocked 620e1df attempt
 - [Phase ?]: Only Ninja (too strong) and Wilmsry (fine, named exception) carry an editorial verdict; both accepted -- the caster problem is gone (all 8 Magic User subs land in the fine band).
+- [Phase ?]: 26-04: no ledger fix needed; the plan's own f7f294b-based commit-range check is stale (Phase 25.1 interleaved before Phase 26's real execution) — the true engine-touch is the single, already-reviewed d1e3235 gap-closure fix, which IS the AFTER pin; documented in SUMMARY rather than worked around.
 
 ### Blockers
 
