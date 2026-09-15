@@ -416,10 +416,14 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   if (c.rations >= eats) {
     c.rations -= eats;
     let heal = rng.d(10) + 2 * c.level;
+    // Phase 25 (FEED-01, additive payload): who doubled the heal, if anyone
+    // — a Soldier's label wins for a Wilmsry Soldier (matches `heal *= 2`'s
+    // own `||` precedence below, which is untouched). Narration only.
+    const doubledBy = c.sub === "Soldier" ? "Soldier" : R.heal2x ? c.race : null;
     if (R.heal2x || c.sub === "Soldier") heal *= 2;
     const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + heal);
-    if (c.wp > before) events.push({ type: "rested", amount: c.wp - before });
+    if (c.wp > before) events.push({ type: "rested", amount: c.wp - before, ...(doubledBy ? { doubled: doubledBy } : {}) });
 
     // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A3): resting used to
     // auto-cure any affliction unconditionally, no roll, every fed night.
@@ -464,11 +468,11 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
         const amt = tier === 2 ? rng.d(6) + 3 : rng.d(6);
         c.armorWP = Math.min(c.armorMax, c.armorWP + amt);
         c.patches++;
-        events.push({ type: "armorPatched", amount: amt });
+        events.push({ type: "armorPatched", amount: amt, by: "Sewing" });
       } else if (c.sub === "Master of Arms") {
         const amt = rng.d(6) + 3;
         c.armorWP = Math.min(c.armorMax, c.armorWP + amt);
-        events.push({ type: "armorPatched", amount: amt });
+        events.push({ type: "armorPatched", amount: amt, by: "Master of Arms" });
       }
     }
     // DELIBERATE RULES CHANGE (04-DR12, 2026-09-08): the prototype's Warlock

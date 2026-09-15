@@ -194,6 +194,25 @@ export function canEquipWeapon(c, it) {
 }
 
 /**
+ * weaponRefusalReason(c, it) — Phase 25 (FEED-02): the single source of
+ * truth for WHY weapon item `it` is illegal for `c` to wield, mirroring
+ * armorRefusalReason's shape (`null` when legal). Checked in order: `null`
+ * when canEquipWeapon(c, it) is already true; otherwise `"acrobat"` when the
+ * ONLY failing clause is the Acrobat dagger-only rule (the character's class
+ * letter IS listed in WEAPONS[it.base].cls, but c.sub is Acrobat and it.base
+ * is not Dagger); else `"wrongClass"` (the class letter itself is not
+ * listed — an Acrobat is always Thief-classed, so this is the general
+ * class-gate failure for every OTHER sub/class combination). Pure, no rng,
+ * no mutation.
+ */
+export function weaponRefusalReason(c, it) {
+  if (canEquipWeapon(c, it)) return null;
+  const classOk = !!(WEAPONS[it.base] && WEAPONS[it.base].cls.includes(classLetter(c)));
+  if (classOk && c.sub === "Acrobat" && it.base !== "Dagger") return "acrobat";
+  return "wrongClass";
+}
+
+/**
  * armorRefusalReason(c, it) — ECON-05 (Phase 13) + DELIBERATE RULES CHANGE
  * (Phase 24, 2026-09-14, IDENT-07): the single source of truth for WHY armor
  * item `it` is illegal for `c` to wear/be sold, or `null` if it is legal.
@@ -239,8 +258,9 @@ export function takeItem(state, it, events = []) {
   if (it.kind === "weapon") {
     const now = (WEAPON_MAX[c.weapon] || 0) + c.prof + c.magicWpn;
     const then = (WEAPON_MAX[it.base] || 0) + it.bonus;
-    if (!canEquipWeapon(c, it)) {
-      events.push({ type: "itemRejected", item: it, reason: "wrongClass" });
+    const weaponReason = weaponRefusalReason(c, it);
+    if (weaponReason) {
+      events.push({ type: "itemRejected", item: it, reason: weaponReason });
       return events;
     }
     if (then <= now) {
@@ -405,8 +425,9 @@ export function equipItem(state, i, events = []) {
   if (!it) return events;
 
   if (it.kind === "weapon") {
-    if (!canEquipWeapon(c, it)) {
-      events.push({ type: "equipRejected", item: it, reason: "wrongClass" });
+    const weaponReason = weaponRefusalReason(c, it);
+    if (weaponReason) {
+      events.push({ type: "equipRejected", item: it, reason: weaponReason });
       return events;
     }
     const worn = wornWeaponItem(c);

@@ -414,7 +414,9 @@ export function drinkPotion(state, rng, events = []) {
   let amt = 2 * rng.d(10) + 5;
   if (RACES[c.race].heal2x) amt *= 2;
   c.wp = Math.min(c.maxWP, c.wp + amt);
-  events.push({ type: "potionDrunk", amount: amt, remaining: c.potions });
+  // Phase 25 (FEED-01, additive payload): narrate a heal2x race's double —
+  // narration only, the doubling arithmetic above is untouched.
+  events.push({ type: "potionDrunk", amount: amt, remaining: c.potions, ...(RACES[c.race].heal2x ? { doubled: c.race } : {}) });
   if (state.combat) afterPlayerAction(state, rng, events);
   return events;
 }
@@ -439,7 +441,17 @@ export function canRead(state) {
  */
 export function readScroll(state, rng, events = []) {
   const c = state.c;
-  if (!c.scrolls || !canRead(state)) return events;
+  // Phase 25 (FEED-02): the combined guard is split so each refusal names
+  // its own reason instead of failing silently — zero draws, no mutation,
+  // both checks sit BEFORE `c.scrolls--` and the rng.pick below.
+  if (!c.scrolls) {
+    events.push({ type: "scrollRefused", reason: "noScrolls" });
+    return events;
+  }
+  if (!canRead(state)) {
+    events.push({ type: "scrollRefused", reason: c.sub === "Pilfer" ? "pilfer" : "noRunes" });
+    return events;
+  }
   c.scrolls--;
   const options = SPELLS.filter((sp) => sp.lvl <= Math.min(5, state.floor.depth + 1));
   const sp = rng.pick(options);

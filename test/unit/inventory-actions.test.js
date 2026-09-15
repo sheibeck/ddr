@@ -178,7 +178,10 @@ test("equipItem: REJECTS an illegal class weapon (Magic User + F-only blade)", (
 test("equipItem: REJECTS an Acrobat wielding a non-dagger", () => {
   const state = fixedState({ c: { cls: "Thief", sub: "Acrobat", weapon: "Dagger", items: [WEAPON("Long Sword")] } });
   const events = equipItem(state, 0, []);
-  assert.ok(events.some((e) => e.type === "equipRejected" && e.reason === "wrongClass"));
+  // Phase 25 (FEED-02): the Acrobat dagger-only rule now names itself
+  // "acrobat" rather than the generic "wrongClass" (a Thief IS class-legal
+  // for a Long Sword — the only bar is the Acrobat rule).
+  assert.ok(events.some((e) => e.type === "equipRejected" && e.reason === "acrobat"));
 });
 
 test("equipItem: REJECTS armor for a noArmor race", () => {

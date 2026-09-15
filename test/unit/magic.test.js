@@ -393,12 +393,21 @@ test("readScroll: an already-known spell is cast for free, ignoring the charge e
   assert.ok(events.some((e) => e.type === "healed"));
 });
 
-test("readScroll: no scrolls or cannot read is a no-op", () => {
+test("readScroll: no scrolls or cannot read refuses out loud with a reason, zero draws, no mutation", () => {
+  // Phase 25 (FEED-02): the old silent no-op is replaced by a named
+  // `scrollRefused` event — zero rng draws either way (fakeRng([]) throws on
+  // any draw), and neither branch mutates `c.scrolls`.
   const noScrolls = fixedState({ c: { scrolls: 0, cls: "Magic User" } });
-  assert.deepStrictEqual(readScroll(noScrolls, fakeRng([]), []), []);
+  assert.deepStrictEqual(readScroll(noScrolls, fakeRng([]), []), [{ type: "scrollRefused", reason: "noScrolls" }]);
+  assert.equal(noScrolls.c.scrolls, 0);
 
   const cannotRead = fixedState({ c: { scrolls: 1, cls: "Thief", sub: "Pilfer" } });
-  assert.deepStrictEqual(readScroll(cannotRead, fakeRng([]), []), []);
+  assert.deepStrictEqual(readScroll(cannotRead, fakeRng([]), []), [{ type: "scrollRefused", reason: "pilfer" }]);
+  assert.equal(cannotRead.c.scrolls, 1);
+
+  const noRunes = fixedState({ c: { scrolls: 1, cls: "Fighter", sub: "Soldier" } });
+  assert.deepStrictEqual(readScroll(noRunes, fakeRng([]), []), [{ type: "scrollRefused", reason: "noRunes" }]);
+  assert.equal(noRunes.c.scrolls, 1);
 });
 
 // --- Phase 18: damageFoe routing (CANON-04 / CANON-03 / D-06) ---

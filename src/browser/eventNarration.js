@@ -35,6 +35,32 @@
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// Phase 25 (FEED-01, additive payload) shared render helpers — both are pure
+// string builders over the new additive event fields, reused by every
+// combat-narration entry below that can carry `soaked`/`needMods`. Neither
+// throws on a missing/empty input (mirrors this module's `??`/`?.` defense
+// convention), so the coverage guard's bare `{type}` calls stay safe.
+
+/** soakedText(soaked) — " (hide soaked 2)" / " (Hardiness soaked 3, ward soaked 4)" / "" */
+function soakedText(soaked) {
+  if (!soaked) return "";
+  const parts = [];
+  if (soaked.hardiness) parts.push(`Hardiness soaked ${soaked.hardiness}`);
+  if (soaked.hide) parts.push(`hide soaked ${soaked.hide}`);
+  if (soaked.ward) parts.push(`ward soaked ${soaked.ward}`);
+  return parts.length ? ` (${parts.join(", ")})` : "";
+}
+
+/** needModsText(mods) — "Guard −1" / "Agility −1, Guard −1" */
+function needModsText(mods) {
+  return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
+}
+
+/** needModsClause(mods, need) — " (needs 4: Guard −1)" appended right after "vs N"; "" when absent. */
+function needModsClause(mods, need) {
+  return mods && mods.length ? ` (needs ${need ?? "?"}: ${needModsText(mods)})` : "";
+}
+
 export const EVENT_NARRATION = {
   /* ---------------- movement.js (migrated verbatim from the prior formatEvent switch) ---------------- */
 
@@ -88,12 +114,13 @@ export const EVENT_NARRATION = {
   spellChargeRecovered: (e) =>
     `<span class="beat">Twenty quiet squares, and a spell charge is ready again</span> — ${e.charges ?? "?"} of ${e.max ?? "?"} in reserve. The dungeon keeps no such courtesy for you.`,
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
-  rested: (e) => `Rest restores <span class="hit">+${e.amount ?? 0} hp</span>.`,
+  rested: (e) =>
+    `Rest restores <span class="hit">+${e.amount ?? 0} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
   // Phase 15 item-wiring (ECON-08): the two healing cloaks tick as you walk —
   // Healing a flat mend every 20 squares, Regeneration a rolled d6. Deadpan.
   cloakHealed: (e) => `<span class="hit">The cloak mends what it can as you walk — +${e.amount ?? 0} hp.</span>`,
   cloakRegenerated: (e) => `<span class="hit">Flesh knits itself back over twenty quiet squares — +${e.amount ?? 0} hp.</span>`,
-  armorPatched: (e) => `<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
+  armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
   potionDuplicated: () => `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`,
   wentHungry: (e) =>
     `<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${e.cost ?? 0} hp</span> straight out of you.`,
@@ -163,10 +190,14 @@ export const EVENT_NARRATION = {
       : `<span class="miss">You hold back.</span>`,
   shookOffFrozen: () => `<span class="hit">You shake it off.</span>`,
   frenzy: () => `<span class="hurt">Something in your blood takes over. Frenzy.</span>`,
+  // Phase 25 (FEED-05 Oracle half): `e.quip` is a PRESENTATION-ONLY field —
+  // never set by the engine, only by 25-02's decorateMisses — appended after
+  // the roll and the plain miss sentence so the Oracle keeps the roll first.
+  // Absent `quip` renders byte-identical to before.
   strikeMissed: (e) =>
     e.untouchable
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`
-      : `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. <span class="miss">You miss ${e.target ?? "it"}.</span>`,
+      : `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   backstabDenied: () => `<span class="miss">Heavy armor gives you away.</span>`,
   silenceStrike: () => `<span class="hit">Not a sound. Critical.</span>`,
@@ -174,8 +205,20 @@ export const EVENT_NARRATION = {
   backstab: () => `<span class="hit">A blade in the back. Critical.</span>`,
   conArtistOpener: () => `<span class="beat">You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.</span>`,
   ninjaFirstStrike: () => `<span class="hit">One perfect opening strike.</span>`,
-  struck: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. ${e.critical ? '<span class="hit">Critical!</span> ' : ""}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.`,
+  // Phase 25 (FEED-01, additive payload): `need` fixes the Oracle's old
+  // "N vs ?" hole; `critBy` (present only when critical) names the reason —
+  // absent fields render exactly the prior "Critical!"/plain sentence.
+  struck: (e) => {
+    const CRIT_BY_TEXT = {
+      silence: "Silent. Critical!",
+      stealth: "Unseen. Critical!",
+      backstab: "From behind. Critical!",
+      ninja: "A Ninja's two. Critical!",
+      cutthroat: "The Cutthroat's first blow. Critical!",
+    };
+    const critText = e.critical ? `<span class="hit">${CRIT_BY_TEXT[e.critBy] ?? "Critical!"}</span> ` : "";
+    return `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.`;
+  },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
   foeKilled: (e) => `<span class="hit">${e.name ?? "It"} falls.</span> +<span class="roll">${e.spGained ?? 0}</span> XP.`,
   cooked: (e) =>
@@ -244,19 +287,21 @@ export const EVENT_NARRATION = {
   // PARTY-04/PARTY-05 (Phase 8): a foe lands on a party member instead of you —
   // better them than you, frankly. `name` is the foe, `member` the companion.
   memberStruck: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
   // PARTY-05: a member hits 0 hp — they do not die a hero's death, they simply
   // decide this dungeon is no longer their problem and leave the run.
   memberDowned: (e) => `<span class="hurt">${e.name ?? "Your companion"} goes down, and what is left of them wants no further part of this.</span>`,
   regenerated: (e) => `<span class="hit">+${e.amount ?? 0} hp</span> knits itself shut.`,
   acidTick: (e) => `Acid eats at ${e.target ?? "it"}: <span class="roll">${e.dmg ?? 0}</span> hp.`,
   foeSlept: (e) => `${e.name ?? "It"} sleeps through it.`,
-  foeMissed: (e) => `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}, and misses.`,
+  foeMissed: (e) =>
+    `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}, and misses.`,
   wardReflected: (e) => `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
-  armorSoaked: (e) => `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.`,
+  armorSoaked: (e) =>
+    `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
   // Phase 18 (CANON-01, D-08) — the FOE's natural armor ate the hero's/
   // ally's blow. `name` is the foe; `amount` is what it shrugged off (kept
   // short for the toast).
@@ -264,8 +309,12 @@ export const EVENT_NARRATION = {
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
   damageHalved: (e) => `<span class="hit">The pendant drinks half of ${e.name ?? "that"}'s blow before it reaches you.</span>`,
+  // Phase 25 (FEED-01, additive payload): `soldierCrit` renders exactly like
+  // `critical` (a Soldier's roll-of-2 is a crit in every way that matters to
+  // the Oracle); `needMods`/`soaked` render only when present, so a plain
+  // hero's line stays byte-identical to before.
   struckByFoe: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
 
@@ -277,8 +326,8 @@ export const EVENT_NARRATION = {
   foeCast: (e) => `<span class="beat">${e.txt ?? `${e.name ?? "It"} does something unpleasant and magical.`}</span>`,
   foeBolted: (e) =>
     e.member
-      ? `${e.name ?? "It"} lands it on ${e.member} for <span class="hurt">${e.dmg ?? 0} hp</span>. Better them than you.`
-      : `It lands. <span class="hurt">${e.dmg ?? 0} hp</span>${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
+      ? `${e.name ?? "It"} lands it on ${e.member} for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}. Better them than you.`
+      : `It lands. <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
   foeDrained: (e) => `${e.name ?? "It"} looks better for it. <span class="hurt">+${e.stolen ?? 0} hp</span> — yours, formerly.`,
   foeDebuffed: (e) =>
     e.kind === "dazed"
@@ -348,8 +397,20 @@ export const EVENT_NARRATION = {
   spellHit: (e) => `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,
-  potionDrunk: (e) => `<span class="hit">+${e.amount ?? 0} hp</span> (${plural(e.remaining ?? 0, "potion")} left).`,
+  potionDrunk: (e) =>
+    `<span class="hit">+${e.amount ?? 0} hp</span> (${plural(e.remaining ?? 0, "potion")} left).${e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : ""}`,
   scrollRead: (e) => `You unroll a scroll: ${e.spell ?? "something unreadable"}.`,
+  // Phase 25 (FEED-02): a scroll refuses to be read out loud, with a reason —
+  // never a silent no-op. `reason` is "noScrolls" | "pilfer" | "noRunes";
+  // any other/absent value falls to the generic "stays rolled" line.
+  scrollRefused: (e) =>
+    e.reason === "pilfer"
+      ? `<span class="miss">A Pilfer's hands know locks, not letters.</span> The scroll stays rolled.`
+      : e.reason === "noRunes"
+        ? `<span class="miss">The runes mean nothing to you.</span> The scroll stays rolled.`
+        : e.reason === "noScrolls"
+          ? `<span class="miss">You have no scroll to read.</span>`
+          : `<span class="miss">It stays rolled.</span>`,
   scrollCopiedToGrimoire: (e) => `<span class="hit">${e.spell ?? "It"} copied into your grimoire.</span>`,
   scrollCast: (e) => `The scroll casts itself: ${e.spell ?? "something"}.`,
 
@@ -439,10 +500,14 @@ export const EVENT_NARRATION = {
   itemGiven: (e) => `<span class="hit">Received:</span> ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Woodsman's "no mail, no plate" bad gets its own
   // clause ahead of the generic reasons below, which stay byte-identical.
+  // Phase 25 (FEED-02): an Acrobat's dagger-only rule gets its own clause
+  // too, ahead of the same generic fallback.
   itemRejected: (e) =>
     e.reason === "woodsman"
       ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
-      : `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
+      : e.reason === "acrobat"
+        ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
+        : `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
   itemTaken: (e) => `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.`,
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
@@ -474,8 +539,11 @@ export const EVENT_NARRATION = {
   // Tried to wear/wield something your class, subclass, or race cannot.
   // Phase 24 (IDENT-07): a Woodsman gets its own clause; every other reason
   // (noArmor/wrongClass/notEquippable) stays byte-identical.
+  // Phase 25 (FEED-02): an Acrobat's dagger-only rule gets its own clause.
   equipRejected: (e) =>
     e.reason === "woodsman"
       ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
-      : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+      : e.reason === "acrobat"
+        ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
+        : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
 };
