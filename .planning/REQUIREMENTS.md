@@ -23,8 +23,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 - [x] **CSCR-04**: The › fight log replaces the Round Card: every in-combat narrative line for the WHOLE fight, newest first, with the light › mark; tapping an entry reveals its dice/roll detail line; REFUSALS (`PRIORITY.block`) become dull-toned › entries in the same log (user decision 2026-09-16 — no toasts anywhere); the log clears at fight end; the Oracle stays the complete log; `toastsForAction` routing and the Phase 32 exclusivity invariants hold (every event → exactly one of log-narrative / log-dull).
 - [x] **CSCR-05**: Four actions — 1·STRIKE, 2·SPELLS (labelled ABILITIES for a hero with no spells; lists spells or Sing), 3·ITEMS (potions, scrolls, staffs, every usable), 4·SOCIAL (Flee, Parley) — in the mock's 2×2 grid with sub-lines (to-hit/damage, VP left, charges left, flee odds); SPELLS/ITEMS/SOCIAL open the mock's submenu (title · BACK, item label/cost/desc, scrollable); unavailable actions render disabled but tappable so the engine's refusal explains (as a dull › log entry); number keys and Enter/Space keep working.
 - [x] **CSCR-06**: The Fight! gate is the map screen's MAJOR OVERLAY (MAP-05): on `combat.pending` the overlay shows the encounter icon, "SOMETHING IS HERE" / "THEY ARE ALREADY HERE", the encounter line naming the foes, the roll note, and one FIGHT IT OUT button that dispatches `fight`; the combat screen only ever renders a fought combat (round ≥ 1). Nothing resolves before the tap (Phase 31 rule).
-- [ ] **CSCR-07**: Fight end folds into the screen's over-panel — THEY ARE DOWN (with the Phase 29 loot rows, Take all / Leave all and the victory report inside) / YOU GOT OUT (flee) / THAT IS THAT (death, keeping the death card's epitaph, Review the Oracle and Confirm); the joiner offer and find cards keep their behaviour in the same styling.
-- [ ] **CSCR-08**: Phase 32's guards survive intact — every decision button on the new screen (actions, submenu rows, FIGHT!, loot rows, Take all/Leave all, over-panel button, joiner accept/decline, death Review/Confirm) goes through `guardTap`/`ARM_DELAY_MS`; `DISMISS_SETTLE_MS` still gates `window.move`; no tap-anywhere-to-dismiss; `aria-live` announcer preserved.
+- [x] **CSCR-07**: Fight end folds into the screen's over-panel — THEY ARE DOWN (with the Phase 29 loot rows, Take all / Leave all and the victory report inside) / YOU GOT OUT (flee) / THAT IS THAT (death, keeping the death card's epitaph, Review the Oracle and Confirm); the joiner offer and find cards keep their behaviour in the same styling.
+- [x] **CSCR-08**: Phase 32's guards survive intact — every decision button on the new screen (actions, submenu rows, FIGHT!, loot rows, Take all/Leave all, over-panel button, joiner accept/decline, death Review/Confirm) goes through `guardTap`/`ARM_DELAY_MS`; `DISMISS_SETTLE_MS` still gates `window.move`; no tap-anywhere-to-dismiss; `aria-live` announcer preserved.
 - [x] **CSCR-09**: Engine, content and parity are untouched (`git diff -- engine content test/parity` empty; master fixture hash unchanged); every existing shell test is re-pinned or replaced with an equivalent; `npm test` green; `npm run build:www` exit 0; voice scan on all new copy.
 - [ ] **CSCR-10**: The rebuilt combat screen is validated in an on-device DR round on the Pixel 7 (installed debug build) before the milestone closes.
 
@@ -59,8 +59,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 | CSCR-04 | Phase 34 | Complete |
 | CSCR-05 | Phase 34 | Complete |
 | CSCR-06 | Phase 34 | Complete |
-| CSCR-07 | Phase 34 | Pending |
-| CSCR-08 | Phase 34 | Pending |
+| CSCR-07 | Phase 34 | Complete |
+| CSCR-08 | Phase 34 | Complete |
 | CSCR-09 | Phase 34 | Complete |
 | CSCR-10 | Phase 34 | Pending |
 | MAP-01 | Phase 35 | Pending |

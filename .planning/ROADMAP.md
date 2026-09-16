@@ -130,7 +130,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 34-05-PLAN.md — Endings (THEY ARE DOWN + loot rows / YOU GOT OUT / THAT IS THAT), joiner/find dark restyle, full executor gate, deferred Pixel 7 checklist (CSCR-10)
+- [x] 34-05-PLAN.md — Endings (THEY ARE DOWN + loot rows / YOU GOT OUT / THAT IS THAT), joiner/find dark restyle, full executor gate, deferred Pixel 7 checklist (CSCR-10)
 
 **UI hint**: yes
 
@@ -182,7 +182,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 34. Combat Screen Rebuild | v1.4 | 4/5 | In Progress|  |
+| 34. Combat Screen Rebuild | v1.4 | 5/5 | In Progress|  |
 | 35. Map Screen Rebuild | v1.4 | 0/? | Pending | — |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |

@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: Combat & Map Screens
 current_phase: 34
 current_phase_name: Combat Screen Rebuild
-status: executing
-stopped_at: Completed 34-04-PLAN.md (combat action grid, submenus, keyboard map, dull potion refusals)
-last_updated: "2026-09-16T23:36:02.878Z"
+status: verifying
+stopped_at: Completed 34-05-PLAN.md (fight end over-panel, phase gate, deferred UAT checklist) — Phase 34 complete
+last_updated: "2026-09-16T23:55:16.138Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 34 execution started
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 0
+  completed_plans: 5
+  percent: 50
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 34 (Combat Screen Rebuild) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-16 — Phase 34 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T23:36:02.851Z
-Stopped at: Completed 34-04-PLAN.md (combat action grid, submenus, keyboard map, dull potion refusals)
+Last session: 2026-09-16T23:55:16.113Z
+Stopped at: Completed 34-05-PLAN.md (fight end over-panel, phase gate, deferred UAT checklist) — Phase 34 complete
 Resume file: None
 
 ## Operator Next Steps
@@ -169,6 +169,7 @@ Resume file: None
 | Phase 34 P02 | 19min | 3 tasks | 4 files |
 | Phase 34 P03 | 40min | 3 tasks | 4 files |
 | Phase 34 P04 | 55min | 3 tasks | 6 files |
+| Phase 34 P05 | 55min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -318,6 +319,7 @@ Resume file: None
 - [Phase ?]: 34-03 Decision 2: built renderMajorOverlay(host, spec) as a fully generic, parameterised MAJOR OVERLAY function now (icon/title/line/roll/primary+optional-secondary), reused unchanged by Phase 35 for the stair-down and out-of-combat death
 - [Phase ?]: 34-03 Decision 3: no engine retarget action exists or was added — foe-card targeting stays the presentation mutation S.combat.target = i; renderEncounter(), now wrapped in guardTap (a real CSCR-08 fix; it was previously unguarded)
 - [Phase ?]: 34-04: dropped dead-code spellOpen writes in classic startCombat()/castSpell() (unread, pre-Phase-31 dead code) to satisfy the retired presentation flag's zero-occurrence pin; ITEMS submenu rows reuse cbRow() rather than a fifth renderCarriedList host; a disabled grid button with no opens is a guarded no-op
+- [Phase ?]: Phase 34 (CSCR-07/08) closed: fight endings fold into one renderCombatOver over-panel; joiner/find restyled dark; dismissal clears window.__mzFightEnd/__mzCombatMenu. CSCR-10 (on-device DR round) deferred to milestone close per the 27-item aggregated Pixel 7 checklist in 34-05-SUMMARY.md.
 
 ### Blockers
 
