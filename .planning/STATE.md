@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Combat & Map Screens
-status: planning
-stopped_at: "v1.4 Combat & Map Screens scaffolded: REQUIREMENTS CSCR-01..10 + MAP-01..10, ROADMAP Phases 34–35, specs in design/ (Combat Panel, Map, Map Panel), 34-CONTEXT.md + 35-CONTEXT.md written with the user rulings (no toasts, tap-to-step, never skip an active choice, climb-only obstacles, chips in HUD). Next: /gsd-autonomous (defer uat to end) — research → Opus plan → execute Phase 34 then 35 → build + adb install"
-last_updated: "2026-09-16T21:11:06.862Z"
+current_phase: 34
+current_phase_name: Combat Screen Rebuild
+status: executing
+stopped_at: Completed 34-01-PLAN.md (fight-log/combat-menu/combat-panel presentation modules)
+last_updated: "2026-09-16T22:37:03.232Z"
 last_activity: 2026-09-16
-last_activity_desc: Milestone v1.3 completed and archived
+last_activity_desc: Phase 34 execution started
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
   percent: 0
-current_phase: 34
-current_phase_name: Combat Screen Rebuild
 ---
 
 # Project State
@@ -24,14 +24,14 @@ current_phase_name: Combat Screen Rebuild
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 34 — Combat Screen Rebuild (v1.4)
+**Current focus:** Phase 34 — Combat Screen Rebuild
 
 ## Current Position
 
-Phase: 34 (Combat Screen Rebuild) — v1.4 Combat & Map Screens
-Plan: Not started
-Status: Ready to discuss/plan (v1.4 started 2026-09-16 from the Claude Design combat mock)
-Last activity: 2026-09-16 — Milestone v1.3 completed and archived
+Phase: 34 (Combat Screen Rebuild) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-09-16 — Phase 34 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T19:52:13.637Z
-Stopped at: v1.4 Combat & Map Screens scaffolded (REQUIREMENTS, ROADMAP Phases 34–35, specs in design/, 34-CONTEXT + 35-CONTEXT). Next: /gsd-autonomous (defer uat to end) — Phase 34 then 35 → build + adb install
+Last session: 2026-09-16T22:37:03.207Z
+Stopped at: Completed 34-01-PLAN.md (fight-log/combat-menu/combat-panel presentation modules)
 Resume file: None
 
 ## Operator Next Steps
@@ -165,6 +165,7 @@ Resume file: None
 | Phase 33 P01 | 35min | 3 tasks | 14 files |
 | Phase 33 P02 | 19min | 3 tasks | 4 files |
 | Phase 33 P03 | 25min | 3 tasks | 3 files |
+| Phase 34 P01 | 35min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -306,6 +307,9 @@ Resume file: None
 - [Phase ?]: gearRow re-parents already-built buttons into .mw-gear-actions post-loop rather than reordering the actions array, keeping every non-gear renderCarriedList host byte-identical
 - [Phase ?]: writeSetting('handedness', ...) is now a no-op (unrecognized key) rather than a schema migration; a stale persisted handedness value is never read back or rewritten
 - [Phase ?]: Store stock rolled by depth behind a run flag (state.storeRoll, v1.3 Phase 33): parity stays byte-identical for fixtures/old saves; a newRun option only the shell sets keeps every fixture/bot/pre-Phase-33 save on the frozen roll
+- [Phase ?]: 34-01: toastsForAction gains opts.withIdx (Phase 32 opts.limit precedent) + oracleDetailText — fight-log lines sourced from the folded toast pipeline, not raw event HTML, to preserve the 'log line count = folded count' pin
+- [Phase ?]: 34-01: combatMenu.js's flee/WITHDRAW cost text mirrors engine/combat.js's own roll logic as display-only — no new engine action added
+- [Phase ?]: 34-01: combatPanel.js's YOUR LOT 3-joiner overflow tested via a synthetic state.party array (PARTY_CAP=1 today)
 
 ### Blockers
 

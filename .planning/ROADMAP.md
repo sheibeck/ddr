@@ -114,7 +114,7 @@ Full details: `.planning/milestones/v1.3-ROADMAP.md`. Phase artifacts: `.plannin
 Plans:
 **Wave 1**
 
-- [ ] 34-01-PLAN.md — Pure modules: toasts.js `withIdx` + `oracleDetailText`, `fightLog.js`, `combatMenu.js`, `combatPanel.js` + unit tests (Decision 1: fold-preserving roll detail)
+- [x] 34-01-PLAN.md — Pure modules: toasts.js `withIdx` + `oracleDetailText`, `fightLog.js`, `combatMenu.js`, `combatPanel.js` + unit tests (Decision 1: fold-preserving roll detail)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -182,7 +182,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 34. Combat Screen Rebuild | v1.4 | 0/? | Pending | — |
+| 34. Combat Screen Rebuild | v1.4 | 1/5 | In Progress|  |
 | 35. Map Screen Rebuild | v1.4 | 0/? | Pending | — |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
