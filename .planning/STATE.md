@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Combat & Map Screens
-current_phase: 34
-current_phase_name: Combat Screen Rebuild
-status: verifying
+current_phase: 35
+current_phase_name: Map Screen Rebuild
+status: planning
 stopped_at: Completed 34-05-PLAN.md (fight end over-panel, phase gate, deferred UAT checklist) — Phase 34 complete
-last_updated: "2026-09-16T23:55:16.138Z"
+last_updated: "2026-09-16T23:59:14.732Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 34 execution started
+last_activity_desc: Phase 34 complete, transitioned to Phase 35
 progress:
   total_phases: 2
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 ## Current Position
 
-Phase: 34 (Combat Screen Rebuild) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-09-16 — Phase 34 execution started
+Phase: 35 — Map Screen Rebuild
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-16 — Phase 34 complete, transitioned to Phase 35
 
 ## Ground Truth (durable facts every session needs)
 

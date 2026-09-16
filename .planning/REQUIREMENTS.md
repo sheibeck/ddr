@@ -62,7 +62,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 | CSCR-07 | Phase 34 | Complete |
 | CSCR-08 | Phase 34 | Complete |
 | CSCR-09 | Phase 34 | Complete |
-| CSCR-10 | Phase 34 | Pending |
+| CSCR-10 | Phase 34 | Deferred — UAT pending (end-of-run Pixel 7 batch; 27 checks in 34-VERIFICATION.md) |
 | MAP-01 | Phase 35 | Pending |
 | MAP-02 | Phase 35 | Pending |
 | MAP-03 | Phase 35 | Pending |
