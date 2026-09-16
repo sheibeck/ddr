@@ -255,7 +255,7 @@ Plans:
   4. Make Camp lives in the Marks/Centre row (far right), movement buttons are centered, and the handedness option is gone.
   5. Store stock is rolled randomly and floor-appropriately for the current depth on each visit, with parity byte-identical for fixtures.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
@@ -264,7 +264,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 33-02-PLAN.md — UIF-01 + UIF-05: GEAR rows get one flex action row (Use/Equip left, Drop far right) via `gearRow: true` at the GEAR call site only, inline two-tap "Drop it? [Yes] [No]" (setTimeout 3 s / any-other-tap revert, existing `dropItem` action); Make Camp becomes the far-right chip of the Marks/Centre row, D-pad centered alone; Handedness row/field/attribute/CSS removed, stored key ignored silently; `settings` re-pin + new `shell-gear-toolbar` test
+- [x] 33-02-PLAN.md — UIF-01 + UIF-05: GEAR rows get one flex action row (Use/Equip left, Drop far right) via `gearRow: true` at the GEAR call site only, inline two-tap "Drop it? [Yes] [No]" (setTimeout 3 s / any-other-tap revert, existing `dropItem` action); Make Camp becomes the far-right chip of the Marks/Centre row, D-pad centered alone; Handedness row/field/attribute/CSS removed, stored key ignored silently; `settings` re-pin + new `shell-gear-toolbar` test
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -296,6 +296,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 3/3 | Complete    | 2026-09-16 |
 | 32. Combat Narrative & Input UI Build | v1.3 | 3/3 | Complete    | 2026-09-16 |
-| 33. UI Feel & Store Polish | v1.3 | 1/3 | In Progress|  |
+| 33. UI Feel & Store Polish | v1.3 | 2/3 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |
 | Next tuning pass (TUNE-06/07) | Post-v1.3 | 0/1 | Deferred by user (2026-09-15) | - |
