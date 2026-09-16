@@ -3517,7 +3517,12 @@ function renderCarriedList(container, items, opts = {}) {
   rows.forEach(({ it, i }) => {
     const li = document.createElement("li");
     const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
-    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${it.txt ?? ""}</i>`;
+    // Phase 28 (ARMOR-03): a stowed armor piece carries `left` — the row
+    // must show remaining durability, never the frozen `txt`. This single
+    // change covers the GEAR tab, the store "Your gear" sell list and the
+    // combat use list (all three hosts share this renderer).
+    const sub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : (it.txt ?? "");
+    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${sub}</i>`;
     for (const a of (opts.actions || [])) {
       if (a === "use") {
         if (itemReady(it)) li.appendChild(mkBtn("Use", () => window.mzUseItem?.(i)));
@@ -4951,8 +4956,11 @@ function renderEncounter() {
     // logged to the Oracle by window.move.)
     const narr = window.__mzPendingNarration;
     if (narr && narr.length) body.innerHTML += `<div class="evt">${narr.map((l) => `<p>${l}</p>`).join("")}</div>`;
+    // Phase 28 (ARMOR-03): a found piece is fresh — bagArmorText(it) reads
+    // truthful, hp-labelled max/max durability instead of the frozen txt.
+    const findSub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : it.txt;
     body.innerHTML += `<p class="enc-head" style="color:var(--ditto)">Something worth taking</p>
-      <p class="enc-sub">${it.n || "An item"}${it.txt ? ` · ${it.txt}` : ""}</p>`;
+      <p class="enc-sub">${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}</p>`;
     if (!full) {
       body.innerHTML += `<div class="actions">
         <button class="primary" id="a-find-take">Take it</button>
@@ -4972,7 +4980,10 @@ function renderEncounter() {
       (c.items || []).forEach((bi, i) => {
         const row = document.createElement("button");
         row.className = "goods";
-        row.innerHTML = `<span class="g-n">${bi.n}${bi.txt ? `<i>${bi.txt}</i>` : ""}</span><span class="g-c">Drop</span>`;
+        // Phase 28 (ARMOR-03): the full-bag drop shelf shows remaining
+        // armor durability, never the frozen txt.
+        const biSub = bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt;
+        row.innerHTML = `<span class="g-n">${bi.n}${biSub ? `<i>${biSub}</i>` : ""}</span><span class="g-c">Drop</span>`;
         row.onclick = () => window.mzDropItem?.(i);
         shelf.appendChild(row);
       });
@@ -4991,11 +5002,17 @@ function renderEncounter() {
       <ul class="skills" id="sell-list"></ul>
       <div class="actions"><button class="primary" id="a-leave">Leave</button></div>`;
     const shelf = document.getElementById("shelf");
+    // Phase 28 (ARMOR-02): the repair line is relabelled in the SHELL only —
+    // engine/economy.js's stock `sub` string is compared by the economy
+    // parity harness and stays untouched. Repairs key off the worn piece
+    // even under a cloak (wornSub, not sub).
+    const ad = window.__mzArmorDisplay.armorDisplay(S.c);
     st.stock.forEach((item, i) => {
       const row = document.createElement("button");
       row.className = "goods" + (item.sold ? " sold" : "");
       row.disabled = !!item.sold || S.c.gold < item.cost;
-      row.innerHTML = `<span class="g-n">${item.n}${item.sub ? `<i>${item.sub}</i>` : ""}</span>
+      const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${S.c.armorMax - S.c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
+      row.innerHTML = `<span class="g-n">${item.n}${sub ? `<i>${sub}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
       row.onclick = () => window.mzBuyItem?.(i);
       shelf.appendChild(row);
