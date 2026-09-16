@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor } from "./derived.js";
+import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending } from "./combat.js";
@@ -71,6 +71,30 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       events.push({ type: "spellSchoolLocked", spell: sp.n, school: sp.s, need: schoolGate(c.sub, sp.s), have: c.level });
     }
     return events;
+  }
+
+  // CMB-02 (Phase 31): a combatOnly spell cast outside combat — reachable
+  // both from a direct cast (the Hero-tab Grimoire button is already
+  // disabled by the shell for these, but the engine itself had no gate) and
+  // from readScroll's free-form scroll cast (a scroll of Fireball read in a
+  // corridor is still consumed by readScroll — the scroll and its narration
+  // stay spent — but nothing fizzles, no Apprentice backfire draws, and
+  // Earthquake can no longer self-damage a caster with no foes present).
+  // NEVER guarded on combat.afraid — fear is a penalty, not a refusal
+  // (user ruling 2026-09-16): an afraid caster casts normally, just worse.
+  if (sp.combatOnly && !state.combat) {
+    events.push({ type: "castRefused", spell: sp.n, reason: "combatOnly" });
+    return events;
+  }
+  // Mirror playerStrike's dead-target retarget (combat.js:462): a targeted
+  // spell (blind/acid/petrify/thrown/stupid/status/insane) should never
+  // silently no-op on a corpse while still burning a charge. noTarget is
+  // thereby unreachable in combat — every targeted kind always has a live
+  // foe to retarget onto once combat.js#liveFoes is non-empty (and if it
+  // isn't, the encounter has already cleared).
+  if (C) {
+    const cur = C.foes[C.target];
+    if (!cur || !cur.alive) C.target = C.foes.findIndex((f) => f.alive);
   }
 
   c.spellsUsed++;
@@ -181,7 +205,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   } else if (sp.kind === "quake") {
     const mult = Math.max(1, c.level - sp.lvl);
-    const d = rollDice(rng, sp.dmg) * mult;
+    // Phase 31 Afraid: post-roll arithmetic only — the dice are drawn
+    // exactly as before (zero rng change); halves every point the hero
+    // deals through Earthquake while combat.afraid > 0 (a no-op otherwise).
+    const d = afraidDamage(state, rollDice(rng, sp.dmg) * mult);
     liveFoes(state).forEach((f) => {
       // Spell damage (CANON-04, D-11): per-foe multiplier/halfDmg/bypass —
       // the event below reports the single rolled base, not the per-foe
@@ -217,7 +244,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     for (let k = 0; k < n && foes.length; k++) {
       const t = foes[k % foes.length];
       if (!t.alive) continue;
-      const d = rollDice(rng, sp.dmg);
+      // Phase 31 Afraid: halves each Volley bolt the hero deals (post-roll
+      // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
+      const d = afraidDamage(state, rollDice(rng, sp.dmg));
       // Spell damage (CANON-04, D-11): route through the seam; the volley
       // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
       const hit = damageFoe(state, t, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
@@ -356,19 +385,27 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       if (!t.alive) continue;
       const freeze = sp.n === "Freeze";
       const dieN = freeze ? 10 : 8;
-      const target = freeze ? 6 : 4;
+      // Phase 31 Afraid — to-hit is a LOW range, so the target SHRINKS
+      // (4 → 1, Freeze 6 → 3), never the roll; pure arithmetic, zero rng;
+      // fixture-visible only on the declared cast-damage record, where
+      // d10 = 1 still lands (need 6 → 3, roll 1 still <= 3).
+      const baseTarget = freeze ? 6 : 4;
+      const target = afraidNeed(state, baseTarget);
+      const afraidMods = target !== baseTarget ? [{ name: "afraid", delta: target - baseTarget }] : [];
       const roll = rng.d(dieN);
-      events.push({ type: "spellThrown", spell: sp.n, target: t.name, roll, need: target, bonus });
+      events.push({ type: "spellThrown", spell: sp.n, target: t.name, roll, need: target, bonus, ...(afraidMods.length ? { needMods: afraidMods } : {}) });
       if (roll - bonus <= target) {
         // p.26: area, duration and effect are multiplied by (caster level − spell level)
         const mult = Math.max(1, c.level - sp.lvl);
-        const dmg = rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg");
+        // Phase 31 Afraid: halves the hero's thrown-spell damage (post-roll
+        // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
+        const dmg = afraidDamage(state, rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg"));
         // Spell damage (D-06): bypasses foe armor entirely; eligible for the
         // CANON-04 multiplier table. `mult` in the event stays the level
         // multiplier above (unrelated to the seam's own multiplier); `dmg`
         // switches to the APPLIED amount.
         const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
-        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, mult });
+        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, mult, ...(afraidMods.length ? { afraid: true } : {}) });
         if (freeze) {
           // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, user decision): Freeze kills awarded nothing in the prototype — a bug, not a rule.
           // The prototype marked a frozen foe dead (alive=false, frozen=true, wp=0) and

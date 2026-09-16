@@ -495,8 +495,10 @@ export const EVENT_NARRATION = {
   deathCast: () => `<span class="hurt">You spend 25 hp calling on Death itself.</span>`,
   dozed: (e) => `${e.target ?? "It"} dozes off for ${e.rounds ?? 0} rounds.`,
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
-  spellThrown: (e) => `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}.`,
-  spellHit: (e) => `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.`,
+  spellThrown: (e) =>
+    `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}.`,
+  spellHit: (e) =>
+    `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,
   potionDrunk: (e) =>

@@ -15,7 +15,7 @@
 // it) — re-exported here so item-domain callers have one place to import
 // item/treasure helpers from, without duplicating the implementation.
 
-import { eff, skill, slotItems } from "./derived.js";
+import { eff, skill, slotItems, afraidDamage } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
@@ -918,7 +918,10 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
       for (let k = 0; k < n && foes.length; k++) {
         const t = foes[k % foes.length];
         if (!t.alive) continue;
-        const dmg = rng.d(10) + 4;
+        // Phase 31 Afraid: halves the hero's item-dealt fire damage
+        // (post-roll arithmetic, zero rng change; a no-op unless
+        // combat.afraid > 0).
+        const dmg = afraidDamage(state, rng.d(10) + 4);
         // Item damage is physical (18-RESEARCH A3): soakable by sp.ar,
         // never multiplied (no caster identity applies to an item effect).
         const hit = damageFoe(state, t, dmg, { kind: "item", crit: false }, rng, events);

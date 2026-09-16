@@ -132,7 +132,11 @@ test("castSpell: an unknown scroll-cast spell ignores grimoire/level gating", ()
 // --- Apprentice backfire ------------------------------------------------
 
 test("castSpell: an Apprentice's thrown spell can backfire and hurt the caster", () => {
-  const state = fixedState({ c: { sub: "Apprentice", grimoire: ["Freeze"], wp: 20 } });
+  // Freeze is combatOnly:true (Phase 31 CMB-02) — an empty-foes combat (not
+  // `combat: null`) bypasses the new combatOnly guard while keeping the
+  // draw sequence untouched: afterPlayerAction sees zero live foes and
+  // clears with no further rng consumption.
+  const state = fixedState({ c: { sub: "Apprentice", grimoire: ["Freeze"], wp: 20 }, combat: fixedCombat([]) });
   // d8=1 -> backfire; sp.dmg = {n:1,sides:6}, d6=6 -> self = ceil(6/2) = 3
   const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([1, 6]), []);
   assert.equal(state.c.wp, 17, "backfire self-damage applied");
@@ -141,7 +145,7 @@ test("castSpell: an Apprentice's thrown spell can backfire and hurt the caster",
 });
 
 test("castSpell: a lethal Apprentice backfire kills the caster", () => {
-  const state = fixedState({ c: { sub: "Apprentice", grimoire: ["Freeze"], wp: 2 } });
+  const state = fixedState({ c: { sub: "Apprentice", grimoire: ["Freeze"], wp: 2 }, combat: fixedCombat([]) });
   const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([1, 6]), []);
   assert.equal(state.dead, true);
   assert.ok(events.some((e) => e.type === "died" && e.cause === "backfire"));
@@ -166,8 +170,25 @@ test("castSpell: a thrown damage spell (Fireball) applies rollDice damage and ki
   assert.ok(events.some((e) => e.type === "foeKilled"));
 });
 
-test("castSpell: nothing to throw at is a safe no-op (no foe turn)", () => {
-  const state = fixedState({ c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 }, combat: null });
+test("castSpell: Fireball (combat-only, thrown) cast with combat: null is refused combatOnly, not a silent nothingToThrowAt no-op", () => {
+  // Phase 31 (CMB-02): every combatOnly spell — including every thrown kind,
+  // since all of them are combatOnly:true — now refuses BEFORE the targeting
+  // logic that used to produce a silent nothingToThrowAt. Zero draws, zero
+  // charge spent, zero mutation.
+  const state = fixedState({ c: { sub: "Wizard", grimoire: ["Fireball"], level: 3, spellsUsed: 0 }, combat: null });
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "castRefused" && e.spell === "Fireball" && e.reason === "combatOnly"));
+  assert.ok(!events.some((e) => e.type === "nothingToThrowAt"));
+  assert.equal(state.c.spellsUsed, 0, "no charge consumed");
+});
+
+test("castSpell: nothingToThrowAt still fires in-combat when the retarget finds no live foe (an already-cleared encounter)", () => {
+  // The retarget line (mirroring playerStrike) resolves C.target to -1 when
+  // no foe is alive; nothingToThrowAt is the resulting safe no-op — this is
+  // the one remaining path to it (combatOnly no longer routes here outside
+  // combat, per the test above).
+  const foe = fixedFoe({ alive: false, wp: 0 });
+  const state = fixedState({ c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 }, combat: fixedCombat([foe]) });
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "nothingToThrowAt"));
 });
@@ -226,24 +247,45 @@ test("castSpell: Earthquake damages every foe AND the caster when unwarded", () 
   assert.ok(events.some((e) => e.type === "foeKilled"));
 });
 
-test("castSpell: Earthquake spares the caster behind a ward", () => {
+test("castSpell: Earthquake spares the caster behind a ward (in combat)", () => {
+  // Phase 31 (CMB-02): Earthquake is combatOnly:true — moved in-combat (an
+  // empty-foes combat, not `combat: null`) so this keeps testing the
+  // ward-sparing arithmetic itself rather than the combatOnly guard
+  // (covered separately below); an empty foe list also keeps
+  // afterPlayerAction's trailing call a zero-draw no-op (encounterCleared).
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, reflect: false, name: "Shield" } },
-    combat: null,
+    combat: fixedCombat([]),
   });
   castSpell(state, SPELL_IDX.Earthquake, fakeRng([1, 1, 1]), []);
   assert.equal(state.c.wp, 50, "warded, so no self-damage");
 });
 
+test("castSpell: Earthquake (combat-only) cast with combat: null is refused combatOnly, never self-damaging", () => {
+  // Phase 31 (CMB-02): the OLD "self-damages for zero benefit" bug this test
+  // used to document (Earthquake's self-damage guard fired unconditionally,
+  // even with no combat/foes present — RESEARCH §4.4) is now closed: the
+  // combatOnly guard refuses the cast before the switch ever runs. Zero
+  // draws, zero charge spent, zero self-damage.
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null, spellsUsed: 0 },
+    combat: null,
+  });
+  const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "castRefused" && e.spell === "Earthquake" && e.reason === "combatOnly"));
+  assert.ok(!events.some((e) => e.type === "earthquakeSelfDamage"));
+  assert.equal(state.c.wp, 50, "no self-damage — the cast never happened");
+  assert.equal(state.c.spellsUsed, 0, "no charge consumed");
+});
+
 // --- 04-DR10: out-of-combat casting (Group 2 — content/spells.js#combatOnly) ---
 // These document WHY each spell is classified the way it is: a non-combat
 // spell's effect branch is unconditional (works with state.combat === null);
-// a combat-only spell's branch needs a live foe/encounter to do anything
-// useful, and some (Earthquake, Death) actively harm the caster for zero
-// benefit when cast with nothing to fight — engine/magic.js#castSpell is a
-// faithful, unconditional port of the prototype and is NOT gated here; the
-// Grimoire UI (src/browser/viewModels.js#grimoireViewModel) is what refuses
-// to offer a combat-only spell's Cast button outside an encounter.
+// a combatOnly spell now REFUSES outside combat instead of silently doing
+// nothing useful or (as Earthquake/Death used to) actively harming the
+// caster for zero benefit — Phase 31 (CMB-02) closed that gap engine-side;
+// the Grimoire UI (src/browser/viewModels.js#grimoireViewModel) also keeps
+// a combatOnly spell's Cast button disabled outside an encounter.
 
 test("castSpell: Detect Magic (non-combat) works with no active encounter", () => {
   const state = fixedState({ c: { grimoire: ["Detect Magic"] }, combat: null });
@@ -323,24 +365,17 @@ test("castSpell: Summon (non-combat) queues a pendingAlly instead of C.ally when
   assert.ok(events.some((e) => e.type === "allyPending"));
 });
 
-test("castSpell: Earthquake (combat-only) cast with no foes present still self-damages for zero benefit", () => {
-  // Documents WHY Earthquake is combatOnly:true — liveFoes() is empty with no
-  // state.combat, so nothing is hurt, but the caster's own self-damage guard
-  // (`if (!c.ward)`) fires unconditionally regardless of combat state.
-  const state = fixedState({
-    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
-    combat: null,
-  });
-  const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10]), []); // 3d10+8=38
-  assert.equal(state.c.wp, 31, "self-damage (ceil(38/2)=19) applies with nothing gained");
-  assert.ok(events.some((e) => e.type === "earthquakeSelfDamage"));
-});
-
-test("castSpell: Death (combat-only) cast with no foe present still costs 25wp for nothing", () => {
-  const state = fixedState({ c: { grimoire: ["Death"], level: 5, wp: 40 }, combat: null });
+test("castSpell: Death (combat-only) cast with combat: null is refused combatOnly, never spending its 25wp for nothing", () => {
+  // Phase 31 (CMB-02): the OLD "costs 25wp for nothing" bug this test used
+  // to document is now closed the same way Earthquake's was — the
+  // combatOnly guard refuses before the switch (and before the wp<=26
+  // too-weak check) ever runs. Zero draws, zero charge spent, zero wp lost.
+  const state = fixedState({ c: { grimoire: ["Death"], level: 5, wp: 40, spellsUsed: 0 }, combat: null });
   const events = castSpell(state, SPELL_IDX.Death, fakeRng([]), []);
-  assert.equal(state.c.wp, 15, "25wp spent regardless of whether a foe existed");
-  assert.ok(events.some((e) => e.type === "deathCast"));
+  assert.ok(events.some((e) => e.type === "castRefused" && e.spell === "Death" && e.reason === "combatOnly"));
+  assert.ok(!events.some((e) => e.type === "deathCast"));
+  assert.equal(state.c.wp, 40, "no wp spent — the cast never happened");
+  assert.equal(state.c.spellsUsed, 0, "no charge consumed");
 });
 
 // --- drinkPotion ------------------------------------------------------

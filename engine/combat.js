@@ -1013,7 +1013,19 @@ export function sing(state, rng, events = []) {
   const C = state.combat;
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "actionRefused", { action: "sing" })) return events;
-  if (!C || !songReady(state)) return events;
+  if (!C) return events;
+  // CMB-02 (Phase 31): songReady() bundles "not a Bard" and "still cooling
+  // down" into one silent no-op — split so each refusal names its own reason
+  // (never fear-related; this is a class/cooldown gate, not a phobia refusal).
+  if (!songReady(state)) {
+    events.push({
+      type: "actionRefused",
+      action: "sing",
+      reason: c.sub === "Bard" ? "cooldown" : "wrongClass",
+      ...(c.sub === "Bard" ? { left: 100 - (state.steps - (c.songAt ?? -999)) } : {}),
+    });
+    return events;
+  }
   const song = SONGS.filter((s) => s.lvl <= c.level).pop();
   c.songAt = state.steps;
   events.push({ type: "sang", song: song.n, level: song.lvl });
