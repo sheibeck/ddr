@@ -196,12 +196,12 @@ Plans:
   5. Every round-based effect (Acuteness, haste, might, ward, and the rest of the audited set) expires on leaving combat or on exploration ticks — none linger indefinitely.
   6. Using Amulet of Stone on a foe ends the encounter immediately and pays out kill rewards (experience, coin, treasure, kill count) as if it had been slain normally.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 31-01-PLAN.md — Engine Fight! split: `fight` action + `combat.pending` + `combatJoined` + the `notFought` guard; phobia → Afraid penalty (−3 to-hit range, half damage, 2 rounds; never a lost action) replacing the freeze; parity reconcile/chain + the three declared phobia-fixture divergences + a restored byte-identical death scenario (`lose-plain`); A3 walk; CMB-01 + Afraid pins
+- [x] 31-01-PLAN.md — Engine Fight! split: `fight` action + `combat.pending` + `combatJoined` + the `notFought` guard; phobia → Afraid penalty (−3 to-hit range, half damage, 2 rounds; never a lost action) replacing the freeze; parity reconcile/chain + the three declared phobia-fixture divergences + a restored byte-identical death scenario (`lose-plain`); A3 walk; CMB-01 + Afraid pins
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -267,7 +267,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 28. Armor Integrity & Durability | v1.3 | 3/3 | Complete    | 2026-09-15 |
 | 29. End-of-Combat Loot & Bag Cap | v1.3 | 3/3 | Complete    | 2026-09-15 |
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
-| 31. Combat Start Gating & Effect Hygiene | v1.3 | 0/? | Not started | - |
+| 31. Combat Start Gating & Effect Hygiene | v1.3 | 1/3 | In Progress|  |
 | 32. Combat Narrative & Input UI Build | v1.3 | 0/? | Not started | - |
 | 33. UI Feel & Store Polish | v1.3 | 0/? | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |

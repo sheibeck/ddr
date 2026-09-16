@@ -5,15 +5,15 @@ milestone_name: Feel, Loot & Combat Flow
 current_phase: 31
 current_phase_name: Combat Start Gating & Effect Hygiene
 status: executing
-stopped_at: Completed 30-01-PLAN.md — combat narrative design doc written, ratification pending orchestrator pause
-last_updated: "2026-09-16T13:46:51.443Z"
+stopped_at: Completed 31-01-PLAN.md — Fight! split + Afraid penalty landed, full suite 1641/1641
+last_updated: "2026-09-16T14:46:56.079Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 30 complete, transitioned to Phase 31
+last_activity_desc: Phase 31 execution started
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 10
+  completed_plans: 8
   percent: 50
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 31 — Combat Start Gating & Effect Hygiene (autonomous run; UAT deferred to end of run; Round Card ratified for Phase 32)
+**Current focus:** Phase 31 — Combat Start Gating & Effect Hygiene
 
 ## Current Position
 
-Phase: 31 — Combat Start Gating & Effect Hygiene
-Plan: Not started
+Phase: 31 (Combat Start Gating & Effect Hygiene) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-16 — Phase 30 complete, transitioned to Phase 31
+Last activity: 2026-09-16 — Phase 31 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T10:15:13.224Z
-Stopped at: Phase 30 complete (Round Card ratified, Key Decision recorded), ready to plan Phase 31 (autonomous run in progress — device UAT for Phases 28–29 batched to end of run)
+Last session: 2026-09-16T14:46:56.053Z
+Stopped at: Completed 31-01-PLAN.md — Fight! split + Afraid penalty landed, full suite 1641/1641
 Resume file: None
 
 ## Operator Next Steps
@@ -157,6 +157,7 @@ Resume file: None
 | Phase 29 P02 | 95min | 3 tasks | 17 files |
 | Phase 29 P03 | 50min | 3 tasks | 3 files |
 | Phase 30 P01 | 40min | 3 tasks | 1 files |
+| Phase 31 P01 | 50min | 3 tasks | 33 files |
 
 ## Decisions
 
@@ -278,6 +279,10 @@ Resume file: None
 - [Phase ?]: noteCombat hands the end-of-fight report to window.__mzLootReport instead of building a 'Move on' beat when drops are pending — the loot card folds the report and the decision into one card (RESEARCH Pitfall 4)
 - [Phase ?]: renderDropShelf(shelf, items) extracted from the find card's inline loop, shared by the find card and the new loot screen
 - [Phase ?]: 30-01: live re-verification found the toast/Oracle-pinning test total is 89 (15/21/37/8/8), not RESEARCH.md's assumed 98 — doc uses the live count per its own re-verify-before-writing instruction
+- [Phase ?]: 31-01: startCombat splits at the roster (pending:true); fight() carries initiative/phobia/pre-emptive-strike in the prototype's exact draw order
+- [Phase ?]: 31-01: a triggered phobia sets combat.afraid=2 (a -3 to-hit-need penalty, floor 1, half damage) instead of freezing the hero for a lost turn (user ruling 2026-09-16)
+- [Phase ?]: 31-01: the Fight! split reorders the Knight/Con Artist/Court Mage removal loop ahead of initiative (kept its existing code position) -- discovered and re-measured a 4th rng-reordering divergence (combat/parley seed 303) beyond the plan's three declared phobia records
+- [Phase ?]: 31-01: lose-plain (seed 1119) restores the byte-identical death-path parity coverage the Afraid ruling took from lose-apprentice (seed 127)
 
 ### Blockers
 

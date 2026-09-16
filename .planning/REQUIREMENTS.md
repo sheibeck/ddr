@@ -43,7 +43,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### Combat start & usability (CMB)
 
-- [ ] **CMB-01**: No initiative roll or enemy strike happens before Fight! is pressed; the encounter screen is a preview / decision point only
+- [x] **CMB-01**: No initiative roll or enemy strike happens before Fight! is pressed; the encounter screen is a preview / decision point only
 - [ ] **CMB-02**: "Not ready yet" audit — every usable spell, item, and gear piece is provably usable in its proper circumstances (cooldown / readiness, class gates, combat-vs-explore gates), and each refusal says why
 - [ ] **CMB-03**: Combat potions are drinkable from the Gear page outside combat
 - [ ] **CMB-04**: Shield shows a condition chip with remaining pool and rounds
@@ -123,7 +123,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LOOT-05 | Phase 29 | Complete |
 | LOOT-06 | Phase 29 | Complete |
 | CMBUI-01 | Phase 30 | Complete |
-| CMB-01 | Phase 31 | Pending |
+| CMB-01 | Phase 31 | Complete |
 | CMB-02 | Phase 31 | Pending |
 | CMB-03 | Phase 31 | Pending |
 | CMB-04 | Phase 31 | Pending |
