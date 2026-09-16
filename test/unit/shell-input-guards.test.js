@@ -67,8 +67,12 @@ function guardHelpersRegion() {
   return sliceBetween(CODE, "let encRenderedAt = 0;", "function vitalsStrip()");
 }
 
+// Phase 34: the render helpers that wire guarded buttons sit directly
+// before renderEncounter (renderMajorOverlay's mw-major-primary/secondary
+// guardTap wiring among them), so the region now starts at the first of
+// those helpers rather than at renderEncounter() itself.
 function renderEncounterRegion() {
-  return sliceBetween(CODE, "function renderEncounter()", "function noteCombat(");
+  return sliceBetween(CODE, "function renderFightLog(host)", "function noteCombat(");
 }
 
 function wireDeathConfirmRegion() {
@@ -139,7 +143,9 @@ test("mazeworld.html: the window.__mzInputGuards bridge is intact", () => {
 // ─── 3. every §6.3 decision button is wired through guardTap ─────────────
 
 const GUARDED_IDS = [
-  "a-fight", "a-strike", "a-potion", "a-flee", "a-spell", "a-talk", "a-sing",
+  // Phase 34 (CSCR-06): the Fight! gate is now the major overlay's primary
+  // button (mw-major-primary) — the old #a-fight id is fully retired.
+  "mw-major-primary", "a-strike", "a-potion", "a-flee", "a-spell", "a-talk", "a-sing",
   "a-scroll", "a-join-yes", "a-join-no", "a-loot-take-all", "a-loot-leave-all",
   "a-find-take", "a-find-leave", "btn-death-oracle", "a-next",
 ];

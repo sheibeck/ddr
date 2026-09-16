@@ -59,11 +59,18 @@ test("CMB-01: window.mzFight dispatches the engine's fight action exactly once",
 test("CMB-01: renderEncounter's Fight! gate reads combat.pending, not a presentation flag", () => {
   const renderEncounterRegion = region("function renderEncounter", "function noteCombat");
   assert.match(renderEncounterRegion, /if \(C\.pending\)/);
+  // Phase 34 (CSCR-06): the gate renders the MAJOR OVERLAY, not the old
+  // #a-fight button inside the combat-panel markup.
+  assert.match(renderEncounterRegion, /renderMajorOverlay\(body/);
+  assert.doesNotMatch(renderEncounterRegion, /"a-fight"/);
 });
 
 test("CMB-01: the keydown handler's Fight! gate reads S.combat.pending", () => {
   const keydownRegion = region('addEventListener("keydown"', "addEventListener(\"resize\"");
   assert.match(keydownRegion, /S\.combat\.pending/);
+  // Phase 34 (CSCR-06): only Enter/Space dispatch fight on the MAJOR
+  // OVERLAY — the digit-1 shortcut is gone (1 now selects the action grid).
+  assert.doesNotMatch(keydownRegion, /k === "1"\) \{ e\.preventDefault\(\); window\.mzFight/);
 });
 
 test("CMB-01: the old awaitingFight presentation flag has zero non-comment occurrences", () => {
