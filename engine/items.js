@@ -15,7 +15,7 @@
 // it) — re-exported here so item-domain callers have one place to import
 // item/treasure helpers from, without duplicating the implementation.
 
-import { eff, skill } from "./derived.js";
+import { eff, skill, slotItems } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
@@ -46,9 +46,12 @@ import {
   WEAPON_BONUS_TABLE,
   RACES,
   BAGS,
+  BAG_ORDER,
+  BAG_FLOORS,
+  BAG_ITEMS,
 } from "../content/index.js";
 
-export { eff };
+export { eff, slotItems };
 
 /* ---------------- carried treasure ---------------- */
 
@@ -244,6 +247,26 @@ export function canEquipArmor(c, it) {
 /* ---------------- equip / consume ---------------- */
 
 /**
+ * weaponUpgradeDelta(c, it) — how much MORE max damage weapon item `it` would
+ * give `c` than the currently-wielded weapon (may be <= 0). The exact rule
+ * takeItem's weapon branch uses to decide "is this better" — extracted here
+ * (Phase 29, LOOT-03) so the shell's lootCompare view-model can read the
+ * SAME arithmetic instead of restating it. Pure, no rng.
+ */
+export function weaponUpgradeDelta(c, it) {
+  return (WEAPON_MAX[it.base] || 0) + (it.bonus || 0) - ((WEAPON_MAX[c.weapon] || 0) + (c.prof || 0) + (c.magicWpn || 0));
+}
+
+/**
+ * armorUpgradeDelta(c, it) — how much MORE AR armor item `it` would give `c`
+ * than the currently-worn armor (may be <= 0). Mirrors weaponUpgradeDelta
+ * above for the armor branch. Pure, no rng.
+ */
+export function armorUpgradeDelta(c, it) {
+  return it.ar - c.ar;
+}
+
+/**
  * takeItem(state, it, events) — the weapon/armor equip-swap (only takes a
  * strictly-better item; staves require a Magic User; everything else goes
  * through giveItem). Ports mazeworld.html takeItem() (lines 1929-1955).
@@ -251,19 +274,21 @@ export function canEquipArmor(c, it) {
  * (ECON-05) so its class/race gate is byte-identical to equipItem's — the
  * strictly-better AR/damage gate stays takeItem's own (the store's
  * buy=auto-equip convenience keeps it; equipItem deliberately drops it).
+ * Phase 29 (LOOT-03): the "is this better" arithmetic itself now lives in
+ * weaponUpgradeDelta/armorUpgradeDelta above so lootCompare can import the
+ * exact same rule instead of restating it.
  */
 export function takeItem(state, it, events = []) {
   const c = state.c;
 
   if (it.kind === "weapon") {
-    const now = (WEAPON_MAX[c.weapon] || 0) + c.prof + c.magicWpn;
-    const then = (WEAPON_MAX[it.base] || 0) + it.bonus;
     const weaponReason = weaponRefusalReason(c, it);
     if (weaponReason) {
       events.push({ type: "itemRejected", item: it, reason: weaponReason });
       return events;
     }
-    if (then <= now) {
+    const delta = weaponUpgradeDelta(c, it);
+    if (delta <= 0) {
       events.push({ type: "itemRejected", item: it, reason: "notBetter" });
       return events;
     }
@@ -280,7 +305,7 @@ export function takeItem(state, it, events = []) {
       events.push({ type: "itemRejected", item: it, reason: armorReason });
       return events;
     }
-    if (it.ar <= c.ar) {
+    if (armorUpgradeDelta(c, it) <= 0) {
       events.push({ type: "itemRejected", item: it, reason: "notBetter" });
       return events;
     }
@@ -319,9 +344,84 @@ export function takeItem(state, it, events = []) {
 
 /** bagCap(c) — the character's bag slot capacity, or Infinity if it carries no
  * bag key (a bag-less parity/test character is never capped — matches the
- * clampCarry gate in engine/derived.js). */
-function bagCap(c) {
+ * clampCarry gate in engine/derived.js). Exported (Phase 29) so lootCompare's
+ * bagUsage view-model reads the same rule. */
+export function bagCap(c) {
   return c.bag && BAGS[c.bag] ? BAGS[c.bag].slots : Infinity;
+}
+
+/**
+ * canStow(c) — Phase 29 (LOOT-04): THE capacity predicate. Every stow path
+ * (takeFind/takeLoot/unequipSlot/the store's lockpick buy) and the shell's
+ * bag-full readouts all read this one line instead of an ad-hoc
+ * `c.items.length` comparison. `slotItems(c)` already excludes potions.
+ */
+export function canStow(c) {
+  return slotItems(c).length < bagCap(c);
+}
+
+/**
+ * stowItem(state, it, events, quiet) — Phase 29 (LOOT-04): the ONE path that
+ * adds to `c.items` from OUTSIDE chargen. A `kind:"bag"` item is never
+ * stowed — it upgrades `c.bag` in place (one tier only; a same-or-lower tier
+ * is rejected as `notBetter`) and consumes no slot. Anything else is gated by
+ * `canStow`: on a full bag it pushes `bagFull {item, have, slots}` and
+ * refuses (the item stays wherever the caller's pending state holds it — no
+ * gold spent, nothing discarded); otherwise it delegates to `giveItem`
+ * (applying eff.wp exactly as giveItem always has). Callers push their own
+ * domain event (`findTaken`/`itemUnequipped`/`lootTaken`) after a `true`
+ * return. Pure, no rng.
+ */
+export function stowItem(state, it, events = [], quiet = true) {
+  const c = state.c;
+  if (it.kind === "bag") {
+    const from = c.bag;
+    const have = BAG_ORDER.indexOf(from);
+    const to = BAG_ORDER.indexOf(it.tier);
+    if (to > have) {
+      c.bag = it.tier;
+      events.push({ type: "bagUpgraded", from, to: it.tier, slots: BAGS[it.tier].slots, item: it });
+    } else {
+      events.push({ type: "itemRejected", item: it, reason: "notBetter" });
+    }
+    return true;
+  }
+  // A potion is slot-exempt (LOOT-04): it never counts toward capacity AND
+  // is never itself refused by the gate, even when the bag's gear/treasure
+  // count already sits at cap.
+  if (it.kind !== "potion" && !canStow(c)) {
+    events.push({ type: "bagFull", item: it, have: slotItems(c).length, slots: bagCap(c) });
+    return false;
+  }
+  giveItem(state, it, quiet, events);
+  return true;
+}
+
+/**
+ * bagUpgradeTier(state) — Phase 29 (LOOT-05): is a bigger bag available to
+ * drop right now? Pure read, no rng — Plan 02's killFoe fires its one extra
+ * d20 only when this returns non-null. Returns the next tier name when the
+ * character's current bag has a next tier in BAG_ORDER, the run's floor
+ * depth has reached that tier's BAG_FLOORS entry, and no bag item is already
+ * sitting in state.pendingLoot; otherwise null. Every parity fixture fights
+ * at depth 1, so this is null on all of them (RESEARCH "LOOT-05 guard
+ * safety").
+ */
+export function bagUpgradeTier(state) {
+  const c = state.c;
+  const idx = BAG_ORDER.indexOf(c && c.bag);
+  if (idx < 0) return null;
+  const next = BAG_ORDER[idx + 1];
+  if (!next) return null;
+  if (!(state.floor && state.floor.depth >= BAG_FLOORS[next])) return null;
+  if ((state.pendingLoot || []).some((x) => x && x.kind === "bag")) return null;
+  return next;
+}
+
+/** bagItemFor(tier) — a FRESH copy of the takeable `kind:"bag"` item for
+ * `tier` (content/bags.js BAG_ITEMS), so state never aliases content. */
+export function bagItemFor(tier) {
+  return { ...BAG_ITEMS[tier] };
 }
 
 /** wornWeaponItem(c) — reconstruct the CURRENTLY-wielded weapon as a plain bag
@@ -380,14 +480,9 @@ function wornArmorItem(c) {
  * applied on pickup, exactly as giveItem does. Pure, no rng.
  */
 export function takeFind(state, events = []) {
-  const c = state.c;
   const it = state.pendingFind;
   if (!it) return events;
-  if ((c.items || []).length >= bagCap(c)) {
-    events.push({ type: "bagFull", item: it });
-    return events; // keep pending — the player must drop something first
-  }
-  giveItem(state, it, true, events); // quiet bag-add + eff.wp application
+  if (!stowItem(state, it, events, true)) return events; // keep pending — the player must drop something first
   state.pendingFind = null;
   events.push({ type: "findTaken", item: it });
   return events;
@@ -518,12 +613,7 @@ export function unequipSlot(state, slot, events = []) {
     return events;
   }
   if (!worn) return events; // nothing equipped in that slot (or unknown slot)
-  if ((c.items || []).length >= bagCap(c)) {
-    events.push({ type: "bagFull", item: worn });
-    return events;
-  }
-  c.items = c.items || [];
-  c.items.push(worn);
+  if (!stowItem(state, worn, events, true)) return events;
   if (slot === "weapon") {
     c.weapon = "Fists";
     c.prof = 0;

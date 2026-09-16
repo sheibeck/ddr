@@ -15,8 +15,8 @@
 // No DOM, no localStorage, no Math.random — every roll goes through the
 // injected engine rng, in the prototype's exact consumption order.
 
-import { giveItem, takeItem, hasPicks, rollBlade, rollMailPiece, canEquipArmor } from "./items.js";
-import { clampCarry } from "./derived.js";
+import { giveItem, takeItem, stowItem, canStow, bagCap, hasPicks, rollBlade, rollMailPiece, canEquipArmor } from "./items.js";
+import { clampCarry, slotItems } from "./derived.js";
 import { WEAPONS, ARMORS, FOODS, POTIONS, RACES } from "../content/index.js";
 
 /**
@@ -202,10 +202,12 @@ export const STORE_EFFECTS = {
     events.push({ type: "rationsBought", amount });
   },
   givePotion(state, params, events) {
+    // Potions are slot-exempt (LOOT-04) — deliberately uncapped, unlike
+    // giveLockpicks below.
     giveItem(state, params.item, false, events);
   },
   giveLockpicks(state, params, events) {
-    giveItem(state, params.item, false, events);
+    stowItem(state, params.item, events, false);
   },
   repairArmor(state, params, events) {
     state.c.armorWP = state.c.armorMax;
@@ -320,12 +322,26 @@ export function openStore(state, rng, events = []) {
   return events;
 }
 
+// Phase 29 (LOOT-04, RESEARCH Pitfall 1): effectIds whose STORE_EFFECTS
+// handler lands a slot-consuming item in the bag. buyFrom below checks
+// canStow for these BEFORE deducting gold, so a full-bag buy never spends
+// gold or marks the stock slot sold. givePotion is deliberately absent —
+// potions are slot-exempt (LOOT-04) — as are buyWeapon/buyArmor/buyPremium
+// (they equip-or-reject via takeItem, consuming no slot either way) and
+// buyScroll/buyRations/repairArmor/eatRation (scalar effects, no bag write).
+const STOWING_EFFECTS = new Set(["giveLockpicks"]);
+
 /**
  * buyFrom(state, idx, events) — purchases stock slot `idx`: bounds/sold/
  * gold-sufficiency guards (T-01-10b — an invalid buy is a no-op, never a
  * throw), deducts gold, marks the slot sold, then applies the plain-data
  * effect via STORE_EFFECTS. Never calls or stores a function on `state`.
  * Ports mazeworld.html buyFrom() (lines 2051-2061).
+ *
+ * Phase 29 (LOOT-04): for a STOWING_EFFECTS entry, the stow gate is checked
+ * BEFORE any gold is deducted or the slot is marked sold — a refused stow
+ * (full bag) is a pure no-op plus one `bagFull` event, never a silent
+ * gold-loss (RESEARCH Pitfall 1).
  */
 export function buyFrom(state, idx, events = []) {
   const st = state.store;
@@ -334,6 +350,15 @@ export function buyFrom(state, idx, events = []) {
   if (!item || item.sold) return events;
   if (state.c.gold < item.cost) {
     events.push({ type: "buyFailed", reason: "insufficientGold", short: item.cost - state.c.gold });
+    return events;
+  }
+  if (STOWING_EFFECTS.has(item.effectId) && !canStow(state.c)) {
+    events.push({
+      type: "bagFull",
+      item: item.effectParams && item.effectParams.item,
+      have: slotItems(state.c).length,
+      slots: bagCap(state.c),
+    });
     return events;
   }
   state.c.gold -= item.cost;
