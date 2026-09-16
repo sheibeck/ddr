@@ -638,8 +638,12 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    setting (removed), its on-tap reveal, and the .mw-oracle-hint: the dice
    are ALWAYS shown in the Oracle (#log's inline .roll, styled above) and
    NEVER shown in the encounter panel #enc-body/the Round Card, so the
-   round card reads as clean HIT/MISS prose while the Oracle keeps the math. */
-#enc-body p .roll{display:none}
+   round card reads as clean HIT/MISS prose while the Oracle keeps the math.
+   Phase 34 (CSCR-04) scopes this rule to the legacy .evt narration blocks
+   (beats/joiner/find) — the new fight log shows its dice on tap via its
+   own .cb-log-roll element, never a p .roll span, so this selector must
+   not blanket-hide it. */
+#enc-body .evt p .roll{display:none}
 
 /* ---------- dossier ---------- */
 .dossier{margin-top:0}
@@ -2839,13 +2843,10 @@ const CONDITION_COPY = {
   foeEffect: { label: "Hexed", unit: "rds" },  // Phase 19 D-21 — foe-inflicted debuff; the KIND-specific label comes from FOE_EFFECT_LABEL below, this row is the fallback label for an unmapped kind and the rounds unit the detail renders.
 };
 
-// Phase 32 (CMBUI-02) — the Round Card's header copy. `preview` heads the
-// pre-Fight! card (nothing has rolled yet); `round(n)` heads a fought round
-// where n is the round the player ACTED in (the topbar counter is already
-// on the next round by render time). Both strings are player-facing; kept
-// clear of content/safety-wordlist.js (test/unit/shell-round-card.test.js
-// scans them).
-const ROUND_CARD_COPY = { preview: "The stare-down", round: (n) => `Round ${n} · how that went` };
+// Phase 32 (CMBUI-02) archival note: the Round Card's header copy lived
+// here. Phase 34 (CSCR-04) retires the Round Card entirely — the fight log
+// has no per-round header, just newest-first entries — so this constant is
+// deleted along with every renderEncounter/announcer site that read it.
 
 // Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
 // nod to the depth roll; shown ONLY on a run whose S.storeRoll is true
@@ -5860,6 +5861,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // card is uncapped); narrativeToastText is the card's defensive text prep.
   import { PRIORITY, MAX_TOASTS, narrativeToastText } from "./src/browser/toasts.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
+  import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement } from "./src/browser/fightLog.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — dpad clicks and arrow/WASD
   // keydown, both of which already call the plain `move(dir)` global
@@ -5983,6 +5985,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // safe every paint. The engine alone enforces the actual cap (stowItem).
   window.__mzBagUsage = bagUsage;
   window.__mzLootCompare = lootCompare;
+
+  // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithToasts and
+  // the classic renderFightLog/syncFightLogLive read the whole-fight log
+  // through this ONE bridge rather than importing fightLog.js a second
+  // time. No rng, no DOM access inside the module itself.
+  window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
@@ -6270,12 +6278,23 @@ window.__mzClassicBoot = async function classicBoot() {
       // Phase 29 (LOOT-02, RESEARCH Pitfall 4): a fresh fight clears any stale
       // report from a previous encounter's loot card.
       window.__mzLootReport = null;
+      // Phase 34 (CSCR-04): a fresh fight also clears any stale ending-line
+      // parcel a PREVIOUS fight left parked on window.__mzFightEnd.
+      window.__mzFightEnd = null;
     } else if (wasCombat && has) {
       if (combatSnap) combatSnap.lastRound = after.combat.round || combatSnap.lastRound;
     } else if (wasCombat && !has) {
       // combat ended: death/win have their own cards; fleeing just toasts.
       if (!after || after.dead || after.won) { combatSnap = null; return; }
-      if (events.some((e) => e.type === "fled")) { combatSnap = null; return; }
+      if (events.some((e) => e.type === "fled")) {
+        // Phase 34 (CSCR-07): the flee ending needs a surface too — the
+        // beats-branch (renderEncounter) renders any beats.over as the
+        // over-panel. Beats are shell-owned presentation state, reset to
+        // null on load by saveState.js, so nothing persists to a save.
+        combatSnap = null;
+        after.beats = { groups: [{ title: "You got out", tone: "moss", lines: [] }], i: 0, action: null, over: "fled" };
+        return;
+      }
       const c = after.c, snap = combatSnap || {};
       const data = {
         outcome: events.some((e) => e.type === "beastsSoothed") ? "soothed" : "victory",
@@ -6288,6 +6307,9 @@ window.__mzClassicBoot = async function classicBoot() {
       };
       combatSnap = null;
       const rep = window.mzCombatReport ? window.mzCombatReport(data) : null;
+      // Phase 34 (CSCR-07): tag the report with how the fight ended so
+      // Plan 05's over-panel can choose the right chrome (won vs soothed).
+      if (rep) rep.over = data.outcome === "soothed" ? "soothed" : "won";
       // Phase 29 (LOOT-02, RESEARCH Pitfall 4): with drops pending, fold the
       // report into the loot card (renderEncounter's loot branch) instead of
       // building a "Move on" beat that would show BEFORE the loot decision —
@@ -6296,7 +6318,7 @@ window.__mzClassicBoot = async function classicBoot() {
       if (after.pendingLoot && after.pendingLoot.length) {
         window.__mzLootReport = rep;
       } else if (rep && !after.beats) {
-        after.beats = { groups: [rep], i: 0, action: null };
+        after.beats = { groups: [rep], i: 0, action: null, over: rep.over };
       }
     }
   }
@@ -6336,44 +6358,43 @@ window.__mzClassicBoot = async function classicBoot() {
   // resolveJoiner) each direct-mapped toast carries the Oracle sentence via
   // narrateEvent (dice stripped); every other action keeps Phase 25's short
   // table text unchanged.
-  // Phase 32 (CMBUI-02): the routing rule — while the POST-dispatch state
-  // has a combat, every folded toast except a PRIORITY.block refusal
-  // becomes a Round Card line instead of a toast; refusals always toast;
-  // out of combat the toast queue is exactly today's output (same order,
-  // same MAX_TOASTS cap). This deliberately routes on the state AFTER
-  // dispatch, not before: the action that ENDS combat (a kill, a flee, a
-  // death) must still toast its own lines, because a successful flee hides
-  // the panel, a kill swaps to the loot card, and a death shows the death
-  // card — a card-routed line in any of those would be invisible. The
-  // encounter-starting move, by contrast, has a post-dispatch combat, so
-  // its encounterStart fold correctly lands on the preview card (§6.4).
-  // The round label is the round the player ACTED in — afterPlayerAction's
-  // round++ has already advanced combat.round by the time render runs, so
-  // the topbar's "round N+1" and the card's "Round N" are both truthful.
-  // window.__mzRoundCard is presentation-only and never stored on state
-  // (serializeRun spreads S, so an S field would be saved).
-  let roundCardSeq = 0;
+  // Phase 34 (CSCR-04): the routing rule — while EITHER the pre-dispatch OR
+  // the post-dispatch state has a combat, every folded line (narrative AND
+  // dull refusals alike, uncapped) goes to the whole-fight window.__mzFightLog
+  // instead of a toast — there is no toast for any in-combat line any more.
+  // Checking `wasCombat` too (not just post-dispatch `inCombat`, Phase 32's
+  // rule) is what lets the action that ENDS combat (a kill, a flee, a death)
+  // still have its own lines captured, even though `result.state.combat` is
+  // gone by the time this runs: those lines are parked on window.__mzFightEnd
+  // for the over-panel (Plan 05) to print, instead of vanishing into a toast
+  // the closing panel would never show. Out of combat (never touched combat
+  // either side of this dispatch) the toast queue is exactly today's output
+  // (same order, same MAX_TOASTS cap) — Phase 35 retires the toast host.
+  // window.__mzFightLog / window.__mzFightEnd / window.__mzCombatMenu are
+  // presentation-only and never stored on state (serializeRun spreads S, so
+  // an S field would be saved).
   function dispatchWithToasts(action) {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
     const result = dispatch(action);
     const ctx = NARRATIVE_ACTIONS.has(action.type) ? { narrate: narrateEvent } : {};
+    const wasCombat = !!(before && before.combat);
     const inCombat = !!(result.state && result.state.combat);
-    const lines = [];
-    const queue = [];
-    for (const t of toastsForAction(action.type, result.events, ctx, { limit: Infinity })) {
-      if (inCombat && t.priority !== PRIORITY.block) lines.push(narrativeToastText(t.text) || t.text);
-      else queue.push(t);
+    window.__mzCombatMenu = null;
+    let lines = [];
+    let queue = [];
+    if (wasCombat || inCombat) {
+      lines = fightLogLinesFor(action.type, result.events, ctx);
+    } else {
+      queue = toastsForAction(action.type, result.events, ctx, { limit: Infinity });
     }
     for (const t of queue.slice(0, MAX_TOASTS)) window.mzToast?.(t.text, t.tone);
-    if (!inCombat) {
-      window.__mzRoundCard = null;
-    } else if (lines.length) {
-      window.__mzRoundCard = { seq: ++roundCardSeq, pending: !!result.state.combat.pending, round: roundBefore ?? result.state.combat.round, lines };
-    } else if (roundBefore === null) {
-      window.__mzRoundCard = null;
+    if (inCombat) {
+      if (lines.length) window.__mzFightLog = appendFightLog(window.__mzFightLog, lines, roundBefore ?? result.state.combat.round);
+    } else {
+      window.__mzFightLog = null;
+      if (wasCombat) window.__mzFightEnd = { lines: lines.map((l) => l.text) };
     }
-    // else: a refusal tap or a zero-line action — keep the previous card.
     return result;
   }
 
