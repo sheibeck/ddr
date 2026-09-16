@@ -158,6 +158,25 @@ function stripBagArmorFields(c) {
   return { ...c, items };
 }
 
+/** stripCloakArmorTxt(c) — Phase 28 (ARMOR-04): the Cloak of Armor's `txt`
+ * field (content/treasure-tables.js) was rewritten from the frozen
+ * prototype's original flavor line to state the soak-as-plate/never-wears/
+ * any-class rule plainly. This is a purely COSMETIC content change — `txt`
+ * is display-only flavor text, never read by any engine mechanic (confirmed
+ * by direct code read) — that a chargen roll landing this cloak in the bag
+ * (e.g. the combat-parity `flee` fixture's seed 17) surfaces as a bag-item
+ * diff against the frozen prototype-master.js.txt (DO NOT EDIT). Strip it
+ * the same way stripNameField strips the generative name string: every
+ * OTHER field on the item, and every other item's `txt`, stays byte-
+ * identical — only this one item's `txt` is excluded from comparison. */
+export function stripCloakArmorTxt(c) {
+  if (!c || !Array.isArray(c.items)) return c;
+  const items = c.items.map((it) =>
+    it && it.n === "Cloak of Armor" && "txt" in it ? (({ txt, ...rest }) => rest)(it) : it
+  );
+  return { ...c, items };
+}
+
 /** movementComparable(state) — strips engine-only bookkeeping and the
  * prototype's presentation-only `beats`. No domain-specific closures to
  * strip (movement never touches combat/store/affliction sub-state), but
@@ -194,7 +213,7 @@ export function movementComparable(state) {
   // never carries a live combat), added so D-14's "all three comparables"
   // carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripBagArmorFields(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))))));
   return rest;
 }
 
@@ -261,7 +280,7 @@ export function combatComparable(state) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
-  if (rest.c) rest.c = stripBagArmorFields(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))))));
   return rest;
 }
 
@@ -636,7 +655,7 @@ export function economyComparable(state) {
   // (neither family carries a live combat), added so D-14's "all three
   // comparables" carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripBagArmorFields(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c)))))))));
   return rest;
 }
 

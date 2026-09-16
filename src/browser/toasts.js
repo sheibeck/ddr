@@ -1045,9 +1045,17 @@ export const TOAST_FOR = {
   wardAbsorbed: (e) => ({ text: `The ward eats ${e?.amount ?? 0} (${e?.remaining ?? 0} left).`, tone: "hit", priority: PRIORITY.them }),
   wardShattered: () => ({ text: "The ward shatters.", tone: "hurt", priority: PRIORITY.them }),
   armorDestroyed: () => ({ text: "Your armour gives out.", tone: "hurt", priority: PRIORITY.them }),
-  // Phase 25 (FEED-01): `wear` is the real durability cost; `halved` names the Dwarven mitigation.
+  // Phase 25 (FEED-01): `wear` is the real durability cost; `halved` names the
+  // Dwarven mitigation. Phase 28 (ARMOR-05): `underMin`/`magic` are two more
+  // additive outcome flags — the blow was soaked at/under the armour's min
+  // (no wear), or soaked by the Cloak of Armor's magic plate (never wears) —
+  // making all four armorSoaked outcomes distinguishable on screen.
   armorSoaked: (e) => ({
-    text: `Armour takes ${e?.amount ?? 0}${e?.wear ? ` · wear ${e.wear}` : ""}${e?.halved ? " (Dwarven, halved)" : ""}`,
+    text: e?.magic
+      ? `The cloak's plate takes ${e?.amount ?? 0} · never wears`
+      : e?.underMin
+        ? `Armour shrugs off ${e?.amount ?? 0} · under its min, no wear`
+        : `Armour takes ${e?.amount ?? 0}${e?.wear ? ` · wear ${e.wear}` : ""}${e?.halved ? " (Dwarven, halved)" : ""}`,
     tone: "hit",
     priority: PRIORITY.them,
   }),

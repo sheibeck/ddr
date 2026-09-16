@@ -29,7 +29,7 @@ import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { stripParleyDivergence, actionPathDivergenceOf, skipsByteDiffAt, declaredEndDiffs } from "./harness/comparables.js";
+import { stripParleyDivergence, actionPathDivergenceOf, skipsByteDiffAt, declaredEndDiffs, stripCloakArmorTxt } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -118,7 +118,12 @@ function comparable(state) {
     // ECON-01 (Phase 12): strip the new engine-only c.bag field too (see harness
     // stripBagField) — same treatment as name/darkFor/flight, mirrored here.
     const { name, darkFor, flightLeft, flightCooldown, bag, ...cRest } = rest.c;
-    rest.c = cRest;
+    // Phase 28 (ARMOR-04): the Cloak of Armor's rewritten `txt` is a purely
+    // cosmetic content divergence (see harness/comparables.js's
+    // stripCloakArmorTxt) — the `flee` scenario's seed 17 rolls this cloak
+    // into the bag at chargen, so strip it here too since this file keeps
+    // its own local comparable().
+    rest.c = stripCloakArmorTxt(cRest);
   }
   return rest;
 }

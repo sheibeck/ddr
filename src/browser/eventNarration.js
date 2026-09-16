@@ -351,8 +351,15 @@ export const EVENT_NARRATION = {
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
+  // Phase 28 (ARMOR-05): the same underMin/magic outcome flags toasts.js
+  // reads, so the toast and the Oracle can never disagree about which of
+  // the four armorSoaked outcomes just happened.
   armorSoaked: (e) =>
-    `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
+    e.magic
+      ? `The cloak's plate takes ${e.amount ?? 0} from ${e.name ?? "it"}. Magic plate, light as a rumor, never wears — the maze's one honest bargain.`
+      : e.underMin
+        ? `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to. Under its min — not even a scratch. No wear.`
+        : `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
   // Phase 18 (CANON-01, D-08) — the FOE's natural armor ate the hero's/
   // ally's blow. `name` is the foe; `amount` is what it shrugged off (kept
   // short for the toast).
@@ -598,8 +605,12 @@ export const EVENT_NARRATION = {
   itemDropped: (e) => `<span class="beat">You drop ${e.item?.n ?? "it"}.</span> Lighter, poorer, wiser — pick two.`,
   itemEquipped: (e) =>
     `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${e.slot})` : ""}. Whether that was wise is between you and the maze.`,
+  // Phase 28 (ARMOR-03): a destroyed piece never re-enters the bag — narrate
+  // that honestly instead of the usual stow-and-improvise line.
   itemUnequipped: (e) =>
-    `<span class="beat">You stow your ${e.slot ?? "gear"}</span> — ${e.item?.n ?? "it"} back in the bag, and you back to improvising.`,
+    e.destroyed
+      ? `<span class="beat">You peel off what is left of your ${e.item?.n ?? "armor"}</span> and leave it where it falls. The bag declines the honor.`
+      : `<span class="beat">You stow your ${e.slot ?? "gear"}</span> — ${e.item?.n ?? "it"} back in the bag, and you back to improvising.`,
   // Tried to wear/wield something your class, subclass, or race cannot.
   // Phase 24 (IDENT-07): a Woodsman gets its own clause; every other reason
   // (noArmor/wrongClass/notEquippable) stays byte-identical.

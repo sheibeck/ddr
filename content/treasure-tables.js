@@ -27,7 +27,9 @@ export const CLOAKS = [
   { n: "Cloak of Invisibility", eff: {}, use: "invis", every: 100, txt: "invisible, once every 100 squares" },
   { n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "double attacks, once every 50 squares" },
   { n: "Cloak of Regeneration", eff: { cloakRegen: 1 }, txt: "d6 wp back every 20 squares" },
-  { n: "Cloak of Armor", eff: { cloakArmor: 1 }, txt: "a full suit of plate that weighs nothing" },
+  // Phase 28 (ARMOR-04): states the rule plainly — AR 15, never wears, any
+  // class — with a wink of the original "weighs nothing" flavor.
+  { n: "Cloak of Armor", eff: { cloakArmor: 1 }, txt: "soaks as plate (AR 15) over whatever you wear — any class, never wears out, light as a rumor" },
   { n: "Cloak of Flying", eff: { fly: 1 }, txt: "flight for 20 squares, once every 50" },
   { n: "Cloak of Ether", eff: {}, use: "ether", every: 100, txt: "walk through walls, once every 100 squares" },
 ];
