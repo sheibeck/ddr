@@ -199,9 +199,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 31-01-PLAN.md — Engine Fight! split: `fight` action + `combat.pending` + `combatJoined` + the `notFought` guard; phobia → Afraid penalty (−3 to-hit range, half damage, 2 rounds; never a lost action) replacing the freeze; parity reconcile/chain + the three declared phobia-fixture divergences; A3 walk; CMB-01 + Afraid pins
-- [ ] 31-02-PLAN.md — Refusal vocabulary (combatOnly/cooldown/wrongClass — never fear), spell/item side of the Afraid penalty, useItem combat gate + item-kill close + `foeStoned`, Acuteness/effect expiry, ward chip data, `docs/USABLE-FEATURES-AUDIT.md` (fear as a penalty row) + table-driven test
-- [ ] 31-03-PLAN.md — Shell: Fight! → `fight`, pending gate, AMBUSH collapse, engine-bridged combat spell gate, grimoire reasons, visible Use/Sing/Scroll, Shield chip, Afraid countdown chip; `build:www` + full suite
+- [ ] 31-01-PLAN.md — Engine Fight! split: `fight` action + `combat.pending` + `combatJoined` + the `notFought` guard; phobia → Afraid penalty (−3 to-hit range, half damage, 2 rounds; never a lost action) replacing the freeze; parity reconcile/chain + the three declared phobia-fixture divergences + a restored byte-identical death scenario (`lose-plain`); A3 walk; CMB-01 + Afraid pins
+- [ ] 31-02-PLAN.md — Refusal vocabulary (combatOnly/cooldown/wrongClass — never fear), spell/item side of the Afraid penalty, useItem combat gate + item-kill close + `foeStoned`, Acuteness/effect expiry, ward chip data, Elven foeToHit flip (−1 → +1, easier to hit; user decision from the roll-direction audit), `docs/USABLE-FEATURES-AUDIT.md` (fear as a penalty row) + table-driven test
+- [ ] 31-03-PLAN.md — Shell: Fight! → `fight`, pending gate, AMBUSH collapse, engine-bridged combat spell gate, grimoire reasons, visible Use/Sing/Scroll, Shield chip, Afraid countdown chip, sheet TO HIT reads `1–N`; `build:www` + full suite
 **UI hint**: yes
 
 ### Phase 32: Combat Narrative & Input UI Build
