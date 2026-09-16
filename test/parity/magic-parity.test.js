@@ -20,11 +20,17 @@ import path from "node:path";
 import url from "node:url";
 
 import { newRun, applyAction } from "../../engine/engine.js";
-import { startCombat } from "../../engine/combat.js";
+import { startCombat, fight } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { stripScenarioDivergence } from "./harness/comparables.js";
+import {
+  stripScenarioDivergence,
+  actionPathDivergenceOf,
+  skipsByteDiffAt,
+  declaredEndDiffs,
+  reconcilePendingFight,
+} from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.magic.json"), "utf8"));
@@ -68,6 +74,10 @@ function comparable(state) {
   // no magic fixture ever rolls a drop (RESEARCH's Parity Risk Enumeration),
   // so a plain strip (no reconcile) suffices here, unlike combat-parity's
   // "lose" scenario.
+  // CMB-01 (Phase 31): reconcile a pending combat FIRST — before the
+  // destructure below, since it needs the live rng cursor. See
+  // reconcilePendingFight's own JSDoc (harness/comparables.js).
+  state = reconcilePendingFight(state);
   const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...rest } = state;
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
@@ -93,23 +103,37 @@ function comparable(state) {
 }
 
 /** applyStartCombat(state, wandering, forced) — the same non-validated-action
- * shape test/parity/combat-parity.test.js uses. */
+ * shape test/parity/combat-parity.test.js uses.
+ *
+ * CMB-01 (Phase 31): `fight` is chained on the SAME rng (a REAL state
+ * advance) so the scenario-scripted "startCombat" action advances exactly
+ * as far as the prototype's single call did — the "cast-damage" scenario's
+ * castSpell action assumes an active, joined combat. */
 function applyStartCombat(state, wandering, forced) {
   const next = structuredClone(state);
   const rng = makeRng(next.rngState);
   const events = [];
   startCombat(next, wandering, forced, rng, events);
+  fight(next, rng, events);
   next.rngState = rng.getState();
   return { state: next, events };
 }
 
 for (const scenario of FIXTURE.scenarios) {
   test(`magic parity (${scenario.name}): engine matches the frozen prototype after every action`, () => {
-    // FID-06 (Phase 23, "Freeze pays out"): the `cast-damage` scenario (seed
-    // 8) carries a declared, measured `divergence` record — select the
-    // scenario-scoped stripper only for it; every other scenario keeps
+    // FID-06 (Phase 23, "Freeze pays out") / CMB-01 (Phase 31): the
+    // `cast-damage` scenario (seed 8) carries a declared, measured
+    // `divergence` record. Phase 31 replaced its Phase 23 kind-less shape
+    // with an "action-path" record (the compared combat object itself
+    // differs from action 0 — the prototype's freeze flag vs the engine's
+    // afraid counter) — mirror combat-parity's own selection: an
+    // action-path record uses the BARE comparable (its per-action byte diff
+    // is skipped instead, see skipsByteDiffAt below); a kind-less record
+    // (no fixture uses one today, but the shape stays supported) still
+    // selects the scenario-scoped stripper. Every other scenario keeps
     // comparing on the bare `comparable()`.
-    const cmp = scenario.divergence ? (s) => stripScenarioDivergence(comparable(s), scenario.divergence) : comparable;
+    const pathDiv = actionPathDivergenceOf(scenario);
+    const cmp = pathDiv ? comparable : scenario.divergence ? (s) => stripScenarioDivergence(comparable(s), scenario.divergence) : comparable;
 
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
@@ -147,19 +171,30 @@ for (const scenario of FIXTURE.scenarios) {
         assert.fail(`unhandled magic fixture action type: ${action.type}`);
       }
 
-      const divergence = diffState(cmp(ctx.S), cmp(engineState));
-      assert.equal(
-        divergence,
-        null,
-        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
-      );
+      // FID-07 (Phase 24) / CMB-01 (Phase 31): skip the per-action byte diff
+      // only when a declared action-path record says the path diverges from
+      // this index on.
+      if (!skipsByteDiffAt(pathDiv, i)) {
+        const divergence = diffState(cmp(ctx.S), cmp(engineState));
+        assert.equal(
+          divergence,
+          null,
+          `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
+        );
+      }
     });
 
-    if (scenario.divergence) {
-      // The record's own before/after values are machine-checked on BOTH
-      // sides — the prototype must still be exactly the declared "before",
-      // and the engine must be exactly the declared "after" — before the
-      // strip above is trusted to hide anything.
+    if (pathDiv) {
+      // FID-07: an action-path record's end state is machine-checked
+      // (declaredEndDiffs), not merely stripped — both sides must equal the
+      // record's own before/after.
+      const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+      assert.equal(ends.before, null, `scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
+      assert.equal(ends.after, null, `scenario ${scenario.name}: engine end-state != declared after at ${ends.after}`);
+    } else if (scenario.divergence) {
+      // A kind-less (Phase 23-shaped) record: keep the hand-rolled fields
+      // loop. No fixture uses this shape today (cast-damage moved to
+      // action-path in Phase 31), but the shape stays supported.
       const protoC = comparable(ctx.S).c;
       const engineC = comparable(engineState).c;
       for (const field of scenario.divergence.fields) {
@@ -180,8 +215,17 @@ for (const scenario of FIXTURE.scenarios) {
       // FID-06: Freeze now pays out via killFoe — a hit must show BOTH
       // frozenSolid (the narration) and foeKilled (the payout), not "one way
       // or another" as before this phase.
+      // Phase 31 (CMB-01, user ruling 2026-09-16): the seed-8 Illusionist's
+      // Beasts phobia triggers Afraid at Fight! — never a lost action. The
+      // afraid caster still casts (spellThrown) and Freeze still pays out;
+      // nothing is EVER refused for fear (no castRefused/strikeRefused).
+      assert.ok(allEventTypes.includes("phobiaAfraid"), "the Illusionist's Beasts phobia triggered Afraid");
+      assert.ok(allEventTypes.includes("spellThrown"), "the afraid caster still casts");
       assert.ok(allEventTypes.includes("frozenSolid"), "the frozen foe was narrated");
       assert.ok(allEventTypes.includes("foeKilled"), "the Freeze kill paid out via killFoe");
+      assert.ok(!allEventTypes.includes("castRefused"), "nothing is ever refused for fear");
+      assert.ok(!allEventTypes.includes("strikeRefused"), "nothing is ever refused for fear");
+      assert.equal(engineState.combat, null);
     } else if (scenario.name === "heal") {
       assert.ok(allEventTypes.includes("healed"));
     } else if (scenario.name === "potion") {
@@ -192,7 +236,7 @@ for (const scenario of FIXTURE.scenarios) {
   });
 }
 
-test("magic fixture divergence records are narrow and well-formed (FID-06)", () => {
+test("magic fixture divergence records are narrow and well-formed (FID-06/CMB-01)", () => {
   const withDivergence = FIXTURE.scenarios.filter((s) => s.divergence);
   assert.ok(withDivergence.length <= 1, `expected at most 1 scenario with a divergence record, got ${withDivergence.length}`);
   for (const scenario of withDivergence) {
@@ -202,6 +246,12 @@ test("magic fixture divergence records are narrow and well-formed (FID-06)", () 
     assert.ok(record.before && typeof record.before === "object", `scenario ${scenario.name}: missing before`);
     assert.ok(record.after && typeof record.after === "object", `scenario ${scenario.name}: missing after`);
     assert.ok(typeof record.rationale === "string" && record.rationale.length > 0, `scenario ${scenario.name}: missing rationale`);
+    // Phase 31 (CMB-01): an action-path record additionally requires an
+    // integer fromAction; a kind-less (Phase 23-shaped) record has no
+    // `kind` field at all — both shapes are accepted here.
+    if (record.kind === "action-path") {
+      assert.ok(Number.isInteger(record.fromAction), `scenario ${scenario.name}: action-path record missing integer fromAction`);
+    }
     for (const field of record.fields) {
       assert.notDeepStrictEqual(
         record.before[field],

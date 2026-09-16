@@ -25,11 +25,19 @@ import path from "node:path";
 import url from "node:url";
 
 import { newRun, applyAction } from "../../engine/engine.js";
-import { startCombat } from "../../engine/combat.js";
+import { startCombat, fight } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { stripParleyDivergence, actionPathDivergenceOf, skipsByteDiffAt, declaredEndDiffs, stripCloakArmorTxt, reconcilePendingLoot } from "./harness/comparables.js";
+import {
+  stripParleyDivergence,
+  actionPathDivergenceOf,
+  skipsByteDiffAt,
+  declaredEndDiffs,
+  stripCloakArmorTxt,
+  reconcilePendingLoot,
+  reconcilePendingFight,
+} from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -104,6 +112,10 @@ function comparable(state) {
   // jewel), so this local comparable() needs the real reconcile, not just a
   // strip (mirroring harness combatComparable via the shared, exported
   // reconcilePendingLoot).
+  // CMB-01 (Phase 31): reconcile a pending combat FIRST — before the
+  // destructure below, since it needs the live rng cursor. See
+  // reconcilePendingFight's own JSDoc (harness/comparables.js).
+  state = reconcilePendingFight(state);
   const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...state0 } = state;
   const rest = reconcilePendingLoot(state0, pendingLoot);
   if (rest.combat) {
@@ -138,12 +150,18 @@ function comparable(state) {
 /** applyStartCombat(state, wandering, forced) — the engine-side equivalent
  * of applyAction for the internal (non-validated) startCombat call: clone,
  * rebuild rng from the persisted cursor, run startCombat, persist the rng
- * cursor. Mirrors engine/engine.js's applyAction shape exactly. */
+ * cursor. Mirrors engine/engine.js's applyAction shape exactly.
+ *
+ * CMB-01 (Phase 31): `fight` is chained on the SAME rng (a REAL state
+ * advance) so this scenario-scripted `startCombat` action advances exactly
+ * as far as the prototype's single call did — the scripted attack/flee/
+ * parley actions that follow assume combat is already past initiative. */
 function applyStartCombat(state, wandering, forced) {
   const next = structuredClone(state);
   const rng = makeRng(next.rngState);
   const events = [];
   startCombat(next, wandering, forced, rng, events);
+  fight(next, rng, events);
   next.rngState = rng.getState();
   return { state: next, events };
 }
@@ -233,6 +251,13 @@ for (const scenario of FIXTURE.scenarios) {
       } else if (scenario.name === "lose") {
         assert.equal(engineState.dead, true);
         assert.ok(allEventTypes.includes("died"));
+      } else if (scenario.name === "lose-plain") {
+        // Phase 31 (CMB-01): restores byte-identical death-path parity
+        // coverage the Afraid ruling took from lose-apprentice — never
+        // declare a divergence record on this scenario.
+        assert.equal(engineState.dead, true);
+        assert.ok(allEventTypes.includes("died"));
+        assert.equal(actionPathDivergenceOf(scenario), null, "lose-plain must stay byte-identical — never declare a record on it");
       } else if (scenario.name === "flee") {
         assert.equal(engineState.combat, null, "fleeing ends combat");
         assert.ok(allEventTypes.includes("fled"));

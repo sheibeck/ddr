@@ -30,7 +30,7 @@ const DOC_PATH = path.resolve(__dirname, "FIXTURE-INVENTORY.md");
 // Enumerate ONCE at module top and share the rows across every test below.
 const rows = enumerateFixtureRoster();
 
-test("FID-01: the six fixture fights roll exactly the pinned creatures, in order", () => {
+test("FID-01: the seven fixture fights roll exactly the pinned creatures, in order", () => {
   const fightRows = rows
     .filter((r) => r.foes.length)
     .map(({ fixture, scenario, seed, forced, foes }) => ({ fixture, scenario, seed, forced, foes }));
@@ -67,6 +67,18 @@ test("FID-01: the six fixture fights roll exactly the pinned creatures, in order
         { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
       ],
     },
+    // Phase 31 (2026-09-16, CMB-01): added because the Afraid ruling (phobia
+    // is a penalty, not a lost action) turned `lose-apprentice` into a
+    // declared action-path divergence — this row (a plain Human Cutthroat
+    // with no Beasts phobia, seed 1119) restores byte-identical death-path
+    // coverage (see FIXTURE-INVENTORY.md's Phase 31 section).
+    {
+      fixture: "action-script.combat.json",
+      scenario: "lose-plain",
+      seed: 1119,
+      forced: "Beasts",
+      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 3 }],
+    },
     {
       fixture: "action-script.combat.json",
       scenario: "flee",
@@ -102,7 +114,7 @@ test("FID-01: the six fixture fights roll exactly the pinned creatures, in order
 
   // trigger is asserted separately: every fight row starts via startCombat.
   const fightTriggers = rows.filter((r) => r.foes.length).map((r) => r.trigger);
-  assert.deepStrictEqual(fightTriggers, Array(6).fill("startCombat"));
+  assert.deepStrictEqual(fightTriggers, Array(7).fill("startCombat"));
 });
 
 test("FID-01: the parity-exposed surface is exactly 2 types x 4 names, all level 1", () => {

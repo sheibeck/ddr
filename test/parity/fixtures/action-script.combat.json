@@ -1,5 +1,5 @@
 {
-  "_note": "Combat parity fixture (01-08): five independent scenarios, each its own seed + forced encounter, so every outcome (win/lose/flee/parley) is deterministic and reachable in a small, fixed action count. `startCombat` is NOT in engine/actions.js's validated ACTION_TYPES (it is an internal function other rule domains call, not a player-facing action) -- test/parity/combat-parity.test.js special-cases it, calling engine/combat.js's startCombat directly (state/rng managed the same way applyAction does) and the prototype's `ctx.startCombat(wandering, forced)` directly, exactly mirroring the encounter the wandering-monster check or an encounter dot would eventually trigger. Every scenario's seed was found by a throwaway discovery script that simulated the engine directly against a forced encounter type until it produced the desired outcome (same method 01-05/01-07 used for chargen/movement fixture seeds), then cross-checked for prototype parity before being committed here. Phase 24 (2026-09-14, race pass, FID-07): `lose`'s seed-14 Fridgian Soldier now carries a declared `divergence` (kind action-path) — the frenzy corpse-whiff removal + hide -2 flip its outcome from died to won, measured live and asserted via test/parity/harness/comparables.js's actionPathDivergenceOf/skipsByteDiffAt/declaredEndDiffs; the new `lose-apprentice` scenario (seed 127, a plain Human, unaffected by the race pass) restores byte-identical death-path coverage.",
+  "_note": "Combat parity fixture (01-08): six independent scenarios, each its own seed + forced encounter, so every outcome (win/lose/lose-apprentice/lose-plain/flee/parley) is deterministic and reachable in a small, fixed action count. `startCombat` is NOT in engine/actions.js's validated ACTION_TYPES (it is an internal function other rule domains call, not a player-facing action) -- test/parity/combat-parity.test.js special-cases it, calling engine/combat.js's startCombat directly (state/rng managed the same way applyAction does) and the prototype's `ctx.startCombat(wandering, forced)` directly, exactly mirroring the encounter the wandering-monster check or an encounter dot would eventually trigger. Every scenario's seed was found by a throwaway discovery script that simulated the engine directly against a forced encounter type until it produced the desired outcome (same method 01-05/01-07 used for chargen/movement fixture seeds), then cross-checked for prototype parity before being committed here. Phase 24 (2026-09-14, race pass, FID-07): `lose`'s seed-14 Fridgian Soldier now carries a declared `divergence` (kind action-path) — the frenzy corpse-whiff removal + hide -2 flip its outcome from died to won, measured live and asserted via test/parity/harness/comparables.js's actionPathDivergenceOf/skipsByteDiffAt/declaredEndDiffs; the new `lose-apprentice` scenario (seed 127, a plain Human, unaffected by the race pass) restores byte-identical death-path coverage. Phase 31 (2026-09-16, CMB-01, user ruling \"phobia is a penalty, not a lost action\"): the Fight! split (rollInitiative and everything from it onward now runs in a separate `fight` action, strictly after the encounter step's Knight/Con Artist/Court Mage foe-removal loop) re-measured `lose`'s declared after-values and gave `lose-apprentice` its own declared divergence (both trigger a Beasts phobia at Fight!, now Afraid instead of frozen); the same reordering also shifted `parley`'s (seed 303, a Con Artist) declared after-values, since its escape roll now lands before initiative instead of after. Because the Afraid ruling took `lose-apprentice`'s byte-identical death-path coverage, the new `lose-plain` scenario (seed 1119, a plain Human Cutthroat with no Beasts phobia; fallback seed 1141, a Human Warlock) restores it -- found by an engine scan of seeds 1-5000 against a forced Beasts encounter and confirmed action-by-action against the prototype sandbox; it carries NO divergence record.",
   "scenarios": [
     {
       "name": "win",
@@ -26,17 +26,17 @@
         { "type": "attack" }
       ],
       "divergence": {
-        "phase": "24",
-        "requirements": ["FID-07", "IDENT-08"],
+        "phase": "24+31",
+        "requirements": ["FID-07", "IDENT-08", "CMB-01"],
         "kind": "action-path",
-        "fromAction": 1,
+        "fromAction": 0,
         "fields": ["wp", "sp", "kills", "rations"],
         "before": { "wp": 0, "sp": 5, "kills": 1, "rations": 7 },
-        "after": { "wp": 22, "sp": 30, "kills": 2, "rations": 8 },
+        "after": { "wp": 51, "sp": 45, "kills": 2, "rations": 8 },
         "stateFields": ["dead"],
         "stateBefore": { "dead": true },
         "stateAfter": { "dead": false },
-        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage."
+        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward (Phase 24) and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): this Fridgian Soldier's Beasts phobia triggers at Fight!. The prototype froze him and spent action 1 shaking it off (no strike die drawn); the engine sets combat.afraid = 2 instead and action 1 is a real strike at need - 3 and half damage, so the rng draw sequence diverges from action 1 onward -- on top of the Phase 24 frenzy/hide divergence above. fromAction moves from 1 to 0 because the fight-step combat object already differs (afraid counter vs freeze flag) the instant Fight! resolves. After re-measured live on 2026-09-16 (wp 22->51, sp 30->45; the hero still survives)."
       }
     },
     {
@@ -51,6 +51,33 @@
         { "type": "attack" },
         { "type": "attack" },
         { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" },
+        { "type": "attack" }
+      ],
+      "divergence": {
+        "phase": "31",
+        "requirements": ["CMB-01"],
+        "kind": "action-path",
+        "fromAction": 0,
+        "fields": ["wp", "sp", "gold", "kills", "rations"],
+        "before": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 4 },
+        "after": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 4 },
+        "stateFields": ["dead"],
+        "stateBefore": { "dead": true },
+        "stateAfter": { "dead": true },
+        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the new lose-plain scenario (seed 1119, below). Re-measured live on 2026-09-16: the hero still dies (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differs."
+      }
+    },
+    {
+      "name": "lose-plain",
+      "seed": 1119,
+      "actions": [
+        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
         { "type": "attack" },
         { "type": "attack" },
         { "type": "attack" },
@@ -76,17 +103,17 @@
         { "type": "parley" }
       ],
       "divergence": {
-        "phase": "27",
-        "requirements": ["TUNE-06"],
+        "phase": "27+31",
+        "requirements": ["TUNE-06", "CMB-01"],
         "kind": "action-path",
         "fromAction": 0,
         "fields": ["wp", "sp", "gold", "kills", "rations"],
         "before": { "wp": 40, "sp": 13, "gold": 250, "kills": 0, "rations": 5 },
-        "after": { "wp": 40, "sp": 7, "gold": 50, "kills": 0, "rations": 5 },
+        "after": { "wp": 34, "sp": 5, "gold": 50, "kills": 0, "rations": 5 },
         "stateFields": ["dead"],
         "stateBefore": { "dead": false },
         "stateAfter": { "dead": false },
-        "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes."
+        "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes. Phase 31 (CMB-01, user ruling 2026-09-16): the Fight! split moves rollInitiative (and everything from it onward) out of startCombat into the new fight action, which now runs strictly AFTER the Knight/Con Artist/Court Mage foe-removal loop completes (that loop stays in the encounter step, in its existing position, ahead of the cut line) -- a genuine, structural rng-order change for any character whose sub draws in that loop. This Con Artist's level-1-foe escape roll (rng.d(6), one of the two Neds fled) now lands BEFORE the two initiative d20s instead of after, so the initiative outcome and every downstream draw shift; here the foes win initiative and land one pre-emptive strike before Talk-it-down is even attempted. Re-measured live on 2026-09-16 (wp 40->34, sp 7->5); the outcome is still a successful parley, just with a shallower wp/sp margin."
       }
     }
   ]

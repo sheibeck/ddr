@@ -17,7 +17,7 @@
 // `loss` carve-outs.
 
 import { makeRng } from "../../../engine/rng.js";
-import { startCombat } from "../../../engine/combat.js";
+import { startCombat, fight } from "../../../engine/combat.js";
 import { openStore } from "../../../engine/economy.js";
 import { springTrap, openChest, encounterDot } from "../../../engine/encounters.js";
 import { descend } from "../../../engine/movement.js";
@@ -78,6 +78,26 @@ export function reconcilePendingLoot(rest, pendingLoot) {
     if (it && it.kind !== "bag") takeItem(proxy, structuredClone(it), []);
   }
   return { ...rest, c: proxy.c };
+}
+
+/** reconcilePendingFight(state) — CMB-01 (Phase 31) analog of
+ * reconcilePendingFight/reconcilePendingLoot's compare-only pattern, for the
+ * `startCombat`/`fight` split. Real gameplay (`move()`/`newDay()` via
+ * `movementComparable`/`combatComparable`/`economyComparable`) legitimately
+ * WANTS `combat.pending: true` to survive a dispatch — that is the whole
+ * point of CMB-01 — so this NEVER mutates the compared state. When
+ * `state.combat.pending` is truthy, it real-dispatches `fight` on a CLONE
+ * (via `applyAction`, which structuredClones and rebuilds the rng from
+ * `state.rngState`) and returns THAT clone (with its advanced `rngState`)
+ * for comparison, proving the state WOULD match once Fight! is pressed —
+ * without touching what a subsequent scripted action in the SAME fixture
+ * actually operates on. A no-op (`state` unchanged) when no combat is
+ * pending. Must run BEFORE a comparable's own `const { rngState, ... } =
+ * state` destructure — it needs the live rng cursor.
+ */
+export function reconcilePendingFight(state) {
+  if (!state?.combat?.pending) return state;
+  return applyAction(state, { type: "fight" }).state;
 }
 
 /** stripDarkForField(c) — PHOBIA-01 (04.1-05) adds a brand-new persistent
@@ -234,6 +254,10 @@ export function movementComparable(state) {
   // fourth analog of party/pendingJoiner/pendingFind; always false on a
   // fixture (every fixture calls newRun(seed)); the prototype master has no
   // such field.
+  // CMB-01 (Phase 31): reconcile a pending combat to its post-Fight! state
+  // FIRST — before the rngState destructure below, since it needs the live
+  // cursor. See reconcilePendingFight's own JSDoc.
+  state = reconcilePendingFight(state);
   // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
   // a fifth analog of party/pendingJoiner/pendingFind/dev; reconciled (not
   // just dropped) via reconcilePendingLoot below.
@@ -308,6 +332,9 @@ export function combatComparable(state) {
   // fourth analog of party/pendingJoiner/pendingFind; always false on a
   // fixture (every fixture calls newRun(seed)); the prototype master has no
   // such field.
+  // CMB-01 (Phase 31): reconcile a pending combat FIRST — see
+  // reconcilePendingFight's own JSDoc.
+  state = reconcilePendingFight(state);
   // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
   // a fifth analog of party/pendingJoiner/pendingFind/dev; reconciled (not
   // just dropped) via reconcilePendingLoot below.
@@ -328,12 +355,20 @@ export function combatComparable(state) {
 /** applyStartCombat(state, wandering, forced) — the engine-side equivalent
  * of applyAction for the internal (non-validated) startCombat call: clone,
  * rebuild rng from the persisted cursor, run startCombat, persist the rng
- * cursor. Mirrors engine/engine.js's applyAction shape exactly. */
+ * cursor. Mirrors engine/engine.js's applyAction shape exactly.
+ *
+ * CMB-01 (Phase 31): every scripted `"startCombat"` fixture action is
+ * immediately followed by scripted `attack`/`flee`/`parley` actions that
+ * assume combat is ALREADY past initiative — this is what today's
+ * single-call `startCombat` produced. `fight` is chained on the SAME rng
+ * (a REAL state advance, not a compare-only reconcile) so the replay state
+ * advances exactly as far as the prototype's single call did. */
 export function applyStartCombat(state, wandering, forced) {
   const next = structuredClone(state);
   const rng = makeRng(next.rngState);
   const events = [];
   startCombat(next, wandering, forced, rng, events);
+  fight(next, rng, events);
   next.rngState = rng.getState();
   return { state: next, events };
 }
@@ -686,6 +721,9 @@ export function economyComparable(state) {
   // fourth analog of party/pendingJoiner/pendingFind; always false on a
   // fixture (every fixture calls newRun(seed)); the prototype master has no
   // such field.
+  // CMB-01 (Phase 31): reconcile a pending combat FIRST — see
+  // reconcilePendingFight's own JSDoc.
+  state = reconcilePendingFight(state);
   // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
   // a fifth analog of party/pendingJoiner/pendingFind/dev; reconciled (not
   // just dropped) via reconcilePendingLoot below.

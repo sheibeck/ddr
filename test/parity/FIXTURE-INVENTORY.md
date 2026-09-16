@@ -35,6 +35,7 @@ intent artifact).
 | action-script.combat.json | win | 3 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
+| action-script.combat.json | lose-plain | 1119 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 8); Ned (Humans lvl 1, wp 8) |
 | action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
@@ -654,3 +655,69 @@ Neither `test/parity/prototype-master.js.txt` nor
 divergence is checked entirely through the pre-existing, generic
 `actionPathDivergenceOf`/`skipsByteDiffAt`/`declaredEndDiffs` helpers Phase
 24 already wired into both combat replay sites.
+
+## Phase 31: phobia is a penalty (Afraid) — three declared action-path divergences
+
+CMB-01 (user ruling 2026-09-16, "Phobia should be penalties, never a no
+actions state") splits `startCombat` at the roster/`pending` cut line: a new
+`fight` action performs `rollInitiative` onward (the phobia trigger, the
+pre-emptive `foeTurn`) in a SEPARATE dispatch. A triggered phobia now sets
+`combat.afraid = 2` (a −3 to-hit-need penalty, floor 1, and halved damage on
+the player's strikes, both via `engine/derived.js#afraidNeed`/`afraidDamage`)
+instead of freezing the hero and spending the first strike shaking it off.
+Because the compared `combat` object itself differs the instant Fight!
+resolves (the prototype's boolean freeze flag vs. the engine's `afraid: 2`
+counter), every fixture whose hero triggers a phobia carries a declared
+`kind: "action-path"` divergence record with `fromAction: 0` — the per-action
+byte diff is skipped from there and the end state is machine-checked instead
+via `declaredEndDiffs`. Exactly THREE fixtures reach this branch (a plan-time
+probe of every fixture scenario found no others):
+
+| Fixture | Scenario | Seed | Hero | Fear | fromAction | before → after (declared `fields`) | What changed |
+|---|---|---|---|---|---|---|---|
+| action-script.combat.json | lose | 14 | Fridgian Soldier | Bats and rats (Beasts) | 0 | wp 0→51, sp 5→45, kills 1→2, rations 7→8 (dead: true→false) | Re-measured (was a Phase 24 record, `fromAction` 1→0): the prototype froze and lost action 1's strike; the engine's action 1 is a real strike at need −3/half damage, on top of the pre-existing Phase 24 frenzy/hide divergence |
+| action-script.combat.json | lose-apprentice | 127 | Human Apprentice | Bats and rats (Beasts) | 0 | wp 0→0, sp 0→0, gold 50→50, kills 0→0, rations 4→4 (dead: true→true) | NEW divergence (previously byte-identical, Phase 24): the hero still dies, matching the prototype's own outcome, but the draw sequence from action 1 onward differs |
+| action-script.magic.json | cast-damage | 8 | Wilmsry Illusionist | Bats and rats (Beasts) | 0 | sp 0→5, gold 50→51, kills 0→1, rations 4→5 (dead: false→false) | Upgraded from a Phase 23 field-only record to action-path (same declared `after` values — Freeze still pays out identically) |
+
+Because `lose-apprentice` moved from byte-identical to a declared divergence,
+its death-path coverage is restored by a NEW no-divergence scenario,
+**`lose-plain`** (`action-script.combat.json`, seed 1119: a plain Human
+Cutthroat with no Beasts phobia, `startCombat` + 7 attacks, dies on the 7th)
+— found by an engine scan of seeds 1-5000 against a forced Beasts encounter
+and confirmed action-by-action against the prototype sandbox; it carries NO
+divergence record and compares byte-identical after every action, exactly
+restoring the coverage `lose-apprentice` (seed 127) provided before this
+phase (see the roster table above for its one new generated row).
+
+Every event carrying the phobia trigger is renamed
+(`phobiaFrozen`→`phobiaAfraid {rounds}`, `shookOffFrozen`→`fearPassed`) —
+`test/unit/afraid.test.js`/`test/unit/fight-gate.test.js` pin the mechanic at
+the engine level; the parity records above only prove the fixture-level
+consequence.
+
+### A fourth, incidental re-measurement: `parley` (seed 303)
+
+The Fight! split also moves `rollInitiative` (and everything from it onward)
+out of `startCombat` into the separate `fight` action, which now runs
+strictly AFTER the encounter step's Knight/Con Artist/Court Mage foe-removal
+loop completes (that loop stays in `startCombat`, in its existing position,
+ahead of the cut line) — a structural rng-order change for any character
+whose sub draws in that loop. The `parley` scenario's Con Artist (seed 303)
+is exactly such a character: its level-1-foe escape roll (`rng.d(6)`, one of
+the two Neds fled) now lands BEFORE the two initiative d20s instead of after,
+so the initiative outcome and every downstream draw shift. This is NOT a
+phobia trigger — it is re-measured under the SAME pre-existing Phase 27
+`kind: "action-path"` record (`fromAction: 0`, unchanged), only the declared
+`after` values move: `wp 40→34, sp 7→5` (gold/kills/rations unchanged). The
+outcome is still a successful parley, just with a shallower margin (the foes
+win initiative and land one pre-emptive strike first).
+
+### Byte-identical elsewhere
+
+Every other fixture scenario — `win`/`flee` (combat), `heal`/`potion`/
+`scroll` (magic), the movement script (seed 256; the pending-fight-audit
+test proves its 101 actions never produce a non-null `state.combat`), the
+chargen fixture, the economy script, and every encounters scenario (none of
+the three `encounterDot` seeds starts a combat) — is unchanged, with no
+carve-out. `test/parity/prototype-master.js.txt` is never edited; no
+existing scenario's `seed`/`actions` array was touched.

@@ -180,11 +180,16 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
 
   await t.test("magic: every magic scenario matches the frozen prototype", () => {
     for (const scenario of MAGIC_FIXTURE.scenarios) {
-      // FID-06 (Phase 23, "Freeze pays out"): the `cast-damage` scenario
-      // (seed 8) carries a declared, measured `divergence` record — select
-      // the scenario-scoped stripper only for it, mirroring
-      // magic-parity.test.js's identical selection.
-      const cmp = scenario.divergence ? (s) => stripScenarioDivergence(combatComparable(s), scenario.divergence) : combatComparable;
+      // FID-06 (Phase 23, "Freeze pays out") / CMB-01 (Phase 31): the
+      // `cast-damage` scenario (seed 8) carries a declared, measured
+      // `divergence` record — Phase 31 upgraded it to an "action-path"
+      // shape (the compared combat object itself differs from action 0),
+      // mirroring the combat sub-test above and magic-parity.test.js's
+      // identical selection. A kind-less (Phase 23-shaped) record still
+      // selects the scenario-scoped stripper (no fixture uses that shape
+      // today, but it stays supported).
+      const pathDiv = actionPathDivergenceOf(scenario);
+      const cmp = pathDiv ? combatComparable : scenario.divergence ? (s) => stripScenarioDivergence(combatComparable(s), scenario.divergence) : combatComparable;
 
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
@@ -207,11 +212,20 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
           engineState = state;
           allEventTypes.push(...events.map((e) => e.type));
         }
-        const d = diffState(cmp(ctx.S), cmp(engineState));
-        assert.equal(d, null, `magic scenario ${scenario.name}, action ${i}: diverged at ${d}`);
+        // FID-07 (Phase 24) / CMB-01 (Phase 31): skip the per-action byte
+        // diff only when a declared action-path record says the path
+        // diverges from this index on.
+        if (!skipsByteDiffAt(pathDiv, i)) {
+          const d = diffState(cmp(ctx.S), cmp(engineState));
+          assert.equal(d, null, `magic scenario ${scenario.name}, action ${i}: diverged at ${d}`);
+        }
       });
 
-      if (scenario.divergence) {
+      if (pathDiv) {
+        const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+        assert.equal(ends.before, null, `magic scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
+        assert.equal(ends.after, null, `magic scenario ${scenario.name}: engine end-state != declared after at ${ends.after}`);
+      } else if (scenario.divergence) {
         const protoC = combatComparable(ctx.S).c;
         const engineC = combatComparable(engineState).c;
         for (const field of scenario.divergence.fields) {
@@ -221,8 +235,15 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       }
 
       if (scenario.name === "cast-damage") {
+        // Phase 31 (CMB-01): the afraid caster still casts and still pays
+        // out; nothing is ever refused for fear.
+        assert.ok(allEventTypes.includes("phobiaAfraid"), "the Illusionist's Beasts phobia triggered Afraid");
+        assert.ok(allEventTypes.includes("spellThrown"), "the afraid caster still casts");
         assert.ok(allEventTypes.includes("frozenSolid"), "the frozen foe was narrated");
         assert.ok(allEventTypes.includes("foeKilled"), "the Freeze kill paid out via killFoe");
+        assert.ok(!allEventTypes.includes("castRefused"), "nothing is ever refused for fear");
+        assert.ok(!allEventTypes.includes("strikeRefused"), "nothing is ever refused for fear");
+        assert.equal(engineState.combat, null);
       }
     }
   });

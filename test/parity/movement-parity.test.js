@@ -24,6 +24,7 @@ import url from "node:url";
 import { newRun, applyAction } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
+import { reconcilePendingFight } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -54,6 +55,12 @@ function comparable(state) {
   // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
   // the movement fixture never fights (RESEARCH "LOOT-05 guard safety"), so
   // it is always empty here — a plain strip (no reconcile) suffices.
+  // CMB-01 (Phase 31): reconcile a pending combat FIRST — before the
+  // destructure below, since it needs the live rng cursor (a no-op here:
+  // this fixture's 101 moves never produce a non-null state.combat, per the
+  // pending-fight-audit test). See reconcilePendingFight's own JSDoc
+  // (harness/comparables.js).
+  state = reconcilePendingFight(state);
   const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, ...rest } = state;
   // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field (see
   // engine/character.js's rollCharacter) with no prototype-side equivalent
