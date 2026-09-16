@@ -5,15 +5,15 @@ milestone_name: Feel, Loot & Combat Flow
 current_phase: 28
 current_phase_name: Armor Integrity & Durability
 status: executing
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-09-16T01:24:34.094Z"
+stopped_at: Completed 28-02-PLAN.md
+last_updated: "2026-09-16T01:42:42.208Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 28 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-15 for v1.3)
 ## Current Position
 
 Phase: 28 (Armor Integrity & Durability) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-15 — Phase 28 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T01:24:34.072Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-09-16T01:42:42.184Z
+Stopped at: Completed 28-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -151,6 +151,7 @@ Resume file: None
 | Phase 27 P02 | 65min | 4 tasks | 20 files |
 | Phase 27 P03 | 72min | 3 tasks | 9 files |
 | Phase 28 P01 | 25min | 3 tasks | 4 files |
+| Phase 28 P02 | 35min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -261,6 +262,8 @@ Resume file: None
 - [Phase ?]: 27-03: bounded 4-iteration retune landed COMBAT_SCALE_FROM_DEPTH 6->21, FOE_GRACE_AT_2 0.75->0.5, ENCOUNTER_DOT_CAP 15->13, FOE_POWER_MAX/ABILITY_THREAT_MAX flattened to 1.15/1.3 — natural median/reach and forced-20 encounters-survived in band; forced-20 floors-gained recorded as a miss for the DR round
 - [Phase ?]: Assumption A1 accepted: combat's armorDestroyed path still leaves c.ar/c.armor/c.armorMax untouched; the destroyed-armor guard lives entirely in wornArmorItem + unequipSlot
 - [Phase ?]: rollMailPiece's txt unit token changed from 'wp' to 'hp' for consistency (parity-safe via comparables.js's existing normalizeHpUnit)
+- [Phase ?]: 28-02: armorDisplay's current/max always reflect the WORN piece's own pool, never the cloak's — the cloak's magic plate has no separate durability pool to show
+- [Phase ?]: 28-02: Cloak of Armor txt rewrite is a genuine but purely cosmetic content divergence from the frozen prototype; carved out via a new stripCloakArmorTxt comparables helper (mirrors stripNameField) rather than editing prototype-master.js.txt or any fixture
 
 ### Blockers
 

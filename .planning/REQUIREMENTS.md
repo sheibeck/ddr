@@ -18,9 +18,9 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 ### Armor (ARMOR)
 
 - [x] **ARMOR-01**: The soak-vs-wear rule is audited against the prototype and rulebook (d20 ≤ AR soaks the whole blow; blocked damage above the armor's min is charged to durability; Cloak = never-wearing magic plate; Dwarves wear at half), a keep/change decision is recorded as a Key Decision, and any change ships as a declared parity divergence
-- [ ] **ARMOR-02**: The "Armor takes N / Wear N" toast and the gear panel / character sheet always agree — the observed "toast says wear, panel shows no damage" discrepancy is root-caused and fixed, with a test pinning toast `wear` = durability delta on the displayed armor
+- [x] **ARMOR-02**: The "Armor takes N / Wear N" toast and the gear panel / character sheet always agree — the observed "toast says wear, panel shows no damage" discrepancy is root-caused and fixed, with a test pinning toast `wear` = durability delta on the displayed armor
 - [x] **ARMOR-03**: Armor durability is carried on the item, so unequip → swap → re-equip preserves remaining durability (kills the full-repair exploit); new serialized field carved out of the parity comparables, save-migration tolerant
-- [ ] **ARMOR-04**: Cloak of Armor is legible and real — its item text says exactly what it does (never-wearing magic plate, or a redesign) and the armor UI shows it as the effective armor when carried
+- [x] **ARMOR-04**: Cloak of Armor is legible and real — its item text says exactly what it does (never-wearing magic plate, or a redesign) and the armor UI shows it as the effective armor when carried
 - [x] **ARMOR-05**: Player can tell the four armor outcomes apart on screen: soaked-with-wear, soaked-without-wear (blow ≤ armor min), magic-plate soak, armor gives out
 
 ### End-of-combat loot (LOOT)
@@ -112,9 +112,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ARMOR-01 | Phase 28 | Complete |
-| ARMOR-02 | Phase 28 | Pending |
+| ARMOR-02 | Phase 28 | Complete |
 | ARMOR-03 | Phase 28 | Complete |
-| ARMOR-04 | Phase 28 | Pending |
+| ARMOR-04 | Phase 28 | Complete |
 | ARMOR-05 | Phase 28 | Complete |
 | LOOT-01 | Phase 29 | Pending |
 | LOOT-02 | Phase 29 | Pending |
