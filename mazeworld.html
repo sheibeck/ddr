@@ -2948,6 +2948,20 @@ const COMBAT_COPY = {
   back: "BACK",
   fullHealth: "Already at full health. The potion stays corked.",
   noPotions: "No potions left. The bag is honest about that.",
+  // Phase 34 (CSCR-07), Plan 05 — the over-panel's own literals: take-all/
+  // leave-all button labels, the loot list's section head, the ending-
+  // header right-hand text, and the four fight-ending variants (title/line/
+  // btn for won/soothed/fled, title/line/oracle/bury for dead).
+  takeAll: "TAKE ALL",
+  leaveAll: "LEAVE ALL",
+  lootHead: "WHAT THEY LEFT BEHIND",
+  headerOver: { won: "NONE STANDING", soothed: "NONE STANDING", fled: "YOU LEFT", dead: "YOU FELL" },
+  over: {
+    won: { title: "THEY ARE DOWN", line: "Every one of them. Try not to look smug.", btn: "BACK TO THE MAZE" },
+    soothed: { title: "THEY STAND DOWN", line: "Words. Who knew.", btn: "BACK TO THE MAZE" },
+    fled: { title: "YOU GOT OUT", line: "Not proud. Not dead either.", btn: "BACK TO THE MAZE" },
+    dead: { title: "THAT IS THAT", line: "The maze keeps the rest.", oracle: "REVIEW THE ORACLE", bury: "BURY THEM" },
+  },
 };
 
 // Phase 32 (CMBUI-02) archival note: the Round Card's header copy lived
@@ -5520,6 +5534,89 @@ function renderActionArea(host) {
   guardTap(document.getElementById("cb-social"), () => openCombatMenu(vm.actions[3]));
 }
 
+// Phase 34 (CSCR-07) — the report/beat/last-words lines are engine HTML with
+// span.roll/hit/hurt; the over-panel prints them as plain text — dice kept —
+// through textContent only. This is the one innerHTML in the helper and it
+// never touches the live DOM.
+function htmlToPlain(html) {
+  const t = document.createElement("template");
+  t.innerHTML = String(html ?? "");
+  return (t.content.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+// Phase 34 (CSCR-07) — the win/soothed/fled/dead over-panel: header ->
+// parked ending lines (window.__mzFightEnd, Plan 02) plus any extra lines ->
+// title/line/buttons. Every button that carries its own onTap is wired
+// through guardTap here; the death Confirm carries none (wireDeathConfirm
+// wires it separately, keeping its existing armed-no-lock behaviour).
+function renderCombatOver(host, kind, opts = {}) {
+  const copy = COMBAT_COPY.over[kind] || COMBAT_COPY.over.won;
+  renderCombatHeader(host, { label: "ENCOUNTER", round: "", standing: COMBAT_COPY.headerOver[kind] || "" });
+  const mid = document.createElement("div");
+  mid.className = "cb-mid";
+  mid.id = "cb-mid";
+  const lines = document.createElement("div");
+  lines.className = "cb-over-lines";
+  const allLines = [
+    ...((window.__mzFightEnd && window.__mzFightEnd.lines) ? window.__mzFightEnd.lines : []),
+    ...(opts.lines || []),
+  ];
+  allLines.forEach((line) => {
+    const p = document.createElement("p");
+    p.textContent = htmlToPlain(line);
+    lines.appendChild(p);
+  });
+  if (kind === "dead") {
+    const p1 = document.createElement("p");
+    p1.textContent = `${S.c.name}, ${S.c.race} ${S.c.sub}, ${S.deathNote}.`;
+    lines.appendChild(p1);
+    const p2 = document.createElement("p");
+    p2.textContent = `Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} XP`;
+    lines.appendChild(p2);
+    const epitaph = document.createElement("p");
+    epitaph.className = "cb-epitaph";
+    epitaph.textContent = S.epitaph || "";
+    lines.appendChild(epitaph);
+    (S.lastWords || []).forEach((l) => {
+      const p = document.createElement("p");
+      p.textContent = htmlToPlain(l);
+      lines.appendChild(p);
+    });
+  }
+  mid.appendChild(lines);
+  if (typeof opts.fillMid === "function") opts.fillMid(mid);
+  host.appendChild(mid);
+  const over = document.createElement("div");
+  over.className = "cb-over";
+  over.id = "cb-over";
+  const title = document.createElement("div");
+  title.className = "cb-over-title" + (kind === "dead" ? " dead" : "");
+  title.textContent = copy.title;
+  over.appendChild(title);
+  const line = document.createElement("div");
+  line.className = "cb-over-line";
+  line.textContent = copy.line;
+  over.appendChild(line);
+  if (Array.isArray(opts.buttons) && opts.buttons.length) {
+    const actions = document.createElement("div");
+    actions.className = "cb-over-actions";
+    opts.buttons.forEach((b) => {
+      const btn = document.createElement("button");
+      btn.className = "cb-over-btn" + (b.cls ? " " + b.cls : "");
+      btn.id = b.id;
+      btn.textContent = b.label;
+      actions.appendChild(btn);
+    });
+    over.appendChild(actions);
+  }
+  host.appendChild(over);
+  if (Array.isArray(opts.buttons)) {
+    opts.buttons.forEach((b) => {
+      if (b.onTap) guardTap(document.getElementById(b.id), b.onTap);
+    });
+  }
+}
+
 function renderEncounter() {
   const panel = document.getElementById("enc-panel");
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
@@ -5537,6 +5634,11 @@ function renderEncounter() {
   if (encWasActive && !active) {
     lastDismissAt = Date.now();
     window.mzCenterMap?.();
+    // Phase 34 (CSCR-07): the panel just closed — clear the ending-line
+    // parcel and the submenu state so a fresh encounter never inherits a
+    // previous fight's leftovers.
+    window.__mzFightEnd = null;
+    window.__mzCombatMenu = null;
   }
   encWasActive = active;
   if (!active) {
@@ -5570,22 +5672,18 @@ function renderEncounter() {
   // and THEN this death card shows.
   const preDeathBeat = S.dead && S.beats && S.beats.preDeath && S.beats.groups && S.beats.groups.length;
   if (S.dead && !preDeathBeat) {
-    body.innerHTML = `<div class="deathcard">
-      <h3>Dead</h3>
-      <p>${S.c.name}, ${S.c.race} ${S.c.sub}, ${S.deathNote}.<br>
-      Floor ${S.floor.depth} · day ${S.day} · ${Math.round(S.c.sp)} XP</p>
-      <p class="epitaph">${S.epitaph || ""}</p>
-      ${(S.lastWords && S.lastWords.length) ? `<div class="lastwords">${S.lastWords.map(l => `<p>${l}</p>`).join("")}</div>` : ""}
-      <div class="again">
-        <button class="small" id="btn-death-oracle">Review the Oracle</button>
-        <button class="primary" id="btn-death-confirm">Confirm</button>
-      </div></div>`;
-    // DR16 Fix 3: let the player read the full Oracle log (what killed them,
-    // their last exchanges) BEFORE dismissing. The log lives on its own ORACLE
-    // tab; this affordance jumps there. The death overlay + Confirm persist on
-    // the MAP tab, so returning still lands on the armed Confirm.
-    const oracleBtn = document.getElementById("btn-death-oracle");
-    guardTap(oracleBtn, () => window.__mzShowTab?.("oracle"));
+    // Phase 34 (CSCR-07): THAT IS THAT — the mock's dark over-panel, not the
+    // legacy death card markup. DR16 Fix 3 (read the Oracle before
+    // dismissing) and DR4 group 3 (Confirm stays armed, no read-first lock)
+    // both carry over; wireDeathConfirm keeps the existing armed-Confirm
+    // wiring untouched.
+    panel.dataset.mode = "dark";
+    renderCombatOver(body, "dead", {
+      buttons: [
+        { id: "btn-death-oracle", label: COMBAT_COPY.over.dead.oracle, cls: "secondary", onTap: () => window.__mzShowTab?.("oracle") },
+        { id: "btn-death-confirm", label: COMBAT_COPY.over.dead.bury, cls: "dead" },
+      ],
+    });
     wireDeathConfirm();
     return;
   }
@@ -5604,6 +5702,18 @@ function renderEncounter() {
   // whatever just happened comes first — one moment at a time on a phone
   if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
     const b = S.beats;
+    // Phase 34 (CSCR-07): a won-without-drops / soothed / fled fight ends on
+    // the over-panel; every other beat (floor, level-up, feature narration)
+    // keeps the legacy card until Phase 35.
+    if (b.over) {
+      panel.dataset.mode = "dark";
+      const grp = b.groups && b.groups[0];
+      renderCombatOver(body, b.over, {
+        lines: grp && grp.lines ? grp.lines : [],
+        buttons: [{ id: "cb-over-btn", label: COMBAT_COPY.over[b.over] ? COMBAT_COPY.over[b.over].btn : COMBAT_COPY.over.won.btn, cls: "", onTap: () => { S.beats = null; renderEncounter(); } }],
+      });
+      return;
+    }
     // Phase 31 (CMB-01): the AMBUSH pre-death Fight! gate that used to live
     // here is gone — a pre-emptive foe kill can no longer happen on a bare
     // move/encounter roll, because nothing rolls or strikes until the player
@@ -5650,30 +5760,36 @@ function renderEncounter() {
     const c = S.c;
     const usage = window.__mzBagUsage(c);
     const rep = window.__mzLootReport;
-    body.innerHTML += `<p class="enc-head" style="color:var(--moss)">${rep ? rep.title : "The spoils"}</p>`;
-    if (rep && rep.lines && rep.lines.length) {
-      body.innerHTML += `<div class="evt">${rep.lines.map((l) => `<p>${l}</p>`).join("")}</div>`;
-    }
-    body.innerHTML += `<p class="enc-sub">What they left behind · bag ${usage.text || "unlimited"}</p>
-      <ul class="skills" id="loot-list"></ul>`;
+    panel.dataset.mode = "dark";
+    const kind = rep && rep.over === "soothed" ? "soothed" : "won";
     const needsSlot = S.pendingLoot.some((it) => it.kind !== "potion" && it.kind !== "bag");
-    if (usage.full && needsSlot) {
-      body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
-        <div class="shelf" id="loot-drop-shelf"></div>`;
-    }
-    body.innerHTML += `<div class="actions"><button class="primary" id="a-loot-take-all">Take all</button><button id="a-loot-leave-all">Leave all</button></div>`;
-    renderCarriedList(document.getElementById("loot-list"), S.pendingLoot, {
-      actions: ["lootEquip", "lootTake", "lootLeave"],
-      guard: true,
-      subFor: (it) => {
-        const cmp = window.__mzLootCompare(c, it);
-        return cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line;
+    renderCombatOver(body, kind, {
+      lines: rep && rep.lines ? rep.lines : [],
+      fillMid: (mid) => {
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `<p class="cb-sub">${COMBAT_COPY.lootHead} · bag ${usage.text || "unlimited"}</p>
+          <ul class="skills cb-loot" id="loot-list"></ul>`
+          + (usage.full && needsSlot
+            ? `<p class="cb-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
+              <div class="shelf" id="loot-drop-shelf"></div>`
+            : "");
+        mid.appendChild(wrap);
+        renderCarriedList(document.getElementById("loot-list"), S.pendingLoot, {
+          actions: ["lootEquip", "lootTake", "lootLeave"],
+          guard: true,
+          subFor: (it) => {
+            const cmp = window.__mzLootCompare(c, it);
+            return cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line;
+          },
+        });
+        const dropShelf = document.getElementById("loot-drop-shelf");
+        if (dropShelf) renderDropShelf(dropShelf, c.items || []);
       },
+      buttons: [
+        { id: "a-loot-take-all", label: COMBAT_COPY.takeAll, cls: "", onTap: () => window.mzTakeAllLoot?.() },
+        { id: "a-loot-leave-all", label: COMBAT_COPY.leaveAll, cls: "secondary", onTap: () => window.mzLeaveAllLoot?.() },
+      ],
     });
-    const dropShelf = document.getElementById("loot-drop-shelf");
-    if (dropShelf) renderDropShelf(dropShelf, c.items || []);
-    guardTap(document.getElementById("a-loot-take-all"), () => window.mzTakeAllLoot?.());
-    guardTap(document.getElementById("a-loot-leave-all"), () => window.mzLeaveAllLoot?.());
     return;
   }
 
@@ -5689,6 +5805,7 @@ function renderEncounter() {
   // Oracle log. Buttons inherit the base ≥48dp min-height and the .actions
   // gap keeps the two choices separated (UX-02 mis-tap rule).
   if (S.pendingJoiner && !S.combat && !S.store) {
+    panel.dataset.mode = "dark";
     const j = S.pendingJoiner;
     const lvl = j.lvl ?? j.level ?? 1;
     const ident = [j.race, j.sub].filter(Boolean).join(" ");
@@ -5731,6 +5848,7 @@ function renderEncounter() {
   // findTaken/findLeft/itemDropped narration already flows to the Oracle log.
   // Buttons inherit the base ≥48dp min-height (UX-02 mis-tap rule).
   if (S.pendingFind && !S.combat && !S.store) {
+    panel.dataset.mode = "dark";
     const it = S.pendingFind;
     const c = S.c;
     // Phase 29 (LOOT-04): the ONE capacity readout and full-bag gate —
@@ -6169,7 +6287,7 @@ addEventListener("keydown", e => {
     // used to live here is gone — see renderEncounter's beats branch; the
     // pending-fight gate is its own MAJOR OVERLAY branch above, keyed on
     // S.combat.pending, not reachable from here).
-    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next"); if (n) n.click(); }
+    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next") || document.getElementById("cb-over-btn"); if (n) n.click(); }
     return;
   }
   if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
