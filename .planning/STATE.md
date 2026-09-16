@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 status: planning
-stopped_at: "v1.4 Combat Screen started — Phase 34 context next; v1.3 UAT batch still pending on the Pixel 7"
+stopped_at: "v1.3 closed (tag v1.3). v1.4 Combat Screen scaffolded: REQUIREMENTS (CSCR-01..10), ROADMAP Phase 34, spec at design/Mazeworld Combat Panel.dc.html, 34-CONTEXT.md written. Next: /gsd-autonomous (defer uat to end) or /gsd-plan-phase 34 — research → Opus plan → execute → build + adb install"
 last_updated: "2026-09-16T20:16:45.488Z"
 last_activity: 2026-09-16
 last_activity_desc: Milestone v1.3 completed and archived
@@ -87,7 +87,7 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 ## Session Continuity
 
 Last session: 2026-09-16T19:52:13.637Z
-Stopped at: v1.4 Combat Screen started — Phase 34 context next; v1.3 UAT batch still pending on the Pixel 7
+Stopped at: v1.3 closed (tag v1.3). v1.4 Combat Screen scaffolded: REQUIREMENTS (CSCR-01..10), ROADMAP Phase 34, spec at design/Mazeworld Combat Panel.dc.html, 34-CONTEXT.md written. Next: /gsd-autonomous (defer uat to end) or /gsd-plan-phase 34 — research → Opus plan → execute → build + adb install
 Resume file: None
 
 ## Operator Next Steps
