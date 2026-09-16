@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
-status: Awaiting next milestone
-stopped_at: "v1.3 shipped and archived (Phases 28–33). Pending: the consolidated Pixel 7 UAT batch (50 checks incl. the CMBUI-06 DR round) against the installed debug build; then /gsd-new-milestone"
+status: planning
+stopped_at: "v1.4 Combat Screen started — Phase 34 context next; v1.3 UAT batch still pending on the Pixel 7"
 last_updated: "2026-09-16T20:16:45.488Z"
 last_activity: 2026-09-16
 last_activity_desc: Milestone v1.3 completed and archived
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: Milestone v1.3 complete
-Plan: —
-Status: Awaiting next milestone
+Plan: Not started
+Status: Ready to discuss/plan (v1.4 started 2026-09-16 from the Claude Design combat mock)
 Last activity: 2026-09-16 — Milestone v1.3 completed and archived
 
 ## Ground Truth (durable facts every session needs)
@@ -87,7 +87,7 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 ## Session Continuity
 
 Last session: 2026-09-16T19:52:13.637Z
-Stopped at: v1.3 shipped and archived (Phases 28–33). Pending: the consolidated Pixel 7 UAT batch (50 checks incl. the CMBUI-06 DR round) against the installed debug build; then /gsd-new-milestone
+Stopped at: v1.4 Combat Screen started — Phase 34 context next; v1.3 UAT batch still pending on the Pixel 7
 Resume file: None
 
 ## Operator Next Steps

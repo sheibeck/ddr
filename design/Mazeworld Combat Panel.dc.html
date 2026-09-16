@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0a0806;display:flex;justify-content:center;align-items:flex-start;padding:28px 0 40px;font-family:'Courier Prime',ui-monospace,monospace}
+a{color:#e8c97a}a:hover{color:#f6e0a2}
+*{-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes mwfade{from{opacity:0}to{opacity:1}}
+@keyframes mwrise{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes mwtorch{0%,100%{opacity:.9}50%{opacity:.5}}
+</style></helmet>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:50px;background:#120f0a;color:#e6ddc6;font-family:'Courier Prime',monospace;overflow:hidden">
+
+<div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:10px 14px 9px;border-bottom:3px solid #6b2c22;background:#1e120f;flex:none">
+<span style="font-family:'Press Start 2P';font-size:8px;color:#e07260">ENCOUNTER</span>
+<div style="display:flex;gap:11px;align-items:baseline">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;color:#e8c97a">ROUND {{ round }}</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;color:#c9bda0">{{ aliveLabel }}</span>
+</div>
+</div>
+
+<div style="flex:1;overflow:auto;min-height:0">
+
+<div style="padding:11px 12px 0">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#a89c82;line-height:1.7">{{ targetHint }}</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:13px;color:#8f856f">{{ threatLabel }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+<sc-for list="{{ foes }}" as="f" hint-placeholder-count="3">
+<div onClick="{{ f.onPick }}" style="{{ f.style }}">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+<span style="{{ f.glyph }}">{{ f.icon }}</span>
+<div style="min-width:0;flex:1">
+<div style="font-family:'Press Start 2P';font-size:8px;line-height:1.5;color:#e6ddc6">{{ f.name }}</div>
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:12px;color:#a89c82;margin-top:4px">{{ f.meta }}</div>
+</div>
+</div>
+<div style="text-align:right;flex:none">
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:15px;color:#e6ddc6">{{ f.wpLabel }}</div>
+<div style="{{ f.tag }}">{{ f.tagLabel }}</div>
+</div>
+</div>
+<div style="height:6px;background:#2c2519;margin-top:7px;box-shadow:inset 0 0 0 2px #0f0d09"><div style="{{ f.bar }}"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="padding:12px 12px 0">
+<div style="font-family:'Press Start 2P';font-size:6.5px;color:#a89c82;line-height:1.7">{{ partyHint }}</div>
+<div style="display:flex;gap:6px;margin-top:8px">
+<sc-for list="{{ party }}" as="p" hint-placeholder-count="3">
+<div style="{{ p.style }}">
+<div style="font-family:'Press Start 2P';font-size:7px;line-height:1.5">{{ p.name }}</div>
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;margin-top:5px">{{ p.wp }}</div>
+<div style="height:5px;background:#2c2519;margin-top:5px"><div style="{{ p.bar }}"></div></div>
+<div style="{{ p.vpStyle }}">{{ p.vp }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="padding:10px 12px 6px">
+<sc-for list="{{ log }}" as="e" hint-placeholder-count="0">
+<div onClick="{{ e.onClick }}" style="display:flex;gap:8px;margin-top:11px;cursor:pointer">
+<span style="{{ e.mark }}">›</span>
+<div style="flex:1">
+<div style="{{ e.textStyle }}">{{ e.text }}</div>
+<div style="{{ e.rollStyle }}">{{ e.rollText }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="flex:none;border-top:3px solid #3a3226;background:#1b170f">
+<sc-if value="{{ isMenu }}" hint-placeholder-val="{{ true }}">
+<div style="padding:10px 12px 26px">
+<div style="font-family:'Press Start 2P';font-size:6.5px;color:#e8c97a;line-height:1.7">{{ actorPrompt }}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+<sc-for list="{{ actions }}" as="a" hint-placeholder-count="4">
+<div onClick="{{ a.onClick }}" style="{{ a.style }}">
+<div style="font-family:'Press Start 2P';font-size:7.5px;line-height:1.6">{{ a.label }}</div>
+<div style="{{ a.subStyle }}">{{ a.sub }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSubmenu }}" hint-placeholder-val="{{ false }}">
+<div style="padding:10px 12px 26px;animation:mwrise .16s ease">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#e8c97a;line-height:1.7">{{ subTitle }}</span>
+<span onClick="{{ onBack }}" style="font-family:'Press Start 2P';font-size:7px;color:#c9bda0;cursor:pointer;padding:7px 9px;border:2px solid #4a4032;flex:none">BACK</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:9px;max-height:206px;overflow:auto;padding-right:4px">
+<sc-for list="{{ subItems }}" as="o" hint-placeholder-count="3">
+<div onClick="{{ o.onClick }}" style="{{ o.style }}">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<span style="font-family:'Press Start 2P';font-size:7.5px;line-height:1.6;min-width:0;overflow:hidden">{{ o.label }}</span>
+<span style="{{ o.costStyle }}">{{ o.cost }}</span>
+</div>
+<div style="{{ o.descStyle }}">{{ o.desc }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isOver }}" hint-placeholder-val="{{ false }}">
+<div style="padding:13px 12px 28px;animation:mwfade .2s ease">
+<div style="{{ over.titleStyle }}">{{ over.title }}</div>
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:15px;color:#c9bda0;margin-top:8px;line-height:1.45">{{ over.line }}</div>
+<div onClick="{{ over.onClick }}" style="{{ over.btnStyle }}">{{ over.btn }}</div>
+</div>
+</sc-if>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:900},&quot;foeCount&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:5,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Encounter&quot;},&quot;partyMode&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Encounter&quot;},&quot;diceMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;on tap&quot;,&quot;always&quot;,&quot;never&quot;],&quot;default&quot;:&quot;on tap&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Combat&quot;}}">
+// ── Behaviour reference (the mock's own toy engine; OUR engine is the source of truth — only the
+// ── style objects and copy tone below are the spec). Style values referenced by the spec:
+//
+// foe card:   border 2px (dead #241f16 | selected #e8c97a | else #6b2c22); background (dead #15120c | selected #241d12 | else #1e120f);
+//             padding 10px 11px; dead opacity .45; glyph 19px (dead #6d6455 | selected #e8c97a | else #e07260) width 22 centered;
+//             tag: Press Start 2P 6px, line-height 1.8, margin-top 5, color (dead #8f856f | status #a78ce8 | else #e8c97a),
+//             text DOWN | <STATUS · STATUS> | TARGET (only when >1 foe alive); wp label "5 / 12" or "—" when dead;
+//             bar fill width pct, background (dead #3a3226 | #c4483a), transition width .3s steps(6).
+// party card: flex 1; padding 9px 6px; text-align center; border 2px (active #e8c97a | #3a3226);
+//             background (active #241d12 | down #15120c | transparent); color (down #8f856f | active #e8c97a | #c9bda0);
+//             wp "27/34" or DOWN; bar 5px fill (down #3a3226 | >35% #7f9d4e | else #e05a48); "N VP" Courier 700 12px (#a89c82 | down #8f856f).
+// log entry:  mark › color #6b5c3c 15px 700; text 15px 700 line-height 1.5 #c9bda0; roll line Courier 700 13.5px #e8c97a, revealed on tap
+//             (diceMode "on tap"), always, or never; newest FIRST.
+// action btn: padding 12px 10px; text-align left; border 2px (accent #a63a2c | #6b5c3c); background (accent #2a1512 | enabled #241d12 | #191510);
+//             color (enabled: accent #e07260 | #e8c97a; disabled #8f856f); box-shadow enabled 0 4px 0 #0d0b08; label Press Start 2P 7.5px;
+//             sub Courier 700 12.5px margin-top 6 (#a89c82 | disabled #8f856f) line-height 1.35. Grid 2 columns, gap 7.
+// submenu:    item border 2px (#6b5c3c | disabled #241f16); background (#241d12 | #191510); padding 10px 11px; label Press Start 2P 7.5px;
+//             cost Courier 700 14px #e8c97a; desc Courier 700 13px #a89c82 margin-top 6 line-height 1.4; list max-height 206 scroll; BACK chip
+//             Press Start 2P 7px #c9bda0 padding 7px 9px border 2px #4a4032; panel animates mwrise .16s.
+// over panel: title Press Start 2P 11px line-height 1.6 (#e8c97a | dead #e07260); line Courier 700 15px #c9bda0 margin-top 8 line-height 1.45;
+//             button margin-top 13 centered Press Start 2P 8px padding 15px 10px (win/flee: bg #e8c97a color #14110c shadow 0 4px 0 #6b5c3c;
+//             dead: bg #2a1512 color #e07260 border 2px #a63a2c shadow 0 4px 0 #0d0b08). Titles: THEY ARE DOWN / YOU GOT OUT / THAT IS THAT.
+// header:     ENCOUNTER (Press Start 2P 8px #e07260) · ROUND N (Courier 700 14px #e8c97a) · N STANDING (#c9bda0); border-bottom 3px #6b2c22; bg #1e120f.
+// hints:      Press Start 2P 6.5px #a89c82 line-height 1.7 — "TAP A FOE TO AIM AT IT" / "ONE LEFT. AIM IS SIMPLE." ; "YOUR LOT · EACH ROLLS THEIR OWN" /
+//             "JUST YOU · NOBODY TO BLAME"; threat label Courier 700 13px #8f856f "THEY STRIKE FIRST"; actor prompt (#e8c97a) "PICK YOUR MISTAKE".
+// shell:      background #120f0a; color #e6ddc6; header/action bar flex:none; middle flex:1 overflow auto; action bar border-top 3px #3a3226 bg #1b170f.
+</script>
+</body>
+</html>

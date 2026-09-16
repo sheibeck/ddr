@@ -6,6 +6,7 @@
 - ✅ **v1.1 Monster Balancing & Abilities** — Phases 17–21 (shipped 2026-09-14, override closeout; see `.planning/milestones/v1.1-ROADMAP.md`)
 - ✅ **v1.2 Class Pass & Mass Playtest** — Phases 22–27 (shipped 2026-09-15, override closeout; see `.planning/milestones/v1.2-ROADMAP.md`)
 - ✅ **v1.3 Feel, Loot & Combat Flow** — Phases 28–33 (shipped 2026-09-16, device UAT batch pending; see `.planning/milestones/v1.3-ROADMAP.md`)
+- 🚧 **v1.4 Combat Screen** — Phase 34 (current, started 2026-09-16; requirements: `.planning/REQUIREMENTS.md`; spec: `design/Mazeworld Combat Panel.dc.html`)
 - 📋 **v1.0 launch tail** — first-run tutorial (04-10 / UX-06) + Google Play production launch (STR-01..04, STR-06); deliberately deferred until after v1.3 (CMBUI reshapes the UI the tutorial would teach)
 - 📋 **Next tuning pass** — TUNE-06 roster decision + TUNE-07 human DR round; explicitly deferred out of v1.3 by user decision 2026-09-15 (`docs/DIFFICULTY-RETUNE.md`)
 
@@ -24,6 +25,13 @@ Every phase in this milestone touches serialized character/combat state and/or i
 **Explicitly out of this milestone** (user decision 2026-09-15): the difficulty retune (TUNE-06/07), the Play versionCode-4 internal upload, the first-run tutorial (UX-06), and Google Play production launch. None of these get a v1.3 phase.
 
 ## Phases
+
+### 🚧 v1.4 Combat Screen (In Progress)
+
+**Milestone Goal:** Replace the combat UX with the Claude Design "Mazeworld Combat" screen — foes, your lot, a › fight log and a four-action bar on one dark screen — keeping the engine, parity, the Fight! gate, refusals, loot, joiners and the Phase 32 input guards exactly as shipped.
+
+- [ ] **Phase 34: Combat Screen Rebuild** - The encounter panel becomes the mock's full-screen layout (header, foes, YOUR LOT, › log, four-action bar with submenus), with the Fight! gate and the loot/flee/death endings folded into the same screen, engine untouched, validated on the Pixel 7.
+
 
 <details>
 <summary>✅ v1.0 Delve, Die, Repeat (Phases 1–16 + 04.1/04.2) — SHIPPED 2026-09-13 (internal testing)</summary>
@@ -87,6 +95,25 @@ Full details: `.planning/milestones/v1.3-ROADMAP.md`. Phase artifacts: `.plannin
 
 ## Phase Details
 
+### Phase 34: Combat Screen Rebuild
+
+**Goal**: The combat UX is rebuilt to the imported Claude Design spec (`design/Mazeworld Combat Panel.dc.html`): one dark full-screen panel with ENCOUNTER · ROUND N · N STANDING, foe cards (glyph, name, size · INT · trait, wp/max, hp bar, TARGET/DOWN tags), a YOUR LOT strip for the hero and every joiner, a newest-first › fight log with tap-to-reveal dice, and a 2×2 STRIKE / SPELLS(ABILITIES) / ITEMS / SOCIAL action grid with the mock's submenus — the Fight! gate, loot card, flee and death endings folded into the same screen, Phase 32 guards intact, engine/parity untouched.
+**Depends on**: Phase 33 (v1.3) — builds on the Round Card routing, input guards, Fight! gate and loot card.
+**Requirements**: CSCR-01..10
+**Success Criteria** (what must be TRUE):
+
+  1. Walking into an encounter shows the new screen: foes, YOUR LOT, the encounter line in the › log, and one FIGHT! button; nothing resolves before the tap.
+  2. During a fight every narrative line lands in the › log (newest first, tap reveals the dice), never as a toast; refusals still toast; the Oracle still has everything.
+  3. STRIKE resolves at once; SPELLS/ABILITIES, ITEMS and SOCIAL open the submenu with the right options for the class and the fight; number keys still work.
+  4. Killing the last foe shows THEY ARE DOWN with the loot rows inside; fleeing shows YOU GOT OUT; dying shows THAT IS THAT with Review the Oracle / Confirm.
+  5. Every button is guarded (250 ms arm, settle on dismiss); nothing dismisses on a map tap; TalkBack announces a new log line once.
+  6. `npm test` green with every shell test re-pinned; `build:www` exit 0; engine/content/parity diff empty; the Pixel 7 DR round signs it off.
+
+**Plans**: TBD
+**UI hint**: yes
+
+
+
 <details>
 <summary>v1.0 phase details (Phases 1–16 + 04.1/04.2) — archived, see `.planning/milestones/v1.0-ROADMAP.md`</summary>
 
@@ -119,6 +146,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
+| 34. Combat Screen Rebuild | v1.4 | 0/? | Pending | — |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
