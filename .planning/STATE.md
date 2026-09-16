@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
-current_phase: 31
-current_phase_name: Combat Start Gating & Effect Hygiene
-status: verifying
-stopped_at: "Completed 31-03-PLAN.md — shell wiring landed (Fight! dispatch, spell gate bridge, visible Use/Sing/Scroll, ward+afraid chips, TO HIT range), full suite 1855/1855, build:www exit 0"
-last_updated: "2026-09-16T15:49:34.324Z"
+current_phase: 32
+current_phase_name: Combat Narrative & Input UI Build
+status: planning
+stopped_at: "Phase 31 complete (3/3 plans, 31-VERIFICATION passed, 11 Pixel 7 checks deferred to end-of-run UAT) — next: Phase 32 smart discuss"
+last_updated: "2026-09-16T15:52:45.324Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 31 execution started
+last_activity_desc: Phase 31 complete, transitioned to Phase 32
 progress:
   total_phases: 6
   completed_phases: 4
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 31 — Combat Start Gating & Effect Hygiene
+**Current focus:** Phase 32 — Combat Narrative & Input UI Build
 
 ## Current Position
 
-Phase: 31 (Combat Start Gating & Effect Hygiene) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-09-16 — Phase 31 execution started
+Phase: 32 — Combat Narrative & Input UI Build
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-16 — Phase 31 complete, transitioned to Phase 32
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,7 +87,7 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 ## Session Continuity
 
 Last session: 2026-09-16T15:49:34.300Z
-Stopped at: Completed 31-03-PLAN.md — shell wiring landed (Fight! dispatch, spell gate bridge, visible Use/Sing/Scroll, ward+afraid chips, TO HIT range), full suite 1855/1855, build:www exit 0
+Stopped at: Phase 31 complete (3/3 plans, 31-VERIFICATION passed, 11 Pixel 7 checks deferred to end-of-run UAT) — next: Phase 32 smart discuss
 Resume file: None
 
 ## Operator Next Steps
