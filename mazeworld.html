@@ -3481,14 +3481,16 @@ function useItem(i) {
 }
 
 /* ---------------- shared carried-item list (Phase 14, ECON-06/07) ----------------
-   ONE carried-item list renderer, authored once and reused by three hosts: the
-   GEAR tab (paint()), the store "Your gear" SELL section, and the combat-bar
-   USE list (both in renderEncounter()). Each host passes which per-item actions
-   to surface (`use`/`equip`/`drop`/`sell`) and an optional `filter`, so the gear
-   list is never built three times. Every action button routes through the
-   window.mz* engine bridges (mzUseItem/mzEquipItem/mzDropItem/mzSellItem) — the
-   pure applyAction() seam — so the classic UI never mutates GameState off-band.
-   `container` is a <ul>; rows are <li> with ≥48dp action buttons. */
+   ONE carried-item list renderer, authored once and reused by four hosts: the
+   GEAR tab (paint()), the store "Your gear" SELL section, the combat-bar
+   USE list, and the Phase 29 loot screen (all three of the latter render from
+   renderEncounter()). Each host passes which per-item actions to surface
+   (`use`/`equip`/`drop`/`sell`/`lootEquip`/`lootTake`/`lootLeave`) and an
+   optional `filter`, so the gear list is never built four times. Every action
+   button routes through the window.mz* engine bridges (mzUseItem/mzEquipItem/
+   mzDropItem/mzSellItem/mzTakeLoot/mzLeaveLoot) — the pure applyAction() seam —
+   so the classic UI never mutates GameState off-band. `container` is a <ul>;
+   rows are <li> with ≥48dp action buttons. */
 function renderCarriedList(container, items, opts = {}) {
   // `clear` (default true) wipes the container first — the store/combat hosts
   // own their <ul> outright. The GEAR tab passes clear:false so its worn
@@ -3518,10 +3520,12 @@ function renderCarriedList(container, items, opts = {}) {
     const li = document.createElement("li");
     const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
     // Phase 28 (ARMOR-03): a stowed armor piece carries `left` — the row
-    // must show remaining durability, never the frozen `txt`. This single
-    // change covers the GEAR tab, the store "Your gear" sell list and the
-    // combat use list (all three hosts share this renderer).
-    const sub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : (it.txt ?? "");
+    // must show remaining durability, never the frozen `txt`. Phase 29
+    // (LOOT-03): the loot screen instead supplies opts.subFor to show the
+    // lootCompare readout — the armor/txt default here is unchanged so
+    // every pre-existing host (GEAR tab, store sell list, combat use list)
+    // renders byte-identically.
+    const sub = typeof opts.subFor === "function" ? opts.subFor(it) : (it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : (it.txt ?? ""));
     li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${sub}</i>`;
     for (const a of (opts.actions || [])) {
       if (a === "use") {
@@ -3533,9 +3537,36 @@ function renderCarriedList(container, items, opts = {}) {
       } else if (a === "sell") {
         const price = window.__mzSellPrice ? window.__mzSellPrice(it) : null;
         li.appendChild(mkBtn(price != null ? `Sell · ${price.toLocaleString()} wm` : "Sell", () => window.mzSellItem?.(i)));
+      } else if (a === "lootEquip") {
+        // Phase 29 (LOOT-03): Equip now — only when it's a legal upgrade
+        // (lootCompare's own equipNow verdict, never restated here).
+        if ((it.kind === "weapon" || it.kind === "armor") && window.__mzLootCompare && window.__mzLootCompare(S.c, it).equipNow) li.appendChild(mkBtn("Equip now", () => window.mzTakeLoot?.(i, true)));
+      } else if (a === "lootTake") {
+        li.appendChild(mkBtn(it.kind === "weapon" || it.kind === "armor" ? "Stow" : "Take", () => window.mzTakeLoot?.(i)));
+      } else if (a === "lootLeave") {
+        li.appendChild(mkBtn("Leave", () => window.mzLeaveLoot?.(i)));
       }
     }
     container.appendChild(li);
+  });
+}
+
+/* ---------------- shared drop-to-make-room shelf (Phase 29, LOOT-04) ----------------
+   ONE drop shelf renderer, extracted from the find card's inline loop and
+   reused there and by the loot screen — every carried item gets a Drop
+   button (window.mzDropItem -> the engine's stow-cap gate) so a full bag
+   can free a slot before Take/Take it now/Equip now retries. `shelf` is a
+   <div class="shelf">; `items` is the character's c.items array. */
+function renderDropShelf(shelf, items) {
+  (items || []).forEach((bi, i) => {
+    const row = document.createElement("button");
+    row.className = "goods";
+    // Phase 28 (ARMOR-03): the drop shelf shows remaining armor durability,
+    // never the frozen txt.
+    const biSub = bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt;
+    row.innerHTML = `<span class="g-n">${bi.n}${biSub ? `<i>${biSub}</i>` : ""}</span><span class="g-c">Drop</span>`;
+    row.onclick = () => window.mzDropItem?.(i);
+    shelf.appendChild(row);
   });
 }
 
@@ -4700,7 +4731,12 @@ function hasActiveEncounter() {
   // encounters.js#offerFind) keeps the overlay up for its Take it / Leave it
   // prompt exactly like pendingJoiner. It resolves via window.mzTakeFind /
   // mzLeaveFind (which clear S.pendingFind), after which this returns false.
-  return !!(S && (S.dead || S.won || S.combat || S.store || S.pendingJoiner || S.pendingFind || (S.beats && S.beats.groups && S.beats.groups.length)));
+  // Phase 29 (LOOT-02/06): a non-empty pending pile (S.pendingLoot, stashed
+  // by engine/items.js#offerLoot at end of combat) is a decision surface
+  // exactly like pendingFind — it parks the map (window.move re-checks this
+  // predicate) until every drop is taken or left, and it is what makes the
+  // loot card re-appear on resume, since the pile is serialized.
+  return !!(S && (S.dead || S.won || S.combat || S.store || S.pendingJoiner || S.pendingFind || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length)));
 }
 function vitalsStrip() {
   const c = S.c;
@@ -4976,17 +5012,7 @@ function renderEncounter() {
           <button class="primary" id="a-find-take">Take it now</button>
           <button id="a-find-leave">Leave it</button>
         </div>`;
-      const shelf = document.getElementById("find-drop-shelf");
-      (c.items || []).forEach((bi, i) => {
-        const row = document.createElement("button");
-        row.className = "goods";
-        // Phase 28 (ARMOR-03): the full-bag drop shelf shows remaining
-        // armor durability, never the frozen txt.
-        const biSub = bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt;
-        row.innerHTML = `<span class="g-n">${bi.n}${biSub ? `<i>${biSub}</i>` : ""}</span><span class="g-c">Drop</span>`;
-        row.onclick = () => window.mzDropItem?.(i);
-        shelf.appendChild(row);
-      });
+      renderDropShelf(document.getElementById("find-drop-shelf"), c.items || []);
       document.getElementById("a-find-take").onclick = () => window.mzTakeFind?.();
       document.getElementById("a-find-leave").onclick = () => window.mzLeaveFind?.();
     }
@@ -5567,7 +5593,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // content tables (content/index.js) used ONLY to build the reel-flicker's
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
-  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText } from "./src/browser/viewModels.js";
+  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf } from "./engine/derived.js";
@@ -5617,6 +5643,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzClassicBoot() further down, so paint() can rely on it
   // unconditionally.
   window.__mzArmorDisplay = { armorDisplay, bagArmorText };
+
+  // Phase 29 (LOOT-03/04): bridge the PURE compare-to-equipped verdict and
+  // the ONE bag-capacity readout so the loot screen, the gear panel, the
+  // find card and the store all agree with the engine — read-only, no rng,
+  // safe every paint. The engine alone enforces the actual cap (stowItem).
+  window.__mzBagUsage = bagUsage;
+  window.__mzLootCompare = lootCompare;
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
@@ -5902,6 +5935,9 @@ window.__mzClassicBoot = async function classicBoot() {
       // bar / initiative outcome is shown. Presentation-ONLY flag on state.combat
       // (never set by the engine, so parity is untouched); cleared by mzFight().
       after.combat.awaitingFight = true;
+      // Phase 29 (LOOT-02, RESEARCH Pitfall 4): a fresh fight clears any stale
+      // report from a previous encounter's loot card.
+      window.__mzLootReport = null;
     } else if (wasCombat && has) {
       if (combatSnap) combatSnap.lastRound = after.combat.round || combatSnap.lastRound;
     } else if (wasCombat && !has) {
@@ -5920,7 +5956,16 @@ window.__mzClassicBoot = async function classicBoot() {
       };
       combatSnap = null;
       const rep = window.mzCombatReport ? window.mzCombatReport(data) : null;
-      if (rep && !after.beats) after.beats = { groups: [rep], i: 0, action: null };
+      // Phase 29 (LOOT-02, RESEARCH Pitfall 4): with drops pending, fold the
+      // report into the loot card (renderEncounter's loot branch) instead of
+      // building a "Move on" beat that would show BEFORE the loot decision —
+      // one card, no dismiss-then-continue chain. window.__mzLootReport is a
+      // presentation-only transient, never stored on state.
+      if (after.pendingLoot && after.pendingLoot.length) {
+        window.__mzLootReport = rep;
+      } else if (rep && !after.beats) {
+        after.beats = { groups: [rep], i: 0, action: null };
+      }
     }
   }
 
@@ -6397,6 +6442,14 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzTakeFind = () => inventoryAction({ type: "takeFind" });
   window.mzLeaveFind = () => inventoryAction({ type: "leaveFind" });
   window.mzDropItem = (i) => inventoryAction({ type: "dropItem", i });
+  // Phase 29 (LOOT-02/03/06): the pending-pile bridges — pure engine actions
+  // (engine/items.js#takeLoot/leaveLoot/takeAllLoot/leaveAllLoot), no rng, no
+  // parity impact. The loot card (renderEncounter) dismisses itself once
+  // S.pendingLoot empties, because hasActiveEncounter() then returns false.
+  window.mzTakeLoot = (i, equip) => inventoryAction(equip ? { type: "takeLoot", i, equip: true } : { type: "takeLoot", i });
+  window.mzLeaveLoot = (i) => inventoryAction({ type: "leaveLoot", i });
+  window.mzTakeAllLoot = () => inventoryAction({ type: "takeAllLoot" });
+  window.mzLeaveAllLoot = () => inventoryAction({ type: "leaveAllLoot" });
   // Phase 25 (FEED-02): an equip the engine REJECTS (illegal class/subclass/
   // race/Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
   // `equipRejected` event) now toasts from the TOAST_FOR table (block tone,
