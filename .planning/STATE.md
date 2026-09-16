@@ -4,17 +4,17 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 31
 current_phase_name: Combat Start Gating & Effect Hygiene
-status: executing
-stopped_at: Completed 31-02-PLAN.md — refusal vocabulary + Afraid spell/item side + Acuteness expiry + ward chip + Elven flip landed, full suite 1834/1834
-last_updated: "2026-09-16T15:28:35.108Z"
+status: verifying
+stopped_at: "Completed 31-03-PLAN.md — shell wiring landed (Fight! dispatch, spell gate bridge, visible Use/Sing/Scroll, ward+afraid chips, TO HIT range), full suite 1855/1855, build:www exit 0"
+last_updated: "2026-09-16T15:49:34.324Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 31 execution started
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 10
-  completed_plans: 9
-  percent: 50
+  completed_plans: 10
+  percent: 67
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 31 (Combat Start Gating & Effect Hygiene) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-16 — Phase 31 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T15:28:35.065Z
-Stopped at: Completed 31-02-PLAN.md — refusal vocabulary + Afraid spell/item side + Acuteness expiry + ward chip + Elven flip landed, full suite 1834/1834
+Last session: 2026-09-16T15:49:34.300Z
+Stopped at: Completed 31-03-PLAN.md — shell wiring landed (Fight! dispatch, spell gate bridge, visible Use/Sing/Scroll, ward+afraid chips, TO HIT range), full suite 1855/1855, build:www exit 0
 Resume file: None
 
 ## Operator Next Steps
@@ -159,6 +159,7 @@ Resume file: None
 | Phase 30 P01 | 40min | 3 tasks | 1 files |
 | Phase 31 P01 | 50min | 3 tasks | 33 files |
 | Phase 31 P02 | 55min | 3 tasks | 19 files |
+| Phase 31 P03 | 45min | 3 tasks | 8 files |
 
 ## Decisions
 
@@ -287,6 +288,8 @@ Resume file: None
 - [Phase ?]: 31-02: Acuteness ticks both per foeTurn round AND per exploration step, clearing unconditionally at endCombat
 - [Phase ?]: 31-02: Afraid's damage halving reuses the same post-halved value for Earthquake's self-damage (deliberate reuse per plan text)
 - [Phase ?]: 31-02: Elven foeToHit flipped -1 to +1 (DELIBERATE RULES CHANGE, user decision 2026-09-16) at the data layer only; zero fixture impact
+- [Phase ?]: 31-03: the dead classic castSpell()'s error-message branch reordered off a stale sp.lvl compare onto the still-valid schoolGate check, so no copy of the fixed IDENT-03/04 bug survives anywhere in the file, live or dead
+- [Phase ?]: 31-03: Sing/Scroll button visibility relaxed to the structural gate (Bard; scrolls > 0), not full readiness — songReady()/canRead() still gate the internal countdown math but no longer hide the button, matching the CMB-02 refusal-vocabulary design
 
 ### Blockers
 

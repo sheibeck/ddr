@@ -196,7 +196,7 @@ Plans:
   5. Every round-based effect (Acuteness, haste, might, ward, and the rest of the audited set) expires on leaving combat or on exploration ticks — none linger indefinitely.
   6. Using Amulet of Stone on a foe ends the encounter immediately and pays out kill rewards (experience, coin, treasure, kill count) as if it had been slain normally.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -209,7 +209,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 31-03-PLAN.md — Shell: Fight! → `fight`, pending gate, AMBUSH collapse, engine-bridged combat spell gate, grimoire reasons, visible Use/Sing/Scroll, Shield chip, Afraid countdown chip, sheet TO HIT reads `1–N`; `build:www` + full suite
+- [x] 31-03-PLAN.md — Shell: Fight! → `fight`, pending gate, AMBUSH collapse, engine-bridged combat spell gate, grimoire reasons, visible Use/Sing/Scroll, Shield chip, Afraid countdown chip, sheet TO HIT reads `1–N`; `build:www` + full suite
 
 **UI hint**: yes
 
@@ -267,7 +267,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 28. Armor Integrity & Durability | v1.3 | 3/3 | Complete    | 2026-09-15 |
 | 29. End-of-Combat Loot & Bag Cap | v1.3 | 3/3 | Complete    | 2026-09-15 |
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
-| 31. Combat Start Gating & Effect Hygiene | v1.3 | 2/3 | In Progress|  |
+| 31. Combat Start Gating & Effect Hygiene | v1.3 | 3/3 | In Progress|  |
 | 32. Combat Narrative & Input UI Build | v1.3 | 0/? | Not started | - |
 | 33. UI Feel & Store Polish | v1.3 | 0/? | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |
