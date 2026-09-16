@@ -4,9 +4,9 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 31
 current_phase_name: Combat Start Gating & Effect Hygiene
-status: planning
+status: executing
 stopped_at: Completed 30-01-PLAN.md — combat narrative design doc written, ratification pending orchestrator pause
-last_updated: "2026-09-16T11:42:52.703Z"
+last_updated: "2026-09-16T13:46:51.443Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 30 complete, transitioned to Phase 31
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 31 — Combat Start Gating & Effect Hygiene
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-16 — Phase 30 complete, transitioned to Phase 31
 
 ## Ground Truth (durable facts every session needs)
