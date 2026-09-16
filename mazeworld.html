@@ -2444,11 +2444,12 @@ let CELL = 28;
 let pan = { x: 0, y: 0 };
 // DR13: pinch-to-zoom map scale. `zoom` multiplies the text-scale-derived base
 // cell size in fit(); clamped so the maze never zooms uselessly tiny or huge.
-// Phase 33 (UIF-03, CONTEXT Area 2): the default is the LITERAL midpoint of
-// ZOOM_MIN..ZOOM_MAX ((0.6 + 2.4) / 2 = 1.5, the user chose literal over
-// geometric). SESSION-ONLY -- this variable is never persisted (no settings
-// row, never written to S), so every cold start returns here.
-let zoom = 1.5;
+// Phase 33 (UIF-03) + device feedback 2026-09-16: the default sits ZOOMED
+// OUT so a cold start shows MORE map than the old 1.0 -- 0.8 is the midpoint
+// between fully-out (ZOOM_MIN 0.6) and that old default; pinch in for less
+// map. SESSION-ONLY -- this variable is never persisted (no settings row,
+// never written to S), so every cold start returns here.
+let zoom = 0.8;
 const ZOOM_MIN = 0.6, ZOOM_MAX = 2.4;
 const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 const CANVAS_PAD = 0;

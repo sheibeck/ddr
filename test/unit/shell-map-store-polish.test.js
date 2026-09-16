@@ -6,7 +6,7 @@
 // shell-input-guards.test.js's own source-assertion pattern — this file
 // reads the real shipped source with fs.readFileSync and asserts against it
 // directly:
-//   1. UIF-03: `let zoom = 1.5;` is the default, the literal midpoint of
+//   1. UIF-03: `let zoom = 0.8;` is the default — zoomed OUT (more map than the old 1.0),
 //      ZOOM_MIN..ZOOM_MAX, and zoom is never persisted (no writeSetting/S/
 //      state reference) — session-only.
 //   2. UIF-02 site 1: renderEncounter's encWasActive && !active dismissal
@@ -90,21 +90,22 @@ function storeRegion() {
 
 // ─── 1. UIF-03: zoom default + session-only persistence ──────────────────
 
-test("UIF-03: let zoom = 1.5 is the default, exactly once, no stray `let zoom = 1;`", () => {
-  const matches = CODE.match(/^let zoom = 1\.5;/m);
-  assert.ok(matches, "let zoom = 1.5; must be found in mazeworld.html");
-  assert.equal((CODE.match(/let zoom = 1\.5;/g) || []).length, 1);
+test("UIF-03: let zoom = 0.8 is the default, exactly once, no stray `let zoom = 1;`", () => {
+  const matches = CODE.match(/^let zoom = 0\.8;/m);
+  assert.ok(matches, "let zoom = 0.8; must be found in mazeworld.html");
+  assert.equal((CODE.match(/let zoom = 0\.8;/g) || []).length, 1);
   assert.equal((CODE.match(/let zoom = 1;/g) || []).length, 0, "the old `let zoom = 1;` default must be gone");
 });
 
-test("UIF-03: 1.5 is the literal midpoint of ZOOM_MIN..ZOOM_MAX", () => {
+test("UIF-03: 0.8 is the midpoint between fully-out (ZOOM_MIN) and the old 1.0 default, inside the clamp", () => {
   const m = CODE.match(/const ZOOM_MIN = ([\d.]+), ZOOM_MAX = ([\d.]+);/);
   assert.ok(m, "ZOOM_MIN/ZOOM_MAX declaration must be found");
   const min = Number(m[1]);
   const max = Number(m[2]);
   assert.equal(min, 0.6);
   assert.equal(max, 2.4);
-  assert.equal((min + max) / 2, 1.5);
+  assert.equal((min + 1.0) / 2, 0.8);
+  assert.ok(0.8 > min && 0.8 < max, "default must sit inside ZOOM_MIN..ZOOM_MAX");
 });
 
 test("UIF-03: zoom is never persisted — no writeSetting/S.zoom/state.zoom expression", () => {
