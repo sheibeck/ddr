@@ -6,7 +6,7 @@ status: executing
 stopped_at: "Phase 31 complete (3/3 plans, 31-VERIFICATION passed, 11 Pixel 7 checks deferred to end-of-run UAT) — next: Phase 32 smart discuss"
 last_updated: "2026-09-16T16:44:51.712Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase null execution resumed (wave continue)
+last_activity_desc: Phase 32 execution started (wave 1 of 3)
 progress:
   total_phases: 6
   completed_phases: 4
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 Phase: 32 — Combat Narrative & Input UI Build — EXECUTING
 Plan: 1 of 3
 Status: Executing Phase 32 (3 plans, sequential waves)
-Last activity: 2026-09-16 — Phase null execution resumed (wave continue)
+Last activity: 2026-09-16 — Phase 32 execution started (wave 1 of 3)
 
 ## Ground Truth (durable facts every session needs)
 
