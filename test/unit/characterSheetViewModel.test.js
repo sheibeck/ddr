@@ -41,7 +41,13 @@ test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE 
 
   assert.equal(statByKey(vm, "toStrike").value, `d${strikeDie(state.c)}`);
   assert.equal(statByKey(vm, "toHit").value, `${toHit(state)}+`);
-  assert.equal(statByKey(vm, "armor").value, `${state.c.armor.toUpperCase()} · AR ${state.c.ar}`);
+  // Phase 28 (ARMOR-02/04): the ARMOR stat now reads through the shared
+  // armorDisplay(c) formatter, showing durability (seed 42 wears Studded
+  // 18/18) so the sheet can never disagree with the toast/gear panel.
+  assert.equal(
+    statByKey(vm, "armor").value,
+    `${state.c.armor.toUpperCase()} · AR ${state.c.ar} · ${state.c.armorWP}/${state.c.armorMax} hp`,
+  );
   assert.equal(statByKey(vm, "intelligence").value, state.c.intel);
   assert.equal(statByKey(vm, "skillPoints").value, state.c.sp);
   assert.equal(statByKey(vm, "skillPoints").label, "EXPERIENCE", "TERM-01: the sheet's sp row reads EXPERIENCE, not the old SKILL POINTS label");

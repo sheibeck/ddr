@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, canCast, intelBonus } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, canCast, intelBonus, armorSoak } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 
 /**
@@ -81,6 +81,56 @@ function quirkText(c) {
 }
 
 /**
+ * armorDisplay(c) — Phase 28 (ARMOR-02/04): the ONE render-ready description
+ * of the character's effective armor — the sheet tile, the HUD armor line,
+ * the gear worn row and the store repair row all call it (Plan 03 bridges it
+ * onto the classic script's global namespace). It reads `armorSoak(c)` (engine/derived.js)
+ * so it can never disagree with the combat soak site — the same
+ * damageBracket <-> weaponDamage single-source pattern this file already
+ * follows. Never reads the DOM, draws no rng. `magic` means the Cloak of
+ * Armor is carried — it counts for ANY class, no Fighter gate (user
+ * decision, Phase 28). `current`/`max` are always the WORN piece's pool,
+ * because the cloak's plate never wears. Returns a plain object:
+ * { label, ar, current, max, worn, destroyed, magic, sub, wornSub, under, line }.
+ */
+export function armorDisplay(c) {
+  const av = armorSoak(c);
+  const worn = Boolean(c.armor && c.armor !== "Nothing" && c.ar > 0);
+  const destroyed = worn && c.armorWP <= 0;
+  const current = worn ? c.armorWP : 0;
+  const max = worn ? c.armorMax : 0;
+  const ar = av.ar;
+  const magic = av.magic;
+  const label = magic ? "Cloak of Armor" : worn ? c.armor : "Nothing";
+  const wornSub = !worn
+    ? "AR 0"
+    : destroyed
+      ? `AR ${c.ar} · destroyed`
+      : `AR ${c.ar} · ${current}/${max} hp`;
+  const sub = magic ? `AR ${ar} · magic plate, never wears` : wornSub;
+  const under = !magic
+    ? null
+    : !worn
+      ? "under the cloak: nothing"
+      : destroyed
+        ? `under the cloak: ${c.armor}, destroyed`
+        : `under the cloak: ${c.armor} ${current}/${max} hp`;
+  const line = `${label} · ${sub}`;
+  return { label, ar, current, max, worn, destroyed, magic, sub, wornSub, under, line };
+}
+
+/**
+ * bagArmorText(it) — Phase 28 (ARMOR-03): renders a bag armor row from the
+ * item's own remaining durability (`left`, falling back to `wp` for a fresh
+ * piece that has never been worn — tolerant of pre-v1.3 saves that carry no
+ * `left` field at all).
+ */
+export function bagArmorText(it) {
+  const left = it.left ?? it.wp;
+  return left > 0 ? `AR ${it.ar} · ${left}/${it.wp} hp` : `AR ${it.ar} · destroyed`;
+}
+
+/**
  * characterSheetViewModel(state) — the HERO tab's ("THE DOOMED") render-
  * ready data, bound to the real GameState. Returns a flat object: name,
  * level, classLabel, raceLabel, subLabel, snarkLine, stats[] (the 8 UI-SPEC
@@ -89,12 +139,15 @@ function quirkText(c) {
 export function characterSheetViewModel(state) {
   const c = state.c;
   const damage = damageBracket(c);
+  // Phase 28 (ARMOR-02/04): durability and the cloak's effective plate now
+  // show on the tile via the shared formatter.
+  const armor = armorDisplay(c);
 
   const stats = [
     { key: "toStrike", label: "TO STRIKE", value: `d${strikeDie(c)}` },
     { key: "toHit", label: "TO HIT", value: `${toHit(state)}+` },
     { key: "damage", label: "DAMAGE", value: `${damage.min}–${damage.max}`, min: damage.min, max: damage.max },
-    { key: "armor", label: "ARMOR", value: `${c.armor.toUpperCase()} · AR ${c.ar}` },
+    { key: "armor", label: "ARMOR", value: `${armor.label.toUpperCase()} · ${armor.sub}`, under: armor.under },
     // RULE-01 (04.1-04): intelBonus(c) is the SAME derived.js helper openChest
     // consumes for its lock-roll threshold — surfaced here as `lockBonus` so
     // the sheet and the engine can never drift (the damageBracket↔
