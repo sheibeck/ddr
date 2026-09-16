@@ -80,7 +80,7 @@ Full details: `.planning/milestones/v1.2-ROADMAP.md`. Phase artifacts: `.plannin
 - [x] **Phase 30: Combat Narrative & Input — Research** - A written, decision-ready survey of combat-feedback UI patterns exists, with a recommended design for this game's combat flow agreed before any implementation begins (completed 2026-09-16)
 - [x] **Phase 31: Combat Start Gating & Effect Hygiene** - Combat only truly starts on Fight!, every refusal explains itself, and every consumable/condition behaves and expires honestly — landed as engine groundwork ahead of the combat narrative rebuild (completed 2026-09-16)
 - [x] **Phase 32: Combat Narrative & Input UI Build** - The chosen combat-feedback design is built — round narrative in one place, one-tap move-on, decision buttons safe from D-pad thumb-spam — then proven on-device (completed 2026-09-16)
-- [ ] **Phase 33: UI Feel & Store Polish** - Gear panel, map, tutorial toggle, toolbar layout, and store stock all get their remaining polish pass, done once against the finished combat UI
+- [x] **Phase 33: UI Feel & Store Polish** - Gear panel, map, tutorial toggle, toolbar layout, and store stock all get their remaining polish pass, done once against the finished combat UI (completed 2026-09-16)
 
 ## Phase Details
 
@@ -255,7 +255,7 @@ Plans:
   4. Make Camp lives in the Marks/Centre row (far right), movement buttons are centered, and the handedness option is gone.
   5. Store stock is rolled randomly and floor-appropriately for the current depth on each visit, with parity byte-identical for fixtures.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -296,6 +296,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 3/3 | Complete    | 2026-09-16 |
 | 32. Combat Narrative & Input UI Build | v1.3 | 3/3 | Complete    | 2026-09-16 |
-| 33. UI Feel & Store Polish | v1.3 | 3/3 | In Progress|  |
+| 33. UI Feel & Store Polish | v1.3 | 3/3 | Complete    | 2026-09-16 |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |
 | Next tuning pass (TUNE-06/07) | Post-v1.3 | 0/1 | Deferred by user (2026-09-15) | - |
