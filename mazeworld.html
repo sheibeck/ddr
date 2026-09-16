@@ -590,6 +590,111 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-log-dull .cb-log-text{color:#8f856f}
 .cb-log-roll{font-family:var(--mono);font-weight:700;font-size:13.5px;color:#e8c97a;margin-top:3px}
 .cb-log-roll[hidden]{display:none}
+
+/* Phase 34 (CSCR-01/02/03/05/06/07) — combat screen, Claude Design spec
+   design/Mazeworld Combat Panel.dc.html + the Map Panel MAJOR OVERLAY;
+   values copied from the STYLE OBJECTS comment; var(--disp) = bundled
+   Press Start 2P, var(--mono) = bundled Courier Prime. */
+#enc-panel[data-mode="dark"]{padding:0;background:#120f0a;color:#e6ddc6;overflow:hidden;font-family:var(--mono)}
+#enc-panel[data-mode="dark"] .enc-topbar{display:none}
+#enc-panel[data-mode="dark"] #enc-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto;position:relative}
+.cb-head{flex:none;display:flex;justify-content:space-between;align-items:center;padding:10px 14px 9px;border-bottom:3px solid #6b2c22;background:#1e120f}
+.cb-head-label{font-family:var(--disp);font-size:8px;color:#e07260}
+.cb-head-right{display:flex;gap:11px;align-items:baseline;font-family:var(--mono);font-weight:700;font-size:14px}
+.cb-head-round{color:#e8c97a}
+.cb-head-standing{color:#c9bda0}
+.cb-mid{flex:1;overflow:auto;min-height:0}
+.cb-hint{font-family:var(--disp);font-size:6.5px;color:#a89c82;line-height:1.7}
+.cb-threat{font-family:var(--mono);font-weight:700;font-size:13px;color:#8f856f}
+.cb-foes{padding:11px 12px 0}
+.cb-foes-head{display:flex;justify-content:space-between;align-items:center}
+.cb-foe-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.cb-foe{border:2px solid #6b2c22;background:#1e120f;padding:10px 11px;cursor:pointer}
+.cb-foe.target{border-color:#e8c97a;background:#241d12}
+.cb-foe.dead{border-color:#241f16;background:#15120c;opacity:.45;cursor:default}
+.cb-foe-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cb-foe-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.cb-foe-glyph{font-size:19px;color:#e07260;width:22px;text-align:center;flex:none}
+.cb-foe.target .cb-foe-glyph{color:#e8c97a}
+.cb-foe.dead .cb-foe-glyph{color:#6d6455}
+.cb-foe-name{font-family:var(--disp);font-size:8px;line-height:1.5;color:#e6ddc6}
+.cb-foe-meta{font-family:var(--mono);font-weight:700;font-size:12px;color:#a89c82;margin-top:4px}
+.cb-foe-right{text-align:right;flex:none}
+.cb-foe-wp{font-family:var(--mono);font-weight:700;font-size:15px;color:#e6ddc6}
+.cb-foe-tag{font-family:var(--disp);font-size:6px;line-height:1.8;margin-top:5px;color:#e8c97a;min-height:11px}
+.cb-foe-tag.status{color:#a78ce8}
+.cb-foe.dead .cb-foe-tag{color:#8f856f}
+.cb-bar{height:6px;background:#2c2519;margin-top:7px;box-shadow:inset 0 0 0 2px #0f0d09}
+.cb-bar-fill{height:100%;background:#c4483a;transition:width .3s steps(6)}
+.cb-foe.dead .cb-bar-fill{background:#3a3226}
+.cb-lot{padding:12px 12px 0}
+.cb-lot-strip{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+.cb-lot-card{flex:1 0 96px;min-width:96px;padding:9px 6px;text-align:center;border:2px solid #3a3226;background:transparent;color:#c9bda0}
+.cb-lot-card.active{border-color:#e8c97a;background:#241d12;color:#e8c97a}
+.cb-lot-card.down{background:#15120c;color:#8f856f}
+.cb-lot-name{font-family:var(--disp);font-size:7px;line-height:1.5}
+.cb-lot-wp{font-family:var(--mono);font-weight:700;font-size:14px;margin-top:5px}
+.cb-lot-bar{height:5px;background:#2c2519;margin-top:5px}
+.cb-lot-fill{height:100%;background:#7f9d4e}
+.cb-lot-fill.low{background:#e05a48}
+.cb-lot-card.down .cb-lot-fill{background:#3a3226}
+.cb-lot-third{font-family:var(--mono);font-weight:700;font-size:12px;color:#a89c82;margin-top:5px}
+.cb-lot-card.down .cb-lot-third{color:#8f856f}
+.cb-act{flex:none;border-top:3px solid #3a3226;background:#1b170f;padding:10px 12px 26px}
+.cb-prompt{font-family:var(--disp);font-size:6.5px;color:#e8c97a;line-height:1.7}
+.cb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.cb-btn{padding:12px 10px;text-align:left;border:2px solid #6b5c3c;border-radius:0;background:#241d12;color:#e8c97a;box-shadow:0 4px 0 #0d0b08;font-family:var(--mono);font-size:12.5px;letter-spacing:0;min-height:48px;cursor:pointer}
+.cb-btn-accent{border-color:#a63a2c;background:#2a1512;color:#e07260}
+.cb-btn-off{background:#191510;color:#8f856f;box-shadow:none}
+.cb-btn-label{font-family:var(--disp);font-size:7.5px;line-height:1.6}
+.cb-btn-sub{font-family:var(--mono);font-weight:700;font-size:12.5px;margin-top:6px;color:#a89c82;line-height:1.35}
+.cb-btn-off .cb-btn-sub{color:#8f856f}
+.cb-submenu{animation:mwrise .16s ease}
+.cb-sub-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cb-sub-title{font-family:var(--disp);font-size:6.5px;color:#e8c97a;line-height:1.7}
+.cb-chip{font-family:var(--disp);font-size:7px;color:#c9bda0;padding:7px 9px;border:2px solid #4a4032;border-radius:0;background:transparent;box-shadow:none;letter-spacing:0;flex:none;min-height:0;cursor:pointer}
+.cb-sub-list{display:flex;flex-direction:column;gap:6px;margin-top:9px;max-height:206px;overflow:auto;padding-right:4px}
+.cb-row{display:block;width:100%;border:2px solid #6b5c3c;border-radius:0;background:#241d12;padding:10px 11px;text-align:left;color:#e6ddc6;font-family:var(--mono);letter-spacing:0;box-shadow:none;min-height:48px;cursor:pointer}
+.cb-row-off{border-color:#241f16;background:#191510;color:#8f856f}
+.cb-row-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cb-row-label{font-family:var(--disp);font-size:7.5px;line-height:1.6;min-width:0;overflow:hidden}
+.cb-row-cost{font-family:var(--mono);font-weight:700;font-size:14px;color:#e8c97a;flex:none}
+.cb-row-off .cb-row-cost{color:#8f856f}
+.cb-row-desc{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin-top:6px;line-height:1.4}
+.cb-over{padding:13px 12px 28px;animation:mwfade .2s ease}
+.cb-over-title{font-family:var(--disp);font-size:11px;line-height:1.6;color:#e8c97a}
+.cb-over-title.dead{color:#e07260}
+.cb-over-line{font-family:var(--mono);font-weight:700;font-size:15px;color:#c9bda0;margin-top:8px;line-height:1.45}
+.cb-over-lines{padding:12px 12px 0}
+.cb-over-lines p{font-family:var(--mono);font-weight:700;font-size:15px;line-height:1.45;color:#c9bda0;margin:0 0 8px}
+.cb-over-lines p.cb-epitaph{color:#e8c97a}
+.cb-over-actions{display:flex;flex-direction:column;gap:9px}
+.cb-over-btn{display:block;width:100%;margin-top:13px;text-align:center;font-family:var(--disp);font-size:8px;letter-spacing:0;padding:15px 10px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
+.cb-over-btn.secondary{background:transparent;color:#a89c82;border:2px solid #3a3226;box-shadow:none}
+.cb-over-btn.dead{background:#2a1512;color:#e07260;border:2px solid #a63a2c;box-shadow:0 4px 0 #0d0b08}
+.cb-sub{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin:10px 12px 0}
+#enc-panel[data-mode="dark"] .enc-head{font-family:var(--disp);font-size:11px;line-height:1.6;color:#e8c97a;margin:12px 12px 0}
+#enc-panel[data-mode="dark"] .enc-sub{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin:6px 12px 0}
+#enc-panel[data-mode="dark"] .evt p{font-family:var(--mono);font-weight:700;font-size:15px;line-height:1.45;color:#c9bda0;margin:8px 12px 0}
+#enc-panel[data-mode="dark"] .actions{display:flex;gap:9px;padding:13px 12px 28px;flex:none;border-top:3px solid #3a3226;background:#1b170f}
+#enc-panel[data-mode="dark"] .actions button{flex:1;font-family:var(--disp);font-size:8px;letter-spacing:0;padding:15px 10px;background:transparent;color:#a89c82;border:2px solid #3a3226;border-radius:0;box-shadow:none}
+#enc-panel[data-mode="dark"] .actions button.primary{background:#e8c97a;color:#14110c;border:0;box-shadow:0 4px 0 #6b5c3c}
+#enc-panel[data-mode="dark"] ul.skills{margin:8px 12px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+#enc-panel[data-mode="dark"] ul.skills li{border:2px solid #6b5c3c;background:#241d12;padding:10px 11px}
+#enc-panel[data-mode="dark"] ul.skills li b{font-family:var(--disp);font-size:7.5px;line-height:1.6;color:#e6ddc6}
+#enc-panel[data-mode="dark"] ul.skills li i{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;font-style:normal}
+#enc-panel[data-mode="dark"] ul.skills li button.small{font-family:var(--disp);font-size:7px;letter-spacing:0;color:#c9bda0;padding:7px 9px;border:2px solid #4a4032;border-radius:0;background:transparent;box-shadow:none;min-height:36px}
+#enc-panel[data-mode="dark"] .shelf{margin:8px 12px 0}
+.mw-major{position:absolute;inset:0;background:#0d0b08;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;animation:mwfade .22s ease;z-index:2}
+.mw-major-icon{font-size:54px;color:#d3c49f;text-shadow:0 0 24px rgba(0,0,0,.8)}
+.mw-major-icon.encounter{color:#e05a48}
+.mw-major-title{font-family:var(--disp);font-size:15px;line-height:1.6;color:#e8c97a;margin-top:22px}
+.mw-major-line{font-family:var(--mono);font-weight:700;font-size:17px;line-height:1.5;color:#c9bda0;margin-top:14px}
+.mw-major-roll{font-family:var(--mono);font-weight:700;font-size:14px;color:#e8c97a;margin-top:12px}
+.mw-major-actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+.mw-major-btn{font-family:var(--disp);font-size:9px;letter-spacing:0;padding:17px 10px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 5px 0 #6b5c3c;text-align:center;cursor:pointer}
+.mw-major-btn.secondary{background:transparent;color:#a89c82;border:2px solid #3a3226;box-shadow:none}
+
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
    column with both buttons clearing the 48dp touch target (UX-02). */
