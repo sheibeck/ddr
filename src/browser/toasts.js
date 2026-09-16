@@ -145,6 +145,25 @@ export function narrativeToastText(html) {
 }
 
 /**
+ * oracleDetailText(html) — Phase 34 (CSCR-04). The fight log's tap-reveal
+ * line: the Oracle's own sentence with its dice KEPT (the opposite of
+ * narrativeToastText, which strips the roll span). Needed because a
+ * `struck` line carries TWO roll spans (the to-hit roll and the damage
+ * roll) — splitting out only the first span (as oracleLogViewModel does)
+ * would leave a bare number with no context, so this keeps the whole
+ * sentence intact and merely strips the surrounding tags. Returns "" when
+ * `html` contains no `<span class="roll">` (nothing to reveal) or is
+ * null/undefined/empty.
+ */
+export function oracleDetailText(html) {
+  const raw = String(html ?? "");
+  if (!raw.includes('<span class="roll">')) return "";
+  const noTags = raw.replace(/<[^>]+>/g, "");
+  const decoded = decodeEntities(noTags);
+  return decoded.replace(/\s+/g, " ").trim();
+}
+
+/**
  * ORACLE_ONLY — bookkeeping event types that already have a dedicated
  * screen, HUD field, prompt, or are pure step/roll detail whose outcome
  * sibling always follows. These get NO toast entry; the Oracle never loses
@@ -828,10 +847,18 @@ function dedupeByType(list) {
  * exactly one presentation destination (design §6.4) and a fifth folded
  * line must not vanish. The default call (no opts, or opts without
  * `limit`) is byte-for-byte unchanged from before this option existed.
+ * Phase 34 (CSCR-04) adds `opts.withIdx` (default false): when true, each
+ * surviving folded entry keeps its `idx` (the index into `events` its
+ * roll detail should be looked up from) and, for a directly-mapped event,
+ * its `type` — so the fight log can derive per-line dice detail via
+ * `oracleDetailText(narrateEvent(events[idx]))` without re-deriving the
+ * fold/dedup pipeline. The default (no opts, or opts without `withIdx`)
+ * return shape stays exactly `{ text, tone, priority }`, byte-for-byte
+ * unchanged from before this option existed.
  */
 export function toastsForAction(type, events, ctx = {}, opts = {}) {
   if (!Array.isArray(events) || events.length === 0) return [];
-  const { limit = MAX_TOASTS } = opts || {};
+  const { limit = MAX_TOASTS, withIdx = false } = opts || {};
   const consumed = new Set();
   const built = [];
 
@@ -861,7 +888,10 @@ export function toastsForAction(type, events, ctx = {}, opts = {}) {
 
   const deduped = dedupeByType(built);
   deduped.sort((a, b) => a.priority - b.priority || a.idx - b.idx);
-  return deduped.slice(0, limit).map(({ text, tone, priority }) => ({ text, tone, priority }));
+  const capped = deduped.slice(0, limit);
+  return capped.map(({ text, tone, priority, idx, type: t }) =>
+    withIdx ? { text, tone, priority, idx, ...(t !== undefined ? { type: t } : {}) } : { text, tone, priority }
+  );
 }
 
 export const TOAST_FOR = {
