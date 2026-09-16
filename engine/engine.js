@@ -19,7 +19,7 @@ import { makeRng } from "./rng.js";
 import { move, makeCamp } from "./movement.js";
 import { playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
-import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot } from "./items.js";
+import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
 import { buyFrom, leaveStore, sellItem } from "./economy.js";
 import { resolveJoiner } from "./encounters.js";
 import { die } from "./death.js";
@@ -127,6 +127,23 @@ export function applyAction(state, action) {
     case "unequipSlot":
       // ECON-05 (Phase 13): return the equipped weapon/armor to the bag. Pure (no rng).
       unequipSlot(next, action.slot, events);
+      break;
+    case "takeLoot":
+      // Phase 29 (LOOT-02): accept pending drop `i` (stow, or equip-now when
+      // `equip` is true). Pure (no rng).
+      takeLoot(next, action.i, !!action.equip, events);
+      break;
+    case "leaveLoot":
+      // Phase 29 (LOOT-02): decline pending drop `i`. Pure (no rng).
+      leaveLoot(next, action.i, events);
+      break;
+    case "takeAllLoot":
+      // Phase 29 (LOOT-02): take every pending drop that fits. Pure (no rng).
+      takeAllLoot(next, events);
+      break;
+    case "leaveAllLoot":
+      // Phase 29 (LOOT-02): decline every pending drop. Pure (no rng).
+      leaveAllLoot(next, events);
       break;
     default:
       break;

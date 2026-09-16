@@ -81,6 +81,23 @@ function buildRunSummary(state, cause, when) {
 }
 
 /**
+ * forfeitLoot(state, reason, events) — Phase 29 (LOOT-06): the ONE forfeit
+ * hook, called from die() (below, unconditionally, covering every one of
+ * die()'s 13+ call sites at once — RESEARCH Pitfall 3) and from combat.js#
+ * flee's three success exits. A non-empty pile is cleared and narrated with
+ * exactly ONE `lootForfeited {items, reason}` covering the whole pile; an
+ * empty (or absent) pile is silent and adds no key to a state that lacks
+ * one. Pure, no rng.
+ */
+export function forfeitLoot(state, reason, events = []) {
+  const pile = state.pendingLoot;
+  if (!Array.isArray(pile) || !pile.length) return events;
+  state.pendingLoot = [];
+  events.push({ type: "lootForfeited", items: pile, reason });
+  return events;
+}
+
+/**
  * die(state, cause, detail, rng, events, now) — kills the run: clears combat
  * and wards, fills the death note + epitaph from the content banks, captures
  * `lastWords` from the current beat group (if any), pushes a `died` event,
@@ -91,6 +108,11 @@ export function die(state, cause, detail, rng, events = [], now = Date.now) {
   const c = state.c;
   state.dead = true;
   state.combat = null;
+  // Phase 29 (LOOT-06, RESEARCH Pitfall 3): forfeit any pending loot pile
+  // here, inside the ONE terminator every death cause funnels through —
+  // never at each of the 13+ call sites (a future death cause would
+  // otherwise silently skip the forfeit).
+  forfeitLoot(state, "died", events);
   c.wp = 0;
   c.ward = null;
   c.regen = false;

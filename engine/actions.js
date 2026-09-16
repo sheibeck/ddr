@@ -42,6 +42,14 @@ export const ACTION_TYPES = new Set([
   // ECON-06 (Phase 14): sell carried item `i` at a store. Pure (no rng); carries
   // a non-negative item index `i`, same contract as dropItem/useItem.
   "sellItem",
+  // Phase 29 (LOOT-01/02/06): the pending end-of-combat loot pile. All pure
+  // (no rng). takeLoot carries a non-negative index `i` and an OPTIONAL
+  // boolean `equip` (direct-swap equip-now vs stow); leaveLoot carries `i`;
+  // takeAllLoot/leaveAllLoot carry no payload (same shape as takeFind/leaveFind).
+  "takeLoot",
+  "leaveLoot",
+  "takeAllLoot",
+  "leaveAllLoot",
 ]);
 
 const DIRS = new Set(["N", "S", "E", "W"]);
@@ -118,6 +126,21 @@ export function validateAction(action) {
     case "leaveFind":
       // ECON-03 (Phase 13): no payload fields — the pending find is read from
       // state.pendingFind, exactly like leaveStore reads state.store.
+      break;
+    case "takeLoot":
+    case "leaveLoot":
+      // Phase 29 (LOOT-02): the pending pile index — same non-negative
+      // integer contract as dropItem/equipItem/sellItem's `i` above.
+      if (!isInt(action.i) || action.i < 0) {
+        return { ok: false, reason: `${action.type}.i must be a non-negative integer` };
+      }
+      if (action.type === "takeLoot" && action.equip !== undefined && typeof action.equip !== "boolean") {
+        return { ok: false, reason: "takeLoot.equip must be a boolean when present" };
+      }
+      break;
+    case "takeAllLoot":
+    case "leaveAllLoot":
+      // Phase 29 (LOOT-02): no payload fields — same shape as takeFind/leaveFind.
       break;
     default:
       break;

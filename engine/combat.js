@@ -52,13 +52,13 @@
 import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
-import { die } from "./death.js";
+import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
-import { takeItem, gainWilmst, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
+import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeWpFor, foeDmgBonusFor } from "./difficulty.js";
-import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE } from "../content/index.js";
+import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER } from "../content/index.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -552,8 +552,10 @@ export function playerStrike(state, rng, events = []) {
 /**
  * killFoe(state, f, rng, events) — a foe's death: lives (kill-twice), the
  * skill-point formula (d6 x level x mul, with spMul/Barbarian/Apprentice
- * modifiers), coin via gainWilmst, treasure via rollTreasureItem/takeItem,
- * cooking, and checkLevel. Ports mazeworld.html killFoe() (lines 2410-2443).
+ * modifiers), coin via gainWilmst, treasure via rollTreasureItem, offered
+ * into the pending loot pile (Phase 29, LOOT-01 — replaces the legacy
+ * auto-take), cooking, and checkLevel. Ports mazeworld.html killFoe() (lines
+ * 2410-2443).
  */
 export function killFoe(state, f, rng, events = []) {
   const c = state.c;
@@ -592,7 +594,20 @@ export function killFoe(state, f, rng, events = []) {
   const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
   const coin = Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR);
   if (coin > 0) gainWilmst(state, coin, "off the body", rng, events);
-  if (rng.d(20) <= 2 + f.lvl) takeItem(state, rollTreasureItem(rng, state.floor.depth, c), events);
+  // DETERMINISM GATE (Phase 29, LOOT-01/05): the gate d20 and every
+  // rollTreasureItem draw below are UNCHANGED and still sit first, in the
+  // same order — only the destination changes, from the legacy auto-take to
+  // the pending pile (offerLoot). The bag-swap d20 is the ONE new draw this
+  // phase adds: it sits AFTER them and before the cooking check, and fires
+  // ONLY when bagUpgradeTier(state) is non-null (depth >= 2 with an upgrade
+  // tier available) — never true on a depth-1 fixture (RESEARCH "LOOT-05
+  // guard safety"), so every parity fixture draws exactly as before.
+  if (rng.d(20) <= 2 + f.lvl) {
+    let drop = rollTreasureItem(rng, state.floor.depth, c);
+    const tier = bagUpgradeTier(state);
+    if (tier && rng.d(20) <= BAG_DROP_UNDER) drop = bagItemFor(tier);
+    offerLoot(state, drop, events);
+  }
 
   if (f.type === "Beasts" || f.type === "Lair Beasts") {
     if (skill(c, "Cooking")) {
@@ -680,6 +695,12 @@ function pursuitStrike(state, rng, events) {
  * Cloaker free vanish while `!C.opened2` (denied + narrated once seen) ->
  * tracked round-1 clean withdrawal (denied + narrated for a Master of
  * Arms, who falls through) -> the ordinary d20 roll.
+ *
+ * Phase 29 (LOOT-06, CONTEXT §Pending pile): every success exit (cloaker,
+ * tracked, escaped) forfeits a non-empty pending loot pile with ONE
+ * narrated `lootForfeited` BEFORE the `fled` event — fleeing honestly costs
+ * the spoils. The fleeFailed path and the post-foeTurn encounterCleared
+ * path do NOT forfeit (the pile still shows normally there).
  */
 export function flee(state, rng, events = []) {
   const c = state.c;
@@ -697,6 +718,7 @@ export function flee(state, rng, events = []) {
   // instead of returning here. Zero new draws; `opened2` already exists.
   if (c.sub === "Cloaker" && !C.opened2) {
     if (pursuitStrike(state, rng, events).died) return events;
+    forfeitLoot(state, "fled", events);
     events.push({ type: "fled", reason: "cloaker" });
     endCombat(state, events);
     return events;
@@ -713,6 +735,7 @@ export function flee(state, rng, events = []) {
       events.push({ type: "withdrawalDenied", reason: "masterOfArms" });
     } else {
       if (pursuitStrike(state, rng, events).died) return events;
+      forfeitLoot(state, "fled", events);
       events.push({ type: "fled", reason: "tracked" });
       endCombat(state, events);
       return events;
@@ -723,6 +746,7 @@ export function flee(state, rng, events = []) {
   events.push({ type: "fleeRolled", roll, bonus, need: 11 });
   if (roll + bonus >= 11) {
     if (pursuitStrike(state, rng, events).died) return events;
+    forfeitLoot(state, "fled", events);
     events.push({ type: "fled", reason: "escaped" });
     endCombat(state, events);
     return events;

@@ -14,10 +14,14 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 
 import { offerLoot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "../../engine/items.js";
-import { newRun } from "../../engine/engine.js";
+import { newRun, applyAction } from "../../engine/engine.js";
+import { validateAction } from "../../engine/actions.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
+import { killFoe, flee } from "../../engine/combat.js";
+import { die, forfeitLoot } from "../../engine/death.js";
 import { BAG_ITEMS } from "../../content/bags.js";
 
 // --- fixed character/state helpers (mirrors inventory-actions.test.js) -----
@@ -277,4 +281,285 @@ test("none of the five handlers accepts an rng argument", () => {
   assert.equal(leaveLoot.length, 2, "leaveLoot(state, i, events=[])");
   assert.equal(takeAllLoot.length, 1, "takeAllLoot(state, events=[])");
   assert.equal(leaveAllLoot.length, 1, "leaveAllLoot(state, events=[])");
+});
+
+// ============================================================================
+// Task 2: dispatch/validation, killFoe redirect + guarded bag draw, forfeit
+// ============================================================================
+
+// --- combat-domain helpers (mirrors combat.test.js) -------------------------
+
+/** countingRng(seq) — like combat.test.js's fakeRng, but also records how
+ * many draws were consumed (`.calls`), so killFoe's draw-count pinning tests
+ * can assert exactly how many values were read regardless of which branch
+ * fired. `.pick` returns arr[0]; `.shuffle` is identity. */
+function countingRng(seq) {
+  let i = 0;
+  return {
+    calls: 0,
+    d(_sides) {
+      if (i >= seq.length) throw new Error(`countingRng: sequence exhausted at index ${i}`);
+      this.calls++;
+      return seq[i++];
+    },
+    pick: (arr) => arr[0],
+    shuffle: (a) => a,
+  };
+}
+
+function fixedFighter(overrides = {}) {
+  return {
+    cls: "Fighter", sub: "Soldier", race: "Human", level: 1, sp: 0,
+    maxWP: 55, wp: 55, skills: {}, vp: 0,
+    weapon: "Club", prof: 0, magicWpn: 0,
+    armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x",
+    potions: 1, rations: 6, gold: 50, scrolls: 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
+    items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    darkFor: 0, flightLeft: 0, flightCooldown: 0,
+    bag: "small",
+    ...overrides,
+  };
+}
+
+function fixedFloor(depth = 1, overrides = {}) {
+  const g = [];
+  for (let y = 0; y < 3; y++) {
+    g.push([]);
+    for (let x = 0; x < 3; x++) g[y].push({ wall: false, dark: false, seen: true, feat: null });
+  }
+  return { g, px: 1, py: 1, depth, ...overrides };
+}
+
+function fixedCombatState(overrides = {}) {
+  const { c: cOverrides, floor: floorOverrides, ...rest } = overrides;
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: fixedFighter(cOverrides),
+    floor: fixedFloor(1, floorOverrides),
+    day: 1, steps: 0, combat: null, store: null, beats: null,
+    pendingLoot: [], dead: false, won: false, deathNote: "", epitaph: "",
+    ...rest,
+  };
+}
+
+function fixedFoe(overrides = {}) {
+  return {
+    name: "Target", type: "Beasts", lvl: 1, size: "S", intel: 1,
+    wp: 10, maxWP: 10, alive: true, asleep: 0, sp: {}, lives: 1,
+    ...overrides,
+  };
+}
+
+function fixedCombat(foes, overrides = {}) {
+  return { foes, type: foes[0]?.type || "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, ...overrides };
+}
+
+test("validateAction: takeLoot/leaveLoot/takeAllLoot/leaveAllLoot contracts", () => {
+  assert.equal(validateAction({ type: "takeLoot", i: 0 }).ok, true);
+  assert.equal(validateAction({ type: "takeLoot", i: -1 }).ok, false);
+  assert.equal(validateAction({ type: "takeLoot", i: "0" }).ok, false);
+  assert.equal(validateAction({ type: "takeLoot" }).ok, false);
+  assert.equal(validateAction({ type: "takeLoot", i: 0, equip: true }).ok, true);
+  assert.equal(validateAction({ type: "takeLoot", i: 0, equip: "yes" }).ok, false);
+  assert.equal(validateAction({ type: "leaveLoot", i: 2 }).ok, true);
+  assert.equal(validateAction({ type: "leaveLoot" }).ok, false);
+  assert.equal(validateAction({ type: "takeAllLoot" }).ok, true);
+  assert.equal(validateAction({ type: "leaveAllLoot" }).ok, true);
+});
+
+test("applyAction: dispatches takeLoot/leaveLoot/takeAllLoot/leaveAllLoot and clones state", () => {
+  let state = newRun(7);
+  state.pendingLoot = [WEAPON("Dagger", 1)];
+
+  const r1 = applyAction(state, { type: "takeLoot", i: 0 });
+  assert.notEqual(r1.state, state, "returns a NEW state");
+  assert.equal(r1.state.pendingLoot.length, 0);
+  assert.ok(r1.events.some((e) => e.type === "lootTaken"));
+
+  state = newRun(7);
+  state.pendingLoot = [WEAPON("Dagger", 1)];
+  const r2 = applyAction(state, { type: "takeLoot", i: 0, equip: true });
+  assert.ok(r2.events.some((e) => e.type === "itemEquipped"));
+
+  state = newRun(7);
+  state.pendingLoot = [JEWEL("A"), JEWEL("B")];
+  const r3 = applyAction(state, { type: "leaveLoot", i: 0 });
+  assert.deepStrictEqual(r3.state.pendingLoot, [JEWEL("B")]);
+  assert.ok(r3.events.some((e) => e.type === "lootLeft"));
+
+  state = newRun(7);
+  state.pendingLoot = [JEWEL("A")];
+  const r4 = applyAction(state, { type: "takeAllLoot" });
+  assert.ok(r4.events.some((e) => e.type === "lootTaken"));
+
+  state = newRun(7);
+  state.pendingLoot = [JEWEL("A")];
+  const r5 = applyAction(state, { type: "leaveAllLoot" });
+  assert.deepStrictEqual(r5.state.pendingLoot, []);
+  assert.ok(r5.events.some((e) => e.type === "lootLeft"));
+});
+
+test("killFoe: depth 1, small bag — draws exactly 6, pushes a jewel to pendingLoot, no auto-take", () => {
+  const state = fixedCombatState({ floor: { depth: 1 } });
+  const foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 }); // Humans never cook
+  state.combat = fixedCombat([foe]);
+  const rng = countingRng([1, 1, 1, 5, 6, 1]); // sp d6, coin d10, treasure gate d20<=3, picks d12!=1, kind d10->jewel, jewel d8
+  const events = killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 6);
+  assert.equal(state.pendingLoot.length, 1);
+  assert.equal(state.pendingLoot[0].kind, "jewel");
+  assert.ok(events.some((e) => e.type === "lootDropped" && e.kind === "jewel"));
+  assert.ok(events.some((e) => e.type === "foeKilled"));
+  assert.ok(!events.some((e) => ["itemTaken", "itemRejected", "itemGiven"].includes(e.type)));
+  assert.deepStrictEqual(state.c.items, []);
+  assert.equal(state.c.sp, 5);
+});
+
+test("killFoe: depth 2, small bag — draws exactly 7; a low 7th roll swaps in a bag item instead of the jewel", () => {
+  const state = fixedCombatState({ floor: { depth: 2 } });
+  const foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  const rng = countingRng([1, 1, 1, 5, 6, 1, 1]); // + bag-swap d20 <= BAG_DROP_UNDER
+  killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 7);
+  assert.equal(state.pendingLoot.length, 1);
+  assert.equal(state.pendingLoot[0].kind, "bag");
+  assert.equal(state.pendingLoot[0].tier, "medium");
+});
+
+test("killFoe: depth 2, small bag — a high 7th roll keeps the jewel", () => {
+  const state = fixedCombatState({ floor: { depth: 2 } });
+  const foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  const rng = countingRng([1, 1, 1, 5, 6, 1, 20]);
+  killFoe(state, foe, rng, []);
+  assert.equal(state.pendingLoot.length, 1);
+  assert.equal(state.pendingLoot[0].kind, "jewel");
+});
+
+test("killFoe: no bag-swap draw when no upgrade is available (exlarge bag, existing bag pending, or below floor)", () => {
+  // depth 2, exlarge bag (no next tier)
+  let state = fixedCombatState({ c: { bag: "exlarge" }, floor: { depth: 2 } });
+  let foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  let rng = countingRng([1, 1, 1, 5, 6, 1]);
+  killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 6);
+
+  // depth 2, a bag item already pending
+  state = fixedCombatState({ floor: { depth: 2 }, pendingLoot: [BAG("medium")] });
+  foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  rng = countingRng([1, 1, 1, 5, 6, 1]);
+  killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 6);
+
+  // depth 4, medium bag (large needs floor 5)
+  state = fixedCombatState({ c: { bag: "medium" }, floor: { depth: 4 } });
+  foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  rng = countingRng([1, 1, 1, 5, 6, 1]);
+  killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 6);
+});
+
+test("killFoe: depth 5, medium bag — draws exactly 7 (large tier now available)", () => {
+  const state = fixedCombatState({ c: { bag: "medium" }, floor: { depth: 5 } });
+  const foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  const rng = countingRng([1, 1, 1, 5, 6, 1, 20]);
+  killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 7);
+});
+
+test("killFoe: a Beasts foe at depth 1 still draws its cooking d6 AFTER the treasure block", () => {
+  const state = fixedCombatState({ c: { skills: {} } });
+  const foe = fixedFoe({ type: "Beasts", lvl: 1, wp: 0 });
+  state.combat = fixedCombat([foe]);
+  const rng = countingRng([1, 1, 1, 5, 6, 1, 6]); // + cooking d6
+  killFoe(state, foe, rng, []);
+  assert.equal(rng.calls, 7);
+});
+
+test("killFoe never calls the legacy auto-take (source assertion)", () => {
+  const src = fs.readFileSync(new URL("../../engine/combat.js", import.meta.url), "utf8");
+  const stripped = src.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.ok(!stripped.includes("takeItem("), "combat.js must not call the legacy auto-take");
+});
+
+test("flee: a Cloaker with a pile forfeits before fled, in order; empty pile emits no lootForfeited", () => {
+  const state = fixedCombatState({ c: { sub: "Cloaker" }, pendingLoot: [JEWEL("A"), JEWEL("B")] });
+  state.combat = fixedCombat([fixedFoe({ sp: {} })], { opened2: false });
+  const events = flee(state, countingRng([]), []);
+  assert.deepStrictEqual(
+    events.map((e) => e.type),
+    ["lootForfeited", "fled", "combatEnded"],
+  );
+  assert.deepStrictEqual(state.pendingLoot, []);
+
+  const state2 = fixedCombatState({ c: { sub: "Cloaker" }, pendingLoot: [] });
+  state2.combat = fixedCombat([fixedFoe({ sp: {} })], { opened2: false });
+  const events2 = flee(state2, countingRng([]), []);
+  assert.ok(!events2.some((e) => e.type === "lootForfeited"));
+});
+
+test("flee: tracked round-1 withdrawal forfeits before fled", () => {
+  const state = fixedCombatState({ pendingLoot: [JEWEL("A")] });
+  state.combat = fixedCombat([fixedFoe({ sp: {} })], { tracked: true, round: 1 });
+  const events = flee(state, countingRng([]), []);
+  assert.deepStrictEqual(
+    events.map((e) => e.type),
+    ["lootForfeited", "fled", "combatEnded"],
+  );
+});
+
+test("flee: an ordinary successful escape forfeits before fled", () => {
+  const state = fixedCombatState({ pendingLoot: [JEWEL("A")] });
+  state.combat = fixedCombat([fixedFoe({ sp: {} })]);
+  const events = flee(state, countingRng([20]), []); // d20=20 -> escaped
+  assert.deepStrictEqual(
+    events.map((e) => e.type),
+    ["fleeRolled", "lootForfeited", "fled", "combatEnded"],
+  );
+});
+
+test("flee: a FAILED flee roll does NOT forfeit", () => {
+  const state = fixedCombatState({ pendingLoot: [JEWEL("A")] });
+  state.combat = fixedCombat([fixedFoe({ wp: 10, maxWP: 10, sp: {} })]);
+  const events = flee(state, countingRng([1, 6, 15]), []); // d20=1 fails, then a foeTurn
+  assert.ok(!events.some((e) => e.type === "lootForfeited"));
+  assert.deepStrictEqual(state.pendingLoot, [JEWEL("A")]);
+});
+
+test("die: forfeits a pending pile with ONE lootForfeited BEFORE died; empty pile is silent; no key added when absent", () => {
+  const state = fixedCombatState({ pendingLoot: [JEWEL("A"), JEWEL("B")] });
+  const events = [];
+  die(state, "starve", null, countingRng([1]), events);
+  assert.deepStrictEqual(state.pendingLoot, []);
+  const types = events.map((e) => e.type);
+  assert.equal(types.indexOf("lootForfeited"), 0, "forfeit comes before died");
+  assert.ok(types.includes("died"));
+
+  const state2 = fixedCombatState({ pendingLoot: [] });
+  const events2 = [];
+  die(state2, "starve", null, countingRng([1]), events2);
+  assert.ok(!events2.some((e) => e.type === "lootForfeited"));
+
+  const state3 = fixedCombatState();
+  delete state3.pendingLoot;
+  const keysBefore = Object.keys(state3);
+  const events3 = [];
+  die(state3, "starve", null, countingRng([1]), events3);
+  const newKeys = Object.keys(state3).filter((k) => !keysBefore.includes(k));
+  assert.ok(!newKeys.includes("pendingLoot"), "die() must not add a pendingLoot key to a state that lacks one");
+});
+
+test("forfeitLoot is exported from engine/death.js and returns events", () => {
+  const state = fixedCombatState({ pendingLoot: [JEWEL("A")] });
+  const events = forfeitLoot(state, "fled", []);
+  assert.deepStrictEqual(state.pendingLoot, []);
+  assert.deepStrictEqual(events, [{ type: "lootForfeited", items: [JEWEL("A")], reason: "fled" }]);
 });
