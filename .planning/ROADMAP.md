@@ -255,12 +255,12 @@ Plans:
   4. Make Camp lives in the Marks/Centre row (far right), movement buttons are centered, and the handedness option is gone.
   5. Store stock is rolled randomly and floor-appropriately for the current depth on each visit, with parity byte-identical for fixtures.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 33-01-PLAN.md — STORE-01 engine half: `state.storeRoll` run flag (a `newRun` option only `engineAdapter#startNewRun` sets — the `dev` precedent; fixtures/bots/old saves read false), tolerant `validateSave`/`rehydrate` read, six-line parity strip (harness ×3 + test-local ×3), `content/store-stock.js` per-tier pools/bands/caps/bonuses on the BAG_FLOORS 2/5/9 ladder, `openStore` flag-on block after every existing draw (Healing + 3 rolled potions from an allow-list, 2 banded weapons, best armor under the tier cap, +1/+2/+3 premium), `store-roll` tests (flag-off identity incl. rng cursor, N-extra-draws pin, per-depth shape)
+- [x] 33-01-PLAN.md — STORE-01 engine half: `state.storeRoll` run flag (a `newRun` option only `engineAdapter#startNewRun` sets — the `dev` precedent; fixtures/bots/old saves read false), tolerant `validateSave`/`rehydrate` read, six-line parity strip (harness ×3 + test-local ×3), `content/store-stock.js` per-tier pools/bands/caps/bonuses on the BAG_FLOORS 2/5/9 ladder, `openStore` flag-on block after every existing draw (Healing + 3 rolled potions from an allow-list, 2 banded weapons, best armor under the tier cap, +1/+2/+3 premium), `store-roll` tests (flag-off identity incl. rng cursor, N-extra-draws pin, per-depth shape)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -269,6 +269,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 33-03-PLAN.md — UIF-02 + UIF-03 + STORE-01 shell half: `zoom` default 1.5 (session-only), `window.mzCenterMap()` at the three panel-closed choke points (`renderEncounter` dismissal transition, `showTab("maze")`, `closeSettingsSheet`) + pinch release (never per pointermove); store header roll line gated on `S.storeRoll` with a voice scan; `shell-map-store-polish` test; `build:www` + full suite gate; SUMMARY with the milestone hand-off (dropped UIF-04, the 32-03 unguarded set + haptics, the flag name) and the PROJECT.md Key Decision row
+
 **UI hint**: yes
 
 ## Carried-forward work (not yet phases)
@@ -295,6 +296,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 3/3 | Complete    | 2026-09-16 |
 | 32. Combat Narrative & Input UI Build | v1.3 | 3/3 | Complete    | 2026-09-16 |
-| 33. UI Feel & Store Polish | v1.3 | 0/3 | Planned | - |
+| 33. UI Feel & Store Polish | v1.3 | 1/3 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |
 | Next tuning pass (TUNE-06/07) | Post-v1.3 | 0/1 | Deferred by user (2026-09-15) | - |

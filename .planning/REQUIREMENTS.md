@@ -60,7 +60,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### Store (STORE)
 
-- [ ] **STORE-01**: Store stock is rolled randomly and floor-appropriately for the current depth (new rng draw behind a feature guard; parity byte-identical for fixtures)
+- [x] **STORE-01**: Store stock is rolled randomly and floor-appropriately for the current depth (new rng draw behind a feature guard; parity byte-identical for fixtures)
 
 ## Future Requirements
 
@@ -139,4 +139,4 @@ Which phases cover which requirements. Populated during roadmap creation.
 | UIF-03 | Phase 33 | Pending |
 | UIF-04 | — (moved to UX-06 backlog) | Dropped |
 | UIF-05 | Phase 33 | Pending |
-| STORE-01 | Phase 33 | Pending |
+| STORE-01 | Phase 33 | Complete |

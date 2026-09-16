@@ -4,16 +4,16 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 33
 current_phase_name: UI Feel & Store Polish
-status: planning
-stopped_at: Completed 32-03-PLAN.md
-last_updated: "2026-09-16T17:33:41.902Z"
+status: executing
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-09-16T18:58:54.668Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 32 complete, transitioned to Phase 33
+last_activity_desc: Phase 33 planned (UIF-04 dropped), execution started (wave 1 of 3)
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
+  total_plans: 16
+  completed_plans: 14
   percent: 83
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 33 — UI Feel & Store Polish
-Plan: Not started
-Status: Executing Phase 33 (3 plans, sequential waves; last phase of v1.3)
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-09-16 — Phase 33 planned (UIF-04 dropped), execution started (wave 1 of 3)
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T17:29:50.732Z
-Stopped at: Phase 33 wave 1 (33-01 STORE-01 engine) executing
+Last session: 2026-09-16T18:58:54.598Z
+Stopped at: Completed 33-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -163,6 +163,7 @@ Resume file: None
 | Phase 32 P01 | 5min | 2 tasks | 3 files |
 | Phase 32 P02 | 12min | 3 tasks | 4 files |
 | Phase 32 P03 | 18min | 3 tasks | 3 files |
+| Phase 33 P01 | 35min | 3 tasks | 14 files |
 
 ## Decisions
 
@@ -297,6 +298,9 @@ Resume file: None
 - [Phase ?]: Round Card routing uses post-dispatch state.combat (not pre-dispatch wasCombat) so the action that ends combat still toasts its own final-round lines
 - [Phase ?]: window.__mzRoundCard is presentation-only, module-scope state (like window.__mzLootReport), never an S field, since serializeRun spreads S wholesale
 - [Phase ?]: 32-03: guardTap's internal check written as if (encArmed()) fn(); to satisfy the plan's own literal grep-count acceptance criteria without changing behavior
+- [Phase ?]: storeRoll follows the dev boolean precedent exactly (unconditional-on-fresh-state, tolerant-default-false on load, plain destructure-and-drop in comparables) rather than pendingLoot's reconcile pattern
+- [Phase ?]: Confirmed 33-RESEARCH.md assumption A2 correction: parity fixtures are newRun(seed) output, so the six-line comparables carve-out (storeRoll) is required, not optional
+- [Phase ?]: Armor-cap enforcement can shrink the flag-on stock array by exactly one line (when the flag-off upgrade no longer fits the tier's cap) but never grows it
 
 ### Blockers
 
