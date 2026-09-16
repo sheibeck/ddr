@@ -147,8 +147,21 @@ Plans:
   4. A depth-appropriate bigger bag (medium/large/xlarge) can turn up as treasure and expands carry capacity when taken.
   5. Closing and resuming the app mid-loot-screen preserves the pending pile exactly; fleeing or dying instead forfeits it with a narrated line rather than losing it without explanation.
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 29-01-PLAN.md — Engine gate + content + view-models: `slotItems`/`bagCap`/`canStow`/`stowItem` (the ONE bag-cap gate, potions exempt), `weaponUpgradeDelta`/`armorUpgradeDelta` extracted from takeItem, `bagUpgradeTier`/`bagItemFor`, `BAG_ORDER`/`BAG_FLOORS`/`BAG_DROP_UNDER`/`BAG_ITEMS`, store pre-pay `bagFull` gate (no gold on a refused stow), potion-preserving `clampCarry`, `lootCompare`/`bagUsage`, richer `bagFull` + `bagUpgraded` toast/Oracle entries, chargen-never-exceeds-cap test, full `npm test` gate (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 29-02-PLAN.md — The pending pile: `state.pendingLoot` (serialized, tolerant, `sanitizeLoot`), `offerLoot` + `takeLoot {i, equip?}`/`leaveLoot`/`takeAllLoot`/`leaveAllLoot` actions, `killFoe` → pile with the one guarded bag d20, `forfeitLoot` in `die()` and flee's three exits, `reconcilePendingLoot` in all three comparables, `lootDropped`/`lootTaken`/`lootLeft`/`lootForfeited` toast/Oracle entries, draw-count + roundtrip + forfeit tests, full `npm test` gate (Wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 29-03-PLAN.md — Shell: loot screen card replacing the encounter-cleared report (per-row Equip now/Stow-or-Take/Leave via `lootCompare`, Take all/Leave all, shared `renderDropShelf`), `hasActiveEncounter` parks the map on a pile, `noteCombat` folds the report into the card, `window.__mzBagUsage`/`__mzLootCompare` + `mzTakeLoot`/`mzLeaveLoot`/`mzTakeAllLoot`/`mzLeaveAllLoot` bridges, every readout through `bagUsage` (gear panel, find card, store with Drop when full), shell source-assertion test, `npm run build:www` + full `npm test` gates (Wave 3)
 
 ### Phase 30: Combat Narrative & Input — Research
 
