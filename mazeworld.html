@@ -3009,11 +3009,12 @@ function paint() {
   // carried treasure (Phase 13, ECON-04/05: the keep/drop/equip UI)
   const carry = document.getElementById("s-carry");
   const items = c.items || [];
-  // Capacity readout — "used / slots" (content/bags.js BAGS[c.bag].slots,
-  // bridged as window.__mzBags). A bag-less character shows just the count.
-  const bagSlots = (window.__mzBags && window.__mzBags[c.bag] && window.__mzBags[c.bag].slots) || null;
-  document.getElementById("s-carry-n").textContent = bagSlots ? `${items.length} / ${bagSlots}` : (items.length ? `${items.length}` : "");
-  const bagFull = bagSlots != null && items.length >= bagSlots;
+  // Phase 29 (LOOT-04): the readout and the full-bag gate read the ONE
+  // view-model (window.__mzBagUsage — potions exempt from the count), never
+  // a local count. The engine (stowItem/canStow) alone enforces the cap.
+  const usage = window.__mzBagUsage(c);
+  document.getElementById("s-carry-n").textContent = usage.text;
+  const bagFull = usage.full;
   carry.innerHTML = "";
 
   // ≥48dp helper: build a small action button dispatching an engine inventory
@@ -5027,8 +5028,10 @@ function renderEncounter() {
   if (S.pendingFind && !S.combat && !S.store) {
     const it = S.pendingFind;
     const c = S.c;
-    const slots = (window.__mzBags && window.__mzBags[c.bag] && window.__mzBags[c.bag].slots) || Infinity;
-    const full = (c.items || []).length >= slots;
+    // Phase 29 (LOOT-04): the ONE capacity readout and full-bag gate —
+    // never a raw array-length count.
+    const usage = window.__mzBagUsage(c);
+    const full = usage.full;
     // DR17 item 4 (one-screen): render the findOffered narration INLINE above the
     // Take/Leave buttons — no separate "Move on" beat first. (Full line still
     // logged to the Oracle by window.move.)
@@ -5048,7 +5051,7 @@ function renderEncounter() {
       document.getElementById("a-find-leave").onclick = () => window.mzLeaveFind?.();
     } else {
       // keep/drop chooser: the bag is full — drop something to make room.
-      body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Your bag is full (${(c.items || []).length}/${slots}). Drop something to make room, or leave it.</p>
+      body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Your bag is full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
         <div class="shelf" id="find-drop-shelf"></div>
         <div class="actions">
           <button class="primary" id="a-find-take">Take it now</button>
@@ -5063,9 +5066,14 @@ function renderEncounter() {
 
   if (S.store) {
     const st = S.store;
+    // Phase 29 (LOOT-04): the store's drop-to-make-room option; a refused
+    // lockpick buy costs nothing (engine gate, Plan 01) and its bagFull
+    // toast names have/slots.
+    const usage = window.__mzBagUsage(S.c);
     body.innerHTML += `<p class="enc-head" style="color:var(--moss)">A store</p>
       <p class="enc-sub">${S.c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
       <div class="shelf" id="shelf"></div>
+      ${usage.full ? `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}) — sell or drop something to make room.</p>` : ""}
       <p class="enc-sub" id="sell-head" style="margin-top:12px">Your gear</p>
       <ul class="skills" id="sell-list"></ul>
       <div class="actions"><button class="primary" id="a-leave">Leave</button></div>`;
@@ -5089,9 +5097,11 @@ function renderEncounter() {
     // a Sell button (window.mzSellItem → {type:"sellItem", i}), rendered by the
     // SAME shared component the GEAR tab and the combat use-list use. Selling
     // frees a slot and credits gold; the bridge re-renders the store after.
+    // Phase 29 (LOOT-04): when the bag is full, each row also gets a Drop
+    // button so the player can make room without selling.
     const sellHead = document.getElementById("sell-head");
     if ((S.c.items || []).length) {
-      renderCarriedList(document.getElementById("sell-list"), S.c.items, { actions: ["sell"] });
+      renderCarriedList(document.getElementById("sell-list"), S.c.items, { actions: usage.full ? ["sell", "drop"] : ["sell"] });
     } else {
       // Nothing to sell — drop the heading so the empty <ul> isn't a bare label.
       if (sellHead) sellHead.style.display = "none";

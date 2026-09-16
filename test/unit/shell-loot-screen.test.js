@@ -205,3 +205,48 @@ test("Phase 29 (LOOT-02): the joiner region is untouched (no pendingLoot leaked 
   const region = pendingJoinerRegion();
   assert.ok(!region.includes("pendingLoot"), "the joiner branch does not reference pendingLoot");
 });
+
+// ─── 7. LOOT-04: every readout routes through bagUsage — no raw count survives ──
+
+function paintCarryRegion() {
+  const start = CODE.indexOf('const carry = document.getElementById("s-carry");');
+  const end = CODE.indexOf("renderCarriedList(carry,");
+  assert.ok(start !== -1 && end !== -1 && end > start, "paint() carried-treasure region bounds found");
+  return CODE.slice(start, end);
+}
+
+test("Phase 29 (LOOT-04): paint()'s carried-treasure readout and full-bag gate read window.__mzBagUsage", () => {
+  const region = paintCarryRegion();
+  assert.match(region, /window\.__mzBagUsage\(c\)/);
+  assert.match(region, /usage\.text/);
+  assert.match(region, /usage\.full/);
+});
+
+test("Phase 29 (LOOT-04): the find card's capacity readout and full-bag gate read window.__mzBagUsage", () => {
+  const region = pendingFindRegion();
+  assert.match(region, /window\.__mzBagUsage\(c\)/);
+  assert.match(region, /\$\{usage\.have\}\/\$\{usage\.slots\}/);
+});
+
+function storeRegion() {
+  const start = CODE.indexOf("if (S.store) {");
+  const end = CODE.indexOf("const C = S.combat;", start);
+  assert.ok(start !== -1 && end !== -1 && end > start, "store region bounds found");
+  return CODE.slice(start, end);
+}
+
+test("Phase 29 (LOOT-04): the store reads window.__mzBagUsage and offers Drop when full", () => {
+  const region = storeRegion();
+  assert.match(region, /window\.__mzBagUsage\(S\.c\)/);
+  assert.match(region, /\["sell", "drop"\]/);
+});
+
+test("Phase 29 (LOOT-04): no raw capacity count survives in mazeworld.html (the four negative greps)", () => {
+  // Each literal below is copied verbatim from the PRE-Task-3 source at the
+  // line ranges cited in 29-03-PLAN.md Task 3's read_first — written only
+  // here, in the test file, never reintroduced into mazeworld.html.
+  assert.equal(CODE.includes("items.length >= bagSlots"), false, "paint()'s old raw-length bagFull comparison must be gone");
+  assert.equal(CODE.includes("(c.items || []).length >= slots"), false, "the find card's old raw-length full comparison must be gone");
+  assert.equal(CODE.includes("${items.length} / ${bagSlots}"), false, "paint()'s old raw-length readout template must be gone");
+  assert.equal(CODE.includes("(c.items || []).length}/${slots}"), false, "the find card's old raw-length rust-line template must be gone");
+});

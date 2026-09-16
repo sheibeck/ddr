@@ -18,8 +18,9 @@
 //      three hosts);
 //   5. the store repair row is relabelled in the shell (engine's own stock
 //      `sub` string is left untouched — parity-safe);
-//   6. the pending-find card and the full-bag drop shelf both read
-//      bagArmorText for a carried/found armor piece;
+//   6. the pending-find card reads bagArmorText for a found armor piece, and
+//      its full-bag drop shelf lives in the shared renderDropShelf(shelf,
+//      items) function (Phase 29 Plan 03), which itself reads bagArmorText;
 //   7. the classic (dead) CLOAKS table's Cloak of Armor txt mirrors the live
 //      content/treasure-tables.js string, and the PRE-Phase-28 flavor line
 //      (still frozen in test/parity/prototype-master.js.txt) is gone from the
@@ -58,7 +59,7 @@ const CODE = stripComments(HTML);
 test("Phase 28 (ARMOR-02/03/04): the module bridges armorDisplay/bagArmorText from viewModels.js", () => {
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage \} from "\.\/src\/browser\/viewModels\.js";/,
   );
   assert.match(CODE, /window\.__mzArmorDisplay = \{ armorDisplay, bagArmorText \};/);
 });
@@ -109,6 +110,10 @@ test("Phase 28 (ARMOR-02): the store repair row reads armorDisplay(S.c).wornSub 
 });
 
 // ─── 6. pending-find card + full-bag drop shelf ─────────────────────────────
+// Phase 29 Plan 03: the drop shelf loop was extracted into the shared
+// renderDropShelf(shelf, items) function — the shelf's bagArmorText(bi) read
+// now lives THERE, not inline in the pendingFind branch. Intent unchanged:
+// every bag armor row (including the drop shelf) still shows durability.
 
 function pendingFindRegion() {
   const start = CODE.indexOf("if (S.pendingFind && !S.combat && !S.store)");
@@ -117,9 +122,22 @@ function pendingFindRegion() {
   return CODE.slice(start, end);
 }
 
-test("Phase 28 (ARMOR-03): the pending-find card and full-bag drop shelf both read bagArmorText", () => {
+function renderDropShelfRegion() {
+  const start = CODE.indexOf("function renderDropShelf(");
+  assert.ok(start !== -1, "renderDropShelf found");
+  const end = CODE.indexOf("\nfunction ", start + 1);
+  assert.ok(end !== -1 && end > start, "renderDropShelf region end found");
+  return CODE.slice(start, end);
+}
+
+test("Phase 28 (ARMOR-03): the pending-find card reads bagArmorText and calls the shared renderDropShelf", () => {
   const region = pendingFindRegion();
   assert.match(region, /bagArmorText\(it\)/);
+  assert.match(region, /renderDropShelf\(/);
+});
+
+test("Phase 29 (LOOT-04): renderDropShelf (the shared drop shelf) reads bagArmorText", () => {
+  const region = renderDropShelfRegion();
   assert.match(region, /bagArmorText\(bi\)/);
 });
 
