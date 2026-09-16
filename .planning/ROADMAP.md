@@ -122,7 +122,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 34-03-PLAN.md — Combat screen bands (header / foes / YOUR LOT / log / action band), the Phase 34 CSS, `renderMajorOverlay` for `combat.pending` (Decision 2), guarded retarget (Decision 3)
+- [x] 34-03-PLAN.md — Combat screen bands (header / foes / YOUR LOT / log / action band), the Phase 34 CSS, `renderMajorOverlay` for `combat.pending` (Decision 2), guarded retarget (Decision 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -182,7 +182,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 34. Combat Screen Rebuild | v1.4 | 2/5 | In Progress|  |
+| 34. Combat Screen Rebuild | v1.4 | 3/5 | In Progress|  |
 | 35. Map Screen Rebuild | v1.4 | 0/? | Pending | — |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |

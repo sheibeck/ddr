@@ -5,15 +5,15 @@ milestone_name: Combat & Map Screens
 current_phase: 34
 current_phase_name: Combat Screen Rebuild
 status: executing
-stopped_at: Completed 34-02-PLAN.md (fight-log seam, renderer, announcer)
-last_updated: "2026-09-16T23:06:51.820Z"
+stopped_at: Completed 34-03-PLAN.md (combat screen layout, MAJOR OVERLAY, foes, YOUR LOT)
+last_updated: "2026-09-16T23:23:08.075Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 34 execution started
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 34 (Combat Screen Rebuild) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 34 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T23:06:51.796Z
-Stopped at: Completed 34-02-PLAN.md (fight-log seam, renderer, announcer)
+Last session: 2026-09-16T23:23:08.049Z
+Stopped at: Completed 34-03-PLAN.md (combat screen layout, MAJOR OVERLAY, foes, YOUR LOT)
 Resume file: None
 
 ## Operator Next Steps
@@ -167,6 +167,7 @@ Resume file: None
 | Phase 33 P03 | 25min | 3 tasks | 3 files |
 | Phase 34 P01 | 35min | 3 tasks | 7 files |
 | Phase 34 P02 | 19min | 3 tasks | 4 files |
+| Phase 34 P03 | 40min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -313,6 +314,8 @@ Resume file: None
 - [Phase ?]: 34-01: combatPanel.js's YOUR LOT 3-joiner overflow tested via a synthetic state.party array (PARTY_CAP=1 today)
 - [Phase ?]: 34-02: window.__mzFightEnd is populated only when the ending dispatch is both wasCombat and no-longer-inCombat; a fresh fight (noteCombat's fresh-fight branch) clears any stale parcel from a previous fight.
 - [Phase ?]: 34-02: the flee ending reuses the existing beats surface (after.beats = { groups: [{title:"You got out",tone:"moss",lines:[]}], over:"fled" }) rather than inventing a new presentation channel — Plan 05's beats-branch renders any beats.over as the over-panel.
+- [Phase ?]: 34-03 Decision 2: built renderMajorOverlay(host, spec) as a fully generic, parameterised MAJOR OVERLAY function now (icon/title/line/roll/primary+optional-secondary), reused unchanged by Phase 35 for the stair-down and out-of-combat death
+- [Phase ?]: 34-03 Decision 3: no engine retarget action exists or was added — foe-card targeting stays the presentation mutation S.combat.target = i; renderEncounter(), now wrapped in guardTap (a real CSCR-08 fix; it was previously unguarded)
 
 ### Blockers
 
