@@ -5,15 +5,15 @@ milestone_name: Combat & Map Screens
 current_phase: 34
 current_phase_name: Combat Screen Rebuild
 status: executing
-stopped_at: Completed 34-01-PLAN.md (fight-log/combat-menu/combat-panel presentation modules)
-last_updated: "2026-09-16T22:37:03.232Z"
+stopped_at: Completed 34-02-PLAN.md (fight-log seam, renderer, announcer)
+last_updated: "2026-09-16T23:06:51.820Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 34 execution started
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 34 (Combat Screen Rebuild) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 34 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T22:37:03.207Z
-Stopped at: Completed 34-01-PLAN.md (fight-log/combat-menu/combat-panel presentation modules)
+Last session: 2026-09-16T23:06:51.796Z
+Stopped at: Completed 34-02-PLAN.md (fight-log seam, renderer, announcer)
 Resume file: None
 
 ## Operator Next Steps
@@ -166,6 +166,7 @@ Resume file: None
 | Phase 33 P02 | 19min | 3 tasks | 4 files |
 | Phase 33 P03 | 25min | 3 tasks | 3 files |
 | Phase 34 P01 | 35min | 3 tasks | 7 files |
+| Phase 34 P02 | 19min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -310,6 +311,8 @@ Resume file: None
 - [Phase ?]: 34-01: toastsForAction gains opts.withIdx (Phase 32 opts.limit precedent) + oracleDetailText — fight-log lines sourced from the folded toast pipeline, not raw event HTML, to preserve the 'log line count = folded count' pin
 - [Phase ?]: 34-01: combatMenu.js's flee/WITHDRAW cost text mirrors engine/combat.js's own roll logic as display-only — no new engine action added
 - [Phase ?]: 34-01: combatPanel.js's YOUR LOT 3-joiner overflow tested via a synthetic state.party array (PARTY_CAP=1 today)
+- [Phase ?]: 34-02: window.__mzFightEnd is populated only when the ending dispatch is both wasCombat and no-longer-inCombat; a fresh fight (noteCombat's fresh-fight branch) clears any stale parcel from a previous fight.
+- [Phase ?]: 34-02: the flee ending reuses the existing beats surface (after.beats = { groups: [{title:"You got out",tone:"moss",lines:[]}], over:"fled" }) rather than inventing a new presentation channel — Plan 05's beats-branch renders any beats.over as the over-panel.
 
 ### Blockers
 
