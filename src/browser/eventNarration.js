@@ -599,9 +599,14 @@ export const EVENT_NARRATION = {
   findOffered: (e) => `<span class="beat">Something's here for the taking: ${e.name ?? "something"}.</span> Your call.`,
   findTaken: (e) => `<span class="hit">Into the bag it goes:</span> ${e.item?.n ?? "something"}. You'll regret the weight eventually.`,
   findLeft: (e) => `<span class="miss">You leave ${e.item?.n ?? "it"} where it lay.</span> The dungeon respects restraint from no one.`,
-  // The bag is full — nothing more fits until something is dropped.
+  // The bag is full — nothing more fits until something is dropped. Phase 29
+  // (LOOT-04): when the event carries have/slots (every current push site
+  // does), append the count; a bare {type} call keeps today's wording.
   bagFull: (e) =>
-    `<span class="miss">No room.</span> The bag is stuffed; drop something before ${e.item?.n ? `taking ${e.item.n}` : "you can take that"}.`,
+    `<span class="miss">No room.</span> The bag is stuffed; drop something before ${e.item?.n ? `taking ${e.item.n}` : "you can take that"}.${e.have != null && e.slots != null ? ` (${e.have}/${e.slots})` : ""}`,
+  // Phase 29 (LOOT-05): a bag upgrade item was taken — c.bag went up a tier.
+  bagUpgraded: (e) =>
+    `<span class="hit">A bigger bag.</span> ${e.item?.n ?? "It"} holds ${e.slots ?? "more"} slots — more room to make worse decisions in.`,
   itemDropped: (e) => `<span class="beat">You drop ${e.item?.n ?? "it"}.</span> Lighter, poorer, wiser — pick two.`,
   itemEquipped: (e) =>
     `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${e.slot})` : ""}. Whether that was wise is between you and the maze.`,

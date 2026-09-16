@@ -1247,7 +1247,12 @@ export const TOAST_FOR = {
   cured: (e) => ({ text: `Cured of ${e?.kind ?? "it"}.`, tone: "hit", priority: PRIORITY.you }),
   itemBurned: (e) => ({ text: `${e?.total ?? 0} fire damage spread.`, tone: "magic", priority: PRIORITY.you }),
   itemFizzled: () => ({ text: "Nothing happens.", tone: "miss", priority: PRIORITY.you }),
-  bagFull: () => block("No room in the bag."),
+  // Phase 29 (LOOT-04): richer text when the event carries the have/slots
+  // count (every current push site does); a bare {type} call (safety-scan
+  // style) still gets a sane fallback.
+  bagFull: (e) => block(e?.have != null && e?.slots != null ? `Bag full (${e.have}/${e.slots}) — drop something to make room.` : "No room in the bag."),
   itemEquipped: (e) => ({ text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${e.slot})` : ""}.`, tone: "hit", priority: PRIORITY.other }),
   equipRejected: (e) => block(equipRejectText(e)),
+  // Phase 29 (LOOT-05): a bag upgrade item was taken — c.bag just went up a tier.
+  bagUpgraded: (e) => ({ text: `Bigger bag: ${e?.slots ?? "more"} slots.`, tone: "hit", priority: PRIORITY.you }),
 };

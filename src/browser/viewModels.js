@@ -6,9 +6,10 @@
 // Pitfall 1, never the design mockup's throwaway state-object field names.
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
-import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS } from "../../content/index.js";
+import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS } from "../../content/index.js";
 import { strikeDie, toHit, upkeep, skill, eff, canCast, intelBonus, armorSoak } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
+import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 
 /**
  * skillTableFor(cls) — the special-skill description pool for a class
@@ -128,6 +129,101 @@ export function armorDisplay(c) {
 export function bagArmorText(it) {
   const left = it.left ?? it.wp;
   return left > 0 ? `AR ${it.ar} · ${left}/${it.wp} hp` : `AR ${it.ar} · destroyed`;
+}
+
+/** classNames(letters) — Phase 29 (LOOT-03): "FTM"-style class-letter string
+ * -> a human-readable class-name list joined with " or " (e.g. "F" ->
+ * "Fighter", "FT" -> "Fighter or Thief"). Unknown letters pass through
+ * verbatim rather than throwing — defensive for content it can't foresee. */
+function classNames(letters) {
+  const NAME = { F: "Fighter", T: "Thief", M: "Magic User" };
+  return (letters || "")
+    .split("")
+    .map((l) => NAME[l] || l)
+    .join(" or ");
+}
+
+/** refusalText(reason, clsLetters) — Phase 29 (LOOT-03): the loot screen's
+ * "can't use (...)" fragment for a weaponRefusalReason/armorRefusalReason
+ * code. Mirrors src/browser/toasts.js's EQUIP_REJECT_TEXT wording without
+ * importing it (that table also covers notEquippable/notBetter, which never
+ * reach lootCompare's illegal-gear branch). */
+function refusalText(reason, clsLetters) {
+  switch (reason) {
+    case "wrongClass":
+    case "tooHeavy":
+      return `${classNames(clsLetters)} only`;
+    case "acrobat":
+      return "Acrobat: dagger only";
+    case "noArmor":
+      return "your kind wears no armour";
+    case "woodsman":
+      return "no mail or plate for a Woodsman";
+    default:
+      return "not for you";
+  }
+}
+
+/**
+ * lootCompare(c, it) — Phase 29 (LOOT-03): the ONE compare-to-equipped
+ * verdict for a loot/find item, mirroring armorDisplay's single-source
+ * pattern — the verdict is takeItem's own weaponUpgradeDelta/
+ * armorUpgradeDelta (engine/items.js), never a restated formula, so the
+ * screen can never disagree with what the engine would actually do. Returns
+ * a plain object `{ kind, legal, reason, delta, upgrade, equipNow, line,
+ * sub }`; the shell joins `line`/`sub` itself (lootCompare never joins
+ * them). Pure, no rng, no mutation.
+ */
+export function lootCompare(c, it) {
+  if (it.kind === "weapon") {
+    const reason = weaponRefusalReason(c, it);
+    const delta = weaponUpgradeDelta(c, it);
+    const legal = reason === null;
+    const upgrade = delta > 0;
+    const equipNow = legal && upgrade;
+    const line = !legal
+      ? `can't use (${refusalText(reason, WEAPONS[it.base]?.cls ?? "")})`
+      : upgrade
+        ? `+${delta} damage`
+        : "not an upgrade";
+    return { kind: "weapon", legal, reason, delta, upgrade, equipNow, line, sub: it.txt ?? "" };
+  }
+
+  if (it.kind === "armor") {
+    const reason = armorRefusalReason(c, it);
+    const delta = armorUpgradeDelta(c, it);
+    const legal = reason === null;
+    const upgrade = delta > 0;
+    const equipNow = legal && upgrade;
+    const line = !legal
+      ? `can't use (${refusalText(reason, it.cls ?? "")})`
+      : `AR ${it.ar} vs your AR ${c.ar} · ${upgrade ? "upgrade" : "not an upgrade"}`;
+    // The AR is already in `line` above — sub carries only the durability
+    // pool (Phase 28's tolerant `left ?? wp` read for a fresh, never-worn drop).
+    const left = it.left ?? it.wp;
+    const sub = left > 0 ? `${left}/${it.wp} hp` : "destroyed";
+    return { kind: "armor", legal, reason, delta, upgrade, equipNow, line, sub };
+  }
+
+  if (it.kind === "bag") {
+    const line = `${BAGS[it.tier]?.slots ?? "?"} slots — you carry ${bagCap(c) === Infinity ? "no bag" : bagCap(c)}`;
+    // sub is deliberately blank — it.txt would just repeat the slot count.
+    return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "" };
+  }
+
+  return { kind: it.kind, legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line: it.txt ?? "", sub: "" };
+}
+
+/**
+ * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
+ * gear panel, find card, loot screen and store display all read (Plan 03
+ * bridges it as window.__mzBagUsage). Pure, no rng.
+ */
+export function bagUsage(c) {
+  const have = slotItems(c).length;
+  const cap = bagCap(c);
+  const slots = cap === Infinity ? null : cap;
+  return { have, slots, full: !canStow(c), text: slots ? `${have} / ${slots}` : have ? `${have}` : "" };
 }
 
 /**
