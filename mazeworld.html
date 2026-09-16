@@ -2668,10 +2668,6 @@ function act(fn) {
     if (!S.combat && !S.dead && !S.won && !S.store && lines.length) {
       // parleyed, fled, or killed the last of them — say so, don't just go quiet
       S.beats = { groups: [{ title: "", tone: "", lines }], i: 0, action: null };
-      S.lastExchange = null;
-    } else {
-      S.lastExchange = lines;
-      S.exchangeN = (S.exchangeN || 0) + 1;
     }
     renderEncounter();
     return;
@@ -3907,7 +3903,7 @@ function startCombat(wandering, forced) {
       sp: c.sp || {}, lives: (c.sp && c.sp.twice) ? 2 : 1
     });
   }
-  S.beats = null; CAPTURE = null; S.lastExchange = null;
+  S.beats = null; CAPTURE = null;
   S.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };
   const first = rollInitiative();
   const samurai = S.c.sub === "Samurai", slow = R_().slow;
@@ -4463,7 +4459,6 @@ function readScroll() {
 
 function endCombat() {
   S.combat = null;
-  S.lastExchange = null;
   S.c.regen = false;
   S.c.ward = null;
   S.c.mirror = 0;
@@ -5263,14 +5258,6 @@ function renderEncounter() {
   }
   body.appendChild(menu);
 
-  if (S.lastExchange && S.lastExchange.length) {
-    const ex = document.createElement("div");
-    ex.className = "exchange";
-    ex.dataset.n = S.exchangeN || 0;
-    ex.innerHTML = `<h4>Last exchange</h4>` + S.lastExchange.slice(-6).map(l => `<p>${l}</p>`).join("");
-    body.appendChild(ex);
-  }
-
   // Device-review Pass DR8: STRIKE/POTION/FLEE/PARLEY/SING/SCROLL route
   // through the engine's own attack/drinkPotion/flee/parley/sing/readScroll
   // actions (window.mzAttack etc., trailing module script) instead of the
@@ -5640,6 +5627,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // fallback in engineMove/mzMakeCamp; NARRATIVE_ACTIONS gates ctx.narrate in
   // dispatchWithToasts; toastLifetime is bridged to the classic script below.
   import { CARD_EVENTS, NARRATIVE_ACTIONS, toastLifetime } from "./src/browser/toasts.js";
+  // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as toasts even in
+  // combat; MAX_TOASTS caps only the out-of-combat toast queue (the round
+  // card is uncapped); narrativeToastText is the card's defensive text prep.
+  import { PRIORITY, MAX_TOASTS, narrativeToastText } from "./src/browser/toasts.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — dpad clicks and arrow/WASD
@@ -6116,10 +6107,44 @@ window.__mzClassicBoot = async function classicBoot() {
   // resolveJoiner) each direct-mapped toast carries the Oracle sentence via
   // narrateEvent (dice stripped); every other action keeps Phase 25's short
   // table text unchanged.
+  // Phase 32 (CMBUI-02): the routing rule — while the POST-dispatch state
+  // has a combat, every folded toast except a PRIORITY.block refusal
+  // becomes a Round Card line instead of a toast; refusals always toast;
+  // out of combat the toast queue is exactly today's output (same order,
+  // same MAX_TOASTS cap). This deliberately routes on the state AFTER
+  // dispatch, not before: the action that ENDS combat (a kill, a flee, a
+  // death) must still toast its own lines, because a successful flee hides
+  // the panel, a kill swaps to the loot card, and a death shows the death
+  // card — a card-routed line in any of those would be invisible. The
+  // encounter-starting move, by contrast, has a post-dispatch combat, so
+  // its encounterStart fold correctly lands on the preview card (§6.4).
+  // The round label is the round the player ACTED in — afterPlayerAction's
+  // round++ has already advanced combat.round by the time render runs, so
+  // the topbar's "round N+1" and the card's "Round N" are both truthful.
+  // window.__mzRoundCard is presentation-only and never stored on state
+  // (serializeRun spreads S, so an S field would be saved).
+  let roundCardSeq = 0;
   function dispatchWithToasts(action) {
+    const before = window.__mzState.get();
+    const roundBefore = before && before.combat ? before.combat.round : null;
     const result = dispatch(action);
     const ctx = NARRATIVE_ACTIONS.has(action.type) ? { narrate: narrateEvent } : {};
-    for (const t of toastsForAction(action.type, result.events, ctx)) window.mzToast?.(t.text, t.tone);
+    const inCombat = !!(result.state && result.state.combat);
+    const lines = [];
+    const queue = [];
+    for (const t of toastsForAction(action.type, result.events, ctx, { limit: Infinity })) {
+      if (inCombat && t.priority !== PRIORITY.block) lines.push(narrativeToastText(t.text) || t.text);
+      else queue.push(t);
+    }
+    for (const t of queue.slice(0, MAX_TOASTS)) window.mzToast?.(t.text, t.tone);
+    if (!inCombat) {
+      window.__mzRoundCard = null;
+    } else if (lines.length) {
+      window.__mzRoundCard = { seq: ++roundCardSeq, pending: !!result.state.combat.pending, round: roundBefore ?? result.state.combat.round, lines };
+    } else if (roundBefore === null) {
+      window.__mzRoundCard = null;
+    }
+    // else: a refusal tap or a zero-line action — keep the previous card.
     return result;
   }
 

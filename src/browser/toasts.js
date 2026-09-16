@@ -820,11 +820,18 @@ function dedupeByType(list) {
 }
 
 /**
- * toastsForAction(type, events, ctx = {}) — the exported per-action
- * pipeline. See the header comment above this section for the full order.
+ * toastsForAction(type, events, ctx = {}, opts = {}) — the exported
+ * per-action pipeline. See the header comment above this section for the
+ * full order. Phase 32 (CMBUI-02) adds `opts.limit` (default MAX_TOASTS,
+ * the toast host's visible cap): the Round Card requests the FULL folded
+ * list with `{ limit: Infinity }` because every in-combat event has
+ * exactly one presentation destination (design §6.4) and a fifth folded
+ * line must not vanish. The default call (no opts, or opts without
+ * `limit`) is byte-for-byte unchanged from before this option existed.
  */
-export function toastsForAction(type, events, ctx = {}) {
+export function toastsForAction(type, events, ctx = {}, opts = {}) {
   if (!Array.isArray(events) || events.length === 0) return [];
+  const { limit = MAX_TOASTS } = opts || {};
   const consumed = new Set();
   const built = [];
 
@@ -854,7 +861,7 @@ export function toastsForAction(type, events, ctx = {}) {
 
   const deduped = dedupeByType(built);
   deduped.sort((a, b) => a.priority - b.priority || a.idx - b.idx);
-  return deduped.slice(0, MAX_TOASTS).map(({ text, tone, priority }) => ({ text, tone, priority }));
+  return deduped.slice(0, limit).map(({ text, tone, priority }) => ({ text, tone, priority }));
 }
 
 export const TOAST_FOR = {

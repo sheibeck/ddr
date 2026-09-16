@@ -11,6 +11,12 @@
 // behavioural check proves the deleted DR18 hand-written equip-rejection
 // toast is replaced, not lost, by importing the real toastsForAction and
 // running a real equipRejected event through it.
+//
+// Phase 32 (CMBUI-02): re-pinned for the Round Card routing rewrite —
+// dispatchWithToasts now branches in-combat non-refusal toasts to
+// window.__mzRoundCard (uncapped, via toastsForAction's new `limit` option)
+// and keeps everything else on the MAX_TOASTS-capped toast host, as a
+// single if/else (structural exclusivity).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -254,4 +260,57 @@ test("DFB-01: FEATURE_EVENT_TITLE carries a title for both CARD_EVENTS", () => {
   for (const t of CARD_EVENTS) {
     assert.match(CODE, new RegExp(t + ": \\["), `FEATURE_EVENT_TITLE must have an entry for ${t}`);
   }
+});
+
+// ─── Phase 32 (CMBUI-02): in-combat routing re-pin ───────────────────────
+//
+// dispatchWithToasts is retargeted: while the POST-dispatch state has a
+// combat, every folded toast except a PRIORITY.block refusal becomes a
+// Round Card line instead of a toast. These pins prove the routing is a
+// single if/else inside the one pipeline function (structural exclusivity),
+// that the card path requests the UNCAPPED list while the toast path keeps
+// MAX_TOASTS, and that toasts.js's only change is the new `limit` option.
+
+test("Phase 32: the module imports PRIORITY, MAX_TOASTS, narrativeToastText on their own line", () => {
+  const hits = CODE.match(/import \{ PRIORITY, MAX_TOASTS, narrativeToastText \} from "\.\/src\/browser\/toasts\.js";/g) || [];
+  assert.equal(hits.length, 1, "the PRIORITY/MAX_TOASTS/narrativeToastText import must appear exactly once");
+});
+
+test("Phase 32: dispatchWithToasts routes card-vs-toast via a single if/else, uncapped card + MAX_TOASTS-capped queue", () => {
+  const start = CODE.indexOf("function dispatchWithToasts(action)");
+  const end = CODE.indexOf("window.move = function engineMove");
+  assert.ok(start !== -1 && end !== -1 && end > start, "dispatchWithToasts..window.move region must be found");
+  const region = CODE.slice(start, end);
+  assert.match(region, /const inCombat = !!\(result\.state && result\.state\.combat\)/);
+  const cardCalls = region.match(/toastsForAction\(action\.type, result\.events, ctx, \{ limit: Infinity \}\)/g) || [];
+  assert.equal(cardCalls.length, 1, "exactly one uncapped toastsForAction call for the card path");
+  const ifElse = region.match(/if \(inCombat && t\.priority !== PRIORITY\.block\)/g) || [];
+  assert.equal(ifElse.length, 1, "exactly one routing if/else");
+  const capped = region.match(/queue\.slice\(0, MAX_TOASTS\)/g) || [];
+  assert.equal(capped.length, 1, "the toast path keeps the host's MAX_TOASTS cap");
+  const toastCalls = region.match(/window\.mzToast\?\.\(t\.text, t\.tone\)/g) || [];
+  assert.equal(toastCalls.length, 1, "exactly one window.mzToast call inside dispatchWithToasts");
+  assert.match(region, /narrativeToastText\(t\.text\)/);
+  assert.match(region, /window\.__mzRoundCard = null/);
+});
+
+test("Phase 32: toasts.js carries the limit option once, and the old literal MAX_TOASTS slice is gone", () => {
+  const toastsSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "toasts.js"), "utf8");
+  const sigHits = toastsSrc.match(/export function toastsForAction\(type, events, ctx = \{\}, opts = \{\}\)/g) || [];
+  assert.equal(sigHits.length, 1, "toastsForAction must accept an opts argument exactly once");
+  const limitHits = toastsSrc.match(/deduped\.slice\(0, limit\)/g) || [];
+  assert.equal(limitHits.length, 1, "the pipeline tail must slice by the new limit exactly once");
+  assert.doesNotMatch(toastsSrc, /slice\(0, MAX_TOASTS\)/, "the literal MAX_TOASTS slice must be gone from toasts.js");
+});
+
+test("Phase 32: the two full-health block toasts are still exactly 2 after the routing rewrite", () => {
+  const blockGuards = HTML.match(/Already at full health\.", "block"\)/g) || [];
+  assert.equal(blockGuards.length, 2, "both pre-dispatch full-health guards must survive the routing rewrite untouched");
+});
+
+test("Phase 32: window.mzToast is defined exactly once and never reassigned — routing lives in the pipeline, not a wrapper", () => {
+  const defs = CODE.match(/window\.mzToast = function/g) || [];
+  assert.equal(defs.length, 1, "window.mzToast must be defined exactly once");
+  const assigns = CODE.match(/window\.mzToast = /g) || [];
+  assert.equal(assigns.length, 1, "window.mzToast must never be reassigned outside its own definition");
 });
