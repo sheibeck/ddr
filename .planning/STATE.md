@@ -4,17 +4,17 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 33
 current_phase_name: UI Feel & Store Polish
-status: executing
-stopped_at: Completed 33-02-PLAN.md
-last_updated: "2026-09-16T19:23:35.501Z"
+status: verifying
+stopped_at: Completed 33-03-PLAN.md (Phase 33 complete, ready for milestone verification)
+last_updated: "2026-09-16T19:52:13.728Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 33 planned (UIF-04 dropped), execution started (wave 1 of 3)
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 16
-  completed_plans: 15
-  percent: 83
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 33 — UI Feel & Store Polish
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-16 — Phase 33 planned (UIF-04 dropped), execution started (wave 1 of 3)
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T19:23:35.448Z
-Stopped at: Completed 33-02-PLAN.md
+Last session: 2026-09-16T19:52:13.637Z
+Stopped at: Completed 33-03-PLAN.md (Phase 33 complete, ready for milestone verification)
 Resume file: None
 
 ## Operator Next Steps
@@ -165,6 +165,7 @@ Resume file: None
 | Phase 32 P03 | 18min | 3 tasks | 3 files |
 | Phase 33 P01 | 35min | 3 tasks | 14 files |
 | Phase 33 P02 | 19min | 3 tasks | 4 files |
+| Phase 33 P03 | 25min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -305,6 +306,7 @@ Resume file: None
 - [Phase ?]: Drop confirm's Yes handler reverts the armed row before dispatching mzDropItem so a paint() re-render never finds a stale armed confirm
 - [Phase ?]: gearRow re-parents already-built buttons into .mw-gear-actions post-loop rather than reordering the actions array, keeping every non-gear renderCarriedList host byte-identical
 - [Phase ?]: writeSetting('handedness', ...) is now a no-op (unrecognized key) rather than a schema migration; a stale persisted handedness value is never read back or rewritten
+- [Phase ?]: Store stock rolled by depth behind a run flag (state.storeRoll, v1.3 Phase 33): parity stays byte-identical for fixtures/old saves; a newRun option only the shell sets keeps every fixture/bot/pre-Phase-33 save on the frozen roll
 
 ### Blockers
 

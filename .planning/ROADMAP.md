@@ -255,7 +255,7 @@ Plans:
   4. Make Camp lives in the Marks/Centre row (far right), movement buttons are centered, and the handedness option is gone.
   5. Store stock is rolled randomly and floor-appropriately for the current depth on each visit, with parity byte-identical for fixtures.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -268,7 +268,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 33-03-PLAN.md — UIF-02 + UIF-03 + STORE-01 shell half: `zoom` default 1.5 (session-only), `window.mzCenterMap()` at the three panel-closed choke points (`renderEncounter` dismissal transition, `showTab("maze")`, `closeSettingsSheet`) + pinch release (never per pointermove); store header roll line gated on `S.storeRoll` with a voice scan; `shell-map-store-polish` test; `build:www` + full suite gate; SUMMARY with the milestone hand-off (dropped UIF-04, the 32-03 unguarded set + haptics, the flag name) and the PROJECT.md Key Decision row
+- [x] 33-03-PLAN.md — UIF-02 + UIF-03 + STORE-01 shell half: `zoom` default 1.5 (session-only), `window.mzCenterMap()` at the three panel-closed choke points (`renderEncounter` dismissal transition, `showTab("maze")`, `closeSettingsSheet`) + pinch release (never per pointermove); store header roll line gated on `S.storeRoll` with a voice scan; `shell-map-store-polish` test; `build:www` + full suite gate; SUMMARY with the milestone hand-off (dropped UIF-04, the 32-03 unguarded set + haptics, the flag name) and the PROJECT.md Key Decision row
 
 **UI hint**: yes
 
@@ -296,6 +296,6 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 3/3 | Complete    | 2026-09-16 |
 | 32. Combat Narrative & Input UI Build | v1.3 | 3/3 | Complete    | 2026-09-16 |
-| 33. UI Feel & Store Polish | v1.3 | 2/3 | In Progress|  |
+| 33. UI Feel & Store Polish | v1.3 | 3/3 | In Progress|  |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |
 | Next tuning pass (TUNE-06/07) | Post-v1.3 | 0/1 | Deferred by user (2026-09-15) | - |

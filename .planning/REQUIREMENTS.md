@@ -53,8 +53,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 ### UI feel (UIF)
 
 - [x] **UIF-01**: Gear panel shows Use and Drop side by side, Drop on the far right, with a confirm before dropping
-- [ ] **UIF-02**: The map recenters on the party icon whenever the map view returns from a full-screen panel (Store, sheet, Oracle, …)
-- [ ] **UIF-03**: Default map zoom is the midpoint between fully zoomed in and fully zoomed out
+- [x] **UIF-02**: The map recenters on the party icon whenever the map view returns from a full-screen panel (Store, sheet, Oracle, …)
+- [x] **UIF-03**: Default map zoom is the midpoint between fully zoomed in and fully zoomed out
 - [ ] ~~**UIF-04**: Tutorial on/off setting — dismiss once, re-enable from Settings~~ — DROPPED from v1.3 (2026-09-16): the tutorial UI is not wired in the shell; moves to the UX-06 backlog
 - [x] **UIF-05**: Make Camp moves into the Marks / Centre row (far right); the handedness option is removed; movement buttons are centered
 
@@ -135,8 +135,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CMBUI-05 | Phase 32 | Complete |
 | CMBUI-06 | Phase 32 | Complete |
 | UIF-01 | Phase 33 | Complete |
-| UIF-02 | Phase 33 | Pending |
-| UIF-03 | Phase 33 | Pending |
+| UIF-02 | Phase 33 | Complete |
+| UIF-03 | Phase 33 | Complete |
 | UIF-04 | — (moved to UX-06 backlog) | Dropped |
 | UIF-05 | Phase 33 | Complete |
 | STORE-01 | Phase 33 | Complete |
