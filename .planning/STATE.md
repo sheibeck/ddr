@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
-current_phase: 29
-current_phase_name: End-of-Combat Loot & Bag Cap
-status: verifying
+current_phase: 30
+current_phase_name: Combat Narrative & Input — Research
+status: planning
 stopped_at: Completed 29-03-PLAN.md
-last_updated: "2026-09-16T03:51:11.105Z"
+last_updated: "2026-09-16T03:53:24.316Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase 29 execution started
+last_activity_desc: Phase 29 complete, transitioned to Phase 30
 progress:
   total_phases: 6
   completed_phases: 2
@@ -21,17 +21,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-15 after Phase 28)
+See: .planning/PROJECT.md (updated 2026-09-15 after Phase 29)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 29 — End-of-Combat Loot & Bag Cap
+**Current focus:** Phase 30 — Combat Narrative & Input — Research (autonomous run; UAT deferred to end of run)
 
 ## Current Position
 
-Phase: 29 (End-of-Combat Loot & Bag Cap) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-09-15 — Phase 29 execution started
+Phase: 30 — Combat Narrative & Input — Research
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-15 — Phase 29 complete, transitioned to Phase 30
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,7 +87,7 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 ## Session Continuity
 
 Last session: 2026-09-16T03:51:11.082Z
-Stopped at: Completed 29-03-PLAN.md
+Stopped at: Phase 29 complete, ready to plan Phase 30 (autonomous run in progress — device UAT for Phases 28–29 batched to end of run)
 Resume file: None
 
 ## Operator Next Steps
