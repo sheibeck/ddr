@@ -147,7 +147,7 @@ Plans:
   4. A depth-appropriate bigger bag (medium/large/xlarge) can turn up as treasure and expands carry capacity when taken.
   5. Closing and resuming the app mid-loot-screen preserves the pending pile exactly; fleeing or dying instead forfeits it with a narrated line rather than losing it without explanation.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 **UI hint**: yes
 
 Plans:
@@ -157,7 +157,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 29-02-PLAN.md — The pending pile: `state.pendingLoot` (serialized, tolerant, `sanitizeLoot`), `offerLoot` + `takeLoot {i, equip?}`/`leaveLoot`/`takeAllLoot`/`leaveAllLoot` actions, `killFoe` → pile with the one guarded bag d20, `forfeitLoot` in `die()` and flee's three exits, `reconcilePendingLoot` in all three comparables, `lootDropped`/`lootTaken`/`lootLeft`/`lootForfeited` toast/Oracle entries, draw-count + roundtrip + forfeit tests, full `npm test` gate (Wave 2)
+- [x] 29-02-PLAN.md — The pending pile: `state.pendingLoot` (serialized, tolerant, `sanitizeLoot`), `offerLoot` + `takeLoot {i, equip?}`/`leaveLoot`/`takeAllLoot`/`leaveAllLoot` actions, `killFoe` → pile with the one guarded bag d20, `forfeitLoot` in `die()` and flee's three exits, `reconcilePendingLoot` in all three comparables, `lootDropped`/`lootTaken`/`lootLeft`/`lootForfeited` toast/Oracle entries, draw-count + roundtrip + forfeit tests, full `npm test` gate (Wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -246,7 +246,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
 | 28. Armor Integrity & Durability | v1.3 | 3/3 | Complete    | 2026-09-15 |
-| 29. End-of-Combat Loot & Bag Cap | v1.3 | 1/3 | In Progress|  |
+| 29. End-of-Combat Loot & Bag Cap | v1.3 | 2/3 | In Progress|  |
 | 30. Combat Narrative & Input — Research | v1.3 | 0/? | Not started | - |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 0/? | Not started | - |
 | 32. Combat Narrative & Input UI Build | v1.3 | 0/? | Not started | - |

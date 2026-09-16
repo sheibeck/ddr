@@ -25,12 +25,12 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### End-of-combat loot (LOOT)
 
-- [ ] **LOOT-01**: Foe drops during combat go into a pending pile instead of being auto-equipped or auto-rejected; no drop is silently discarded
-- [ ] **LOOT-02**: When combat clears, the player sees a loot screen listing every drop with take / leave per item, plus take-all / leave-all
+- [x] **LOOT-01**: Foe drops during combat go into a pending pile instead of being auto-equipped or auto-rejected; no drop is silently discarded
+- [x] **LOOT-02**: When combat clears, the player sees a loot screen listing every drop with take / leave per item, plus take-all / leave-all
 - [x] **LOOT-03**: Taking a weapon or armor from loot shows the compare-to-equipped info (e.g. "+2 damage" / "not an upgrade") and offers equip-now vs. bag
 - [x] **LOOT-04**: One bag-cap gate that every pickup / buy / starting-kit / loot path routes through, with "bag full" feedback and a drop-to-make-room option; healing potions, special potions, and scrolls do NOT count against bag space (user rule 2026-09-15) — only gear and treasure items consume slots
 - [x] **LOOT-05**: Bigger bags (medium / large / xlarge) are obtainable as depth-appropriate treasure (new rng draw behind a feature guard)
-- [ ] **LOOT-06**: The pending pile survives save/resume (serialized, carved out of comparables); fleeing or dying forfeits it with a narrated line
+- [x] **LOOT-06**: The pending pile survives save/resume (serialized, carved out of comparables); fleeing or dying forfeits it with a narrated line
 
 ### Combat narrative & input (CMBUI) — research-first
 
@@ -116,12 +116,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ARMOR-03 | Phase 28 | Complete |
 | ARMOR-04 | Phase 28 | Complete |
 | ARMOR-05 | Phase 28 | Complete |
-| LOOT-01 | Phase 29 | Pending |
-| LOOT-02 | Phase 29 | Pending |
+| LOOT-01 | Phase 29 | Complete |
+| LOOT-02 | Phase 29 | Complete |
 | LOOT-03 | Phase 29 | Complete |
 | LOOT-04 | Phase 29 | Complete |
 | LOOT-05 | Phase 29 | Complete |
-| LOOT-06 | Phase 29 | Pending |
+| LOOT-06 | Phase 29 | Complete |
 | CMBUI-01 | Phase 30 | Pending |
 | CMB-01 | Phase 31 | Pending |
 | CMB-02 | Phase 31 | Pending |

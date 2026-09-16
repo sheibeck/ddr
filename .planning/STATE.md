@@ -5,15 +5,15 @@ milestone_name: Feel, Loot & Combat Flow
 current_phase: 29
 current_phase_name: End-of-Combat Loot & Bag Cap
 status: executing
-stopped_at: Completed 29-01-PLAN.md
-last_updated: "2026-09-16T03:07:29.229Z"
+stopped_at: Completed 29-02-PLAN.md
+last_updated: "2026-09-16T03:37:38.571Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 29 execution started
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 17
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-15 after Phase 28)
 ## Current Position
 
 Phase: 29 (End-of-Combat Loot & Bag Cap) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-15 — Phase 29 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T03:07:29.206Z
-Stopped at: Completed 29-01-PLAN.md
+Last session: 2026-09-16T03:37:38.548Z
+Stopped at: Completed 29-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -154,6 +154,7 @@ Resume file: None
 | Phase 28 P02 | 35min | 3 tasks | 7 files |
 | Phase 28 P03 | 30min | 3 tasks | 3 files |
 | Phase 29 P01 | 55min | 3 tasks | 9 files |
+| Phase 29 P02 | 95min | 3 tasks | 17 files |
 
 ## Decisions
 
@@ -270,6 +271,7 @@ Resume file: None
 - [Phase ?]: 28-03: findSub/biSub computed as local consts (not inline ternaries) so the find-card/drop-shelf bagArmorText wiring matches the plan's literal grep acceptance criteria verbatim
 - [Phase ?]: 29-01: stowItem's potion exemption applies to the refusal check itself (not just the have count) — a potion always stows even at a gear-full bag
 - [Phase ?]: 29-01: weaponUpgradeDelta/armorUpgradeDelta return signed deltas so takeItem (<=0 rejects) and lootCompare (>0 upgrade) share one arithmetic source
+- [Phase ?]: Plan 29-02: pendingLoot replaces the mid-fight auto-take (offerLoot/takeLoot/leaveLoot/takeAllLoot/leaveAllLoot), forfeited via one hook on flee/die, reconciled byte-identically in all three parity comparables (plus their own local dupes) with zero fixture edits.
 
 ### Blockers
 
