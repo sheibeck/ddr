@@ -3552,7 +3552,11 @@ function renderCarriedList(container, items, opts = {}) {
     bt.className = "small";
     bt.textContent = label;
     bt.style.marginTop = "4px"; bt.style.marginRight = "6px"; bt.style.alignSelf = "flex-start";
-    if (disabled) bt.disabled = true; else bt.onclick = onClick;
+    // Phase 32 (CMBUI-04): opts.guard opts a caller's rows into the same
+    // arm-delay guardTap() every other §6.3 decision button uses — the loot
+    // card and the combat use-list pass guard:true; the GEAR tab and the
+    // store sell list do not (outside the ratified list).
+    if (disabled) bt.disabled = true; else opts.guard ? guardTap(bt, onClick) : (bt.onclick = onClick);
     return bt;
   };
   rows.forEach(({ it, i }) => {
@@ -4788,6 +4792,57 @@ function hasActiveEncounter() {
   return !!(S && (S.dead || S.won || S.combat || S.store || S.pendingJoiner || S.pendingFind || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length)));
 }
 
+// Phase 32 (CMBUI-04/05, design §6.3) — the two Date.now() tap-safety
+// guards, wired onto DOM/render state: an arm-delay for freshly rendered
+// decision buttons and a dismiss-settle window after the encounter overlay
+// closes. Both predicates are read from window.__mzInputGuards
+// (src/browser/inputGuards.js) and compared against Date.now() at the call
+// site — NEVER a CSS transition/animation duration and NEVER a
+// transition- or animation-completion event listener, because the blanket
+// prefers-reduced-motion rule (mazeworld.html ~L773) sets
+// transition:none/animation:none for those users, which would silently
+// zero a transition-based guard. Every guarded button renders INSIDE
+// #enc-panel (the hit-zone rule, design §6.3 rule 3).
+let encRenderedAt = 0;
+let armTimer = null;
+let lastDismissAt = 0;
+let encWasActive = false;
+
+function encArmed() {
+  return window.__mzInputGuards ? window.__mzInputGuards.isArmed(encRenderedAt, Date.now()) : true;
+}
+function encounterSettled() {
+  return window.__mzInputGuards ? window.__mzInputGuards.isSettled(lastDismissAt, Date.now()) : true;
+}
+
+// armEncounterButtons(): stamps a fresh arm window every time renderEncounter()
+// builds a visible panel. T-32-05: the timer below ONLY tidies the
+// aria-disabled accessibility attribute after the window elapses — the
+// actual decision of whether a tap/key fires is ALWAYS the Date.now()
+// comparison in encArmed()/guardTap(), never this timer, so a stuck or late
+// timer can never permanently lock a button.
+function armEncounterButtons() {
+  encRenderedAt = Date.now();
+  if (armTimer) clearTimeout(armTimer);
+  const delay = (window.__mzInputGuards && window.__mzInputGuards.ARM_DELAY_MS) || 250;
+  armTimer = setTimeout(() => {
+    document.querySelectorAll('#enc-panel [aria-disabled="true"]').forEach((el) => el.removeAttribute("aria-disabled"));
+  }, delay);
+}
+
+// guardTap(btn, fn): the ONE wrapper for every §6.3 decision-button handler.
+// A tap (or a key that clicks the same handler) that lands inside the arm
+// window is swallowed silently — no toast, no visible disabled styling (the
+// button keeps its normal look; aria-disabled is an accessibility-only
+// attribute and is never referenced by CSS, so there is no 250 ms flicker).
+// Tolerates a null btn so optional action-bar buttons keep their existing
+// `if (x) …` null-guard call sites.
+function guardTap(btn, fn) {
+  if (!btn) return;
+  btn.setAttribute("aria-disabled", "true");
+  btn.onclick = () => { if (encArmed()) fn(); };
+}
+
 // Phase 32 (CMBUI-02, design §6.7 / RESEARCH Pitfall 1) — the Round Card's
 // screen-reader announcer. #enc-round-live is a PERSISTENT sr-only node (a
 // sibling of #enc-body, never rebuilt) so a live region recreated inside
@@ -4833,9 +4888,11 @@ function vitalsStrip() {
 function wireDeathConfirm() {
   const btn = document.getElementById("btn-death-confirm");
   if (!btn) return;
-  btn.onclick = () => {
+  // Phase 32 (CMBUI-04): Confirm stays "armed" in the DR4 sense (no
+  // read-it-first lock) — only the 250 ms re-render arm window is added.
+  guardTap(btn, () => {
     (window.mzReturnToTitle ? window.mzReturnToTitle() : (window.mzStartRoll ? window.mzStartRoll() : newGame()));
-  };
+  });
 }
 
 // Quick task: enemy status effects → badges on each foe row. Reads the same
@@ -4906,12 +4963,22 @@ function renderEncounter() {
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
   // ONLY while something is actually happening (feature-tile narration,
   // combat, store, death/win) — never a permanent fixture beneath the map.
-  if (!hasActiveEncounter()) {
+  const active = hasActiveEncounter();
+  // Phase 32 (CMBUI-05, design §6.3 rule 2): stamp lastDismissAt on the
+  // true -> false transition (the overlay just closed under the thumb) —
+  // window.move's settle clause refuses a step for DISMISS_SETTLE_MS after
+  // this moment so a dismiss tap/step can never double as the first move.
+  if (encWasActive && !active) lastDismissAt = Date.now();
+  encWasActive = active;
+  if (!active) {
     if (panel) panel.hidden = true;
     syncRoundCardLive(null);
     return;
   }
   if (panel) panel.hidden = false;
+  // Phase 32 (CMBUI-04): every button this render builds below shares one
+  // fresh arm-delay stamp.
+  armEncounterButtons();
   const body = document.getElementById("enc-body");
   const rd = document.getElementById("enc-round");
   body.innerHTML = ""; rd.textContent = "";
@@ -4945,7 +5012,7 @@ function renderEncounter() {
     // tab; this affordance jumps there. The death overlay + Confirm persist on
     // the MAP tab, so returning still lands on the armed Confirm.
     const oracleBtn = document.getElementById("btn-death-oracle");
-    if (oracleBtn) oracleBtn.onclick = () => window.__mzShowTab?.("oracle");
+    guardTap(oracleBtn, () => window.__mzShowTab?.("oracle"));
     wireDeathConfirm();
     return;
   }
@@ -4985,10 +5052,10 @@ function renderEncounter() {
     // .actions row, keeping it clear of the D-pad zone. The feature-action
     // button (a-evt, e.g. "Smash it open") stays inline in the body above.
     if (dismissSlot) dismissSlot.innerHTML = `<button class="${last ? "small" : "primary"}" id="a-next">${last ? "Move on" : "Next"}</button>`;
-    document.getElementById("a-next").onclick = () => {
+    guardTap(document.getElementById("a-next"), () => {
       if (last) S.beats = null; else b.i++;
       renderEncounter();
-    };
+    });
     const ab = document.getElementById("a-evt");
     if (ab) ab.onclick = () => { const f = b.action.fn; b.action = null; f(); CAPTURE = null; if (S.beats) S.beats.i = 0; renderEncounter(); };
     return;
@@ -5024,6 +5091,7 @@ function renderEncounter() {
     body.innerHTML += `<div class="actions"><button class="primary" id="a-loot-take-all">Take all</button><button id="a-loot-leave-all">Leave all</button></div>`;
     renderCarriedList(document.getElementById("loot-list"), S.pendingLoot, {
       actions: ["lootEquip", "lootTake", "lootLeave"],
+      guard: true,
       subFor: (it) => {
         const cmp = window.__mzLootCompare(c, it);
         return cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line;
@@ -5031,8 +5099,8 @@ function renderEncounter() {
     });
     const dropShelf = document.getElementById("loot-drop-shelf");
     if (dropShelf) renderDropShelf(dropShelf, c.items || []);
-    document.getElementById("a-loot-take-all").onclick = () => window.mzTakeAllLoot?.();
-    document.getElementById("a-loot-leave-all").onclick = () => window.mzLeaveAllLoot?.();
+    guardTap(document.getElementById("a-loot-take-all"), () => window.mzTakeAllLoot?.());
+    guardTap(document.getElementById("a-loot-leave-all"), () => window.mzLeaveAllLoot?.());
     return;
   }
 
@@ -5075,8 +5143,8 @@ function renderEncounter() {
         <button class="primary" id="a-join-yes">Take them along</button>
         <button id="a-join-no">Leave them</button>
       </div>`;
-    document.getElementById("a-join-yes").onclick = () => window.mzResolveJoiner?.(true);
-    document.getElementById("a-join-no").onclick = () => window.mzResolveJoiner?.(false);
+    guardTap(document.getElementById("a-join-yes"), () => window.mzResolveJoiner?.(true));
+    guardTap(document.getElementById("a-join-no"), () => window.mzResolveJoiner?.(false));
     return;
   }
 
@@ -5111,8 +5179,8 @@ function renderEncounter() {
         <button class="primary" id="a-find-take">Take it</button>
         <button id="a-find-leave">Leave it</button>
       </div>`;
-      document.getElementById("a-find-take").onclick = () => window.mzTakeFind?.();
-      document.getElementById("a-find-leave").onclick = () => window.mzLeaveFind?.();
+      guardTap(document.getElementById("a-find-take"), () => window.mzTakeFind?.());
+      guardTap(document.getElementById("a-find-leave"), () => window.mzLeaveFind?.());
     } else {
       // keep/drop chooser: the bag is full — drop something to make room.
       body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Your bag is full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
@@ -5122,8 +5190,8 @@ function renderEncounter() {
           <button id="a-find-leave">Leave it</button>
         </div>`;
       renderDropShelf(document.getElementById("find-drop-shelf"), c.items || []);
-      document.getElementById("a-find-take").onclick = () => window.mzTakeFind?.();
-      document.getElementById("a-find-leave").onclick = () => window.mzLeaveFind?.();
+      guardTap(document.getElementById("a-find-take"), () => window.mzTakeFind?.());
+      guardTap(document.getElementById("a-find-leave"), () => window.mzLeaveFind?.());
     }
     return;
   }
@@ -5266,7 +5334,7 @@ function renderEncounter() {
     g.className = "actions";
     g.innerHTML = `<button class="primary" id="a-fight">Fight!</button>`;
     body.appendChild(g);
-    document.getElementById("a-fight").onclick = () => window.mzFight?.();
+    guardTap(document.getElementById("a-fight"), () => window.mzFight?.());
     return;
   }
 
@@ -5304,6 +5372,7 @@ function renderEncounter() {
     body.appendChild(useWrap);
     renderCarriedList(document.getElementById("combat-use-list"), S.c.items, {
       actions: ["use"],
+      guard: true,
       filter: (it) => it.kind === "potion" || it.use,
     });
   }
@@ -5335,18 +5404,18 @@ function renderEncounter() {
   // actions (window.mzAttack etc., trailing module script) instead of the
   // classic, now-dead functions of the same name above — see
   // startCombat()'s own doc comment for why.
-  document.getElementById("a-strike").onclick = () => window.mzAttack?.();
+  guardTap(document.getElementById("a-strike"), () => window.mzAttack?.());
   // DR16 Fix 2: never let a heal potion be wasted at full HP. The button is
   // rendered disabled when wp >= maxWP (above); this onclick guard also covers
   // the key-2 path and any programmatic click, no-opping with a clear toast
   // instead of dispatching the (parity-sensitive, rng-drawing) engine drink.
-  document.getElementById("a-potion").onclick = () => {
+  guardTap(document.getElementById("a-potion"), () => {
     if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "block"); return; }
     window.mzDrinkPotion?.();
-  };
-  document.getElementById("a-flee").onclick = () => window.mzFlee?.();
+  });
+  guardTap(document.getElementById("a-flee"), () => window.mzFlee?.());
   const sb = document.getElementById("a-spell");
-  if (sb) sb.onclick = () => {
+  if (sb) guardTap(sb, () => {
     C.spellOpen = !C.spellOpen;
     renderEncounter();
     // Device-review Pass B1 item 5: the spell list already renders directly
@@ -5358,10 +5427,10 @@ function renderEncounter() {
     // (not just the menu) into view so both the button and its freshly
     // opened list are visible together.
     if (C.spellOpen) document.getElementById("a-spell")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-  const tb = document.getElementById("a-talk");   if (tb) tb.onclick = () => window.mzParley?.();
-  const gb = document.getElementById("a-sing");   if (gb) gb.onclick = () => window.mzSing?.();
-  const cb = document.getElementById("a-scroll"); if (cb) cb.onclick = () => window.mzReadScroll?.();
+  });
+  const tb = document.getElementById("a-talk");   if (tb) guardTap(tb, () => window.mzParley?.());
+  const gb = document.getElementById("a-sing");   if (gb) guardTap(gb, () => window.mzSing?.());
+  const cb = document.getElementById("a-scroll"); if (cb) guardTap(cb, () => window.mzReadScroll?.());
 }
 
 /* ---------------- save / load ---------------- */
@@ -5619,6 +5688,10 @@ addEventListener("keydown", e => {
   // only the WASD/arrow movement path is gated. See hasActiveEncounter().
   if (S && hasActiveEncounter()) {
     if (S.combat) {
+      // Phase 32 (CMBUI-04): keys share the buttons' arm window — Enter/
+      // Space/1 on the Fight! gate and keys 1-7 in a fight are swallowed
+      // exactly like a tap that lands mid re-render.
+      if (!encArmed()) return;
       // Phase 31 (CMB-01): while the ENGINE's combat.pending gate is up, the
       // action keys (1-7) are suppressed — only Enter/Space/1 dispatch the
       // `fight` action (see the a-fight click fallback below), so the player
@@ -6227,6 +6300,11 @@ window.__mzClassicBoot = async function classicBoot() {
     // no move can ever register while it's up, even from a call site that
     // forgets its own check.
     if (hasActiveEncounter()) return;
+    // Phase 32 (CMBUI-05, design §6.3 rule 2): the ONE dismiss-settle guard —
+    // a step that arrives within DISMISS_SETTLE_MS of the overlay closing
+    // was aimed at the card, not the corridor. Covers D-pad, viewport tap
+    // and WASD/arrows because every movement path funnels through here.
+    if (!encounterSettled()) return;
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
     const { state, events, html } = dispatchWithToasts({ type: "move", dir });
     window.__mzState.set(state);
