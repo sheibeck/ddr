@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, canCast, intelBonus, armorSoak } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 
@@ -241,7 +241,12 @@ export function characterSheetViewModel(state) {
 
   const stats = [
     { key: "toStrike", label: "TO STRIKE", value: `d${strikeDie(c)}` },
-    { key: "toHit", label: "TO HIT", value: `${toHit(state)}+` },
+    // Phase 31 (roll-direction audit Finding 2): LOW-roll-good — a strike
+    // lands on d <= toHit, so the sheet shows the hitting range 1-N exactly
+    // as the prototype's Hero tab (mazeworld.html: "1-" + toHit()); the old
+    // plus suffix implied the opposite polarity (roll-direction audit
+    // Finding 2, Phase 31).
+    { key: "toHit", label: "TO HIT", value: `1–${toHit(state)}` },
     { key: "damage", label: "DAMAGE", value: `${damage.min}–${damage.max}`, min: damage.min, max: damage.max },
     { key: "armor", label: "ARMOR", value: `${armor.label.toUpperCase()} · ${armor.sub}`, under: armor.under },
     // RULE-01 (04.1-04): intelBonus(c) is the SAME derived.js helper openChest
@@ -320,8 +325,16 @@ export function grimoireViewModel(state) {
         disabledReason = "On the combat screen";
       } else if (sp.combatOnly) {
         disabledReason = "Combat only";
-      } else if (!canCast(state, sp)) {
-        disabledReason = "Not ready yet";
+      } else if (spellLevelFor(c.sub, sp) > c.level) {
+        // Phase 31 (CMB-02): the engine's own two-way split (magic.js's
+        // castSpell) instead of the old collapsed single opaque string —
+        // grimoire membership is already guaranteed (sp came from c.grimoire), so
+        // canCast's only two failure modes are the level gate and the
+        // school gate; naming which one keeps a permanently-blocked spell
+        // from reading like a transient cooldown.
+        disabledReason = `Needs level ${spellLevelFor(c.sub, sp)}`;
+      } else if (c.level < schoolGate(c.sub, sp.s)) {
+        disabledReason = `${sp.s} opens at level ${schoolGate(c.sub, sp.s)}`;
       } else if (charges <= 0) {
         disabledReason = "No charges left";
       } else {

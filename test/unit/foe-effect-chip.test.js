@@ -66,14 +66,32 @@ test("D-21: paintConditions resolves foeEffect through FOE_EFFECT_LABEL[cn.kind]
   );
   assert.match(HTML, /foeEffect:\s*\{\s*label:\s*"Hexed",\s*unit:\s*"rds"\s*\}/);
 
-  const phobiaIdx = HTML.indexOf('cn.key === "phobia"');
+  // Phase 31 (CMB-04, "Phobia = penalty, never a lost action"): the old
+  // DR17 phobia-names-its-own-fear branch is gone — re-anchor the ordering
+  // assertion on the affliction branch instead (still the first special case
+  // in the chain).
+  const afflictionIdx = HTML.indexOf('cn.key === "affliction"');
   const foeEffectIdx = HTML.indexOf('cn.key === "foeEffect"');
   const fallbackIdx = HTML.indexOf("(CONDITION_COPY[cn.key]?.label || cn.key)");
-  assert.ok(phobiaIdx >= 0 && foeEffectIdx >= 0 && fallbackIdx >= 0, "one of the label-chain anchors is missing");
-  assert.ok(foeEffectIdx > phobiaIdx, "the foeEffect branch must come after the phobia branch");
+  assert.ok(afflictionIdx >= 0 && foeEffectIdx >= 0 && fallbackIdx >= 0, "one of the label-chain anchors is missing");
+  assert.ok(foeEffectIdx > afflictionIdx, "the foeEffect branch must come after the affliction branch");
   assert.ok(foeEffectIdx < fallbackIdx, "the foeEffect branch must come before the generic fallback");
 
   assert.equal((HTML.match(/cn\.key === "foeEffect"/g) || []).length, 1, "exactly one foeEffect branch, no duplicate");
+});
+
+test("Phase 31 (CMB-04): CONDITION_COPY carries the afraid row and the old phobia label-chain branch is gone", () => {
+  assert.match(HTML, /afraid:\s*\{\s*label:\s*"Afraid",\s*unit:\s*"rds"\s*\}/);
+  const CODE = HTML
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("//");
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join("\n")
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+  assert.doesNotMatch(CODE, /cn\.key === "phobia"/);
+  assert.doesNotMatch(CODE, /phobia:\s*\{\s*label:\s*"Phobia"/);
 });
 
 test("D-21 end-to-end: the engine's chip descriptor for each live debuff resolves to its voice label with a numeric remaining", () => {

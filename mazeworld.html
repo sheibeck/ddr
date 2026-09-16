@@ -2043,10 +2043,15 @@ function schoolAllowed(sub, school) { const c = MU_CHART[sub]; return !!c && c[s
 function schoolGate(sub, school)    { const c = MU_CHART[sub]; return (c && c.gate && c.gate[school]) || 1; }
 function schoolBonus(sub, school)   { const c = MU_CHART[sub]; return (c && typeof c[school] === "number") ? c[school] : 0; }
 function canLearn(sub, sp)          { return schoolAllowed(sub, sp.s); }
+// Phase 31 (CMB-02): this classic copy used to check `sp.lvl` directly and
+// never learned Phase 23's spellLevelFor override table, which hid a
+// level-1 Summoner's Summon and a level-1 Illusionist's Phantom Host from
+// the combat menu (the exact "cannot act" bug Phase 23 believed it had
+// fixed at the engine layer). It now delegates to the engine's own
+// predicate (window.__mzCanCast, bridged below) so the shell never
+// re-implements the gate and can never disagree with engine/derived.js#canCast.
 function canCast(sp) {
-  if (!S.c.grimoire || !S.c.grimoire.includes(sp.n)) return false;
-  if (sp.lvl > S.c.level) return false;
-  return S.c.level >= schoolGate(S.c.sub, sp.s);
+  return !!(window.__mzCanCast && window.__mzCanCast(S, sp));
 }
 
 /* d10 spells, minimum 4, chosen from what the subclass may ever learn. */
@@ -2817,12 +2822,24 @@ function levelFromSP(sp) { let l = 1; for (let i = 4; i >= 0; i--) if (sp >= THR
 const CONDITION_COPY = {
   haste:  { label: "Hasted",    unit: "sq"  },  // double attacks
   invis:  { label: "Invisible", unit: "sq"  },
-  acute:  { label: "Acute",     unit: "rds" },  // strike on a d6
+  // Acuteness ticks per COMBAT ROUND in a fight and per exploration STEP
+  // outside one (engine/derived.js#conditionsOf's own comment) — this row's
+  // `unit` is the OUTSIDE-combat fallback; paintConditions below special-cases
+  // the in-combat "rds" reading right beside the ward branch.
+  acute:  { label: "Acute",     unit: "sq" },  // strike on a d6
   ether:  { label: "Ethereal",  unit: "sq"  },  // pass through walls
   might:  { label: "Strong"                  },  // +damage; lasts the day, no count
   flight: { label: "Flying"                  },  // detail comes from the flight sub-state
   darkness: { label: "In the dark", unit: "sq" },
-  phobia: { label: "Phobia"                  },  // DR17: names its own fear (see paintConditions)
+  // Phase 31 (user ruling 2026-09-16, "Phobia = penalty, never a lost
+  // action"): replaces the old DR17 `phobia` freeze-chip row — the engine's
+  // conditionsOf now emits {key:"afraid", remaining, phobia} only while
+  // combat.afraid > 0; the generic detail branch below renders it as
+  // "Afraid N rds" with no special case needed.
+  afraid: { label: "Afraid", unit: "rds" },
+  // Phase 31 (CMB-04): the Shield chip — detail comes from the ward
+  // sub-state (pool AND rounds, mirroring the flight special case below).
+  ward: { label: "Shield" },
   foeEffect: { label: "Hexed", unit: "rds" },  // Phase 19 D-21 — foe-inflicted debuff; the KIND-specific label comes from FOE_EFFECT_LABEL below, this row is the fallback label for an unmapped kind and the rounds unit the detail renders.
 };
 
@@ -2846,12 +2863,13 @@ function paintConditions(c) {
   }
   host.innerHTML = conds.map((cn) => {
     // Affliction has no fixed copy row — it names its own kind (Poison/Disease).
-    // DR17 item 1: the phobia chip names the active fear — "Phobia: <fear>".
     // Phase 19 D-21 — the foeEffect chip labels its kind ("Weakened" /
     // "Dazed"); the detail branch below already renders `remaining` with the
-    // row's `rds` unit, so nothing else changes.
+    // row's `rds` unit, so nothing else changes. Phase 31: the old DR17
+    // phobia-names-its-own-fear branch is gone — "afraid" now renders through
+    // the plain CONDITION_COPY/generic-detail path below like any other timed
+    // condition (no special case needed).
     let label = cn.key === "affliction" ? (cn.kind || "Afflicted")
-      : cn.key === "phobia" ? `Phobia: ${cn.phobia || "Fear"}`
       : cn.key === "foeEffect" ? (FOE_EFFECT_LABEL[cn.kind] || CONDITION_COPY.foeEffect.label)
       : (CONDITION_COPY[cn.key]?.label || cn.key);
     let detail = "";
@@ -2860,6 +2878,14 @@ function paintConditions(c) {
       if (cn.flight === "cooldown") detail = `recharge ${cn.remaining} sq`;
       else if (cn.flight === "charged") detail = `${cn.remaining} sq`;
       // "always"/"ready" carry no count.
+    } else if (cn.key === "ward") {
+      // Phase 31 (CMB-04): both numbers on one chip, mirroring the flight
+      // special case above — "Shield 34 hp · 3 rds".
+      detail = `${cn.pool} hp · ${cn.remaining} rds`;
+    } else if (cn.key === "acute" && typeof cn.remaining === "number") {
+      // Acuteness reads rounds in combat, squares outside (engine ticks it
+      // both ways — see CONDITION_COPY.acute's own comment).
+      detail = `${cn.remaining} ${S.combat ? "rds" : "sq"}`;
     } else if (typeof cn.remaining === "number") {
       const unit = CONDITION_COPY[cn.key]?.unit || "";
       detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
@@ -3530,7 +3556,12 @@ function renderCarriedList(container, items, opts = {}) {
     li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${sub}</i>`;
     for (const a of (opts.actions || [])) {
       if (a === "use") {
-        if (itemReady(it)) li.appendChild(mkBtn("Use", () => window.mzUseItem?.(i)));
+        // Phase 31 (CMB-02/CMB-03, Phase 25.1 DFB-06 precedent): never
+        // disable silently — a potion/use-kind item's Use button stays
+        // visible even on cooldown (the row title already shows `· N sq`
+        // above); a tap dispatches as usual and the engine's own
+        // useRefused {reason:"cooldown"} toast explains the wait.
+        if (it.kind === "potion" || it.use) li.appendChild(mkBtn("Use", () => window.mzUseItem?.(i)));
       } else if (a === "equip") {
         if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => window.mzEquipItem?.(i)));
       } else if (a === "drop") {
@@ -4093,9 +4124,15 @@ function castSpell(idx) {
   const sp = SPELLS[idx], C = S.combat;
   if (maxCharges() - S.c.spellsUsed <= 0) { say(`<span class="miss">No charges left. Walk it off — one comes back every 20 squares.</span>`); return; }
   if (!S.c.scrollCast && !canCast(sp)) {
+    // Phase 31 (CMB-02): this whole cluster is dead code (see the doc
+    // comment above startCombat) — kept for the message-picking branch
+    // order only, not a live gate. Re-ordered off the stale sp.lvl compare
+    // (never spellLevelFor-aware) onto the still-valid school-gate check so
+    // no literal copy of the fixed IDENT-03/04 bug survives anywhere in the
+    // file, live or dead.
     if (!S.c.grimoire.includes(sp.n)) say(`<span class="miss">${sp.n} is not in your grimoire.</span>`);
-    else if (sp.lvl > S.c.level) say(`<span class="miss">${sp.n} is above your skill level.</span>`);
-    else say(`<span class="miss">A ${S.c.sub} may not work ${sp.s} magic until skill level ${ROMAN[schoolGate(S.c.sub, sp.s) - 1]}.</span>`);
+    else if (S.c.level < schoolGate(S.c.sub, sp.s)) say(`<span class="miss">A ${S.c.sub} may not work ${sp.s} magic until skill level ${ROMAN[schoolGate(S.c.sub, sp.s) - 1]}.</span>`);
+    else say(`<span class="miss">${sp.n} is above your skill level.</span>`);
     return;
   }
   S.c.spellsUsed++;
@@ -5168,13 +5205,21 @@ function renderEncounter() {
 
   const acts = document.createElement("div");
   acts.className = "actions";
+  // Phase 31 (CMB-02, DFB-06 precedent): the Bard's Sing and the Scroll
+  // button never disable silently any more — they stay visible whenever the
+  // class/sub gate that WOULD make them a legal action ever applies (Bard;
+  // any scroll carried), and a tap on a cooling/ungated-out button dispatches
+  // and lets the engine's own actionRefused/scrollRefused toast explain why
+  // (cooldown/wrongClass/pilfer/noRunes). The countdown mirrors the engine's
+  // own songReady math (100 squares between songs).
+  const singLeft = 100 - (S.steps - (S.c.songAt ?? -999));
   acts.innerHTML = `<button class="primary" id="a-strike">1 · Strike</button>
     <button id="a-potion" ${(S.c.potions && S.c.wp < S.c.maxWP) ? "" : "disabled"}${S.c.wp >= S.c.maxWP ? ' title="Already at full health"' : ""}>2 · Potion (${S.c.potions})</button>
     <button class="danger" id="a-flee">3 · ${C.tracked && C.round === 1 ? "Withdraw" : "Flee"}</button>` +
     (S.c.cls === "Magic User" ? `<button id="a-spell">4 · Spells (${maxCharges() - S.c.spellsUsed})</button>` : "") +
     (canParley() ? `<button id="a-talk">5 · Parley</button>` : "") +
-    (songReady() ? `<button id="a-sing">6 · Sing</button>` : "") +
-    (S.c.scrolls && canRead() ? `<button id="a-scroll">7 · Scroll (${S.c.scrolls})</button>` : "");
+    (S.c.sub === "Bard" ? `<button id="a-sing">6 · Sing${songReady() ? "" : ` (${Math.max(0, singLeft)} sq)`}</button>` : "") +
+    (S.c.scrolls ? `<button id="a-scroll">7 · Scroll (${S.c.scrolls})</button>` : "");
   body.appendChild(acts);
 
   // E2 / ECON-07 (Phase 14): the combat-bar USE-LIST — combat-usable carried
@@ -5182,15 +5227,17 @@ function renderEncounter() {
   // with a Use button dispatching {type:"useItem", i} via window.mzUseItem (the
   // useItem action is already wired — engine/engine.js). Rendered by the SAME
   // shared renderCarriedList component the store sell section and GEAR tab use.
-  // Filtered to ready, combat-relevant items so the bar stays actionable.
-  const useable = (S.c.items || []).some((it) => (it.kind === "potion" || it.use) && itemReady(it));
+  // Phase 31 (CMB-02, DFB-06 precedent): every potion/use-kind item shows,
+  // cooldown or not — a tap on a cooling item toasts the engine's own
+  // useRefused {reason:"cooldown"} explanation instead of the row vanishing.
+  const useable = (S.c.items || []).some((it) => it.kind === "potion" || it.use);
   if (useable) {
     const useWrap = document.createElement("div");
     useWrap.innerHTML = `<p class="enc-sub" style="margin:10px 0 2px">Use an item</p><ul class="skills" id="combat-use-list"></ul>`;
     body.appendChild(useWrap);
     renderCarriedList(document.getElementById("combat-use-list"), S.c.items, {
       actions: ["use"],
-      filter: (it) => (it.kind === "potion" || it.use) && itemReady(it),
+      filter: (it) => it.kind === "potion" || it.use,
     });
   }
 
@@ -5530,8 +5577,12 @@ addEventListener("keydown", e => {
       else if (k === "3") { e.preventDefault(); window.mzFlee?.(); }
       else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
       else if (k === "5" && canParley()) { e.preventDefault(); window.mzParley?.(); }
-      else if (k === "6" && songReady()) { e.preventDefault(); window.mzSing?.(); }
-      else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); window.mzReadScroll?.(); }
+      // Phase 31 (CMB-02): mirror the action-bar buttons above — visible
+      // (and now key-reachable) whenever the class/sub gate applies, not
+      // only when fully ready; the engine's own refusal toast explains a
+      // cooling/ungated tap.
+      else if (k === "6" && S.c.sub === "Bard") { e.preventDefault(); window.mzSing?.(); }
+      else if (k === "7" && S.c.scrolls) { e.preventDefault(); window.mzReadScroll?.(); }
       return;
     }
     // Phase 31 (CMB-01): the beats overlay's own dismiss/advance control is
@@ -5642,7 +5693,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
-  import { conditionsOf } from "./engine/derived.js";
+  import { conditionsOf, canCast } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
 
@@ -5681,6 +5732,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
   // mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // Phase 31 (CMB-02): bridge the PURE, spellLevelFor-aware canCast(state, sp)
+  // predicate so the classic in-combat SPELLS menu filter (canCast(sp) above)
+  // delegates to the SAME gate engine/magic.js#castSpell enforces, instead of
+  // re-checking sp.lvl directly and missing the Summoner/Illusionist level
+  // overrides. Read-only, no rng, no mutation — same bridge pattern as
+  // __mzConditionsOf/__mzSellPrice.
+  window.__mzCanCast = canCast;
 
   // Phase 28 (ARMOR-02/04): bridge the PURE armor formatters so the classic
   // paint()/renderCarriedList/renderEncounter render every armor string from

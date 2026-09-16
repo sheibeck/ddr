@@ -106,12 +106,34 @@ test("grimoireViewModel: during a fight the Hero grimoire defers casting to the 
   assert.equal(vm.rows[0].disabledReason, "On the combat screen");
 });
 
-test("grimoireViewModel: a non-combat spell above the caster's level is disabled (Not ready yet)", () => {
+test("grimoireViewModel: a non-combat spell above the caster's level names the level it needs (CMB-02)", () => {
   const state = fixedState({ c: { grimoire: ["Major Heal"], level: 1, spellsUsed: 0 }, combat: null }); // Major Heal is lvl 3
   const vm = grimoireViewModel(state);
   const row = vm.rows.find((r) => r.name === "Major Heal");
   assert.equal(row.castable, false);
-  assert.equal(row.disabledReason, "Not ready yet");
+  assert.equal(row.disabledReason, "Needs level 3");
+});
+
+test("grimoireViewModel: a school-locked spell names the school and level it opens at (CMB-02)", () => {
+  // Sorcerer: healing:0 (allowed) but gate:{healing:4} — a level-1 Sorcerer
+  // knows Heal (a level-1 spell) but the healing SCHOOL stays locked until
+  // level 4, distinct from a level gate on the spell itself.
+  const state = fixedState({ c: { grimoire: ["Heal"], level: 1, sub: "Sorcerer", spellsUsed: 0 }, combat: null });
+  const vm = grimoireViewModel(state);
+  const row = vm.rows.find((r) => r.name === "Heal");
+  assert.equal(row.castable, false);
+  assert.equal(row.disabledReason, "healing opens at level 4");
+});
+
+test("grimoireViewModel: a level-1 Summoner's Summon is castable — the Phase 23 spell-level-override regression stays fixed (CMB-02)", () => {
+  // Summon is printed lvl 2 but SPELL_LEVEL_OVERRIDES gives Summoner an
+  // effective level of 1 — grimoireViewModel must consult spellLevelFor,
+  // never sp.lvl directly, or this reads "Needs level 2" forever.
+  const state = fixedState({ c: { grimoire: ["Summon"], level: 1, sub: "Summoner", spellsUsed: 0 }, combat: null });
+  const vm = grimoireViewModel(state);
+  const row = vm.rows.find((r) => r.name === "Summon");
+  assert.equal(row.castable, true);
+  assert.equal(row.disabledReason, null);
 });
 
 test("grimoireViewModel: a non-combat spell with no charges left is disabled (No charges left)", () => {

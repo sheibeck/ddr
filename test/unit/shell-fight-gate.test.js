@@ -80,3 +80,41 @@ test("CMB-01: preDeath: true appears exactly once; the AMBUSH beats.foes/combatT
 test("CMB-01: no classic shadow `function fight(` was added — the engine owns the fight action", () => {
   assert.doesNotMatch(CODE, /function fight\(/);
 });
+
+// ─── Task 2: the spell gate bridge, the grimoire/never-disable-silently
+// shell wiring, and the ward/afraid chip copy ─────────────────────────────
+
+test("CMB-02: CONDITION_COPY has a ward row and an afraid row and no phobia row", () => {
+  assert.match(CODE, /ward:\s*\{\s*label:\s*"Shield"\s*\}/);
+  assert.match(CODE, /afraid:\s*\{\s*label:\s*"Afraid",\s*unit:\s*"rds"\s*\}/);
+  assert.doesNotMatch(CODE, /phobia:\s*\{\s*label:\s*"Phobia"/);
+});
+
+test("CMB-04: the cn.key === \"ward\" branch renders both hp and rds on one chip", () => {
+  const wardIdx = CODE.indexOf('cn.key === "ward"');
+  assert.ok(wardIdx !== -1, "the ward detail branch is missing");
+  const branchRegion = CODE.slice(wardIdx, wardIdx + 200);
+  assert.match(branchRegion, /hp/);
+  assert.match(branchRegion, /rds/);
+});
+
+test("CMB-02: renderCarriedList's use branch no longer gates the Use button on itemReady", () => {
+  assert.doesNotMatch(CODE, /itemReady\(it\)\) li\.appendChild/);
+  assert.match(CODE, /it\.kind === "potion" \|\| it\.use\) li\.appendChild\(mkBtn\("Use"/);
+});
+
+test("CMB-02: the combat use-list filter has no readiness term", () => {
+  assert.doesNotMatch(CODE, /\(it\.kind === "potion" \|\| it\.use\) && itemReady\(it\)/);
+});
+
+test("CMB-02: 6 · Sing renders for every Bard (not gated on songReady), and the scroll button no longer includes canRead()", () => {
+  assert.match(CODE, /S\.c\.sub === "Bard" \? `<button id="a-sing">6 · Sing/);
+  assert.doesNotMatch(CODE, /songReady\(\) \? `<button id="a-sing"/);
+  assert.match(CODE, /S\.c\.scrolls \? `<button id="a-scroll">7 · Scroll/);
+  assert.doesNotMatch(CODE, /S\.c\.scrolls && canRead\(\) \? `<button id="a-scroll"/);
+});
+
+test("CMB-02: the spell gate bridge — window.__mzCanCast = canCast, and the classic canCast(sp) delegates to it", () => {
+  assert.equal((CODE.match(/window\.__mzCanCast = canCast;/g) || []).length, 1);
+  assert.equal((CODE.match(/__mzCanCast\(S, sp\)/g) || []).length, 1);
+});

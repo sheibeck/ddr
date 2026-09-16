@@ -40,7 +40,12 @@ test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE 
   const vm = characterSheetViewModel(state);
 
   assert.equal(statByKey(vm, "toStrike").value, `d${strikeDie(state.c)}`);
-  assert.equal(statByKey(vm, "toHit").value, `${toHit(state)}+`);
+  // Phase 31 (roll-direction audit Finding 2): LOW-roll-good — the sheet
+  // shows the hitting range 1-N (en dash), matching the prototype's own
+  // Hero tab text, not a HIGH-good-implying "N+" suffix.
+  assert.equal(statByKey(vm, "toHit").value, `1–${toHit(state)}`);
+  assert.ok(statByKey(vm, "toHit").value.startsWith("1–"));
+  assert.ok(statByKey(vm, "toHit").value.endsWith(`${toHit(state)}`));
   // Phase 28 (ARMOR-02/04): the ARMOR stat now reads through the shared
   // armorDisplay(c) formatter, showing durability (seed 42 wears Studded
   // 18/18) so the sheet can never disagree with the toast/gear panel.
