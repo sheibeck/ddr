@@ -626,6 +626,22 @@ export const EVENT_NARRATION = {
       : e.reason === "acrobat"
         ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
         : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+
+  /* ---------------- pending loot pile (LOOT-01/02/06, Phase 29) ----------------
+     A foe drop lands on a pile, not in your hands — the loot screen's own
+     take/leave/take-all/leave-all prompt IS the UI (mirrors the find card's
+     findOffered/findTaken/findLeft voice above); a forfeit narrates the whole
+     pile in one honest line. Deadpan, dark-but-family-friendly (VOX-02). */
+  lootDropped: (e) =>
+    `<span class="beat">Something falls out of the fight: ${e.name ?? "something"}.</span> It will wait. It has nowhere else to be.`,
+  lootTaken: (e) => `<span class="hit">Into the bag:</span> ${e.item?.n ?? "something"}. Your back sends its regards.`,
+  lootLeft: (e) => `<span class="miss">You leave ${e.item?.n ?? "it"} on the floor.</span> Someone will be thrilled. Not you.`,
+  lootForfeited: (e) => {
+    const names = (e.items ?? []).map((i) => i?.n ?? "something").join(", ") || "the spoils";
+    return e.reason === "died"
+      ? `<span class="miss">${names} stay where they fell.</span> So, for that matter, do you.`
+      : `<span class="miss">You leave ${names} on the floor</span> in your hurry not to be on the floor yourself.`;
+  },
 };
 
 /**

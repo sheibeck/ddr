@@ -51,6 +51,35 @@ function reconcilePendingFind(rest, pendingFind) {
   return { ...rest, c: proxy.c };
 }
 
+/** reconcilePendingLoot(rest, pendingLoot) — Phase 29 (LOOT-01/06) carve-out,
+ * mirroring reconcilePendingFind above. killFoe now defers the rolled drop
+ * into state.pendingLoot instead of the prototype's mid-fight auto-take. The
+ * frozen prototype (test/parity/prototype-master.js.txt — DO NOT EDIT)
+ * auto-took every combat drop via takeItem, in kill order. RESEARCH's Parity
+ * Risk Enumeration measured every combat/magic parity scenario live: only
+ * `combat/lose` (seed 14) ever rolls a drop — a `kind:"jewel"` item — and
+ * that scenario's per-action byte diff is already skipped from action 1 by
+ * its Phase 24 action-path record, so this is a structural tripwire (like
+ * stripBagArmorFields) rather than a per-fixture-tuned patch.
+ *
+ * Applying the SAME legacy takeItem auto-take, once per pending drop, IN
+ * KILL ORDER, onto a clone of `c` proves the engine offers byte-identically
+ * what the prototype auto-took — the ONLY divergence being the take→offer
+ * indirection the new takeLoot/leaveLoot/takeAllLoot/leaveAllLoot actions
+ * own (and which no fixture drives). `kind:"bag"` entries are engine-only
+ * content (LOOT-05) with no prototype-side equivalent at all — skipped here,
+ * exactly like stripBagField skips a field the prototype never had. A no-op
+ * when pendingLoot is empty/absent, and never mutates the real comparison
+ * state (operates on a structuredClone). */
+export function reconcilePendingLoot(rest, pendingLoot) {
+  if (!Array.isArray(pendingLoot) || !pendingLoot.length || !rest.c) return rest;
+  const proxy = { c: structuredClone(rest.c) };
+  for (const it of pendingLoot) {
+    if (it && it.kind !== "bag") takeItem(proxy, structuredClone(it), []);
+  }
+  return { ...rest, c: proxy.c };
+}
+
 /** stripDarkForField(c) — PHOBIA-01 (04.1-05) adds a brand-new persistent
  * darkness counter (`c.darkFor`, set by engine/encounters.js's fallDark,
  * decremented by engine/movement.js's per-step tick) with NO prototype-side
@@ -205,10 +234,16 @@ export function movementComparable(state) {
   // fourth analog of party/pendingJoiner/pendingFind; always false on a
   // fixture (every fixture calls newRun(seed)); the prototype master has no
   // such field.
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, dev, ...state0 } = state;
+  // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
+  // a fifth analog of party/pendingJoiner/pendingFind/dev; reconciled (not
+  // just dropped) via reconcilePendingLoot below.
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
-  const rest = reconcilePendingFind(state0, pendingFind);
+  // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST (drops happen
+  // in the fight, a find afterwards; no fixture carries both). See
+  // reconcilePendingLoot.
+  const rest = reconcilePendingFind(reconcilePendingLoot(state0, pendingLoot), pendingFind);
   // Phase 19 (FOE-01/D-14): a no-op for every movement fixture (movement
   // never carries a live combat), added so D-14's "all three comparables"
   // carve-out holds structurally, not just for combatComparable.
@@ -273,9 +308,15 @@ export function combatComparable(state) {
   // fourth analog of party/pendingJoiner/pendingFind; always false on a
   // fixture (every fixture calls newRun(seed)); the prototype master has no
   // such field.
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...state0 } = state;
+  // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
+  // a fifth analog of party/pendingJoiner/pendingFind/dev; reconciled (not
+  // just dropped) via reconcilePendingLoot below.
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find (no-op when none pending).
-  const rest = reconcilePendingFind(state0, pendingFind);
+  // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST — see
+  // movementComparable's rationale above (drops happen in the fight, a find
+  // afterwards; no fixture carries both).
+  const rest = reconcilePendingFind(reconcilePendingLoot(state0, pendingLoot), pendingFind);
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
@@ -645,11 +686,16 @@ export function economyComparable(state) {
   // fourth analog of party/pendingJoiner/pendingFind; always false on a
   // fixture (every fixture calls newRun(seed)); the prototype master has no
   // such field.
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...state0 } = state;
+  // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
+  // a fifth analog of party/pendingJoiner/pendingFind/dev; reconciled (not
+  // just dropped) via reconcilePendingLoot below.
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing — the `chest` (seed 2) and `faerie` (seed 38)
   // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.
-  const rest = reconcilePendingFind(state0, pendingFind);
+  // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST — see
+  // movementComparable's rationale above.
+  const rest = reconcilePendingFind(reconcilePendingLoot(state0, pendingLoot), pendingFind);
   if (rest.store) rest.store = stripStoreClosures(rest.store);
   // Phase 19 (FOE-01/D-14): a no-op for every economy/encounters fixture
   // (neither family carries a live combat), added so D-14's "all three

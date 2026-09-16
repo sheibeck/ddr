@@ -23,6 +23,8 @@ import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js
 import { killFoe, flee } from "../../engine/combat.js";
 import { die, forfeitLoot } from "../../engine/death.js";
 import { BAG_ITEMS } from "../../content/bags.js";
+import { movementComparable, combatComparable, economyComparable } from "../parity/harness/comparables.js";
+import { diffState } from "../parity/harness/diffState.js";
 
 // --- fixed character/state helpers (mirrors inventory-actions.test.js) -----
 
@@ -562,4 +564,44 @@ test("forfeitLoot is exported from engine/death.js and returns events", () => {
   const events = forfeitLoot(state, "fled", []);
   assert.deepStrictEqual(state.pendingLoot, []);
   assert.deepStrictEqual(events, [{ type: "lootForfeited", items: [JEWEL("A")], reason: "fled" }]);
+});
+
+// ============================================================================
+// Task 3: reconcilePendingLoot carve-out
+// ============================================================================
+
+test("reconcilePendingLoot: a pendingLoot jewel compares equal to the same jewel already given, in all three comparables", () => {
+  const s1 = newRun(3);
+  s1.pendingLoot = [JEWEL("Bracelet of Flight")];
+  const s2 = newRun(3);
+  s2.c.items = [...s2.c.items, JEWEL("Bracelet of Flight")];
+
+  assert.equal(diffState(movementComparable(s1), movementComparable(s2)), null);
+  assert.equal(diffState(combatComparable(s1), combatComparable(s2)), null);
+  assert.equal(diffState(economyComparable(s1), economyComparable(s2)), null);
+});
+
+test("reconcilePendingLoot: a two-item pile applies in order", () => {
+  const s1 = newRun(3);
+  s1.pendingLoot = [JEWEL("A"), JEWEL("B")];
+  const s2 = newRun(3);
+  s2.c.items = [...s2.c.items, JEWEL("A"), JEWEL("B")];
+
+  assert.equal(diffState(combatComparable(s1), combatComparable(s2)), null);
+});
+
+test("reconcilePendingLoot: a kind:'bag' pile entry is ignored (no prototype equivalent)", () => {
+  const s1 = newRun(3);
+  s1.pendingLoot = [BAG("medium")];
+  const s2 = newRun(3);
+
+  assert.equal(diffState(combatComparable(s1), combatComparable(s2)), null);
+});
+
+test("reconcilePendingLoot: the comparable output has no pendingLoot key", () => {
+  const s1 = newRun(3);
+  s1.pendingLoot = [JEWEL("A")];
+  assert.ok(!("pendingLoot" in combatComparable(s1)));
+  assert.ok(!("pendingLoot" in movementComparable(s1)));
+  assert.ok(!("pendingLoot" in economyComparable(s1)));
 });

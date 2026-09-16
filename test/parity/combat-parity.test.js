@@ -29,7 +29,7 @@ import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { stripParleyDivergence, actionPathDivergenceOf, skipsByteDiffAt, declaredEndDiffs, stripCloakArmorTxt } from "./harness/comparables.js";
+import { stripParleyDivergence, actionPathDivergenceOf, skipsByteDiffAt, declaredEndDiffs, stripCloakArmorTxt, reconcilePendingLoot } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -98,7 +98,14 @@ function comparable(state) {
   // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
   // fourth analog of party/pendingJoiner/pendingFind, mirroring harness
   // combatComparable, since this file defines its own local comparable().
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...rest } = state;
+  // Phase 29 (LOOT-01/06): strip + reconcile the new top-level
+  // `state.pendingLoot` too — this file's `lose` scenario (seed 14) is
+  // EXACTLY the fixture RESEARCH identified as rolling a mid-fight drop (a
+  // jewel), so this local comparable() needs the real reconcile, not just a
+  // strip (mirroring harness combatComparable via the shared, exported
+  // reconcilePendingLoot).
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...state0 } = state;
+  const rest = reconcilePendingLoot(state0, pendingLoot);
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);

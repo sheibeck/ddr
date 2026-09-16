@@ -1255,4 +1255,18 @@ export const TOAST_FOR = {
   equipRejected: (e) => block(equipRejectText(e)),
   // Phase 29 (LOOT-05): a bag upgrade item was taken — c.bag just went up a tier.
   bagUpgraded: (e) => ({ text: `Bigger bag: ${e?.slots ?? "more"} slots.`, tone: "hit", priority: PRIORITY.you }),
+
+  /* ---------------- pending loot pile (LOOT-01/02/06, Phase 29) ---------------- */
+
+  lootDropped: (e) => ({ text: `Dropped: ${e?.name ?? "something"}. It will keep.`, tone: "beat", priority: PRIORITY.other }),
+  lootTaken: (e) => ({ text: `Taken: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.you }),
+  lootLeft: (e) => ({ text: `Left behind: ${e?.item?.n ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
+  lootForfeited: (e) => {
+    const names = (e?.items ?? []).map((i) => i?.n ?? "something").join(", ") || "the spoils";
+    return {
+      text: e?.reason === "died" ? `Left where they fell: ${names}.` : `Left on the floor in your hurry: ${names}.`,
+      tone: "miss",
+      priority: PRIORITY.you,
+    };
+  },
 };

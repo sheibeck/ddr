@@ -64,7 +64,11 @@ function comparable(state) {
   // Phase 21 (TUNE-04, D-14): strip the new top-level `state.dev` too — a
   // fourth analog of party/pendingJoiner/pendingFind, mirroring harness
   // combatComparable, since this file defines its own local comparable().
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, dev, ...rest } = state;
+  // Phase 29 (LOOT-01/06): strip the new top-level `state.pendingLoot` too —
+  // no magic fixture ever rolls a drop (RESEARCH's Parity Risk Enumeration),
+  // so a plain strip (no reconcile) suffices here, unlike combat-parity's
+  // "lose" scenario.
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...rest } = state;
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);
