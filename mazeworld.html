@@ -1812,7 +1812,7 @@ const CLOAKS = [    // Magic Cloaks Table, d8, p.46 — every thief begins with 
   {n:"Cloak of Invisibility",eff:{},  use:"invis", every:100, txt:"invisible, once every 100 squares"},
   {n:"Cloak of Speed",       eff:{},  use:"haste", every:50,  txt:"double attacks, once every 50 squares"},
   {n:"Cloak of Regeneration",eff:{cloakRegen:1}, txt:"d6 hp back every 20 squares"},
-  {n:"Cloak of Armor",       eff:{cloakArmor:1}, txt:"a full suit of plate that weighs nothing"},
+  {n:"Cloak of Armor",       eff:{cloakArmor:1}, txt:"soaks as plate (AR 15) over whatever you wear — any class, never wears out, light as a rumor"},
   {n:"Cloak of Flying",      eff:{fly:1},        txt:"flight for 20 squares, once every 50"},
   {n:"Cloak of Ether",       eff:{},  use:"ether", every:100, txt:"walk through walls, once every 100 squares"}
 ];
@@ -2951,7 +2951,11 @@ function paint() {
   const w = WEAPONS[c.weapon] || WEAPONS["Club"];
   const bonus = c.prof + c.magicWpn + (R_().dmg || 0) + (R_().wpnBonus || 0) + eff("dmg");
   document.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
-  document.getElementById("s-arm").textContent = c.armor + (c.ar ? ` (AR ${c.ar})` : "");
+  // Phase 28 (ARMOR-02): durability + the cloak's effective plate come from
+  // the shared formatter — this HUD line never showed durability before,
+  // which was the reported "toast says wear, panel shows no damage" bug.
+  const armorD = window.__mzArmorDisplay.armorDisplay(c);
+  document.getElementById("s-arm").textContent = armorD.line;
   document.getElementById("s-int").textContent = c.intel;
   document.getElementById("s-sp").textContent = Math.round(c.sp);
   document.getElementById("s-next").textContent = c.level >= 5 ? "—" : THRESHOLDS[c.level];
@@ -2964,7 +2968,10 @@ function paint() {
   kit.innerHTML = "";
   const rows = [
     [c.weapon, `${w.lab}${c.prof ? ` +${c.prof}` : ""}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`],
-    [c.armor, c.armorWP > 0 ? `AR ${c.ar} · ${c.armorWP}/${c.armorMax} hp` : "destroyed"],
+    // Phase 28 (ARMOR-02/04): the kit row's armor label/sub now come from the
+    // same shared armorD the HUD line uses — the cloak's effective armor and
+    // the piece underneath (if any) both surface here.
+    [armorD.label, armorD.under ? `${armorD.sub} · ${armorD.under}` : armorD.sub],
     ["Potions", c.potions],
     ...(c.scrolls ? [["Scrolls", `${c.scrolls}${canRead() ? "" : " (unreadable)"}`]] : []),
     ["Rations", `${c.rations} days`],
@@ -3023,17 +3030,23 @@ function paint() {
 
   // Equipped weapon/armor rows first, each with an Unequip control (stows the
   // worn piece back into the bag — engine gates on a free slot). A bare-handed
-  // "Fists" weapon / "Nothing" armor has nothing to unequip.
-  const wornRow = (label, sub, slot, canUnequip) => {
+  // "Fists" weapon / "Nothing" armor has nothing to unequip. Phase 28
+  // (ARMOR-03): `noSlotNeeded` lets a DESTROYED piece unequip even on a full
+  // bag — it is discarded (Plan 01's unequipSlot branch), not stowed.
+  const wornRow = (label, sub, slot, canUnequip, noSlotNeeded) => {
     const li = document.createElement("li");
     li.className = "mw-worn";
     li.innerHTML = `<b>${label} <span class="mw-worn-tag">worn</span></b><i>${sub}</i>`;
-    if (canUnequip) li.appendChild(gearBtn(bagFull ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull));
+    if (canUnequip) li.appendChild(gearBtn(bagFull && !noSlotNeeded ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull && !noSlotNeeded));
     carry.appendChild(li);
   };
   wornRow(c.weapon, `${w.lab}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`, "weapon", c.weapon && c.weapon !== "Fists" && WEAPONS[c.weapon]);
-  if (c.armor && c.armor !== "Nothing")
-    wornRow(c.armor, c.armorWP > 0 ? `AR ${c.ar} · ${c.armorWP}/${c.armorMax} hp` : "destroyed", "armor", true);
+  // Phase 28 (ARMOR-02/04): the worn-armor row now reads the shared
+  // formatter — with the cloak the headline is the cloak (effective armor)
+  // and Unequip still stows the piece underneath; a destroyed piece needs no
+  // slot, so a full bag never blocks discarding it.
+  if (armorD.worn || armorD.magic)
+    wornRow(armorD.label, armorD.under ? `${armorD.sub} · ${armorD.under}` : armorD.sub, "armor", armorD.worn, armorD.destroyed);
 
   // Phase 14 (ECON-06/07): the carried-item rows now come from the SHARED
   // renderCarriedList component (used identically by the store sell section and
@@ -5537,7 +5550,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // content tables (content/index.js) used ONLY to build the reel-flicker's
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
-  import { characterSheetViewModel, grimoireViewModel } from "./src/browser/viewModels.js";
+  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf } from "./engine/derived.js";
@@ -5579,6 +5592,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
   // mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // Phase 28 (ARMOR-02/04): bridge the PURE armor formatters so the classic
+  // paint()/renderCarriedList/renderEncounter render every armor string from
+  // ONE engine-derived source (armorSoak(c) under the hood) — read-only, no
+  // rng, safe every paint. This assignment runs before
+  // window.__mzClassicBoot() further down, so paint() can rely on it
+  // unconditionally.
+  window.__mzArmorDisplay = { armorDisplay, bagArmorText };
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
