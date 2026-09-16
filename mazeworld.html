@@ -6143,21 +6143,25 @@ addEventListener("keydown", e => {
         if (k === "enter" || k === " ") { e.preventDefault(); window.mzFight?.(); }
         return;
       }
-      // Device-review Pass DR8: same engine-routed bridges as the combat
-      // action buttons above (window.mzAttack etc.) — see startCombat()'s
-      // own doc comment for why the classic functions these once called are
-      // now dead code.
-      if (k === "1") { e.preventDefault(); window.mzAttack?.(); }
-      else if (k === "2") { e.preventDefault(); if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "block"); } else { window.mzDrinkPotion?.(); } }
-      else if (k === "3") { e.preventDefault(); window.mzFlee?.(); }
-      else if (k === "4" && S.c.cls === "Magic User") { e.preventDefault(); S.combat.spellOpen = !S.combat.spellOpen; renderEncounter(); }
-      else if (k === "5" && canParley()) { e.preventDefault(); window.mzParley?.(); }
-      // Phase 31 (CMB-02): mirror the action-bar buttons above — visible
-      // (and now key-reachable) whenever the class/sub gate applies, not
-      // only when fully ready; the engine's own refusal toast explains a
-      // cooling/ungated tap.
-      else if (k === "6" && S.c.sub === "Bard") { e.preventDefault(); window.mzSing?.(); }
-      else if (k === "7" && S.c.scrolls) { e.preventDefault(); window.mzReadScroll?.(); }
+      // Phase 34 (CSCR-05/08): keys never dispatch directly — they click the
+      // same guardTap-wired buttons the grid/submenu build, so one arm
+      // window covers taps and keys alike. 1-4 pick the grid; inside a
+      // submenu, digits pick rows in DOM order and Escape/Backspace = BACK.
+      const menu = window.__mzCombatMenu;
+      const digit = /^[1-9]$/.test(k) ? Number(k) : 0;
+      if (menu && menu.open) {
+        if (k === "escape" || k === "backspace") { e.preventDefault(); document.getElementById("cb-back")?.click(); return; }
+        if (digit) {
+          e.preventDefault();
+          const rows = document.querySelectorAll("#cb-sub-list [data-cb-row]");
+          rows[digit - 1]?.click();
+        }
+        return;
+      }
+      if (digit >= 1 && digit <= 4) {
+        e.preventDefault();
+        document.getElementById(["cb-strike", "cb-spells", "cb-items", "cb-social"][digit - 1])?.click();
+      }
       return;
     }
     // Phase 31 (CMB-01), cleaned up Phase 34 (CSCR-06): the beats overlay's
