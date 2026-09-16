@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
-current_phase: 32
-current_phase_name: Combat Narrative & Input UI Build
-status: planning
+status: executing
 stopped_at: "Phase 31 complete (3/3 plans, 31-VERIFICATION passed, 11 Pixel 7 checks deferred to end-of-run UAT) — next: Phase 32 smart discuss"
-last_updated: "2026-09-16T15:52:45.324Z"
+last_updated: "2026-09-16T16:44:51.712Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 31 complete, transitioned to Phase 32
+last_activity_desc: Phase null execution resumed (wave continue)
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 10
+  total_plans: 13
   completed_plans: 10
   percent: 67
+current_phase: 32
+current_phase_name: Combat Narrative & Input UI Build
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 32 — Combat Narrative & Input UI Build
+**Current focus:** Phase null
 
 ## Current Position
 
-Phase: 32 — Combat Narrative & Input UI Build
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-16 — Phase 31 complete, transitioned to Phase 32
+Phase: 32 — Combat Narrative & Input UI Build — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 32 (3 plans, sequential waves)
+Last activity: 2026-09-16 — Phase null execution resumed (wave continue)
 
 ## Ground Truth (durable facts every session needs)
 
