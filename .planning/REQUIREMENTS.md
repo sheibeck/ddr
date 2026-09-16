@@ -39,7 +39,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 - [x] **CMBUI-03**: Moving on after a round or an encounter takes at most one deliberate tap — no dismiss-then-continue chains
 - [x] **CMBUI-04**: Decision buttons (Fight!, Joiner accept/decline, loot, Move on) cannot fire from a tap aimed at the D-pad — arm delay, no hit-zone overlap, or a distinct gesture
 - [x] **CMBUI-05**: Nothing important can be dismissed by a movement tap; dismissal requires a deliberate tap on the surface itself
-- [x] **CMBUI-06**: The chosen design is validated in an on-device DR round before the milestone closes
+- [ ] **CMBUI-06**: The chosen design is validated in an on-device DR round before the milestone closes — built in Phase 32; the DR round itself is in the end-of-run Pixel 7 UAT batch (pending)
 
 ### Combat start & usability (CMB)
 
@@ -133,7 +133,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CMBUI-03 | Phase 32 | Complete |
 | CMBUI-04 | Phase 32 | Complete |
 | CMBUI-05 | Phase 32 | Complete |
-| CMBUI-06 | Phase 32 | Complete |
+| CMBUI-06 | Phase 32 | Deferred — UAT pending |
 | UIF-01 | Phase 33 | Complete |
 | UIF-02 | Phase 33 | Complete |
 | UIF-03 | Phase 33 | Complete |
