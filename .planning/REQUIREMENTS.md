@@ -34,7 +34,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### Combat narrative & input (CMBUI) — research-first
 
-- [ ] **CMBUI-01**: A written survey of known combat-feedback patterns (combat log / ledger, batched round summary, auto-advance, ticker, mis-tap guards — from mobile roguelikes and turn-based RPGs) with a recommended design for this game, recorded in `docs/` and as a Key Decision before implementation starts
+- [x] **CMBUI-01**: A written survey of known combat-feedback patterns (combat log / ledger, batched round summary, auto-advance, ticker, mis-tap guards — from mobile roguelikes and turn-based RPGs) with a recommended design for this game, recorded in `docs/` and as a Key Decision before implementation starts
 - [ ] **CMBUI-02**: A combat round's narrative is delivered in one coherent place per the chosen design, not a stack of individual toasts; the Oracle remains the complete log
 - [ ] **CMBUI-03**: Moving on after a round or an encounter takes at most one deliberate tap — no dismiss-then-continue chains
 - [ ] **CMBUI-04**: Decision buttons (Fight!, Joiner accept/decline, loot, Move on) cannot fire from a tap aimed at the D-pad — arm delay, no hit-zone overlap, or a distinct gesture
@@ -122,7 +122,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LOOT-04 | Phase 29 | Complete |
 | LOOT-05 | Phase 29 | Complete |
 | LOOT-06 | Phase 29 | Complete |
-| CMBUI-01 | Phase 30 | Pending |
+| CMBUI-01 | Phase 30 | Complete |
 | CMB-01 | Phase 31 | Pending |
 | CMB-02 | Phase 31 | Pending |
 | CMB-03 | Phase 31 | Pending |

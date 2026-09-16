@@ -2,36 +2,36 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
-current_phase: 30
-current_phase_name: Combat Narrative & Input — Research
-status: verifying
+current_phase: 31
+current_phase_name: Combat Start Gating & Effect Hygiene
+status: planning
 stopped_at: Completed 30-01-PLAN.md — combat narrative design doc written, ratification pending orchestrator pause
-last_updated: "2026-09-16T10:15:13.649Z"
+last_updated: "2026-09-16T11:42:52.703Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 30 execution started
+last_activity_desc: Phase 30 complete, transitioned to Phase 31
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 33
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-15 after Phase 29)
+See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 30 — Combat Narrative & Input — Research
+**Current focus:** Phase 31 — Combat Start Gating & Effect Hygiene (autonomous run; UAT deferred to end of run; Round Card ratified for Phase 32)
 
 ## Current Position
 
-Phase: 30 (Combat Narrative & Input — Research) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-09-16 — Phase 30 execution started
+Phase: 31 — Combat Start Gating & Effect Hygiene
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-16 — Phase 30 complete, transitioned to Phase 31
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,7 +87,7 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 ## Session Continuity
 
 Last session: 2026-09-16T10:15:13.224Z
-Stopped at: Completed 30-01-PLAN.md — combat narrative design doc written, ratification pending orchestrator pause
+Stopped at: Phase 30 complete (Round Card ratified, Key Decision recorded), ready to plan Phase 31 (autonomous run in progress — device UAT for Phases 28–29 batched to end of run)
 Resume file: None
 
 ## Operator Next Steps
