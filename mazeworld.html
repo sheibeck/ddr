@@ -575,17 +575,21 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .goods .g-c{font-variant-numeric:tabular-nums;color:var(--moss);white-space:nowrap;font-weight:600}
 .goods.sold .g-c{color:var(--ink-soft)}
 
-/* Phase 32 (CMBUI-02/03): ONE always-visible narrative block between the
-   foe roster and the action bar, replacing the last-exchange footnote and
-   its per-event toasts. No line cap — a long round scrolls INSIDE the
-   block so the action bar below never moves between rounds (§6.3 rule 3).
-   No entrance animation on purpose — the guards and the block never
-   depend on a transition, and reduced-motion users get the identical
-   experience (no separate @media override needed). */
-.round-card{flex:0 1 auto;min-height:0;max-height:40%;overflow-y:auto;margin:0 0 12px;padding:10px 11px;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--ditto);touch-action:manipulation}
-.round-card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px;font-weight:400}
-.round-card p{font-family:var(--body);font-size:15px;line-height:1.45;margin:0 0 6px;color:var(--ink)}
-.round-card p:last-child{margin-bottom:0}
+/* Phase 34 (CSCR-04): the whole-fight › log — newest entry first, tap an
+   entry with a roll to reveal it in place (no re-render). Replaces the
+   Round Card (Phase 32) entirely; no entrance animation on purpose — the
+   guards never depend on a transition, and reduced-motion users get the
+   identical experience (no separate @media override needed). */
+.cb-log{padding:10px 12px 6px}
+.cb-log-entry{display:flex;gap:8px;margin-top:11px}
+.cb-log-entry:first-child{margin-top:0}
+.cb-log-revealable{cursor:pointer}
+.cb-log-mark{color:#6b5c3c;font-size:15px;font-weight:700;font-family:var(--mono);flex:none}
+.cb-log-body{flex:1;min-width:0}
+.cb-log-text{font-family:var(--mono);font-weight:700;font-size:15px;line-height:1.5;color:#c9bda0}
+.cb-log-dull .cb-log-text{color:#8f856f}
+.cb-log-roll{font-family:var(--mono);font-weight:700;font-size:13.5px;color:#e8c97a;margin-top:3px}
+.cb-log-roll[hidden]{display:none}
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
    column with both buttons clearing the 48dp touch target (UX-02). */
@@ -4909,27 +4913,26 @@ function guardTap(btn, fn) {
   btn.onclick = () => { if (encArmed()) fn(); };
 }
 
-// Phase 32 (CMBUI-02, design §6.7 / RESEARCH Pitfall 1) — the Round Card's
-// screen-reader announcer. #enc-round-live is a PERSISTENT sr-only node (a
-// sibling of #enc-body, never rebuilt) so a live region recreated inside
-// #enc-body's innerHTML churn does not lose its "same region" identity to
-// assistive tech. Announces once per NEW card (seq change) so a Spells/
-// Items sub-menu re-render, which redraws the same card, never re-announces.
-let roundCardAnnouncedSeq = 0;
-function syncRoundCardLive(rc) {
+// Phase 34 (CSCR-04/08) — the fight log's screen-reader announcer.
+// #enc-round-live is a PERSISTENT sr-only node (a sibling of #enc-body,
+// never rebuilt) so a live region recreated inside #enc-body's innerHTML
+// churn does not lose its "same region" identity to assistive tech.
+// Announces only NEW entries (seq-gated through fightLogAnnouncement) so a
+// Spells/Items sub-menu re-render, which redraws the same log, never
+// re-announces already-heard lines.
+let fightLogAnnouncedSeq = 0;
+function syncFightLogLive(log) {
   const live = document.getElementById("enc-round-live");
   if (!live) return;
-  if (!rc || !Array.isArray(rc.lines) || !rc.lines.length) {
+  if (!log || !log.entries || !log.entries.length) {
     if (live.textContent) live.textContent = "";
-    roundCardAnnouncedSeq = 0;
+    fightLogAnnouncedSeq = 0;
     return;
   }
-  if (rc.seq === roundCardAnnouncedSeq) return;
-  roundCardAnnouncedSeq = rc.seq;
-  const header = rc.pending
-    ? ROUND_CARD_COPY.preview
-    : ROUND_CARD_COPY.round(rc.round);
-  live.textContent = header + ". " + rc.lines.join(" ");
+  const a = window.__mzFightLogVM.announcement(log, fightLogAnnouncedSeq);
+  if (!a.text) return;
+  fightLogAnnouncedSeq = a.seq;
+  live.textContent = a.text;
 }
 
 function vitalsStrip() {
@@ -5024,6 +5027,57 @@ function renderPartyRail() {
   });
 }
 
+// Phase 34 (CSCR-04) — combat screen render helpers (renderFightLog first;
+// Plans 03-05 add renderMajorOverlay/renderCombatHeader/renderFoeCards/
+// renderYourLot/renderActionArea/renderCombatOver after it, before
+// renderEncounter).
+function renderFightLog(host) {
+  const log = window.__mzFightLog;
+  const rows = window.__mzFightLogVM ? window.__mzFightLogVM.rows(log) : [];
+  const section = document.createElement("section");
+  section.className = "cb-log";
+  section.id = "cb-log";
+  section.setAttribute("aria-label", "Fight log");
+  for (const r of rows) {
+    const el = document.createElement("div");
+    el.className = "cb-log-entry cb-log-" + r.tone;
+    el.dataset.logId = String(r.id);
+    const mark = document.createElement("span");
+    mark.className = "cb-log-mark";
+    mark.textContent = "›";
+    el.appendChild(mark);
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "cb-log-body";
+    const text = document.createElement("div");
+    text.className = "cb-log-text";
+    text.textContent = r.text;
+    bodyEl.appendChild(text);
+    if (typeof r.roll === "string" && r.roll) {
+      const roll = document.createElement("div");
+      roll.className = "cb-log-roll";
+      roll.textContent = r.roll;
+      roll.hidden = !r.show;
+      bodyEl.appendChild(roll);
+      el.classList.add("cb-log-revealable");
+      el.tabIndex = 0;
+      // A log tap is a reveal toggle, not a decision button: deliberately
+      // NOT wrapped in guardTap and never calls renderEncounter — a log
+      // tap must not re-arm the action buttons.
+      el.onclick = () => {
+        window.__mzFightLog = window.__mzFightLogVM.toggle(window.__mzFightLog, r.id);
+        roll.hidden = !roll.hidden;
+      };
+      el.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+      };
+    }
+    el.appendChild(bodyEl);
+    section.appendChild(el);
+  }
+  host.appendChild(section);
+  syncFightLogLive(log);
+}
+
 function renderEncounter() {
   const panel = document.getElementById("enc-panel");
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
@@ -5045,7 +5099,7 @@ function renderEncounter() {
   encWasActive = active;
   if (!active) {
     if (panel) panel.hidden = true;
-    syncRoundCardLive(null);
+    syncFightLogLive(null);
     return;
   }
   if (panel) panel.hidden = false;
@@ -5367,36 +5421,16 @@ function renderEncounter() {
   });
   body.appendChild(list);
 
-  // Phase 32 (CMBUI-02/03, design §4/§6.1) — the Round Card: the current
-  // round's folded lines (dispatchWithToasts -> window.__mzRoundCard),
-  // rendered in the slot the last-exchange footnote used to occupy, above
-  // the Fight! gate / action bar; NO tap-to-dismiss and no dismiss gate
-  // (the next action's render replaces it; hasActiveEncounter() false
-  // clears it) — reading costs zero taps and moving on costs no extra tap
-  // (CMBUI-03); the foe roster stays first (RESEARCH Pitfall 5: the
-  // loot/joiner/find/death branches above are decision surfaces and
-  // intentionally carry no card). The pending preview thus reads: head ->
-  // roster -> card (preview header + the encounterStarted line) -> Fight!.
-  const rc = window.__mzRoundCard;
-  if (rc && Array.isArray(rc.lines) && rc.lines.length) {
-    const card = document.createElement("section");
-    card.className = "round-card";
-    card.id = "round-card";
-    card.dataset.seq = String(rc.seq);
-    card.setAttribute("aria-label", "This round");
-    const h4 = document.createElement("h4");
-    h4.textContent = rc.pending
-      ? ROUND_CARD_COPY.preview
-      : ROUND_CARD_COPY.round(rc.round);
-    card.appendChild(h4);
-    for (const line of rc.lines) {
-      const p = document.createElement("p");
-      p.textContent = line;
-      card.appendChild(p);
-    }
-    body.appendChild(card);
-  }
-  syncRoundCardLive(rc);
+  // Phase 34 (CSCR-04, design §4/§6.1) — the fight log: the WHOLE fight's
+  // folded lines (dispatchWithToasts -> window.__mzFightLog), rendered in
+  // the slot the Round Card used to occupy, above the Fight! gate / action
+  // bar; NO tap-to-dismiss and no dismiss gate (the next action's render
+  // replaces it; hasActiveEncounter() false clears it) — reading costs
+  // zero taps and moving on costs no extra tap; the foe roster stays first
+  // (RESEARCH Pitfall 5: the loot/joiner/find/death branches above are
+  // decision surfaces and intentionally carry no log). Plan 03 moves this
+  // call into the middle band.
+  renderFightLog(body);
 
   // Phase 31 (CMB-01) — the "Fight!" gate: the ENGINE owns it now. While
   // combat.pending is true, startCombat has only rolled the foe roster —
