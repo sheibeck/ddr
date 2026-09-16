@@ -4982,6 +4982,11 @@ let encRenderedAt = 0;
 let armTimer = null;
 let lastDismissAt = 0;
 let encWasActive = false;
+// Phase 34 (CSCR-04) — the fight log's own scroll-into-view seq gate: only
+// scroll the newest entry into view when a NEW log batch landed since the
+// last render (a submenu open/close re-render of the same log must not
+// re-scroll the middle band).
+let lastLogSeqShown = 0;
 
 function encArmed() {
   return window.__mzInputGuards ? window.__mzInputGuards.isArmed(encRenderedAt, Date.now()) : true;
@@ -5183,6 +5188,181 @@ function renderFightLog(host) {
   syncFightLogLive(log);
 }
 
+// Phase 34 (CSCR-06, Decision 2) — the map's MAJOR OVERLAY, generic; Phase
+// 35 reuses it for THE STAIR DOWN and out-of-combat death; every button is
+// guarded.
+function renderMajorOverlay(host, spec) {
+  const el = document.createElement("div");
+  el.id = "mw-major";
+  el.className = "mw-major";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-label", spec.title);
+  const icon = document.createElement("span");
+  icon.className = "mw-major-icon " + spec.iconTone;
+  icon.textContent = spec.icon;
+  el.appendChild(icon);
+  const title = document.createElement("div");
+  title.className = "mw-major-title";
+  title.textContent = spec.title;
+  el.appendChild(title);
+  const line = document.createElement("div");
+  line.className = "mw-major-line";
+  line.textContent = spec.line;
+  el.appendChild(line);
+  if (spec.roll) {
+    const roll = document.createElement("div");
+    roll.className = "mw-major-roll";
+    roll.textContent = spec.roll;
+    el.appendChild(roll);
+  }
+  const actions = document.createElement("div");
+  actions.className = "mw-major-actions";
+  const primary = document.createElement("button");
+  primary.className = "mw-major-btn";
+  primary.id = "mw-major-primary";
+  primary.textContent = spec.primary.label;
+  actions.appendChild(primary);
+  if (spec.secondary) {
+    const secondary = document.createElement("button");
+    secondary.className = "mw-major-btn secondary";
+    secondary.id = "mw-major-secondary";
+    secondary.textContent = spec.secondary.label;
+    actions.appendChild(secondary);
+  }
+  el.appendChild(actions);
+  host.appendChild(el);
+  guardTap(document.getElementById("mw-major-primary"), () => spec.primary.onTap());
+  if (spec.secondary) guardTap(document.getElementById("mw-major-secondary"), () => spec.secondary.onTap());
+}
+
+function renderCombatHeader(host, vm) {
+  const el = document.createElement("div");
+  el.id = "cb-head";
+  el.className = "cb-head";
+  el.innerHTML = `<span class="cb-head-label"></span><div class="cb-head-right"><span class="cb-head-round"></span><span class="cb-head-standing"></span></div>`;
+  el.querySelector(".cb-head-label").textContent = vm.label;
+  el.querySelector(".cb-head-round").textContent = vm.round;
+  el.querySelector(".cb-head-standing").textContent = vm.standing;
+  host.appendChild(el);
+}
+
+// Phase 34 (CSCR-02/08, Decision 3) — picking a new aim point is a guarded
+// presentation mutation; no engine action exists or is added.
+function renderFoeCards(host, vm, onPick) {
+  const section = document.createElement("section");
+  section.id = "cb-foes";
+  section.className = "cb-foes";
+  section.setAttribute("aria-label", "Foes");
+  const head = document.createElement("div");
+  head.className = "cb-foes-head";
+  const hint = document.createElement("span");
+  hint.className = "cb-hint";
+  hint.textContent = vm.hint;
+  head.appendChild(hint);
+  const threat = document.createElement("span");
+  threat.className = "cb-threat";
+  threat.textContent = vm.threat;
+  head.appendChild(threat);
+  section.appendChild(head);
+  const list = document.createElement("div");
+  list.className = "cb-foe-list";
+  vm.cards.forEach((c) => {
+    const el = document.createElement("div");
+    el.className = "cb-foe" + (c.state === "target" ? " target" : "") + (c.state === "dead" ? " dead" : "");
+    el.dataset.foe = String(c.i);
+    const row = document.createElement("div");
+    row.className = "cb-foe-row";
+    const left = document.createElement("div");
+    left.className = "cb-foe-left";
+    const glyph = document.createElement("span");
+    glyph.className = "cb-foe-glyph";
+    glyph.textContent = c.glyph;
+    left.appendChild(glyph);
+    const nameWrap = document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "cb-foe-name";
+    name.textContent = c.name;
+    nameWrap.appendChild(name);
+    const meta = document.createElement("div");
+    meta.className = "cb-foe-meta";
+    meta.textContent = c.meta;
+    nameWrap.appendChild(meta);
+    left.appendChild(nameWrap);
+    row.appendChild(left);
+    const right = document.createElement("div");
+    right.className = "cb-foe-right";
+    const wp = document.createElement("div");
+    wp.className = "cb-foe-wp";
+    wp.textContent = c.wpLabel;
+    right.appendChild(wp);
+    const tag = document.createElement("div");
+    tag.className = "cb-foe-tag" + (c.tagTone === "status" ? " status" : "");
+    tag.textContent = c.tag;
+    right.appendChild(tag);
+    row.appendChild(right);
+    el.appendChild(row);
+    const bar = document.createElement("div");
+    bar.className = "cb-bar";
+    const fill = document.createElement("div");
+    fill.className = "cb-bar-fill";
+    fill.style.width = c.pct + "%";
+    bar.appendChild(fill);
+    el.appendChild(bar);
+    if (c.alive) {
+      el.tabIndex = 0;
+      el.setAttribute("role", "button");
+      guardTap(el, () => onPick(c.i));
+      el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } };
+    }
+    list.appendChild(el);
+  });
+  section.appendChild(list);
+  host.appendChild(section);
+}
+
+// Phase 34 (CSCR-03) — hero first, then every state.party member, then a
+// summoned ally; the strip is overflow-x:auto so more members can join
+// later (PARTY_CAP is 1 today).
+function renderYourLot(host, vm) {
+  const section = document.createElement("section");
+  section.id = "cb-lot";
+  section.className = "cb-lot";
+  section.setAttribute("aria-label", "Your lot");
+  const hint = document.createElement("div");
+  hint.className = "cb-hint";
+  hint.textContent = vm.hint;
+  section.appendChild(hint);
+  const strip = document.createElement("div");
+  strip.className = "cb-lot-strip";
+  strip.dataset.overflow = vm.overflow ? "1" : "0";
+  vm.cards.forEach((c) => {
+    const el = document.createElement("div");
+    el.className = "cb-lot-card" + (c.active ? " active" : "") + (c.down ? " down" : "");
+    const name = document.createElement("div");
+    name.className = "cb-lot-name";
+    name.textContent = c.name;
+    el.appendChild(name);
+    const wp = document.createElement("div");
+    wp.className = "cb-lot-wp";
+    wp.textContent = c.wpLabel;
+    el.appendChild(wp);
+    const bar = document.createElement("div");
+    bar.className = "cb-lot-bar";
+    const fill = document.createElement("div");
+    fill.className = "cb-lot-fill" + (c.barTone === "low" ? " low" : "");
+    fill.style.width = c.pct + "%";
+    bar.appendChild(fill);
+    el.appendChild(bar);
+    const third = document.createElement("div");
+    third.className = "cb-lot-third";
+    third.textContent = c.third;
+    el.appendChild(third);
+    strip.appendChild(el);
+  });
+  section.appendChild(strip);
+  host.appendChild(section);
+}
+
 function renderEncounter() {
   const panel = document.getElementById("enc-panel");
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
@@ -5211,6 +5391,10 @@ function renderEncounter() {
   // Phase 32 (CMBUI-04): every button this render builds below shares one
   // fresh arm-delay stamp.
   armEncounterButtons();
+  // Phase 34 — every branch starts in the pre-Phase-34 styling; the combat/
+  // pending branches (and, from Plan 05, the endings/joiner/find) opt into
+  // the mock palette by setting "dark".
+  panel.dataset.mode = "legacy";
   const body = document.getElementById("enc-body");
   const rd = document.getElementById("enc-round");
   body.innerHTML = ""; rd.textContent = "";
@@ -5482,77 +5666,43 @@ function renderEncounter() {
   // early), so reaching this point with !S.combat can no longer happen.
 
   const C = S.combat;
-  rd.textContent = `round ${C.round}`;
-  // Pass B2 group 2: #enc-round is a persistent element (never destroyed by
-  // this function's body.innerHTML = "" above) — restart its pulse
-  // animation with the classic remove+reflow+re-add trick so it retriggers
-  // on every render, not just the first time the class is added.
-  rd.classList.remove("mw-round-tick");
-  void rd.offsetWidth;
-  rd.classList.add("mw-round-tick");
-  const head = document.createElement("div");
-  head.innerHTML = `<p class="enc-head">${C.type}</p>
-    <p class="enc-sub">${liveFoes().length} still standing · you strike on d${strikeDie()}, ${toHit()} to hit</p>`;
-  body.appendChild(head);
+  rd.textContent = "";
+  // Phase 34 — the legacy topbar is hidden by the dark mode; the
+  // mw-round-tick pulse (a topbar-only affordance) is retired with it.
+  panel.dataset.mode = "dark";
 
-  // DR13: the in-panel HIT/MISS badge is gone — action feedback now rides the
-  // fixed toast (window.mzToast, raised in engineCombatAction) so nothing in the
-  // combat panel resizes/reflows when you act (no CLS, no real-estate churn).
-
-  if (C.ally) {
-    const al = document.createElement("div");
-    al.className = "foe ally";
-    al.innerHTML = `<div class="fname">${C.ally.name}</div>
-      <div class="fwp">${C.ally.rounds} rounds</div>
-      <div class="fmeta">Fighting for you · level ${ROMAN[C.ally.lvl-1]} · ${C.ally.lvl*C.ally.lvl}+d6 damage</div>`;
-    body.appendChild(al);
-  }
-
-  const list = document.createElement("div");
-  list.className = "foes";
-  C.foes.forEach((f, i) => {
-    const el = document.createElement("div");
-    el.className = "foe" + (f.alive ? "" : " dead") + (i === C.target && f.alive ? " target" : "");
-    const badges = f.alive ? foeStatusBadges(f) : [];
-    el.innerHTML = `<div class="fname">${f.name}</div>
-      <div class="fwp">${Math.max(0,f.wp)} / ${f.maxWP} hp</div>
-      <div class="fmeta">${f.size || "H"} · int ${f.intel ?? "?"} · strikes on d${foeDie(f)}, ${foeToHitVs()} to hit${f.lives > 1 ? " · gets up again" : ""}</div>
-      ${badges.length ? `<div class="fstatus">${badges.map(s => `<span class="fchip fchip-${s.tone}">${s.t}</span>`).join("")}</div>` : ""}
-      ${f.sp && f.sp.note ? `<div class="fnote">${f.sp.note}</div>` : ""}`;
-    if (f.alive) { el.tabIndex = 0; el.style.cursor = "pointer";
-      el.onclick = () => { C.target = i; renderEncounter(); };
-      el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); C.target = i; renderEncounter(); } }; }
-    list.appendChild(el);
-  });
-  body.appendChild(list);
-
-  // Phase 34 (CSCR-04, design §4/§6.1) — the fight log: the WHOLE fight's
-  // folded lines (dispatchWithToasts -> window.__mzFightLog), rendered in
-  // the slot the Round Card used to occupy, above the Fight! gate / action
-  // bar; NO tap-to-dismiss and no dismiss gate (the next action's render
-  // replaces it; hasActiveEncounter() false clears it) — reading costs
-  // zero taps and moving on costs no extra tap; the foe roster stays first
-  // (RESEARCH Pitfall 5: the loot/joiner/find/death branches above are
-  // decision surfaces and intentionally carry no log). Plan 03 moves this
-  // call into the middle band.
-  renderFightLog(body);
-
-  // Phase 31 (CMB-01) — the "Fight!" gate: the ENGINE owns it now. While
-  // combat.pending is true, startCombat has only rolled the foe roster —
-  // nothing has rolled initiative, triggered a phobia, or struck yet. Show
-  // the FOE ROSTER (above) + the Round Card preview (Phase 32) + a single
-  // Fight! button, and STOP here — no action bar (strike/potion/flee/spell/
-  // use), no spell menu. mzFight() dispatches the `fight` action, which
-  // resolves initiative/phobia/the pre-emptive foe turn and clears
-  // `pending`; the next render reveals that outcome + the action bar.
+  // Phase 34 (CSCR-06) — the combat screen never renders a pending combat:
+  // while combat.pending is true, nothing has rolled initiative or struck
+  // yet (Phase 31 rule), so this is the map's MAJOR OVERLAY, not the combat
+  // panel's header/foes/lot/log/grid chrome. Returns before any band below
+  // is built.
   if (C.pending) {
-    const g = document.createElement("div");
-    g.className = "actions";
-    g.innerHTML = `<button class="primary" id="a-fight">Fight!</button>`;
-    body.appendChild(g);
-    guardTap(document.getElementById("a-fight"), () => window.mzFight?.());
+    const spec = window.__mzCombatVM.overlay(S);
+    renderMajorOverlay(body, { ...spec, primary: { label: spec.primary.label, onTap: () => window.mzFight?.() }, secondary: null });
     return;
   }
+
+  renderCombatHeader(body, window.__mzCombatVM.header(S));
+
+  const mid = document.createElement("div");
+  mid.className = "cb-mid";
+  mid.id = "cb-mid";
+  renderFoeCards(mid, window.__mzCombatVM.foes(S, { chipsFor: (f) => foeStatusBadges(f).map((b) => b.t) }), (i) => { S.combat.target = i; renderEncounter(); });
+  renderYourLot(mid, window.__mzCombatVM.lot(S));
+  renderFightLog(mid);
+  body.appendChild(mid);
+  // Phase 34 (CSCR-04) — scroll the newest log entry into view only when a
+  // NEW log batch landed since the last render, so a submenu open/close
+  // re-render of the same log never yanks the scroll position.
+  if (window.__mzFightLog && window.__mzFightLog.seq !== lastLogSeqShown) {
+    lastLogSeqShown = window.__mzFightLog.seq;
+    mid.querySelector(".cb-log-entry")?.scrollIntoView({ block: "nearest" });
+  }
+
+  const act = document.createElement("div");
+  act.className = "cb-act";
+  act.id = "cb-act";
+  body.appendChild(act);
 
   const acts = document.createElement("div");
   acts.className = "actions";
@@ -5571,7 +5721,7 @@ function renderEncounter() {
     (canParley() ? `<button id="a-talk">5 · Parley</button>` : "") +
     (S.c.sub === "Bard" ? `<button id="a-sing">6 · Sing${songReady() ? "" : ` (${Math.max(0, singLeft)} sq)`}</button>` : "") +
     (S.c.scrolls ? `<button id="a-scroll">7 · Scroll (${S.c.scrolls})</button>` : "");
-  body.appendChild(acts);
+  act.appendChild(acts);
 
   // E2 / ECON-07 (Phase 14): the combat-bar USE-LIST — combat-usable carried
   // items (potions/staves/scrolls/cloaks/jewelry with a `use`) surfaced mid-fight
@@ -5585,7 +5735,7 @@ function renderEncounter() {
   if (useable) {
     const useWrap = document.createElement("div");
     useWrap.innerHTML = `<p class="enc-sub" style="margin:10px 0 2px">Use an item</p><ul class="skills" id="combat-use-list"></ul>`;
-    body.appendChild(useWrap);
+    act.appendChild(useWrap);
     renderCarriedList(document.getElementById("combat-use-list"), S.c.items, {
       actions: ["use"],
       guard: true,
@@ -5613,7 +5763,7 @@ function renderEncounter() {
     none.textContent = "Nothing in the grimoire you can work at this level.";
     menu.appendChild(none);
   }
-  body.appendChild(menu);
+  act.appendChild(menu);
 
   // Device-review Pass DR8: STRIKE/POTION/FLEE/PARLEY/SING/SCROLL route
   // through the engine's own attack/drinkPotion/flee/parley/sing/readScroll
@@ -5912,15 +6062,16 @@ addEventListener("keydown", e => {
   if (S && hasActiveEncounter()) {
     if (S.combat) {
       // Phase 32 (CMBUI-04): keys share the buttons' arm window — Enter/
-      // Space/1 on the Fight! gate and keys 1-7 in a fight are swallowed
+      // Space on the MAJOR OVERLAY and keys 1-7 in a fight are swallowed
       // exactly like a tap that lands mid re-render.
       if (!encArmed()) return;
-      // Phase 31 (CMB-01): while the ENGINE's combat.pending gate is up, the
-      // action keys (1-7) are suppressed — only Enter/Space/1 dispatch the
-      // `fight` action (see the a-fight click fallback below), so the player
-      // can't strike/flee before initiative has even been rolled.
+      // Phase 31 (CMB-01), amended Phase 34 (CSCR-06): while the ENGINE's
+      // combat.pending gate is up, the action keys (1-7) are suppressed —
+      // only Enter/Space dispatch the `fight` action (the MAJOR OVERLAY's
+      // own primary button, mw-major-primary), so the player can't strike/
+      // flee before initiative has even been rolled.
       if (S.combat.pending) {
-        if (k === "enter" || k === " " || k === "1") { e.preventDefault(); window.mzFight?.(); }
+        if (k === "enter" || k === " ") { e.preventDefault(); window.mzFight?.(); }
         return;
       }
       // Device-review Pass DR8: same engine-routed bridges as the combat
@@ -5940,12 +6091,12 @@ addEventListener("keydown", e => {
       else if (k === "7" && S.c.scrolls) { e.preventDefault(); window.mzReadScroll?.(); }
       return;
     }
-    // Phase 31 (CMB-01): the beats overlay's own dismiss/advance control is
-    // a-next (the AMBUSH a-fight special case that used to live here is
-    // gone — see renderEncounter's beats branch); the a-fight fallback stays
-    // harmless (no such id exists on this branch) so Enter/Space keeps
-    // working uniformly across every beats card.
-    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-fight") || document.getElementById("a-next"); if (n) n.click(); }
+    // Phase 31 (CMB-01), cleaned up Phase 34 (CSCR-06): the beats overlay's
+    // own dismiss/advance control is a-next (the AMBUSH special case that
+    // used to live here is gone — see renderEncounter's beats branch; the
+    // pending-fight gate is its own MAJOR OVERLAY branch above, keyed on
+    // S.combat.pending, not reachable from here).
+    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next"); if (n) n.click(); }
     return;
   }
   if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
@@ -6001,6 +6152,11 @@ window.__mzClassicBoot = async function classicBoot() {
   import { PRIORITY, MAX_TOASTS, narrativeToastText } from "./src/browser/toasts.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
   import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement } from "./src/browser/fightLog.js";
+  // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
+  // view-models and the four-action-grid/submenu view-model, bridged onto
+  // window.__mzCombatVM below for the classic renderEncounter to consume.
+  import { combatHeaderViewModel, foeListViewModel, yourLotViewModel, encounterOverlaySpec } from "./src/browser/combatPanel.js";
+  import { combatMenuViewModel } from "./src/browser/combatMenu.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — dpad clicks and arrow/WASD
   // keydown, both of which already call the plain `move(dir)` global
@@ -6130,6 +6286,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // through this ONE bridge rather than importing fightLog.js a second
   // time. No rng, no DOM access inside the module itself.
   window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
+
+  // Phase 34 (CSCR-01/02/03/06) — the ONE bridge renderEncounter's combat
+  // branch reads for header/foe-card/YOUR LOT content and the MAJOR
+  // OVERLAY's spec; menu is consumed by Plan 04's action grid. Read-only,
+  // no rng, no DOM access inside these pure modules.
+  window.__mzCombatVM = { header: combatHeaderViewModel, foes: foeListViewModel, lot: yourLotViewModel, overlay: encounterOverlaySpec, menu: combatMenuViewModel };
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
