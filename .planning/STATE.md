@@ -4,15 +4,15 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 30
 current_phase_name: Combat Narrative & Input — Research
-status: executing
-stopped_at: Completed 29-03-PLAN.md
-last_updated: "2026-09-16T10:03:14.506Z"
-last_activity: 2026-09-15
-last_activity_desc: Phase 29 complete, transitioned to Phase 30
+status: verifying
+stopped_at: Completed 30-01-PLAN.md — combat narrative design doc written, ratification pending orchestrator pause
+last_updated: "2026-09-16T10:15:13.649Z"
+last_activity: 2026-09-16
+last_activity_desc: Phase 30 execution started
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 6
+  total_plans: 7
   completed_plans: 6
   percent: 33
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-15 after Phase 29)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 30 — Combat Narrative & Input — Research (autonomous run; UAT deferred to end of run)
+**Current focus:** Phase 30 — Combat Narrative & Input — Research
 
 ## Current Position
 
-Phase: 30 — Combat Narrative & Input — Research
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-15 — Phase 29 complete, transitioned to Phase 30
+Phase: 30 (Combat Narrative & Input — Research) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-09-16 — Phase 30 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T03:51:11.082Z
-Stopped at: Phase 29 complete, ready to plan Phase 30 (autonomous run in progress — device UAT for Phases 28–29 batched to end of run)
+Last session: 2026-09-16T10:15:13.224Z
+Stopped at: Completed 30-01-PLAN.md — combat narrative design doc written, ratification pending orchestrator pause
 Resume file: None
 
 ## Operator Next Steps
@@ -156,6 +156,7 @@ Resume file: None
 | Phase 29 P01 | 55min | 3 tasks | 9 files |
 | Phase 29 P02 | 95min | 3 tasks | 17 files |
 | Phase 29 P03 | 50min | 3 tasks | 3 files |
+| Phase 30 P01 | 40min | 3 tasks | 1 files |
 
 ## Decisions
 
@@ -276,6 +277,7 @@ Resume file: None
 - [Phase ?]: Loot screen: window.__mzBagUsage is the ONE capacity readout in the shell (gear panel, find card, loot screen, store) — no raw array-length count survives
 - [Phase ?]: noteCombat hands the end-of-fight report to window.__mzLootReport instead of building a 'Move on' beat when drops are pending — the loot card folds the report and the decision into one card (RESEARCH Pitfall 4)
 - [Phase ?]: renderDropShelf(shelf, items) extracted from the find card's inline loop, shared by the find card and the new loot screen
+- [Phase ?]: 30-01: live re-verification found the toast/Oracle-pinning test total is 89 (15/21/37/8/8), not RESEARCH.md's assumed 98 — doc uses the live count per its own re-verify-before-writing instruction
 
 ### Blockers
 
