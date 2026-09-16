@@ -4891,23 +4891,14 @@ function renderEncounter() {
   // whatever just happened comes first — one moment at a time on a phone
   if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
     const b = S.beats;
-    // DR17 item 4 — AMBUSH death Fight! gate: the pre-emptive turn killed the
-    // player on entry (state.combat already nulled), but they should still SEE
-    // the foes + press Fight! before the killing narration plays. Render the
-    // roster (carried on the beat from the encounterStarted event) + a single
-    // Fight! button; mzFight() clears the flag and re-renders into the pre-death
-    // beat below → death card.
-    if (b.awaitingFight) {
-      rd.textContent = "";
-      const roster = (b.foes || []).map((f) =>
-        `<div class="foe"><div class="fname">${f.name}</div>
-          <div class="fwp">${Math.max(0, f.wp)} / ${f.maxWP} hp</div></div>`).join("");
-      body.innerHTML = `<p class="enc-head">${b.combatType || "Ambush"}</p>
-        <div class="foes">${roster}</div>
-        <div class="actions"><button class="primary" id="a-fight">Fight!</button></div>`;
-      document.getElementById("a-fight").onclick = () => window.mzFight?.();
-      return;
-    }
+    // Phase 31 (CMB-01): the AMBUSH pre-death Fight! gate that used to live
+    // here is gone — a pre-emptive foe kill can no longer happen on a bare
+    // move/encounter roll, because nothing rolls or strikes until the player
+    // dispatches the `fight` action themselves (see window.mzFight below).
+    // If a pre-emptive strike kills the player, it happens INSIDE the fight
+    // dispatch (after Fight! was already pressed), so state.dead resolves
+    // through the ordinary death-card branch above with no bridging beat
+    // needed here at all.
     const step = stepping();
     const groups = step ? [b.groups[Math.min(b.i, b.groups.length - 1)]] : b.groups;
     const last = !step || b.i >= b.groups.length - 1;
@@ -5158,15 +5149,15 @@ function renderEncounter() {
   });
   body.appendChild(list);
 
-  // DR17 item 4 — the "Fight!" gate: combat has JUST started and hasn't been
-  // entered yet. Show the FOE ROSTER (above) + a single Fight! button, and STOP
-  // here — no action bar (strike/potion/flee/spell/use), no spell menu, and no
-  // "Last exchange" block, so the initiative / pre-emptive first-turn outcome
-  // stays hidden until the player confirms. mzFight() flips the flag and
-  // re-renders into the full combat panel below (revealing that outcome + the
-  // action bar). Presentation-only: the engine already rolled initiative inside
-  // startCombat; this gates ONLY what the screen shows.
-  if (C.awaitingFight) {
+  // Phase 31 (CMB-01) — the "Fight!" gate: the ENGINE owns it now. While
+  // combat.pending is true, startCombat has only rolled the foe roster —
+  // nothing has rolled initiative, triggered a phobia, or struck yet. Show
+  // the FOE ROSTER (above) + a single Fight! button, and STOP here — no
+  // action bar (strike/potion/flee/spell/use), no spell menu, and no "Last
+  // exchange" block. mzFight() dispatches the `fight` action, which resolves
+  // initiative/phobia/the pre-emptive foe turn and clears `pending`; the next
+  // render reveals that outcome + the action bar.
+  if (C.pending) {
     const g = document.createElement("div");
     g.className = "actions";
     g.innerHTML = `<button class="primary" id="a-fight">Fight!</button>`;
@@ -5522,10 +5513,11 @@ addEventListener("keydown", e => {
   // only the WASD/arrow movement path is gated. See hasActiveEncounter().
   if (S && hasActiveEncounter()) {
     if (S.combat) {
-      // DR17 item 4: while the Fight! gate is up, the action keys (1-7) are
-      // suppressed — only Enter/Space/1 release the gate (see the a-fight click
-      // fallback below), so the player can't strike/flee before confirming.
-      if (S.combat.awaitingFight) {
+      // Phase 31 (CMB-01): while the ENGINE's combat.pending gate is up, the
+      // action keys (1-7) are suppressed — only Enter/Space/1 dispatch the
+      // `fight` action (see the a-fight click fallback below), so the player
+      // can't strike/flee before initiative has even been rolled.
+      if (S.combat.pending) {
         if (k === "enter" || k === " " || k === "1") { e.preventDefault(); window.mzFight?.(); }
         return;
       }
@@ -5542,9 +5534,11 @@ addEventListener("keydown", e => {
       else if (k === "7" && S.c.scrolls && canRead()) { e.preventDefault(); window.mzReadScroll?.(); }
       return;
     }
-    // DR17 item 4: an ambush-death Fight! gate (state.combat already nulled, the
-    // gate lives on the pre-death beat) shows an a-fight button, not a-next —
-    // Enter/Space should release it too.
+    // Phase 31 (CMB-01): the beats overlay's own dismiss/advance control is
+    // a-next (the AMBUSH a-fight special case that used to live here is
+    // gone — see renderEncounter's beats branch); the a-fight fallback stays
+    // harmless (no such id exists on this branch) so Enter/Space keeps
+    // working uniformly across every beats card.
     if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-fight") || document.getElementById("a-next"); if (n) n.click(); }
     return;
   }
@@ -5982,11 +5976,9 @@ window.__mzClassicBoot = async function classicBoot() {
         foes: after.combat.foes.map((f) => f.name),
         lastRound: after.combat.round || 1,
       };
-      // DR17 item 4: combat JUST started this dispatch — gate the presentation so
-      // the player sees the full foe roster + a single "Fight!" before any action
-      // bar / initiative outcome is shown. Presentation-ONLY flag on state.combat
-      // (never set by the engine, so parity is untouched); cleared by mzFight().
-      after.combat.awaitingFight = true;
+      // Phase 31 (CMB-01): the Fight! gate is now the ENGINE's own
+      // combat.pending flag (set by startCombat, cleared by the `fight`
+      // action) — no presentation-layer flag to set here any more.
       // Phase 29 (LOOT-02, RESEARCH Pitfall 4): a fresh fight clears any stale
       // report from a previous encounter's loot card.
       window.__mzLootReport = null;
@@ -6095,19 +6087,12 @@ window.__mzClassicBoot = async function classicBoot() {
     window.__mzPendingNarration =
       (state.pendingJoiner || state.pendingFind) && html.length ? stripRollDetail(html) : null;
     if (diedOnMove && html.length) {
-      const ambush = events.some((e) => e.type === "encounterStarted");
-      state.beats = { groups: [{ title: ambush ? "They got the drop on you" : "The maze has the last word", tone: "hurt", lines: stripRollDetail(html) }], i: 0, action: null, preDeath: true };
-      // DR17 item 4 — AMBUSH death: gate the killing narration behind the same
-      // "see the foes, then Fight!" roster the player would have gotten had they
-      // survived. die() has already nulled state.combat, so carry the foe roster
-      // from the encounterStarted event onto the (presentation-transient) beat;
-      // renderEncounter shows roster + Fight! first, then reveals this beat.
-      if (ambush) {
-        const es = events.find((e) => e.type === "encounterStarted");
-        state.beats.awaitingFight = true;
-        state.beats.foes = (es && es.foes) || [];
-        state.beats.combatType = (es && es.combatType) || "";
-      }
+      // Phase 31 (CMB-01): a move can no longer kill via an encounter — the
+      // pre-emptive opener now runs inside the `fight` action, dispatched
+      // only after the player has already seen the roster and pressed
+      // Fight!, so the AMBUSH special case (and its distinct title/roster
+      // carry) is gone; every death-on-move title reads the same.
+      state.beats = { groups: [{ title: "The maze has the last word", tone: "hurt", lines: stripRollDetail(html) }], i: 0, action: null, preDeath: true };
     } else if (!state.combat && !state.store && !state.dead && !state.won && !state.beats
                && !state.pendingJoiner && !state.pendingFind && html.length
                && events.some((e) => CARD_EVENTS.has(e.type))) {
@@ -6573,21 +6558,14 @@ window.__mzClassicBoot = async function classicBoot() {
     window.renderEncounter();
   }
   window.mzAttack = () => engineCombatAction("attack");
-  // DR17 item 4: the "Fight!" gate release. Purely presentation — flips the
-  // awaitingFight flag off (on the live combat, or on an ambush-death pre-death
-  // beat) and re-renders so the initiative/first-turn outcome + action bar (or,
-  // for an ambush death, the killing narration → death card) become visible. No
-  // dispatch, no rng, no engine call: the engine already resolved everything
-  // inside startCombat; this only reveals it.
-  window.mzFight = () => {
-    const state = window.__mzState.get();
-    if (state) {
-      if (state.combat && state.combat.awaitingFight) state.combat.awaitingFight = false;
-      if (state.beats && state.beats.awaitingFight) state.beats.awaitingFight = false;
-      window.__mzState.set(state);
-    }
-    window.renderEncounter();
-  };
+  // Phase 31 (CMB-01): the "Fight!" gate release is now a REAL dispatch — the
+  // engine's `fight` action rolls initiative and the pre-emptive turn NOW,
+  // not before. engineCombatAction already handles the aftermath: noteCombat's
+  // `wasCombat && !has` branch builds the victory report if the opener clears
+  // the room, the ordinary S.dead branch renders the death card if the opener
+  // kills the player, and hapticForEvents/logLine/paint/renderEncounter run
+  // exactly as for any other combat action.
+  window.mzFight = () => engineCombatAction("fight");
   window.mzFlee = () => engineCombatAction("flee");
   window.mzParley = () => engineCombatAction("parley");
   window.mzSing = () => engineCombatAction("sing");
@@ -6670,10 +6648,9 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzMakeCamp = () => {
     const { state, events, html } = dispatchWithToasts({ type: "camp" });
     window.__mzState.set(state);
-    // DR17 item 4: a wandering-monster ambush during camp is a fresh combat
-    // START (camp only runs outside combat), so gate it behind the same Fight!
-    // roster as any other combat start. Presentation-only flag; parity untouched.
-    if (state.combat) state.combat.awaitingFight = true;
+    // Phase 31 (CMB-01): a wandering-monster ambush during camp arrives from
+    // the engine already `combat.pending` — no presentation flag needed here;
+    // renderEncounter's own combat.pending gate shows the roster + Fight!.
     // Phase 25.1 (DFB-01): camp results are toast-only too — the SAME
     // CARD_EVENTS gate as engineMove, so rested/wentHungry/afflictionCured/
     // armorPatched/potionDuplicated/wanderingMonster arrive as narrative

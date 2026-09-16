@@ -217,10 +217,13 @@ test("DFB-01: the html-to-beats fallback in engineMove AND mzMakeCamp is gated o
   );
 });
 
-test("DFB-01: the preDeath and ambush branches survive byte-identical", () => {
+test("DFB-01 preDeath survives; the ambush gate collapsed in Phase 31", () => {
   const preDeathHits = CODE.match(/preDeath: true/g) || [];
   assert.equal(preDeathHits.length, 1, "preDeath: true must appear exactly once");
-  assert.match(CODE, /state\.beats\.awaitingFight = true;/);
+  // Phase 31 (CMB-01): a pre-emptive kill now happens inside the `fight`
+  // dispatch (after Fight! was pressed), so the old AMBUSH pre-death
+  // awaitingFight bridging is gone — assert its zero-occurrence absence.
+  assert.doesNotMatch(CODE, /awaitingFight/);
 });
 
 test("DFB-02: mzToast reads the lifetime through window.__mzToastLifetime, measures visible before appending, and dismisses on tap with a cleared timer", () => {
