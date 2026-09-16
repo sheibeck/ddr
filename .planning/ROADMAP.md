@@ -175,7 +175,12 @@ Plans:
   2. The survey recommends one design for this game's round narrative and input-safety needs, with tradeoffs against the alternatives stated.
   3. The recommended design is recorded as a Key Decision in PROJECT.md before Phase 32 is planned.
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+**Wave 1**
+
+- [ ] 30-01-PLAN.md — `docs/COMBAT-NARRATIVE-DESIGN.md` (documentation only): current state with live-verified toast/Oracle counts and the code-read correction (overlay already covers the D-pad; the real mis-tap mechanism is rapid re-render coordinate collision with zero arm delay), six-pattern survey with tagged shipped examples, weighted scorecard fixed before scoring (20/20/20/10/10/15/5 = 100; Round Card 4.75, Guarded Bundled Toast runner-up), recommendation with tradeoffs against every alternative, fully specified runner-up, Phase 32 build contract (per-state wireframes, 1-tap budget, `ARM_DELAY_MS`/`DISMISS_SETTLE_MS` = 250 ms `Date.now()` guards, toast-vs-round-surface routing, Oracle unchanged, Phase 28/29 fold-in, accessibility, 98-test re-pin list), Ratification section left pending for the orchestrator's user pick; `npm test` 1593/1593 + empty code-diff gate (Wave 1)
 
 ### Phase 31: Combat Start Gating & Effect Hygiene
 
