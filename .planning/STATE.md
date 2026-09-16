@@ -4,9 +4,9 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 29
 current_phase_name: End-of-Combat Loot & Bag Cap
-status: planning
+status: executing
 stopped_at: Completed 28-03-PLAN.md
-last_updated: "2026-09-16T01:58:01.726Z"
+last_updated: "2026-09-16T02:51:24.422Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 28 complete, transitioned to Phase 29
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-15 after Phase 28)
 
 Phase: 29 — End-of-Combat Loot & Bag Cap
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-15 — Phase 28 complete, transitioned to Phase 29
 
 ## Ground Truth (durable facts every session needs)
