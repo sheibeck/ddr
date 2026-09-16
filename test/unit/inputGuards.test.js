@@ -133,5 +133,23 @@ test("inputGuards.js has no import statements at all (mirrors controls.js)", () 
   assert.equal(/^import /m.test(stripped), false);
 });
 
-// ─── 6. mazeworld.html bridge pin — added by Task 2, once the import and
-// bridge lines actually exist in mazeworld.html. ────────────────────────
+// ─── 6. mazeworld.html bridge pin ────────────────────────────────────────
+
+test("mazeworld.html: imports inputGuards.js and bridges it onto window.__mzInputGuards", () => {
+  const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const HTML = RAW_HTML.replace(/\r\n/g, "\n");
+  const CODE = stripComments(HTML);
+
+  const importLine = 'import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";';
+  const bridgeLine = "window.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };";
+
+  const importMatches = CODE.split(importLine).length - 1;
+  const bridgeMatches = CODE.split(bridgeLine).length - 1;
+  assert.equal(importMatches, 1, "expected exactly one inputGuards.js import line");
+  assert.equal(bridgeMatches, 1, "expected exactly one window.__mzInputGuards bridge line");
+
+  const moduleScriptIdx = CODE.indexOf('<script type="module">');
+  const bridgeIdx = CODE.indexOf(bridgeLine);
+  assert.ok(moduleScriptIdx !== -1, "expected to find the module script tag");
+  assert.ok(bridgeIdx > moduleScriptIdx, "the bridge assignment must sit inside the module script");
+});

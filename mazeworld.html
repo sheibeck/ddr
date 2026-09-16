@@ -5681,6 +5681,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // can call them without an ES `import` (see this module's own doc comment
   // on why window.move/window.__mzState use the same bridge pattern).
   import { screenToCell, resolveTapDirection, classifyPointerGesture } from "./src/browser/controls.js";
+  // Phase 32 (CMBUI-04/05) — the pure tap-safety timing guards, bridged
+  // below for renderEncounter/window.move.
+  import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
   import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
   import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
   // 04-DR3 (the roll screen): characterSheetViewModel is the SAME pure,
@@ -5740,6 +5743,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // overrides. Read-only, no rng, no mutation — same bridge pattern as
   // __mzConditionsOf/__mzSellPrice.
   window.__mzCanCast = canCast;
+
+  // Phase 32 (CMBUI-04/05): the classic renderEncounter()/keydown/
+  // window.move guards (32-03) read the arm-delay and dismiss-settle
+  // predicates through this ONE bridge; the module never reads the clock
+  // itself, the call sites pass Date.now(). Read-only, no rng, no DOM.
+  window.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };
 
   // Phase 28 (ARMOR-02/04): bridge the PURE armor formatters so the classic
   // paint()/renderCarriedList/renderEncounter render every armor string from
