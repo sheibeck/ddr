@@ -53,7 +53,7 @@
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles
 - [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
 - [ ] Automate the Play upload (Developer API service account) — see `docs/RELEASING.md`
-- [ ] **Armor rework** — v1.3: the soak-vs-wear rule audited and decided (today a d20 ≤ AR soaks the whole blow and the full damage is charged to durability unless ≤ armor min; Cloak of Armor is never-wearing magic plate; Dwarves wear at half), the "Armor takes 39 / Wear 39 but the gear panel shows no damage" discrepancy fixed, durability carried on the item (INV-01), Cloak of Armor legible and real (INV-04), everything narrated
+- ✓ **Armor rework** — v1.3 Phase 28 (soak-vs-wear ruling audited: rulebook p.44 = prototype = engine, kept as canon and recorded as a Key Decision; the "wear N / panel shows no damage" discrepancy root-caused to the HUD armor line never showing durability and pinned by test; durability rides the bag item (`left`/`patches`) so re-equip no longer repairs; destroyed armor is gone; Cloak of Armor = never-wearing plate for any carrier, text states the rule, shown as effective armor; four armor outcomes narrated via additive `armorSoaked` flags; 1485/1485 tests, master untouched; 5 Pixel 7 checks deferred to the end-of-run UAT batch)
 - [ ] **End-of-combat loot** — v1.3: foe drops collected and presented after combat with take/leave per item, one bag-cap gate every pickup/buy/kit path routes through with feedback when full (INV-02), bigger bags as depth-appropriate treasure (INV-03); replaces the auto-reject "Not an upgrade" toast
 - [ ] **Combat narrative & input redesign** — v1.3 (research-first): survey known combat-feedback patterns, pick a design that delivers the round narrative in one place with fewer taps to move on, and guards Fight!/decision buttons against D-pad thumb-spam; then build it
 - [ ] **Combat start & usability** — v1.3: no initiative or enemy strike before Fight! (CMB-01), "not ready yet" audit with every refusal explained (CMB-02), combat potions from Gear + Shield chip + round-based effects expiring outside combat (CMB-03), G16 squares of opponents + Amulet of Stone ends combat
@@ -197,4 +197,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-15 — v1.3 Feel, Loot & Combat Flow started*
+*Last updated: 2026-09-15 — after Phase 28 (Armor Integrity & Durability)*
