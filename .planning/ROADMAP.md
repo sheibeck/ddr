@@ -147,13 +147,13 @@ Plans:
   4. A depth-appropriate bigger bag (medium/large/xlarge) can turn up as treasure and expands carry capacity when taken.
   5. Closing and resuming the app mid-loot-screen preserves the pending pile exactly; fleeing or dying instead forfeits it with a narrated line rather than losing it without explanation.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 29-01-PLAN.md — Engine gate + content + view-models: `slotItems`/`bagCap`/`canStow`/`stowItem` (the ONE bag-cap gate, potions exempt), `weaponUpgradeDelta`/`armorUpgradeDelta` extracted from takeItem, `bagUpgradeTier`/`bagItemFor`, `BAG_ORDER`/`BAG_FLOORS`/`BAG_DROP_UNDER`/`BAG_ITEMS`, store pre-pay `bagFull` gate (no gold on a refused stow), potion-preserving `clampCarry`, `lootCompare`/`bagUsage`, richer `bagFull` + `bagUpgraded` toast/Oracle entries, chargen-never-exceeds-cap test, full `npm test` gate (Wave 1)
+- [x] 29-01-PLAN.md — Engine gate + content + view-models: `slotItems`/`bagCap`/`canStow`/`stowItem` (the ONE bag-cap gate, potions exempt), `weaponUpgradeDelta`/`armorUpgradeDelta` extracted from takeItem, `bagUpgradeTier`/`bagItemFor`, `BAG_ORDER`/`BAG_FLOORS`/`BAG_DROP_UNDER`/`BAG_ITEMS`, store pre-pay `bagFull` gate (no gold on a refused stow), potion-preserving `clampCarry`, `lootCompare`/`bagUsage`, richer `bagFull` + `bagUpgraded` toast/Oracle entries, chargen-never-exceeds-cap test, full `npm test` gate (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -246,7 +246,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
 | 28. Armor Integrity & Durability | v1.3 | 3/3 | Complete    | 2026-09-15 |
-| 29. End-of-Combat Loot & Bag Cap | v1.3 | 0/? | Not started | - |
+| 29. End-of-Combat Loot & Bag Cap | v1.3 | 1/3 | In Progress|  |
 | 30. Combat Narrative & Input — Research | v1.3 | 0/? | Not started | - |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 0/? | Not started | - |
 | 32. Combat Narrative & Input UI Build | v1.3 | 0/? | Not started | - |

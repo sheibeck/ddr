@@ -5,15 +5,15 @@ milestone_name: Feel, Loot & Combat Flow
 current_phase: 29
 current_phase_name: End-of-Combat Loot & Bag Cap
 status: executing
-stopped_at: Completed 28-03-PLAN.md
-last_updated: "2026-09-16T02:51:24.422Z"
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-09-16T03:07:29.229Z"
 last_activity: 2026-09-15
-last_activity_desc: Phase 28 complete, transitioned to Phase 29
+last_activity_desc: Phase 29 execution started
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
   percent: 17
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-15 after Phase 28)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 29 — End-of-Combat Loot & Bag Cap (autonomous run; UAT deferred to end of run)
+**Current focus:** Phase 29 — End-of-Combat Loot & Bag Cap
 
 ## Current Position
 
-Phase: 29 — End-of-Combat Loot & Bag Cap
-Plan: Not started
+Phase: 29 (End-of-Combat Loot & Bag Cap) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-15 — Phase 28 complete, transitioned to Phase 29
+Last activity: 2026-09-15 — Phase 29 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T01:55:31.556Z
-Stopped at: Phase 28 complete, ready to plan Phase 29 (autonomous run in progress — device UAT for Phase 28 batched to end of run)
+Last session: 2026-09-16T03:07:29.206Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -153,6 +153,7 @@ Resume file: None
 | Phase 28 P01 | 25min | 3 tasks | 4 files |
 | Phase 28 P02 | 35min | 3 tasks | 7 files |
 | Phase 28 P03 | 30min | 3 tasks | 3 files |
+| Phase 29 P01 | 55min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -267,6 +268,8 @@ Resume file: None
 - [Phase ?]: 28-02: Cloak of Armor txt rewrite is a genuine but purely cosmetic content divergence from the frozen prototype; carved out via a new stripCloakArmorTxt comparables helper (mirrors stripNameField) rather than editing prototype-master.js.txt or any fixture
 - [Phase ?]: 28-03: store repair row relabelling stays entirely in the shell (armorDisplay(S.c).wornSub), never touching engine/economy.js's parity-compared stock sub string
 - [Phase ?]: 28-03: findSub/biSub computed as local consts (not inline ternaries) so the find-card/drop-shelf bagArmorText wiring matches the plan's literal grep acceptance criteria verbatim
+- [Phase ?]: 29-01: stowItem's potion exemption applies to the refusal check itself (not just the have count) — a potion always stows even at a gear-full bag
+- [Phase ?]: 29-01: weaponUpgradeDelta/armorUpgradeDelta return signed deltas so takeItem (<=0 rejects) and lootCompare (>0 upgrade) share one arithmetic source
 
 ### Blockers
 
