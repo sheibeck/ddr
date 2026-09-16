@@ -33,7 +33,6 @@ Every phase in this milestone touches serialized character/combat state and/or i
 - [ ] **Phase 34: Combat Screen Rebuild** - The encounter panel becomes the mock's full-screen layout (header, foes, YOUR LOT, › log, four-action bar with submenus), with the Fight! gate and the loot/flee/death endings folded into the same screen, engine untouched, validated on the Pixel 7.
 - [ ] **Phase 35: Map Screen Rebuild** - The map tab becomes the mock's column: HUD + condition chips, tap-to-step viewport (no D-pad), the bottom rail that replaces every toast and carries every decision, the major overlay for encounters (FIGHT IT OUT) / descents / death, and the MARKS / CENTRE / MAKE CAMP chips with their sheets — engine untouched, validated on the Pixel 7.
 
-
 <details>
 <summary>✅ v1.0 Delve, Die, Repeat (Phases 1–16 + 04.1/04.2) — SHIPPED 2026-09-13 (internal testing)</summary>
 
@@ -113,11 +112,26 @@ Full details: `.planning/milestones/v1.3-ROADMAP.md`. Phase artifacts: `.plannin
 **Plans**: 5 plans (sequential waves 1–5 — every wave after the first edits `mazeworld.html`, so none run in parallel)
 
 Plans:
+**Wave 1**
+
 - [ ] 34-01-PLAN.md — Pure modules: toasts.js `withIdx` + `oracleDetailText`, `fightLog.js`, `combatMenu.js`, `combatPanel.js` + unit tests (Decision 1: fold-preserving roll detail)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 34-02-PLAN.md — Routing seam → `window.__mzFightLog` (narrative + dull, uncapped), `renderFightLog` newest-first tap-to-reveal, announcer, DR18 rule scoped, noteCombat `over` tags; shell-round-card → shell-fight-log
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 34-03-PLAN.md — Combat screen bands (header / foes / YOUR LOT / log / action band), the Phase 34 CSS, `renderMajorOverlay` for `combat.pending` (Decision 2), guarded retarget (Decision 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 34-04-PLAN.md — 2×2 STRIKE / SPELLS(ABILITIES) / ITEMS / SOCIAL grid + submenus, keys, potion refusals as dull entries; old bar retired, guards re-pinned
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 34-05-PLAN.md — Endings (THEY ARE DOWN + loot rows / YOU GOT OUT / THAT IS THAT), joiner/find dark restyle, full executor gate, deferred Pixel 7 checklist (CSCR-10)
+
 **UI hint**: yes
 
 ### Phase 35: Map Screen Rebuild
@@ -135,8 +149,6 @@ Plans:
 
 **Plans**: TBD
 **UI hint**: yes
-
-
 
 <details>
 <summary>v1.0 phase details (Phases 1–16 + 04.1/04.2) — archived, see `.planning/milestones/v1.0-ROADMAP.md`</summary>
