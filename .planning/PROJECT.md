@@ -153,6 +153,12 @@
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-16)
+
+**Shipped:** v1.3 "Feel, Loot & Combat Flow" (Phases 28–33) — armor integrity, end-of-combat loot + bag cap, Fight!-gated combat with explained refusals and honest effect chips, the Afraid/Elven rules rulings, the Round Card + input guards, gear/toolbar/map polish, depth-rolled store stock. 1955 tests green; parity master untouched since v1.2. Debug build installed on the Pixel 7; the 50-check UAT batch (incl. the CMBUI-06 DR round) runs against it.
+
+**Next milestone candidates:** the v1.0 launch tail (UX-06 tutorial incl. the dropped UIF-04 toggle; Google Play production launch STR-01..04/06), the deferred tuning pass (TUNE-06/07, `storeRoll` for bots), a feel pass for the unguarded button set + haptics — plus whatever the UAT batch turns up.
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
@@ -202,4 +208,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-16 — after Phase 33 (UI Feel & Store Polish; v1.3 phases complete, device UAT batch pending)*
+*Last updated: 2026-09-16 — v1.3 shipped (Phases 28–33); device UAT batch pending*

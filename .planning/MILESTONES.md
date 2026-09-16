@@ -1,5 +1,33 @@
 # Milestones
 
+## v1.3 Feel, Loot & Combat Flow (Shipped: 2026-09-16)
+
+**Closeout type:** autonomous run, on-device UAT deferred to the end (50 Pixel 7 checks batched; CMBUI-06 DR round pending on the installed build)
+**Phases:** 6 (28 Armor · 29 Loot & bag cap · 30 Combat-narrative research · 31 Combat start gating & effect hygiene · 32 Round Card build · 33 UI feel & store) · **Plans:** 16 · **Tasks:** 44
+**Timeline:** 2026-09-15 → 2026-09-16 (2 days, 104 commits, 140 files, +21.9k lines)
+**Tests:** 1448 → 1955 green; parity master untouched since v1.2; zero fixture regenerations (three declared action-path divergences for the deliberate Afraid rules change; the new `lose-plain` scenario restores death-path coverage)
+**Requirements:** 28 complete · UIF-04 dropped (tutorial UI unwired → UX-06) · CMBUI-06 deferred to the device round
+
+**Key accomplishments:**
+
+1. **Armor that tells the truth** — durability rides the bag item (the unequip→re-equip full-repair exploit is dead), destroyed armor is gone, the four soak outcomes are distinct on screen, one `armorDisplay` formatter behind every armor string (the HUD line was the real bug), Cloak of Armor = never-wearing plate for any carrier.
+2. **End-of-combat loot as a decision** — serialized `pendingLoot` pile, one loot card with per-drop Equip/Stow/Leave + compare-to-equipped, a single `stowItem` bag-cap gate on every path (store pays only after a successful stow), bigger bags as depth-tiered treasure, honest forfeit on flight/death.
+3. **Combat starts on Fight!** — the `fight` action owns initiative/phobia/pre-emptive strike; every refusal explains itself (`docs/USABLE-FEATURES-AUDIT.md` + a 150-row doc-synced test); buff potions from Gear; Shield/Acuteness/Afraid chips with honest expiry; Amulet of Stone closes the encounter with full payout.
+4. **Rules rulings from the roll-direction audit** — phobia is now an *Afraid* penalty (need −3 on the LOW-range to-hit, half damage, 2 rounds), never a lost action; Elven `foeToHit` inversion flipped to "easier to hit"; the sheet's TO HIT reads `1–N`.
+5. **The Round Card** — surveyed six patterns, ratified one, built it: an uncapped always-visible round block below the foe roster (post-dispatch routing in `dispatchWithToasts`, refusals stay toasts, Oracle untouched), `inputGuards.js` 250 ms arm/settle `Date.now()` guards on 24 decision-button sites and `window.move`; worst-case round measured at 6 lines.
+6. **Feel & store polish** — Use/Drop gear rows with an inline two-tap confirm, Make Camp in the Marks/Centre strip (handedness removed), map recenters at every panel-close choke point + pinch release, default zoom 1.5, depth-rolled store stock behind the `storeRoll` run flag (fixtures, bots and old saves untouched).
+
+### Known Gaps (carried forward)
+
+| Req | Gap | Where it lands |
+|-----|-----|----------------|
+| CMBUI-06 | On-device DR round of the Round Card not yet run — build installed on the Pixel 7, checklist in the end-of-run UAT batch | Immediately after this closeout (UAT batch) |
+| UIF-04 | Tutorial on/off setting — nothing to toggle until the coach-mark sequencer is wired | UX-06 (v1.0 launch tail) |
+| — | 32-03 unguarded button set (store rows, drop shelf, `a-evt`, `btn-again`, spell menu) + haptics on hit/kill | future feel pass |
+| — | `storeRoll` off for tools/ bots — ledgers unchanged by the rolled store | next tuning pass |
+
+**Archived:** `milestones/v1.3-ROADMAP.md`, `milestones/v1.3-REQUIREMENTS.md`, `milestones/v1.3-MILESTONE-AUDIT.md`, `milestones/v1.3-phases/`
+
 ## v1.2 Class Pass & Mass Playtest (Shipped: 2026-09-15)
 
 **Phases completed:** 7 phases (22–27 + inserted 25.1), 31 plans, 85 tasks · 161 commits, 2026-09-14 → 2026-09-15 · tests 951 → 1448 · parity 33/33 byte-identical with declared, machine-checked divergences (chargen seeds 15/24 grimoire top-up; combat/lose seed 14 Fridgian; economy seed 3 Pickpocket markup; combat/parley seed 303 Dante → Ned) · closed on a user-recorded TUNE-07 deferral (DR round carried forward)
