@@ -591,18 +591,17 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .goods .g-c{font-variant-numeric:tabular-nums;color:var(--moss);white-space:nowrap;font-weight:600}
 .goods.sold .g-c{color:var(--ink-soft)}
 
-.exchange{
-  margin-top:12px;padding-top:11px;border-top:1px solid var(--rule);
-  animation:exflash .5s ease-out;
-}
-.exchange h4{
-  font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-soft);margin:0 0 6px;font-weight:400;
-}
-.exchange p{font-family:var(--mono);font-size:11.5px;line-height:1.5;margin:0 0 4px;color:var(--ink)}
-.exchange p:last-child{margin-bottom:0}
-@keyframes exflash{from{background:rgba(74,59,140,.14)}to{background:transparent}}
-@media (prefers-reduced-motion:reduce){.exchange{animation:none}}
+/* Phase 32 (CMBUI-02/03): ONE always-visible narrative block between the
+   foe roster and the action bar, replacing the last-exchange footnote and
+   its per-event toasts. No line cap — a long round scrolls INSIDE the
+   block so the action bar below never moves between rounds (§6.3 rule 3).
+   No entrance animation on purpose — the guards and the block never
+   depend on a transition, and reduced-motion users get the identical
+   experience (no separate @media override needed). */
+.round-card{flex:0 1 auto;min-height:0;max-height:40%;overflow-y:auto;margin:0 0 12px;padding:10px 11px;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--ditto);touch-action:manipulation}
+.round-card h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px;font-weight:400}
+.round-card p{font-family:var(--body);font-size:15px;line-height:1.45;margin:0 0 6px;color:var(--ink)}
+.round-card p:last-child{margin-bottom:0}
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
    column with both buttons clearing the 48dp touch target (UX-02). */
@@ -654,8 +653,8 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    data change. A single static gate replaces 04-DR9's 3-mode `diceMode`
    setting (removed), its on-tap reveal, and the .mw-oracle-hint: the dice
    are ALWAYS shown in the Oracle (#log's inline .roll, styled above) and
-   NEVER shown in the encounter panel #enc-body/.exchange, so the "last
-   exchange" reads as clean HIT/MISS prose while the Oracle keeps the math. */
+   NEVER shown in the encounter panel #enc-body/the Round Card, so the
+   round card reads as clean HIT/MISS prose while the Oracle keeps the math. */
 #enc-body p .roll{display:none}
 
 /* ---------- dossier ---------- */
@@ -1406,6 +1405,15 @@ html,body{height:100%}
             <div id="enc-dismiss-slot"></div>
           </div>
           <div id="enc-body"></div>
+          <!-- Phase 32 (CMBUI-02, design §6.7 / RESEARCH Pitfall 1) — the Round
+               Card's screen-reader announcer. It PERSISTS (renderEncounter only
+               ever rewrites its textContent, never rebuilds it) because a live
+               region recreated inside #enc-body's innerHTML rebuild is a new
+               node to assistive tech and is not announced reliably; the visible
+               card lives in #enc-body for layout, this node carries the
+               announcement. It sits AFTER #enc-body so browse order reads the
+               visible card first. -->
+          <div class="sr-only" id="enc-round-live" aria-live="polite" aria-atomic="true"></div>
         </section>
       </div>
     </section>
@@ -2838,6 +2846,14 @@ const CONDITION_COPY = {
   ward: { label: "Shield" },
   foeEffect: { label: "Hexed", unit: "rds" },  // Phase 19 D-21 — foe-inflicted debuff; the KIND-specific label comes from FOE_EFFECT_LABEL below, this row is the fallback label for an unmapped kind and the rounds unit the detail renders.
 };
+
+// Phase 32 (CMBUI-02) — the Round Card's header copy. `preview` heads the
+// pre-Fight! card (nothing has rolled yet); `round(n)` heads a fought round
+// where n is the round the player ACTED in (the topbar counter is already
+// on the next round by render time). Both strings are player-facing; kept
+// clear of content/safety-wordlist.js (test/unit/shell-round-card.test.js
+// scans them).
+const ROUND_CARD_COPY = { preview: "The stare-down", round: (n) => `Round ${n} · how that went` };
 
 // Phase 19, FOE-08 / D-21: a foe debuff chip names its KIND, not its key — in
 // voice, family-friendly; keys mirror content/foe-abilities.js debuff `effect`
@@ -4771,6 +4787,30 @@ function hasActiveEncounter() {
   // loot card re-appear on resume, since the pile is serialized.
   return !!(S && (S.dead || S.won || S.combat || S.store || S.pendingJoiner || S.pendingFind || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length)));
 }
+
+// Phase 32 (CMBUI-02, design §6.7 / RESEARCH Pitfall 1) — the Round Card's
+// screen-reader announcer. #enc-round-live is a PERSISTENT sr-only node (a
+// sibling of #enc-body, never rebuilt) so a live region recreated inside
+// #enc-body's innerHTML churn does not lose its "same region" identity to
+// assistive tech. Announces once per NEW card (seq change) so a Spells/
+// Items sub-menu re-render, which redraws the same card, never re-announces.
+let roundCardAnnouncedSeq = 0;
+function syncRoundCardLive(rc) {
+  const live = document.getElementById("enc-round-live");
+  if (!live) return;
+  if (!rc || !Array.isArray(rc.lines) || !rc.lines.length) {
+    if (live.textContent) live.textContent = "";
+    roundCardAnnouncedSeq = 0;
+    return;
+  }
+  if (rc.seq === roundCardAnnouncedSeq) return;
+  roundCardAnnouncedSeq = rc.seq;
+  const header = rc.pending
+    ? ROUND_CARD_COPY.preview
+    : ROUND_CARD_COPY.round(rc.round);
+  live.textContent = header + ". " + rc.lines.join(" ");
+}
+
 function vitalsStrip() {
   const c = S.c;
   // DR13: the WP/health bar is removed from the encounter panel — current HP
@@ -4868,6 +4908,7 @@ function renderEncounter() {
   // combat, store, death/win) — never a permanent fixture beneath the map.
   if (!hasActiveEncounter()) {
     if (panel) panel.hidden = true;
+    syncRoundCardLive(null);
     return;
   }
   if (panel) panel.hidden = false;
@@ -5181,14 +5222,45 @@ function renderEncounter() {
   });
   body.appendChild(list);
 
+  // Phase 32 (CMBUI-02/03, design §4/§6.1) — the Round Card: the current
+  // round's folded lines (dispatchWithToasts -> window.__mzRoundCard),
+  // rendered in the slot the last-exchange footnote used to occupy, above
+  // the Fight! gate / action bar; NO tap-to-dismiss and no dismiss gate
+  // (the next action's render replaces it; hasActiveEncounter() false
+  // clears it) — reading costs zero taps and moving on costs no extra tap
+  // (CMBUI-03); the foe roster stays first (RESEARCH Pitfall 5: the
+  // loot/joiner/find/death branches above are decision surfaces and
+  // intentionally carry no card). The pending preview thus reads: head ->
+  // roster -> card (preview header + the encounterStarted line) -> Fight!.
+  const rc = window.__mzRoundCard;
+  if (rc && Array.isArray(rc.lines) && rc.lines.length) {
+    const card = document.createElement("section");
+    card.className = "round-card";
+    card.id = "round-card";
+    card.dataset.seq = String(rc.seq);
+    card.setAttribute("aria-label", "This round");
+    const h4 = document.createElement("h4");
+    h4.textContent = rc.pending
+      ? ROUND_CARD_COPY.preview
+      : ROUND_CARD_COPY.round(rc.round);
+    card.appendChild(h4);
+    for (const line of rc.lines) {
+      const p = document.createElement("p");
+      p.textContent = line;
+      card.appendChild(p);
+    }
+    body.appendChild(card);
+  }
+  syncRoundCardLive(rc);
+
   // Phase 31 (CMB-01) — the "Fight!" gate: the ENGINE owns it now. While
   // combat.pending is true, startCombat has only rolled the foe roster —
   // nothing has rolled initiative, triggered a phobia, or struck yet. Show
-  // the FOE ROSTER (above) + a single Fight! button, and STOP here — no
-  // action bar (strike/potion/flee/spell/use), no spell menu, and no "Last
-  // exchange" block. mzFight() dispatches the `fight` action, which resolves
-  // initiative/phobia/the pre-emptive foe turn and clears `pending`; the next
-  // render reveals that outcome + the action bar.
+  // the FOE ROSTER (above) + the Round Card preview (Phase 32) + a single
+  // Fight! button, and STOP here — no action bar (strike/potion/flee/spell/
+  // use), no spell menu. mzFight() dispatches the `fight` action, which
+  // resolves initiative/phobia/the pre-emptive foe turn and clears
+  // `pending`; the next render reveals that outcome + the action bar.
   if (C.pending) {
     const g = document.createElement("div");
     g.className = "actions";
