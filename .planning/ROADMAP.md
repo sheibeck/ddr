@@ -118,7 +118,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.2 live in t
   4. Player can tell apart, on screen, the four armor outcomes: soaked-with-wear, soaked-without-wear (blow at or below armor min), magic-plate soak, and armor giving out.
   5. The soak-vs-wear keep/change decision is recorded as a Key Decision in PROJECT.md, and any rule change ships as a declared, documented parity divergence.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 **UI hint**: yes
 
 Plans:
@@ -132,7 +132,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 28-03-PLAN.md — Shell: `window.__mzArmorDisplay` bridge; `#s-arm` HUD line, kit row, gear worn row, bag rows, find card, drop shelf, store repair row wired to the formatter; shell source-assertion test; PROJECT.md Key Decision row; full `npm test` gate (Wave 3)
+- [x] 28-03-PLAN.md — Shell: `window.__mzArmorDisplay` bridge; `#s-arm` HUD line, kit row, gear worn row, bag rows, find card, drop shelf, store repair row wired to the formatter; shell source-assertion test; PROJECT.md Key Decision row; full `npm test` gate (Wave 3)
 
 ### Phase 29: End-of-Combat Loot & Bag Cap
 
@@ -232,7 +232,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
-| 28. Armor Integrity & Durability | v1.3 | 2/3 | In Progress|  |
+| 28. Armor Integrity & Durability | v1.3 | 3/3 | In Progress|  |
 | 29. End-of-Combat Loot & Bag Cap | v1.3 | 0/? | Not started | - |
 | 30. Combat Narrative & Input — Research | v1.3 | 0/? | Not started | - |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 0/? | Not started | - |

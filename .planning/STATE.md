@@ -4,17 +4,17 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 28
 current_phase_name: Armor Integrity & Durability
-status: executing
-stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-09-16T01:42:42.208Z"
+status: verifying
+stopped_at: Completed 28-03-PLAN.md
+last_updated: "2026-09-16T01:55:31.579Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 28 execution started
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 17
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-15 for v1.3)
 
 Phase: 28 (Armor Integrity & Durability) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-15 — Phase 28 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T01:42:42.184Z
-Stopped at: Completed 28-02-PLAN.md
+Last session: 2026-09-16T01:55:31.556Z
+Stopped at: Completed 28-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -152,6 +152,7 @@ Resume file: None
 | Phase 27 P03 | 72min | 3 tasks | 9 files |
 | Phase 28 P01 | 25min | 3 tasks | 4 files |
 | Phase 28 P02 | 35min | 3 tasks | 7 files |
+| Phase 28 P03 | 30min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -264,6 +265,8 @@ Resume file: None
 - [Phase ?]: rollMailPiece's txt unit token changed from 'wp' to 'hp' for consistency (parity-safe via comparables.js's existing normalizeHpUnit)
 - [Phase ?]: 28-02: armorDisplay's current/max always reflect the WORN piece's own pool, never the cloak's — the cloak's magic plate has no separate durability pool to show
 - [Phase ?]: 28-02: Cloak of Armor txt rewrite is a genuine but purely cosmetic content divergence from the frozen prototype; carved out via a new stripCloakArmorTxt comparables helper (mirrors stripNameField) rather than editing prototype-master.js.txt or any fixture
+- [Phase ?]: 28-03: store repair row relabelling stays entirely in the shell (armorDisplay(S.c).wornSub), never touching engine/economy.js's parity-compared stock sub string
+- [Phase ?]: 28-03: findSub/biSub computed as local consts (not inline ternaries) so the find-card/drop-shelf bagArmorText wiring matches the plan's literal grep acceptance criteria verbatim
 
 ### Blockers
 
