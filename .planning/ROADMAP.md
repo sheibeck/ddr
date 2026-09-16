@@ -75,7 +75,7 @@ Full details: `.planning/milestones/v1.2-ROADMAP.md`. Phase artifacts: `.plannin
 
 **Milestone Goal:** Make gear and combat legible and honest — armor behaves the way the screen says it does, kill drops become a real end-of-combat loot decision, and the combat narrative is delivered through a researched, less tap-heavy, tap-safe UI — while landing the parked Feel & Polish backlog (inventory integrity, UI feel, combat start, store stock). Tuning is explicitly NOT this milestone.
 
-- [ ] **Phase 28: Armor Integrity & Durability** - Armor behaves exactly as the screen says: the soak-vs-wear rule is audited and decided, durability lives on the item, and every armor outcome is legible
+- [x] **Phase 28: Armor Integrity & Durability** - Armor behaves exactly as the screen says: the soak-vs-wear rule is audited and decided, durability lives on the item, and every armor outcome is legible (completed 2026-09-15)
 - [ ] **Phase 29: End-of-Combat Loot & Bag Cap** - Foe drops become a real, presented decision after combat, gated by one consistent bag-cap system, with bigger bags as a treasure path
 - [ ] **Phase 30: Combat Narrative & Input — Research** - A written, decision-ready survey of combat-feedback UI patterns exists, with a recommended design for this game's combat flow agreed before any implementation begins
 - [ ] **Phase 31: Combat Start Gating & Effect Hygiene** - Combat only truly starts on Fight!, every refusal explains itself, and every consumable/condition behaves and expires honestly — landed as engine groundwork ahead of the combat narrative rebuild
@@ -232,7 +232,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
-| 28. Armor Integrity & Durability | v1.3 | 3/3 | In Progress|  |
+| 28. Armor Integrity & Durability | v1.3 | 3/3 | Complete    | 2026-09-15 |
 | 29. End-of-Combat Loot & Bag Cap | v1.3 | 0/? | Not started | - |
 | 30. Combat Narrative & Input — Research | v1.3 | 0/? | Not started | - |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 0/? | Not started | - |
