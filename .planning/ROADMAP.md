@@ -122,8 +122,16 @@ Full phase-by-phase goals, requirements, and success criteria for v1.2 live in t
 **UI hint**: yes
 
 Plans:
+**Wave 1**
+
 - [ ] 28-01-PLAN.md — Engine: durability rides the bag item (`left`/`patches`), destroyed armor is gone (wornArmorItem guard + unequipSlot branch, A1 accepted), `armorSoaked` `underMin`/`magic` flags, `stripBagArmorFields` parity carve-out, engine pin tests (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 28-02-PLAN.md — Presentation model: ARMOR-02 reproduction test first, shared `armorDisplay`/`bagArmorText` formatter over `armorSoak(c)`, sheet ARMOR tile, four-outcome toast + Oracle copy, destroyed-unequip narration, Cloak of Armor item text (Wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 28-03-PLAN.md — Shell: `window.__mzArmorDisplay` bridge; `#s-arm` HUD line, kit row, gear worn row, bag rows, find card, drop shelf, store repair row wired to the formatter; shell source-assertion test; PROJECT.md Key Decision row; full `npm test` gate (Wave 3)
 
 ### Phase 29: End-of-Combat Loot & Bag Cap
