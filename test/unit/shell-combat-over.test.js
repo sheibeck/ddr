@@ -1,0 +1,362 @@
+// test/unit/shell-combat-over.test.js
+//
+// Phase 34 (CSCR-07/08/09), Plan 05 — mazeworld.html has no module surface a
+// test could import directly (it is not an ESM module the test runner can
+// load), so — mirroring shell-combat-screen.test.js/shell-combat-actions.
+// test.js's own source-assertion pattern — this file reads the real shipped
+// source with fs.readFileSync and asserts against it directly: the fight-
+// ending over-panel (win/soothed/flee/death), the loot/joiner/find dark
+// restyle, the dismissal-transition clears, the keydown over-panel path, and
+// a voice scan of every new literal string this whole phase introduced
+// (COMBAT_COPY + COMBAT_MENU_COPY + COMBAT_PANEL_COPY).
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
+import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { COMBAT_PANEL_COPY } from "../../src/browser/combatPanel.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+const HTML = RAW_HTML.replace(/\r\n/g, "\n");
+
+// ─── comment stripping (line comments first, THEN block comments — a
+// literal `/*`-looking substring inside a `//` comment must not be misread
+// as an unterminated block-comment opener; see 31-01-SUMMARY.md / 34-RESEARCH
+// Pitfall 4) ───────────────────────────────────────────────────────────────
+function stripComments(source) {
+  const noLineComments = source
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("//");
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join("\n");
+  return noLineComments.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+}
+
+const CODE = stripComments(HTML);
+
+function sliceBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start === -1 ? 0 : start);
+  assert.ok(start !== -1, `start marker not found: ${startMarker}`);
+  assert.ok(end !== -1 && end > start, `end marker not found after start: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+// A per-function slice from an exact signature to the NEXT "\nfunction "
+// after it — stays valid when a later plan adds more render helpers between
+// this function and its neighbour.
+function fnRegion(sig) {
+  const start = CODE.indexOf(sig);
+  assert.ok(start !== -1, `signature not found: ${sig}`);
+  const end = CODE.indexOf("\nfunction ", start + sig.length);
+  assert.ok(end !== -1 && end > start, `no following function boundary after: ${sig}`);
+  return CODE.slice(start, end);
+}
+
+function overRegion() {
+  return fnRegion("function renderCombatOver(host, kind, opts = {})");
+}
+function deathBranch() {
+  return sliceBetween(CODE, "if (S.dead && !preDeathBeat) {", "if (S.won) {");
+}
+function wireDeathConfirmRegion() {
+  return sliceBetween(CODE, "function wireDeathConfirm", "function foeStatusBadges(");
+}
+function beatsBranch() {
+  return sliceBetween(
+    CODE,
+    "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {",
+    "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
+  );
+}
+function lootBranch() {
+  return sliceBetween(
+    CODE,
+    "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
+    "if (S.pendingJoiner && !S.combat && !S.store) {",
+  );
+}
+function joinerBranch() {
+  return sliceBetween(CODE, "if (S.pendingJoiner && !S.combat && !S.store) {", "if (S.pendingFind && !S.combat && !S.store) {");
+}
+function findBranch() {
+  return sliceBetween(CODE, "if (S.pendingFind && !S.combat && !S.store) {", "if (S.store) {");
+}
+function noteCombatRegion() {
+  return sliceBetween(CODE, "function noteCombat(", "function hapticForEvents");
+}
+function copyLiteral() {
+  const start = CODE.indexOf("const COMBAT_COPY = {");
+  assert.ok(start !== -1, "const COMBAT_COPY = { not found");
+  const end = CODE.indexOf("\n};", start);
+  assert.ok(end !== -1 && end > start, "no closing \\n}; found after COMBAT_COPY");
+  return CODE.slice(start, end + "\n};".length);
+}
+function dismissalBlock() {
+  const start = CODE.indexOf("if (encWasActive && !active) {");
+  assert.ok(start !== -1, "if (encWasActive && !active) { not found");
+  const end = CODE.indexOf("}", start);
+  assert.ok(end !== -1 && end > start);
+  return CODE.slice(start, end + 1);
+}
+function engineMoveRegion() {
+  return sliceBetween(CODE, "window.move = function engineMove", "window.newGame = ");
+}
+function keydownRegion() {
+  return sliceBetween(CODE, 'addEventListener("keydown"', 'addEventListener("resize"');
+}
+function helpersAndRenderEncounterRegion() {
+  return sliceBetween(CODE, "function renderFightLog(host)", "function noteCombat(");
+}
+
+// ─── a. Three variants exist in copy ──────────────────────────────────────
+
+test("CSCR-07: COMBAT_COPY.over carries the four ending variants (won/soothed/fled/dead)", () => {
+  const region = copyLiteral();
+  assert.match(region, /title: "THEY ARE DOWN"/);
+  assert.match(region, /title: "YOU GOT OUT"/);
+  assert.match(region, /title: "THAT IS THAT"/);
+  assert.match(region, /title: "THEY STAND DOWN"/);
+  assert.match(region, /bury: "BURY THEM"/);
+  assert.match(region, /oracle: "REVIEW THE ORACLE"/);
+  const btnHits = region.match(/btn: "BACK TO THE MAZE"/g) || [];
+  assert.ok(btnHits.length >= 3, `expected btn: "BACK TO THE MAZE" at least 3 times, found ${btnHits.length}`);
+});
+
+// ─── b. renderCombatOver ───────────────────────────────────────────────────
+
+test("CSCR-07: renderCombatOver builds header/lines/title/line/actions via textContent, no innerHTML", () => {
+  const region = overRegion();
+  assert.match(region, /cb-over-title/);
+  assert.match(region, /cb-over-line/);
+  assert.match(region, /cb-over-lines/);
+  assert.match(region, /cb-over-actions/);
+  assert.match(region, /cb-over-btn/);
+  assert.match(region, /htmlToPlain\(/);
+  assert.match(region, /window\.__mzFightEnd/);
+  assert.match(region, /guardTap\(document\.getElementById\(b\.id\), b\.onTap\)/);
+  assert.match(region, /renderCombatHeader\(host/);
+  assert.match(region, /COMBAT_COPY\.headerOver\[kind\]/);
+  assert.doesNotMatch(region, /innerHTML/);
+});
+
+// ─── c. Death (CSCR-07) ─────────────────────────────────────────────────────
+
+test('CSCR-07: the death branch renders THAT IS THAT through renderCombatOver(body, "dead", ...), no legacy death card', () => {
+  const region = deathBranch();
+  assert.match(region, /renderCombatOver\(body, "dead"/);
+  assert.match(region, /"btn-death-oracle"/);
+  assert.match(region, /"btn-death-confirm"/);
+  assert.match(region, /cls: "dead"/);
+  assert.match(region, /wireDeathConfirm\(\);/);
+  assert.match(region, /panel\.dataset\.mode = "dark"/);
+  assert.doesNotMatch(region, /deathcard/);
+});
+
+test("CSCR-07: wireDeathConfirm stays armed — guardTap only, no read-first lock anywhere in the file", () => {
+  const region = wireDeathConfirmRegion();
+  assert.match(region, /guardTap\(btn,/);
+  assert.doesNotMatch(region, /btn\.onclick =/);
+  assert.doesNotMatch(CODE, /AGAIN_LOCK/);
+});
+
+// ─── d. Win/loot (CSCR-07) ──────────────────────────────────────────────────
+
+test("CSCR-07: the loot branch renders won/soothed through renderCombatOver with every Phase 29 literal intact", () => {
+  const region = lootBranch();
+  assert.match(region, /renderCombatOver\(body, kind/);
+  assert.match(region, /rep\.over === "soothed"/);
+  assert.match(region, /fillMid/);
+  const literals = [
+    "window.__mzBagUsage(c)",
+    "window.__mzLootReport",
+    'id="loot-list"',
+    "renderCarriedList(",
+    'actions: ["lootEquip", "lootTake", "lootLeave"]',
+    "guard: true",
+    "subFor",
+    "window.__mzLootCompare(c, it)",
+    'id="loot-drop-shelf"',
+    "renderDropShelf(",
+    '"a-loot-take-all"',
+    '"a-loot-leave-all"',
+    "window.mzTakeAllLoot",
+    "window.mzLeaveAllLoot",
+    "Bag full (",
+  ];
+  for (const lit of literals) {
+    assert.ok(region.includes(lit), `expected loot branch to contain literal: ${lit}`);
+  }
+  assert.match(region, /COMBAT_COPY\.takeAll/);
+  assert.match(region, /COMBAT_COPY\.leaveAll/);
+  assert.match(region, /COMBAT_COPY\.lootHead/);
+  const guardTrueHits = region.match(/guard: true/g) || [];
+  assert.equal(guardTrueHits.length, 1, "guard: true must appear exactly once inside the loot branch");
+  assert.match(region, /panel\.dataset\.mode = "dark"/);
+});
+
+// ─── e. Flee / won-without-drops ────────────────────────────────────────────
+
+test("CSCR-07: the beats branch's FIRST statement after `const b = S.beats;` folds an over ending through renderCombatOver", () => {
+  const region = beatsBranch();
+  const bIdx = region.indexOf("const b = S.beats;");
+  assert.ok(bIdx !== -1, "const b = S.beats; not found");
+  const afterB = region.slice(bIdx + "const b = S.beats;".length);
+  const firstStatement = afterB
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => l.length > 0);
+  assert.equal(firstStatement, "if (b.over) {");
+  assert.match(region, /renderCombatOver\(body, b\.over/);
+  assert.match(region, /"cb-over-btn"/);
+  assert.match(region, /S\.beats = null; renderEncounter\(\);/);
+  // the legacy a-next dismiss/advance control still exists for every OTHER
+  // beat (floor, level-up, feature narration) below the new early return.
+  assert.match(region, /"a-next"/);
+});
+
+test('CSCR-07: noteCombat tags rep.over (won|soothed) and the flee beat carries over:"fled"', () => {
+  const region = noteCombatRegion();
+  assert.match(region, /over: "fled"/);
+  assert.match(region, /rep\.over =/);
+  assert.match(region, /over: rep\.over/);
+});
+
+// ─── f. Joiner/find restyle ─────────────────────────────────────────────────
+
+test("CSCR-07: joiner and find branches are dark-styled once, wiring/ids/textContent unchanged", () => {
+  const jRegion = joinerBranch();
+  const fRegion = findBranch();
+  for (const [name, region] of [
+    ["joiner", jRegion],
+    ["find", fRegion],
+  ]) {
+    const hits = region.match(/panel\.dataset\.mode = "dark";/g) || [];
+    assert.equal(hits.length, 1, `${name} branch must set panel.dataset.mode = "dark"; exactly once`);
+  }
+  assert.match(jRegion, /"a-join-yes"/);
+  assert.match(jRegion, /"a-join-no"/);
+  assert.match(jRegion, /guardTap\(document\.getElementById\("a-join-yes"\)/);
+  assert.match(jRegion, /guardTap\(document\.getElementById\("a-join-no"\)/);
+  assert.match(jRegion, /head\.textContent =/);
+  assert.match(fRegion, /"a-find-take"/);
+  assert.match(fRegion, /"a-find-leave"/);
+  assert.match(fRegion, /guardTap\(document\.getElementById\("a-find-take"\)/);
+  assert.match(fRegion, /guardTap\(document\.getElementById\("a-find-leave"\)/);
+});
+
+// ─── g. Guards (CSCR-08) ─────────────────────────────────────────────────────
+
+test("CSCR-08: the dismissal transition clears window.__mzFightEnd/__mzCombatMenu before its first close brace", () => {
+  const block = dismissalBlock();
+  assert.match(block, /lastDismissAt = Date\.now\(\);/);
+  assert.match(block, /window\.mzCenterMap\?\.\(\);/);
+  assert.match(block, /window\.__mzFightEnd = null;/);
+  assert.match(block, /window\.__mzCombatMenu = null;/);
+});
+
+test("CSCR-08: engineMove still gates on hasActiveEncounter() then the settle clause immediately after", () => {
+  const region = engineMoveRegion();
+  const gateIdx = region.indexOf("if (hasActiveEncounter()) return;");
+  const settleIdx = region.indexOf("if (!encounterSettled()) return;");
+  assert.ok(gateIdx !== -1, "hasActiveEncounter() gate not found");
+  assert.ok(settleIdx !== -1 && settleIdx > gateIdx, "settle clause not found after the gate");
+});
+
+test("CSCR-08: the keydown beats branch Enter/Space clicks a-next, falling back to cb-over-btn", () => {
+  const region = keydownRegion();
+  assert.match(region, /document\.getElementById\("a-next"\) \|\| document\.getElementById\("cb-over-btn"\)/);
+});
+
+test("CSCR-08: no card/body/panel tap-anywhere-to-dismiss listener, and zero transitionend/animationend anywhere", () => {
+  const region = helpersAndRenderEncounterRegion();
+  for (const bad of [/card\.onclick/, /body\.onclick/, /panel\.onclick/, /body\.addEventListener/, /panel\.addEventListener/, /card\.addEventListener/]) {
+    assert.doesNotMatch(region, bad);
+  }
+  assert.doesNotMatch(CODE, /transitionend/i);
+  assert.doesNotMatch(CODE, /animationend/i);
+});
+
+// ─── h. No toasts on endings ────────────────────────────────────────────────
+
+test("CSCR-04/07: zero window.mzToast?.( call anywhere in the helpers+renderEncounter region", () => {
+  const region = helpersAndRenderEncounterRegion();
+  assert.doesNotMatch(region, /window\.mzToast\?\.\(/);
+});
+
+// ─── i. Header endings copy ─────────────────────────────────────────────────
+
+test("CSCR-07: headerOver carries won/soothed/fled/dead keys", () => {
+  const region = copyLiteral();
+  assert.match(region, /headerOver: \{/);
+  assert.match(region, /won: "NONE STANDING"/);
+  assert.match(region, /soothed: "NONE STANDING"/);
+  assert.match(region, /fled: "YOU LEFT"/);
+  assert.match(region, /dead: "YOU FELL"/);
+});
+
+// ─── j. Voice scan of every new string this phase introduced ───────────────
+
+const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + escapeRegExp(term) + "\\b", "i") }));
+function findBannedTerms(text) {
+  const hits = [];
+  for (const { term, re } of MATCHERS) {
+    const m = text.match(re);
+    if (m && !ALLOW.has(m[0].toLowerCase())) hits.push({ term, match: m[0] });
+  }
+  return hits;
+}
+
+test("Phase 34 (whole-phase voice scan): every COMBAT_COPY string leaf is non-empty and clear of BANNED", () => {
+  const region = copyLiteral();
+  const leaves = [...region.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)].map((m) => m[1]);
+  assert.ok(leaves.length > 0, "expected at least one string leaf inside COMBAT_COPY");
+  for (const leaf of leaves) {
+    assert.ok(leaf.length > 0, "every COMBAT_COPY string leaf must be non-empty");
+    const offenders = findBannedTerms(leaf);
+    assert.deepStrictEqual(offenders, [], `Banned copy in COMBAT_COPY: ${JSON.stringify(offenders)} (text: "${leaf}")`);
+  }
+});
+
+test("Phase 34 (whole-phase voice scan): every COMBAT_MENU_COPY value is non-empty and clear of BANNED", () => {
+  for (const [key, val] of Object.entries(COMBAT_MENU_COPY)) {
+    assert.ok(typeof val === "string" && val.length > 0, `COMBAT_MENU_COPY.${key} must be a non-empty string`);
+    const offenders = findBannedTerms(val);
+    assert.deepStrictEqual(offenders, [], `Banned copy in COMBAT_MENU_COPY.${key}: ${JSON.stringify(offenders)} (text: "${val}")`);
+  }
+});
+
+test("Phase 34 (whole-phase voice scan): every COMBAT_PANEL_COPY value is non-empty and clear of BANNED", () => {
+  for (const [key, val] of Object.entries(COMBAT_PANEL_COPY)) {
+    assert.ok(typeof val === "string" && val.length > 0, `COMBAT_PANEL_COPY.${key} must be a non-empty string`);
+    const offenders = findBannedTerms(val);
+    assert.deepStrictEqual(offenders, [], `Banned copy in COMBAT_PANEL_COPY.${key}: ${JSON.stringify(offenders)} (text: "${val}")`);
+  }
+});
+
+test('Phase 34 (whole-phase voice scan): the flee beat title "You got out" is clear of BANNED', () => {
+  const title = "You got out";
+  assert.deepStrictEqual(findBannedTerms(title), []);
+  assert.match(noteCombatRegion(), /"You got out"/);
+});
+
+// ─── k. Legacy untouched ─────────────────────────────────────────────────────
+
+test("Phase 34: the S.won card and the store region are untouched by this plan", () => {
+  const wonBranch = sliceBetween(CODE, "if (S.won) {", "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
+  assert.match(wonBranch, /class="deathcard"/);
+  assert.match(wonBranch, /id="btn-again"/);
+  const storeRegion = sliceBetween(CODE, "if (S.store) {", "const C = S.combat;");
+  assert.doesNotMatch(storeRegion, /guardTap\(/);
+  assert.doesNotMatch(storeRegion, /dataset\.mode/);
+});

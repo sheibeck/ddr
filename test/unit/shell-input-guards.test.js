@@ -148,18 +148,27 @@ const GUARDED_IDS = [
   // Phase 34 (CSCR-05), Plan 04: the old 7-button bar (a-strike/a-potion/
   // a-flee/a-spell/a-talk/a-sing/a-scroll) is retired — replaced by the
   // grid (cb-strike/cb-spells/cb-items/cb-social) and the submenu's BACK
-  // chip (cb-back); Plan 05 appends cb-over-btn.
+  // chip (cb-back). Plan 05 appends cb-over-btn — the over-panel's own
+  // ending button (won-without-drops/soothed/fled), wired generically
+  // through renderCombatOver's buttons array.
   "mw-major-primary", "cb-strike", "cb-spells", "cb-items", "cb-social", "cb-back",
   "a-join-yes", "a-join-no", "a-loot-take-all", "a-loot-leave-all",
-  "a-find-take", "a-find-leave", "btn-death-oracle", "a-next",
+  "a-find-take", "a-find-leave", "btn-death-oracle", "a-next", "cb-over-btn",
 ];
 
-// A guarded id is wired one of two ways in renderEncounter: directly
-// (`guardTap(document.getElementById("id"), fn)`) or via a local variable
-// captured first (`const sb = document.getElementById("id"); if (sb)
-// guardTap(sb, fn);` — the optional action-bar buttons a-spell/a-talk/
-// a-sing/a-scroll, which may not exist and keep their `if (x) …`
-// null-guard). Both count as "wired through guardTap".
+// A guarded id is wired one of three ways in renderEncounter:
+//   1. directly (`guardTap(document.getElementById("id"), fn)`);
+//   2. via a local variable captured first (`const sb =
+//      document.getElementById("id"); if (sb) guardTap(sb, fn);` — the
+//      optional action-bar buttons a-spell/a-talk/a-sing/a-scroll, which
+//      may not exist and keep their `if (x) …` null-guard);
+//   3. Phase 34 (CSCR-07), Plan 05: generically, through renderCombatOver's
+//      buttons array — the region carries `id: "<id>"` inside a
+//      `buttons: [` array AND the one generic
+//      `guardTap(document.getElementById(b.id), b.onTap)` call exists
+//      somewhere in the region (a-loot-take-all/a-loot-leave-all,
+//      btn-death-oracle and cb-over-btn are all wired this way now).
+// All three count as "wired through guardTap".
 function countGuardedWiring(region, id) {
   const direct = region.match(new RegExp(`guardTap\\([^,]*getElementById\\("${id}"\\)`, "g")) || [];
   let indirect = 0;
@@ -170,7 +179,11 @@ function countGuardedWiring(region, id) {
     const guardRe = new RegExp(`guardTap\\(${varName},`);
     if (guardRe.test(region)) indirect++;
   }
-  return direct.length + indirect;
+  let generic = 0;
+  const hasGenericIdEntry = region.includes(`id: "${id}"`);
+  const hasGenericGuardTap = /guardTap\(document\.getElementById\(b\.id\), b\.onTap\)/.test(region);
+  if (hasGenericIdEntry && hasGenericGuardTap) generic = 1;
+  return direct.length + indirect + generic;
 }
 
 test("renderEncounter region: every §6.3 decision button id is wired through guardTap", () => {

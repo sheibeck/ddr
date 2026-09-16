@@ -178,11 +178,18 @@ test("Phase 29 (LOOT-02/03/04/06): the loot screen card renders the folded repor
   assert.match(region, /window\.__mzLootCompare\(c, it\)/);
   assert.match(region, /id="loot-drop-shelf"/);
   assert.match(region, /renderDropShelf\(/);
-  assert.match(region, /id="a-loot-take-all"/);
-  assert.match(region, /id="a-loot-leave-all"/);
+  // Phase 34 (CSCR-07), Plan 05: the take-all/leave-all buttons are now
+  // built through renderCombatOver's generic buttons array (`id:
+  // "a-loot-take-all"`, a JS object property) rather than an HTML
+  // `id="a-loot-take-all"` attribute string — the id itself is unchanged,
+  // just how it reaches the DOM.
+  assert.match(region, /"a-loot-take-all"/);
+  assert.match(region, /"a-loot-leave-all"/);
   assert.match(region, /window\.mzTakeAllLoot/);
   assert.match(region, /window\.mzLeaveAllLoot/);
   assert.match(region, /Bag full \(/);
+  assert.match(region, /renderCombatOver\(body, kind/);
+  assert.match(region, /panel\.dataset\.mode = "dark"/);
 });
 
 test("Phase 29 (LOOT-02): the loot branch sits after won/beats and before the joiner branch", () => {
