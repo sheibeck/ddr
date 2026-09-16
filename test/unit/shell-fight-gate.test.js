@@ -110,15 +110,12 @@ test("CMB-02: renderCarriedList's use branch no longer gates the Use button on i
   assert.match(CODE, /it\.kind === "potion" \|\| it\.use\) li\.appendChild\(mkBtn\("Use"/);
 });
 
-test("CMB-02: the combat use-list filter has no readiness term", () => {
-  assert.doesNotMatch(CODE, /\(it\.kind === "potion" \|\| it\.use\) && itemReady\(it\)/);
-});
-
-test("CMB-02: 6 · Sing renders for every Bard (not gated on songReady), and the scroll button no longer includes canRead()", () => {
-  assert.match(CODE, /S\.c\.sub === "Bard" \? `<button id="a-sing">6 · Sing/);
-  assert.doesNotMatch(CODE, /songReady\(\) \? `<button id="a-sing"/);
-  assert.match(CODE, /S\.c\.scrolls \? `<button id="a-scroll">7 · Scroll/);
-  assert.doesNotMatch(CODE, /S\.c\.scrolls && canRead\(\) \? `<button id="a-scroll"/);
+test("Phase 34: the ITEMS/ABILITIES rows never hide on readiness — combatMenu.js lists the Sing row and carried usables with enabled flags, never filters them", () => {
+  const combatMenuSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "combatMenu.js"), "utf8");
+  assert.match(combatMenuSrc, /enabled: singReady/);
+  assert.match(combatMenuSrc, /enabled: cd === 0/);
+  assert.doesNotMatch(combatMenuSrc, /\.filter\(\(it\) => .*itemReady/);
+  assert.doesNotMatch(combatMenuSrc, /songReady\(\) \?/);
 });
 
 test("CMB-02: the spell gate bridge — window.__mzCanCast = canCast, and the classic canCast(sp) delegates to it", () => {

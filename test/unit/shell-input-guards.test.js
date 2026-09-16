@@ -145,8 +145,12 @@ test("mazeworld.html: the window.__mzInputGuards bridge is intact", () => {
 const GUARDED_IDS = [
   // Phase 34 (CSCR-06): the Fight! gate is now the major overlay's primary
   // button (mw-major-primary) — the old #a-fight id is fully retired.
-  "mw-major-primary", "a-strike", "a-potion", "a-flee", "a-spell", "a-talk", "a-sing",
-  "a-scroll", "a-join-yes", "a-join-no", "a-loot-take-all", "a-loot-leave-all",
+  // Phase 34 (CSCR-05), Plan 04: the old 7-button bar (a-strike/a-potion/
+  // a-flee/a-spell/a-talk/a-sing/a-scroll) is retired — replaced by the
+  // grid (cb-strike/cb-spells/cb-items/cb-social) and the submenu's BACK
+  // chip (cb-back); Plan 05 appends cb-over-btn.
+  "mw-major-primary", "cb-strike", "cb-spells", "cb-items", "cb-social", "cb-back",
+  "a-join-yes", "a-join-no", "a-loot-take-all", "a-loot-leave-all",
   "a-find-take", "a-find-leave", "btn-death-oracle", "a-next",
 ];
 
@@ -203,16 +207,22 @@ test("renderCarriedList region: mkBtn routes through guardTap when opts.guard is
   assert.match(region, /opts\.guard \? guardTap\(bt, onClick\)/);
 });
 
-test("guard: true appears exactly twice — the loot card and the combat use-list", () => {
+test("guard: true appears exactly once — the loot card (Phase 34 folded the combat use-list into the ITEMS submenu)", () => {
   const hits = CODE.match(/guard: true/g) || [];
-  assert.equal(hits.length, 2);
+  assert.equal(hits.length, 1);
   const lootIdx = CODE.indexOf("if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
   const joinerIdx = CODE.indexOf("if (S.pendingJoiner && !S.combat && !S.store) {");
   const lootGuardIdx = CODE.indexOf("guard: true", lootIdx);
   assert.ok(lootIdx !== -1 && joinerIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < joinerIdx, "loot card's guard:true must sit inside the loot branch");
-  const useListIdx = CODE.indexOf('id="combat-use-list"');
-  const useGuardIdx = CODE.indexOf("guard: true", useListIdx);
-  assert.ok(useListIdx !== -1 && useGuardIdx > useListIdx, "combat use-list's guard:true must sit after the combat-use-list id");
+});
+
+test("Phase 34: submenu rows are wired through guardTap inside cbRow", () => {
+  const start = CODE.indexOf("function cbRow(row, n)");
+  assert.ok(start !== -1, "function cbRow(row, n) not found");
+  const end = CODE.indexOf("\nfunction ", start + "function cbRow(row, n)".length);
+  const region = CODE.slice(start, end);
+  const hits = region.match(/guardTap\(el, \(\) => pickCombatRow\(row\)\)/g) || [];
+  assert.equal(hits.length, 1, "guardTap(el, () => pickCombatRow(row)) must appear exactly once inside cbRow");
 });
 
 test("store region: no guardTap wiring — the store stays outside the ratified §6.3 list", () => {

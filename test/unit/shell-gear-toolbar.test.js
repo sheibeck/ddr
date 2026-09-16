@@ -120,8 +120,8 @@ test("UIF-01: gearRow:true is passed at exactly the GEAR call site", () => {
   assert.doesNotMatch(store, /gearRow/);
 });
 
-test("UIF-01: guard:true still occurs exactly twice (Phase 32's ratified list unchanged)", () => {
-  assert.equal((CODE.match(/guard: true/g) || []).length, 2);
+test("Phase 34: guard:true occurs exactly once (Phase 34 folded the combat use-list into the ITEMS submenu)", () => {
+  assert.equal((CODE.match(/guard: true/g) || []).length, 1);
 });
 
 test("UIF-01: the Use-button pin (potion/use-kind items) is untouched", () => {

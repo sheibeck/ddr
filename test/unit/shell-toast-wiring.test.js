@@ -186,11 +186,11 @@ test("the DR18 hand-written equip-rejection toast is deleted", () => {
   assert.match(CODE, /window\.mzEquipItem = \(i\) => inventoryAction\(\{ type: "equipItem", i \}\);/);
 });
 
-test("the two pre-dispatch full-health guards use the block tone, not miss", () => {
+test("Phase 34: no shell-side in-combat toast survives — the full-health and no-potion refusals are dull fight-log entries", () => {
   const blockGuards = HTML.match(/Already at full health\.", "block"\)/g) || [];
-  const missGuards = HTML.match(/Already at full health\.", "miss"\)/g) || [];
-  assert.equal(blockGuards.length, 2, "both full-health guards must use tone block");
-  assert.equal(missGuards.length, 0, "no full-health guard may keep tone miss");
+  assert.equal(blockGuards.length, 0, "the old block-toast literal must be fully gone");
+  assert.equal((CODE.match(/fightLogRefuse\(COMBAT_COPY\.fullHealth\)/g) || []).length, 1);
+  assert.equal((CODE.match(/fightLogRefuse\(COMBAT_COPY\.noPotions\)/g) || []).length, 1);
 });
 
 // ─── behavioural: the deleted hand-written toast is replaced, not lost ──
@@ -307,11 +307,6 @@ test("Phase 32: toasts.js carries the limit option once, and the old literal MAX
   const limitHits = toastsSrc.match(/deduped\.slice\(0, limit\)/g) || [];
   assert.equal(limitHits.length, 1, "the pipeline tail must slice by the new limit exactly once");
   assert.doesNotMatch(toastsSrc, /slice\(0, MAX_TOASTS\)/, "the literal MAX_TOASTS slice must be gone from toasts.js");
-});
-
-test("Phase 32: the two full-health block toasts are still exactly 2 after the routing rewrite", () => {
-  const blockGuards = HTML.match(/Already at full health\.", "block"\)/g) || [];
-  assert.equal(blockGuards.length, 2, "both pre-dispatch full-health guards must survive the routing rewrite untouched");
 });
 
 test("Phase 32: window.mzToast is defined exactly once and never reassigned — routing lives in the pipeline, not a wrapper", () => {
