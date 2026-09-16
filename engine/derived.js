@@ -38,6 +38,19 @@ export function eff(c, key) {
 }
 
 /**
+ * slotItems(c) — LOOT-04 user rule (2026-09-15): only gear and treasure
+ * consume bag slots. Healing potions (`c.potions`) and scrolls (`c.scrolls`)
+ * are already scalars; SPECIAL potions (`kind:"potion"`, e.g. Acuteness) live
+ * in `c.items` but are exempt from the slot count. This is THE capacity count
+ * every engine and shell site must read instead of a raw `c.items.length`.
+ * Defensive against null/undefined entries and a missing/non-array `c.items`
+ * (returns `[]`); never mutates.
+ */
+export function slotItems(c) {
+  return (c && Array.isArray(c.items) ? c.items : []).filter((it) => it && it.kind !== "potion");
+}
+
+/**
  * clampCarry(c) — ECON-01 (Phase 12, Economy A): enforce the carry caps of the
  * character's bag tier (content/bags.js BAGS[c.bag]) by clamping, in place:
  *   - `c.items.length` down to `slots` (dropping the OVERFLOW off the end),
@@ -59,12 +72,29 @@ export function eff(c, key) {
  * behavior); Phase 13's new gated find/keep/drop action handlers call it.
  *
  * Pure w.r.t. rng (no draw); mutates and returns the passed `c`.
+ *
+ * Phase 29 (LOOT-04, Pitfall 2): the slot trim is keyed on `slotItems(c)`
+ * (gear/treasure only) against the cap, not the raw item-list length — a
+ * naive length truncation would drop a trailing special potion instead of
+ * trailing gear. Overflow slot-consuming entries are dropped off the end,
+ * in original relative order; every `kind:"potion"` entry is exempt and
+ * always survives regardless of position.
  */
 export function clampCarry(c) {
   if (!c || !c.bag) return c; // GATED no-op — no bag, nothing to clamp
   const cap = BAGS[c.bag];
   if (!cap) return c; // unknown bag key — leave untouched rather than crash
-  if (Array.isArray(c.items) && c.items.length > cap.slots) c.items.length = cap.slots;
+  if (Array.isArray(c.items) && slotItems(c).length > cap.slots) {
+    let kept = 0;
+    c.items = c.items.filter((it) => {
+      if (it && it.kind === "potion") return true; // exempt — never trimmed
+      if (kept < cap.slots) {
+        kept++;
+        return true;
+      }
+      return false; // overflow gear/treasure — dropped off the end
+    });
+  }
   if (typeof c.gold === "number" && c.gold > cap.wilmst) c.gold = cap.wilmst;
   if (typeof c.rations === "number" && c.rations > cap.rations) c.rations = cap.rations;
   return c;
