@@ -44,11 +44,11 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 ### Combat start & usability (CMB)
 
 - [x] **CMB-01**: No initiative roll or enemy strike happens before Fight! is pressed; the encounter screen is a preview / decision point only
-- [ ] **CMB-02**: "Not ready yet" audit — every usable spell, item, and gear piece is provably usable in its proper circumstances (cooldown / readiness, class gates, combat-vs-explore gates), and each refusal says why
-- [ ] **CMB-03**: Combat potions are drinkable from the Gear page outside combat
-- [ ] **CMB-04**: Shield shows a condition chip with remaining pool and rounds
-- [ ] **CMB-05**: Every round-based effect (Acuteness, haste, might, ward, …) expires outside combat — ticks on exploration steps or clears at `endCombat`; the audit covers all of them
-- [ ] **CMB-06**: Amulet of Stone ends combat and pays out like a kill (stoned foes count as defeated)
+- [x] **CMB-02**: "Not ready yet" audit — every usable spell, item, and gear piece is provably usable in its proper circumstances (cooldown / readiness, class gates, combat-vs-explore gates), and each refusal says why
+- [x] **CMB-03**: Combat potions are drinkable from the Gear page outside combat
+- [x] **CMB-04**: Shield shows a condition chip with remaining pool and rounds
+- [x] **CMB-05**: Every round-based effect (Acuteness, haste, might, ward, …) expires outside combat — ticks on exploration steps or clears at `endCombat`; the audit covers all of them
+- [x] **CMB-06**: Amulet of Stone ends combat and pays out like a kill (stoned foes count as defeated)
 
 ### UI feel (UIF)
 
@@ -124,11 +124,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LOOT-06 | Phase 29 | Complete |
 | CMBUI-01 | Phase 30 | Complete |
 | CMB-01 | Phase 31 | Complete |
-| CMB-02 | Phase 31 | Pending |
-| CMB-03 | Phase 31 | Pending |
-| CMB-04 | Phase 31 | Pending |
-| CMB-05 | Phase 31 | Pending |
-| CMB-06 | Phase 31 | Pending |
+| CMB-02 | Phase 31 | Complete |
+| CMB-03 | Phase 31 | Complete |
+| CMB-04 | Phase 31 | Complete |
+| CMB-05 | Phase 31 | Complete |
+| CMB-06 | Phase 31 | Complete |
 | CMBUI-02 | Phase 32 | Pending |
 | CMBUI-03 | Phase 32 | Pending |
 | CMBUI-04 | Phase 32 | Pending |

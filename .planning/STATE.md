@@ -5,15 +5,15 @@ milestone_name: Feel, Loot & Combat Flow
 current_phase: 31
 current_phase_name: Combat Start Gating & Effect Hygiene
 status: executing
-stopped_at: Completed 31-01-PLAN.md — Fight! split + Afraid penalty landed, full suite 1641/1641
-last_updated: "2026-09-16T14:46:56.079Z"
+stopped_at: Completed 31-02-PLAN.md — refusal vocabulary + Afraid spell/item side + Acuteness expiry + ward chip + Elven flip landed, full suite 1834/1834
+last_updated: "2026-09-16T15:28:35.108Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 31 execution started
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 31 (Combat Start Gating & Effect Hygiene) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 31 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T14:46:56.053Z
-Stopped at: Completed 31-01-PLAN.md — Fight! split + Afraid penalty landed, full suite 1641/1641
+Last session: 2026-09-16T15:28:35.065Z
+Stopped at: Completed 31-02-PLAN.md — refusal vocabulary + Afraid spell/item side + Acuteness expiry + ward chip + Elven flip landed, full suite 1834/1834
 Resume file: None
 
 ## Operator Next Steps
@@ -158,6 +158,7 @@ Resume file: None
 | Phase 29 P03 | 50min | 3 tasks | 3 files |
 | Phase 30 P01 | 40min | 3 tasks | 1 files |
 | Phase 31 P01 | 50min | 3 tasks | 33 files |
+| Phase 31 P02 | 55min | 3 tasks | 19 files |
 
 ## Decisions
 
@@ -283,6 +284,9 @@ Resume file: None
 - [Phase ?]: 31-01: a triggered phobia sets combat.afraid=2 (a -3 to-hit-need penalty, floor 1, half damage) instead of freezing the hero for a lost turn (user ruling 2026-09-16)
 - [Phase ?]: 31-01: the Fight! split reorders the Knight/Con Artist/Court Mage removal loop ahead of initiative (kept its existing code position) -- discovered and re-measured a 4th rng-reordering divergence (combat/parley seed 303) beyond the plan's three declared phobia records
 - [Phase ?]: 31-01: lose-plain (seed 1119) restores the byte-identical death-path parity coverage the Afraid ruling took from lose-apprentice (seed 127)
+- [Phase ?]: 31-02: Acuteness ticks both per foeTurn round AND per exploration step, clearing unconditionally at endCombat
+- [Phase ?]: 31-02: Afraid's damage halving reuses the same post-halved value for Earthquake's self-damage (deliberate reuse per plan text)
+- [Phase ?]: 31-02: Elven foeToHit flipped -1 to +1 (DELIBERATE RULES CHANGE, user decision 2026-09-16) at the data layer only; zero fixture impact
 
 ### Blockers
 
