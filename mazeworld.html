@@ -4929,6 +4929,48 @@ function renderEncounter() {
     return;
   }
 
+  // Phase 29 (LOOT-02/03/04/06): the end-of-combat loot decision (CONTEXT
+  // §Pending pile & loot screen). Replaces the encounter-cleared card —
+  // noteCombat() hands the "Move on" report over on window.__mzLootReport
+  // instead of building a beat, so this card shows the report AND the
+  // decision together (RESEARCH Pitfall 4: no dismiss-then-continue chain).
+  // Re-appears on resume because S.pendingLoot is serialized. Per-row
+  // buttons route through window.mzTakeLoot/mzLeaveLoot -> the engine; the
+  // card dismisses itself once the pile empties (hasActiveEncounter() then
+  // returns false). Tap safety mirrors the find card exactly: the overlay
+  // covers the D-pad, hasActiveEncounter() gates window.move, buttons
+  // inherit the base ≥48dp min-height and the .actions gap (Phase 32 owns
+  // the systematic guard redesign).
+  if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {
+    const c = S.c;
+    const usage = window.__mzBagUsage(c);
+    const rep = window.__mzLootReport;
+    body.innerHTML += `<p class="enc-head" style="color:var(--moss)">${rep ? rep.title : "The spoils"}</p>`;
+    if (rep && rep.lines && rep.lines.length) {
+      body.innerHTML += `<div class="evt">${rep.lines.map((l) => `<p>${l}</p>`).join("")}</div>`;
+    }
+    body.innerHTML += `<p class="enc-sub">What they left behind · bag ${usage.text || "unlimited"}</p>
+      <ul class="skills" id="loot-list"></ul>`;
+    const needsSlot = S.pendingLoot.some((it) => it.kind !== "potion" && it.kind !== "bag");
+    if (usage.full && needsSlot) {
+      body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
+        <div class="shelf" id="loot-drop-shelf"></div>`;
+    }
+    body.innerHTML += `<div class="actions"><button class="primary" id="a-loot-take-all">Take all</button><button id="a-loot-leave-all">Leave all</button></div>`;
+    renderCarriedList(document.getElementById("loot-list"), S.pendingLoot, {
+      actions: ["lootEquip", "lootTake", "lootLeave"],
+      subFor: (it) => {
+        const cmp = window.__mzLootCompare(c, it);
+        return cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line;
+      },
+    });
+    const dropShelf = document.getElementById("loot-drop-shelf");
+    if (dropShelf) renderDropShelf(dropShelf, c.items || []);
+    document.getElementById("a-loot-take-all").onclick = () => window.mzTakeAllLoot?.();
+    document.getElementById("a-loot-leave-all").onclick = () => window.mzLeaveAllLoot?.();
+    return;
+  }
+
   // Phase 10 (Party UI, PARTY-01 UI half): the ACCEPT/DECLINE recruitment
   // prompt. When a "Joiner" encounter fired joinerMet, encounters.js#meetJoiner
   // stashed the full rolled candidate on S.pendingJoiner. Its joinerMet

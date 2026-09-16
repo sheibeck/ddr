@@ -153,3 +153,55 @@ test("Phase 29 (LOOT-04): the pendingFind branch calls the shared renderDropShel
   const region = pendingFindRegion();
   assert.match(region, /renderDropShelf\(/);
 });
+
+// ─── 6. the loot screen card ──────────────────────────────────────────────
+
+const LOOT_GUARD = 'if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {';
+const JOINER_GUARD = 'if (S.pendingJoiner && !S.combat && !S.store)';
+const WON_GUARD = 'if (S.won) {';
+
+function lootRegion() {
+  const start = CODE.indexOf(LOOT_GUARD);
+  const end = CODE.indexOf(JOINER_GUARD);
+  assert.ok(start !== -1 && end !== -1 && end > start, "loot branch bounds found");
+  return CODE.slice(start, end);
+}
+
+test("Phase 29 (LOOT-02/03/04/06): the loot screen card renders the folded report, the shared list, the shelf, and take-all/leave-all", () => {
+  const region = lootRegion();
+  assert.match(region, /window\.__mzBagUsage\(c\)/);
+  assert.match(region, /window\.__mzLootReport/);
+  assert.match(region, /id="loot-list"/);
+  assert.match(region, /renderCarriedList\(/);
+  assert.match(region, /actions: \["lootEquip", "lootTake", "lootLeave"\]/);
+  assert.match(region, /subFor/);
+  assert.match(region, /window\.__mzLootCompare\(c, it\)/);
+  assert.match(region, /id="loot-drop-shelf"/);
+  assert.match(region, /renderDropShelf\(/);
+  assert.match(region, /id="a-loot-take-all"/);
+  assert.match(region, /id="a-loot-leave-all"/);
+  assert.match(region, /window\.mzTakeAllLoot/);
+  assert.match(region, /window\.mzLeaveAllLoot/);
+  assert.match(region, /Bag full \(/);
+});
+
+test("Phase 29 (LOOT-02): the loot branch sits after won/beats and before the joiner branch", () => {
+  const lootIdx = CODE.indexOf(LOOT_GUARD);
+  const joinerIdx = CODE.indexOf(JOINER_GUARD);
+  const wonIdx = CODE.indexOf(WON_GUARD);
+  assert.ok(lootIdx !== -1 && joinerIdx !== -1 && wonIdx !== -1);
+  assert.ok(lootIdx > wonIdx, "loot branch comes after the won branch");
+  assert.ok(lootIdx < joinerIdx, "loot branch comes before the joiner branch");
+});
+
+function pendingJoinerRegion() {
+  const start = CODE.indexOf(JOINER_GUARD);
+  const end = CODE.indexOf("if (S.pendingFind && !S.combat && !S.store)");
+  assert.ok(start !== -1 && end !== -1 && end > start, "pendingJoiner branch bounds found");
+  return CODE.slice(start, end);
+}
+
+test("Phase 29 (LOOT-02): the joiner region is untouched (no pendingLoot leaked into it)", () => {
+  const region = pendingJoinerRegion();
+  assert.ok(!region.includes("pendingLoot"), "the joiner branch does not reference pendingLoot");
+});
