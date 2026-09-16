@@ -235,7 +235,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 32-02-PLAN.md — The Round Card: `dispatchWithToasts` routes in-combat `toastsForAction` output to `window.__mzRoundCard` (refusals stay toasts; cleared when the post-dispatch state has no combat), `renderEncounter` renders it between the foe roster and the Fight!/action bar (`.round-card`, max-height 40 % + inner scroll, textContent only), persistent `#enc-round-live` announcer, `S.lastExchange`/`S.exchangeN` + the "Last exchange" block/CSS deleted; `shell-toast-wiring` re-pinned for routing; new `shell-round-card` test (region, routing exclusivity, header-copy voice scan)
+- [ ] 32-02-PLAN.md — The Round Card: `dispatchWithToasts` routes in-combat `toastsForAction` output to `window.__mzRoundCard` (refusals stay toasts; cleared when the post-dispatch state has no combat), `renderEncounter` renders it between the foe roster and the Fight!/action bar (`.round-card`, UNCAPPED — `toastsForAction` gains an optional `limit` argument, groupers untouched, toast host keeps `MAX_TOASTS` — max-height 40 % + inner scroll, textContent only), persistent `#enc-round-live` announcer, `S.lastExchange`/`S.exchangeN` + the "Last exchange" block/CSS deleted; `shell-toast-wiring` re-pinned for routing; new `shell-round-card` test (region, routing exclusivity, header-copy voice scan)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
