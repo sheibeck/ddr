@@ -4,17 +4,17 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 32
 current_phase_name: Combat Narrative & Input UI Build
-status: executing
-stopped_at: Completed 32-02-PLAN.md
-last_updated: "2026-09-16T17:11:03.619Z"
+status: verifying
+stopped_at: Completed 32-03-PLAN.md
+last_updated: "2026-09-16T17:29:50.767Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 32 execution started (wave 1 of 3)
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 13
-  completed_plans: 12
-  percent: 67
+  completed_plans: 13
+  percent: 83
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 32 — Combat Narrative & Input UI Build — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-16 — Phase 32 execution started (wave 1 of 3)
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T17:11:03.584Z
-Stopped at: Completed 32-02-PLAN.md
+Last session: 2026-09-16T17:29:50.732Z
+Stopped at: Completed 32-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -162,6 +162,7 @@ Resume file: None
 | Phase 31 P03 | 45min | 3 tasks | 8 files |
 | Phase 32 P01 | 5min | 2 tasks | 3 files |
 | Phase 32 P02 | 12min | 3 tasks | 4 files |
+| Phase 32 P03 | 18min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -295,6 +296,7 @@ Resume file: None
 - [Phase ?]: inputGuards fail-open resolved by direct short-circuit on non-finite first arg (not coerce-to-0-then-subtract), matching the plan's own behavior spec
 - [Phase ?]: Round Card routing uses post-dispatch state.combat (not pre-dispatch wasCombat) so the action that ends combat still toasts its own final-round lines
 - [Phase ?]: window.__mzRoundCard is presentation-only, module-scope state (like window.__mzLootReport), never an S field, since serializeRun spreads S wholesale
+- [Phase ?]: 32-03: guardTap's internal check written as if (encArmed()) fn(); to satisfy the plan's own literal grep-count acceptance criteria without changing behavior
 
 ### Blockers
 

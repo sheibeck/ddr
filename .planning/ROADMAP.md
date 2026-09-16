@@ -226,7 +226,7 @@ Plans:
   4. Nothing important dismisses from an incidental movement tap — dismissal always requires a deliberate tap on the surface itself.
   5. An on-device DR round on the Pixel 7 confirms the rebuilt combat flow feels right before the milestone closes.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -239,7 +239,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 32-03-PLAN.md — Guards wired: `guardTap` arm window on exactly the §6.3 button list + keys, `window.move` settle clause stamped on the `hasActiveEncounter()` true→false transition; `shell-input-guards` pins; worst-case-round measurement test (both frenzy mechanics + ability kits, seed sweep); `build:www` + full suite; SUMMARY with the measured count, the Phase 33 hand-off and the CMBUI-06 DR-round checklist (deferred human verification)
+- [x] 32-03-PLAN.md — Guards wired: `guardTap` arm window on exactly the §6.3 button list + keys, `window.move` settle clause stamped on the `hasActiveEncounter()` true→false transition; `shell-input-guards` pins; worst-case-round measurement test (both frenzy mechanics + ability kits, seed sweep); `build:www` + full suite; SUMMARY with the measured count, the Phase 33 hand-off and the CMBUI-06 DR-round checklist (deferred human verification)
 
 **UI hint**: yes
 
@@ -282,7 +282,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 29. End-of-Combat Loot & Bag Cap | v1.3 | 3/3 | Complete    | 2026-09-15 |
 | 30. Combat Narrative & Input — Research | v1.3 | 1/1 | Complete    | 2026-09-16 |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 3/3 | Complete    | 2026-09-16 |
-| 32. Combat Narrative & Input UI Build | v1.3 | 2/3 | In Progress|  |
+| 32. Combat Narrative & Input UI Build | v1.3 | 3/3 | In Progress|  |
 | 33. UI Feel & Store Polish | v1.3 | 0/? | Not started | - |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.3 | - |
 | Next tuning pass (TUNE-06/07) | Post-v1.3 | 0/1 | Deferred by user (2026-09-15) | - |
