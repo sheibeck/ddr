@@ -17,7 +17,7 @@
 
 import { giveItem, takeItem, stowItem, canStow, bagCap, hasPicks, rollBlade, rollMailPiece, canEquipArmor } from "./items.js";
 import { clampCarry, slotItems } from "./derived.js";
-import { WEAPONS, ARMORS, FOODS, POTIONS, RACES } from "../content/index.js";
+import { WEAPONS, ARMORS, FOODS, POTIONS, RACES, BAG_FLOORS, STORE_POTION_POOL, STORE_WEAPON_BANDS, STORE_ARMOR_CAP, STORE_PREMIUM_BONUS } from "../content/index.js";
 
 /**
  * priceFor(base, race, sub = null) — "Costs are triple for trolls, and half
@@ -226,6 +226,62 @@ export const STORE_EFFECTS = {
   },
 };
 
+// Phase 33 (STORE-01) — depth-tier helpers for the guarded store re-roll.
+// All pure, no rng inside except where explicitly stated (storePotionPool/
+// storeWeaponPool return FRESH arrays; the caller shuffles them).
+
+// STORE_TIER_FLOORS — derived, not restated: the single source of truth for
+// the depth-tier ladder stays content/bags.js#BAG_FLOORS.
+export const STORE_TIER_FLOORS = [BAG_FLOORS.medium, BAG_FLOORS.large, BAG_FLOORS.exlarge];
+
+/** storeTier(depth) — 0 (depth 1), 1 (2-4), 2 (5-8), 3 (9+); non-finite input treated as depth 1 (tier 0). */
+export function storeTier(depth) {
+  const d = Number.isFinite(depth) ? depth : 1;
+  return STORE_TIER_FLOORS.filter((f) => d >= f).length;
+}
+
+/** storePotionPool(tier) — a FRESH array of POTIONS entries from the STORE_POTION_POOL allow-list (never raw POTIONS — the trap potion is never in the allow-list). Fresh because rng.shuffle mutates in place. */
+export function storePotionPool(tier) {
+  return STORE_POTION_POOL.filter((e) => e.from <= tier).map((e) => POTIONS.find((p) => p.n === e.n));
+}
+
+/** storeWeaponPool(letter, tier) — a FRESH array of class-legal weapon names inside the tier's cost band; falls back to every class-legal weapon at or under the band's ceiling when the strict band holds fewer than 2. */
+export function storeWeaponPool(letter, tier) {
+  const legal = Object.keys(WEAPONS).filter((w) => WEAPONS[w].cls.includes(letter));
+  const band = STORE_WEAPON_BANDS[tier];
+  let pool = legal.filter((w) => WEAPONS[w].cost >= band.lo && WEAPONS[w].cost <= band.hi);
+  if (pool.length < 2) pool = legal.filter((w) => WEAPONS[w].cost <= band.hi);
+  return pool;
+}
+
+/** storeArmorFor(mails, tier) — given openStore's already-filtered `mails` (class-legal, ar > c.ar, canEquipArmor, ascending ar order), the best entry at or under the tier's STORE_ARMOR_CAP, or null when none fits. No rng. */
+export function storeArmorFor(mails, tier) {
+  const capIdx = ARMORS.findIndex((a) => a.name === STORE_ARMOR_CAP[tier]);
+  const eligible = mails.filter((a) => ARMORS.indexOf(a) <= capIdx);
+  return eligible.length ? eligible[eligible.length - 1] : null;
+}
+
+/** enchantForTier(premium, tier) — a NEW object (never mutates its input, consumes no rng) with the enchantment bonus re-derived from STORE_PREMIUM_BONUS[tier]. */
+export function enchantForTier(premium, tier) {
+  const b = STORE_PREMIUM_BONUS[tier];
+  if (premium.kind === "weapon") {
+    return { ...premium, bonus: b, txt: `${WEAPONS[premium.base].lab} +${b}` };
+  }
+  const a = ARMORS.find((x) => x.name === premium.armor) || ARMORS[0];
+  return { ...premium, ar: a.ar + b, wp: a.wp + 10 * b, txt: `AR ${a.ar + b}, ${a.wp + 10 * b} hp` };
+}
+
+/** replaceStockLines(stock, pred, lines) — splices `lines` in at the position of the FIRST match of `pred`, removing every match; a no-op (stock unchanged) when nothing matches, so a line the flag-off store never had is never introduced. */
+export function replaceStockLines(stock, pred, lines) {
+  const at = stock.findIndex(pred);
+  if (at === -1) return stock;
+  for (let i = stock.length - 1; i >= 0; i--) {
+    if (pred(stock[i])) stock.splice(i, 1);
+  }
+  stock.splice(at, 0, ...lines);
+  return stock;
+}
+
 /**
  * openStore(state, rng, events) — builds `state.store = {stock, haggle,
  * race}` from plain-data stock entries. Ports mazeworld.html openStore()
@@ -234,6 +290,18 @@ export const STORE_EFFECTS = {
  * scroll, and the one premium enchanted item (a d2 pick between a magic
  * weapon and magic armor). Haggle (Wilmsry, -30%) is applied last, exactly
  * as the prototype does.
+ *
+ * Phase 33 (STORE-01): when `state.storeRoll === true` (a run the SHELL
+ * started — see engine/state.js#newRun / src/browser/engineAdapter.js
+ * #startNewRun), the potion/weapon/armor/premium lines are re-rolled
+ * depth-appropriately by storeTier(d) AFTER every draw below — see the
+ * guarded block near the end of this function. Every parity fixture, unit
+ * pin and old save reads storeRoll false and never enters that block, so
+ * this function's flag-off output is byte-identical to before Phase 33.
+ * Note: `rollBlade(rng, d, true)` below never actually reads its own
+ * `depth` argument (a pre-existing dead parameter, not introduced by this
+ * phase) — the Phase 33 depth scaling for the premium item lives in
+ * enchantForTier, not in rollBlade itself.
  */
 export function openStore(state, rng, events = []) {
   const stock = [];
@@ -241,12 +309,40 @@ export function openStore(state, rng, events = []) {
   const d = state.floor.depth;
   const race = c.race;
   const letter = c.cls === "Fighter" ? "F" : c.cls === "Thief" ? "T" : "M";
-  const add = (n, cost, effectId, effectParams, sub) =>
-    stock.push({ n, sub: sub ?? null, cost: Math.max(1, Math.round(cost)), effectId, effectParams: effectParams ?? null, sold: false });
+  const mk = (n, cost, effectId, effectParams, sub) => ({ n, sub: sub ?? null, cost: Math.max(1, Math.round(cost)), effectId, effectParams: effectParams ?? null, sold: false });
+  const add = (...args) => stock.push(mk(...args));
+
+  // Phase 33 (STORE-01): builders shared by both the flag-off path below and
+  // the guarded flag-on rewrite near the end of this function — same object
+  // shape, same argument expressions, so the flag-off output is unchanged.
+  const potionLine = (p) =>
+    mk(`${p.n} potion`, p.price, "givePotion", { item: { kind: "potion", n: `${p.n} potion`, txt: p.txt, eff2: p.eff, uses: 1 } }, p.txt);
+  const weaponLine = (w) =>
+    mk(
+      w,
+      priceFor(WEAPONS[w].cost, race, c.sub) * (race === "Troll" ? 2 : 1),
+      "buyWeapon",
+      { item: { kind: "weapon", n: w, base: w, bonus: 0, txt: WEAPONS[w].lab } },
+      WEAPONS[w].lab,
+    );
+  const armorLine = (a) =>
+    mk(
+      a.name,
+      priceFor(a.cost, race, c.sub),
+      "buyArmor",
+      { item: { kind: "armor", n: a.name, armor: a.name, ar: a.ar, wp: a.wp, min: a.min, cls: a.cls, txt: `AR ${a.ar}` } },
+      `AR ${a.ar}, ${a.wp} hp`,
+    );
+  const premiumLine = (p) => {
+    const pCost =
+      p.kind === "weapon"
+        ? priceFor((WEAPONS[p.base] || { cost: 500 }).cost, race, c.sub) * (2 + p.bonus)
+        : priceFor((ARMORS.find((a) => a.name === p.armor) || ARMORS[0]).cost, race, c.sub) * 2;
+    return mk(p.n, pCost, "buyPremium", { item: p }, `${p.txt} · enchanted`);
+  };
 
   for (const f of [FOODS[0], FOODS[1], FOODS[5]]) add(`${f.n} (+${f.wp} hp)`, f.cost, "eatRation", { wp: f.wp });
-  for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]])
-    add(`${p.n} potion`, p.price, "givePotion", { item: { kind: "potion", n: `${p.n} potion`, txt: p.txt, eff2: p.eff, uses: 1 } }, p.txt);
+  for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]]) stock.push(potionLine(p));
   if (!hasPicks(c))
     add("Set of lockpicks", 450, "giveLockpicks", { item: { kind: "picks", n: "Lockpicks", txt: "1–5 on d10 against any lock" } }, "opens boxes on 1–5");
 
@@ -259,14 +355,7 @@ export function openStore(state, rng, events = []) {
 
   const arms = Object.keys(WEAPONS).filter((w) => WEAPONS[w].cls.includes(letter));
   rng.shuffle(arms);
-  for (const w of arms.slice(0, 2))
-    add(
-      w,
-      priceFor(WEAPONS[w].cost, race, c.sub) * (race === "Troll" ? 2 : 1),
-      "buyWeapon",
-      { item: { kind: "weapon", n: w, base: w, bonus: 0, txt: WEAPONS[w].lab } },
-      WEAPONS[w].lab,
-    );
+  for (const w of arms.slice(0, 2)) stock.push(weaponLine(w));
 
   // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): a Woodsman's
   // "no mail, no plate" bad — the store never even OFFERS an armour line
@@ -276,24 +365,38 @@ export function openStore(state, rng, events = []) {
   const mails = ARMORS.filter((a) => a.cls.includes(letter) && a.ar > c.ar && canEquipArmor(c, a));
   if (mails.length && !RACES[race].noArmor) {
     const a = mails[0];
-    add(
-      a.name,
-      priceFor(a.cost, race, c.sub),
-      "buyArmor",
-      { item: { kind: "armor", n: a.name, armor: a.name, ar: a.ar, wp: a.wp, min: a.min, cls: a.cls, txt: `AR ${a.ar}` } },
-      `AR ${a.ar}, ${a.wp} hp`,
-    );
+    stock.push(armorLine(a));
   }
 
   if (c.cls === "Magic User") add("Sealed scroll", 900, "buyScroll", null);
 
   // one thing on the shelf you cannot simply buy
   const premium = rng.d(2) === 1 ? rollBlade(rng, d, true) : rollMailPiece(rng);
-  const pCost =
-    premium.kind === "weapon"
-      ? priceFor((WEAPONS[premium.base] || { cost: 500 }).cost, race, c.sub) * (2 + premium.bonus)
-      : priceFor((ARMORS.find((a) => a.name === premium.armor) || ARMORS[0]).cost, race, c.sub) * 2;
-  add(premium.n, pCost, "buyPremium", { item: premium }, `${premium.txt} · enchanted`);
+  stock.push(premiumLine(premium));
+
+  // Phase 33 (STORE-01, CONTEXT Area 3): depth-rolled stock, ONLY on a run
+  // whose newRun set storeRoll (engine/state.js; the shell's startNewRun) —
+  // every parity fixture, unit pin and old save reads false and never
+  // enters here. Every new rng draw sits AFTER every existing draw
+  // (rng.shuffle(arms) -> rng.d(2) -> rollBlade|rollMailPiece are untouched
+  // above), the Phase 29 bagUpgradeTier placement rule, so the flag-off
+  // cursor never shifts; the lines are rewritten IN PLACE so
+  // food/potions/picks/repair/weapons/armor/scroll/premium/Rations keep
+  // their positions. Draw count flag-on = flag-off + (pPool.length - 1) +
+  // (wPool.length - 1) (rng.shuffle is n-1 draws) — pinned by
+  // test/unit/store-roll.test.js.
+  if (state.storeRoll === true) {
+    const tier = storeTier(d);
+    const pPool = storePotionPool(tier);
+    rng.shuffle(pPool);
+    const wPool = storeWeaponPool(letter, tier);
+    rng.shuffle(wPool);
+    replaceStockLines(stock, (l) => l.effectId === "givePotion" && l.effectParams.item.eff2 !== "heal", pPool.slice(0, 3).map(potionLine));
+    replaceStockLines(stock, (l) => l.effectId === "buyWeapon", wPool.slice(0, 2).map(weaponLine));
+    const capped = storeArmorFor(mails, tier);
+    replaceStockLines(stock, (l) => l.effectId === "buyArmor", capped ? [armorLine(capped)] : []);
+    replaceStockLines(stock, (l) => l.effectId === "buyPremium", [premiumLine(enchantForTier(premium, tier))]);
+  }
 
   // RATION-01: Rations are their own store line, decoupled from HP-restoring
   // food. `add()` consumes no rng, so appending it here does not shift the
