@@ -227,6 +227,12 @@ ul.skills li.none{border-left-color:var(--rule)}
 ul.skills li b{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.03em;color:var(--ink)}
 ul.skills li i{font-family:var(--body);font-style:normal;font-size:13.5px;line-height:1.35;color:var(--ink-soft)}
 ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);padding:2px 0 2px 8px}
+/* Phase 33 (UIF-01) — the GEAR row's action row + the in-place Drop confirm;
+   min-height 48px comes from button.small; the revert is a timer, so there
+   is deliberately no transition here. */
+.mw-gear-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;margin-top:4px;touch-action:manipulation}
+.mw-drop-confirm{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft)}
+.mw-drop-confirm button.small{margin:0}
 
 /* 04-DR10: the Grimoire row layout — a spell row reuses ul.skills' left
    accent-bar treatment but lays out as a row (name+effect on the left, a
@@ -3092,9 +3098,13 @@ function paint() {
   // the combat use-list). clear:false preserves the worn weapon/armor rows
   // appended just above. Use routes through the engine bridge (window.mzUseItem)
   // like Equip/Drop already do — no more classic act(()=>useItem(i)).
+  // Phase 33 (UIF-01) — gearRow:true is passed HERE ONLY (the store sell
+  // list, the combat use-list and the loot card keep the Phase 14/29/32
+  // rendering).
   renderCarriedList(carry, items, {
     clear: false,
     actions: ["use", "equip", "drop"],
+    gearRow: true,
     // 04-UI-SPEC.md Copywriting Contract — GEAR tab's CARRIED empty state.
     emptyHtml: `<b class="mw-empty-head">NOTHING LEFT TO CARRY</b><i class="mw-empty-body">You used it all. That was the plan, technically.</i>`,
   });
@@ -3519,6 +3529,18 @@ function useItem(i) {
   if (S.combat) afterPlayerAction(); else (paint(), save());
 }
 
+// Phase 33 (UIF-01, CONTEXT Area 1) — the GEAR tab's inline two-tap Drop
+// confirm. DOM-local presentation state, never on S (serializeRun spreads
+// S). Exactly one row can be armed; the revert is a setTimeout of
+// DROP_CONFIRM_MS (never a CSS transition — reduced-motion safe, and the
+// guard rules of Phase 32 never depend on a transition either), and any
+// pointerdown outside the confirm reverts it (a document-level capture
+// listener registered only while armed). Not an encounter button: no
+// guardTap here by design (Phase 32 scope).
+const DROP_CONFIRM_MS = 3000;
+let dropConfirmRevert = null;
+function revertDropConfirm() { if (!dropConfirmRevert) return; const r = dropConfirmRevert; dropConfirmRevert = null; r(); }
+
 /* ---------------- shared carried-item list (Phase 14, ECON-06/07) ----------------
    ONE carried-item list renderer, authored once and reused by four hosts: the
    GEAR tab (paint()), the store "Your gear" SELL section, the combat-bar
@@ -3559,6 +3581,38 @@ function renderCarriedList(container, items, opts = {}) {
     if (disabled) bt.disabled = true; else opts.guard ? guardTap(bt, onClick) : (bt.onclick = onClick);
     return bt;
   };
+  // Phase 33 (UIF-01) — the GEAR host's inline two-tap Drop confirm. Tapping
+  // Drop arms the row: the button is replaced in place with "Drop it?
+  // [Yes] [No]"; Yes reverts THEN dispatches the existing dropItem bridge
+  // (no new engine action — any bag item, potions included); No, a
+  // DROP_CONFIRM_MS timeout, or a pointerdown anywhere outside the confirm
+  // reverts it. Only ever one row armed at a time (revertDropConfirm() at
+  // the top of arm() disarms any other row first).
+  const mkDropConfirm = (i) => {
+    const arm = () => {
+      revertDropConfirm();
+      const wrap = document.createElement("span");
+      wrap.className = "mw-drop-confirm";
+      const label = document.createElement("span");
+      label.textContent = "Drop it?";
+      const yes = mkBtn("Yes", () => { revertDropConfirm(); window.mzDropItem?.(i); });
+      const no = mkBtn("No", () => revertDropConfirm());
+      yes.style.marginTop = "0"; no.style.marginTop = "0";
+      wrap.appendChild(label); wrap.appendChild(yes); wrap.appendChild(no);
+      drop.replaceWith(wrap);
+      const timer = setTimeout(revertDropConfirm, DROP_CONFIRM_MS);
+      const onAnyTap = (e) => { if (!wrap.contains(e.target)) revertDropConfirm(); };
+      document.addEventListener("pointerdown", onAnyTap, true);
+      dropConfirmRevert = () => {
+        clearTimeout(timer);
+        document.removeEventListener("pointerdown", onAnyTap, true);
+        if (wrap.isConnected) wrap.replaceWith(drop);
+      };
+    };
+    const drop = mkBtn("Drop", arm);
+    drop.classList.add("mw-gear-drop");
+    return drop;
+  };
   rows.forEach(({ it, i }) => {
     const li = document.createElement("li");
     const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
@@ -3581,7 +3635,8 @@ function renderCarriedList(container, items, opts = {}) {
       } else if (a === "equip") {
         if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => window.mzEquipItem?.(i)));
       } else if (a === "drop") {
-        li.appendChild(mkBtn("Drop", () => window.mzDropItem?.(i)));
+        if (opts.gearRow) li.appendChild(mkDropConfirm(i));
+        else li.appendChild(mkBtn("Drop", () => window.mzDropItem?.(i)));
       } else if (a === "sell") {
         const price = window.__mzSellPrice ? window.__mzSellPrice(it) : null;
         li.appendChild(mkBtn(price != null ? `Sell · ${price.toLocaleString()} wm` : "Sell", () => window.mzSellItem?.(i)));
@@ -3593,6 +3648,22 @@ function renderCarriedList(container, items, opts = {}) {
         li.appendChild(mkBtn(it.kind === "weapon" || it.kind === "armor" ? "Stow" : "Take", () => window.mzTakeLoot?.(i)));
       } else if (a === "lootLeave") {
         li.appendChild(mkBtn("Leave", () => window.mzLeaveLoot?.(i)));
+      }
+    }
+    // Phase 33 (UIF-01) — the GEAR host's `[name · detail]` line stays first;
+    // its action buttons are re-parented into ONE flex row so Use/Equip sit
+    // immediately left of Drop and Drop is pinned to the row's right edge;
+    // `ul.skills li` is column-flex (CSS above), which is why appending
+    // buttons directly to the li stacks them instead of running side by side.
+    if (opts.gearRow) {
+      const btns = Array.from(li.querySelectorAll(":scope > button"));
+      if (btns.length) {
+        const row = document.createElement("div");
+        row.className = "mw-gear-actions";
+        for (const b of btns) row.appendChild(b);
+        const dropBtn = row.querySelector(".mw-gear-drop");
+        if (dropBtn) { dropBtn.style.marginLeft = "auto"; dropBtn.style.marginRight = "0"; }
+        li.appendChild(row);
       }
     }
     container.appendChild(li);
