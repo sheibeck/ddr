@@ -4,9 +4,9 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 30
 current_phase_name: Combat Narrative & Input — Research
-status: planning
+status: executing
 stopped_at: Completed 29-03-PLAN.md
-last_updated: "2026-09-16T03:53:24.316Z"
+last_updated: "2026-09-16T10:03:14.506Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 29 complete, transitioned to Phase 30
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-15 after Phase 29)
 
 Phase: 30 — Combat Narrative & Input — Research
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-15 — Phase 29 complete, transitioned to Phase 30
 
 ## Ground Truth (durable facts every session needs)
