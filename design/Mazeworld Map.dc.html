@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0a0806;display:flex;justify-content:center;align-items:flex-start;padding:28px 0 40px;font-family:'Courier Prime',ui-monospace,monospace}
+a{color:#e8c97a}a:hover{color:#f6e0a2}
+*{-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:0;height:0}
+</style></helmet>
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ dark }}" hint-size="402px,874px">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:50px;background:#14110c;overflow:hidden">
+
+<div style="position:relative;display:flex;align-items:center;gap:10px;padding:8px 14px 9px;border-bottom:3px solid #3a3226;background:#1b170f;flex:none">
+<div style="flex:1;min-width:0;overflow:hidden;display:flex;gap:8px;align-items:baseline">
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">FLOOR</span><span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:16px;margin-left:-6px;color:#e8c97a">{{ hud.floor }}</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">DAY</span><span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:16px;margin-left:-6px;color:#e6ddc6">{{ hud.day }}</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">SQUARES</span><span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:16px;margin-left:-6px;color:#e6ddc6">{{ hud.squares }}</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">RATIONS</span><span style="{{ hud.rationStyle }}">{{ hud.rations }}</span>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+<span style="{{ hud.wpStyle }}">{{ hud.wp }}</span>
+<div style="width:64px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09"><div style="{{ hud.wpBar }}"></div></div>
+</div>
+</div>
+
+<sc-if value="{{ hasConds }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;gap:5px;overflow:hidden;padding:6px 14px 7px;border-bottom:3px solid #3a3226;background:#181409">
+<sc-for list="{{ conds }}" as="c" hint-placeholder-count="2">
+<div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}<span style="{{ c.leftStyle }}">{{ c.left }}</span></div>
+</sc-for>
+</div>
+</sc-if>
+
+<div style="flex:1;position:relative;min-height:0">
+<dc-import name="Mazeworld Map Panel" cell-size="{{ cellSize }}" fog-of-war="{{ fogOfWar }}" hero-wp="{{ heroWp }}" hero-max-wp="{{ heroMaxWp }}" on-stats="{{ onStats }}" on-encounter="{{ onEncounter }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+</div>
+
+<sc-if value="{{ inFight }}" hint-placeholder-val="{{ false }}">
+<dc-import name="Mazeworld Combat Panel" foe-count="{{ foes }}" party-mode="{{ partyMode }}" dice-mode="{{ diceMode }}" hero-wp="{{ heroWp }}" hero-max-wp="{{ heroMaxWp }}" on-resolve="{{ onResolve }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+</sc-if>
+
+</div>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:900},&quot;cellSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:34,&quot;min&quot;:24,&quot;max&quot;:48,&quot;step&quot;:2,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Maze&quot;},&quot;fogOfWar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Maze&quot;},&quot;partyMode&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Combat&quot;},&quot;diceMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;on tap&quot;,&quot;always&quot;,&quot;never&quot;],&quot;default&quot;:&quot;on tap&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Combat&quot;}}">
+class Component extends DCLogic {
+  state = { floor: 1, day: 1, squares: 0, wp: 40, maxWp: 40, rations: 7, fight: null, conds: [], explain: null };
+  renderVals() {
+    const self = this, s = this.state, p = this.props;
+    const pct = Math.round((s.wp / s.maxWp) * 100);
+    return {
+      dark: true,
+      cellSize: p.cellSize || 34, fogOfWar: p.fogOfWar !== false,
+      heroWp: s.wp, heroMaxWp: s.maxWp,
+      partyMode: p.partyMode !== false, diceMode: p.diceMode || 'on tap',
+      hud: { floor: s.floor, day: s.day, squares: s.squares, wp: s.wp + '/' + s.maxWp + ' WP', rations: s.rations,
+        rationStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 16, marginLeft: -6, color: s.rations <= 2 ? '#e05a48' : '#e6ddc6' },
+        wpStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', color: pct <= 25 ? '#e05a48' : '#e6ddc6' },
+        wpBar: { width: pct + '%', height: '100%', background: pct > 50 ? '#7f9d4e' : pct > 22 ? '#e8c97a' : '#e05a48' } },
+      hasConds: s.conds.length > 0,
+      conds: s.conds.map(function (c, i) {
+        const TONE = { bad: ['#a63a2c', '#e07260'], warn: ['#6b5c3c', '#e8c97a'], odd: ['#5b4a86', '#b9a4ef'], good: ['#5e7a3c', '#a8cc72'] };
+        const t = TONE[c.tone] || TONE.warn;
+        return { key: c.id + i, label: c.label, left: c.left == null ? '' : c.left,
+          onClick: function () { if (s.explain) s.explain(c.id); },
+          style: { display: 'flex', alignItems: 'baseline', gap: 4, flex: 'none', border: '1px solid ' + t[0], background: '#1b170f',
+            padding: '3px 5px', fontFamily: "'Press Start 2P'", fontSize: 5.5, lineHeight: 1.5, color: t[1], cursor: 'pointer', whiteSpace: 'nowrap' },
+          leftStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 10, color: '#8f856f',
+            display: c.left == null ? 'none' : 'inline' } };
+      }),
+      onStats: function (st) { self.setState({ floor: st.floor, day: st.day, squares: st.squares, rations: st.rations, wp: st.wp, maxWp: st.maxWp, conds: st.conditions || [], explain: st.explain || null }); },
+      onEncounter: function (e) { self.setState({ fight: e }); },
+      inFight: !!s.fight, foes: s.fight ? s.fight.foes : 3,
+      onResolve: function (res) { self.setState({ fight: null, wp: res.outcome === 'dead' ? 0 : res.heroWp }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

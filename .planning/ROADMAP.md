@@ -6,7 +6,7 @@
 - ✅ **v1.1 Monster Balancing & Abilities** — Phases 17–21 (shipped 2026-09-14, override closeout; see `.planning/milestones/v1.1-ROADMAP.md`)
 - ✅ **v1.2 Class Pass & Mass Playtest** — Phases 22–27 (shipped 2026-09-15, override closeout; see `.planning/milestones/v1.2-ROADMAP.md`)
 - ✅ **v1.3 Feel, Loot & Combat Flow** — Phases 28–33 (shipped 2026-09-16, device UAT batch pending; see `.planning/milestones/v1.3-ROADMAP.md`)
-- 🚧 **v1.4 Combat Screen** — Phase 34 (current, started 2026-09-16; requirements: `.planning/REQUIREMENTS.md`; spec: `design/Mazeworld Combat Panel.dc.html`)
+- 🚧 **v1.4 Combat & Map Screens** — Phases 34–35 (current, started 2026-09-16; requirements: `.planning/REQUIREMENTS.md`; specs: `design/Mazeworld Combat Panel.dc.html`, `design/Mazeworld Map.dc.html` + `Mazeworld Map Panel.dc.html`)
 - 📋 **v1.0 launch tail** — first-run tutorial (04-10 / UX-06) + Google Play production launch (STR-01..04, STR-06); deliberately deferred until after v1.3 (CMBUI reshapes the UI the tutorial would teach)
 - 📋 **Next tuning pass** — TUNE-06 roster decision + TUNE-07 human DR round; explicitly deferred out of v1.3 by user decision 2026-09-15 (`docs/DIFFICULTY-RETUNE.md`)
 
@@ -26,11 +26,12 @@ Every phase in this milestone touches serialized character/combat state and/or i
 
 ## Phases
 
-### 🚧 v1.4 Combat Screen (In Progress)
+### 🚧 v1.4 Combat & Map Screens (In Progress)
 
-**Milestone Goal:** Replace the combat UX with the Claude Design "Mazeworld Combat" screen — foes, your lot, a › fight log and a four-action bar on one dark screen — keeping the engine, parity, the Fight! gate, refusals, loot, joiners and the Phase 32 input guards exactly as shipped.
+**Milestone Goal:** Replace the combat AND map UX with the Claude Design "Mazeworld Combat" and "Mazeworld Map" screens — a dark combat screen (foes, your lot, › fight log, four actions) and a map with no D-pad and no toasts (tap-to-step, a bottom rail for every event and decision, a major overlay for encounters and descents, HUD + condition chips) — keeping the engine, parity, refusals, loot, joiners and the Phase 32 input guards exactly as shipped.
 
 - [ ] **Phase 34: Combat Screen Rebuild** - The encounter panel becomes the mock's full-screen layout (header, foes, YOUR LOT, › log, four-action bar with submenus), with the Fight! gate and the loot/flee/death endings folded into the same screen, engine untouched, validated on the Pixel 7.
+- [ ] **Phase 35: Map Screen Rebuild** - The map tab becomes the mock's column: HUD + condition chips, tap-to-step viewport (no D-pad), the bottom rail that replaces every toast and carries every decision, the major overlay for encounters (FIGHT IT OUT) / descents / death, and the MARKS / CENTRE / MAKE CAMP chips with their sheets — engine untouched, validated on the Pixel 7.
 
 
 <details>
@@ -97,17 +98,33 @@ Full details: `.planning/milestones/v1.3-ROADMAP.md`. Phase artifacts: `.plannin
 
 ### Phase 34: Combat Screen Rebuild
 
-**Goal**: The combat UX is rebuilt to the imported Claude Design spec (`design/Mazeworld Combat Panel.dc.html`): one dark full-screen panel with ENCOUNTER · ROUND N · N STANDING, foe cards (glyph, name, size · INT · trait, wp/max, hp bar, TARGET/DOWN tags), a YOUR LOT strip for the hero and every joiner, a newest-first › fight log with tap-to-reveal dice, and a 2×2 STRIKE / SPELLS(ABILITIES) / ITEMS / SOCIAL action grid with the mock's submenus — the Fight! gate, loot card, flee and death endings folded into the same screen, Phase 32 guards intact, engine/parity untouched.
+**Goal**: The combat UX is rebuilt to the imported Claude Design spec (`design/Mazeworld Combat Panel.dc.html`): one dark full-screen panel with ENCOUNTER · ROUND N · N STANDING, foe cards (glyph, name, size · INT · trait, wp/max, hp bar, TARGET/DOWN tags), a YOUR LOT strip for the hero and every joiner, a newest-first › fight log with tap-to-reveal dice (refusals as dull entries), and a 2×2 STRIKE / SPELLS(ABILITIES) / ITEMS / SOCIAL action grid with the mock's submenus — the loot, flee and death endings folded into the same screen; the Fight! gate is the map's major overlay (Phase 35 spec, built here so the combat screen never renders a pending combat); Phase 32 guards intact, engine/parity untouched.
 **Depends on**: Phase 33 (v1.3) — builds on the Round Card routing, input guards, Fight! gate and loot card.
 **Requirements**: CSCR-01..10
 **Success Criteria** (what must be TRUE):
 
-  1. Walking into an encounter shows the new screen: foes, YOUR LOT, the encounter line in the › log, and one FIGHT! button; nothing resolves before the tap.
-  2. During a fight every narrative line lands in the › log (newest first, tap reveals the dice), never as a toast; refusals still toast; the Oracle still has everything.
+  1. Walking into an encounter shows the major overlay (SOMETHING IS HERE / THEY ARE ALREADY HERE, the foes named, FIGHT IT OUT); nothing resolves before the tap; the tap opens the new combat screen at round 1.
+  2. During a fight every narrative line lands in the › log (newest first, tap reveals the dice) and every refusal is a dull › entry — no toasts; the Oracle still has everything.
   3. STRIKE resolves at once; SPELLS/ABILITIES, ITEMS and SOCIAL open the submenu with the right options for the class and the fight; number keys still work.
   4. Killing the last foe shows THEY ARE DOWN with the loot rows inside; fleeing shows YOU GOT OUT; dying shows THAT IS THAT with Review the Oracle / Confirm.
   5. Every button is guarded (250 ms arm, settle on dismiss); nothing dismisses on a map tap; TalkBack announces a new log line once.
   6. `npm test` green with every shell test re-pinned; `build:www` exit 0; engine/content/parity diff empty; the Pixel 7 DR round signs it off.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 35: Map Screen Rebuild
+
+**Goal**: The map tab is rebuilt to the imported Claude Design spec (`design/Mazeworld Map.dc.html` + `Mazeworld Map Panel.dc.html`): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with a condition-chip strip beneath, a tap-to-step viewport (hold to inspect, drag to pan, pinch to zoom; the D-pad is gone), the bottom RAIL that replaces every toast and carries every decision with its dice (walking away declines; crevices/walls are climb-only and block until a success), the MAJOR OVERLAY for encounters (FIGHT IT OUT), descents (GO DOWN / NOT YET) and out-of-combat death, and the MARKS / CENTRE / MAKE CAMP chips with their bottom sheets; the canvas renderer adopts the mock's palette; Phase 32 guards intact; engine/parity untouched.
+**Depends on**: Phase 34 (the combat screen the overlay hands off to; the log-routing seam).
+**Requirements**: MAP-01..10
+**Success Criteria** (what must be TRUE):
+
+  1. No D-pad and no toast exists anywhere; a tap on the map steps one square toward it; hold inspects; drag pans; pinch zooms.
+  2. Every out-of-combat event appears in the rail with its dice and clears on its own; every decision (joiner, find, climb) is answered in the rail or declined by walking away; level-up and floor arrival need no tap.
+  3. Encounters, descents and out-of-combat death use the major overlay; FIGHT IT OUT opens the combat screen at round 1.
+  4. HUD + condition chips match the mock; MARKS / CENTRE / MAKE CAMP work from the top chips with their sheets.
+  5. Guards hold on every new button; `npm test` green with every shell test re-pinned; `build:www` exit 0; engine/content/parity diff empty; the Pixel 7 DR round signs it off.
 
 **Plans**: TBD
 **UI hint**: yes
@@ -147,6 +164,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 34. Combat Screen Rebuild | v1.4 | 0/? | Pending | — |
+| 35. Map Screen Rebuild | v1.4 | 0/? | Pending | — |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |

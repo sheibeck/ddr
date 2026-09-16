@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+@keyframes mwfade{from{opacity:0}to{opacity:1}}
+@keyframes mwrise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes mwtorch{0%,100%{opacity:.9}50%{opacity:.5}}
+@keyframes mwglow{0%,100%{box-shadow:0 0 0 3px #14110c,0 0 10px 2px rgba(232,201,122,.35)}50%{box-shadow:0 0 0 3px #14110c,0 0 16px 4px rgba(232,201,122,.65)}}
+</style></helmet>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#14110c;color:#e6ddc6;font-family:'Courier Prime',monospace;overflow:hidden">
+
+<div ref="{{ vpRef }}" style="position:relative;overflow:hidden;background:#080705;flex:1;min-height:0;touch-action:none" onPointerDown="{{ panDown }}" onPointerMove="{{ panMove }}" onPointerUp="{{ panUp }}" onPointerCancel="{{ panUp }}">
+<div style="{{ panStyle }}">
+<div ref="{{ gridRef }}" style="{{ gridStyle }}">
+<sc-for list="{{ squares }}" as="q" hint-placeholder-count="0"><div style="{{ q.style }}"></div></sc-for>
+<sc-for list="{{ deco }}" as="dd" hint-placeholder-count="0"><div style="{{ dd.style }}"></div></sc-for>
+<sc-for list="{{ marks }}" as="m" hint-placeholder-count="0"><div style="{{ m.style }}">{{ m.g }}</div></sc-for>
+<div style="{{ playerStyle }}"></div>
+</div>
+</div>
+<div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)"></div>
+<div style="position:absolute;left:10px;right:10px;top:10px;display:flex;gap:6px;align-items:flex-start">
+<div onClick="{{ toggleLegend }}" style="font-family:'Press Start 2P';font-size:7px;padding:9px 10px;background:#1b170f;border:2px solid #4a4032;color:#e8c97a;cursor:pointer;box-shadow:0 3px 0 #0d0b08">MARKS</div>
+<div onClick="{{ recenter }}" style="font-family:'Press Start 2P';font-size:7px;padding:9px 10px;background:#1b170f;border:2px solid #4a4032;color:#e8c97a;cursor:pointer;box-shadow:0 3px 0 #0d0b08">CENTRE</div>
+<div style="flex:1"></div>
+<div onClick="{{ openCamp }}" style="font-family:'Press Start 2P';font-size:7px;padding:9px 10px;background:#241d12;border:2px solid #6b5c3c;color:#e8c97a;cursor:pointer;box-shadow:0 3px 0 #0d0b08">MAKE CAMP</div>
+</div>
+</div>
+
+<div style="{{ rail.wrap }}">
+<div style="display:flex;gap:11px;align-items:flex-start">
+<span style="{{ rail.iconStyle }}">{{ rail.icon }}</span>
+<div style="flex:1;min-width:0">
+<div style="{{ rail.titleStyle }}">{{ rail.title }}</div>
+<div style="{{ rail.lineStyle }}">{{ rail.line }}</div>
+<div style="{{ rail.rollStyle }}">{{ rail.roll }}</div>
+</div>
+<span onClick="{{ rail.onPeek }}" style="{{ rail.peekStyle }}">{{ rail.peek }}</span>
+</div>
+<div style="{{ rail.actionsStyle }}">
+<sc-for list="{{ rail.actions }}" as="a" hint-placeholder-count="0">
+<div onClick="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</div>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{ legendOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ toggleLegend }}" style="position:absolute;inset:0;background:rgba(8,7,5,.8);display:flex;align-items:flex-end;animation:mwfade .16s ease">
+<div style="width:100%;background:#1b170f;border-top:3px solid #6b5c3c;padding:18px 18px 30px;animation:mwrise .2s ease">
+<div style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0;border-bottom:3px solid #3a3226;padding-bottom:10px">WHAT THE MARKS MEAN</div>
+<sc-for list="{{ legend }}" as="l" hint-placeholder-count="7">
+<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:2px solid #241f16">
+<span style="{{ l.gs }}">{{ l.g }}</span>
+<span style="font-family:'Press Start 2P';font-size:7px;width:100px;color:#e6ddc6;line-height:1.5">{{ l.n }}</span>
+<span style="flex:1;font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;color:#a89c82;line-height:1.35">{{ l.d }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ campOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(8,7,5,.8);display:flex;align-items:flex-end;animation:mwfade .16s ease">
+<div style="width:100%;background:#1b170f;border-top:3px solid #6b5c3c;padding:20px 18px 30px;animation:mwrise .2s ease">
+<div style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">MAKE CAMP</div>
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:16px;line-height:1.5;margin-top:13px;color:#c9bda0">Eight hours asleep in a corridor that has already killed better people than you. One ration. We roll to see what wanders past.</div>
+<div style="display:flex;gap:10px;margin-top:20px">
+<div onClick="{{ doCamp }}" style="flex:1;text-align:center;font-family:'Press Start 2P';font-size:8px;line-height:1.6;padding:15px 8px;background:#e8c97a;color:#14110c;cursor:pointer;box-shadow:0 4px 0 #6b5c3c">SLEEP<br>1 RATION</div>
+<div onClick="{{ closeCamp }}" style="text-align:center;font-family:'Press Start 2P';font-size:8px;line-height:1.6;padding:15px 16px;border:2px solid #4a4032;color:#c9bda0;cursor:pointer;box-shadow:0 4px 0 #0d0b08">WALK<br>ON</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasMajor }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:#0d0b08;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;animation:mwfade .22s ease">
+<div style="{{ major.iconStyle }}">{{ major.icon }}</div>
+<div style="font-family:'Press Start 2P';font-size:15px;line-height:1.6;color:#e8c97a;margin-top:22px">{{ major.title }}</div>
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:17px;line-height:1.5;color:#c9bda0;margin-top:14px">{{ major.line }}</div>
+<div style="font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;color:#e8c97a;margin-top:12px">{{ major.roll }}</div>
+<div style="display:flex;flex-direction:column;gap:9px;margin-top:26px">
+<sc-for list="{{ major.actions }}" as="a" hint-placeholder-count="2">
+<div onClick="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+// ── Behaviour + style reference (the mock's toy engine renders its own DOM grid and rolls its own dice; OUR canvas
+// ── renderer and engine are the source of truth — what the spec locks is the INTERACTION MODEL, the RAIL, the MAJOR
+// ── OVERLAY, the SHEETS, the chrome and every style value below). User rulings 2026-09-16: crevices/walls have NO
+// ── "go round" — climb only, dice shown, blocked until you succeed; refusals in combat are dull › log entries.
+//
+// INTERACTION (viewport, touch-action:none, pointer events):
+//   tap  = one square toward the tap per tap — dominant axis first, the other axis as fallback; both blocked →
+//          rail dull "NO WAY THAT DIRECTION / Rock, both ways you tried. The corridor has opinions." (hold 2400);
+//          tap on your own square → "YOU ARE HERE / For the moment, and with no particular claim to it." (2200).
+//   hold ≥ 450 ms (no travel) = inspect the square: unwalked "UNWALKED / The lantern does not reach…" (2400);
+//          rock "SOLID ROCK / A square of it, same as the corridor. No way through." (2400); a mark → its legend name +
+//          description (tone odd, 3400); walked empty "EMPTY CORRIDOR / Walked, lit, and entirely uninteresting. Enjoy it." (2400)
+//   drag (travel > 10 px) = pan; two fingers = pinch (scale clamped 0.6–2.0, transform-origin on the player);
+//   a tap is: no meaningful travel, quick, only one finger ever down. Moves reset the pan to 0,0 (player centered).
+//   No D-pad anywhere. Keyboard arrows may remain for desktop.
+// CHROME: top-left chips MARKS, CENTRE (bg #1b170f, border 2px #4a4032, gold text, Press Start 2P 7px, padding 9px 10px,
+//   shadow 0 3px 0 #0d0b08); top-right MAKE CAMP (bg #241d12, border #6b5c3c). Vignette: inset 0 0 70px 26px rgba(8,7,5,.92).
+//   Palette for the canvas: fog #0b0a08, wall #2c261c (inset 2px 2px 0 #4a3f2c / -2px -2px 0 #16120c), floor #645c48
+//   (inset 0 0 0 1px #554d3b), grid border 6px #443a26, player #f4dc94 with mwglow (gold pulse), marks 60% of cell, colored:
+//   dot ● #e05a48, tp ◆ #a78ce8, door ▲ #8ec06a, trap ✕ #e05a48, loot ▪ #d3c49f, crev ⧗ #d3c49f, down ▼ #d3c49f.
+// RAIL (the bottom card; flex:none): border-top 3px <tone.edge>; bg #1b170f when an event is showing, #161209 idle;
+//   padding 14px 16px 30px; min-height 132; mwrise .18s on a new event. Row: icon (20px, tone.ink, width 22) · title
+//   (Press Start 2P 8px, line-height 1.6, tone.ink) · line (Courier 700 14.5px, line-height 1.4, #c9bda0; idle #8f856f,
+//   margin-top 6) · roll line (Courier 700 13.5px, tone.ink, margin-top 5, only when present) · idle peek hint at the right
+//   (Press Start 2P 6px #5f5849: "TAP TO STEP" / "PINCH OUT" when zoomed). Actions row (flex, gap 8, margin-top 11):
+//   primary = bg tone.ink, text #14110c, shadow 0 4px 0 #6b5c3c; secondary = bg #241d12, text #c9bda0, border 2px #4a4032,
+//   shadow 0 4px 0 #0d0b08; both Press Start 2P 7.5px, padding 13px 8px, flex 1, centered.
+//   TONES: info edge #6b5c3c ink #e8c97a · good #5e7a3c/#a8cc72 · bad #a63a2c/#e07260 · odd #5b4a86/#b9a4ef · dull #3a3226/#a89c82.
+//   Idle: icon "·", title "FLOOR N · NOTHING IS HAPPENING", line "Tap anywhere to step one square that way. Hold a square to
+//   inspect it, drag to look around, pinch to zoom." Events without actions auto-clear after `hold` ms (default 4200;
+//   dull ones 2200–3400). An event WITH actions stays until answered. USER RULING 2026-09-16 (overrides the mock): walking away
+//   does NOT decline — tap-to-step is DISABLED while a decision or obstacle is pending; a tap re-shows the card; a wall/crevice
+//   holds the party on its square until a successful roll.
+//   Every event is also reported to the Oracle (report(line, roll)).
+// MAJOR OVERLAY (full-screen, bg #0d0b08, column centered, padding 28px 22px, mwfade .22s): icon 54px (#e05a48 for an
+//   encounter dot, else #d3c49f, text-shadow 0 0 24px rgba(0,0,0,.8)); title Press Start 2P 15px #e8c97a (margin-top 22);
+//   line Courier 700 17px #c9bda0 (margin-top 14); roll Courier 700 14px #e8c97a (margin-top 12); stacked buttons (gap 9,
+//   margin-top 26): primary bg #e8c97a text #14110c shadow 0 5px 0 #6b5c3c; secondary transparent, text #a89c82, border 2px
+//   #3a3226; Press Start 2P 9px, padding 17px 10px. Used for: the ENCOUNTER ("SOMETHING IS HERE" / "THEY ARE ALREADY HERE",
+//   line names/counts the foes, roll "encounter table d8, then d10", one button FIGHT IT OUT) and THE STAIR DOWN ("Floor N+1
+//   is colder, longer, and considerably less forgiving. Nobody has asked you to do this.", GO DOWN / NOT YET).
+// SHEETS (bottom, scrim rgba(8,7,5,.8) mwfade .16s; panel bg #1b170f, border-top 3px #6b5c3c, mwrise .2s):
+//   MARKS legend "WHAT THE MARKS MEAN" (Press Start 2P 9px #c9bda0, border-bottom 3px #3a3226), rows: glyph (22px, colored,
+//   width 26) · name (Press Start 2P 7px, width 100) · description (Courier 700 14px #a89c82); tap the scrim to close.
+//   MAKE CAMP: title, copy "Eight hours asleep in a corridor that has already killed better people than you. One ration. We roll
+//   to see what wanders past.", buttons SLEEP / 1 RATION (gold, flex 1) and WALK / ON (bordered). No food → rail bad
+//   "NOTHING TO EAT / You cannot camp on an empty pack. Walk, and be hungry walking."
+// SAMPLE RAIL EVENTS (tone · title · line · roll): bad ✕ TRAP "Patient as furniture, and it was here first." "d6 → N · −N wp";
+//   odd ◆ TELEPORTED "Wherever this is, it is not progress. Nothing was asked of you." "d20 → N squares · direction on a d4";
+//   odd ▲ ONE-WAY DOOR "It shuts behind you with the sound of a decision being made for you." "no roll · that way only";
+//   good ▪ A LOCKED BOX "Something is in it. Opening it costs a pick, on a bad roll." "lockpicks d10 · 1–5 opens · N picks left"
+//   [PICK THE LOCK / LEAVE IT] → TAKEN / THE LOCK HOLDS "And a pick snaps. Two things the maze did for free.";
+//   odd ⧗ A CREVICE "Down, or across. Neither is free." "climb d20+4 · 9 to clear" [CLIMB IT] → CLIMBED / FELL (bad, damage);
+//   dull ☾ DAY N "One ration gone. N between you and the obvious." "upkeep 1 wp/day"; bad ☾ A DAY GONE, NOTHING TO EAT;
+//   good ☾ CAMP MADE "Eight hours, one ration, and nothing found you. This time." "mend d10+4 → N · ambush d20 → N";
+//   odd ▼ FLOOR N "The air changes and the corridors get longer. That is the whole reward."
+</script>
+</body>
+</html>
