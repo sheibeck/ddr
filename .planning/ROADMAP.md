@@ -196,7 +196,12 @@ Plans:
   5. Every round-based effect (Acuteness, haste, might, ward, and the rest of the audited set) expires on leaving combat or on exploration ticks — none linger indefinitely.
   6. Using Amulet of Stone on a foe ends the encounter immediately and pays out kill rewards (experience, coin, treasure, kill count) as if it had been slain normally.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 31-01-PLAN.md — Engine Fight! split: `fight` action + `combat.pending` + `combatJoined` + the `notFought` guard; parity reconcile/chain; A3 walk; CMB-01 pins
+- [ ] 31-02-PLAN.md — Refusal vocabulary (frozen/combatOnly/cooldown/wrongClass), useItem combat gate + item-kill close + `foeStoned`, Acuteness/effect expiry, ward chip data, cast-damage divergence, `docs/USABLE-FEATURES-AUDIT.md` + table-driven test
+- [ ] 31-03-PLAN.md — Shell: Fight! → `fight`, pending gate, AMBUSH collapse, engine-bridged combat spell gate, grimoire reasons, visible Use/Sing/Scroll, Shield chip; `build:www` + full suite
 **UI hint**: yes
 
 ### Phase 32: Combat Narrative & Input UI Build
