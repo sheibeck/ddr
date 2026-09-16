@@ -314,8 +314,11 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:1px solid var(--rule);touch-action:none}
 .mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
-.mw-viewport-chips{position:absolute;top:8px;left:8px;display:flex;gap:8px;z-index:3}
+.mw-viewport-chips{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:8px;z-index:3}
 .mw-chip{min-height:48px;min-width:48px;padding:9px 14px;border:2px solid #4a4032;background:#1b170f;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;display:flex;align-items:center;justify-content:center}
+/* Phase 33 (UIF-05): MAKE CAMP is the row's far-right chip; Marks/Centre
+   stay left. */
+.mw-viewport-chips #btn-camp{margin-left:auto}
 /* Device-review round 4 ("MARKS/CENTRE active color -> mock, NOT white"):
    the generic `button:hover:not(:disabled){background:#F7F1E2}` rule below
    (a light-parchment-theme leftover) was winning on specificity over
@@ -366,32 +369,10 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 #enc-dismiss-slot{flex:0 0 auto;display:flex}
 #enc-dismiss-slot button{min-height:48px;padding:0 18px;white-space:nowrap}
 
-/* 04-DR11: grid (not flex) so the D-pad can occupy a fixed CENTER column
-   regardless of which side MAKE CAMP is assigned to — see the
-   data-handedness rules below and .mazefoot .dpad's grid-column:2. */
-/* DR13: control bar is a TIGHT flex cluster — MAKE CAMP sits snug beside the
-   D-pad, both BOTTOM-aligned (align-items:flex-end) so camp is level with the
-   ← ↓ → row, not floating far-left in a wide grid column. The whole cluster is
-   centered; handedness flips which side CAMP is on via flex-direction below. */
+/* Phase 33 (UIF-05): the control bar holds only the centered D-pad; the camp
+   button moved to the chip row (.mw-viewport-chips above); the former
+   handed-layout option is gone. */
 .mazefoot{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-top:10px}
-
-/* 04-DR11 ("D-pad ALWAYS centered; handedness moves only MAKE CAMP"):
-   supersedes 04-DR9's swap-both-sides layout. .mazefoot is now a 3-column
-   grid — [side-slot][D-pad][side-slot] — so the D-pad (grid-column:2,
-   below) is dead-center in BOTH handedness modes; only MAKE CAMP's grid
-   column/alignment moves. "left" (left-handed, the DEFAULT per user
-   device-review direction — see settings.js SETTINGS_DEFAULTS.handedness)
-   puts MAKE CAMP on the LEFT; "right" (right-handed) puts it on the
-   RIGHT. #app's data-handedness attribute is set at boot and re-applied
-   live on every Settings-sheet change (see the trailing module script's
-   applySettings()). */
-/* DR13: MAKE CAMP drops to the BOTTOM of the control row (align-self:end) so
-   it sits level with the D-pad's bottom arrow row (← ↓ →) instead of floating
-   at the bar's vertical middle. D-pad still owns the center column. */
-/* DR13: left-handed (default) = MAKE CAMP on the LEFT of the D-pad (camp is
-   first in the DOM, so plain row order); right-handed flips it to the right. */
-#app[data-handedness="left"] .mazefoot{flex-direction:row}
-#app[data-handedness="right"] .mazefoot{flex-direction:row-reverse}
 
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
    48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
@@ -480,13 +461,10 @@ button.danger:active:not(:disabled){background:var(--mw-danger-panel);color:var(
    spell-menu buttons all use this class. Bumped to a still-visually-
    "secondary" but comfortably >=48dp-tall size. */
 button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:13px 14px;min-height:48px}
-/* Device-review round 4 ("MAKE CAMP active color -> mock"): same
-   generic-hover-wins-on-specificity bug as .mw-chip above — scoped to
-   #btn-camp only (the other .small buttons — MOVE ON, Clear save, etc. —
-   are out of this round's scope) so its pressed state inverts to the mock's
-   gold treatment instead of flashing near-white. */
-#btn-camp:hover:not(:disabled){background:var(--paper);color:var(--ink)}
-#btn-camp:active:not(:disabled){background:var(--ditto);color:var(--paper);box-shadow:0 1px 0 var(--mw-btn-shadow)}
+/* Phase 33 (UIF-05): MAKE CAMP moved from button.small into the
+   .mw-viewport-chips row as a .mw-chip — the .mw-chip:hover/:active rules
+   above already style it (an #btn-camp id rule would out-specify them and
+   flash parchment on tap), so the old scoped hover/active pair is gone. */
 /* Phase 25.1 (DFB-06): short-on-food state — visibly dimmed, never disabled,
    so a tap can still surface the campFailed toast's refusal numbers. */
 #btn-camp[data-short="1"]{opacity:.55;border-style:dashed}
@@ -1087,10 +1065,10 @@ html,body{height:100%}
 /* ---------- Settings bottom sheet (04-DR9, completes UX-07) ----------
    Reuses the MARKS legend's own sheet chrome (.mw-legend-sheet/-scrim/
    -panel/-head/-close, above) — only the rows content differs. Each row is
-   a label + a row of segmented option buttons (handedness/text size/dice
-   detail) or a two-state ON/OFF segmented toggle (confirm-before-quit/
-   sound/haptics); the selected option gets `.active` (gold), applied by the
-   trailing module script's renderSettingsSheet(). */
+   a label + a row of segmented option buttons (text size/dice detail) or a
+   two-state ON/OFF segmented toggle (confirm-before-quit/sound/haptics);
+   the selected option gets `.active` (gold), applied by the trailing module
+   script's renderSettingsSheet(). */
 .mw-settings-row{padding:14px 0;border-bottom:2px solid #241f16}
 .mw-settings-row:last-child{border-bottom:0}
 .mw-settings-label{
@@ -1232,9 +1210,8 @@ html,body{height:100%}
      (read from settings.js's readSettings()) gets the `active` class — see
      the trailing module script's applySettings()/renderSettingsSheet(). A
      tap on any option writes back through settings.js's writeSetting() and
-     applies the change live (text scale/cell size, handedness layout,
-     dice-reveal gating) — never a raw window.mzStorage/localStorage call
-     from here. -->
+     applies the change live (text scale/cell size, dice-reveal gating) —
+     never a raw window.mzStorage/localStorage call from here. -->
 <div id="mw-settings-sheet" class="mw-legend-sheet" hidden>
   <div class="mw-legend-scrim" id="mw-settings-scrim"></div>
   <div class="mw-legend-panel" role="dialog" aria-label="Settings">
@@ -1243,13 +1220,9 @@ html,body{height:100%}
       <button type="button" class="mw-legend-close" id="mw-settings-close" aria-label="Close">Close</button>
     </div>
     <div class="mw-settings-rows" id="mw-settings-rows">
-      <div class="mw-settings-row">
-        <span class="mw-settings-label">Handedness</span>
-        <div class="mw-settings-options" data-setting="handedness">
-          <button type="button" class="mw-settings-opt" data-value="left">Left-handed</button>
-          <button type="button" class="mw-settings-opt" data-value="right">Right-handed</button>
-        </div>
-      </div>
+      <!-- Phase 33 (UIF-05): the former control-bar side option is gone —
+           Make Camp moved to the Marks/Centre chip row and no longer needs
+           a side setting. -->
       <div class="mw-settings-row">
         <span class="mw-settings-label">Text size</span>
         <div class="mw-settings-options" data-setting="textSize">
@@ -1291,7 +1264,7 @@ html,body{height:100%}
   </div>
 </div>
 
-<div id="app" class="mw-app" data-handedness="left">
+<div id="app" class="mw-app">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
   <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
@@ -1368,16 +1341,19 @@ html,body{height:100%}
           <div class="mw-viewport-chips">
             <button type="button" class="mw-chip" id="mw-chip-marks">Marks</button>
             <button type="button" class="mw-chip" id="mw-chip-centre">Centre</button>
+            <!-- Phase 33 (UIF-05): MAKE CAMP is now the far-right chip of
+                 this row (margin-left:auto, CSS above) — keeps its id so
+                 paint()'s short-state block and the mzMakeCamp onclick
+                 wiring below are unchanged. -->
+            <button type="button" class="mw-chip" id="btn-camp">Make camp</button>
           </div>
           <div class="mw-flash" id="mw-flash" aria-live="polite"></div>
         </div>
         <div class="mazefoot">
-          <!-- DR11 "D-pad ALWAYS centered; handedness moves only MAKE
-               CAMP": camp + dpad are the two direct .mazefoot grid
-               children — see the .mazefoot/[data-handedness] CSS above —
-               so the D-pad stays dead-center in the middle grid column
-               while MAKE CAMP floats to whichever side handedness picks. -->
-          <button class="small" id="btn-camp">Make camp</button>
+          <!-- Phase 33 (UIF-05) — the D-pad is the ONLY child of the control
+               bar and sits centered (justify-content:center); MAKE CAMP now
+               lives at the far right of the Marks/Centre chip row above the
+               map (.mw-viewport-chips). -->
           <!-- Device-review revision #2: the D-pad is now the SOLE,
                ALWAYS-VISIBLE movement control (see .dpad CSS — no more
                settings-gated display:none/grid toggle). -->
@@ -5995,11 +5971,12 @@ window.__mzClassicBoot = async function classicBoot() {
   //
   // 04-DR9: currentSettings is the ONE in-memory mirror of settings.js's
   // persisted blob for this whole module — every live-apply site below
-  // (handedness layout, --mw-text-scale/cell size, dice-mode gating,
-  // confirm-before-quit gate) reads it via applySettings()/shouldConfirmQuit,
-  // and every write goes back through settings.js's writeSetting() (see the
-  // Settings sheet's click handler further down) — never a raw
-  // window.mzStorage/localStorage call from here.
+  // (--mw-text-scale/cell size, dice-mode gating, confirm-before-quit gate)
+  // reads it via applySettings()/shouldConfirmQuit, and every write goes
+  // back through settings.js's writeSetting() (see the Settings sheet's
+  // click handler further down) — never a raw window.mzStorage/localStorage
+  // call from here. Phase 33 (UIF-05): the former control-bar side option
+  // is gone; this module no longer sets any layout-side attribute here.
   let currentSettings = null;
   function applySettings(settings) {
     currentSettings = settings;
@@ -6014,10 +5991,6 @@ window.__mzClassicBoot = async function classicBoot() {
     const appEl = document.getElementById("app");
     if (!appEl) return;
     appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
-    // 04-DR9: handedness (bottom control-bar side swap) — see the matching
-    // #app[data-handedness=...] CSS rule. (04-DR9's diceMode gating was
-    // removed in DR18/DR15-E; dice detail is now a static #log-only rule.)
-    appEl.setAttribute("data-handedness", settings.handedness);
   }
 
   // 04-DR9: highlights the currently-selected option in each Settings-sheet

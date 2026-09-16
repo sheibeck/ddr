@@ -54,21 +54,13 @@ test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad'", () => {
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
 });
 
-// 04-DR11: handedness field (default "left" = MAKE CAMP on the left, D-pad
-// ALWAYS centered regardless of this setting; only MAKE CAMP's side moves
-// live via the Settings sheet).
-test("SETTINGS_DEFAULTS: handedness defaults to 'left'", () => {
-  assert.equal(SETTINGS_DEFAULTS.handedness, "left");
-});
-
-test("writeSetting/readSettings: each of the 6 fields round-trips through window.mzStorage", async () => {
+test("writeSetting/readSettings: each of the 5 fields round-trips through window.mzStorage", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
     await writeSetting("sound", false);
     await writeSetting("haptics", false);
     await writeSetting("textSize", "L");
     await writeSetting("controlScheme", "dpad");
     await writeSetting("confirmBeforeQuit", false);
-    await writeSetting("handedness", "right");
     await flushStorage();
 
     const settings = await readSettings();
@@ -78,7 +70,6 @@ test("writeSetting/readSettings: each of the 6 fields round-trips through window
       textSize: "L",
       controlScheme: "dpad",
       confirmBeforeQuit: false,
-      handedness: "right",
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -114,10 +105,6 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
     await writeSetting("controlScheme", "keyboard"); // not in {tap,dpad}
     await flushStorage();
     assert.equal((await readSettings()).controlScheme, "dpad");
-
-    await writeSetting("handedness", "ambidextrous"); // not in {left,right}
-    await flushStorage();
-    assert.equal((await readSettings()).handedness, "left");
   });
 });
 
@@ -135,7 +122,34 @@ test("readSettings(): partial persisted blob merges over defaults", async () => 
     const settings = await readSettings();
     assert.equal(settings.textSize, "S");
     assert.equal(settings.sound, SETTINGS_DEFAULTS.sound);
-    assert.equal(settings.handedness, SETTINGS_DEFAULTS.handedness);
+    assert.equal(settings.confirmBeforeQuit, SETTINGS_DEFAULTS.confirmBeforeQuit);
+  });
+});
+
+// Phase 33 (UIF-05): a stored handed-layout key is ignored silently — no
+// migration, no error. readSettings only merges SETTINGS_DEFAULTS keys, so
+// a leftover `handedness` value in an old persisted blob never reaches the
+// returned settings object; writeSetting rejects the now-unknown key as a
+// no-op.
+test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "S", handedness: "right" }));
+    const settings = await readSettings();
+    assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
+    assert.equal("handedness" in settings, false);
+
+    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), ["sound", "haptics", "textSize", "controlScheme", "confirmBeforeQuit"]);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 5);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
+
+    // writeSetting rejects the now-unknown key as a no-op: the returned
+    // settings are unchanged and nothing is (re-)persisted for it — a fresh
+    // store (no prior blob) still has no key written after the call.
+    store.delete(SETTINGS_STORAGE_KEY);
+    const before = await readSettings();
+    const after = await writeSetting("handedness", "right");
+    assert.deepEqual(after, before);
+    assert.equal(store.has(SETTINGS_STORAGE_KEY), false);
   });
 });
 

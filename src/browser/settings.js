@@ -1,8 +1,8 @@
 // src/browser/settings.js
 //
-// The single source of truth for the six persisted UX settings (UX-07,
-// plus 04-DR9's `handedness`; DR18/DR15-E removed the `diceMode` field) plus
-// the pure text-scaling (UX-08) and
+// The single source of truth for the five persisted UX settings (UX-07;
+// DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
+// former control-bar side option) plus the pure text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -13,21 +13,24 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All six fields are persisted as ONE JSON object under a single
+// All five fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never seven separate keys racing each other.
+// per settings change, never five separate keys racing each other.
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()/getBest()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
 // all just mean readSettings() returns SETTINGS_DEFAULTS — this module never
-// throws.
+// throws. Phase 33 (UIF-05): the former handed-layout field was removed; a
+// persisted blob that still carries it is ignored on read because
+// readSettings only merges SETTINGS_DEFAULTS keys, and writeSetting rejects
+// unknown keys — no migration needed.
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all seven settings fields are persisted under. */
+/** Single versioned key all five settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
-/** The six UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
+/** The five UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
   haptics: true,
@@ -40,15 +43,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   // screen regardless of this setting.
   controlScheme: "dpad",
   confirmBeforeQuit: true,
-  // 04-DR11 ("D-pad ALWAYS centered; handedness moves only MAKE CAMP"):
-  // supersedes 04-DR9's swap-both-sides layout. The D-pad is now
-  // horizontally CENTERED in the MAP tab's bottom bar regardless of this
-  // setting — handedness controls ONLY which side MAKE CAMP floats to.
-  // "left" (left-handed, the DEFAULT per user device-review direction)
-  // puts MAKE CAMP on the LEFT; "right" (right-handed) puts it on the
-  // RIGHT. See mazeworld.html's `#app[data-handedness=...]` CSS rules for
-  // the live layout.
-  handedness: "left",
 });
 
 // Allowed value sets per field — writeSetting() validates against these
@@ -60,7 +54,6 @@ const ALLOWED_VALUES = {
   textSize: ["S", "M", "L"],
   controlScheme: ["tap", "dpad"],
   confirmBeforeQuit: [true, false],
-  handedness: ["left", "right"],
 };
 
 function isValidSettingValue(key, value) {
