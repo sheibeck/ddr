@@ -516,19 +516,10 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   100%{color:inherit;text-shadow:none}
 }
 #enc-round.mw-round-tick{animation:mwRoundTick .35s ease-out}
-.foes{display:grid;gap:8px;margin-bottom:14px}
-.foe{
-  display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;
-  background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--stamp);
-  padding:8px 11px;
-}
-.foe.dead{opacity:.42;border-left-color:var(--ink-soft)}
-.foe .fname{font-family:var(--disp);font-size:15px}
-.foe .fwp{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
-.foe .fmeta{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);grid-column:1/-1}
-.foe .fnote{grid-column:1/-1;font-family:var(--body);font-style:italic;font-size:13px;line-height:1.35;color:var(--ink-soft);margin-top:2px}
-/* Quick task: per-enemy status effects (asleep/frozen/acid/blind/…) as chips. */
-.foe .fstatus{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+/* Quick task: per-enemy status effects (asleep/frozen/acid/blind/…) as chips
+   — still used by the map rail's mw-party-status (Downed) badge; the legacy
+   .foes/.foe* combat-card rules these chips once sat inside were retired in
+   Phase 34 (CSCR-01/02) — replaced by .cb-foe*. */
 .fchip{
   font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   padding:2px 7px;border-radius:3px;line-height:1.5;
@@ -537,8 +528,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .fchip-good{color:var(--moss);border-color:var(--moss)}
 .fchip-acid{color:var(--ditto);border-color:var(--ditto)}
 .fchip-bad{color:var(--stamp);border-color:var(--stamp)}
-.foe.target{outline:2px solid var(--ditto);outline-offset:1px}
-.foe.ally{border-left-color:var(--moss);margin-bottom:8px}
 .evt{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
 .evt p{font-family:var(--body);font-size:15px;line-height:1.45;margin:0;color:var(--ink)}
 .evt p .roll{font-family:var(--mono);font-size:13px}
@@ -701,9 +690,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .again{margin-top:4px;display:flex;flex-direction:column;gap:8px}
 .again button{width:100%;min-height:48px}
 .again button:disabled{opacity:.45}
-
-.spellmenu{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dotted var(--rule)}
-.spellmenu[hidden]{display:none}
 
 /* ---------- log ---------- */
 .log{
@@ -2952,6 +2938,18 @@ const CONDITION_COPY = {
   foeEffect: { label: "Hexed", unit: "rds" },  // Phase 19 D-21 — foe-inflicted debuff; the KIND-specific label comes from FOE_EFFECT_LABEL below, this row is the fallback label for an unmapped kind and the rounds unit the detail renders.
 };
 
+// Phase 34 (CSCR-04/05) — every player-facing literal the shell itself adds
+// for the new combat screen (the two shell-side potion refusals the engine
+// never narrates — engine/magic.js#drinkPotion is silent at 0 potions and at
+// full health). Kept as ONE object literal, like CONDITION_COPY above, so a
+// voice-scan test can regex-extract every string leaf in a single pass.
+// Plan 05 extends this same const with the over-panel's own copy keys.
+const COMBAT_COPY = {
+  back: "BACK",
+  fullHealth: "Already at full health. The potion stays corked.",
+  noPotions: "No potions left. The bag is honest about that.",
+};
+
 // Phase 32 (CMBUI-02) archival note: the Round Card's header copy lived
 // here. Phase 34 (CSCR-04) retires the Round Card entirely — the fight log
 // has no per-round header, just newest-first entries — so this constant is
@@ -4099,7 +4097,12 @@ function startCombat(wandering, forced) {
     });
   }
   S.beats = null; CAPTURE = null;
-  S.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };
+  // Phase 34 (CSCR-05): this classic startCombat() is dead code (see
+  // castSpell()'s own doc comment below) — the real fight-start literal is
+  // engine/combat.js's startCombat(), which owns spellOpen. Dropped the
+  // duplicate field here so the retired submenu-open flag's name has zero
+  // non-comment occurrences left in this file.
+  S.combat = { foes, type, round: 1, target: 0, tracked };
   const first = rollInitiative();
   const samurai = S.c.sub === "Samurai", slow = R_().slow;
   say(`<span class="banner">${wandering ? "Wandering monsters" : "Encounter"}: ${type}.</span>`);
@@ -4327,7 +4330,9 @@ function castSpell(idx) {
     return;
   }
   S.c.spellsUsed++;
-  S.combat && (S.combat.spellOpen = false);
+  // Phase 34 (CSCR-05): dead code (see this function's own doc comment
+  // above) — the presentation-only submenu-open flag it used to reset is
+  // window.__mzCombatMenu now, reset by dispatchWithToasts, not read here.
 
   // an Apprentice's spells go wrong one time in eight
   if (S.c.sub === "Apprentice" && D(8) === 1) {
@@ -5363,6 +5368,158 @@ function renderYourLot(host, vm) {
   host.appendChild(section);
 }
 
+// Phase 34 (CSCR-05) — the ONE map from a submenu row's dispatch payload
+// (combatMenu.js's `row.dispatch`) to the existing engine bridges. No new
+// engine action, no new bridge — every entry here already exists above
+// (window.mzAttack/mzCastSpell/mzSing/mzDrinkPotion/mzReadScroll/mzUseItem/
+// mzFlee/mzParley), this object just routes to the right one by `type`.
+const COMBAT_DISPATCH = {
+  attack: () => window.mzAttack?.(),
+  castSpell: (d) => window.mzCastSpell?.(d.idx),
+  sing: () => window.mzSing?.(),
+  drinkPotion: () => window.mzDrinkPotion?.(),
+  readScroll: () => window.mzReadScroll?.(),
+  useItem: (d) => window.mzUseItem?.(d.i),
+  flee: () => window.mzFlee?.(),
+  parley: () => window.mzParley?.(),
+};
+
+// Phase 34 (CSCR-04/05) — a shell-owned refusal the engine cannot narrate
+// (drinkPotion is silent at 0 potions and at full health) lands in the ›
+// fight log as a dull entry, exactly like an engine-refused dispatch would —
+// never a toast. Also closes the submenu (a refusal is a terminal outcome
+// for this tap) and re-renders.
+function fightLogRefuse(text) {
+  window.__mzFightLog = window.__mzFightLogVM.append(window.__mzFightLog, [window.__mzFightLogVM.dull(text)], S.combat ? S.combat.round : null);
+  window.__mzCombatMenu = null;
+  renderEncounter();
+}
+
+// Phase 34 (CSCR-05) — a submenu row tap. The two potion refusals the engine
+// itself never narrates are caught here, shell-side, before dispatch; every
+// other row (including every OTHER disabled/unavailable row) dispatches
+// through the real bridge and lets the engine's own refusal explain via the
+// fight log (Plan 02's dispatchWithToasts routing). `row.dispatch === null`
+// (the id:"none" placeholder rows) never reaches this function — cbRow()
+// disables those rows instead of wiring a tap handler.
+function pickCombatRow(row) {
+  if (!row || !row.dispatch) return;
+  if (row.id === "potion") {
+    if ((S.c.potions || 0) <= 0) { fightLogRefuse(COMBAT_COPY.noPotions); return; }
+    if (S.c.wp >= S.c.maxWP) { fightLogRefuse(COMBAT_COPY.fullHealth); return; }
+  }
+  const fn = COMBAT_DISPATCH[row.dispatch.type];
+  if (fn) fn(row.dispatch);
+}
+
+// Phase 34 (CSCR-05) — one submenu row (SPELLS/ABILITIES/ITEMS/SOCIAL).
+// Every field via createElement/textContent, no innerHTML. A row with no
+// dispatch (the id:"none" placeholder) is disabled, never guarded/tapped —
+// every OTHER row stays tappable even when `enabled` is false, per CONTEXT's
+// "unavailable rows render disabled-styled but stay tappable so the engine's
+// refusal lands as a dull › log entry" rule.
+function cbRow(row, n) {
+  const el = document.createElement("button");
+  el.className = "cb-row" + (row.enabled ? "" : " cb-row-off");
+  el.id = "cb-row-" + row.id;
+  el.dataset.cbRow = String(n);
+  const head = document.createElement("div");
+  head.className = "cb-row-head";
+  const label = document.createElement("span");
+  label.className = "cb-row-label";
+  label.textContent = row.label;
+  head.appendChild(label);
+  const cost = document.createElement("span");
+  cost.className = "cb-row-cost";
+  cost.textContent = row.cost;
+  head.appendChild(cost);
+  el.appendChild(head);
+  const desc = document.createElement("div");
+  desc.className = "cb-row-desc";
+  desc.textContent = row.desc;
+  el.appendChild(desc);
+  if (row.dispatch) {
+    guardTap(el, () => pickCombatRow(row));
+  } else {
+    el.disabled = true;
+  }
+  return el;
+}
+
+// Phase 34 (CSCR-05) — opens a submenu (presentation-only state, reset on
+// every dispatch by Plan 02's dispatchWithToasts and by BACK; never a field
+// on S.combat). A grid button with no `opens` (the disabled ABILITIES
+// fallback) is a guarded no-op — there is no engine action to refuse and the
+// sub-line already says NOTHING UP YOUR SLEEVE.
+function openCombatMenu(a) {
+  if (!a || !a.opens) return;
+  window.__mzCombatMenu = { open: a.opens };
+  renderEncounter();
+}
+
+// Phase 34 (CSCR-05) — the action band: the 2x2 grid (STRIKE dispatches at
+// once; SPELLS-or-ABILITIES/ITEMS/SOCIAL open their submenu) or, while a
+// submenu is open, the submenu itself (title/BACK chip/rows).
+function renderActionArea(host) {
+  const vm = window.__mzCombatVM.menu(S);
+  const menu = window.__mzCombatMenu;
+  const open = menu && menu.open && vm.submenus[menu.open] ? menu.open : null;
+  if (open) {
+    const sm = vm.submenus[open];
+    const wrap = document.createElement("div");
+    wrap.className = "cb-submenu";
+    wrap.id = "cb-submenu";
+    const headEl = document.createElement("div");
+    headEl.className = "cb-sub-head";
+    const title = document.createElement("span");
+    title.className = "cb-sub-title";
+    title.id = "cb-sub-title";
+    title.textContent = sm.title;
+    headEl.appendChild(title);
+    const back = document.createElement("button");
+    back.className = "cb-chip";
+    back.id = "cb-back";
+    back.textContent = COMBAT_COPY.back;
+    headEl.appendChild(back);
+    wrap.appendChild(headEl);
+    const list = document.createElement("div");
+    list.className = "cb-sub-list";
+    list.id = "cb-sub-list";
+    sm.rows.forEach((row, i) => list.appendChild(cbRow(row, i + 1)));
+    wrap.appendChild(list);
+    host.appendChild(wrap);
+    guardTap(document.getElementById("cb-back"), () => { window.__mzCombatMenu = null; renderEncounter(); });
+    return;
+  }
+  const prompt = document.createElement("div");
+  prompt.className = "cb-prompt";
+  prompt.textContent = vm.prompt;
+  host.appendChild(prompt);
+  const grid = document.createElement("div");
+  grid.className = "cb-grid";
+  grid.id = "cb-grid";
+  const gridIds = ["cb-strike", "cb-spells", "cb-items", "cb-social"];
+  vm.actions.forEach((a, i) => {
+    const btn = document.createElement("button");
+    btn.className = "cb-btn" + (a.accent ? " cb-btn-accent" : "") + (a.enabled ? "" : " cb-btn-off");
+    btn.id = gridIds[i];
+    const label = document.createElement("div");
+    label.className = "cb-btn-label";
+    label.textContent = a.label;
+    btn.appendChild(label);
+    const sub = document.createElement("div");
+    sub.className = "cb-btn-sub";
+    sub.textContent = a.sub;
+    btn.appendChild(sub);
+    grid.appendChild(btn);
+  });
+  host.appendChild(grid);
+  guardTap(document.getElementById("cb-strike"), () => window.mzAttack?.());
+  guardTap(document.getElementById("cb-spells"), () => openCombatMenu(vm.actions[1]));
+  guardTap(document.getElementById("cb-items"), () => openCombatMenu(vm.actions[2]));
+  guardTap(document.getElementById("cb-social"), () => openCombatMenu(vm.actions[3]));
+}
+
 function renderEncounter() {
   const panel = document.getElementById("enc-panel");
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
@@ -5704,99 +5861,11 @@ function renderEncounter() {
   act.id = "cb-act";
   body.appendChild(act);
 
-  const acts = document.createElement("div");
-  acts.className = "actions";
-  // Phase 31 (CMB-02, DFB-06 precedent): the Bard's Sing and the Scroll
-  // button never disable silently any more — they stay visible whenever the
-  // class/sub gate that WOULD make them a legal action ever applies (Bard;
-  // any scroll carried), and a tap on a cooling/ungated-out button dispatches
-  // and lets the engine's own actionRefused/scrollRefused toast explain why
-  // (cooldown/wrongClass/pilfer/noRunes). The countdown mirrors the engine's
-  // own songReady math (100 squares between songs).
-  const singLeft = 100 - (S.steps - (S.c.songAt ?? -999));
-  acts.innerHTML = `<button class="primary" id="a-strike">1 · Strike</button>
-    <button id="a-potion" ${(S.c.potions && S.c.wp < S.c.maxWP) ? "" : "disabled"}${S.c.wp >= S.c.maxWP ? ' title="Already at full health"' : ""}>2 · Potion (${S.c.potions})</button>
-    <button class="danger" id="a-flee">3 · ${C.tracked && C.round === 1 ? "Withdraw" : "Flee"}</button>` +
-    (S.c.cls === "Magic User" ? `<button id="a-spell">4 · Spells (${maxCharges() - S.c.spellsUsed})</button>` : "") +
-    (canParley() ? `<button id="a-talk">5 · Parley</button>` : "") +
-    (S.c.sub === "Bard" ? `<button id="a-sing">6 · Sing${songReady() ? "" : ` (${Math.max(0, singLeft)} sq)`}</button>` : "") +
-    (S.c.scrolls ? `<button id="a-scroll">7 · Scroll (${S.c.scrolls})</button>` : "");
-  act.appendChild(acts);
-
-  // E2 / ECON-07 (Phase 14): the combat-bar USE-LIST — combat-usable carried
-  // items (potions/staves/scrolls/cloaks/jewelry with a `use`) surfaced mid-fight
-  // with a Use button dispatching {type:"useItem", i} via window.mzUseItem (the
-  // useItem action is already wired — engine/engine.js). Rendered by the SAME
-  // shared renderCarriedList component the store sell section and GEAR tab use.
-  // Phase 31 (CMB-02, DFB-06 precedent): every potion/use-kind item shows,
-  // cooldown or not — a tap on a cooling item toasts the engine's own
-  // useRefused {reason:"cooldown"} explanation instead of the row vanishing.
-  const useable = (S.c.items || []).some((it) => it.kind === "potion" || it.use);
-  if (useable) {
-    const useWrap = document.createElement("div");
-    useWrap.innerHTML = `<p class="enc-sub" style="margin:10px 0 2px">Use an item</p><ul class="skills" id="combat-use-list"></ul>`;
-    act.appendChild(useWrap);
-    renderCarriedList(document.getElementById("combat-use-list"), S.c.items, {
-      actions: ["use"],
-      guard: true,
-      filter: (it) => it.kind === "potion" || it.use,
-    });
-  }
-
-  const menu = document.createElement("div");
-  menu.className = "spellmenu";
-  menu.hidden = !C.spellOpen;
-  SPELLS.forEach((sp, i) => {
-    if (!canCast(sp)) return;
-    const b = document.createElement("button");
-    b.className = "small";
-    b.textContent = `${sp.n} — ${sp.txt}`;
-    // Device-review Pass DR8: routes through the engine's castSpell action
-    // (window.mzCastSpell, trailing module script) instead of the classic,
-    // now-dead castSpell() above — see startCombat()'s own doc comment.
-    b.onclick = () => window.mzCastSpell?.(i);
-    menu.appendChild(b);
-  });
-  if (!menu.children.length) {
-    const none = document.createElement("p");
-    none.className = "hint"; none.style.margin = "0";
-    none.textContent = "Nothing in the grimoire you can work at this level.";
-    menu.appendChild(none);
-  }
-  act.appendChild(menu);
-
-  // Device-review Pass DR8: STRIKE/POTION/FLEE/PARLEY/SING/SCROLL route
-  // through the engine's own attack/drinkPotion/flee/parley/sing/readScroll
-  // actions (window.mzAttack etc., trailing module script) instead of the
-  // classic, now-dead functions of the same name above — see
-  // startCombat()'s own doc comment for why.
-  guardTap(document.getElementById("a-strike"), () => window.mzAttack?.());
-  // DR16 Fix 2: never let a heal potion be wasted at full HP. The button is
-  // rendered disabled when wp >= maxWP (above); this onclick guard also covers
-  // the key-2 path and any programmatic click, no-opping with a clear toast
-  // instead of dispatching the (parity-sensitive, rng-drawing) engine drink.
-  guardTap(document.getElementById("a-potion"), () => {
-    if (S.c.wp >= S.c.maxWP) { window.mzToast?.("Already at full health.", "block"); return; }
-    window.mzDrinkPotion?.();
-  });
-  guardTap(document.getElementById("a-flee"), () => window.mzFlee?.());
-  const sb = document.getElementById("a-spell");
-  if (sb) guardTap(sb, () => {
-    C.spellOpen = !C.spellOpen;
-    renderEncounter();
-    // Device-review Pass B1 item 5: the spell list already renders directly
-    // under the SPELLS button in DOM order, but #enc-panel scrolls
-    // internally (overflow-y:auto) — with several foes on screen the button
-    // (and the list opened beneath it) can sit below the fold, making SPELLS
-    // look dead. renderEncounter() just rebuilt the DOM, so re-query rather
-    // than reuse the now-detached `sb` reference, and scroll the button
-    // (not just the menu) into view so both the button and its freshly
-    // opened list are visible together.
-    if (C.spellOpen) document.getElementById("a-spell")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  const tb = document.getElementById("a-talk");   if (tb) guardTap(tb, () => window.mzParley?.());
-  const gb = document.getElementById("a-sing");   if (gb) guardTap(gb, () => window.mzSing?.());
-  const cb = document.getElementById("a-scroll"); if (cb) guardTap(cb, () => window.mzReadScroll?.());
+  // Phase 34 (CSCR-05) — the mock's 2x2 STRIKE/SPELLS-or-ABILITIES/ITEMS/
+  // SOCIAL grid and its submenus replace the old 7-button action bar, the
+  // combat use-list (potions/scrolls/carried usables all fold into the
+  // ITEMS submenu rows) and the spell menu entirely.
+  renderActionArea(act);
 }
 
 /* ---------------- save / load ---------------- */
