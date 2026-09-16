@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
+current_phase: 32
+current_phase_name: Combat Narrative & Input UI Build
 status: executing
-stopped_at: "Phase 31 complete (3/3 plans, 31-VERIFICATION passed, 11 Pixel 7 checks deferred to end-of-run UAT) — next: Phase 32 smart discuss"
-last_updated: "2026-09-16T16:44:51.712Z"
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-09-16T16:51:57.376Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 32 execution started (wave 1 of 3)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 67
-current_phase: 32
-current_phase_name: Combat Narrative & Input UI Build
 ---
 
 # Project State
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 32 — Combat Narrative & Input UI Build — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 32 (3 plans, sequential waves)
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-09-16 — Phase 32 execution started (wave 1 of 3)
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T15:49:34.300Z
-Stopped at: Phase 31 complete (3/3 plans, 31-VERIFICATION passed, 11 Pixel 7 checks deferred to end-of-run UAT) — next: Phase 32 smart discuss
+Last session: 2026-09-16T16:51:57.349Z
+Stopped at: Completed 32-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -160,6 +160,7 @@ Resume file: None
 | Phase 31 P01 | 50min | 3 tasks | 33 files |
 | Phase 31 P02 | 55min | 3 tasks | 19 files |
 | Phase 31 P03 | 45min | 3 tasks | 8 files |
+| Phase 32 P01 | 5min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -290,6 +291,7 @@ Resume file: None
 - [Phase ?]: 31-02: Elven foeToHit flipped -1 to +1 (DELIBERATE RULES CHANGE, user decision 2026-09-16) at the data layer only; zero fixture impact
 - [Phase ?]: 31-03: the dead classic castSpell()'s error-message branch reordered off a stale sp.lvl compare onto the still-valid schoolGate check, so no copy of the fixed IDENT-03/04 bug survives anywhere in the file, live or dead
 - [Phase ?]: 31-03: Sing/Scroll button visibility relaxed to the structural gate (Bard; scrolls > 0), not full readiness — songReady()/canRead() still gate the internal countdown math but no longer hide the button, matching the CMB-02 refusal-vocabulary design
+- [Phase ?]: inputGuards fail-open resolved by direct short-circuit on non-finite first arg (not coerce-to-0-then-subtract), matching the plan's own behavior spec
 
 ### Blockers
 
