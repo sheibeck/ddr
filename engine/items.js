@@ -139,7 +139,7 @@ export function rollMailPiece(rng) {
     wp: a.wp + m.wp,
     min: a.min,
     cls: a.cls,
-    txt: `AR ${a.ar + m.ar}, ${a.wp + m.wp} wp`,
+    txt: `AR ${a.ar + m.ar}, ${a.wp + m.wp} hp`,
   };
 }
 
@@ -344,12 +344,18 @@ function wornWeaponItem(c) {
 
 /** wornArmorItem(c) — reconstruct the CURRENTLY-worn armor as a plain bag item
  * (for an equip swap / unequip), or null when the character wears nothing
- * ("Nothing"/AR 0). Like takeItem, only the base armor type + scalar AR/max
- * are retained on the character, so the reconstructed piece carries the base
- * name and its full (undamaged) max — re-equipping repairs it, matching
- * takeItem's own always-full-on-equip semantics. */
+ * ("Nothing"/AR 0) OR the worn piece is DESTROYED (c.armorWP <= 0 — rulebook
+ * p.44: "permanently destroyed... may not be repaired"). Phase 28 (ARMOR-03,
+ * MINIMAL MODEL): the reconstructed piece now carries its REMAINING
+ * durability (`left`, sourced from c.armorWP) and patch count (`patches`) — re-equipping
+ * does NOT repair it (the old always-full reconstruction was the unequip ->
+ * swap -> re-equip full-repair exploit). A destroyed piece (armorWP <= 0)
+ * returns null here — it is gone, no bag copy, even though combat's
+ * armorDestroyed path (engine/combat.js) deliberately leaves c.ar/c.armor/
+ * c.armorMax untouched (assumption A1) — this guard is the ONLY place the
+ * "destroyed armor is gone" rule is enforced. */
 function wornArmorItem(c) {
-  if (!c.armor || c.armor === "Nothing" || !(c.ar > 0)) return null;
+  if (!c.armor || c.armor === "Nothing" || !(c.ar > 0) || c.armorWP <= 0) return null;
   const base = ARMORS.find((a) => a.name === c.armor);
   return {
     kind: "armor",
@@ -359,6 +365,8 @@ function wornArmorItem(c) {
     wp: c.armorMax,
     min: c.armorMin,
     cls: base ? base.cls : "FTM",
+    left: c.armorWP,
+    patches: c.patches || 0,
     txt: `AR ${c.ar}, ${c.armorMax} hp`,
   };
 }
@@ -418,6 +426,15 @@ export function dropItem(state, i, events = []) {
  * bag slot (no net slot change); if the character wore nothing, the item is
  * simply removed from the bag (net −1). No-op on an out-of-range index. Pure,
  * no rng.
+ *
+ * Phase 28 (ARMOR-03): a piece that has been WORN carries `left`/`patches`
+ * (set by wornArmorItem above) and comes back at that same durability — a
+ * fresh piece (store, foe drop, kit, treasure — no `left` field) equips at
+ * full via the `??` tolerant read, which also covers a pre-v1.3 save's bag
+ * armor with no `left` at all. When the worn piece being swapped OUT is
+ * destroyed, wornArmorItem returns null, so the swap simply removes the
+ * newly-equipped item from the bag — the destroyed piece is gone, no bag
+ * copy.
  */
 export function equipItem(state, i, events = []) {
   const c = state.c;
@@ -451,8 +468,8 @@ export function equipItem(state, i, events = []) {
     c.ar = it.ar;
     c.armorMin = it.min;
     c.armorMax = it.wp;
-    c.armorWP = it.wp;
-    c.patches = 0;
+    c.armorWP = it.left ?? it.wp;
+    c.patches = it.patches ?? 0;
     if (worn) c.items[i] = worn;
     else c.items.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "armor" });
@@ -469,10 +486,37 @@ export function equipItem(state, i, events = []) {
  * the bag (ECON-05), leaving the slot bare (a weapon → bare-handed "Fists",
  * armor → "Nothing"). Needs a free bag slot; on a FULL bag pushes `bagFull` and
  * does nothing. No-op when the slot is already bare. Pure, no rng.
+ *
+ * Phase 28 (ARMOR-03): a DESTROYED piece (c.armorWP <= 0) needs no slot and
+ * leaves no bag copy — wornArmorItem's null-guard already returns null for
+ * it, so `worn` below is null even though c.ar is still > 0 (combat's
+ * armorDestroyed path never resets c.ar/c.armor/c.armorMax — assumption A1).
+ * That case is handled FIRST, separately from the generic `!worn` no-op: the
+ * slot is bared exactly as the normal armor branch below does, but with NO
+ * bag-cap check (nothing is being stowed) and an additive `destroyed` flag
+ * (set true) on the existing itemUnequipped event (Phase 25 additive-payload
+ * pattern — not a new event type) so the Oracle can narrate it.
  */
 export function unequipSlot(state, slot, events = []) {
   const c = state.c;
   const worn = slot === "weapon" ? wornWeaponItem(c) : slot === "armor" ? wornArmorItem(c) : null;
+  if (slot === "armor" && !worn && c.armor && c.armor !== "Nothing" && c.ar > 0 && c.armorWP <= 0) {
+    const destroyedName = c.armor;
+    const destroyedAr = c.ar;
+    c.armor = "Nothing";
+    c.ar = 0;
+    c.armorMin = 0;
+    c.armorMax = 0;
+    c.armorWP = 0;
+    c.patches = 0;
+    events.push({
+      type: "itemUnequipped",
+      item: { kind: "armor", n: destroyedName, armor: destroyedName, ar: destroyedAr, left: 0 },
+      slot: "armor",
+      destroyed: true,
+    });
+    return events;
+  }
   if (!worn) return events; // nothing equipped in that slot (or unknown slot)
   if ((c.items || []).length >= bagCap(c)) {
     events.push({ type: "bagFull", item: worn });

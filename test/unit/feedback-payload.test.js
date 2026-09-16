@@ -374,6 +374,8 @@ test("applyFoeDamageToPlayer: armorSoaked wear is NOT halved for a Human", () =>
   const soaked = events.find((e) => e.type === "armorSoaked");
   assert.equal(soaked.wear, 5);
   assert.equal("halved" in soaked, false);
+  assert.equal("underMin" in soaked, false);
+  assert.equal("magic" in soaked, false);
 });
 
 test("applyFoeDamageToPlayer: magic plate (Cloak of Armor) never wears — wear: 0", () => {
@@ -386,6 +388,8 @@ test("applyFoeDamageToPlayer: magic plate (Cloak of Armor) never wears — wear:
   const soaked = events.find((e) => e.type === "armorSoaked");
   assert.equal(soaked.wear, 0);
   assert.equal("halved" in soaked, false);
+  assert.equal(soaked.magic, true);
+  assert.equal("underMin" in soaked, false);
 });
 
 // --- 6. struck: need + critBy --------------------------------------------

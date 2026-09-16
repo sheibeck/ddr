@@ -1466,6 +1466,12 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
   let onArmour = false;
   let blocked = 0;
   let wear = 0;
+  // Phase 28 (ARMOR-05, additive payload): true when the blow was soaked but
+  // at/under the armour's min (no wear charged) — a distinct outcome from a
+  // magic-plate soak, which also produces wear: 0 but for a different
+  // reason (av.magic below). Flags only, set from the SAME condition the
+  // wear-charge branch already tests — see the armorSoaked push below.
+  let underMin = false;
   // Phase 19 (D-18): an explicit true/false override wins over the foe's own
   // flag; `undefined` keeps today's behaviour exactly (reads foe.sp.noArmor).
   const ignores = ignoresArmor ?? (foe.sp && foe.sp.noArmor);
@@ -1495,18 +1501,24 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
         const rawWear = R.armorWear ? Math.ceil(dmg * R.armorWear) : dmg;
         wear = Math.min(c.armorWP, rawWear);
         c.armorWP = Math.max(0, c.armorWP - rawWear);
-      }
+      } else if (!av.magic) underMin = true;
       dmg = 0;
       if (!av.magic && c.armorWP <= 0) events.push({ type: "armorDestroyed" });
     }
   }
   if (onArmour) {
+    // Phase 28 (ARMOR-05, additive payload): `underMin` = soaked but the
+    // blow was at/under the armour's min (no wear); `magic` = the Cloak of
+    // Armor's plate took it (never wears). Flags only — the soak/wear
+    // expressions above are byte-identical to before.
     events.push({
       type: "armorSoaked",
       name: foe.name,
       amount: blocked,
       wear,
       ...(R.armorWear && wear > 0 ? { halved: true } : {}),
+      ...(underMin ? { underMin: true } : {}),
+      ...(av.magic ? { magic: true } : {}),
     });
     return { died: false, onArmour: true, applied: 0 };
   }
