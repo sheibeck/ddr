@@ -118,8 +118,13 @@ Full phase-by-phase goals, requirements, and success criteria for v1.2 live in t
   4. Player can tell apart, on screen, the four armor outcomes: soaked-with-wear, soaked-without-wear (blow at or below armor min), magic-plate soak, and armor giving out.
   5. The soak-vs-wear keep/change decision is recorded as a Key Decision in PROJECT.md, and any rule change ships as a declared, documented parity divergence.
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 28-01-PLAN.md — Engine: durability rides the bag item (`left`/`patches`), destroyed armor is gone (wornArmorItem guard + unequipSlot branch, A1 accepted), `armorSoaked` `underMin`/`magic` flags, `stripBagArmorFields` parity carve-out, engine pin tests (Wave 1)
+- [ ] 28-02-PLAN.md — Presentation model: ARMOR-02 reproduction test first, shared `armorDisplay`/`bagArmorText` formatter over `armorSoak(c)`, sheet ARMOR tile, four-outcome toast + Oracle copy, destroyed-unequip narration, Cloak of Armor item text (Wave 2)
+- [ ] 28-03-PLAN.md — Shell: `window.__mzArmorDisplay` bridge; `#s-arm` HUD line, kit row, gear worn row, bag rows, find card, drop shelf, store repair row wired to the formatter; shell source-assertion test; PROJECT.md Key Decision row; full `npm test` gate (Wave 3)
 
 ### Phase 29: End-of-Combat Loot & Bag Cap
 
