@@ -226,7 +226,21 @@ Plans:
   4. Nothing important dismisses from an incidental movement tap — dismissal always requires a deliberate tap on the surface itself.
   5. An on-device DR round on the Pixel 7 confirms the rebuilt combat flow feels right before the milestone closes.
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 32-01-PLAN.md — Pure `src/browser/inputGuards.js` (`ARM_DELAY_MS`/`DISMISS_SETTLE_MS` = 250, `isArmed`/`isSettled`, clock passed in — never a transition), unit test with a purity scan, `window.__mzInputGuards` bridge; feedback-payload confirmed untouched (RESEARCH finding 3)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 32-02-PLAN.md — The Round Card: `dispatchWithToasts` routes in-combat `toastsForAction` output to `window.__mzRoundCard` (refusals stay toasts; cleared when the post-dispatch state has no combat), `renderEncounter` renders it between the foe roster and the Fight!/action bar (`.round-card`, max-height 40 % + inner scroll, textContent only), persistent `#enc-round-live` announcer, `S.lastExchange`/`S.exchangeN` + the "Last exchange" block/CSS deleted; `shell-toast-wiring` re-pinned for routing; new `shell-round-card` test (region, routing exclusivity, header-copy voice scan)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 32-03-PLAN.md — Guards wired: `guardTap` arm window on exactly the §6.3 button list + keys, `window.move` settle clause stamped on the `hasActiveEncounter()` true→false transition; `shell-input-guards` pins; worst-case-round measurement test (both frenzy mechanics + ability kits, seed sweep); `build:www` + full suite; SUMMARY with the measured count, the Phase 33 hand-off and the CMBUI-06 DR-round checklist (deferred human verification)
+
 **UI hint**: yes
 
 ### Phase 33: UI Feel & Store Polish
