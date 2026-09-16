@@ -288,6 +288,14 @@ async function persistGrave(state, cause) {
  * non-integer or sub-1 value is ignored here (Security V5 — a second,
  * adapter-side clamp before the engine's own DEV_START_DEPTH_MAX/
  * difficultyCurve sanitisation).
+ *
+ * Phase 33 (STORE-01) — every run the player starts from here (including a
+ * dev start-at-depth run, which is exactly how the deep-tier stock gets
+ * checked on device) carries state.storeRoll: true; boot()'s throwaway
+ * pre-title fresh run and dispatch()'s fail-closed recovery run
+ * deliberately do NOT pass it (flag-off = the parity-identical store), and
+ * tools/ bots call newRun(seed) directly so the mass-playtest ledgers are
+ * unchanged by this phase.
  */
 export async function startNewRun(seed, options = {}) {
   if (currentState && !currentState.dev) {
@@ -300,7 +308,7 @@ export async function startNewRun(seed, options = {}) {
   // fresh roll so a new adventurer avoids reusing the last ~25 dead names.
   const exclude = await readRecentNames();
   const startDepth = Number.isInteger(options.startDepth) && options.startDepth >= 1 ? options.startDepth : 1;
-  const state = initRun(safeSeed, exclude, { startDepth });
+  const state = initRun(safeSeed, exclude, { startDepth, storeRoll: true });
   persist();
   return state;
 }

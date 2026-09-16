@@ -77,8 +77,10 @@ function comparable(state) {
   // CMB-01 (Phase 31): reconcile a pending combat FIRST — before the
   // destructure below, since it needs the live rng cursor. See
   // reconcilePendingFight's own JSDoc (harness/comparables.js).
+  // Phase 33 (STORE-01): strip `state.storeRoll` too — a sixth analog of party/pendingJoiner/pendingFind/pendingLoot/dev, mirroring harness combatComparable,
+  // since this file defines its own local comparable(); always false on a fixture; a plain strip (no reconcile — `store` is transient).
   state = reconcilePendingFight(state);
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, ...rest } = state;
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, ...rest } = state;
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);

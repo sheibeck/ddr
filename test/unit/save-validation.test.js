@@ -367,3 +367,35 @@ test("Phase 29 (LOOT-06): a non-empty pendingLoot survives serializeRun -> valid
     assert.deepStrictEqual(tampered.value.pendingLoot, []);
   }
 });
+
+// --- Phase 33 (STORE-01): the `storeRoll` flag ---
+
+test("STORE-01: a pre-Phase-33 save with no storeRoll key loads with storeRoll === false", () => {
+  const obj = serializeRun(newRun(5));
+  delete obj.storeRoll;
+  const check = validateSave(JSON.stringify(obj));
+  assert.equal(check.ok, true);
+  assert.equal(check.value.storeRoll, false, "a save missing the storeRoll key validates to storeRoll: false");
+  assert.equal(rehydrate(check.value).storeRoll, false, "rehydrate also defaults the missing key to false");
+});
+
+test("STORE-01: storeRoll: true survives serializeRun -> JSON -> validateSave -> rehydrate", () => {
+  const state = newRun(5, [], { storeRoll: true });
+  const json = JSON.stringify(serializeRun(state));
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+  const rehydrated = rehydrate(check.value);
+  assert.equal(rehydrated.storeRoll, true);
+});
+
+test("STORE-01: storeRoll is coerced to a strict boolean", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  for (const [raw, expected] of [["yes", true], [1, true], [0, false], [null, false], [undefined, false]]) {
+    const save = { c: validChar, floor: validFloor, storeRoll: raw };
+    const check = validateSave(JSON.stringify(save));
+    assert.equal(check.ok, true);
+    assert.equal(check.value.storeRoll, expected, `storeRoll: ${JSON.stringify(raw)} must coerce to ${expected} via validateSave`);
+    assert.equal(rehydrate({ ...check.value, storeRoll: raw }).storeRoll, expected, `storeRoll: ${JSON.stringify(raw)} must coerce to ${expected} via rehydrate`);
+  }
+});

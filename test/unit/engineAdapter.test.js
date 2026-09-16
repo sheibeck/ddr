@@ -772,6 +772,22 @@ test("D-13: startNewRun(seed, { startDepth: 20 }) starts a dev run on floor 20",
   });
 });
 
+// --- Phase 33 (STORE-01): startNewRun flags the run storeRoll: true ---
+
+test("STORE-01: startNewRun flags the run storeRoll: true (plain and dev start); initRun(seed) does not", async () => {
+  await withFakeLocalStorage(async () => {
+    const plain = await startNewRun(4300);
+    assert.equal(plain.storeRoll, true, "a shell-started run carries storeRoll: true");
+
+    const dev = await startNewRun(4301, { startDepth: 20 });
+    assert.equal(dev.storeRoll, true, "a dev start-at-depth run started from the shell also carries storeRoll: true");
+    assert.equal(dev.dev, true);
+
+    initRun(4302);
+    assert.equal(getState().storeRoll, false, "initRun(seed) directly (tools/ bots, boot's fresh-run fallback) never sets storeRoll");
+  });
+});
+
 test("D-13: a dev run's death through dispatch() writes NO graveyard entry", async () => {
   await withFakeLocalStorage(async (store) => {
     initRun(55, [], { startDepth: 20 });

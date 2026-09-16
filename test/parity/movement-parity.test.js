@@ -60,8 +60,10 @@ function comparable(state) {
   // this fixture's 101 moves never produce a non-null state.combat, per the
   // pending-fight-audit test). See reconcilePendingFight's own JSDoc
   // (harness/comparables.js).
+  // Phase 33 (STORE-01): strip `state.storeRoll` too — a sixth analog of party/pendingJoiner/pendingFind/pendingLoot/dev, mirroring harness movementComparable,
+  // since this file defines its own local comparable(); always false on a fixture; a plain strip (no reconcile — `store` is transient).
   state = reconcilePendingFight(state);
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, ...rest } = state;
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, ...rest } = state;
   // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field (see
   // engine/character.js's rollCharacter) with no prototype-side equivalent
   // at all — strip it the same way test/parity/harness/comparables.js's

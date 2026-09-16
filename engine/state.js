@@ -131,10 +131,10 @@ export function swapPartyMember(state, member) {
  *
  * @param {number} seed - an integer seed
  * @param {string[]} [exclude] - recent character names to avoid reusing
- * @param {{ startDepth?: number, force?: {cls?: string, sub?: string, race?: string}|null }} [options] - startDepth: dev-only start-at-depth (default 1); force: dev-only chargen draw-result override (HARN-01, default null)
+ * @param {{ startDepth?: number, force?: {cls?: string, sub?: string, race?: string}|null, storeRoll?: boolean }} [options] - startDepth: dev-only start-at-depth (default 1); force: dev-only chargen draw-result override (HARN-01, default null); storeRoll: shell-started run, enables the depth-rolled store stock; default false
  * @returns {object} a serializable GameState
  */
-export function newRun(seed, exclude = [], { startDepth = 1, force = null } = {}) {
+export function newRun(seed, exclude = [], { startDepth = 1, force = null, storeRoll = false } = {}) {
   const rng = makeRng(seed);
   const c = rollCharacter(rng, exclude, force);
   // Phase 21 (TUNE-04, D-13): Math.min(DEV_START_DEPTH_MAX, difficultyCurve(startDepth).depth)
@@ -198,6 +198,18 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null } = {}
     // strips it in all three comparables. A dev run is never written to the
     // graveyard or the best-depth record (src/browser/engineAdapter.js).
     dev: startAt > 1,
+    // Phase 33 (STORE-01, CONTEXT Area 3): storeRoll — true only for a run
+    // the SHELL starts (engineAdapter#startNewRun passes it); a plain
+    // boolean present on EVERY fresh state exactly like dev above, so
+    // serializeRun/validateSave/rehydrate round-trip it and the fresh-run
+    // round-trip test stays deepStrictEqual. It gates the ONLY new rng
+    // draws of Phase 33 (engine/economy.js#openStore's depth-rolled
+    // stock). Every parity fixture, every unit test, every tools/ bot and
+    // every existing caller calls newRun(seed) with no option → false →
+    // openStore is byte-identical to the frozen prototype. The parity
+    // harness strips it in all six comparables (three in
+    // harness/comparables.js, three test-local), exactly like dev.
+    storeRoll: !!storeRoll,
     deathNote: "",
     epitaph: "",
   };

@@ -214,6 +214,10 @@ export function validateSave(raw, options = {}) {
     // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
     // pre-Phase-21 save → false.
     dev: !!obj.dev,
+    // Phase 33 (STORE-01): boolean-coerced like dev/dead/won; absent on a
+    // pre-Phase-33 save → false, so an old save keeps today's fixed store
+    // stock and never gains the new draws mid-run.
+    storeRoll: !!obj.storeRoll,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
@@ -270,6 +274,10 @@ export function rehydrate(obj) {
     // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
     // pre-Phase-21 save → false.
     dev: !!obj.dev,
+    // Phase 33 (STORE-01): boolean-coerced like dev/dead/won; absent on a
+    // pre-Phase-33 save → false, so an old save keeps today's fixed store
+    // stock and never gains the new draws mid-run.
+    storeRoll: !!obj.storeRoll,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };

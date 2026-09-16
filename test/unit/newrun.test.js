@@ -146,3 +146,16 @@ test("purity: a dev run reads no wall clock and is reproducible", () => {
   const b = newRun(9, [], { startDepth: 12 });
   assert.deepStrictEqual(a, b);
 });
+
+// --- Phase 33 (STORE-01): storeRoll run flag ---
+
+test("STORE-01: newRun(seed).storeRoll is false; newRun(seed, [], { storeRoll: true }) differs ONLY in that field", () => {
+  for (const seed of [1, 42, 303]) {
+    const a = newRun(seed);
+    const b = newRun(seed, [], { storeRoll: true });
+    assert.equal(a.storeRoll, false, `seed ${seed}: a default run is never flagged storeRoll`);
+    assert.equal(b.storeRoll, true, `seed ${seed}: storeRoll: true is forwarded through`);
+    assert.deepStrictEqual({ ...a, storeRoll: true }, b, `seed ${seed}: storeRoll: true must not consume any rng or change any other field (same rngState, c, floor)`);
+  }
+  assert.equal(newRun.length, 1, "newRun's declared arity is still exactly one parameter (seed)");
+});
