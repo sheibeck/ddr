@@ -2846,6 +2846,14 @@ const CONDITION_COPY = {
 // scans them).
 const ROUND_CARD_COPY = { preview: "The stare-down", round: (n) => `Round ${n} · how that went` };
 
+// Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
+// nod to the depth roll; shown ONLY on a run whose S.storeRoll is true
+// (engine/state.js — a run this build started), so an old save's header is
+// byte-identical to today; no toast, no Oracle line (the store is a screen,
+// not an event). Player-facing: kept clear of content/safety-wordlist.js
+// (scanned by test/unit/shell-map-store-polish.test.js).
+const STORE_ROLL_COPY = "Stock rolled fresh for this floor. Deeper down, pricier regrets.";
+
 // Phase 19, FOE-08 / D-21: a foe debuff chip names its KIND, not its key — in
 // voice, family-friendly; keys mirror content/foe-abilities.js debuff `effect`
 // values and test/unit/foe-effect-chip.test.js cross-checks the two sets.
@@ -5265,8 +5273,12 @@ function renderEncounter() {
     // lockpick buy costs nothing (engine gate, Plan 01) and its bagFull
     // toast names have/slots.
     const usage = window.__mzBagUsage(S.c);
+    // Phase 33 (STORE-01) — the roll line is gated on the run flag, never on
+    // stock contents, so an old save (flag off, fixed stock) shows exactly
+    // the pre-Phase-33 header.
     body.innerHTML += `<p class="enc-head" style="color:var(--moss)">A store</p>
       <p class="enc-sub">${S.c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
+      ${S.storeRoll === true ? `<p class="enc-sub mw-store-roll">${STORE_ROLL_COPY}</p>` : ""}
       <div class="shelf" id="shelf"></div>
       ${usage.full ? `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}) — sell or drop something to make room.</p>` : ""}
       <p class="enc-sub" id="sell-head" style="margin-top:12px">Your gear</p>
