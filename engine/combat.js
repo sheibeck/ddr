@@ -1095,6 +1095,15 @@ export function endCombat(state, events = []) {
   state.c.ward = null;
   state.c.mirror = 0;
   state.c.senses = 0;
+  // Phase 31 (CMB-05): Acuteness ticks per foeTurn round AND per exploration
+  // step (movement.js), but clears unconditionally when the combat it was
+  // active in ends — mirroring ward/mirror/regen/senses above. CONDITIONAL
+  // (only fires + narrates when acute > 0) so a character who never drank it
+  // stays byte-identical, matching foeEffect's own conditional clear below.
+  if (state.c.acute > 0) {
+    state.c.acute = 0;
+    events.push({ type: "acuteFaded" });
+  }
   // Phase 19 D-09: combat-scoped, never leaks between fights; CONDITIONAL so
   // the key is never ADDED to a character that never had a debuff (unlike
   // `senses` above) — keeps every solo parity fixture's `c` byte-identical
@@ -1876,6 +1885,12 @@ export function foeTurn(state, rng, events = []) {
     c.ward = null;
   }
   if (c.mirror > 0 && --c.mirror <= 0) events.push({ type: "mirrorFaded" });
+  // Phase 31 (CMB-05): Acuteness finally counts down — once per foeTurn
+  // round, exactly like ward/mirror above, and per exploration step outside
+  // combat (engine/movement.js); clears unconditionally at endCombat too.
+  // Zero-event, zero-key no-op for a character with acute <= 0 (no fixture
+  // ever sets it, so every parity replay stays byte-identical).
+  if (c.acute > 0 && --c.acute <= 0) events.push({ type: "acuteFaded" });
   // Phase 19 (D-09/A8): ticks once per foeTurn like ward/mirror, but never
   // on the turn that applied/refreshed it (resolveFoeAbility always assigns
   // a NEW object to c.foeEffect), so `rounds: 1` is never a no-op.

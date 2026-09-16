@@ -28,7 +28,7 @@ import { die } from "./death.js";
 // bookkeeping for stone/fire since killFoe didn't exist yet); now that
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
-import { killFoe, refuseIfPending } from "./combat.js";
+import { killFoe, refuseIfPending, liveFoes, endCombat } from "./combat.js";
 // Phase 18 (D-09/CANON-01): the fire effect below routes through the shared
 // foe-damage seam. This edge is NOT part of the circular-import concern
 // above — engine/foeDamage.js imports only ../content/index.js, never
@@ -786,6 +786,12 @@ export function itemReady(state, it) {
   return state.steps - (it.usedAt ?? -99999) >= it.every;
 }
 
+// CMB-03 (Phase 31): the targeted attack kinds — the ones that read
+// `state.combat.foes` and do nothing useful (yet still burned their
+// cooldown, RESEARCH §4.2) with no active combat. Exported for the
+// usable-features audit test (Plan 02, Task 3).
+export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas"]);
+
 /**
  * useItem(state, i, rng, events, now) — triggers carried item `i`'s effect.
  * Ports mazeworld.html useItem() (lines 1963-1995). Foe-targeting effects
@@ -793,17 +799,32 @@ export function itemReady(state, it) {
  * a "kill" here is the minimal bookkeeping (`wp`/`alive`/`kills`) the item
  * itself owns — full combat resolution (loot, victory checks) is wired by
  * the combat slice (01-08) when it calls into a live `state.combat`.
+ *
+ * CMB-02/03 (Phase 31): the full refusal ladder, every step BEFORE
+ * `it.usedAt`/`itemUsed` fire (so a refused use never burns a cooldown,
+ * never consumes the item, never draws): pending fight -> wrongClass (a
+ * staff used by a non-caster) -> pilfer -> combatOnly (a targeted kind
+ * outside combat) -> cooldown (itemReady). Every reason its own event,
+ * never a silent no-op (Phase 25.1 DFB-06).
  */
 export function useItem(state, i, rng, events = [], now = Date.now) {
   const c = state.c;
   const it = (c.items || [])[i];
   if (!it) return events;
-  // CMB-01 (Phase 31): refuseIfPending is the FIRST check, before the
-  // itemReady cooldown gate.
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check, before every
+  // refusal below.
   if (refuseIfPending(state, events, "useRefused", { item: it })) return events;
-  if (!itemReady(state, it)) return events;
 
   const kind = it.kind === "potion" ? it.eff2 : it.use;
+
+  // CMB-02 (Phase 31): a staff used by a non-caster — stowItem/takeItem
+  // already refuse a staff at ACQUIRE time (itemRejected wrongClass), but a
+  // character can still end up carrying one (chargen roster, a save from
+  // before that gate existed); refuse the USE too, before any side effect.
+  if (it.kind === "staff" && c.cls !== "Magic User") {
+    events.push({ type: "useRefused", item: it, reason: "wrongClass" });
+    return events;
+  }
 
   // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): a Pilfer's
   // "cannot use a single magic item that doesn't heal" bad, enforced. Heal-
@@ -815,6 +836,33 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
   // already gate a Pilfer independently and are untouched by this change.
   if (c.sub === "Pilfer" && kind !== "heal" && kind !== "full") {
     events.push({ type: "useRefused", item: it, reason: "pilfer" });
+    return events;
+  }
+
+  // CMB-03 (Phase 31): a targeted attack item used outside combat used to
+  // silently fizzle (foes = [], every forEach/for a no-op) while STILL
+  // burning its cooldown and, for `fire`, drawing a narratively-invisible
+  // rng.d(6) and pushing a misleading `itemBurned {total:0}` (RESEARCH
+  // §4.2) — refuse it explicitly instead, before usedAt/itemUsed fire.
+  if (!state.combat && TARGETED_KINDS.has(kind)) {
+    events.push({ type: "useRefused", item: it, reason: "combatOnly" });
+    return events;
+  }
+
+  // CMB-02 (Phase 31): itemReady's silent no-op (RESEARCH §3.4) replaced
+  // with an explaining refusal naming exactly how many squares remain —
+  // only when the item actually carries a cooldown; an item with no `use`
+  // effect and not a potion (never itemReady, never on cooldown) stays the
+  // pre-existing silent no-op, since there is nothing to explain.
+  if (!itemReady(state, it)) {
+    if (it.every) {
+      events.push({
+        type: "useRefused",
+        item: it,
+        reason: "cooldown",
+        left: it.every - (state.steps - (it.usedAt ?? -99999)),
+      });
+    }
     return events;
   }
 
@@ -906,7 +954,13 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
       // foes the Amulet hits changes, and it drives no frozen fixture.
       // NOTE: the count is `it.aoe`, not `it.n` (the CONTEXT shorthand) — `.n`
       // is the item's display-name field throughout the codebase.
-      foes.slice(0, it.aoe ?? 2).forEach((f) => {
+      const targets = foes.slice(0, it.aoe ?? 2);
+      // CMB-06 (Phase 31): one foeStoned {names} line naming every stoned foe
+      // in target order, pushed BEFORE the per-foe kill loop (Pitfall 5 —
+      // never batch the kills themselves; each still pays through its own
+      // killFoe call, exactly like a melee kill of the same foe).
+      if (targets.length) events.push({ type: "foeStoned", names: targets.map((f) => f.name) });
+      targets.forEach((f) => {
         f.wp = 0;
         killFoe(state, f, rng, events);
       });
@@ -942,6 +996,19 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
   if (it.kind === "potion" || it.uses === 1) {
     c.items.splice(i, 1);
     events.push({ type: "itemConsumed", item: it });
+  }
+
+  // CMB-06 (Phase 31): the narrow cleared-check (mirrors combat.js's own
+  // pre-emptive-kill guard, combat.js:399-402) — an item kill (stone/fire)
+  // that removes the last live foe closes the encounter through the SAME
+  // path any other kill does (encounterCleared -> endCombat -> the loot
+  // card), instead of leaving state.combat stranded open with zero live
+  // foes. Deliberately NOT the full afterPlayerAction (RESEARCH §8.2) — a
+  // non-lethal item use never triggers foe retaliation; items stay free
+  // actions, so this check only ever fires after a kill.
+  if (state.combat && !liveFoes(state).length) {
+    events.push({ type: "encounterCleared" });
+    endCombat(state, events);
   }
   return events;
 }

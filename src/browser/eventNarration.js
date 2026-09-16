@@ -399,6 +399,7 @@ export const EVENT_NARRATION = {
     `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
+  acuteFaded: () => `<span class="beat">The Acuteness wears off.</span>`,
 
   // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
   // second. Every builder here defends a bare `{ type }` call (the coverage
@@ -645,6 +646,7 @@ export const EVENT_NARRATION = {
     return `<span class="miss">${item} does not heal,</span> so as far as a Pilfer is concerned it does not work.`;
   },
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
+  foeStoned: (e) => `<span class="hit">${(e.names ?? []).join(", ") || "It"} turn to stone.</span> Statues don't hit back.`,
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,
   itemFizzled: () => `<span class="miss">Nothing happens.</span>`,
   itemConsumed: (e) => `${e.item?.n ?? "It"} is spent.`,

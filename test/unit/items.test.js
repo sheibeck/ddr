@@ -212,16 +212,22 @@ test("useItem heals and consumes a single-use potion", () => {
 });
 
 test("useItem respects a staff/cloak's every-N-squares cooldown", () => {
+  // Phase 31 (CMB-02): a staff now refuses a non-Magic-User first — use a
+  // Magic User caster so this keeps exercising the cooldown gate itself.
   const staff = { kind: "staff", use: "dome", every: 250, n: "Rowan Staff" };
-  const state = fixedState({ c: { items: [staff] }, steps: 10 });
+  const state = fixedState({ c: { cls: "Magic User", items: [staff] }, steps: 10 });
   useItem(state, 0, makeRng(3));
   assert.equal(state.c.items[0].usedAt, 10);
   assert.ok(state.c.ward, "dome effect should have applied");
 
-  const state2 = fixedState({ c: { items: [{ ...staff, usedAt: 10 }] }, steps: 20 });
+  const state2 = fixedState({ c: { cls: "Magic User", items: [{ ...staff, usedAt: 10 }] }, steps: 20 });
   const events = useItem(state2, 0, makeRng(3));
   assert.equal(state2.c.ward, null, "cooldown not yet elapsed — no effect applied");
-  assert.deepStrictEqual(events, [], "no events when the item is not ready");
+  // Phase 31 (CMB-02): the old silent no-op is now an explaining useRefused —
+  // exactly one event, naming the squares left (every 250, usedAt 10, steps 20).
+  assert.equal(events.length, 1, "exactly one event — the cooldown refusal");
+  assert.deepStrictEqual(events[0], { type: "useRefused", item: state2.c.items[0], reason: "cooldown", left: 240 });
+  assert.equal(state2.c.items[0].usedAt, 10, "usedAt untouched by a refused use");
 });
 
 test("useItem's potion of death kills the character via engine/death.js", () => {

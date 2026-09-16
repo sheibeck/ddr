@@ -1006,7 +1006,16 @@ const CONTRACT = [
         const elven = hero("Soldier", "Elven", 7);
         const control = hero("Soldier", "Human", 7);
         assert.equal(elven.c.maxWP, Math.round(control.c.maxWP * 0.6));
-        assert.equal(foeToHitVs(elven), 4);
+        // Phase 31 (DELIBERATE RULES CHANGE, user decision 2026-09-16, audit
+        // Finding 1): Elves are EASIER to hit: the foe's need is one HIGHER
+        // than a Human's (hit on roll <= need) — the prototype's foeToHit −1
+        // inverted this (see content/races.js's Elven comment).
+        assert.equal(
+          foeToHitVs(elven),
+          foeToHitVs(control) + 1,
+          "Elves are EASIER to hit: the foe's need is one HIGHER than a Human's (hit on roll <= need)",
+        );
+        assert.ok(foeToHitVs(elven) > foeToHitVs(control));
       },
     },
   },

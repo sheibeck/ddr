@@ -293,6 +293,13 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   if (c.haste > 0) c.haste--;
   if (c.invis > 0) c.invis--;
   if (c.ether > 0) c.ether--;
+  // Phase 31 (CMB-05): Acuteness — drunk from Gear outside combat, its
+  // "round" timer has no round to tick until a fight resolves it (via
+  // combat.js#foeTurn's mirroring tick), so it also ticks once per
+  // exploration STEP here (the Key Decision: option 3, RESEARCH §6.1) and
+  // clears unconditionally at combat.js#endCombat. Zero-event, zero-draw
+  // no-op for a character with acute <= 0.
+  if (c.acute > 0 && --c.acute <= 0) events.push({ type: "acuteFaded" });
   // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
   // Healing (eff:{cloakHeal:1}, "heals up to 10 wp every 20 squares") and the
   // Cloak of Regeneration (eff:{cloakRegen:1}, "d6 wp back every 20 squares")

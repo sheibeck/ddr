@@ -223,7 +223,9 @@ test("Amulet of Stone petrifies up to 4 foes (per-item aoe:4); a plain stone sou
   useItem(amulet, 0, makeRng(7), []);
   assert.equal(amulet.combat.foes.filter((f) => f.alive).length, 1, "Amulet turns 4 of 5 to stone");
 
-  const staff = fixedState({ c: { items: [OAK_STAFF] }, combat: fixedCombat(makeFoes()) });
+  // Phase 31 (CMB-02): a staff now refuses a non-Magic-User (wrongClass) —
+  // use a Magic User caster here to keep exercising the aoe-count logic.
+  const staff = fixedState({ c: { cls: "Magic User", items: [OAK_STAFF] }, combat: fixedCombat(makeFoes()) });
   useItem(staff, 0, makeRng(7), []);
   assert.equal(staff.combat.foes.filter((f) => f.alive).length, 3, "a default stone source (Oak Staff) hits only 2");
 });

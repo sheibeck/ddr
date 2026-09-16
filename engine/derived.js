@@ -181,6 +181,7 @@ export function isFlying(state) {
  *   - acute  {polarity:"good", remaining:<rounds>}        — strike on a d6
  *   - ether  {polarity:"good", remaining:<sq left>}       — pass through walls
  *   - might  {polarity:"good"}                            — +damage, lasts the day (no count)
+ *   - ward   {polarity:"good", pool:<hp>, remaining:<rounds>, name:<spell/item name>} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape
  *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
  *   - affliction {polarity:"bad", kind:"Poison"|"Disease"|…}
  *   - darkness   {polarity:"bad", remaining:<sq left>}    — the persistent Darkness/phobia state
@@ -203,6 +204,15 @@ export function conditionsOf(state) {
   if (c.acute > 0) out.push({ key: "acute", polarity: "good", remaining: c.acute });
   if (c.ether > 0) out.push({ key: "ether", polarity: "good", remaining: c.ether });
   if (c.might > 0) out.push({ key: "might", polarity: "good" });
+  // Phase 31 (CMB-04): the Shield chip — c.ward is the same field the
+  // engine's absorb/reflect/shatter code (engine/combat.js) already reads;
+  // this surfaces it as data only (pool + rounds), never touching the
+  // lifecycle events (wardRaised/wardAbsorbed/wardReflected/wardShattered/
+  // wardFaded already narrate). Gated on a positive pool so a shattered
+  // (pool<=0, about to be nulled) ward never flashes a zero-hp chip.
+  if (c.ward && c.ward.pool > 0) {
+    out.push({ key: "ward", polarity: "good", pool: c.ward.pool, remaining: c.ward.rounds, name: c.ward.name });
+  }
 
   // Flight mirrors isFlying's item logic: the Bracelet is unconditional; the
   // Cloak of Flying is a real charge/cooldown resource. Surface all knowable

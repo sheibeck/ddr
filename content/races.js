@@ -6,7 +6,16 @@
 export const RACES = {
   "Human": { size: "Human", upkeep: 4, note: "No advantages, no penalties. The dungeon's default." },
   "Elven": {
-    size: "Small", upkeep: 4, wpMul: 0.6, strikeStep: 1, foeToHit: -1, toHit: 5,
+    size: "Small", upkeep: 4, wpMul: 0.6, strikeStep: 1,
+    // DELIBERATE RULES CHANGE (Phase 31, user decision 2026-09-16, audit
+    // Finding 1): the prototype's foeToHit −1 ADDS into foeToHitVs's need
+    // (foe lands on roll ≤ need), so −1 made Elves HARDER to hit — the
+    // opposite of this row's own note / flavor.js / CLASS-PASS ("easy to
+    // hit"). +1 raises the foe's need 5→6: Elves are genuinely easier to
+    // hit now. Zero rng change; no fixture has an Elven hero in combat
+    // (chargen seed 13, encounters/faerie seed 38 never reach foeToHitVs),
+    // so no divergence record — prototype-master.js.txt keeps −1 untouched.
+    foeToHit: 1, toHit: 5,
     note: "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit.",
   },
   "Dwarven": {

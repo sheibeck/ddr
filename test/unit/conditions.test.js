@@ -16,7 +16,7 @@ import { conditionsOf } from "../../engine/derived.js";
  * only c.*, so a bare-bones c is a valid, fully-inert baseline. */
 function cleanChar(overrides = {}) {
   return {
-    haste: 0, invis: 0, ether: 0, acute: 0, might: 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, might: 0, ward: null,
     flightLeft: 0, flightCooldown: 0,
     affliction: null, darkFor: 0,
     items: [],
@@ -50,6 +50,31 @@ test("conditionsOf: might is GOOD with no remaining count (lasts until next day)
   const conds = conditionsOf({ c: cleanChar({ might: 8 }) });
   assert.deepEqual(conds, [{ key: "might", polarity: "good" }]);
   assert.ok(!("remaining" in conds[0]), "might carries no square/round count");
+});
+
+// --- Phase 31 (CMB-04): the Shield chip -------------------------------
+
+test("conditionsOf: ward surfaces {pool, remaining, name} after might, before flight", () => {
+  const conds = conditionsOf({ c: cleanChar({ ward: { pool: 34, rounds: 3, name: "Shield" } }) });
+  assert.deepStrictEqual(conds, [{ key: "ward", polarity: "good", pool: 34, remaining: 3, name: "Shield" }]);
+});
+
+test("conditionsOf: ward with pool 0 (about to be nulled) is absent", () => {
+  assert.deepEqual(conditionsOf({ c: cleanChar({ ward: { pool: 0, rounds: 1, name: "Shield" } }) }), []);
+});
+
+test("conditionsOf: ward null is absent", () => {
+  assert.deepEqual(conditionsOf({ c: cleanChar({ ward: null }) }), []);
+});
+
+test("conditionsOf: ward + might + flight order in a fully-loaded character", () => {
+  const c = cleanChar({
+    might: 8,
+    ward: { pool: 50, rounds: 5, name: "Shield" },
+    items: [{ n: "Bracelet of Flight" }],
+  });
+  const conds = conditionsOf({ c });
+  assert.deepStrictEqual(keys(conds), ["might", "ward", "flight"]);
 });
 
 test("conditionsOf: BAD affliction names its kind", () => {

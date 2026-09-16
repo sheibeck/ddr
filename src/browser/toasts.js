@@ -1097,6 +1097,9 @@ export const TOAST_FOR = {
   },
   wardFaded: () => ({ text: "The ward fades.", tone: "beat", priority: PRIORITY.other }),
   mirrorFaded: () => ({ text: "The mirror fades.", tone: "beat", priority: PRIORITY.other }),
+  // Phase 31 (CMB-05): Acuteness finally wears off (per foeTurn round, per
+  // exploration step, or unconditionally at endCombat).
+  acuteFaded: () => ({ text: "Your edge dulls.", tone: "beat", priority: PRIORITY.other }),
 
   /* ---------------- foe abilities (engine/foeAbilities.js) ---------------- */
 
@@ -1315,6 +1318,9 @@ export const TOAST_FOR = {
     return block(map[e?.reason] ?? "That does not work for you.");
   },
   cured: (e) => ({ text: `Cured of ${e?.kind ?? "it"}.`, tone: "hit", priority: PRIORITY.you }),
+  // Phase 31 (CMB-06): one line naming every stoned foe, ahead of the
+  // per-foe foeKilled lines that follow.
+  foeStoned: (e) => ({ text: `${(e?.names ?? []).join(", ") || "It"} turn to stone. Statues don't hit back.`, tone: "hit", priority: PRIORITY.you }),
   itemBurned: (e) => ({ text: `${e?.total ?? 0} fire damage spread.`, tone: "magic", priority: PRIORITY.you }),
   itemFizzled: () => ({ text: "Nothing happens.", tone: "miss", priority: PRIORITY.you }),
   // Phase 29 (LOOT-04): richer text when the event carries the have/slots
