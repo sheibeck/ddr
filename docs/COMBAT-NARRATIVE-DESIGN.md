@@ -252,3 +252,212 @@ Keep the floating-toast aesthetic and the fixed-top `#mw-toast-host` position, u
 Bundling reduces toast count (4→1), which materially helps coherence, but the surface is still a FLOATING, TIMED, AUTO-DISMISSING element positioned away from the foe roster/action context — it does not achieve "zero taps to read" as cleanly as an always-on inline block, and it keeps the toast system as the primary combat-feedback channel rather than promoting the combat panel itself to be self-narrating. The honest case FOR picking it: it is meaningfully cheaper to build (no new DOM block inside `renderEncounter`, no change to where `S.lastExchange` sits), most of the 89 toast/Oracle-pinning tests (§1.6) need only a bundling-count update rather than a structural rewrite, and it preserves the current visual language exactly — the safer fallback if the ratification pause reveals a preference for minimizing change over maximizing coherence.
 
 ## 6. Phase 32 build contract
+
+This section is Phase 32's spec for CMBUI-02..06, written for the RECOMMENDED design (§4, the Round Card). Where the runner-up (§5) differs, the difference is called out inline under "If the runner-up is ratified."
+
+### 6.1 Screen anatomy
+
+`#enc-panel`/`.mw-overlay` geometry relative to `.mazebox`/`.mazefoot` is unchanged. The round-narrative block occupies the `S.lastExchange` "Last exchange" slot — below the always-first foe roster, above the `.actions` bar — replacing that footnote. The foe roster is never hidden (§Pitfall 5 in RESEARCH.md): it renders first, always, in every combat-panel branch.
+
+**State: mid-round (Round Card)**
+```
+┌───────────────────────────────┐
+│ Ambush · round 3               │
+│ 2 still standing · d20, 14+    │
+├───────────────────────────────┤
+│ Giant Rat        6/12 hp        │
+│ Giant Rat        0/9 hp  dead   │
+├───────────────────────────────┤
+│ ▸ THIS ROUND                    │
+│  You hit the Giant Rat for 4.  │
+│  It bites back — 2 dmg.         │
+│  The second rat goes down.      │
+├───────────────────────────────┤
+│ [1·Strike] [2·Potion] [3·Flee] │  <- ARM_DELAY_MS=250 on first paint
+└───────────────────────────────┘
+```
+
+**State: Fight! gate (ambush preview)**
+```
+┌───────────────────────────────┐
+│ Ambush                          │
+├───────────────────────────────┤
+│ Giant Rat        12/12 hp       │
+│ Giant Rat         9/9 hp        │  <- DR17 awaitingFight roster
+├───────────────────────────────┤
+│           [Fight!]              │  <- ARM_DELAY_MS=250 on first paint
+└───────────────────────────────┘
+```
+
+**State: encounter cleared → loot card**
+```
+┌───────────────────────────────┐
+│ Victory                         │
+│ Round 3 · +40 gold · +12 XP     │
+├───────────────────────────────┤
+│ The spoils                      │
+│ Rusted Mail · +2 over worn      │
+│   [Equip now] [Stow] [Leave]    │
+├───────────────────────────────┤
+│       [Take all]  [Leave all]   │  <- ARM_DELAY_MS=250 on first paint
+└───────────────────────────────┘
+```
+
+**State: joiner offer**
+```
+┌───────────────────────────────┐
+│ A wanderer wants to tag along   │
+│ Human Fighter · skill level II  │
+├───────────────────────────────┤
+│ [Take them along] [Leave them] │  <- ARM_DELAY_MS=250 on first paint
+└───────────────────────────────┘
+```
+
+**State: death**
+```
+┌───────────────────────────────┐
+│ Dead                            │
+│ Name, Race Sub, killed by...    │
+│ Floor N · day D · SP XP         │
+│ epitaph line                    │
+├───────────────────────────────┤
+│ [Review the Oracle] [Confirm]  │  <- ARM_DELAY_MS=250 on first paint;
+│                                  │     Confirm stays deliberately "armed"
+│                                  │     (no read-it-first lock) per DR4
+└───────────────────────────────┘
+```
+
+If the runner-up is ratified: the THIS ROUND block is instead one bundled toast rendered in `#mw-toast-host` (fixed top, unaffected by panel layout); every other frame above (Fight! gate, loot card, joiner offer, death) is identical — those are decision surfaces, not round narrative, and are unaffected by which of §4/§5 is chosen.
+
+### 6.2 Tap budget per state
+
+| State transition | Taps required | What Phase 32 must preserve or change |
+| --- | --- | --- |
+| Mid-round → next round | 0 extra beyond the chosen action | The narrative is always visible; no Move-on gate is inserted mid-fight — preserved, not reduced |
+| Fight! gate → first round | 1 tap on Fight! | The gate itself is Phase 31's business; the button's `ARM_DELAY_MS` guard is Phase 32's |
+| Encounter cleared → loot resolved → move on | 1 tap (Take all / Leave all, or per-item then implicitly done) | Phase 29, preserved verbatim |
+| Joiner offer | 1 tap (Take them along / Leave them) | Preserved |
+| Death | 1 tap Confirm; Review the Oracle is an elective second tap | Preserved; Confirm stays "armed" (DR4), only the new `ARM_DELAY_MS` gate is added |
+| Floor change / level-up Move on | 1 tap | Out of CMBUI-02's in-combat scope; must not regress; the guard still applies to the `#enc-dismiss-slot` button |
+
+**Invariant:** no state requires a dismiss-then-continue chain, and the total deliberate taps to leave any surface is 1.
+
+### 6.3 Guard rules
+
+The guards are designed against rapid re-render coordinate collision and the synchronous-dismiss gap (§1.5), not against D-pad bleed-through, which the overlay already prevents structurally.
+
+1. **`ARM_DELAY_MS = 250`** — every freshly rendered decision button (round-card action bar, Fight!, joiner accept/decline, loot per-row and Take all/Leave all, find Take/Leave, death Confirm, the `#enc-dismiss-slot` Move on) records `renderedAt = Date.now()` when `renderEncounter()` builds it, and its handler no-ops (or the button carries `disabled` — Phase 32 picks whichever fits the existing `.disabled` CSS convention) while `Date.now() - renderedAt < ARM_DELAY_MS`.
+2. **`DISMISS_SETTLE_MS = 250`** — when `hasActiveEncounter()` transitions true → false, record `lastDismissAt = Date.now()`; `window.move`'s guard gains a second clause refusing input while `Date.now() - lastDismissAt < DISMISS_SETTLE_MS`.
+3. **Hit-zone rule** — decision buttons never share the D-pad's hit zone; satisfied structurally today because `.mw-overlay` `inset:0` covers `.mazefoot`, so Phase 32's obligation is to render every decision button INSIDE `#enc-panel` and never introduce one outside the overlay, and to keep the roster/narrative/actions vertical order so the action bar's coordinates stay stable between rounds.
+4. **Dismissal rule** — nothing important dismisses on a tap in the map/D-pad region. The round card has NO tap-to-dismiss gesture at all (it is rebuilt by the next render, never dismissed); every other surface dismisses only via its own buttons; Phase 32 must not add any tap-anywhere-to-dismiss behaviour.
+
+The "distinct gesture" technique (CONTEXT's third named option) is explicitly not adopted: Hoplite's Fat Finger Mode costs an extra tap; the two timing guards above reach safety at zero tap cost.
+
+**Both guards are `Date.now()` timestamp checks and must never depend on a CSS transition or animation duration** — the blanket `prefers-reduced-motion` rule (`mazeworld.html` line 773) sets `transition:none` and `animation:none` for those users and would silently zero a transition-based guard. This is a hard implementation constraint, not merely a suggestion.
+
+The sibling constants this pair joins are `TAP_MOVE_THRESHOLD_PX = 10` and `TAP_MAX_DURATION_MS = 350` in `src/browser/controls.js` — module placement for `ARM_DELAY_MS`/`DISMISS_SETTLE_MS` is Phase 32's call.
+
+If the runner-up is ratified: identical numbers on the action bar; the bundled toast itself needs no arm delay (non-interactive except its own optional tap-to-dismiss, which must carry `touch-action:manipulation` like `.mw-toast`).
+
+### 6.4 Toast-vs-round-surface routing
+
+| Event family | Examples | In combat | Out of combat | Rule |
+| --- | --- | --- | --- | --- |
+| Player outcomes | `struck`, `strikeMissed`, `foeKilled` (via killFold) | Round card | n/a | Folded by `yourRound`/`killFold` |
+| Foe outcomes | `struckByFoe`, `foeMissed`, `armorSoaked` and the four Phase 28 armor outcomes | Round card | n/a | Folded by `enemyRound` |
+| Party and ally | `memberStruck`, ally strikes and casts | Round card | n/a | Folded by `enemyRound`/`allyCast` sibling handling |
+| Spell chains | `spellThrown` → outcome, 3+ targets collapsed | Round card | n/a | Folded by `spellChain` |
+| In-combat rolls | flee, parley, chest chains | Round card | n/a | Folded by `fleeChain`/`parleyChain`/`chestChain` |
+| Foe abilities and conditions | bolts, drains, debuffs, heals, summons | Round card | n/a | Routed through `TOAST_FOR` directly if not consumed by a grouper |
+| Feature events | `FEATURE_EVENTS` (frenzy, backstab, etc.) | Round card | Toast | Existing `FEATURE_EVENTS` set unchanged |
+| Refusals and blocks | `strikeRefused`, `fleeRefused`, `noChargesLeft`, `spellNotKnown` (`PRIORITY.block` tier) | Stays a toast | Stays a toast | A refusal is a direct response to the just-tapped button, not round narrative |
+| Encounter start | `encounterStarted` and its same-action followers | Round card (first round) | n/a | Folded by `encounterStart` |
+| Loot pile events | `lootDropped` (mid-fight), `lootTaken`/`lootLeft` (at the loot card) | Round card / toast | n/a | `lootDropped` joins the round card; take/leave stay toasts as Phase 29 ships |
+| Out-of-combat narrative | `move`, `camp`, teleport, find | n/a | Toast unchanged | Phase 25/25.1 rules stand |
+| `CARD_EVENTS` | `floorChanged`, `leveled` | n/a | `S.beats` Move on card unchanged | Out of this phase's in-combat scope |
+
+**Every event has exactly ONE in-combat presentation destination — nothing is both toasted and folded into the round card — and the Oracle receives every event regardless of destination.** The 25-05 partition invariants (every type in exactly one of `TOAST_FOR`/`ORACLE_ONLY`; `FEATURE_EVENTS ⊆ TOAST_FOR`) hold structurally if Phase 32 keeps routing through `toastsForAction` and only retargets its output.
+
+If the runner-up is ratified: identical routing; "round card" reads "the one bundled toast."
+
+### 6.5 Oracle behaviour
+
+Unchanged and unabridged: `EVENT_NARRATION`'s 218 entries, full-screen tab, opens at newest via `window.__mzOracleToNewest()`, the dice-reveal setting untouched. The round surface derives its grouped text from a copy of the same `events[]` array the Oracle's own `logLine` calls consume — it is never a second writer into `S.log`. Any Phase 32 change that drops, filters, or summarizes an Oracle line is out of contract.
+
+### 6.6 Phase 28 armor outcomes and the Phase 29 loot card
+
+The four Phase 28 armor outcomes (soaked-with-wear, soaked-without-wear, magic-plate soak, armor gives out) are existing event shapes with `TOAST_FOR`/`EVENT_NARRATION` entries already and fold into the round card through the same grouping path — no new event types, no engine work. The Phase 29 loot card is unchanged by this recommendation: the `noteCombat()` → `window.__mzLootReport` hand-off stays, and the card IS the batched pattern already applied at encounter-clear. The "Last exchange" footnote (`S.lastExchange`) is superseded by the round card in the same slot.
+
+### 6.7 Accessibility
+
+`aria-live="polite"` on a persistent wrapper element that survives `#enc-body`'s `innerHTML` rebuilds — live regions announce reliably only when the region node persists (RESEARCH Pitfall 1); the `#mw-toast-host` region today is `aria-live="polite" aria-atomic="false"`. Reduced motion: the guards are `Date.now()` checks independent of any transition (cross-reference §6.3). Any new tappable element carries `touch-action:manipulation` like `.mw-toast`/`.mw-chip` (Pitfall 3). Buttons keep the ≥48dp min-height and the `.actions` gap (Material 48×48dp / 8dp separation, CITED in §2). Reading speed 12–20 CPS comfortable, 20–25 CPS upper bound (ASSUMED, A5) informs whether the block needs a line cap — Phase 32 should measure a worst-case round (4 foes, frenzied, abilities) against the tuning harness before fixing a cap, keeping `enemyRound`'s 3+-collapse discipline either way. Haptics (`@capacitor/haptics`, already present) may be named as an enhancer here — a light tap on a hit/kill — but is never a decision factor.
+
+### 6.8 Tests Phase 32 will re-pin
+
+RESEARCH.md's assumed table read 15+28+38+8+9 = 98; re-measured live via `node --test` per file, the real total is 89 (§1.6). Phase 32 re-pins against the live numbers below.
+
+| Test file | Tests | Pins today | Round Card impact | Bundled Toast impact |
+| --- | --- | --- | --- | --- |
+| `test/unit/narrativeToasts.test.js` | 15 | `narrativeToastText` HTML-stripping/entity-decoding | Unchanged — the helper is reused by the round card's own text prep | Unchanged |
+| `test/unit/shell-toast-wiring.test.js` | 21 | Toast-host wiring, dismiss/lifetime | Re-pinned for routing — in-combat events no longer produce individual toasts | Re-pinned for bundling — one toast per round instead of per event |
+| `test/unit/feedback-payload.test.js` | 37 | Toast/Oracle payload shapes for FEED-01..06 | Re-pinned where a payload assertion checks the toast destination for an in-combat event | Re-pinned for the bundled-count assertion |
+| `test/unit/oracleLogViewModel.test.js` | 8 | `oracleLogViewModel` reverse/reveal-mode contract | Unchanged — the Oracle is untouched by either design | Unchanged |
+| `test/unit/shell-oracle-panel.test.js` | 8 | Oracle tab DOM wiring, "opens at newest" | Unchanged | Unchanged |
+| **Total** | **89** | — | — | — |
+
+The 25-05 `toastsCoverage`/`toastTable` partition invariants (every event type in exactly one of `TOAST_FOR`/`ORACLE_ONLY`; `FEATURE_EVENTS ⊆ TOAST_FOR`) must keep passing under both designs. New tests Phase 32 owes: a `renderEncounter` round-card region source-assertion test in the `test/unit/shell-loot-screen.test.js` style (readFileSync + stripComments source assertion); guard-constant assertions (both `ARM_DELAY_MS`/`DISMISS_SETTLE_MS` present, both compared against `Date.now()`, neither referencing `transitionend`/animation); a routing test asserting no in-combat event type maps to both destinations. The `npm test` baseline (1593/1593) is what Phase 32 grows from.
+
+## 7. Ratification
+
+**Ratified design:** _pending user pick_
+
+**How this is ratified:** the orchestrator presents §4 and §5 with the §3.2 totals in one AskUserQuestion; the user picks or redirects. If redirected, §4 is amended to the chosen design before the PROJECT.md row is written. The row is written immediately after the pick, inside Phase 30, so Phase 32 is planned against a recorded decision.
+
+**Key Decision row drafts (orchestrator copies ONE after the pick):**
+
+| Decision | Rationale | Outcome |
+| --- | --- | --- |
+| DRAFT A — Combat round narrative = one always-visible Round Card in the encounter panel (below the foe roster, above the action bar) + `ARM_DELAY_MS`/`DISMISS_SETTLE_MS` = 250 ms `Date.now()` guards | Scored 4.75/5 on the fixed scorecard (highest of all six patterns); generalizes the shipped Phase 29 loot card; reuses `toastsForAction`'s existing groupers unmodified | Phase 32 builds from §6 |
+| DRAFT B — Combat round narrative = one bundled toast per round in `#mw-toast-host` (Guarded, Bundled Toast) + the same `ARM_DELAY_MS`/`DISMISS_SETTLE_MS` guards on the action bar | Scored 3.15/5 as guards-alone, materially higher once bundling's coherence gain is counted; minimal structural change, least test churn of the two, preserves the current visual language | Phase 32 builds §5 in place of §4, with §6's wireframes/routing/guards read through the "If the runner-up is ratified" notes |
+
+## Appendix A — Sources
+
+**Primary (HIGH confidence — direct code inspection, this session):**
+- `src/browser/toasts.js` (read in full, live-imported for exact counts)
+- `mazeworld.html` (`renderEncounter`, `hasActiveEncounter`, `.mw-overlay`/`.mazefoot`/`.mw-toast-host` CSS, all read directly)
+- `src/browser/controls.js` (read in full)
+- `src/browser/eventNarration.js` / `src/browser/viewModels.js#oracleLogViewModel` (live-imported + read)
+- `test/unit/narrativeToasts.test.js`, `test/unit/shell-toast-wiring.test.js`, `test/unit/feedback-payload.test.js`, `test/unit/oracleLogViewModel.test.js`, `test/unit/shell-oracle-panel.test.js` (each run standalone via `node --test` for live counts)
+- `npm test` run fresh this session: 1593/1593 passing
+
+**Secondary (MEDIUM confidence — WebSearch, official/primary pages):**
+- https://darkestdungeon.wiki.gg/wiki/Combat_Mechanics_(Darkest_Dungeon) — Combat Mechanics (Darkest Dungeon) — Official Wiki
+- https://apps.apple.com/us/app/darkest-dungeon-tablet-edition/id1199831446 — Darkest Dungeon: Tablet Edition — App Store
+- https://en.wikipedia.org/wiki/Hoplite_(video_game) — Hoplite (video game) — Wikipedia
+- https://medium.com/@scott_williams/hoplite-7c190d3f6ecc — Hoplite — Scott Williams, Medium
+- https://www.gamedeveloper.com/game-platforms/road-to-the-igf-subset-games-i-into-the-breach-i- — Road to the IGF: Subset Games' Into the Breach — Game Developer
+- https://interfaceingame.com/games/into-the-breach/ — Into the Breach — Interface In Game
+- https://m1.material.io/usability/accessibility.html — Accessibility — Material Design (m1)
+- https://support.google.com/accessibility/android/answer/7101858?hl=en — Touch target size — Android Accessibility Help
+- https://developer.chrome.com/blog/300ms-tap-delay-gone-away — 300ms tap delay, gone away — Chrome for Developers
+- https://www.yosenspace.com/posts/lets-code-roguelike-tutorial-part7-enhancing-ui.html — Let's code with the Roguelike tutorial - Part 7 - Enhancing the UI
+- https://www.phoca.cz/a11y-component-lab/toast — Accessible Toast Notification — A11y Component Lab
+
+**Tertiary (LOW confidence — WebSearch summary only, not independently re-verified; see Appendix B):**
+- Dungeon Crawl Stone Soup / Cogmind message-log conventions (A1)
+- Card Crawl / Dicey Dungeons auto-battle conventions (A2)
+- Diablo/Pokémon/MMO floating-text conventions (A3)
+- Fire Emblem / Advance Wars battle-forecast panels (A4)
+- Mobile UI reading-speed CPS bounds (A5)
+
+## Appendix B — Assumptions log
+
+| # | Claim | Section | Risk if wrong |
+| --- | --- | --- | --- |
+| A1 | Dungeon Crawl Stone Soup and Cogmind's message-log implementations follow the genre-standard append-and-scroll pattern described | §2.1 Pattern 1 | Low — cited as illustrative genre examples only; the actual decision rests on the "scrolling log duplicates the Oracle" structural argument, independently derivable from this project's own architecture |
+| A2 | Card Crawl / Dicey Dungeons follow auto-battle/idle conventions as described | §2.1 Pattern 3 | Low — Pattern 3 is rejected on structural grounds (timer-paced reading, new state machine cost) that don't depend on these titles' specific implementations |
+| A3 | Diablo/Pokémon/MMO floating-text conventions are as described | §2.1 Pattern 4 | Low — Pattern 4 is rejected on "zero voice room" and "no canvas typography layer" arguments, independently verifiable against this project's own code |
+| A4 | Fire Emblem/Advance Wars battle-forecast panels work as described | §2.1 Pattern 2 | Low — Pattern 2's case rests primarily on the verified Darkest Dungeon citations and the already-shipped Phase 29 loot card, not on this genre claim |
+| A5 | 12–20 CPS / 20–25 CPS are the correct comfortable/fast reading-speed bounds for this audience | §6.7 Accessibility | Medium — the Round Card has no forced auto-dismiss timer, so a wrong CPS figure only affects a secondary "should we cap the block's line count" tuning decision, not a hard functional requirement |
+
+**Confidence statement:** the recommendation rests on HIGH-confidence code-read evidence (the current toast/renderEncounter architecture, the already-shipped Phase 29 loot-card precedent); the shipped-game examples throughout §2 are illustrative and comparative, not load-bearing for the recommendation itself.
