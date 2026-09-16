@@ -409,7 +409,7 @@ The 25-05 `toastsCoverage`/`toastTable` partition invariants (every event type i
 
 ## 7. Ratification
 
-**Ratified design:** _pending user pick_
+**Ratified design:** the Round Card (§4) — ratified by the user 2026-09-16 during the v1.3 autonomous run (Phase 30 ratification pause). Key Decision row DRAFT A copied to PROJECT.md; Phase 32 builds from §6.
 
 **How this is ratified:** the orchestrator presents §4 and §5 with the §3.2 totals in one AskUserQuestion; the user picks or redirects. If redirected, §4 is amended to the chosen design before the PROJECT.md row is written. The row is written immediately after the pick, inside Phase 30, so Phase 32 is planned against a recorded decision.
 
