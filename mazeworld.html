@@ -1615,6 +1615,11 @@ html,body{height:100%}
     }
     // DFB-03: every open of the Oracle lands on the most recent line.
     if (name === "oracle") window.__mzOracleToNewest?.();
+    // Phase 33 (UIF-02, site 2): returning to the map from Hero/Gear/Oracle/
+    // Dead recenters on the party; optional-chained because the initial
+    // showTab("maze") at tab-init runs before the classic script assigns the
+    // bridge (a harmless no-op then).
+    if (name === "maze") window.mzCenterMap?.();
     // E9 (04.2 Bugs B): re-fetch the graveyard from storage every time the Dead
     // tab is opened. The Dead screen renders from the classic in-memory `graves`
     // array, which is only synced from storage at BOOT (loadGraves() inside
@@ -2439,7 +2444,11 @@ let CELL = 28;
 let pan = { x: 0, y: 0 };
 // DR13: pinch-to-zoom map scale. `zoom` multiplies the text-scale-derived base
 // cell size in fit(); clamped so the maze never zooms uselessly tiny or huge.
-let zoom = 1;
+// Phase 33 (UIF-03, CONTEXT Area 2): the default is the LITERAL midpoint of
+// ZOOM_MIN..ZOOM_MAX ((0.6 + 2.4) / 2 = 1.5, the user chose literal over
+// geometric). SESSION-ONLY -- this variable is never persisted (no settings
+// row, never written to S), so every cold start returns here.
+let zoom = 1.5;
 const ZOOM_MIN = 0.6, ZOOM_MAX = 2.4;
 const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 const CANVAS_PAD = 0;
@@ -5015,7 +5024,14 @@ function renderEncounter() {
   // true -> false transition (the overlay just closed under the thumb) —
   // window.move's settle clause refuses a step for DISMISS_SETTLE_MS after
   // this moment so a dismiss tap/step can never double as the first move.
-  if (encWasActive && !active) lastDismissAt = Date.now();
+  // Phase 33 (UIF-02, RESEARCH Pattern 3 site 1): the same true->false
+  // transition is the one moment every over-map overlay (store, beats,
+  // death, joiner, find, loot) has just closed, so recenter the viewport on
+  // the party here; centerMap only touches pan/positionCanvas, never S.floor.
+  if (encWasActive && !active) {
+    lastDismissAt = Date.now();
+    window.mzCenterMap?.();
+  }
   encWasActive = active;
   if (!active) {
     if (panel) panel.hidden = true;
@@ -5711,9 +5727,16 @@ window.mzCenterMap = centerMap;
     }
   });
   const release = e => {
+    // Phase 33 (UIF-02/03): recenter ONCE when a two-finger pinch ends (the
+    // second finger lifted), mirroring the settings textSize recenter; NEVER
+    // inside pointermove -- a per-tick reset would fight the live gesture and
+    // make pinch-to-zoom feel broken. The one-finger hand-off below then
+    // starts from the recentered pan.
+    const wasPinch = !!pinch;
     pts.delete(e.pointerId);
     if (pts.size < 2) pinch = null;
     if (pointerStart && e.pointerId === pointerStart.id) pointerStart = null;
+    if (wasPinch && pts.size < 2) window.mzCenterMap?.();
     // one finger left after a pinch -> hand the pan off to it cleanly
     if (pts.size === 1 && !pointerStart) {
       const [id, p] = [...pts.entries()][0];
@@ -6016,6 +6039,10 @@ window.__mzClassicBoot = async function classicBoot() {
   function closeSettingsSheet() {
     const sheet = document.getElementById("mw-settings-sheet");
     if (sheet) sheet.hidden = true;
+    // Phase 33 (UIF-02, site 3): the Settings sheet is reachable from any
+    // tab and outside the tab/overlay systems, so it needs its own recenter;
+    // both callers (scrim, Close) funnel through here.
+    window.mzCenterMap?.();
   }
   document.getElementById("mw-gear-btn")?.addEventListener("click", openSettingsSheet);
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
