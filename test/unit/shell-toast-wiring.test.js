@@ -262,36 +262,42 @@ test("DFB-01: FEATURE_EVENT_TITLE carries a title for both CARD_EVENTS", () => {
   }
 });
 
-// ─── Phase 32 (CMBUI-02): in-combat routing re-pin ───────────────────────
+// ─── Phase 34 (CSCR-04): in-combat routing re-pin ────────────────────────
 //
-// dispatchWithToasts is retargeted: while the POST-dispatch state has a
-// combat, every folded toast except a PRIORITY.block refusal becomes a
-// Round Card line instead of a toast. These pins prove the routing is a
-// single if/else inside the one pipeline function (structural exclusivity),
-// that the card path requests the UNCAPPED list while the toast path keeps
-// MAX_TOASTS, and that toasts.js's only change is the new `limit` option.
+// dispatchWithToasts is retargeted again: while EITHER the pre- or
+// post-dispatch state has a combat, every folded line (narrative AND dull
+// refusals alike) goes to the whole-fight window.__mzFightLog instead of a
+// Round Card line — there is no toast for any in-combat line any more.
+// These pins prove the routing is a single if/else inside the one pipeline
+// function (structural exclusivity), that the log path is uncapped while
+// the toast path keeps MAX_TOASTS, and that window.__mzFightLog is cleared
+// out of combat.
 
 test("Phase 32: the module imports PRIORITY, MAX_TOASTS, narrativeToastText on their own line", () => {
   const hits = CODE.match(/import \{ PRIORITY, MAX_TOASTS, narrativeToastText \} from "\.\/src\/browser\/toasts\.js";/g) || [];
   assert.equal(hits.length, 1, "the PRIORITY/MAX_TOASTS/narrativeToastText import must appear exactly once");
 });
 
-test("Phase 32: dispatchWithToasts routes card-vs-toast via a single if/else, uncapped card + MAX_TOASTS-capped queue", () => {
+test("Phase 34: dispatchWithToasts routes log-vs-toast via a single if/else, uncapped log + MAX_TOASTS-capped queue", () => {
   const start = CODE.indexOf("function dispatchWithToasts(action)");
   const end = CODE.indexOf("window.move = function engineMove");
   assert.ok(start !== -1 && end !== -1 && end > start, "dispatchWithToasts..window.move region must be found");
   const region = CODE.slice(start, end);
-  assert.match(region, /const inCombat = !!\(result\.state && result\.state\.combat\)/);
-  const cardCalls = region.match(/toastsForAction\(action\.type, result\.events, ctx, \{ limit: Infinity \}\)/g) || [];
-  assert.equal(cardCalls.length, 1, "exactly one uncapped toastsForAction call for the card path");
-  const ifElse = region.match(/if \(inCombat && t\.priority !== PRIORITY\.block\)/g) || [];
-  assert.equal(ifElse.length, 1, "exactly one routing if/else");
+  const wasCombatHits = region.match(/const wasCombat = !!\(before && before\.combat\)/g) || [];
+  assert.equal(wasCombatHits.length, 1, "exactly one wasCombat derivation");
+  const inCombatHits = region.match(/const inCombat = !!\(result\.state && result\.state\.combat\)/g) || [];
+  assert.equal(inCombatHits.length, 1, "exactly one inCombat derivation");
+  const ifHits = region.match(/if \(wasCombat \|\| inCombat\)/g) || [];
+  assert.equal(ifHits.length, 1, "exactly one routing if");
+  const foldCalls = region.match(/fightLogLinesFor\(action\.type, result\.events, ctx\)/g) || [];
+  assert.equal(foldCalls.length, 1, "exactly one fightLogLinesFor call for the log path");
+  const queueCalls = region.match(/toastsForAction\(action\.type, result\.events, ctx, \{ limit: Infinity \}\)/g) || [];
+  assert.equal(queueCalls.length, 1, "exactly one uncapped toastsForAction call for the out-of-combat queue path");
   const capped = region.match(/queue\.slice\(0, MAX_TOASTS\)/g) || [];
   assert.equal(capped.length, 1, "the toast path keeps the host's MAX_TOASTS cap");
   const toastCalls = region.match(/window\.mzToast\?\.\(t\.text, t\.tone\)/g) || [];
   assert.equal(toastCalls.length, 1, "exactly one window.mzToast call inside dispatchWithToasts");
-  assert.match(region, /narrativeToastText\(t\.text\)/);
-  assert.match(region, /window\.__mzRoundCard = null/);
+  assert.match(region, /window\.__mzFightLog = null/);
 });
 
 test("Phase 32: toasts.js carries the limit option once, and the old literal MAX_TOASTS slice is gone", () => {

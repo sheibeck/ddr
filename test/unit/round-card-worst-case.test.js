@@ -1,24 +1,27 @@
 // test/unit/round-card-worst-case.test.js
 //
-// Phase 32 (CMBUI-02, design §6.7 / RESEARCH Pitfall 4), Plan 03 — measures
-// the worst-case Round Card round against the REAL engine (applyAction) and
-// the REAL toastsForAction pipeline, combining BOTH frenzy mechanics (a
-// Fridgian hero's player-side frenzy second swing AND a foe carrying
-// `sp.atk:2` + `frenzied:true` for a 4-swing melee turn) plus three
-// ability-kit foes (Stalka Beast/Djinni/Krupke, straight off
-// content/bestiary.js), swept over a deterministic seed range. For every
-// seed it asserts the Round Card's line count EQUALS the uncapped folded
-// non-refusal toast count (`toastsForAction(..., { limit: Infinity })` —
-// CONTEXT Area 1 #5: the card has no cap) while the toast-host's default
-// call still caps at MAX_TOASTS. The two `fixed*` state-builder helpers are
-// copied verbatim from test/unit/foe-abilities.test.js (module-local there,
-// not exported).
+// Phase 34 (CSCR-04), Plan 02 — retargeted from the Round Card to the
+// whole-fight fight log: log line count = folded count (refusals
+// included — they are dull entries in the log now, not filtered out).
+// Measures the worst-case fight-log round against the REAL engine
+// (applyAction) and the REAL toastsForAction/fightLogLinesFor pipeline,
+// combining BOTH frenzy mechanics (a Fridgian hero's player-side frenzy
+// second swing AND a foe carrying `sp.atk:2` + `frenzied:true` for a
+// 4-swing melee turn) plus three ability-kit foes (Stalka Beast/Djinni/
+// Krupke, straight off content/bestiary.js), swept over a deterministic
+// seed range. For every seed it asserts the fight log's line count EQUALS
+// the uncapped folded toast count (`toastsForAction(..., { limit: Infinity
+// })`) while the toast-host's default call still caps at MAX_TOASTS, and
+// tracks how many seeds reveal at least one line's dice via a non-null
+// `roll`. The two `fixed*` state-builder helpers are copied verbatim from
+// test/unit/foe-abilities.test.js (module-local there, not exported).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { applyAction } from "../../engine/engine.js";
-import { toastsForAction, MAX_TOASTS, narrativeToastText, PRIORITY } from "../../src/browser/toasts.js";
+import { toastsForAction, MAX_TOASTS } from "../../src/browser/toasts.js";
+import { fightLogLinesFor } from "../../src/browser/fightLog.js";
 
 // ─── fixed* helpers, copied verbatim from test/unit/foe-abilities.test.js ──
 
@@ -124,22 +127,30 @@ function runScenario(scenarioName, buildState, action) {
   let abilitySeeds = 0;
   let sawFrenzy = false;
   let sawFourStalkaSwings = false;
+  let rollSeeds = 0;
 
   for (let seed = 1; seed <= SEED_COUNT; seed++) {
     const state = buildState();
     const result = applyAction({ ...state, rngState: seed }, action);
     const events = result.events;
 
-    // the Round Card's own uncapped request (mazeworld.html's
-    // dispatchWithToasts — 32-02) vs. the toast host's default (capped) call
+    // the fight log's own uncapped request (mazeworld.html's
+    // dispatchWithToasts — 34-02) vs. the toast host's default (capped)
+    // call. Phase 34: log line count = folded count (refusals included —
+    // they are dull entries in the log now, not filtered out).
     const folded = toastsForAction(action.type, events, {}, { limit: Infinity });
-    const cardEligible = folded.filter((t) => t.priority !== PRIORITY.block);
-    const lines = cardEligible.map((t) => narrativeToastText(t.text) || t.text);
+    const lines = fightLogLinesFor(action.type, events);
     assert.equal(
       lines.length,
-      cardEligible.length,
-      `seed ${seed}: every card-eligible folded toast must produce one line`,
+      folded.length,
+      `seed ${seed}: fight-log line count must equal the uncapped folded toast count (refusals included)`,
     );
+    for (const line of lines) {
+      assert.ok(
+        line.tone === "narrative" || line.tone === "dull",
+        `seed ${seed}: every fight-log line's tone must be narrative or dull, got ${line.tone}`,
+      );
+    }
 
     const hostCapped = toastsForAction(action.type, events, {});
     assert.ok(
@@ -149,11 +160,12 @@ function runScenario(scenarioName, buildState, action) {
 
     if (events.length > maxEvents.n) maxEvents = { n: events.length, seed };
     if (lines.length > maxLines.n) maxLines = { n: lines.length, seed };
-    const chars = lines.join(" ").length;
+    const chars = lines.map((l) => l.text).join(" ").length;
     if (chars > maxChars.n) maxChars = { n: chars, seed };
 
     if (events.some((e) => e.ability)) abilitySeeds++;
     if (events.some((e) => e.type === "frenzy")) sawFrenzy = true;
+    if (lines.some((l) => l.roll)) rollSeeds++;
     const stalkaSwings = events.filter(
       (e) => (e.type === "struckByFoe" || e.type === "foeMissed") && e.name === "Stalka Beast",
     ).length;
@@ -161,13 +173,13 @@ function runScenario(scenarioName, buildState, action) {
   }
 
   console.log(
-    `round-card worst case (${scenarioName}): seed=${maxLines.seed} events=${maxEvents.n} lines=${maxLines.n} chars=${maxChars.n} abilitySeeds=${abilitySeeds}`,
+    `fight-log worst case (${scenarioName}): seed=${maxLines.seed} events=${maxEvents.n} lines=${maxLines.n} chars=${maxChars.n} abilitySeeds=${abilitySeeds} rollSeeds=${rollSeeds}`,
   );
 
-  return { maxLines, maxEvents, maxChars, abilitySeeds, sawFrenzy, sawFourStalkaSwings };
+  return { maxLines, maxEvents, maxChars, abilitySeeds, sawFrenzy, sawFourStalkaSwings, rollSeeds };
 }
 
-test("fight scenario: the worst-case round card is uncapped, the toast host stays capped, ability kits fire", () => {
+test("fight scenario: the worst-case fight log is uncapped, the toast host stays capped, ability kits fire", () => {
   const stats = runScenario(
     "fight",
     () => {
@@ -177,11 +189,12 @@ test("fight scenario: the worst-case round card is uncapped, the toast host stay
     },
     { type: "fight" },
   );
-  assert.ok(stats.maxLines.n >= 2, `expected at least 2 card lines in the worst fight-scenario round, got ${stats.maxLines.n}`);
+  assert.ok(stats.maxLines.n >= 2, `expected at least 2 log lines in the worst fight-scenario round, got ${stats.maxLines.n}`);
   assert.ok(stats.abilitySeeds >= 1, "expected at least one seed to fire a foe ability kit during the fight scenario");
+  assert.ok(stats.rollSeeds >= 1, "at least one seed reveals dice");
 });
 
-test("attack scenario: the worst-case round card is uncapped, the toast host stays capped, both frenzy mechanics fire", () => {
+test("attack scenario: the worst-case fight log is uncapped, the toast host stays capped, both frenzy mechanics fire", () => {
   const stats = runScenario(
     "attack",
     () => {
@@ -191,11 +204,12 @@ test("attack scenario: the worst-case round card is uncapped, the toast host sta
     },
     { type: "attack" },
   );
-  assert.ok(stats.maxLines.n >= 2, `expected at least 2 card lines in the worst attack-scenario round, got ${stats.maxLines.n}`);
+  assert.ok(stats.maxLines.n >= 2, `expected at least 2 log lines in the worst attack-scenario round, got ${stats.maxLines.n}`);
   assert.ok(stats.abilitySeeds >= 1, "expected at least one seed to fire a foe ability kit during the attack scenario");
   assert.ok(stats.sawFrenzy, "expected at least one seed to fire the Fridgian hero's player-side frenzy (a 'frenzy' event)");
   assert.ok(
     stats.sawFourStalkaSwings,
     "expected at least one seed where the Stalka Beast's foe-side frenzy (frenzied + sp.atk:2) produced >= 4 melee swing events",
   );
+  assert.ok(stats.rollSeeds >= 1, "at least one seed reveals dice");
 });
