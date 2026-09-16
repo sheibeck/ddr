@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 33 — UI Feel & Store Polish
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-16 — Phase 32 complete, transitioned to Phase 33
+Status: Executing Phase 33 (3 plans, sequential waves; last phase of v1.3)
+Last activity: 2026-09-16 — Phase 33 planned (UIF-04 dropped), execution started (wave 1 of 3)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -87,7 +87,7 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 ## Session Continuity
 
 Last session: 2026-09-16T17:29:50.732Z
-Stopped at: Phase 32 complete (3/3 plans, 32-VERIFICATION passed, 14 Pixel 7 checks deferred incl. CMBUI-06) — next: Phase 33 smart discuss
+Stopped at: Phase 33 wave 1 (33-01 STORE-01 engine) executing
 Resume file: None
 
 ## Operator Next Steps
