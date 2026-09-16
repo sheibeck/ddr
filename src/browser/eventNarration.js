@@ -185,6 +185,12 @@ export const EVENT_NARRATION = {
     if (e.courtMageTalksFirst) line += ` You open with a few words. They open with everything else.`;
     return line;
   },
+  // Phase 31 (CMB-01): the FIGHT step's own initiative outcome — the
+  // encounter step no longer knows who moves first.
+  combatJoined: (e) =>
+    e.first === "you"
+      ? `<span class="beat">You move first.</span>`
+      : `<span class="hurt">They move first.</span>`,
   trackable: () => `<span class="beat">They have not noticed you yet.</span>`,
   allyJoined: (e) => `<span class="hit">${e.name ?? "An ally"} falls in beside you.</span>`,
   warlockBoost: (e) => `The Warlock's presence stiffens the dead. <span class="hurt">+${e.amount ?? 0} hp to every corpse in the room.</span>`,
@@ -197,17 +203,25 @@ export const EVENT_NARRATION = {
       : `<span class="hit">${e.name ?? "It"} thinks better of it and leaves.</span>`,
   foeBored: (e) => `<span class="hit">${e.name ?? "It"} loses interest entirely.</span>`,
   encounterCleared: () => `<span class="hit">Nothing left standing.</span>`,
-  phobiaFrozen: () => `<span class="hurt">Your phobia has you rooted to the spot.</span>`,
+  // Phase 31 (renamed from phobiaFrozen — "Phobia should be penalties, never
+  // a no actions state", user ruling 2026-09-16): a triggered phobia is now
+  // a −to-hit/half-damage penalty for e.rounds rounds — you can still swing.
+  phobiaAfraid: (e) =>
+    `<span class="hurt">Your phobia has you shaking.</span> Harder to hit and softer blows for ${e.rounds ?? 2} rounds. You can still swing — you just will not enjoy it.`,
   combatInDark: () => `<span class="beat">You cannot see what you are fighting.</span>`,
   // Phase 23 (IDENT-01): the refusal now names the attack spell the Wizard
   // should cast instead, when the engine supplies one.
+  // Phase 31 (CMB-01): notFought — Fight! not yet pressed.
   strikeRefused: (e) =>
     e.reason === "wizard"
       ? e.spell
         ? `<span class="miss">A Wizard does not stoop to fisticuffs while ${e.spell} is still in the book.</span>`
         : `<span class="miss">A Wizard does not stoop to fisticuffs while a spell remains.</span>`
-      : `<span class="miss">You hold back.</span>`,
-  shookOffFrozen: () => `<span class="hit">You shake it off.</span>`,
+      : e.reason === "notFought"
+        ? `<span class="miss">Fight! first, then swing.</span>`
+        : `<span class="miss">You hold back.</span>`,
+  // Phase 31 (renamed from shookOffFrozen): the Afraid countdown reaching 0.
+  fearPassed: () => `<span class="hit">The fear passes.</span> Your hands remember what they are for.`,
   frenzy: () => `<span class="hurt">Something in your blood takes over. Frenzy.</span>`,
   // Phase 25 (FEED-05 Oracle half): `e.quip` is a PRESENTATION-ONLY field —
   // never set by the engine, only by 25-02's decorateMisses — appended after
@@ -216,7 +230,7 @@ export const EVENT_NARRATION = {
   strikeMissed: (e) =>
     e.untouchable
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`
-      : `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
+      : `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   backstabDenied: () => `<span class="miss">Heavy armor gives you away.</span>`,
   silenceStrike: () => `<span class="hit">Not a sound. Critical.</span>`,
@@ -236,7 +250,10 @@ export const EVENT_NARRATION = {
       cutthroat: "The Cutthroat's first blow. Critical!",
     };
     const critText = e.critical ? `<span class="hit">${CRIT_BY_TEXT[e.critBy] ?? "Critical!"}</span> ` : "";
-    return `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.`;
+    // Phase 31 (Afraid): needModsClause names the -3 afraid penalty when
+    // present; `e.afraid` appends the pulled-blow line (absent for every
+    // non-afraid strike, byte-identical to before).
+    return `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
   },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
   foeKilled: (e) => `<span class="hit">${e.name ?? "It"} falls.</span> +<span class="roll">${e.spGained ?? 0}</span> XP.`,
@@ -244,7 +261,12 @@ export const EVENT_NARRATION = {
     (e.wp ?? 0) > 0
       ? `You cook what is left. <span class="hit">+${e.wp} hp, +${e.rations ?? 1} ration.</span>`
       : `You salvage a ration off the carcass. <span class="hit">+${e.rations ?? 1} ration.</span>`,
-  fleeRefused: () => `<span class="miss">A Samurai does not run.</span>`,
+  // Phase 31 (CMB-01): notFought — Fight! not yet pressed — alongside the
+  // existing samurai reason.
+  fleeRefused: (e) =>
+    e.reason === "notFought"
+      ? `<span class="miss">Running comes after Fight!, not instead of it.</span>`
+      : `<span class="miss">A Samurai does not run.</span>`,
   // Phase 24 (IDENT-05): a Master of Arms' tracked round-1 withdrawal is
   // denied — they fall through to the ordinary flee roll below instead.
   withdrawalDenied: () => `<span class="miss">Slipping away untouched would mean not attacking. You attack. Roll like everyone else.</span>`,
@@ -272,7 +294,9 @@ export const EVENT_NARRATION = {
         ? `<span class="miss">A Ninja does not speak. Least of all to them.</span>`
         : e.reason === "masterOfArms"
           ? `<span class="miss">A Master of Arms has one answer to a question like that, and it is not a sentence.</span>`
-          : `<span class="miss">Not this time, not with them.</span>`,
+          : e.reason === "notFought"
+            ? `<span class="miss">They are not listening yet.</span> Fight! first.`
+            : `<span class="miss">Not this time, not with them.</span>`,
   // Phase 20 (D-14): appends the fluency bonus (2 per point) whenever it is
   // non-zero, e.g. "need 15 (+2 <the literal below>)".
   parleyRolled: (e) =>
@@ -413,6 +437,26 @@ export const EVENT_NARRATION = {
   spellNotKnown: (e) => `<span class="miss">You do not know ${e.spell ?? "that"}.</span>`,
   spellAboveLevel: (e) => `<span class="miss">${e.spell ?? "That"} needs level ${e.need ?? "?"}; you are ${e.have ?? "?"}.</span>`,
   spellSchoolLocked: (e) => `<span class="miss">${e.spell ?? "That"} is not open to you yet.</span>`,
+  // Phase 31 (CMB-01/CMB-02): the NEW spell-refusal circumstances — never a
+  // `frozen` reason; nothing is ever refused for fear.
+  castRefused: (e) => {
+    const map = {
+      notFought: `<span class="miss">Fight! first.</span> ${e.spell ?? "The spell"} keeps.`,
+      combatOnly: `<span class="miss">${e.spell ?? "That"} wants a target.</span> Save it for a fight.`,
+      exploreOnly: `<span class="miss">${e.spell ?? "That"} needs quieter surroundings.</span>`,
+      noTarget: `<span class="miss">Nothing left to aim at.</span>`,
+    };
+    return map[e.reason] ?? `<span class="miss">${e.spell ?? "The spell"} refuses you.</span>`;
+  },
+  // Phase 31 (CMB-01): the generic action-refusal vocabulary (sing/drinkPotion).
+  actionRefused: (e) => {
+    const map = {
+      notFought: `<span class="miss">Fight! first.</span>`,
+      cooldown: `<span class="miss">Your voice needs ${e.left ?? "more"} more squares.</span>`,
+      wrongClass: `<span class="miss">Only a Bard sings here.</span>`,
+    };
+    return map[e.reason] ?? `<span class="miss">Not now.</span>`;
+  },
   spellBackfired: (e) => `<span class="hurt">${e.spell ?? "The spell"} goes wrong.</span>`,
   backfireSelfDamage: (e) => `<span class="hurt">It costs you ${e.amount ?? 0} hp.</span>`,
   spellResisted: (e) => `${e.target ?? "It"} shrugs it off. <span class="roll">${e.roll ?? "?"}</span> vs intel ${e.intel ?? "?"}.`,
@@ -468,7 +512,9 @@ export const EVENT_NARRATION = {
         ? `<span class="miss">The runes mean nothing to you.</span> The scroll stays rolled.`
         : e.reason === "noScrolls"
           ? `<span class="miss">You have no scroll to read.</span>`
-          : `<span class="miss">It stays rolled.</span>`,
+          : e.reason === "notFought"
+            ? `<span class="miss">Fight! first.</span> The scroll will keep.`
+            : `<span class="miss">It stays rolled.</span>`,
   scrollCopiedToGrimoire: (e) => `<span class="hit">${e.spell ?? "It"} copied into your grimoire.</span>`,
   scrollCast: (e) => `The scroll casts itself: ${e.spell ?? "something"}.`,
 
@@ -583,7 +629,19 @@ export const EVENT_NARRATION = {
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
   // doesn't heal" bad — the refusal fires before any side effect.
-  useRefused: (e) => `<span class="miss">${e.item?.n ?? "That"} does not heal,</span> so as far as a Pilfer is concerned it does not work.`,
+  // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason with
+  // cooldown/wrongClass/combatOnly/exploreOnly/noTarget/notFought — the
+  // pilfer line stays byte-identical.
+  useRefused: (e) => {
+    const item = e.item?.n ?? "That";
+    if (e.reason === "cooldown") return `<span class="miss">${item} needs ${e.left ?? "more"} more squares.</span>`;
+    if (e.reason === "wrongClass") return `<span class="miss">${item} is a stick to anyone who is not a Magic User.</span>`;
+    if (e.reason === "combatOnly") return `<span class="miss">${item} wants a target.</span> Save it for a fight.`;
+    if (e.reason === "exploreOnly") return `<span class="miss">${item} needs quieter surroundings.</span>`;
+    if (e.reason === "noTarget") return `<span class="miss">Nothing left to aim at.</span>`;
+    if (e.reason === "notFought") return `<span class="miss">Fight! first.</span> It will keep.`;
+    return `<span class="miss">${item} does not heal,</span> so as far as a Pilfer is concerned it does not work.`;
+  },
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,
   itemFizzled: () => `<span class="miss">Nothing happens.</span>`,

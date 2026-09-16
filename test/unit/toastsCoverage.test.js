@@ -91,6 +91,12 @@ function deriveCanonicalEventTypes() {
         types.add(strMatch[1]);
       }
     }
+    // Phase 31 (CMB-01): refuseIfPending(state, events, "someType", extra)
+    // constructs its event from a PARAMETER, not a literal `type: "..."`
+    // object key — see formatEventsCoverage.test.js's identical addition.
+    for (const m of stripped.matchAll(/refuseIfPending\(\s*state,\s*events,\s*"([A-Za-z]+)"/g)) {
+      types.add(m[1]);
+    }
   }
   return types;
 }

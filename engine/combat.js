@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -215,8 +215,15 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       ...(dmgBonus !== 0 ? { dmgBonus } : {}),
     });
   }
-  state.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked };
-  const first = rollInitiative(state, rng);
+  // CMB-01 (Phase 31): the ENCOUNTER step ends here with `pending: true` —
+  // nothing from rollInitiative onward (initiative, the phobia trigger,
+  // combatInDark, a pre-emptive foeTurn) runs until the new `fight` action
+  // below is dispatched. `encounterStarted` (just below) carries every flag
+  // computable at encounter time (samuraiNeverFirst/fridgianSlow/
+  // acuteHearing/knightBigFoe/courtMageTalksFirst — all zero-draw), but NOT
+  // `first`, which requires rollInitiative's two d20s and is now carried by
+  // `fight`'s own `combatJoined {first}` event instead.
+  state.combat = { foes, type, round: 1, target: 0, spellOpen: false, tracked, pending: true };
   const R = RACES[c.race];
   events.push({
     type: "encounterStarted",
@@ -234,7 +241,8 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     // instead of live state. Safe/additive: no existing event-shape
     // assertion pins this array to exactly {name, lvl, wp}.
     foes: foes.map((f) => ({ name: f.name, lvl: f.lvl, wp: f.wp, maxWP: f.maxWP })),
-    first,
+    // CMB-01 (Phase 31): `first` is no longer known at encounter time — it
+    // moved to `fight`'s `combatJoined` event (see above).
     samuraiNeverFirst: c.sub === "Samurai",
     fridgianSlow: !!R.slow,
     acuteHearing: skill(c, "Acute Hearing"),
@@ -312,47 +320,68 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     state.combat = null;
     return events;
   }
+  return events;
+}
 
-  // DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): the Darkness
-  // phobia (`c.phobia === "Darkness"`) has `phobiaType: null` in the
-  // PHOBIAS catalog (content/flavor.js) — it was one of the 6 phobias with
-  // NO game effect (04.1-RESEARCH.md's Phobias audit). Generalized the
-  // existing type-matched freeze condition to ALSO trigger when the
-  // character is Darkness-phobic AND inDark(state) is true at encounter
-  // start (reusing Task 1's persistent-darkness-aware inDark), reusing the
-  // exact same frozen/shookOffFrozen seam and Hardiness-halved mitigation
-  // the 5 type-matched phobias already use. The two conditions are
-  // mutually exclusive per character (Darkness's phobiaType is always
-  // null, so a Darkness-phobic character never also carries a
-  // type-matched phobiaType), so this never double-triggers or
-  // double-rolls Hardiness for a single character. Because the left side
-  // of the `&&` short-circuits, rng.d(2) is drawn ONLY when one of the two
-  // conditions is already true AND the character has Hardiness — never for
-  // a non-phobic or non-triggered character, and never during chargen — so
-  // RNG consumption order is unchanged for everyone else.
+/**
+ * fight(state, rng, events) — CMB-01 (Phase 31, user ruling 2026-09-16): the
+ * FIGHT step split from startCombat at the roster/`pending` cut line —
+ * resolves everything from `rollInitiative` onward, in the EXACT prototype
+ * draw order: the two initiative d20s (`rollInitiative`, which also
+ * consumes `c.foresight` — spent at Fight! time now, not at the moment the
+ * encounter was glimpsed; a zero-draw, fixture-invisible timing shift), the
+ * phobia trigger's conditional Hardiness `rng.d(2)` (same site, same
+ * condition — now applies the Afraid PENALTY, see below, never a lost
+ * action), `combatInDark` (0 draws), and the pre-emptive `foeTurn` only when
+ * the foes win initiative (`foeTurn`'s own draws, unchanged internally).
+ * Idempotent and zero-draw on a null or already-joined (non-pending) combat
+ * — a replayed Fight! tap can never reroll initiative (T-31-02). A
+ * foes-first opener that triggers Afraid ticks it 2 -> 1 inside this same
+ * call (the foeTurn tail runs before this call returns), exactly like a
+ * pre-cast ward.
+ */
+export function fight(state, rng, events = []) {
+  const C = state.combat;
+  if (!C || !C.pending) return events;
+  const c = state.c;
+  const type = C.type;
+  const first = rollInitiative(state, rng);
+  delete C.pending; // the joined combat object's key set stays byte-identical to the prototype's — deleted, never set false
+  events.push({ type: "combatJoined", first });
+
+  // DELIBERATE RULES CHANGE (04.1-05/04.1-06, 2026-09-09, PHOBIA-01): the
+  // phobia trigger fires on THREE mutually-exclusive conditions per
+  // character (a character carries exactly one `c.phobia` value, and only
+  // Darkness/Death ever have `phobiaType: null` in the PHOBIAS catalog) — a
+  // type-matched phobia (`c.phobiaType === type`), Darkness-in-the-dark
+  // (`inDark(state)`), or a Death-phobic character at/below
+  // DEATH_PANIC_THRESHOLD (25%) of `c.maxWP` (`nearDeathPanic`) — so this
+  // can never double-trigger or double-roll Hardiness for a single
+  // character. Because the left side of the `&&` short-circuits,
+  // `rng.d(2)` is drawn ONLY when one of the three conditions is already
+  // true AND the character has Hardiness — never for a non-phobic or
+  // non-triggered character. WR-02 (19-REVIEW.md): DEATH_PANIC_THRESHOLD
+  // lives as a single source of truth in engine/derived.js, so this check
+  // and conditionsOf's afraid chip can never drift out of sync.
   //
-  // DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Death
-  // phobia (`c.phobia === "Death"`, `phobiaType: null` in the PHOBIAS
-  // catalog) was likewise inert — 04.1-RESEARCH.md flagged it as having "no
-  // existing near-death state hook". Generalized the same freeze condition
-  // a third time to ALSO trigger a near-death panic: a Death-phobic
-  // character whose own `c.wp` is at/below DEATH_PANIC_THRESHOLD (25%) of
-  // `c.maxWP` at encounter start. Death's phobiaType is also always null in
-  // the catalog, so this operand stays mutually exclusive with the other
-  // two per character (a character carries exactly one `c.phobia` value),
-  // and it reuses the identical frozen/shookOffFrozen seam and single
-  // Hardiness rng.d(2) mitigation roll — never a second roll, never for a
-  // non-Death-phobic or non-near-death character, never during chargen.
-  // WR-02 (19-REVIEW.md): DEATH_PANIC_THRESHOLD now lives as a single
-  // source of truth in engine/derived.js (imported below), so this check and
-  // conditionsOf's phobia chip can never drift out of sync again.
+  // DELIBERATE RULES CHANGE (Phase 31, user ruling 2026-09-16: "Phobia
+  // should be penalties, never a no actions state"): the prototype froze
+  // the hero here and spent the first strike shaking it off (`frozen`/
+  // `shookOffFrozen`). The engine now sets `combat.afraid = AFRAID_ROUNDS`
+  // (a shrunk to-hit range and halved damage on the player's strikes, see
+  // engine/derived.js's `afraidNeed`/`afraidDamage`) with ZERO new rng
+  // draws (no shake-off roll) — the trigger condition and the single
+  // conditional Hardiness `rng.d(2)` above are byte-identical to before.
+  // The three fixtures that reach this branch (combat/lose,
+  // combat/lose-apprentice, magic/cast-damage) carry declared action-path
+  // divergence records (see the fixture JSON files under test/parity/fixtures).
   const nearDeathPanic = c.phobia === "Death" && c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD;
   if (
     (c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic) &&
     !(skill(c, "Hardiness") && rng.d(2) === 1)
   ) {
-    state.combat.frozen = true;
-    events.push({ type: "phobiaFrozen" });
+    state.combat.afraid = AFRAID_ROUNDS;
+    events.push({ type: "phobiaAfraid", rounds: AFRAID_ROUNDS });
   }
   if (inDark(state) && !skill(c, "Night Vision")) events.push({ type: "combatInDark" });
   if (first === "foe") {
@@ -376,18 +405,40 @@ export function startCombat(state, wandering, forced, rng, events = []) {
 }
 
 /**
+ * refuseIfPending(state, events, type, extra) — CMB-01 (Phase 31): the ONE
+ * `notFought` guard. Every player combat action other than `fight` calls
+ * this as its FIRST check (before any other refusal, and before its own
+ * `!state.combat` return): while `state.combat.pending` is truthy, pushes
+ * `{ type, ...extra, reason: "notFought" }` and returns `true` (the caller
+ * returns immediately, mutating nothing and drawing nothing); otherwise
+ * returns `false` and the caller proceeds untouched. A single shared
+ * implementation means a future notFought wording/shape change never has to
+ * be repeated at eight call sites.
+ */
+export function refuseIfPending(state, events, type, extra = {}) {
+  if (!state.combat || !state.combat.pending) return false;
+  events.push({ type, ...extra, reason: "notFought" });
+  return true;
+}
+
+/**
  * playerStrike(state, rng, events) — the player's attack action. Ports
  * mazeworld.html playerStrike() (lines 2331-2408): Wizard's melee refusal
- * while an attack spell is castable right now, the frozen-round skip, the
- * attack count (Barbarian/Ambidextrous/haste/Fridgian frenzy — the second
- * wild swing always targets the live foe; see the Phase 24 note below),
- * per-attack toHit vs strikeDie, all the critical-strike rules
- * (Stealth/Cat Burglar/Cutthroat/Ninja/Death-touch/Guard/Soldier no-crit),
- * weaponDamage, and killFoe on lethal.
+ * while an attack spell is castable right now, the Afraid to-hit/damage
+ * penalty (Phase 31 — never a lost action, see below), the attack count
+ * (Barbarian/Ambidextrous/haste/Fridgian frenzy — the second wild swing
+ * always targets the live foe; see the Phase 24 note below), per-attack
+ * toHit vs strikeDie, all the critical-strike rules (Stealth/Cat
+ * Burglar/Cutthroat/Ninja/Death-touch/Guard/Soldier no-crit), weaponDamage,
+ * and killFoe on lethal.
  */
 export function playerStrike(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check, before any other
+  // refusal or the `!C` return below — every player combat action refuses
+  // with `notFought` while Fight! has not yet been pressed.
+  if (refuseIfPending(state, events, "strikeRefused")) return events;
   if (!C) return events;
   // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-01): the prototype
   // (mazeworld.html lines 2331-2408) refused a Wizard's melee strike while
@@ -406,12 +457,6 @@ export function playerStrike(state, rng, events = []) {
       events.push({ type: "strikeRefused", reason: "wizard", spell: castable[0].n });
       return events;
     }
-  }
-  if (C.frozen) {
-    C.frozen = false;
-    events.push({ type: "shookOffFrozen" });
-    afterPlayerAction(state, rng, events);
-    return events;
   }
   const foe = C.foes[C.target];
   if (!foe || !foe.alive) C.target = C.foes.findIndex((f) => f.alive);
@@ -450,11 +495,26 @@ export function playerStrike(state, rng, events = []) {
     if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
     if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
     if (t.sp && t.sp.magicOnly && !c.magicWpn) need = 0; // only magic touches it
+    // Phase 31 Afraid — pure arithmetic on already-rolled values, zero rng;
+    // false (afraidMods empty) for every non-phobia fixture. The LAST
+    // modifier, after every other need rule; never revives an untouchable
+    // (need 0) foe.
+    const needBeforeAfraid = need;
+    need = afraidNeed(state, need);
+    const afraidMods = need !== needBeforeAfraid ? [{ name: "afraid", delta: need - needBeforeAfraid }] : [];
     const auto = (c.sub === "Cat Burglar" || c.sub === "Ninja") && !C.opened;
     if (auto) C.opened = true;
     const hit = auto || (need > 0 && roll <= need);
     if (!hit) {
-      events.push({ type: "strikeMissed", target: t.name, roll, need, dieN, untouchable: need === 0 });
+      events.push({
+        type: "strikeMissed",
+        target: t.name,
+        roll,
+        need,
+        dieN,
+        untouchable: need === 0,
+        ...(afraidMods.length ? { needMods: afraidMods } : {}),
+      });
       continue;
     }
 
@@ -535,6 +595,9 @@ export function playerStrike(state, rng, events = []) {
     // C.weakened halving below (same ceil rounding, opposite direction) —
     // pure read, 0 draws, false for every fixture.
     if (c.foeEffect && c.foeEffect.kind === "weakened" && c.foeEffect.rounds > 0) dmg = Math.ceil(dmg / 2);
+    // Phase 31 Afraid — pure arithmetic on already-rolled values, zero rng;
+    // false (afraidMods empty, dmg unchanged) for every non-phobia fixture.
+    dmg = afraidDamage(state, dmg);
     // CANON-01/03/04 (D-05..D-11): route the hero's weapon hit through the
     // seam. `casterClass`/`casterSub` let the multiplier table identify a
     // Fighter's melee vs Trachea (D-11/D-20 — hero-only); `crit` lets a
@@ -542,7 +605,16 @@ export function playerStrike(state, rng, events = []) {
     // `foeArmorSoaked` is the only narration for this blow — no `struck`.
     const landed = damageFoe(state, t, dmg, { kind: "melee", casterClass: c.cls, casterSub: c.sub, crit }, rng, events);
     if (!landed.soaked)
-      events.push({ type: "struck", target: t.name, roll, need, dmg: landed.applied, critical: crit, ...(crit && critBy ? { critBy } : {}) });
+      events.push({
+        type: "struck",
+        target: t.name,
+        roll,
+        need,
+        dmg: landed.applied,
+        critical: crit,
+        ...(crit && critBy ? { critBy } : {}),
+        ...(afraidMods.length ? { needMods: afraidMods, afraid: true } : {}),
+      });
     if (t.wp <= 0) killFoe(state, t, rng, events);
   }
   afterPlayerAction(state, rng, events);
@@ -705,6 +777,8 @@ function pursuitStrike(state, rng, events) {
 export function flee(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
+  if (refuseIfPending(state, events, "fleeRefused")) return events;
   if (!C) return events;
   if (c.sub === "Samurai") {
     events.push({ type: "fleeRefused", reason: "samurai" });
@@ -843,6 +917,8 @@ export function canParley(state) {
 export function parley(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
+  if (refuseIfPending(state, events, "parleyRefused")) return events;
   if (!C) return events;
   if (C.parleyTried) {
     // D-05: a re-sent action after the encounter's one attempt (canParley is
@@ -935,6 +1011,8 @@ export function songReady(state) {
 export function sing(state, rng, events = []) {
   const c = state.c;
   const C = state.combat;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
+  if (refuseIfPending(state, events, "actionRefused", { action: "sing" })) return events;
   if (!C || !songReady(state)) return events;
   const song = SONGS.filter((s) => s.lvl <= c.level).pop();
   c.songAt = state.steps;
@@ -1000,7 +1078,7 @@ export function endCombat(state, events = []) {
     }
     state.party = state.party.filter((m) => m.status !== "downed");
   }
-  state.combat = null;
+  state.combat = null; // Phase 31: this also clears combat.afraid — the fear ends with the fight, not with a fearPassed line
   state.c.regen = false;
   state.c.ward = null;
   state.c.mirror = 0;
@@ -1793,5 +1871,11 @@ export function foeTurn(state, rng, events = []) {
     events.push({ type: "foeEffectFaded", kind: c.foeEffect.kind });
     c.foeEffect = null;
   }
+  // Phase 31 (Afraid ruling, user ruling 2026-09-16): the Afraid countdown —
+  // LAST in the tail (after ward/mirror/foeEffect), ticks once per foeTurn
+  // call exactly like those, and never adds the key to a combat that lacks
+  // it (a combat with no triggered phobia this fight simply never has
+  // `C.afraid`).
+  if (C.afraid > 0 && --C.afraid <= 0) events.push({ type: "fearPassed" });
   return events;
 }

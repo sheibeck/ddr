@@ -17,7 +17,7 @@ import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
 import { move, makeCamp } from "./movement.js";
-import { playerStrike, flee, parley, sing } from "./combat.js";
+import { fight, playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
 import { buyFrom, leaveStore, sellItem } from "./economy.js";
@@ -55,6 +55,12 @@ export function applyAction(state, action) {
       break;
     case "camp":
       makeCamp(next, rng, events);
+      break;
+    case "fight":
+      // CMB-01 (Phase 31): the FIGHT step — initiative onward, moved out of
+      // startCombat. A no-op on a null/already-joined combat (fight itself
+      // guards `!C.pending`).
+      fight(next, rng, events);
       break;
     case "attack":
       playerStrike(next, rng, events);

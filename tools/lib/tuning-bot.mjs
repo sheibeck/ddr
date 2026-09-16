@@ -431,6 +431,8 @@ export function makeBotContext(opts = {}) {
  */
 export function decideAction(state, policyRng, ctx) {
   if (state.combat) {
+    // CMB-01 (Phase 31): the bot presses Fight! like a player would.
+    if (state.combat.pending) return { type: "fight" };
     const c = state.c;
     const C = state.combat;
     const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;

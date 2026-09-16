@@ -28,7 +28,7 @@ import { die } from "./death.js";
 // bookkeeping for stone/fire since killFoe didn't exist yet); now that
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
-import { killFoe } from "./combat.js";
+import { killFoe, refuseIfPending } from "./combat.js";
 // Phase 18 (D-09/CANON-01): the fire effect below routes through the shared
 // foe-damage seam. This edge is NOT part of the circular-import concern
 // above — engine/foeDamage.js imports only ../content/index.js, never
@@ -797,7 +797,11 @@ export function itemReady(state, it) {
 export function useItem(state, i, rng, events = [], now = Date.now) {
   const c = state.c;
   const it = (c.items || [])[i];
-  if (!it || !itemReady(state, it)) return events;
+  if (!it) return events;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check, before the
+  // itemReady cooldown gate.
+  if (refuseIfPending(state, events, "useRefused", { item: it })) return events;
+  if (!itemReady(state, it)) return events;
 
   const kind = it.kind === "potion" ? it.eff2 : it.use;
 

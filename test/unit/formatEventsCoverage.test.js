@@ -102,6 +102,15 @@ function deriveCanonicalEventTypes() {
         types.add(strMatch[1]);
       }
     }
+    // Phase 31 (CMB-01): refuseIfPending(state, events, "someType", extra)
+    // constructs `{ type, ...extra, reason: "notFought" }` from a PARAMETER,
+    // never a literal `type: "..."` object key at the push site — the ONE
+    // notFought guard shared by all eight refusal call sites. Union in every
+    // literal type name passed as its 3rd positional argument, the same way
+    // KNOWN_INDIRECT_TYPES unions in the factory-function types above.
+    for (const m of stripped.matchAll(/refuseIfPending\(\s*state,\s*events,\s*"([A-Za-z]+)"/g)) {
+      types.add(m[1]);
+    }
   }
   return types;
 }

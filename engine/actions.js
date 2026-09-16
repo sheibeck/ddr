@@ -9,6 +9,9 @@
 
 export const ACTION_TYPES = new Set([
   "move",
+  // CMB-01 (Phase 31): the FIGHT step, split from startCombat's ENCOUNTER
+  // step. No payload; no validate case needed (mirrors `camp`).
+  "fight",
   "attack",
   "castSpell",
   "drinkPotion",

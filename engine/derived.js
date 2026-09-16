@@ -22,6 +22,23 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 // one place.
 export const DEATH_PANIC_THRESHOLD = 0.25; // near-death: at/below 25% of maxWP
 
+// TUNING KNOBS — Afraid (Phase 31, user ruling 2026-09-16: "Phobia should be
+// penalties, never a no actions state"). A triggered phobia
+// (engine/combat.js#fight) sets `combat.afraid = AFRAID_ROUNDS`: for that
+// many ROUNDS (ticked once per foeTurn call at the foeTurn tail, cleared
+// unconditionally when the combat ends at endCombat), the player's strike
+// to-hit RANGE SHRINKS by AFRAID_TO_HIT_PENALTY — the game's to-hit is a LOW
+// range (a strike lands on roll <= need), so a SMALLER need is HARDER to hit;
+// see afraidNeed below, floor 1, and an untouchable (need 0) foe is never
+// made hittable by fear — and the player's already-rolled weapon damage is
+// halved (AFRAID_DMG_DIV, Math.ceil, floor 1; see afraidDamage below). Every
+// other action stays fully available while afraid — nothing is ever refused
+// for fear (see refuseIfPending in engine/combat.js, which never fires on an
+// afraid character, only a pending one).
+export const AFRAID_ROUNDS = 2;
+export const AFRAID_TO_HIT_PENALTY = 3;
+export const AFRAID_DMG_DIV = 2;
+
 // --- skills (state-scoped, not global) -------------------------------------
 
 /** skill(c, name) — does the character have skill `name` at all? */
@@ -167,7 +184,7 @@ export function isFlying(state) {
  *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
  *   - affliction {polarity:"bad", kind:"Poison"|"Disease"|…}
  *   - darkness   {polarity:"bad", remaining:<sq left>}    — the persistent Darkness/phobia state
- *   - phobia     {polarity:"bad", phobia:<fear name>}     — DR17: the active fear in the CURRENT combat (state.combat only)
+ *   - afraid     {polarity:"bad", remaining:<rounds>, phobia:<fear name>} — Phase 31 (user ruling 2026-09-16): the Afraid penalty from a triggered phobia in the CURRENT combat, only while combat.afraid > 0 (a Hardiness shrug-off shows nothing)
  *
  * Only currently-active conditions are included; a character with none set
  * yields an empty array. `remaining` is the raw engine counter (squares or
@@ -213,25 +230,19 @@ export function conditionsOf(state) {
   // because the character has the Darkness phobia.
   if (c.darkFor > 0) out.push({ key: "darkness", polarity: "bad", remaining: c.darkFor });
 
-  // Active phobia (DR17 item 1, 2026-09-10): surface the character's fear as a
-  // named BAD chip whenever the phobia is ACTIVELY gripping them in the CURRENT
-  // combat — so the tracker names it (e.g. "Phobia: Humans") for the whole
-  // feared fight, matching the "your phobia rooted you" moment the Oracle
-  // already narrates. This MIRRORS the exact trigger engine/combat.js
-  // startCombat uses (~:259-262): the type-matched freeze (c.phobiaType ===
-  // state.combat.type), the Darkness-in-the-dark freeze, and the near-death
-  // Death-panic freeze — plus state.combat.frozen itself (set by that same
-  // block) so the chip is up while the root actually holds. Gated on
-  // state.combat existing, so it NEVER surfaces outside a fight; a pure read of
-  // already-computed state (no rng, no mutation) — zero parity impact, exactly
-  // like every other condition above.
-  if (state && state.combat && c.phobia) {
-    const phobiaActive =
-      !!state.combat.frozen ||
-      c.phobiaType === state.combat.type ||
-      (c.phobia === "Darkness" && inDark(state)) ||
-      (c.phobia === "Death" && c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD);
-    if (phobiaActive) out.push({ key: "phobia", polarity: "bad", phobia: c.phobia });
+  // Afraid (Phase 31, user ruling 2026-09-16: "Phobia should be penalties,
+  // never a no actions state" — supersedes the old DR17 "phobia" freeze
+  // chip). Surfaces as a named BAD chip whenever engine/combat.js#fight's
+  // phobia trigger has set state.combat.afraid > 0 in the CURRENT combat —
+  // the tracker names it (e.g. "Afraid · N rds") for as long as the penalty
+  // holds. A Hardiness shrug-off never sets the counter, so it shows
+  // nothing; the chip clears the instant the counter reaches 0 (fearPassed)
+  // or the combat ends (endCombat nulls state.combat). Gated on state.combat
+  // existing, so it never surfaces outside a fight; a pure read of
+  // already-computed state (no rng, no mutation) — zero parity impact,
+  // exactly like every other condition above.
+  if (state && state.combat && state.combat.afraid > 0) {
+    out.push({ key: "afraid", polarity: "bad", remaining: state.combat.afraid, phobia: c.phobia });
   }
 
   return out;
@@ -341,6 +352,30 @@ export function toHit(state) {
   if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - 2);
   if (inDark(state) && !skill(c, "Night Vision") && !c.senses) h = Math.min(h, 2);
   return h;
+}
+
+/**
+ * afraidNeed(state, need) — Phase 31 (user ruling 2026-09-16): the Afraid
+ * to-hit penalty, applied as the LAST modifier after every other need rule
+ * (frenzy/asleep/hard-to-hit/fast/magicOnly/darkness). The game's to-hit is
+ * a LOW range (a strike lands on roll <= need), so the penalty SHRINKS the
+ * target number — the PENALTY IS SUBTRACTED FROM THE NEED, never added to
+ * the die roll. Floor 1; an untouchable foe (need 0, e.g. magicOnly without
+ * a magic weapon) is never made hittable by fear (the `need > 0` guard).
+ * Pure, zero rng.
+ */
+export function afraidNeed(state, need) {
+  if (!(state.combat && state.combat.afraid > 0 && need > 0)) return need;
+  return Math.max(1, need - AFRAID_TO_HIT_PENALTY);
+}
+
+/**
+ * afraidDamage(state, dmg) — Phase 31 (user ruling 2026-09-16): halves the
+ * player's already-rolled weapon damage while Afraid, floor 1 (Math.ceil).
+ * Pure, zero rng.
+ */
+export function afraidDamage(state, dmg) {
+  return state.combat && state.combat.afraid > 0 ? Math.max(1, Math.ceil(dmg / AFRAID_DMG_DIV)) : dmg;
 }
 
 /**

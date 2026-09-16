@@ -22,7 +22,7 @@
 import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -48,6 +48,8 @@ const RESIST_IMMUNE_KINDS = new Set(["thrown", "ward", "might", "regen", "heal",
 export function castSpell(state, idx, rng, events = [], now = Date.now) {
   const sp = SPELLS[idx];
   if (!sp) return events;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
+  if (refuseIfPending(state, events, "castRefused", { spell: sp.n })) return events;
   const c = state.c;
   const C = state.combat;
 
@@ -409,6 +411,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
  */
 export function drinkPotion(state, rng, events = []) {
   const c = state.c;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
+  if (refuseIfPending(state, events, "actionRefused", { action: "drinkPotion" })) return events;
   if (c.potions <= 0) return events;
   c.potions--;
   let amt = 2 * rng.d(10) + 5;
@@ -441,6 +445,8 @@ export function canRead(state) {
  */
 export function readScroll(state, rng, events = []) {
   const c = state.c;
+  // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
+  if (refuseIfPending(state, events, "scrollRefused")) return events;
   // Phase 25 (FEED-02): the combined guard is split so each refusal names
   // its own reason instead of failing silently — zero draws, no mutation,
   // both checks sit BEFORE `c.scrolls--` and the rng.pick below.

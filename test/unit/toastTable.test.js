@@ -43,6 +43,8 @@ const REFUSAL_TYPES = [
   "spellNotKnown", "spellAboveLevel", "spellSchoolLocked", "campFailed", "joinerRefused",
   "buyFailed", "backstabDenied", "bagFull", "nothingToThrowAt", "nothingToTurn",
   "gateRefused", "insaneNoTarget", "deathSpellTooWeak", "parleyExhausted",
+  // Phase 31 (CMB-01/CMB-02): the notFought/generic-action refusal vocabulary.
+  "castRefused", "actionRefused",
 ];
 
 test("every refusal type is block/priority-0 with non-empty voiced text, even with a bare/undefined/unknown reason", () => {
@@ -72,6 +74,15 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   const useFallback = TOAST_FOR.useRefused({ type: "useRefused", reason: "definitelyNotAReason" }).text;
   const pilferUse = TOAST_FOR.useRefused({ type: "useRefused", reason: "pilfer", item: { n: "Bomb" } }).text;
   assert.notEqual(pilferUse, useFallback);
+
+  // Phase 31 (CMB-01): a castRefused notFought reason vs the generic fallback.
+  const castFallback = TOAST_FOR.castRefused({ type: "castRefused", reason: "definitelyNotAReason" }).text;
+  const castNotFought = TOAST_FOR.castRefused({ type: "castRefused", reason: "notFought", spell: "Heal" }).text;
+  assert.notEqual(castNotFought, castFallback);
+
+  // Phase 31 (CMB-02): a useRefused cooldown reason vs the generic fallback.
+  const useCooldown = TOAST_FOR.useRefused({ type: "useRefused", reason: "cooldown", item: { n: "Cloak" }, left: 12 }).text;
+  assert.notEqual(useCooldown, useFallback);
 
   const scrollFallback = TOAST_FOR.scrollRefused({ type: "scrollRefused", reason: "definitelyNotAReason" }).text;
   const pilferScroll = TOAST_FOR.scrollRefused({ type: "scrollRefused", reason: "pilfer" }).text;

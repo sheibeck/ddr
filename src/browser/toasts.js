@@ -213,9 +213,12 @@ export const FEATURE_EVENTS = [
   "allyMissed",
   "allySpellHit",
   "allySpellMissed",
-  "phobiaFrozen",
-  "shookOffFrozen",
+  // Phase 31 (CMB-01): renamed from phobiaFrozen/shookOffFrozen — "Phobia
+  // should be penalties, never a no actions state" (user ruling 2026-09-16).
+  "phobiaAfraid",
+  "fearPassed",
   "encounterStarted",
+  "combatJoined",
   "encounterCleared",
   "wanderingMonster",
   "joinerRefused",
@@ -249,6 +252,9 @@ export const FEATURE_EVENTS = [
   "spellNotKnown",
   "spellAboveLevel",
   "spellSchoolLocked",
+  // Phase 31 (CMB-01/CMB-02): the notFought/generic-action refusal vocabulary.
+  "castRefused",
+  "actionRefused",
   "campFailed",
   "buyFailed",
   "backstabDenied",
@@ -299,7 +305,7 @@ function equipRejectText(e) {
 // already been decorated by decorateMisses (engineAdapter.js). Order:
 //   1. encounterStart  — folds encounterStarted + its same-action followers
 //      (trackable, allyJoined, warlockBoost, foeFled knight/conArtist,
-//      foeBored, phobiaFrozen, combatInDark) into ONE toast.
+//      foeBored, phobiaAfraid, combatInDark) into ONE toast.
 //   2. enemyRound       — groups struckByFoe/foeMissed(hero) by foe name
 //      into one toast per foe (3+ distinct names collapse into one), and
 //      memberStruck/foeMissed(member) by (name, member) into their own
@@ -722,7 +728,7 @@ function chestChain(events, consumed) {
 /**
  * encounterStart(events, consumed) — when an `encounterStarted` is present,
  * folds it plus its same-action followers (trackable, allyJoined,
- * warlockBoost, foeFled reason knight/conArtist, foeBored, phobiaFrozen,
+ * warlockBoost, foeFled reason knight/conArtist, foeBored, phobiaAfraid,
  * combatInDark) into ONE toast; each follower appends a short clause and is
  * consumed. Without an `encounterStarted` in the action, every one of those
  * events keeps its own builder (this function simply returns null).
@@ -766,8 +772,12 @@ function encounterStart(events, consumed) {
         text += ` · ${fe.name ?? "it"} loses interest`;
         consumed.add(j);
         break;
-      case "phobiaFrozen":
-        text += " · frozen by fear";
+      // Phase 31 (CMB-01): renamed from phobiaFrozen. This fold rarely fires
+      // now that the event arrives from the separate `fight` dispatch (not
+      // the same action as encounterStarted), but the case must name the
+      // live type in case a future caller ever chains them in one action.
+      case "phobiaAfraid":
+        text += " · afraid";
         consumed.add(j);
         break;
       case "combatInDark":
@@ -924,14 +934,28 @@ export const TOAST_FOR = {
   },
   foeBored: (e) => ({ text: `${e?.name ?? "It"} loses interest.`, tone: "hit", priority: PRIORITY.feature }),
   encounterCleared: () => ({ text: "Nothing left standing.", tone: "hit", priority: PRIORITY.feature }),
-  phobiaFrozen: () => ({ text: "Frozen by fear.", tone: "hurt", priority: PRIORITY.feature }),
+  // Phase 31 (CMB-01): the FIGHT step's own initiative outcome — the
+  // encounter step no longer knows who moves first.
+  combatJoined: (e) => ({
+    text: e?.first === "you" ? "You move first." : "They move first.",
+    tone: e?.first === "you" ? "hit" : "hurt",
+    priority: PRIORITY.feature,
+  }),
+  // Phase 31 (renamed from phobiaFrozen — "Phobia should be penalties, never
+  // a no actions state", user ruling 2026-09-16): a triggered phobia is now
+  // a −to-hit/half-damage penalty, never a lost action.
+  phobiaAfraid: (e) => ({ text: `Afraid. Your aim wobbles for ${e?.rounds ?? 2} rounds.`, tone: "hurt", priority: PRIORITY.feature }),
   combatInDark: () => ({ text: "You cannot see what you are fighting.", tone: "beat", priority: PRIORITY.feature }),
   // Phase 23 (IDENT-01): names the attack spell the Wizard should cast instead, when supplied.
+  // Phase 31 (CMB-01): notFought — Fight! not yet pressed.
   strikeRefused: (e) =>
     e?.reason === "wizard"
       ? block(e?.spell ? `Wizards don't punch. Cast ${e.spell}.` : "Wizards don't punch while a spell remains.")
-      : block("You hold back."),
-  shookOffFrozen: () => ({ text: "You shake it off.", tone: "hit", priority: PRIORITY.feature }),
+      : e?.reason === "notFought"
+        ? block("Fight! first, then swing.")
+        : block("You hold back."),
+  // Phase 31 (renamed from shookOffFrozen): the Afraid countdown reaching 0.
+  fearPassed: () => ({ text: "The fear passes. Your hands remember what they are for.", tone: "hit", priority: PRIORITY.feature }),
   frenzy: () => ({ text: "Frenzy — two wild swings.", tone: "hit", priority: PRIORITY.feature }),
   // Phase 25 (FEED-05): untouchable never gets a quip (decorateMisses skips
   // it); `quip` renders after an em-dash only when present.
@@ -959,7 +983,9 @@ export const TOAST_FOR = {
     tone: "hit",
     priority: PRIORITY.feature,
   }),
-  fleeRefused: () => block("A Samurai does not run."),
+  // Phase 31 (CMB-01): notFought — Fight! not yet pressed — added alongside
+  // the existing samurai reason.
+  fleeRefused: (e) => (e?.reason === "notFought" ? block("Running comes after Fight!, not instead of it.") : block("A Samurai does not run.")),
   withdrawalDenied: () => block("Slipping away untouched would mean not attacking."),
   vanishDenied: () => block("They have already seen your face."),
   fled: (e) => {
@@ -976,6 +1002,8 @@ export const TOAST_FOR = {
       magical: "Magic Users do not parley with you.",
       wilmsryVsMagical: "Magic Users hate the Wilmsry. There is nothing to discuss.",
       tried: "You already tried that.",
+      // Phase 31 (CMB-01): Fight! not yet pressed.
+      notFought: "They are not listening yet. Fight! first.",
     };
     return block(map[e?.reason] ?? "Not this time, not with them.");
   },
@@ -1101,6 +1129,27 @@ export const TOAST_FOR = {
   spellNotKnown: (e) => block(`You do not know ${e?.spell ?? "that"}.`),
   spellAboveLevel: (e) => block(`${e?.spell ?? "That"} needs level ${e?.need ?? "?"}; you are ${e?.have ?? "?"}.`),
   spellSchoolLocked: (e) => block(`${e?.spell ?? "That"} is not open to you yet.`),
+  // Phase 31 (CMB-01/CMB-02): the NEW spell-refusal circumstances this phase
+  // introduces (notFought/combatOnly/exploreOnly/noTarget) — never a `frozen`
+  // reason; nothing is ever refused for fear.
+  castRefused: (e) => {
+    const map = {
+      notFought: "Fight! first. The spell keeps.",
+      combatOnly: `${e?.spell ?? "That"} wants a target. Save it for a fight.`,
+      exploreOnly: `${e?.spell ?? "That"} needs quieter surroundings.`,
+      noTarget: "Nothing left to aim at.",
+    };
+    return block(map[e?.reason] ?? "The spell refuses you.");
+  },
+  // Phase 31 (CMB-01): the generic action-refusal vocabulary (sing/drinkPotion).
+  actionRefused: (e) => {
+    const map = {
+      notFought: "Fight! first.",
+      cooldown: `Your voice needs ${e?.left ?? "more"} more squares.`,
+      wrongClass: "Only a Bard sings here.",
+    };
+    return block(map[e?.reason] ?? "Not now.");
+  },
   spellBackfired: (e) => ({ text: `${e?.spell ?? "The spell"} goes wrong.`, tone: "hurt", priority: PRIORITY.you }),
   backfireSelfDamage: (e) => ({ text: `It costs you ${e?.amount ?? 0} hp.`, tone: "hurt", priority: PRIORITY.you }),
   // Phase 25 (25-03): no trailing period — matches the aggregate-format
@@ -1160,7 +1209,13 @@ export const TOAST_FOR = {
   // Phase 25 (FEED-02): a scroll refusal always names its reason; unknown/
   // absent reason still gets a voiced fallback.
   scrollRefused: (e) => {
-    const map = { pilfer: "A Pilfer's hands know locks, not letters.", noRunes: "The runes mean nothing to you.", noScrolls: "You have no scroll to read." };
+    const map = {
+      pilfer: "A Pilfer's hands know locks, not letters.",
+      noRunes: "The runes mean nothing to you.",
+      noScrolls: "You have no scroll to read.",
+      // Phase 31 (CMB-01): Fight! not yet pressed.
+      notFought: "Fight! first. The scroll will keep.",
+    };
     return block(map[e?.reason] ?? "It stays rolled.");
   },
   scrollCopiedToGrimoire: (e) => ({ text: `${e?.spell ?? "It"} copied into your grimoire.`, tone: "magic", priority: PRIORITY.you }),
@@ -1243,7 +1298,22 @@ export const TOAST_FOR = {
   itemRejected: (e) => block(equipRejectText(e)),
   itemTaken: (e) => ({ text: `Equipped: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.other }),
   itemUsed: (e) => ({ text: `You use ${e?.item?.n ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
-  useRefused: (e) => block(e?.reason === "pilfer" ? `${e?.item?.n ?? "That"} does not heal. Pilfers use only healing.` : "That does not work for you."),
+  // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason map with
+  // cooldown/wrongClass/combatOnly/exploreOnly/noTarget/notFought — the
+  // pilfer text and the generic fallback stay byte-identical.
+  useRefused: (e) => {
+    const item = e?.item?.n ?? "That";
+    const map = {
+      pilfer: `${item} does not heal. Pilfers use only healing.`,
+      cooldown: `${item} needs ${e?.left ?? "more"} more squares.`,
+      wrongClass: `${item} is a stick to anyone who is not a Magic User.`,
+      combatOnly: `${item} wants a target. Save it for a fight.`,
+      exploreOnly: `${item} needs quieter surroundings.`,
+      noTarget: "Nothing left to aim at.",
+      notFought: "Fight! first. It will keep.",
+    };
+    return block(map[e?.reason] ?? "That does not work for you.");
+  },
   cured: (e) => ({ text: `Cured of ${e?.kind ?? "it"}.`, tone: "hit", priority: PRIORITY.you }),
   itemBurned: (e) => ({ text: `${e?.total ?? 0} fire damage spread.`, tone: "magic", priority: PRIORITY.you }),
   itemFizzled: () => ({ text: "Nothing happens.", tone: "miss", priority: PRIORITY.you }),
