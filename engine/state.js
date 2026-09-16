@@ -180,6 +180,15 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null } = {}
     // Phase 13. The parity harness strips this top-level field the same way it
     // strips `party`/`pendingJoiner`.
     pendingFind: null,
+    // Phase 29 (LOOT-01/06): the end-of-combat drop pile — a top-level
+    // sibling of pendingFind, initialized to a plain empty array (NO rng
+    // draw, so the seeded chargen cursor the determinism/parity suites pin
+    // is untouched). UNLIKE pendingFind (transient, reset on load), this IS
+    // serialized (engine/saveState.js) and survives a save/resume cycle —
+    // the player must still get their loot screen back. The parity harness
+    // destructures it out of all three *Comparable() fns and reconciles it
+    // via reconcilePendingLoot (Task 3, mirrors reconcilePendingFind).
+    pendingLoot: [],
     dead: false,
     won: false,
     // Phase 21 (TUNE-04, D-13/D-14): dev — true only for a start-at-depth run;

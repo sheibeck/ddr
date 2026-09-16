@@ -337,7 +337,10 @@ export function takeItem(state, it, events = []) {
    (leaveFind) it. equipItem/unequipSlot/dropItem then manage the bag directly.
    All FIVE are PURE (no rng) — plain bookkeeping over c.items and the scalar
    equipped-weapon/armor fields, so they never shift the seeded rng cursor and
-   are inherently parity-safe (no fixture drives them). The bag-slot cap
+   are inherently parity-safe (no fixture drives them). Phase 29's pending
+   LOOT pile handlers (offerLoot/takeLoot/leaveLoot/takeAllLoot/leaveAllLoot,
+   below) are the same shape and the same PURE guarantee, over
+   state.pendingLoot instead of state.pendingFind. The bag-slot cap
    (content/bags.js BAGS[c.bag].slots) is enforced HERE and ONLY here (Phase 12
    deliberately left giveItem/gainWilmst/takeItem uncapped to keep the frozen
    parity fixtures byte-identical). */
@@ -627,6 +630,144 @@ export function unequipSlot(state, slot, events = []) {
     c.patches = 0;
   }
   events.push({ type: "itemUnequipped", item: worn, slot });
+  return events;
+}
+
+/* ---------------- pending loot pile (LOOT-01/02/05/06, Phase 29) ----------
+
+   killFoe (engine/combat.js) no longer auto-takes a treasure drop — it pushes
+   the rolled item onto state.pendingLoot via offerLoot, and the player
+   decides per item (takeLoot/leaveLoot) or in bulk (takeAllLoot/leaveAllLoot)
+   once combat ends. All FIVE handlers below are PURE (no rng), exactly like
+   the takeFind/leaveFind/equipItem/unequipSlot family above, and every stow
+   routes through stowItem — the one bag-cap gate. */
+
+/**
+ * offerLoot(state, it, events) — the ONE producer (killFoe, Task 2):
+ * appends `it` to state.pendingLoot and narrates `lootDropped` — replaces
+ * the legacy mid-fight auto-take entirely. Never touches c.items. Pure, no
+ * rng.
+ */
+export function offerLoot(state, it, events = []) {
+  state.pendingLoot = state.pendingLoot || [];
+  state.pendingLoot.push(it);
+  events.push({ type: "lootDropped", name: it.n, kind: it.kind });
+  return events;
+}
+
+/**
+ * takeLoot(state, i, equip, events) — take pending drop `i`. Default
+ * (`equip` false): stow it via the single gate (`bagFull` refusal keeps it
+ * pending). With `equip: true` (CONTEXT §Compare-to-equipped): a DIRECT
+ * swap for weapon/armor only — anything else is `equipRejected
+ * {reason:"notEquippable"}`. The displaced worn piece (if any) goes through
+ * the SAME stow gate, so a slot is needed only when something is displaced
+ * (bare-handed/"Nothing"/destroyed worn pieces need none, per
+ * wornWeaponItem/wornArmorItem's null guards). A class/race-illegal item is
+ * `equipRejected` with the shared refusal reason, pile untouched. Pure, no
+ * rng.
+ */
+export function takeLoot(state, i, equip = false, events = []) {
+  const c = state.c;
+  const pile = state.pendingLoot || [];
+  const it = pile[i];
+  if (!it) return events;
+
+  if (!equip) {
+    if (!stowItem(state, it, events, true)) return events; // keep pending — the player must drop something first
+    pile.splice(i, 1);
+    events.push({ type: "lootTaken", item: it });
+    return events;
+  }
+
+  if (it.kind !== "weapon" && it.kind !== "armor") {
+    events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
+    return events;
+  }
+
+  if (it.kind === "weapon") {
+    const reason = weaponRefusalReason(c, it);
+    if (reason) {
+      events.push({ type: "equipRejected", item: it, reason });
+      return events;
+    }
+    const worn = wornWeaponItem(c);
+    if (worn && !stowItem(state, worn, events, true)) return events;
+    c.weapon = it.base;
+    c.prof = 0;
+    c.magicWpn = it.bonus || 0;
+    pile.splice(i, 1);
+    events.push({ type: "itemEquipped", item: it, slot: "weapon" });
+    return events;
+  }
+
+  // armor
+  const reason = armorRefusalReason(c, it);
+  if (reason) {
+    events.push({ type: "equipRejected", item: it, reason });
+    return events;
+  }
+  const worn = wornArmorItem(c);
+  if (worn && !stowItem(state, worn, events, true)) return events;
+  c.armor = it.armor;
+  c.ar = it.ar;
+  c.armorMin = it.min;
+  c.armorMax = it.wp;
+  c.armorWP = it.left ?? it.wp;
+  c.patches = it.patches ?? 0;
+  pile.splice(i, 1);
+  events.push({ type: "itemEquipped", item: it, slot: "armor" });
+  return events;
+}
+
+/**
+ * leaveLoot(state, i, events) — DECLINE pending drop `i`: splice it out and
+ * narrate `lootLeft`. No-op on an out-of-range index. Pure, no rng.
+ */
+export function leaveLoot(state, i, events = []) {
+  const pile = state.pendingLoot || [];
+  const it = pile[i];
+  if (!it) return events;
+  pile.splice(i, 1);
+  events.push({ type: "lootLeft", item: it });
+  return events;
+}
+
+/**
+ * takeAllLoot(state, events) — take every pending drop that fits, IN PILE
+ * ORDER (CONTEXT's locked default, RESEARCH A1): a blocked gear item does
+ * not block a later potion/bag behind it. Refused items stay in the pile,
+ * in their original relative order; exactly ONE `bagFull` is surfaced (for
+ * the FIRST refusal) — never loses an item. Pure, no rng.
+ */
+export function takeAllLoot(state, events = []) {
+  const pile = (state.pendingLoot || []).slice();
+  const remaining = [];
+  let refused = false;
+  for (const it of pile) {
+    const scratch = [];
+    if (stowItem(state, it, scratch, true)) {
+      events.push(...scratch, { type: "lootTaken", item: it });
+    } else {
+      remaining.push(it);
+      if (!refused) {
+        events.push(...scratch); // the bagFull for the FIRST refusal only
+        refused = true;
+      }
+    }
+  }
+  state.pendingLoot = remaining;
+  return events;
+}
+
+/**
+ * leaveAllLoot(state, events) — DECLINE every pending drop: one `lootLeft`
+ * per item, in pile order, then empty the pile. Pure, no rng.
+ */
+export function leaveAllLoot(state, events = []) {
+  const pile = state.pendingLoot || [];
+  for (const it of pile) events.push({ type: "lootLeft", item: it });
+  state.pendingLoot = [];
   return events;
 }
 

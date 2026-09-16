@@ -180,6 +180,22 @@ test("a mid-cast ward sub-state (Shield) round-trips losslessly", () => {
   assert.deepStrictEqual(rehydrated, stripped, "state with an active ward sub-state must round-trip losslessly");
 });
 
+test("Phase 29 (LOOT-06): a state carrying a 3-item pendingLoot pile round-trips losslessly and idempotently", () => {
+  const state = newRun(1);
+  state.pendingLoot = [
+    { kind: "jewel", n: "A" },
+    { kind: "weapon", n: "Dagger", base: "Dagger", bonus: 0, txt: "d6/2" },
+    { kind: "bag", tier: "medium", n: "Medium bag", txt: "6 slots. Room to regret more things." },
+  ];
+
+  const stripped = stripVolatileFields(state);
+  const rehydrated = JSON.parse(JSON.stringify(stripped));
+  assert.deepStrictEqual(rehydrated, stripped, "a 3-item pendingLoot pile must round-trip losslessly");
+
+  const again = JSON.parse(JSON.stringify(stripVolatileFields(JSON.parse(JSON.stringify(stripped)))));
+  assert.deepStrictEqual(again, stripped, "double round-trip is idempotent");
+});
+
 // --- 01-10: the guardrail extended through economy/encounters/win ---------
 
 /** applyInternal(state, fn) — the same clone/rng-rehydrate/persist shape as

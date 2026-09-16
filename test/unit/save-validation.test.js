@@ -132,6 +132,11 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
   // ECON-02 (Phase 12): pendingFind is transient run state — reset to null on
   // load, exactly like combat/store/beats above.
   assert.equal(state.pendingFind, null);
+  // Phase 29 (LOOT-06): pendingLoot has no prototype-side equivalent at all,
+  // so an old-shape save with no field defaults to [] (contrast: pendingFind
+  // above is reset because it EXISTED as transient state; pendingLoot is
+  // additive-with-default, like c.bag via migrateCarry).
+  assert.deepStrictEqual(state.pendingLoot, []);
   // ECON-01 (Phase 12): an old save with no c.bag migrates to the class-derived
   // default (Fighter => "medium"); every OTHER field is preserved verbatim.
   assert.equal(state.c.bag, "medium");
@@ -345,5 +350,20 @@ test("D-23: dev is coerced to a strict boolean", () => {
     assert.equal(check.ok, true);
     assert.equal(check.value.dev, expected, `dev: ${JSON.stringify(raw)} must coerce to ${expected} via validateSave`);
     assert.equal(rehydrate({ ...check.value, dev: raw }).dev, expected, `dev: ${JSON.stringify(raw)} must coerce to ${expected} via rehydrate`);
+  }
+});
+
+test("Phase 29 (LOOT-06): a non-empty pendingLoot survives serializeRun -> validateSave -> rehydrate in order, and a tampered value degrades to []", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const pile = [{ kind: "jewel", n: "A" }, { kind: "jewel", n: "B" }];
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor, pendingLoot: pile }));
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(check.value.pendingLoot, pile);
+  assert.deepStrictEqual(rehydrate(check.value).pendingLoot, pile);
+
+  for (const bad of ["x", 42, {}]) {
+    const tampered = validateSave(JSON.stringify({ c: validChar, floor: validFloor, pendingLoot: bad }));
+    assert.deepStrictEqual(tampered.value.pendingLoot, []);
   }
 });

@@ -89,6 +89,19 @@ function defaultBagForClass(cls) {
 }
 
 /**
+ * sanitizeLoot(raw) — Phase 29 (LOOT-06): fail-open normalization of an
+ * untrusted `pendingLoot` field, mirroring sanitizeParty's precedent above.
+ * A pre-v1.3 save has no field at all (or a tampered non-array value like
+ * `"x"`/`42`/`{}`) — that degrades to `[]` rather than rejecting the whole
+ * save. Malformed entries (`null`, a non-object, an array) inside an
+ * otherwise-valid array are dropped, never crash the load. No STATE_VERSION
+ * bump — purely additive.
+ */
+function sanitizeLoot(raw) {
+  return Array.isArray(raw) ? raw.filter((it) => it && typeof it === "object" && !Array.isArray(it)) : [];
+}
+
+/**
  * migrateCarry(c) — ECON-01 (Phase 12) additive-with-default migration,
  * mirroring the sanitizeParty precedent (PARTY-02): a pre-Phase-12 save has no
  * `c.bag`, so default it by class (Fighter=medium, else small; "small" if the
@@ -192,6 +205,10 @@ export function validateSave(raw, options = {}) {
     day,
     steps,
     party: sanitizeParty(obj.party),
+    // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (the player
+    // must still get their loot screen on resume) — carried through here,
+    // unlike pendingFind (transient, nulled by rehydrate below).
+    pendingLoot: sanitizeLoot(obj.pendingLoot),
     dead: !!obj.dead,
     won: !!obj.won,
     // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
@@ -237,6 +254,10 @@ export function rehydrate(obj) {
     // null on load, exactly like combat/store above (the prototype's load()
     // never resumed a mid-find prompt either). Defaults a missing field to null.
     pendingFind: null,
+    // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (unlike
+    // pendingFind just above) — the player must still get their loot screen
+    // back on resume, so it is carried through here, never reset.
+    pendingLoot: sanitizeLoot(obj.pendingLoot),
     // PARTY-02 (Phase 7): whitelist the persistent roster, mirroring dead/won
     // above. sanitizeParty fail-opens a missing party (pre-Phase-7 save) to []
     // and drops malformed members, so old saves load with `party: []` and zero
