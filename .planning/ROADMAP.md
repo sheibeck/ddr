@@ -147,7 +147,7 @@ Plans:
   4. A depth-appropriate bigger bag (medium/large/xlarge) can turn up as treasure and expands carry capacity when taken.
   5. Closing and resuming the app mid-loot-screen preserves the pending pile exactly; fleeing or dying instead forfeits it with a narrated line rather than losing it without explanation.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 **UI hint**: yes
 
 Plans:
@@ -161,7 +161,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 29-03-PLAN.md — Shell: loot screen card replacing the encounter-cleared report (per-row Equip now/Stow-or-Take/Leave via `lootCompare`, Take all/Leave all, shared `renderDropShelf`), `hasActiveEncounter` parks the map on a pile, `noteCombat` folds the report into the card, `window.__mzBagUsage`/`__mzLootCompare` + `mzTakeLoot`/`mzLeaveLoot`/`mzTakeAllLoot`/`mzLeaveAllLoot` bridges, every readout through `bagUsage` (gear panel, find card, store with Drop when full), shell source-assertion test, `npm run build:www` + full `npm test` gates (Wave 3)
+- [x] 29-03-PLAN.md — Shell: loot screen card replacing the encounter-cleared report (per-row Equip now/Stow-or-Take/Leave via `lootCompare`, Take all/Leave all, shared `renderDropShelf`), `hasActiveEncounter` parks the map on a pile, `noteCombat` folds the report into the card, `window.__mzBagUsage`/`__mzLootCompare` + `mzTakeLoot`/`mzLeaveLoot`/`mzTakeAllLoot`/`mzLeaveAllLoot` bridges, every readout through `bagUsage` (gear panel, find card, store with Drop when full), shell source-assertion test, `npm run build:www` + full `npm test` gates (Wave 3)
 
 ### Phase 30: Combat Narrative & Input — Research
 
@@ -246,7 +246,7 @@ Notes: PARTY-10 / ECON deep tuning / Phase 3 feel-tuning landed in Phase 21 (v1.
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
 | 28. Armor Integrity & Durability | v1.3 | 3/3 | Complete    | 2026-09-15 |
-| 29. End-of-Combat Loot & Bag Cap | v1.3 | 2/3 | In Progress|  |
+| 29. End-of-Combat Loot & Bag Cap | v1.3 | 3/3 | In Progress|  |
 | 30. Combat Narrative & Input — Research | v1.3 | 0/? | Not started | - |
 | 31. Combat Start Gating & Effect Hygiene | v1.3 | 0/? | Not started | - |
 | 32. Combat Narrative & Input UI Build | v1.3 | 0/? | Not started | - |

@@ -4,17 +4,17 @@ milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
 current_phase: 29
 current_phase_name: End-of-Combat Loot & Bag Cap
-status: executing
-stopped_at: Completed 29-02-PLAN.md
-last_updated: "2026-09-16T03:37:38.571Z"
+status: verifying
+stopped_at: Completed 29-03-PLAN.md
+last_updated: "2026-09-16T03:51:11.105Z"
 last_activity: 2026-09-15
 last_activity_desc: Phase 29 execution started
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 17
+  completed_plans: 6
+  percent: 33
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-15 after Phase 28)
 
 Phase: 29 (End-of-Combat Loot & Bag Cap) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-15 — Phase 29 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T03:37:38.548Z
-Stopped at: Completed 29-02-PLAN.md
+Last session: 2026-09-16T03:51:11.082Z
+Stopped at: Completed 29-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -155,6 +155,7 @@ Resume file: None
 | Phase 28 P03 | 30min | 3 tasks | 3 files |
 | Phase 29 P01 | 55min | 3 tasks | 9 files |
 | Phase 29 P02 | 95min | 3 tasks | 17 files |
+| Phase 29 P03 | 50min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -272,6 +273,9 @@ Resume file: None
 - [Phase ?]: 29-01: stowItem's potion exemption applies to the refusal check itself (not just the have count) — a potion always stows even at a gear-full bag
 - [Phase ?]: 29-01: weaponUpgradeDelta/armorUpgradeDelta return signed deltas so takeItem (<=0 rejects) and lootCompare (>0 upgrade) share one arithmetic source
 - [Phase ?]: Plan 29-02: pendingLoot replaces the mid-fight auto-take (offerLoot/takeLoot/leaveLoot/takeAllLoot/leaveAllLoot), forfeited via one hook on flee/die, reconciled byte-identically in all three parity comparables (plus their own local dupes) with zero fixture edits.
+- [Phase ?]: Loot screen: window.__mzBagUsage is the ONE capacity readout in the shell (gear panel, find card, loot screen, store) — no raw array-length count survives
+- [Phase ?]: noteCombat hands the end-of-fight report to window.__mzLootReport instead of building a 'Move on' beat when drops are pending — the loot card folds the report and the decision into one card (RESEARCH Pitfall 4)
+- [Phase ?]: renderDropShelf(shelf, items) extracted from the find card's inline loop, shared by the find card and the new loot screen
 
 ### Blockers
 
