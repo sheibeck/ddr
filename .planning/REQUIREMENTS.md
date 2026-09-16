@@ -5,6 +5,7 @@
 **Milestone goal:** Make gear and combat legible and honest — armor behaves the way the screen says it does, kill drops become a real end-of-combat loot decision, and the combat narrative is delivered through a researched, less tap-heavy, tap-safe UI — while landing the parked Feel & Polish backlog (inventory integrity, UI feel, combat start, store stock). Tuning is explicitly NOT this milestone.
 
 **Grounding (2026-09-15, code read):**
+
 - **Armor today** (`engine/combat.js` ~L1478–1512, `engine/derived.js#armorSoak`): on a foe hit, if worn armor has `ar > 0` and `armorWP > 0` and the foe doesn't ignore armor, a d20 ≤ AR *soaks the entire blow* (`dmg = 0`). Durability is charged the **full blocked damage** (`c.armorWP -= dmg`) only when `dmg > armorMin`; a Dwarf pays `ceil(dmg × armorWear)`; the Cloak of Armor makes effective armor never-wearing magic Plate (`av.magic`). The `armorSoaked` event carries `{amount, wear}` — so "Armor takes 39 / Wear 39" means 39 blocked, 39 durability spent. If the gear panel showed no change, either the panel reads the *item's* `wp` (durability is a scalar on the character: `c.armorWP/armorMax/patches`, not on the item — `engine/items.js` L292/L454 reset it on every equip) or the cloak's magic plate absorbed it. That split (durability on the character, not the item) is also the root of the re-equip full-repair exploit.
 - **Foe drops today** (`engine/items.js#takeItem` L253–300): a dropped weapon/armor is auto-equipped if strictly better, else `itemRejected reason:"notBetter"` → the "Not an upgrade." toast, and the item is gone. Only `giveItem` paths touch the bag.
 - **Bag space today** (`content/bags.js`, `engine/items.js#bagCap` L323): slots cap `c.items.length` (4/6/8/10). Healing potions (`c.potions`) and scrolls (`c.scrolls`) are scalar counters that never take a slot; special potions (`kind:"potion"`, e.g. Acuteness) and other treasure live in `c.items`. The cap is checked at only two sites (L378, L477).
@@ -16,11 +17,11 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 
 ### Armor (ARMOR)
 
-- [ ] **ARMOR-01**: The soak-vs-wear rule is audited against the prototype and rulebook (d20 ≤ AR soaks the whole blow; blocked damage above the armor's min is charged to durability; Cloak = never-wearing magic plate; Dwarves wear at half), a keep/change decision is recorded as a Key Decision, and any change ships as a declared parity divergence
+- [x] **ARMOR-01**: The soak-vs-wear rule is audited against the prototype and rulebook (d20 ≤ AR soaks the whole blow; blocked damage above the armor's min is charged to durability; Cloak = never-wearing magic plate; Dwarves wear at half), a keep/change decision is recorded as a Key Decision, and any change ships as a declared parity divergence
 - [ ] **ARMOR-02**: The "Armor takes N / Wear N" toast and the gear panel / character sheet always agree — the observed "toast says wear, panel shows no damage" discrepancy is root-caused and fixed, with a test pinning toast `wear` = durability delta on the displayed armor
-- [ ] **ARMOR-03**: Armor durability is carried on the item, so unequip → swap → re-equip preserves remaining durability (kills the full-repair exploit); new serialized field carved out of the parity comparables, save-migration tolerant
+- [x] **ARMOR-03**: Armor durability is carried on the item, so unequip → swap → re-equip preserves remaining durability (kills the full-repair exploit); new serialized field carved out of the parity comparables, save-migration tolerant
 - [ ] **ARMOR-04**: Cloak of Armor is legible and real — its item text says exactly what it does (never-wearing magic plate, or a redesign) and the armor UI shows it as the effective armor when carried
-- [ ] **ARMOR-05**: Player can tell the four armor outcomes apart on screen: soaked-with-wear, soaked-without-wear (blow ≤ armor min), magic-plate soak, armor gives out
+- [x] **ARMOR-05**: Player can tell the four armor outcomes apart on screen: soaked-with-wear, soaked-without-wear (blow ≤ armor min), magic-plate soak, armor gives out
 
 ### End-of-combat loot (LOOT)
 
@@ -110,11 +111,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARMOR-01 | Phase 28 | Pending |
+| ARMOR-01 | Phase 28 | Complete |
 | ARMOR-02 | Phase 28 | Pending |
-| ARMOR-03 | Phase 28 | Pending |
+| ARMOR-03 | Phase 28 | Complete |
 | ARMOR-04 | Phase 28 | Pending |
-| ARMOR-05 | Phase 28 | Pending |
+| ARMOR-05 | Phase 28 | Complete |
 | LOOT-01 | Phase 29 | Pending |
 | LOOT-02 | Phase 29 | Pending |
 | LOOT-03 | Phase 29 | Pending |

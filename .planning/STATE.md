@@ -2,14 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Feel, Loot & Combat Flow
-status: planning
-last_updated: "2026-09-15T22:59:06.507Z"
+current_phase: 28
+current_phase_name: Armor Integrity & Durability
+status: executing
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-09-16T01:24:34.094Z"
 last_activity: 2026-09-15
+last_activity_desc: Phase 28 execution started
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-15 for v1.3)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.3 Feel, Loot & Combat Flow — defining requirements (armor rework, end-of-combat loot, combat narrative/input research → build, combat start & usability, UI feel, store stock). Tuning (TUNE-06/07), Play upload, tutorial, launch explicitly out.
+**Current focus:** Phase 28 — Armor Integrity & Durability
 
 ## Current Position
 
-Phase: Not started — ROADMAP.md created (Phases 28–33); Phase 28 (Armor Integrity & Durability) is next
-Plan: —
-Status: Roadmap created, awaiting phase planning
-Last activity: 2026-09-15 — v1.3 ROADMAP.md created (Phases 28: Armor Integrity & Durability, 29: End-of-Combat Loot & Bag Cap, 30: Combat Narrative & Input — Research, 31: Combat Start Gating & Effect Hygiene, 32: Combat Narrative & Input UI Build, 33: UI Feel & Store Polish)
+Phase: 28 (Armor Integrity & Durability) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-09-15 — Phase 28 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -82,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-15T22:17:02.695Z
-Stopped at: Completed 27-03-PLAN.md
+Last session: 2026-09-16T01:24:34.072Z
+Stopped at: Completed 28-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -146,6 +150,7 @@ Resume file: None
 | Phase 27 P01 | 55min | 3 tasks | 5 files |
 | Phase 27 P02 | 65min | 4 tasks | 20 files |
 | Phase 27 P03 | 72min | 3 tasks | 9 files |
+| Phase 28 P01 | 25min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -254,6 +259,8 @@ Resume file: None
 - [Phase ?]: 27-01: band substitution per amended 27-CONTEXT.md (4d18e80) — bot median 4 / pooled reach>=5 >=25%, human 5-6 judged by DR round, replacing the plan's original flat 5-6 bot target
 - [Phase ?]: Landed Dante Form C (tier-2 demotion + Ned at tier 1) — the only form meeting the decision rule; followed Task 3's literal dial values (FOE_GRACE_AT_2 0.75) over the calibration table's stronger T2 row (0.5).
 - [Phase ?]: 27-03: bounded 4-iteration retune landed COMBAT_SCALE_FROM_DEPTH 6->21, FOE_GRACE_AT_2 0.75->0.5, ENCOUNTER_DOT_CAP 15->13, FOE_POWER_MAX/ABILITY_THREAT_MAX flattened to 1.15/1.3 — natural median/reach and forced-20 encounters-survived in band; forced-20 floors-gained recorded as a miss for the DR round
+- [Phase ?]: Assumption A1 accepted: combat's armorDestroyed path still leaves c.ar/c.armor/c.armorMax untouched; the destroyed-armor guard lives entirely in wornArmorItem + unequipSlot
+- [Phase ?]: rollMailPiece's txt unit token changed from 'wp' to 'hp' for consistency (parity-safe via comparables.js's existing normalizeHpUnit)
 
 ### Blockers
 
