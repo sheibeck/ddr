@@ -5,15 +5,15 @@ milestone_name: Combat & Map Screens
 current_phase: 34
 current_phase_name: Combat Screen Rebuild
 status: executing
-stopped_at: Completed 34-03-PLAN.md (combat screen layout, MAJOR OVERLAY, foes, YOUR LOT)
-last_updated: "2026-09-16T23:23:08.075Z"
+stopped_at: Completed 34-04-PLAN.md (combat action grid, submenus, keyboard map, dull potion refusals)
+last_updated: "2026-09-16T23:36:02.878Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 34 execution started
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 34 (Combat Screen Rebuild) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 34 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T23:23:08.049Z
-Stopped at: Completed 34-03-PLAN.md (combat screen layout, MAJOR OVERLAY, foes, YOUR LOT)
+Last session: 2026-09-16T23:36:02.851Z
+Stopped at: Completed 34-04-PLAN.md (combat action grid, submenus, keyboard map, dull potion refusals)
 Resume file: None
 
 ## Operator Next Steps
@@ -168,6 +168,7 @@ Resume file: None
 | Phase 34 P01 | 35min | 3 tasks | 7 files |
 | Phase 34 P02 | 19min | 3 tasks | 4 files |
 | Phase 34 P03 | 40min | 3 tasks | 4 files |
+| Phase 34 P04 | 55min | 3 tasks | 6 files |
 
 ## Decisions
 
@@ -316,6 +317,7 @@ Resume file: None
 - [Phase ?]: 34-02: the flee ending reuses the existing beats surface (after.beats = { groups: [{title:"You got out",tone:"moss",lines:[]}], over:"fled" }) rather than inventing a new presentation channel — Plan 05's beats-branch renders any beats.over as the over-panel.
 - [Phase ?]: 34-03 Decision 2: built renderMajorOverlay(host, spec) as a fully generic, parameterised MAJOR OVERLAY function now (icon/title/line/roll/primary+optional-secondary), reused unchanged by Phase 35 for the stair-down and out-of-combat death
 - [Phase ?]: 34-03 Decision 3: no engine retarget action exists or was added — foe-card targeting stays the presentation mutation S.combat.target = i; renderEncounter(), now wrapped in guardTap (a real CSCR-08 fix; it was previously unguarded)
+- [Phase ?]: 34-04: dropped dead-code spellOpen writes in classic startCombat()/castSpell() (unread, pre-Phase-31 dead code) to satisfy the retired presentation flag's zero-occurrence pin; ITEMS submenu rows reuse cbRow() rather than a fifth renderCarriedList host; a disabled grid button with no opens is a guarded no-op
 
 ### Blockers
 
