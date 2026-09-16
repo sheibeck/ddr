@@ -110,7 +110,14 @@ Full details: `.planning/milestones/v1.3-ROADMAP.md`. Phase artifacts: `.plannin
   5. Every button is guarded (250 ms arm, settle on dismiss); nothing dismisses on a map tap; TalkBack announces a new log line once.
   6. `npm test` green with every shell test re-pinned; `build:www` exit 0; engine/content/parity diff empty; the Pixel 7 DR round signs it off.
 
-**Plans**: TBD
+**Plans**: 5 plans (sequential waves 1–5 — every wave after the first edits `mazeworld.html`, so none run in parallel)
+
+Plans:
+- [ ] 34-01-PLAN.md — Pure modules: toasts.js `withIdx` + `oracleDetailText`, `fightLog.js`, `combatMenu.js`, `combatPanel.js` + unit tests (Decision 1: fold-preserving roll detail)
+- [ ] 34-02-PLAN.md — Routing seam → `window.__mzFightLog` (narrative + dull, uncapped), `renderFightLog` newest-first tap-to-reveal, announcer, DR18 rule scoped, noteCombat `over` tags; shell-round-card → shell-fight-log
+- [ ] 34-03-PLAN.md — Combat screen bands (header / foes / YOUR LOT / log / action band), the Phase 34 CSS, `renderMajorOverlay` for `combat.pending` (Decision 2), guarded retarget (Decision 3)
+- [ ] 34-04-PLAN.md — 2×2 STRIKE / SPELLS(ABILITIES) / ITEMS / SOCIAL grid + submenus, keys, potion refusals as dull entries; old bar retired, guards re-pinned
+- [ ] 34-05-PLAN.md — Endings (THEY ARE DOWN + loot rows / YOU GOT OUT / THAT IS THAT), joiner/find dark restyle, full executor gate, deferred Pixel 7 checklist (CSCR-10)
 **UI hint**: yes
 
 ### Phase 35: Map Screen Rebuild
