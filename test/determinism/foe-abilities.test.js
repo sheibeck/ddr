@@ -38,7 +38,7 @@ import assert from "node:assert/strict";
 
 import { makeRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/engine.js";
-import { startCombat, playerStrike, foeTurn } from "../../engine/combat.js";
+import { startCombat, fight, playerStrike, foeTurn } from "../../engine/combat.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
 
 // --- countingRng: verbatim copy of test/unit/foe-turn-draw-count.test.js's
@@ -114,6 +114,10 @@ function setupEncounter(spec, seed) {
   const rng = countingRng(makeRng(start));
   const events = [];
   startCombat(state, false, spec.type, rng, events);
+  // CMB-01 (Phase 31): fight (initiative, the pre-emptive foeTurn) is a
+  // separate action now — chained on the SAME counting rng so this helper
+  // reproduces the old single-call startCombat's full draw sequence.
+  fight(state, rng, events);
   return { state, rng, events, start };
 }
 
@@ -236,7 +240,17 @@ const FULL_FIGHT_PINS = {
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 46, attacks: 4, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 55, attacks: 4, outcome: "won" },
   "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 36, attacks: 2, outcome: "died" },
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 64, attacks: 4, outcome: "died" },
+  // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
+  // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
+  // and rats" (Beasts), so this Beasts-forced encounter now triggers
+  // combat.afraid = 2 at Fight! instead of the old freeze/shake-off. Every
+  // `playerStrike` is now a real (if weakened) swing from action 1, so the
+  // fight resolves one attack sooner; the hero still dies. Re-measured live
+  // via this file's own runFullFight, never hand-computed. The per-visit
+  // pins below (PER_VISIT_PINS) are UNCHANGED — runVisits never calls
+  // playerStrike, so the Afraid penalty (which only touches the player's
+  // own strikes) has no effect on foeTurn's own draws.
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 59, attacks: 3, outcome: "died" },
 };
 
 const PER_VISIT_PINS = {

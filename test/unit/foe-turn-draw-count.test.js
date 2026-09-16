@@ -35,7 +35,7 @@ import assert from "node:assert/strict";
 
 import { makeRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/engine.js";
-import { startCombat, playerStrike, foeTurn } from "../../engine/combat.js";
+import { startCombat, fight, playerStrike, foeTurn } from "../../engine/combat.js";
 import { BESTIARY } from "../../content/index.js";
 
 // --- countingRng: the ONLY rng object the engine sees in every test below --
@@ -242,15 +242,17 @@ test("FID-02 micro: two Dante-shaped foes (atk 3 each), all six swings miss, dra
 // this engine (c.regen, f.acid, C.allies, c.halfNext).
 
 /** runFullFight(seed, forced) — replays one parity-fixture-representative
- * fight start-to-finish (startCombat, then playerStrike in a loop until
- * combat resolves or the hero dies), driven entirely by ONE counting rng so
- * the returned draw count covers the whole fight, not just one action. */
+ * fight start-to-finish (startCombat, then fight — CMB-01, Phase 31, the
+ * Fight! split — then playerStrike in a loop until combat resolves or the
+ * hero dies), driven entirely by ONE counting rng so the returned draw
+ * count covers the whole fight, not just one action. */
 function runFullFight(seed, forced) {
   const state = newRun(seed);
   const start = state.rngState;
   const rng = countingRng(makeRng(start));
   const events = [];
   startCombat(state, false, forced, rng, events);
+  fight(state, rng, events);
   assertNoAbilities(state.combat.foes);
   const foeNames = state.combat.foes.map((f) => f.name);
   let attacks = 0;
@@ -263,28 +265,48 @@ function runFullFight(seed, forced) {
 
 const FULL_FIGHTS = [
   { seed: 3, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 12, attacks: 1, outcome: "won" },
-  // Phase 24 (2026-09-14, race pass): was 101/10/died — this seed's hero is a
-  // Fridgian Soldier; the frenzy corpse-whiff draw was removed and hide -2
-  // now shaves every landed foe blow (IDENT-08/09), so the fight now KILLS
-  // the Shriek instead of dying to it. Re-measured live via runFullFight
-  // against the patched engine (never hand-computed).
-  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 87, attacks: 8, outcome: "won" },
+  // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
+  // lost action"): was 87/8/won — this Fridgian Soldier's Beasts phobia now
+  // triggers Afraid (combat.afraid = 2) instead of freezing him for a lost
+  // first action; every `playerStrike` call is now a REAL (if weakened)
+  // swing, so the fight resolves in far fewer attacks than the old
+  // freeze-then-shake-off sequence needed. Re-measured live via runFullFight
+  // against the finished Phase 31 engine (never hand-computed).
+  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 36, attacks: 3, outcome: "won" },
   // Phase 24 (2026-09-14, race pass): was 111/11/won — same cause (a
   // Fridgian Pilfer): the corpse-whiff draw is gone and hide -2 shortens the
-  // fight by two rounds. Re-measured live.
+  // fight by two rounds. Re-measured live. Unaffected by Phase 31 (this
+  // Pilfer has no Beasts phobia).
   { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 101, attacks: 9, outcome: "won" },
-  // Phase 27 (2026-09-15, TUNE-06): was foeNames ["Dante", "Dante"], attacks
-  // 6 — Dante demoted to tier 2, Ned is now the tier-1 Humans row; total
-  // draws happens to stay 66 (re-measured live via runFullFight, never
-  // hand-computed).
-  { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 66, attacks: 10, outcome: "won" },
+  // Phase 31 (2026-09-16, CMB-01): was 66/10/won (Phase 27's Ned re-measure).
+  // Not a phobia trigger — this Con Artist's own level-1-foe escape roll
+  // (rng.d(6), still inside the encounter step) now lands BEFORE the two
+  // initiative d20s instead of after, because `fight` (which now owns
+  // rollInitiative) runs strictly AFTER the Knight/Con Artist/Court Mage
+  // foe-removal loop completes — the same structural rng-order change
+  // FIXTURE-INVENTORY.md's Phase 31 section documents for the `parley`
+  // parity scenario (same seed, same character). Re-measured live.
+  { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 52, attacks: 8, outcome: "won" },
+  // Phase 31 (2026-09-16, CMB-01): this Wilmsry Illusionist's Beasts phobia
+  // ALSO triggers Afraid (same trigger as seed 14) — re-measured live and
+  // found, by coincidence, byte-identical to the pre-Phase-31 total (32/4).
   { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 32, attacks: 4, outcome: "won" },
   // Phase 24 (2026-09-14, race pass): new row. A plain Human Apprentice
   // (unaffected by the race pass — no Fridgian/Dwarven mechanic in play),
   // added to restore death-path FID-02 coverage now that seed 14's Fridgian
-  // no longer dies; pairs with the parity fixture's new lose-apprentice
-  // scenario (same seed, same roster, same reason).
-  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 119, attacks: 14, outcome: "died" },
+  // no longer dies; pairs with the parity fixture's original lose-apprentice
+  // scenario (same seed, same roster, same reason) — that fixture coverage
+  // has since moved to `lose-plain` (seed 1119, Phase 31, see below) because
+  // this Apprentice ALSO fears Beasts and is now a declared parity
+  // divergence. Phase 31 (2026-09-16, CMB-01): re-measured live — was
+  // 119/14/died; the hero still dies (attacks unchanged at 14), only the
+  // draw total shifts (119 -> 121) from action 1 onward.
+  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 121, attacks: 14, outcome: "died" },
+  // Phase 31 (2026-09-16, CMB-01): restores the byte-identical death-path
+  // FULL_FIGHTS row the Afraid ruling took from seed 127 (a plain Human
+  // Cutthroat, no Beasts phobia — pairs with the parity fixture's new
+  // `lose-plain` scenario, same seed, same roster, same reason).
+  { seed: 1119, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 51, attacks: 7, outcome: "died" },
 ];
 
 // --- Section 3: Phase 18 seam + slow — gated draws (D-13) ------------------
@@ -564,10 +586,19 @@ for (const row of GATED_DRAWS) {
 // totals (seed 14, seed 17 — both Fridgian heroes) changed because the
 // frenzy corpse-whiff draw was DELIBERATELY removed and hide -2 now shaves
 // every landed foe blow; that is a rules change, not a seam bug. Seed 127
-// is a new sixth row (a plain Human, unaffected by the race pass) restoring
+// was a sixth row (a plain Human, unaffected by the race pass) restoring
+// death-path coverage. Phase 31 (2026-09-16, CMB-01, user ruling "phobia is
+// a penalty, not a lost action"): seeds 14/8/127 (each fears Beasts, forced
+// Beasts) re-measured — the old freeze-then-shake-off no longer wastes the
+// first `playerStrike` call, so seed 14 now resolves in far fewer attacks;
+// seed 303 (a Con Artist, unrelated to phobia) also re-measured — the
+// Fight! split's rollInitiative now runs after the encounter step's Con
+// Artist foe-removal roll instead of before it; seed 127 is now a declared
+// parity divergence (see FIXTURE-INVENTORY.md), so a NEW seventh row (seed
+// 1119, a plain Human Cutthroat, no Beasts phobia) restores byte-identical
 // death-path coverage. See the FULL_FIGHTS array above for the full
 // rationale on each changed/added row.
-test("FID-02 restated post-Phase-24: the six FULL_FIGHTS totals (12/87/101/66/32/119) are measured-current and no fixture-roster creature carries a kit", () => {
+test("FID-02 restated post-Phase-31: the seven FULL_FIGHTS totals (12/36/101/52/32/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);
@@ -590,3 +621,53 @@ test("FID-02 restated post-Phase-24: the six FULL_FIGHTS totals (12/87/101/66/32
   }
   assert.equal(kitCount, 8, "expected exactly 8 bestiary rows to carry an abilities kit (19-01's pin)");
 });
+
+// --- Section 5: Phase 31 (CMB-01) — the OPENER-only draw table -------------
+//
+// CMB-01's own rng prohibition ("no new draws — the split MOVES draws into
+// `fight` in the same order") is proven independently of the Afraid ruling
+// here: `startCombat` + `fight` together, on ONE counting rng, must consume
+// EXACTLY the same total the pre-split single-call `startCombat` used to
+// consume for the OPENER ALONE (roster + initiative + the conditional
+// Hardiness d2 + the pre-emptive foeTurn, stopping there — no attacks). This
+// table covers the phobic seeds too, because the trigger's draw (none
+// without Hardiness) and the pre-emptive foeTurn are unchanged by the
+// ruling — the FULL_FIGHTS totals above shift starting at attack 1, but the
+// OPENER itself does not shift for phobia reasons.
+//
+// PROVENANCE: measured live against the finished Phase 31 engine via this
+// file's own countingRng (never hand-computed, never taken from a
+// pre-Phase-31 reference without re-verifying). Seeds 3/14/17/8/127 match
+// the pre-split single-call `startCombat`'s own opener draw total exactly
+// (6/11/10/5/8) — the CMB-01 no-new-draws proof for those five. Seed 303 is
+// the ONE exception, and it is NOT a phobia effect: this Con Artist's own
+// foe-removal roll (rng.d(6), still drawn inside the encounter step) now
+// lands BEFORE the two initiative d20s instead of after (`fight`, which now
+// owns `rollInitiative`, runs strictly AFTER the encounter step's Knight/
+// Con Artist/Court Mage removal loop completes) — the same reordering
+// FIXTURE-INVENTORY.md's Phase 31 section documents for the `parley` parity
+// scenario (same seed, same character): the foes win initiative under the
+// new order where they did not before, so the pre-emptive foeTurn now fires
+// and draws more. 1119 is the new `lose-plain` seed (no divergence, no
+// phobia — its opener total simply mirrors its own FULL_FIGHTS row's first
+// component).
+const OPENER_DRAWS = [
+  { seed: 3, forced: "Beasts", draws: 6 },
+  { seed: 14, forced: "Beasts", draws: 11 },
+  { seed: 17, forced: "Beasts", draws: 10 },
+  { seed: 303, forced: "Humans", draws: 13 },
+  { seed: 8, forced: "Beasts", draws: 5 },
+  { seed: 127, forced: "Beasts", draws: 8 },
+  { seed: 1119, forced: "Beasts", draws: 8 },
+];
+
+for (const row of OPENER_DRAWS) {
+  test(`Phase 31 (CMB-01) opener-only: seed ${row.seed}/${row.forced} — startCombat + fight draws exactly ${row.draws}`, () => {
+    const state = newRun(row.seed);
+    const rng = countingRng(makeRng(state.rngState));
+    const events = [];
+    startCombat(state, false, row.forced, rng, events);
+    fight(state, rng, events);
+    assert.equal(rng.draws, row.draws, `seed ${row.seed}/${row.forced} opener draw total`);
+  });
+}

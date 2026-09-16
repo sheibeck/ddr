@@ -42,7 +42,7 @@ import {
   scaleHazard,
   abilityCadenceFor,
 } from "../../engine/difficulty.js";
-import { startCombat, foeTurn } from "../../engine/combat.js";
+import { startCombat, fight, foeTurn } from "../../engine/combat.js";
 import { tickAbilityCooldowns, firstReadyAbility } from "../../engine/foeAbilities.js";
 import { BESTIARY, FOE_ABILITIES } from "../../content/index.js";
 
@@ -403,21 +403,28 @@ test("D-19 wiring identity: at depth 1..5 every foe built by startCombat has wp 
   }
 });
 
-test("draw-shape equality (D-17/D-19): startCombat draws 8 at depth 1 and at depth 5, and 2 + foeCountFor(2, difficultyCurve(30)) * 2 + 2 at depth 30", () => {
+test("draw-shape equality (D-17/D-19): startCombat+fight draws 8 at depth 1 and at depth 5, and 2 + foeCountFor(2, difficultyCurve(30)) * 2 + 2 at depth 30", () => {
+  // CMB-01 (Phase 31): the initiative draws (the trailing 10, 5 in `seq`)
+  // moved out of startCombat into the separate `fight` call — chained here
+  // on the SAME counting rng so the combined total is unchanged (the split
+  // moves draws, it never adds or removes any).
   const seq = [3, 3, 2, 2, 2, 2, 2, 10, 5];
   const state1 = fixedState({ c: { level: 5 }, floor: { depth: 1 } });
   const rng1 = countingRng(fakeRng(seq));
   startCombat(state1, false, "Beasts", rng1, []);
+  fight(state1, rng1, []);
   const draws1 = rng1.draws;
 
   const state5 = fixedState({ c: { level: 5 }, floor: { depth: 5 } });
   const rng5 = countingRng(fakeRng(seq));
   startCombat(state5, false, "Beasts", rng5, []);
+  fight(state5, rng5, []);
   const draws5 = rng5.draws;
 
   const state30 = fixedState({ c: { level: 5 }, floor: { depth: 30 } });
   const rng30 = countingRng(fakeRng(seq));
   startCombat(state30, false, "Beasts", rng30, []);
+  fight(state30, rng30, []);
   const draws30 = rng30.draws;
 
   assert.equal(draws1, 8);
@@ -436,6 +443,8 @@ test("wandering encounters still draw no count dice", () => {
     const state = fixedState({ c: { level: 5 }, floor: { depth } });
     const rng = countingRng(fakeRng([2, 10, 5]));
     startCombat(state, true, "Beasts", rng, []);
+    // CMB-01 (Phase 31): initiative (the trailing 10, 5) now lives in fight.
+    fight(state, rng, []);
     assert.equal(state.combat.foes.length, 1);
     assert.equal(rng.draws, 1 + 1 + 2);
   }

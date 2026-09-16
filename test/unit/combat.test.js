@@ -17,6 +17,7 @@ import url from "node:url";
 import { makeRng } from "../../engine/rng.js";
 import {
   startCombat,
+  fight,
   rollInitiative,
   liveFoes,
   playerStrike,
@@ -161,112 +162,141 @@ test("startCombat: a Knight is beneath the notice of a weak foe (fled, not fough
   assert.equal(state.combat, null, "the only foe fled -> nothing left to fight");
 });
 
-// --- PHOBIA-01: Darkness-phobia freeze on encounter start (04.1-05) -------
+// --- PHOBIA-01 / CMB-01 (Phase 31): the Darkness-phobia Afraid penalty on
+// Fight! (04.1-05, re-pinned 2026-09-16 — "Phobia should be penalties, never
+// a no actions state") -------------------------------------------------
 //
 // Every test below hand-drives startCombat(state, true /* wandering */,
-// "Beasts", rng, []) so the roster/initiative rng draws are pinned to
-// exactly 3: rng.d(4) (the foe's level-reduction roll, here 1 -> lvl 1),
-// then rng.d(20) x2 for rollInitiative (mine, theirs), chosen so mine >=
-// theirs -> first === "you", which skips foeTurn() entirely and keeps the
-// draw count exact. A 4th fakeRng entry, when present, is the Hardiness
-// mitigation roll (rng.d(2)) — fakeRng throws on sequence underflow, so any
-// test that supplies EXACTLY 3 entries also proves no extra rng draw fires
-// for that scenario (T-04.1-10).
+// "Beasts", rng, []) THEN fight(state, rng, events) on the SAME rng/events —
+// CMB-01 (Phase 31) split the single call in two, so the roster/initiative
+// rng draws are still pinned to exactly 3 total, just split across the two
+// calls: rng.d(4) (the foe's level-reduction roll, here 1 -> lvl 1, consumed
+// by startCombat), then rng.d(20) x2 for rollInitiative (mine, theirs, now
+// consumed by fight), chosen so mine >= theirs -> first === "you", which
+// skips foeTurn() entirely and keeps the draw count exact. A 4th fakeRng
+// entry, when present, is the Hardiness mitigation roll (rng.d(2), still
+// inside fight). fakeRng throws on sequence underflow, so any test that
+// supplies EXACTLY 3 entries also proves no extra rng draw fires for that
+// scenario (T-04.1-10).
 
-test("startCombat: a Darkness-phobic character freezes on encounter start while dark", () => {
+test("startCombat+fight: a Darkness-phobic character is Afraid after Fight! while dark", () => {
   const state = fixedState({ c: { phobia: "Darkness", phobiaType: null } });
   state.floor.g[state.floor.py][state.floor.px].dark = true;
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.equal(state.combat.frozen, true);
-  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.equal(state.combat.afraid, 2);
+  assert.ok(events.some((e) => e.type === "phobiaAfraid" && e.rounds === 2));
 });
 
-test("startCombat: the persistent darkness counter (darkFor) also triggers the Darkness-phobia freeze off a lit tile", () => {
+test("startCombat+fight: the persistent darkness counter (darkFor) also triggers the Darkness-phobia Afraid penalty off a lit tile", () => {
   const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, darkFor: 10 } });
   // floor tile itself stays lit (fixedFloor default dark:false) — only the
   // persistent counter is active, proving Task 1's inDark extension flows
   // through here too.
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.equal(state.combat.frozen, true);
-  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.equal(state.combat.afraid, 2);
+  assert.ok(events.some((e) => e.type === "phobiaAfraid" && e.rounds === 2));
 });
 
-test("startCombat: the same Darkness-phobic character does NOT freeze in the light, and no extra rng is drawn", () => {
+test("startCombat+fight: the same Darkness-phobic character is NOT Afraid in the light, and no extra rng is drawn", () => {
   const state = fixedState({ c: { phobia: "Darkness", phobiaType: null } });
   // floor stays lit, darkFor stays 0 — exactly 3 fakeRng entries: any 4th
   // (unwanted Hardiness-style) draw would throw "sequence exhausted".
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.ok(!state.combat.frozen);
-  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.ok(!state.combat.afraid);
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
 });
 
-test("startCombat: a non-Darkness, non-type-matched phobic character in the dark does not freeze and draws no extra rng", () => {
+test("startCombat+fight: a non-Darkness, non-type-matched phobic character in the dark is NOT Afraid and draws no extra rng", () => {
   const state = fixedState({ c: { phobia: "Spiders", phobiaType: "x" } });
   state.floor.g[state.floor.py][state.floor.px].dark = true;
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.ok(!state.combat.frozen, "an unrelated phobia never triggers the Darkness freeze");
-  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.ok(!state.combat.afraid, "an unrelated phobia never triggers the Darkness Afraid penalty");
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
   assert.ok(events.some((e) => e.type === "combatInDark"), "the ordinary in-dark combat notice still fires, unrelated to phobia");
 });
 
-test("startCombat: Hardiness gives a Darkness-phobic character a 50% chance to shrug off the freeze (roll shrugs it off)", () => {
+test("startCombat+fight: Hardiness gives a Darkness-phobic character a 50% chance to shrug off the Afraid penalty (roll shrugs it off)", () => {
   const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { Hardiness: 1 } } });
   state.floor.g[state.floor.py][state.floor.px].dark = true;
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 1]), []); // Hardiness roll: d(2)=1 -> shrugged off
-  assert.ok(!state.combat.frozen, "a Hardiness roll of 1 shrugs the freeze off entirely");
-  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5, 1]); // Hardiness roll: d(2)=1 -> shrugged off
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.ok(!state.combat.afraid, "a Hardiness roll of 1 shrugs the Afraid penalty off entirely");
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
 });
 
-test("startCombat: Hardiness's mitigation roll can still fail, leaving the Darkness-phobia freeze in place", () => {
+test("startCombat+fight: Hardiness's mitigation roll can still fail, leaving the Darkness-phobia Afraid penalty in place", () => {
   const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { Hardiness: 1 } } });
   state.floor.g[state.floor.py][state.floor.px].dark = true;
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 2]), []); // Hardiness roll: d(2)=2 -> no shrug
-  assert.equal(state.combat.frozen, true);
-  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5, 2]); // Hardiness roll: d(2)=2 -> no shrug
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.equal(state.combat.afraid, 2);
+  assert.ok(events.some((e) => e.type === "phobiaAfraid" && e.rounds === 2));
 });
 
-// --- PHOBIA-01: Death-phobia near-death panic on encounter start (04.1-06) -
+// --- PHOBIA-01 / CMB-01 (Phase 31): the Death-phobia near-death Afraid
+// penalty on Fight! (04.1-06, re-pinned 2026-09-16) ---------------------
 //
 // maxWP is 55 (fixedFighter default), so DEATH_PANIC_THRESHOLD (0.25) puts
 // the near-death line at wp <= 13.75. wp:10 is at/below it; wp:20 is above
 // it. Same 3-draw rng shape as the Darkness tests above (foe-level roll +
 // initiative x2, "you" goes first so foeTurn never runs and the draw count
-// stays exact); a 4th entry, when present, is the Hardiness mitigation roll.
+// stays exact, now split across startCombat+fight); a 4th entry, when
+// present, is the Hardiness mitigation roll.
 
-test("startCombat: a Death-phobic character at/below the near-death threshold freezes on encounter start", () => {
+test("startCombat+fight: a Death-phobic character at/below the near-death threshold is Afraid after Fight!", () => {
   const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10 } });
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.equal(state.combat.frozen, true);
-  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.equal(state.combat.afraid, 2);
+  assert.ok(events.some((e) => e.type === "phobiaAfraid" && e.rounds === 2));
 });
 
-test("startCombat: the same Death-phobic character does NOT freeze above the threshold, and no extra rng is drawn", () => {
+test("startCombat+fight: the same Death-phobic character is NOT Afraid above the threshold, and no extra rng is drawn", () => {
   const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 20 } });
   // exactly 3 fakeRng entries: any 4th (unwanted Hardiness-style) draw would throw.
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.ok(!state.combat.frozen);
-  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.ok(!state.combat.afraid);
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
 });
 
-test("startCombat: a non-Death phobic character near death does not freeze and draws no extra rng", () => {
+test("startCombat+fight: a non-Death phobic character near death is NOT Afraid and draws no extra rng", () => {
   const state = fixedState({ c: { phobia: "Spiders", phobiaType: "x", wp: 5 } });
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5]), []);
-  assert.ok(!state.combat.frozen, "an unrelated phobia never triggers the near-death panic");
-  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5]);
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.ok(!state.combat.afraid, "an unrelated phobia never triggers the near-death panic");
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
 });
 
-test("startCombat: Hardiness gives a near-death Death-phobic character a 50% chance to shrug off the panic (roll shrugs it off)", () => {
+test("startCombat+fight: Hardiness gives a near-death Death-phobic character a 50% chance to shrug off the panic (roll shrugs it off)", () => {
   const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10, skills: { Hardiness: 1 } } });
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 1]), []); // Hardiness roll: d(2)=1 -> shrugged off
-  assert.ok(!state.combat.frozen, "a Hardiness roll of 1 shrugs the panic off entirely");
-  assert.ok(!events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5, 1]); // Hardiness roll: d(2)=1 -> shrugged off
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.ok(!state.combat.afraid, "a Hardiness roll of 1 shrugs the panic off entirely");
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
 });
 
-test("startCombat: Hardiness's mitigation roll can still fail, leaving the Death-phobia panic in place", () => {
+test("startCombat+fight: Hardiness's mitigation roll can still fail, leaving the Death-phobia Afraid penalty in place", () => {
   const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10, skills: { Hardiness: 1 } } });
-  const events = startCombat(state, true, "Beasts", fakeRng([1, 15, 5, 2]), []); // Hardiness roll: d(2)=2 -> no shrug
-  assert.equal(state.combat.frozen, true);
-  assert.ok(events.some((e) => e.type === "phobiaFrozen"));
+  const rng = fakeRng([1, 15, 5, 2]); // Hardiness roll: d(2)=2 -> no shrug
+  const events = startCombat(state, true, "Beasts", rng, []);
+  fight(state, rng, events);
+  assert.equal(state.combat.afraid, 2);
+  assert.ok(events.some((e) => e.type === "phobiaAfraid" && e.rounds === 2));
 });
 
 test("liveFoes: filters to only alive foes; empty outside combat", () => {
@@ -1413,13 +1443,17 @@ test("foeTurn: a pending summon joins at the top, before regen, and acts as an o
 // 4,600 no-op actions. The test scans seeds for that exact shape (foe first,
 // wardReflected + foeKilled in the opener) so it survives future dice-shape
 // changes, and asserts combat is closed with encounterCleared.
-test("startCombat: a foe killed by ward reflection during its opening turn ends the encounter (no stranded combat)", () => {
+test("startCombat+fight: a foe killed by ward reflection during its opening turn ends the encounter (no stranded combat)", () => {
   let hits = 0;
   for (let seed = 1; seed <= 400 && hits < 3; seed++) {
     const state = fixedState({ c: { sub: "Samurai", ward: { pool: 100, reflect: true, rounds: 12, name: "Bubble" } } });
-    const events = startCombat(state, false, "Beasts", makeRng(seed), []);
-    const started = events.find((e) => e.type === "encounterStarted");
-    if (!started || started.first !== "foe") continue;
+    const rng = makeRng(seed);
+    const events = startCombat(state, false, "Beasts", rng, []);
+    fight(state, rng, events);
+    // CMB-01 (Phase 31): `first` moved from encounterStarted to fight's own
+    // combatJoined event.
+    const joined = events.find((e) => e.type === "combatJoined");
+    if (!joined || joined.first !== "foe") continue;
     if (!events.some((e) => e.type === "wardReflected") || !events.some((e) => e.type === "foeKilled")) continue;
     if (state.dead) continue;
     if (state.combat && liveFoes(state).length) continue; // a foe survived — not the shape under test

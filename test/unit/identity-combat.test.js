@@ -184,18 +184,21 @@ test("rollInitiative: a Fridgian Court Mage still only goes last once (adjacency
 test("startCombat: a Court Mage's boredom kill fires on d12 in {1,2} and nothing else", () => {
   // Draw order up to the boredom check (see engine/combat.js#startCombat):
   // d4 (foe count, <=2 so only one draw), d4 (level downgrade — either
-  // value clamps to lvl 1 here), d20 (initiative "mine"), d20 (initiative
-  // "theirs"), d12 (the boredom check itself). Everything after that point
-  // (killFoe's own dice, or a surviving foe's foeTurn swing) is real
-  // content-driven arithmetic covered by looseRng's fallback, not
-  // hand-verified here — this test's claim is only about the d12 draw.
+  // value clamps to lvl 1 here), d12 (the boredom check itself — CMB-01,
+  // Phase 31: initiative moved out of startCombat into the separate `fight`
+  // action, which now runs strictly AFTER this encounter-step removal loop,
+  // so no initiative placeholders sit between the roster draws and the
+  // d12 here anymore). Everything after that point (killFoe's own dice, or
+  // a surviving foe's foeTurn swing) is real content-driven arithmetic
+  // covered by looseRng's fallback, not hand-verified here — this test's
+  // claim is only about the d12 draw.
   const fires = fixedState({ c: { sub: "Court Mage" } });
-  const eventsFires = startCombat(fires, false, "Beasts", looseRng([1, 2, 20, 1, 2]), []);
+  const eventsFires = startCombat(fires, false, "Beasts", looseRng([1, 2, 2]), []);
   assert.ok(eventsFires.some((e) => e.type === "foeBored"), "d12 <= 2 fires the boredom kill");
   assert.ok(eventsFires.some((e) => e.type === "encounterCleared"), "the lone foe dies of boredom");
 
   const noFire = fixedState({ c: { sub: "Court Mage" } });
-  const eventsNoFire = startCombat(noFire, false, "Beasts", looseRng([1, 2, 20, 1, 3]), []);
+  const eventsNoFire = startCombat(noFire, false, "Beasts", looseRng([1, 2, 3]), []);
   assert.equal(eventsNoFire.some((e) => e.type === "foeBored"), false, "d12 === 3 never fires");
 });
 

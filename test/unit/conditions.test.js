@@ -119,56 +119,57 @@ test("conditionsOf: tolerates a bare/empty state without throwing", () => {
   assert.deepEqual(conditionsOf({ c: {} }), []);
 });
 
-// --- DR17 item 1: active-phobia condition -----------------------------------
-// The phobia chip surfaces ONLY inside the CURRENT combat, when the fear is
-// actually active — mirroring engine/combat.js startCombat's freeze trigger
-// (type-matched foe, frozen root, Darkness-in-the-dark, or Death near-death).
+// --- Phase 31 (CMB-01, re-pins DR17 item 1, user ruling 2026-09-16): the
+// Afraid condition ------------------------------------------------------
+// "Phobia should be penalties, never a no actions state" — the old DR17
+// phobia chip surfaced whenever the fear was ACTIVELY gripping the hero
+// (type-matched foe, a set freeze flag, Darkness-in-the-dark, or Death
+// near-death); the new `afraid` chip is narrower and simpler: it surfaces
+// ONLY while `state.combat.afraid > 0` — the penalty counter engine/combat.js
+// #fight sets when the trigger fires (see engine/derived.js#afraidNeed/
+// afraidDamage) — so the chip follows the PENALTY, not the underlying fear
+// condition. A Hardiness shrug-off (the trigger fired but the mitigation
+// roll won) never sets the counter, so it shows nothing, even though the
+// fear itself is still "active" in the old sense.
 
-test("conditionsOf: type-matched phobia surfaces a named BAD chip in that combat", () => {
+test("conditionsOf: combat.afraid > 0 surfaces a named BAD chip with the fear and the remaining rounds", () => {
+  const c = cleanChar({ phobia: "Crowds", phobiaType: "Humans", wp: 40, maxWP: 40 });
+  const conds = conditionsOf({ c, combat: { type: "Humans", afraid: 2 } });
+  assert.deepEqual(conds, [{ key: "afraid", polarity: "bad", remaining: 2, phobia: "Crowds" }]);
+});
+
+test("conditionsOf: the afraid chip's remaining count tracks the live counter, not a fixed number", () => {
+  const c = cleanChar({ phobia: "Bats and rats", phobiaType: "Beasts", wp: 40, maxWP: 40 });
+  assert.deepEqual(conditionsOf({ c, combat: { type: "Beasts", afraid: 1 } }), [
+    { key: "afraid", polarity: "bad", remaining: 1, phobia: "Bats and rats" },
+  ]);
+});
+
+test("conditionsOf: a type-matched phobia WITHOUT the afraid counter (a Hardiness shrug-off) shows nothing — the chip follows the penalty, not the fear", () => {
   const c = cleanChar({ phobia: "Crowds", phobiaType: "Humans", wp: 40, maxWP: 40 });
   const conds = conditionsOf({ c, combat: { type: "Humans" } });
-  assert.deepEqual(conds, [{ key: "phobia", polarity: "bad", phobia: "Crowds" }]);
+  assert.deepEqual(conds, []);
 });
 
-test("conditionsOf: a set frozen root surfaces the phobia whatever the foe type", () => {
-  const c = cleanChar({ phobia: "Crowds", phobiaType: "Humans", wp: 40, maxWP: 40 });
-  const conds = conditionsOf({ c, combat: { type: "Goblins", frozen: true } });
-  assert.deepEqual(keys(conds), ["phobia"]);
-  assert.equal(byKey(conds, "phobia").phobia, "Crowds");
-});
-
-test("conditionsOf: Darkness phobia surfaces while in the dark (darkFor active)", () => {
+test("conditionsOf: Darkness-in-the-dark without the afraid counter surfaces only the darkness chip, never afraid", () => {
   const c = cleanChar({ phobia: "Darkness", phobiaType: null, darkFor: 8, wp: 40, maxWP: 40 });
   const conds = conditionsOf({ c, combat: { type: "Rats" } });
-  // darkFor > 0 also surfaces the persistent-darkness chip; the phobia chip is
-  // additional and names the fear.
-  assert.ok(keys(conds).includes("phobia"));
-  assert.equal(byKey(conds, "phobia").phobia, "Darkness");
+  assert.deepEqual(keys(conds), ["darkness"]);
 });
 
-test("conditionsOf: Death phobia surfaces on a near-death panic (wp <= 25% maxWP)", () => {
+test("conditionsOf: Death near-death (wp <= 25% maxWP) without the afraid counter shows nothing", () => {
   const c = cleanChar({ phobia: "Death", phobiaType: null, wp: 5, maxWP: 100 });
-  const conds = conditionsOf({ c, combat: { type: "Skeletons" } });
-  assert.ok(keys(conds).includes("phobia"));
-  // Above the 25% threshold, no panic → no chip.
-  const healthy = conditionsOf({ c: cleanChar({ phobia: "Death", phobiaType: null, wp: 90, maxWP: 100 }), combat: { type: "Skeletons" } });
-  assert.deepEqual(healthy, []);
+  assert.deepEqual(conditionsOf({ c, combat: { type: "Skeletons" } }), []);
 });
 
-test("conditionsOf: phobia does NOT surface when the fear doesn't match the current combat", () => {
-  const c = cleanChar({ phobia: "Crowds", phobiaType: "Humans", wp: 40, maxWP: 40 });
-  // Different foe type, not frozen, not dark, not near-death.
-  assert.deepEqual(conditionsOf({ c, combat: { type: "Goblins" } }), []);
-});
-
-test("conditionsOf: phobia NEVER surfaces outside combat, even with a matching phobiaType", () => {
+test("conditionsOf: afraid NEVER surfaces outside combat, even with combat.afraid set on a bare object", () => {
   const c = cleanChar({ phobia: "Crowds", phobiaType: "Humans", wp: 40, maxWP: 40 });
   assert.deepEqual(conditionsOf({ c }), []); // no state.combat
 });
 
-test("conditionsOf: the phobia read stays PURE (no mutation) inside combat", () => {
+test("conditionsOf: the afraid read stays PURE (no mutation) inside combat", () => {
   const c = cleanChar({ phobia: "Crowds", phobiaType: "Humans", wp: 5, maxWP: 40 });
-  const state = { c, combat: { type: "Humans", frozen: true } };
+  const state = { c, combat: { type: "Humans", afraid: 1 } };
   const before = JSON.stringify(state);
   conditionsOf(state);
   assert.equal(JSON.stringify(state), before, "conditionsOf must not mutate state or combat");

@@ -377,12 +377,17 @@ const CONTRACT = [
     good: {
       name: "boredom kills 1-in-6 (d12 <= 2); always parleys Humans",
       run() {
+        // CMB-01 (Phase 31): the Court Mage boredom d12 is drawn inside
+        // startCombat's encounter-step removal loop, which now runs BEFORE
+        // `fight` (and its rollInitiative) rather than after — this test
+        // never calls `fight`, so the sequence is just the two roster draws
+        // then the d12, with no initiative placeholders.
         const fires = hero("Court Mage");
-        const eventsFires = startCombat(fires, false, "Beasts", looseRng([1, 2, 20, 1, 2]), []);
+        const eventsFires = startCombat(fires, false, "Beasts", looseRng([1, 2, 2]), []);
         expectEvent(eventsFires, "foeBored");
 
         const noFire = hero("Court Mage");
-        const eventsNoFire = startCombat(noFire, false, "Beasts", looseRng([1, 2, 20, 1, 3]), []);
+        const eventsNoFire = startCombat(noFire, false, "Beasts", looseRng([1, 2, 3]), []);
         assert.ok(!eventsNoFire.some((e) => e.type === "foeBored"), "d12 === 3 never fires");
 
         const parleyState = hero("Court Mage");
@@ -884,8 +889,12 @@ const CONTRACT = [
         withCombat(state, [fixedFoe({ type: "Walking Dead" })], { type: "Walking Dead" });
         assert.equal(canParley(state), false);
 
+        // CMB-01 (Phase 31): the Con Artist's escape d6 is drawn inside
+        // startCombat's encounter-step removal loop, which now runs BEFORE
+        // `fight` (and its rollInitiative) rather than after — no initiative
+        // placeholders needed since this test never calls `fight`.
         const startState = hero("Con Artist");
-        const events = startCombat(startState, false, "Beasts", fakeRng([1, 2, 20, 1, 4]), []);
+        const events = startCombat(startState, false, "Beasts", fakeRng([1, 2, 4]), []);
         expectEvent(events, "foeFled", { reason: "conArtist" });
       },
     },

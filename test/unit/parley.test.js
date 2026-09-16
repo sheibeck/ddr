@@ -12,7 +12,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { canParley, parley, foeTurn, endCombat, startCombat, liveFoes, flee } from "../../engine/combat.js";
+import { canParley, parley, foeTurn, endCombat, startCombat, fight, liveFoes, flee } from "../../engine/combat.js";
 import { fluency, killSpFor, foeToHitVs } from "../../engine/derived.js";
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
@@ -273,6 +273,10 @@ test("PARLEY-02 / D-05: through applyAction an exhausted encounter yields only p
   let next = structuredClone(newRun(303));
   const rng = makeRng(next.rngState);
   startCombat(next, false, "Humans", rng, []);
+  // CMB-01 (Phase 31): fight (initiative onward) must run before pending
+  // clears, so parley's own C.parleyTried gate — not refuseIfPending's
+  // notFought guard — is what this test exercises.
+  fight(next, rng, []);
   next.rngState = rng.getState();
   next.combat.parleyTried = true;
   const { state, events } = applyAction(next, { type: "parley" });
@@ -517,7 +521,7 @@ test("D-04 draw shape pinned with countingRng: exhausted 0, refused 0, success 1
 
 // --- Test 14: D-21 seed-303 pin ----------------------------------------
 
-test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 7 / gold 50 with the same first three dice and no fourth", () => {
+test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 5 / gold 50 with re-measured Phase 31 dice", () => {
   const run = newRun(303);
   const c = run.c;
   assert.equal(c.race, "Wilmsry");
@@ -530,33 +534,45 @@ test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 7 
   const next = structuredClone(run);
   const rng = makeRng(next.rngState);
   startCombat(next, false, "Humans", rng, []);
+  // CMB-01 (Phase 31): fight (initiative onward) must run before parley is
+  // dispatched, or refuseIfPending's notFought guard refuses it outright.
+  fight(next, rng, []);
   next.rngState = rng.getState();
   const foes = liveFoes(next);
   assert.equal(foes.length, 1);
   // Phase 27 (2026-09-15, TUNE-06): was "Dante" — Dante demoted to tier 2,
-  // Ned is now the tier-1 Humans row this seed rolls (re-measured live; the
-  // dice log/need/sp/gold below are unchanged by the swap, also re-measured).
+  // Ned is now the tier-1 Humans row this seed rolls.
   assert.ok(foes.every((f) => f.name === "Ned"));
 
   const counting = countingRng(makeRng(next.rngState));
   const events = parley(next, counting, []);
-  assert.deepStrictEqual(counting.log, ["d20=2", "d6=5", "d6=5"]);
+  // Phase 31 (CMB-01, 2026-09-16): re-measured — was d20=2/d6=5/d6=5 (need
+  // 17, sp 7). This Con Artist's own foe-removal d6 (one of the two Neds
+  // fled) now lands BEFORE the two initiative d20s instead of after
+  // (`fight`, which now owns rollInitiative, runs strictly AFTER the
+  // encounter step's Knight/Con Artist/Court Mage removal loop) — the same
+  // reordering FIXTURE-INVENTORY.md's Phase 31 section documents for this
+  // exact seed/character. The dice log itself shifts (still 3 draws, no
+  // wilmst 4th); need is unchanged (17), sp drops 7 -> 5.
+  assert.deepStrictEqual(counting.log, ["d20=5", "d6=4", "d6=5"]);
   assert.equal(counting.draws, 3);
 
   const rolled = events.find((e) => e.type === "parleyRolled");
-  assert.deepStrictEqual(rolled, { type: "parleyRolled", roll: 2, need: 17, fluency: 0 });
+  assert.deepStrictEqual(rolled, { type: "parleyRolled", roll: 5, need: 17, fluency: 0 });
   const gained = events.find((e) => e.type === "spGained");
-  assert.deepStrictEqual(gained, { type: "spGained", amount: 7, reason: "parley" });
+  assert.deepStrictEqual(gained, { type: "spGained", amount: 5, reason: "parley" });
   assert.ok(events.some((e) => e.type === "combatEnded"));
   assert.equal(events.some((e) => e.type === "goldGained"), false);
 
-  assert.equal(next.c.sp, 7);
+  assert.equal(next.c.sp, 5);
   assert.equal(next.c.gold, 50);
   assert.equal(next.combat, null);
 
   // BEFORE (pre-Phase-20, measured 2026-09-14) was d20=2 d6=5 d6=5 d6=2 ->
   // need 19, sp 13, gold 250 — see test/parity/FIXTURE-INVENTORY.md "Phase
-  // 20 parley divergence".
+  // 20 parley divergence". Phase 27 re-measured to d20=2/d6=5/d6=5 (need 17,
+  // sp 7, the numbers this test pinned until Phase 31's Fight! split
+  // reordered the Con Artist's own removal-loop draw ahead of initiative.
 });
 
 // --- Test 15: old-save probe --------------------------------------------

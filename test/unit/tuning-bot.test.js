@@ -150,6 +150,19 @@ function fight(type, nFoes, round = 1, extra = {}) {
   return { type, foes, round, target: 0, ...extra };
 }
 
+// CMB-01 (Phase 31): the bot presses Fight! like a player would — the very
+// first check inside `if (state.combat)`, before any of the flee/parley/
+// potion/sing/spell heuristics below even run.
+test("CMB-01: decideAction returns {type:'fight'} whenever state.combat.pending is truthy, before any other combat heuristic", () => {
+  const ctx = makeBotContext();
+  const pendingState = mkState({ combat: fight("Beasts", 1, 1, { pending: true }), c: { wp: 5, maxWP: 40 } });
+  assert.deepStrictEqual(decideAction(pendingState, fixedPolicyRng, ctx), { type: "fight" });
+
+  // A joined (non-pending) combat falls through to the ordinary heuristics.
+  const joinedState = mkState({ combat: fight("Beasts", 1, 1, {}), c: { wp: 40, maxWP: 40 } });
+  assert.deepStrictEqual(decideAction(joinedState, fixedPolicyRng, ctx), { type: "attack" });
+});
+
 test("D-06: caster threshold raises flee/parley to 0.5 vs any kit-bearing live foe (0.3 otherwise)", () => {
   const ctx = makeBotContext();
 
