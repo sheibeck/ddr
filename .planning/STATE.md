@@ -5,15 +5,15 @@ milestone_name: Feel, Loot & Combat Flow
 current_phase: 32
 current_phase_name: Combat Narrative & Input UI Build
 status: executing
-stopped_at: Completed 32-01-PLAN.md
-last_updated: "2026-09-16T16:51:57.376Z"
+stopped_at: Completed 32-02-PLAN.md
+last_updated: "2026-09-16T17:11:03.619Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 32 execution started (wave 1 of 3)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 67
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 32 — Combat Narrative & Input UI Build — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 32 execution started (wave 1 of 3)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T16:51:57.349Z
-Stopped at: Completed 32-01-PLAN.md
+Last session: 2026-09-16T17:11:03.584Z
+Stopped at: Completed 32-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -161,6 +161,7 @@ Resume file: None
 | Phase 31 P02 | 55min | 3 tasks | 19 files |
 | Phase 31 P03 | 45min | 3 tasks | 8 files |
 | Phase 32 P01 | 5min | 2 tasks | 3 files |
+| Phase 32 P02 | 12min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -292,6 +293,8 @@ Resume file: None
 - [Phase ?]: 31-03: the dead classic castSpell()'s error-message branch reordered off a stale sp.lvl compare onto the still-valid schoolGate check, so no copy of the fixed IDENT-03/04 bug survives anywhere in the file, live or dead
 - [Phase ?]: 31-03: Sing/Scroll button visibility relaxed to the structural gate (Bard; scrolls > 0), not full readiness — songReady()/canRead() still gate the internal countdown math but no longer hide the button, matching the CMB-02 refusal-vocabulary design
 - [Phase ?]: inputGuards fail-open resolved by direct short-circuit on non-finite first arg (not coerce-to-0-then-subtract), matching the plan's own behavior spec
+- [Phase ?]: Round Card routing uses post-dispatch state.combat (not pre-dispatch wasCombat) so the action that ends combat still toasts its own final-round lines
+- [Phase ?]: window.__mzRoundCard is presentation-only, module-scope state (like window.__mzLootReport), never an S field, since serializeRun spreads S wholesale
 
 ### Blockers
 
