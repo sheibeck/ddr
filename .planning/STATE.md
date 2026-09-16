@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Feel, Loot & Combat Flow
+milestone: v1.4
+milestone_name: Combat & Map Screens
 status: planning
 stopped_at: "v1.4 Combat & Map Screens scaffolded: REQUIREMENTS CSCR-01..10 + MAP-01..10, ROADMAP Phases 34–35, specs in design/ (Combat Panel, Map, Map Panel), 34-CONTEXT.md + 35-CONTEXT.md written with the user rulings (no toasts, tap-to-step, never skip an active choice, climb-only obstacles, chips in HUD). Next: /gsd-autonomous (defer uat to end) — research → Opus plan → execute Phase 34 then 35 → build + adb install"
-last_updated: "2026-09-16T20:16:45.488Z"
+last_updated: "2026-09-16T21:11:06.862Z"
 last_activity: 2026-09-16
 last_activity_desc: Milestone v1.3 completed and archived
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
-current_phase: 33
-current_phase_name: UI Feel & Store Polish
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+current_phase: 34
+current_phase_name: Combat Screen Rebuild
 ---
 
 # Project State
@@ -24,11 +24,11 @@ current_phase_name: UI Feel & Store Polish
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase null
+**Current focus:** Phase 34 — Combat Screen Rebuild (v1.4)
 
 ## Current Position
 
-Phase: Milestone v1.3 complete
+Phase: 34 (Combat Screen Rebuild) — v1.4 Combat & Map Screens
 Plan: Not started
 Status: Ready to discuss/plan (v1.4 started 2026-09-16 from the Claude Design combat mock)
 Last activity: 2026-09-16 — Milestone v1.3 completed and archived
