@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-The remaining polish pass, done once against the finished combat UI (Phases 30–32): the gear panel's Use/Drop row with a drop confirm (UIF-01), map recenter on return from any full-screen panel (UIF-02) and a new default zoom (UIF-03), a tutorial on/off setting (UIF-04), Make Camp into the Marks/Centre row with the handedness option removed and movement buttons centered (UIF-05), and depth-appropriate randomly rolled store stock behind a parity-safe feature guard (STORE-01). Last phase of milestone v1.3.
+The remaining polish pass, done once against the finished combat UI (Phases 30–32): the gear panel's Use/Drop row with a drop confirm (UIF-01), map recenter on return from any full-screen panel (UIF-02) and a new default zoom (UIF-03), Make Camp into the Marks/Centre row with the handedness option removed and movement buttons centered (UIF-05), and depth-appropriate randomly rolled store stock behind a parity-safe feature guard (STORE-01). Last phase of milestone v1.3.
 
 Out of scope: any combat-surface change (Phase 32 shipped it; the unguarded button set and haptics from the 32-03 hand-off are NOT pulled in unless trivially adjacent), store pricing/haggle rules, new items, tutorial content rewrites (UX-06 content stands; only the toggle is new).
 
@@ -16,16 +16,16 @@ Out of scope: any combat-surface change (Phase 32 shipped it; the unguarded butt
 <decisions>
 ## Implementation Decisions
 
-### Area 1 — Gear panel, toolbar, tutorial (UIF-01, UIF-04, UIF-05)
+### Area 1 — Gear panel, toolbar (UIF-01, UIF-05) — tutorial toggle dropped
 - **Drop confirm (UIF-01)**: inline two-tap on the row — tapping Drop turns the button into "Drop it? [Yes] [No]"; reverts after ~3 s or on any other tap; NO modal card (card-vs-toast rule: a minor decision stays on the row). Drop applies to any bag item including potions; equipped slots keep going through the existing unequip path (no drop from a worn slot).
 - **Gear row layout**: `[name · detail] … [Use] [Drop]` — Use immediately left of Drop, Drop pinned far right, both ≥ 48 dp min-height, `touch-action:manipulation`. The Store's own Sell/Drop rows (Phase 29) are unchanged.
 - **Make Camp & handedness (UIF-05)**: Make Camp becomes the far-right button of the Marks/Centre row; the D-pad grid is centered with the CAMP column removed; the Handedness settings row, its `data-handedness` attribute and CSS rules (04-DR9/DR11) are deleted; a stored handedness preference is ignored (no migration UI, no error).
-- **Tutorial toggle (UIF-04)**: a new Settings row "Tutorial" (on/off) stored with the other settings (Preferences-backed via `src/browser/settings.js`/`storage.js`); the tutorial's own "Got it"/dismiss sets it off (today's `mazeworld.tutorialSeen` flag becomes the inverse of / is folded into this setting — the planner picks one source of truth); re-enabling from Settings restarts the tutorial from step 1 the next time the map is shown.
+- **Tutorial toggle (UIF-04) — DROPPED from v1.3 (user decision 2026-09-16 after research)**: `src/browser/tutorial.js` is unwired in the shell (zero references in `mazeworld.html`) and UX-06 is parked past this milestone, so there is nothing to toggle. UIF-04 moves to the UX-06 backlog; Phase 33 ships UIF-01/02/03/05 + STORE-01 only. No Settings row, no `tutorial` boolean this phase.
 
 ### Area 2 — Map recenter & default zoom (UIF-02, UIF-03)
 - **Default zoom = 1.5**, the literal midpoint of `ZOOM_MIN 0.6 … ZOOM_MAX 2.4` (user chose literal over the geometric 1.2).
 - **Persistence**: pinch zoom persists for the session only; every cold start returns to the default; no zoom settings row.
-- **Recenter hook (UIF-02)**: ONE hook on the "panel closed → map visible" path (Store, Hero sheet, Oracle, Settings, Graveyard, and any other full-screen overlay) calls the existing auto-recenter used after moves (`mazeworld.html` ~L5609 "auto-recenter the viewport on the party"); also recenter after any zoom change so the party never drifts off-screen.
+- **Recenter hook (UIF-02)**: research found THREE "map visible again" choke points, not one — `renderEncounter()`'s dismissal transition (Store/beats/death/joiner/find/loot), `showTab()` (Hero/Gear/Oracle/Dead tabs) and `closeSettingsSheet()`; all three call the existing `window.mzCenterMap()`; pinch-zoom recenter fires on gesture RELEASE (never per pointermove tick), mirroring the textSize-change recenter.
 - **Tests**: source-assertion pins on the constant and the hook; no engine change.
 
 ### Area 3 — Store stock roll (STORE-01) — the only engine/rng change this phase
@@ -37,7 +37,6 @@ Out of scope: any combat-surface change (Phase 32 shipped it; the unguarded butt
 
 ### Claude's Discretion
 - Exact band boundaries and the potion-by-depth weighting, as long as the tiers come from the existing content bands.
-- Whether the tutorial setting replaces `TUTORIAL_SEEN_KEY` or wraps it.
 - CSS for the gear row and the Marks/Centre row; the ~3 s confirm revert timer is a `setTimeout` (not a CSS transition).
 - The store header copy.
 
@@ -61,7 +60,6 @@ Out of scope: any combat-surface change (Phase 32 shipped it; the unguarded butt
 
 ### Integration Points
 - `newRun` → run flag → `openStore` branch → store screen header.
-- Settings → tutorial flag → `tutorial.js` sequencer start condition.
 - Panel-close paths → one recenter hook → canvas `fit()`/viewport.
 
 </code_context>

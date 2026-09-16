@@ -247,12 +247,11 @@ Plans:
 
 **Goal**: The gear panel, map, tutorial toggle, toolbar layout, and store all get their remaining polish pass — done once against the finished combat UI rather than bolted on before it existed.
 **Depends on**: Phase 32 — the toolbar/gear-panel layout (Make Camp's move into the Marks/Centre row, handedness removal) should be laid out once against the final combat surface, not redone after.
-**Requirements**: UIF-01, UIF-02, UIF-03, UIF-04, UIF-05, STORE-01
+**Requirements**: UIF-01, UIF-02, UIF-03, UIF-05, STORE-01 (UIF-04 dropped 2026-09-16 — tutorial UI unwired, → UX-06 backlog)
 **Success Criteria** (what must be TRUE):
 
   1. The gear panel shows Use and Drop side by side (Drop on the far right) with a confirmation step before a drop is applied.
   2. The map recenters on the party icon whenever the view returns from a full-screen panel (Store, sheet, Oracle, etc.), and the default zoom sits at the midpoint between fully zoomed in and fully zoomed out.
-  3. A tutorial on/off setting exists — it can be dismissed once and re-enabled later from Settings.
   4. Make Camp lives in the Marks/Centre row (far right), movement buttons are centered, and the handedness option is gone.
   5. Store stock is rolled randomly and floor-appropriately for the current depth on each visit, with parity byte-identical for fixtures.
 
