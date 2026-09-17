@@ -150,7 +150,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 36-06-PLAN.md — JOIN-01 Company sheet + two-tap DISMISS + bridge, SUB_NOTE sync, phase gate + aggregated deferred checklist — wave 5
+- [x] 36-06-PLAN.md — JOIN-01 Company sheet + two-tap DISMISS + bridge, SUB_NOTE sync, phase gate + aggregated deferred checklist — wave 5
 
 **Cross-cutting constraints:**
 
@@ -319,7 +319,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 5/6 | In Progress|  |
+| 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | In Progress|  |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 0/? | Not started | - |
 | 38. Melee Active Abilities | v1.5 | 0/? | Not started | - |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |

@@ -4,17 +4,17 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 36
 current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
-status: executing
-stopped_at: Completed 36-05-PLAN.md (dismissJoiner engine action, JOIN-01 engine half)
-last_updated: "2026-09-17T17:20:40.168Z"
+status: verifying
+stopped_at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
+last_updated: "2026-09-17T17:30:23.433Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 36 execution started
 progress:
   total_phases: 8
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 0
+  completed_plans: 6
+  percent: 13
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 
 Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-17 — Phase 36 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T17:20:40.143Z
-Stopped at: Completed 36-05-PLAN.md (dismissJoiner engine action, JOIN-01 engine half)
+Last session: 2026-09-17T17:30:15.724Z
+Stopped at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
 Resume file: None
 
 ## Operator Next Steps
@@ -201,6 +201,7 @@ Resume file: None
 | Phase 36 P03 | 16min | 3 tasks | 5 files |
 | Phase 36 P04 | 24min | 3 tasks | 11 files |
 | Phase 36 P05 | 9min | 2 tasks | 9 files |
+| Phase 36 P06 | 12min | 3 tasks | 2 files |
 
 ## Decisions
 
@@ -367,6 +368,8 @@ Resume file: None
 - [Phase ?]: 36-04: identity-contract's Cutthroat BAD entry now drives the full accept-then-murder lifecycle (meetJoiner -> resolveJoiner -> cutthroatMurderCheck) instead of a bare refusal assertion, with a Soldier control proving the murder check is Cutthroat-only
 - [Phase ?]: 36-05: The plan's own surfaced assumption (dismissRefused as a genuine third event type, not a silent no-op) was implemented exactly as specified — every refusal in this codebase is an event with a toast-table block() entry (FEED-02), so a silent return would have regressed that standing contract.
 - [Phase ?]: 36-05: applyAction's rngState-unchanged proof needed a one-time makeRng round-trip normalization on a freshly-captured newRun() cursor before snapshotting 'before' state — mulberry32's constructor coerces a signed seed to unsigned via >>> 0, so the FIRST makeRng() call on a fresh cursor can change getState()'s numeric representation (bit-identical, JS-number-different) even with zero draws. Pre-existing engine/rng.js artifact, not a dismissJoiner defect.
+- [Phase ?]: 36-06: DISMISS/confirm controls built via document.createElement/textContent (not template-string innerHTML), matching the Drop confirm's construction style; a local mkConfirmBtn closure was written since mkBtn is local to renderCarriedList
+- [Phase ?]: 36-06: 13 other classic-script SUB_NOTE rows remain drifted from content/flavor.js (measured via live node diff) — only Cutthroat was in this plan's CUT-01 scope; logged as a Clarity-phase (43) or quick-task follow-up
 
 ### Blockers
 
