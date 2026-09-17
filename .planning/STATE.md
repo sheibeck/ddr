@@ -4,9 +4,9 @@ milestone: v1.4
 milestone_name: Combat & Map Screens
 status: Awaiting next milestone
 stopped_at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
-last_updated: "2026-09-17T12:45:32.977Z"
-last_activity: 2026-09-16
-last_activity_desc: "Completed quick task 260916-w0c: v1.4 UAT fixes (tap-to-move, PNG icons, gear chip, rail map-only)"
+last_updated: "2026-09-17T12:57:46.409Z"
+last_activity: 2026-09-17
+last_activity_desc: "Completed quick task 260917-bbs: v1.4 UAT fixes round 2 (pulse, party roster to Hero, bag-full line, PNG icons, idle rail)"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -69,6 +69,7 @@ Last activity: 2026-09-17 - Completed quick task 260917-bbs: v1.4 UAT fixes roun
 | 3 | fast: stuck-after-win fix — renderCombatOver attaches mid before fillMid; won-branch loot hosts resolved inside wrap \| 2026-09-17 \| 49e01fc \| inline (/gsd-fast) | 2026-09-17 | 49e01fc | — |
 | 4 | fast: player-facing WP -> HP (HUD readout + rules note) \| 2026-09-17 \| 67192d5 \| inline (/gsd-fast) | 2026-09-17 | 67192d5 | — |
 | 5 | 260917-bbs \| v1.4 UAT fixes round 2: composited party pulse + paused under the encounter panel, idle rail hidden while a panel is up, joiner strip off map/combat → Hero-tab Company panel, no inline bag-full line on the loot screen, PNG icons on feature rail cards / hold-inspect / encounter+stair overlays \| 2026-09-17 \| f3cc7e2 \| [260917-bbs-v1-4-uat-fixes-round-2](./quick/260917-bbs-v1-4-uat-fixes-round-2/) | 2026-09-17 | f3cc7e2 | — |
+| 6 | fast: rail global — visible on any tab only when it has a card; idle hides everywhere (reverses map-tab-only) \| 2026-09-17 \| a0d7747 \| inline (/gsd-fast) | 2026-09-17 | a0d7747 | — |
 
 ### Pending Todos
 
