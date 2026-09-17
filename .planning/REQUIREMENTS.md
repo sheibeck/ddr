@@ -38,7 +38,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 - [x] **MAP-06**: MARKS opens the "WHAT THE MARKS MEAN" bottom sheet (glyph · name · description rows, scrim tap closes); CENTRE recenters; MAKE CAMP opens the camp sheet (copy, SLEEP 1 RATION / WALK ON) and a refused camp (no food, party appetites) is a bad-toned rail line — all three as the mock's top chips over the viewport.
 - [x] **MAP-07**: The canvas maze renderer keeps its engine-fed drawing but adopts the mock's palette (fog / wall / floor / border), the colored mark glyphs, the gold pulsing party marker and the inset vignette; fog-of-war and marks behave as today.
 - [x] **MAP-08**: Phase 32's guards survive: every rail/overlay/sheet button goes through `guardTap`; the settle window still gates movement after an overlay/sheet closes; `aria-live` announces new rail lines once; no tap-anywhere-to-dismiss except the sheets' scrim.
-- [ ] **MAP-09**: Engine, content and parity untouched; every shell test re-pinned or replaced (toast wiring, D-pad/controls, party-camp, Move-on/beats, HUD, marks legend); `npm test` green; `npm run build:www` exit 0; voice scan on all new copy.
+- [x] **MAP-09**: Engine, content and parity untouched; every shell test re-pinned or replaced (toast wiring, D-pad/controls, party-camp, Move-on/beats, HUD, marks legend); `npm test` green; `npm run build:www` exit 0; voice scan on all new copy.
 - [ ] **MAP-10**: The rebuilt map screen is validated in an on-device DR round on the Pixel 7 before the milestone closes.
 
 ## Out of scope (this milestone)
@@ -71,5 +71,5 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 | MAP-06 | Phase 35 | Complete |
 | MAP-07 | Phase 35 | Complete |
 | MAP-08 | Phase 35 | Complete |
-| MAP-09 | Phase 35 | Pending |
+| MAP-09 | Phase 35 | Complete |
 | MAP-10 | Phase 35 | Pending |
