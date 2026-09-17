@@ -154,13 +154,14 @@ test("UIF-01: engine/actions.js still whitelists dropItem (no new engine action 
 
 // ─── UIF-05: Make Camp joins the Marks/Centre row; handedness is gone ────
 
-test("UIF-05/Phase 35 (MAP-06): the chip row holds Marks, Centre, then the camp chip, in that order", () => {
+test("the chip row holds Marks, Centre, the camp chip, then the settings gear, in that order (2026-09-16 UAT)", () => {
   const markup = chipsMarkup();
   const marksIdx = markup.indexOf('id="mw-chip-marks"');
   const centreIdx = markup.indexOf('id="mw-chip-centre"');
   const campIdx = markup.indexOf('id="btn-camp"');
-  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1, "all three chips found in the row");
-  assert.ok(marksIdx < centreIdx && centreIdx < campIdx, "Marks, then Centre, then the camp chip");
+  const gearIdx = markup.indexOf('id="mw-gear-btn"');
+  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1 && gearIdx !== -1, "all four chips found in the row");
+  assert.ok(marksIdx < centreIdx && centreIdx < campIdx && campIdx < gearIdx, "Marks, then Centre, then the camp chip, then the settings gear");
 
   const campButtonMatch = markup.match(/<button[^>]*id="btn-camp"[^>]*>/);
   assert.ok(campButtonMatch, "camp button tag found in the chip row");

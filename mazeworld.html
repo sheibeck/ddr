@@ -324,6 +324,10 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-map-chips-gap{flex:1}
 .mw-map-chip{font-family:var(--disp);font-size:7px;letter-spacing:0;padding:9px 10px;min-height:48px;min-width:48px;background:#1b170f;border:2px solid #4a4032;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;border-radius:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mw-map-chip.camp{background:#241d12;border-color:#6b5c3c}
+/* 2026-09-16 UAT (user ruling): the settings gear glyph needs a readable
+   size and a font that has it — the chip's 48dp box, border, shadow and
+   press state all come from .mw-map-chip above. */
+.mw-map-chip.gear{font-family:var(--mono);font-size:22px;line-height:1;padding:0 12px}
 .mw-map-chip:active{transform:translateY(2px);box-shadow:0 1px 0 #0d0b08}
 /* Phase 35 (MAP-07): the pulsing gold ring over the party's canvas cell — a
    DOM element (not a canvas rAF loop), so the blanket prefers-reduced-motion
@@ -834,11 +838,12 @@ html,body{height:100%}
 
 .mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc(8px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;display:flex;flex-direction:column}
 /* Phase 35 (MAP-01, ruling 5): one HUD row — FLOOR/DAY/SQUARES/RATIONS on the
-   left, the x/y WP bar + DEV chip + gear on the right. The DR13 character
-   line (name/subclass/level/hp) is retired outright — the Hero tab keeps the
-   full sheet; the condition-chip strip and the party rail move OUT of the
-   header into their own strips directly beneath it (see .mw-cond-strip and
-   the relocated .mw-party-rail below), no longer HUD children. */
+   left, the x/y WP bar + DEV chip on the right (the settings gear is a
+   viewport chip, 2026-09-16 UAT). The DR13 character line (name/subclass/
+   level/hp) is retired outright — the Hero tab keeps the full sheet; the
+   condition-chip strip and the party rail move OUT of the header into their
+   own strips directly beneath it (see .mw-cond-strip and the relocated
+   .mw-party-rail below), no longer HUD children. */
 .mw-hud-top{display:flex;align-items:center;gap:10px}
 .mw-hud-row{display:flex;gap:8px;align-items:baseline;flex:1;min-width:0;overflow:hidden;flex-wrap:nowrap}
 .mw-hud-item{
@@ -897,22 +902,6 @@ html,body{height:100%}
 .mw-party-status{align-self:flex-start;margin-top:1px}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
-/* 04-DR9: the config gear button — top-right of the header, opens the
-   Settings sheet (#mw-settings-sheet below). Same dark chip treatment as
-   .mw-chip (MARKS/CENTRE) for visual consistency, clearing 48dp as-is. */
-/* DR13: bare gear GLYPH — no border/background/shadow box (the box ate header
-   real estate and read as a heavy chip). Still a 44px hit area for the thumb;
-   resting color matches the HUD labels, gold on press. */
-.mw-gear-btn{
-  min-height:44px;min-width:44px;flex:none;
-  display:flex;align-items:center;justify-content:center;
-  border:none;background:transparent;color:#9a8f76;
-  box-shadow:none;border-radius:0;font-size:24px;line-height:1;
-  padding:0;
-}
-.mw-gear-btn:hover:not(:disabled){background:transparent;color:#e8c97a}
-.mw-gear-btn:active:not(:disabled){background:transparent;color:#e8c97a;box-shadow:none;transform:none}
-
 .mw-screens{flex:1;min-height:0;overflow-y:auto;padding:0}
 .mw-screen{display:block;padding:14px}
 
@@ -1249,8 +1238,9 @@ html,body{height:100%}
 
 <!-- ============ SETTINGS BOTTOM SHEET (04-DR9, completes UX-07) ============
      Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
-     -scrim/-panel/-head/-close, above) — opened by the top-HUD gear button
-     (#mw-gear-btn), dismissed by tapping the scrim or Close. Each row is a
+     -scrim/-panel/-head/-close, above) — opened by the gear chip in the
+     viewport chip row (#mw-gear-btn), dismissed by tapping the scrim or
+     Close. Each row is a
      label + a row of segmented option buttons; the currently-selected value
      (read from settings.js's readSettings()) gets the `active` class — see
      the trailing module script's applySettings()/renderSettingsSheet(). A
@@ -1352,9 +1342,6 @@ html,body{height:100%}
            marked — toggled from state.dev in paint(), never reachable from
            normal play. -->
       <span class="mw-dev-chip" id="mw-dev-chip" hidden>DEV</span>
-      <!-- 04-DR9: config gear — opens the Settings sheet (#mw-settings-sheet,
-           below the MARKS legend sheet markup). -->
-      <button type="button" class="mw-gear-btn" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
     </div>
   </header>
   <!-- Phase 35 (MAP-01, ruling 5): the condition-chip strip — moved OUT of
@@ -1390,15 +1377,20 @@ html,body{height:100%}
         <div class="mw-maze-viewport" id="mw-maze-viewport">
           <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
           <div class="mw-vignette" aria-hidden="true"></div>
-          <!-- Phase 35 (MAP-06/08): MARKS/CENTRE top-left, MAKE CAMP
-               top-right, per design/Mazeworld Map Panel.dc.html — replaces
-               the Phase 33 chip row. #btn-camp keeps its id so paint()'s
-               short-state block stays unchanged. -->
+          <!-- Phase 35 (MAP-06/08): MARKS/CENTRE top-left, MAKE CAMP + the
+               settings gear top-right, per design/Mazeworld Map Panel.dc.html
+               — replaces the Phase 33 chip row. #btn-camp keeps its id so
+               paint()'s short-state block stays unchanged. -->
           <div class="mw-map-chips" id="mw-map-chips">
             <button type="button" class="mw-map-chip" id="mw-chip-marks">MARKS</button>
             <button type="button" class="mw-map-chip" id="mw-chip-centre">CENTRE</button>
             <span class="mw-map-chips-gap" aria-hidden="true"></span>
             <button type="button" class="mw-map-chip camp" id="btn-camp">MAKE CAMP</button>
+            <!-- 2026-09-16 UAT (user ruling): the settings gear is a chip
+                 right of MAKE CAMP; same id, same module listener
+                 (openSettingsSheet) as before — the Settings sheet itself
+                 is unchanged. -->
+            <button type="button" class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
           </div>
           <!-- Phase 35 (MAP-07): the pulsing party ring — a DOM element kept
                centered over the party's canvas cell by positionPartyPulse()

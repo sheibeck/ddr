@@ -88,7 +88,7 @@ function styleBlock() {
 
 // ─── (a) HUD markup ─────────────────────────────────────────────────────
 
-test("(a) HUD markup: FLOOR/DAY/SQUARES/RATIONS in order with their kept ids, the WP block ids, DEV chip + gear still inside .mw-hud-top, zero character-line ids", () => {
+test("(a) HUD markup: FLOOR/DAY/SQUARES/RATIONS in order with their kept ids, the WP block ids, DEV chip still inside .mw-hud-top, the gear gone from the HUD, zero character-line ids", () => {
   const hudStart = HTML.indexOf('<header class="mw-hud" id="mw-hud">');
   const hudEnd = HTML.indexOf("</header>", hudStart);
   assert.ok(hudStart !== -1 && hudEnd !== -1 && hudEnd > hudStart, "the HUD header region must be found");
@@ -107,12 +107,12 @@ test("(a) HUD markup: FLOOR/DAY/SQUARES/RATIONS in order with their kept ids, th
   assert.match(region, /class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0\/0 WP<\/span>/);
 
   const devIdx = region.indexOf('id="mw-dev-chip"');
-  const gearIdx = region.indexOf('id="mw-gear-btn"');
   const topStart = region.indexOf('<div class="mw-hud-top">');
   // .mw-hud-top is the header's ONE child now (the character line/condition
-  // strip/party rail all moved out) — so DEV chip + gear appearing after it
-  // opens, in order, inside this region proves they stayed inside it.
-  assert.ok(topStart !== -1 && topStart < devIdx && devIdx < gearIdx, "the DEV chip then the gear button, both after .mw-hud-top opens");
+  // strip/party rail all moved out) — so the DEV chip appearing after it
+  // opens proves it stayed inside it.
+  assert.ok(topStart !== -1 && topStart < devIdx, "the DEV chip after .mw-hud-top opens");
+  assert.equal((region.match(/id="mw-gear-btn"/g) || []).length, 0, "the settings gear left the HUD (2026-09-16 UAT)");
 
   const retired = ["hud-name", "hud-cls", "mm-hp\"", "mm-hpmax", "mm-hpfill", "mw-hud-char"].join("|");
   assert.doesNotMatch(region, new RegExp(retired));
@@ -267,7 +267,7 @@ test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds, and no 
 
 // ─── (h) viewport chrome ────────────────────────────────────────────────
 
-test("(h) chrome: chip ids/order/classes, the pulse element, zero retired chip-row/flash literals, .mw-map-chip.camp colours", () => {
+test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear), the pulse element, zero retired chip-row/flash literals, .mw-map-chip.camp/.gear colours", () => {
   const chipsStart = HTML.indexOf('<div class="mw-map-chips" id="mw-map-chips">');
   // Phase 35 Plan 04 (MAP-02) re-pin: the control bar (formerly the end
   // marker here) is retired outright — the next markup landmark after the
@@ -279,9 +279,11 @@ test("(h) chrome: chip ids/order/classes, the pulse element, zero retired chip-r
   const centreIdx = region.indexOf('id="mw-chip-centre"');
   const gapIdx = region.indexOf('class="mw-map-chips-gap"');
   const campIdx = region.indexOf('id="btn-camp"');
-  assert.ok(marksIdx !== -1 && centreIdx !== -1 && gapIdx !== -1 && campIdx !== -1);
-  assert.ok(marksIdx < centreIdx && centreIdx < gapIdx && gapIdx < campIdx, "MARKS, CENTRE, the gap, then MAKE CAMP");
+  const gearIdx = region.indexOf('id="mw-gear-btn"');
+  assert.ok(marksIdx !== -1 && centreIdx !== -1 && gapIdx !== -1 && campIdx !== -1 && gearIdx !== -1);
+  assert.ok(marksIdx < centreIdx && centreIdx < gapIdx && gapIdx < campIdx && campIdx < gearIdx, "MARKS, CENTRE, the gap, MAKE CAMP, then the settings gear");
   assert.match(region, /class="mw-map-chip camp" id="btn-camp"/);
+  assert.match(region, /class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings"/);
   assert.match(region, /id="mw-party-pulse" aria-hidden="true"/);
 
   for (const literal of ["mw-viewport-chips", "mw-flash", "flashMessage", "MAZE_CANVAS_COLORS"]) {
@@ -289,6 +291,7 @@ test("(h) chrome: chip ids/order/classes, the pulse element, zero retired chip-r
   }
 
   assert.match(HTML, /^\.mw-map-chip\.camp\{background:#241d12;border-color:#6b5c3c\}$/m);
+  assert.match(HTML, /^\.mw-map-chip\.gear\{[^}]*font-size:22px[^}]*\}$/m);
   assert.equal((HTML.match(/@keyframes mwglow/g) || []).length, 1);
 });
 
