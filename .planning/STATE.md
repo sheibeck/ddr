@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 37
 current_phase_name: Equipment Slot Model & eff(
 status: executing
-stopped_at: Completed 37-01-PLAN.md (worn-slot model + two-path eff() refactor, zero player-visible behaviour)
-last_updated: "2026-09-17T19:12:06.300Z"
+stopped_at: "Completed 37-02-PLAN.md (worn-model behaviours: equip/unequip/auto-wear/useItem slot addressing, zero player-visible behaviour without c.worn)"
+last_updated: "2026-09-17T19:30:48.808Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 37 execution started
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
   percent: 13
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 ## Current Position
 
 Phase: 37 (Equipment Slot Model & eff() Refactor) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 37 execution started
 
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T19:12:06.266Z
-Stopped at: Completed 37-01-PLAN.md (worn-slot model + two-path eff() refactor, zero player-visible behaviour)
+Last session: 2026-09-17T19:30:48.783Z
+Stopped at: Completed 37-02-PLAN.md (worn-model behaviours: equip/unequip/auto-wear/useItem slot addressing, zero player-visible behaviour without c.worn)
 Resume file: None
 
 ## Operator Next Steps
@@ -203,6 +203,7 @@ Resume file: None
 | Phase 36 P05 | 9min | 2 tasks | 9 files |
 | Phase 36 P06 | 12min | 3 tasks | 2 files |
 | Phase 37 P01 | 22min | 3 tasks | 7 files |
+| Phase 37 P02 | 40min | 3 tasks | 8 files |
 
 ## Decisions
 
@@ -374,6 +375,10 @@ Resume file: None
 - [Phase ?]: 37-01: SLOT_OF derived from the same *_ROWS arrays that build JEWELRY/CLOAKS/STAVES so the taxonomy and exported tables can never drift apart
 - [Phase ?]: 37-01: reconcileWorn refuses to re-migrate a c that already carries an own worn key (even empty {}) — proven by a dedicated test, not just documented
 - [Phase ?]: 37-01: eff()'s legacy branch left byte-for-byte identical to the pre-refactor loop; new defensive guards apply only to the new worn-path branch
+- [Phase ?]: 37-02: itemEquipped.replaced is additive, built conditionally so a no-swap event carries no replaced key at all (not null)
+- [Phase ?]: 37-02: notWorn refusal fires after wrongClass, before pilfer, on useRefused; verified by a dedicated ordering test
+- [Phase ?]: 37-02: useItem's ref resolution treats bag index 0 correctly (typeof 0 !== object), never misread as a slot form
+- [Phase ?]: 37-02: Task 3 legacy-identity sweep uses measured before/after assertions on real newRun(3) output rather than hand-typed literal pins, to avoid a mistyped magic-string pin on non-trivial chargen data
 
 ### Blockers
 

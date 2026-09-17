@@ -179,7 +179,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 37-02-PLAN.md — `equipItem`/`unequipSlot` six-slot branches (direct swap, `replaced` payload, staff class gate, `bagFull`), auto-wear on take, `useItem { slot }` + `useRefused notWorn`, action validation, toast/Oracle copy, refusal-ledger row — wave 2
+- [x] 37-02-PLAN.md — `equipItem`/`unequipSlot` six-slot branches (direct swap, `replaced` payload, staff class gate, `bagFull`), auto-wear on take, `useItem { slot }` + `useRefused notWorn`, action validation, toast/Oracle copy, refusal-ledger row — wave 2
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -338,7 +338,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
-| 37. Equipment Slot Model & eff() Refactor | v1.5 | 1/4 | In Progress|  |
+| 37. Equipment Slot Model & eff() Refactor | v1.5 | 2/4 | In Progress|  |
 | 38. Melee Active Abilities | v1.5 | 0/? | Not started | - |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |
 | 40. Spell Rework | v1.5 | 0/? | Not started | - |
