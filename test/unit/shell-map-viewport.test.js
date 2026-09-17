@@ -12,7 +12,9 @@
 //   (d) tapStep() — the guard/lookup/resolve/branch order
 //   (e) inspectAt() — the lookup/inspect/report order, zero dispatch
 //   (f) the pointer pipeline — the tap/hold gesture tracker alongside the
-//       untouched Phase 33 pan/pinch mechanics
+//       untouched Phase 33 pan/pinch mechanics; the tapStep bridge is read
+//       through a call-time accessor (2026-09-16 UAT fix), never captured
+//       at parse time
 //   (g) the stair-down gate — stepTargetsExit, engineMove's five-statement
 //       sequence, __mzDescend, hasActiveEncounter(), the renderEncounter
 //       branch order, renderMajorOverlay unmodified
@@ -177,16 +179,27 @@ test("(e) inspectAt(): looks up the cell, builds the hold-inspect card, reports 
 test("(f) viewport region: the gesture tracker (hold timer, travel cap, multi-finger cancel) is present", () => {
   const region = viewportRegion();
   assert.match(region, /let gesture = null;/);
-  assert.match(region, /const T = window\.__mzTapStep;/);
+  assert.doesNotMatch(region, /const T = window\.__mzTapStep;/);
+  assert.match(region, /const T = \(\) => window\.__mzTapStep \|\| \{ HOLD_MS: 450, TAP_MAX_TRAVEL_PX: 10 \};/);
   assert.match(region, /holdTimer: setTimeout\(/);
-  assert.match(region, /T\.HOLD_MS/);
-  assert.match(region, /T\.TAP_MAX_TRAVEL_PX/);
+  assert.equal((region.match(/T\(\)\.HOLD_MS/g) || []).length, 1);
+  assert.equal((region.match(/T\(\)\.TAP_MAX_TRAVEL_PX/g) || []).length, 3);
   assert.match(region, /gesture\.multi = true/);
   assert.match(region, /gesture\.holdFired = true; inspectAt\(gesture\.x0, gesture\.y0\);/);
   assert.match(region, /clearTimeout\(gesture\.holdTimer\)/);
   assert.match(region, /tapStep\(gst\.x0, gst\.y0\)/);
   assert.match(region, /e\.type === "pointerup"/);
   assert.match(region, /vp\.addEventListener\("contextmenu"/);
+});
+
+test("(f) bridge timing (2026-09-16 UAT fix): the viewport IIFE reads the tapStep bridge only through the call-time accessor", () => {
+  const region = viewportRegion();
+  assert.equal((region.match(/window\.__mzTapStep/g) || []).length, 1, "the accessor is the sole reference to the bridge");
+  assert.doesNotMatch(
+    region,
+    /^\s*(?:const|let|var) \w+ = window\.__mz\w+;/m,
+    "no parse-time capture of any module bridge in the IIFE",
+  );
 });
 
 test("(f) viewport region: the four Phase 33 pan/pinch literals are byte-intact", () => {

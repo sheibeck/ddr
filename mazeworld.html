@@ -6307,7 +6307,15 @@ function inspectAt(clientX, clientY) {
 (function initMazeViewportControls() {
   const vp = document.getElementById("mw-maze-viewport");
   if (!vp) return;
-  const T = window.__mzTapStep;
+  // 2026-09-16 UAT fix: this IIFE runs while the classic script is being
+  // parsed, but the tapStep bridge is assigned by the trailing module
+  // script, which runs after every classic script -- an init-time capture
+  // is always undefined, so pointerdown threw while building the gesture
+  // object and no tap was ever recorded (drag/pinch survived because
+  // startPan runs first). Read the bridge at call time; the fallback
+  // mirrors tapStep.js's HOLD_MS/TAP_MAX_TRAVEL_PX so a tap still works
+  // even if the bridge were somehow missing.
+  const T = () => window.__mzTapStep || { HOLD_MS: 450, TAP_MAX_TRAVEL_PX: 10 };
   // DR13: one pipeline handles BOTH a one-finger pan and a two-finger
   // pinch-to-zoom. `pts` tracks every active pointer; a single pointer drags
   // `pan`, a second pointer switches to pinch (distance ratio -> `zoom`), and
@@ -6340,8 +6348,8 @@ function inspectAt(clientX, clientY) {
       // transition/animation-completion event (those are zeroed by the
       // blanket prefers-reduced-motion rule).
       gesture = { id: e.pointerId, x0: e.clientX, y0: e.clientY, travel: 0, multi: false, holdFired: false, holdTimer: setTimeout(() => {
-        if (gesture && gesture.id === e.pointerId && !gesture.multi && gesture.travel <= T.TAP_MAX_TRAVEL_PX) { gesture.holdFired = true; inspectAt(gesture.x0, gesture.y0); }
-      }, T.HOLD_MS) };
+        if (gesture && gesture.id === e.pointerId && !gesture.multi && gesture.travel <= T().TAP_MAX_TRAVEL_PX) { gesture.holdFired = true; inspectAt(gesture.x0, gesture.y0); }
+      }, T().HOLD_MS) };
     }
   });
   vp.addEventListener("pointermove", e => {
@@ -6358,7 +6366,7 @@ function inspectAt(clientX, clientY) {
     }
     if (gesture && e.pointerId === gesture.id) {
       gesture.travel = Math.max(gesture.travel, Math.hypot(e.clientX - gesture.x0, e.clientY - gesture.y0));
-      if (gesture.travel > T.TAP_MAX_TRAVEL_PX) clearTimeout(gesture.holdTimer);
+      if (gesture.travel > T().TAP_MAX_TRAVEL_PX) clearTimeout(gesture.holdTimer);
     }
   });
   const release = e => {
@@ -6384,7 +6392,7 @@ function inspectAt(clientX, clientY) {
       clearTimeout(gesture.holdTimer);
       const gst = gesture;
       gesture = null;
-      if (e.type === "pointerup" && !gst.multi && !gst.holdFired && gst.travel <= T.TAP_MAX_TRAVEL_PX) tapStep(gst.x0, gst.y0);
+      if (e.type === "pointerup" && !gst.multi && !gst.holdFired && gst.travel <= T().TAP_MAX_TRAVEL_PX) tapStep(gst.x0, gst.y0);
     }
   };
   vp.addEventListener("pointerup", release);
