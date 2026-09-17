@@ -98,3 +98,48 @@ test("DFB-06: the camp button is never disabled by the shell", () => {
   const forbidden = "campBtn" + ".disabled";
   assert.ok(!region.includes(forbidden), "the campBtn region must never set .disabled");
 });
+
+// ─── 5. 2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel ─
+
+function sliceBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start === -1 ? 0 : start);
+  assert.ok(start !== -1, `start marker not found: ${startMarker}`);
+  assert.ok(end !== -1 && end > start, `end marker not found after start: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+test('2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel rendered by renderPartyRoster() on the paint() path (never from tab init)', () => {
+  assert.equal((HTML.match(/id="hero-party"/g) || []).length, 1);
+  assert.equal((HTML.match(/id="hero-party-list"/g) || []).length, 1);
+
+  const heroRegion = HTML.slice(HTML.indexOf('id="screen-hero"'), HTML.indexOf('id="screen-gear"'));
+  const a = heroRegion.indexOf('id="s-trait"');
+  const b = heroRegion.indexOf('id="hero-party"');
+  const c = heroRegion.indexOf('<h2>Company</h2>');
+  const d = heroRegion.indexOf('Special skills');
+  assert.ok(a !== -1 && b !== -1 && c !== -1 && d !== -1, "all four Hero-tab anchors found");
+  assert.ok(a < b && b < c && c < d, "s-trait < hero-party < Company heading < Special skills");
+
+  assert.match(HTML, /Joiner should only show when fighting, and probably on the hero screen\./);
+
+  assert.equal((CODE.match(/^function renderPartyRoster\(\) \{/gm) || []).length, 1);
+  const fnStart = CODE.indexOf("function renderPartyRoster() {");
+  const fnEnd = CODE.indexOf("\n}\n", fnStart);
+  assert.ok(fnStart !== -1 && fnEnd !== -1 && fnEnd > fnStart, "renderPartyRoster() function region found");
+  const fnRegion = CODE.slice(fnStart, fnEnd);
+  assert.match(fnRegion, /getElementById\("hero-party"\)/);
+  assert.match(fnRegion, /getElementById\("hero-party-list"\)/);
+  assert.match(fnRegion, /panel\.hidden = party\.length === 0;/);
+  assert.match(fnRegion, /mw-map-hptrack/);
+  assert.match(fnRegion, /mw-map-hpfill/);
+  assert.match(fnRegion, /Downed/);
+  const getByIdCalls = fnRegion.match(/getElementById\(/g) || [];
+  assert.equal(getByIdCalls.length, 2, "renderPartyRoster reads only #hero-party and #hero-party-list");
+
+  const paintRegion = sliceBetween(CODE, "function paint() {", "\nfunction move(dir)");
+  assert.equal((paintRegion.match(/renderPartyRoster\(\);/g) || []).length, 1);
+
+  const initTabsRegion = sliceBetween(CODE, "(function initTabs() {", "window.__mzShowTab = showTab;");
+  assert.doesNotMatch(initTabsRegion, /renderPartyRoster/);
+});

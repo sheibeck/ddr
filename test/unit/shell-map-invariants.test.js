@@ -140,6 +140,14 @@ test("retirements: RAW carries zero occurrences of the retired dismiss-control i
   assert.equal(countOf(RAW, `"${RETIRED.dismissId}"`), 0);
 });
 
+test("retirements (2026-09-17 UAT): RAW carries zero of the retired party-strip literals; .mw-party-list{ appears once", () => {
+  const retiredPartyRailId = "mw-party-" + "rail";
+  const retiredRenderPartyRail = "renderParty" + "Rail";
+  assert.equal(countOf(RAW, retiredPartyRailId), 0, `expected zero "${retiredPartyRailId}" in mazeworld.html`);
+  assert.equal(countOf(RAW, retiredRenderPartyRail), 0, `expected zero "${retiredRenderPartyRail}" in mazeworld.html`);
+  assert.equal((RAW.match(/^\.mw-party-list\{/gm) || []).length, 1);
+});
+
 test("PNG canon (user reversed Phase 35 decision 3, 2026-09-16 UAT): the draw() region reads __mzIconMap and calls drawFeatureIcon, and no glyph fillText survives", () => {
   const region = fnRegion("function draw() {");
   assert.match(region, /__mzIconMap/);

@@ -846,9 +846,9 @@ html,body{height:100%}
    left, the x/y WP bar + DEV chip on the right (the settings gear is a
    viewport chip, 2026-09-16 UAT). The DR13 character line (name/subclass/
    level/hp) is retired outright — the Hero tab keeps the full sheet; the
-   condition-chip strip and the party rail move OUT of the header into their
-   own strips directly beneath it (see .mw-cond-strip and the relocated
-   .mw-party-rail below), no longer HUD children. */
+   condition-chip strip moves OUT of the header into its own strip directly
+   beneath it (see .mw-cond-strip; the party roster moved to the Hero tab's
+   Company panel, 2026-09-17 UAT), no longer a HUD child. */
 .mw-hud-top{display:flex;align-items:center;gap:10px}
 .mw-hud-row{display:flex;gap:8px;align-items:baseline;flex:1;min-width:0;overflow:hidden;flex-wrap:nowrap}
 .mw-hud-item{
@@ -886,17 +886,18 @@ html,body{height:100%}
 .mw-cond[data-tone="odd"]{--cond-edge:#5b4a86;--cond-ink:#b9a4ef}
 .mw-cond[data-tone="good"]{--cond-edge:#5e7a3c;--cond-ink:#a8cc72}
 .mw-cond-detail{font-family:var(--mono);font-weight:700;font-size:10px;color:#8f856f}
-/* Phase 10 (Party UI): the persistent PARTY RAIL — a data-driven flex row of
-   member cards (per design/Mazeworld Mobile.dc.html's `railStyle`/`party`
-   member cards, ~lines 240/700), shown only while S.party.length > 0 (the
-   mock's demo partyOn toggle is DROPPED — visibility is data-driven here).
-   Reuses the Phase-4 map HP-bar treatment (.mw-map-hptrack/.mw-map-hpfill) and
-   the .fchip status-chip vocabulary so it speaks the existing visual language
-   rather than inventing a new one. Phase 35 (ruling 5): now its own strip,
-   directly beneath the condition-chip strip — both moved out of the HUD
-   header; renderPartyRail() (paint() path) keeps its HP live through combat. */
-.mw-party-rail{display:flex;flex-wrap:wrap;gap:7px;padding:7px 14px;background:#1b170f;margin-top:0;border-top:0;border-bottom:3px solid #3a3226}
-.mw-party-rail[hidden]{display:none}
+/* Phase 10 (Party UI): the member card — a data-driven card (per
+   design/Mazeworld Mobile.dc.html's `railStyle`/`party` member cards,
+   ~lines 240/700). Reuses the Phase-4 map HP-bar treatment
+   (.mw-map-hptrack/.mw-map-hpfill) and the .fchip status-chip vocabulary so
+   it speaks the existing visual language rather than inventing a new one.
+   2026-09-17 UAT (user ruling): the strip that used to sit between the HUD
+   and <main> (and, being a sibling of <main>, also sat above the combat
+   screen) is retired. The cards now live in the Hero tab's Company panel
+   (#hero-party > .mw-party-list), rendered by renderPartyRoster() on the
+   paint() path so HP stays live through combat; in combat the only joiner
+   surface is the existing YOUR LOT strip. */
+.mw-party-list{display:flex;flex-wrap:wrap;gap:7px}
 .mw-party-member{flex:1 1 auto;min-width:120px;padding:7px 9px;border:2px solid var(--rule);background:var(--paper-2);display:flex;flex-direction:column;gap:4px}
 .mw-party-member.downed{opacity:.6;border-color:var(--stamp)}
 .mw-party-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
@@ -1355,13 +1356,6 @@ html,body{height:100%}
        paintConditions(); tapping a chip (guarded) puts its explanation in
        the rail. Hidden entirely when no condition is active. -->
   <div class="mw-cond-strip" id="mm-conditions" hidden></div>
-  <!-- Phase 10 (Party UI, PARTY-07): the persistent PARTY RAIL. Data-driven
-       on S.party.length (hidden when solo) — populated/toggled by
-       renderPartyRail() on the paint() path, so a companion's HP updates live
-       through combat on the same repaint that refreshes the hero HP above.
-       Phase 35 (ruling 5): moved out of the HUD header, beneath the
-       condition-chip strip. -->
-  <div class="mw-party-rail" id="mw-party-rail" hidden></div>
 
   <!-- ============ 5 TAB SCREENS ============ -->
   <main class="mw-screens" id="mw-screens">
@@ -1461,6 +1455,18 @@ html,body{height:100%}
         </dl>
 
         <p class="trait" id="s-trait">—</p>
+      </section>
+
+      <!-- 2026-09-17 UAT (user ruling, verbatim):
+           "Joiner should only show when fighting, and probably on the hero screen."
+           addendum: "Joiner section on top of the combat window should go, too. We already have our joiner in the Your Lot section."
+           The Phase 10 roster strip left the map column (it was a sibling of
+           <main>, so it also sat above the combat screen). The company now
+           lives here, rendered by renderPartyRoster() on the paint() path;
+           in combat the only joiner surface is the YOUR LOT strip. -->
+      <section class="panel" id="hero-party" hidden>
+        <h2>Company</h2>
+        <div class="mw-party-list" id="hero-party-list"></div>
       </section>
 
       <section class="panel">
@@ -3249,7 +3255,7 @@ function paint() {
   // that module script finishes its own top-level setup.
   window.__mzRenderGrimoire?.();
 
-  renderPartyRail();
+  renderPartyRoster();
   renderEncounter();
   renderRail();
   draw();
@@ -5127,26 +5133,21 @@ function foeStatusBadges(f) {
   return out;
 }
 
-// Phase 10 (Party UI, PARTY-07): the persistent PARTY RAIL. Reads the engine's
-// own persistent roster (S.party — the array of full member sheets Phase 7's
-// addPartyMember grows, each carrying name/sub/lvl(level)/wp/maxWP/status) and
-// renders one card per member: name, subclass·level, an HP bar (wp/maxWP reusing
-// the map HUD's own .mw-map-hptrack/.mw-map-hpfill treatment), and a "Downed"
-// status chip (a member is flagged status:"downed" by combat.js#downMember when
-// it hits 0 wp, before endCombat drops it from the run). Data-driven visibility:
-// shown ONLY when S.party.length > 0, hidden when solo. Called from paint() — the
-// SAME repaint the hero/foe HUD rides — so member HP updates live in combat.
-function renderPartyRail() {
-  const rail = document.getElementById("mw-party-rail");
-  if (!rail) return;
+// 2026-09-17 UAT (user ruling): the party roster is a Hero-tab panel
+// (#hero-party / #hero-party-list), no longer a map-column strip. Reads the
+// engine's own persistent roster (S.party) and renders one card per member:
+// name, subclass·level, an HP bar (reusing .mw-map-hptrack/.mw-map-hpfill)
+// and a Downed chip. Data-driven: the panel is hidden when solo. Called from
+// paint() — never from tab init (S is in its TDZ there) — so member HP stays
+// live through combat.
+function renderPartyRoster() {
+  const panel = document.getElementById("hero-party");
+  const host = document.getElementById("hero-party-list");
+  if (!panel || !host) return;
   const party = (S && Array.isArray(S.party)) ? S.party : [];
-  if (!party.length) {
-    rail.hidden = true;
-    rail.innerHTML = "";
-    return;
-  }
-  rail.hidden = false;
-  rail.innerHTML = "";
+  panel.hidden = party.length === 0;
+  host.innerHTML = "";
+  if (!party.length) return;
   party.forEach((m) => {
     const lvl = m.lvl ?? m.level ?? 1;
     const maxWP = m.maxWP || 1;
@@ -5163,7 +5164,7 @@ function renderPartyRail() {
        <div class="mw-party-hp-lab">HP <b>${wp}</b>/<b>${maxWP}</b></div>
        <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
        ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}`;
-    rail.appendChild(card);
+    host.appendChild(card);
   });
 }
 
@@ -7556,8 +7557,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // rng, so no parity impact). `accept` is a strict boolean (the action's own
   // validator rejects anything else). After the dispatch: swap in the returned
   // state, narrate the joinerJoined/joinerDeclined line to the Oracle log, then
-  // repaint — paint() re-runs renderPartyRail() (the rail appears on accept)
-  // and renderEncounter() (the overlay dismisses itself now that pendingJoiner
+  // repaint — paint() re-runs renderPartyRoster() (the Company panel appears
+  // on accept) and renderEncounter() (the overlay dismisses itself now that pendingJoiner
   // is cleared), mirroring the buy/leave bridges' render tail exactly.
   window.mzResolveJoiner = function resolveJoinerBridge(accept) {
     const { state, html } = dispatchWithToasts({ type: "resolveJoiner", accept: !!accept });

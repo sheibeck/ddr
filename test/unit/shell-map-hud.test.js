@@ -128,15 +128,15 @@ test("(a) raw file: zero occurrences of every retired character-line/chip-track 
   }
 });
 
-// ─── (b) layout: the strip sits between </header> and the party rail, which sits before <main> ──
+// ─── (b) layout: the condition strip sits between </header> and <main>; the retired party strip is gone ──
 
-test("(b) layout: mw-cond-strip sits directly after </header>, mw-party-rail directly after that, both before <main>", () => {
+test('(b) layout: mw-cond-strip sits directly after </header> and before <main>; the retired party strip is gone from the map column (2026-09-17 UAT)', () => {
   const h = HTML.indexOf("</header>");
   const c = HTML.indexOf('class="mw-cond-strip" id="mm-conditions"');
-  const p = HTML.indexOf('id="mw-party-rail"');
   const m = HTML.indexOf('<main class="mw-screens"');
-  assert.ok(h !== -1 && c !== -1 && p !== -1 && m !== -1, "all four anchors found");
-  assert.ok(h < c && c < p && p < m, "</header> < mw-cond-strip < mw-party-rail < <main>");
+  assert.ok(h !== -1 && c !== -1 && m !== -1, "all three anchors found");
+  assert.ok(h < c && c < m, "</header> < mw-cond-strip < <main>");
+  assert.equal((HTML.match(new RegExp('id="' + 'mw-party-' + 'rail"', "g")) || []).length, 0);
 });
 
 // ─── (c) HUD CSS ────────────────────────────────────────────────────────
