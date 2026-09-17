@@ -16,6 +16,7 @@ import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
 import { clearRoundTimers } from "./effects.js";
 import { reconcileWorn } from "./derived.js";
+import { ensureAbilities } from "./character.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -78,6 +79,30 @@ function isValidFloor(f) {
 function sanitizeParty(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.filter((m) => isValidCharacter(m));
+}
+
+/**
+ * ensureCharacterAbilities(c, seed) — Phase 38 (ABIL-02) tolerant-load entry
+ * point for the hero's own sheet: `ensureAbilities(c, String(seed))`. A
+ * no-op when `c.abilities` is already an array (every save this phase
+ * itself writes); rebuilds it deterministically (migrateLegacySkills +
+ * splitTableAbilities + grantLevelAbilities up to `c.level`) for a
+ * pre-phase save that lacks the field, or a tampered non-array value.
+ */
+function ensureCharacterAbilities(c, seed) {
+  return ensureAbilities(c, String(seed));
+}
+
+/**
+ * ensurePartyAbilities(party) — Phase 38 (ABIL-05) tolerant-load entry point
+ * for the persistent roster, mirroring ensureCharacterAbilities above: each
+ * member is keyed `joiner:<name>:0` (depth 0 — the roster is not
+ * depth-scoped, unlike a live meetJoiner roll), matching the derived-stream
+ * key format the tolerant-load ledger documents. A no-op member whose
+ * `abilities` is already an array.
+ */
+function ensurePartyAbilities(party) {
+  return party.map((m) => ensureAbilities(m, `joiner:${m.name}:0`));
 }
 
 /**
@@ -276,12 +301,17 @@ export function validateSave(raw, options = {}) {
     // Phase 37 (GEAR-04): neutralise a present-but-tampered c.worn (see
     // sanitizeWorn) before the option-gated reconcileWorn below ever reads
     // it. pendingFind is transient (like combat/store) — not carried through
-    // validateSave's value; rehydrate() nulls it below.
-    c: sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))),
+    // validateSave's value; rehydrate() nulls it below. Phase 38 (ABIL-02):
+    // ensureCharacterAbilities is the tolerant-load rebuild for c.abilities
+    // (a no-op once the field is already an array) — runs LAST in the chain
+    // so it sees c.skills already migrated/sanitized by everything before it.
+    c: ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), seed),
     floor: obj.floor,
     day,
     steps,
-    party: sanitizeParty(obj.party),
+    // Phase 38 (ABIL-05): each party member gets the same tolerant-load
+    // rebuild, keyed joiner:<name>:0 (see ensurePartyAbilities's JSDoc).
+    party: ensurePartyAbilities(sanitizeParty(obj.party)),
     // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (the player
     // must still get their loot screen on resume) — carried through here,
     // unlike pendingFind (transient, nulled by rehydrate below).
@@ -353,8 +383,10 @@ export function rehydrate(obj, options = {}) {
     // foundation): clear a present-but-stale c.timers rounds record / drop a
     // tampered value (see clearStaleTimers); never injected. Phase 37
     // (GEAR-04): neutralise a present-but-tampered c.worn (see sanitizeWorn)
-    // before the option-gated reconcileWorn below ever reads it.
-    c: sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))),
+    // before the option-gated reconcileWorn below ever reads it. Phase 38
+    // (ABIL-02): ensureCharacterAbilities mirrors validateSave's own call —
+    // a no-op once c.abilities is already an array.
+    c: ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), obj.seed),
     floor: obj.floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
@@ -375,7 +407,8 @@ export function rehydrate(obj, options = {}) {
     // other data loss. serializeRun's state spread already persists it; this is
     // the explicit read-back side. combat is still nulled (roster is persistent,
     // combat sub-state is transient), so the party correctly survives reload.
-    party: sanitizeParty(obj.party),
+    // Phase 38 (ABIL-05): ensurePartyAbilities mirrors validateSave's own call.
+    party: ensurePartyAbilities(sanitizeParty(obj.party)),
     dead: !!obj.dead,
     won: !!obj.won,
     // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a

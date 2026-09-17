@@ -147,6 +147,11 @@ export const RAIL_FAMILY = Object.freeze({
 
   floorChanged: { icon: "▼", title: "FLOOR {n}", tone: "odd", hold: RAIL_HOLD.floor },
   leveled: { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level },
+  // Phase 38 (ABIL-01/03): a level-pool ability roll — identical family to
+  // leveled immediately above (numberFor reads e.level), so the two events
+  // from one level-up fold into a single SKILL LEVEL N card whose second
+  // line is the ability's "New trick" line (a later plan's shell work).
+  abilityLearned: { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level },
   dayBegan: { icon: "☾", title: "DAY {n}", tone: "dull", hold: RAIL_HOLD.day },
   rested: { icon: "☾", title: "CAMP MADE", tone: "good", hold: RAIL_HOLD.camp },
   wentHungry: { icon: "☾", title: "NOTHING TO EAT", tone: "bad" },

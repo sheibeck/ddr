@@ -941,6 +941,9 @@ export const TOAST_FOR = {
     block(e?.need != null && e?.have != null ? `You eat ${e.need} a night, you have ${e.have}. Find rations first.` : "Not enough food to make camp."),
   teleported: () => ({ text: "You teleport to an unknown location.", tone: "beat", priority: PRIORITY.other }),
   leveled: (e) => ({ text: `Skill level ${e?.level ?? "?"} (+${e?.wpGain ?? 0} hp).`, tone: "hit", priority: PRIORITY.feature }),
+  // Phase 38 (ABIL-01/03): a level-pool ability roll, sibling of leveled
+  // immediately above (both fold into the same SKILL LEVEL N card family).
+  abilityLearned: (e) => ({ text: `New trick: ${e?.name ?? "something"} — ${e?.txt ?? ""}`, tone: "hit", priority: PRIORITY.feature }),
 
   /* ---------------- combat.js ---------------- */
 

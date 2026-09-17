@@ -163,6 +163,9 @@ export const EVENT_NARRATION = {
   },
   floorChanged: (e) => `<span class="banner">Floor ${e.depth ?? "?"}.</span> The air gets worse, and takes it personally.`,
   leveled: (e) => `<span class="hit">Skill level ${e.level ?? "?"}</span> (+${e.wpGain ?? 0} hp).`,
+  // Phase 38 (ABIL-01/03): a level-pool ability roll, folded as the SKILL
+  // LEVEL N card's second line (see rail.js's matching family entry).
+  abilityLearned: (e) => `<span class="hit">New trick: ${e.name ?? "something"}</span> — ${e.txt ?? ""}`,
   won: (e) => `<span class="banner">The Gate.</span> Walked out on day ${e.day ?? "?"}, after ${e.steps ?? 0} squares.`,
   died: () => `<span class="hurt">You have died.</span>`,
 

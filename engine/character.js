@@ -30,6 +30,7 @@
 import { rollDice } from "./dice.js";
 import { leveled } from "./events.js";
 import { canLearn, schoolGate, levelFromSP, clampCarry, spellLevelFor, isAttackSpell } from "./derived.js";
+import { derivedRng } from "./rng.js";
 import {
   CLASSES,
   RACES,
@@ -45,6 +46,8 @@ import {
   CLOAKS,
   NAMES,
   SPELLS,
+  ABILITY_BY_ID,
+  ABILITY_POOL,
 } from "../content/index.js";
 
 /** skillTable(cls) — the special-skill pool for a class (Magic Users have none). */
@@ -157,6 +160,132 @@ export function rollSkills(rng, c) {
     if (sk && sk.up && sk.up <= vp && c.skills[n] === 1) { c.skills[n] = 2; vp -= sk.up; }
   }
   c.vp = vp;
+}
+
+/**
+ * LEGACY_SKILL_RENAMES — Phase 38 (ABIL-02) tolerant-load rename map: a
+ * pre-phase `c.skills` key the table reshape CONVERTED into an active whose
+ * name also changed, keyed by class. The tier value (1 or, for an up-skill,
+ * 2) is preserved across the rename. Fighter Kata and Thief Silence->Silent
+ * Step/Kata->Feint conversions that keep or lose their name entirely are
+ * handled directly by splitTableAbilities (a converted key that already
+ * matches its new table position, or one migrateLegacySkills renames first)
+ * — this map only covers the two Fighter names that actually changed
+ * (Death-touch/Agility) plus the two Thief names that changed (Kata/Silence).
+ */
+export const LEGACY_SKILL_RENAMES = Object.freeze({
+  Fighter: Object.freeze({ "Death-touch": "Death Touch", "Agility": "Sidestep" }),
+  Thief: Object.freeze({ "Kata": "Feint", "Silence": "Silent Step" }),
+});
+
+/** DROPPED_SKILLS — Phase 38 (ABIL-02): table keys the reshape removed
+ * outright (no replacement, no rename) — Language, Tracking, Climbing,
+ * Leaping. Present on both FIGHTER_SKILLS and THIEF_SKILLS pre-phase. */
+export const DROPPED_SKILLS = Object.freeze(["Language", "Tracking", "Climbing", "Leaping"]);
+
+/**
+ * migrateLegacySkills(c) — Phase 38 (ABIL-02) tolerant-load pass for an old
+ * save's `c.skills`: renames a key per LEGACY_SKILL_RENAMES[c.cls]
+ * (preserving its tier value), then deletes any DROPPED_SKILLS key. A no-op
+ * on a `c` with no skills table at all (Magic User) or a `c.skills` that is
+ * already new-format (no legacy key present, so no rename/delete fires).
+ * Mutates and returns `c`.
+ */
+export function migrateLegacySkills(c) {
+  if (!c || !c.skills || typeof c.skills !== "object") return c;
+  const renames = LEGACY_SKILL_RENAMES[c.cls];
+  if (renames) {
+    for (const [oldKey, newKey] of Object.entries(renames)) {
+      if (Object.prototype.hasOwnProperty.call(c.skills, oldKey)) {
+        c.skills[newKey] = c.skills[oldKey];
+        delete c.skills[oldKey];
+      }
+    }
+  }
+  for (const dropped of DROPPED_SKILLS) delete c.skills[dropped];
+  return c;
+}
+
+/**
+ * splitTableAbilities(c) — Phase 38 (ABIL-01/02): moves every `c.skills` key
+ * whose table entry carries an `active` marker into `c.abilities` (created
+ * as `[]` if missing), in `c.skills` key insertion order, deleting the key
+ * from `c.skills` as it goes. `c.vp` is untouched. Idempotent (a second call
+ * finds no more active keys left in `c.skills` to move). A no-op for a
+ * class with no table (Magic User). Mutates and returns `c`.
+ */
+export function splitTableAbilities(c) {
+  if (!c) return c;
+  if (!Array.isArray(c.abilities)) c.abilities = [];
+  const table = skillTable(c.cls);
+  if (!table || !c.skills) return c;
+  for (const key of Object.keys(c.skills)) {
+    const entry = table[key];
+    if (entry && entry.active) {
+      if (!c.abilities.includes(entry.active)) c.abilities.push(entry.active);
+      delete c.skills[key];
+    }
+  }
+  return c;
+}
+
+/**
+ * rollPoolAbility(c, base, level) — Phase 38 (ABIL-01/03): rolls ONE
+ * still-unowned id from `ABILITY_POOL[c.cls]` via a DERIVED stream keyed
+ * `${base}:abilities:${level}` (engine/rng.js#derivedRng) — never the run's
+ * main rng, so this can never move a seeded chargen/run cursor. Pushes the
+ * rolled id onto `c.abilities` (created as `[]` if missing) and returns it;
+ * returns `null` (no push) when `c.cls` has no pool (Magic User) or every
+ * pool id is already owned.
+ */
+export function rollPoolAbility(c, base, level) {
+  const pool = ABILITY_POOL[c.cls];
+  if (!pool) return null;
+  if (!Array.isArray(c.abilities)) c.abilities = [];
+  const open = pool.filter((id) => !c.abilities.includes(id));
+  if (open.length === 0) return null;
+  const id = derivedRng(base, "abilities", level).pick(open);
+  c.abilities.push(id);
+  return id;
+}
+
+/**
+ * grantLevelAbilities(c, base, upToLevel) — Phase 38 (ABIL-01/03): calls
+ * rollPoolAbility for every level 1..upToLevel (in order), returning the
+ * array of ids actually added (shorter than `upToLevel` once the pool is
+ * exhausted; empty for a Magic User). The level-1 call is the SC-3
+ * guarantee (engine/state.js#newRun); a real climb's later levels reuse this
+ * same helper one level at a time via rollPoolAbility directly
+ * (engine/character.js#checkLevel).
+ */
+export function grantLevelAbilities(c, base, upToLevel) {
+  const added = [];
+  for (let lvl = 1; lvl <= upToLevel; lvl++) {
+    const id = rollPoolAbility(c, base, lvl);
+    if (id) added.push(id);
+  }
+  return added;
+}
+
+/**
+ * ensureAbilities(c, base) — Phase 38 (ABIL-02) tolerant-load entry point
+ * (engine/saveState.js): when `c.abilities` is missing or not an array (a
+ * pre-phase save, or a tampered non-array value), rebuilds it deterministically
+ * — `migrateLegacySkills` then `splitTableAbilities` then
+ * `grantLevelAbilities(c, base, c.level || 1)` — so the character ends up
+ * with exactly the abilities a fresh roll at its current level would have
+ * granted. A no-op when `c.abilities` is already an array (never re-derives
+ * a save that has already been migrated). Mutates and returns `c`.
+ */
+export function ensureAbilities(c, base) {
+  if (!c) return c;
+  if (!Array.isArray(c.abilities)) {
+    c.abilities = [];
+    migrateLegacySkills(c);
+    splitTableAbilities(c);
+    grantLevelAbilities(c, base, c.level || 1);
+  }
+  return c;
 }
 
 /**
@@ -414,7 +543,21 @@ export function rollCharacter(rng, exclude = [], force = null) {
     // determinism suites pin is completely untouched. Carried out of the
     // parity comparators (stripBagField) the same way name/darkFor/flight are.
     bag: cls === "Fighter" ? "medium" : "small",
+    // Phase 38 (ABIL-01/03): an ordered array of catalog ids the character
+    // has — the table actives split out of c.skills immediately below, plus
+    // any level-pool picks granted later (engine/state.js#newRun's level-1
+    // guarantee, this file's checkLevel per-level-up roll). A plain empty
+    // literal for EVERY character (a Magic User keeps it empty forever — no
+    // table, no ABILITY_POOL entry), so this adds NO rng draw and does not
+    // shift the chargen rng-consumption order the parity/determinism suites
+    // pin. Carved out of every comparable (test/parity/harness/
+    // comparables.js#stripAbilitiesField) the same way bag/darkFor/flight are.
+    abilities: [],
   };
+  // Phase 38 (ABIL-02): move every table-active skill this roll picked from
+  // c.skills into c.abilities — a pure data reshuffle (no rng draw), so it
+  // cannot move the rng cursor test/unit/chargen-rng-pin.test.js pins.
+  splitTableAbilities(c);
   c.name = nameFor(rng, race, exclude);
   // ECON-01 (Phase 12): enforce the freshly-assigned bag's caps at a SAFE,
   // provably no-op site — a chargen character (gold 50, rations ≤ 6, items 0-1)
@@ -443,6 +586,17 @@ export function checkLevel(state, rng, events = []) {
     c.maxWP += add;
     c.wp += add;
     events.push(leveled(c.level, add));
+
+    // Phase 38 (ABIL-01/03): one level-pool pick per level-up, from a
+    // DERIVED stream keyed by seed+level (never the main `rng`) — zero
+    // main-rng draws, so every gain-dice/Sorcerer draw below sits at the
+    // identical rng cursor as before this phase. Pushes nothing (and grants
+    // nothing) for a Magic User or once the pool is exhausted.
+    const learnedId = rollPoolAbility(c, String(state.seed), c.level);
+    if (learnedId) {
+      const learned = ABILITY_BY_ID[learnedId];
+      events.push({ type: "abilityLearned", key: learnedId, name: learned.name, txt: learned.txt, level: c.level });
+    }
 
     // a Soldier is made a Knight at three; an Apprentice finally becomes something
     if (c.sub === "Soldier" && c.level >= 3) {

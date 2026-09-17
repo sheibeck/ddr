@@ -140,7 +140,12 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
   // ECON-01 (Phase 12): an old save with no c.bag migrates to the class-derived
   // default (Fighter => "medium"); every OTHER field is preserved verbatim.
   assert.equal(state.c.bag, "medium");
-  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium" });
+  // Phase 38 (ABIL-02): an old save with no c.abilities gets one deterministically
+  // rebuilt via ensureAbilities (migrateLegacySkills/splitTableAbilities are
+  // no-ops here — an empty c.skills has nothing to rename/split — then
+  // grantLevelAbilities(c, "777", 2) rolls the level-1 and level-2 picks off
+  // the derived stream); every OTHER field is still preserved verbatim.
+  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"] });
 });
 
 // MD-01 regression: die()/winGame() set state.deathAt/lastWords on a
@@ -245,7 +250,10 @@ test("FID-04: a v1.0-shaped save (no foeEffect / pendingFoes / abilities) loads 
   const check = validateSave(JSON.stringify(oldSave), { freshSeed: 777 });
   assert.equal(check.ok, true);
   const state = rehydrate(check.value);
-  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium" });
+  // Phase 38 (ABIL-02): see the identical "an old-shape save" test above —
+  // ensureAbilities deterministically rebuilds c.abilities from a save that
+  // lacks it (freshSeed 777, level 2: the level-1 + level-2 derived-stream picks).
+  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"] });
   assert.equal(Object.hasOwn(state.c, "foeEffect"), false, "a v1.0 save must not gain a foeEffect key");
 });
 

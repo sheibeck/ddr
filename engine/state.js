@@ -8,7 +8,7 @@
 
 import { makeRng } from "./rng.js";
 import { genFloor, reveal } from "./maze.js";
-import { rollCharacter, checkLevel } from "./character.js";
+import { rollCharacter, checkLevel, grantLevelAbilities } from "./character.js";
 import { revealRadius, reconcileWorn } from "./derived.js";
 // Phase 21 (TUNE-04, D-13): the dev-only start-at-depth branch below needs
 // difficultyCurve (to sanitize the requested startDepth, mirroring
@@ -151,6 +151,16 @@ export function swapPartyMember(state, member) {
 export function newRun(seed, exclude = [], { startDepth = 1, force = null, storeRoll = false, wornSlots = false } = {}) {
   const rng = makeRng(seed);
   const c = rollCharacter(rng, exclude, force);
+  // Phase 38 (ABIL-01/03, SC-3): the level-1 guarantee — every fresh
+  // Fighter/Thief already has at least one rolled active even if chargen
+  // rolled only passives. Draws from a DERIVED stream (base = String(seed)),
+  // never the main `rng` — zero draws off the seeded chargen cursor, so this
+  // can never move `newRun(seed).rngState` (see
+  // test/unit/chargen-rng-pin.test.js, unchanged and green). `c.abilities`
+  // has no prototype-side equivalent — carved out of every comparable
+  // (test/parity/harness/comparables.js#stripAbilitiesField). A no-op for a
+  // Magic User (no ABILITY_POOL entry).
+  grantLevelAbilities(c, String(seed), 1);
   // Phase 37 (GEAR-03/GEAR-04): shell-only option, mirroring storeRoll's own
   // precedent — true only for a run engineAdapter#startNewRun starts. Plain
   // assignments/reassignment inside reconcileWorn, NO rng draw, so the

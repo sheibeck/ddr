@@ -30,7 +30,7 @@ import { skill, skillTier, canLearn, intelBonus } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { checkLevel, rollCharacter } from "./character.js";
+import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
 import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
@@ -476,6 +476,13 @@ export function meetJoiner(state, rng, events = []) {
   const wp = 20 * lvl + rng.d(20);
   // eslint-disable-next-line no-unused-vars -- consumed for RNG-order fidelity only
   const discardedMaxWP = 20 * lvl + rng.d(20);
+  // Phase 38 (ABIL-05): the Joiner's own level-pool picks, from a DERIVED
+  // stream keyed by name+depth (never the main `rng`) — zero draws off this
+  // function's four fixed draws above, so they stay byte-identical. Rolled
+  // onto `joinerChar` (the sheet `pendingJoiner` spreads below) BEFORE
+  // `c.joiner`'s frozen 7-key shape is built, so `c.joiner` never gains a
+  // field and the joinerMet event stays exactly as before.
+  grantLevelAbilities(joinerChar, `joiner:${joinerChar.name}:${state.floor.depth}`, lvl);
   c.joiner = { name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, cls: joinerChar.cls, lvl, wp, maxWP: wp };
   const refusal = c.race === "Wilmsry" && joinerChar.cls === "Magic User" ? "wilmsry" : null;
   events.push({ type: "joinerMet", name: joinerChar.name, race: joinerChar.race, sub: joinerChar.sub, lvl });
