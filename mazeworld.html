@@ -5793,12 +5793,14 @@ function renderEncounter() {
     renderCombatOver(body, kind, {
       lines: rep && rep.lines ? rep.lines : [],
       fillMid: (mid) => {
+        // 2026-09-17 UAT (user ruling): a full bag is reported once, by the
+        // rail's bagFull refusal card — no inline line under the loot list;
+        // the drop shelf still appears so the player can make room.
         const wrap = document.createElement("div");
         wrap.innerHTML = `<p class="cb-sub">${COMBAT_COPY.lootHead} · bag ${usage.text || "unlimited"}</p>
           <ul class="skills cb-loot" id="loot-list"></ul>`
           + (usage.full && needsSlot
-            ? `<p class="cb-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
-              <div class="shelf" id="loot-drop-shelf"></div>`
+            ? `<div class="shelf" id="loot-drop-shelf"></div>`
             : "");
         mid.appendChild(wrap);
         // Resolve the hosts inside `wrap` itself (never by document id) so

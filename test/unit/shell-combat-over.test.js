@@ -205,7 +205,6 @@ test("CSCR-07: the loot branch renders won/soothed through renderCombatOver with
     '"a-loot-leave-all"',
     "window.mzTakeAllLoot",
     "window.mzLeaveAllLoot",
-    "Bag full (",
   ];
   for (const lit of literals) {
     assert.ok(region.includes(lit), `expected loot branch to contain literal: ${lit}`);
@@ -216,6 +215,9 @@ test("CSCR-07: the loot branch renders won/soothed through renderCombatOver with
   const guardTrueHits = region.match(/guard: true/g) || [];
   assert.equal(guardTrueHits.length, 1, "guard: true must appear exactly once inside the loot branch");
   assert.match(region, /panel\.dataset\.mode = "dark"/);
+  // 2026-09-17 UAT: the bag-full refusal lives only in the rail card
+  assert.doesNotMatch(region, /Bag full \(/, "2026-09-17 UAT: the bag-full refusal lives only in the rail card");
+  assert.ok(region.indexOf('id="loot-drop-shelf"') !== -1 && region.indexOf("usage.full && needsSlot") !== -1, "the drop shelf still renders when the bag is full and a slot is needed");
 });
 
 // ─── e. Flee / won-without-drops ────────────────────────────────────────────

@@ -182,7 +182,7 @@ function lootRegion() {
   return CODE.slice(start, end);
 }
 
-test("Phase 29 (LOOT-02/03/04/06): the loot screen card renders the folded report, the shared list, the shelf, and take-all/leave-all", () => {
+test("Phase 29 (LOOT-02/03/04/06)/2026-09-17 UAT: no inline bag-full line, the shelf remains — the loot screen card renders the folded report, the shared list, the shelf, and take-all/leave-all", () => {
   const region = lootRegion();
   assert.match(region, /window\.__mzBagUsage\(c\)/);
   assert.match(region, /window\.__mzLootReport/);
@@ -202,7 +202,13 @@ test("Phase 29 (LOOT-02/03/04/06): the loot screen card renders the folded repor
   assert.match(region, /"a-loot-leave-all"/);
   assert.match(region, /window\.mzTakeAllLoot/);
   assert.match(region, /window\.mzLeaveAllLoot/);
-  assert.match(region, /Bag full \(/);
+  // 2026-09-17 UAT (user ruling): the inline red bag-full paragraph is gone
+  // — the rail's bagFull refusal card carries the message. The shelf and
+  // header stay.
+  assert.doesNotMatch(region, /Bag full \(/);
+  assert.match(region, /usage\.full && needsSlot/);
+  assert.match(region, /COMBAT_COPY\.lootHead/);
+  assert.doesNotMatch(region, /color:var\(--rust\)/);
   assert.match(region, /renderCombatOver\(body, kind/);
   assert.match(region, /panel\.dataset\.mode = "dark"/);
 });
