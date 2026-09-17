@@ -362,35 +362,37 @@ test('(n) BEHAVIOUR: a failed climb folds to a bad "FELL" card whose only line h
   assert.doesNotMatch(region, /document\.getElementById\("a-next"\)/);
 });
 
-// ─── (o) 2026-09-16 UAT ruling: the rail is a map-tab element ────────────
+// ─── (o) 2026-09-17 UAT ruling: the rail is the ONE feedback surface on every tab, shown only when it has something to report ────────────
 
-test("(o) 2026-09-16 UAT ruling: the rail is a map-tab element — mwActiveTab is declared once before initTabs, showTab sets it and hides the rail off-Map without reading S, renderRail combines both hide conditions", () => {
+test("(o) 2026-09-17 UAT ruling (reverses the 2026-09-16 map-tab-only rule): showTab never hides the rail by tab and only re-renders it (guarded on __mzState); renderRail hides exactly when idle or when combat/death/win own the screen", () => {
   assert.equal((CODE.match(/^let mwActiveTab = "maze";/gm) || []).length, 1);
   assert.ok(CODE.indexOf('let mwActiveTab = "maze";') < CODE.indexOf("(function initTabs() {"));
 
   const showTabRegion = sliceBetween(CODE, "function showTab(name) {", 'for (const btn of tabs) btn.addEventListener("click"');
   assert.match(showTabRegion, /mwActiveTab = name;/);
-  assert.match(showTabRegion, /railEl\.hidden = name !== "maze";/);
+  // No per-tab hide any more — a live card (equip refusal on Gear, cast
+  // refusal on Hero, an event on Map) stays visible wherever the player is.
+  assert.doesNotMatch(showTabRegion, /railEl\.hidden/);
   // 2026-09-17 boot fix: renderRail is a hoisted classic global, so the
   // tab-init showTab("maze") must not call it before `let S` runs — the
   // __mzState sentinel (assigned right after S) is the guard.
-  assert.match(showTabRegion, /if \(name === "maze" && window\.__mzState\) window\.renderRail\?\.\(\);/);
+  assert.match(showTabRegion, /if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
   assert.doesNotMatch(showTabRegion, /if \(name === "maze"\) window\.renderRail/);
   assert.doesNotMatch(showTabRegion, /\bS\./);
 
-  // 2026-09-17 UAT ruling ("Don't show the nothing is happening screen until
-  // the They are down screen goes away."): a real card (e.g. bagFull) still
-  // shows under the panel; only the idle card is additionally suppressed.
-  assert.match(railRegion(), /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze" \|\| \(panelUp && idle\);/);
+  // "Rail should only show up if there is something to report": idle hides
+  // it everywhere (no NOTHING IS HAPPENING card, and THEY ARE DOWN keeps its
+  // full height); a real card (event, decision, bagFull/equip refusal) shows
+  // on any tab; combat/death/win still own their screens.
+  const region = railRegion();
+  assert.match(region, /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| idle;/);
+  assert.doesNotMatch(region, /mwActiveTab !== "maze"/);
+  assert.doesNotMatch(region, /panelUp/);
 });
 
-// ─── (p) 2026-09-17 UAT ruling: the idle rail hides while the encounter panel covers the map ────────────
+// ─── (p) 2026-09-17: renderEncounter re-renders the rail on both panel show/hide sites ────────────
 
-test('(p) 2026-09-17 UAT ruling: renderRail hides the idle card while the encounter panel is up (panelUp from hasActiveEncounter()), and renderEncounter re-renders the rail on both panel show/hide sites', () => {
-  const region = railRegion();
-  assert.match(region, /const panelUp = hasActiveEncounter\(\);/);
-  assert.match(region, /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze" \|\| \(panelUp && idle\);/);
-
+test("(p) renderEncounter re-renders the rail (guarded on __mzState) and toggles the pulse cover on both panel show/hide sites", () => {
   const encRegion = fnRegion("function renderEncounter() {");
   assert.match(encRegion, /if \(panel\) panel\.hidden = true;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
   assert.match(encRegion, /if \(panel\) panel\.hidden = false;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
