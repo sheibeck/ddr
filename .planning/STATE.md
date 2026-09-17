@@ -4,17 +4,17 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 37
 current_phase_name: Equipment Slot Model & eff(
-status: executing
-stopped_at: "Completed 37-03-PLAN.md (worn-model reachable: newRun wornSlots option, saveState.js load migration + wornReport, engineAdapter boot()/takeBootWornReport(), rail.js reconciliation card, combatMenu.js worn ITEMS rows)"
-last_updated: "2026-09-17T19:47:27.468Z"
+status: verifying
+stopped_at: "Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)"
+last_updated: "2026-09-17T20:12:49.700Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 37 execution started
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
-  percent: 13
+  completed_plans: 10
+  percent: 25
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 
 Phase: 37 (Equipment Slot Model & eff() Refactor) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-17 — Phase 37 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T19:47:27.443Z
-Stopped at: Completed 37-03-PLAN.md (worn-model reachable: newRun wornSlots option, saveState.js load migration + wornReport, engineAdapter boot()/takeBootWornReport(), rail.js reconciliation card, combatMenu.js worn ITEMS rows)
+Last session: 2026-09-17T20:12:49.666Z
+Stopped at: Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)
 Resume file: None
 
 ## Operator Next Steps
@@ -205,6 +205,7 @@ Resume file: None
 | Phase 37 P01 | 22min | 3 tasks | 7 files |
 | Phase 37 P02 | 40min | 3 tasks | 8 files |
 | Phase 37 P03 | 15min | 3 tasks | 8 files |
+| Phase 37 P04 | 25min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -383,6 +384,9 @@ Resume file: None
 - [Phase ?]: 37-03: the declared engineAdapter.test.js boot-rehydrates-a-save assertion update landed exactly as pre-authorized (boot() now migrates every legacy save, state.c gains worn: {})
 - [Phase ?]: 37-03: wornReconcileCard is a standalone directly-built rail card (mirrors railLineCard), not routed through railCardFor's applyAction fold pipeline, since the migration is a load-time event
 - [Phase ?]: 37-03: combatMenu's worn-row-ordering test asserts the full row-id array including the always-present potion row, since combatMenu.js unconditionally renders it whenever usableCount !== 0 regardless of c.potions
+- [Phase ?]: 37-04: the swap confirm's unarmed button reads Equip (not a pre-labelled Swap) — mirrors the empty-slot Equip button until tapped
+- [Phase ?]: 37-04: wornSlotRowRegion() in the new test file is a narrower slice than the full paint-carry region so the once pins on window.mzUnequip?.(slot)/window.mzUseItem?.({ slot }) aren't confused by wornRow's own pre-existing identical call
+- [Phase ?]: 37-04: docs/GEAR-SLOTS.md's locked reconciliation copy lives in a markdown blockquote, not inline prose, so the sentence is never word-wrapped across a line break and the doc's own acceptance-criteria grep stays exact
 
 ### Blockers
 

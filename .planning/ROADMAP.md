@@ -187,7 +187,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 37-04-PLAN.md — shell: classic `eff` routing, Gear-tab worn rows, EQUIP + two-tap swap confirm, `mzUseItem`/`COMBAT_DISPATCH` slot forms, resume-time reconciliation rail card + Oracle line; `docs/GEAR-SLOTS.md` canon ledger; phase gate + aggregated Pixel 7 checklist — wave 4
+- [x] 37-04-PLAN.md — shell: classic `eff` routing, Gear-tab worn rows, EQUIP + two-tap swap confirm, `mzUseItem`/`COMBAT_DISPATCH` slot forms, resume-time reconciliation rail card + Oracle line; `docs/GEAR-SLOTS.md` canon ledger; phase gate + aggregated Pixel 7 checklist — wave 4
 
 **Research flag**: Standard shape (research: the worn-slot model and refactor scope are already mapped file-by-file in ARCHITECTURE.md). No `--research-phase` needed — this phase's risk is regression breadth, not design ambiguity; plan carefully around every `eff()` call site.
 
@@ -338,7 +338,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
-| 37. Equipment Slot Model & eff() Refactor | v1.5 | 3/4 | In Progress|  |
+| 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | In Progress|  |
 | 38. Melee Active Abilities | v1.5 | 0/? | Not started | - |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |
 | 40. Spell Rework | v1.5 | 0/? | Not started | - |
