@@ -22,7 +22,7 @@
 import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -91,11 +91,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   // silently no-op on a corpse while still burning a charge. noTarget is
   // thereby unreachable in combat — every targeted kind always has a live
   // foe to retarget onto once combat.js#liveFoes is non-empty (and if it
-  // isn't, the encounter has already cleared).
-  if (C) {
-    const cur = C.foes[C.target];
-    if (!cur || !cur.alive) C.target = C.foes.findIndex((f) => f.alive);
-  }
+  // isn't, the encounter has already cleared). Phase 36 (TGT-01): the rule
+  // now lives in combat.js#normalizeTarget.
+  if (C) normalizeTarget(C);
 
   c.spellsUsed++;
   if (C) C.spellOpen = false;

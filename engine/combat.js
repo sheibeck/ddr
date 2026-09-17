@@ -81,6 +81,26 @@ export function liveFoes(state) {
 }
 
 /**
+ * normalizeTarget(combat) — Phase 36 (TGT-01): the ONE dead-target rule,
+ * extracted from playerStrike (formerly inline at the strike) and
+ * magic.js#castSpell (formerly inline at the cast), byte-for-byte the same
+ * semantics: when `combat.target` does not point at a live foe, it becomes
+ * the index of the lowest-indexed live foe — which is -1 when nothing is
+ * alive, exactly as before; a live target is never moved; null/undefined
+ * `combat` or a non-array `foes` returns untouched.
+ * Zero rng. Also called by the shell after every combat dispatch, before the
+ * re-render (mazeworld.html engineCombatAction), which is the sanctioned
+ * Phase 34 presentation mutation — there is still no engine action for
+ * choosing a target.
+ */
+export function normalizeTarget(combat) {
+  if (!combat || !Array.isArray(combat.foes)) return combat;
+  const foe = combat.foes[combat.target];
+  if (!foe || !foe.alive) combat.target = combat.foes.findIndex((f) => f.alive);
+  return combat;
+}
+
+/**
  * knightFacesBigFoe(state) — true when a Knight is up against something with
  * real heft this encounter: any still-live foe with maxWP >= 20. Exported so
  * rollInitiative and startCombat's encounterStarted flag share one
@@ -459,8 +479,8 @@ export function playerStrike(state, rng, events = []) {
       return events;
     }
   }
-  const foe = C.foes[C.target];
-  if (!foe || !foe.alive) C.target = C.foes.findIndex((f) => f.alive);
+  // Phase 36 (TGT-01): shared rule, see normalizeTarget.
+  normalizeTarget(C);
   const t = C.foes[C.target];
   if (!t) return events;
 
