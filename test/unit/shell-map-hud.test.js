@@ -104,7 +104,7 @@ test("(a) HUD markup: FLOOR/DAY/SQUARES/RATIONS in order with their kept ids, th
 
   assert.equal((region.match(/id="mw-hud-wp"/g) || []).length, 1);
   assert.equal((region.match(/id="mw-hud-wpfill"/g) || []).length, 1);
-  assert.match(region, /class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0\/0 WP<\/span>/);
+  assert.match(region, /class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0\/0 HP<\/span>/);
 
   const devIdx = region.indexOf('id="mw-dev-chip"');
   const topStart = region.indexOf('<div class="mw-hud-top">');
@@ -256,7 +256,7 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
 
 test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds, and no character-line writes survive", () => {
   const region = paintRegion();
-  assert.match(region, /wpText\.textContent = `\$\{Math\.max\(0, c\.wp\)\}\/\$\{c\.maxWP\} WP`;/);
+  assert.match(region, /wpText\.textContent = `\$\{Math\.max\(0, c\.wp\)\}\/\$\{c\.maxWP\} HP`;/);
   assert.match(region, /wpText\.classList\.toggle\("low", pct <= 25\)/);
   assert.match(region, /wpFill\.classList\.toggle\("mid", pct <= 50 && pct > 22\)/);
   assert.match(region, /wpFill\.classList\.toggle\("low", pct <= 22\)/);

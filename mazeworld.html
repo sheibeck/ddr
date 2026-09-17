@@ -1337,7 +1337,7 @@ html,body{height:100%}
       <!-- Phase 35 (MAP-01, ruling 5): the x/y WP readout over a threshold
            bar, replacing the retired name/class/hp character line below —
            paint() writes the text and the bar's width/threshold classes. -->
-      <div class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0/0 WP</span><div class="mw-hud-wptrack"><div class="mw-hud-wpfill" id="mw-hud-wpfill" style="width:100%"></div></div></div>
+      <div class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0/0 HP</span><div class="mw-hud-wptrack"><div class="mw-hud-wpfill" id="mw-hud-wpfill" style="width:100%"></div></div></div>
       <!-- Phase 21 (TUNE-04, D-13): a dev start-at-depth run is visibly
            marked — toggled from state.dev in paint(), never reachable from
            normal play. -->
@@ -1611,7 +1611,7 @@ html,body{height:100%}
       <h3>Rulings on ambiguities</h3>
       <ul>
         <li><b>"Roll one die lower to strike"</b> for dwarves is read as the creature getting the better die, per the book's own worked example (a level 1 creature rolls d12 instead of d20).</li>
-        <li><b>Armour AR is a d20 soak roll</b> exactly as written on p.44, with damage going to the armour's WP when it exceeds the Min. Armour is therefore consumable, and store repair at a tenth of cost per point is the main money sink.</li>
+        <li><b>Armour AR is a d20 soak roll</b> exactly as written on p.44, with damage going to the armour's HP when it exceeds the Min. Armour is therefore consumable, and store repair at a tenth of cost per point is the main money sink.</li>
         <li><b>Creature damage</b> is <code>level² + d6</code> where a creature's description gives no weapon, and <code>level² + its own damage</code> where it does.</li>
         <li><b>Level V creatures</b> for Demons, Humans, Lair Beasts and Magical fall back to the level IV roster, because those four headings on p.43 are empty in the book.</li>
         <li><b>Win condition:</b> the book states none. Five floors and a Gate.</li>
@@ -3086,7 +3086,7 @@ function paint() {
   // >22% gold, else red; text turns red at <=25%.
   const wpText = document.getElementById("mw-hud-wp");
   if (wpText) {
-    wpText.textContent = `${Math.max(0, c.wp)}/${c.maxWP} WP`;
+    wpText.textContent = `${Math.max(0, c.wp)}/${c.maxWP} HP`;
     wpText.classList.toggle("low", pct <= 25);
   }
   const wpFill = document.getElementById("mw-hud-wpfill");
