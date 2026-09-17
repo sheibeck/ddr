@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
+See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 36 — Balance Foundation, Effect Timers & Small Independent Wins
+**Current focus:** Phase 37 — Equipment Slot Model & eff() Refactor (v1.5; Phase 36 done — BEFORE pin, effects.js, targeting, Cutthroat, dismiss)
 
 ## Current Position
 
@@ -108,7 +108,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-17T17:30:15.724Z
-Stopped at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
+Stopped at: Phase 36 complete (autonomous run, defer-UAT-to-end; 18 Pixel 7 checks queued in 36-VERIFICATION.md), ready to discuss/plan Phase 37
 Resume file: None
 
 ## Operator Next Steps
