@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 36
 current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
 status: executing
-stopped_at: Completed 36-04-PLAN.md (Cutthroat Joiner reversal + murder risk, CUT-01/CUT-02)
-last_updated: "2026-09-17T17:08:23.408Z"
+stopped_at: Completed 36-05-PLAN.md (dismissJoiner engine action, JOIN-01 engine half)
+last_updated: "2026-09-17T17:20:40.168Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 36 execution started
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 ## Current Position
 
 Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 36 execution started
 
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T17:08:14.930Z
-Stopped at: Completed 36-04-PLAN.md (Cutthroat Joiner reversal + murder risk, CUT-01/CUT-02)
+Last session: 2026-09-17T17:20:40.143Z
+Stopped at: Completed 36-05-PLAN.md (dismissJoiner engine action, JOIN-01 engine half)
 Resume file: None
 
 ## Operator Next Steps
@@ -200,6 +200,7 @@ Resume file: None
 | Phase 36 P02 | 22min | 3 tasks | 9 files |
 | Phase 36 P03 | 16min | 3 tasks | 5 files |
 | Phase 36 P04 | 24min | 3 tasks | 11 files |
+| Phase 36 P05 | 9min | 2 tasks | 9 files |
 
 ## Decisions
 
@@ -364,6 +365,8 @@ Resume file: None
 - [Phase ?]: 36-03: playerStrike draw-count identity test uses a measured (not hand-computed) draw count of 6 via looseRng, since the seed-1 Soldier hero swings more than a bare roll+damage pair
 - [Phase ?]: 36-04: Task order (murder mechanics first, refusal reversal second) kept the suite green at every commit — cutthroatMurderCheck landed reachable only via a planted party while the old refusal still stood, then Task 2 flipped the ternary and rewrote every refusal-dependent test in the same commit
 - [Phase ?]: 36-04: identity-contract's Cutthroat BAD entry now drives the full accept-then-murder lifecycle (meetJoiner -> resolveJoiner -> cutthroatMurderCheck) instead of a bare refusal assertion, with a Soldier control proving the murder check is Cutthroat-only
+- [Phase ?]: 36-05: The plan's own surfaced assumption (dismissRefused as a genuine third event type, not a silent no-op) was implemented exactly as specified — every refusal in this codebase is an event with a toast-table block() entry (FEED-02), so a silent return would have regressed that standing contract.
+- [Phase ?]: 36-05: applyAction's rngState-unchanged proof needed a one-time makeRng round-trip normalization on a freshly-captured newRun() cursor before snapshotting 'before' state — mulberry32's constructor coerces a signed seed to unsigned via >>> 0, so the FIRST makeRng() call on a fresh cursor can change getState()'s numeric representation (bit-identical, JS-number-different) even with zero draws. Pre-existing engine/rng.js artifact, not a dismissJoiner defect.
 
 ### Blockers
 
