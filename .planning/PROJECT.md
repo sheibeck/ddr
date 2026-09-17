@@ -72,9 +72,9 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Last Milestone: v1.4 Combat & Map Screens (shipped 2026-09-16, override closeout — device UAT batch pending)
+## Last Milestone: v1.4 Combat & Map Screens (shipped 2026-09-16; device round closed 2026-09-17; on Play internal testing as 1.4.0 / versionCode 5)
 
-**Goal:** replace the combat AND map UX with the Claude Design "Mazeworld Combat" and "Mazeworld Map" screens — a dark combat screen (foes, YOUR LOT, › fight log, four actions) and a map with no D-pad and no toasts (tap-to-step, a bottom RAIL for every event and decision, a MAJOR OVERLAY for encounters / descents / death, HUD + condition chips) — keeping the engine, parity, refusals, loot, joiners and the Phase 32 input guards exactly as shipped. **Delivered** in Phases 34–35 (10 plans, 28 tasks, one day; 2170 tests; engine/content/parity untouched). Open: the 54-item Pixel 7 UAT batch (CSCR-10 / MAP-10), the climb dice payload quick task, the ⧗ glyph check.
+**Goal:** replace the combat AND map UX with the Claude Design "Mazeworld Combat" and "Mazeworld Map" screens — a dark combat screen (foes, YOUR LOT, › fight log, four actions) and a map with no D-pad and no toasts (tap-to-step, a bottom RAIL for every event and decision, a MAJOR OVERLAY for encounters / descents / death, HUD + condition chips) — keeping the engine, parity, refusals, loot, joiners and the Phase 32 input guards exactly as shipped. **Delivered** in Phases 34–35 (10 plans, 28 tasks, one day; 2170 tests; engine/content/parity untouched). The device round (2026-09-16/17) reversed several mock choices — PNG icons kept, gear as a chip, joiner only in YOUR LOT + a Hero-tab Company panel, HP not WP, the rail as the one app-wide feedback surface shown only when it has a card — and fixed three real bugs (tap-to-move bridge timing, boot TDZ crash, stuck-after-win). Open: the climb dice payload quick task; Play Developer API upload setup.
 
 **Next milestone candidates:** whatever the UAT batch turns up; the v1.0 launch tail (UX-06 first-run tutorial — now against the finished combat + map screens — and Google Play production launch STR-01..04/06); the deferred tuning pass (TUNE-06/07); the store screen restyle to the dark vocabulary; a dice-mode setting; haptics.
 
@@ -225,4 +225,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-16 after v1.4 milestone (override closeout — Pixel 7 UAT batch of 54 checks pending against the versionCode-3 debug APK)*
+*Last updated: 2026-09-17 — v1.4 closed: device round done, 1.4.0 (versionCode 5) on Play internal testing*

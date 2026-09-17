@@ -6,7 +6,7 @@
 - ✅ **v1.1 Monster Balancing & Abilities** — Phases 17–21 (shipped 2026-09-14, override closeout; see `.planning/milestones/v1.1-ROADMAP.md`)
 - ✅ **v1.2 Class Pass & Mass Playtest** — Phases 22–27 (shipped 2026-09-15, override closeout; see `.planning/milestones/v1.2-ROADMAP.md`)
 - ✅ **v1.3 Feel, Loot & Combat Flow** — Phases 28–33 (shipped 2026-09-16, device UAT batch pending; see `.planning/milestones/v1.3-ROADMAP.md`)
-- ✅ **v1.4 Combat & Map Screens** — Phases 34–35 (shipped 2026-09-16, override closeout: CSCR-10/MAP-10 device UAT batch pending — 54 Pixel 7 checks against the versionCode-3 debug APK; see `.planning/milestones/v1.4-ROADMAP.md`)
+- ✅ **v1.4 Combat & Map Screens** — Phases 34–35 (shipped 2026-09-16; device round closed 2026-09-17, on Play internal testing as 1.4.0 / versionCode 5; see `.planning/milestones/v1.4-ROADMAP.md`)
 - 📋 **v1.0 launch tail** — first-run tutorial (04-10 / UX-06) + Google Play production launch (STR-01..04, STR-06); deliberately deferred until after v1.3 (CMBUI reshapes the UI the tutorial would teach)
 - 📋 **Next tuning pass** — TUNE-06 roster decision + TUNE-07 human DR round; explicitly deferred out of v1.3 by user decision 2026-09-15 (`docs/DIFFICULTY-RETUNE.md`)
 

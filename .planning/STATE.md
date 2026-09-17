@@ -23,7 +23,7 @@ current_phase_name: Map Screen Rebuild
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.4 shipped (override closeout) — run the 54-check Pixel 7 UAT batch (34-/35-VERIFICATION.md), then /gsd-new-milestone
+**Current focus:** v1.4 closed 2026-09-17 (device round done, 1.4.0 versionCode 5 on Play internal testing) — next: /gsd-new-milestone
 
 ## Current Position
 
@@ -36,7 +36,7 @@ Last activity: 2026-09-17 - Completed quick task 260917-bbs: v1.4 UAT fixes roun
 
 **App identity:** "Delve, Die, Repeat", appId `com.darktierstudios.delvedierepeat` (PERMANENT — published). Player-facing text uses "Dungeon"/"Game Master". The old working-title string survives only in filenames (`mazeworld.html`, `mazeworld.pdf`), code ids, and storage-key history — do not reintroduce it anywhere player-facing or in docs.
 
-**Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers (first upload 2026-09-10, versionCode 1, built BEFORE DR18). **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`). A signed versionCode-2 AAB with DR17+DR18 was built 2026-09-13 13:48 and handed to the user to upload.
+**Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers. Latest upload: **1.4.0, versionCode 5 (2026-09-17)** — the v1.4 combat + map screens with every DR-round fix. **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`).
 
 **Build/env:** `npm test` (1448/1448 as of v1.2 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
 
@@ -98,16 +98,16 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 | Category | Item | Status |
 |----------|------|--------|
-| requirement | CSCR-10 combat screen DR round (Phase 34) | Deferred — UAT pending; 27 checks in `milestones/v1.4-phases/34-combat-screen-rebuild/34-VERIFICATION.md` |
-| requirement | MAP-10 map screen DR round (Phase 35) | Deferred — UAT pending; 27 checks in `milestones/v1.4-phases/35-map-screen-rebuild/35-VERIFICATION.md` |
+| requirement | CSCR-10 combat screen DR round (Phase 34) | DONE 2026-09-17 — user-run Pixel 7 round; findings fixed (260916-w0c, 260917-bbs, fast fixes); shipped as 1.4.0 (5) |
+| requirement | MAP-10 map screen DR round (Phase 35) | DONE 2026-09-17 — user-run Pixel 7 round; findings fixed; shipped as 1.4.0 (5) |
 | follow-up | Climb dice payload (`roll`/`need` on the four climb events) | quick task after UAT — additive, parity-safe; rail already renders it |
-| follow-up | ⧗ crevice glyph tofu risk | UAT item; one-line `mapMarks.js` swap if it fails |
+| follow-up | ⧗ crevice glyph tofu risk | MOOT — PNG icons restored 2026-09-16 (user ruling) |
 | quick_task | rules-text-audit-pass (20260909), 260908-kkq-rename… | stale records, both shipped (re-acknowledged) |
 
 ## Session Continuity
 
 Last session: 2026-09-17T02:48:36.757Z
-Stopped at: v1.4 archived + tagged; debug APK (versionCode 3) installed on the Pixel 7 2026-09-16 22:54; the 54-item UAT batch is the next step, findings → quick task or next milestone
+Stopped at: v1.4 fully closed — DR round findings fixed and shipped (1.4.0 / versionCode 5, Play internal testing, 2026-09-17). Open follow-ups: climb dice payload quick task; Play Developer API upload setup. Next: /gsd-new-milestone
 Resume file: None
 
 ## Operator Next Steps

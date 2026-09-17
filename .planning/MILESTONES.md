@@ -17,12 +17,24 @@
 - Tap-to-step (dominant-axis-then-fallback) and hold-to-inspect replace the D-pad on the map viewport; a shell pre-dispatch interception shows THE STAIR DOWN before the engine's unconditional descend can fire, with GO DOWN dispatching the identical stepNow(dir) every step uses — 25 new source-assertion tests, zero engine/content/parity edits.
 - One `shell-map-invariants.test.js` suite (37 tests, zero fixes required) pins every Phase 35 retirement/guard/copy invariant file-wide; the full executor gate is green (2170/2170 tests, clean build, untouched engine/content/parity); the v1.4 milestone's one debug APK is built (1.2.0 (3), 9.0 MB) with no device install attempted; and the aggregated 27-item deferred Pixel 7 checklist closes out MAP-10's plan-side deliverable, ready for the same milestone-close DR round that also works through Phase 34's own 27-item list.
 
-### Known Gaps (carried forward)
+### Device round (2026-09-16 → 2026-09-17) — closed
 
-- **CSCR-10 / MAP-10 — on-device DR round (override closeout, 2026-09-16):** the user ran this milestone with `/gsd-autonomous defer uat to end`; both device requirements are satisfied only by the 54-item Pixel 7 batch (27 in `milestones/v1.4-phases/34-combat-screen-rebuild/34-VERIFICATION.md`, 27 in `…/35-map-screen-rebuild/35-VERIFICATION.md`) against the versionCode-3 debug APK installed 2026-09-16 22:54. Findings become a quick task or the next milestone.
-- **Climb dice payload** — `fellClimbing`/`fellInGorge`/`climbedOver`/`leaptOver` carry no `roll`/`need`; the rail shows climb outcomes without a dice line. Additive, parity-safe engine change queued as a quick task after UAT (`rail.js#rollLineFor` already renders it).
-- **⧗ crevice glyph** may render as tofu on the Pixel 7 — UAT item; one-line swap in `src/browser/mapMarks.js` if so.
-- Known verification overrides: 2 (CSCR-10, MAP-10 — see STATE.md Deferred Items). Stale quick-task records (rules-text-audit-pass, product rename) re-acknowledged — both shipped long ago.
+The deferred CSCR-10 / MAP-10 Pixel 7 round was run by the user against the versionCode-3 debug build and the fixes re-tested through versionCode 5. Findings and their fixes:
+
+- **Tap-to-move never stepped** — the viewport pipeline captured the module bridge before it existed (`260916-w0c` be6d2e3).
+- **Black screen after the splash** — a hoisted `renderRail` read `S` in its TDZ from tab-init (fast fix 7ab68d3).
+- **Stuck on NONE STANDING after the last kill** — the over-panel filled its loot host before attaching it (fast fix 49e01fc).
+- **User reversals of the mock**: PNG map icons restored (glyph experiment retired) and the real icons on rail/overlay cards; the settings gear moved to a chip right of MAKE CAMP; the joiner strip removed from the map and from over combat (Company panel on the Hero tab; YOUR LOT unchanged); player-facing WP → HP; no inline bag-full line on the loot screen; the rail is the ONE feedback surface on every tab and shows only when it has something to report (no idle card) — `260916-w0c`, `260917-bbs`, fast fixes 67192d5 / a0d7747.
+- **Perf**: the party pulse ring animated `box-shadow` (whole-layer repaints, FIGHT IT OUT's background not drawn until a focus change) — composited and paused under overlays (`260917-bbs` 5138b4d).
+- Palette (fog black / wall blocks / dark corridors) reviewed by the user: kept as is.
+
+**Shipped:** Google Play internal testing, `1.4.0` versionCode 5 (2026-09-17). Tests 2179/2179; parity master untouched throughout.
+
+### Still open (carried forward)
+
+- **Climb dice payload** — `fellClimbing`/`fellInGorge`/`climbedOver`/`leaptOver` carry no `roll`/`need`; the rail shows climb outcomes without a dice line. Additive, parity-safe engine change (events are asserted loosely by parity); `rail.js#rollLineFor` already renders it.
+- **Play Developer API upload** — still Console drag-and-drop (`docs/RELEASING.md` steps 1–2 are the user's).
+- Verification overrides at closeout: 2 (CSCR-10, MAP-10) — both since satisfied by the device round above.
 
 ---
 
