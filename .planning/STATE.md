@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-current_phase: 37
-current_phase_name: Equipment Slot Model & eff(
-status: verifying
+current_phase: 38
+current_phase_name: Melee Active Abilities
+status: planning
 stopped_at: "Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)"
-last_updated: "2026-09-17T20:12:49.700Z"
+last_updated: "2026-09-17T20:15:13.006Z"
 last_activity: 2026-09-17
-last_activity_desc: Phase 37 execution started
+last_activity_desc: Phase 37 complete, transitioned to Phase 38
 progress:
   total_phases: 8
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 
 ## Current Position
 
-Phase: 37 (Equipment Slot Model & eff() Refactor) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-17 — Phase 37 execution started
+Phase: 38 — Melee Active Abilities
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-17 — Phase 37 complete, transitioned to Phase 38
 
 ## Ground Truth (durable facts every session needs)
 
