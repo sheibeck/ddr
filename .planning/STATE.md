@@ -6,13 +6,13 @@ current_phase: 38
 current_phase_name: Melee Active Abilities
 status: executing
 stopped_at: "Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)"
-last_updated: "2026-09-17T21:30:14.286Z"
+last_updated: "2026-09-17T21:30:17.903Z"
 last_activity: 2026-09-17
-last_activity_desc: Phase 37 complete, transitioned to Phase 38
+last_activity_desc: Phase 38 execution started
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 10
+  total_plans: 15
   completed_plans: 10
   percent: 25
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 38 — Melee Active Abilities (v1.5; Phases 36–37 done)
+**Current focus:** Phase 38 — Melee Active Abilities
 
 ## Current Position
 
-Phase: 38 — Melee Active Abilities
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-17 — Phase 37 complete, transitioned to Phase 38
+Phase: 38 (Melee Active Abilities) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 38
+Last activity: 2026-09-17 — Phase 38 execution started
 
 ## Ground Truth (durable facts every session needs)
 
