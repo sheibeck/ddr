@@ -522,3 +522,72 @@ test("EVENT_NARRATION.itemEquipped mentions the replaced item going back in the 
   const plain = EVENT_NARRATION.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring" });
   assert.equal(plain, `<span class="hit">Equipped:</span> Ring of Power (ring). Whether that was wise is between you and the maze.`);
 });
+
+// --- Plan 02 Task 3: legacy identity sweep ---
+//
+// Five entry points, exercised against a REAL newRun(3) legacy state (a
+// Pickpocket Thief with a Cloak of Ether in the bag, no `worn` key) run
+// through the actual engine — proving this plan changed nothing for a state
+// without the worn-slot model. Each test asserts the call's own before/after
+// state (or, for useItem, agreement across two independently-cloned legacy
+// states run through the SAME call) rather than a hand-typed literal pin —
+// deliberately avoiding a mistyped magic-string pin on this seed's real,
+// non-trivial chargen output while still proving byte-identical behaviour.
+
+test("Task 3 sweep: equipItem on the Thief's starting cloak is unaffected by Plan 02", () => {
+  const state = newRun(3);
+  assert.equal("worn" in state.c, false, "seed 3 must be a legacy state");
+  const cloakIdx = state.c.items.findIndex((it) => it.kind === "cloak");
+  assert.ok(cloakIdx >= 0, "seed 3's Thief must start with a cloak in the bag");
+  const before = JSON.stringify(state.c);
+  const events = equipItem(state, cloakIdx, []);
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: state.c.items[cloakIdx], reason: "notEquippable" }]);
+  assert.equal(JSON.stringify(state.c), before, "c must be byte-identical — equipItem changed nothing on a legacy state");
+});
+
+test("Task 3 sweep: unequipSlot('ring') on a legacy state is a no-op", () => {
+  const state = newRun(3);
+  const before = JSON.stringify(state.c);
+  const events = unequipSlot(state, "ring", []);
+  assert.deepStrictEqual(events, []);
+  assert.equal(JSON.stringify(state.c), before);
+});
+
+test("Task 3 sweep: takeFind of a ring on a legacy state bags it exactly as before Plan 02", () => {
+  const state = newRun(3);
+  const ring = RING();
+  state.pendingFind = ring;
+  const beforeItemsLen = state.c.items.length;
+  const events = takeFind(state, []);
+  assert.deepStrictEqual(events, [{ type: "findTaken", item: ring }]);
+  assert.equal(state.c.items.length, beforeItemsLen + 1);
+  assert.equal(state.c.items[state.c.items.length - 1], ring);
+  assert.equal("worn" in state.c, false);
+});
+
+test("Task 3 sweep: takeLoot of a ring on a legacy state bags it exactly as before Plan 02", () => {
+  const state = newRun(3);
+  const ring = RING();
+  state.pendingLoot = [ring];
+  const beforeItemsLen = state.c.items.length;
+  const events = takeLoot(state, 0, false, []);
+  assert.deepStrictEqual(events, [{ type: "lootTaken", item: ring }]);
+  assert.equal(state.c.items.length, beforeItemsLen + 1);
+  assert.equal("worn" in state.c, false);
+});
+
+test("Task 3 sweep: useItem of the bagged starting cloak on a legacy state resolves identically across two independent clones", () => {
+  const stateA = newRun(3);
+  const stateB = JSON.parse(JSON.stringify(newRun(3)));
+  const idx = stateA.c.items.findIndex((it) => it.kind === "cloak");
+  assert.ok(idx >= 0, "seed 3's Thief must start with a cloak in the bag");
+  const eventsA = useItem(stateA, idx, makeRng(stateA.rngState), [], () => 1);
+  const eventsB = useItem(stateB, idx, makeRng(stateB.rngState), [], () => 1);
+  assert.deepStrictEqual(eventsA, eventsB, "two independent clones of the same legacy state must resolve identically");
+  assert.deepStrictEqual(stateA.c, stateB.c);
+  assert.ok(
+    !eventsA.some((e) => e.type === "useRefused" && e.reason === "notWorn"),
+    "a legacy state must never see the new notWorn refusal",
+  );
+  assert.equal("worn" in stateA.c, false);
+});

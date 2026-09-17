@@ -29,6 +29,7 @@ never a generic "you can't do that."
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |
 | `pilfer` | `useRefused`, `scrollRefused` | a Pilfer cannot use a non-heal magic item or read a scroll | `useRefused`, `scrollRefused` |
+| notWorn | useRefused | (Phase 37, GEAR-03) a cloak/jewelry/staff activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use | useRefused |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
 
 `noChargesLeft` / `spellNotKnown` / `spellAboveLevel` / `spellSchoolLocked`
