@@ -15,7 +15,7 @@
 // it) — re-exported here so item-domain callers have one place to import
 // item/treasure helpers from, without duplicating the implementation.
 
-import { eff, skill, slotItems, afraidDamage } from "./derived.js";
+import { eff, skill, slotItems, afraidDamage, slotFor, WORN_SLOTS } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
@@ -267,6 +267,40 @@ export function armorUpgradeDelta(c, it) {
 }
 
 /**
+ * autoWearSlot(state, it) — Phase 37 (GEAR-03): pure predicate — does `it`
+ * auto-wear into an EMPTY slot right now? Returns the slot key when yes, or
+ * `null` when no: `state.c` carries no own `worn` key (a legacy state —
+ * never auto-wears), `it` is not an object, `slotFor(it)` is null (not a
+ * slot item at all), the slot is already occupied, or (staff only) `c.cls`
+ * is not "Magic User" (mirrors equipItem/takeItem's own staff class gate).
+ * Pure, no rng, no mutation.
+ */
+export function autoWearSlot(state, it) {
+  const c = state && state.c;
+  if (!c || typeof c !== "object" || !("worn" in c) || !c.worn || typeof c.worn !== "object") return null;
+  if (!it || typeof it !== "object") return null;
+  const slot = slotFor(it);
+  if (!slot) return null;
+  if (c.worn[slot]) return null;
+  if (it.kind === "staff" && c.cls !== "Magic User") return null;
+  return slot;
+}
+
+/**
+ * wearItem(state, it, slot, events) — Phase 37 (GEAR-03): assigns `it`
+ * (the SAME object, never cloned) into `c.worn[slot]` and pushes
+ * `{ type: "itemEquipped", item: it, slot }`. Deliberately does NOT apply
+ * `eff.wp` — no JEWELRY/CLOAKS/STAVES row ever carries a `wp` key (Plan 01's
+ * no-slot-row-carries-eff.wp tripwire test), so giveItem's flat-wp-on-pickup
+ * rule has nothing to apply here. Adds no rng draw.
+ */
+export function wearItem(state, it, slot, events = []) {
+  state.c.worn[slot] = it;
+  events.push({ type: "itemEquipped", item: it, slot });
+  return events;
+}
+
+/**
  * takeItem(state, it, events) — the weapon/armor equip-swap (only takes a
  * strictly-better item; staves require a Magic User; everything else goes
  * through giveItem). Ports mazeworld.html takeItem() (lines 1929-1955).
@@ -277,6 +311,10 @@ export function armorUpgradeDelta(c, it) {
  * Phase 29 (LOOT-03): the "is this better" arithmetic itself now lives in
  * weaponUpgradeDelta/armorUpgradeDelta above so lootCompare can import the
  * exact same rule instead of restating it.
+ * Phase 37 (GEAR-03): with `c.worn` present, a cloak/jewelry/staff item that
+ * fits into an EMPTY slot auto-wears instead of landing in the bag (fewer
+ * taps; mirrors the weapon/armor auto-equip spirit above). Legacy states
+ * (no `c.worn`) fall straight through to giveItem, unchanged.
  */
 export function takeItem(state, it, events = []) {
   const c = state.c;
@@ -321,6 +359,13 @@ export function takeItem(state, it, events = []) {
 
   if (it.kind === "staff" && c.cls !== "Magic User") {
     events.push({ type: "itemRejected", item: it, reason: "wrongClass" });
+    return events;
+  }
+
+  const slot = autoWearSlot(state, it);
+  if (slot) {
+    events.push({ type: "itemGiven", item: it });
+    wearItem(state, it, slot, events);
     return events;
   }
 
@@ -480,11 +525,20 @@ function wornArmorItem(c) {
  * pending and pushes `bagFull` (the UI then offers keep/drop, ECON-04). Found
  * weapons/armor land in the bag like anything else (NO auto-equip — that is the
  * player's separate equipItem choice); the flat `eff.wp` effect (if any) is
- * applied on pickup, exactly as giveItem does. Pure, no rng.
+ * applied on pickup, exactly as giveItem does. Phase 37 (GEAR-03): with
+ * `c.worn` present, a slot item that fits an EMPTY slot auto-wears instead
+ * (no bag slot consumed — wearing needs none). Pure, no rng.
  */
 export function takeFind(state, events = []) {
   const it = state.pendingFind;
   if (!it) return events;
+  const slot = autoWearSlot(state, it);
+  if (slot) {
+    state.pendingFind = null;
+    events.push({ type: "findTaken", item: it });
+    wearItem(state, it, slot, events);
+    return events;
+  }
   if (!stowItem(state, it, events, true)) return events; // keep pending — the player must drop something first
   state.pendingFind = null;
   events.push({ type: "findTaken", item: it });
@@ -574,7 +628,29 @@ export function equipItem(state, i, events = []) {
     return events;
   }
 
-  // staves, cloaks, jewelry, potions, picks — not an equip slot
+  // staves, cloaks, jewelry — worn slots in the new model (Phase 37,
+  // GEAR-03); potions, picks, bags — never an equip slot.
+  if ((it.kind === "cloak" || it.kind === "jewel" || it.kind === "staff") && c.worn && typeof c.worn === "object") {
+    if (it.kind === "staff" && c.cls !== "Magic User") {
+      events.push({ type: "equipRejected", item: it, reason: "wrongClass" });
+      return events;
+    }
+    const slot = slotFor(it);
+    if (!slot) {
+      events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
+      return events;
+    }
+    const worn = c.worn[slot] || null;
+    c.worn[slot] = it;
+    if (worn) c.items[i] = worn;
+    else c.items.splice(i, 1);
+    const evt = { type: "itemEquipped", item: it, slot };
+    if (worn) evt.replaced = worn;
+    events.push(evt);
+    return events;
+  }
+
+  // legacy states (no c.worn) and anything else — not an equip slot
   events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
   return events;
 }
@@ -597,7 +673,14 @@ export function equipItem(state, i, events = []) {
  */
 export function unequipSlot(state, slot, events = []) {
   const c = state.c;
-  const worn = slot === "weapon" ? wornWeaponItem(c) : slot === "armor" ? wornArmorItem(c) : null;
+  const worn =
+    slot === "weapon"
+      ? wornWeaponItem(c)
+      : slot === "armor"
+        ? wornArmorItem(c)
+        : WORN_SLOTS.includes(slot)
+          ? (c.worn && c.worn[slot]) || null
+          : null;
   if (slot === "armor" && !worn && c.armor && c.armor !== "Nothing" && c.ar > 0 && c.armorWP <= 0) {
     const destroyedName = c.armor;
     const destroyedAr = c.ar;
@@ -621,13 +704,17 @@ export function unequipSlot(state, slot, events = []) {
     c.weapon = "Fists";
     c.prof = 0;
     c.magicWpn = 0;
-  } else {
+  } else if (slot === "armor") {
     c.armor = "Nothing";
     c.ar = 0;
     c.armorMin = 0;
     c.armorMax = 0;
     c.armorWP = 0;
     c.patches = 0;
+  } else {
+    // Phase 37 (GEAR-03): one of the six new worn slots — delete, not null,
+    // so `slot in c.worn` reports empty exactly like a never-worn slot.
+    delete c.worn[slot];
   }
   events.push({ type: "itemUnequipped", item: worn, slot });
   return events;
@@ -674,12 +761,24 @@ export function takeLoot(state, i, equip = false, events = []) {
   if (!it) return events;
 
   if (!equip) {
+    // Phase 37 (GEAR-03): with c.worn present, an empty-slot item auto-wears
+    // instead of stowing. Occupied slot / legacy state -> unchanged.
+    const slot = autoWearSlot(state, it);
+    if (slot) {
+      pile.splice(i, 1);
+      events.push({ type: "lootTaken", item: it });
+      wearItem(state, it, slot, events);
+      return events;
+    }
     if (!stowItem(state, it, events, true)) return events; // keep pending — the player must drop something first
     pile.splice(i, 1);
     events.push({ type: "lootTaken", item: it });
     return events;
   }
 
+  // Deliberately unchanged (Phase 43 owns loot-card equip for slot items):
+  // the equip:true form is weapon/armor only — a slot item here still gets
+  // notEquippable.
   if (it.kind !== "weapon" && it.kind !== "armor") {
     events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
     return events;
@@ -745,6 +844,14 @@ export function takeAllLoot(state, events = []) {
   const remaining = [];
   let refused = false;
   for (const it of pile) {
+    // Phase 37 (GEAR-03): an empty-slot item auto-wears and never consumes a
+    // bag slot or trips `refused` — checked BEFORE the stow gate below.
+    const slot = autoWearSlot(state, it);
+    if (slot) {
+      events.push({ type: "lootTaken", item: it });
+      wearItem(state, it, slot, events);
+      continue;
+    }
     const scratch = [];
     if (stowItem(state, it, scratch, true)) {
       events.push(...scratch, { type: "lootTaken", item: it });

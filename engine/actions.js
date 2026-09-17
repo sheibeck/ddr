@@ -7,6 +7,8 @@
 // object, its `type` is known, and the per-type field shapes are well-formed;
 // applyAction no-ops (empty events, unchanged state) on anything that fails.
 
+import { WORN_SLOTS } from "./derived.js";
+
 export const ACTION_TYPES = new Set([
   "move",
   // CMB-01 (Phase 31): the FIGHT step, split from startCombat's ENCOUNTER
@@ -129,10 +131,14 @@ export function validateAction(action) {
       }
       break;
     case "unequipSlot":
-      // ECON-05 (Phase 13): only the two real equip slots — a malformed slot
-      // string can never reach the handler.
-      if (!EQUIP_SLOTS.has(action.slot)) {
-        return { ok: false, reason: "unequipSlot.slot must be 'weapon' or 'armor'" };
+      // ECON-05 (Phase 13) + Phase 37 (GEAR-03): the two scalar equip slots
+      // PLUS the six worn-model slots — a malformed slot string can never
+      // reach the handler.
+      if (!EQUIP_SLOTS.has(action.slot) && !WORN_SLOTS.includes(action.slot)) {
+        return {
+          ok: false,
+          reason: "unequipSlot.slot must be 'weapon', 'armor' or one of ring, bracelet, amulet, helm, cloak, staff",
+        };
       }
       break;
     case "takeFind":
