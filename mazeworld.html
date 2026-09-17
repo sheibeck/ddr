@@ -684,6 +684,31 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-major-btn{font-family:var(--disp);font-size:9px;letter-spacing:0;padding:17px 10px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 5px 0 #6b5c3c;text-align:center;cursor:pointer}
 .mw-major-btn.secondary{background:transparent;color:#a89c82;border:2px solid #3a3226;box-shadow:none}
 
+/* ---------- Phase 35 (MAP-03/04): the RAIL ---------- */
+.mw-rail{flex:none;min-height:132px;padding:14px 16px 18px;border-top:3px solid var(--rail-edge);background:#1b170f;color:#e6ddc6;font-family:var(--mono)}
+.mw-rail[hidden]{display:none}
+.mw-rail[data-idle="1"]{background:#161209}
+.mw-rail[data-tone="info"]{--rail-edge:#6b5c3c;--rail-ink:#e8c97a}
+.mw-rail[data-tone="good"]{--rail-edge:#5e7a3c;--rail-ink:#a8cc72}
+.mw-rail[data-tone="bad"]{--rail-edge:#a63a2c;--rail-ink:#e07260}
+.mw-rail[data-tone="odd"]{--rail-edge:#5b4a86;--rail-ink:#b9a4ef}
+.mw-rail[data-tone="dull"]{--rail-edge:#3a3226;--rail-ink:#a89c82}
+.mw-rail-row{display:flex;gap:11px;align-items:flex-start}
+.mw-rail-icon{flex:none;width:22px;font-size:20px;line-height:1.2;color:var(--rail-ink)}
+.mw-rail-body{flex:1;min-width:0}
+.mw-rail-title{font-family:var(--disp);font-size:8px;line-height:1.6;color:var(--rail-ink)}
+.mw-rail-line{font-weight:700;font-size:14.5px;line-height:1.4;color:#c9bda0;margin-top:6px}
+.mw-rail[data-idle="1"] .mw-rail-line{color:#8f856f}
+.mw-rail-roll{font-weight:700;font-size:13.5px;color:var(--rail-ink);margin-top:5px}
+.mw-rail-peek{flex:none;font-family:var(--disp);font-size:6px;color:#5f5849;padding-top:4px}
+.mw-rail-actions{display:flex;gap:8px;margin-top:11px}
+.mw-rail-actions:empty{display:none}
+.mw-rail-btn{flex:1;min-height:48px;font-family:var(--disp);font-size:7.5px;letter-spacing:0;padding:13px 8px;text-align:center;background:var(--rail-ink);color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
+.mw-rail-btn.secondary{background:#241d12;color:#c9bda0;border:2px solid #4a4032;box-shadow:0 4px 0 #0d0b08}
+.mw-rail.mw-rail-new{animation:mwrise .18s ease}
+@keyframes mwpulse{0%,100%{box-shadow:none}50%{box-shadow:inset 0 0 0 3px var(--rail-ink)}}
+.mw-rail.mw-rail-pulse{animation:mwpulse .45s ease 2}
+
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
    column with both buttons clearing the 48dp touch target (UX-02). */
@@ -771,39 +796,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   }
   .v-side{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
 }
-
-/* ---------- DR13: toast feedback ---------- */
-.mw-toast-host{
-  position:fixed;left:0;right:0;
-  top:calc(102px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
-  z-index:120;display:flex;flex-direction:column;align-items:center;gap:8px;
-  padding:0 14px;pointer-events:none;
-}
-.mw-toast{
-  pointer-events:auto;cursor:pointer;touch-action:manipulation;max-width:360px;
-  font-family:var(--mono);font-size:14px;letter-spacing:.05em;font-weight:700;
-  text-transform:uppercase;
-  color:var(--ink);background:var(--paper-3);
-  border:1px solid var(--ink-soft);border-left:5px solid var(--ink-soft);
-  box-shadow:0 10px 26px rgba(0,0,0,.6);
-  padding:12px 20px;border-radius:5px;text-align:center;
-  animation:mwToastIn .18s cubic-bezier(.2,1.25,.35,1) both;
-}
-.mw-toast.out{animation:mwToastOut .3s ease forwards}
-/* Phase 25 (FEED-03): YOU green family (hit/miss), THEM red family
-   (hurt/dodge), plus two utilities (magic gold, block amber) and beat
-   (the neutral default, made explicit). All seven tones resolve to
-   explicit colors — miss is no longer the ink-soft grey. */
-.mw-toast[data-tone="hit"]{border-color:var(--moss);border-left-color:var(--moss);color:var(--moss)}
-.mw-toast[data-tone="miss"]{border-color:var(--moss-soft);border-left-color:var(--moss-soft);color:var(--moss-soft)}
-.mw-toast[data-tone="hurt"]{border-color:var(--stamp);border-left-color:var(--stamp);color:var(--stamp)}
-.mw-toast[data-tone="dodge"]{border-color:var(--stamp-soft);border-left-color:var(--stamp-soft);color:var(--stamp-soft)}
-.mw-toast[data-tone="magic"]{border-color:var(--ditto);border-left-color:var(--ditto);color:var(--ditto)}
-.mw-toast[data-tone="block"]{border-color:var(--amber);border-left-color:var(--amber);color:var(--amber)}
-.mw-toast[data-tone="beat"]{border-color:var(--ink-soft);border-left-color:var(--ink-soft);color:var(--ink)}
-@keyframes mwToastIn{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:none}}
-@keyframes mwToastOut{to{opacity:0;transform:translateY(-8px)}}
-@media (prefers-reduced-motion:reduce){.mw-toast,.mw-toast.out{animation:none}}
 
 /* ---------- graveyard ---------- */
 .yard-wrap{margin-top:28px;border-top:2px solid var(--ink);padding-top:14px}
@@ -981,11 +973,16 @@ html,body{height:100%}
 .mw-gear-btn:hover:not(:disabled){background:transparent;color:#e8c97a}
 .mw-gear-btn:active:not(:disabled){background:transparent;color:#e8c97a;box-shadow:none;transform:none}
 
-.mw-screens{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(96px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
-.mw-screen{display:block}
+.mw-screens{flex:1;min-height:0;overflow-y:auto;padding:0}
+.mw-screen{display:block;padding:14px}
+
+/* Phase 35 (MAP-01): the map tab is flush with the RAIL/tab bar below it —
+   no 14px inset (the mock's viewport runs edge to edge); the other four
+   tabs (Hero/Gear/Oracle/Dead) keep .mw-screen's 14px padding. */
+#screen-maze{padding:0}
 
 .mw-tabbar{
-  position:fixed;left:0;right:0;bottom:0;z-index:6;
+  flex:none;
   display:flex;background:var(--paper-2);
   border-top:2px solid var(--rule);
   padding-bottom:calc(8px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
@@ -1414,10 +1411,6 @@ html,body{height:100%}
     <div class="mw-party-rail" id="mw-party-rail" hidden></div>
   </header>
 
-  <!-- DR13: fixed, non-layout toast host for transient action feedback
-       (hit/miss, potion, spell, flee…) — never shuffles panel real estate. -->
-  <div class="mw-toast-host" id="mw-toast-host" aria-live="polite" aria-atomic="false"></div>
-
   <!-- ============ 5 TAB SCREENS ============ -->
   <main class="mw-screens" id="mw-screens">
 
@@ -1607,6 +1600,31 @@ html,body{height:100%}
     </section>
 
   </main>
+
+  <!-- Phase 35 (MAP-03/04): the RAIL — the map screen's persistent bottom
+       card. A direct child of #app between the screens and the (now static)
+       tab bar so every out-of-combat dispatch is seen no matter which tab is
+       open (a Gear-tab Use/Equip, a Hero-tab Cast). renderRail() (trailing
+       module script) toggles `hidden` while combat/death/win own the column
+       and rewrites icon/title/lines/actions in place — never rebuilt via
+       body.innerHTML, so the persistent #mw-rail-live child below is never
+       torn down and stays reliably announced by assistive tech (mirrors
+       #enc-round-live's persistent-node pattern). -->
+  <section class="mw-rail" id="mw-rail" data-tone="dull" data-idle="1" aria-label="What is happening">
+    <div class="mw-rail-row">
+      <span class="mw-rail-icon" id="mw-rail-icon" aria-hidden="true">·</span>
+      <div class="mw-rail-body">
+        <div class="mw-rail-title" id="mw-rail-title"></div>
+        <div class="mw-rail-lines" id="mw-rail-lines"></div>
+      </div>
+      <span class="mw-rail-peek" id="mw-rail-peek"></span>
+    </div>
+    <div class="mw-rail-actions" id="mw-rail-actions"></div>
+    <!-- Persistent sr-only announcer (a sibling, never rebuilt) — renderRail
+         only ever rewrites its textContent, seq-gated via railAnnouncement,
+         so a new rail card is announced exactly once. -->
+    <div class="sr-only" id="mw-rail-live" aria-live="polite" aria-atomic="true"></div>
+  </section>
 
   <!-- ============ 5-TAB BOTTOM NAV (UX; fixed, safe-area-padded) ============ -->
   <nav class="mw-tabbar" id="mw-tabbar">
@@ -2790,41 +2808,6 @@ function logLine(html) {
 }
 const say = logLine;
 
-/* ---------------- DR13: transient toast feedback ----------------
-   A fixed-position, non-layout toast so action feedback (hit/miss, potion,
-   spell, flee, …) never shuffles a panel or causes CLS. mzToast is global so
-   any script/module can raise one; the tone vocabulary (TONES) and every
-   toast's text now live in src/browser/toasts.js (TOAST_FOR / toastsForAction),
-   raised by the module script's dispatchWithToasts(action) (Phase 25).
-   Phase 25.1 (DFB-02): lifetime = toasts.js#toastLifetime via the
-   window.__mzToastLifetime bridge (3000 + 60/char, cap 9000, +1200 per
-   toast already visible) so the formula lives in one place and is
-   unit-tested there. Tap/click dismisses early and clears the pending
-   timer; a timer that later fires after a tap is a harmless no-op
-   (classList.add is idempotent, and Element.remove on an already-detached
-   node is a no-op). Reduced motion is CSS-only — see the
-   prefers-reduced-motion rule, untouched. */
-window.mzToast = function (text, tone) {
-  if (!text) return;
-  const host = document.getElementById("mw-toast-host");
-  if (!host) return;
-  const visible = host.children.length;
-  const t = document.createElement("div");
-  t.className = "mw-toast";
-  if (tone) t.dataset.tone = tone;
-  t.textContent = text;
-  host.appendChild(t);
-  while (host.children.length > 4) host.removeChild(host.firstChild);
-  const life = window.__mzToastLifetime ? window.__mzToastLifetime(text.length, visible) : 4200;
-  let timer = null;
-  const dismiss = () => {
-    if (timer !== null) { clearTimeout(timer); timer = null; }
-    t.classList.add("out");
-    setTimeout(() => t.remove(), 300);
-  };
-  timer = setTimeout(dismiss, life);
-  t.addEventListener("click", dismiss);
-};
 window.mzSpellCharges = () => (S && S.c && S.c.cls === "Magic User")
   ? { left: Math.max(0, maxCharges() - S.c.spellsUsed), max: maxCharges() } : null;
 /* DR13: end-of-combat report — a beats group summarizing the fight (who, how
@@ -3247,6 +3230,7 @@ function paint() {
 
   renderPartyRail();
   renderEncounter();
+  renderRail();
   draw();
 }
 
@@ -5025,7 +5009,7 @@ function armEncounterButtons() {
   if (armTimer) clearTimeout(armTimer);
   const delay = (window.__mzInputGuards && window.__mzInputGuards.ARM_DELAY_MS) || 250;
   armTimer = setTimeout(() => {
-    document.querySelectorAll('#enc-panel [aria-disabled="true"]').forEach((el) => el.removeAttribute("aria-disabled"));
+    document.querySelectorAll('#enc-panel [aria-disabled="true"], #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]').forEach((el) => el.removeAttribute("aria-disabled"));
   }, delay);
 }
 
@@ -5986,6 +5970,135 @@ function renderEncounter() {
   renderActionArea(act);
 }
 
+// Phase 35 (MAP-03/04): the RAIL's own render/announce/pulse trio, mirroring
+// renderFightLog/syncFightLogLive's persist-node-rewrite-textContent-only
+// discipline (Pitfall 9) — #mw-rail is never torn down by body.innerHTML;
+// only its children's textContent/dataset are rewritten, so the persistent
+// #mw-rail-live sr-only child stays the same node to assistive tech across
+// every repaint. lastRailKeyShown/railTimer gate a "new card" (rise
+// animation + one announcement + one hold timer) from a same-card repaint
+// (a submenu toggle elsewhere, a resize) that must NOT re-rise/re-announce/
+// re-arm the auto-clear.
+let lastRailKeyShown = "";
+let railTimer = null;
+
+// railButtons(host, buttons): the ONE generic action-row builder every rail
+// decision (joiner/find/climb) and every future rail action reuses — the
+// same generic per-button guardTap wiring loop shell-input-guards'
+// countGuardedWiring recognises.
+function railButtons(host, buttons) {
+  for (const b of buttons) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mw-rail-btn" + (b.cls ? " " + b.cls : "");
+    btn.id = b.id;
+    btn.textContent = b.label;
+    host.appendChild(btn);
+  }
+  for (const b of buttons) guardTap(document.getElementById(b.id), b.onTap);
+}
+
+function renderRail() {
+  const railEl = document.getElementById("mw-rail");
+  if (!S || !railEl) return;
+  const rail = window.__mzRail || { seq: 0, card: null, pending: null };
+  const vm = window.__mzRailVM;
+  const copy = vm ? vm.copy : null;
+  if (!vm || !copy) return;
+  railEl.hidden = !!(S.combat || S.dead || S.won);
+
+  let key, tone, icon, title, lines, buttons = [], idle = false, peek = "";
+  if (S.pendingJoiner && !S.combat && !S.store) {
+    // Phase 35 Task 2 fills this branch (the joiner decision card).
+    key = "joiner";
+    tone = "info"; icon = "◇"; title = copy.joiner.title; lines = [];
+  } else if (S.pendingFind && !S.combat && !S.store) {
+    // Phase 35 Task 2 fills this branch (the find decision card).
+    key = "find";
+    tone = "good"; icon = "▪"; title = copy.find.title; lines = [];
+  } else if (rail.pending && rail.pending.kind === "climb") {
+    // Phase 35 Task 2 fills this branch (the CLIMB IT retry card).
+    key = "climb:" + rail.seq;
+    const base = rail.card || vm.lineCard("FELL", "", "bad", 0, "⧗");
+    tone = base.tone; icon = base.icon; title = base.title; lines = base.lines;
+  } else if (rail.card) {
+    key = "card:" + rail.card.seq;
+    tone = rail.card.tone; icon = rail.card.icon; title = rail.card.title; lines = rail.card.lines;
+  } else {
+    key = "idle:" + S.floor.depth;
+    title = copy.idleTitle.replace("{n}", S.floor.depth);
+    lines = [{ text: copy.idleLine, roll: null }];
+    tone = "dull"; icon = "·"; idle = true;
+    peek = zoom > 1 ? copy.peekPinch : copy.peekStep;
+  }
+
+  railEl.dataset.tone = tone;
+  railEl.dataset.idle = idle ? "1" : "0";
+  document.getElementById("mw-rail-icon").textContent = icon;
+  document.getElementById("mw-rail-title").textContent = title;
+  document.getElementById("mw-rail-peek").textContent = peek;
+  const linesEl = document.getElementById("mw-rail-lines");
+  linesEl.textContent = "";
+  for (const line of lines) {
+    const el = document.createElement("div");
+    el.className = "mw-rail-line";
+    el.textContent = line.text;
+    linesEl.appendChild(el);
+    if (line.roll) {
+      const rollEl = document.createElement("div");
+      rollEl.className = "mw-rail-roll";
+      rollEl.textContent = line.roll;
+      linesEl.appendChild(rollEl);
+    }
+  }
+  const actionsEl = document.getElementById("mw-rail-actions");
+  actionsEl.textContent = "";
+  railButtons(actionsEl, buttons);
+
+  const isNew = key !== lastRailKeyShown;
+  if (isNew) {
+    lastRailKeyShown = key;
+    if (buttons.length) armEncounterButtons();
+    railEl.classList.remove("mw-rail-new");
+    void railEl.offsetWidth;
+    railEl.classList.add("mw-rail-new");
+    syncRailLive(idle ? "" : title + ". " + lines.map((l) => l.text).join(" "));
+    clearTimeout(railTimer);
+    railTimer = null;
+    if (!idle && !buttons.length && rail.card) {
+      railTimer = setTimeout(() => {
+        window.__mzRail = vm.clear(window.__mzRail);
+        renderRail();
+      }, rail.card.hold || 4200);
+    }
+  }
+}
+
+// syncRailLive(text): the persistent #mw-rail-live announcer — textContent
+// rewritten only when it differs, so a same-text repaint never re-announces.
+function syncRailLive(text) {
+  const live = document.getElementById("mw-rail-live");
+  if (!live) return;
+  if (live.textContent !== text) live.textContent = text;
+}
+
+// railPulse(): the pending-decision-lock feedback (ruling 3) — a tap that
+// window.move refuses because a rail decision/obstacle is up re-plays the
+// rise/pulse keyframe on the SAME card. No re-render, no re-arm — just the
+// CSS animation class toggled off/on (both mwrise/mwpulse are zeroed by the
+// blanket prefers-reduced-motion rule, so this never becomes the guard
+// itself — Date.now() guards own that).
+function railPulse() {
+  const railEl = document.getElementById("mw-rail");
+  if (!railEl) return;
+  railEl.classList.remove("mw-rail-pulse");
+  void railEl.offsetWidth;
+  railEl.classList.add("mw-rail-pulse");
+}
+
+window.renderRail = renderRail;
+window.mzRailPulse = railPulse;
+
 /* ---------------- save / load ---------------- */
 /* @gsd:dual-write-convergence-extract:save:start */
 // 02-03: save()/load() route through window.mzStorage instead of raw
@@ -6333,16 +6446,23 @@ window.__mzClassicBoot = async function classicBoot() {
   // the next unrelated `*/`. Placing this import before that comment keeps
   // it outside that swallowed span for any such source-assertion test.
   import { toastsForAction } from "./src/browser/toasts.js";
-  // Phase 25.1 (DFB-01/02): CARD_EVENTS gates the generic html-to-beats
-  // fallback in engineMove/mzMakeCamp; NARRATIVE_ACTIONS gates ctx.narrate in
-  // dispatchWithToasts; toastLifetime is bridged to the classic script below.
-  import { CARD_EVENTS, NARRATIVE_ACTIONS, toastLifetime } from "./src/browser/toasts.js";
-  // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as toasts even in
-  // combat; MAX_TOASTS caps only the out-of-combat toast queue (the round
-  // card is uncapped); narrativeToastText is the card's defensive text prep.
-  import { PRIORITY, MAX_TOASTS, narrativeToastText } from "./src/browser/toasts.js";
+  // Phase 35 (MAP-03/04): the generic html-to-beats gate and the retired
+  // toast queue's lifetime formula are gone with the Phase 25.1 toast host /
+  // Move-on card — NARRATIVE_ACTIONS still gates ctx.narrate in
+  // dispatchWithToasts.
+  import { NARRATIVE_ACTIONS } from "./src/browser/toasts.js";
+  // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as dull rail/log
+  // entries even in combat; narrativeToastText is the card's defensive text
+  // prep. Phase 35 retires the old toast queue's one cap consumer — the
+  // rail is uncapped.
+  import { PRIORITY, narrativeToastText } from "./src/browser/toasts.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
   import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement } from "./src/browser/fightLog.js";
+  // Phase 35 (MAP-03/04) — the RAIL view-model: the out-of-combat twin of
+  // fightLog.js, folding the same toastsForAction output into one bottom
+  // card per dispatch (rail.js's own doc comment: "one dispatch, two
+  // destinations — rail or fight log").
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY } from "./src/browser/rail.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -6420,12 +6540,6 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzNightlyEats = nightlyEats;
   window.__mzPartyCap = PARTY_CAP;
 
-  // Phase 25.1 (DFB-02): bridge toastLifetime so the classic script's
-  // mzToast reads the lifetime formula through this read-only bridge — the
-  // formula itself lives in toasts.js and is unit-tested there, not
-  // duplicated here (same bridge pattern as window.__mzBags above).
-  window.__mzToastLifetime = toastLifetime;
-
   // Phase 14 (ECON-06): a pure, read-only price probe so the store sell section
   // can LABEL each Sell button with what the shop will pay. sellPriceFor draws no
   // rng and mutates nothing (engine/economy.js) — the same read-only-helper
@@ -6477,6 +6591,23 @@ window.__mzClassicBoot = async function classicBoot() {
   // through this ONE bridge rather than importing fightLog.js a second
   // time. No rng, no DOM access inside the module itself.
   window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
+
+  // Phase 35 (MAP-03/04) — the RAIL's own bridge, mirroring __mzFightLogVM
+  // exactly: the classic renderRail() reads rail.js's pure functions through
+  // this ONE object rather than importing the module a second time.
+  // window.__mzRail is the rail's own presentation-only state (seq/card/
+  // pending) — NEVER a field on S/state, because serializeRun spreads S
+  // wholesale and this is purely "what's currently on screen" (same rule as
+  // window.__mzFightEnd/__mzCombatMenu).
+  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY };
+  window.__mzRail = emptyRail();
+  // The one-shot rail entry point Plans 03/04 use for chip explanations,
+  // tap/inspect lines and the back-button quit warning — builds a card
+  // directly (no fold pipeline) and repaints.
+  window.mzRailLine = (title, line, tone, hold, icon) => {
+    window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon));
+    window.renderRail?.();
+  };
 
   // Phase 34 (CSCR-01/02/03/06) — the ONE bridge renderEncounter's combat
   // branch reads for header/foe-card/YOUR LOT content and the MAJOR
@@ -6850,21 +6981,21 @@ window.__mzClassicBoot = async function classicBoot() {
   // resolveJoiner) each direct-mapped toast carries the Oracle sentence via
   // narrateEvent (dice stripped); every other action keeps Phase 25's short
   // table text unchanged.
-  // Phase 34 (CSCR-04): the routing rule — while EITHER the pre-dispatch OR
+  // Phase 35 (MAP-03/04): the routing rule — while EITHER the pre-dispatch OR
   // the post-dispatch state has a combat, every folded line (narrative AND
-  // dull refusals alike, uncapped) goes to the whole-fight window.__mzFightLog
-  // instead of a toast — there is no toast for any in-combat line any more.
-  // Checking `wasCombat` too (not just post-dispatch `inCombat`, Phase 32's
-  // rule) is what lets the action that ENDS combat (a kill, a flee, a death)
-  // still have its own lines captured, even though `result.state.combat` is
-  // gone by the time this runs: those lines are parked on window.__mzFightEnd
-  // for the over-panel (Plan 05) to print, instead of vanishing into a toast
-  // the closing panel would never show. Out of combat (never touched combat
-  // either side of this dispatch) the toast queue is exactly today's output
-  // (same order, same MAX_TOASTS cap) — Phase 35 retires the toast host.
-  // window.__mzFightLog / window.__mzFightEnd / window.__mzCombatMenu are
-  // presentation-only and never stored on state (serializeRun spreads S, so
-  // an S field would be saved).
+  // dull refusals alike, uncapped) goes to the whole-fight window.__mzFightLog;
+  // out of combat, the SAME fold (toastsForAction, uncapped, {withIdx:true})
+  // feeds src/browser/rail.js's railCardFor into the ONE bottom RAIL card
+  // instead — there is no toast anywhere any more (the Phase 25 toast host is
+  // retired). Checking `wasCombat` too (not just post-dispatch `inCombat`,
+  // Phase 32's rule) is what lets the action that ENDS combat (a kill, a
+  // flee, a death) still have its own lines captured, even though
+  // `result.state.combat` is gone by the time this runs: those lines are
+  // parked on window.__mzFightEnd for the over-panel to print, instead of
+  // vanishing into a card the closing panel would never show.
+  // window.__mzFightLog / window.__mzFightEnd / window.__mzCombatMenu /
+  // window.__mzRail are presentation-only and never stored on state
+  // (serializeRun spreads S, so an S field would be saved).
   function dispatchWithToasts(action) {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
@@ -6874,13 +7005,16 @@ window.__mzClassicBoot = async function classicBoot() {
     const inCombat = !!(result.state && result.state.combat);
     window.__mzCombatMenu = null;
     let lines = [];
-    let queue = [];
     if (wasCombat || inCombat) {
       lines = fightLogLinesFor(action.type, result.events, ctx);
     } else {
-      queue = toastsForAction(action.type, result.events, ctx, { limit: Infinity });
+      const folded = toastsForAction(action.type, result.events, ctx, { limit: Infinity, withIdx: true });
+      const card = railCardFor(action.type, result.events, folded, ctx);
+      if (card) {
+        window.__mzRail = railPush(window.__mzRail, card);
+        window.renderRail?.();
+      }
     }
-    for (const t of queue.slice(0, MAX_TOASTS)) window.mzToast?.(t.text, t.tone);
     if (inCombat) {
       if (lines.length) window.__mzFightLog = appendFightLog(window.__mzFightLog, lines, roundBefore ?? result.state.combat.round);
     } else {
