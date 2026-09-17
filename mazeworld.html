@@ -233,6 +233,12 @@ ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);p
 .mw-gear-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;margin-top:4px;touch-action:manipulation}
 .mw-drop-confirm{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft)}
 .mw-drop-confirm button.small{margin:0}
+/* Phase 37 (GEAR-03) — the Gear tab's EQUIP-on-occupied-slot two-tap swap
+   confirm; a byte-for-byte structural mirror of .mw-drop-confirm above
+   (its own class so the Phase 33 mw-drop-confirm count pin stays exact),
+   the revert is a setTimeout, so there is deliberately no transition here. */
+.mw-swap-confirm{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft)}
+.mw-swap-confirm button.small{margin:0}
 
 /* 04-DR10: the Grimoire row layout — a spell row reuses ul.skills' left
    accent-bar treatment but lays out as a row (name+effect on the left, a
@@ -3224,6 +3230,23 @@ function paint() {
   if (armorD.worn || armorD.magic)
     wornRow(armorD.label, armorD.under ? `${armorD.sub} · ${armorD.under}` : armorD.sub, "armor", armorD.worn, armorD.destroyed);
 
+  // Phase 37 (GEAR-03) — one row per populated c.worn[slot], in WORN_SLOTS
+  // order, reads like the armor row above (name, cooldown when counting
+  // down, txt, a Use button for activatables, Unequip dimmed to "Bag full"
+  // exactly like weapon/armor). Does NOT touch wornRow's pinned signature —
+  // a slot item is never a weapon/armor, so it gets its own small builder.
+  // The ON YOU / BAG two-panel split is Phase 43, not here.
+  const wornSlotRow = (slot, it) => {
+    const li = document.createElement("li");
+    li.className = "mw-worn";
+    const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
+    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""} <span class="mw-worn-tag">worn</span></b><i>${it.txt ?? ""}</i>`;
+    if (it.use) li.appendChild(gearBtn("Use", () => window.mzUseItem?.({ slot })));
+    li.appendChild(gearBtn(bagFull ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull));
+    carry.appendChild(li);
+  };
+  for (const slot of (window.__mzWornSlots || [])) { const it = c.worn && c.worn[slot]; if (it) wornSlotRow(slot, it); }
+
   // Phase 14 (ECON-06/07): the carried-item rows now come from the SHARED
   // renderCarriedList component (used identically by the store sell section and
   // the combat use-list). clear:false preserves the worn weapon/armor rows
@@ -3537,6 +3560,16 @@ function winGame() {
 /* ---------------- encounters ---------------- */
 /* ---------------- carried treasure ---------------- */
 function eff(key) {
+  // Phase 37 (GEAR-03) — this classic-script duplicate now delegates to the
+  // engine's two-path eff (engine/derived.js): worn-only when S.c.worn is
+  // present, the identical legacy sum-over-c.items loop below otherwise.
+  // Without this bridge a worn Amulet of Light would stop widening the map
+  // radius (and every other of eleven classic-script callers — map radius,
+  // charges, to-hit, damage, upkeep, greed, throw, spellDmg, tongue — would
+  // silently read stale data) the moment an item left the bag for c.worn.
+  // The legacy loop below is left byte-for-byte identical as the fallback
+  // for any state without a worn model.
+  const f = window.__mzEff; if (f) return f(S.c, key);
   let t = 0;
   for (const it of (S.c.items || [])) if (it.eff && it.eff[key]) t += it.eff[key];
   return t;
@@ -3673,6 +3706,17 @@ const DROP_CONFIRM_MS = 3000;
 let dropConfirmRevert = null;
 function revertDropConfirm() { if (!dropConfirmRevert) return; const r = dropConfirmRevert; dropConfirmRevert = null; r(); }
 
+// Phase 37 (GEAR-03) — the Gear tab's EQUIP-on-occupied-slot two-tap swap
+// confirm. DOM-local presentation state, never on S (serializeRun spreads
+// S); exactly one row can be armed at a time; the revert is a setTimeout of
+// SWAP_CONFIRM_MS (never a CSS transition), and any pointerdown outside the
+// confirm reverts it (a document-level capture listener registered only
+// while armed) — mirrors DROP_CONFIRM_MS/dropConfirmRevert/
+// revertDropConfirm() above exactly.
+const SWAP_CONFIRM_MS = 3000;
+let swapConfirmRevert = null;
+function revertSwapConfirm() { if (!swapConfirmRevert) return; const r = swapConfirmRevert; swapConfirmRevert = null; r(); }
+
 /* ---------------- shared carried-item list (Phase 14, ECON-06/07) ----------------
    ONE carried-item list renderer, authored once and reused by four hosts: the
    GEAR tab (paint()), the store "Your gear" SELL section, the combat-bar
@@ -3745,6 +3789,33 @@ function renderCarriedList(container, items, opts = {}) {
     drop.classList.add("mw-gear-drop");
     return drop;
   };
+  // Phase 37 (GEAR-03) — the EQUIP-on-occupied-slot two-tap swap confirm;
+  // mirrors mkDropConfirm exactly except the swapped copy/class/state names
+  // and the Yes action (equipItem — a genuine direct swap, not dropItem).
+  const mkSwapConfirm = (i, wornName) => {
+    const arm = () => {
+      revertSwapConfirm();
+      const wrap = document.createElement("span");
+      wrap.className = "mw-swap-confirm";
+      const label = document.createElement("span");
+      label.textContent = `Swap for ${wornName}?`;
+      const yes = mkBtn("Yes", () => { revertSwapConfirm(); window.mzEquipItem?.(i); });
+      const no = mkBtn("No", () => revertSwapConfirm());
+      yes.style.marginTop = "0"; no.style.marginTop = "0";
+      wrap.appendChild(label); wrap.appendChild(yes); wrap.appendChild(no);
+      equip.replaceWith(wrap);
+      const timer = setTimeout(revertSwapConfirm, SWAP_CONFIRM_MS);
+      const onSwapTap = (e) => { if (!wrap.contains(e.target)) revertSwapConfirm(); };
+      document.addEventListener("pointerdown", onSwapTap, true);
+      swapConfirmRevert = () => {
+        clearTimeout(timer);
+        document.removeEventListener("pointerdown", onSwapTap, true);
+        if (wrap.isConnected) wrap.replaceWith(equip);
+      };
+    };
+    const equip = mkBtn("Equip", arm);
+    return equip;
+  };
   rows.forEach(({ it, i }) => {
     const li = document.createElement("li");
     const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
@@ -3766,6 +3837,10 @@ function renderCarriedList(container, items, opts = {}) {
         if (it.kind === "potion" || it.use) li.appendChild(mkBtn("Use", () => window.mzUseItem?.(i)));
       } else if (a === "equip") {
         if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => window.mzEquipItem?.(i)));
+        // Phase 37 (GEAR-03) — a bag cloak/jewel/staff in the new worn model
+        // gets Equip (empty slot) or the two-tap swap confirm (occupied
+        // slot); legacy states (no c.worn) keep today's bag-only behaviour.
+        else if (S.c.worn && window.__mzSlotFor?.(it)) { const wornNow = S.c.worn[window.__mzSlotFor(it)]; li.appendChild(wornNow ? mkSwapConfirm(i, wornNow.n) : mkBtn("Equip", () => window.mzEquipItem?.(i))); }
       } else if (a === "drop") {
         if (opts.gearRow) li.appendChild(mkDropConfirm(i));
         else li.appendChild(mkBtn("Drop", () => window.mzDropItem?.(i)));
@@ -5475,7 +5550,8 @@ const COMBAT_DISPATCH = {
   sing: () => window.mzSing?.(),
   drinkPotion: () => window.mzDrinkPotion?.(),
   readScroll: () => window.mzReadScroll?.(),
-  useItem: (d) => window.mzUseItem?.(d.i),
+  // Phase 37 (GEAR-03): forwards the worn-slot use form when present.
+  useItem: (d) => window.mzUseItem?.(d.slot !== undefined ? { slot: d.slot } : d.i),
   flee: () => window.mzFlee?.(),
   parley: () => window.mzParley?.(),
 };
@@ -6647,7 +6723,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // fightLog.js, folding the same toastsForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
-  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY } from "./src/browser/rail.js";
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, wornReconcileCard } from "./src/browser/rail.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -6684,7 +6760,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // module import, not a bare `@capacitor/*` specifier) is always safe under
   // node/the browser dev loop.
   import "./src/browser/storage.js";
-  import { boot, dispatch, startNewRun, waitForPending } from "./src/browser/engineAdapter.js";
+  import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -6717,7 +6793,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
-  import { conditionsOf, canCast } from "./engine/derived.js";
+  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -6751,6 +6827,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
   // mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // Phase 37 (GEAR-03) — bridge the PURE two-path eff(c, key), slotFor(it)
+  // and the frozen WORN_SLOTS order so the classic script's eff(key)
+  // duplicate (above) and the Gear-tab worn rows / EQUIP swap branch (below)
+  // read the SAME worn-model source of truth as the engine. Read-only, no
+  // rng, no mutation — same bridge pattern as __mzConditionsOf/__mzCanCast.
+  window.__mzEff = eff;
+  window.__mzSlotFor = slotFor;
+  window.__mzWornSlots = WORN_SLOTS;
 
   // Phase 31 (CMB-02): bridge the PURE, spellLevelFor-aware canCast(state, sp)
   // predicate so the classic in-combat SPELLS menu filter (canCast(sp) above)
@@ -7708,10 +7793,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // exactly like Strike/Potion/Spell; OUT of combat (the GEAR tab) it takes the
   // plain inventoryAction repaint. engineCombatAction is a hoisted function
   // declaration in this same scope, so it is callable from here.
-  window.mzUseItem = (i) => {
+  // Phase 37 (GEAR-03): the { slot } form addresses a WORN activatable — the
+  // Gear-tab worn rows and the ITEMS submenu's worn rows both call
+  // window.mzUseItem({ slot }); every existing bag-index caller (a plain
+  // number) is unaffected.
+  window.mzUseItem = (ref) => {
+    const params = ref && typeof ref === "object" ? { slot: ref.slot } : { i: ref };
     const st = window.__mzState.get();
-    if (st && st.combat) engineCombatAction("useItem", { i });
-    else inventoryAction({ type: "useItem", i });
+    if (st && st.combat) engineCombatAction("useItem", params);
+    else inventoryAction({ type: "useItem", ...params });
   };
   window.mzSellItem = (i) => inventoryAction({ type: "sellItem", i });
 
@@ -7883,6 +7973,18 @@ window.__mzClassicBoot = async function classicBoot() {
     showTitleScreen();
   };
 
+  // Phase 37 (GEAR-04): surfaces the ONE-SHOT load-time worn-reconciliation
+  // report only when something was bagged; takeBootWornReport() nulls
+  // itself on read, so a later ENTER (or a fresh roll) is a no-op. Rail
+  // card + Oracle line, never a toast — the v1.4 rail-is-the-one-feedback-
+  // surface ruling.
+  function surfaceWornReconcile() {
+    const card = wornReconcileCard(takeBootWornReport());
+    if (!card) return;
+    window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon);
+    window.logLine?.(card.line);
+  }
+
   (function initTitleScreen() {
     const enterBtn = document.getElementById("mw-title-enter");
     if (!document.getElementById("mw-title-screen") || !enterBtn) return;
@@ -7893,7 +7995,7 @@ window.__mzClassicBoot = async function classicBoot() {
     resumeIntent = hadSaveAtLaunch;
     enterBtn.onclick = () => {
       hideTitleScreen();
-      if (resumeIntent) return; // boot() already rehydrated the live delve underneath
+      if (resumeIntent) { surfaceWornReconcile(); return; } // boot() already rehydrated the live delve underneath
       window.mzStartRoll();
     };
     // DR18 (DR15-C): "View the Dead" — dismiss the title gate and open the
