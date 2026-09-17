@@ -161,8 +161,12 @@ test("SOURCE: dispatchWithToasts routes on exactly one if (wasCombat || inCombat
   const region = dispatchRegion();
   const ifHits = region.match(/if \(wasCombat \|\| inCombat\)/g) || [];
   assert.equal(ifHits.length, 1, "exactly one routing if");
-  const toastHits = region.match(/window\.mzToast\?\.\(t\.text, t\.tone\)/g) || [];
-  assert.equal(toastHits.length, 1, "exactly one window.mzToast call site inside dispatchWithToasts");
+  // Phase 35 (MAP-03): the toast host is retired — the out-of-combat branch
+  // folds through rail.js now, never a toast call. Literal built by
+  // concatenation so this pin can't itself be satisfied by a stray comment.
+  const toastCall = ["window.mz", "Toast?.("].join("");
+  const toastHits = region.match(new RegExp(toastCall.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
+  assert.equal(toastHits.length, 0, `expected zero ${toastCall} calls inside dispatchWithToasts, found ${toastHits.length}`);
   const foldHits = region.match(/fightLogLinesFor\(action\.type, result\.events, ctx\)/g) || [];
   assert.equal(foldHits.length, 1, "exactly one fightLogLinesFor call");
   const appendHits = region.match(/window\.__mzFightLog = appendFightLog\(/g) || [];

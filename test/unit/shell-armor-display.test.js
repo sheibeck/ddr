@@ -117,7 +117,12 @@ test("Phase 28 (ARMOR-02): the store repair row reads armorDisplay(S.c).wornSub 
 
 function pendingFindRegion() {
   const start = CODE.indexOf("if (S.pendingFind && !S.combat && !S.store)");
-  const end = CODE.indexOf("if (S.store) {");
+  // Phase 35 (MAP-04): the find prompt is a rail decision card now, living
+  // (physically, in file order) AFTER renderEncounter's own store branch —
+  // the old "if (S.store) {" end marker matches an EARLIER occurrence and
+  // breaks the region. The next rail branch (CLIMB IT) is the correct,
+  // content-based boundary.
+  const end = CODE.indexOf('if (rail.pending && rail.pending.kind === "climb") {');
   assert.ok(start !== -1 && end !== -1 && end > start, "pendingFind region bounds found");
   return CODE.slice(start, end);
 }
@@ -130,10 +135,16 @@ function renderDropShelfRegion() {
   return CODE.slice(start, end);
 }
 
-test("Phase 28 (ARMOR-03): the pending-find card reads bagArmorText and calls the shared renderDropShelf", () => {
+test("Phase 28 (ARMOR-03)/Phase 35: the pending-find card reads bagArmorText, and renderRail calls the shared renderDropShelf for a full bag", () => {
   const region = pendingFindRegion();
   assert.match(region, /bagArmorText\(it\)/);
-  assert.match(region, /renderDropShelf\(/);
+  // Phase 35 (MAP-04): the shelf render call itself now lives in renderRail's
+  // shared post-branch paint step (shelfItems set inside the find branch),
+  // not inline inside the find branch's own {...} scope.
+  const start = CODE.indexOf("function renderRail()");
+  const end = CODE.indexOf("function syncRailLive(text)");
+  assert.ok(start !== -1 && end !== -1 && end > start, "renderRail region bounds found");
+  assert.match(CODE.slice(start, end), /renderDropShelf\(document\.getElementById\("find-drop-shelf"\), shelfItems\)/);
 });
 
 test("Phase 29 (LOOT-04): renderDropShelf (the shared drop shelf) reads bagArmorText", () => {

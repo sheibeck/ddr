@@ -80,9 +80,6 @@ function copyRegion() {
 function keydownRegion() {
   return sliceBetween(CODE, 'addEventListener("keydown"', 'addEventListener("resize"');
 }
-function dispatchWithToastsRegion() {
-  return sliceBetween(CODE, "function dispatchWithToasts(action)", "window.move = function engineMove");
-}
 function styleBlock() {
   const start = HTML.indexOf("<style>");
   const end = HTML.lastIndexOf("</style>") + "</style>".length;
@@ -184,12 +181,12 @@ test("CSCR-05: pickCombatRow catches the two potion refusals shell-side before d
   assert.match(region, /fightLogRefuse\(COMBAT_COPY\.noPotions\)/);
 });
 
-test("Phase 34: exactly one window.mzToast call survives anywhere in mazeworld.html, and it sits inside dispatchWithToasts's out-of-combat queue", () => {
-  const toastCallHits = CODE.match(/window\.mzToast\?\.\(/g) || [];
-  assert.equal(toastCallHits.length, 1, `expected exactly one window.mzToast?.( call, found ${toastCallHits.length}`);
-  const region = dispatchWithToastsRegion();
-  const queueCallHits = region.match(/window\.mzToast\?\.\(/g) || [];
-  assert.equal(queueCallHits.length, 1, "the one surviving window.mzToast?.( call must sit inside dispatchWithToasts");
+test("Phase 35 (MAP-03): zero toast calls anywhere in CODE — the toast host is fully retired", () => {
+  // literal built by concatenation so this pin can't itself satisfy a stray
+  // comment mentioning the retired call shape.
+  const toastCall = ["window.mz", "Toast?.("].join("");
+  const toastCallHits = CODE.match(new RegExp(toastCall.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
+  assert.equal(toastCallHits.length, 0, `expected zero ${toastCall} calls, found ${toastCallHits.length}`);
 });
 
 // ─── e. Submenu state off S ──────────────────────────────────────────────────
@@ -234,13 +231,15 @@ test("Phase 34: the old 7-button bar, the combat use-list and the spell menu are
 
 // ─── h. Guards ────────────────────────────────────────────────────────────
 
-test("Phase 34: guard: true occurs exactly once — the loot card (the combat use-list folded into the ITEMS submenu rows)", () => {
+test("Phase 34/35: guard: true occurs exactly once — the loot card (the combat use-list folded into the ITEMS submenu rows)", () => {
   const hits = CODE.match(/guard: true/g) || [];
   assert.equal(hits.length, 1);
   const lootIdx = CODE.indexOf("if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
-  const joinerIdx = CODE.indexOf("if (S.pendingJoiner && !S.combat && !S.store) {");
+  // Phase 35 (MAP-04): the joiner/find branches moved out of renderEncounter
+  // — the loot branch's next renderEncounter sibling is the store guard now.
+  const storeIdx = CODE.indexOf("if (S.store) {");
   const lootGuardIdx = CODE.indexOf("guard: true", lootIdx);
-  assert.ok(lootIdx !== -1 && joinerIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < joinerIdx, "the sole guard:true must sit inside the loot branch");
+  assert.ok(lootIdx !== -1 && storeIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < storeIdx, "the sole guard:true must sit inside the loot branch");
 });
 
 test("Phase 34: the helpers + renderEncounter region carries no tap-anywhere-to-dismiss listener", () => {

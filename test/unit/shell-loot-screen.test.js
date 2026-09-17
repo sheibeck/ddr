@@ -144,14 +144,25 @@ test("Phase 29 (LOOT-04): renderDropShelf is the one drop-shelf renderer (find c
 
 function pendingFindRegion() {
   const start = CODE.indexOf("if (S.pendingFind && !S.combat && !S.store)");
-  const end = CODE.indexOf("if (S.store) {");
+  // Phase 35 (MAP-04): the find prompt is a rail decision card now — its
+  // region ends at the next rail branch (the CLIMB IT card), not at the
+  // (now-unrelated) store guard.
+  const end = CODE.indexOf('if (rail.pending && rail.pending.kind === "climb") {');
   assert.ok(start !== -1 && end !== -1 && end > start, "pendingFind region bounds found");
   return CODE.slice(start, end);
 }
 
-test("Phase 29 (LOOT-04): the pendingFind branch calls the shared renderDropShelf", () => {
-  const region = pendingFindRegion();
-  assert.match(region, /renderDropShelf\(/);
+test("Phase 29 (LOOT-04)/Phase 35: the find card (rail decision, a full bag) calls the shared renderDropShelf", () => {
+  // Phase 35 (MAP-04): the shelf render call itself now lives in renderRail's
+  // shared post-branch paint step (shelfItems set inside the find branch,
+  // rendered once after every branch's lines are painted) rather than
+  // inline inside the pendingFind branch's own {...} scope.
+  const start = CODE.indexOf("function renderRail()");
+  const end = CODE.indexOf("function syncRailLive(text)");
+  assert.ok(start !== -1 && end !== -1 && end > start, "renderRail region bounds found");
+  const region = CODE.slice(start, end);
+  assert.match(region, /shelfItems = c\.items \|\| \[\];/);
+  assert.match(region, /renderDropShelf\(document\.getElementById\("find-drop-shelf"\), shelfItems\)/);
 });
 
 // ─── 6. the loot screen card ──────────────────────────────────────────────
@@ -159,10 +170,14 @@ test("Phase 29 (LOOT-04): the pendingFind branch calls the shared renderDropShel
 const LOOT_GUARD = 'if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {';
 const JOINER_GUARD = 'if (S.pendingJoiner && !S.combat && !S.store)';
 const WON_GUARD = 'if (S.won) {';
+const STORE_GUARD = 'if (S.store) {';
 
 function lootRegion() {
   const start = CODE.indexOf(LOOT_GUARD);
-  const end = CODE.indexOf(JOINER_GUARD);
+  // Phase 35 (MAP-04): the joiner/find branches moved out of renderEncounter
+  // entirely — the loot branch's next renderEncounter sibling is the store
+  // guard now.
+  const end = CODE.indexOf(STORE_GUARD);
   assert.ok(start !== -1 && end !== -1 && end > start, "loot branch bounds found");
   return CODE.slice(start, end);
 }
@@ -192,13 +207,13 @@ test("Phase 29 (LOOT-02/03/04/06): the loot screen card renders the folded repor
   assert.match(region, /panel\.dataset\.mode = "dark"/);
 });
 
-test("Phase 29 (LOOT-02): the loot branch sits after won/beats and before the joiner branch", () => {
+test("Phase 29 (LOOT-02)/Phase 35: the loot branch sits after won/beats and before the store branch (the joiner/find branches moved into renderRail)", () => {
   const lootIdx = CODE.indexOf(LOOT_GUARD);
-  const joinerIdx = CODE.indexOf(JOINER_GUARD);
+  const storeIdx = CODE.indexOf(STORE_GUARD);
   const wonIdx = CODE.indexOf(WON_GUARD);
-  assert.ok(lootIdx !== -1 && joinerIdx !== -1 && wonIdx !== -1);
+  assert.ok(lootIdx !== -1 && storeIdx !== -1 && wonIdx !== -1);
   assert.ok(lootIdx > wonIdx, "loot branch comes after the won branch");
-  assert.ok(lootIdx < joinerIdx, "loot branch comes before the joiner branch");
+  assert.ok(lootIdx < storeIdx, "loot branch comes before the store branch");
 });
 
 function pendingJoinerRegion() {
@@ -229,10 +244,12 @@ test("Phase 29 (LOOT-04): paint()'s carried-treasure readout and full-bag gate r
   assert.match(region, /usage\.full/);
 });
 
-test("Phase 29 (LOOT-04): the find card's capacity readout and full-bag gate read window.__mzBagUsage", () => {
+test("Phase 29 (LOOT-04)/Phase 35: the find card's capacity readout and full-bag gate read window.__mzBagUsage (the full-bag copy now lives in RAIL_COPY.find.full)", () => {
   const region = pendingFindRegion();
   assert.match(region, /window\.__mzBagUsage\(c\)/);
-  assert.match(region, /\$\{usage\.have\}\/\$\{usage\.slots\}/);
+  assert.match(region, /usage\.have/);
+  assert.match(region, /usage\.slots/);
+  assert.match(region, /copy\.find\.full\.replace\("\{have\}", usage\.have\)\.replace\("\{slots\}", usage\.slots\)/);
 });
 
 function storeRegion() {

@@ -59,15 +59,17 @@ function pendingJoinerRegion() {
   return CODE.slice(start, end);
 }
 
-test("DFB-04: the Joiner offer names who walks, via textContent", () => {
+test("DFB-04/Phase 35 (MAP-04): the Joiner rail card names who walks, via a plain headLine const (never innerHTML)", () => {
   const region = pendingJoinerRegion();
   assert.match(region, /const cap = window\.__mzPartyCap \?\? 1;/);
   assert.match(region, /S\.party\[0\]/, "index 0 mirrors engine/state.js#swapPartyMember");
-  assert.match(region, /head\.textContent = walker/, "the head text is set via textContent, not innerHTML");
+  // Phase 35 (MAP-04): the joiner decision moved from a DOM head element
+  // (renderEncounter's own innerHTML-built card) into renderRail's plain
+  // headLine const, fed into the card's lines array as {text, roll} — no
+  // DOM element, no textContent assignment, no innerHTML at all.
+  assert.match(region, /const headLine = walker/);
   assert.match(region, /Take \$\{j\.name \|\| "them"\} along\? \$\{walker\.name \|\| "Your companion"\} walks\.`/);
-  assert.match(region, /body\.appendChild\(head\)/);
-  // never routed through innerHTML +=/= for the head's own template string
-  assert.ok(!/innerHTML \+?= `<p class="enc-head"/.test(region), "the head is never built via a template-literal innerHTML assignment");
+  assert.doesNotMatch(region, /innerHTML/, "the joiner card must never use innerHTML anywhere in this region");
 });
 
 // ─── 3/4. camp button short state, never disabled ────────────────────────

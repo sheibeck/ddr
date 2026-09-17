@@ -73,12 +73,14 @@ test("DFB-03: logLine still prepends (the newest line is the top)", () => {
   assert.match(CODE, /logEl\.insertBefore\(p, logEl\.firstChild\);/);
 });
 
-test("the fixed toast host and the tab bar are untouched by the Oracle layout", () => {
-  const toastHostRule = HTML.match(/\.mw-toast-host\{([^}]*)\}/);
-  assert.ok(toastHostRule, ".mw-toast-host{...} rule must exist");
-  assert.match(toastHostRule[1], /position:fixed/);
+test("Phase 35 (MAP-03/04): the toast host rule is gone and the tab bar is a static flex child (below the RAIL) — untouched by the Oracle layout", () => {
+  // literal built by concatenation so this pin can't itself be satisfied by
+  // a stray comment mentioning the retired rule.
+  const hostSelector = [".mw-toast", "-host{"].join("");
+  assert.ok(!HTML.includes(hostSelector), `${hostSelector} rule must no longer exist`);
 
   const tabbarRule = HTML.match(/\.mw-tabbar\{([^}]*)\}/);
   assert.ok(tabbarRule, ".mw-tabbar{...} rule must exist");
-  assert.match(tabbarRule[1], /position:fixed;left:0;right:0;bottom:0/);
+  assert.match(tabbarRule[1], /flex:none/);
+  assert.doesNotMatch(tabbarRule[1], /position:fixed/);
 });

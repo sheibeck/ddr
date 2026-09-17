@@ -151,9 +151,13 @@ const GUARDED_IDS = [
   // chip (cb-back). Plan 05 appends cb-over-btn — the over-panel's own
   // ending button (won-without-drops/soothed/fled), wired generically
   // through renderCombatOver's buttons array.
+  // Phase 35 (MAP-04): the Phase 25.1 Move-on card's header dismiss control
+  // (the retired "a-next" id) is gone; the joiner/find/climb decisions are
+  // rail cards now, wired through the same generic railButtons() builder as
+  // a-loot-take-all/a-loot-leave-all/btn-death-oracle/cb-over-btn.
   "mw-major-primary", "cb-strike", "cb-spells", "cb-items", "cb-social", "cb-back",
   "a-join-yes", "a-join-no", "a-loot-take-all", "a-loot-leave-all",
-  "a-find-take", "a-find-leave", "btn-death-oracle", "a-next", "cb-over-btn",
+  "a-find-take", "a-find-leave", "btn-death-oracle", "cb-over-btn", "mw-rail-climb",
 ];
 
 // A guarded id is wired one of three ways in renderEncounter:
@@ -190,10 +194,12 @@ test("renderEncounter region: every §6.3 decision button id is wired through gu
   const region = renderEncounterRegion();
   for (const id of GUARDED_IDS) {
     const count = countGuardedWiring(region, id);
-    const minCount = id === "a-find-take" || id === "a-find-leave" ? 2 : 1;
+    // Phase 35 (MAP-04): a-find-take/a-find-leave are wired ONCE now (the
+    // generic railButtons() builder), not twice (the retired two-branch
+    // full-bag/room-left duplication renderEncounter used to carry).
     assert.ok(
-      count >= minCount,
-      `expected "${id}" wired through guardTap at least ${minCount}x, found ${count}`,
+      count >= 1,
+      `expected "${id}" wired through guardTap at least 1x, found ${count}`,
     );
   }
 });
@@ -224,9 +230,11 @@ test("guard: true appears exactly once — the loot card (Phase 34 folded the co
   const hits = CODE.match(/guard: true/g) || [];
   assert.equal(hits.length, 1);
   const lootIdx = CODE.indexOf("if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
-  const joinerIdx = CODE.indexOf("if (S.pendingJoiner && !S.combat && !S.store) {");
+  // Phase 35 (MAP-04): the joiner/find branches moved out of renderEncounter
+  // — the loot branch's next renderEncounter sibling is the store guard now.
+  const storeIdx = CODE.indexOf("if (S.store) {");
   const lootGuardIdx = CODE.indexOf("guard: true", lootIdx);
-  assert.ok(lootIdx !== -1 && joinerIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < joinerIdx, "loot card's guard:true must sit inside the loot branch");
+  assert.ok(lootIdx !== -1 && storeIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < storeIdx, "loot card's guard:true must sit inside the loot branch");
 });
 
 test("Phase 34: submenu rows are wired through guardTap inside cbRow", () => {
@@ -263,6 +271,16 @@ test("engineMove region: the settle clause is the very next statement after hasA
   assert.ok(settleIdx !== -1, "engineMove must carry the settle clause");
   const between = region.slice(gateIdx + "if (hasActiveEncounter()) return;".length, settleIdx).trim();
   assert.equal(between, "", "no statement may sit between the two guard clauses");
+});
+
+test("Phase 35 (MAP-04, decision 2): engineMove's railLocked() clause is the statement right after the settle clause", () => {
+  const region = engineMoveRegion();
+  const settleIdx = region.indexOf("if (!encounterSettled()) return;");
+  assert.ok(settleIdx !== -1, "engineMove must carry the settle clause");
+  const lockIdx = region.indexOf("if (railLocked()) { window.mzRailPulse?.(); return; }");
+  assert.ok(lockIdx !== -1, "engineMove must carry the railLocked() clause");
+  const between = region.slice(settleIdx + "if (!encounterSettled()) return;".length, lockIdx).trim();
+  assert.equal(between, "", "no statement may sit between the settle clause and the railLocked() clause");
 });
 
 test("no other isSettled/encounterSettled call exists outside engineMove's one guard", () => {

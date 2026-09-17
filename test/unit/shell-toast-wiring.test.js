@@ -4,19 +4,28 @@
 // test could import (it is not an ESM module the test runner can load), so
 // — mirroring test/unit/foe-effect-chip.test.js / parley-button-mirror.test.js's
 // own source-assertion pattern — this file reads the real shipped source
-// with fs.readFileSync and asserts against it directly: the seven toast
-// tones all resolve to explicit colors, the host cap is 4, every dispatch
-// call site is routed through ONE dispatchWithToasts(action) seam, and the
-// old per-action switch (plus its spell-name helper) is gone. A final
-// behavioural check proves the deleted DR18 hand-written equip-rejection
-// toast is replaced, not lost, by importing the real toastsForAction and
-// running a real equipRejected event through it.
+// with fs.readFileSync and asserts against it directly: the single
+// dispatchWithToasts(action) routing seam every dispatch call site funnels
+// through, and the old per-action switch (plus its spell-name helper) stays
+// gone. A behavioural check proves the deleted DR18 hand-written
+// equip-rejection toast is replaced, not lost, by importing the real
+// toastsForAction and running a real equipRejected event through it.
 //
-// Phase 32 (CMBUI-02): re-pinned for the Round Card routing rewrite —
-// dispatchWithToasts now branches in-combat non-refusal toasts to
-// window.__mzRoundCard (uncapped, via toastsForAction's new `limit` option)
-// and keeps everything else on the MAX_TOASTS-capped toast host, as a
-// single if/else (structural exclusivity).
+// Phase 32 (CMBUI-02): dispatchWithToasts routed in-combat non-refusal
+// lines to a Round Card, later (Phase 34, CSCR-04) to the whole-fight
+// window.__mzFightLog.
+//
+// Phase 35 (MAP-03/04): the toast host itself — `window.mzToast`, the
+// `.mw-toast-host`/`.mw-toast` CSS, `window.__mzToastLifetime`, `MAX_TOASTS`'
+// one consumer, `CARD_EVENTS`/`FEATURE_EVENT_TITLE`/`toastLifetime` — is
+// retired outright. Out-of-combat lines now fold through src/browser/
+// rail.js into the persistent bottom RAIL instead of a toast queue; the
+// tests that pinned the toast host's CSS/lifetime/cap contract are gone
+// with it (test/unit/shell-map-rail.test.js owns the rail's own pins). The
+// tests kept here are the ones that still describe LIVE surface: the single
+// dispatch(...)->dispatchWithToasts(...) seam, the retired legacy switch,
+// the DR18 toast's real toastsForAction replacement, and toasts.js's own
+// pure `limit` option.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -24,7 +33,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { TONES, toastsForAction, CARD_EVENTS, NARRATIVE_ACTIONS } from "../../src/browser/toasts.js";
+import { toastsForAction } from "../../src/browser/toasts.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -66,92 +75,6 @@ const CODE = stripComments(HTML);
 // the literal identifier — so both names are assembled from fragments.
 const OLD_SWITCH_NAME = ["mz", "Combat", "Feedback"].join("");
 const OLD_SPELL_NAME_HELPER = ["mz", "Spell", "Name"].join("");
-
-// ─── CSS tone colors ─────────────────────────────────────────────────────
-
-/** Pulls every `--token:#hex;` declaration out of the `:root{...}` block so
- * a `var(--token)` reference in a tone rule can be resolved to its literal
- * color for the distinctness comparison below. */
-function extractRootTokens(html) {
-  const rootMatch = html.match(/:root\{([\s\S]*?)\n\}/);
-  assert.ok(rootMatch, ":root{...} block must exist in mazeworld.html");
-  const tokens = {};
-  const re = /--([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,8}|var\(--[a-z0-9-]+\))/g;
-  let m;
-  while ((m = re.exec(rootMatch[1]))) tokens[m[1]] = m[2];
-  return tokens;
-}
-
-/** Resolves a `color:` value (a literal hex or a `var(--x)` reference,
- * following one level of var-to-var indirection) to a literal hex string. */
-function resolveColor(value, tokens) {
-  const varMatch = value.match(/^var\(--([a-z0-9-]+)\)$/);
-  if (!varMatch) return value;
-  const resolved = tokens[varMatch[1]];
-  assert.ok(resolved, `--${varMatch[1]} must be defined in :root`);
-  const nested = resolved.match(/^var\(--([a-z0-9-]+)\)$/);
-  return nested ? tokens[nested[1]] : resolved;
-}
-
-/** Extracts the `.mw-toast[data-tone="<tone>"]{...}` rule's `color:`
- * declaration (raw, unresolved) for a given tone name. */
-function toneColor(html, tone) {
-  const re = new RegExp(`\\.mw-toast\\[data-tone="${tone}"\\]\\{([^}]*)\\}`);
-  const m = html.match(re);
-  assert.ok(m, `.mw-toast[data-tone="${tone}"]{...} rule must exist`);
-  const colorMatch = m[1].match(/(?:^|;)color:([^;]+)/);
-  assert.ok(colorMatch, `.mw-toast[data-tone="${tone}"] must declare color:`);
-  return colorMatch[1].trim();
-}
-
-test("every TONES entry has a .mw-toast[data-tone=...] rule with a color: declaration", () => {
-  for (const tone of TONES) {
-    const raw = toneColor(HTML, tone);
-    assert.ok(raw.length > 0, `${tone} color value must be non-empty`);
-  }
-});
-
-test("FEED-03: hit/miss/hurt/dodge resolve to four distinct colors (YOU green family vs THEM red family)", () => {
-  const tokens = extractRootTokens(HTML);
-  const resolved = ["hit", "miss", "hurt", "dodge"].map((t) => resolveColor(toneColor(HTML, t), tokens));
-  const distinct = new Set(resolved);
-  assert.equal(distinct.size, 4, `hit/miss/hurt/dodge must be four distinct colors, got ${JSON.stringify(resolved)}`);
-});
-
-test("FEED-03: magic/block/beat are distinct from each other and from the four combat tones", () => {
-  const tokens = extractRootTokens(HTML);
-  const combat = ["hit", "miss", "hurt", "dodge"].map((t) => resolveColor(toneColor(HTML, t), tokens));
-  const utility = ["magic", "block", "beat"].map((t) => resolveColor(toneColor(HTML, t), tokens));
-  const distinctUtility = new Set(utility);
-  assert.equal(distinctUtility.size, 3, `magic/block/beat must be distinct from each other, got ${JSON.stringify(utility)}`);
-  for (const u of utility) {
-    assert.ok(!combat.includes(u), `utility color ${u} must not collide with a combat-tone color`);
-  }
-});
-
-test("miss is no longer the ink-soft grey", () => {
-  const raw = toneColor(HTML, "miss");
-  assert.ok(!/--ink-soft/.test(raw), `miss color must not reference --ink-soft, got ${raw}`);
-});
-
-// ─── host cap + no-CLS + reduced-motion contract ────────────────────────
-
-test("the toast host trims to a cap of 4, not 3", () => {
-  assert.ok(/host\.children\.length > 4/.test(CODE), "host cap must be raised to 4");
-  assert.ok(!/host\.children\.length > 3/.test(CODE), "the old cap of 3 must be gone");
-});
-
-test("the toast host keeps its fixed, non-layout contract", () => {
-  assert.ok(/\.mw-toast-host\{[\s\S]*?position:fixed/.test(HTML), ".mw-toast-host must stay position:fixed");
-  assert.ok(/position:fixed;left:0;right:0;/.test(HTML), "the host's fixed-contract line must survive");
-});
-
-test("the reduced-motion rule survives byte-identical", () => {
-  assert.ok(
-    /prefers-reduced-motion:reduce\)\{\.mw-toast,\.mw-toast\.out\{animation:none\}/.test(HTML),
-    "the prefers-reduced-motion rule must be unchanged"
-  );
-});
 
 // ─── single dispatch seam ────────────────────────────────────────────────
 
@@ -202,103 +125,30 @@ test("an equipRejected(reason: woodsman) event yields one block toast via toasts
   assert.match(toasts[0].text, /Woodsman/i);
 });
 
-// ─── Phase 25.1 (DFB-01/02) additions ─────────────────────────────────────
+// ─── Phase 35 (MAP-03/04): toast-host retirement re-pin ──────────────────
 
-test("DFB-01: the module imports CARD_EVENTS/NARRATIVE_ACTIONS/toastLifetime and narrateEvent on their own lines, and the original toastsForAction import is untouched", () => {
-  assert.match(CODE, /import \{ toastsForAction \} from "\.\/src\/browser\/toasts\.js";/);
-  assert.match(CODE, /import \{ CARD_EVENTS, NARRATIVE_ACTIONS, toastLifetime \} from "\.\/src\/browser\/toasts\.js";/);
-  assert.match(CODE, /import \{ narrateEvent \} from "\.\/src\/browser\/eventNarration\.js";/);
+test("Phase 35: the module imports NARRATIVE_ACTIONS on its own line; toastLifetime/CARD_EVENTS are imported nowhere", () => {
+  assert.match(CODE, /import \{ NARRATIVE_ACTIONS \} from "\.\/src\/browser\/toasts\.js";/);
+  assert.doesNotMatch(CODE, /import \{[^}]*toastLifetime[^}]*\} from "\.\/src\/browser\/toasts\.js";/);
+  assert.doesNotMatch(CODE, /import \{[^}]*CARD_EVENTS[^}]*\} from "\.\/src\/browser\/toasts\.js";/);
 });
 
-test("DFB-01: dispatchWithToasts passes ctx.narrate only for NARRATIVE_ACTIONS", () => {
+test("Phase 35: dispatchWithToasts passes ctx.narrate only for NARRATIVE_ACTIONS", () => {
   assert.match(CODE, /NARRATIVE_ACTIONS\.has\(action\.type\) \? \{ narrate: narrateEvent \} : \{\}/);
 });
 
-test("DFB-01: the html-to-beats fallback in engineMove AND mzMakeCamp is gated on CARD_EVENTS", () => {
+test("Phase 35: the CARD_EVENTS beat-synthesis gate is gone from engineMove and mzMakeCamp (count 0)", () => {
   const gates = CODE.match(/events\.some\(\(e\) => CARD_EVENTS\.has\(e\.type\)\)/g) || [];
-  assert.equal(gates.length, 2, `expected exactly 2 CARD_EVENTS gates, found ${gates.length}`);
-  assert.match(
-    CODE,
-    /&& !state\.pendingJoiner && !state\.pendingFind && html\.length\s*&& events\.some\(\(e\) => CARD_EVENTS\.has\(e\.type\)\)/,
-  );
+  assert.equal(gates.length, 0, `expected zero CARD_EVENTS gates, found ${gates.length}`);
 });
 
-test("DFB-01 preDeath survives; the ambush gate collapsed in Phase 31", () => {
+test("Phase 35: preDeath survives — the ambush gate collapsed in Phase 31 stays collapsed", () => {
   const preDeathHits = CODE.match(/preDeath: true/g) || [];
   assert.equal(preDeathHits.length, 1, "preDeath: true must appear exactly once");
-  // Phase 31 (CMB-01): a pre-emptive kill now happens inside the `fight`
-  // dispatch (after Fight! was pressed), so the old AMBUSH pre-death
-  // awaitingFight bridging is gone — assert its zero-occurrence absence.
   assert.doesNotMatch(CODE, /awaitingFight/);
 });
 
-test("DFB-02: mzToast reads the lifetime through window.__mzToastLifetime, measures visible before appending, and dismisses on tap with a cleared timer", () => {
-  const start = CODE.indexOf("window.mzToast = function");
-  const end = CODE.indexOf("window.mzSpellCharges");
-  assert.ok(start !== -1 && end !== -1 && end > start, "mzToast..mzSpellCharges region must be found");
-  const region = CODE.slice(start, end);
-  assert.match(region, /const visible = host\.children\.length;/);
-  assert.match(region, /window\.__mzToastLifetime\(text\.length, visible\)/);
-  assert.match(region, /clearTimeout\(timer\)/);
-  assert.match(region, /t\.addEventListener\("click", dismiss\)/);
-  const deadRate = ["text.length * ", "45"].join("");
-  assert.ok(!region.includes(deadRate), "the old 45-per-character rate must be gone");
-  assert.match(CODE, /window\.__mzToastLifetime = toastLifetime;/);
-});
-
-test("DFB-02: toasts are tappable while the host stays non-blocking", () => {
-  const toastRule = HTML.match(/\.mw-toast\{([^}]*)\}/);
-  assert.ok(toastRule, ".mw-toast{...} rule must exist");
-  assert.match(toastRule[1], /pointer-events:auto/);
-  assert.match(toastRule[1], /cursor:pointer/);
-  const hostRule = HTML.match(/\.mw-toast-host\{([^}]*)\}/);
-  assert.ok(hostRule, ".mw-toast-host{...} rule must exist");
-  assert.match(hostRule[1], /pointer-events:none/);
-});
-
-test("DFB-01: FEATURE_EVENT_TITLE carries a title for both CARD_EVENTS", () => {
-  for (const t of CARD_EVENTS) {
-    assert.match(CODE, new RegExp(t + ": \\["), `FEATURE_EVENT_TITLE must have an entry for ${t}`);
-  }
-});
-
-// ─── Phase 34 (CSCR-04): in-combat routing re-pin ────────────────────────
-//
-// dispatchWithToasts is retargeted again: while EITHER the pre- or
-// post-dispatch state has a combat, every folded line (narrative AND dull
-// refusals alike) goes to the whole-fight window.__mzFightLog instead of a
-// Round Card line — there is no toast for any in-combat line any more.
-// These pins prove the routing is a single if/else inside the one pipeline
-// function (structural exclusivity), that the log path is uncapped while
-// the toast path keeps MAX_TOASTS, and that window.__mzFightLog is cleared
-// out of combat.
-
-test("Phase 32: the module imports PRIORITY, MAX_TOASTS, narrativeToastText on their own line", () => {
-  const hits = CODE.match(/import \{ PRIORITY, MAX_TOASTS, narrativeToastText \} from "\.\/src\/browser\/toasts\.js";/g) || [];
-  assert.equal(hits.length, 1, "the PRIORITY/MAX_TOASTS/narrativeToastText import must appear exactly once");
-});
-
-test("Phase 34: dispatchWithToasts routes log-vs-toast via a single if/else, uncapped log + MAX_TOASTS-capped queue", () => {
-  const start = CODE.indexOf("function dispatchWithToasts(action)");
-  const end = CODE.indexOf("window.move = function engineMove");
-  assert.ok(start !== -1 && end !== -1 && end > start, "dispatchWithToasts..window.move region must be found");
-  const region = CODE.slice(start, end);
-  const wasCombatHits = region.match(/const wasCombat = !!\(before && before\.combat\)/g) || [];
-  assert.equal(wasCombatHits.length, 1, "exactly one wasCombat derivation");
-  const inCombatHits = region.match(/const inCombat = !!\(result\.state && result\.state\.combat\)/g) || [];
-  assert.equal(inCombatHits.length, 1, "exactly one inCombat derivation");
-  const ifHits = region.match(/if \(wasCombat \|\| inCombat\)/g) || [];
-  assert.equal(ifHits.length, 1, "exactly one routing if");
-  const foldCalls = region.match(/fightLogLinesFor\(action\.type, result\.events, ctx\)/g) || [];
-  assert.equal(foldCalls.length, 1, "exactly one fightLogLinesFor call for the log path");
-  const queueCalls = region.match(/toastsForAction\(action\.type, result\.events, ctx, \{ limit: Infinity \}\)/g) || [];
-  assert.equal(queueCalls.length, 1, "exactly one uncapped toastsForAction call for the out-of-combat queue path");
-  const capped = region.match(/queue\.slice\(0, MAX_TOASTS\)/g) || [];
-  assert.equal(capped.length, 1, "the toast path keeps the host's MAX_TOASTS cap");
-  const toastCalls = region.match(/window\.mzToast\?\.\(t\.text, t\.tone\)/g) || [];
-  assert.equal(toastCalls.length, 1, "exactly one window.mzToast call inside dispatchWithToasts");
-  assert.match(region, /window\.__mzFightLog = null/);
-});
+// ─── toasts.js's own pure option (kept — never retired) ──────────────────
 
 test("Phase 32: toasts.js carries the limit option once, and the old literal MAX_TOASTS slice is gone", () => {
   const toastsSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "toasts.js"), "utf8");
@@ -307,11 +157,4 @@ test("Phase 32: toasts.js carries the limit option once, and the old literal MAX
   const limitHits = toastsSrc.match(/deduped\.slice\(0, limit\)/g) || [];
   assert.equal(limitHits.length, 1, "the pipeline tail must slice by the new limit exactly once");
   assert.doesNotMatch(toastsSrc, /slice\(0, MAX_TOASTS\)/, "the literal MAX_TOASTS slice must be gone from toasts.js");
-});
-
-test("Phase 32: window.mzToast is defined exactly once and never reassigned — routing lives in the pipeline, not a wrapper", () => {
-  const defs = CODE.match(/window\.mzToast = function/g) || [];
-  assert.equal(defs.length, 1, "window.mzToast must be defined exactly once");
-  const assigns = CODE.match(/window\.mzToast = /g) || [];
-  assert.equal(assigns.length, 1, "window.mzToast must never be reassigned outside its own definition");
 });

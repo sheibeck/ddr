@@ -65,7 +65,7 @@ function overRegion() {
   return fnRegion("function renderCombatOver(host, kind, opts = {})");
 }
 function deathBranch() {
-  return sliceBetween(CODE, "if (S.dead && !preDeathBeat) {", "if (S.won) {");
+  return sliceBetween(CODE, "if (S.dead) {", "if (S.won) {");
 }
 function wireDeathConfirmRegion() {
   return sliceBetween(CODE, "function wireDeathConfirm", "function foeStatusBadges(");
@@ -81,14 +81,20 @@ function lootBranch() {
   return sliceBetween(
     CODE,
     "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
-    "if (S.pendingJoiner && !S.combat && !S.store) {",
+    "if (S.store) {",
   );
 }
+// Phase 35 (MAP-04): the joiner/find prompts moved from renderEncounter into
+// renderRail's own decision precedence — these two helpers now scope to
+// renderRail's body instead of the (now-retired) renderEncounter branches.
+function railRegion() {
+  return fnRegion("function renderRail()");
+}
 function joinerBranch() {
-  return sliceBetween(CODE, "if (S.pendingJoiner && !S.combat && !S.store) {", "if (S.pendingFind && !S.combat && !S.store) {");
+  return sliceBetween(railRegion(), "if (S.pendingJoiner && !S.combat && !S.store) {", "if (S.pendingFind && !S.combat && !S.store) {");
 }
 function findBranch() {
-  return sliceBetween(CODE, "if (S.pendingFind && !S.combat && !S.store) {", "if (S.store) {");
+  return sliceBetween(railRegion(), "if (S.pendingFind && !S.combat && !S.store) {", 'if (rail.pending && rail.pending.kind === "climb") {');
 }
 function noteCombatRegion() {
   return sliceBetween(CODE, "function noteCombat(", "function hapticForEvents");
@@ -150,9 +156,10 @@ test("CSCR-07: renderCombatOver builds header/lines/title/line/actions via textC
 
 // ─── c. Death (CSCR-07) ─────────────────────────────────────────────────────
 
-test('CSCR-07: the death branch renders THAT IS THAT through renderCombatOver(body, "dead", ...), no legacy death card', () => {
+test('CSCR-07/Phase 35 (MAP-05): the death branch renders THAT IS THAT through renderCombatOver(body, "dead", ...), folding S.beats.preDeath lines, no legacy death card', () => {
   const region = deathBranch();
   assert.match(region, /renderCombatOver\(body, "dead"/);
+  assert.match(region, /S\.beats\.preDeath/);
   assert.match(region, /"btn-death-oracle"/);
   assert.match(region, /"btn-death-confirm"/);
   assert.match(region, /cls: "dead"/);
@@ -205,7 +212,7 @@ test("CSCR-07: the loot branch renders won/soothed through renderCombatOver with
 
 // ─── e. Flee / won-without-drops ────────────────────────────────────────────
 
-test("CSCR-07: the beats branch's FIRST statement after `const b = S.beats;` folds an over ending through renderCombatOver", () => {
+test("CSCR-07/Phase 35 (MAP-04): the beats branch's FIRST statement after `const b = S.beats;` folds an over ending through renderCombatOver; every other beat clears itself, no legacy dismiss control", () => {
   const region = beatsBranch();
   const bIdx = region.indexOf("const b = S.beats;");
   assert.ok(bIdx !== -1, "const b = S.beats; not found");
@@ -218,9 +225,12 @@ test("CSCR-07: the beats branch's FIRST statement after `const b = S.beats;` fol
   assert.match(region, /renderCombatOver\(body, b\.over/);
   assert.match(region, /"cb-over-btn"/);
   assert.match(region, /S\.beats = null; renderEncounter\(\);/);
-  // the legacy a-next dismiss/advance control still exists for every OTHER
-  // beat (floor, level-up, feature narration) below the new early return.
-  assert.match(region, /"a-next"/);
+  // Phase 35 (MAP-04): every OTHER beat (floor, level-up, feature narration)
+  // is now a self-clearing rail card — the legacy header dismiss control is
+  // fully retired (literal built by concatenation so this pin can't itself
+  // be satisfied by a stray comment mentioning it).
+  const retiredId = ["a", "-next"].join("");
+  assert.equal((CODE.match(new RegExp(`"${retiredId}"`, "g")) || []).length, 0, `expected zero "${retiredId}" occurrences`);
 });
 
 test('CSCR-07: noteCombat tags rep.over (won|soothed) and the flee beat carries over:"fled"', () => {
@@ -232,25 +242,23 @@ test('CSCR-07: noteCombat tags rep.over (won|soothed) and the flee beat carries 
 
 // ─── f. Joiner/find restyle ─────────────────────────────────────────────────
 
-test("CSCR-07: joiner and find branches are dark-styled once, wiring/ids/textContent unchanged", () => {
+test("Phase 35 (MAP-04): joiner and find are rail decision cards — the four action ids, the generic guardTap wiring, and headLine (not head.textContent) live in renderRail", () => {
   const jRegion = joinerBranch();
   const fRegion = findBranch();
-  for (const [name, region] of [
-    ["joiner", jRegion],
-    ["find", fRegion],
-  ]) {
-    const hits = region.match(/panel\.dataset\.mode = "dark";/g) || [];
-    assert.equal(hits.length, 1, `${name} branch must set panel.dataset.mode = "dark"; exactly once`);
-  }
-  assert.match(jRegion, /"a-join-yes"/);
-  assert.match(jRegion, /"a-join-no"/);
-  assert.match(jRegion, /guardTap\(document\.getElementById\("a-join-yes"\)/);
-  assert.match(jRegion, /guardTap\(document\.getElementById\("a-join-no"\)/);
-  assert.match(jRegion, /head\.textContent =/);
-  assert.match(fRegion, /"a-find-take"/);
-  assert.match(fRegion, /"a-find-leave"/);
-  assert.match(fRegion, /guardTap\(document\.getElementById\("a-find-take"\)/);
-  assert.match(fRegion, /guardTap\(document\.getElementById\("a-find-leave"\)/);
+  // Rail cards have no #enc-panel — the retired panel.dataset.mode toggle
+  // does not apply to either branch any more.
+  assert.doesNotMatch(jRegion, /panel\.dataset\.mode/);
+  assert.doesNotMatch(fRegion, /panel\.dataset\.mode/);
+  assert.match(jRegion, /id: "a-join-yes"/);
+  assert.match(jRegion, /id: "a-join-no"/);
+  assert.match(jRegion, /const headLine = walker/);
+  assert.doesNotMatch(jRegion, /head\.textContent =/);
+  assert.match(fRegion, /id: "a-find-take"/);
+  assert.match(fRegion, /id: "a-find-leave"/);
+  // the generic per-button guardTap wiring loop railButtons() shares with
+  // every rail decision — proven present in the railButtons..renderRail span.
+  const railButtonsRegion = fnRegion("function railButtons(host, buttons)");
+  assert.match(railButtonsRegion, /guardTap\(document\.getElementById\(b\.id\), b\.onTap\)/);
 });
 
 // ─── g. Guards (CSCR-08) ─────────────────────────────────────────────────────
@@ -271,9 +279,10 @@ test("CSCR-08: engineMove still gates on hasActiveEncounter() then the settle cl
   assert.ok(settleIdx !== -1 && settleIdx > gateIdx, "settle clause not found after the gate");
 });
 
-test("CSCR-08: the keydown beats branch Enter/Space clicks a-next, falling back to cb-over-btn", () => {
+test("Phase 35 (MAP-04): the keydown beats branch Enter/Space clicks cb-over-btn only — no retired-id fallback chain", () => {
   const region = keydownRegion();
-  assert.match(region, /document\.getElementById\("a-next"\) \|\| document\.getElementById\("cb-over-btn"\)/);
+  assert.match(region, /const n = document\.getElementById\("cb-over-btn"\); if \(n\) n\.click\(\);/);
+  assert.doesNotMatch(region, /document\.getElementById\("a-next"\)/);
 });
 
 test("CSCR-08: no card/body/panel tap-anywhere-to-dismiss listener, and zero transitionend/animationend anywhere", () => {
