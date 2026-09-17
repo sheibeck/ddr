@@ -93,7 +93,7 @@
 - **Combat targeting** — dead foes never targetable; the target auto-switches to the next live foe
 - **Clarity** — every Oracle/rail line names its cause (the "Four walls and one door you already used" line is the Being-trapped phobia and must say so); every loot offer (encounter dot, find, victory) shows its "(usable by …)" class gating; the Hero screen shows rations needed per camp for the hero + joiner; the Gear tab splits into two panels — *On You* (Worn: armor/cloak/jewelry · Carried: weapon/staff/shield) and *Bag*; the bag-full drop prompt lists bag items only
 
-**Key context:** engine gate as always — several of these are deliberate canon divergences (Detect Magic duration, flee odds, phobia triggers, item cooldowns) and must be declared per phase with their fixtures; tone stays family-friendly sarcasm; `tools/tune-classes.mjs` + `docs/CLASS-PASS.md` are the balance yardstick for anything that moves player power; phase numbering continues from 36; Fable does the planning passes, the balanced profile executes.
+**Key context:** engine gate as always — several of these are deliberate canon divergences (Detect Magic duration, flee odds, phobia triggers, item cooldowns) and must be declared per phase with their fixtures; tone stays family-friendly sarcasm; `tools/tune-classes.mjs` + `docs/CLASS-PASS.md` are the balance yardstick for anything that moves player power; phase numbering continues from 36.
 
 **Out of this milestone:** the v1.0 launch tail (UX-06 tutorial, STR production launch), the deferred tuning pass (TUNE-06/07), store restyle, dice-mode setting, haptics, networked multiplayer.
 
