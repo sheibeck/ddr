@@ -30,7 +30,7 @@
 
 - [ ] **GEAR-01**: Weapons and armor are reworked (add/remove/rebalance dice, cost, class gating, depth availability) so store and loot present meaningful trade-offs rather than a single best pick per class, recorded as a before/after ledger
 - [ ] **GEAR-02**: Every activatable magic item (cloaks, staves, rings/jewelry, potions with a duration) follows one model: use → effect for X rounds or squares → cooldown for Y squares; the effect and cooldown remaining are shown on the item and as a condition chip
-- [ ] **GEAR-03**: Player can wear only one item per slot type (ring, bracelet/anklet, amulet/pendant, helm/gauntlet, cloak, staff) and cannot benefit from two of the same type; equipping into an occupied slot swaps with an explicit choice
+- [x] **GEAR-03**: Player can wear only one item per slot type (ring, bracelet/anklet, amulet/pendant, helm/gauntlet, cloak, staff) and cannot benefit from two of the same type; equipping into an occupied slot swaps with an explicit choice
 - [ ] **GEAR-04**: Old saves with two items of one type are reconciled on load without a crash or a silent loss — the extra goes to the bag with a narrated line
 - [ ] **GEAR-05**: One-shot tools exist as loot and store stock — at least rope (cross a pit/crevice without a climb roll), ladder (pass a climbable wall), torch (lights a dark region for N squares) — each consumed on use and offered at the matching decision point (e.g. the CLIMB IT rail card)
 
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CUT-01 | Phase 36 | Complete |
 | CUT-02 | Phase 36 | Complete |
 | JOIN-01 | Phase 36 | Complete |
-| GEAR-03 | Phase 37 | Pending |
+| GEAR-03 | Phase 37 | Complete |
 | GEAR-04 | Phase 37 | Pending |
 | ABIL-01 | Phase 38 | Pending |
 | ABIL-02 | Phase 38 | Pending |

@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 37
 current_phase_name: Equipment Slot Model & eff(
 status: executing
-stopped_at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
-last_updated: "2026-09-17T18:56:35.764Z"
+stopped_at: Completed 37-01-PLAN.md (worn-slot model + two-path eff() refactor, zero player-visible behaviour)
+last_updated: "2026-09-17T19:12:06.300Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 37 execution started
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
   percent: 13
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 ## Current Position
 
 Phase: 37 (Equipment Slot Model & eff() Refactor) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 37
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-09-17 — Phase 37 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T17:30:15.724Z
-Stopped at: Phase 36 complete (autonomous run, defer-UAT-to-end; 18 Pixel 7 checks queued in 36-VERIFICATION.md), ready to discuss/plan Phase 37
+Last session: 2026-09-17T19:12:06.266Z
+Stopped at: Completed 37-01-PLAN.md (worn-slot model + two-path eff() refactor, zero player-visible behaviour)
 Resume file: None
 
 ## Operator Next Steps
@@ -202,6 +202,7 @@ Resume file: None
 | Phase 36 P04 | 24min | 3 tasks | 11 files |
 | Phase 36 P05 | 9min | 2 tasks | 9 files |
 | Phase 36 P06 | 12min | 3 tasks | 2 files |
+| Phase 37 P01 | 22min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -370,6 +371,9 @@ Resume file: None
 - [Phase ?]: 36-05: applyAction's rngState-unchanged proof needed a one-time makeRng round-trip normalization on a freshly-captured newRun() cursor before snapshotting 'before' state — mulberry32's constructor coerces a signed seed to unsigned via >>> 0, so the FIRST makeRng() call on a fresh cursor can change getState()'s numeric representation (bit-identical, JS-number-different) even with zero draws. Pre-existing engine/rng.js artifact, not a dismissJoiner defect.
 - [Phase ?]: 36-06: DISMISS/confirm controls built via document.createElement/textContent (not template-string innerHTML), matching the Drop confirm's construction style; a local mkConfirmBtn closure was written since mkBtn is local to renderCarriedList
 - [Phase ?]: 36-06: 13 other classic-script SUB_NOTE rows remain drifted from content/flavor.js (measured via live node diff) — only Cutthroat was in this plan's CUT-01 scope; logged as a Clarity-phase (43) or quick-task follow-up
+- [Phase ?]: 37-01: SLOT_OF derived from the same *_ROWS arrays that build JEWELRY/CLOAKS/STAVES so the taxonomy and exported tables can never drift apart
+- [Phase ?]: 37-01: reconcileWorn refuses to re-migrate a c that already carries an own worn key (even empty {}) — proven by a dedicated test, not just documented
+- [Phase ?]: 37-01: eff()'s legacy branch left byte-for-byte identical to the pre-refactor loop; new defensive guards apply only to the new worn-path branch
 
 ### Blockers
 
