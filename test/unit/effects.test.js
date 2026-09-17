@@ -29,7 +29,10 @@ import {
   isReady,
   clearRoundTimers,
 } from "../../engine/effects.js";
-import { newRun } from "../../engine/engine.js";
+import { newRun, applyAction } from "../../engine/engine.js";
+import { makeRng } from "../../engine/rng.js";
+import { foeTurn, endCombat } from "../../engine/combat.js";
+import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
 
 /* ============================================================
  * Section 1 — unit tests for the seven pure functions
@@ -218,4 +221,251 @@ test("a mid-cooldown record survives a JSON round-trip and continues ticking ide
 test("newRun(1).c has no timers key", () => {
   const s = newRun(1);
   assert.equal(Object.prototype.hasOwnProperty.call(s.c, "timers"), false);
+});
+
+/* ============================================================
+ * ─── wiring ───
+ * Section 2 (Task 2) — the three tick sites + load tolerance. All guarded
+ * behind `if (c.timers)` so behaviour and draw counts stay byte-identical
+ * for every fixture/bot/pre-Phase-36 save (none of which carries the key)
+ * until a LATER phase adds the first startEffect/startCooldown caller.
+ * ============================================================ */
+
+/** findOpenDir(state) — the first cardinal direction from the hero's current
+ * tile that leads to a genuinely open (non-wall) neighbour, so a wiring test
+ * can drive a real, legal `move` action without hand-building a floor. */
+function findOpenDir(state) {
+  const f = state.floor;
+  const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
+  for (const [dir, [dx, dy]] of Object.entries(DIRV)) {
+    const nx = f.px + dx;
+    const ny = f.py + dy;
+    if (f.g[ny] && f.g[ny][nx] && !f.g[ny][nx].wall) return dir;
+  }
+  return null;
+}
+
+/** takeLegalStep(state) — dispatches one legal `move` action and returns the
+ * resulting state. Asserts a legal step exists (a broken fixture floor, not
+ * a real assertion about effects.js, would be the only reason it doesn't). */
+function takeLegalStep(state) {
+  const dir = findOpenDir(state);
+  assert.ok(dir, "expected at least one open neighbour to step into");
+  return applyAction(state, { type: "move", dir }).state;
+}
+
+/** looseRng(fallback) — every `.d()` call returns `fallback` (a permanent
+ * "miss"/no-content roll for whatever die is drawn); `.pick` returns the
+ * first element; `.shuffle` is the identity. Mirrors the identical helper in
+ * test/unit/identity-contract.test.js — copied locally per that file's own
+ * no-cross-import convention. */
+function looseRng(fallback = 20) {
+  return {
+    d: () => fallback,
+    pick: (arr) => arr[0],
+    shuffle: (a) => a,
+  };
+}
+
+/** fixedFoe(overrides) — a minimal live foe with no `abilities` kit, so
+ * foeTurn's ability gate is a structural no-op and the melee path always
+ * runs. Mirrors test/unit/identity-contract.test.js's helper of the same
+ * name. */
+function fixedFoe(overrides = {}) {
+  return {
+    name: "Target",
+    type: "Beasts",
+    lvl: 1,
+    size: "S",
+    intel: 1,
+    wp: 10,
+    maxWP: 10,
+    alive: true,
+    asleep: 0,
+    sp: {},
+    lives: 1,
+    ...overrides,
+  };
+}
+
+/** withCombat(state, foes, overrides) — attaches a synthetic state.combat.
+ * Mirrors test/unit/identity-contract.test.js's helper of the same name. */
+function withCombat(state, foes, overrides = {}) {
+  state.combat = {
+    foes,
+    type: foes[0]?.type || "Beasts",
+    round: 1,
+    target: 0,
+    spellOpen: false,
+    tracked: false,
+    ...overrides,
+  };
+  return state;
+}
+
+test("move(): a planted squares timer loses exactly 1 left per successful step; a rounds record is untouched", () => {
+  let state = newRun(3);
+  state.c.timers = {
+    "item:Cloak of Light": { cadence: "squares", left: 3, phase: "effect" },
+    "ability:whirl": { cadence: "rounds", left: 3, phase: "effect" },
+  };
+
+  state = takeLegalStep(state);
+  assert.equal(state.c.timers["item:Cloak of Light"].left, 2, "one successful step must decrement the squares record by 1");
+  assert.equal(state.c.timers["ability:whirl"].left, 3, "a step must never touch a rounds-cadence record");
+
+  state = takeLegalStep(state);
+  assert.equal(state.c.timers["item:Cloak of Light"].left, 1);
+  assert.equal(state.c.timers["ability:whirl"].left, 3);
+});
+
+test("move(): a blocked step (wall) leaves a planted squares timer unchanged", () => {
+  const state = newRun(3);
+  state.c.timers = { "item:Cloak of Light": { cadence: "squares", left: 3, phase: "effect" } };
+  const f = state.floor;
+  const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
+  let wallDir = null;
+  for (const [dir, [dx, dy]] of Object.entries(DIRV)) {
+    const nx = f.px + dx;
+    const ny = f.py + dy;
+    if (!f.g[ny] || !f.g[ny][nx] || f.g[ny][nx].wall) {
+      wallDir = dir;
+      break;
+    }
+  }
+  assert.ok(wallDir, "expected at least one blocked neighbour on this floor");
+  const { state: next } = applyAction(state, { type: "move", dir: wallDir });
+  assert.equal(next.c.timers["item:Cloak of Light"].left, 3, "a blocked step must not tick the timer");
+});
+
+test("foeTurn(): a planted rounds record loses exactly 1 per call; a squares record is untouched", () => {
+  const state = newRun(5);
+  state.c.timers = {
+    "ability:whirl": { cadence: "rounds", left: 3, phase: "effect" },
+    "item:Cloak of Light": { cadence: "squares", left: 3, phase: "effect" },
+  };
+  withCombat(state, [fixedFoe()]);
+  const rng = looseRng(20); // an always-high roll misses every foeToHitVs need
+
+  foeTurn(state, rng, []);
+  assert.equal(state.c.timers["ability:whirl"].left, 2, "one foeTurn call must decrement the rounds record by 1");
+  assert.equal(state.c.timers["item:Cloak of Light"].left, 3, "foeTurn must never touch a squares-cadence record");
+
+  foeTurn(state, rng, []);
+  assert.equal(state.c.timers["ability:whirl"].left, 1);
+  assert.equal(state.c.timers["item:Cloak of Light"].left, 3);
+});
+
+test("endCombat(): deletes every rounds record, leaves every squares record, never adds the key when absent", () => {
+  const state = newRun(5);
+  state.c.timers = {
+    "ability:whirl": { cadence: "rounds", left: 2, phase: "effect" },
+    "item:Cloak of Light": { cadence: "squares", left: 2, phase: "effect" },
+  };
+  withCombat(state, [fixedFoe()]);
+  endCombat(state, []);
+  assert.equal("ability:whirl" in state.c.timers, false);
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Light"], { cadence: "squares", left: 2, phase: "effect" });
+
+  const noTimers = newRun(5);
+  withCombat(noTimers, [fixedFoe()]);
+  endCombat(noTimers, []);
+  assert.equal(Object.prototype.hasOwnProperty.call(noTimers.c, "timers"), false);
+});
+
+test("no-record invariant: 25 legal moves + a startCombat/fight/attack sequence never creates c.timers", () => {
+  const rng = makeRng(9);
+  let state = newRun(9);
+  for (let i = 0; i < 25; i++) {
+    if (state.combat || state.dead || state.won) break;
+    const dir = findOpenDir(state);
+    if (!dir) break;
+    state = applyAction(state, { type: "move", dir }).state;
+  }
+  withCombat(state, [fixedFoe()]);
+  foeTurn(state, rng, []);
+  endCombat(state, []);
+  assert.equal(Object.prototype.hasOwnProperty.call(state.c, "timers"), false);
+});
+
+test("rehydrate/validateSave: a rounds record is cleared, a squares record survives, a tampered value drops the key", () => {
+  const state = newRun(11);
+  state.c.timers = {
+    "ability:whirl": { cadence: "rounds", left: 4, phase: "effect" },
+    "item:Cloak of Light": { cadence: "squares", left: 4, phase: "effect" },
+  };
+  const serialized = serializeRun(state);
+
+  const viaValidate = validateSave(JSON.stringify(serialized)).value;
+  assert.equal("ability:whirl" in viaValidate.c.timers, false);
+  assert.deepStrictEqual(viaValidate.c.timers["item:Cloak of Light"], {
+    cadence: "squares",
+    left: 4,
+    phase: "effect",
+  });
+
+  const viaRehydrate = rehydrate(structuredClone(serialized));
+  assert.equal("ability:whirl" in viaRehydrate.c.timers, false);
+  assert.deepStrictEqual(viaRehydrate.c.timers["item:Cloak of Light"], {
+    cadence: "squares",
+    left: 4,
+    phase: "effect",
+  });
+
+  const tamperedRaw = structuredClone(serialized);
+  tamperedRaw.c.timers = "tampered";
+  const tamperedValidate = validateSave(JSON.stringify(tamperedRaw)).value;
+  assert.equal("timers" in tamperedValidate.c, false, "a tampered non-object timers must be dropped, not injected as {}");
+  const tamperedRehydrate = rehydrate(structuredClone(tamperedRaw));
+  assert.equal("timers" in tamperedRehydrate.c, false);
+
+  const noTimersState = newRun(11);
+  const noTimersSerialized = serializeRun(noTimersState);
+  const noTimersValidate = validateSave(JSON.stringify(noTimersSerialized)).value;
+  assert.deepStrictEqual(noTimersValidate.c, structuredClone(noTimersState.c));
+  assert.equal("timers" in noTimersValidate.c, false, "a save with no timers key must never gain one");
+});
+
+test("draw-count invariance: a planted squares timer changes zero rng draws or events across 30 legal moves", () => {
+  const seed = 7;
+  const scriptDirs = (() => {
+    let s = newRun(seed);
+    const dirs = [];
+    for (let i = 0; i < 30; i++) {
+      if (s.combat || s.dead || s.won) break;
+      const dir = findOpenDir(s);
+      if (!dir) break;
+      dirs.push(dir);
+      s = applyAction(s, { type: "move", dir }).state;
+    }
+    return dirs;
+  })();
+
+  const runWithout = () => {
+    let s = newRun(seed);
+    const allEvents = [];
+    for (const dir of scriptDirs) {
+      const result = applyAction(s, { type: "move", dir });
+      s = result.state;
+      allEvents.push(...result.events);
+    }
+    return { rngState: s.rngState, events: allEvents };
+  };
+
+  const runWith = () => {
+    let s = newRun(seed);
+    s.c.timers = { "item:Cloak of Light": { cadence: "squares", left: 9999, phase: "effect" } };
+    const allEvents = [];
+    for (const dir of scriptDirs) {
+      const result = applyAction(s, { type: "move", dir });
+      s = result.state;
+      allEvents.push(...result.events);
+    }
+    return { rngState: s.rngState, events: allEvents };
+  };
+
+  const without = runWithout();
+  const withPlanted = runWith();
+  assert.equal(withPlanted.rngState, without.rngState, "a squares tick must draw zero rng — cursor must match exactly");
+  assert.deepStrictEqual(withPlanted.events, without.events, "planting a timer record must not change any emitted event");
 });

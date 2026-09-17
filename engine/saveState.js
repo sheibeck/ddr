@@ -14,6 +14,7 @@
 
 import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
+import { clearRoundTimers } from "./effects.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -141,6 +142,30 @@ function clearFoeEffect(c) {
 }
 
 /**
+ * clearStaleTimers(c) — Phase 36 (BAL foundation) load-tolerance for
+ * `c.timers` (engine/effects.js), mirroring clearFoeEffect immediately
+ * above: when `c` is a non-null, non-array object AND the `"timers"` key is
+ * PRESENT, a non-plain-object value (a tampered string/array/number) is
+ * deleted outright, and a genuine map has its rounds-cadence records
+ * cleared via clearRoundTimers — combat is always reset to null on load
+ * (see rehydrate below), so a combat-scoped rounds record must not survive
+ * a load either, exactly clearFoeEffect's reasoning. Squares-cadence
+ * records persist. When the key is ABSENT this does NOTHING — a save that
+ * never had `c.timers` must not gain one (mirrors clearFoeEffect's
+ * additive-with-default discipline). Mutates and returns the passed `c`.
+ */
+function clearStaleTimers(c) {
+  if (c && typeof c === "object" && !Array.isArray(c) && "timers" in c) {
+    if (!c.timers || typeof c.timers !== "object" || Array.isArray(c.timers)) {
+      delete c.timers;
+    } else {
+      clearRoundTimers(c);
+    }
+  }
+  return c;
+}
+
+/**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
  * shape. Never throws: malformed JSON or a save with a malformed/missing
@@ -198,9 +223,11 @@ export function validateSave(raw, options = {}) {
     rngState,
     // ECON-01 (Phase 12): default a missing c.bag by class (see migrateCarry).
     // Phase 19 FID-04: null a present-but-stale c.foeEffect (see clearFoeEffect).
+    // Phase 36 (BAL foundation): clear a present-but-stale c.timers rounds
+    // record / drop a tampered value (see clearStaleTimers); never injected.
     // pendingFind is transient (like combat/store) — not carried through
     // validateSave's value; rehydrate() nulls it below.
-    c: clearFoeEffect(migrateCarry(obj.c)),
+    c: clearStaleTimers(clearFoeEffect(migrateCarry(obj.c))),
     floor: obj.floor,
     day,
     steps,
@@ -246,8 +273,10 @@ export function rehydrate(obj) {
     // mirroring the validateSave side so a save loaded through either entry
     // point lands with a bag. Phase 19 FID-04: null a present-but-stale
     // c.foeEffect (see clearFoeEffect) — combat is already reset to null
-    // below, so a mid-combat debuff must not survive either.
-    c: clearFoeEffect(migrateCarry(obj.c)),
+    // below, so a mid-combat debuff must not survive either. Phase 36 (BAL
+    // foundation): clear a present-but-stale c.timers rounds record / drop a
+    // tampered value (see clearStaleTimers); never injected.
+    c: clearStaleTimers(clearFoeEffect(migrateCarry(obj.c))),
     floor: obj.floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,

@@ -58,6 +58,7 @@ import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LO
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeWpFor, foeDmgBonusFor } from "./difficulty.js";
+import { tickRounds, clearRoundTimers } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER } from "../content/index.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -1110,6 +1111,11 @@ export function endCombat(state, events = []) {
   // without touching the per-file parity comparables; the harness strippers
   // (19-02) cover the case where it IS set.
   if (state.c.foeEffect) state.c.foeEffect = null;
+  // Phase 36 (BAL foundation) — rounds-cadence engine/effects.js records are
+  // combat-scoped and clear unconditionally at endCombat (the Phase 31
+  // ward/afraid precedent); squares-cadence records survive. Conditional so
+  // the key is never added to a character that never had one.
+  if (state.c.timers) clearRoundTimers(state.c);
   events.push({ type: "combatEnded" });
   return events;
 }
@@ -1904,5 +1910,11 @@ export function foeTurn(state, rng, events = []) {
   // it (a combat with no triggered phobia this fight simply never has
   // `C.afraid`).
   if (C.afraid > 0 && --C.afraid <= 0) events.push({ type: "fearPassed" });
+  // Phase 36 (BAL foundation) — the rounds tick for engine/effects.js
+  // records, LAST in the tail after ward/mirror/acute/foeEffect/afraid, once
+  // per foeTurn call exactly like ward (a round where the foes win
+  // initiative ticks twice, as ward does); guarded on c.timers; zero draws;
+  // the return value is ignored until Phase 38 maps expiries to events.
+  if (c.timers) tickRounds(c);
   return events;
 }

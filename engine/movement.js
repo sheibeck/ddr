@@ -35,6 +35,7 @@ import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged, won } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES } from "../content/index.js";
+import { tickSquares } from "./effects.js";
 
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
 export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
@@ -338,6 +339,15 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   } else if (c.flightCooldown > 0) {
     c.flightCooldown--;
   }
+
+  // Phase 36 (BAL foundation) — the squares tick for engine/effects.js
+  // records; GUARDED on the lazily-created c.timers so every fixture, bot
+  // run and pre-Phase-36 save (none carries the key) is byte-identical; the
+  // literal 1 is this step's cost — Phase 41 (TERR-02) passes a water
+  // square's 2 here so squares-cadence timers stay consistent with the step
+  // counter. The returned transition list is deliberately ignored until
+  // Phase 38 maps expiries to events (effects.js narrates nothing).
+  if (c.timers) tickSquares(c, 1);
 
   // the book recharges a Magic User every hundred squares; a solo caster
   // needs it oftener.
