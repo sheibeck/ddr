@@ -54,8 +54,8 @@
 
 ### Cutthroat & Joiners (CUT / JOIN)
 
-- [ ] **CUT-01**: A Cutthroat can accept a Joiner (the Phase 24 refusal is reversed as a declared canon change); the sub-class blurb is rewritten to match
-- [ ] **CUT-02**: Each time a Cutthroat with a Joiner descends there is a small, stated chance the Joiner is murdered, narrated with its own event type and several sarcastic lines so it reads as a joke, not a bug; the blurb states the odds
+- [x] **CUT-01**: A Cutthroat can accept a Joiner (the Phase 24 refusal is reversed as a declared canon change); the sub-class blurb is rewritten to match
+- [x] **CUT-02**: Each time a Cutthroat with a Joiner descends there is a small, stated chance the Joiner is murdered, narrated with its own event type and several sarcastic lines so it reads as a joke, not a bug; the blurb states the odds
 - [ ] **JOIN-01**: Player can dismiss a Joiner from the Hero tab's Company panel, which shows the Joiner's sheet (class/sub/race, HP, weapon, "eats N a rest"); dismissal needs a confirmation tap, and the departing Joiner gets a sarcastic parting line of their own (a new event type, no rng)
 
 ### Clarity (CLAR)
@@ -100,8 +100,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BAL-01 | Phase 36 | Complete |
 | TGT-01 | Phase 36 | Complete |
 | TGT-02 | Phase 36 | Complete |
-| CUT-01 | Phase 36 | Pending |
-| CUT-02 | Phase 36 | Pending |
+| CUT-01 | Phase 36 | Complete |
+| CUT-02 | Phase 36 | Complete |
 | JOIN-01 | Phase 36 | Pending |
 | GEAR-03 | Phase 37 | Pending |
 | GEAR-04 | Phase 37 | Pending |

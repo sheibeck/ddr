@@ -142,7 +142,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 36-03-PLAN.md — TGT-01/02 normalizeTarget export, shell post-dispatch normalize, inert dead cards, arm-window race test — wave 3
-- [ ] 36-04-PLAN.md — CUT-01/02 Cutthroat Joiner reversal, one guarded d20 murder check, six lines, blurb + identity row — wave 3
+- [x] 36-04-PLAN.md — CUT-01/02 Cutthroat Joiner reversal, one guarded d20 murder check, six lines, blurb + identity row — wave 3
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -319,7 +319,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 3/6 | In Progress|  |
+| 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 4/6 | In Progress|  |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 0/? | Not started | - |
 | 38. Melee Active Abilities | v1.5 | 0/? | Not started | - |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |

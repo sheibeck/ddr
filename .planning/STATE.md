@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 36
 current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
 status: executing
-stopped_at: Completed 36-03-PLAN.md (dead-foe targeting normalizeTarget, TGT-01/TGT-02)
-last_updated: "2026-09-17T16:56:22.970Z"
+stopped_at: Completed 36-04-PLAN.md (Cutthroat Joiner reversal + murder risk, CUT-01/CUT-02)
+last_updated: "2026-09-17T17:08:23.408Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 36 execution started
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 ## Current Position
 
 Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 36 execution started
 
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T16:56:22.942Z
-Stopped at: Completed 36-03-PLAN.md (dead-foe targeting normalizeTarget, TGT-01/TGT-02)
+Last session: 2026-09-17T17:08:14.930Z
+Stopped at: Completed 36-04-PLAN.md (Cutthroat Joiner reversal + murder risk, CUT-01/CUT-02)
 Resume file: None
 
 ## Operator Next Steps
@@ -199,6 +199,7 @@ Resume file: None
 | Phase 36 P01 | 27min | 2 tasks | 4 files |
 | Phase 36 P02 | 22min | 3 tasks | 9 files |
 | Phase 36 P03 | 16min | 3 tasks | 5 files |
+| Phase 36 P04 | 24min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -361,6 +362,8 @@ Resume file: None
 - [Phase ?]: 36-03: hero() test helper uses sub names (Soldier/Sorcerer), not class names, matching rollCharacter's force-sub validation
 - [Phase ?]: 36-03: castSpell retarget test seeds a third live foe + high looseRng fallback so a thrown-kind attack spell's possible kill never clears the encounter before the retarget can be asserted
 - [Phase ?]: 36-03: playerStrike draw-count identity test uses a measured (not hand-computed) draw count of 6 via looseRng, since the seed-1 Soldier hero swings more than a bare roll+damage pair
+- [Phase ?]: 36-04: Task order (murder mechanics first, refusal reversal second) kept the suite green at every commit — cutthroatMurderCheck landed reachable only via a planted party while the old refusal still stood, then Task 2 flipped the ternary and rewrote every refusal-dependent test in the same commit
+- [Phase ?]: 36-04: identity-contract's Cutthroat BAD entry now drives the full accept-then-murder lifecycle (meetJoiner -> resolveJoiner -> cutthroatMurderCheck) instead of a bare refusal assertion, with a Soldier control proving the murder check is Cutthroat-only
 
 ### Blockers
 
