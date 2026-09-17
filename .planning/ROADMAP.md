@@ -183,7 +183,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 37-03-PLAN.md — `newRun({ wornSlots })` shell-only option, option-gated load migration + returned reconciliation report + tampered-`worn` tolerance, engineAdapter plumbing (`takeBootWornReport`), rail reconciliation copy/card, combat ITEMS worn rows — wave 3
+- [x] 37-03-PLAN.md — `newRun({ wornSlots })` shell-only option, option-gated load migration + returned reconciliation report + tampered-`worn` tolerance, engineAdapter plumbing (`takeBootWornReport`), rail reconciliation copy/card, combat ITEMS worn rows — wave 3
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -338,7 +338,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
-| 37. Equipment Slot Model & eff() Refactor | v1.5 | 2/4 | In Progress|  |
+| 37. Equipment Slot Model & eff() Refactor | v1.5 | 3/4 | In Progress|  |
 | 38. Melee Active Abilities | v1.5 | 0/? | Not started | - |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |
 | 40. Spell Rework | v1.5 | 0/? | Not started | - |

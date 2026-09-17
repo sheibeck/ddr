@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 37
 current_phase_name: Equipment Slot Model & eff(
 status: executing
-stopped_at: "Completed 37-02-PLAN.md (worn-model behaviours: equip/unequip/auto-wear/useItem slot addressing, zero player-visible behaviour without c.worn)"
-last_updated: "2026-09-17T19:30:48.808Z"
+stopped_at: "Completed 37-03-PLAN.md (worn-model reachable: newRun wornSlots option, saveState.js load migration + wornReport, engineAdapter boot()/takeBootWornReport(), rail.js reconciliation card, combatMenu.js worn ITEMS rows)"
+last_updated: "2026-09-17T19:47:27.468Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 37 execution started
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
   percent: 13
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 ## Current Position
 
 Phase: 37 (Equipment Slot Model & eff() Refactor) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 37 execution started
 
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T19:30:48.783Z
-Stopped at: Completed 37-02-PLAN.md (worn-model behaviours: equip/unequip/auto-wear/useItem slot addressing, zero player-visible behaviour without c.worn)
+Last session: 2026-09-17T19:47:27.443Z
+Stopped at: Completed 37-03-PLAN.md (worn-model reachable: newRun wornSlots option, saveState.js load migration + wornReport, engineAdapter boot()/takeBootWornReport(), rail.js reconciliation card, combatMenu.js worn ITEMS rows)
 Resume file: None
 
 ## Operator Next Steps
@@ -204,6 +204,7 @@ Resume file: None
 | Phase 36 P06 | 12min | 3 tasks | 2 files |
 | Phase 37 P01 | 22min | 3 tasks | 7 files |
 | Phase 37 P02 | 40min | 3 tasks | 8 files |
+| Phase 37 P03 | 15min | 3 tasks | 8 files |
 
 ## Decisions
 
@@ -379,6 +380,9 @@ Resume file: None
 - [Phase ?]: 37-02: notWorn refusal fires after wrongClass, before pilfer, on useRefused; verified by a dedicated ordering test
 - [Phase ?]: 37-02: useItem's ref resolution treats bag index 0 correctly (typeof 0 !== object), never misread as a slot form
 - [Phase ?]: 37-02: Task 3 legacy-identity sweep uses measured before/after assertions on real newRun(3) output rather than hand-typed literal pins, to avoid a mistyped magic-string pin on non-trivial chargen data
+- [Phase ?]: 37-03: the declared engineAdapter.test.js boot-rehydrates-a-save assertion update landed exactly as pre-authorized (boot() now migrates every legacy save, state.c gains worn: {})
+- [Phase ?]: 37-03: wornReconcileCard is a standalone directly-built rail card (mirrors railLineCard), not routed through railCardFor's applyAction fold pipeline, since the migration is a load-time event
+- [Phase ?]: 37-03: combatMenu's worn-row-ordering test asserts the full row-id array including the always-present potion row, since combatMenu.js unconditionally renders it whenever usableCount !== 0 regardless of c.potions
 
 ### Blockers
 
