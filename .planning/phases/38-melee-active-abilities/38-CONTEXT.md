@@ -51,6 +51,12 @@ Out of scope here: teaching the tuning bot *when* to use abilities (Phase 42, be
 - **Joiners (ABIL-05):** Fighter/Thief party members carry `abilities` on their sheet (rolled at `meetJoiner`) and `alliesTurn`'s class policy uses a READY ability by a simple rule — an opener-type ability in round 1, a damage ability when the target is above half hp, a defensive one when the member is below half — the Phase 25.1 "fight by class" pattern; member ability cooldowns live on the member sheet's own `timers`.
 - **Balance:** no matrix run in this phase; the bot gains abilities automatically and Phase 42 gives it a use policy before the ONE AFTER matrix (BAL-02).
 
+### Post-research rulings (orchestrator, 2026-09-17 — resolving RESEARCH.md open questions)
+- **Strike-modifying abilities resolve immediately, uniformly:** Death Touch, Kata, Feint, Silent Step and Overhead Blow each set a transient `state.combat.abilityStrike` descriptor and call the existing `playerStrike` inline in the same dispatch (no flag-for-a-later-strike scheme) — zero new draws, one round’s action, narration from the existing strike events plus an additive `via`/`critBy` tag. Death Touch’s "next landed blow" means THIS strike doubles if it lands (a miss still burns the cooldown); Silent Step’s "any round" only means it is not opener-only.
+- **Joiner ability cooldowns clear at `endCombat`** like the hero’s: add the per-member `tickRounds`/`clearRoundTimers` call sites beside the hero’s in `foeTurn`’s tail / `endCombat`.
+- **`content/kit.js` FREE_SKILL** (Cat Burglar→Climbing, Acrobat→Leaping, Ninja→Silence) must be repointed to still-valid keys in the SAME commit as the table reshape (e.g. Ninja→Silent Step; Cat Burglar/Acrobat→a kept passive or an active the planner chooses), or the shuffle-exclusion shrinks and every later chargen draw shifts.
+- **Table reshape rule:** keep every dropped/converted entry’s exact `cost` at the exact same object-literal position so the chargen shuffle outcome stays byte-identical per seed (divergence = the key’s name/behaviour only).
+
 ### Claude's Discretion
 - File layout: `content/abilities.js` (catalog: id, name, cls, source `"table" | "pool"`, cd, txt, effect descriptor) vs. extending `content/skills.js`; `engine/abilities.js` for the dispatcher and effect resolution.
 - The hash function for the derived stream (a small FNV-1a over `${seed}:abilities:${level}` is fine) and whether it lives in `engine/rng.js`.
