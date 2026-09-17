@@ -14,6 +14,10 @@
 // rail.js/toasts.js/eventNarration.js fold produces the exact cards this
 // plan's CONTEXT sample copy describes. (o) pins the 2026-09-16 UAT ruling
 // that the rail is a map-tab element (mwActiveTab in showTab/renderRail).
+// (p) pins the 2026-09-17 UAT ruling that the idle "NOTHING IS HAPPENING"
+// card stays hidden while the encounter panel covers the map (a real card,
+// e.g. bagFull, still shows), and that renderEncounter re-renders the rail
+// on both panel show/hide sites.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -374,5 +378,20 @@ test("(o) 2026-09-16 UAT ruling: the rail is a map-tab element — mwActiveTab i
   assert.doesNotMatch(showTabRegion, /if \(name === "maze"\) window\.renderRail/);
   assert.doesNotMatch(showTabRegion, /\bS\./);
 
-  assert.match(railRegion(), /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze";/);
+  // 2026-09-17 UAT ruling ("Don't show the nothing is happening screen until
+  // the They are down screen goes away."): a real card (e.g. bagFull) still
+  // shows under the panel; only the idle card is additionally suppressed.
+  assert.match(railRegion(), /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze" \|\| \(panelUp && idle\);/);
+});
+
+// ─── (p) 2026-09-17 UAT ruling: the idle rail hides while the encounter panel covers the map ────────────
+
+test('(p) 2026-09-17 UAT ruling: renderRail hides the idle card while the encounter panel is up (panelUp from hasActiveEncounter()), and renderEncounter re-renders the rail on both panel show/hide sites', () => {
+  const region = railRegion();
+  assert.match(region, /const panelUp = hasActiveEncounter\(\);/);
+  assert.match(region, /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze" \|\| \(panelUp && idle\);/);
+
+  const encRegion = fnRegion("function renderEncounter() {");
+  assert.match(encRegion, /if \(panel\) panel\.hidden = true;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
+  assert.match(encRegion, /if \(panel\) panel\.hidden = false;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
 });

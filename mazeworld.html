@@ -331,10 +331,15 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-map-chip:active{transform:translateY(2px);box-shadow:0 1px 0 #0d0b08}
 /* Phase 35 (MAP-07): the pulsing gold ring over the party's canvas cell — a
    DOM element (not a canvas rAF loop), so the blanket prefers-reduced-motion
-   rule (mazeworld.html ~L773) zeroes its animation for reduced-motion users;
-   the canvas keeps its own static glow underneath regardless. */
-.mw-party-pulse{position:absolute;border-radius:50%;pointer-events:none;z-index:2;animation:mwglow 1.6s ease-in-out infinite}
-@keyframes mwglow{0%,100%{box-shadow:0 0 0 3px #14110c,0 0 10px 2px rgba(232,201,122,.35)}50%{box-shadow:0 0 0 3px #14110c,0 0 16px 4px rgba(232,201,122,.65)}}
+   rule (~L814) zeroes its animation for reduced-motion users (the ring then
+   sits static at full opacity). 2026-09-17 UAT PERF: the ring/halo shadow is
+   static and the keyframes animate only opacity + transform — shadow
+   animation is not GPU-composited and forced Chromium to re-rasterise the
+   whole map layer every frame (logcat tile-memory spam); will-change
+   promotes the ring to its own layer. */
+.mw-party-pulse{position:absolute;border-radius:50%;pointer-events:none;z-index:2;box-shadow:0 0 0 3px #14110c,0 0 14px 3px rgba(232,201,122,.5);will-change:transform,opacity;animation:mwglow 1.6s ease-in-out infinite}
+.mw-party-pulse.covered{animation-play-state:paused;visibility:hidden}
+@keyframes mwglow{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}
 
 /* Device-review revision #5: the encounter/feature-event panel as an
    OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
@@ -5653,10 +5658,24 @@ function renderEncounter() {
   encWasActive = active;
   if (!active) {
     if (panel) panel.hidden = true;
+    // 2026-09-17 UAT PERF/addendum: the panel no longer covers the map —
+    // resume/reveal the party ring so it composites again, and re-render the
+    // rail so the idle "NOTHING IS HAPPENING" card can return now that the
+    // real estate is free again (2026-09-17 ruling: "Don't show the nothing
+    // is happening screen until the They are down screen goes away.").
+    document.getElementById("mw-party-pulse")?.classList.remove("covered");
+    if (window.__mzState) window.renderRail?.();
     syncFightLogLive(null);
     return;
   }
   if (panel) panel.hidden = false;
+  // 2026-09-17 UAT PERF/addendum: the panel just covered the map — pause and
+  // hide the party ring underneath it (Chromium tile-memory starvation: an
+  // animated element under an opaque overlay can fail to paint until a
+  // focus change without this); also re-render the rail so the idle card
+  // hides the instant THEY ARE DOWN (or any other overlay) appears.
+  document.getElementById("mw-party-pulse")?.classList.add("covered");
+  if (window.__mzState) window.renderRail?.();
   // Phase 32 (CMBUI-04): every button this render builds below shares one
   // fresh arm-delay stamp.
   armEncounterButtons();
@@ -5941,8 +5960,13 @@ function renderRail() {
   const copy = vm ? vm.copy : null;
   if (!vm || !copy) return;
   // 2026-09-16 UAT (user ruling): both conditions hide — the column owners
-  // (combat/dead/won) AND any non-Map tab.
-  railEl.hidden = !!(S.combat || S.dead || S.won) || mwActiveTab !== "maze";
+  // (combat/dead/won) AND any non-Map tab. 2026-09-17 UAT (user ruling):
+  // "Don't show the nothing is happening screen until the They are down
+  // screen goes away. We need that real estate for judging inventory." —
+  // while the encounter panel covers the map (THEY ARE DOWN, over-panels,
+  // major overlays), the idle card stays hidden too; a real card (e.g. the
+  // bagFull refusal) still shows.
+  const panelUp = hasActiveEncounter();
 
   let key, tone, icon, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
   if (S.pendingJoiner && !S.combat && !S.store) {
@@ -6017,6 +6041,8 @@ function renderRail() {
     tone = "dull"; icon = "·"; idle = true;
     peek = zoom > 1 ? copy.peekPinch : copy.peekStep;
   }
+
+  railEl.hidden = !!(S.combat || S.dead || S.won) || mwActiveTab !== "maze" || (panelUp && idle);
 
   railEl.dataset.tone = tone;
   railEl.dataset.idle = idle ? "1" : "0";

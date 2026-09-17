@@ -8,11 +8,13 @@
 // strip (FLOOR/DAY/SQUARES/RATIONS + the x/y WP bar, the DR13 character
 // line retired), the condition-chip strip (now its own strip, each chip a
 // guarded button explaining itself in the rail), the viewport chrome
-// (MARKS/CENTRE/MAKE CAMP chips, the pulsing party ring), the canvas
-// palette from mapMarks.js and the v1.3 PNG icon pipeline for marks/party
-// (restored 2026-09-16 UAT), the MARKS legend's PNG <img> rows, and the
-// MAKE CAMP sheet. A final BEHAVIOUR section proves the real mapMarks.js
-// mapping/rotation table inspectAt()'s legend lookups still read.
+// (MARKS/CENTRE/MAKE CAMP chips, the pulsing party ring — 2026-09-17 UAT:
+// composited to only opacity/transform, and paused/hidden whenever the
+// encounter panel covers the map), the canvas palette from mapMarks.js and
+// the v1.3 PNG icon pipeline for marks/party (restored 2026-09-16 UAT), the
+// MARKS legend's PNG <img> rows, and the MAKE CAMP sheet. A final BEHAVIOUR
+// section proves the real mapMarks.js mapping/rotation table inspectAt()'s
+// legend lookups still read.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -293,6 +295,27 @@ test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear), 
   assert.match(HTML, /^\.mw-map-chip\.camp\{background:#241d12;border-color:#6b5c3c\}$/m);
   assert.match(HTML, /^\.mw-map-chip\.gear\{[^}]*font-size:22px[^}]*\}$/m);
   assert.equal((HTML.match(/@keyframes mwglow/g) || []).length, 1);
+});
+
+// ─── (h) PERF 2026-09-17: composited party pulse ───────────────────────────
+
+test('(h) PERF 2026-09-17: the party pulse animates only composited properties (static ring shadow, opacity/transform keyframes, will-change)', () => {
+  assert.match(HTML, /^\.mw-party-pulse\{[^}]*box-shadow:0 0 0 3px #14110c,0 0 14px 3px rgba\(232,201,122,\.5\)[^}]*will-change:transform,opacity[^}]*animation:mwglow 1\.6s ease-in-out infinite\}$/m);
+  const kf = HTML.match(/^@keyframes mwglow\{.*\}\}$/m)[0];
+  assert.doesNotMatch(kf, /box-shadow/);
+  assert.match(kf, /0%,100%\{opacity:\.55;transform:scale\(1\)\}/);
+  assert.match(kf, /50%\{opacity:1;transform:scale\(1\.18\)\}/);
+  assert.match(HTML, /^@media \(prefers-reduced-motion:reduce\)\{\*\{transition:none!important;animation:none!important\}\}$/m);
+});
+
+test('(h) PERF addendum 2026-09-17: the party pulse is paused/hidden while the encounter panel covers the map (Chromium tile-memory starvation fix)', () => {
+  assert.match(HTML, /^\.mw-party-pulse\.covered\{animation-play-state:paused;visibility:hidden\}$/m);
+  const a = CODE.indexOf("function renderEncounter() {");
+  const b = CODE.indexOf("\nfunction ", a + 1);
+  assert.ok(a !== -1 && b !== -1 && b > a, "renderEncounter() region found");
+  const region = CODE.slice(a, b);
+  assert.match(region, /if \(panel\) panel\.hidden = true;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);/);
+  assert.match(region, /if \(panel\) panel\.hidden = false;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);/);
 });
 
 // ─── (i) canvas: draw() region positive/negative pins ─────────────────────
