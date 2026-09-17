@@ -5045,7 +5045,7 @@ function armEncounterButtons() {
   if (armTimer) clearTimeout(armTimer);
   const delay = (window.__mzInputGuards && window.__mzInputGuards.ARM_DELAY_MS) || 250;
   armTimer = setTimeout(() => {
-    document.querySelectorAll('#enc-panel [aria-disabled="true"], #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]').forEach((el) => el.removeAttribute("aria-disabled"));
+    document.querySelectorAll('#enc-panel [aria-disabled="true"]:not(.cb-foe.dead), #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]').forEach((el) => el.removeAttribute("aria-disabled"));
   }, delay);
 }
 
@@ -5353,6 +5353,10 @@ function renderFoeCards(host, vm, onPick) {
       el.setAttribute("role", "button");
       guardTap(el, () => onPick(c.i));
       el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } };
+    } else {
+      // Phase 36 (TGT-02) — a dead card is a plain div: no role, no
+      // tabIndex, no click/keydown handler, just an accessibility signal.
+      el.setAttribute("aria-disabled", "true");
     }
     list.appendChild(el);
   });
@@ -6659,6 +6663,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { conditionsOf, canCast } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
+  import { normalizeTarget } from "./engine/combat.js";
 
   // Phase 13 (ECON-04): expose the read-only BAGS capacity table so the classic
   // script's GEAR tab + find keep/drop prompt can show the "used / slots"
@@ -7659,6 +7664,16 @@ window.__mzClassicBoot = async function classicBoot() {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
     const { state, events, html } = dispatchWithToasts({ type, ...extra });
     window.__mzState.set(state);
+    // Phase 36 (TGT-01/02) — settle the aim on the next living foe after
+    // EVERY combat dispatch (hero blow, Joiner blow, Freeze/stone/fire/gas,
+    // ward reflection, DOT — one seam, not per source) BEFORE
+    // renderEncounter() rebuilds the cards and armEncounterButtons() stamps
+    // the arm window, so a tap arriving inside ARM_DELAY_MS lands on a
+    // settled roster or is swallowed; the engine's own lazy rule would
+    // assign the identical index at the next strike/cast, so parity
+    // fixtures (engine-only) never see a different combat.target; still no
+    // engine action for aiming (Phase 34 Decision 3).
+    if (state.combat) normalizeTarget(state.combat);
     // DR2's HIT/MISS strike badge (renderEncounter()'s `C.lastStrike`) was a
     // field the classic playerStrike() populated directly; engine/combat.js
     // deliberately carries no such presentation-only field on state.combat
