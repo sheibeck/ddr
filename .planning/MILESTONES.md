@@ -33,7 +33,6 @@ The deferred CSCR-10 / MAP-10 Pixel 7 round was run by the user against the vers
 ### Still open (carried forward)
 
 - **Climb dice payload** — `fellClimbing`/`fellInGorge`/`climbedOver`/`leaptOver` carry no `roll`/`need`; the rail shows climb outcomes without a dice line. Additive, parity-safe engine change (events are asserted loosely by parity); `rail.js#rollLineFor` already renders it.
-- **Play Developer API upload** — still Console drag-and-drop (`docs/RELEASING.md` steps 1–2 are the user's).
 - Verification overrides at closeout: 2 (CSCR-10, MAP-10) — both since satisfied by the device round above.
 
 ---

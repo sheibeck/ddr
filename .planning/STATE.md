@@ -73,7 +73,7 @@ Last activity: 2026-09-17 - Completed quick task 260917-bbs: v1.4 UAT fixes roun
 
 ### Pending Todos
 
-- Set up Play Developer API upload (service account) so `play:release` can push to the internal track without Console drag-and-drop — user steps in `docs/RELEASING.md`.
+- (dropped 2026-09-17, user) Play Developer API upload — the user uploads the AAB manually in Play Console when needed.
 
 ### Roadmap Evolution
 
@@ -107,7 +107,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-17T02:48:36.757Z
-Stopped at: v1.4 fully closed — DR round findings fixed and shipped (1.4.0 / versionCode 5, Play internal testing, 2026-09-17). Open follow-ups: climb dice payload quick task; Play Developer API upload setup. Next: /gsd-new-milestone
+Stopped at: v1.4 fully closed — DR round findings fixed and shipped (1.4.0 / versionCode 5, Play internal testing, 2026-09-17). Open follow-up: climb dice payload quick task (Play Developer API upload dropped by the user — manual Console upload stays). Next: /gsd-new-milestone
 Resume file: None
 
 ## Operator Next Steps
