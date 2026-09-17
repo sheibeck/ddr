@@ -95,7 +95,10 @@ export function applyAction(state, action) {
       sellItem(next, action.i, events);
       break;
     case "useItem":
-      useItem(next, action.i, rng, events);
+      // Phase 37 (GEAR-03): the slot address form ({ type: "useItem", slot })
+      // maps onto useItem's `{ slot }` ref; the original bag-index form is
+      // untouched.
+      useItem(next, action.slot !== undefined ? { slot: action.slot } : action.i, rng, events);
       break;
     case "abandon":
       // Device-review Pass B1 item 3: "ABANDON THIS CHARACTER" — a voluntary,

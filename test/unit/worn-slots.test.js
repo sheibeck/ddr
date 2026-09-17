@@ -401,3 +401,124 @@ test("validateAction: unequipSlot accepts weapon/armor and the six worn slots; r
   assert.match(bad.reason, /ring|bracelet|amulet|helm|cloak|staff|WORN_SLOTS/);
   assert.equal(validateAction({ type: "unequipSlot", slot: 3 }).ok, false);
 });
+
+/* ============================================================
+ * Task 2: useItem slot addressing + notWorn refusal + engine.js
+ * dispatch + actions validation + toast/Oracle copy
+ * ============================================================ */
+
+test("useItem slot form: a worn staff heals, stamps usedAt on the WORN object, and a second immediate use refuses cooldown", () => {
+  const staff = POPLAR_STAFF();
+  const state = hero({ c: { cls: "Magic User", worn: { staff }, wp: 20, maxWP: 55 } });
+  const rng = fakeRng([5]);
+  const events = useItem(state, { slot: "staff" }, rng, [], () => 12345);
+  assert.equal(state.c.worn.staff, staff);
+  assert.deepStrictEqual(state.c.items, []);
+  assert.equal(staff.usedAt, state.steps);
+  const types = events.map((e) => e.type);
+  assert.ok(types.includes("itemUsed"));
+  assert.ok(types.includes("healed"));
+
+  const events2 = useItem(state, { slot: "staff" }, rng, [], () => 12345);
+  assert.equal(events2.length, 1);
+  assert.equal(events2[0].type, "useRefused");
+  assert.equal(events2[0].reason, "cooldown");
+  assert.equal(typeof events2[0].left, "number");
+});
+
+test("useItem slot form on an empty slot is a silent no-op (mirrors the bag out-of-range no-op)", () => {
+  const state = hero({ c: { worn: {} } });
+  const events = useItem(state, { slot: "cloak" }, fakeRng([]), [], () => 1);
+  assert.deepStrictEqual(events, []);
+});
+
+test("useItem (new model): a bagged activatable is refused notWorn before any side effect", () => {
+  const cloak = CLOAK_SPEED();
+  const state = hero({ c: { worn: {}, items: [cloak], haste: 0 } });
+  const events = useItem(state, 0, fakeRng([]), [], () => 1);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: cloak, reason: "notWorn" }]);
+  assert.equal(cloak.usedAt, undefined);
+  assert.equal(state.c.haste, 0);
+});
+
+test("useItem notWorn ordering: wrongClass fires before notWorn for a bagged staff on a non-caster", () => {
+  const staff = OAK_STAFF();
+  const state = hero({ c: { cls: "Fighter", worn: {}, items: [staff] } });
+  const events = useItem(state, 0, fakeRng([]), [], () => 1);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: staff, reason: "wrongClass" }]);
+});
+
+test("useItem notWorn ordering: notWorn fires before pilfer for a bagged Cloak of Speed", () => {
+  const cloak = CLOAK_SPEED();
+  const state = hero({ c: { sub: "Pilfer", worn: {}, items: [cloak] } });
+  const events = useItem(state, 0, fakeRng([]), [], () => 1);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: cloak, reason: "notWorn" }]);
+});
+
+test("useItem notWorn: a bagged passive Ring of Power (no use) with worn {} is refused notWorn, not itemFizzled", () => {
+  const ring = RING();
+  const state = hero({ c: { worn: {}, items: [ring] } });
+  const events = useItem(state, 0, fakeRng([]), [], () => 1);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: ring, reason: "notWorn" }]);
+});
+
+test("useItem legacy identity: a bagged Cloak of Speed without c.worn still hastes exactly as today", () => {
+  const cloak = CLOAK_SPEED();
+  const state = legacyHero({ c: { items: [cloak], haste: 0 } });
+  const events = useItem(state, 0, fakeRng([]), [], () => 1);
+  const types = events.map((e) => e.type);
+  assert.ok(types.includes("itemUsed"));
+  assert.equal(state.c.haste, 50);
+  assert.equal("worn" in state.c, false);
+});
+
+test("useItem consume path: a worn uses:1 item deletes the worn slot (not the bag) and pushes itemConsumed", () => {
+  const trinket = { uses: 1, use: "heal", kind: "jewel", n: "Ring of Power", eff: {} };
+  const state = hero({ c: { worn: { ring: trinket }, wp: 20, maxWP: 55 } });
+  const events = useItem(state, { slot: "ring" }, fakeRng([5]), [], () => 1);
+  assert.equal("ring" in state.c.worn, false);
+  const types = events.map((e) => e.type);
+  assert.ok(types.includes("itemConsumed"));
+});
+
+test("validateAction: useItem accepts { i } or { slot } but not both, and rejects an unknown slot", () => {
+  assert.equal(validateAction({ type: "useItem", slot: "cloak" }).ok, true);
+  assert.equal(validateAction({ type: "useItem", slot: "hat" }).ok, false);
+  assert.equal(validateAction({ type: "useItem", i: 0 }).ok, true);
+  const noAddress = validateAction({ type: "useItem" });
+  assert.equal(noAddress.ok, false);
+  assert.equal(noAddress.reason, "useItem.i must be a non-negative integer");
+  assert.equal(validateAction({ type: "useItem", i: 0, slot: "cloak" }).ok, false);
+});
+
+test("applyAction reaches a worn staff through engine.js's slot dispatch", () => {
+  const staff = POPLAR_STAFF();
+  const state = hero({ c: { cls: "Magic User", worn: { staff }, wp: 20, maxWP: 55 } });
+  const result = applyAction(state, { type: "useItem", slot: "staff" });
+  assert.ok(result.events.some((e) => e.type === "itemUsed"));
+});
+
+test("TOAST_FOR.useRefused renders the notWorn line with a block tone", () => {
+  const t = TOAST_FOR.useRefused({ type: "useRefused", item: { n: "Cloak of Speed" }, reason: "notWorn" });
+  assert.equal(t.text, "Cloak of Speed is in your bag, doing what things in bags do: nothing. Wear it first.");
+  assert.equal(t.tone, "block");
+});
+
+test("EVENT_NARRATION.useRefused renders the notWorn line", () => {
+  const line = EVENT_NARRATION.useRefused({ item: { n: "Cloak of Speed" }, reason: "notWorn" });
+  assert.ok(line.includes("Wear it first"));
+});
+
+test("TOAST_FOR.itemEquipped appends the replaced suffix only when replaced is present; byte-identical otherwise", () => {
+  const swapped = TOAST_FOR.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring", replaced: { n: "Ring of Power" } });
+  assert.equal(swapped.text, "Equipped: Ring of Power (ring). Ring of Power goes back in the bag.");
+  const plain = TOAST_FOR.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring" });
+  assert.equal(plain.text, "Equipped: Ring of Power (ring).");
+});
+
+test("EVENT_NARRATION.itemEquipped mentions the replaced item going back in the bag only when replaced is present; byte-identical otherwise", () => {
+  const swapped = EVENT_NARRATION.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring", replaced: { n: "Ring of Power" } });
+  assert.ok(swapped.includes("goes back in the bag"));
+  const plain = EVENT_NARRATION.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring" });
+  assert.equal(plain, `<span class="hit">Equipped:</span> Ring of Power (ring). Whether that was wise is between you and the maze.`);
+});

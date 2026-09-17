@@ -665,6 +665,9 @@ export const EVENT_NARRATION = {
     const item = e.item?.n ?? "That";
     if (e.reason === "cooldown") return `<span class="miss">${item} needs ${e.left ?? "more"} more squares.</span>`;
     if (e.reason === "wrongClass") return `<span class="miss">${item} is a stick to anyone who is not a Magic User.</span>`;
+    // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
+    // BAG in the new worn-slot model — activatables must be worn to work.
+    if (e.reason === "notWorn") return `<span class="miss">${item} is in your bag,</span> doing what things in bags do: nothing. Wear it first.`;
     if (e.reason === "combatOnly") return `<span class="miss">${item} wants a target.</span> Save it for a fight.`;
     if (e.reason === "exploreOnly") return `<span class="miss">${item} needs quieter surroundings.</span>`;
     if (e.reason === "noTarget") return `<span class="miss">Nothing left to aim at.</span>`;
@@ -696,8 +699,10 @@ export const EVENT_NARRATION = {
   bagUpgraded: (e) =>
     `<span class="hit">A bigger bag.</span> ${e.item?.n ?? "It"} holds ${e.slots ?? "more"} slots — more room to make worse decisions in.`,
   itemDropped: (e) => `<span class="beat">You drop ${e.item?.n ?? "it"}.</span> Lighter, poorer, wiser — pick two.`,
+  // Phase 37 (GEAR-03): an additive `replaced` payload names the swapped-out
+  // worn item; the no-replaced line stays byte-identical.
   itemEquipped: (e) =>
-    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${e.slot})` : ""}. Whether that was wise is between you and the maze.`,
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${e.slot})` : ""}. Whether that was wise is between you and the maze.${e.replaced?.n ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.` : ""}`,
   // Phase 28 (ARMOR-03): a destroyed piece never re-enters the bag — narrate
   // that honestly instead of the usual stow-and-improvise line.
   itemUnequipped: (e) =>

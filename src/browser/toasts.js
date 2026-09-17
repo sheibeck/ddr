@@ -1363,6 +1363,9 @@ export const TOAST_FOR = {
       exploreOnly: `${item} needs quieter surroundings.`,
       noTarget: "Nothing left to aim at.",
       notFought: "Fight! first. It will keep.",
+      // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
+      // BAG in the new worn-slot model — activatables must be worn to work.
+      notWorn: `${item} is in your bag, doing what things in bags do: nothing. Wear it first.`,
     };
     return block(map[e?.reason] ?? "That does not work for you.");
   },
@@ -1376,7 +1379,13 @@ export const TOAST_FOR = {
   // count (every current push site does); a bare {type} call (safety-scan
   // style) still gets a sane fallback.
   bagFull: (e) => block(e?.have != null && e?.slots != null ? `Bag full (${e.have}/${e.slots}) — drop something to make room.` : "No room in the bag."),
-  itemEquipped: (e) => ({ text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${e.slot})` : ""}.`, tone: "hit", priority: PRIORITY.other }),
+  // Phase 37 (GEAR-03): an additive `replaced` payload (the swapped-out
+  // worn item) appends one clause; the no-replaced text stays byte-identical.
+  itemEquipped: (e) => ({
+    text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${e.slot})` : ""}.${e?.replaced?.n ? ` ${e.replaced.n} goes back in the bag.` : ""}`,
+    tone: "hit",
+    priority: PRIORITY.other,
+  }),
   equipRejected: (e) => block(equipRejectText(e)),
   // Phase 29 (LOOT-05): a bag upgrade item was taken — c.bag just went up a tier.
   bagUpgraded: (e) => ({ text: `Bigger bag: ${e?.slots ?? "more"} slots.`, tone: "hit", priority: PRIORITY.you }),

@@ -99,6 +99,17 @@ export function validateAction(action) {
       }
       break;
     case "useItem":
+      // Phase 37 (GEAR-03): the slot address form — exactly one of `i` or
+      // `slot` may be present, never both.
+      if (action.slot !== undefined) {
+        if (action.i !== undefined || !WORN_SLOTS.includes(action.slot)) {
+          return {
+            ok: false,
+            reason: "useItem.slot must be one of ring, bracelet, amulet, helm, cloak, staff (and excludes i)",
+          };
+        }
+        break;
+      }
       // LO-01: see castSpell.idx above — c.items[i] on a negative i safely
       // no-ops today, but the contract should be consistent.
       if (!isInt(action.i) || action.i < 0) {

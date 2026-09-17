@@ -148,6 +148,9 @@ const BRANCH_TOGGLES = [
   { knightBigFoe: true, courtMageTalksFirst: true, samuraiNeverFirst: true, fridgianSlow: true, acuteHearing: true },
   // Phase 36 (JOIN-01): dismissJoiner's three named refusal reasons.
   { reason: "noParty" }, { reason: "inCombat" }, { reason: "badIndex" },
+  // Phase 37 (GEAR-03): the notWorn refusal and itemEquipped's additive
+  // replaced payload.
+  { reason: "notWorn" }, { replaced: { n: "Ring of Power" } },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

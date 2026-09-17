@@ -900,23 +900,31 @@ export function itemReady(state, it) {
 export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas"]);
 
 /**
- * useItem(state, i, rng, events, now) — triggers carried item `i`'s effect.
- * Ports mazeworld.html useItem() (lines 1963-1995). Foe-targeting effects
- * (freeze/weaken/stone/fire/gas) read/write `state.combat.foes` directly;
- * a "kill" here is the minimal bookkeeping (`wp`/`alive`/`kills`) the item
- * itself owns — full combat resolution (loot, victory checks) is wired by
- * the combat slice (01-08) when it calls into a live `state.combat`.
+ * useItem(state, ref, rng, events, now) — triggers a carried OR worn item's
+ * effect. Ports mazeworld.html useItem() (lines 1963-1995). `ref` addresses
+ * the item two ways: a non-negative bag index (the original form,
+ * `c.items[i]`) or `{ slot }` (Phase 37, GEAR-03 — a worn item,
+ * `c.worn[slot]`). Foe-targeting effects (freeze/weaken/stone/fire/gas)
+ * read/write `state.combat.foes` directly; a "kill" here is the minimal
+ * bookkeeping (`wp`/`alive`/`kills`) the item itself owns — full combat
+ * resolution (loot, victory checks) is wired by the combat slice (01-08)
+ * when it calls into a live `state.combat`.
  *
- * CMB-02/03 (Phase 31): the full refusal ladder, every step BEFORE
- * `it.usedAt`/`itemUsed` fire (so a refused use never burns a cooldown,
- * never consumes the item, never draws): pending fight -> wrongClass (a
- * staff used by a non-caster) -> pilfer -> combatOnly (a targeted kind
- * outside combat) -> cooldown (itemReady). Every reason its own event,
- * never a silent no-op (Phase 25.1 DFB-06).
+ * CMB-02/03 (Phase 31) + Phase 37 (GEAR-03): the full refusal ladder, every
+ * step BEFORE `it.usedAt`/`itemUsed` fire (so a refused use never burns a
+ * cooldown, never consumes the item, never draws): pending fight ->
+ * wrongClass (a staff used by a non-caster) -> notWorn (a bagged cloak/
+ * jewelry/staff activatable in the new worn-slot model — "activatables must
+ * be worn to work") -> pilfer -> combatOnly (a targeted kind outside
+ * combat) -> cooldown (itemReady). Every reason its own event, never a
+ * silent no-op (Phase 25.1 DFB-06). A legacy state (no `c.worn`) never sees
+ * `notWorn` — bag-use of a cloak/jewelry/staff stays exactly as today.
  */
-export function useItem(state, i, rng, events = [], now = Date.now) {
+export function useItem(state, ref, rng, events = [], now = Date.now) {
   const c = state.c;
-  const it = (c.items || [])[i];
+  const slot = ref && typeof ref === "object" ? ref.slot : null;
+  const i = slot ? null : ref;
+  const it = slot ? c.worn && c.worn[slot] : (c.items || [])[i];
   if (!it) return events;
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check, before every
   // refusal below.
@@ -930,6 +938,15 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
   // before that gate existed); refuse the USE too, before any side effect.
   if (it.kind === "staff" && c.cls !== "Magic User") {
     events.push({ type: "useRefused", item: it, reason: "wrongClass" });
+    return events;
+  }
+
+  // Phase 37 (GEAR-03): "activatables must be worn to work" — in the new
+  // worn-slot model a cloak/jewelry/staff addressed by its BAG index (not
+  // `{ slot }`) does nothing; a legacy state (no `c.worn`) keeps today's
+  // bag-use behaviour untouched.
+  if (slot === null && c.worn && typeof c.worn === "object" && slotFor(it)) {
+    events.push({ type: "useRefused", item: it, reason: "notWorn" });
     return events;
   }
 
@@ -1101,7 +1118,8 @@ export function useItem(state, i, rng, events = [], now = Date.now) {
   }
 
   if (it.kind === "potion" || it.uses === 1) {
-    c.items.splice(i, 1);
+    if (slot) delete c.worn[slot];
+    else c.items.splice(i, 1);
     events.push({ type: "itemConsumed", item: it });
   }
 
