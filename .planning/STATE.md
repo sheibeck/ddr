@@ -2,13 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-status: planning
-last_updated: "2026-09-17T14:07:53.295Z"
+current_phase: 36
+current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
+status: executing
+stopped_at: "v1.4 fully closed — DR round findings fixed and shipped (1.4.0 / versionCode 5, Play internal testing, 2026-09-17). Open follow-up: climb dice payload quick task (Play Developer API upload dropped by the user — manual Console upload stays). Next: /gsd-new-milestone"
+last_updated: "2026-09-17T15:55:58.841Z"
 last_activity: 2026-09-17
+last_activity_desc: Phase 36 execution started
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 0
+  total_plans: 6
   completed_plans: 0
   percent: 0
 ---
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.5 Meaningful Choices — Spells, Gear & Abilities (started 2026-09-17) — roadmap created (Phases 36–43), ready to plan Phase 36
+**Current focus:** Phase 36 — Balance Foundation, Effect Timers & Small Independent Wins
 
 ## Current Position
 
-Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — not started
-Plan: —
-Status: Roadmap created, awaiting `/gsd-plan-phase 36`
-Last activity: 2026-09-17 — ROADMAP.md created for v1.5 (Phases 36–43, 35/35 requirements mapped)
+Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 36
+Last activity: 2026-09-17 — Phase 36 execution started
 
 ## Ground Truth (durable facts every session needs)
 
