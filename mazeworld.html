@@ -297,7 +297,7 @@ ul.grimoire li button{flex:none}
    .mw-maze-viewport — see the .mw-overlay CSS comment) can absolutely
    position itself against THIS box, covering the map viewport AND
    .mazefoot's MAKE CAMP + D-pad bar, not just the canvas above them. */
-.mazebox{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;background:var(--paper-2);border:1px solid var(--rule);box-shadow:var(--shadow);padding:12px}
+.mazebox{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;background:#14110c;padding:0;border:0;box-shadow:none}
 canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px solid var(--rule);touch-action:manipulation}
 
 /* 04-06: the pannable, fog-lit viewport framing DOM/CSS layer wrapped
@@ -310,27 +310,27 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    screenToCell inverts for tap hit-testing — one shared transform, never a
    second copy (04-RESEARCH.md Anti-Pattern). Device-review revision #4:
    height is now flex:1 (fills remaining space) instead of a fixed
-   min(62vw,420px) — "big map" is the intended feel, not a small fixed box. */
-.mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:1px solid var(--rule);touch-action:none}
+   min(62vw,420px) — "big map" is the intended feel, not a small fixed box.
+   Phase 35 (MAP-06/07): user-select disabled — prepares Plan 04's
+   hold-to-inspect gesture (no context menu/text-selection handle on a long
+   press). */
+.mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:0;touch-action:none;-webkit-user-select:none;user-select:none}
 .mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
-.mw-viewport-chips{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:8px;z-index:3}
-.mw-chip{min-height:48px;min-width:48px;padding:9px 14px;border:2px solid #4a4032;background:#1b170f;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;display:flex;align-items:center;justify-content:center}
-/* Phase 33 (UIF-05): MAKE CAMP is the row's far-right chip; Marks/Centre
-   stay left. */
-.mw-viewport-chips #btn-camp{margin-left:auto}
-/* Device-review round 4 ("MARKS/CENTRE active color -> mock, NOT white"):
-   the generic `button:hover:not(:disabled){background:#F7F1E2}` rule below
-   (a light-parchment-theme leftover) was winning on specificity over
-   .mw-chip's own dark background, so a tap that sticks as :hover on Android
-   WebView made these chips flash near-white. Override both hover (stay
-   dark) and active/pressed (invert to the mock's gold-chip treatment,
-   mirroring the D-pad's own already-correct :active pattern below) with
-   higher-specificity rules scoped to .mw-chip only. */
-.mw-chip:hover:not(:disabled){background:#1b170f;color:#e8c97a}
-.mw-chip:active:not(:disabled){background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px)}
-.mw-flash{position:absolute;top:8px;left:50%;transform:translate(-50%,-4px);z-index:4;background:rgba(8,7,5,.9);color:#e6ddc6;padding:6px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis;opacity:0;pointer-events:none;transition:opacity .18s ease}
-.mw-flash.mw-flash-show{opacity:1}
+/* Phase 35 (MAP-06/08): MARKS/CENTRE top-left, MAKE CAMP top-right, per
+   design/Mazeworld Map Panel.dc.html's chrome block — replaces the Phase 33
+   chip-row chrome entirely. */
+.mw-map-chips{position:absolute;left:10px;right:10px;top:10px;display:flex;gap:6px;align-items:flex-start;z-index:3}
+.mw-map-chips-gap{flex:1}
+.mw-map-chip{font-family:var(--disp);font-size:7px;letter-spacing:0;padding:9px 10px;min-height:48px;min-width:48px;background:#1b170f;border:2px solid #4a4032;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;border-radius:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mw-map-chip.camp{background:#241d12;border-color:#6b5c3c}
+.mw-map-chip:active{transform:translateY(2px);box-shadow:0 1px 0 #0d0b08}
+/* Phase 35 (MAP-07): the pulsing gold ring over the party's canvas cell — a
+   DOM element (not a canvas rAF loop), so the blanket prefers-reduced-motion
+   rule (mazeworld.html ~L773) zeroes its animation for reduced-motion users;
+   the canvas keeps its own static glow underneath regardless. */
+.mw-party-pulse{position:absolute;border-radius:50%;pointer-events:none;z-index:2;animation:mwglow 1.6s ease-in-out infinite}
+@keyframes mwglow{0%,100%{box-shadow:0 0 0 3px #14110c,0 0 10px 2px rgba(232,201,122,.35)}50%{box-shadow:0 0 0 3px #14110c,0 0 16px 4px rgba(232,201,122,.65)}}
 
 /* Device-review revision #5: the encounter/feature-event panel as an
    OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
@@ -369,8 +369,8 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-overlay .enc-topbar h2{border-bottom:none;margin:0;padding-bottom:0;flex:0 1 auto}
 
 /* Phase 33 (UIF-05): the control bar holds only the centered D-pad; the camp
-   button moved to the chip row (.mw-viewport-chips above); the former
-   handed-layout option is gone. */
+   button moved to the top-right chip over the viewport (.mw-map-chips
+   above); the former handed-layout option is gone. */
 .mazefoot{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-top:10px}
 
 /* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
@@ -460,10 +460,9 @@ button.danger:active:not(:disabled){background:var(--mw-danger-panel);color:var(
    spell-menu buttons all use this class. Bumped to a still-visually-
    "secondary" but comfortably >=48dp-tall size. */
 button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:13px 14px;min-height:48px}
-/* Phase 33 (UIF-05): MAKE CAMP moved from button.small into the
-   .mw-viewport-chips row as a .mw-chip — the .mw-chip:hover/:active rules
-   above already style it (an #btn-camp id rule would out-specify them and
-   flash parchment on tap), so the old scoped hover/active pair is gone. */
+/* Phase 35 (MAP-06): MAKE CAMP is now the top-right chip over the viewport
+   (.mw-map-chips/.mw-map-chip.camp above), which already styles its
+   pressed state — no scoped hover/active pair needed here. */
 /* Phase 25.1 (DFB-06): short-on-food state — visibly dimmed, never disabled,
    so a tap can still surface the campFailed toast's refusal numbers. */
 #btn-camp[data-short="1"]{opacity:.55;border-style:dashed}
@@ -1128,7 +1127,9 @@ html,body{height:100%}
 }
 .mw-legend-close:hover:not(:disabled),.mw-legend-close:active:not(:disabled){background:transparent;color:#e8c97a}
 .mw-legend-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:2px solid #241f16}
-.mw-legend-row img{width:34px;height:34px;object-fit:contain;flex:none}
+/* Phase 35 (decision 3): coloured text glyphs replace the Phase-4 PNG icon
+   rows — src/browser/mapMarks.js's MARK_GLYPHS colour per row. */
+.mw-legend-glyph{width:26px;flex:none;font-size:22px;line-height:1;text-align:center}
 .mw-legend-row-name{
   font-family:var(--disp);font-size:7px;width:104px;flex:none;
   color:#e6ddc6;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;
@@ -1173,6 +1174,14 @@ html,body{height:100%}
 .mw-settings-version{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;opacity:.75}
 #mw-dev-start-depth{width:5.5em;font:inherit;padding:4px 6px;background:transparent;color:inherit;border:1px solid currentColor;border-radius:4px}
 .mw-dev-chip{font:700 10px/1 inherit;letter-spacing:.08em;padding:3px 6px;border-radius:4px;background:var(--ditto);color:#000;margin-left:8px}
+
+/* ---------- MAKE CAMP bottom sheet (Phase 35, MAP-06/08) ----------
+   Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
+   -scrim/-panel/-head, above); only the copy + actions row differ. */
+.mw-camp-copy{font-family:var(--mono);font-weight:700;font-size:16px;line-height:1.5;margin:13px 0 0;color:#c9bda0}
+.mw-camp-actions{display:flex;gap:10px;margin-top:20px}
+.mw-camp-btn{flex:1;white-space:pre-line;text-align:center;font-family:var(--disp);font-size:8px;line-height:1.6;letter-spacing:0;padding:15px 8px;min-height:48px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
+.mw-camp-btn.secondary{flex:0 0 auto;padding:15px 16px;background:transparent;border:2px solid #4a4032;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
 
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
@@ -1337,6 +1346,27 @@ html,body{height:100%}
   </div>
 </div>
 
+<!-- ============ MAKE CAMP BOTTOM SHEET (Phase 35, MAP-06/08) ============
+     Reuses the MARKS legend sheet's own scrim/rise chrome
+     (.mw-legend-sheet/-scrim/-panel/-head, above) — opened by the top-right
+     MAKE CAMP chip over the viewport (#btn-camp), dismissed by tapping the
+     scrim. SLEEP dispatches the existing camp bridge (window.mzMakeCamp);
+     the refusal/result reach the player through the rail, not this sheet —
+     see openCampSheet()/closeCampSheet() (classic script, below). -->
+<div id="mw-camp-sheet" class="mw-legend-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-camp-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-label="Make camp">
+    <div class="mw-legend-head">
+      <span>Make camp</span>
+    </div>
+    <p class="mw-camp-copy" id="mw-camp-copy"></p>
+    <div class="mw-camp-actions">
+      <button type="button" class="mw-camp-btn" id="mw-camp-sleep"></button>
+      <button type="button" class="mw-camp-btn secondary" id="mw-camp-walk"></button>
+    </div>
+  </div>
+</div>
+
 <div id="app" class="mw-app">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
@@ -1397,22 +1427,26 @@ html,body{height:100%}
         <div class="mw-maze-viewport" id="mw-maze-viewport">
           <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
           <div class="mw-vignette" aria-hidden="true"></div>
-          <div class="mw-viewport-chips">
-            <button type="button" class="mw-chip" id="mw-chip-marks">Marks</button>
-            <button type="button" class="mw-chip" id="mw-chip-centre">Centre</button>
-            <!-- Phase 33 (UIF-05): MAKE CAMP is now the far-right chip of
-                 this row (margin-left:auto, CSS above) — keeps its id so
-                 paint()'s short-state block and the mzMakeCamp onclick
-                 wiring below are unchanged. -->
-            <button type="button" class="mw-chip" id="btn-camp">Make camp</button>
+          <!-- Phase 35 (MAP-06/08): MARKS/CENTRE top-left, MAKE CAMP
+               top-right, per design/Mazeworld Map Panel.dc.html — replaces
+               the Phase 33 chip row. #btn-camp keeps its id so paint()'s
+               short-state block stays unchanged. -->
+          <div class="mw-map-chips" id="mw-map-chips">
+            <button type="button" class="mw-map-chip" id="mw-chip-marks">MARKS</button>
+            <button type="button" class="mw-map-chip" id="mw-chip-centre">CENTRE</button>
+            <span class="mw-map-chips-gap" aria-hidden="true"></span>
+            <button type="button" class="mw-map-chip camp" id="btn-camp">MAKE CAMP</button>
           </div>
-          <div class="mw-flash" id="mw-flash" aria-live="polite"></div>
+          <!-- Phase 35 (MAP-07): the pulsing party ring — a DOM element kept
+               centered over the party's canvas cell by positionPartyPulse()
+               (called from positionCanvas()), never a canvas rAF loop. -->
+          <div class="mw-party-pulse" id="mw-party-pulse" aria-hidden="true"></div>
         </div>
         <div class="mazefoot">
           <!-- Phase 33 (UIF-05) — the D-pad is the ONLY child of the control
                bar and sits centered (justify-content:center); MAKE CAMP now
                lives at the far right of the Marks/Centre chip row above the
-               map (.mw-viewport-chips). -->
+               map (.mw-map-chips). -->
           <!-- Device-review revision #2: the D-pad is now the SOLE,
                ALWAYS-VISIBLE movement control (see .dpad CSS — no more
                settings-gated display:none/grid toggle). -->
@@ -2575,6 +2609,20 @@ function positionCanvas() {
   const ty = rect.height / 2 - (py + 0.5) * CELL - CANVAS_PAD + pan.y;
   cv.style.left = tx + "px";
   cv.style.top = ty + "px";
+  positionPartyPulse(rect);
+}
+
+// Phase 35 (MAP-07): the pulsing party ring (#mw-party-pulse) is a DOM
+// element, not a canvas rAF loop — this keeps it centered over the party's
+// cell using the SAME viewport-center transform positionCanvas() just
+// applied to the canvas (the party sits at the viewport center + pan by
+// that transform's own definition, so no separate cell lookup is needed).
+function positionPartyPulse(rect) {
+  const ring = document.getElementById("mw-party-pulse");
+  if (!ring) return;
+  ring.style.width = ring.style.height = CELL + "px";
+  ring.style.left = (rect.width / 2 + pan.x - CELL / 2) + "px";
+  ring.style.top = (rect.height / 2 + pan.y - CELL / 2) + "px";
 }
 
 function reveal() {
@@ -2599,123 +2647,92 @@ function reveal() {
       if (g[y] && g[y][x]) g[y][x].seen = true;
 }
 
-// 04-05: the maze <canvas> itself is UNCHANGED by the dark-theme reskin
-// (04-06 owns recoloring/re-iconing the actual render — this plan only
-// rebuilds the DOM/CSS chrome AROUND it). draw() used to read its palette
-// live via getComputedStyle(document.documentElement) against the SAME
-// --grid/--ink/--stamp/--ditto/--moss custom properties the rest of the app
-// used — now that :root repoints those to the dark palette (04-05), reading
-// them here would draw near-invisible low-contrast marks against the
-// canvas's own floor fill. This lookup table now holds the DARK torch-lit
-// maze palette (the deferred "canvas recoloring" pass): light bone walls
-// (--ink) on a dark warm-stone floor, so the rendered maze matches the dark
-// shell instead of the original light-parchment look. Kept as literals (not
-// live getComputedStyle reads) so the canvas palette is explicit and stable.
-const MAZE_CANVAS_COLORS = {
-  "--grid": "#5a4f3a",
-  "--ink": "#cebfa0",
-  "--stamp": "#e07260",
-  "--ditto": "#e8c97a",
-  "--moss": "#8ec06a",
-};
+// Phase 35 (decision 3): the canvas chrome palette + coloured mark glyphs
+// come from src/browser/mapMarks.js via the window.__mzMapMarks bridge the
+// trailing module script sets up BEFORE window.__mzClassicBoot() ever calls
+// draw() the first time — see that module's own doc comment for why a
+// classic (non-module) script can't `import` directly. No live palette
+// read of any kind (not a custom-property lookup, not the retired PNG icon
+// pipeline) — the palette is explicit, literal data. Fail-open: a missing
+// bridge falls back to the same literal values mapMarks.js exports, so
+// draw() never throws even if the module somehow failed to load.
 function draw() {
   if (!S) return;
   const { g, px, py } = S.floor;
   const size = CELL * GW;
-  const C = n => MAZE_CANVAS_COLORS[n] || "#000";
+  const M = window.__mzMapMarks;
+  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", border: "#443a26", party: "#f4dc94" };
 
-  ctx.fillStyle = "#0d0b08"; ctx.fillRect(0, 0, size, size);
+  // fog — the whole grid starts unexplored; only seen cells below repaint
+  // over it, so an unseen cell is simply left showing the fog fill.
+  ctx.fillStyle = P.fog; ctx.fillRect(0, 0, size, size);
 
-  // graph paper
-  ctx.strokeStyle = C("--grid"); ctx.globalAlpha = .30; ctx.lineWidth = 1;
-  for (let i = 0; i <= GW; i++) {
-    ctx.beginPath(); ctx.moveTo(i*CELL+.5, 0); ctx.lineTo(i*CELL+.5, size); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i*CELL+.5); ctx.lineTo(size, i*CELL+.5); ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-
-  // unexplored haze over wall cells / unseen cells
-  ctx.fillStyle = "rgba(0,0,0,.5)";
-  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++)
-    if (!g[y][x].seen) ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
-
-  // explored floor, with unlit stretches shaded
-  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
-    if (!g[y][x].seen || g[y][x].wall) continue;
-    ctx.fillStyle = g[y][x].dark ? "#191509" : "#2b2416";
-    ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
-  }
-
-  // ink walls: draw an edge wherever an explored floor cell meets a wall
-  ctx.strokeStyle = C("--ink"); ctx.lineWidth = Math.max(2, CELL * .10); ctx.lineCap = "square";
-  const edge = (x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();};
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
     const c = g[y][x];
-    if (!c.seen || c.wall) continue;
-    const X = x*CELL, Y = y*CELL;
-    const solid = (nx,ny)=> !g[ny] || !g[ny][nx] || g[ny][nx].wall;
-    if (solid(x, y-1)) edge(X, Y, X+CELL, Y);
-    if (solid(x, y+1)) edge(X, Y+CELL, X+CELL, Y+CELL);
-    if (solid(x-1, y)) edge(X, Y, X, Y+CELL);
-    if (solid(x+1, y)) edge(X+CELL, Y, X+CELL, Y+CELL);
-  }
-
-  // features — PNG icons (04-06), replacing the procedural vector glyphs
-  // AND the design mockup's Unicode glyphs (04-CONTEXT.md decision).
-  // featureKeyForCell/drawFeatureIcon come from src/browser/icons.js via the
-  // window.__mzIconsApi/window.__mzIconMap bridges the trailing module
-  // script sets up (and awaits preloadIcons() for) BEFORE
-  // window.__mzClassicBoot() ever calls draw() the first time — see that
-  // module's own doc comment for why a classic (non-module) script can't
-  // `import` directly. Fail-open (04-RESEARCH.md Code Example #3): a
-  // missing/undecoded icon just draws nothing for that cell, never blocks
-  // rendering the rest of the maze.
-  const iconsApi = window.__mzIconsApi, iconMap = window.__mzIconMap;
-  const iconReady = img => img && img.complete && img.naturalWidth > 0;
-  if (iconsApi && iconMap) {
-    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
-      const c = g[y][x];
-      if (!c.seen || !c.feat) continue;
-      const key = iconsApi.featureKeyForCell(c);
-      const img = key && iconMap[key];
-      // DR5: pass c.dir through so drawFeatureIcon can rotate the
-      // one-way-door icon to its real passable direction (N/E/S/W). Every
-      // other feature's cell has no `.dir` (undefined) — drawFeatureIcon
-      // fails open and draws those unrotated, unaffected by this change.
-      // DR11 ("Feature icons -> ~3/4 size"): pass scale=0.75 so FEATURE
-      // tiles draw smaller than a full cell — the party marker below
-      // (which omits this arg, defaulting to 1.0) stays full-size so it
-      // keeps standing out against the now-smaller feature icons.
-      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75);
+    if (!c.seen) continue;
+    const X = x * CELL, Y = y * CELL;
+    if (c.wall) {
+      // a raised wall block: base fill, then a 2px light bevel (top/left)
+      // and a 2px dark bevel (bottom/right) — replaces the old graph-paper
+      // grid + ink-edge wall-outline passes entirely.
+      ctx.fillStyle = P.wall; ctx.fillRect(X, Y, CELL, CELL);
+      ctx.fillStyle = P.wallLight;
+      ctx.fillRect(X, Y, CELL, 2);
+      ctx.fillRect(X, Y, 2, CELL);
+      ctx.fillStyle = P.wallDark;
+      ctx.fillRect(X, Y + CELL - 2, CELL, 2);
+      ctx.fillRect(X + CELL - 2, Y, 2, CELL);
+    } else {
+      ctx.fillStyle = c.dark ? P.floorDark : P.floor;
+      ctx.fillRect(X, Y, CELL, CELL);
+      ctx.strokeStyle = P.floorInset; ctx.lineWidth = 1;
+      ctx.strokeRect(X + .5, Y + .5, CELL - 1, CELL - 1);
     }
   }
 
-  // the party marker — party.png (04-06), replacing the procedural "P"
-  // glyph, with a static soft glow behind it standing in for the design's
-  // animated mwglow pulse. draw() only runs on-demand (per move/render), not
-  // inside a continuous rAF loop — a literal animated pulse would need a new
-  // always-running render loop, out of scope for this MVP slice (Claude's
-  // discretion, 04-CONTEXT.md). Fails open to the original dot+letter marker
-  // if party.png never loaded, so the player is never invisible on the map.
+  // the outer maze border
+  ctx.lineWidth = 6; ctx.strokeStyle = P.border;
+  ctx.strokeRect(3, 3, size - 6, size - 6);
+
+  // marks — every seen feature draws as its coloured text glyph at
+  // MARK_SCALE of the cell (decision 3), the one-way door rotated to its
+  // passable direction via ONEWAY_ROTATION_DEG (N at rest).
+  if (M) {
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      const c = g[y][x];
+      if (!c.seen || !c.feat) continue;
+      const mark = M.markForCell(c);
+      if (!mark) continue;
+      const cx = x * CELL + CELL / 2, cy = y * CELL + CELL / 2;
+      ctx.font = `${Math.round(CELL * M.MARK_SCALE)}px "Courier Prime", "Noto Sans Symbols", sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = mark.color;
+      if (mark.key === "onewaydoor") {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate((M.ONEWAY_ROTATION_DEG[c.dir] || 0) * Math.PI / 180);
+        ctx.fillText(mark.glyph, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.fillText(mark.glyph, cx, cy + CELL * .03);
+      }
+    }
+  }
+
+  // the party marker — a gold dot with a static soft glow (04-06 legacy);
+  // the pulsing ring itself is now the DOM element #mw-party-pulse,
+  // positioned by positionPartyPulse() below (see that function's own doc
+  // comment for why a DOM ring rather than a canvas rAF loop).
   {
-    const cx = px*CELL + CELL/2, cy = py*CELL + CELL/2;
-    const partyImg = iconsApi && iconMap && iconMap[iconsApi.PLAYER_MARKER_ICON];
+    const cx = px * CELL + CELL / 2, cy = py * CELL + CELL / 2;
     const glowR = CELL * .5;
     const grad = ctx.createRadialGradient(cx, cy, glowR * .15, cx, cy, glowR);
     grad.addColorStop(0, "rgba(232,201,122,.55)");
     grad.addColorStop(1, "rgba(232,201,122,0)");
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, 7); ctx.fill();
-    if (iconReady(partyImg)) {
-      iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL);
-    } else {
-      ctx.fillStyle = C("--ditto");
-      ctx.beginPath(); ctx.arc(cx, cy, CELL*.36, 0, 7); ctx.fill();
-      ctx.fillStyle = "#F6F1E4";
-      ctx.font = `${Math.round(CELL*.5)}px "Special Elite", monospace`;
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("P", cx, cy + CELL*.03);
-    }
+    ctx.fillStyle = P.party;
+    ctx.beginPath(); ctx.arc(cx, cy, CELL * .36, 0, 7); ctx.fill();
   }
 
   positionCanvas();
@@ -2907,6 +2924,18 @@ const COMBAT_COPY = {
     soothed: { title: "THEY STAND DOWN", line: "Words. Who knew.", btn: "BACK TO THE MAZE" },
     fled: { title: "YOU GOT OUT", line: "Not proud. Not dead either.", btn: "BACK TO THE MAZE" },
     dead: { title: "THAT IS THAT", line: "The maze keeps the rest.", oracle: "REVIEW THE ORACLE", bury: "BURY THEM" },
+  },
+};
+
+// Phase 35 (MAP-06): the MAKE CAMP bottom sheet's own copy — title comes
+// from the sheet's static markup, this carries the body + button labels.
+// One object literal (voice-scannable); Plan 04 adds a `stair` key beside
+// this one for the stair-down overlay.
+const MAP_COPY = {
+  camp: {
+    copy: "Eight hours asleep in a corridor that has already killed better people than you. One ration. We roll to see what wanders past.",
+    sleep: "SLEEP\n1 RATION",
+    walk: "WALK\nON",
   },
 };
 
@@ -6132,13 +6161,11 @@ document.getElementById("btn-abandon-character").onclick = () => {
     newGame();
   }
 };
-// Device-review Pass DR8: routes through the engine's "camp" action
-// (window.mzMakeCamp, trailing module script); the `|| makeCamp()` fallback
-// only matters if that module somehow failed to load/run (same pattern as
-// btn-save-quit/btn-abandon-character above).
-document.getElementById("btn-camp").onclick = () => {
-  if (window.mzMakeCamp) window.mzMakeCamp(); else makeCamp();
-};
+// Phase 35 (MAP-06): the camp chip now opens the MAKE CAMP bottom sheet
+// (openCampSheet, defined further down) instead of dispatching "camp"
+// directly — SLEEP inside that sheet is the actual camp dispatch, routed
+// through the same window.mzMakeCamp bridge (trailing module script) this
+// onclick used to call straight from the chip.
 // audit-batch E12 (part 3): the #btn-clearyard control and its handler were
 // removed — the lifetime death total is non-clearable by design now.
 document.getElementById("dpad").addEventListener("click", e => {
@@ -6165,50 +6192,41 @@ document.getElementById("dpad").addEventListener("click", e => {
 // always-on in the Oracle (#log) and always-off in the encounter panel
 // (#enc-body), so there is no per-line reveal interaction to toggle.
 
-// 04-06: centered, single-line flash toast (04-UI-SPEC.md Screen 1 — kept
-// within the <=5-word contract by every call site below).
-let flashTimer = null;
-function flashMessage(text) {
-  const el = document.getElementById("mw-flash");
-  if (!el) return;
-  el.textContent = text;
-  el.classList.add("mw-flash-show");
-  clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => el.classList.remove("mw-flash-show"), 1400);
-}
-
 // DR4 group 2: MARKS opens the mock's "WHAT THE MARKS MEAN" bottom sheet
-// (design/Mazeworld Mobile.dc.html's legendOpen block) — replaces the
+// (design/Mazeworld Map Panel.dc.html's legendOpen block) — replaces the
 // prototype's inline .legend strip toggle. CENTRE still just snaps the
 // camera pan back onto the player. Both remain >=48dp chips per the 48dp
 // Corrections table.
 //
-// One row per FEATURE_ICONS PNG key (src/browser/icons.js — the same 9
-// icons/optimized/*.png the map itself draws), each with its display name
-// and a short description in the game's own deadpan voice. Descriptions for
-// the 7 feature-tile marks echo design/Mazeworld Mobile.dc.html's own FEATS
-// table; WALL (the "climb" feat) and the YOU/party marker have no FEATS
-// entry in the mock (it treats them as maze structure / the player, not a
-// rollable feature) so their copy is new but matches the same voice.
-const MARKS_LEGEND = [
-  { icon: "encounter",  name: "ENCOUNTER",     desc: "Something gets rolled for you the moment you touch it." },
-  { icon: "teleport",   name: "TELEPORT",      desc: "Thrown a d20 of squares somewhere you did not choose." },
-  { icon: "onewaydoor", name: "ONE-WAY DOOR",  desc: "Go where the arrow points. There is no coming back." },
-  { icon: "trap",       name: "TRAP",          desc: "A d6 out of you, before you knew it was there." },
-  { icon: "chest",      name: "LOCKED BOX",    desc: "1–5 on a d10 opens it. The rest costs you a pick." },
-  { icon: "crevice",    name: "CREVICE",       desc: "Climb it, or fall, and be grateful for half the fall." },
-  { icon: "descent",    name: "DESCENT",       desc: "The floor below, which is worse in every way." },
-  { icon: "wall",       name: "WALL",          desc: "Climb it on a d10 under your class's number, or fall and eat the difference." },
-  { icon: "party",      name: "YOU",           desc: "The party marker. Whatever is nearby has already noticed you." },
-];
+// Phase 35 (decision 3): the legend's data and glyph now come from
+// src/browser/mapMarks.js's MARKS_LEGEND/MARK_GLYPHS, via the
+// window.__mzMapMarks bridge — the classic Phase-4 PNG-icon table and its
+// <img> rows are retired; each row is a coloured text glyph instead.
 function renderMarksLegend() {
   const rows = document.getElementById("mw-legend-rows");
   if (!rows || rows.childElementCount) return; // build once, reused on every open
-  rows.innerHTML = MARKS_LEGEND.map(m =>
-    `<div class="mw-legend-row"><img src="./icons/optimized/${m.icon}.png" alt="" aria-hidden="true">` +
-    `<span class="mw-legend-row-name">${m.name}</span>` +
-    `<span class="mw-legend-row-desc">${m.desc}</span></div>`
-  ).join("");
+  const M = window.__mzMapMarks;
+  if (!M) return;
+  for (const row of M.MARKS_LEGEND) {
+    const div = document.createElement("div");
+    div.className = "mw-legend-row";
+    const glyph = document.createElement("span");
+    glyph.className = "mw-legend-glyph";
+    glyph.setAttribute("aria-hidden", "true");
+    const g = M.MARK_GLYPHS[row.key];
+    glyph.textContent = g ? g.glyph : "";
+    if (g) glyph.style.color = g.color;
+    div.appendChild(glyph);
+    const name = document.createElement("span");
+    name.className = "mw-legend-row-name";
+    name.textContent = row.name;
+    div.appendChild(name);
+    const desc = document.createElement("span");
+    desc.className = "mw-legend-row-desc";
+    desc.textContent = row.desc;
+    div.appendChild(desc);
+    rows.appendChild(div);
+  }
 }
 function openMarksLegend() {
   renderMarksLegend();
@@ -6216,10 +6234,43 @@ function openMarksLegend() {
 }
 function closeMarksLegend() {
   document.getElementById("mw-legend-sheet").hidden = true;
+  // Phase 32 (CMBUI-05, design §6.3 rule 2)/Phase 35 (MAP-08): stamp the
+  // settle window on close — the same rule every §6.3 dismissal follows.
+  lastDismissAt = Date.now();
 }
 document.getElementById("mw-chip-marks").addEventListener("click", openMarksLegend);
 document.getElementById("mw-legend-scrim").addEventListener("click", closeMarksLegend);
 document.getElementById("mw-legend-close").addEventListener("click", closeMarksLegend);
+
+// Phase 35 (MAP-06/08): the MAKE CAMP bottom sheet — SLEEP dispatches the
+// existing camp bridge (window.mzMakeCamp); the refusal (NOTHING TO EAT)
+// and the result (CAMP MADE / …) reach the player through the rail via
+// dispatchWithToasts's own fold — nothing is synthesized here.
+function openCampSheet() {
+  if (!S || hasActiveEncounter()) return;
+  // Ruling 3: no dispatch past an active rail decision — pulse it instead.
+  if (railLocked()) { railPulse(); return; }
+  const sheet = document.getElementById("mw-camp-sheet");
+  if (!sheet) return;
+  document.getElementById("mw-camp-copy").textContent = MAP_COPY.camp.copy;
+  document.getElementById("mw-camp-sleep").textContent = MAP_COPY.camp.sleep;
+  document.getElementById("mw-camp-walk").textContent = MAP_COPY.camp.walk;
+  sheet.hidden = false;
+  armEncounterButtons();
+  guardTap(document.getElementById("mw-camp-sleep"), () => {
+    closeCampSheet();
+    if (window.mzMakeCamp) window.mzMakeCamp(); else makeCamp();
+  });
+  guardTap(document.getElementById("mw-camp-walk"), closeCampSheet);
+}
+function closeCampSheet() {
+  const sheet = document.getElementById("mw-camp-sheet");
+  if (sheet) sheet.hidden = true;
+  lastDismissAt = Date.now();
+}
+document.getElementById("mw-camp-scrim").addEventListener("click", closeCampSheet);
+document.getElementById("btn-camp").onclick = openCampSheet;
+
 function centerMap() {
   pan = { x: 0, y: 0 };
   positionCanvas();
@@ -6468,6 +6519,11 @@ window.__mzClassicBoot = async function classicBoot() {
   import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
   import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
   import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
+  // Phase 35 (decision 3) — the canvas palette + coloured mark glyphs + the
+  // MARKS legend rows; the PNG preload/draw pipeline just above stays
+  // imported/bridged (icons.js itself is untouched, no asset deletion) but
+  // draw()/renderMarksLegend() read this module instead from here on.
+  import { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor } from "./src/browser/mapMarks.js";
   // 04-DR3 (the roll screen): characterSheetViewModel is the SAME pure,
   // rng-free view-model the HERO tab uses (src/browser/viewModels.js) — the
   // roller's reveal reuses it rather than re-deriving name/quirk copy, so
@@ -6722,6 +6778,10 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale };
   window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON };
   window.__mzIconMap = await preloadIcons("./icons/optimized");
+  // Phase 35 (decision 3): the canvas palette + coloured mark glyphs +
+  // legend rows draw()/renderMarksLegend() read instead of the PNG pipeline
+  // above.
+  window.__mzMapMarks = { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor };
 
   // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —
   // src/browser/storage.js#migrateLegacyKeys). boot() below also runs this
