@@ -88,7 +88,6 @@ const RETIRED = {
   condTrack: "mw-cond-" + "track",
   viewportChips: "mw-viewport-" + "chips",
   canvasColors: "MAZE_CANVAS_" + "COLORS",
-  iconReadyFn: "icon" + "Ready",
   cardEvents: "CARD_" + "EVENTS",
   beatsTitleFor: "beatsTitle" + "For",
   featureEventTitle: "FEATURE_EVENT_" + "TITLE",
@@ -125,8 +124,8 @@ test("SC-1: RAW carries zero Move north/west/south/east aria labels", () => {
 
 // ─── (c) other retirements ──────────────────────────────────────────────────
 
-test("retirements: RAW carries zero of the flash/character-line/chip-track/palette-table/icon-ready literals", () => {
-  for (const key of ["flashEl", "flashFn", "hudName", "hudCls", "mmHp", "hudChar", "condTrack", "viewportChips", "canvasColors", "iconReadyFn"]) {
+test("retirements: RAW carries zero of the flash/character-line/chip-track/palette-table literals", () => {
+  for (const key of ["flashEl", "flashFn", "hudName", "hudCls", "mmHp", "hudChar", "condTrack", "viewportChips", "canvasColors"]) {
     assert.equal(countOf(RAW, RETIRED[key]), 0, `expected zero "${RETIRED[key]}" in mazeworld.html`);
   }
 });
@@ -141,15 +140,18 @@ test("retirements: RAW carries zero occurrences of the retired dismiss-control i
   assert.equal(countOf(RAW, `"${RETIRED.dismissId}"`), 0);
 });
 
-test("retirements: the draw() region has zero PNG-icon draw calls / bridge reads", () => {
+test("PNG canon (user reversed Phase 35 decision 3, 2026-09-16 UAT): the draw() region reads __mzIconMap and calls drawFeatureIcon, and no glyph fillText survives", () => {
   const region = fnRegion("function draw() {");
-  assert.doesNotMatch(region, /drawFeatureIcon/);
-  assert.doesNotMatch(region, /__mzIconMap/);
+  assert.match(region, /__mzIconMap/);
+  assert.match(region, /drawFeatureIcon/);
+  assert.doesNotMatch(region, /fillText\(mark\.glyph/);
 });
 
-test("retirements: the legend region has zero <img> rows (PNG legend fully retired)", () => {
+test("PNG canon: the legend region builds <img> rows and no glyph span survives", () => {
   const region = fnRegion("function renderMarksLegend() {");
-  assert.doesNotMatch(region, /<img/);
+  assert.match(region, /createElement\("img"\)/);
+  assert.match(region, /icons\/optimized\//);
+  assert.doesNotMatch(region, /mw-legend-glyph/);
 });
 
 // ─── (d) MAP-08: guarded targets, file-wide ────────────────────────────────

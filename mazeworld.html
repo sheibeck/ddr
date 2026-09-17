@@ -1091,9 +1091,8 @@ html,body{height:100%}
 }
 .mw-legend-close:hover:not(:disabled),.mw-legend-close:active:not(:disabled){background:transparent;color:#e8c97a}
 .mw-legend-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:2px solid #241f16}
-/* Phase 35 (decision 3): coloured text glyphs replace the Phase-4 PNG icon
-   rows — src/browser/mapMarks.js's MARK_GLYPHS colour per row. */
-.mw-legend-glyph{width:26px;flex:none;font-size:22px;line-height:1;text-align:center}
+/* PNG legend rows restored 2026-09-16 UAT (user reversed Phase 35 decision 3). */
+.mw-legend-row img{width:34px;height:34px;object-fit:contain;flex:none}
 .mw-legend-row-name{
   font-family:var(--disp);font-size:7px;width:104px;flex:none;
   color:#e6ddc6;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;
@@ -2598,15 +2597,19 @@ function reveal() {
       if (g[y] && g[y][x]) g[y][x].seen = true;
 }
 
-// Phase 35 (decision 3): the canvas chrome palette + coloured mark glyphs
-// come from src/browser/mapMarks.js via the window.__mzMapMarks bridge the
-// trailing module script sets up BEFORE window.__mzClassicBoot() ever calls
-// draw() the first time — see that module's own doc comment for why a
-// classic (non-module) script can't `import` directly. No live palette
-// read of any kind (not a custom-property lookup, not the retired PNG icon
-// pipeline) — the palette is explicit, literal data. Fail-open: a missing
-// bridge falls back to the same literal values mapMarks.js exports, so
-// draw() never throws even if the module somehow failed to load.
+// Phase 35 (decision 3), reversed 2026-09-16 UAT: the canvas chrome
+// palette (fog / bevelled walls / floor inset / border) still comes from
+// src/browser/mapMarks.js via the window.__mzMapMarks bridge; the marks
+// and the party are drawn from the v1.3 PNG icon pipeline (src/browser/
+// icons.js via the window.__mzIconsApi/window.__mzIconMap bridges) — the
+// user reversed decision 3's coloured-glyph experiment and PNG icons are
+// canon again. Both bridges are set up by the trailing module script
+// BEFORE window.__mzClassicBoot() ever calls draw() the first time — see
+// each module's own doc comment for why a classic (non-module) script
+// can't `import` directly. Fail-open on both bridges: a missing palette
+// bridge falls back to the same literal values mapMarks.js exports, and a
+// missing/undecoded icon simply draws nothing for that cell — draw()
+// never throws even if a module somehow failed to load.
 function draw() {
   if (!S) return;
   const { g, px, py } = S.floor;
@@ -2645,45 +2648,47 @@ function draw() {
   ctx.lineWidth = 6; ctx.strokeStyle = P.border;
   ctx.strokeRect(3, 3, size - 6, size - 6);
 
-  // marks — every seen feature draws as its coloured text glyph at
-  // MARK_SCALE of the cell (decision 3), the one-way door rotated to its
-  // passable direction via ONEWAY_ROTATION_DEG (N at rest).
-  if (M) {
+  // marks — features are PNG icons (v1.3 canon, restored 2026-09-16 UAT).
+  // c.dir rotates the one-way door to its passable direction (DR5); scale
+  // 0.75 keeps feature tiles smaller than the full-size party marker
+  // (DR11). A missing/undecoded icon draws nothing, never blocks the rest
+  // of the maze from rendering.
+  const iconsApi = window.__mzIconsApi, iconMap = window.__mzIconMap;
+  const iconReady = img => img && img.complete && img.naturalWidth > 0;
+  if (iconsApi && iconMap) {
     for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
       const c = g[y][x];
       if (!c.seen || !c.feat) continue;
-      const mark = M.markForCell(c);
-      if (!mark) continue;
-      const cx = x * CELL + CELL / 2, cy = y * CELL + CELL / 2;
-      ctx.font = `${Math.round(CELL * M.MARK_SCALE)}px "Courier Prime", "Noto Sans Symbols", sans-serif`;
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillStyle = mark.color;
-      if (mark.key === "onewaydoor") {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate((M.ONEWAY_ROTATION_DEG[c.dir] || 0) * Math.PI / 180);
-        ctx.fillText(mark.glyph, 0, 0);
-        ctx.restore();
-      } else {
-        ctx.fillText(mark.glyph, cx, cy + CELL * .03);
-      }
+      const key = iconsApi.featureKeyForCell(c);
+      const img = key && iconMap[key];
+      if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75);
     }
   }
 
-  // the party marker — a gold dot with a static soft glow (04-06 legacy);
-  // the pulsing ring itself is now the DOM element #mw-party-pulse,
-  // positioned by positionPartyPulse() below (see that function's own doc
-  // comment for why a DOM ring rather than a canvas rAF loop).
+  // the party marker — party.png (v1.3 canon, restored 2026-09-16 UAT),
+  // with the same soft radial glow beneath it as before; the pulsing ring
+  // itself is still the DOM element #mw-party-pulse, positioned by
+  // positionPartyPulse() below, and now pulses around party.png. The
+  // dot+"P" fallback keeps the player visible if party.png never loaded.
   {
     const cx = px * CELL + CELL / 2, cy = py * CELL + CELL / 2;
+    const partyImg = iconsApi && iconMap && iconMap[iconsApi.PLAYER_MARKER_ICON];
     const glowR = CELL * .5;
     const grad = ctx.createRadialGradient(cx, cy, glowR * .15, cx, cy, glowR);
     grad.addColorStop(0, "rgba(232,201,122,.55)");
     grad.addColorStop(1, "rgba(232,201,122,0)");
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, 7); ctx.fill();
-    ctx.fillStyle = P.party;
-    ctx.beginPath(); ctx.arc(cx, cy, CELL * .36, 0, 7); ctx.fill();
+    if (iconReady(partyImg)) {
+      iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL);
+    } else {
+      ctx.fillStyle = P.party;
+      ctx.beginPath(); ctx.arc(cx, cy, CELL * .36, 0, 7); ctx.fill();
+      ctx.fillStyle = "#F6F1E4";
+      ctx.font = `${Math.round(CELL * .5)}px "Courier Prime", monospace`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("P", cx, cy + CELL * .03);
+    }
   }
 
   positionCanvas();
@@ -6171,10 +6176,10 @@ document.getElementById("btn-abandon-character").onclick = () => {
 // camera pan back onto the player. Both remain >=48dp chips per the 48dp
 // Corrections table.
 //
-// Phase 35 (decision 3): the legend's data and glyph now come from
-// src/browser/mapMarks.js's MARKS_LEGEND/MARK_GLYPHS, via the
-// window.__mzMapMarks bridge — the classic Phase-4 PNG-icon table and its
-// <img> rows are retired; each row is a coloured text glyph instead.
+// Rows come from src/browser/mapMarks.js's MARKS_LEGEND data via the
+// window.__mzMapMarks bridge; each row's icon is the same
+// icons/optimized/<key>.png the map itself draws (PNG canon, restored
+// 2026-09-16 UAT — user reversed Phase 35 decision 3's coloured glyphs).
 function renderMarksLegend() {
   const rows = document.getElementById("mw-legend-rows");
   if (!rows || rows.childElementCount) return; // build once, reused on every open
@@ -6183,13 +6188,11 @@ function renderMarksLegend() {
   for (const row of M.MARKS_LEGEND) {
     const div = document.createElement("div");
     div.className = "mw-legend-row";
-    const glyph = document.createElement("span");
-    glyph.className = "mw-legend-glyph";
-    glyph.setAttribute("aria-hidden", "true");
-    const g = M.MARK_GLYPHS[row.key];
-    glyph.textContent = g ? g.glyph : "";
-    if (g) glyph.style.color = g.color;
-    div.appendChild(glyph);
+    const img = document.createElement("img");
+    img.src = `./icons/optimized/${row.key}.png`;
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    div.appendChild(img);
     const name = document.createElement("span");
     name.className = "mw-legend-row-name";
     name.textContent = row.name;
@@ -6578,10 +6581,9 @@ window.__mzClassicBoot = async function classicBoot() {
   import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
   import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
   import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
-  // Phase 35 (decision 3) — the canvas palette + coloured mark glyphs + the
-  // MARKS legend rows; the PNG preload/draw pipeline just above stays
-  // imported/bridged (icons.js itself is untouched, no asset deletion) but
-  // draw()/renderMarksLegend() read this module instead from here on.
+  // draw() reads MAP_PALETTE from here; inspectAt() reads markForCell/
+  // legendFor; the PNG pipeline above (icons.js) is what draws the marks
+  // and the party (canon since the 2026-09-16 UAT).
   import { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor } from "./src/browser/mapMarks.js";
   // 04-DR3 (the roll screen): characterSheetViewModel is the SAME pure,
   // rng-free view-model the HERO tab uses (src/browser/viewModels.js) — the
@@ -6845,9 +6847,9 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale };
   window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON };
   window.__mzIconMap = await preloadIcons("./icons/optimized");
-  // Phase 35 (decision 3): the canvas palette + coloured mark glyphs +
-  // legend rows draw()/renderMarksLegend() read instead of the PNG pipeline
-  // above.
+  // draw() reads MAP_PALETTE from here; inspectAt() reads markForCell/
+  // legendFor; the PNG pipeline above is what draws the marks and the
+  // party (canon since the 2026-09-16 UAT).
   window.__mzMapMarks = { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor };
 
   // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —

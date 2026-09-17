@@ -9,9 +9,10 @@
 // line retired), the condition-chip strip (now its own strip, each chip a
 // guarded button explaining itself in the rail), the viewport chrome
 // (MARKS/CENTRE/MAKE CAMP chips, the pulsing party ring), the canvas
-// palette + coloured mark glyphs (decision 3), the MARKS legend's glyph
-// rows, and the MAKE CAMP sheet. A final BEHAVIOUR section proves the real
-// mapMarks.js mapping/rotation table this plan's canvas code reads.
+// palette from mapMarks.js and the v1.3 PNG icon pipeline for marks/party
+// (restored 2026-09-16 UAT), the MARKS legend's PNG <img> rows, and the
+// MAKE CAMP sheet. A final BEHAVIOUR section proves the real mapMarks.js
+// mapping/rotation table inspectAt()'s legend lookups still read.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -283,7 +284,7 @@ test("(h) chrome: chip ids/order/classes, the pulse element, zero retired chip-r
   assert.match(region, /class="mw-map-chip camp" id="btn-camp"/);
   assert.match(region, /id="mw-party-pulse" aria-hidden="true"/);
 
-  for (const literal of ["mw-viewport-chips", "mw-flash", "flashMessage", "MAZE_CANVAS_COLORS", "iconReady", "mw-legend-row img"]) {
+  for (const literal of ["mw-viewport-chips", "mw-flash", "flashMessage", "MAZE_CANVAS_COLORS"]) {
     assert.equal((HTML.match(new RegExp(escapeRegExp(literal), "g")) || []).length, 0, `expected zero occurrences of "${literal}"`);
   }
 
@@ -293,7 +294,7 @@ test("(h) chrome: chip ids/order/classes, the pulse element, zero retired chip-r
 
 // ─── (i) canvas: draw() region positive/negative pins ─────────────────────
 
-test("(i) draw(): reads the palette/glyphs from window.__mzMapMarks, no PNG pipeline reference, positionCanvas() last", () => {
+test("(i) draw(): reads the palette from window.__mzMapMarks and the marks/party from the PNG pipeline (v1.3 canon restored 2026-09-16), positionCanvas() last", () => {
   const region = drawRegion();
   for (const needle of [
     "window.__mzMapMarks",
@@ -306,16 +307,19 @@ test("(i) draw(): reads the palette/glyphs from window.__mzMapMarks, no PNG pipe
     "P.floorInset",
     "P.border",
     "P.party",
-    "markForCell(c)",
-    "MARK_SCALE",
-    "ONEWAY_ROTATION_DEG[c.dir]",
-    "ctx.rotate(",
-    "ctx.fillText(mark.glyph",
     "strokeRect(3, 3, size - 6, size - 6)",
+    "window.__mzIconsApi",
+    "window.__mzIconMap",
+    "img.complete && img.naturalWidth > 0",
+    "iconsApi.featureKeyForCell(c)",
+    "iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75)",
+    "iconMap[iconsApi.PLAYER_MARKER_ICON]",
+    "iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL)",
+    "createRadialGradient(",
   ]) {
     assert.ok(region.includes(needle), `draw() region must include "${needle}"`);
   }
-  for (const gone of ["drawFeatureIcon", "__mzIconMap", "__mzIconsApi", "getComputedStyle", "globalAlpha"]) {
+  for (const gone of ["getComputedStyle", "globalAlpha", "ctx.fillText(mark.glyph", "MARK_SCALE", "markForCell("]) {
     assert.ok(!region.includes(gone), `draw() region must not include "${gone}"`);
   }
   assert.match(region.trimEnd(), /positionCanvas\(\);\s*\}$/);
@@ -330,17 +334,21 @@ test("(i) positionCanvas() calls positionPartyPulse(rect); positionPartyPulse is
   assert.match(region, /positionPartyPulse\(rect\)/);
 });
 
-// ─── (j) legend: glyph rows, no PNG path ───────────────────────────────────
+// ─── (j) legend: PNG <img> rows (v1.3 canon), zero glyph span ─────────────
 
-test("(j) renderMarksLegend: reads MARKS_LEGEND/MARK_GLYPHS from the bridge, builds glyph rows, zero <img>/PNG path", () => {
+test("(j) renderMarksLegend: reads MARKS_LEGEND from the bridge, builds PNG <img> rows (v1.3 canon), zero glyph span", () => {
   const region = renderMarksLegendRegion();
   assert.match(region, /window\.__mzMapMarks/);
   assert.match(region, /MARKS_LEGEND/);
-  assert.match(region, /mw-legend-glyph/);
-  assert.match(region, /style\.color/);
-  assert.doesNotMatch(region, /<img/);
-  assert.doesNotMatch(region, /icons\/optimized/);
-  assert.equal((HTML.match(/const MARKS_LEGEND = \[/g) || []).length, 0, "the classic PNG-icon legend table is gone");
+  assert.match(region, /createElement\("img"\)/);
+  assert.match(region, /icons\/optimized\/\$\{row\.key\}\.png/);
+  assert.match(region, /setAttribute\("aria-hidden", "true"\)/);
+  assert.doesNotMatch(region, /mw-legend-glyph/);
+  assert.doesNotMatch(region, /MARK_GLYPHS/);
+  assert.doesNotMatch(region, /style\.color/);
+  assert.equal((HTML.match(/const MARKS_LEGEND = \[/g) || []).length, 0, "the classic table stays retired — data still lives in mapMarks.js");
+  assert.match(HTML, /^\.mw-legend-row img\{width:34px;height:34px;object-fit:contain;flex:none\}$/m);
+  assert.equal((HTML.match(/mw-legend-glyph/g) || []).length, 0);
 });
 
 // ─── (k) camp sheet ─────────────────────────────────────────────────────
@@ -396,7 +404,7 @@ test("(l) settle-stamp count is 3 (the dismissal transition + the two sheet clos
 
 // ─── (m) BEHAVIOUR: the real mapMarks.js mapping/rotation table ───────────
 
-test("(m) BEHAVIOUR: markForCell maps a one-way door to onewaydoor, and ONEWAY_ROTATION_DEG.S is 180 (the rotation draw() applies)", () => {
+test("(m) BEHAVIOUR: markForCell/ONEWAY_ROTATION_DEG stay intact in mapMarks.js for inspectAt's legend lookups (the canvas rotation is drawFeatureIcon's again)", () => {
   const mark = markForCell({ feat: "one", dir: "S" });
   assert.ok(mark, "markForCell must resolve a one-way-door cell");
   assert.equal(mark.key, "onewaydoor");
