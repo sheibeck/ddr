@@ -4,7 +4,7 @@ milestone: v1.4
 milestone_name: Combat & Map Screens
 status: Awaiting next milestone
 stopped_at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
-last_updated: "2026-09-17T02:57:05.732Z"
+last_updated: "2026-09-17T02:59:42.912Z"
 last_activity: 2026-09-16
 last_activity_desc: Milestone v1.4 completed and archived
 progress:
@@ -24,7 +24,7 @@ current_phase_name: Map Screen Rebuild
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 35 — Map Screen Rebuild
+**Current focus:** v1.4 shipped (override closeout) — run the 54-check Pixel 7 UAT batch (34-/35-VERIFICATION.md), then /gsd-new-milestone
 
 ## Current Position
 
@@ -84,7 +84,6 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
 | v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
 
-
 Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override closeout — `defer uat to end`):
 
 | Category | Item | Status |
@@ -98,7 +97,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-17T02:48:36.757Z
-Stopped at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
+Stopped at: v1.4 archived + tagged; debug APK (versionCode 3) installed on the Pixel 7 2026-09-16 22:54; the 54-item UAT batch is the next step, findings → quick task or next milestone
 Resume file: None
 
 ## Operator Next Steps
