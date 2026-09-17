@@ -103,7 +103,10 @@ test("UIF-03: 0.8 is the midpoint between fully-out (ZOOM_MIN) and the old 1.0 d
   const min = Number(m[1]);
   const max = Number(m[2]);
   assert.equal(min, 0.6);
-  assert.equal(max, 2.4);
+  // Phase 35 Plan 04 (MAP-02) re-pin: ZOOM_MAX re-ranged 2.4 -> 2.0 to match
+  // the mock's 0.6-2.0 pinch spec; the 0.8 default's midpoint relationship
+  // to ZOOM_MIN/the old 1.0 default is unaffected by ZOOM_MAX's own value.
+  assert.equal(max, 2.0);
   assert.equal((min + 1.0) / 2, 0.8);
   assert.ok(0.8 > min && 0.8 < max, "default must sit inside ZOOM_MIN..ZOOM_MAX");
 });

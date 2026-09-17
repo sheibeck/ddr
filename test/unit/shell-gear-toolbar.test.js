@@ -13,10 +13,11 @@
 //      `guard: true`'s two call sites) is untouched, and no new engine
 //      action was introduced (Drop still dispatches the existing
 //      `dropItem`).
-//   2. UIF-05: MAKE CAMP is the last chip of the Marks/Centre row, the
-//      control bar's own markup (before the D-pad) holds no `<button>`, and
-//      every trace of the former handed-layout option (markup, CSS,
-//      applySettings, settings.js) is gone.
+//   2. UIF-05: MAKE CAMP is the last chip of the Marks/Centre row, and every
+//      trace of the former handed-layout option (markup, CSS, applySettings,
+//      settings.js) is gone. Phase 35 Plan 04 retired the control bar
+//      itself outright (test/unit/shell-map-viewport.test.js owns that pin
+//      now) — this file dropped its own now-stale mazefoot assertions.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -66,16 +67,12 @@ function storeRegion() {
 }
 
 function chipsMarkup() {
-  // Phase 35 (MAP-06): the chip row now ends at the viewport's closing
+  // Phase 35 (MAP-02/06): the chip row now ends at the viewport's closing
   // </div> — sliced through <section class="mw-overlay" (the next markup
-  // landmark), which also covers the party-pulse ring and the control bar
-  // (the control bar is retired outright in Plan 04, so the mazefoot test
-  // below stays valid for now).
+  // landmark), which also covers the party-pulse ring; the control bar
+  // (the former .mazefoot/D-pad markup) is retired outright by Plan 04 —
+  // test/unit/shell-map-viewport.test.js owns its zero-occurrence pin now.
   return sliceBetween(HTML, '<div class="mw-map-chips"', '<section class="mw-overlay"');
-}
-
-function mazefootMarkup() {
-  return sliceBetween(HTML, '<div class="mazefoot">', '<div class="dpad" id="dpad">');
 }
 
 // ─── UIF-01: the GEAR action row + inline two-tap Drop confirm ───────────
@@ -170,11 +167,6 @@ test("UIF-05/Phase 35 (MAP-06): the chip row holds Marks, Centre, then the camp 
   assert.match(campButtonMatch[0], /class="mw-map-chip camp"/);
 });
 
-test("UIF-05: the control bar's own markup (before the D-pad) holds no button — MAKE CAMP moved out", () => {
-  const markup = mazefootMarkup();
-  assert.equal((markup.match(/<button/g) || []).length, 0);
-});
-
 test("UIF-05: no trace of the former handed-layout option remains in the shell", () => {
   assert.doesNotMatch(HTML, /handedness/i);
   assert.doesNotMatch(HTML, /data-setting="handedness"/);
@@ -190,10 +182,6 @@ test("UIF-05/Phase 35 (MAP-06): the chip row spans the viewport width and pins t
   assert.doesNotMatch(HTML, /#btn-camp:hover/);
   assert.doesNotMatch(HTML, /#btn-camp:active/);
   assert.match(HTML, /#btn-camp\[data-short="1"\]\{/);
-
-  const mazefootRuleMatch = HTML.match(/^\.mazefoot\{[^}]*\}/m);
-  assert.ok(mazefootRuleMatch, ".mazefoot rule found");
-  assert.match(mazefootRuleMatch[0], /justify-content:center/);
 });
 
 test("UIF-05: the camp button's onclick wiring and short-state read stay singular (untouched)", () => {

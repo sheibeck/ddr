@@ -268,7 +268,10 @@ test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds, and no 
 
 test("(h) chrome: chip ids/order/classes, the pulse element, zero retired chip-row/flash literals, .mw-map-chip.camp colours", () => {
   const chipsStart = HTML.indexOf('<div class="mw-map-chips" id="mw-map-chips">');
-  const chipsEnd = HTML.indexOf('<div class="mazefoot">');
+  // Phase 35 Plan 04 (MAP-02) re-pin: the control bar (formerly the end
+  // marker here) is retired outright — the next markup landmark after the
+  // party-pulse ring is the encounter overlay section.
+  const chipsEnd = HTML.indexOf('<section class="mw-overlay"');
   assert.ok(chipsStart !== -1 && chipsEnd !== -1 && chipsEnd > chipsStart);
   const region = HTML.slice(chipsStart, chipsEnd);
   const marksIdx = region.indexOf('id="mw-chip-marks"');
