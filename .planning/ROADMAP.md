@@ -136,13 +136,13 @@ Plans:
 
 ### Phase 35: Map Screen Rebuild
 
-**Goal**: The map tab is rebuilt to the imported Claude Design spec (`design/Mazeworld Map.dc.html` + `Mazeworld Map Panel.dc.html`): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with a condition-chip strip beneath, a tap-to-step viewport (hold to inspect, drag to pan, pinch to zoom; the D-pad is gone), the bottom RAIL that replaces every toast and carries every decision with its dice (walking away declines; crevices/walls are climb-only and block until a success), the MAJOR OVERLAY for encounters (FIGHT IT OUT), descents (GO DOWN / NOT YET) and out-of-combat death, and the MARKS / CENTRE / MAKE CAMP chips with their bottom sheets; the canvas renderer adopts the mock's palette; Phase 32 guards intact; engine/parity untouched.
+**Goal**: The map tab is rebuilt to the imported Claude Design spec (`design/Mazeworld Map.dc.html` + `Mazeworld Map Panel.dc.html`): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with a condition-chip strip beneath, a tap-to-step viewport (hold to inspect, drag to pan, pinch to zoom; the D-pad is gone), the bottom RAIL that replaces every toast and carries every decision with its dice (movement is locked until the decision is answered — user ruling 2026-09-16; crevices/walls are climb-only and block until a success), the MAJOR OVERLAY for encounters (FIGHT IT OUT), descents (GO DOWN / NOT YET) and out-of-combat death, and the MARKS / CENTRE / MAKE CAMP chips with their bottom sheets; the canvas renderer adopts the mock's palette; Phase 32 guards intact; engine/parity untouched.
 **Depends on**: Phase 34 (the combat screen the overlay hands off to; the log-routing seam).
 **Requirements**: MAP-01..10
 **Success Criteria** (what must be TRUE):
 
   1. No D-pad and no toast exists anywhere; a tap on the map steps one square toward it; hold inspects; drag pans; pinch zooms.
-  2. Every out-of-combat event appears in the rail with its dice and clears on its own; every decision (joiner, find, climb) is answered in the rail or declined by walking away; level-up and floor arrival need no tap.
+  2. Every out-of-combat event appears in the rail with its dice and clears on its own; every decision (joiner, find, climb) is answered in the rail and tap-to-step stays locked until it is (a tap re-shows the pending card — user ruling 2026-09-16, "never move past an active choice"); level-up and floor arrival need no tap.
   3. Encounters, descents and out-of-combat death use the major overlay; FIGHT IT OUT opens the combat screen at round 1.
   4. HUD + condition chips match the mock; MARKS / CENTRE / MAKE CAMP work from the top chips with their sheets.
   5. Guards hold on every new button; `npm test` green with every shell test re-pinned; `build:www` exit 0; engine/content/parity diff empty; the Pixel 7 DR round signs it off.
