@@ -1657,8 +1657,11 @@ html,body{height:100%}
 // BEFORE initTabs runs so its first showTab("maze") assignment is not a
 // TDZ error; renderRail() (further down) reads it. showTab never reads S
 // directly (S is declared later) — it re-runs the rail's own visibility
-// check through window.renderRail?.(), which is undefined until the
-// classic bridge line executes and is a harmless no-op at tab-init.
+// check through window.renderRail, GUARDED on window.__mzState: renderRail
+// is a hoisted classic-script global, so it already exists at tab-init and
+// would read S inside its TDZ (a boot-killing ReferenceError, seen on the
+// Pixel 7 2026-09-17); __mzState is assigned right after `let S`, so it is
+// the "state exists" sentinel.
 let mwActiveTab = "maze";
 (function initTabs() {
   const tabs = Array.from(document.querySelectorAll(".mw-tab"));
@@ -1684,7 +1687,7 @@ let mwActiveTab = "maze";
     mwActiveTab = name;
     const railEl = document.getElementById("mw-rail");
     if (railEl) railEl.hidden = name !== "maze";
-    if (name === "maze") window.renderRail?.();
+    if (name === "maze" && window.__mzState) window.renderRail?.();
     // DFB-03: every open of the Oracle lands on the most recent line.
     if (name === "oracle") window.__mzOracleToNewest?.();
     // Phase 33 (UIF-02, site 2): returning to the map from Hero/Gear/Oracle/

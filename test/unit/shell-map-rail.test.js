@@ -367,7 +367,11 @@ test("(o) 2026-09-16 UAT ruling: the rail is a map-tab element — mwActiveTab i
   const showTabRegion = sliceBetween(CODE, "function showTab(name) {", 'for (const btn of tabs) btn.addEventListener("click"');
   assert.match(showTabRegion, /mwActiveTab = name;/);
   assert.match(showTabRegion, /railEl\.hidden = name !== "maze";/);
-  assert.match(showTabRegion, /if \(name === "maze"\) window\.renderRail\?\.\(\);/);
+  // 2026-09-17 boot fix: renderRail is a hoisted classic global, so the
+  // tab-init showTab("maze") must not call it before `let S` runs — the
+  // __mzState sentinel (assigned right after S) is the guard.
+  assert.match(showTabRegion, /if \(name === "maze" && window\.__mzState\) window\.renderRail\?\.\(\);/);
+  assert.doesNotMatch(showTabRegion, /if \(name === "maze"\) window\.renderRail/);
   assert.doesNotMatch(showTabRegion, /\bS\./);
 
   assert.match(railRegion(), /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze";/);
