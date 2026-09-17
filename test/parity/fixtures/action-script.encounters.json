@@ -1,10 +1,50 @@
 {
   "_note": "Each scenario's seed was found by brute-force search: run newRun(seed) then a single direct springTrap/openChest/encounterDot call and keep the first seed whose result matches the scenario's target outcome (a sprung/damaging trap, an opened chest, a plain Table Four row, a Faerie encounter, and a Disease/Poison affliction). 'springTrap'/'openChest'/'encounterDot' are internal (non-validated) actions, mirroring action-script.combat.json's 'startCombat' precedent — the harness clones/rehydrates-rng/persists by hand, the same shape applyAction itself uses.",
   "scenarios": [
-    { "name": "trap", "seed": 1, "actions": [{ "type": "springTrap" }] },
-    { "name": "chest", "seed": 2, "actions": [{ "type": "openChest" }] },
-    { "name": "tablefour", "seed": 3, "actions": [{ "type": "encounterDot" }] },
-    { "name": "faerie", "seed": 38, "actions": [{ "type": "encounterDot" }] },
-    { "name": "affliction", "seed": 160, "actions": [{ "type": "encounterDot" }] }
+    {
+      "name": "trap", "seed": 1, "actions": [{ "type": "springTrap" }],
+      "chargenDivergence": {
+        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
+        "before": { "skills": { "Climbing": 1, "Ambidextrous": 1, "Runes/Signs": 1 } },
+        "after": { "skills": { "Ambidextrous": 1, "Runes/Signs": 1 } },
+        "rationale": "ABIL-02: as chargen seed 1 — Climbing dropped outright; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. springTrap's dodge never read Climbing."
+      }
+    },
+    {
+      "name": "chest", "seed": 2, "actions": [{ "type": "openChest" }],
+      "chargenDivergence": {
+        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
+        "before": { "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 } },
+        "after": { "skills": { "Acute Hearing": 1, "Night Vision": 1 } },
+        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills."
+      }
+    },
+    {
+      "name": "tablefour", "seed": 3, "actions": [{ "type": "encounterDot" }],
+      "chargenDivergence": {
+        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
+        "before": { "skills": { "Heft": 1, "Silence": 1 } },
+        "after": { "skills": { "Heft": 1 } },
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills."
+      }
+    },
+    {
+      "name": "faerie", "seed": 38, "actions": [{ "type": "encounterDot" }],
+      "chargenDivergence": {
+        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
+        "before": { "skills": { "Silence": 1, "Kata": 1 } },
+        "after": { "skills": {} },
+        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills."
+      }
+    },
+    {
+      "name": "affliction", "seed": 160, "actions": [{ "type": "encounterDot" }],
+      "chargenDivergence": {
+        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
+        "before": { "skills": { "Acute Hearing": 1, "Kata": 1, "Locks": 1 } },
+        "after": { "skills": { "Acute Hearing": 1, "Locks": 1 } },
+        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched."
+      }
+    }
   ]
 }

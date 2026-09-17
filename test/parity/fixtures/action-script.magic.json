@@ -31,7 +31,15 @@
     {
       "name": "potion",
       "seed": 1,
-      "actions": [{ "type": "drinkPotion" }]
+      "actions": [{ "type": "drinkPotion" }],
+      "chargenDivergence": {
+        "phase": 38,
+        "requirements": ["ABIL-02"],
+        "fields": ["skills"],
+        "before": { "skills": { "Climbing": 1, "Ambidextrous": 1, "Runes/Signs": 1 } },
+        "after": { "skills": { "Ambidextrous": 1, "Runes/Signs": 1 } },
+        "rationale": "ABIL-02: as chargen seed 1 — Climbing was dropped outright by the reshape; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills."
+      }
     },
     {
       "name": "scroll",

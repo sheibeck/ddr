@@ -37,6 +37,9 @@ import {
   stripCloakArmorTxt,
   reconcilePendingLoot,
   reconcilePendingFight,
+  chargenShiftOf,
+  stripChargenShift,
+  chargenShiftDiffs,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -145,7 +148,10 @@ function comparable(state) {
     // Phase 37 (GEAR-03/GEAR-04): strip the new engine-only lazily-created
     // c.worn slot map too (see harness stripWornField) — mirrored here
     // because this file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, ...cRest } = rest.c;
+    // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
+    // too (see harness stripAbilitiesField) — mirrored here because this
+    // file keeps its own local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, ...cRest } = rest.c;
     // Phase 28 (ARMOR-04): the Cloak of Armor's rewritten `txt` is a purely
     // cosmetic content divergence (see harness/comparables.js's
     // stripCloakArmorTxt) — the `flee` scenario's seed 17 rolls this cloak
@@ -181,7 +187,13 @@ for (const scenario of FIXTURE.scenarios) {
     // scoped divergence (c.sp/c.gold/combat.parleyTried/combat.parleyInsulted);
     // see stripParleyDivergence's JSDoc in ./harness/comparables.js. Every other
     // scenario keeps comparing on the bare comparable().
-    const cmp = scenario.name === "parley" ? (s) => stripParleyDivergence(comparable(s)) : comparable;
+    const baseCmp = scenario.name === "parley" ? (s) => stripParleyDivergence(comparable(s)) : comparable;
+    // Phase 38 (ABIL-02): win/lose/lose-plain/flee/parley all carry a
+    // declared chargenDivergence (the table reshape moved their chargen
+    // c.skills) — wrap the base comparable (including any parley strip)
+    // with the shift strip.
+    const shift = chargenShiftOf(scenario);
+    const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
     // FID-07 (Phase 24, plan 24-02): a scenario MAY carry a generic
     // "action-path" divergence record — declares that the per-action byte
     // diff is skipped from a given action index on (the action path itself
@@ -193,6 +205,12 @@ for (const scenario of FIXTURE.scenarios) {
 
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
+
+    if (shift) {
+      const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+      assert.equal(shiftDiffs.before, null, `scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+      assert.equal(shiftDiffs.after, null, `scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+    }
 
     const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(

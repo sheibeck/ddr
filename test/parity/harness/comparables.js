@@ -200,6 +200,26 @@ function stripWornField(c) {
   return rest;
 }
 
+/** stripAbilitiesField(c) — Phase 38 (ABIL-01/02/03) adds `c.abilities`, an
+ * ordered array of catalog ids present on EVERY character (a plain `[]` on
+ * a Magic User) — table actives split out of `c.skills` at chargen plus any
+ * level-pool picks rolled from a derived stream (level-1 guarantee,
+ * per-level-up, Joiner recruitment). The frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) has NO equivalent field at all, so
+ * this is carved out exactly like stripWornField/stripTimersField
+ * immediately above: a structural tripwire, wired as the innermost-but-one
+ * wrapper directly around stripWornField in all three comparable chains, so
+ * a future ability-driving fixture (or a determinism test reusing this
+ * comparable) never reaches the diff on this genuine, permanent,
+ * deliberate divergence. `state.party`/`state.pendingJoiner` member sheets
+ * also carry `abilities` but need no separate carve-out — both top-level
+ * fields are already stripped wholesale by every comparable below. */
+function stripAbilitiesField(c) {
+  if (!c || !("abilities" in c)) return c;
+  const { abilities, ...rest } = c;
+  return rest;
+}
+
 /** stripNameField(c) — DR-name-generator (2026-09-09) makes `c.name` a
  * GENERATIVE first × surname build (engine/character.js's nameFor over the new
  * content/names.js { first, sur } banks) instead of the frozen prototype's
@@ -307,7 +327,7 @@ export function movementComparable(state) {
   // never carries a live combat), added so D-14's "all three comparables"
   // carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))))))));
   return rest;
 }
 
@@ -385,7 +405,7 @@ export function combatComparable(state) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))))))));
   return rest;
 }
 
@@ -728,6 +748,66 @@ export function chargenDivergenceFor(fixture, seed) {
 }
 
 /**
+ * chargenShiftOf(holder) — Phase 38 (ABIL-02): the scenario-scoped/script-
+ * top-level analog of `chargenDivergenceFor` above, for a scenario/magic/
+ * economy/movement fixture whose HERO's chargen `c.skills` the Special
+ * Skills table reshape moved (a table-active key left `c.skills` for
+ * `c.abilities`). A `chargenDivergence` record declares a CHARGEN-TIME field
+ * change — the analog of a chargen fixture's own `divergences` map entry,
+ * but attached directly to a combat/magic/encounters scenario object or a
+ * movement/economy script's top level (mirroring `scenario.divergence`'s
+ * placement). Returns `holder?.chargenDivergence ?? null`.
+ */
+export function chargenShiftOf(holder) {
+  return holder?.chargenDivergence ?? null;
+}
+
+/**
+ * stripChargenShift(state, record) — Phase 38 (ABIL-02): strips a
+ * `chargenDivergence` record's declared fields from `state.c`, reusing
+ * `stripScenarioDivergence`'s exact mechanism (both records share the same
+ * `{fields, before, after, rationale}` shape) — a separate export purely so
+ * a replay site's intent reads clearly (`chargenShiftOf`/`stripChargenShift`
+ * vs. `scenario.divergence`/`stripScenarioDivergence`), never a hybrid of
+ * the two record kinds on one holder. Returns `state` unchanged when
+ * `record` is falsy.
+ */
+export function stripChargenShift(state, record) {
+  return stripScenarioDivergence(state, record);
+}
+
+/**
+ * chargenShiftDiffs(protoC, engineC, record) — Phase 38 (ABIL-02): the
+ * `declaredEndDiffs`-style before/after proof for a `chargenDivergence`
+ * record, scoped to `record.fields` on the two ALREADY-ROLLED characters
+ * (chargen-time, not end-of-scenario) — the prototype's `c` must equal
+ * `record.before` and the engine's `c` must equal `record.after` for every
+ * declared field. Returns `{ before, after }`, each the result of
+ * `diffState` (never a bare `assert.deepStrictEqual` — the prototype's `c`
+ * fields can live in a `node:vm` sandbox realm, see chargen-parity.test.js's
+ * identical comment) comparing the MEASURED value against the DECLARED one;
+ * a caller asserts both are `null`. Throws on a missing/empty
+ * `record.fields` array — a record that declares nothing to check is
+ * malformed, mirroring `declaredEndDiffs`'s own guard.
+ */
+export function chargenShiftDiffs(protoC, engineC, record) {
+  const fields = record?.fields;
+  if (!fields || fields.length === 0) {
+    throw new Error("chargenShiftDiffs: a chargenDivergence record must declare a non-empty `fields` array");
+  }
+  const before = {};
+  const after = {};
+  for (const f of fields) {
+    before[f] = protoC?.[f];
+    after[f] = engineC?.[f];
+  }
+  return {
+    before: diffState(before, record.before),
+    after: diffState(after, record.after),
+  };
+}
+
+/**
  * stripDeclaredFields(c, fields) — the seed-scoped/field-scoped strip that
  * pairs with chargenDivergenceFor above: returns a shallow copy of `c`
  * without the keys named in `fields` (a record's own `fields` array). A
@@ -778,7 +858,7 @@ export function economyComparable(state) {
   // (neither family carries a live combat), added so D-14's "all three
   // comparables" carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c)))))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))))));
   return rest;
 }
 

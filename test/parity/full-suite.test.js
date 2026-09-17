@@ -46,6 +46,9 @@ import {
   skipsByteDiffAt,
   declaredEndDiffs,
   stockMarkupDiff as checkStockMarkup,
+  chargenShiftOf,
+  stripChargenShift,
+  chargenShiftDiffs,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -87,6 +90,10 @@ const CHARACTER_FIELDS = [
   // prototype-side equivalent — plain assignment (no rng), stripped again
   // below before diffState. See chargen-parity.test.js for the full rationale.
   "bag",
+  // Phase 38 (ABIL-01/02/03): engine-only ordered array of catalog ability
+  // ids, no prototype-side equivalent — stripped again below before
+  // diffState. See chargen-parity.test.js for the full rationale.
+  "abilities",
 ];
 
 test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/economy/encounters", async (t) => {
@@ -100,7 +107,7 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       assert.deepStrictEqual(Object.keys(engineC).sort(), [...CHARACTER_FIELDS, "name"].sort());
       // DR-name-generator: strip the generative "name" from both sides — a
       // deliberate cosmetic divergence with no rng-order effect.
-      const { name: _en, darkFor, flightLeft, flightCooldown, bag, ...engineCForDiff } = engineC;
+      const { name: _en, darkFor, flightLeft, flightCooldown, bag, abilities, ...engineCForDiff } = engineC;
       const { name: _pn, ...protoCForDiff } = ctx.S.c;
 
       // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
@@ -126,14 +133,25 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
   });
 
   await t.test("movement: the movement fixture matches the frozen prototype", () => {
+    // Phase 38 (ABIL-02): the movement fixture's seed 256 (Thief Cat
+    // Burglar) is a declared chargenDivergence (the table reshape moved its
+    // c.skills) — wrap movementComparable with the shift strip, and prove
+    // both sides' chargen c matches the record's before/after first.
+    const shift = chargenShiftOf(MOVEMENT_FIXTURE);
+    const cmp = shift ? (s) => stripChargenShift(movementComparable(s), shift) : movementComparable;
     const ctx = loadPrototypeSandbox({ seed: MOVEMENT_FIXTURE.seed });
     let engineState = newRun(MOVEMENT_FIXTURE.seed);
-    assert.equal(diffState(movementComparable(ctx.S), movementComparable(engineState)), null);
+    if (shift) {
+      const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+      assert.equal(shiftDiffs.before, null, `movement fixture: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+      assert.equal(shiftDiffs.after, null, `movement fixture: engine chargen shift != declared after at ${shiftDiffs.after}`);
+    }
+    assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
     MOVEMENT_FIXTURE.actions.forEach((action, i) => {
       ctx.move(action.dir);
       const { state } = applyAction(engineState, action);
       engineState = state;
-      const d = diffState(movementComparable(ctx.S), movementComparable(engineState));
+      const d = diffState(cmp(ctx.S), cmp(engineState));
       assert.equal(d, null, `movement action ${i}: diverged at ${d}`);
     });
   });
@@ -145,7 +163,12 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // combat.parleyInsulted); see the imported stripper's JSDoc in
       // ./harness/comparables.js. Every other scenario (win/lose/flee) keeps
       // comparing on the bare combatComparable.
-      const cmp = scenario.name === "parley" ? (s) => stripParleyDivergence(combatComparable(s)) : combatComparable;
+      const baseCmp = scenario.name === "parley" ? (s) => stripParleyDivergence(combatComparable(s)) : combatComparable;
+      // Phase 38 (ABIL-02): win/lose/lose-plain/flee/parley all carry a
+      // declared chargenDivergence (the table reshape moved their chargen
+      // c.skills) — wrap the base comparable with the shift strip.
+      const shift = chargenShiftOf(scenario);
+      const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
       // FID-07 (Phase 24, plan 24-02): the identical consult/skip/end-assert
       // logic as combat-parity.test.js — both replay sites must agree (the
       // Phase 23 rule). `null` for every scenario today (no-op).
@@ -153,6 +176,11 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
 
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
+      if (shift) {
+        const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+        assert.equal(shiftDiffs.before, null, `combat scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+        assert.equal(shiftDiffs.after, null, `combat scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+      }
       assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
       scenario.actions.forEach((action, i) => {
         if (action.type === "startCombat") {
@@ -189,10 +217,19 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // selects the scenario-scoped stripper (no fixture uses that shape
       // today, but it stays supported).
       const pathDiv = actionPathDivergenceOf(scenario);
-      const cmp = pathDiv ? combatComparable : scenario.divergence ? (s) => stripScenarioDivergence(combatComparable(s), scenario.divergence) : combatComparable;
+      let cmp = pathDiv ? combatComparable : scenario.divergence ? (s) => stripScenarioDivergence(combatComparable(s), scenario.divergence) : combatComparable;
+      // Phase 38 (ABIL-02): the "potion" scenario (seed 1) carries a declared
+      // chargenDivergence — wrap outermost, on top of pathDiv/scenario.divergence.
+      const shift = chargenShiftOf(scenario);
+      if (shift) { const inner = cmp; cmp = (s) => stripChargenShift(inner(s), shift); }
 
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
+      if (shift) {
+        const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+        assert.equal(shiftDiffs.before, null, `magic scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+        assert.equal(shiftDiffs.after, null, `magic scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+      }
       assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
       const allEventTypes = [];
       scenario.actions.forEach((action, i) => {
@@ -254,10 +291,19 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // markup logic as economy-parity.test.js — both replay sites must
       // agree. `null` today (no-op).
       const pathDiv = actionPathDivergenceOf(ECONOMY_FIXTURE);
+      // Phase 38 (ABIL-02): the economy fixture's script top level carries a
+      // declared chargenDivergence (seed 3, Thief Pickpocket).
+      const shift = chargenShiftOf(ECONOMY_FIXTURE);
+      const cmp = shift ? (s) => stripChargenShift(economyComparable(s), shift) : economyComparable;
 
       const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
       let engineState = newRun(ECONOMY_FIXTURE.seed);
-      assert.equal(diffState(economyComparable(ctx.S), economyComparable(engineState)), null);
+      if (shift) {
+        const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+        assert.equal(shiftDiffs.before, null, `economy fixture: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+        assert.equal(shiftDiffs.after, null, `economy fixture: engine chargen shift != declared after at ${shiftDiffs.after}`);
+      }
+      assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
       ctx.S.c.gold = 5000;
       engineState.c.gold = 5000;
       ECONOMY_FIXTURE.actions.forEach((action, i) => {
@@ -270,7 +316,7 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
         }
 
         if (!skipsByteDiffAt(pathDiv, i)) {
-          const d = diffState(economyComparable(ctx.S), economyComparable(engineState));
+          const d = diffState(cmp(ctx.S), cmp(engineState));
           assert.equal(d, null, `economy action ${i}: diverged at ${d}`);
         }
       });
@@ -282,13 +328,22 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       }
     }
     for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+      // Phase 38 (ABIL-02): trap/chest/tablefour/faerie/affliction all carry
+      // a declared chargenDivergence.
+      const shift = chargenShiftOf(scenario);
+      const cmp = shift ? (s) => stripChargenShift(economyComparable(s), shift) : economyComparable;
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
-      assert.equal(diffState(economyComparable(ctx.S), economyComparable(engineState)), null);
+      if (shift) {
+        const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+        assert.equal(shiftDiffs.before, null, `encounters scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+        assert.equal(shiftDiffs.after, null, `encounters scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+      }
+      assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
       scenario.actions.forEach((action, i) => {
         const { state } = runEconomyAction(ctx, engineState, action);
         engineState = state;
-        const d = diffState(economyComparable(ctx.S), economyComparable(engineState));
+        const d = diffState(cmp(ctx.S), cmp(engineState));
         assert.equal(d, null, `encounters scenario ${scenario.name}, action ${i}: diverged at ${d}`);
       });
     }

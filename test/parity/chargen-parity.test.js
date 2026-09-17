@@ -67,6 +67,11 @@ const CHARACTER_FIELDS = [
   // every other chargen field stays byte-identical; stripped again below
   // before diffState, same treatment as darkFor/flight above.
   "bag",
+  // Phase 38 (ABIL-01/02/03): a brand-new, engine-only ordered array of
+  // catalog ability ids (see engine/character.js's rollCharacter/
+  // splitTableAbilities) with NO prototype-side equivalent at all — stripped
+  // again below before diffState, same treatment as bag/darkFor/flight above.
+  "abilities",
 ];
 
 test("engine chargen matches the frozen prototype for every fixture seed", () => {
@@ -103,7 +108,7 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
     // name differs from the engine's first × surname build), with no mechanical
     // effect and no change to the rng draw count/order, so every OTHER field
     // still compares byte-identical.
-    const { name: _engineName, darkFor, flightLeft, flightCooldown, bag, ...engineCForDiff } = engineC;
+    const { name: _engineName, darkFor, flightLeft, flightCooldown, bag, abilities, ...engineCForDiff } = engineC;
     const { name: _protoName, ...protoCForDiff } = protoC;
 
     // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
@@ -150,7 +155,11 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
 test("chargen fixture divergence records are narrow and well-formed (FID-06)", () => {
   const divergences = FIXTURE.divergences || {};
   const keys = Object.keys(divergences);
-  assert.ok(keys.length <= 2, `expected at most 2 divergence records, got ${keys.length}`);
+  // Phase 23 (FID-06) contributed 2 records (seeds 15, 24); Phase 38
+  // (ABIL-02, the Special Skills table reshape) contributes 7 more (seeds
+  // 1, 2, 3, 4, 6, 13, 32) — see test/parity/FIXTURE-INVENTORY.md's Phase 38
+  // section for the full measured before/after table.
+  assert.ok(keys.length <= 9, `expected at most 9 divergence records, got ${keys.length}`);
   for (const key of keys) {
     assert.ok(SEEDS.includes(Number(key)), `divergence key ${key} is not in the fixture's seeds array`);
     const record = divergences[key];

@@ -48,6 +48,9 @@ import {
   skipsByteDiffAt,
   declaredEndDiffs,
   stockMarkupDiff as checkStockMarkup,
+  chargenShiftOf,
+  stripChargenShift,
+  chargenShiftDiffs,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -62,18 +65,28 @@ test("economy parity (store visit): engine matches the frozen prototype after ev
   // top level. `null` today (no record declared yet) — a no-op until Plan
   // 24-04 declares the Pickpocket markup here.
   const pathDiv = actionPathDivergenceOf(ECONOMY_FIXTURE);
+  // Phase 38 (ABIL-02): the economy fixture's script top level carries a
+  // declared chargenDivergence (seed 3, Thief Pickpocket).
+  const shift = chargenShiftOf(ECONOMY_FIXTURE);
+  const cmp = shift ? (s) => stripChargenShift(comparable(s), shift) : comparable;
 
   const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
   let engineState = newRun(ECONOMY_FIXTURE.seed);
 
-  const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+  if (shift) {
+    const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+    assert.equal(shiftDiffs.before, null, `economy fixture: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+    assert.equal(shiftDiffs.after, null, `economy fixture: engine chargen shift != declared after at ${shiftDiffs.after}`);
+  }
+
+  const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
   assert.equal(initialDivergence, null, `seed ${ECONOMY_FIXTURE.seed}: initial boot state diverges at ${initialDivergence}`);
 
   // Bump gold identically on both sides so the scenario can afford a full
   // spread of purchase categories (see the fixture's `_note`).
   ctx.S.c.gold = 5000;
   engineState.c.gold = 5000;
-  assert.equal(diffState(comparable(ctx.S), comparable(engineState)), null, "the gold bump itself must land identically on both sides");
+  assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null, "the gold bump itself must land identically on both sides");
 
   const allEventTypes = [];
   ECONOMY_FIXTURE.actions.forEach((action, i) => {
@@ -102,7 +115,7 @@ test("economy parity (store visit): engine matches the frozen prototype after ev
     }
 
     if (!skipsByteDiffAt(pathDiv, i)) {
-      const divergence = diffState(comparable(ctx.S), comparable(engineState));
+      const divergence = diffState(cmp(ctx.S), cmp(engineState));
       assert.equal(divergence, null, `action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`);
     }
   });
@@ -126,10 +139,21 @@ test("economy parity (store visit): engine matches the frozen prototype after ev
 
 for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
   test(`encounters parity (${scenario.name}): engine matches the frozen prototype after every action`, () => {
+    // Phase 38 (ABIL-02): trap/chest/tablefour/faerie/affliction all carry a
+    // declared chargenDivergence.
+    const shift = chargenShiftOf(scenario);
+    const cmp = shift ? (s) => stripChargenShift(comparable(s), shift) : comparable;
+
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
 
-    const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+    if (shift) {
+      const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+      assert.equal(shiftDiffs.before, null, `scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+      assert.equal(shiftDiffs.after, null, `scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+    }
+
+    const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(
       initialDivergence,
       null,
@@ -142,7 +166,7 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
       engineState = state;
       allEventTypes.push(...events.map((e) => e.type));
 
-      const divergence = diffState(comparable(ctx.S), comparable(engineState));
+      const divergence = diffState(cmp(ctx.S), cmp(engineState));
       assert.equal(
         divergence,
         null,

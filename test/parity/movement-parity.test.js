@@ -24,7 +24,7 @@ import url from "node:url";
 import { newRun, applyAction } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { reconcilePendingFight } from "./harness/comparables.js";
+import { reconcilePendingFight, chargenShiftOf, stripChargenShift, chargenShiftDiffs } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -85,20 +85,35 @@ function comparable(state) {
     // Phase 37 (GEAR-03/GEAR-04): strip the new engine-only lazily-created
     // c.worn slot map too (see harness stripWornField) — mirrored here
     // because this file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, ...cRest } = rest.c;
+    // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
+    // too (see harness stripAbilitiesField) — mirrored here because this
+    // file keeps its own local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, ...cRest } = rest.c;
     rest.c = cRest;
   }
   return rest;
 }
 
 test("engine matches the frozen prototype after every action in the movement fixture", () => {
+  // Phase 38 (ABIL-02): the movement fixture's seed 256 (Thief Cat Burglar)
+  // carries a declared chargenDivergence (the table reshape moved its
+  // chargen c.skills) at the script's top level.
+  const shift = chargenShiftOf(FIXTURE);
+  const cmp = shift ? (s) => stripChargenShift(comparable(s), shift) : comparable;
+
   const ctx = loadPrototypeSandbox({ seed: FIXTURE.seed });
   let engineState = newRun(FIXTURE.seed);
+
+  if (shift) {
+    const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+    assert.equal(shiftDiffs.before, null, `movement fixture: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+    assert.equal(shiftDiffs.after, null, `movement fixture: engine chargen shift != declared after at ${shiftDiffs.after}`);
+  }
 
   // Sanity: both sides must start from the identical rolled character/floor
   // before any action runs (chargen-parity already proves this in general;
   // this is a fast, local re-confirmation for this specific seed).
-  const initialDivergence = diffState(comparable(ctx.S), comparable(engineState));
+  const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
   assert.equal(initialDivergence, null, `seed ${FIXTURE.seed}: initial boot state diverges at ${initialDivergence}`);
 
   const allEventTypes = [];
@@ -109,7 +124,7 @@ test("engine matches the frozen prototype after every action in the movement fix
     engineState = state;
     allEventTypes.push(...events.map((e) => e.type));
 
-    const divergence = diffState(comparable(ctx.S), comparable(engineState));
+    const divergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(divergence, null, `action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`);
   });
 

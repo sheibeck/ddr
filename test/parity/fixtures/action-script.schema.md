@@ -97,7 +97,32 @@ exact same ordered action list, so any divergence in resulting state (per
   shape's own before/after assertions. It is declared, measured, and
   asserted — never a blanket skip, and never a substitute for comparing every
   action before `fromAction` byte-for-byte as normal.
-- **The rule:** a `divergences`/`divergence` record is the ONLY sanctioned
+- `chargenDivergence` (object, optional; Phase 38, ABIL-02) — the scenario-
+  scoped/script-top-level analog of `divergences` above, for a combat/magic/
+  economy/encounters/movement fixture whose HERO's CHARGEN-TIME `c.skills`
+  the Special Skills table reshape moved (a table-active key left `c.skills`
+  for `c.abilities`). Same record shape as a `divergences` entry
+  (`{ phase, requirements, fields, before, after, rationale }`), attached
+  directly to a scenario object (e.g. a combat/magic/encounters scenario) OR
+  a script fixture's own top level (e.g. the economy/movement fixtures,
+  keyed by a single `seed`, not by scenario). It is a SEPARATE key from
+  `divergence` — the two record kinds are never combined on one holder; a
+  `chargenDivergence` declares a field that diverges from the moment the
+  hero is rolled (before any action runs), while `divergence`/`divergence
+  {kind:"action-path"}` declare a field/action-path that diverges as a
+  CONSEQUENCE of the scenario's actions. The harness helpers live beside the
+  Phase 23/24 ones in `test/parity/harness/comparables.js`:
+  `chargenShiftOf(holder)` looks up the record (`holder?.chargenDivergence
+  ?? null`); `stripChargenShift(state, record)` strips the declared fields
+  from `state.c` (reusing `stripScenarioDivergence`'s mechanism); and
+  `chargenShiftDiffs(protoC, engineC, record)` machine-checks BOTH
+  already-rolled characters against the record's `before`/`after` — a caller
+  asserts both results are `null` BEFORE stripping, exactly like every other
+  divergence record kind. Applied at the fixture's initial-boot comparison,
+  wrapping the scenario's own `divergence`/`scenario.divergence` handling
+  OUTERMOST (a `chargenDivergence`'s field diverges from boot onward, so its
+  strip must survive every later per-action byte diff too).
+- **The rule:** a `divergences`/`divergence`/`chargenDivergence` record is the ONLY sanctioned
   way to keep a deliberately-changed fixture result in the parity suite.
   `test/parity/prototype-master.js.txt` (the frozen golden master) is NEVER
   edited, and a fixture's `seeds`/`actions`/`scenarios` are NEVER trimmed or

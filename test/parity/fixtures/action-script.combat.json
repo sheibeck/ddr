@@ -7,7 +7,15 @@
       "actions": [
         { "type": "startCombat", "wandering": false, "forced": "Beasts" },
         { "type": "attack" }
-      ]
+      ],
+      "chargenDivergence": {
+        "phase": 38,
+        "requirements": ["ABIL-02"],
+        "fields": ["skills"],
+        "before": { "skills": { "Heft": 1, "Silence": 1 } },
+        "after": { "skills": { "Heft": 1 } },
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway)."
+      }
     },
     {
       "name": "lose",
@@ -37,6 +45,14 @@
         "stateBefore": { "dead": true },
         "stateAfter": { "dead": false },
         "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward (Phase 24) and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): this Fridgian Soldier's Beasts phobia triggers at Fight!. The prototype froze him and spent action 1 shaking it off (no strike die drawn); the engine sets combat.afraid = 2 instead and action 1 is a real strike at need - 3 and half damage, so the rng draw sequence diverges from action 1 onward -- on top of the Phase 24 frenzy/hide divergence above. fromAction moves from 1 to 0 because the fight-step combat object already differs (afraid counter vs freeze flag) the instant Fight! resolves. After re-measured live on 2026-09-16 (wp 22->51, sp 30->45; the hero still survives)."
+      },
+      "chargenDivergence": {
+        "phase": 38,
+        "requirements": ["ABIL-02"],
+        "fields": ["skills"],
+        "before": { "skills": { "Stealth": 1, "Cooking": 1, "Leaping": 1 } },
+        "after": { "skills": { "Stealth": 1, "Cooking": 1 } },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep (an active), which lives in c.abilities (sweep) instead of c.skills. The existing action-path record above is untouched."
       }
     },
     {
@@ -85,7 +101,15 @@
         { "type": "attack" },
         { "type": "attack" },
         { "type": "attack" }
-      ]
+      ],
+      "chargenDivergence": {
+        "phase": 38,
+        "requirements": ["ABIL-02"],
+        "fields": ["skills"],
+        "before": { "skills": { "Leaping": 1, "Sewing": 1, "Night Vision": 1 } },
+        "after": { "skills": { "Sewing": 1, "Night Vision": 1 } },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The action path stays byte-identical (this scenario carries NO divergence record — the lose-plain pin actionPathDivergenceOf === null still holds)."
+      }
     },
     {
       "name": "flee",
@@ -93,7 +117,15 @@
       "actions": [
         { "type": "startCombat", "wandering": false, "forced": "Beasts" },
         { "type": "flee" }
-      ]
+      ],
+      "chargenDivergence": {
+        "phase": 38,
+        "requirements": ["ABIL-02"],
+        "fields": ["skills"],
+        "before": { "skills": { "Heft": 1, "Silence": 1 } },
+        "after": { "skills": { "Heft": 1 } },
+        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here."
+      }
     },
     {
       "name": "parley",
@@ -114,6 +146,14 @@
         "stateBefore": { "dead": false },
         "stateAfter": { "dead": false },
         "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes. Phase 31 (CMB-01, user ruling 2026-09-16): the Fight! split moves rollInitiative (and everything from it onward) out of startCombat into the new fight action, which now runs strictly AFTER the Knight/Con Artist/Court Mage foe-removal loop completes (that loop stays in the encounter step, in its existing position, ahead of the cut line) -- a genuine, structural rng-order change for any character whose sub draws in that loop. This Con Artist's level-1-foe escape roll (rng.d(6), one of the two Neds fled) now lands BEFORE the two initiative d20s instead of after, so the initiative outcome and every downstream draw shift; here the foes win initiative and land one pre-emptive strike before Talk-it-down is even attempted. Re-measured live on 2026-09-16 (wp 40->34, sp 7->5); the outcome is still a successful parley, just with a shallower wp/sp margin."
+      },
+      "chargenDivergence": {
+        "phase": 38,
+        "requirements": ["ABIL-02"],
+        "fields": ["skills"],
+        "before": { "skills": { "Leaping": 1, "Heft": 1, "Locks": 2 } },
+        "after": { "skills": { "Heft": 1, "Locks": 2 } },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched."
       }
     }
   ]

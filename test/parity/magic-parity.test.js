@@ -30,6 +30,9 @@ import {
   skipsByteDiffAt,
   declaredEndDiffs,
   reconcilePendingFight,
+  chargenShiftOf,
+  stripChargenShift,
+  chargenShiftDiffs,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -105,7 +108,10 @@ function comparable(state) {
     // Phase 37 (GEAR-03/GEAR-04): strip the new engine-only lazily-created
     // c.worn slot map too (see harness stripWornField) — mirrored here
     // because this file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, ...cRest } = rest.c;
+    // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
+    // too (see harness stripAbilitiesField) — mirrored here because this
+    // file keeps its own local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, ...cRest } = rest.c;
     rest.c = cRest;
   }
   return rest;
@@ -142,10 +148,20 @@ for (const scenario of FIXTURE.scenarios) {
     // selects the scenario-scoped stripper. Every other scenario keeps
     // comparing on the bare `comparable()`.
     const pathDiv = actionPathDivergenceOf(scenario);
-    const cmp = pathDiv ? comparable : scenario.divergence ? (s) => stripScenarioDivergence(comparable(s), scenario.divergence) : comparable;
+    let cmp = pathDiv ? comparable : scenario.divergence ? (s) => stripScenarioDivergence(comparable(s), scenario.divergence) : comparable;
+    // Phase 38 (ABIL-02): the "potion" scenario (seed 1) carries a declared
+    // chargenDivergence — wrap outermost, on top of pathDiv/scenario.divergence.
+    const shift = chargenShiftOf(scenario);
+    if (shift) { const inner = cmp; cmp = (s) => stripChargenShift(inner(s), shift); }
 
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
+
+    if (shift) {
+      const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
+      assert.equal(shiftDiffs.before, null, `scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
+      assert.equal(shiftDiffs.after, null, `scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+    }
 
     const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(

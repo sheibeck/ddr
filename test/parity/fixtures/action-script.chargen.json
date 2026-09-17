@@ -19,6 +19,62 @@
       "before": { "grimoire": ["Heal", "Strength", "Stupidity", "Detect Magic", "Sense Presence"] },
       "after": { "grimoire": ["Heal", "Strength", "Stupidity", "Detect Magic", "Sense Presence", "Freeze"] },
       "rationale": "The Apprentice's ready set was Heal/Strength with no attack spell; the new IDENT-02 guaranteed-attack top-up appends the first attack-kind spell of the already-shuffled `spare` list (Freeze). Zero new rng draws — the rng cursor is pinned unchanged by test/unit/chargen-rng-pin.test.js."
+    },
+    "1": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Climbing": 1, "Ambidextrous": 1, "Runes/Signs": 1 } },
+      "after": { "skills": { "Ambidextrous": 1, "Runes/Signs": 1 } },
+      "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry."
+    },
+    "2": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 } },
+      "after": { "skills": { "Acute Hearing": 1, "Night Vision": 1 } },
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills."
+    },
+    "3": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Heft": 1, "Silence": 1 } },
+      "after": { "skills": { "Heft": 1 } },
+      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills."
+    },
+    "4": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Climbing": 1, "Acute Hearing": 1, "Silence": 1 } },
+      "after": { "skills": { "Acute Hearing": 1 } },
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills."
+    },
+    "6": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Hardiness": 1, "Leaping": 1 } },
+      "after": { "skills": { "Hardiness": 1 } },
+      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry."
+    },
+    "13": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Death-touch": 1, "Tracking": 1 } },
+      "after": { "skills": {} },
+      "rationale": "ABIL-02: Death-touch was converted to the Death Touch active and Tracking was dropped outright; Death Touch landed in c.abilities (deathTouch) instead of c.skills, and Tracking's table position is now Battle Roar (also an active)."
+    },
+    "32": {
+      "phase": 38,
+      "requirements": ["ABIL-02"],
+      "fields": ["skills"],
+      "before": { "skills": { "Agility": 1, "Runes/Signs": 1, "Language": 1 } },
+      "after": { "skills": { "Runes/Signs": 1 } },
+      "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills."
     }
   }
 }

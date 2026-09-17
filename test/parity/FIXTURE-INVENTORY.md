@@ -721,3 +721,80 @@ chargen fixture, the economy script, and every encounters scenario (none of
 the three `encounterDot` seeds starts a combat) — is unchanged, with no
 carve-out. `test/parity/prototype-master.js.txt` is never edited; no
 existing scenario's `seed`/`actions` array was touched.
+
+## Phase 38: Special Skills reshape — 20 declared chargen-field divergences (ABIL-02/ABIL-03)
+
+ABIL-02 reshapes `content/skills.js`'s FIGHTER_SKILLS (12 entries) and
+THIEF_SKILLS (9 entries) POSITIONALLY: every key's object-literal position
+and per-position `cost` are preserved exactly (the chargen shuffle outcome
+by position — `rollSkills`' Fisher-Yates draw is unchanged), but a
+converted/replacement key now carries an `active: "<catalog id>"` marker
+instead of being a passive. Five passives per class survive verbatim
+(Fighter: Stealth, Hardiness, Ambidextrous, Cooking, Runes/Signs; Thief:
+Locks, Sewing, Night Vision, Heft, Acute Hearing); Language/Tracking/
+Climbing/Leaping are dropped outright; Death-touch/Agility/Kata (Fighter)
+and Kata/Silence (Thief) are converted into actives. `content/kit.js`'s
+FREE_SKILL is repointed to the key sitting at the OLD free key's EXACT
+table position (Cat Burglar→Dirty Trick, Acrobat→Smoke, Ninja→Silent Step,
+positions 7/8/9 of THIEF_SKILLS) in the SAME commit as the reshape, because
+`rollSkills` excludes the free key by POSITION via Fisher-Yates over
+`Object.keys(table)` — excluding a different position would permute a
+different draw outcome. `engine/character.js#splitTableAbilities` then
+moves every `c.skills` key whose table entry carries `active` into the new
+`c.abilities` array (ABIL-01/03's ordered ability-id list, carved out of
+every comparable via `stripAbilitiesField` — a brand-new engine-only field
+with NO prototype-side equivalent at all, present on EVERY character). The
+derived-stream level-pool rolls (`engine/rng.js#derivedRng`, the SC-3
+level-1 guarantee, `checkLevel`'s per-level-up pick, the Joiner's roll) add
+ZERO draws to the run's main rng — every seed's `rngState` at every
+measured checkpoint (`rollCharacter`, `newRun`, `meetJoiner`) is unchanged
+(`test/unit/chargen-rng-pin.test.js` stays green and UNTOUCHED).
+
+Every fixture seed/scenario whose chargen roll picked one of the seven
+converted/dropped table keys moves its `c.skills` field — measured live
+against `loadPrototypeSandbox({seed}).S.c.skills` (prototype) and
+`newRun(seed).c.skills` (engine) — and is declared here, never a blanket
+regeneration. Chargen-fixture seeds use the existing `divergences` map
+(`chargenDivergenceFor`); every other fixture uses the new `chargenDivergence`
+key (`chargenShiftOf`/`stripChargenShift`/`chargenShiftDiffs`,
+`test/parity/harness/comparables.js`), documented in
+`action-script.schema.md`. All 20 records declare `fields: ["skills"]` only
+— `c.vp`, `rngState`, and every other chargen field stay byte-identical per
+seed; the moved table-active id(s) land in `c.abilities`, which is carved
+out structurally, not declared per-record.
+
+| Fixture | Scenario / seed | Hero | `skills` before (prototype) | `skills` after (engine) | moved to c.abilities | Rationale |
+|---|---|---|---|---|---|---|
+| action-script.chargen.json | seed 1 | Fighter Knight Fridgian | `{Climbing:1, Ambidextrous:1, "Runes/Signs":1}` | `{Ambidextrous:1, "Runes/Signs":1}` | secondWind | Climbing dropped; its slot is now an active |
+| action-script.chargen.json | seed 2 | Thief Cat Burglar Wilmsry | `{Climbing:1, "Acute Hearing":1, Leaping:1, "Night Vision":1}` | `{"Acute Hearing":1, "Night Vision":1}` | dirtyTrick (free grant), smoke | FREE_SKILL same-position repoint + Leaping dropped |
+| action-script.chargen.json | seed 3 | Thief Pickpocket Human | `{Heft:1, Silence:1}` | `{Heft:1}` | silentStep | Silence converted |
+| action-script.chargen.json | seed 4 | Thief Cat Burglar Dwarven | `{Climbing:1, "Acute Hearing":1, Silence:1}` | `{"Acute Hearing":1}` | dirtyTrick (free), silentStep | FREE_SKILL repoint + Silence converted |
+| action-script.chargen.json | seed 6 | Fighter Knight Troll | `{Hardiness:1, Leaping:1}` | `{Hardiness:1}` | sweep | Leaping dropped |
+| action-script.chargen.json | seed 13 | Fighter Woodsman Elven | `{"Death-touch":1, Tracking:1}` | `{}` | deathTouch, battleRoar | Death-touch converted, Tracking dropped |
+| action-script.chargen.json | seed 32 | Fighter Samurai Wilmsry | `{Agility:1, "Runes/Signs":1, Language:1}` | `{"Runes/Signs":1}` | sidestep, pommelStrike | Agility converted, Language dropped |
+| action-script.combat.json | win / seed 3 | Thief Pickpocket Human | `{Heft:1, Silence:1}` | `{Heft:1}` | silentStep | as seed 3; opening-strike event renamed `backstab` (was `silenceStrike`, events not byte-diffed) |
+| action-script.combat.json | lose / seed 14 | Fighter Soldier Fridgian | `{Stealth:1, Cooking:1, Leaping:1}` | `{Stealth:1, Cooking:1}` | sweep | Leaping dropped; existing action-path record untouched |
+| action-script.combat.json | lose-plain / seed 1119 | Thief Cutthroat Human | `{Leaping:1, Sewing:1, "Night Vision":1}` | `{Sewing:1, "Night Vision":1}` | smoke | Leaping dropped; the action path stays byte-identical |
+| action-script.combat.json | flee / seed 17 | Thief Pilfer Fridgian | `{Heft:1, Silence:1}` | `{Heft:1}` | silentStep | Silence converted; flee never reaches the opening strike |
+| action-script.combat.json | parley / seed 303 | Thief Con Artist Wilmsry | `{Leaping:1, Heft:1, Locks:2}` | `{Heft:1, Locks:2}` | smoke | Leaping dropped; existing action-path record untouched |
+| action-script.magic.json | potion / seed 1 | Fighter Knight Fridgian | `{Climbing:1, Ambidextrous:1, "Runes/Signs":1}` | `{Ambidextrous:1, "Runes/Signs":1}` | secondWind | as seed 1 |
+| action-script.economy.json | seed 3 (script top level) | Thief Pickpocket Human | `{Heft:1, Silence:1}` | `{Heft:1}` | silentStep | as seed 3; existing action-path record (fromAction 0, stockCostMul 1.25) untouched |
+| action-script.encounters.json | trap / seed 1 | Fighter Knight Fridgian | `{Climbing:1, Ambidextrous:1, "Runes/Signs":1}` | `{Ambidextrous:1, "Runes/Signs":1}` | secondWind | as seed 1; springTrap's dodge never read Climbing |
+| action-script.encounters.json | chest / seed 2 | Thief Cat Burglar Wilmsry | `{Climbing:1, "Acute Hearing":1, Leaping:1, "Night Vision":1}` | `{"Acute Hearing":1, "Night Vision":1}` | dirtyTrick (free), smoke | as seed 2 |
+| action-script.encounters.json | tablefour / seed 3 | Thief Pickpocket Human | `{Heft:1, Silence:1}` | `{Heft:1}` | silentStep | as seed 3 |
+| action-script.encounters.json | faerie / seed 38 | Thief Con Artist Elven | `{Silence:1, Kata:1}` | `{}` | silentStep, feint | Silence and Thief Kata converted |
+| action-script.encounters.json | affliction / seed 160 | Thief Pilfer Human | `{"Acute Hearing":1, Kata:1, Locks:1}` | `{"Acute Hearing":1, Locks:1}` | feint | Thief Kata converted (Locks keeps its measured tier value) |
+| action-script.movement.json | seed 256 (script top level) | Thief Cat Burglar Human | `{Climbing:1, "Night Vision":1, Kata:1, Leaping:1}` | `{"Night Vision":1}` | dirtyTrick (free), feint, smoke | Climbing/Leaping dropped, Kata converted; the 101-move script never reaches a climb/leap tile |
+
+### Byte-identical elsewhere (Phase 38)
+
+Every Magic User chargen seed/scenario — chargen seeds 7, 8, 19, 24, 29, 35
+(no Special Skills table at all), combat's `lose-apprentice` (seed 127),
+magic's `cast-damage`/`heal`/`scroll` (seeds 8, 7, 7) — carries NO
+`skills` change and needs NO record (confirmed by live measurement); their
+existing `divergence`/action-path records (if any) are untouched. Every
+seed's `rngState` at `rollCharacter`/`newRun`/`meetJoiner` checkpoints is
+identical to the pre-phase measurement; `c.vp` is identical for every
+declared seed above. `test/parity/prototype-master.js.txt` is never edited;
+no existing `seed`/`actions`/`scenarios` array, and no existing `divergence`
+record, was touched by this phase.
