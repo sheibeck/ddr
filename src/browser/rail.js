@@ -134,6 +134,7 @@ export const RAIL_FAMILY = Object.freeze({
   joinerJoined: { icon: "◇", title: "COMPANY", tone: "good" },
   joinerDeclined: { icon: "◇", title: "COMPANY", tone: "dull" },
   joinerLeft: { icon: "◇", title: "COMPANY", tone: "dull" },
+  joinerMurdered: { icon: "◇", title: "COMPANY", tone: "bad" },
 
   findTaken: { icon: "▪", title: "TAKEN", tone: "good" },
   findLeft: { icon: "▪", title: "LEFT IT", tone: "dull", hold: RAIL_HOLD.dull },

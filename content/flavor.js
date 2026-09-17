@@ -81,3 +81,20 @@ export const JOINER_EXIT_LINES = [
   "{name} has seen how this goes and would rather not be the one it goes to.",
   "{name} leaves without a fuss. Somewhere out there is a longer life expectancy, and {name} intends to find it.",
 ];
+
+/**
+ * JOINER_MURDER_LINES — Phase 36 CUT-02: the Cutthroat's per-descent Joiner
+ * risk (a natural 1 on a d20, one descent in twenty). `{name}` is the
+ * victim, `{depth}` the floor arrived on; picked by
+ * src/browser/eventNarration.js WITHOUT rng, from name length + depth.
+ * Family-friendly sarcasm — the joke is the Cutthroat's reputation, never
+ * the body; scanned by test/voice/safety-scan.test.js.
+ */
+export const JOINER_MURDER_LINES = [
+  "Somewhere between floors, {name} had an accident. You were the accident.",
+  "{name} did not make it down the stairs. The stairs were not the problem.",
+  "You arrive on floor {depth} one companion lighter. {name} would have objected, given the chance.",
+  "{name} stopped to admire the stonework on the way down. That is the official version, and you are sticking to it.",
+  "Old habits. {name} stayed behind on the stairs, and will be staying.",
+  "Travelling beside a Cutthroat is mostly arithmetic, and {name} has just been subtracted.",
+];

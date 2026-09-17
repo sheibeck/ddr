@@ -242,6 +242,7 @@ export const FEATURE_EVENTS = [
   "wanderingMonster",
   "joinerRefused",
   "joinerLeft",
+  "joinerMurdered",
   "storeOpened",
   "sang",
   "beastsSoothed",
@@ -1311,6 +1312,9 @@ export const TOAST_FOR = {
   // action the narrative ctx (NARRATIVE_ACTIONS) replaces this with the
   // snark exit sentence from EVENT_NARRATION.joinerLeft instead.
   joinerLeft: (e) => ({ text: `${e?.name ?? "Your companion"} walks. ${e?.replacedBy ?? "Someone new"} is in.`, tone: "beat", priority: PRIORITY.feature }),
+  // Phase 36 (CUT-02): fallback/coverage text — on the move action the
+  // narrative ctx replaces it with the EVENT_NARRATION line.
+  joinerMurdered: (e) => ({ text: `${e?.name ?? "Your companion"} did not reach floor ${e?.depth ?? "?"}.`, tone: "hurt", priority: PRIORITY.feature }),
   joinerDeclined: (e) => ({ text: `You wave ${e?.name ?? "them"} off.`, tone: "beat", priority: PRIORITY.feature }),
   joinerRefused: (e) => {
     const map = {

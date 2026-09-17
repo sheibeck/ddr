@@ -686,6 +686,33 @@ export function bestTeleportDir(state) {
 /* ---------------- descend / win ---------------- */
 
 /**
+ * cutthroatMurderCheck(state, rng, events) — DELIBERATE RULES CHANGE (Phase
+ * 36, 2026-09-17, CUT-02): the Cutthroat's Joiner risk, made real now that
+ * Joiners travel with a Cutthroat (CUT-01). Once per descent, a natural 1 on
+ * a d20 (one descent in twenty — the blurb states the odds in plain words)
+ * means the Joiner does not reach the next floor.
+ *
+ * GATE: `state.c.sub === "Cutthroat" && Array.isArray(state.party) &&
+ * state.party.length > 0` — the d20 is drawn ONLY inside the gate, so every
+ * fixture (lose-plain seed 1119 is a Cutthroat with party []), every bot run
+ * (the bot declines every Joiner) and every pre-Phase-36 save (a Cutthroat
+ * could never have accepted one) draws nothing and stays byte-identical.
+ *
+ * Victim = `state.party.splice(0, 1)[0]` (index 0 — PARTY_CAP is 1; FIFO if
+ * it ever rises); pushes `joinerMurdered` with `name`, `sub`,
+ * `depth: state.floor.depth`. Returns events.
+ */
+export function cutthroatMurderCheck(state, rng, events = []) {
+  if (state.c.sub === "Cutthroat" && Array.isArray(state.party) && state.party.length > 0) {
+    if (rng.d(20) === 1) {
+      const victim = state.party.splice(0, 1)[0];
+      events.push({ type: "joinerMurdered", name: victim.name, sub: victim.sub, depth: state.floor.depth });
+    }
+  }
+  return events;
+}
+
+/**
  * descend(state, rng, events) — ports mazeworld.html descend() (lines
  * 1846-1856). Awards the depth-scaled skill-point bonus, checks for a level
  * up, then generates and reveals the next floor. No depth ceiling — descent
@@ -707,6 +734,10 @@ export function descend(state, rng, events = []) {
   state.floor = genFloor(state.floor.depth + 1, rng);
   reveal(state.floor, revealRadius(state));
   events.push(floorChanged(state.floor.depth));
+  // CUT-02 (Phase 36): LAST — after checkLevel and genFloor (both draw) and
+  // after floorChanged, so the murder is narrated on the new floor and the
+  // new floor is identical with or without the draw.
+  cutthroatMurderCheck(state, rng, events);
   return events;
 }
 
