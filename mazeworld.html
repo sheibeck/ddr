@@ -357,17 +357,16 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
   display:flex;justify-content:space-between;align-items:baseline;gap:8px;
 }
 .mw-overlay h2 span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ditto)}
-/* DR16 Fix 4: header row holding the "Encounter" heading (left) and the
-   repositioned dismiss/advance control (#enc-dismiss-slot, right). The
-   heading's own bottom rule/margin move up to this wrapper so the divider
-   still spans the full overlay width. */
+/* DR16 Fix 4: header row holding the "Encounter" heading (left) and, once,
+   a right-aligned dismiss/advance control (Phase 35: retired — every beat
+   is a rail card now, so the header slot markup stays but is never filled).
+   The heading's own bottom rule/margin move up to this wrapper so the
+   divider still spans the full overlay width. */
 .mw-overlay .enc-topbar{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   border-bottom:1px solid var(--rule);margin:0 0 10px;padding-bottom:6px;
 }
 .mw-overlay .enc-topbar h2{border-bottom:none;margin:0;padding-bottom:0;flex:0 1 auto}
-#enc-dismiss-slot{flex:0 0 auto;display:flex}
-#enc-dismiss-slot button{min-height:48px;padding:0 18px;white-space:nowrap}
 
 /* Phase 33 (UIF-05): the control bar holds only the centered D-pad; the camp
    button moved to the chip row (.mw-viewport-chips above); the former
@@ -538,10 +537,11 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    action row to the bottom; a longer body scrolls inside enc-body itself. */
 #enc-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto}
 #enc-body .actions{margin-top:auto;justify-content:center;padding-top:12px}
-/* DR16 Fix 4: #a-next ("Move on"/"Next") moved OUT of #enc-body into the header
-   slot (#enc-dismiss-slot), so its old full-width-bottom rule is retired. The
-   feature-action button (a-evt, when present) keeps the base centered bottom
-   .actions treatment; combat/store action rows are unaffected. */
+/* DR16 Fix 4: the header dismiss control's own full-width-bottom rule is
+   retired (Phase 35: the control it targeted is gone — every beat is a rail
+   card now). The feature-action button (a-evt, when present) keeps the base
+   centered bottom .actions treatment; combat/store action rows are
+   unaffected. */
 #enc-body .actions #a-evt{flex:1 1 100%;justify-content:center;min-height:52px}
 .hint{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:10px 0 0;line-height:1.55}
 
@@ -1469,11 +1469,10 @@ html,body{height:100%}
              clicks + keydown) is gated on !hasActiveEncounter() while this
              is up — see the dpad/keydown handlers. -->
         <section class="mw-overlay" id="enc-panel" hidden>
-          <!-- DR16 Fix 4: the beat/encounter dismiss ("Move on"/"Next") used to
-               sit at the BOTTOM of enc-body, directly over the movement D-pad,
-               causing mis-taps. It now renders into #enc-dismiss-slot here in
-               the header row, right-aligned beside the Encounter heading — out
-               of the D-pad zone. renderEncounter() fills/clears the slot. -->
+          <!-- DR16 Fix 4: the header row that once held a right-aligned
+               beat/encounter dismiss control (Phase 35: retired — every beat
+               is a rail card now; the slot markup stays, inert, in case a
+               future header control needs it). -->
           <div class="enc-topbar">
             <h2>Encounter <span id="enc-round"></span></h2>
             <div id="enc-dismiss-slot"></div>
@@ -2771,9 +2770,6 @@ function newBeat(title, tone) {
 }
 function beginEvent(title, tone) { newBeat(title, tone); }
 function evt(html) { say(html); }
-function stepping() {
-  try { return window.matchMedia("(max-width:1080px)").matches; } catch (e) { return false; }
-}
 /* Out of combat, an action is reported as a beat card. In a fight nothing is
    gated — the panel keeps its creatures and its buttons, and the blow-by-blow
    goes to the Oracle. */
@@ -4952,22 +4948,25 @@ function renderGraves() {
 // overlay) and the viewport pointerdown handler above (suppress pan-start
 // while the overlay covers the map).
 function hasActiveEncounter() {
-  // Phase 10 (Party UI, PARTY-01 UI half): a met-but-unresolved Joiner
-  // (S.pendingJoiner, stashed by encounters.js#meetJoiner) keeps the over-map
-  // overlay up so its accept/decline prompt can be shown/answered — the same
-  // way combat/store/beats do. It resolves via window.mzResolveJoiner (which
-  // clears S.pendingJoiner), after which this returns false and the overlay
-  // dismisses itself, exactly like "Move on"/"Leave" close their panels.
-  // Phase 13 (ECON-03/04): a pending FIND (S.pendingFind, stashed by
-  // encounters.js#offerFind) keeps the overlay up for its Take it / Leave it
-  // prompt exactly like pendingJoiner. It resolves via window.mzTakeFind /
-  // mzLeaveFind (which clear S.pendingFind), after which this returns false.
+  // Phase 35 (MAP-04): a pending Joiner/find is a RAIL decision now, not an
+  // over-map overlay — it locks movement through railLocked() below, but it
+  // never raises this predicate (renderRail, not renderEncounter, owns it).
   // Phase 29 (LOOT-02/06): a non-empty pending pile (S.pendingLoot, stashed
-  // by engine/items.js#offerLoot at end of combat) is a decision surface
-  // exactly like pendingFind — it parks the map (window.move re-checks this
+  // by engine/items.js#offerLoot at end of combat) is still a genuine
+  // over-map decision surface — it parks the map (window.move re-checks this
   // predicate) until every drop is taken or left, and it is what makes the
   // loot card re-appear on resume, since the pile is serialized.
-  return !!(S && (S.dead || S.won || S.combat || S.store || S.pendingJoiner || S.pendingFind || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length)));
+  return !!(S && (S.dead || S.won || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length)));
+}
+
+// railLocked() (orchestrator decision 2, ruling 3): a pending rail decision
+// (joiner/find) or a pending obstacle (a failed climb/leap, stashed on
+// window.__mzRail.pending by stepNow below) locks EVERY movement entry path
+// — tap-to-step, keyboard arrows, the D-pad — GLOBALLY, not just the
+// direction that produced it. The mock's "walking away declines" is
+// rejected: there is no decline-by-ignoring here, only answer or pulse.
+function railLocked() {
+  return !!(S && !S.combat && (S.pendingJoiner || S.pendingFind)) || !!(window.__mzRail && window.__mzRail.pending);
 }
 
 // Phase 32 (CMBUI-04/05, design §6.3) — the two Date.now() tap-safety
@@ -5641,21 +5640,15 @@ function renderEncounter() {
   const body = document.getElementById("enc-body");
   const rd = document.getElementById("enc-round");
   body.innerHTML = ""; rd.textContent = "";
-  // DR16 Fix 4: the header dismiss slot is repopulated only by the beats
-  // branch below; clear it on every render so it never lingers on the combat/
-  // store/death/joiner branches.
-  const dismissSlot = document.getElementById("enc-dismiss-slot");
-  if (dismissSlot) dismissSlot.innerHTML = "";
   // DR13: the vitals strip (HP bar, then potions/ward) is gone from the
   // encounter panel entirely — HP lives in the MAP header now, and this header
   // space is reclaimed for the encounter-specific text itself.
 
-  // Death-on-combat-entry (see window.move): while the pre-death "ambush" beat
-  // is still pending, fall through to the beats branch below so the player sees
-  // the fight that killed them; its "Move on" clears S.beats and re-renders,
-  // and THEN this death card shows.
-  const preDeathBeat = S.dead && S.beats && S.beats.preDeath && S.beats.groups && S.beats.groups.length;
-  if (S.dead && !preDeathBeat) {
+  // Phase 35 (MAP-05, RESEARCH Pitfall 7): out-of-combat death — the
+  // pre-death "what got you" beat is folded straight into THAT IS THAT's own
+  // lines (decision 5: re-pin renderCombatOver, don't rebuild); there is no
+  // separate Move-on card to dismiss first any more.
+  if (S.dead) {
     // Phase 34 (CSCR-07): THAT IS THAT — the mock's dark over-panel, not the
     // legacy death card markup. DR16 Fix 3 (read the Oracle before
     // dismissing) and DR4 group 3 (Confirm stays armed, no read-first lock)
@@ -5663,6 +5656,7 @@ function renderEncounter() {
     // wiring untouched.
     panel.dataset.mode = "dark";
     renderCombatOver(body, "dead", {
+      lines: S.beats && S.beats.preDeath && S.beats.groups && S.beats.groups.length ? S.beats.groups[0].lines : [],
       buttons: [
         { id: "btn-death-oracle", label: COMBAT_COPY.over.dead.oracle, cls: "secondary", onTap: () => window.__mzShowTab?.("oracle") },
         { id: "btn-death-confirm", label: COMBAT_COPY.over.dead.bury, cls: "dead" },
@@ -5698,33 +5692,12 @@ function renderEncounter() {
       });
       return;
     }
-    // Phase 31 (CMB-01): the AMBUSH pre-death Fight! gate that used to live
-    // here is gone — a pre-emptive foe kill can no longer happen on a bare
-    // move/encounter roll, because nothing rolls or strikes until the player
-    // dispatches the `fight` action themselves (see window.mzFight below).
-    // If a pre-emptive strike kills the player, it happens INSIDE the fight
-    // dispatch (after Fight! was already pressed), so state.dead resolves
-    // through the ordinary death-card branch above with no bridging beat
-    // needed here at all.
-    const step = stepping();
-    const groups = step ? [b.groups[Math.min(b.i, b.groups.length - 1)]] : b.groups;
-    const last = !step || b.i >= b.groups.length - 1;
-    rd.textContent = step && b.groups.length > 1 ? `${Math.min(b.i + 1, b.groups.length)} of ${b.groups.length}` : "";
-    body.innerHTML += groups.map(g =>
-        (g.title ? `<p class="enc-head" style="color:var(--${g.tone || "ditto"})">${g.title}</p>` : "")
-        + `<div class="evt">${g.lines.map(l => `<p>${l}</p>`).join("")}</div>`).join("")
-      + (last && b.action ? `<div class="actions"><button class="primary" id="a-evt">${b.action.label}</button></div>` : "");
-    // DR16 Fix 4: the "Move on"/"Next" dismiss/advance control renders into the
-    // header slot (right-aligned, top of the overlay) instead of the bottom
-    // .actions row, keeping it clear of the D-pad zone. The feature-action
-    // button (a-evt, e.g. "Smash it open") stays inline in the body above.
-    if (dismissSlot) dismissSlot.innerHTML = `<button class="${last ? "small" : "primary"}" id="a-next">${last ? "Move on" : "Next"}</button>`;
-    guardTap(document.getElementById("a-next"), () => {
-      if (last) S.beats = null; else b.i++;
-      renderEncounter();
-    });
-    const ab = document.getElementById("a-evt");
-    if (ab) ab.onclick = () => { const f = b.action.fn; b.action = null; f(); CAPTURE = null; if (S.beats) S.beats.i = 0; renderEncounter(); };
+    // Phase 35 (MAP-04): every other beat (floor arrival, level-up, camp) is
+    // an auto-clearing rail card now (dispatchWithToasts/renderRail, above)
+    // — a stray beat can never trap the map behind the old header "Move on"/
+    // "Next" dismiss control (the Phase 25.1 Move-on card), which is retired.
+    S.beats = null;
+    renderEncounter();
     return;
   }
 
@@ -5777,99 +5750,9 @@ function renderEncounter() {
     return;
   }
 
-  // Phase 10 (Party UI, PARTY-01 UI half): the ACCEPT/DECLINE recruitment
-  // prompt. When a "Joiner" encounter fired joinerMet, encounters.js#meetJoiner
-  // stashed the full rolled candidate on S.pendingJoiner. Its joinerMet
-  // narration plays first through the beats branch above ("Move on"); once that
-  // is dismissed (S.beats cleared) we reach here with the candidate still
-  // pending and offer the decision. Both buttons route through the engine via
-  // window.mzResolveJoiner(accept) -> dispatch({type:"resolveJoiner",accept}),
-  // which appends to S.party (accept) or declines and ALWAYS clears
-  // S.pendingJoiner; the joinerJoined/joinerDeclined line already flows to the
-  // Oracle log. Buttons inherit the base ≥48dp min-height and the .actions
-  // gap keeps the two choices separated (UX-02 mis-tap rule).
-  if (S.pendingJoiner && !S.combat && !S.store) {
-    panel.dataset.mode = "dark";
-    const j = S.pendingJoiner;
-    const lvl = j.lvl ?? j.level ?? 1;
-    const ident = [j.race, j.sub].filter(Boolean).join(" ");
-    // DR17 item 4 (one-screen): render the joinerMet narration INLINE above the
-    // accept/decline buttons — no separate "Move on" beat first. (The full line
-    // still went to the Oracle log via window.move's logLine.)
-    const narr = window.__mzPendingNarration;
-    if (narr && narr.length) body.innerHTML += `<div class="evt">${narr.map((l) => `<p>${l}</p>`).join("")}</div>`;
-    // Phase 25.1 (DFB-04): an informed decision names who would walk if the
-    // roster is already full (window.__mzPartyCap bridges engine/state.js's
-    // PARTY_CAP; index 0 mirrors engine/state.js#swapPartyMember). Built via
-    // textContent, not a template-literal innerHTML +=, because a name is
-    // interpolated into markup.
-    const cap = window.__mzPartyCap ?? 1;
-    const walker = Array.isArray(S.party) && S.party.length >= cap ? S.party[0] : null;
-    const head = document.createElement("p");
-    head.className = "enc-head";
-    head.style.color = "var(--moss)";
-    head.textContent = walker
-      ? `Take ${j.name || "them"} along? ${walker.name || "Your companion"} walks.`
-      : `${j.name || "A wanderer"} wants to tag along`;
-    body.appendChild(head);
-    body.innerHTML += `<p class="enc-sub">${ident ? ident + " · " : ""}skill level ${ROMAN[lvl - 1] || lvl}</p>
-      <div class="actions">
-        <button class="primary" id="a-join-yes">Take them along</button>
-        <button id="a-join-no">Leave them</button>
-      </div>`;
-    guardTap(document.getElementById("a-join-yes"), () => window.mzResolveJoiner?.(true));
-    guardTap(document.getElementById("a-join-no"), () => window.mzResolveJoiner?.(false));
-    return;
-  }
-
-  // Phase 13 (ECON-03/04): the find accept/decline prompt. When a find caller
-  // (engine/encounters.js openChest/findGear/findMisc/meetFaerie -> offerFind)
-  // stashed a rolled item on S.pendingFind, offer it — Take it (mzTakeFind) or
-  // Leave it (mzLeaveFind). If the bag is full, takeFind emits `bagFull` and the
-  // item stays pending; we surface a keep/drop chooser (each carried item gets a
-  // Drop button, freeing a slot) so the player can make room, then Take it
-  // again. Both bridges route through the engine (dispatch -> applyAction); the
-  // findTaken/findLeft/itemDropped narration already flows to the Oracle log.
-  // Buttons inherit the base ≥48dp min-height (UX-02 mis-tap rule).
-  if (S.pendingFind && !S.combat && !S.store) {
-    panel.dataset.mode = "dark";
-    const it = S.pendingFind;
-    const c = S.c;
-    // Phase 29 (LOOT-04): the ONE capacity readout and full-bag gate —
-    // never a raw array-length count.
-    const usage = window.__mzBagUsage(c);
-    const full = usage.full;
-    // DR17 item 4 (one-screen): render the findOffered narration INLINE above the
-    // Take/Leave buttons — no separate "Move on" beat first. (Full line still
-    // logged to the Oracle by window.move.)
-    const narr = window.__mzPendingNarration;
-    if (narr && narr.length) body.innerHTML += `<div class="evt">${narr.map((l) => `<p>${l}</p>`).join("")}</div>`;
-    // Phase 28 (ARMOR-03): a found piece is fresh — bagArmorText(it) reads
-    // truthful, hp-labelled max/max durability instead of the frozen txt.
-    const findSub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : it.txt;
-    body.innerHTML += `<p class="enc-head" style="color:var(--ditto)">Something worth taking</p>
-      <p class="enc-sub">${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}</p>`;
-    if (!full) {
-      body.innerHTML += `<div class="actions">
-        <button class="primary" id="a-find-take">Take it</button>
-        <button id="a-find-leave">Leave it</button>
-      </div>`;
-      guardTap(document.getElementById("a-find-take"), () => window.mzTakeFind?.());
-      guardTap(document.getElementById("a-find-leave"), () => window.mzLeaveFind?.());
-    } else {
-      // keep/drop chooser: the bag is full — drop something to make room.
-      body.innerHTML += `<p class="enc-sub" style="color:var(--rust)">Your bag is full (${usage.have}/${usage.slots}). Drop something to make room, or leave it.</p>
-        <div class="shelf" id="find-drop-shelf"></div>
-        <div class="actions">
-          <button class="primary" id="a-find-take">Take it now</button>
-          <button id="a-find-leave">Leave it</button>
-        </div>`;
-      renderDropShelf(document.getElementById("find-drop-shelf"), c.items || []);
-      guardTap(document.getElementById("a-find-take"), () => window.mzTakeFind?.());
-      guardTap(document.getElementById("a-find-leave"), () => window.mzLeaveFind?.());
-    }
-    return;
-  }
+  // Phase 35 (MAP-04): the Joiner accept/decline prompt and the find Take
+  // it/Leave it prompt are RAIL decision cards now (renderRail, above) —
+  // this over-map overlay no longer renders them at all.
 
   if (S.store) {
     const st = S.store;
@@ -6007,20 +5890,69 @@ function renderRail() {
   if (!vm || !copy) return;
   railEl.hidden = !!(S.combat || S.dead || S.won);
 
-  let key, tone, icon, title, lines, buttons = [], idle = false, peek = "";
+  let key, tone, icon, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
   if (S.pendingJoiner && !S.combat && !S.store) {
-    // Phase 35 Task 2 fills this branch (the joiner decision card).
-    key = "joiner";
-    tone = "info"; icon = "◇"; title = copy.joiner.title; lines = [];
+    // The joiner decision card (MAP-04) — the accept/decline prompt that
+    // used to be renderEncounter's own over-map branch, now a rail card
+    // with a guarded action row. DFB-04's who-walks rule (a full roster
+    // names the party member who would be swapped out) is unchanged.
+    const j = S.pendingJoiner;
+    const lvl = j.lvl ?? j.level ?? 1;
+    const ident = [j.race, j.sub].filter(Boolean).join(" ");
+    const cap = window.__mzPartyCap ?? 1;
+    const walker = Array.isArray(S.party) && S.party.length >= cap ? S.party[0] : null;
+    const headLine = walker
+      ? `Take ${j.name || "them"} along? ${walker.name || "Your companion"} walks.`
+      : `${j.name || "A wanderer"} wants to tag along`;
+    key = "joiner:" + (j.name || "") + ":" + (walker ? walker.name : "");
+    tone = "info"; icon = "◇"; title = copy.joiner.title;
+    lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
+    lines.push({ text: headLine, roll: `${ident ? ident + " · " : ""}skill level ${ROMAN[lvl - 1] || lvl}` });
+    buttons = [
+      { id: "a-join-yes", label: copy.joiner.yes, onTap: () => window.mzResolveJoiner?.(true) },
+      { id: "a-join-no", label: copy.joiner.no, cls: "secondary", onTap: () => window.mzResolveJoiner?.(false) },
+    ];
   } else if (S.pendingFind && !S.combat && !S.store) {
-    // Phase 35 Task 2 fills this branch (the find decision card).
-    key = "find";
-    tone = "good"; icon = "▪"; title = copy.find.title; lines = [];
+    // The find decision card (MAP-04) — Take it / Leave it, or (a full bag)
+    // the drop shelf + Take it now / Leave it. Decision 4: no PICK THE
+    // LOCK — the chest lock already auto-resolved into an earlier
+    // auto-clearing card; this is only the treasure-inside prompt.
+    const it = S.pendingFind;
+    const c = S.c;
+    const usage = window.__mzBagUsage(c);
+    const full = usage.full;
+    const findSub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : it.txt;
+    key = "find:" + (it.n || "") + ":" + (full ? "full" : "room");
+    tone = "good"; icon = "▪"; title = copy.find.title;
+    lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
+    lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}`, roll: null });
+    if (full) {
+      lines.push({ text: copy.find.full.replace("{have}", usage.have).replace("{slots}", usage.slots), roll: null });
+      shelfItems = c.items || [];
+    }
+    buttons = [
+      { id: "a-find-take", label: full ? copy.find.takeNow : copy.find.take, onTap: () => window.mzTakeFind?.() },
+      { id: "a-find-leave", label: copy.find.leave, cls: "secondary", onTap: () => window.mzLeaveFind?.() },
+    ];
   } else if (rail.pending && rail.pending.kind === "climb") {
-    // Phase 35 Task 2 fills this branch (the CLIMB IT retry card).
-    key = "climb:" + rail.seq;
+    // The CLIMB IT retry card (decision 1/4, RESEARCH Pitfall 3): the climb
+    // roll already happened inside stepNow's dispatch — this only re-offers
+    // the SAME direction; the engine re-rolls synchronously inside move().
+    // No go-round, no pre-roll preview.
+    const pend = rail.pending;
     const base = rail.card || vm.lineCard("FELL", "", "bad", 0, "⧗");
+    key = "climb:" + rail.seq;
     tone = base.tone; icon = base.icon; title = base.title; lines = base.lines;
+    buttons = [
+      {
+        id: "mw-rail-climb",
+        label: copy.climb.retry,
+        onTap: () => {
+          window.__mzRail = { ...window.__mzRail, pending: null };
+          window.move(pend.dir);
+        },
+      },
+    ];
   } else if (rail.card) {
     key = "card:" + rail.card.seq;
     tone = rail.card.tone; icon = rail.card.icon; title = rail.card.title; lines = rail.card.lines;
@@ -6050,6 +5982,13 @@ function renderRail() {
       rollEl.textContent = line.roll;
       linesEl.appendChild(rollEl);
     }
+  }
+  if (shelfItems) {
+    const shelfEl = document.createElement("div");
+    shelfEl.className = "shelf";
+    shelfEl.id = "find-drop-shelf";
+    linesEl.appendChild(shelfEl);
+    renderDropShelf(document.getElementById("find-drop-shelf"), shelfItems);
   }
   const actionsEl = document.getElementById("mw-rail-actions");
   actionsEl.textContent = "";
@@ -6395,12 +6334,12 @@ addEventListener("keydown", e => {
       }
       return;
     }
-    // Phase 31 (CMB-01), cleaned up Phase 34 (CSCR-06): the beats overlay's
-    // own dismiss/advance control is a-next (the AMBUSH special case that
-    // used to live here is gone — see renderEncounter's beats branch; the
-    // pending-fight gate is its own MAJOR OVERLAY branch above, keyed on
-    // S.combat.pending, not reachable from here).
-    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("a-next") || document.getElementById("cb-over-btn"); if (n) n.click(); }
+    // Phase 35 (MAP-04): the header dismiss control (the Phase 25.1 Move-on
+    // card's Next button) is retired — every beat that reaches this branch
+    // is an over-panel ending now (renderCombatOver's own primary button,
+    // cb-over-btn); the pending-fight gate is its own MAJOR OVERLAY branch
+    // above, keyed on S.combat.pending, not reachable from here.
+    if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("cb-over-btn"); if (n) n.click(); }
     return;
   }
   if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
@@ -6818,48 +6757,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // this is bridged rather than a direct pan/positionCanvas call from here.
   window.mzCenterMap?.();
 
-  // DR2 "Encounter window on EVERY icon landing" (04-CONTEXT.md
-  // "Device-review revisions" #5, extended): 04-DR1 already turned #enc-panel
-  // into an over-map .mw-overlay gated by hasActiveEncounter(), which was
-  // true for S.combat/S.store/S.dead/S.won OR a populated S.beats.groups —
-  // but nothing on the engine-routed move path (this function) ever POPULATED
-  // S.beats; only the classic (pre-engine-routing, now-superseded) move()
-  // above did, via its own beginEvent() calls that this function's dispatch()
-  // bypasses entirely. So a feature-tile landing that did NOT start combat/a
-  // store (trap, teleport, chest, one-way door, climb, gorge, a plain
-  // encounter-dot table-4/faerie/joiner/food/affliction result, the stair
-  // down) only ever reached the Oracle log — never the over-map overlay —
-  // exactly the device-review complaint ("only shows for combat"). Fix: when
-  // this dispatch produced narration (html.length, i.e. more than a silent
-  // "moved") and did NOT already claim the overlay via combat/store/dead/won
-  // (those already have their own hasActiveEncounter()/renderEncounter()
-  // branches, untouched), synthesize the SAME beats-group shape the classic
-  // beginEvent()/newBeat() used to build — hasActiveEncounter()/
-  // renderEncounter() need no changes at all; they already know how to show
-  // it and dismiss it via "Move on" (S.beats = null). `state.beats` is
-  // presentation-transient (engine/saveState.js's rehydrate()/validateSave()
-  // both always reset/omit it — never round-tripped through a save), so
-  // setting it here is not a GameState.rngState-affecting mutation.
-  const FEATURE_EVENT_TITLE = {
-    trapSprung: ["A trap", "stamp"], trapAvoided: ["A trap", "stamp"],
-    trapDisarmed: ["A trap", "stamp"], trapDoubled: ["A trap", "stamp"], trapPoisoned: ["A trap", "stamp"],
-    chestOpened: ["A locked box", "moss"], chestLocked: ["A locked box", "moss"],
-    chestLockRolled: ["A locked box", "moss"], scrollFound: ["A locked box", "moss"],
-    teleported: ["Teleport square", "ditto"],
-    climbedOver: ["A wall", "ink"], fellClimbing: ["A wall", "ink"],
-    leaptOver: ["A crevice", "ink"], fellInGorge: ["A crevice", "ink"],
-    floorChanged: ["The stair down", "ditto"],
-    leveled: ["Skill level up", "moss"],
-    oneWayBlocked: ["A one-way door", "moss"],
-    encounterRolled: ["Encounter", "stamp"],
-  };
-  function beatsTitleFor(events) {
-    for (const e of events) {
-      const hit = FEATURE_EVENT_TITLE[e.type];
-      if (hit) return hit;
-    }
-    return ["", ""];
-  }
+  // Phase 35 (MAP-03/04): every feature-tile landing that does not start
+  // combat/a store now reaches the player through the bottom RAIL (folded by
+  // dispatchWithToasts/rail.js below), not a synthesized over-map beat card
+  // — the Phase 25.1 Move-on card and its title/tone lookup table are
+  // retired. hasActiveEncounter()/renderEncounter() still own combat/store/
+  // dead/won/loot; nothing else raises the over-map overlay any more.
 
   // Pass B2 group 1: the over-map encounter/feature-landing OVERLAY shows
   // ONLY narration prose — never the dice-roll mechanics (the
@@ -7024,6 +6927,12 @@ window.__mzClassicBoot = async function classicBoot() {
     return result;
   }
 
+  // window.move (Phase 35, MAP-02/04): the single choke point every
+  // movement path (tap-to-step, keyboard arrows, the D-pad) funnels
+  // through. Orchestrator decision 2 / ruling 3: railLocked() sits AFTER
+  // the settle clause and BEFORE any dispatch — a pending rail decision or
+  // a failed climb refuses EVERY direction, pulsing the pending card
+  // instead of stepping. stepNow(dir) below is the actual dispatching half.
   window.move = function engineMove(dir) {
     // Device-review revision #5 (extended): this is the single choke point
     // every movement path (D-pad clicks, keydown, any future tap) funnels
@@ -7036,11 +6945,23 @@ window.__mzClassicBoot = async function classicBoot() {
     // was aimed at the card, not the corridor. Covers D-pad, viewport tap
     // and WASD/arrows because every movement path funnels through here.
     if (!encounterSettled()) return;
+    if (railLocked()) { window.mzRailPulse?.(); return; }
+    stepNow(dir);
+  };
+
+  function stepNow(dir) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
     const { state, events, html } = dispatchWithToasts({ type: "move", dir });
     window.__mzState.set(state);
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
+    // Phase 35 (decision 2, ruling 3/4): a failed climb/leap holds the party
+    // on its square until a CLIMB IT retry succeeds — the pending flag is
+    // presentation-only (window.__mzRail, never S/state) and cleared by any
+    // success (climbedOver/leaptOver) or a death, both of which never set
+    // it in the first place.
+    const fell = events.some((e) => e.type === "fellClimbing" || e.type === "fellInGorge");
+    window.__mzRail = { ...(window.__mzRail || { seq: 0, card: null, pending: null }), pending: fell && !state.dead ? { kind: "climb", dir } : null };
     // Death ON A MOVE — you stepped onto a tile and this one dispatch killed you
     // before you could see what happened: a combat ambush (foes won initiative +
     // a pre-emptive killing turn), a Table-4 "-N HP" toll, a trap, a poison tick,
@@ -7054,7 +6975,7 @@ window.__mzClassicBoot = async function classicBoot() {
     const diedOnMove = state.dead && !wasCombat && events.some((e) => e.type === "died");
     // DR17 item 4 (one-screen Joiner/find): a pending recruitment (pendingJoiner)
     // or pending find (pendingFind) renders its narration INLINE above its own
-    // accept/decline / Take-Leave buttons (see renderEncounter) — so DON'T build
+    // accept/decline / Take-Leave buttons (see renderRail) — so DON'T build
     // an intermediate "Move on" beat for those; stash the stripped narration for
     // that prompt branch to show instead. Cleared to null on any move that has
     // no pending prompt so it never leaks into a later prompt.
@@ -7067,15 +6988,6 @@ window.__mzClassicBoot = async function classicBoot() {
       // Fight!, so the AMBUSH special case (and its distinct title/roster
       // carry) is gone; every death-on-move title reads the same.
       state.beats = { groups: [{ title: "The maze has the last word", tone: "hurt", lines: stripRollDetail(html) }], i: 0, action: null, preDeath: true };
-    } else if (!state.combat && !state.store && !state.dead && !state.won && !state.beats
-               && !state.pendingJoiner && !state.pendingFind && html.length
-               && events.some((e) => CARD_EVENTS.has(e.type))) {
-      // Phase 25.1 (DFB-01): the "Move on" card is now gated on CARD_EVENTS
-      // (floorChanged, leveled) — every other feature landing on the move
-      // path is a narrative toast already raised by dispatchWithToasts
-      // above; FEATURE_EVENT_TITLE is only consulted for card events.
-      const [title, tone] = beatsTitleFor(events);
-      state.beats = { groups: [{ title, tone, lines: stripRollDetail(html) }], i: 0, action: null };
     }
     window.paint();
     window.draw();
@@ -7090,7 +7002,7 @@ window.__mzClassicBoot = async function classicBoot() {
     // pushes `moved` first, so this check alone already covers both cases)
     // — the player was reporting drifting off-center while just walking.
     if (events.some((e) => e.type === "moved")) window.mzCenterMap?.();
-  };
+  }
 
   // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
   // script above created a mutable global `window.newGame` property;
@@ -7625,15 +7537,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 31 (CMB-01): a wandering-monster ambush during camp arrives from
     // the engine already `combat.pending` — no presentation flag needed here;
     // renderEncounter's own combat.pending gate shows the roster + Fight!.
-    // Phase 25.1 (DFB-01): camp results are toast-only too — the SAME
-    // CARD_EVENTS gate as engineMove, so rested/wentHungry/afflictionCured/
-    // armorPatched/potionDuplicated/wanderingMonster arrive as narrative
-    // toasts instead of a "Camp" card (in practice this gate never matches
-    // on camp, since CARD_EVENTS only names move-path events).
-    if (!state.combat && !state.store && !state.dead && !state.won && html.length
-        && events.some((e) => CARD_EVENTS.has(e.type))) {
-      state.beats = { groups: [{ title: "Camp", tone: "moss", lines: stripRollDetail(html) }], i: 0, action: null };
-    }
+    // Phase 35 (MAP-04): camp results (rested/wentHungry/campFailed/
+    // afflictionCured/armorPatched/potionDuplicated/wanderingMonster) are
+    // rail cards now — dispatchWithToasts already folded them above; no
+    // separate "Camp" card is synthesized here any more.
     for (const line of html) window.logLine(line);
     window.paint();
     window.renderEncounter();
@@ -7698,6 +7605,10 @@ window.__mzClassicBoot = async function classicBoot() {
       // pause/appStateChange handlers) so that write isn't lost.
       waitForPending,
       getGameContext: () => ({
+        // Phase 35 (ruling 3): a pending rail decision or a failed climb is
+        // NOT a modal — it is presentation state on window.__mzRail, never
+        // S/state, and the hardware back button can never skip it (the
+        // stair-down overlay, Plan 04, adds its own case here).
         hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)),
         hasLiveRun: !!(S && S.c && !S.dead && !S.won),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)),
@@ -7714,6 +7625,7 @@ window.__mzClassicBoot = async function classicBoot() {
         },
         showConfirmQuit: () => {
           window.logLine(`<span class="beat">Press back again to abandon this delve.</span>`);
+          window.mzRailLine?.(RAIL_COPY.quit.title, RAIL_COPY.quit.line, "dull", 4200);
         },
       }),
     }).catch(() => {
