@@ -138,7 +138,11 @@ function comparable(state) {
   if (rest.c) {
     // ECON-01 (Phase 12): strip the new engine-only c.bag field too (see harness
     // stripBagField) — same treatment as name/darkFor/flight, mirrored here.
-    const { name, darkFor, flightLeft, flightCooldown, bag, ...cRest } = rest.c;
+    // Phase 36 (BAL foundation): strip the new engine-only lazily-created
+    // c.timers map too (see harness stripTimersField) — same treatment as
+    // name/darkFor/flight/bag, mirrored here because this file keeps its own
+    // local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, ...cRest } = rest.c;
     // Phase 28 (ARMOR-04): the Cloak of Armor's rewritten `txt` is a purely
     // cosmetic content divergence (see harness/comparables.js's
     // stripCloakArmorTxt) — the `flee` scenario's seed 17 rolls this cloak
