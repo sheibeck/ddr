@@ -4,9 +4,9 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 37
 current_phase_name: Equipment Slot Model & eff
-status: planning
+status: executing
 stopped_at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
-last_updated: "2026-09-17T17:33:16.983Z"
+last_updated: "2026-09-17T18:56:03.440Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 36 complete, transitioned to Phase 37
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 
 Phase: 37 — Equipment Slot Model & eff() Refactor
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-17 — Phase 36 complete, transitioned to Phase 37
 
 ## Ground Truth (durable facts every session needs)
