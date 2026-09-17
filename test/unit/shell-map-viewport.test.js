@@ -168,7 +168,7 @@ test("(e) inspectAt(): looks up the cell, builds the hold-inspect card, reports 
   assert.match(region, /inspectCell\(c, \(feat\) => M\.legendFor\(feat\)\)/);
   assert.match(
     region,
-    /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, mark \? mark\.glyph : "[^"]*"\);/,
+    /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, mark \? mark\.glyph : "[^"]*", mark \? mark\.key : null\);/,
   );
   assert.doesNotMatch(region, /move\(/);
   assert.doesNotMatch(region, /dispatch\(/);
@@ -262,13 +262,14 @@ test("(g) renderEncounter: the stair branch is the first branch, before the deat
   const branch = region.slice(stairIdx, branchEnd === -1 ? undefined : branchEnd);
   assert.match(branch, /renderMajorOverlay\(body, \{/);
   assert.match(branch, /icon: "▼"/);
+  assert.match(branch, /iconKey: "descent",/);
   assert.match(branch, /MAP_COPY\.stair\.title/);
   assert.match(branch, /MAP_COPY\.stair\.line\.replace\("\{n\}", S\.floor\.depth \+ 1\)/);
   assert.match(branch, /window\.__mzDescend\?\.\(\)/);
   assert.match(branch, /window\.__mzStair = null; renderEncounter\(\);/);
 });
 
-test("(g) renderMajorOverlay(body call-site count is 2 (the encounter gate + the stair), and its own function body is byte-identical to before this plan", () => {
+test("(g) renderMajorOverlay(body call-site count is 2 (the encounter gate + the stair), and its own function body stays content-agnostic (no MAP_COPY)", () => {
   assert.equal((CODE.match(/renderMajorOverlay\(body/g) || []).length, 2);
   assert.equal((CODE.match(/function renderMajorOverlay\(host, spec\)/g) || []).length, 1);
   const body = renderMajorOverlayRegion();

@@ -174,7 +174,8 @@ export function yourLotViewModel(state) {
  * encounterOverlaySpec(state) — the MAJOR OVERLAY (CSCR-06) content for
  * `combat.pending`: icon/title/line/roll/primary-button. `secondary` is
  * always null in this phase (Phase 35 reuses this shape for descend/death
- * variants that DO carry a secondary button).
+ * variants that DO carry a secondary button). `iconKey` (2026-09-17 UAT):
+ * the icons/optimized PNG the overlay shows instead of the glyph.
  */
 export function encounterOverlaySpec(state) {
   const C = state.combat || { foes: [], tracked: false };
@@ -194,6 +195,7 @@ export function encounterOverlaySpec(state) {
 
   return {
     icon: "●",
+    iconKey: "encounter",
     iconTone: "encounter",
     title: foes.length === 1 ? COMBAT_PANEL_COPY.oneHere : COMBAT_PANEL_COPY.manyHere,
     line: `${summary}. ${C.tracked ? COMBAT_PANEL_COPY.unnoticed : COMBAT_PANEL_COPY.noticed}`,

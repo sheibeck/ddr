@@ -225,6 +225,14 @@ test("CSCR-06 (Decision 2): renderMajorOverlay exists before renderEncounter and
   const secondaryHits = region.match(/spec\.secondary/g) || [];
   assert.ok(secondaryHits.length >= 2, "spec.secondary must be referenced at least twice (the Phase 35 hook)");
   assert.doesNotMatch(region, /innerHTML/);
+  // 2026-09-17 UAT ruling: the overlay shows the tile's actual PNG when the
+  // spec carries an iconKey; specs without one keep the glyph path.
+  assert.match(region, /if \(spec\.iconKey\) \{/);
+  assert.match(region, /img\.className = "mw-major-icon-img";/);
+  assert.match(region, /img\.src = featureIconSrc\(spec\.iconKey\);/);
+  assert.match(region, /else \{ icon\.textContent = spec\.icon; \}/);
+  assert.match(COMBAT_PANEL_SRC, /iconKey: "encounter",/);
+  assert.match(HTML, /^\.mw-major-icon-img\{width:60px;height:60px;object-fit:contain;display:block\}$/m);
 });
 
 test("CSCR-06: the pending gate renders the overlay from encounterOverlaySpec, maps its dispatch to window.mzFight, and returns before any combat-panel band", () => {

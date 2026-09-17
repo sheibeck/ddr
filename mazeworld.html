@@ -649,6 +649,7 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-major{position:absolute;inset:0;background:#0d0b08;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;animation:mwfade .22s ease;z-index:2}
 .mw-major-icon{font-size:54px;color:#d3c49f;text-shadow:0 0 24px rgba(0,0,0,.8)}
 .mw-major-icon.encounter{color:#e05a48}
+.mw-major-icon-img{width:60px;height:60px;object-fit:contain;display:block}
 .mw-major-title{font-family:var(--disp);font-size:15px;line-height:1.6;color:#e8c97a;margin-top:22px}
 .mw-major-line{font-family:var(--mono);font-weight:700;font-size:17px;line-height:1.5;color:#c9bda0;margin-top:14px}
 .mw-major-roll{font-family:var(--mono);font-weight:700;font-size:14px;color:#e8c97a;margin-top:12px}
@@ -666,7 +667,8 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-rail[data-tone="odd"]{--rail-edge:#5b4a86;--rail-ink:#b9a4ef}
 .mw-rail[data-tone="dull"]{--rail-edge:#3a3226;--rail-ink:#a89c82}
 .mw-rail-row{display:flex;gap:11px;align-items:flex-start}
-.mw-rail-icon{flex:none;width:22px;font-size:20px;line-height:1.2;color:var(--rail-ink)}
+.mw-rail-icon{flex:none;width:26px;font-size:20px;line-height:1.2;color:var(--rail-ink)}
+.mw-rail-icon img{width:26px;height:26px;object-fit:contain;display:block}
 .mw-rail-body{flex:1;min-width:0}
 .mw-rail-title{font-family:var(--disp);font-size:8px;line-height:1.6;color:var(--rail-ink)}
 .mw-rail-line{font-weight:700;font-size:14.5px;line-height:1.4;color:#c9bda0;margin-top:6px}
@@ -5219,6 +5221,12 @@ function renderFightLog(host) {
   syncFightLogLive(log);
 }
 
+// 2026-09-17 UAT (user ruling): feature cards and the encounter/stair
+// overlays show the tile's actual PNG; same icons/optimized set
+// preloadIcons/renderMarksLegend already use.
+const FEATURE_ICON_PATH = Object.freeze({ dir: "./icons/optimized/", ext: ".png" });
+function featureIconSrc(key) { return FEATURE_ICON_PATH.dir + key + FEATURE_ICON_PATH.ext; }
+
 // Phase 34 (CSCR-06, Decision 2) — the map's MAJOR OVERLAY, generic; Phase
 // 35 reuses it for THE STAIR DOWN and out-of-combat death; every button is
 // guarded.
@@ -5230,7 +5238,7 @@ function renderMajorOverlay(host, spec) {
   el.setAttribute("aria-label", spec.title);
   const icon = document.createElement("span");
   icon.className = "mw-major-icon " + spec.iconTone;
-  icon.textContent = spec.icon;
+  if (spec.iconKey) { const img = document.createElement("img"); img.className = "mw-major-icon-img"; img.src = featureIconSrc(spec.iconKey); img.alt = ""; img.setAttribute("aria-hidden", "true"); icon.appendChild(img); } else { icon.textContent = spec.icon; }
   el.appendChild(icon);
   const title = document.createElement("div");
   title.className = "mw-major-title";
@@ -5704,6 +5712,7 @@ function renderEncounter() {
     const s = window.__mzStair;
     renderMajorOverlay(body, {
       icon: "▼",
+      iconKey: "descent",
       iconTone: "",
       title: MAP_COPY.stair.title,
       line: MAP_COPY.stair.line.replace("{n}", S.floor.depth + 1),
@@ -5971,7 +5980,7 @@ function renderRail() {
   // bagFull refusal) still shows.
   const panelUp = hasActiveEncounter();
 
-  let key, tone, icon, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
+  let key, tone, icon, iconKey = null, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
   if (S.pendingJoiner && !S.combat && !S.store) {
     // The joiner decision card (MAP-04) — the accept/decline prompt that
     // used to be renderEncounter's own over-map branch, now a rail card
@@ -6023,7 +6032,7 @@ function renderRail() {
     const pend = rail.pending;
     const base = rail.card || vm.lineCard("FELL", "", "bad", 0, "⧗");
     key = "climb:" + rail.seq;
-    tone = base.tone; icon = base.icon; title = base.title; lines = base.lines;
+    tone = base.tone; icon = base.icon; iconKey = base.iconKey ?? null; title = base.title; lines = base.lines;
     buttons = [
       {
         id: "mw-rail-climb",
@@ -6036,7 +6045,7 @@ function renderRail() {
     ];
   } else if (rail.card) {
     key = "card:" + rail.card.seq;
-    tone = rail.card.tone; icon = rail.card.icon; title = rail.card.title; lines = rail.card.lines;
+    tone = rail.card.tone; icon = rail.card.icon; iconKey = rail.card.iconKey ?? null; title = rail.card.title; lines = rail.card.lines;
   } else {
     key = "idle:" + S.floor.depth;
     title = copy.idleTitle.replace("{n}", S.floor.depth);
@@ -6049,7 +6058,7 @@ function renderRail() {
 
   railEl.dataset.tone = tone;
   railEl.dataset.idle = idle ? "1" : "0";
-  document.getElementById("mw-rail-icon").textContent = icon;
+  const iconEl = document.getElementById("mw-rail-icon"); iconEl.textContent = iconKey ? "" : icon; if (iconKey) { const img = document.createElement("img"); img.src = featureIconSrc(iconKey); img.alt = ""; img.setAttribute("aria-hidden", "true"); iconEl.appendChild(img); }
   document.getElementById("mw-rail-title").textContent = title;
   document.getElementById("mw-rail-peek").textContent = peek;
   const linesEl = document.getElementById("mw-rail-lines");
@@ -6344,7 +6353,7 @@ function inspectAt(clientX, clientY) {
   const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat));
   const mark = c && c.seen && c.feat ? M.markForCell(c) : null;
   // No dispatch, no S mutation — a hold only reports, never moves.
-  window.mzRailLine?.(card.title, card.line, card.tone, card.hold, mark ? mark.glyph : "·");
+  window.mzRailLine?.(card.title, card.line, card.tone, card.hold, mark ? mark.glyph : "·", mark ? mark.key : null);
 }
 
 // 04-06: one pointerdown/move/up gesture pipeline on the viewport — a drag
@@ -6728,8 +6737,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
-  window.mzRailLine = (title, line, tone, hold, icon) => {
-    window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon));
+  window.mzRailLine = (title, line, tone, hold, icon, iconKey = null) => {
+    window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey));
     window.renderRail?.();
   };
 

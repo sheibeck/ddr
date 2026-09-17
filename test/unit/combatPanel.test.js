@@ -219,6 +219,7 @@ test("encounterOverlaySpec: one pending foe, untracked", () => {
   const state = fixedState({ combat: fixedCombat([{ name: "Kobold", alive: true, type: "Beasts", wp: 5, maxWP: 5 }], { tracked: false }) });
   assert.deepEqual(encounterOverlaySpec(state), {
     icon: "●",
+    iconKey: "encounter",
     iconTone: "encounter",
     title: "SOMETHING IS HERE",
     line: "Kobold. They have noticed you.",
@@ -238,6 +239,7 @@ test("encounterOverlaySpec: 3 foes (a duplicate folded to ×2), tracked", () => 
   const spec = encounterOverlaySpec(state);
   assert.equal(spec.title, "THEY ARE ALREADY HERE");
   assert.equal(spec.line, "Giant Rat ×2, Kobold. They have not noticed you yet.");
+  assert.equal(spec.iconKey, "encounter");
 });
 
 // ─── FOE_GLYPHS coverage ────────────────────────────────────────────────────

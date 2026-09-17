@@ -395,3 +395,22 @@ test('(p) 2026-09-17 UAT ruling: renderRail hides the idle card while the encoun
   assert.match(encRegion, /if \(panel\) panel\.hidden = true;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
   assert.match(encRegion, /if \(panel\) panel\.hidden = false;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
 });
+
+// ─── (q) 2026-09-17 UAT ruling (actual icons): renderRail's <img> branch, mzRailLine's optional trailing iconKey ────────────
+
+test('(q) 2026-09-17 UAT ruling (actual icons): renderRail renders an <img> from featureIconSrc(iconKey) via createElement (no innerHTML) and falls back to the glyph; mzRailLine forwards the optional trailing iconKey', () => {
+  const region = railRegion();
+  assert.match(region, /iconKey = rail\.card\.iconKey \?\? null;/);
+  assert.match(region, /iconKey = base\.iconKey \?\? null;/);
+  assert.match(region, /iconEl\.textContent = iconKey \? "" : icon;/);
+  assert.match(region, /img\.src = featureIconSrc\(iconKey\);/);
+  assert.match(region, /document\.createElement\("img"\)/);
+  assert.doesNotMatch(region, /innerHTML/);
+
+  assert.equal((CODE.match(/^function featureIconSrc\(key\)/gm) || []).length, 1);
+  assert.equal((CODE.match(/^const FEATURE_ICON_PATH = Object\.freeze\(\{ dir: "\.\/icons\/optimized\/", ext: "\.png" \}\);/gm) || []).length, 1);
+  assert.equal((CODE.match(/window\.mzRailLine = \(title, line, tone, hold, icon, iconKey = null\) =>/g) || []).length, 1);
+  assert.equal((CODE.match(/railLineCard\(title, line, tone, hold, icon, iconKey\)/g) || []).length, 1);
+
+  assert.match(HTML, /^\.mw-rail-icon img\{width:26px;height:26px;object-fit:contain;display:block\}$/m);
+});

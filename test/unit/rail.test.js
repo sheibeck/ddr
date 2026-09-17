@@ -18,11 +18,13 @@ import url from "node:url";
 import { toastsForAction, TOAST_FOR, ORACLE_ONLY, PRIORITY } from "../../src/browser/toasts.js";
 import { narrateEvent } from "../../src/browser/eventNarration.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { FEATURE_ICONS } from "../../src/browser/icons.js";
 import {
   RAIL_TONES,
   RAIL_HOLD,
   RAIL_COPY,
   RAIL_FAMILY,
+  RAIL_FEATURE_ICON,
   RAIL_DIRECT,
   railFamilyFor,
   rollLineFor,
@@ -144,6 +146,7 @@ test("railCardFor: a trap + level-up move dispatch folds to one card, trap wins 
   const card = railCardFor("move", events, folded, {});
   assert.ok(card, "a trap + level-up dispatch must produce a card");
   assert.equal(card.icon, "✕");
+  assert.equal(card.iconKey, "trap");
   assert.equal(card.title, "A TRAP");
   assert.equal(card.tone, "bad");
   assert.equal(card.hold, RAIL_HOLD.level, "hold is the max family hold across the lines (6000)");
@@ -161,6 +164,7 @@ test("railCardFor: a floorChanged-only dispatch builds a card straight from RAIL
   const card = railCardFor("move", events, [], {});
   assert.ok(card);
   assert.equal(card.title, "FLOOR 3");
+  assert.equal(card.iconKey, "descent");
   assert.equal(card.tone, "odd");
   assert.equal(card.hold, RAIL_HOLD.floor);
   assert.equal(card.lines.length, 1);
@@ -189,6 +193,7 @@ test("railCardFor: a camp dispatch (rested + dayBegan + wanderingMonster) folds 
   const card = railCardFor("camp", events, folded, {});
   assert.ok(card);
   assert.ok(card.lines.length >= 2, "rested + wanderingMonster fold, plus the RAIL_DIRECT dayBegan line");
+  assert.equal(card.iconKey, null);
 });
 
 // ─── Test 11: railLineCard ──────────────────────────────────────────────────
@@ -196,12 +201,44 @@ test("railCardFor: a camp dispatch (rested + dayBegan + wanderingMonster) folds 
 test("railLineCard: builds a single-line card with the given icon default", () => {
   assert.deepEqual(railLineCard("YOU ARE HERE", "For the moment…", "dull", 2200), {
     icon: "·",
+    iconKey: null,
     title: "YOU ARE HERE",
     lines: [{ text: "For the moment…", roll: null }],
     tone: "dull",
     hold: 2200,
   });
   assert.equal(railLineCard("T", "L", "good", 3000, "◆").icon, "◆");
+  assert.equal(railLineCard("T", "L", "good", 3000, "◆", "teleport").iconKey, "teleport");
+});
+
+// ─── Test 11.1: RAIL_FEATURE_ICON (2026-09-17 UAT ruling) ─────────────────
+
+test("RAIL_FEATURE_ICON: frozen, every key is a RAIL_FAMILY key, every value is a FEATURE_ICONS key, the trap/chest/climb/crevice/floor/encounter families are covered", () => {
+  assert.ok(Object.isFrozen(RAIL_FEATURE_ICON));
+  const keys = Object.keys(RAIL_FEATURE_ICON);
+  for (const k of keys) {
+    assert.ok(k in RAIL_FAMILY, `RAIL_FEATURE_ICON key "${k}" must be a RAIL_FAMILY key`);
+  }
+  for (const v of Object.values(RAIL_FEATURE_ICON)) {
+    assert.ok(FEATURE_ICONS.includes(v), `RAIL_FEATURE_ICON value "${v}" must be a FEATURE_ICONS key`);
+  }
+  const pairs = {
+    trapSprung: "trap",
+    teleported: "teleport",
+    oneWayBlocked: "onewaydoor",
+    chestLocked: "chest",
+    climbedOver: "wall",
+    fellClimbing: "wall",
+    leaptOver: "crevice",
+    fellInGorge: "crevice",
+    floorChanged: "descent",
+    tableFour: "encounter",
+  };
+  for (const [k, v] of Object.entries(pairs)) {
+    assert.equal(RAIL_FEATURE_ICON[k], v, `RAIL_FEATURE_ICON.${k} should be "${v}"`);
+  }
+  assert.equal(RAIL_FEATURE_ICON.leveled, undefined);
+  assert.equal(RAIL_FEATURE_ICON.joinerJoined, undefined);
 });
 
 // ─── Test 12: emptyRail / railPush / railClear ─────────────────────────────

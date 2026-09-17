@@ -144,6 +144,43 @@ export const RAIL_FAMILY = Object.freeze({
 });
 
 /**
+ * RAIL_FEATURE_ICON — event family -> icons/optimized PNG key (a
+ * FEATURE_ICONS key from icons.js) for the rail cards that describe landing
+ * on a tile, 2026-09-17 UAT ruling. Every key is a RAIL_FAMILY key; families
+ * with no tile identity are absent and render the glyph.
+ *
+ * Deliberate refinement of the ruling's literal "climb family -> crevice":
+ * climbedOver/fellClimbing fire only on the `climb` feat, which the map
+ * itself draws as wall.png (icons.js: `climb -> "wall"`), and the ruling is
+ * "the actual icon" — so this table matches the map, not the crevice glyph.
+ * flownOver/phasedThrough carry no feat (Flight/Ethereal fly over either
+ * obstacle), so they keep the crevice icon per the ruling's literal text.
+ */
+export const RAIL_FEATURE_ICON = Object.freeze({
+  trapSprung: "trap",
+  trapDoubled: "trap",
+  trapPoisoned: "trap",
+  trapAvoided: "trap",
+  trapDisarmed: "trap",
+  teleported: "teleport",
+  oneWayBlocked: "onewaydoor",
+  chestOpened: "chest",
+  chestLockRolled: "chest",
+  scrollFound: "chest",
+  chestLocked: "chest",
+  climbedOver: "wall",
+  fellClimbing: "wall",
+  leaptOver: "crevice",
+  fellInGorge: "crevice",
+  flownOver: "crevice",
+  phasedThrough: "crevice",
+  floorChanged: "descent",
+  tableFour: "encounter",
+  tableFourNoop: "encounter",
+  wanderingMonster: "encounter",
+});
+
+/**
  * RAIL_DIRECT — the ORACLE_ONLY event types the rail surfaces directly from
  * the Oracle narration (the retired Move-on card's floor arrival/level-up
  * and the find outcome). A strict subset of ORACLE_ONLY, disjoint from
@@ -260,6 +297,7 @@ export function railCardFor(type, events, folded, ctx = {}) {
   return {
     tone: fam.tone,
     icon: fam.icon,
+    iconKey: RAIL_FEATURE_ICON[head.type] ?? null,
     title,
     lines: sorted.map(({ text, roll }) => ({ text, roll })),
     hold,
@@ -267,12 +305,15 @@ export function railCardFor(type, events, folded, ctx = {}) {
 }
 
 /**
- * railLineCard(title, line, tone, hold, icon = "·") — a one-line card built
- * directly (no fold pipeline involved) for shell call sites that need to
- * inject an idle/inspect/obstacle card verbatim (Plans 02-04).
+ * railLineCard(title, line, tone, hold, icon = "·", iconKey = null) — a
+ * one-line card built directly (no fold pipeline involved) for shell call
+ * sites that need to inject an idle/inspect/obstacle card verbatim (Plans
+ * 02-04). `iconKey` (2026-09-17 UAT) is an optional trailing PNG key
+ * (icons/optimized/<key>.png) for the hold-inspect card — null when the
+ * inspected square has no tile identity worth an icon.
  */
-export function railLineCard(title, line, tone, hold, icon = "·") {
-  return { icon, title, lines: [{ text: line, roll: null }], tone, hold };
+export function railLineCard(title, line, tone, hold, icon = "·", iconKey = null) {
+  return { icon, iconKey, title, lines: [{ text: line, roll: null }], tone, hold };
 }
 
 /** emptyRail() — the rail's zero state: no card up, no decision pending. */
