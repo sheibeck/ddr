@@ -131,12 +131,30 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 **Plans**: 6 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 36-01-PLAN.md — BAL-01 v1.5 BEFORE class-matrix pin (both runs, ledger section, additive guard) — wave 1, before any engine change
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 36-02-PLAN.md — engine/effects.js timer model + guarded tick sites + load tolerance + parity carve-out (no records created) — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 36-03-PLAN.md — TGT-01/02 normalizeTarget export, shell post-dispatch normalize, inert dead cards, arm-window race test — wave 3
 - [ ] 36-04-PLAN.md — CUT-01/02 Cutthroat Joiner reversal, one guarded d20 murder check, six lines, blurb + identity row — wave 3
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 36-05-PLAN.md — JOIN-01 dismissJoiner engine action + parting/refusal narration, toast and rail entries — wave 4
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 36-06-PLAN.md — JOIN-01 Company sheet + two-tap DISMISS + bridge, SUB_NOTE sync, phase gate + aggregated deferred checklist — wave 5
+
+**Cross-cutting constraints:**
+
+- npm test prints '# fail 0'; fixtures untouched; master hash a1f4d0dc29782218d8e5aab65bc5989c33f917f0
 
 **Research flag**: Standard/precedented (research: both changes are fully specified by existing code precedent — display suppression already correct, the Cutthroat refusal ternary already isolated, the effects-model shape is fully specified from existing `c.ward`/`f.cd`/`c.darkFor` precedents). `--research-phase` optional; the Cutthroat murder-odds value is a small balance call that can be settled directly in the plan.
 
