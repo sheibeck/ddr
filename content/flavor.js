@@ -98,3 +98,18 @@ export const JOINER_MURDER_LINES = [
   "Old habits. {name} stayed behind on the stairs, and will be staying.",
   "Travelling beside a Cutthroat is mostly arithmetic, and {name} has just been subtracted.",
 ];
+
+/**
+ * JOINER_PARTING_LINES — Phase 36 JOIN-01: the sarcastic parting line for a
+ * Joiner sent away from the Hero tab's Company panel. `{name}` is the
+ * member dismissed; picked by src/browser/eventNarration.js WITHOUT rng,
+ * from the name length. The Joiner gets the last word. Family-friendly
+ * sarcasm, scanned by test/voice/safety-scan.test.js.
+ */
+export const JOINER_PARTING_LINES = [
+  "{name} takes the news well, by which we mean they were already walking away.",
+  "{name} thanks you for the opportunity and means none of it.",
+  "{name} leaves at once, which is the first quick decision anyone has made down here.",
+  "{name} wishes you the best. {name} has met the best. The two are not expected to overlap.",
+  "{name} goes without a word, having saved several for the tavern.",
+];

@@ -52,8 +52,8 @@ test("CARD_EVENTS is exactly floorChanged + leveled, disjoint from ORACLE_ONLY, 
   assert.equal(ORACLE_ONLY.has("floorChanged"), true);
 });
 
-test("NARRATIVE_ACTIONS is exactly move + camp + resolveJoiner", () => {
-  assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "move", "resolveJoiner"]);
+test("NARRATIVE_ACTIONS is exactly move + camp + resolveJoiner + dismissJoiner", () => {
+  assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "dismissJoiner", "move", "resolveJoiner"]);
   for (const t of ["attack", "castSpell", "buyItem", "equipItem"]) {
     assert.equal(NARRATIVE_ACTIONS.has(t), false, `${t} must not be a narrative action`);
   }

@@ -528,6 +528,36 @@ export function resolveJoiner(state, accept, events = []) {
 }
 
 /**
+ * dismissJoiner(state, i = 0, events) — Phase 36 (JOIN-01): the player sends
+ * a party member away from the Hero tab's Company panel (the shell asks for
+ * a confirmation first; the engine never assumes one). Pure, NO rng (a plain
+ * roster splice, like resolveJoiner/swapPartyMember) so it never shifts the
+ * seeded cursor; not part of any parity fixture. Order of checks: a fight in
+ * progress keeps its allies (endCombat syncs them) so `state.combat` truthy
+ * refuses "inCombat" FIRST; then an empty/missing roster refuses "noParty";
+ * then an out-of-range index refuses "badIndex"; otherwise the member at `i`
+ * (default 0) is spliced out and a `joinerDismissed { name, sub }` event is
+ * pushed. Never adds a key to state.
+ */
+export function dismissJoiner(state, i = 0, events = []) {
+  if (state.combat) {
+    events.push({ type: "dismissRefused", reason: "inCombat" });
+    return events;
+  }
+  if (!Array.isArray(state.party) || state.party.length === 0) {
+    events.push({ type: "dismissRefused", reason: "noParty" });
+    return events;
+  }
+  if (!state.party[i]) {
+    events.push({ type: "dismissRefused", reason: "badIndex" });
+    return events;
+  }
+  const [gone] = state.party.splice(i, 1);
+  events.push({ type: "joinerDismissed", name: gone.name, sub: gone.sub });
+  return events;
+}
+
+/**
  * catchAffliction(state, rng, events) — AFFLICTIONS[d8]: a permanent phobia
  * row sets one via PHOBIAS[d10], otherwise a periodic wp-loss affliction is
  * set with an immediate first tick. Ports mazeworld.html catchAffliction()

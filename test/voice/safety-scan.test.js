@@ -60,7 +60,7 @@ import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
 import { RACES } from "../../content/races.js";
-import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS, JOINER_EXIT_LINES, JOINER_MURDER_LINES } from "../../content/flavor.js";
+import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS, JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "../../content/flavor.js";
 import { SPELLS } from "../../content/spells.js";
 import { POTIONS } from "../../content/potions.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/skills.js";
@@ -146,6 +146,8 @@ const BRANCH_TOGGLES = [
   { needMods: [{ name: "Guard", delta: -1 }] }, { critBy: "cutthroat" }, { soldierCrit: true },
   { quip: "X" }, { untouchable: true },
   { knightBigFoe: true, courtMageTalksFirst: true, samuraiNeverFirst: true, fridgianSlow: true, acuteHearing: true },
+  // Phase 36 (JOIN-01): dismissJoiner's three named refusal reasons.
+  { reason: "noParty" }, { reason: "inCombat" }, { reason: "badIndex" },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every
@@ -278,6 +280,10 @@ function collectAuthoredStrings() {
   // AND counted here so they participate in the completeness/load-bearing
   // meta-tests too.
   JOINER_MURDER_LINES.forEach((s, i) => push(`JOINER_MURDER_LINES[${i}]`, s));
+  // Phase 36 (JOIN-01): the Company-panel dismissal parting lines — scanned
+  // AND counted here so they participate in the completeness/load-bearing
+  // meta-tests too.
+  JOINER_PARTING_LINES.forEach((s, i) => push(`JOINER_PARTING_LINES[${i}]`, s));
 
   return out;
 }

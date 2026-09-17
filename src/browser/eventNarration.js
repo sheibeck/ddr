@@ -36,7 +36,7 @@
 // Phase 25.1 (DFB-04): JOINER_EXIT_LINES is pure DATA (no rng, no DOM, no
 // engine/ import) — importing it here does not violate this module's
 // presentation-only contract.
-import { JOINER_EXIT_LINES, JOINER_MURDER_LINES } from "../../content/flavor.js";
+import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "../../content/flavor.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -591,6 +591,22 @@ export const EVENT_NARRATION = {
     const idx = (String(rawName).length + depth) % JOINER_MURDER_LINES.length;
     const line = JOINER_MURDER_LINES[idx].replaceAll("{name}", escapeHtml(rawName)).replaceAll("{depth}", String(depth));
     return `<span class="hurt">${line}</span>`;
+  },
+  // Phase 36 (JOIN-01): the Hero tab's Company-panel dismissal — a
+  // deterministic pick (no rng, name length only), name escaped like
+  // joinerLeft/joinerMurdered.
+  joinerDismissed: (e) => {
+    const rawName = e.name ?? "Your companion";
+    const idx = String(rawName).length % JOINER_PARTING_LINES.length;
+    const line = JOINER_PARTING_LINES[idx].replaceAll("{name}", escapeHtml(rawName));
+    return `<span class="beat">${line}</span>`;
+  },
+  // Phase 36 (JOIN-01): dismissJoiner's named refusals — noParty/inCombat
+  // are spelled out; badIndex and any other/unknown reason share one line.
+  dismissRefused: (e) => {
+    if (e.reason === "noParty") return `<span class="beat">There is nobody to send away. You checked twice.</span>`;
+    if (e.reason === "inCombat") return `<span class="beat">Not in the middle of a fight. There are manners, even here.</span>`;
+    return `<span class="beat">Nobody answers to that number.</span>`;
   },
   // Phase 24 (IDENT-05), reversed for Cutthroat in Phase 36 (CUT-01): a
   // Joiner is rolled exactly as normal, then declines to travel ONLY when

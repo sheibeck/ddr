@@ -68,11 +68,11 @@ export const CARD_EVENTS = new Set(["floorChanged", "leveled"]);
  * NARRATIVE_ACTIONS — Phase 25.1 (DFB-01 decision 2). The action types
  * whose direct-mapped toasts carry the Oracle's own sentence (dice
  * stripped) instead of the terse Phase 25 table text: move, camp,
- * resolveJoiner. The shell passes a `ctx.narrate` hook ONLY for these
- * action types — every other action (combat, store, inventory) keeps the
- * short Phase 25 table text unchanged.
+ * resolveJoiner, dismissJoiner (Phase 36, JOIN-01). The shell passes a
+ * `ctx.narrate` hook ONLY for these action types — every other action
+ * (combat, store, inventory) keeps the short Phase 25 table text unchanged.
  */
-export const NARRATIVE_ACTIONS = new Set(["move", "camp", "resolveJoiner"]);
+export const NARRATIVE_ACTIONS = new Set(["move", "camp", "resolveJoiner", "dismissJoiner"]);
 
 /**
  * Toast lifetime constants (Phase 25.1, DFB-02). `toastLifetime(len,
@@ -276,6 +276,7 @@ export const FEATURE_EVENTS = [
   "castRefused",
   "actionRefused",
   "campFailed",
+  "dismissRefused",
   "buyFailed",
   "backstabDenied",
 ];
@@ -1315,6 +1316,14 @@ export const TOAST_FOR = {
   // Phase 36 (CUT-02): fallback/coverage text — on the move action the
   // narrative ctx replaces it with the EVENT_NARRATION line.
   joinerMurdered: (e) => ({ text: `${e?.name ?? "Your companion"} did not reach floor ${e?.depth ?? "?"}.`, tone: "hurt", priority: PRIORITY.feature }),
+  // Phase 36 (JOIN-01): fallback/coverage text — on the dismissJoiner action
+  // the narrative ctx (NARRATIVE_ACTIONS) replaces this with the
+  // EVENT_NARRATION parting line instead.
+  joinerDismissed: (e) => ({ text: `${e?.name ?? "Your companion"} walks. The slot is yours again.`, tone: "beat", priority: PRIORITY.feature }),
+  dismissRefused: (e) => {
+    const map = { noParty: "Nobody is travelling with you.", inCombat: "Not in the middle of a fight.", badIndex: "Nobody by that count." };
+    return block(map[e?.reason] ?? "Nobody to dismiss.");
+  },
   joinerDeclined: (e) => ({ text: `You wave ${e?.name ?? "them"} off.`, tone: "beat", priority: PRIORITY.feature }),
   joinerRefused: (e) => {
     const map = {

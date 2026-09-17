@@ -21,7 +21,7 @@ import { fight, playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
 import { buyFrom, leaveStore, sellItem } from "./economy.js";
-import { resolveJoiner } from "./encounters.js";
+import { resolveJoiner, dismissJoiner } from "./encounters.js";
 import { die } from "./death.js";
 
 /**
@@ -111,6 +111,12 @@ export function applyAction(state, action) {
       // Pure data mutation (no rng): appends to state.party under PARTY_CAP on
       // accept, else declines; always clears state.pendingJoiner.
       resolveJoiner(next, action.accept, events);
+      break;
+    case "dismissJoiner":
+      // Phase 36 (JOIN-01): send a party member away from the Company panel.
+      // Pure data mutation, no rng; refuses in combat / with no party / on a
+      // bad index.
+      dismissJoiner(next, action.i ?? 0, events);
       break;
     case "takeFind":
       // ECON-03 (Phase 13): accept state.pendingFind into the bag (or bagFull).

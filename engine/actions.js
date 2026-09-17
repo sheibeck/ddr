@@ -33,6 +33,9 @@ export const ACTION_TYPES = new Set([
   // PARTY-01 (Phase 9): accept/decline a pending Joiner recruitment stashed by
   // encounters.js#meetJoiner. Pure (no rng); carries a boolean `accept`.
   "resolveJoiner",
+  // Phase 36 (JOIN-01): send a party member away from the Company panel;
+  // pure, no rng; optional non-negative integer `i` (default 0).
+  "dismissJoiner",
   // ECON-03/04/05 (Phase 13): the player-choice inventory actions. All pure
   // (no rng). takeFind/leaveFind accept/decline the pending find stashed by a
   // find caller (encounters.js#offerFind); dropItem/equipItem carry a
@@ -106,6 +109,13 @@ export function validateAction(action) {
       // truthy/falsy value through the recruitment chokepoint.
       if (typeof action.accept !== "boolean") {
         return { ok: false, reason: "resolveJoiner.accept must be a boolean" };
+      }
+      break;
+    case "dismissJoiner":
+      // Phase 36 (JOIN-01): `i` is optional; when present it must be a
+      // non-negative integer (same contract as buyItem.idx/useItem.i above).
+      if (action.i !== undefined && (!isInt(action.i) || action.i < 0)) {
+        return { ok: false, reason: "dismissJoiner.i must be a non-negative integer when present" };
       }
       break;
     case "dropItem":

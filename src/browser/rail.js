@@ -135,6 +135,10 @@ export const RAIL_FAMILY = Object.freeze({
   joinerDeclined: { icon: "◇", title: "COMPANY", tone: "dull" },
   joinerLeft: { icon: "◇", title: "COMPANY", tone: "dull" },
   joinerMurdered: { icon: "◇", title: "COMPANY", tone: "bad" },
+  // Phase 36 (JOIN-01): dismissJoiner's parting line. No dismissRefused row
+  // — its refusals are PRIORITY.block and fall to the block fallback
+  // (NOTHING DOING / dull).
+  joinerDismissed: { icon: "◇", title: "COMPANY", tone: "dull" },
 
   findTaken: { icon: "▪", title: "TAKEN", tone: "good" },
   findLeft: { icon: "▪", title: "LEFT IT", tone: "dull", hold: RAIL_HOLD.dull },
