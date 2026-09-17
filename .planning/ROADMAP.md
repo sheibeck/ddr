@@ -152,7 +152,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 35-01-PLAN.md — Pure modules: `rail.js` (event family → icon/title/tone/hold, generic roll line, one card per dispatch), `tapStep.js` (step-toward-a-tap, hold-inspect), `mapMarks.js` (palette, coloured glyphs, legend rows) + unit tests (decisions 1, 3, 4)
+- [x] 35-01-PLAN.md — Pure modules: `rail.js` (event family → icon/title/tone/hold, generic roll line, one card per dispatch), `tapStep.js` (step-toward-a-tap, hold-inspect), `mapMarks.js` (palette, coloured glyphs, legend rows) + unit tests (decisions 1, 3, 4)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -205,7 +205,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete    | 2026-09-16 |
-| 35. Map Screen Rebuild | v1.4 | 0/? | Pending | — |
+| 35. Map Screen Rebuild | v1.4 | 1/5 | In Progress|  |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |

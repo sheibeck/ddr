@@ -5,15 +5,15 @@ milestone_name: Combat & Map Screens
 current_phase: 35
 current_phase_name: Map Screen Rebuild
 status: executing
-stopped_at: Completed 34-05-PLAN.md (fight end over-panel, phase gate, deferred UAT checklist) — Phase 34 complete
-last_updated: "2026-09-17T01:07:41.373Z"
+stopped_at: Completed 35-01-PLAN.md (rail.js, tapStep.js, mapMarks.js + tests)
+last_updated: "2026-09-17T01:22:17.692Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 34 complete, transitioned to Phase 35
+last_activity_desc: Phase 35 execution started
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 10
+  completed_plans: 6
   percent: 50
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 34 — Combat Screen Rebuild
+**Current focus:** Phase 35 — Map Screen Rebuild
 
 ## Current Position
 
-Phase: 35 — Map Screen Rebuild
-Plan: Not started
+Phase: 35 (Map Screen Rebuild) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-09-16 — Phase 34 complete, transitioned to Phase 35
+Last activity: 2026-09-16 — Phase 35 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-16T23:55:16.113Z
-Stopped at: Completed 34-05-PLAN.md (fight end over-panel, phase gate, deferred UAT checklist) — Phase 34 complete
+Last session: 2026-09-17T01:22:17.666Z
+Stopped at: Completed 35-01-PLAN.md (rail.js, tapStep.js, mapMarks.js + tests)
 Resume file: None
 
 ## Operator Next Steps
@@ -170,6 +170,7 @@ Resume file: None
 | Phase 34 P03 | 40min | 3 tasks | 4 files |
 | Phase 34 P04 | 55min | 3 tasks | 6 files |
 | Phase 34 P05 | 55min | 3 tasks | 4 files |
+| Phase 35 P01 | 25min | 2 tasks | 6 files |
 
 ## Decisions
 
@@ -320,6 +321,7 @@ Resume file: None
 - [Phase ?]: 34-03 Decision 3: no engine retarget action exists or was added — foe-card targeting stays the presentation mutation S.combat.target = i; renderEncounter(), now wrapped in guardTap (a real CSCR-08 fix; it was previously unguarded)
 - [Phase ?]: 34-04: dropped dead-code spellOpen writes in classic startCombat()/castSpell() (unread, pre-Phase-31 dead code) to satisfy the retired presentation flag's zero-occurrence pin; ITEMS submenu rows reuse cbRow() rather than a fifth renderCarriedList host; a disabled grid button with no opens is a guarded no-op
 - [Phase ?]: Phase 34 (CSCR-07/08) closed: fight endings fold into one renderCombatOver over-panel; joiner/find restyled dark; dismissal clears window.__mzFightEnd/__mzCombatMenu. CSCR-10 (on-device DR round) deferred to milestone close per the 27-item aggregated Pixel 7 checklist in 34-05-SUMMARY.md.
+- [Phase ?]: Phase 35 Plan 01: rail.js/tapStep.js/mapMarks.js built pure per orchestrator decisions 1/3/4 (no climb-dice engine change, colored glyphs replace PNG marks, no PICK THE LOCK action) — 39 new tests, engine/content/parity/toasts.js/controls.js/icons.js untouched
 
 ### Blockers
 
