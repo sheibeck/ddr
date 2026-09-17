@@ -77,6 +77,7 @@ Last activity: 2026-09-17 — Phase 37 complete, transitioned to Phase 38
 ### Pending Todos
 
 - (dropped 2026-09-17, user) Play Developer API upload — the user uploads the AAB manually in Play Console when needed.
+- 2026-09-17 — Stand up the "Shell Debt & Dead Code" cleanup milestone after v1.5 (`.planning/proposed-milestone-shell-cleanup.md`; todo `todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md`)
 
 ### Roadmap Evolution
 
