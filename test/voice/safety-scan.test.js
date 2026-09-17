@@ -64,6 +64,7 @@ import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS, JOINER
 import { SPELLS } from "../../content/spells.js";
 import { POTIONS } from "../../content/potions.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/skills.js";
+import { ABILITIES } from "../../content/abilities.js";
 import { JEWELRY, CLOAKS, STAVES, BLADE_NAMES, FAERIE, MISC_MAGIC } from "../../content/treasure-tables.js";
 import { INSANITY } from "../../content/misc-tables.js";
 import { WEAPONS } from "../../content/weapons.js";
@@ -258,6 +259,10 @@ function collectAuthoredStrings() {
   // Phase 19 (D-16 / RESEARCH Pitfall 7) — new content banks are NOT
   // auto-discovered here; every foe-ability telegraph line must be scanned.
   FOE_ABILITIES.forEach((a) => { push(`FOE_ABILITIES.${a.id}(id)`, a.id); push(`FOE_ABILITIES.${a.id}.txt`, a.txt); });
+  // Phase 38 (ABIL-01/02/03) — new content bank, not auto-discovered here
+  // (same "new content banks are NOT auto-discovered" note as FOE_ABILITIES
+  // immediately above): every ability's name + one-line effect text.
+  ABILITIES.forEach((a) => { push(`ABILITIES.${a.id}(name)`, a.name); push(`ABILITIES.${a.id}.txt`, a.txt); });
 
   // Authored proper-noun / result banks
   BLADE_NAMES.forEach((s, i) => push(`BLADE_NAMES[${i}]`, s));

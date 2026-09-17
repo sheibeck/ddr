@@ -75,3 +75,38 @@ export function makeRng(seedOrState) {
     setState: (s) => gen.setState(s),
   };
 }
+
+/**
+ * hashString(str) — FNV-1a 32-bit hash. Deterministic, non-cryptographic
+ * (same disclaimer as mulberry32 above): pure function of its input string,
+ * with no dependency on iteration order or platform.
+ *
+ * @param {*} str - coerced with `String(str)` before hashing
+ * @returns {number} a 32-bit unsigned integer in [0, 2^32)
+ */
+export function hashString(str) {
+  const s = String(str);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * derivedRng(...parts) — Phase 38 (milestone-wide greenfield ruling): a
+ * PURE, keyed rng stream for new rolls that must not reorder an existing
+ * seeded draw sequence (the level-pool ability rolls being the first
+ * consumer — see engine/character.js#rollPoolAbility). Constructed FRESH
+ * per call from `hashString(parts.join(":"))`; never serialized, never
+ * advances any other rng instance's cursor (in particular the run's main
+ * `state.rngState`), and is itself a pure function of its key — the same
+ * parts always yield the same first draw, with no shared mutable state
+ * between calls.
+ *
+ * @param {...*} parts - joined with ":" to form the hash key
+ */
+export function derivedRng(...parts) {
+  return makeRng(hashString(parts.join(":")));
+}

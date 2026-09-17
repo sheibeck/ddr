@@ -14,6 +14,7 @@ export * from "./bags.js";
 export * from "./store-stock.js";
 export * from "./kit.js";
 export * from "./skills.js";
+export * from "./abilities.js";
 export * from "./bestiary.js";
 export * from "./foe-abilities.js";
 export * from "./damage-multipliers.js";
