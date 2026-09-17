@@ -12,6 +12,13 @@
 // weakened assertion is exactly the drift this test exists to catch
 // (T-26-23).
 //
+// Phase 36 Plan 01 (BAL-01) appended a ninth section, "## v1.5 BEFORE",
+// additively: the eight v1.2 heading regexes above stay in place at
+// indices 0-7 (Handoff to Phase 27 is no longer the LAST heading, just the
+// last of the v1.2 set), and three new tests below pin the v1.5 BEFORE
+// section's hash/provenance/meta-parity/cell-keys/cannot-act against
+// docs/class-pass/v15-before.json and v15-before-depth20.json.
+//
 // Every check re-derives its expectation through tools/class-pass-diff.mjs's
 // own exported helpers (metaParity, cannotActCells, cellKey, buildVerdicts,
 // renderMarkdown) rather than hand-deriving a second copy of the rules, so
@@ -37,6 +44,8 @@ const beforeDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "clas
 const after = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "after.json"), "utf8"));
 const afterDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "after-depth20.json"), "utf8"));
 const verdicts = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "verdicts.json"), "utf8"));
+const v15Before = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-before.json"), "utf8"));
+const v15BeforeDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-before-depth20.json"), "utf8"));
 
 // --- doc-parsing helpers -------------------------------------------------
 
@@ -72,9 +81,9 @@ function section(text, headingRegex) {
 
 // --- (1) section presence and fixed order -------------------------------
 
-test("sections: exactly eight H2 headings, in the fixed order, Handoff last", () => {
+test("sections: exactly nine H2 headings, in the fixed order, v1.5 BEFORE last", () => {
   const headings = h2s(doc);
-  assert.equal(headings.length, 8, `expected exactly 8 H2 headings, found ${headings.length}: ${headings.join(" | ")}`);
+  assert.equal(headings.length, 9, `expected exactly 9 H2 headings, found ${headings.length}: ${headings.join(" | ")}`);
 
   const expected = [
     /^## Bot proxy/,
@@ -85,11 +94,12 @@ test("sections: exactly eight H2 headings, in the fixed order, Handoff last", ()
     /^## AFTER — commit [0-9a-f]{40} \(Phase 26 — PLAY-02\)$/,
     /^## Outliers \(Phase 26 — revisit list\)$/,
     /^## Handoff to Phase 27$/,
+    /^## v1\.5 BEFORE — commit [0-9a-f]{40} \(Phase 36 — BAL-01\)$/,
   ];
   expected.forEach((re, i) => {
     assert.ok(re.test(headings[i]), `heading ${i} ("${headings[i]}") should match ${re}`);
   });
-  assert.equal(headings[headings.length - 1], "## Handoff to Phase 27");
+  assert.equal(headings[7], "## Handoff to Phase 27");
 });
 
 // --- (2) AFTER placeholder replaced, BEFORE/Rulings anchors intact -------
@@ -312,5 +322,72 @@ test("Handoff to Phase 27 carries the yardstick", () => {
   }
 
   const allHeadings = h2s(doc);
-  assert.equal(allHeadings[allHeadings.length - 1], "## Handoff to Phase 27", "Handoff to Phase 27 must be the last H2 section in the ledger");
+  assert.equal(allHeadings[7], "## Handoff to Phase 27", "Handoff to Phase 27 must be the eighth H2 section (last of the v1.2 set) in the ledger");
+});
+
+// --- (12) v1.5 BEFORE hash equals v15-before.json / v15-before-depth20.json meta.commit ---
+
+test("v1.5 BEFORE hash equals v15-before.json and v15-before-depth20.json meta.commit", () => {
+  const headingMatch = doc.match(/^## v1\.5 BEFORE — commit ([0-9a-f]{40}) \(Phase 36 — BAL-01\)$/m);
+  assert.ok(headingMatch, "v1.5 BEFORE heading with a 40-hex commit hash not found");
+  const hash = headingMatch[1];
+  assert.ok(hash.startsWith(v15Before.meta.commit), "v1.5 BEFORE heading hash does not start with v15-before.json's meta.commit");
+  assert.equal(v15Before.meta.commit, v15BeforeDeep.meta.commit, "v15-before.json and v15-before-depth20.json must share the same pin");
+
+  const v15Section = section(doc, /^## v1\.5 BEFORE — commit/);
+  assert.ok(v15Section.includes(`\`${v15Before.meta.commit}\``), "v1.5 BEFORE section is missing the backticked short commit hash");
+  assert.ok(v15Section.includes(v15Before.meta.bot), "v1.5 BEFORE section is missing v15-before.json's verbatim Bot: line");
+  assert.ok(v15Section.includes(v15BeforeDeep.meta.bot), "v1.5 BEFORE section is missing v15-before-depth20.json's verbatim Bot: line");
+  assert.ok(v15Section.includes("### Pin and provenance (Phase 36 capture)"), "v1.5 BEFORE section is missing the pin/provenance sub-heading");
+
+  const transcriptHeadings = [...v15Section.matchAll(/^### v1\.5 BEFORE transcript — tune-classes.*$/gm)];
+  assert.equal(transcriptHeadings.length, 2, `expected exactly two "### v1.5 BEFORE transcript" sub-headings, found ${transcriptHeadings.length}`);
+
+  const linesAfterHeading = v15Section.split("\n").slice(1);
+  const firstNonBlank = linesAfterHeading.find((l) => l.trim() !== "");
+  assert.ok(firstNonBlank.startsWith("**Zero cannot-act cells.**"), `v1.5 BEFORE section's first non-blank line should be the zero-cannot-act headline, got: ${firstNonBlank}`);
+});
+
+// --- (13) v1.5 BEFORE meta parity with the v1.2 BEFORE pair (modulo commit) ---
+
+test("v1.5 BEFORE meta parity with the v1.2 BEFORE pair (modulo commit)", () => {
+  const naturalParity = metaParity(before.meta, v15Before.meta);
+  assert.equal(naturalParity.ok, true, `v1.2 BEFORE vs v1.5 BEFORE natural pair parity mismatches: ${naturalParity.mismatches.join(", ")}`);
+  const deepParity = metaParity(beforeDeep.meta, v15BeforeDeep.meta);
+  assert.equal(deepParity.ok, true, `v1.2 BEFORE vs v1.5 BEFORE deep pair parity mismatches: ${deepParity.mismatches.join(", ")}`);
+
+  assert.equal(v15Before.meta.bot, before.meta.bot);
+  assert.equal(v15BeforeDeep.meta.bot, beforeDeep.meta.bot);
+  assert.notEqual(v15Before.meta.commit, after.meta.commit, "v1.5 BEFORE must be a fresh pin, not a copy of the v1.2 AFTER pin");
+});
+
+// --- (14) v1.5 BEFORE: identical 143 cell keys and zero cannot-act / zero stuck ---
+
+test("v1.5 BEFORE: identical 143 cell keys and zero cannot-act / zero stuck", () => {
+  const beforeKeys = new Set(before.cells.map(cellKey));
+  const v15Keys = new Set(v15Before.cells.map(cellKey));
+  assert.deepStrictEqual(beforeKeys, v15Keys, "v1.2 BEFORE / v1.5 BEFORE natural cell key sets differ");
+  assert.equal(v15Keys.size, 143);
+
+  const beforeDeepKeys = new Set(beforeDeep.cells.map(cellKey));
+  const v15DeepKeys = new Set(v15BeforeDeep.cells.map(cellKey));
+  assert.deepStrictEqual(beforeDeepKeys, v15DeepKeys, "v1.2 BEFORE / v1.5 BEFORE depth-20 cell key sets differ");
+  assert.equal(v15DeepKeys.size, 143);
+
+  const flagged = cannotActCells(v15Before);
+  assert.deepStrictEqual(flagged, [], `cannot-act cells found in v15-before.json: ${JSON.stringify(flagged)}`);
+
+  assert.ok(v15Before.cells.every((c) => c.stuck === 0 && c.completed === c.n), "every v15-before.json cell should have zero stuck runs and all runs completed");
+  assert.ok(v15BeforeDeep.cells.every((c) => c.stuck === 0), "the v1.5 BEFORE depth-20 slice should have no stuck runs either");
+
+  const walk = (obj, seen = new Set()) => {
+    if (obj === null || typeof obj !== "object" || seen.has(obj)) return;
+    seen.add(obj);
+    for (const val of Object.values(obj)) {
+      if (typeof val === "number") assert.ok(!Number.isNaN(val), "found NaN in a v1.5 BEFORE file");
+      walk(val, seen);
+    }
+  };
+  walk(v15Before);
+  walk(v15BeforeDeep);
 });
