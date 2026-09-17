@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 36
 current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
 status: executing
-stopped_at: Completed 36-02-PLAN.md (engine/effects.js timer/cooldown foundation, BAL-01)
-last_updated: "2026-09-17T16:38:09.142Z"
+stopped_at: Completed 36-03-PLAN.md (dead-foe targeting normalizeTarget, TGT-01/TGT-02)
+last_updated: "2026-09-17T16:56:22.970Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 36 execution started
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 ## Current Position
 
 Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 36 execution started
 
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T16:38:09.112Z
-Stopped at: Completed 36-02-PLAN.md (engine/effects.js timer/cooldown foundation, BAL-01)
+Last session: 2026-09-17T16:56:22.942Z
+Stopped at: Completed 36-03-PLAN.md (dead-foe targeting normalizeTarget, TGT-01/TGT-02)
 Resume file: None
 
 ## Operator Next Steps
@@ -198,6 +198,7 @@ Resume file: None
 | Phase 35 P05 | 15min | 2 tasks | 1 files |
 | Phase 36 P01 | 27min | 2 tasks | 4 files |
 | Phase 36 P02 | 22min | 3 tasks | 9 files |
+| Phase 36 P03 | 16min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -357,6 +358,9 @@ Resume file: None
 - [Phase ?]: 36-01: v1.5 BEFORE class-matrix pin (BAL-01) captured against e69ff07 (byte-identical to v1.4.0) — docs/class-pass/v15-before*.json + docs/CLASS-PASS.md ninth H2 + additive ledger-guard extension
 - [Phase ?]: 36-02: engine/effects.js — one plain-JSON c.timers shape, seven pure functions, tick sites wired behind if(c.timers) guards; zero player-visible behaviour, zero draw/parity drift
 - [Phase ?]: 36-02: stripTimersField carved into all three *Comparable() fns + the three local comparable() duplicates (combat/magic/movement-parity.test.js), mirroring stripFoeEffectField's structural-tripwire pattern
+- [Phase ?]: 36-03: hero() test helper uses sub names (Soldier/Sorcerer), not class names, matching rollCharacter's force-sub validation
+- [Phase ?]: 36-03: castSpell retarget test seeds a third live foe + high looseRng fallback so a thrown-kind attack spell's possible kill never clears the encounter before the retarget can be asserted
+- [Phase ?]: 36-03: playerStrike draw-count identity test uses a measured (not hand-computed) draw count of 6 via looseRng, since the seed-1 Soldier hero swings more than a bare roll+damage pair
 
 ### Blockers
 

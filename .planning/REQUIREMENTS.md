@@ -49,8 +49,8 @@
 
 ### Combat targeting (TGT)
 
-- [ ] **TGT-01**: A dead foe can never be the target — the target auto-switches to the next living foe the moment a foe dies, before the player's next action
-- [ ] **TGT-02**: Tapping a dead foe card does nothing (guarded), and the auto-switch cannot race a guarded tap into a mis-target
+- [x] **TGT-01**: A dead foe can never be the target — the target auto-switches to the next living foe the moment a foe dies, before the player's next action
+- [x] **TGT-02**: Tapping a dead foe card does nothing (guarded), and the auto-switch cannot race a guarded tap into a mis-target
 
 ### Cutthroat & Joiners (CUT / JOIN)
 
@@ -98,8 +98,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BAL-01 | Phase 36 | Complete |
-| TGT-01 | Phase 36 | Pending |
-| TGT-02 | Phase 36 | Pending |
+| TGT-01 | Phase 36 | Complete |
+| TGT-02 | Phase 36 | Complete |
 | CUT-01 | Phase 36 | Pending |
 | CUT-02 | Phase 36 | Pending |
 | JOIN-01 | Phase 36 | Pending |
