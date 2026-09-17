@@ -126,13 +126,13 @@
   --mw-font-data:calc(1rem * var(--mw-text-scale));        /* Courier Prime Bold — numeric HUD/stat values */
   --mw-font-display:calc(0.8125rem * var(--mw-text-scale)); /* Press Start 2P — names, screen identity headers */
 
-  /* Device-review round 4 ("HUD FLOOR/DAY/SQUARES bigger + mock fonts"):
-     design/Mazeworld Mobile.dc.html's own literal HUD sizes — 7px Press
-     Start 2P tags, 19px bold Courier Prime numbers — scoped to just the top
-     HUD (.mw-hud-item/.mw-hud-item b) rather than repurposing the more
-     general --mw-font-micro/--mw-font-data pair above. */
-  --mw-font-hud-label:calc(0.4375rem * var(--mw-text-scale)); /* Press Start 2P — mock ~7px HUD tags */
-  --mw-font-hud-num:calc(1.1875rem * var(--mw-text-scale));   /* Courier Prime Bold — mock ~19px HUD numbers */
+  /* Phase 35 (MAP-01): design/Mazeworld Map.dc.html's own literal HUD sizes
+     — 6.5px Press Start 2P tags, 16px bold Courier Prime numbers — scoped to
+     just the top HUD (.mw-hud-item/.mw-hud-item b, .mw-hud-wp-text) rather
+     than repurposing the more general --mw-font-micro/--mw-font-data pair
+     above. Supersedes the Device-review round 4 19px HUD-number size. */
+  --mw-font-hud-label:calc(0.40625rem * var(--mw-text-scale)); /* Press Start 2P — mock's 6.5px HUD tags */
+  --mw-font-hud-num:calc(1rem * var(--mw-text-scale));         /* Courier Prime Bold — mock's 16px HUD numbers */
 }
 *{box-sizing:border-box}
 body{
@@ -869,59 +869,60 @@ html,body{height:100%}
    as before. */
 #app.mw-app{display:flex;flex-direction:column;height:100vh;background:var(--paper)}
 
-.mw-hud{
-  position:sticky;top:0;z-index:5;
-  background:var(--paper-2);
-  border-bottom:1px solid var(--rule);
-  padding:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;
-  display:flex;flex-direction:column;gap:7px;
+.mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc(8px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;display:flex;flex-direction:column}
+/* Phase 35 (MAP-01, ruling 5): one HUD row — FLOOR/DAY/SQUARES/RATIONS on the
+   left, the x/y WP bar + DEV chip + gear on the right. The DR13 character
+   line (name/subclass/level/hp) is retired outright — the Hero tab keeps the
+   full sheet; the condition-chip strip and the party rail move OUT of the
+   header into their own strips directly beneath it (see .mw-cond-strip and
+   the relocated .mw-party-rail below), no longer HUD children. */
+.mw-hud-top{display:flex;align-items:center;gap:10px}
+.mw-hud-row{display:flex;gap:8px;align-items:baseline;flex:1;min-width:0;overflow:hidden;flex-wrap:nowrap}
+.mw-hud-item{
+  font-family:var(--disp);font-size:var(--mw-font-hud-label);letter-spacing:0;
+  text-transform:uppercase;color:#9a8f76;
+  display:flex;align-items:baseline;gap:2px;white-space:nowrap;
 }
-/* DR13: line 1 = FLOOR/DAY/MOVES/RATIONS cluster + gear; line 2 = character. */
-.mw-hud-top{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:6px 16px}
-/* DR13: the stat cluster takes the available width (flex:1;min-width:0) and the
-   gear stays pinned to the top line's right end — nowrap stops the gear dropping
-   to its own header line and stealing vertical space from the map. */
-.mw-hud-row{display:flex;gap:6px 16px;flex-wrap:wrap;flex:1;min-width:0}
-/* DR13: character line — name · class/subclass · level · status · health bar,
-   sitting beneath the resource line. Name/class/level are compact text on the
-   left; the HP bar takes the remaining width on the right. */
-.mw-hud-char{display:flex;align-items:center;gap:8px;min-width:0;padding-top:1px;border-top:1px solid var(--rule)}
-.mw-hud-name{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.02em;color:var(--ink);white-space:nowrap;flex:none}
-.mw-hud-cls{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
-.mw-hud-lvl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ditto);white-space:nowrap;flex:none}
-.mw-hud-hp{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:64px;margin-left:auto}
-.mw-hud-hp-lab{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
-.mw-hud-hp-lab b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-/* DR15-B: unified condition tracker "up top". A wrapping row so a stack of
-   chips never overflows the phone width — they flow onto a second line and the
-   row's max-height keeps the map from being shoved off-screen (gracefully
-   scrolls if a character somehow amasses more than fits). Speaks the existing
-   .fchip status-chip vocabulary. Colorblind-safe: good vs bad is carried by the
-   leading ▲/▼ marker glyph + the label text, NOT by the color swap alone. */
-.mw-cond-track{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;max-height:52px;overflow-y:auto}
-.mw-cond{
-  font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-  padding:2px 7px;border-radius:3px;line-height:1.5;white-space:nowrap;
-  border:1px solid var(--ink-soft);color:var(--ink-soft);
-  display:inline-flex;align-items:center;gap:4px;
+.mw-hud-item b{
+  font-family:var(--mono);font-size:var(--mw-font-hud-num);font-weight:700;
+  color:#e6ddc6;font-variant-numeric:tabular-nums;
 }
-/* The marker glyph is the primary good/bad signal (redundant with color). */
-.mw-cond::before{font-weight:700;font-size:9px}
-.mw-cond-good{color:var(--moss);border-color:var(--moss)}
-.mw-cond-good::before{content:"\25B2"}   /* ▲ up = boon */
-.mw-cond-bad{color:var(--stamp);border-color:var(--stamp)}
-.mw-cond-bad::before{content:"\25BC"}    /* ▼ down = bane */
-.mw-cond .mw-cond-detail{opacity:.8;font-weight:600}
+.mw-hud-floor b{color:#e8c97a}
+.mw-hud-rations.warn b{color:#e05a48}
+/* Phase 35 (MAP-01): the x/y WP readout + a 64x5 threshold bar, replacing the
+   retired hp readout — paint() writes the text and the bar's width/threshold
+   classes from the mock's own >50 green / >22 gold / else red bar
+   thresholds (text turns red at <=25). */
+.mw-hud-wp{flex:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-left:auto}
+.mw-hud-wp-text{font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-num);white-space:nowrap;color:#e6ddc6}
+.mw-hud-wp-text.low{color:#e05a48}
+.mw-hud-wptrack{width:64px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09}
+.mw-hud-wpfill{height:100%;background:#7f9d4e;transition:width .25s ease}
+.mw-hud-wpfill.mid{background:#e8c97a}
+.mw-hud-wpfill.low{background:#e05a48}
+/* Phase 35 (MAP-01, ruling 5): the condition-chip strip — its own strip
+   directly under the HUD (not a wrapping row inside it, and no longer over
+   the viewport). One chip per conditionsOf(S) descriptor; tapping a chip
+   (guarded) puts CONDITION_EXPLAIN[cn.key] in the rail as an info card.
+   Hidden entirely when nothing is active. */
+.mw-cond-strip{flex:none;display:flex;gap:5px;overflow-x:auto;padding:6px 14px 7px;border-bottom:3px solid #3a3226;background:#181409}
+.mw-cond-strip[hidden]{display:none}
+.mw-cond{display:flex;align-items:baseline;gap:4px;flex:none;border:1px solid var(--cond-edge);background:#1b170f;padding:3px 5px;min-height:0;min-width:0;border-radius:0;box-shadow:none;font-family:var(--disp);font-size:5.5px;line-height:1.5;color:var(--cond-ink);white-space:nowrap;cursor:pointer}
+.mw-cond[data-tone="bad"]{--cond-edge:#a63a2c;--cond-ink:#e07260}
+.mw-cond[data-tone="warn"]{--cond-edge:#6b5c3c;--cond-ink:#e8c97a}
+.mw-cond[data-tone="odd"]{--cond-edge:#5b4a86;--cond-ink:#b9a4ef}
+.mw-cond[data-tone="good"]{--cond-edge:#5e7a3c;--cond-ink:#a8cc72}
+.mw-cond-detail{font-family:var(--mono);font-weight:700;font-size:10px;color:#8f856f}
 /* Phase 10 (Party UI): the persistent PARTY RAIL — a data-driven flex row of
    member cards (per design/Mazeworld Mobile.dc.html's `railStyle`/`party`
    member cards, ~lines 240/700), shown only while S.party.length > 0 (the
    mock's demo partyOn toggle is DROPPED — visibility is data-driven here).
    Reuses the Phase-4 map HP-bar treatment (.mw-map-hptrack/.mw-map-hpfill) and
    the .fchip status-chip vocabulary so it speaks the existing visual language
-   rather than inventing a new one. Sits beneath the hero HUD char line, above
-   the map, so a companion's identity/HP/status is legible in portrait during
-   play; renderPartyRail() (paint() path) keeps its HP live through combat. */
-.mw-party-rail{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px;padding-top:7px;border-top:1px solid var(--rule)}
+   rather than inventing a new one. Phase 35 (ruling 5): now its own strip,
+   directly beneath the condition-chip strip — both moved out of the HUD
+   header; renderPartyRail() (paint() path) keeps its HP live through combat. */
+.mw-party-rail{display:flex;flex-wrap:wrap;gap:7px;padding:7px 14px;background:#1b170f;margin-top:0;border-top:0;border-bottom:3px solid #3a3226}
 .mw-party-rail[hidden]{display:none}
 .mw-party-member{flex:1 1 auto;min-width:120px;padding:7px 9px;border:2px solid var(--rule);background:var(--paper-2);display:flex;flex-direction:column;gap:4px}
 .mw-party-member.downed{opacity:.6;border-color:var(--stamp)}
@@ -931,30 +932,6 @@ html,body{height:100%}
 .mw-party-hp-lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft)}
 .mw-party-hp-lab b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .mw-party-status{align-self:flex-start;margin-top:1px}
-/* Device-review round 4 ("HUD FLOOR/DAY/SQUARES bigger + mock fonts"): the
-   label used the wrong font family (mono, not Press Start 2P) at a smaller
-   size than the mock, and the number read small too — match
-   design/Mazeworld Mobile.dc.html's own literal HUD typography exactly. */
-.mw-hud-item{
-  font-family:var(--disp);font-size:var(--mw-font-hud-label);letter-spacing:.06em;
-  text-transform:uppercase;color:#9a8f76;
-  display:flex;align-items:baseline;gap:6px;
-}
-.mw-hud-item b{
-  font-family:var(--mono);font-size:var(--mw-font-hud-num);letter-spacing:0;
-  color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;
-}
-/* FLOOR's number is gold in the mock; DAY/SQUARES/RATIONS stay --ink. */
-.mw-hud-floor b{color:var(--ditto)}
-/* 04-DR9 "HUD reorg": RATIONS moves into the LEFT cluster alongside
-   FLOOR/DAY/SQUARES (reusing .mw-hud-item's own row layout directly, no
-   separate flex-column wrapper needed anymore) and the depletion bar is
-   REMOVED outright — just the "RATIONS n" label+number now, still
-   colorblind-safe via the numeric label plus a red-text "warn" state at
-   <=2 remaining (see paint()'s classList.toggle("warn", ...)), matching the
-   mock's HUD fonts. This frees the top-right of the header for the new
-   config gear button (see .mw-gear-btn below). */
-.mw-hud-rations.warn b{color:var(--stamp)}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
 /* 04-DR9: the config gear button — top-right of the header, opens the
@@ -1369,11 +1346,15 @@ html,body{height:100%}
       <div class="mw-hud-row">
         <div class="mw-hud-item mw-hud-floor">Floor<b id="m-floor">1</b></div>
         <div class="mw-hud-item">Day<b id="m-day">1</b></div>
-        <div class="mw-hud-item">Moves<b id="m-steps">0</b></div>
+        <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
         <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
              just the label+number now (see .mw-hud-rations CSS comment). -->
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
+      <!-- Phase 35 (MAP-01, ruling 5): the x/y WP readout over a threshold
+           bar, replacing the retired name/class/hp character line below —
+           paint() writes the text and the bar's width/threshold classes. -->
+      <div class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0/0 WP</span><div class="mw-hud-wptrack"><div class="mw-hud-wpfill" id="mw-hud-wpfill" style="width:100%"></div></div></div>
       <!-- Phase 21 (TUNE-04, D-13): a dev start-at-depth run is visibly
            marked — toggled from state.dev in paint(), never reachable from
            normal play. -->
@@ -1382,34 +1363,20 @@ html,body{height:100%}
            below the MARKS legend sheet markup). -->
       <button type="button" class="mw-gear-btn" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
     </div>
-    <!-- DR13: character line beneath the FLOOR/DAY/MOVES line — name,
-         class·subclass, level, active-affliction status, and the health bar.
-         Populated by paint(). Replaces the removed MAP heading row + its vitals. -->
-    <div class="mw-hud-char" id="mw-hud-char">
-      <span class="mw-hud-name" id="hud-name">—</span>
-      <!-- DR13: subclass + level in one compact token (e.g. "Illusionist III"),
-           gold numeral — the redundant class word is dropped to free room for
-           the status tag. Full class/subclass still lives on the Hero sheet. -->
-      <span class="mw-hud-cls" id="hud-cls"></span>
-      <div class="mw-hud-hp">
-        <span class="mw-hud-hp-lab">HP <b id="mm-hp">0</b>/<b id="mm-hpmax">0</b></span>
-        <div class="mw-map-hptrack"><div class="mw-map-hpfill" id="mm-hpfill" style="width:100%"></div></div>
-      </div>
-    </div>
-    <!-- DR15-B: unified condition tracker "up top" — a wrapping row of
-         good/bad status chips (haste/invis/acute/ether/might/flight + the
-         poison/disease affliction that used to be the lone #mm-status tag +
-         the persistent Darkness/active-phobia state). Populated by paint()
-         from the shared conditionsOf(S) engine helper (window.__mzConditionsOf).
-         Colorblind-safe: each chip carries a text label + a good/bad marker
-         glyph, never color alone. Hidden entirely when no condition is active. -->
-    <div class="mw-cond-track" id="mm-conditions" hidden></div>
-    <!-- Phase 10 (Party UI, PARTY-07): the persistent PARTY RAIL. Data-driven
-         on S.party.length (hidden when solo) — populated/toggled by
-         renderPartyRail() on the paint() path, so a companion's HP updates live
-         through combat on the same repaint that refreshes the hero HP above. -->
-    <div class="mw-party-rail" id="mw-party-rail" hidden></div>
   </header>
+  <!-- Phase 35 (MAP-01, ruling 5): the condition-chip strip — moved OUT of
+       the HUD header into its own strip directly beneath it. One chip per
+       conditionsOf(S) descriptor (window.__mzConditionsOf), populated by
+       paintConditions(); tapping a chip (guarded) puts its explanation in
+       the rail. Hidden entirely when no condition is active. -->
+  <div class="mw-cond-strip" id="mm-conditions" hidden></div>
+  <!-- Phase 10 (Party UI, PARTY-07): the persistent PARTY RAIL. Data-driven
+       on S.party.length (hidden when solo) — populated/toggled by
+       renderPartyRail() on the paint() path, so a companion's HP updates live
+       through combat on the same repaint that refreshes the hero HP above.
+       Phase 35 (ruling 5): moved out of the HUD header, beneath the
+       condition-chip strip. -->
+  <div class="mw-party-rail" id="mw-party-rail" hidden></div>
 
   <!-- ============ 5 TAB SCREENS ============ -->
   <main class="mw-screens" id="mw-screens">
@@ -2961,9 +2928,36 @@ const STORE_ROLL_COPY = "Stock rolled fresh for this floor. Deeper down, pricier
 // values and test/unit/foe-effect-chip.test.js cross-checks the two sets.
 const FOE_EFFECT_LABEL = { weakened: "Weakened", dazed: "Dazed" };
 
-// Render the unified good/bad condition tracker from conditionsOf(S). Reads the
-// shared engine helper (bridged) so the active SET is single-sourced; maps each
-// descriptor to a chip. Hides the whole row when nothing is active.
+// Phase 35 (MAP-01, ruling 5): presentation-only tone/explanation tables for
+// the condition-chip strip — CONDITION_TONE picks the chip's tone class
+// (falling back to the descriptor's own polarity when a key has no explicit
+// entry, mirroring the old good/bad chip split); CONDITION_EXPLAIN is the
+// sentence a guarded chip tap puts in the rail. Both are ONE object literal
+// each (voice-scannable) — presentation copy only, no engine data.
+const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad" };
+const CONDITION_EXPLAIN = {
+  haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
+  invis: "They swing at where you were. Enjoy it; it wears off.",
+  acute: "You strike first on a d6. The maze is briefly unfair in your favour.",
+  ether: "Walls are a suggestion and crevices are a rumour. Count the squares.",
+  might: "Extra damage until the day ends. Hit things.",
+  flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
+  darkness: "You see your own square and not much else. Walk carefully, or walk into something.",
+  afraid: "A penalty on every roll until it passes. Nobody is proud of this.",
+  ward: "A pool of hit points that is not yours, soaking blows until it runs dry.",
+  foeEffect: "Something they did to you. It wears off in a few rounds, which is more than most things do.",
+  affliction: "It takes a bite out of you on a schedule. Find a cure before it finds the rest.",
+  default: "A condition. The maze does not explain itself further.",
+};
+
+// Render the unified good/bad condition-chip strip from conditionsOf(S). Reads
+// the shared engine helper (bridged) so the active SET is single-sourced; maps
+// each descriptor to a guarded chip button. Hides the whole strip when nothing
+// is active. Phase 35 (MAP-01, ruling 5): the strip moved out of the HUD into
+// its own strip beneath it, and each chip is now a real <button> — a guarded
+// tap puts CONDITION_EXPLAIN[cn.key] in the rail as an info card, instead of
+// the old innerHTML-built, non-interactive span.
+let lastCondKeyShown = "";
 function paintConditions(c) {
   const host = document.getElementById("mm-conditions");
   if (!host) return;
@@ -2974,7 +2968,9 @@ function paintConditions(c) {
     host.innerHTML = "";
     return;
   }
-  host.innerHTML = conds.map((cn) => {
+  host.innerHTML = "";
+  const keyList = conds.map((cn) => cn.key + ":" + (cn.kind || "")).join("|");
+  for (const cn of conds) {
     // Affliction has no fixed copy row — it names its own kind (Poison/Disease).
     // Phase 19 D-21 — the foeEffect chip labels its kind ("Weakened" /
     // "Dazed"); the detail branch below already renders `remaining` with the
@@ -3003,10 +2999,28 @@ function paintConditions(c) {
       const unit = CONDITION_COPY[cn.key]?.unit || "";
       detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
     }
-    const tone = cn.polarity === "bad" ? "bad" : "good";
-    const det = detail ? ` <span class="mw-cond-detail">${detail}</span>` : "";
-    return `<span class="mw-cond mw-cond-${tone}">${label}${det}</span>`;
-  }).join("");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mw-cond";
+    btn.dataset.tone = CONDITION_TONE[cn.key] || (cn.polarity === "bad" ? "bad" : "good");
+    btn.dataset.key = cn.key;
+    btn.textContent = label;
+    if (detail) {
+      const d = document.createElement("span");
+      d.className = "mw-cond-detail";
+      d.textContent = detail;
+      btn.appendChild(d);
+    }
+    host.appendChild(btn);
+    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default, "info", 4200, "·"));
+  }
+  // Key-gated: only re-arm when the chip SET actually changed, not on every
+  // repaint after a step — armEncounterButtons() is cheap but pointless
+  // churn otherwise (mirrors the RAIL's own seq-gating discipline).
+  if (keyList !== lastCondKeyShown) {
+    lastCondKeyShown = keyList;
+    armEncounterButtons();
+  }
   host.hidden = false;
 }
 
@@ -3061,20 +3075,22 @@ function paint() {
   fill.style.width = pct + "%";
   fill.classList.toggle("low", pct < 34);
 
-  // 04-DR10: mirror the SAME c.wp/c.maxWP/c.level values onto the MAP
-  // heading's compact HP+level readout (see .mw-map-heading-row CSS above) —
-  // no separate data source, just a second render target for one paint().
-  // DR13: HUD character line — name, then "Subclass <gold level>" (the class
-  // word is implied by the subclass and dropped to keep the line uncrowded).
-  const hudName = document.getElementById("hud-name");
-  const hudCls = document.getElementById("hud-cls");
-  if (hudName) hudName.textContent = c.name;
-  if (hudCls) hudCls.innerHTML = `${c.sub} <span class="mw-hud-lvl">${ROMAN[c.level - 1]}</span>`;
-  document.getElementById("mm-hp").textContent = Math.max(0, c.wp);
-  document.getElementById("mm-hpmax").textContent = c.maxWP;
-  const mmFill = document.getElementById("mm-hpfill");
-  mmFill.style.width = pct + "%";
-  mmFill.classList.toggle("low", pct < 34);
+  // Phase 35 (MAP-01, ruling 5): the x/y WP readout + threshold bar in the
+  // HUD's top-right cluster, replacing the retired name/class/hp character
+  // line — same c.wp/c.maxWP/pct source as the Hero tab's own s-wp/s-wpfill
+  // above, just a second render target. Mock thresholds: bar >50% green,
+  // >22% gold, else red; text turns red at <=25%.
+  const wpText = document.getElementById("mw-hud-wp");
+  if (wpText) {
+    wpText.textContent = `${Math.max(0, c.wp)}/${c.maxWP} WP`;
+    wpText.classList.toggle("low", pct <= 25);
+  }
+  const wpFill = document.getElementById("mw-hud-wpfill");
+  if (wpFill) {
+    wpFill.style.width = pct + "%";
+    wpFill.classList.toggle("mid", pct <= 50 && pct > 22);
+    wpFill.classList.toggle("low", pct <= 22);
+  }
 
   // DR15-B: unified condition tracker "up top" — render ALL active conditions
   // (good AND bad) as a wrapping row of chips, replacing the DR13 lone
@@ -5049,8 +5065,8 @@ function syncFightLogLive(log) {
 
 function vitalsStrip() {
   const c = S.c;
-  // DR13: the WP/health bar is removed from the encounter panel — current HP
-  // now lives permanently in the MAP header (mm-hp/mm-hpfill), so repeating a
+  // DR13: the WP/health bar is removed from the encounter panel — current WP
+  // now lives permanently in the MAP header's WP readout, so repeating a
   // full bar here only ate panel real estate. Keep just the at-a-glance combat
   // resources (potions / ward) the map header does NOT show.
   const side = `${c.potions} pot${c.ward ? ` · ${c.ward.pool} ward` : ""}`;
