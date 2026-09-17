@@ -1,168 +1,192 @@
 # Project Research Summary
 
-**Project:** Delve, Die, Repeat (Mazeworld) - v1.1 Monster Balancing & Abilities
-**Domain:** Deterministic, parity-frozen rules engine extension (turn-based mobile roguelike, subsequent milestone)
-**Researched:** 2026-09-13
+**Project:** Delve, Die, Repeat -- Milestone v1.5 "Meaningful Choices -- Spells, Gear & Abilities"
+**Domain:** Subsequent-milestone extension of a shipped, deterministic, offline Android roguelike engine (vanilla JS, zero runtime dependencies, Capacitor shell unchanged)
+**Researched:** 2026-09-17
 **Confidence:** HIGH
 
 ## Executive Summary
 
-All four researchers converge on the same headline: this milestone needs zero new dependencies and is fully served by extending existing, proven data/code shapes (dice-notation tables, the single mulberry32 RNG stream, sp.* bestiary flags, the parity-carve-out pattern). The engine already has the resistance primitive (intel>=12 / d20<intel), the dice/effect vocabulary (SPELLS[], castSpell's sp.kind switch), and a documented precedent for deliberate, parity-safe divergence (stripFoeDamageClosures, stripDarkForField, etc.). The work is data-and-engine-extension, not new tooling.
+v1.5 is a differentiation and enforcement pass over existing primitives, not new-system invention. Every capability the milestone needs -- squares-based item cooldowns (items.js itemReady/useItem with it.usedAt/it.every), round-based combat timers (c.ward.rounds, combat.afraid, foeAbilities.js tickAbilityCooldowns), class-gated data, and even the darkness-vision infrastructure -- already has a live, shipped precedent somewhere in engine/ or content/. Zero new npm dependencies are needed or should be added; node --test and the existing tools/tune-classes.mjs matrix bot remain the only tooling. The recommended approach is to (1) build one small new engine/effects.js module to own only the new cooldown/duration timers this milestone introduces (ability cooldowns, magic-item duration-then-cooldown pairs, timed map reveal) rather than retrofitting the four existing bespoke timer idioms; (2) land the equipment worn-slot model and its wide-blast-radius eff() refactor early, since gear, magic items, and the Gear-tab split all depend on it; (3) land water terrain before phobias, since the Bodies-of-water phobia has no real trigger without it; and (4) run spells and melee abilities through one shared class-matrix tuning checkpoint rather than two, since both are player-power-additive changes the existing curve was tuned without.
 
-The single biggest risk, called out by every research file independently, is RNG-order/parity discipline: any new foe-cast roll, ability-attempt roll, or resistance roll must be strictly gated behind a new, currently-absent field so that every existing (non-caster) foe and every frozen parity fixture draws exactly zero additional RNG - mirroring the codebase's own "zero-draw gate" pattern already used for c.regen / f.acid / party-targeting. The second major risk is that the frozen prototype (prototype-master.js.txt) embeds its own independent copy of the bestiary - so any bestiary rebalance affecting a creature a parity fixture can roll (only Beasts/Humans are forced today) requires an explicit inventory plus a narrow, named carve-out, never a blanket strip or fixture regeneration without a documented before/after table.
+The single biggest risk is parity: engine/maze.js#genFloor is called by every fixture, bot run, and old save via newRun/descend, so any new unconditional rng draw for water-blob generation would silently reorder or regenerate every maze layout in the test suite. This must be gated behind a new state.terrainRoll run flag, mirroring the storeRoll precedent exactly (Phase 33) -- there is no strip-helper remedy once this class of divergence occurs; only a run-flag gate prevents it. The second biggest risk is scope: this milestone spans six of the largest game systems (spells, melee abilities, gear, terrain/phobias, flee/social mechanics, targeting/UI clarity) simultaneously, which is the exact multi-variable-change pattern the project own tuning methodology ("ONE consolidated difficulty retune") was built to avoid -- mitigated by sequencing power-additive phases before survivability-changing phases, with an explicit tuning checkpoint in between, and by extending the tuning bot policy (tools/lib/tuning-bot.mjs) to actually use new abilities/items before any matrix run is trusted.
 
-Recommended approach: (1) do a short fixture-inventory spike, (2) land two small behavior-preserving refactors (pickFoeTarget, applyFoeDamageToPlayer) to avoid duplicating the ward/armor/damage pipeline, (3) build foe abilities via a new, additive `abilities` field (not by activating sp.caster), (4) rebalance the bestiary with carve-outs where needed, (5) fold ability threat into difficulty.js and re-run the tuning harness, and (6) do the parley/Language pass last, gated on the retuned curve. Confidence is HIGH throughout - all four researchers did direct code reads of the same files and agree on mechanism; the two disagreements below are reconciled explicitly rather than left open.
-
-## Reconciling Disagreements
-
-### Disagreement 1: Key foe casting off sp.caster (STACK/PITFALLS) vs. a new abilities field (ARCHITECTURE)
-
-**Recommendation: use ARCHITECTURE's approach - a brand-new `abilities: [id,...]` field, never activate sp.caster directly.**
-
-Rationale: test/parity/harness/sandboxPrototype.js runs the frozen prototype-master.js.txt, which carries its own independent, byte-identical embedded BESTIARY copy (confirmed at prototype-master.js.txt:304) - not a shared reference to content/bestiary.js. sp.caster: true already exists on Djinni/Krupke/Drudge/Vampire in both copies today, as flavor-only data, per combat.js's own header. If the engine's code starts reading sp.caster as a live gate, any parity fixture whose seed happens to roll one of those four creatures would newly draw RNG that the frozen prototype never draws for that same roll - an ungated divergence with no existing carve-out mechanism, because the field itself isn't new (only its meaning changed), so comparables.js's per-field strip pattern doesn't naturally apply. A new abilities field is undefined on every existing entry by construction, giving a clean, structural, zero-cost gate (Pattern 1's "zero-draw gate") exactly like c.regen / f.acid today. STACK and PITFALLS both reference sp.caster as the natural home for the flag conceptually - that intent is preserved: the new abilities field is added specifically to the creatures already carrying sp.caster/sp.awe etc. (Djinni, Krupke, Drudge, Vampire, Stalka Beast), and sp.caster itself is left inert exactly as-is (per ARCHITECTURE's Anti-Pattern 2). This costs nothing extra (adding one field alongside an existing one is trivial) and removes all parity risk. Treat STACK/PITFALLS' "gate behind sp.caster" language as describing content targeting (which creatures get abilities), not the literal code gate (which must be the new field).
-
-### Disagreement 2: Build order (FEATURES: abilities then bestiary; ARCHITECTURE: bestiary then abilities; PITFALLS: abilities, bestiary, parley, retune last)
-
-**Recommendation: ARCHITECTURE's order - bestiary-fixture inventory, then low-risk refactors, then bestiary rebalance, then abilities, then retune, then parley/Language, then final consolidated pass.**
-
-Rationale: PITFALLS' and FEATURES' ordering (abilities first) is defensible in isolation ("you can't rebalance stats for creatures that don't yet do what they're supposed to"), but ARCHITECTURE's ordering resolves a hard technical prerequisite that the other two files don't address as concretely: the bestiary-rebalance parity risk (Pitfall 4 / ARCHITECTURE Pitfall 1) requires a fixture-inventory spike before any bestiary edits land, and the two low-risk refactors (pickFoeTarget, applyFoeDamageToPlayer) are pure extractions with no feature dependency - landing them first is strictly lower-risk and de-risks the ability work that follows (abilities reuse both helpers). Doing bestiary rebalance before abilities does not waste effort: base stats (wp/dmg/toHit/ar) are logically independent from ability kits, and both FEATURES and PITFALLS agree the combined effect must be re-tuned in the same retune pass regardless of which piece of content lands first - so "rebalance base numbers, then layer abilities on top, then retune once" is at least as sound as "add abilities, then rebalance around them," and it lets the fixture-inventory/carve-out work (the highest-parity-risk item in the whole milestone) happen early and in isolation rather than compounded with new-RNG-draw risk from abilities landing simultaneously. Net: sequence bestiary-safety-first, abilities-second, matching ARCHITECTURE's Recommended Build Order - but treat FEATURES' point as valid design guidance (numbers may get revisited) - the retune pass is exactly where that reconciliation happens, not before.
-
-Parley/Language is treated by all three as substantially independent of abilities/bestiary (different subsystem) but its final numbers must land after the retune, per Pitfall 3/13 - this is uncontested across research files and is preserved as-is.
+Feature-wise, the actual design gap is narrower than the milestone feature list implies: the offense-spell school is a straight damage ladder and the control school has 9 overlapping spells with no scope/duration differentiation -- the fix is re-deriving numbers and niches, not adding a new spell mechanic. Equipment has no slot concept at all today (cloaks/jewelry/staves stack unboundedly and are summed unconditionally by eff()), which is a real, confirmed gap and the milestone biggest architectural prerequisite. The Cutthroat-can-take-a-Joiner ask is a deliberate reversal of an existing, documented refusal (meetJoiner:473) rather than new ground. Dead-foe retarget is nearly done -- display suppression already works; only a normalize-on-kill call and a shell tap-guard remain. Throughout, the project own identity rule (100 percent dice-rolled characters, no player-authored build choices) rules out any "pick your ability/spell" UI -- the rolled-pool approach specified in PROJECT.md is correct and must not slide toward a choice screen under implementation pressure.
 
 ## Key Findings
 
 ### Recommended Stack
 
-No new dependencies. Reuse node:test, the single mulberry32 RNG (engine/rng.js), dice-notation {n,sides,bonus} tables, and plain ESM content/*.js object literals - the same toolkit used across all four prior v1.0 milestones (Joiners, Economy, phobias/flight, item wiring).
+No new runtime dependencies. Every mechanism needed (cooldowns, durations, terrain flags, fog rendering) is data/logic extension inside the existing zero-dependency engine, using node --test (native, Node 22+) as the sole test runner and tools/tune-classes.mjs as the unmodified balance yardstick.
 
-**Core technologies (all pre-existing, extended not added):**
-- node:test / assert.deepStrictEqual - lock new content-table shapes exactly like content-tables.test.js already does for BESTIARY/SPELLS
-- engine/rng.js mulberry32 - the ONLY RNG stream; all new foe-cast/resist/ability rolls must draw from it, never a second stream
-- Dice notation {n,sides,bonus} via engine/dice.js - reuse for any new foe-ability damage/heal/duration numbers
-- tools/tune-difficulty.mjs and tools/tune-economy.mjs - extend (don't replace) to tally ability-cast events and update the heuristic bot's policy
+**Core precedents to reuse, not reinvent:**
+- Squares-based cooldowns: it.usedAt/it.every read against state.steps (engine/items.js:774-870) -- already the exact shape magic items need; STAVES is the one table still missing every.
+- Round-based durations: c.ward.pool/rounds, combat.afraid, c.foeEffect.kind/rounds -- all ticked once per combat round, cleared unconditionally at endCombat.
+- Multi-keyed cooldown pools on one entity: f.cd map of abilityId to roundsRemaining (engine/foeAbilities.js:39-95) -- the direct template for a new c.abilityCd map for hero melee actives.
+- Terrain move-cost: no existing precedent; simplest-consistent extension is a second boolean tile flag (water) consulted at the one state.steps++ call site, charging 2 instead of 1 -- this "for free" also feeds every existing squares-based cadence (haste, flight cooldown, cloak heal/regen), which is a design decision to ratify explicitly, not an accidental side effect to discover in QA.
+- New serialized fields must all get parity carve-outs in test/parity/harness/comparables.js three Comparable functions, mirroring stripFoeEffectField/stripFoeAbilityState.
+- New rng draws follow the narrow feature-guard convention (a draw only fires on a genuinely new state shape, or is explicitly gated like storeRoll) -- not a new top-level flag for every draw.
 
-**Explicitly avoid:** schema validators (ajv/zod), a second RNG library, property-based testing (fast-check), a YAML/content build pipeline, and gating a CI build on the tuning harness's numeric output (it's a sanity proxy, not a pass/fail gate, per its own header).
+**What NOT to add:** any property-based testing library, a canvas/visual-regression tool, an npm wrapper script for the tuning bot, or a generic "TimedEffect"/"Cooldown" class abstraction (the codebase convention is bespoke, explicit, independently-serializable fields per effect -- a shared class would fight the plain-JSON structuredClone contract the parity comparators depend on).
 
 ### Expected Features
 
-**Must have (this milestone, land in order below):**
-- Foe spellcasting core via a new, small foeAbilities.js resolver (not a generalized castSpell) - offense-only, level-capped spell/ability subsets per creature, keyed by the new abilities field
-- Symmetric player-INT resistance (intel>=12, d20<intel), mirroring the existing foe-resists-player check exactly, as a single shared helper reused by both directions
-- High-value canon fixes with existing seams: foe ar as real armor, pursues (Spectre), never_melee (Drudge), every-N cooldown gating (Drake)
-- Bestiary rebalance (HP/damage/to-hit/AR vs. depth), sequenced with a fixture-inventory spike first
-- ONE consolidated difficulty.js retune folding party/economy/monster-power/ability-threat together
-- Parley balance (payout <= combat-equivalent, per-encounter attempt cap or real failure cost, Con Artist odds retuned without gutting the subclass identity) plus Language Option B (graduated fluency bonus in the same parley() bonus term)
+**Must have (table stakes):**
+- Combat spells differentiated by niche (single/multi-target, DOT, control, defensive) instead of a pure damage ladder -- the real gap is concentrated in the single-target damage ladder (Freeze to Ice to Fireball to Mangle, one "best" per level) and a 9-spell control glut with no scope/duration axis.
+- Every wizard sub-class has a guaranteed day-one damage spell.
+- One worn item per equipment-slot type (ring/bracelet/cloak/...) -- a real, confirmed gap; no slot field exists anywhere in content/treasure-tables.js today, and eff() sums every carried copy unconditionally (a latent stacking bug this milestone newly surfaces).
+- One-shot terrain tools (rope/pit, ladder/wall, torch/dark) strictly 1:1 with their hazard -- Lockpicks is the existing in-codebase precedent for this exact shape.
+- Darkness fog (3x3 view while on a dark square, re-fogged on entry, waived by Night Vision/light) -- Night Vision and Amulet/Cloak of Light are currently inert flavor text waiting for this mechanic.
+- Water as a movement-cost (2x) and phobia-trigger tile.
+- Fairer, lower-baseline flee odds with class/race modifiers, shown transparently in the fight log -- hiding the math would be inconsistent with the game own "the tables decide" dice-forward identity.
+- Loot "(usable by ...)" tags -- pure display pass over existing cls fields on weapons/armor.
 
-**Should have / stretch (still v1.1 candidate):** Sterling's halfDmg, type-vs-damage-source multipliers (Cleric 2x vs Demons, magic 2x vs Walking Dead), Philly's slow die-downgrade.
+**Should have (differentiators):**
+- Transparent flee math shown in-log (most genre peers hide it -- showing it reinforces this game identity).
+- Rolled (not chosen) class-flavored ability pool at level-up -- the correct genre deviation given the "100 percent dice-rolled, no player-authored build" identity.
+- Dual-cadence cooldowns (rounds in combat, squares while exploring) -- already Mazeworld own idiom; extend it, do not collapse it.
+- Sarcastic/deadpan narration on every new mechanic (cooldown refusals, tool-use flavor, Cutthroat murder) -- the comedy voice is the core differentiator layer.
+- Risk/reward AoE spells with a real downside (e.g. Earthquake self-damage) kept deliberately, not "fixed" into safety.
 
-**Defer past this milestone:** full incapacitation state machines (grapple/entangle/possess/enthrall/awe-as-stun), guaranteed-drop overrides, pack-coordinated focus-fire AI, daggerOnly weapon-type gating, any new UI screen (foe inspect, bestiary browser) - milestone's own scope boundary is "engine/data/narration only, no new screens."
-
-Richest canon-clear caster targets, in order: Drudge (pure caster, never melees), Krupke (hybrid), Djinni (capped casts/day, flees when losing), Vampire (endgame boss, 5 canon traits currently 1/5 modeled), Stalka Beast (unique elemental-immunity plus weapon-vulnerability kit, largest single canon gap in the bestiary).
+**Defer / anti-features (explicitly out of scope):**
+- Any player-facing ability/spell/perk "choice" UI -- directly conflicts with the 100 percent dice-rolled identity Key Decision.
+- Full itemization sandbox (affix rolling, enchanting, procedural magic items) -- wrong session length and wrong item-pool philosophy (hand-authored 8-per-category tables are legible because they are small).
+- On-grid AoE telegraph/preview UI -- conflicts with the established "narration IS the telegraph, no new UI screens" finding.
+- A universal "skeleton key" tool bypassing any hazard.
+- Full always-on fog-of-war across the whole map (not just darkness-flagged squares).
+- "Smart"/adaptive foe AI reacting to player build choices.
 
 ### Architecture Approach
 
-Every rule domain remains a pure function of (state, rng, events). New foe-ability logic lives in a new, small module (engine/foeAbilities.js), not folded into the already-dense combat.js foeTurn or the player-shaped magic.js castSpell. A new content/foe-abilities.js registry (mirroring SPELLS[]/c.grimoire's name-reference pattern) is referenced by id from a new abilities array on select content/bestiary.js entries. engine/difficulty.js gains new pure exports (foeThreatBudget, abilityThreatWeight) so foe count/level/ability scaling has one source of truth alongside its existing floor-gen-only knobs - or, as a lower-risk v1.1 fallback, simply hand-tune bestiary numbers so ability-bearing foes have proportionally lower raw stats, verified via the existing tuning harness (recommended default; defer the full threat-budget system to v1.2+).
+Every rule domain remains a pure function of (state, rng, events) dispatched through engine/engine.js applyAction single chokepoint -- no DOM, no Math.random, no global mutable state outside state. v1.5 new work slots into this shape via two new modules (engine/effects.js for new timers, engine/abilities.js for a parallel hero-side ability dispatcher mirroring magic.js castSpell shape) plus targeted extensions to maze.js (water flag), items.js/derived.js (worn-slot model, eff() refactor), encounters.js (Cutthroat reversal), movement.js descend (murder hook), and combatMenu.js (ABILITIES submenu -- the seam already exists as a hard-disabled stub).
 
 **Major components:**
-1. engine/foeAbilities.js (new) - resolveFoeAbility(state, foe, rng, events): ability pick, symmetric INT resist check, effect application via a small (~5-kind: bolt/drain/debuff/summon/heal) vocabulary, sharing a new extracted applyFoeDamageToPlayer helper with the existing melee pipeline
-2. content/foe-abilities.js (new) - ability-kind registry, id-referenced from bestiary
-3. engine/combat.js foeTurn (modified) - new ability-attempt gate inserted before the swing loop, structurally zero-draw for any foe without the new abilities field; pickFoeTarget extracted for shared party-aware targeting
-4. engine/difficulty.js (modified) - extended scope from floor-gen-only to also cover combat-scaling knobs
-5. c.foeEffect (new serialized slot) - single new field for foe-inflicted player debuffs, mirroring c.ward's shape, feeding the existing conditionsOf/status-chip UI with zero new UI code
+1. engine/effects.js (new) -- owns only the new ability-cooldown, magic-item duration-then-cooldown, and timed-map-reveal timers; ticked from movement.js move per-step block and combat.js per-round tail, cleared at endCombat.
+2. engine/abilities.js (new) -- a useAbility dispatcher parallel to magic.js castSpell, reading a new c.abilities/c.abilityCd map; wired into engine.js action-dispatch table as a new "useAbility" action type.
+3. c.worn slot model plus eff() refactor (items.js/derived.js) -- the widest-blast-radius change in the milestone (15+ call sites read eff()); must land as its own regression-tested sub-phase before magic items or the Gear-tab split depend on it.
+4. engine/maze.js genFloor with a water option, plus state.terrainRoll run flag -- the water-cell generator, parity-gated exactly like storeRoll.
+5. Render-layer only: the 3x3 dark view is a pure draw() filter over already-seen cells, zero engine/state changes, zero parity risk -- the cheapest, most isolated item in the whole milestone.
 
 ### Critical Pitfalls
 
-1. Unconditional cast-vs-strike roll leaks new RNG into every fight - gate strictly behind the new abilities field (never sp.caster), verified with a draw-count regression test on non-caster fixtures.
-2. Bestiary rebalance silently diverges from the frozen prototype's own embedded bestiary - the frozen master has its own independent BESTIARY copy; enumerate exactly which fixture seeds roll which creatures BEFORE changing numbers, and add narrow named comparables.js carve-outs only for what actually changed.
-3. Green parity suite does not mean abilities work correctly - the frozen fixtures only force Beasts/Humans; every sp.caster-flavored creature lives in Magical/Demons/Walking Dead. New, purpose-built determinism tests must specifically exercise those types.
-4. Retuning to tune-difficulty.mjs's bot, not to human feel - the bot has zero model of foe abilities/potions; treat harness output as a sanity floor, require a human DR-round exit criterion before finalizing constants.
-5. Con Artist nerfed into uselessness - fix parley's shape (real failure cost/attempt cap) rather than just cutting the reward/odds; state a concrete post-rebalance win-rate target so the subclass stays viable.
+1. **New rng draws inserted before existing draws silently reorder every later roll** -- every new draw (item use, ability roll, Cutthroat murder check, water-square check) must be added strictly after all existing draws in its function and gated behind a feature condition false for every current fixture; measure draw-counts, never assume.
+2. **Cooldown/duration timers desync between per-step and per-round ticking, or do not survive save/load** -- every new timer must declare explicitly which tick site owns it (squares vs. rounds) and follow the c.darkFor/f.cd additive-with-safe-default idiom so old saves load with the field simply absent, never crashing or auto-activating.
+3. **Activated abilities and item cooldowns silently move the depth-20 curve without anyone re-running the matrix** -- treat this like the v1.1 to v1.2 retune history: capture a BEFORE matrix pin before any power lands, update the tuning bot policy to actually use new abilities/items FIRST (or the matrix is blind to them), then an AFTER matrix once spells, abilities and gear are code-complete -- one consolidated checkpoint, not per-feature guessing.
+4. **Water/darkness phobia triggers must fire only on fresh entry into terrain, not every step inside a multi-square region** -- otherwise a "spice" mechanic becomes a near-permanent debuff, contradicting the existing Phase 31 ruling that phobia is "a penalty, never a lost action."
+5. **New equipment slot-uniqueness rules can orphan items already legally double-equipped in old saves** -- this is the project first restrictive migration (all prior migrations were additive-with-default); it needs an explicit, narrated load-time reconciliation and a synthetic illegal-old-save test, not a silent drop or a crash.
 
 ## Implications for Roadmap
 
-### Phase 1: Fixture Inventory + Low-Risk Refactors
-**Rationale:** Hard prerequisite gating all later parity-safe work; pure extractions carry zero feature risk and de-risk everything downstream.
-**Delivers:** Documented list of which bestiary entries the 4 parity fixture seeds roll; pickFoeTarget and applyFoeDamageToPlayer extracted from foeTurn with byte-identical-behavior tests.
-**Avoids:** Pitfalls 1, 4, 16 (RNG leak, silent bestiary divergence, party-member combat-path asymmetry).
+Phase numbering continues from 36 per PROJECT.md.
+### Phase 36: Dead-foe targeting and Cutthroat Joiner reversal (small independent wins)
+**Rationale:** Zero new state, zero dependencies on anything else in the milestone; cheapest possible wins that build early confidence and are naturally small enough to ride together.
+**Delivers:** combat.js normalizeTarget called from killFoe; a shell-side tap-guard refusing dead-card taps; removal of the Cutthroat clause in meetJoiner refusal ternary so Cutthroats can accept Joiners.
+**Addresses:** Combat targeting (dead foes never targetable, auto-switch) and the Cutthroat-can-accept-a-Joiner target feature.
+**Avoids:** Pitfall 10 (retarget racing the guarded tap) by extending inputGuards.js test coverage in the same phase, not after.
 
-### Phase 2: Bestiary Rebalance
-**Rationale:** Depends on Phase 1's inventory; base stats (wp/dmg/toHit/ar) are independent of ability kits and safest to land first, in isolation from new-RNG-draw risk.
-**Delivers:** Rebalanced HP/damage/to-hit/AR per creature vs. intended depth band, with narrow named comparables.js carve-outs for any fixture-exercised creature, plus a written before/after stat table.
-**Addresses:** FEATURES' bestiary-rebalance ask.
-**Avoids:** Pitfall 4/14 (silent divergence, fixture-regeneration masking regressions).
+### Phase 37: Generic effect/cooldown/timer model (engine/effects.js)
+**Rationale:** Foundational -- blocks melee abilities, magic-item cooldowns, and the timed-reveal spell kind. Must land before anything that needs a new timer.
+**Delivers:** tickSquareEffects/tickRoundEffects/clearCombatEffects, a new c.timers-style serialized field, one new parity strip helper.
+**Uses:** The c.darkFor/f.cd/c.ward.rounds precedents from STACK.md/ARCHITECTURE.md -- do not retrofit existing fields.
 
-### Phase 3: Foe Abilities + Spellcasting + Symmetric INT Resistance
-**Rationale:** Depends on Phase 1's refactors; the milestone's headline ask; must land as one unit with resistance (fairness valve for any lock/instakill-style ability).
-**Delivers:** New content/foe-abilities.js registry plus abilities field on Djinni/Krupke/Drudge/Vampire/Stalka Beast; engine/foeAbilities.js resolver; new c.foeEffect slot plus conditionsOf entry; new EVENT_NARRATION entries (sarcastic-Oracle voice, not stubs); new determinism tests forcing Magical/Demons/Walking Dead encounters; comparables.js carve-outs for all new fields.
-**Implements:** ARCHITECTURE Patterns 1-4 (zero-draw gate, separate resolver, symmetric resistance, shared targeting).
-**Avoids:** Pitfalls 1, 2, 3, 5, 6, 7, 8, 9 (RNG leak, sp.caster misuse, parity-blind false confidence, foe-array mutation, field-reuse collisions, untelegraphed unfair deaths, flat narration, resistance double-counting).
+### Phase 38: Equipment slot model plus eff() refactor
+**Rationale:** Widest blast-radius change in the milestone (15+ eff() call sites); must land, fully regression-tested, before magic items or the Gear-tab split depend on it. Independent of Phase 37 effects model, so could run in parallel if resourced, but sequenced here to keep gear-related work contiguous.
+**Delivers:** c.worn slot map, a slot field on jewelry/cloak/staff content rows, equipItem/unequipSlot extension, eff() rewritten to sum scalar-equipped plus worn items only.
+**Addresses:** "One worn item per slot type" table-stakes feature; unblocks Phase 39 and Phase 42.
+**Avoids:** Pitfall 8 (old-save migration) -- must ship a narrated, tested illegal-old-save migration in this same phase.
 
-### Phase 4: Consolidated Difficulty Retune (Phase A + B)
-**Rationale:** Must be sequenced after Phases 2-3 exist to tune against; the milestone's explicit "ONE retune" directive folding 3 inherited deferrals (PARTY-10, ECON deep-tune, Phase 3 feel-tuning) plus the new ability axis.
-**Delivers:** difficulty.js extended with combat-scaling knobs (or the simpler hand-tuned fallback, per Pattern 5); tune-difficulty.mjs/tune-economy.mjs bot policy updated to react to foe-ability events; a human DR-round at depth 20-50+ against caster foes as the exit criterion, not harness numbers alone.
-**Uses:** tools/tune-difficulty.mjs, tools/tune-economy.mjs (extended).
-**Avoids:** Pitfalls 10, 11 (bot-blind retuning, under-scoped consolidated retune).
+### Phase 39: Terrain (water squares plus parity-gated genFloor/terrainRoll plumbing)
+**Rationale:** Independent subsystem from Phases 37-38 (maze/movement, not timers), but must land before phobias (Phase 40) since the Bodies-of-water phobia has no real trigger without it.
+**Delivers:** water cell flag, state.terrainRoll run flag mirroring storeRoll, plus-2-step movement cost on water tiles.
+**Avoids:** Pitfall 1 in its highest-stakes form -- the water-blob rng draw is the single largest parity risk in the milestone; it must be threaded through genFloor options parameter and appended strictly after every existing draw, gated so every current fixture/bot/old save is unaffected.
 
-### Phase 5: Parley Balance + Language System
-**Rationale:** Substantially independent subsystem (combat avoidance, not combat resolution) but final numbers depend on Phase 4's curve; split into two sequenced sub-tasks to keep changes independently attributable.
-**Delivers:** Task 1 - Language/Helm-of-Knowledge wiring (Option B: graduated fluency bonus in parley()'s existing additive term) with its own availability test. Task 2 - parley odds/reward/failure-cost retune (payout <= combat-equivalent, attempt cap or real cost) with a stated Con Artist win-rate target.
-**Addresses:** DR15-A, FEATURES section 3-4.
-**Avoids:** Pitfalls 12, 13 (Con Artist gutted, conflated Language+parley changes).
+### Phase 40: Phobias (water/darkness/heights triggers) plus darkness 3x3 render filter
+**Rationale:** Depends on Phase 39 for the water trigger; the 3x3 dark view is presentation-only and has no code dependency on phobias but pairs naturally (both are "make darkness matter").
+**Delivers:** Fresh-entry-only phobia triggering (not per-step), the Heights hook reusing existing gorge/climb tiles, a draw()-level 3x3 fog filter gated on being in the dark without Night Vision.
+**Avoids:** Pitfall 6 (phobia over-triggering) and Pitfall 7 (fog/reveal rendering collisions) -- needs a single render-state-precedence helper (permanent-explored vs. transient overlay), tested without a canvas.
 
-### Phase 6: Final Consolidated Tuning Pass
-**Rationale:** One more full-system run once every prior phase has landed, closing PARTY-10/ECON-deep-tuning/Phase-3-feel-tuning as a single milestone-ending exercise.
-**Delivers:** Final tune-difficulty.mjs/tune-economy.mjs run across the complete feature set; final human DR-round sign-off.
+### Phase 41: Melee active abilities (engine/abilities.js plus ABILITIES submenu) -- balance checkpoint start
+**Rationale:** Depends on Phase 37 cooldown model; independent of gear/terrain work. Begins the shared power-additive balance checkpoint with Phase 42.
+**Delivers:** Rolled ability pool at level 1/skill levels, a small (2-3 skill) initial passive-to-active conversion set, combatMenu.js existing ABILITIES stub branch filled in.
+**Avoids:** Pitfall 5 (passive to active identity-contract breakage) -- every converted skill must be re-checked against docs/CLASS-PASS.md good/bad table and the identity-contract suite updated in this same phase, not deferred.
+
+### Phase 42: Magic items use-to-effect-to-cooldown extension plus one-shot terrain tools
+**Rationale:** Depends on Phase 37 (cooldown model) for duration-then-cooldown items and Phase 38 (worn-slot model) for worn magic items specifically; one-shot tools have no dependency on Phase 38 and could land earlier if convenient.
+**Delivers:** every/usedAt wired onto STAVES and additional weapon/armor rows; rope/ladder/torch as new useItem cases hooked into the existing CLIMB IT major-overlay decision point.
+
+### Phase 43: Spell rework (niche differentiation, day-one damage spells, timed Detect Magic, scroll-castable-immediately) -- balance checkpoint close
+**Rationale:** Mechanically independent of gear/abilities work, but shares the SAME class-pass balance yardstick as Phase 41 -- land the tuning-bot policy extension (scoring for new abilities AND new spell niches) BEFORE running the consolidated BEFORE/AFTER matrix, then run ONE matrix diff covering Phases 41 plus 42 plus 43 together rather than three separate partial checkpoints.
+**Delivers:** Re-derived offense-school niches, a distinct new timedReveal spell kind (provenance-tracked, decoupled from the 3x3 dark view per Phase 40), guaranteed day-one damage spells per wizard sub.
+**Avoids:** Pitfall 3 (power creep un-measured) and Pitfall 4 (situational spells never picked by the bot) -- every new spell/ability needs a corresponding scoring branch and a measured pick-rate in the class-pass ledger before this phase is considered done.
+
+### Phase 44: Flee retune
+**Rationale:** Fully isolated to combat.js flee and its combatMenu.js display mirror; no dependency on anything else. Sequenced after the power-additive checkpoint (survivability retuning against a settled power baseline, not a moving one).
+**Delivers:** Lower baseline chance, small class/race modifiers, roll/need shown transparently in the fight log.
+
+### Phase 45: Clarity pass (cause-naming, loot legibility, Gear On You/Bag split, rations-per-camp)
+**Rationale:** Depends on Phase 38 (worn-slot model, for the Gear split) and touches the final shape of every feature above -- a cooldown refusal needs to exist before its refusal reason can be named. Best done last, or continuously feature-by-feature as each phase lands (each of Phases 37-44 should proactively add its own cause payload field at the point of introduction) rather than as one giant terminal retrofit.
+**Delivers:** EVENT_NARRATION/toast-table cause fields sourced from event payload (never hand-written duplicate strings), "(usable by ...)" tags, the On You/Bag panel split, rations-per-camp on the Hero screen sourced from the same function makeCamp refusal already uses.
+**Avoids:** Pitfall 11 (ad-hoc cause naming bypassing the coverage guard) -- every change must keep toastsCoverage.test.js/formatEventsCoverage.test.js green.
 
 ### Phase Ordering Rationale
 
-- Parity-safety work (inventory + refactors) must precede any content/behavior change that could introduce new RNG draws or numeric divergence - this is the single most load-bearing constraint across all four research files.
-- Bestiary rebalance before abilities avoids compounding two different kinds of parity risk (value divergence and new-RNG-draw risk) in the same phase, while still allowing FEATURES' concern (numbers may need revisiting once abilities exist) to be resolved in the dedicated retune phase rather than skipped.
-- Retune is sequenced after both content changes land, per the milestone's own "ONE retune" directive - never per-feature.
-- Parley/Language can start in parallel with abilities work (different subsystem) but its numeric finalization must wait for the retune, per Pitfall 3/13.
+- Power-additive phases (37-38, 41-43) precede survivability-changing phases (39-40, 44) -- retuning phobia penalties or flee odds against a moving player-power target is far harder than retuning once power is settled; this mirrors the project own "ONE consolidated difficulty retune" lesson applied at milestone-internal scale.
+- The eff()/worn-slot refactor (38) is deliberately isolated from new content -- its blast radius (15+ call sites) means bugs there would be indistinguishable from new gear/ability bugs if bundled together.
+- Terrain (39) precedes phobias (40) because the Bodies-of-water phobia literally cannot fire without water tiles existing.
+- Melee abilities and spells (41, 43) share one balance checkpoint, not two, to avoid the exact "under-measured caster" mistake the v1.1 to v1.2 history already made once -- the tuning bot must be extended to use both new systems before either checkpoint matrix is trusted.
+- Clarity (45) is last because it is a wiring/display pass over the final shape of every other feature, but every earlier phase should still proactively add cause-payload fields per Pitfall 11, so this phase is a sweep, not a retrofit scramble.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- Phase 3 (Foe Abilities): the single biggest design fork in the milestone (new resolver vocabulary, resistance sharing, new serialized state) - recommend --research-phase during planning.
-- Phase 4 (Retune): whether to build the full foeThreatBudget system or use the simpler hand-tuned fallback is an open design call flagged at MEDIUM confidence in ARCHITECTURE - worth a short research/spike pass before committing.
+Phases likely needing deeper research/design discussion during plan-phase:
+- **Phase 39 (Terrain):** the genFloor/terrainRoll parity-gating mechanism is high-stakes and has exactly one correct shape (mirror storeRoll precisely) -- the phase own plan must include a live fixture-roster scan and an explicit draw-count table before any code lands.
+- **Phase 40 (Phobias/darkness):** the re-fog provenance question (does normal walking after a timed-reveal spell earn back knowledge, or does everything the spell touched re-fog unconditionally) is an explicitly flagged open design call needing a ratified decision, not an implementation default.
+- **Phase 41 (Melee abilities):** which specific Special Skills convert to actives (vs. staying passive) is a per-skill judgment call requiring the good/bad identity-contract table review before implementation -- needs its own discussion pass.
+- **Phase 43 (Spell rework):** the niche re-derivation (which offense spells become DOT vs. burst vs. AoE, and the exact control-spell scope/duration axis) is a genuine design/balance decision, not a mechanical extension -- benefits from a dedicated design discussion before coding.
 
-Phases with standard patterns (skip research-phase):
-- Phase 1 (Inventory + Refactors): pure extraction plus grep-based inventory, no new design surface.
-- Phase 2 (Bestiary Rebalance): well-precedented pattern (stripFoeDamageClosures etc.) already used repeatedly in v1.0.
-- Phase 5 (Parley/Language): small numeric/tuning plus one bonus-term change, already scoped in detail by FEATURES.md.
+Phases with standard, already-precedented patterns (can likely skip a research-phase pass):
+- **Phase 36 (targeting/Cutthroat):** both changes are fully specified by existing code precedent (display suppression already correct, refusal ternary already isolated).
+- **Phase 37 (effects model):** shape is fully specified in ARCHITECTURE.md Section 1 recommendation.
+- **Phase 42 (magic items/tools):** extends a proven, already-shipped pattern (itemReady/useItem) to more tables.
+- **Phase 44 (flee retune):** pure numeric retune of one existing formula, isolated to one function.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Direct reads of engine/content/test/tool source; zero new dependencies needed, low ambiguity |
-| Features | HIGH (canon inventory) / MEDIUM (comparable-roguelike patterns) | Canon table cross-checked line-by-line against rulebook and bestiary; competitor patterns are web-research-only |
-| Architecture | HIGH (integration points) / MEDIUM (2 flagged open design calls) | Every pattern grounded in file:line citations; threat-budget-vs-hand-tuned and targeting-pool extraction explicitly flagged as needing a planning-time decision |
-| Pitfalls | HIGH (repo-grounded) / MEDIUM (general RNG-game/tuning industry patterns) | 16 pitfalls all grounded in direct code read plus project history (v1.0 phase summaries); general patterns cross-checked against this repo's own already-correct implementation |
+| Stack | HIGH | Every recommendation is grounded in direct file:line reads of the live engine; no external library research needed since zero new dependencies are introduced |
+| Features | HIGH (codebase claims) / MEDIUM (comparable-game design patterns) | Direct reads of content/spells.js, content/skills.js, content/treasure-tables.js, etc. are HIGH; DCSS/Spire/SPD/Hoplite design-pattern citations are MEDIUM (web research, not code-verified against those engines) |
+| Architecture | HIGH | Every integration point is a direct code read with file:line citations; only a few explicitly-flagged open design calls (re-fog provenance, water movement-cost side effects, ability-conversion scope) are genuinely undetermined |
+| Pitfalls | HIGH | Every pitfall is tied to a concrete file/function/precedent already in this codebase (rng.js, comparables.js, inputGuards.js, CLASS-PASS.md, DIFFICULTY-RETUNE.md), not generic advice |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- Threat-budget vs. hand-tuned bestiary for ability power: ARCHITECTURE recommends starting with the simpler hand-tuned fallback and deferring the full foeThreatBudget system - confirm this decision explicitly in Phase 4's CONTEXT rather than defaulting silently either way.
-- daggerOnly weapon-type gating (Shadow): no existing weapon-type check exists anywhere in combat resolution; FEATURES defers this, but if planning wants Shadow's canon fidelity, a design call is needed on whether to generalize weapon-type gates or treat it as magicOnly-equivalent.
-- Foe-summon ability array-mutation risk (Pitfall 5): no existing precedent in this codebase for appending to C.foes mid-fight; if a summon-kind ability is included in Phase 3, its plan must explicitly design around the C.ally next-round-only precedent rather than improvising.
-- Party-member interaction per ability (Pitfall 16): the member-combat branch is a deliberately simplified clone of the hero's; each new ability's plan should explicitly state whether/how it applies to a live party member, since parity fixtures provide zero coverage here (solo-only).
+- **Re-fog provenance for timed map reveal** (ARCHITECTURE.md Section 3): whether normal exploration during a Detect Magic window should keep cells it would have revealed anyway is an explicit open design call -- must be ratified as a Key Decision in Phase 43 plan, not defaulted silently.
+- **Water shared-counter side effect on cadences** (state.steps driving both movement cost and every squares-based cooldown/cadence): the phase 39 plan must explicitly ratify this as intended flavor (water tiles accelerate cadences per tile crossed) or introduce a separate state.moves counter -- a real design decision, not an accident to discover in QA.
+- **Which Special Skills convert to actives** (ARCHITECTURE.md Section 4, PITFALLS.md #5): needs a per-skill design pass against the good/bad identity-contract table before Phase 41 implementation begins; recommend starting with a small (2-3 skill) initial set rather than the whole catalog.
+- **Whether Shield-pool-on-Hero is already satisfied** by the existing conditionsOf/ward-chip infrastructure from v1.3 Phase 31 -- verify scope before treating as new engine work; likely only needs a Hero-tab-specific display, not new state.
+- **Cutthroat murder odds and the exact roll formula**: FEATURES.md/PITFALLS.md agree the odds must be low and explicitly documented to the player (a rail card on first Joiner acceptance), but the precise probability is a balance call for Phase 36 own plan, not pre-determined by research.
 
 ## Sources
 
-### Primary (HIGH confidence)
-- Direct code read: engine/combat.js, engine/magic.js, engine/difficulty.js, engine/derived.js, engine/dice.js, engine/rng.js, engine/saveState.js
-- Direct code read: content/bestiary.js, content/spells.js, content/skills.js, content/afflictions.js, content/encounters.js, content/treasure-tables.js
-- Direct code read: test/parity/harness/comparables.js, test/parity/harness/sandboxPrototype.js, test/parity/fixtures/action-script.combat.json, test/unit/content-tables.test.js, test/unit/formatEventsCoverage.test.js, test/voice/safety-scan.test.js
-- Direct code read: tools/tune-difficulty.mjs, tools/tune-economy.mjs, package.json
-- mazeworld.pdf "Creatures Described" (pp.36-43), Language (pp.6-7), Spell Resistance (pp.25-26), Jewelry Table (p.47)
-- .planning/PROJECT.md, .planning/proposed-milestone-monster-balancing.md, v1.0 phase summaries (03, 11, 16, 04.1)
+### Primary (HIGH confidence -- direct code/document reads)
+- engine/movement.js, engine/items.js, engine/derived.js, engine/foeAbilities.js, engine/combat.js, engine/magic.js, engine/maze.js, engine/state.js, engine/encounters.js
+- content/spells.js, content/skills.js, content/treasure-tables.js, content/weapons.js, content/armors.js, content/potions.js, content/flavor.js
+- test/parity/harness/comparables.js, test/unit/mapMarks.test.js, test/unit/shell-map-invariants.test.js, test/unit/toastsCoverage.test.js, test/unit/formatEventsCoverage.test.js, test/voice/safety-scan.test.js
+- src/browser/combatMenu.js, src/browser/combatPanel.js, src/browser/inputGuards.js, src/browser/eventNarration.js, src/browser/toasts.js
+- mazeworld.html (Gear tab, foe-card tap wiring, draw())
+- tools/tune-classes.mjs, docs/CLASS-PASS.md, docs/DIFFICULTY-RETUNE.md, docs/USABLE-FEATURES-AUDIT.md
+- .planning/PROJECT.md (v1.5 Current Milestone section, Key Decisions, Constraints), .planning/STATE.md, .planning/MILESTONES.md
 
-### Secondary (MEDIUM confidence)
-- Shattered Pixel Dungeon, Brogue, Dungeon Crawl Stone Soup enemy-ability and counterplay design consensus - web research, not code-verified against those engines
-- Indie diplomacy/negotiation-roguelike patterns (reward parity, escalating retry) - web research
+### Secondary (MEDIUM confidence -- web research, design consensus, not code-verified)
+- DCSS spell-buff/situational-design commentary -- crawl.develz.org, crawl.akrasiac.org
+- Slay the Spire situational-card philosophy -- Cloudfall Studios blog, Slay the Spire Wiki
+- Shattered Pixel Dungeon wand/artifact charge-cooldown and equipment-slot design -- shatteredpixel.com, Pixel Dungeon Wiki
+- Hoplite ability/cooldown/kit-size design -- Giant Bomb, ResetEra, Magma Fortress
+- General roguelike flee-escape and fog-of-war design consensus -- genre-level pattern, cross-checked against Mazeworld own stated formula
 
 ---
-*Research completed: 2026-09-13*
+*Research completed: 2026-09-17*
 *Ready for roadmap: yes*

@@ -1,251 +1,280 @@
-# Feature Research — Foe Abilities, Bestiary Rebalance, Parley/Language
+# Feature Research — v1.5 "Meaningful Choices — Spells, Gear & Abilities"
 
-**Domain:** Turn-based dice-driven mobile roguelike dungeon-crawler (solo, offline, 5–10 min sessions)
-**Researched:** 2026-09-13
-**Confidence:** HIGH for the canon inventory (direct rulebook + source read, cross-checked line-by-line against `content/bestiary.js` and `engine/combat.js`); MEDIUM for comparable-roguelike patterns (web search, general design consensus, not primary-sourced code reads of those engines).
+**Domain:** Turn-based, dice-driven, offline mobile roguelike dungeon-crawler (solo + 1-Joiner party, 5–10 min sessions, one-thumb phone UI, permadeath, family-friendly dark comedy)
+**Researched:** 2026-09-17
+**Confidence:** HIGH for all existing-codebase claims (direct reads of `content/spells.js`, `content/skills.js`, `content/treasure-tables.js`, `content/weapons.js`, `content/armors.js`, `content/potions.js`, `content/flavor.js`, `docs/USABLE-FEATURES-AUDIT.md`, `.planning/PROJECT.md`). MEDIUM for comparable-roguelike design patterns (web research — design consensus and community/dev commentary, not code reads of those engines).
 
----
-
-## 0. Headline Finding (reframes the whole milestone)
-
-`engine/combat.js`'s own module header states this as an already-audited fact, confirmed here by cross-reading every creature against the rulebook:
-
-> "Most BESTIARY creature `sp.*` flags (poison/disease/steals/enthrall/awe/grapple/entangle/possess/raise/shriek/quills/ar/critOn/loot/song/pack/slow/halfDmg/age/pursues/seesInvis/noTurn/never_melee/dark/daggerOnly/caster/breaks/every, etc.) are flavor-only… Only `sp.atk`, `sp.dmg`, `sp.toHit`, `sp.fast`, `sp.magicOnly`, `sp.noArmor`, and `sp.twice` (via `lives`) have any mechanical effect."
-
-This was already true in the **frozen `mazeworld.html` prototype**, not just an engine-port gap — so it is not a regression to fix, it is **uncharted territory to build**. Every creature's rulebook-described "special" beyond that 7-flag set (attack count, flat/dice damage, a numeric to-hit override, "fast" = harder to hit, "magicOnly"/"noArmor" = damage-source/soak bypass, "twice" = 2 lives) is currently **pure narration text** (`sp.note`) with zero game-state effect. Giving foes "real abilities" for this milestone means building the mechanical hooks for a long tail of already-named-but-inert flags, not wiring a couple of stragglers.
-
-Two other cross-cutting gaps, confirmed by grep, apply to nearly every creature and are worth fixing once, generically, rather than per-creature:
-- **A foe's own `sp.ar` (natural armor, e.g. Drat 12, Craig/Google/Herman 15) is never read anywhere** — it is flavor text ("natural mail", "chitin plate") with no actual damage-reduction effect on player hits. Every armored foe currently takes full player damage.
-- **No spell-school-vs-creature-type multiplier exists** — canon repeatedly calls this out ("Cleric spells 2x effective" vs Gremlins, "magic has double effect" vs Walking Dead) and nothing in `engine/magic.js` reads foe `type` for a damage multiplier.
+This file answers one question: **how do situational spell lists, activated-ability cooldowns, item use/duration patterns, terrain hazards + fog-of-war, flee odds, and loot legibility typically work in well-regarded dice/turn-based crawlers — and which of those conventions are table stakes, differentiators, or anti-features for *this* game's identity** (crunchy dice made visible, deadpan family-friendly comedy, 5–10 minute runs, one-thumb phone taps, 100%-dice-rolled character progression with **no player-authored build choices**)?
 
 ---
 
-## 1. Canon Ability Inventory
+## 0. Headline finding
 
-Table columns: **Creature** (name as in `content/bestiary.js`, `{type} L{level}`) · **Rulebook ability** (condensed from `mazeworld.pdf` "Creatures Described," pp.36–43) · **Bestiary `sp` flag today** · **Mechanically modeled today?** (per the 7-flag real set above — everything else is `sp.note` flavor only).
+Mazeworld already has the *scaffolding* for almost everything this milestone asks for — the milestone is a **differentiation and enforcement pass on existing primitives**, not new-system invention:
 
-### Beasts
-
-| Creature | Rulebook ability | `sp` flag | Modeled? |
-|---|---|---|---|
-| Bat/Rat (L1) | 2 attacks/round, 1WP each | `atk:2, dmg:1` | ✅ YES |
-| Shriek (L1) | d4→1: screams, deafens 1 random member 25 sq (−2wp, strike die +1, half dmg); else attacks d4 | `shriek:true` (no `dmg` field at all → falls back to generic `lvl²+d6`) | ❌ NO |
-| Viper (L1) | Bite poisons 2wp/round × d10 rounds, cured by Cure Poison | `poison:true` | ❌ NO |
-| Cave Bear (L2) | Swipe d8; bite d10+rabies(disease), 10wp/day×2 unless cured, chance of insanity | `dmg:1d8, disease:true` | ⚠️ PARTIAL (dmg only; disease inert) |
-| Zit (L2) | Acid: d8 initial +d6/round×3, armor damage permanent; hit only on a 4 | `acid:true, toHit:4` (no `dmg` field) | ⚠️ PARTIAL (toHit:4 real; acid DoT inert, generic dmg fallback) |
-| Drat (L3) | Natural mail (AR~12), need 5 to hit, weapon-break chance on a "10 to hit" roll | `ar:12, toHit:5, breaks:true` | ⚠️ PARTIAL (toHit real; `ar`/`breaks` inert) |
-| Flube (L3) | Armor-piercing poison spike; blinds d6 rounds; blinded party takes 3-to-hit from Flube | `noArmor:true, blind:true` | ⚠️ PARTIAL (noArmor real; blind-the-player inert — no player-blindness state exists at all) |
-| Rast (L3) | +4 damage with any weapon it picks up | `dmg:1d8+4` | ✅ YES |
-| Sterling (L3) | Two hearts: **half damage from everything, even magic** | `halfDmg:true, dmg:1d12` | ❌ NO (biggest single balance bug — Sterling should be a damage-sponge and isn't) |
-| Wolf (L3) | +2 damage | `dmg:1d6+2` | ✅ YES |
-| Drake (L4) | Physical brute-force attack; breathes fire (=Fireball, 2d10+4) **every 4th round only** | `dmg:2d10+4, every:4` | ❌ NO (`every` inert — Drake deals fireball-tier damage EVERY round, not gated) |
-| Stink Bug (L4) | Attacked as if 1 level lower; hits player only on a 2; on-hit grants a random 1-day phobia | `toHit:2, phobia:true` | ⚠️ PARTIAL (toHit real; phobia-infliction + attacker-level-down inert) |
-| Dread Lock (L5) | No special described | (none) | N/A — correctly plain |
-| Stalka Beast (L5) | **Immune to fire/lightning/poison/illness; sees invisible/hears silenced; strikes through force fields; only knives/dirks harm it; casts every lvl1-5 offensive spell without limit** | `atk:2` + note only | ❌ NO — the single largest canon/implementation gap in the bestiary. The game's most powerful beast is currently a generic 2-attack creature with zero of its five defining traits. |
-
-### Demons
-
-| Creature | Rulebook ability | `sp` flag | Modeled? |
-|---|---|---|---|
-| Gremlin (L1) | +3 damage, fast; Sorcerer in party scares it off (60% no-attack); Cleric spells 2x effective vs it | `dmg:1d6+3` | ⚠️ PARTIAL (dmg only; class-conditional behaviors inert) |
-| Poltergeist (L2) | 2 strikes/round; armor ineffective against it | `atk:2, noArmor:true` | ✅ YES |
-| Rinkle (L3) | Toxin (d8/3-to-hit): d6 1-2 → "aging" hallucination — victim's OWN strikes become d20 vs a 2-to-hit until Rinkle dies | `age:true` (no dmg field) | ❌ NO |
-| Djinni (L4/L5) | **Casts every lvl1-4 spell, up to 4×/day each**; flees to another plane when about to die; 1/20 chance it can be reasoned with | `caster:true` | ❌ NO — prime foe-caster candidate |
-| Ghost (L4) | Only magic weapons/spells harm it; armor useless; 1/12 chance to evade whole fight; on-hit d12→1 grants a random phobia | `magicOnly:true, noArmor:true, phobia:true` | ⚠️ PARTIAL (magicOnly/noArmor real; phobia-on-hit inert) |
-| Spectre (L4) | Only magic harms it, armor useless; **pursues you after you flee** until killed | `magicOnly:true, noArmor:true, pursues:true` | ⚠️ PARTIAL (pursues inert — fleeing works identically to any other foe) |
-
-### Humans
-
-| Creature | Rulebook ability | `sp` flag | Modeled? |
-|---|---|---|---|
-| Dante (L1) | 3 strikes/round (4 arms, 3 weapons); immune to ordinary magic (only Planes-shifters can hurt him with it) | `atk:3` | ⚠️ PARTIAL (atk real; magic-immunity inert) |
-| China Wolf (L2) | Hunts in pairs, 2 attacks | `atk:2, dmg:1d6` | ✅ YES |
-| Krupke (L2) | **Sorcerer — casts every lvl1-2 offensive spell**; d10 strike/4-to-hit longsword+2, mail armor | `caster:true, ar:12, dmg:1d8+2` | ⚠️ PARTIAL (dmg/ar-flavor only; caster inert) — clean tier-1 foe-caster candidate |
-| Frank (L3) | Con-man: d10 roll at encounter start, on a 1 steals ALL party treasure and vanishes | `steals:true, dmg:1d8+6` | ⚠️ PARTIAL (dmg only; steal-and-flee inert) |
-| Primp (L3) | Beauty: opposite-sex-phobic males auto-faint; d10 enthrall roll (1-5) incapacitates; escape roll d12 each round-end; kills the fully-enthralled party | `enthrall:true, dmg:1d8+2` | ❌ NO (no incapacitation mechanic exists at all) |
-| Craig (L4) | Home-field advantage: attacker strikes as if 1 level lower | `dmg:1d12, ar:15` | ⚠️ PARTIAL (dmg/ar-flavor only; home-field penalty inert) |
-| Herman (L4/L5) | Turns invisible at will; hittable only on a 2 while invisible; strikes as a level 5 (base 25+weapon) | `invis:true, ar:15, dmg:25` | ⚠️ PARTIAL (flat dmg real; invisibility-raises-player's-to-hit-need entirely inert — no `toHit` field even set) |
-
-### Lair Beasts
-
-| Creature | Rulebook ability | `sp` flag | Modeled? |
-|---|---|---|---|
-| Dog Face (L1) | Pack; leader carries d8 sword, rest d6; Elves get 2 attacks/3-to-hit frenzy vs this type | `dmg:1d6` | ⚠️ PARTIAL (flat dmg for all, no leader distinction; Elven frenzy bonus inert) |
-| Goblin (L1) | Never retreats, carries wilmst | (none besides note) | N/A — flavor matches, no real special needed |
-| Hobgoblin (L1) | d6+1 dmg; **guaranteed** misc-magic item in its lair | `dmg:1d6+1, loot:true` | ⚠️ PARTIAL (dmg real; guaranteed-drop override inert — uses the generic per-kill loot roll) |
-| M&M (L1) | Crits on a natural 1 (redundant with the universal auto-crit-on-1 rule already applied to every foe); deaf | `critOn:1` | ✅ Effectively already covered by the generic rule (flag itself unread but behavior matches) |
-| Pogo (L1) | +4 damage; "fast" = all non-Elves must roll 1 higher to strike it | `dmg:1d6+4, fast:true` | ✅ YES |
-| Hair (L2) | Clubs, d6 damage, nothing else | `dmg:1d6` | ✅ YES |
-| Trachea (L2) | Poison strike d10; **+4 bonus on its first hit**; Fighters do double damage to it; Thieves need a 5 (not 4) to hit | `poison:true, dmg:1d10` | ⚠️ PARTIAL (base dmg real; poison DoT, first-hit bonus, and the two class-conditional to-hit/damage rules all inert) |
-| Blumble (L3) | Quills d12 + a rolling attack d20; **cutting it with a bladed weapon spawns a new Blumble** | `quills:true, dmg:1d12` | ⚠️ PARTIAL (dmg real for the quill hit only; the self-replication-on-bladed-hit and secondary d20 attack are both inert) |
-| Drarl (L4/L5) | Acid: base+10 dmg; **mail/plate armor makes it WORSE** (extra +10/round for 2 rounds after) | `acid:true, noArmor:true` (no dmg field) | ⚠️ PARTIAL (noArmor real; the acid DoT + armor-type-punishes-you clause both inert) |
-
-### Magical
-
-| Creature | Rulebook ability | `sp` flag | Modeled? |
-|---|---|---|---|
-| Drekk (L1) | Initiative-gated sleep song: lose init → d10 roll >6 asleep until birds stop | `song:true` (no dmg) | ❌ NO |
-| Shadow (L2) | Casts persistent darkness on 1-7/10 party members (cured by Light/Restore Vision or killing it); only dagger or magic harms it | `daggerOnly:true, dark:true` | ❌ NO (weapon-type-gate and the darkness-infliction are both inert; the *generic* darkness/phobia system from Phase 04.1 is a ready-made reuse target for the infliction half) |
-| Werebeast (L3) | 2 attacks, d10+5; **demands ½ each member's wilmst or calls d10 reinforcements**; won't engage if a Stalka Beast is present; vanishes to Planes at fight's end | `atk:2, dmg:1d10+5` | ⚠️ PARTIAL (atk/dmg real; the entire extortion/reinforcement/Stalka-Beast-avoidance mechanic is unflagged AND unmodeled — not even a `sp` key exists for it) |
-| Drudge (L4/L5) | **Unlimited innate casting of every lvl1-4 offensive spell; NEVER attacks physically** | `caster:true, never_melee:true` | ❌ NO — the purest "always-casts, no-melee" test case in the whole bestiary; currently just swings for generic melee damage every round, directly contradicting its identity |
-
-### Walking Dead
-
-| Creature | Rulebook ability | `sp` flag | Modeled? |
-|---|---|---|---|
-| Philly (L1) | Strikes on the LOWER of d10 or normal die (player-favorable downgrade); base+2 only; kill twice | `twice:true, slow:true, dmg:1d4+2` | ⚠️ PARTIAL (twice/dmg real via `lives`; `slow` — the player-favorable die-downgrade — inert) |
-| Google (L2) | Rusted plate, longsword d8; no other special. (Canon-wide note: magic does 2× damage to all Walking Dead) | `ar:15, dmg:1d8` | ⚠️ PARTIAL (dmg real; the type-wide 2×-magic-damage rule is unimplemented for ANY Walking Dead creature) |
-| Skeleton (L2) | Kill twice; crits on a 1 (redundant with universal rule); needs a 4 to hit | `twice:true, toHit:4, critOn:1` | ✅ YES (twice + toHit real; critOn redundant-but-covered) |
-| Ghoul (L3) | 1-3/10 chance per turn to **resurrect an already-killed Ghoul** back to full WP | `raise:true, dmg:1d6` | ❌ NO |
-| Zombie (L3) | Nat-1 grapples (immobilize, escalating escape-roll, eventual d20/round loss); separate on-hit d8 1-2 → leprosy (disease) | `grapple:true, disease:true` | ❌ NO |
-| Bones (L4) | Whole pack focus-fires one randomly chosen target until dead, then re-targets | `pack:true` | ❌ NO (current targeting is per-swing random, not pack-coordinated) |
-| Floater (L4) | On-hit: lifts/entangles; escape roll d20 1-5 (breaks free + falls, d10 fall dmg) else takes normal dmg each round; Plate armor blocks it entirely | `entangle:true` | ❌ NO |
-| Undead (L4) | **On-kill**, d12 1-4 → its spirit possesses the killer, forcing d4 rounds of attacking their own party | `possess:true` | ❌ NO (rich mechanic: friendly-fire/possession candidate) |
-| Vampire (L5) | d12 1-4 → awestruck (≈Stupidity spell, can shake off 1-2/12 each round-end); 2 attacks; sees invisible/hears silenced; **immune to Turn Walking Dead**; **casts every offensive+special spell lvl1-5, unlimited** | `atk:2, awe:true, caster:true, seesInvis:true, noTurn:true` | ⚠️ PARTIAL (atk real; ALL FOUR other named specials — awe, caster, seesInvis, noTurn — are inert) — the capstone boss currently has 1 of 5 canon traits working |
-
-**Reading the inventory for scope:** the richest, cleanest "give foes spellcasting" targets, in order of canon clarity, are **Drudge** (unlimited lvl1-4, never melees — a pure caster), **Krupke** (restricted to lvl1-2, still swings a sword — a hybrid), **Djinni** (lvl1-4, capped at 4 casts/day/spell, flees when losing), and **Vampire** (unlimited lvl1-5, the endgame boss). **Stalka Beast** is the other must-fix — it is nominally a "Beast," not a caster type, but the rulebook gives it the same "casts every level without limit" clause plus a unique elemental-immunity + weapon-type-vulnerability kit that has no equivalent anywhere else in the bestiary.
+- **Use → effect-for-X → cooldown-for-Y-squares already exists** and works today on 8 cloaks, 8 jewelry items, and several potions (`content/treasure-tables.js` — Pendant of Fortitude `every 100`, Amulet of Stone `every 200`, Cloak of Speed `every 50`, Cloak of Invisibility/Ether `every 100`; `content/potions.js` — Speed 50 squares, Strength 25 squares, Enlarge 50 squares). The milestone's "magic items as use→effect→cooldown" ask is **extend this pattern to more items**, not invent it.
+- **Round-based combat timers already exist** (`c.ward` pool+rounds, `c.mirror` rounds, `c.regen`, `combat.afraid` — all ticked once per `foeTurn` round and cleared at `endCombat`, per `docs/USABLE-FEATURES-AUDIT.md` §6). The milestone's "activated cooldown abilities" for melee classes should reuse this **rounds** clock for in-combat actives, keeping the existing **squares** clock for exploration items — two clocks, not one, matching what's already shipped.
+- **The Shield ward chip (pool + rounds) already shipped** in v1.3 Phase 31 ("Shield chip shows pool + rounds" — PROJECT.md Validated list). The v1.5 ask ("Shield shows its remaining pool on the hero") is most likely about surfacing it **outside combat too** (Hero tab), not building it from scratch — verify scope before treating as new engine work.
+- **Class-gating already exists as data** on every weapon (`cls: "FTM"/"F"/"FT"`) and armor (`cls`, `min` level) row in `content/weapons.js`/`content/armors.js` — the "(usable by …)" loot-legibility ask is a **display pass over data that already exists**, not a new gating system.
+- **What does NOT exist today:** an equipment-slot model (no `slot` field anywhere in `content/treasure-tables.js` — nothing stops a hero from carrying/wearing multiple rings, multiple cloaks, etc.), a terrain move-cost model (map squares are presence/absence, not typed tiles with a cost), and a real "combat spell niche" design (many offense spells in `content/spells.js` are pure damage-die variants at increasing level, which the milestone itself calls "cheapest damage wins").
 
 ---
 
-## 2. Foe Spellcasting: Table Stakes vs Differentiators vs Anti-Features
+## 1. Per-sub-question findings, ranked for THIS game
 
-Comparable turn-based roguelikes (Dungeon Crawl Stone Soup, Brogue, Shattered Pixel Dungeon) converge on a few shared norms for enemy-cast magic. None of these engines were code-read directly (web research only, MEDIUM confidence) — treat this section as design consensus, not implementation spec.
+### (a) Spell list as situational choices, not a damage ladder
 
-### Table Stakes
+**What good crawlers do:** DCSS's own dev commentary (`crawl.develz.org`) describes an explicit, ongoing effort to make spells "useful but situational" rather than permanent/always-correct — the design goal stated by the devs is that over a game made of "thousands of fights," a spell that is *always* the right pick is a design smell, not a feature. Slay the Spire's community-documented philosophy (Cloudfall Studios' breakdown, widely cited) is the sharpest version of this: **each card should solve some problems, not all** — a card's power is allowed to be extreme *because* it's narrow (works in Act 1, dead in Act 3; works vs. a single elite, useless vs. a swarm). The mechanism that makes a spell list feel like real choices is a **niche taxonomy**, not a level gate:
 
-| Feature | Why expected | Complexity | Notes |
-|---|---|---|---|
-| Foes have a bounded, named spell list per creature (not "cast anything") | DCSS explicitly separates natural/magical/divine abilities per-monster; players learn a foe's kit and plan around it | LOW–MED | Canon already hands us this: Krupke = lvl1-2 offense, Djinni/Drudge = lvl1-4 offense, Vampire/Stalka Beast = lvl1-5 all. Reuse `SPELLS` filtered by `sp.lvl` + `kind !== "heal"/"ward"/etc` (offense-only, matching canon's "offensive spells" wording) |
-| A resistance/counterplay check exists, not a guaranteed hit | DCSS's own philosophy explicitly avoids "no-brainer" no-counterplay effects | LOW | Already exists in reverse (foe `intel≥12` resists player spells, `engine/magic.js:86-97`) — canon literally states the SAME threshold applies to "any... creature or character with Intelligence 12 or higher" (rulebook p.25), so extending it symmetrically to the player is both table-stakes AND already-speced by the rulebook, not an invention |
-| Casting is rate-limited (cooldown / uses-per-day / caster-only-if-melee-refused), not spammed every round | Prevents a single foe from feeling like unavoidable, repeated burst damage in a 5–10 min session | MED | Canon gives per-creature caps for free: Djinni "4×/day/spell", Krupke/Drudge/Vampire "unlimited" but still gated by the once-per-encounter/turn cadence a foe naturally has (1 action/round unless `atk>1`) |
-| Foe spell use is narrated distinctly from a melee swing (name the spell, don't just say "hit") | Matches this game's existing Oracle-log-is-the-detail-layer pattern (DR15-E) and lets players learn to fear specific names | LOW | No new UI — an event type + `EVENT_NARRATION` entry per cast, exactly like `spellResisted`/`resistFailed` already work for the reverse direction |
-
-### Differentiators (fits this game's tone/scope, not required elsewhere)
-
-| Feature | Value proposition | Complexity | Notes |
-|---|---|---|---|
-| Sarcastic Oracle flavor per foe-cast spell (a Djinni's fireball gets a different deadpan line than a generic "Fireball" cast) | Reinforces the voice identity that is core to this project, not just mechanical | LOW | Pure content — new `EVENT_NARRATION` strings, no new event *types* needed beyond a generic `foeCast` |
-| "Never melees" casters (Drudge) as a distinct AI branch | A foe that ONLY casts is a different threat-read than a foe that swings AND casts (Krupke); gives depth-band variety without new systems | LOW–MED | `never_melee` flag already exists in bestiary data — just needs `foeTurn` to branch on it |
-| Symmetric INT resistance surfaced as a condition/toast ("Your wits turn the curse aside") | Makes the player's rolled Intelligence stat (currently a cosmetic-plus-lockpicking-bonus orphan, `intelBonus`) matter in combat too, which the milestone explicitly wants | LOW | Mirrors the existing `spellResisted`/`resistFailed` event pair, just with `c.intel` as the threshold instead of `t.intel` |
-
-### Anti-Features (seem good, avoid for this scope)
-
-| Feature | Why requested | Why problematic | Alternative |
-|---|---|---|---|
-| Foe AI that "chooses the optimal spell" via any lookahead/scoring | Feels like it would make fights "smarter" | Massive complexity for a pure/deterministic, parity-gated engine with a 5-10 min session target; DCSS/Brogue don't do sophisticated foe AI either — they rely on bounded per-monster kits, not general intelligence | A small deterministic per-creature table (e.g. "if never_melee, always cast the highest available offensive spell it knows"; "if melee-capable caster, cast on cooldown / when a condition is met") |
-| A UI "enemy is casting!" telegraph/warning screen | SPD does show telegraphed AoE tiles for *some* mobs | This milestone's own scope boundary is explicit: **no new UI screens** — abilities surface through narration only | The Oracle-log narration ITSELF is the telegraph — a distinct `foeCasting`/`foeCast` line before the effect line functions as a one-beat warning without any new screen |
-| Generalizing ALL ~30 inert `sp.*` flags into fully-simulated mechanics this milestone | The inventory above makes it tempting to "fix everything at once" | Most of these (grapple/entangle/possess/steal/enthrall/raise/pack) are BRAND NEW state machines with no existing engine seam (no incapacitation system, no on-kill-effect system, no focus-fire AI) — building all of them is a milestone unto itself and risks blowing the "no new UI" / parity-gate constraints trying to communicate new player states | Rulebook-first triage: land spellcasting (the milestone's headline ask) + the highest-value, lowest-new-surface specials (noArmor-family already done; `pursues`, `never_melee`, `slow`, foe `ar` as real armor, and the type-vs-magic-damage multiplier are all small reads on EXISTING fields/systems) — defer full incapacitation-style mechanics (grapple/entangle/possess/enthrall/awe-as-stun) to a future pass unless research/planning finds a cheap generalization (e.g. reuse the existing `asleep`/`stupid`/`frozen` fields as the incapacitation primitive, since those ALREADY exist and already stop a turn) |
-| A full "spell school" AI personality per creature type (e.g. Demons always cast offense, Magical always cast utility) | Sounds thematic | Not canon — canon assigns casting per NAMED creature, not per encounter TYPE (e.g. most Demons don't cast at all; Poltergeist/Gremlin/Rinkle are non-casters) | Keep the caster flag per-creature exactly as canon does, resist the urge to generalize by type |
-
----
-
-## 3. Parley / Negotiation Balance Patterns
-
-General design consensus for "talk instead of fight" mechanics (Sunless Sea/Cultist Simulator-style negotiation roguelikes, tabletop-diplomacy ports, XCOM-adjacent) plus this game's own captured balance concerns (`proposed-milestone-monster-balancing.md` candidate #5):
-
-| Pattern | What it does | Applicability here |
+| Niche | Function | Where it fits a dice-crawler |
 |---|---|---|
-| **Reward parity, not reward superiority** | Diplomacy/talk-down payouts are typically ≤ the combat payout — a "safer, cheaper" option, not a strictly-better one | Directly fixes the flagged bug: parley pays `~2.5× Σ(d6×lvl)` vs a kill's `d6×lvl×5×raceMul`. Current parley is generally already LESS than a full kill per-foe when the raw multipliers are compared per creature (5 vs 2.5), but the *aggregate* pays for the WHOLE group at once with zero risk and no combat rounds — recommend re-deriving parley's total against the killFoe-equivalent for the same roster, then setting it strictly ≤ that sum, not a flat 2.5× multiplier chosen independently of the kill formula |
-| **Escalating/diminishing retry** | "Try the same trick twice and they catch on" (a common indie-diplomacy pattern) — either odds worsen on repeat, or a failed attempt has a real cost | Today: zero failure cost beyond a lost turn, unlimited retries per encounter. A per-encounter attempt cap (e.g. 1 attempt, or odds worsening −N per retry) directly targets the "spam until success" concern already flagged |
-| **A real failure cost, not just "no gain"** | Common alternative: a failed negotiation triggers a free foe attack, an aggro/ambush penalty, or forfeits the flee option this round | `parley()` already routes failure through `afterPlayerAction` (foes DO act after a failed parley today) — confirm this is felt as a real cost in practice, or make it explicit/harsher (e.g. failed parley forfeits initiative this round even if the player would have won it) |
-| **Class/race gates stay wide, odds stay narrow** | Many systems let MOST characters attempt diplomacy but reserve high odds for a dedicated build | Matches the existing design well (Con Artist/Bard/Woodsman/Wilmsry/Elven/Language all WIDEN who can try) — the fix is TIGHTENING Con Artist's ~75%-at-level-1 baseline odds, not narrowing who's eligible |
-| **Cost/benefit must never dominate combat for a build that CAN’T fight well either** | If parley is nerfed too hard, a Con Artist/Bard build (whose class identity leans on it) becomes strictly worse than a fighter who just kills things | Keep parley reachable and worthwhile for talk-oriented builds — tune the NUMBER (payout formula, retry cap) rather than removing the class bonuses (`+6`/`+3`/`+4`/`+3`) that define those subclasses |
+| Single-target burst | High variance, kills one dangerous thing fast | vs. a lone strong foe |
+| Multi-target/AoE | Lower per-target damage, hits everything | vs. a pack |
+| DOT | Damage spread over rounds, no upfront spike | vs. a foe you plan to outlast, or when your own to-hit is bad this fight |
+| Control (sleep/stun/confuse-equivalent) | Removes a foe's turn(s) rather than dealing damage | vs. the ONE foe that would otherwise wreck you |
+| Defensive/ward | Reduces incoming damage/risk | vs. an alpha-strike encounter or a fight you're entering hurt |
+| Utility | No combat effect at all — detection, escape prep, info | outside combat, before a decision |
 
-**Complexity:** LOW — this is pure numeric/tuning + a small state field (attempt count per encounter), no new UI, no new engine domain. Directly composable with the `tools/tune-difficulty.mjs`/`tools/tune-economy.mjs` harnesses already used for the consolidated retune.
+**Mazeworld's actual gap (grounded in `content/spells.js`):** the utility/defensive/divination niches are already well-separated (Heal/Major Heal, Shield/Bubble, Strength, Detect Magic, Mirror Self, Sense Danger, Sense Presence, Regeneration, Summon/Phantom Host, Turn Walking Dead, Plane Gate) — 13 of 32 spells already occupy distinct non-combat niches with no overlap. The genuine problem is concentrated in **two places**:
+1. **Pure single-target damage spells are a straight ladder**: Freeze (d6, lvl1) → Ice (d6/round + freeze, lvl3) → Fireball (2d10+4, lvl3) → Mangle (2d20+15, lvl5) — at any given level a caster has exactly one "best damage per WP," so the others are never chosen once the better one is known. Fireballs (volley, d8 balls of d10+2 each) and Lightning (d10+6 vs. every foe) are the ONLY spells that differentiate on multi-target — everything else in the offense school is single-target damage at a rising die.
+2. **A control glut**: Doze, Stun, Weaken, Stupidity, Blind, Shrink, Petrify, Insane, Turn Walking Dead all "disable or cripple one-or-more foes" with no stated axis for *why* you'd pick one over another beyond spell level — 9 of 32 spells share one functional lane.
+
+**Recommendation (ties to identity):** re-derive the offense school along the niche table above rather than a pure damage curve — e.g., keep exactly one clean single-target burst per tier, make Acid/Ice genuinely the DOT choice (situational: "I'm about to be Afraid/underpowered to-hit this fight, so damage-over-time beats a single roll"), keep Earthquake/Fireballs/Lightning as the AoE trio each with a distinct downside (Earthquake hurts you too — a genuine risk/reward pick fitting the game's "play the hand you're dealt" dice identity), and differentiate the control glut by **scope** (single foe vs. up to d6 foes) and **duration** rather than raw level. **Every wizard sub-class needs a day-one damage spell** (already a stated v1.5 requirement) — this is additive to the niche work, not in tension with it.
+
+**Classification:** **Table stakes** for this milestone (it's the headline ask). **Complexity: MEDIUM** — no new engine mechanism, but every offense spell's numbers and `kind` need re-deriving together, gated behind the class-pass yardstick (`tools/tune-classes.mjs`) exactly like prior balance passes.
+**Anti-feature to avoid:** don't chase DCSS/Spire's depth by inventing entirely new spell *mechanics* (charges-per-turn schools, spell combos) — 32 spells for a 5–10 min session is already generous; the fix is differentiation of what exists, not expansion of the system.
+
+### (b) Activated-ability design for melee classes (cooldowns in turns/squares)
+
+**What good crawlers do:** Hoplite (the closest comparable — a short-session, mobile, turn-based tactical roguelike) is instructive because it deliberately avoids "bump-attack-spam" (the designer's own stated goal, per Giant Bomb/ResetEra summaries): a **small fixed action set** (move, melee, one cooldown special — shield bash on a 3-turn cooldown, unlimited uses), **limited-use tools** (throwing spear must be retrieved, sandals have a small charge count), and a **level-up "gifts" system** that improves cooldowns/charges rather than adding new buttons. Shattered Pixel Dungeon's wand rework (`shatteredpixel.com` blog) reinforces the same shape at the item level: 2 base charges, faster regen the more charges are missing — **short cooldowns on a small kit**, not long cooldowns on a big kit.
+
+**Applied to Mazeworld:** the combat screen is a fixed 2×2 grid (STRIKE / SPELLS-or-ABILITIES / ITEMS / SOCIAL) on a phone screen — the existing SPELLS submenu pattern (per-class filtered list) is the template the new ABILITIES submenu should copy exactly (`docs/USABLE-FEATURES-AUDIT.md` §9 already documents this submenu shape). Recommended sizing for a 5–10 minute session:
+- **Pool size:** 3–6 abilities visible per class at once (the existing Fighter/Thief skill lists are 9–12 entries total, but not all convert to actives — a converted subset of ~3–5 plus a rolled pool addition per level keeps the submenu scannable in one thumb-reach, matching Hoplite's "small kit" lesson).
+- **Cooldown unit:** **rounds**, not squares, for anything usable only in combat — mirrors the existing `c.ward`/`c.mirror`/`combat.afraid` round-tick precedent already in the engine. 2–5 rounds is the sweet spot: short enough to fire more than once in a fight that might last 3–8 rounds, long enough that it isn't "spam every turn" (Hoplite's 3-turn shield-bash cooldown is the closest analog and is explicitly praised for feeling meaningful without stalling play).
+- **Squares-based cooldowns stay for exploration-usable actives** (anything with a passive-skill precedent like Bard's Sing, already squares-gated at 100) — do not collapse the two clocks into one; the dual-cadence (rounds in combat, squares while walking) is already Mazeworld's own established idiom, not something to import.
+
+**Classification:** **Differentiator** (activating passive skills + a rolled ability pool is new relative to what exists, and directly serves "melee variety," a named milestone goal) with one **table-stakes constraint**: cooldowns must be small pools / short cooldowns, per genre consensus on short-session mobile turn-based combat. **Complexity: MEDIUM–HIGH** — needs new per-hero cooldown-counter state, a new dispatchable action type per ability (or one generic `useAbility` action, mirroring `useItem`'s existing shape), and UI wiring reusing the SPELLS-submenu pattern.
+**Identity tie-back:** the ability pool must be **rolled, not chosen** (see §2 anti-features) — "a class-flavored active-ability pool rolled at level 1 and each skill level" (the milestone's own wording) is exactly right and should not slide toward a player-facing "choose your upgrade" screen under implementation pressure.
+
+### (c) Item use/duration/cooldown patterns + equipment slot rules
+
+**What good crawlers do:** SPD's equipment model (Fandom wiki + DeepWiki) caps a character at a small, fixed number of equipment slots (~5: weapon, armor, and a few ring/misc slots) and enforces **one item per slot type** — this is the mechanism that makes finding a second ring of the same category a real decision ("swap or sell") instead of a pure accumulation. Artifacts in SPD only charge/cooldown **while equipped**, reinforcing that wearing is itself the resource commitment, not just carrying.
+
+**Mazeworld today (grounded read):** `content/treasure-tables.js`'s JEWELRY (8), CLOAKS (8), and STAVES (8) tables carry no `slot` field at all — nothing in the read data or the audit indicates an enforced "one ring at a time" rule. The milestone's own text explicitly flags this as new: "one worn item per slot type (ring/bracelet/cloak/…), no stacking of a type." This is a **real, confirmed gap**, not a restatement of an existing rule.
+
+**Recommendation:** add a `slot` field per item (ring/bracelet/cloak/amulet/staff/shield — matching the milestone's own "On You: Worn (armor/cloak/jewelry) · Carried (weapon/staff/shield)" split) and enforce equip-time replace-not-add. Keep the **use → effect-for-X-squares → cooldown-for-Y-squares** shape exactly as it exists today (Cloak of Speed/Ether/Invisibility, Pendant of Fortitude, Amulet of Stone) and extend it to more items rather than inventing a second pattern (e.g. a charges-per-day system) — one mental model for "how do magic items work" is a genre-agnostic UX win and costs nothing new to build.
+
+**Classification:** **Table stakes** (slot enforcement is what makes "meaningful choices" true of gear at all — without it, a player just wears everything they find, which is the opposite of this milestone's stated goal). **Complexity: LOW–MEDIUM** — one new data field + one new equip-time guard; the use/cooldown mechanism itself is already proven code, not new.
+**Anti-feature to avoid:** don't build a full itemization sandbox (affix rolling, enchanting, upgrade currency) — SPD/DCSS have these because their run lengths are hours; Mazeworld's hand-authored 8-item tables per category and 5–10 minute sessions call for **small, legible, memorizable** item pools, not a procedural loot system.
+
+### (d) Consumable tools that bypass terrain/hazards (rope, ladder, torch)
+
+**What good crawlers do:** the durable convention (DCSS scrolls of teleport/blinking, and general roguelike "tool" design) is **narrow, one-shot items tied 1:1 to a specific hazard type**, not a universal skeleton key. A rope that only helps with pits and nothing else is a *good* design specifically because it's legible and situational — you know exactly when to use it and exactly when it's dead weight, which is the same "situational, not universally correct" principle as (a).
+
+**Mazeworld precedent (grounded):** Lockpicks are already exactly this shape — a passive, single-purpose, consumed-by-one-specific-gated-action item (`hasPicks`, consumed by `openChest`'s lock roll, per `docs/USABLE-FEATURES-AUDIT.md` §4). Rope/ladder/torch should follow the identical shape: no cooldown, no duration — **one-shot, consumed on the specific hazard check it answers** (a pit roll, a wall-climb roll, a darkness-view check).
+
+**Classification:** **Table stakes** once water/darkness/climb hazards become real player-facing mechanics this milestone (a hazard with zero counterplay tool feels unfair in a permadeath game). **Complexity: LOW–MEDIUM** — the milestone's own PROJECT.md notes the climb-decision "major overlay" (CLIMB IT) already exists from Phase 35 as the exact hook point; rope/ladder should present as an alternate resolution path at that SAME decision point, not a new screen.
+**Anti-feature to avoid:** a single universal tool that bypasses all hazards (a "skeleton key" item) trivializes the exact hazards this milestone is adding real teeth to — keep the 1:1 mapping strict.
+
+### (e) Terrain that costs extra movement + fog-of-war in darkness
+
+**What good crawlers do:** friction tiles (deep water, quicksand, chasms) that cost extra movement or require preparation are a standard "make the player think about routing" device across the genre; darkness/vision-radius fog is near-universal in vision-based roguelikes, with the standard behavior being **currently-visible squares fully rendered, previously-seen-but-now-out-of-radius squares shown dimmed/"remembered" rather than erased**, and light sources or race/class traits as the mitigation.
+
+**Mazeworld precedent (grounded):** the map already permanently reveals explored squares as "dark-blob" marks (per PROJECT.md's Phase 35 description) — the milestone's darkness ask is narrower and consistent with genre convention: only *while standing on/near a dark square*, shrink the view to 3×3, and **re-fog** previously-explored squares until the hero leaves the dark (an intentional, scoped reversal of the map's normal "always shown once explored" rule, exactly the kind of "declared canon divergence" this project already tracks per phase). Two existing hooks make this cheap: the Thief's **Night Vision** skill ("darkness costs you nothing," `content/skills.js`) and **Amulet of Light** ("a standing light spell; dispels darkness," `content/treasure-tables.js`) are both currently-inert flavor text waiting for exactly this mechanic to attach to.
+
+**Water as a friction tile:** "2 moves per square" is a clean, low-complexity friction cost (a per-square move-cost multiplier) with an existing built-in tension valve — the milestone pairs it directly with the Bodies-of-water phobia trigger, so the "cost" of water is narrative/tension-based (slower, scarier) rather than needing a separate counter-item this milestone.
+
+**Classification:** **Table stakes** for making phobias and gear (Night Vision, Amulet/Cloak of Light) mean something real — both are currently named-but-inert, exactly the pattern this milestone exists to fix everywhere else. **Complexity: MEDIUM** — needs one new generic "square property" concept (light requirement / move-cost multiplier / phobia trigger) rather than three bespoke one-offs for water/darkness/heights, since all three plug into the same rendering + phobia-check seam.
+**Anti-feature to avoid:** don't generalize fog-of-war to the WHOLE map (a full NetHack-style vision-radius-everywhere system) — that's a much larger rendering/memory change than this milestone scopes, and conflicts with the map's existing "explored stays visible" identity outside of darkness specifically.
+
+### (f) Flee/escape odds that feel fair
+
+**What good crawlers do:** across tabletop-derived and indie crawlers, flee is treated as a real, roughly even-odds decision (not a near-guarantee, which removes all tension from disengaging, and not a near-impossibility, which punishes recognizing a bad fight) — genre commentary and design write-ups on "diplomatic"/escape mechanics converge on this middle ground, with class/build modifiers shifting the odds rather than replacing them. Most digital roguelikes (DCSS, Brogue) show only a flavor result ("you escape" / "you fail to escape"), not the underlying number.
+
+**Mazeworld's actual dial (grounded in PROJECT.md's own milestone text):** today's formula is d20 + Thief bonus 5, need ≥ 11 (roughly 50% baseline / 75% for a Thief), with **no race input at all** — the milestone wants it lowered with small class/race modifiers and the roll/need shown in the fight log.
+
+**Classification:** **Table stakes** for fairness (lowering a too-generous baseline) but the **transparent roll/need display is a genuine differentiator** — most comparable roguelikes deliberately hide the number to preserve suspense; Mazeworld's whole identity is "the tables decide" and every dice roll is already shown on tap-to-reveal in the fight log (Phase 34) — hiding the flee math would be inconsistent with the game's own established voice, not just a missed nicety. **Complexity: LOW** — a numeric retune of one existing formula plus reusing the already-built dice-reveal fight-log convention; no new UI surface needed.
+
+### (g) Loot legibility ("usable by …")
+
+**What good crawlers do:** the standard solution across the genre (Diablo-lineage color/tint coding, tabletop-crawler text tags) is to mark class/level restriction directly on the item so a player never wastes a decision picking up or equipping something they can't use. Text tags beat color-only coding for accessibility and for small phone screens where color alone is easy to miss.
+
+**Mazeworld's actual gap:** class-gating data already exists on every weapon and armor row (`cls: "FTM"/"F"/"FT"`, `content/weapons.js`/`content/armors.js`) — the milestone's ask is purely a **display** pass, surfacing data that's already there onto the encounter-dot, find, and victory-loot presentations.
+
+**Classification:** **Table stakes**, and arguably overdue given this project's own established "nothing happens silently" principle (v1.2's 209-event narration coverage guarantee) — an un-narrated class restriction is exactly the kind of silent rule this project has spent two milestones eliminating everywhere else. **Complexity: LOW** — pure view-model text derived from existing `cls` fields, no new data or engine change.
 
 ---
 
-## 4. "Language as a System" — Design Options
+## Feature Landscape
 
-Rulebook grounding (`mazeworld.pdf` pp.6-7, "Language"): every non-human race automatically speaks its own tongue plus the shared trade language ("Slop"); humans (non-Magic-User) speak ONLY Slop; a d12 roll can grant an extra language at chargen; a language BOUGHT at a store (post-chargen) isn't usable until the next skill-level-up. Fighter's `Language` skill entry (p.15) is separately described as letting a fighter "gain any language other than dragon which seems useful to them." The Helm of Knowledge (`content/treasure-tables.js`) is the only in-game item tied to this system: "grants the wearer perfect fluency in ONE chosen language... as long as the helm is worn."
+### Table Stakes (Users Expect These)
 
-Given the current implementation only uses Language as a single boolean parley-gate (`skill(c,"Language") || eff(c,"tongue")>0`, both already OR'd in `canParley`), three tiers of "Language as a real system" are available, in increasing complexity:
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Combat spells differentiated by niche (single/multi-target, control, DOT, defensive) instead of a pure damage ladder | Genre consensus (DCSS/Spire): a spell that's always the right pick is a design flaw; players expect each spell to have a "moment" | MEDIUM | Re-derive `content/spells.js` offense school against the niche table in §1(a); gate behind `tools/tune-classes.mjs` |
+| Every wizard sub-class has a day-one damage spell | Already a stated v1.5 requirement; a caster with no way to hurt anything at level 1 is broken, not situational | LOW | Data-only fix, mirrors the v1.2 Phase 23 precedent (every non-Summoner caster already gets a guaranteed day-one attack spell) |
+| One worn item per equipment-slot type (no stacking rings/cloaks) | SPD's 5-slot model; without it, gear accumulation replaces gear choice | LOW–MEDIUM | New `slot` field on `content/treasure-tables.js` rows + an equip-time replace guard; no existing enforcement found in a direct read |
+| One-shot tools tied 1:1 to a specific hazard (rope→pit, ladder→wall, torch→dark) | Narrow, legible tools are a genre norm; the existing Lockpicks item is the in-codebase precedent for this exact shape | LOW–MEDIUM | Hook into the existing CLIMB IT major-overlay decision point (Phase 35), don't build a new screen |
+| Darkness fog (3×3 view, re-fog on entry, waived by Night Vision/light items) | Vision-radius fog is near-universal in this genre; Night Vision and Amulet/Cloak of Light are existing inert flavor waiting for this | MEDIUM | One generic "square property" (light requirement) rather than a bespoke darkness-only hack |
+| Water as a movement-cost + phobia-trigger tile | Friction terrain is standard; pairs cleanly with the existing (currently non-firing) Bodies-of-water phobia | LOW | Per-square move-cost multiplier; shares the same "square property" seam as darkness |
+| Fairer, lower-baseline flee odds with class/race modifiers | Flee should be a real coin-flip decision, not a near-guarantee; today's ~50–75% is on the generous side per genre norms | LOW | Numeric retune of the existing d20+bonus≥need formula (`engine/combat.js`) |
+| Loot "(usable by …)" tags on every offer (encounter dot / find / victory) | Class-gating already exists as data; an unnarrated restriction contradicts this project's own "nothing happens silently" principle | LOW | Pure display pass over existing `cls` fields — no new data |
 
-| Option | What it adds | Complexity | Fit for this milestone |
-|---|---|---|---|
-| **A — Confirm/polish the existing gate** (already landed) | Language skill OR Helm both unlock TALKATIVE-type parley; no further change | Done | Baseline — already shipped per `engine/combat.js:521` |
-| **B — Graduated fluency (bonus, not just gate)** | Language skill/Helm ALSO adds a small flat `+N` to the parley roll (mirroring how Con Artist/Woodsman/Wilmsry/Elven already stack additively in `parley()`'s `bonus` calc) rather than being a pure yes/no gate | LOW | Fits cleanly into the existing additive-bonus formula; makes buying Language (1 skill point, cheapest skill in the game) or finding the Helm feel meaningfully better, not just binary-unlocked |
-| **C — Widen WHICH types are talkable** | Canon doesn't restrict language by encounter TYPE — a language is a language. A case could be made that Language/Helm should let a character attempt parley against types OUTSIDE the current `TALKATIVE` set the same class/race bonuses already exempt (e.g. still never Magical/Walking Dead — those are canonically "doesn't speak," not "you don't understand it") | LOW–MED | Riskier: changes WHO can enter parley at all for types currently fully blocked; needs a design call on whether e.g. "Demons" already being TALKATIVE covers this, or whether something like Lair-Beast sub-groups warrant a split. Recommend deferring unless a concrete rulebook or player-facing gap is found |
+### Differentiators (Competitive Advantage)
 
-**Recommendation:** ship **Option B** as the core of "Language as a system" for this milestone — it's a small, on-model change (same additive-bonus shape parley already uses), it's inert-item-wiring-shaped (same pattern class as Bracelet of Flight / Cloak of Armor), and it directly satisfies the milestone's own cross-reference note ("Language changes WHO can parley and how well... tune together with the parley balance pass"). Do not couple it to Option C without a separate design pass — the milestone's scope boundary already excludes new UI, and A/B are enough to make Language feel like "a system" instead of a single gate check.
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Transparent flee math (roll + need shown in the fight log, not a hidden %) | Most comparable roguelikes hide this number to preserve suspense; showing it is consistent with — and reinforces — this game's "the tables decide" dice-forward identity | LOW | Reuses the already-built tap-to-reveal dice convention from Phase 34's fight log |
+| Rolled (not chosen) class-flavored ability pool at level-up | Most genre peers (Spire's card rewards, Hoplite's gift menu) make ability acquisition a PLAYER CHOICE; Mazeworld's whole identity is "100%-dice-rolled, no player-authored build" — rolling the ability pool is the correct genre deviation, not a compromise | MEDIUM–HIGH | Must resist scope pressure toward a "pick your upgrade" screen during implementation |
+| Dual-cadence cooldowns (rounds for in-combat actives, squares for exploration items) | Already Mazeworld's own idiom (ward/mirror tick per round; cloaks/jewelry tick per square) — most modern roguelikes use one uniform "turn" clock for everything | MEDIUM | Extend the existing pattern to new melee actives rather than collapsing to a single clock |
+| Sarcastic/deadpan narration on every new mechanic (cooldown refusals, tool-use flavor, Cutthroat-murders-Joiner) | The comedy voice is this project's core differentiator layer over otherwise-standard mechanics; every new system this milestone adds is an opportunity for a new joke, not just a new rule | LOW (per-line) | Must pass the existing `test/voice/safety-scan.test.js` family-friendly guardrail |
+| Risk/reward AoE spells with a real downside (Earthquake's self-damage) kept as a deliberate identity feature, not "fixed" away | A spell that can hurt you too is a distinctly dice-crawler, "play the hand you're dealt" flavor of risk most modern balanced-RNG roguelikes smooth away | LOW | Keep, don't nerf into safety, when doing the niche-rework pass in §1(a) |
 
-**Dependency:** this option shares the exact `bonus` calculation site in `parley()` that the parley-balance pass (Section 3) is already retuning — land them together, in the same phase, so the bonus math isn't touched twice.
+### Anti-Features (Commonly Requested, Often Problematic)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|------------------|-------------|
+| Player-chosen ability/spell/perk selection screen (Slay the Spire card-reward style, Hoplite gift-menu style) | It's the genre-standard way to make level-ups feel meaningful | Directly conflicts with the established Key Decision "100%-dice-rolled characters, no player choice... faithful to the game's comedic identity" | Roll the ability pool exactly as the milestone spec already states; keep any "choice" flavor-narrated, not mechanically player-driven |
+| Full itemization sandbox (affix rolling, enchanting, socketing, procedural magic items) | SPD/DCSS have deep item-identify/enchant subsystems that feel rewarding over long runs | Wrong session length (hours vs. 5–10 min) and wrong item-pool philosophy (this game's hand-authored 8-per-category tables are legible precisely because they're small and memorizable) | Extend the existing hand-authored tables with `slot` + use/cooldown fields; do not add procedural generation |
+| On-grid AoE telegraph/preview UI (SPD/Brogue-style tile highlighting before a spell/ability resolves) | Feels like it would reduce "gotcha" AoE damage | Conflicts with this project's own established "no new UI screens, narration IS the telegraph" finding from the v1.1 milestone research (Oracle/fight-log lines already serve this role) | A distinct narrated line before the effect resolves (already the pattern for foe ability casts) |
+| A universal "skeleton key" tool that bypasses any hazard | Feels convenient, reduces the sting of a bad die roll on a specific hazard | Trivializes the exact hazards (water, darkness, climbing) this milestone is giving real teeth; breaks the situational-tool principle from §1(d) | Keep tools strictly 1:1 with their hazard (rope/pit, ladder/wall, torch/dark), exactly as the milestone spec already states |
+| Percentage-only flee/spell-resist UI that hides the underlying dice | Common mobile-UX pattern to reduce "math anxiety" | Undercuts the crunchy, dice-forward core value this whole game is built around; contradicts the existing tap-to-reveal fight-log convention | Show roll + need explicitly, as the milestone's own spec already intends |
+| Full-map, always-on fog-of-war (vision-radius fog everywhere, not just on dark squares) | Reads as "more roguelike" (NetHack/Brogue-style universal vision limits) | Much larger rendering/memory-model change than scoped; conflicts with the map's existing "explored squares stay visible" identity outside darkness | Scope fog strictly to darkness-flagged squares, exactly as the milestone spec states ("on a dark square the map shows only the 3×3...") |
+| "Smart" foe AI that adapts to the player's new abilities/gear (lookahead, counter-picking) | Feels like it would make fights react meaningfully to player builds | Reconfirms the same anti-feature the v1.1 milestone research already flagged for foe spellcasting: massive complexity for a pure/deterministic, parity-gated engine at this session length; genre peers (DCSS/Brogue) don't do this either | Bounded, deterministic per-creature behavior tables, unchanged from the existing foe-ability model |
 
 ---
 
-## 5. Feature Dependencies
+## Feature Dependencies
 
 ```
-Foe spellcasting (generalizing engine/magic.js for foe casters)
-    └──requires──> Existing RESIST_IMMUNE_KINDS set + intel-resist pattern (engine/magic.js:33,86-97)
-    └──requires──> An offense-only spell subset filtered from content/spells.js by sp.lvl cap per creature
-    └──enables───> Symmetric INT resistance (player c.intel vs incoming foe spell, mirrors t.intel vs player spell)
-    └──enables───> Krupke/Djinni/Drudge/Vampire/Stalka Beast canon fidelity (Section 1)
+Equipment slot model (new `slot` field + equip-time replace guard)
+    └──requires──> nothing new (pure data + one guard)
+    └──enables───> Gear tab "On You / Bag" split (needs a slot taxonomy to know what counts as "Worn" vs "Carried")
+    └──enables───> Magic-item use→cooldown extension feeling like a real choice (can't "pick the best ring" if you can wear all of them)
 
-Bestiary rebalance (HP/damage/to-hit/AR vs depth)
-    └──interacts───> Foe spellcasting (a caster's effective threat = melee stats + spell kit; must retune together, not sequentially, or the curve gets tuned twice)
-    └──requires──> engine/difficulty.js as the single source of truth (already exists) — fold ability-bearing foes into the SAME retune pass, not a second one
+Generic "square property" (light requirement / move-cost multiplier / phobia trigger)
+    └──enables───> Darkness 3×3 fog + re-fog behavior
+    └──enables───> Water squares (2 moves, Bodies-of-water phobia trigger)
+    └──enables───> Heights hook (crevices/gorges) — same property, different trigger
+    └──shared with──> Night Vision skill / Amulet of Light / Cloak of Light activation (existing inert flavor text becomes real once the property exists)
 
-Foe sp.ar as real armor (new, small, generic)
-    └──independent of the above — a pure combat.js formula addition (foe defense subtracts from incoming player damage), touches every creature with a nonzero ar, must be included in the SAME difficulty retune since it changes effective foe survivability
+Consumable terrain tools (rope/ladder/torch)
+    └──requires──> the square-property terrain work landing FIRST (or in the same phase) — a tool needs a real hazard to bypass
+    └──requires──> the existing CLIMB IT major-overlay decision point (Phase 35) as its UI hook — no new screen
 
-Parley balance pass
-    └──requires──> Language-as-a-system Option B (same `bonus` formula site in parley())
-    └──independent of foe spellcasting/bestiary rebalance (different subsystem — combat resolution vs. combat avoidance) but SHARES the milestone's single difficulty-retune pass since parley XP feeds the same c.sp/c.gold curve
+Melee active abilities (skill-to-ability conversion + rolled ability pool)
+    └──requires──> a new per-hero cooldown-counter state (rounds-based, mirrors c.ward/c.mirror)
+    └──requires──> the existing SPELLS-submenu UI pattern (reused for a new ABILITIES submenu)
+    └──shares────> the class-pass balance yardstick (tools/tune-classes.mjs) with the spell niche rework — retune together, not sequentially, to avoid double-tuning power (the same lesson the v1.1 "ONE consolidated retune" decision already encoded)
 
-Language Option B (graduated fluency bonus)
-    └──requires──> parley()'s existing additive bonus calc (already reads skill(c,"Language") / eff(c,"tongue") as a gate; add as a bonus term in the same expression)
-    └──conflicts with──> doing Language and the parley numeric retune in SEPARATE phases (both touch parley()'s bonus formula — combine into one phase to avoid re-tuning twice, exactly as the milestone doc already flags)
+Spell niche rework (combat spells differentiated; every wizard sub gets a day-one damage spell)
+    └──independent of gear/abilities work mechanically
+    └──shares────> the SAME class-pass balance yardstick as melee abilities — land in the same tuning pass
+
+Flee retune (lower baseline + class/race modifiers + shown roll/need)
+    └──independent of everything else — pure numeric + fight-log text change
+
+Loot "(usable by …)" legibility
+    └──requires──> nothing new — reuses existing `cls` fields on weapons/armors
+    └──independent of everything else
+
+Cutthroat-can-take-a-Joiner + murder chance
+    └──requires──> the existing Joiner accept/swap flow (already shipped, v1.0 Phases 7–11)
+    └──conflicts with──> the current SUB_NOTE flavor text ("no Joiner will ever agree to walk beside you") — must be rewritten as part of this feature, not left contradicting the new mechanic
 ```
 
 ---
 
-## 6. MVP Definition (this milestone's scope, not a general product MVP)
+## MVP Definition
 
-### Land this milestone (v1.1)
+*(This is a milestone-scoped MVP — what v1.5 itself must land vs. what can slip — not a general product MVP; the product has already shipped v1.0–v1.4.)*
 
-- [ ] **Foe spellcasting core**: generalize `castSpell`-adjacent logic (or a new `foeCastSpell`) so `sp.caster`/`sp.never_melee` creatures actually cast from an offense-only, level-capped `SPELLS` subset — essential because it is the headline ask and unlocks symmetric resistance
-- [ ] **Symmetric INT resistance**: wire `c.intel` (already exists, already has `intelBonus`) to resist incoming foe spells using the SAME `roll < intel, threshold 12` rule the rulebook states applies to "any creature or character" — essential, canon-specified, and explicitly gated on foe-casting landing first
-- [ ] **High-value canon fixes with existing seams**: foe `ar` as real armor (generic formula add), `pursues` (Spectre — reuses flee's existing resolution path), `never_melee` (branch in `foeTurn`), `every` cooldown gating (Drake — mirrors existing `every`-squares item-cooldown pattern) — essential because they're cheap (no new state machine) and close some of the largest canon gaps (Stalka Beast, Drudge, Spectre, Drake)
-- [ ] **Bestiary rebalance pass**: once ability-bearing foes are real, re-derive HP/damage/to-hit/AR per creature vs. intended depth band — essential, this milestone's second headline ask, and can't happen before spellcasting lands (it would tune stats for foes that don't yet do what they're supposed to)
-- [ ] **Consolidated difficulty retune**: fold everything above into ONE `engine/difficulty.js` pass via the existing tuning harnesses — essential per the milestone's own explicit "ONE retune" directive
-- [ ] **Parley balance pass**: retune payout formula (target: ≤ combat-equivalent, not 2.5×), Con Artist's baseline odds, and a per-encounter attempt cap or real failure cost — essential, already scoped and flagged as strictly-dominant today
-- [ ] **Language Option B**: graduated fluency bonus added to the SAME parley `bonus` term — essential, small, and must land in the same phase as the parley numeric retune to avoid double-tuning
+### Land this milestone (v1.5)
 
-### Add after this milestone, if scope allows (still v1.1 candidate, lower priority)
+- [ ] **Spell niche rework** — differentiate the offense-school damage ladder and control glut by function (single/multi-target, DOT, control scope/duration); guarantee every wizard sub a day-one damage spell; scribed scrolls castable immediately — essential, it's the headline ask and the class-pass yardstick already exists to gate it
+- [ ] **Detect Magic → timed map-reveal** — a small, self-contained scoping change (permanent → N-turn duration) with an existing declared-divergence precedent (canon-vs-engine deviations are already a normal, tracked part of this project's process)
+- [ ] **Melee active abilities** (skill conversion + rolled level-up pool) — essential per milestone scope; reuse the SPELLS-submenu UI shape and the rounds-based cooldown clock already established
+- [ ] **Equipment slot model** (`slot` field + one-per-type enforcement) — essential prerequisite for both the magic-item rework and the Gear tab's On You/Bag split; cheap, do it first
+- [ ] **Magic-item use→effect→cooldown extension** to more weapons/armor/gear beyond the current 8 cloaks/8 jewelry — essential to this milestone's "gear rework" goal; reuses proven code
+- [ ] **One-shot terrain tools** (rope/ladder/torch) — essential, but sequence AFTER the terrain "square property" work lands (nothing to bypass otherwise)
+- [ ] **Terrain "square property"** (darkness fog, water move-cost + phobia, Heights hook) — essential; build once, generically, rather than three bespoke special-cases
+- [ ] **Flee retune** (lower baseline, class/race modifiers, shown roll/need) — essential, low-complexity, independent
+- [ ] **Cutthroat Joiner + murder chance** — essential per milestone scope; must include a flavor-text rewrite of the contradicting `SUB_NOTE` line
+- [ ] **Dead-foe auto-retarget** — essential per milestone scope, low complexity (a targeting guard, not a new system)
+- [ ] **Loot "(usable by …)" legibility + Gear On You/Bag split + rations-per-camp on Hero** — essential "clarity pass" items; all pure display work over existing data, do these last so they reflect the final slot/gear shape
 
-- [ ] **Sterling `halfDmg`** (foe takes half damage from all sources) — clean generic mechanic, isolated to one creature's damage-taken path, no new state
-- [ ] **Type-vs-damage-source multipliers** (Cleric spells 2× vs Gremlin-class Demons; magic 2× vs Walking Dead) — a single generic multiplier lookup, touches `magic.js`'s damage application, moderate scope because it needs a small `{sourceType, targetType} → multiplier` table
-- [ ] **`slow` (Philly's player-favorable lower-of-two-dice)** — small, isolated to `strikeDie`/`toHit` resolution for one flag
+### Add after this milestone, if scope allows (still v1.5-adjacent, lower priority)
 
-### Explicitly defer past this milestone (per the milestone doc's own scope boundary + this research)
+- [ ] Shield-pool visibility on the Hero tab specifically (outside combat) — verify first whether v1.3 Phase 31's combat-chip work already satisfies the intent before treating this as new
+- [ ] A second consumable tool per hazard type (e.g., a cheaper/worse alternative to rope) — only if the single-tool version proves too binary in on-device play
 
-- [ ] Full incapacitation state machines (grapple/entangle/possess/enthrall/awe-as-real-stun, Primp/Zombie/Floater/Undead/Vampire's `awe`) — no existing engine seam; each is effectively its own status-effect feature. Consider prototyping ONE (e.g. reuse `asleep`/`stupid`/`frozen` as the shared "incapacitated" primitive) only if planning finds it cheap; otherwise backlog
-- [ ] Guaranteed-drop overrides (Hobgoblin's loot, Frank's steal-and-vanish) — touches the loot/economy system, cross-references the (also out-of-this-milestone) Economy work
-- [ ] Pack-coordinated focus-fire AI (Bones) — a targeting-AI change, not a per-creature data flag; separate from ability-wiring
-- [ ] `daggerOnly` weapon-type gating (Shadow) — requires a weapon-TYPE check that doesn't exist anywhere in combat resolution today (only `magicOnly` exists); design call needed on whether to generalize weapon-type gates or treat Shadow as `magicOnly`-equivalent for now
-- [ ] DR16-G "squares of opponents" / any AoE-model change beyond what's already wired — explicitly backlogged in the milestone doc
-- [ ] Foe inspect screen / bestiary screen — explicitly out of scope (no new UI screens this milestone)
+### Explicitly defer past this milestone
+
+- [ ] Any player-facing ability/spell "choice" UI — conflicts with the dice-rolled-everything identity; not a v1.5 candidate at all, ever, unless a future explicit user decision reverses the Key Decision
+- [ ] Procedural/affix-rolled magic items — wrong shape for this game's hand-authored, small-table item design
+- [ ] Full always-on fog-of-war across the whole map — far larger than the darkness-only scope stated
+- [ ] AoE telegraph/preview UI on the grid — conflicts with the existing "no new UI screens, narration is the telegraph" finding
+- [ ] Adaptive/"smart" foe AI reacting to player build choices — same anti-feature already flagged in the v1.1 milestone research for foe spellcasting; still applies here
 
 ---
 
-## 7. Sources
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|----------------------|----------|
+| Spell niche rework + day-one damage spell | HIGH | MEDIUM | P1 |
+| Equipment slot model | HIGH | LOW–MEDIUM | P1 |
+| Melee active abilities (rolled pool) | HIGH | MEDIUM–HIGH | P1 |
+| Terrain square-property (darkness/water/heights) | MEDIUM–HIGH | MEDIUM | P1 |
+| One-shot terrain tools | MEDIUM | LOW–MEDIUM | P1 |
+| Magic-item use→cooldown extension | MEDIUM–HIGH | LOW–MEDIUM | P1 |
+| Flee retune + shown roll/need | MEDIUM | LOW | P1 |
+| Loot "(usable by …)" legibility | MEDIUM | LOW | P1 |
+| Gear On You/Bag split + rations-per-camp | MEDIUM | LOW | P1 |
+| Cutthroat Joiner + murder chance | LOW–MEDIUM | LOW | P2 |
+| Dead-foe auto-retarget | LOW | LOW | P2 |
+| Detect Magic timed reveal | LOW–MEDIUM | LOW | P2 |
+| Shield-pool-on-Hero (if not already satisfied) | LOW | LOW | P3 |
+
+**Priority key:** P1 = essential to this milestone's stated goal ("no budget picks, no dead phobias, no silent causes"); P2 = clearly in-scope per the milestone's own target-feature list but lower user-facing weight; P3 = verify-first, may already be done.
+
+---
+
+## Competitor Feature Analysis
+
+| Feature area | DCSS / Brogue | Shattered Pixel Dungeon | Slay the Spire | Hoplite | Mazeworld's approach |
+|---|---|---|---|---|---|
+| Spell/card situationality | Explicit dev goal: avoid "always correct" spells | N/A (wands, not spells) | Extreme power tied to narrow applicability | N/A | Niche taxonomy (§1a) over the existing 32-spell table, not a new spell system |
+| Ability cooldowns | N/A (mostly passive/no-cooldown abilities) | Wand charges regen faster the more depleted | N/A (deck-based, not cooldown-based) | 3-turn cooldown on a small, fixed kit | Rounds-based cooldowns on a small (3–6) rolled ability pool |
+| Equipment slots | Multiple ring/amulet slots, still capped | ~5 fixed slots, one item per slot | N/A | N/A (fixed 2-item kit: sandals + spear) | New: one-per-type slot model layered onto existing hand-authored jewelry/cloak/staff tables |
+| Terrain hazards | Deep water requires swimming/flying; lava blocks | Chasms, quicksand slow/skip movement | N/A | Lava blocks movement entirely | Water = 2 moves/square + phobia trigger; darkness = 3×3 fog; both new "square property" work |
+| Fog of war | Vision-radius fog, remembered-dim tiles outside radius | Standard vision-radius fog | N/A | N/A (small hex grid, fully visible) | Scoped to darkness-flagged squares only, not the whole map — a deliberate narrower scope |
+| Flee/escape | Flavor-only result, no shown odds | Flavor-only result | N/A | N/A (no flee mechanic — small board, must resolve) | Numeric odds SHOWN in the fight log — a deliberate divergence from genre norm, matching the dice-forward identity |
+| Loot legibility | Identify system (unknown until used/identified) | Similar identify system | Rarity color-coding, no class gating (single-character decks) | N/A | Explicit "(usable by …)" text tag over existing `cls` data — no identify-mystery layer, matching the "nothing happens silently" principle |
+
+---
+
+## Sources
 
 **Primary (HIGH confidence — direct code/document reads):**
-- `mazeworld.pdf` "Creatures Described" (pp.36-43, extracted via `pdftotext -layout`) — full canon ability text for every creature cited above
-- `mazeworld.pdf` pp.6-7 ("Language," race/language chargen tables) and p.15 (Fighter `Language` skill description)
-- `mazeworld.pdf` pp.25-26 ("About the Spells," "Resisting Spells," "Spells v. Armor") — the canon Intelligence-resist rule (`Int ≥ 12`, `d20 < intel` negates), directly matching `engine/magic.js:86-97`'s existing player→foe implementation
-- `mazeworld.pdf` p.47 (Jewelry Table — Helm of Knowledge full text)
-- `content/bestiary.js`, `content/spells.js`, `content/skills.js`, `content/afflictions.js`, `content/encounters.js`, `content/treasure-tables.js` (direct read)
-- `engine/combat.js`, `engine/magic.js`, `engine/derived.js`, `engine/difficulty.js` (direct read + grep-verified claims about which `sp.*` flags are mechanically real)
-- `.planning/proposed-milestone-monster-balancing.md`, `.planning/proposed-features-dr15.md` (existing balance/design notes and prior audits this research extends)
+- `.planning/PROJECT.md` — v1.5 milestone scope, target features, Key Decisions table (100%-dice-rolled/no-player-choice identity), prior milestone precedent for "declared canon divergences" and "one consolidated retune"
+- `content/spells.js` — full 32-spell table, `kind`/`combatOnly`/level/dice fields
+- `content/skills.js` — Fighter (12) and Thief (9) passive skill tables
+- `content/treasure-tables.js` — Jewelry (8), Cloaks (8), Staves (8) use/cooldown (`every`) fields; no `slot` field present
+- `content/weapons.js`, `content/armors.js` — class-gating (`cls`) and dice-curve data
+- `content/potions.js` — square-based duration precedent (Speed/Strength/Enlarge)
+- `content/flavor.js` — Cutthroat/phobia flavor text requiring a rewrite for this milestone
+- `docs/USABLE-FEATURES-AUDIT.md` — refusal vocabulary, per-spell/item gating table, §6 effect-expiry clock table (rounds vs. squares precedent), §9 shell obligations (existing Shield chip, SPELLS-submenu shape)
+- `.planning/research/FEATURES.md` (prior v1.1 version, superseded by this file) — the "no lookahead/smart-AI" and "narration is the telegraph, no new UI" anti-feature findings, reconfirmed here for melee abilities/spells
 
-**Secondary (MEDIUM confidence — web research, general design consensus, not code-verified against those engines):**
-- Shattered Pixel Dungeon mob AI/telegraphing — [Pixel Dungeon Wiki: Enemies](https://pixeldungeon.fandom.com/wiki/Shattered_Pixel_Dungeon/Enemies), [AI and Mob Behavior — DeepWiki](https://deepwiki.com/00-Evan/shattered-pixel-dungeon/3.4-ai-and-mob-behavior)
-- Brogue's counterplay/information-transparency design philosophy — [Brogue Wiki: Roguelikes and roguelites](https://brogue.wiki/wiki/Roguelikes_and_roguelites), [RogueBasin: Brogue](https://www.roguebasin.com/index.php/Brogue)
-- Dungeon Crawl Stone Soup's monster-ability categorization and "avoid no-brainer resistances" design philosophy — [DCSS Manual](https://crawl.akrasiac.org/docs/crawl_manual.txt), [DCSS FAQ](https://crawl.github.io/crawl/FAQ.html)
-- Indie diplomacy/negotiation-roguelike patterns (reward parity, escalating-retry) — [Ascii Dreams: Being diplomatic](http://roguelikedeveloper.blogspot.com/2008/03/being-diplomatic.html), [Parley (itch.io)](https://goodguystebs.itch.io/parley)
+**Secondary (MEDIUM confidence — web research, design consensus, not code-verified against those engines):**
+- DCSS spell-buff/situational-design commentary — [A Brief History Of Buffness](https://crawl.develz.org/wordpress/a-brief-history-of-buffness), [DCSS manual](https://crawl.akrasiac.org/docs/crawl_manual.txt)
+- Slay the Spire situational-card philosophy — [Game Design Tips from Slay the Spire — Cloudfall Studios](https://www.cloudfallstudios.com/blog/2020/11/2/game-design-tips-reverse-engineering-slay-the-spires-decisions), [Slay the Spire Wiki: Cards](https://slay-the-spire.fandom.com/wiki/Cards)
+- Shattered Pixel Dungeon wand/artifact charge-cooldown design — [Shattered PD v0.3.0: The Wand Rework](https://shatteredpixel.com/blog/shattered-pixel-dungeon-v030.html), [Pixel Dungeon Wiki: Wands](https://pixeldungeon.fandom.com/wiki/Shattered_Pixel_Dungeon/Wands), [Pixel Dungeon Wiki: Artifacts](https://pixeldungeon.fandom.com/wiki/Shattered_PD_-_Artifacts)
+- Hoplite ability/cooldown/kit-size design — [Giant Bomb: Hoplite](https://giantbomb.com/wiki/Games/Hoplite), [ResetEra: Let me introduce you to Hoplite](https://www.resetera.com/threads/let-me-introduce-you-to-hoplite-small-but-addictive-mobile-rogue-like-turn-based-puzzle-game.94812/), [Magma Fortress: Hoplite](http://www.magmafortress.com/p/hoplite.html)
+- General roguelike/indie flee-escape design consensus — [Rogue Dungeon (Steam)](https://store.steampowered.com/app/1822640/Rogue_Dungeon/), general genre pattern (fair, roughly even-odds escape, class-modified) cross-checked against Mazeworld's own stated formula in PROJECT.md
+- Brogue/DCSS fog-of-war and vision-radius conventions — general genre knowledge (direct search did not surface Brogue-specific developer commentary; treated as LOW-confidence genre convention, not a sourced claim, and flagged as such)
 
 ---
-*Feature research for: Delve, Die, Repeat — v1.1 Monster Balancing & Abilities*
-*Researched: 2026-09-13*
+*Feature research for: Delve, Die, Repeat — v1.5 Meaningful Choices — Spells, Gear & Abilities*
+*Researched: 2026-09-17*

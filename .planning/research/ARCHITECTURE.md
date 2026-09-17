@@ -1,8 +1,8 @@
 # Architecture Research
 
-**Domain:** Foe abilities/spellcasting, symmetric INT resistance, parley/Language rebalance, bestiary rebalance, consolidated difficulty retune — integration into an existing deterministic roguelike rules engine
-**Researched:** 2026-09-13
-**Confidence:** HIGH (direct code read of every integration point below; file:line cited throughout) / MEDIUM on the two open design calls flagged explicitly (foe-ability targeting-pool extraction, threat-budget vs. hand-tuned bestiary)
+**Domain:** v1.5 "Meaningful Choices — Spells, Gear & Abilities" — integrating spell rework, activated abilities, magic-item cooldowns, terrain/phobias, darkness rendering, flee retune, Cutthroat murder, dead-foe targeting, and a Gear-tab split into an existing shipped, deterministic roguelike rules engine
+**Researched:** 2026-09-17
+**Confidence:** HIGH (every integration point below is a direct code read with file:line citations; no external doc lookups were needed for this pass — it is pure codebase archaeology). MEDIUM on the handful of explicitly-flagged open design calls (re-fog provenance tracking, water movement-cost side effects on cadence timers, ability-vs-passive-skill conversion scope).
 
 ## Standard Architecture (current, as-built)
 
@@ -10,373 +10,228 @@
 
 ```
 ┌───────────────────────────────────────────────────────────────────────┐
-│  src/browser/  (adapter, view-models, EVENT_NARRATION — presentation)  │
+│  mazeworld.html — DOM/canvas shell (draw(), paint(), renderEncounter,  │
+│  renderGear/#s-carry, guardTap-wired taps, window.mz* action bridges)  │
+├───────────────────────────────────────────────────────────────────────┤
+│  src/browser/ — presentation view-models + narration (pure, no DOM):   │
+│  combatMenu.js / combatPanel.js / rail.js / toasts.js /                │
+│  eventNarration.js (EVENT_NARRATION, coverage-guarded) / viewModels.js │
 ├───────────────────────────────────────────────────────────────────────┤
 │  engine/engine.js  applyAction(state, action) → {state, events}       │
 │  (THE single chokepoint: validate → structuredClone → rehydrate rng    │
 │   from state.rngState → dispatch by action.type → persist rng cursor)  │
 ├───────────────────┬───────────────┬───────────────┬───────────────────┤
 │ engine/combat.js   │ engine/magic.js│ engine/         │ engine/         │
-│ startCombat        │ castSpell      │ difficulty.js   │ encounters.js   │
-│ playerStrike       │ (PLAYER-only;  │ difficultyCurve │ encounterDot    │
-│ foeTurn ◄── foe    │  foe.intel     │ (pure fn of     │ meetJoiner/     │
-│   ability slots in │  resists it)   │  depth; floor-  │ meetFaerie/etc  │
-│ afterPlayerAction  │ drinkPotion    │  gen knobs ONLY,│                 │
-│ killFoe/liveFoes   │ readScroll     │  NOT foe power) │                 │
-│ allyTurn/alliesTurn│                │                 │                 │
-├───────────────────┴───────────────┴───────────────┴───────────────────┤
-│ engine/derived.js — strikeDie/toHit/foeDie/foeToHitVs/conditionsOf/eff │
-├─────────────────────────────────────────────────────────────────────── ┤
-│ content/*.js — pure data tables (BESTIARY, SPELLS, ENC_TYPES, …)       │
-│ barrel: content/index.js  (export * from "./X.js" per module)         │
-├─────────────────────────────────────────────────────────────────────── ┤
+│ startCombat/fight  │ castSpell      │ movement.js     │ encounters.js   │
+│ playerStrike       │ (kind switch,  │ move/newDay/    │ meetJoiner/     │
+│ foeTurn, flee,     │  combatOnly    │ makeCamp/       │ resolveJoiner/  │
+│ pickFoeTarget,     │  gate, resist) │ teleport/descend│ encounterDot    │
+│ killFoe/liveFoes   │ drinkPotion/   │ (per-step ticks:│                 │
+│ afterPlayerAction  │ readScroll     │ darkFor/haste/  │                 │
+├───────────────────┴───────────────┤ invis/ether/     ├─────────────────┤
+│ engine/items.js — takeItem/        │ acute/cloak      │ engine/state.js │
+│ equipItem/unequipSlot/useItem/     │ heal/flight/     │ newRun, party   │
+│ pendingLoot family                 │ spellCharge)     │ cap, addParty…  │
+├────────────────────────────────────┴──────────────────┴─────────────────┤
+│ engine/derived.js — strikeDie/toHit/foeToHitVs/eff/slotItems/conditionsOf│
+│ /afraidNeed/afraidDamage/resistRoll/castableAttackSpells (cycle-free leaf)│
+├───────────────────────────────────────────────────────────────────────┤
+│ engine/maze.js — genFloor(depth,rng)/bfs/reveal; cell = {wall,seen,feat,dark}│
+├───────────────────────────────────────────────────────────────────────┤
+│ content/*.js — pure data tables (SPELLS, SKILLS, treasure tables, …)   │
+├───────────────────────────────────────────────────────────────────────┤
 │ engine/rng.js — seeded mulberry32; state.rngState persists the cursor  │
+├───────────────────────────────────────────────────────────────────────┤
+│ test/parity/harness/comparables.js — the parity gate every new field/  │
+│ event/rng-draw must clear (strip helpers, run-flag precedent, etc.)    │
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-Every rule domain is a pure function of `(state, rng, events)` — no DOM, no `Math.random`, no global `S`. `state.combat.foes[]` and `state.c` (the player character) are the two objects every new mechanic in this milestone reads and writes.
+Every rule domain is a pure function of `(state, rng, events)` — no DOM, no `Math.random`, no global `S`. `state.combat`, `state.c` (the player), `state.floor` (the maze) and `state.party` are the objects every v1.5 mechanic reads and writes. The single hardest constraint this milestone must respect: **`engine/maze.js#genFloor` is called by `engine/state.js#newRun` and `engine/movement.js#descend` for every single run and every single floor transition, and it is exercised, unmodified, by every movement/combat/economy/magic parity fixture** — any new *unconditional* rng draw inside it changes the maze layout (and therefore the rng cursor consumed by everything downstream) for every fixture simultaneously. This is the single biggest parity landmine in the milestone (water terrain) and is called out in detail in §2 and in Parity/Testing Considerations below.
 
 ### Component Responsibilities (current vs. what this milestone touches)
 
-| Component | Current Responsibility | Touched by this milestone |
-|-----------|------------------------|----------------------------|
-| `engine/combat.js` `foeTurn` (819-990) | Per-foe melee swing(s): sleep/acid checks, target selection (hero vs. live party members), to-hit, damage, ward/armor soak, death | **MODIFIED** — new ability-attempt branch inserted per foe, before the swing loop |
-| `engine/combat.js` (new) `pickTarget` | *(does not exist as a standalone export — the hero-vs-member targeting roll is inlined at 858-865)* | **NEW export** — extracted so both melee swings and foe abilities share identical, already-tested targeting logic |
-| `engine/magic.js` `castSpell` | Player-only spell resolution over `SPELLS[]`, keyed by grimoire/charges/school gates | **UNTOUCHED** — see "Pattern 2" below for why generalizing it is explicitly rejected |
-| `engine/foeAbilities.js` | *(does not exist)* | **NEW module** — small, foe-scoped ability resolver |
-| `content/bestiary.js` | `BESTIARY[type][level-1] → [{n, sz, i, wp, sp}]`; `sp.*` flags are flavor-only today (per combat.js's own header comment, lines 25-34) | **MODIFIED** (rebalanced wp/dmg/toHit/ar) + **NEW** `abilities: [id, …]` field added to the subset of entries that get real abilities |
-| `content/foe-abilities.js` | *(does not exist)* | **NEW module** — ability-kind registry, referenced by id from bestiary entries (mirrors `SPELLS[]` + `c.grimoire` name-reference pattern already used for the player) |
-| `engine/derived.js` `conditionsOf` (139-193) | Enumerates the player's active good/bad status chips (haste/invis/affliction/darkness/phobia…) | **MODIFIED** — new bad-condition entries for foe-inflicted debuffs |
-| `engine/difficulty.js` `difficultyCurve` | Pure fn of `depth` → floor-gen knobs ONLY (`dots`, `darkBlobs`, `darkRadius`); **does not touch monster power at all** | **MODIFIED/EXTENDED** — becomes the single source of truth for combat-scaling knobs too (foe count/level, now + an ability-threat weight) |
-| `engine/combat.js` `startCombat` (98-270) | Inline foe-count/level rolls (`cap`, `rng.d(4)` ternary chain, `maxLvl`) — **not sourced from difficulty.js today** | **MODIFIED** — roster composition consults the new difficulty.js budget function |
-| `tools/tune-difficulty.mjs` | Headless auto-play, reports death-depth/action-count distributions only | **MODIFIED** — tallies ability-driven events per run |
-| `engine/combat.js` `canParley`/`parley` (506-576) | Gates on sub/race/skill/`eff(c,"tongue")`; success `d20 ≤ 9+bonus`; reward `~2.5×Σ(d6×lvl)` XP, no failure cost | **MODIFIED** — odds/reward/failure-cost retune; Language skill's `TALKATIVE` reach may widen |
-| `engine/magic.js` `castSpell` resistance block (85-97) | Foe resists PLAYER spells via `foe.intel` | **MIRRORED, not reused** — a new, separate resistance check in `foeAbilities.js` using `state.c.intel` |
-| `src/browser/eventNarration.js` `EVENT_NARRATION` | Coverage-guarded map, every engine event type MUST have an entry | **MODIFIED** — new entries for every new event type (build fails otherwise, per its own coverage test) |
-| `test/parity/harness/comparables.js` | Carves engine-only fields out of the frozen-prototype comparison | **MODIFIED** — new carve-outs for ability runtime fields AND (separately, see Pitfall below) rebalanced bestiary numeric fields |
+| Component | Current responsibility | v1.5 touches it because |
+|-----------|------------------------|--------------------------|
+| `engine/maze.js` | Pure maze/floor generator; cell = `{wall, seen, feat, dark}` (maze.js:69, dark added maze.js:141-148) | Needs a new `water` cell flag — a new terrain type, parity-sensitive (§2) |
+| `engine/movement.js` | `move()` per-step ticks (darkFor/haste/invis/ether/acute/cloak heal-regen/flight/spellCharge, lines 273-347); `descend()` (691-701); phobia penalties (heightsPenalty/waterPenalty, 56-63; trapped-panic, 230-236) | Water movement cost, re-fog tick, Cutthroat murder hook, more phobia triggers |
+| `engine/combat.js` | `fight()`'s phobia trigger (343-405); `flee()` (777-842); `pickFoeTarget`/`playerStrike`'s dead-target retarget (461-462, 1463-1471); `killFoe` (632) | Flee retune, proactive dead-foe retarget, a home for ability-cooldown round-ticks |
+| `engine/magic.js` | `castSpell()`'s kind-keyed if/else chain (140-439); `combatOnly` gate (85-88); RESIST_IMMUNE_KINDS (36) | New spell kinds (timed reveal), day-one damage spell wiring, scroll-castable-immediately |
+| `engine/items.js` | Scalar weapon/armor equip (269-330, 537-634); `useItem`'s kind switch + `itemReady`/`every`/`usedAt` cooldown (775-1014); `eff(c,key)` sums ALL carried items unconditionally (derived.js:51-55) | One-worn-item-per-slot-type needs a real "worn" concept for cloak/jewelry (today only weapon/armor are scalar-equipped); magic-item use→effect→cooldown; one-shot tools |
+| `engine/derived.js` | `eff`, `skill`/`skillTier`, `afraidNeed`/`afraidDamage`, `conditionsOf`, `castableAttackSpells`/`ATTACK_SPELL_KINDS` (cycle-free leaf module) | Natural home for a new shared timer/cooldown helper and an ability-availability query mirroring `castableAttackSpells` |
+| `engine/encounters.js` | `meetJoiner`/`resolveJoiner` (465-521) — **today a Cutthroat's Joiner offer is refused outright** (line 473) | Must REVERSE this refusal for Cutthroat, then hook the murder chance elsewhere (descend) |
+| `src/browser/combatMenu.js` | Four-action grid; ABILITIES submenu is a hard-disabled stub for every non-Bard, non-caster class (111-148) | Real ability rows plug into this existing seam |
+| `src/browser/combatPanel.js` | `foeListViewModel` (60-107) already fully suppresses a dead foe's "TARGET" tag (76, 86-89) | Confirms the display-layer half of dead-foe targeting is already correct; only the numeric `C.target` and the tap-guard need work |
+| `mazeworld.html` | Gear tab (`#s-carry`, paint() 3182-3239) renders worn-weapon/worn-armor rows then ONE flat `renderCarriedList` for everything else, in the same container; foe-card tap sets `S.combat.target = i` directly (5916), guarded by `guardTap` (5354) | On You/Bag panel split (depends on a real "worn" model, §6); dead-foe tap-guard |
+| `test/parity/harness/comparables.js` | Per-field strip helpers (stripDarkForField, stripFlightFields, stripBagField, …) + the `storeRoll`-style run-flag precedent (state.js:201-212) for gating new rng draws | Every new field/draw this milestone adds needs the same treatment |
 
-## Recommended Project Structure (additions only)
+## Integration Points (file:line grounded)
 
-```
-engine/
-├── combat.js            # MODIFIED: foeTurn ability-attempt branch; pickTarget extracted
-├── magic.js              # UNCHANGED (player castSpell untouched)
-├── foeAbilities.js       # NEW: resolveFoeAbility(state, foe, ability, rng, events)
-├── difficulty.js          # MODIFIED: + combat-scaling knobs (foe budget, ability threat weight)
-content/
-├── bestiary.js            # MODIFIED: rebalanced stats + new `abilities` field on select entries
-├── foe-abilities.js       # NEW: ability-kind registry (id → {kind, dmg, effect, txt})
-├── index.js               # MODIFIED: + `export * from "./foe-abilities.js";`
-src/browser/
-├── eventNarration.js      # MODIFIED: + entries for every new event type
-test/parity/harness/
-├── comparables.js         # MODIFIED: + carve-outs (ability runtime fields, rebalanced foe stats)
-tools/
-├── tune-difficulty.mjs    # MODIFIED: + ability-threat tallying in the report
-```
+### 1. A generic effect/cooldown/duration model — what exists today, and what to build
 
-### Structure Rationale
+**What already exists (and should NOT be blanket-replaced):**
 
-- **`engine/foeAbilities.js` as its own file, not folded into `combat.js` or `magic.js`:** `combat.js` is already the largest, hottest-path module (foeTurn is "the single hottest parity loop in the engine," per its own comment at 851-859); adding ~5 ability-kind branches inline would bloat an already-dense function. A separate module also makes the new mechanic's parity-relevant surface easy to grep/audit in isolation, matching this codebase's established one-domain-per-file convention (`combat.js`/`magic.js`/`encounters.js`/`economy.js`/`death.js` are all narrow, single-purpose slices).
-- **`content/foe-abilities.js` as a registry, not inline `abilities:[{...}]` literals on every bestiary entry:** several existing creatures already carry the flavor-only `sp.caster: true` flag with near-identical prose ("casts every spell of levels 1 to 4" — Djinni; "casts every offensive spell, 1 to 4, without limit" — Drudge/Vampire). A shared registry keyed by id lets multiple creatures reference the same ability definition (dice, kind, resistance behavior) without duplicating it, exactly the way `content/spells.js`'s `SPELLS[]` is a single table every Magic User subclass references by name via `c.grimoire`. Bestiary entries carry only `abilities: ["boltFire", …]` (an array of ids), not full descriptors.
+- **Per-step (squares) tickers**, all inside `engine/movement.js#move`'s single per-step block (lines 273-347), each a bespoke field with its own semantics:
+  - `c.darkFor` (273-292) — persistent darkness counter, dispelled by `eff(c,"light")`, else decremented; narrated `darknessLifted`/`darknessDispelled`.
+  - `c.haste`/`c.invis`/`c.ether` (293-295) — flat per-step decrements, no events.
+  - `c.acute` (296-302) — decremented per step (Acuteness also ticks per **round** in combat — see below); `acuteFaded` event at zero.
+  - `eff(c,"cloakHeal")`/`eff(c,"cloakRegen")` (303-328) — fire on a **cadence** (`state.steps % CLOAK_TICK_SQUARES === 0`, i.e. every 20 squares), not a plain decrement.
+  - `c.flightLeft`/`c.flightCooldown` (329-341) — a genuine two-phase charge-then-cooldown resource, the closest existing precedent to what magic-item "use → effect for X → cooldown for Y" needs.
+  - Magic User spell-charge recovery (344-347) — cadence-based (`state.steps % 20 === 0`).
+- **Per-round ticker**: `combat.afraid` (set in `combat.js#fight`, 383; consumed by `derived.js#afraidNeed`/`afraidDamage`, 377-389) — decremented once per `foeTurn` call and, per Decision `31-02`, Acuteness "ticks both per foeTurn round AND per exploration step, clearing unconditionally at `endCombat`" — i.e. **the codebase already has one real precedent for a dual squares+rounds ticker**, just not factored into a shared helper.
+- **Item cooldowns**: `it.every`/`it.usedAt`, gated purely on `state.steps` (`itemReady`, items.js:783-787; refusal narration in `useItem`, items.js:857-867). This is already exactly the "use → cooldown for Y squares" shape magic items need — it just currently has no matching "effect lasts for X" half (every existing `use:` effect in the `useItem` switch, 875-994, is either instantaneous or writes a bespoke scalar field like `c.haste=50`).
+- **Potion/buff square-counters** (`c.haste`, `c.invis`, `c.ether`, `c.acute`, `c.might` "until next day") are all bespoke scalar fields on `c`, each independently ticked, each independently narrated, each independently carved out of the parity comparables where new (e.g. `stripDarkForField`/`stripFlightFields`, comparables.js:103-134).
 
-## Architectural Patterns
+**Recommendation — do not retrofit the existing fields.** Every one of the fields above already has a tuned narration line, a parity carve-out (where new), and in several cases a declared canon divergence. Rewriting them onto a generic model buys nothing and risks regressing tuned behavior and fixture coverage for zero player-visible benefit. Instead:
 
-### Pattern 1: The zero-draw gate (how every new mechanic stays parity-safe)
-
-**What:** Every conditional branch that can consume `rng` in this codebase is gated on a *structural* check of already-serialized data that is `undefined`/`false`/empty for every character or foe that doesn't opt into the feature — never on a value computed *after* an rng draw. Concrete precedents already in `engine/combat.js`:
-- `if (c.regen) { const r = rng.d(8); … }` (823) — only draws when `c.regen` was set by a spell.
-- `if (f.acid && f.acid.rounds > 0) { … rollDice(rng, f.acid.dmg) … }` (831) — only draws when a prior acid-spell application set `f.acid`.
-- `if (state.party?.length) { state.combat.allies = … }` (183) and the member-targeting roll at 860-865, gated on `C.allies` and `liveMembers.length` — an empty/absent party draws zero extra rng, "exactly the path every solo parity fixture already exercises" (per the module's own comment, 855-859).
-
-**When to use:** Every new ability-attempt roll, every new foe-summon roll, every new player-INT-resists-foe-spell roll.
-
-**Trade-off:** None — this is strictly additive and is the ONLY pattern that keeps `test/parity/prototype-master.js.txt` byte-identical for every existing fixture while still allowing new mechanics to draw rng when they DO apply.
-
-**Concrete slot for the foe-ability check** — insert into `foeTurn` (`engine/combat.js:819-990`) immediately after the existing sleep check and BEFORE the `swings` computation:
+**Build one new, small, cycle-free module — `engine/effects.js`** (sibling to `derived.js`, the pattern that module's own header explains: "the only cycle-free leaf module" when both `magic.js`→`combat.js` and a future `combat.js`→`abilities.js` edge exist) — that owns exactly the **new** timers this milestone introduces: ability cooldowns, magic-item duration-then-cooldown pairs, and the timed map reveal. Shape:
 
 ```js
-for (const f of C.foes) {
-  if (f.acid && f.acid.rounds > 0) { /* unchanged */ }
-  if (!f.alive) continue;
-  if (f.asleep > 0) { f.asleep--; events.push({ type: "foeSlept", name: f.name }); continue; }
-
-  // NEW — gate is a pure structural read of content-driven data; every
-  // existing BESTIARY entry has no `abilities` field, so `f.abilities` is
-  // `undefined` for them and this whole block is skipped with ZERO rng
-  // draws, leaving the swing loop below byte-identical to today.
-  if (f.abilities && f.abilities.length && (f.abilityCooldown ?? 0) <= 0) {
-    const attemptRoll = rng.d(FOE_ABILITY_ATTEMPT_DIE);
-    if (attemptRoll <= FOE_ABILITY_ATTEMPT_THRESHOLD) {
-      resolveFoeAbility(state, f, rng, events); // engine/foeAbilities.js — may itself draw more rng
-      continue; // an ability REPLACES this foe's melee swings this round (mirrors the Wizard "does not stoop to fisticuffs while a spell remains" precedent, combat.js:286-289)
-    }
-  }
-  if (f.abilityCooldown > 0) f.abilityCooldown--; // decays even on a round the check fails/skips
-
-  const swings = (f.frenzied ? 2 : 1) * ((f.sp && f.sp.atk) || 1);
-  // … unchanged melee loop …
-}
+// engine/effects.js
+export function tickSquareEffects(state, events) { /* called from movement.js#move,
+  in the SAME per-step block as darkFor/haste/etc (after line 347), decrementing
+  c.timers[] entries whose kind === "squares" */ }
+export function tickRoundEffects(state, events) { /* called from combat.js's
+  foeTurn tail, mirroring the existing combat.afraid/acute-in-combat tick site,
+  decrementing c.timers[]/C.timers[] entries whose kind === "rounds" */ }
+export function clearCombatEffects(state) { /* called from combat.js#endCombat,
+  mirroring Acuteness's unconditional end-of-combat clear (Decision 31-02) */ }
 ```
 
-Only foes carrying a NEW `abilities` array (never `sp.caster`, which stays inert — see Pitfall 1) ever reach `rng.d()` here. This is the direct answer to "where does an ability check slot in so RNG order for ability-less foes is unchanged."
+`c.timers` (or a small array per consumer — `c.abilityCooldowns`, `c.itemEffects`) is a **new serialized field** with **zero rng draws** (pure decrement), so it needs exactly one new strip helper in `comparables.js` (mirroring `stripDarkForField`) — cheap, and it is the ONE new mechanism every subsequent feature (abilities, magic items, timed reveal) should target, rather than each inventing its own bespoke counter as items.js/movement.js have organically done for years. This is the single foundational build-order item (§ Build Order, item 2).
 
-### Pattern 2: A separate foe-ability resolver, NOT a generalized `castSpell`
+### 2. Water terrain squares — the parity landmine
 
-**What:** `engine/magic.js#castSpell` (45-361) is deeply player-shaped: it reads `c.spellsUsed`/`maxCharges(c)`/`c.grimoire`/`c.sub` (Apprentice backfire, school gates), targets via `C.foes[C.target]` (the player's manually-selected foe), and writes effects onto `c.*` (ward/regen/mirror/might) across ~20 `sp.kind` branches. Generalizing it to accept an arbitrary "caster" would require threading a caster parameter through every one of those branches and inverting every targeting assumption (a foe's ability targets the PLAYER, not `C.foes[C.target]`) — a large, high-risk refactor touching the function every existing spell-parity/unit test exercises.
+Maze cells are built as `{ wall: true, seen: false, feat: null }` (maze.js:69) with `dark` added later only where a dark blob's BFS reaches (maze.js:141-148: `g[y][x].dark = true`). Adding `water` as a third boolean flag on the cell is structurally trivial — the hard part is **how it gets there**.
 
-**Recommendation:** Write a new, small, foe-scoped resolver instead:
+The existing `darkBlobs` mechanism is *not* a new draw: the code comment at maze.js:136-140 states plainly that `dc.darkBlobs` (from `difficultyCurve`) "equals the old `blobs` count for depths 1-5, so `rng.pick(open)` is still called exactly `darkBlobs` times here, preserving the seeded RNG cursor" — darkness blobs existed in the **original, frozen prototype** at those depths, so this was a refactor of an existing draw, not an addition. **Water squares have no prototype-side equivalent at all.** Any new, unconditional `rng.pick(open)`/BFS-seed draw added to `genFloor` shifts the RNG cursor for literally every seed, which means every movement/combat/economy/magic parity fixture (all of which start from `genFloor(1)` via `newRun`) would generate a **different maze layout** than the frozen master — not a "field changed," a structurally different floor. This is unrecoverable via a strip helper; it would require regenerating every fixture.
 
-```js
-// engine/foeAbilities.js
-export function resolveFoeAbility(state, foe, rng, events = []) {
-  const ability = FOE_ABILITIES[rng.pick(foe.abilities)]; // or a fixed/weighted pick — a data decision, not an architectural one
-  foe.abilityCooldown = ability.cooldown ?? 3;
+**The only clean path is the `storeRoll` run-flag precedent** (`engine/state.js:201-212`, Phase 33/STORE-01): `state.storeRoll` is `false` for every existing caller (every fixture, every bot, every pre-Phase-33 save) and gates the *only* new rng draws that phase introduced, so nothing that doesn't opt in ever sees a different cursor. Apply the identical shape here:
 
-  // Symmetric INT resistance (mirrors magic.js:85-97's foe-resists-player
-  // block exactly, but the READER is now state.c.intel, the player's own
-  // stat, wired per RULE-01 Option A — see Pattern 3).
-  if (!FOE_RESIST_IMMUNE_KINDS.has(ability.kind) && (state.c.intel ?? 0) >= 12) {
-    const r = rng.d(20);
-    if (r < state.c.intel) {
-      events.push({ type: "foeSpellResisted", name: foe.name, ability: ability.n, roll: r, intel: state.c.intel });
-      return events;
-    }
-    events.push({ type: "foeResistFailed", name: foe.name, roll: r });
-  }
+- Thread a new options flag through `genFloor(depth, rng, { water = false } = {})` (maze.js:65), consumed only when `water` is true, drawing its blob seeds via `rng.pick(open)` **after every existing draw in the function** (i.e., appended after the one-way-door shuffle at maze.js:163-172, the last existing consumer).
+- `engine/state.js#newRun` (149: `const floor = genFloor(startAt, rng);`) and `engine/movement.js#descend` (697: `state.floor = genFloor(state.floor.depth + 1, rng);`) both need to pass `{ water: state.terrainRoll }` (a new top-level run flag, plain boolean, set only by the shell's `engineAdapter#startNewRun` exactly like `storeRoll` is today) — every existing caller (`newRun(seed)` with no options, every fixture, every bot, every tool) gets `water: undefined` → falsy → byte-identical floor generation.
+- This is the **highest-parity-risk single item in the entire milestone** and should be flagged explicitly to whoever plans the terrain phase.
 
-  events.push({ type: "foeCast", name: foe.name, ability: ability.n });
-  switch (ability.kind) {
-    case "bolt": /* damage to a picked target, reusing combat.js's pickTarget (Pattern 4) */ break;
-    case "drain": /* damage + self-heal */ break;
-    case "debuff": /* sets a NEW c.foeEffect slot — see Pattern 3's serialized-state section */ break;
-    case "summon": /* pushes a new entry into C.foes — reuses killFoe/liveFoes untouched */ break;
-    case "heal": /* heals foe or an ally foe */ break;
-  }
-  afterPlayerAction is NOT called here — foeTurn's own caller chain already
-  // continues the loop and the round; resolveFoeAbility is called FROM
-  // inside foeTurn, one foe at a time, matching every other per-foe branch.
-  return events;
-}
-```
+**Movement cost of 2 for water:** `move()` currently does one unconditional `state.steps++` per successful step (movement.js:215). The simplest, most consistent option is: when the destination cell (`there`, movement.js:126) has `there.water`, increment `state.steps` by 2 instead of 1. This is additive arithmetic at one call site — no new field. **Side effect to flag explicitly for the phase's own design call**: `state.steps` is the SAME counter driving every existing cadence (Magic User spell recharge every 20 squares, both healing cloaks every 20 squares, the Cloak of Flying's 20/50 charge-cooldown, the Bard's song every 100 squares, the 8-hour wandering-monster check every 100 squares). Wading through water will incidentally accelerate all of these cadences relative to "squares walked" — reasonable flavor (water is slow, cadences measured in steps-not-progress fire "sooner" per tile crossed) but should be a *ratified* Key Decision, not an accidental side effect discovered in QA. If the phase wants cadences unaffected, introduce a separate `state.moves` (actual tiles entered) and keep `state.steps` reserved for the +2 semantics — but this is more invasive (every `% N` cadence site would need to switch counters) and is not recommended unless the ratified design explicitly rejects the shared-counter side effect.
 
-**Trade-off:** A second, smaller vocabulary of effect kinds (bolt/drain/debuff/summon/heal — 5, not 20) duplicates a little logic (e.g., damage application, ward/soak interaction on the player side should still apply — a foe's `bolt` should go through the SAME ward/armor-soak/Hardiness pipeline `foeTurn`'s melee branch already implements at 906-967, not bypass it). **Recommendation:** factor the melee branch's post-hit pipeline (ward absorb/reflect → armor soak → `c.wp -= dmg` → `struckByFoe`/die) into a small shared helper (e.g. `applyFoeDamageToPlayer(state, foe, dmg, rng, events, {ignoresArmor})`) that BOTH the existing melee swing and the new `bolt`/`drain` ability kinds call — this is a second, low-risk, behavior-preserving extraction (see Pattern 4) that avoids either duplicating the ward/armor pipeline or reimplementing it slightly differently (a correctness risk).
+Phobia hook: `waterPenalty(c)` (movement.js:61-63) already exists and is wired into the **gorge/crevice leap roll**, not general water-tile movement — the new water *terrain* trigger for the "Bodies of water" phobia is a distinct event (stepping onto a `water` cell during ordinary `move()`, not the climb/leap branch at movement.js:138-211) and should push its own new event (e.g. `waterEntered`/reuse the existing `waterFear` event shape) from the water-cost branch described above.
 
-### Pattern 3: Symmetric player-INT resistance and foe-inflicted player conditions
+### 3. Timed map reveal, and the 3×3 dark view — two genuinely different mechanisms that must stay decoupled
 
-**What:** The player's `c.intel` (rolled at chargen, `intelBonus(c)` in `derived.js:391-394`) currently has exactly one mechanical read (chest-lock threshold, `encounters.js:122/127`) besides feeding `intelBonus`. The 04.1 audit's deferred RULE-01 Option A ("once foes cast, let the player's Intelligence resist") is unlocked directly by this milestone.
+**Timed reveal** (Detect Magic rework): today, `magic.js`'s `reveal` kind (295-298) is a one-shot, permanent, unconditional `f.g[y][x].seen = true` sweep of every open cell — no duration, no re-fog. The milestone wants this to expire after N turns.
 
-**Design:** Do NOT touch `magic.js`'s existing `RESIST_IMMUNE_KINDS`/resistance block (that gates FOES resisting the PLAYER's spells and must stay untouched for parity). Add a **new, separate** resistance check inside `foeAbilities.js` (shown in Pattern 2 above) that mirrors the shape (`d20 < intel` beats the ability) but reads `state.c.intel` instead of `foe.intel`. This is a pure logic mirror, not a shared function — the two checks read different objects (`state.c` vs. a foe) and belong to different modules that must each stay independently auditable for parity.
+- New spell-kind branch (or an added `sp.turns` field on the existing `reveal` kind, dispatched via a small conditional inside the same branch — either is fine; a distinct kind, e.g. `timedReveal`, is cleaner since `RESIST_IMMUNE_KINDS` (magic.js:36) and any future UI copy can key off it independently) inserted into the same if/else-if chain, following the exact pattern every other kind uses: read/write only `state`/`c`, push a typed event, fall through to the shared `if (state.combat) afterPlayerAction(...)` tail (magic.js:440). This is a pure addition — no existing branch is touched, so every fixture that never casts it (none does) is byte-identical.
+- **Critical design point**: `.seen` today means "the player has ever legitimately walked close enough to know this cell" — it is permanent memory and drives the canvas fog-of-war. A timed reveal must NOT corrupt that memory for cells the player later walks past normally. Track provenance explicitly: stamp only the *newly*-revealed cells (ones that were `seen: false` immediately before the cast) with a `revealedAt: state.steps` marker, and record the expiry on the character (`c.mapRevealUntil = state.steps + sp.turns`, a new top-level `c` field). A new per-step check (added to the existing tick block in `movement.js#move`, after line 347, in the new `engine/effects.js#tickSquareEffects` helper from §1) fires when `state.steps >= c.mapRevealUntil`, and for every cell still carrying a `revealedAt` marker, **re-fogs it only if the player's current position's own `revealRadius(state)` (derived.js:341-343) would not otherwise have revealed it by now** — i.e., don't take back knowledge the player would have earned normally in the meantime. This is a design decision the phase's own plan must state explicitly (the two options — "re-fog everything the spell touched, unconditionally" vs. "re-fog only what normal walking wouldn't already show" — are both defensible; the latter is recommended since it never feels like it's punishing the player for having also explored).
+- Zero new rng draws (pure step-counter bookkeeping), so the only parity obligation is a new strip helper for `c.mapRevealUntil` (mirroring `stripDarkForField`) and, if cell-level `revealedAt` markers are added, a structural map-and-strip on `state.floor.g` mirroring how `stripBagArmorFields` maps into `c.items[]` (comparables.js:202-208) — cheap, since no fixture ever casts this spell.
 
-**New serialized state — foe-inflicted player debuffs:** model as a single new slot on the character, mirroring the proven `c.ward = {pool, rounds, reflect, name}` shape (`magic.js:255-257`) rather than one boolean field per debuff kind:
+**3×3 dark view** — this is explicitly **not** the same thing, and the research question's framing is correct: it must be a **render filter, never a state change**.
 
-```js
-c.foeEffect = { kind: "weaken" | "blind" | "stun" | "drain", roundsLeft: N, magnitude?: N };
-```
+- `derived.js#revealRadius` (341-343) already computes `(inDark(state) && !skill(c,"Night Vision") ? 1 : 2) + eff(c,"sight")` — this is the ENGINE's existing, correct answer to "how much NEW area do you learn per step while standing in the dark." It already shrinks new-knowledge radius to 1. This infrastructure is untouched and is not what the milestone is asking to change.
+- The new ask is purely about what the **canvas currently draws** from already-`seen` memory while the player happens to be standing on a dark tile right now: hide everything outside a 3×3 window around the player (Chebyshev distance ≤ 1), regardless of whether those cells are `seen`, and un-hide them the instant the player leaves the dark tile. This is squarely inside `mazeworld.html#draw()` (maze.js:2637) — the cell-iteration loop there should gate on `inDark(state)` (bridgeable to the shell exactly as other derived reads already are, e.g. via a small `window.__mz*` bridge or a tiny new view-model export) and, when true, skip rendering any `seen` cell whose Chebyshev distance from `(f.px, f.py)` exceeds 1.
+- Waiver condition must reuse the identical gate the engine already uses for "does darkness matter to you right now": `inDark(state) && !skill(c, "Night Vision")`, PLUS `eff(c, "light") > 0` should also waive it (mirroring `movement.js:285`'s existing light-source dispel of `darkFor`) — so the render filter's rule can never drift from what the engine considers "you can actually see fine here."
+- **Zero engine changes, zero new serialized field, zero parity risk** — this is entirely inside the shell's draw loop. It is the single cheapest, most isolated item in the whole milestone and can land whenever convenient (it pairs naturally with the Darkness-phobia work but has no code dependency on it).
 
-Combat-domain readers that already exist and would need to consult it: `toHit(state)` (derived.js:284-296, for a `blind`-equivalent to-hit penalty), `weaponDamage`/`strikeDie` (for a `weaken` analog of `C.weakened`/`C.foeToHitPenalty`, which today are combat-scoped fields the PLAYER's own `weaken` spell sets on `C` — `magic.js:131-136` — a foe-authored weaken should very plausibly reuse `C.weakened`/`C.foeToHitPenalty` directly, since those are already combat-scoped and already read by `foeTurn` FOR the foe's own to-hit math... but the player's OWN outgoing to-hit doesn't currently read `C.weakened`, so a "foe weakens the PLAYER" effect needs its own read site in `toHit()`/`weaponDamage()`, not a reuse of `C.weakened`). Recommend `c.foeEffect` as the single new slot, decremented once per round inside `foeTurn`'s existing per-round housekeeping (alongside the `c.ward`/`c.mirror` countdown at combat.js:984-988).
+### 4. Spell dispatch (`magic.js#castSpell`) — where new kinds and abilities plug in
 
-**`conditionsOf` integration (`derived.js:139-193`):** add one new bad-condition entry, following the file's own established pattern exactly:
+`castSpell` (magic.js:48-442) is a single long if/else-if chain keyed on `sp.kind` (140-439). The `combatOnly` gate already exists as general content-driven infrastructure (`sp.combatOnly`, checked at line 85: `if (sp.combatOnly && !state.combat)`) — any new spell that should be combat-only just sets that flag in `content/spells.js`; no engine change needed. `RESIST_IMMUNE_KINDS` (line 36) is the other content-adjacent gate new kinds must consider (should intelligent foes resist this?).
 
-```js
-if (c.foeEffect && c.foeEffect.roundsLeft > 0) {
-  out.push({ key: "foeEffect", polarity: "bad", kind: c.foeEffect.kind, remaining: c.foeEffect.roundsLeft });
-}
-```
+Most of the milestone's new spell content (day-one damage spell per wizard sub, rebalanced numbers, Shield-pool display) needs **no new kind at all** — they reuse existing kinds (`thrown` for damage, `ward` for Shield — `c.ward = {pool, rounds, reflect, name}` already exists at magic.js:307 and is already surfaced as a UI chip via `conditionsOf` at derived.js:213-215, so "Shield shows its remaining pool" is very likely *already wired* and just needs a dedicated combat-panel chip if one doesn't already render it prominently — verify before treating this as new work). The **timed reveal** (§3) is the one genuinely new `castSpell` kind this milestone needs. A "scroll scribed into the grimoire is castable immediately" changes `readScroll`'s existing branch (magic.js:503-507: today, learning a scroll into the grimoire returns early with `scrollCopiedToGrimoire` and never casts) — the phase would add an immediate `castSpell` call after the grimoire push, gated on `c.level >= spellLevelFor(...)` exactly as `canCast` already checks (derived.js:735-744), reusing `scrollCast`-style bypass semantics already present in the same function (511-514).
 
-This is the ONLY UI hook needed — the milestone's scope boundary ("no new screens") is satisfied because the existing status-chip tracker automatically surfaces the new debuff once it's added here, exactly like `darkness`/`affliction`/`phobia` do today.
+**Abilities are structurally NOT spells** and should not be forced through `castSpell`. `SPELLS`/grimoire/school-gate/charge-economy (`canCast`, `schoolGate`, `maxCharges`, magic.js:56-74) are Magic-User-only concepts baked deeply into `castSpell`'s preamble. Fighter/Thief activated abilities need a **parallel dispatch module**, `engine/abilities.js`, mirroring `magic.js`'s shape (`useAbility(state, key, rng, events)`), reading a new `c.abilities` array with its own cooldown entries (via the `engine/effects.js` timer model from §1) instead of grimoire/charges. This is wired into `engine/engine.js`'s action-type dispatch table as a new `"useAbility"` action, exactly parallel to the existing `"castSpell"`/`"useItem"` entries (confirm the exact dispatch table shape in `engine/engine.js` before implementation — not read in this pass, but the pattern is unambiguous from `magic.js`/`items.js`'s own action-registration comments).
 
-**New event types needed** (must each get an `EVENT_NARRATION` entry or the coverage test fails, per `eventNarration.js:1-9`):
-`foeCast`, `foeSpellResisted`, `foeResistFailed`, `foeAbilityHit` (or reuse `struckByFoe`'s shape for `bolt`/`drain` — recommended, since it's already narrated and already understood by the UI), `foeDrained` (self-heal-from-damage flavor), `foeEffectApplied` (weaken/blind/stun onto the player), `foeEffectFaded` (mirrors `wardFaded`/`mirrorFaded`), `foeSummonedAlly` (a foe adds a new foe to `C.foes`), `foeHealedSelf`/`foeHealedAlly`.
+Converting existing passive `SKILLS` catalog entries (content/skills.js: Kata, Agility, Ambidextrous, Climbing, Leaping, Silence, Night Vision, Heft, Sewing, Language, Runes/Signs) into activated abilities is a **per-skill** refactor, not a mechanical batch job — each skill's passive read site (`skill(c, name)`/`skillTier`, scattered across `derived.js`/`combat.js`/`movement.js`) would need to become conditional on an active-use flag for any skill that converts. Recommend picking a small (2-3 skill) initial conversion set rather than the whole catalog in one phase.
 
-### Pattern 4: Extract `pickTarget` so foe abilities are party-aware for free
+### 5. ABILITIES submenu + dead-foe targeting — where the mutation belongs
 
-**What:** `foeTurn`'s melee swing loop already implements hero-vs-party-member targeting inline (combat.js:860-865): a `rng.d(liveMembers.length + 1)` roll picks the hero (roll `1`) or a specific live member (`2..N+1`), gated on `C.allies` existing (zero rng draw with no party, per the DETERMINISM GATE comment at 851-859).
+`combatMenu.js#combatMenuViewModel` (62-256) already has the exact seam: the `isCaster`/`isBard`/`else` branch (72-148) decides what fills submenu slot 2. Real Fighter/Thief ability rows are a **third branch** (`hasAbilities`), built with the identical `{id, label, cost, desc, enabled, dispatch}` shape the SPELLS branch already uses (94-104: `cost: LVL N`, `dispatch: {type:"castSpell", idx}` → for abilities, `cost: cooldown-remaining`, `dispatch: {type:"useAbility", key}`). `mazeworld.html`'s submenu renderer (the `pickCombatRow`/`openCombatMenu` machinery around lines 5477/5526) already dispatches whatever `row.dispatch` object the view-model supplies through the existing shell→`applyAction` bridge — **zero shell changes needed for the submenu itself**, only the view-model's row-building logic.
 
-**Recommendation:** extract this into a small, pure, exported helper — e.g. `pickFoeTarget(state, rng) → { isHero: bool, member: object|null }` — called from BOTH the existing melee branch and the new `resolveFoeAbility`'s `bolt`/`drain` kinds. This is a **behavior-preserving refactor** (must ship with its own unit test proving byte-identical output for every existing seed before any new caller uses it) that:
-1. Guarantees foe abilities respect the exact same "party members can be targeted" rule the milestone's joiner-interaction question asks about, with no duplicated/divergent logic.
-2. Keeps the new ability code from needing to re-derive `liveMembers`/the targeting roll shape itself.
+Dead-foe targeting is confirmed, by direct read, to be a **guarded shell-local mutation, never an engine action** — `S.combat.target = i` at `mazeworld.html:5916`, wrapped in `guardTap` via `renderFoeCards`' internal wiring (`mazeworld.html:5354`), and the recorded Key Decision states explicitly: "no engine `retarget` action exists or was added — targeting stays the guarded shell mutation." The engine already has TWO independent, duplicated, reactive dead-target guards: `playerStrike` (combat.js:461-462: `if (!foe || !foe.alive) C.target = C.foes.findIndex(f => f.alive);`) and `castSpell` (magic.js:95-98, identical logic). `combatPanel.js#foeListViewModel` (60-107) already fully suppresses the visual "TARGET" tag on a dead foe (`tagTone`/`tag` logic at 76-89, gated on `f.alive`) — so the *display* is already correct; only the underlying numeric `C.target` can go briefly stale between kills.
 
-**Trade-off:** A small pre-requisite refactor lands before the ability feature itself — but it is low-risk (pure extraction, no behavior change) and directly de-risks the "how does the party member interact with foe abilities" question by construction rather than by parallel reimplementation.
+Two small, independent, zero-risk changes close this gap:
+1. **Engine-side proactive normalization**: extract the duplicated `if (!foe||!foe.alive) C.target = ...findIndex(...)` pattern (combat.js:461-462, magic.js:95-98) into one shared helper (e.g. `combat.js#normalizeTarget(state)`) and call it from `killFoe` (combat.js:632) the instant a foe dies, not just lazily at the next strike/cast. Zero new events (pure index reassignment, matching today's silent behavior), zero rng.
+2. **Shell-side tap-guard**: the foe-card tap handler (`mazeworld.html:5916`) should refuse the assignment outright for a dead card (`if (!vm.cards[i].alive) return;`) — belt-and-braces, since "dead foes never targetable" reads as an interaction rule as much as an engine-consistency one.
 
-AoE/multi-target foe abilities (a foe-side "Lightning"/"Earthquake" equivalent hitting the hero AND every live member) do not need `pickTarget` — they iterate `[hero, ...liveMembers]` directly, mirroring `magic.js`'s own `volley`/`quake` kinds which already iterate `liveFoes(state)` unconditionally.
+Neither change touches serialization or adds an event/rng draw — this is one of the cheapest, earliest-buildable items in the milestone.
 
-### Pattern 5: Difficulty retune — extend `difficultyCurve`'s scope, don't bolt a second system beside it
+### 6. Equipment slots — the "one per type" rule needs a real "worn" concept that doesn't exist yet
 
-**What:** `engine/difficulty.js` is currently scoped ONLY to floor-generation knobs (`dots`, `darkBlobs`, `darkRadius` — see its own header, lines 1-22: "bounds the two floor-generation knobs"). Foe count/level scaling lives entirely inline in `combat.js#startCombat` (98-138: `maxLvl = clamp(min(c.level, floor.depth), 1, 5)`; `cap = c.level <= 2 ? 2 : 3`; the `rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3` foe-count ternary; per-foe `rng.d(4) === 1 ? -1 : 0` level jitter) and is **never sourced from `difficulty.js` today** — confirmed by grep: `combat.js` imports `BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE` from `content/index.js` but nothing from `engine/difficulty.js`.
+Weapon and armor are **already** effectively one-per-type by construction: they are scalar fields on `c` (`c.weapon`, `c.armor`/`c.ar`/`c.armorWP`, set by `takeItem`/`equipItem`, items.js:269-330/537-634) — equipping a second weapon simply overwrites the first, so there is no stacking concept to fix there. **Cloaks, jewelry, and staves are different**: they have no "worn" bit at all today. They live permanently and unconditionally in `c.items` (the bag), and their `eff` values are summed **across every carried copy, unconditionally**, by `derived.js#eff` (51-55: `for (const it of c.items||[]) if (it.eff && it.eff[key]) t += it.eff[key];`). A character carrying three Cloaks of Flying today gets `eff(c,"fly")` counted three times over — masked for `fly` specifically because `isFlying` (derived.js:156-161) only checks a boolean name-match, but this is a real latent stacking bug for any additive `eff` key (e.g. `sight`, `toHit`, `dmg`) that this milestone's "no stacking of a type" rule newly surfaces.
 
-**Recommendation:** add new pure (no-rng) exports to `difficulty.js` alongside `difficultyCurve`:
+**Proposed model**: introduce `c.worn = { cloak: null, jewelry: null, bracelet: null, ... }` (a small slot-key → item map), mirroring the weapon/armor scalar pattern but keyed since there are several slot types. `content/treasure-tables.js`'s CLOAKS/JEWELRY entries need a new `slot` field (defaulting obviously — cloak items → `"cloak"`, etc.). `derived.js#eff` (51-55) must change from "sum across all of `c.items`" to "sum across scalar-equipped weapon/armor effects (if any carry `eff`) plus every populated `c.worn[*]` entry" — **this is a wide-blast-radius change**: `eff()` is read at roughly 15+ call sites across `combat.js`/`movement.js`/`magic.js`/`items.js` (toHit, damage, upkeep, sight, greed, throw, size, cloakHeal/cloakRegen, foeToHit, …), so it should be its own early sub-phase with full regression coverage before anything else depends on it (magic items, the Gear-tab split).
 
-```js
-// engine/difficulty.js — NEW exports
-export function abilityThreatWeight(ability) {
-  // pure lookup/formula over a content/foe-abilities.js descriptor's kind —
-  // e.g. bolt: +4, drain: +5, debuff: +3, summon: +6, heal: +2 (starting
-  // constants; this IS a tuning knob, like ENCOUNTER_DOT_BASE above it)
-}
-export function foeThreatBudget(depth) {
-  // pure fn of depth — the "how much foe power is this floor allowed to
-  // spend" cap, mirroring softCap()'s asymptotic shape already used for dots
-}
-```
+Equip/unequip flow: extend `items.js#equipItem`/`unequipSlot` (519-634) — today gated on `it.kind === "weapon"|"armor"` only (542/558) — with a parallel branch for `it.kind === "cloak"|"jewelry"` that reads/writes `c.worn[slotFor(it)]` instead of a scalar, displacing any previously-worn item at that slot back into the bag via the exact same stow-gate pattern the weapon/armor branch already uses (worn-item reconstruction + `stowItem`, mirroring 542-556 almost verbatim, parameterized by slot key).
 
-`combat.js#startCombat`'s roster-build loop then consults `foeThreatBudget(state.floor.depth)` the same way `maze.js#genFloor` already consults `difficultyCurve(depth).dots` (`maze.js:111`) — called BEFORE any rng draw for the encounter, so it never perturbs RNG order; it only changes what count/level VALUES the existing rolls are compared against or capped by (a pure comparison-threshold change, the same category of change `intelBonus`'s chest-lock-threshold precedent already established as parity-safe: "callers apply it to a comparison threshold, never to the rng draw itself" — `derived.js:387-389`).
+One-shot tools (rope for pits, ladder for walls, torch for darkness) are **not** equip-slot items — they are single-use consumables that belong in the existing `useItem` kind-switch (items.js:875-994), each a new `case` (e.g. `use:"climbAssist"`, `use:"wallBreach"`, `use:"lightSource"`) consumed via the already-generic `it.uses === 1` → splice + `itemConsumed` path (996-999). Purely additive, no dependency on the worn-slot work.
 
-**Simpler fallback (lower risk, may be sufficient for v1.1):** skip the full threat-budget system; instead hand-tune BESTIARY's per-creature stats so an ability-bearing foe's raw `wp`/`dmg` is proportionally LOWER than a same-level non-caster (the ability itself is the "extra" power budget), verified purely via `tools/tune-difficulty.mjs`'s existing death-depth distribution. **This is the recommended v1.1 scope** — the full budget system is a natural v1.2+ refinement once real ability-bearing creatures exist to calibrate against. Flag both options to the roadmapper; do not commit to the heavier system without a research spike proving the simpler hand-tuned approach is insufcient.
+### 7. Cutthroat Joiner + murder chance — a canon reversal plus a new descend() hook
 
-**`tools/tune-difficulty.mjs` measurement hook:** `autoPlayOnce` (152-169) currently discards each action's `events` array (`({ state } = applyAction(state, action))`). To measure ability threat, capture and tally instead:
+**This is a deliberate reversal of existing, documented behavior, not new ground.** `engine/encounters.js#meetJoiner` (465-491) *already* special-cases Cutthroat: line 473, `const refusal = c.sub === "Cutthroat" ? "cutthroat" : ...` — today, **no Joiner has ever agreed to travel with a Cutthroat hero at all**; `state.pendingJoiner` is simply left `null` on that branch (the header comment even states "No Joiner ever agrees to travel with a Cutthroat"). The v1.5 target feature ("Cutthroat — can accept a Joiner") directly contradicts this and must be logged as an explicit canon reversal in the phase's own context doc: remove the Cutthroat clause from the `refusal` ternary (line 473) so a Cutthroat's Joiner offer proceeds through `resolveJoiner` (508-521) exactly like any other class — `resolveJoiner` itself is already class-agnostic, so zero changes are needed there.
 
-```js
-let abilityCasts = 0, abilityDamage = 0;
-while (!state.dead && !state.won && actions < MAX_ACTIONS) {
-  const action = decideAction(state, policyRng);
-  const result = applyAction(state, action);
-  state = result.state;
-  for (const e of result.events) {
-    if (e.type === "foeCast") abilityCasts++;
-    if (e.type === "struckByFoe" && e.fromAbility) abilityDamage += e.dmg ?? 0; // needs a new `fromAbility` flag on the reused struckByFoe event (Pattern 2)
-  }
-  actions++;
-}
-```
+**The murder hook belongs in `engine/movement.js#descend`** (691-701) — the one function that already runs exactly once per floor transition with an injected `rng`, already gated on party state elsewhere in the same module (the `nightlyEats`/`newDay` party loops at movement.js:392/435 are the precedent for "only run this when `state.party?.length`"). Recommended shape: gate a new check on `c.sub === "Cutthroat" && state.party?.length`, roll a low-probability check (the phase's balance pass picks the exact odds), and on a hit, splice the murdered member out of `state.party` and push a new `cutthroatMurder {name}` event — land it as the **last** step of `descend()`, after `floorChanged` (line 699), so the murder is narrated as happening on the new floor, not retroactively un-happening the floor that was just survived.
 
-Then extend `printReport`/the `--json` output with `abilityCasts`/`abilityDamage` distributions alongside the existing death-depth/action-count ones — directly answering "how tools/tune-difficulty.mjs can measure [ability threat]."
+**Parity note**: `descend()` is directly fixture-exposed — `test/parity/harness/comparables.js`'s `INTERNAL_FNS` (763: `{ openStore, springTrap, openChest, encounterDot, descend }`) replays it in economy/encounters fixtures. A new unguarded rng draw inside it would be a parity risk in principle, but per `meetJoiner`'s own header note ("no fixture ever meets a Joiner"), no existing fixture rolls a Cutthroat hero carrying a live party member — the gate (`c.sub === "Cutthroat" && state.party?.length`) should therefore be a structural no-op on every current fixture, mirroring the Phase 19 caster-ability gating precedent (zero draws for a foe with no ability kit). Confirm this with a live fixture-roster scan (mirroring the Phase 17 `FIXTURE-INVENTORY.md` audit) before landing, rather than assuming.
 
-## Data Flow
+### 8. Gear tab — On You / Bag split
 
-### Foe-turn sequence, before vs. after this milestone
+Today's Gear tab (`mazeworld.html`, `paint()`, `#s-carry` block ~3182-3239) renders two `wornRow(...)` calls for weapon (3217) and armor (3222-3223) directly ahead of a single flat `renderCarriedList(carry, items, {...})` call (3233-3239) covering every other carried item (cloaks, jewelry, staves, potions, scrolls, tools) — all appended into the **same** `<ul id="s-carry">` container with no structural boundary between "worn" and "everything else." `renderCarriedList` itself (mazeworld.html:3685+) is already a clean, reusable component — it is the same function the store's sell list, the combat use-list, and the loot card all call, and it never receives worn items on any of those other call sites already.
 
-```
-BEFORE (today):
-foeTurn(state, rng, events)
-  for each live foe f:
-    acid tick (gated)          ← 0 draws if !f.acid
-    asleep check (gated)        ← 0 draws if !f.asleep
-    for each swing:
-      target pick (gated)       ← 0 draws if no party
-      to-hit roll                ← ALWAYS 1 draw per swing
-      damage roll                 ← ALWAYS ~1 draw per swing
-      armor-soak roll (gated)     ← 0 draws if no armor/ignoresArmor
+Once §6's `c.worn` slot model exists, the split falls out almost for free: "On You" becomes weapon + armor (existing scalar rows) plus one new `wornRow`-style entry per populated `c.worn[slot]`; "Bag" becomes the exact same `renderCarriedList(carry, items, {...})` call, unchanged, now naturally excluding worn cloak/jewelry items because — mirroring how an equipped weapon/armor is already not a `c.items` entry — a worn cloak/jewelry item would live in `c.worn`, not in `c.items`, the instant it's equipped. The "bag-full drop prompt lists bag items only" requirement falls out for the same structural reason (worn items are never candidates because they were never bag members to begin with).
 
-AFTER (this milestone, for a foe WITHOUT `abilities` — UNCHANGED):
-  same as above — the new ability-attempt gate is `f.abilities && f.abilities.length`,
-  false for every existing BESTIARY entry ⇒ zero new draws, identical order.
+Concretely: split the single `#s-carry` container into two DOM sections (e.g. `#s-worn` / `#s-bag`), move the `wornRow(...)` calls into the first, and the `renderCarriedList(...)` call into the second — unchanged internally. **This item has a hard dependency on §6 landing first** — there is nothing structurally distinct to put in an "On You" panel for cloaks/jewelry until the worn-slot model exists to make them not-bag-members.
 
-AFTER (for a foe WITH `abilities` — NEW path, only reachable via new content):
-  for each live foe f:
-    acid tick (gated)
-    asleep check (gated)
-    ability-attempt roll (NEW)          ← 1 draw, only when f.abilities.length > 0
-      if attempted:
-        resolveFoeAbility():
-          ability pick (rng.pick)        ← 1 draw
-          INT-resist roll (gated on kind + c.intel>=12)  ← 0-1 draws
-          effect-kind resolution          ← 0-N draws depending on kind
-        continue (skip melee swings this round)
-      else: fall through to unchanged melee swing loop
-```
+## Data-Flow Changes (summary)
 
-### Key data flows
+- **New engine module `engine/effects.js`** (§1): consumed by `movement.js#move` (new per-step tick call), `combat.js` (new per-round tick call in `foeTurn`'s tail, and a clear call in `endCombat`), `magic.js` (timed reveal writes a timer entry), `items.js` (magic-item use writes a duration-then-cooldown pair).
+- **New engine module `engine/abilities.js`** (§4): consumed by `engine/engine.js`'s action dispatch table (new `"useAbility"` action) and `src/browser/combatMenu.js`'s ABILITIES submenu branch.
+- **`engine/maze.js#genFloor`** gains an options parameter (`{ water }`) and a new cell flag (§2) — parity-gated behind a new top-level run flag (`state.terrainRoll`, mirroring `storeRoll`) threaded through `state.js#newRun` and `movement.js#descend`.
+- **`c` (character) gains**: `c.worn` (§6, equip slots), ability-cooldown entries (§1/§4, likely `c.abilities`/`c.abilityCooldowns`), `c.mapRevealUntil` + per-cell `revealedAt` markers (§3). Every one of these needs a new strip helper in `comparables.js`, mirroring `stripDarkForField`/`stripFlightFields`/`stripBagField` (103-151), added to all three comparables (`movementComparable`/`combatComparable`/`economyComparable`) even where currently a structural no-op (the `stripFoeAbilityState` precedent, 302-322).
+- **New events** needing `EVENT_NARRATION` + toast-table entries (both coverage-guarded, machine-checked): `cutthroatMurder`, `revealFaded` (or similar), `waterEntered`/reused `waterFear`, `abilityUsed`/ability-specific events, item duration-expired/cooldown-ready narration, and whatever the "clarity" pass's cause-naming additions turn out to need on existing events (additive payload fields, not new types, per the Phase 25 `foeToHitBreakdown`/`needMods` precedent at derived.js:446-509).
 
-1. **Ability definition → runtime foe state:** `content/foe-abilities.js` (static registry) → `content/bestiary.js`'s `abilities: [id,…]` reference → `startCombat`'s foe-build loop (`combat.js:124-136`) copies the id list onto the spawned foe object + initializes `abilityCooldown: 0` → `foeTurn`'s new gate reads `f.abilities`/`f.abilityCooldown` every round.
-2. **Foe ability → player state → UI:** `resolveFoeAbility` writes `c.foeEffect` (new) or `c.wp` (damage) → `derived.js#conditionsOf` reads `c.foeEffect` every render → `src/browser`'s existing status-chip UI (already wired to `conditionsOf`) shows it — **no new screen or component**, satisfying the milestone's scope boundary.
-3. **Difficulty retune → both generation and combat:** `engine/difficulty.js` becomes the single import both `maze.js#genFloor` (existing) and `combat.js#startCombat` (new) consult for their respective depth-scaled knobs — one source of truth, one file for `tools/tune-difficulty.mjs`/`tools/tune-economy.mjs` to point at when re-running the retune.
-4. **Parley retune → no new engine seam, only value/threshold changes:** `canParley`/`parley` (combat.js:506-576) keep their existing shape; the retune changes constants (the `9 + bonus` threshold, the `2.5×` reward multiplier, and possibly adds a `C.parleyAttempts` counter for a per-encounter cap — a new, engine-only `state.combat` field needing a `comparables.js` carve-out the same way `combat.initNote`/`combat.round` are already carved out today, combat-parity.test.js:98-100).
+## Build Order (dependency-aware)
 
-## New Serialized State — Full Inventory
+The question's own two hard constraints are correct and are the spine of this ordering: **the generic effect/cooldown model before items and abilities**, and **terrain before phobias**. Recommended full sequence:
 
-| Field | Location | Set by | Parity carve-out needed? |
-|-------|----------|--------|---------------------------|
-| `f.abilities` | `state.combat.foes[i]` | `startCombat`, copied from bestiary content | **Yes** — new field, absent on every existing fixture roster entry today; needs stripping from `combatComparable`/`stripFoeDamageClosures`-style helper (or a new `stripFoeAbilityFields`) the moment ANY ability-bearing creature can be rolled by a fixture seed |
-| `f.abilityCooldown` / `f.abilityCharges` | `state.combat.foes[i]` | `startCombat` init, decremented in `foeTurn` | **Yes** — same carve-out as above |
-| new foe entries pushed by a `summon` ability | `state.combat.foes[]` (array grows mid-combat) | `resolveFoeAbility`'s `summon` kind | **Yes** — array length/shape divergence; carve out via the same per-foe field-stripping approach, or flag summoned entries (`f.summonedBy`) and exclude them from length-sensitive comparisons |
-| `c.foeEffect` | `state.c` | `resolveFoeAbility`'s `debuff`/`weaken`/`blind`/`stun` kinds | **Yes** — new `c.*` field, mirror `stripDarkForField`/`stripFlightFields` precedent exactly (comparables.js:63-84) |
-| `C.parleyAttempts` (if a per-encounter cap is adopted) | `state.combat` | `parley()` | **Yes** — mirror the existing `combat.round`/`combat.initNote` carve-out (combat-parity.test.js:99) |
-| Rebalanced `wp`/`sp.dmg`/`sp.toHit`/`ar` values on EXISTING bestiary entries | `content/bestiary.js` (static data, not runtime state) | the bestiary rebalance itself | **Yes — see Pitfall 1, this is the highest-risk carve-out of the whole milestone** |
+1. **Dead-foe targeting + Cutthroat reversal** (§5, §7) — zero new state, zero dependencies on anything else, cheapest possible wins; can land first or be interleaved anywhere. Recommended first purely for early confidence-building and because it touches the fewest files.
+2. **Generic effect/cooldown/timer model** (`engine/effects.js`, §1) — foundational. Blocks: melee abilities (3), magic-item use→cooldown (4 below), and the timed-reveal spell kind (part of item 7).
+3. **Terrain** (water squares + the `genFloor`/`terrainRoll` parity-gated plumbing, §2) — independent of item 2 (different subsystem: `maze.js`/`movement.js` vs. timers), so it can run in parallel if resourced separately, but **must** land before phobias (item 5), since the "Bodies of water" phobia's real trigger doesn't exist without water tiles.
+4. **Equipment one-per-type** (`c.worn` model + `eff()` refactor, §6) — wide-blast-radius; land before magic items (which are mostly the cloak/jewelry/staff category this targets) and before the Gear-tab split (item 8), both of which hard-depend on it.
+5. **Phobias** (every phobia fires, §2/movement.js's existing `heightsPenalty`/`waterPenalty`/`trapped-panic` precedents) — depends on item 3 for the water trigger; the Heights hook can reuse existing gorge/climb feature tiles with no new content, so it has no hard dependency beyond the existing phobia-trigger machinery already in `combat.js#fight` (352-385).
+6. **Darkness 3×3 render filter** (§3, second half) — fully independent, presentation-only; natural pairing with item 5 (both are "make darkness matter") but no code dependency — can land anytime.
+7. **Melee active abilities** (`engine/abilities.js` + `combatMenu.js` ABILITIES submenu, §4/§5) — depends on item 2 (cooldown timers); independent of items 3/4/6.
+8. **Magic items use→effect→cooldown + one-shot tools** (§1/§6) — depends on item 2 (cooldown model) for the duration-then-cooldown items, and on item 4 for worn magic items specifically (one-shot tools do not depend on item 4 — they can land earlier if convenient).
+9. **Spell rework** (§3/§4) — the timed-reveal piece depends on item 2; day-one damage spell wiring, rebalance, and scroll-castable-immediately are content/data plus small `canCast`-adjacent logic, independent of items 2/3/4.
+10. **Flee retune** — isolated to `combat.js#flee` (777-842) and its display mirror in `combatMenu.js` (207-219); no dependency on anything else in this list.
+11. **Gear tab On You / Bag split** (§8) — hard dependency on item 4 (`c.worn` must exist before there is anything structurally distinct to split by).
+12. **Clarity pass** (cause-naming, loot-gating display, rations-per-camp) — mostly narration/view-model surface work touching the final shape of *every* feature above (a cooldown ability's refusal needs to exist before its refusal reason can be named; water's move-cost needs an event before its "cause" line can be written). Best done **last**, or continuously feature-by-feature as each lands, rather than as one big terminal pass.
 
-## Anti-Patterns
+## Parity/Testing Considerations
 
-### Anti-Pattern 1: Generalizing `castSpell` into a caster-agnostic function
-
-**What people would do:** thread a `caster` parameter through `magic.js#castSpell`'s ~20 `sp.kind` branches so both the player and foes call the same function.
-**Why it's wrong:** every branch assumes player-shaped state (`c.spellsUsed`, `c.grimoire`, `C.foes[C.target]` as the manually-selected target, `c.sub === "Apprentice"` backfire) — inverting all of it is a large refactor of the single most spell-parity-tested function in the engine, for a foe vocabulary that only needs ~5 effect kinds, not ~20.
-**Do this instead:** the new, small `engine/foeAbilities.js` resolver (Pattern 2), sharing only the low-level primitives (`liveFoes`, `killFoe`, a new `pickFoeTarget`, a new `applyFoeDamageToPlayer`) that were already designed to be reused across domains.
-
-### Anti-Pattern 2: Keying the new ability system off the existing `sp.caster`/`sp.*` flavor flags
-
-**What people would do:** treat `sp.caster: true` (already present on Djinni/Krupke/Drudge/Vampire in `content/bestiary.js`) as "this creature already has abilities, just wire it up."
-**Why it's wrong:** `combat.js`'s own header (lines 25-34) documents that these flags are flavor-only in BOTH the engine's bestiary AND the frozen prototype (`prototype-master.js.txt` has its own independent, byte-identical `BESTIARY` copy at line 304 — confirmed by direct read). Making `sp.caster` mechanically active is a "deliberate rules change" exactly like every other one already logged in this codebase, but unlike those (which changed VALUES on paths no frozen fixture exercises), turning ON casting for a creature that a parity fixture might roll adds a NEW rng draw mid-fixture — an un-gated, un-guarded divergence the parity harness has no existing carve-out for.
-**Do this instead:** a brand-new `abilities` field (Pattern 1's gate), populated only on entries whose fixture-exposure has been checked (see Pitfall 1), leaving every `sp.*` flag exactly as inert as it is today.
-
-### Anti-Pattern 3: A parallel `C.foeAllies` structure for foe-summoned creatures
-
-**What people would do:** mirror the player's `C.ally`/`C.allies` shape with a new `C.foeAllies` array for foe-summoned reinforcements, to keep "whose side is this creature on" unambiguous.
-**Why it's wrong:** it would require teaching `playerStrike`, `killFoe`, `liveFoes`, and the entire targeting UI a second "enemy" collection to check everywhere `C.foes`/`liveFoes(state)` is read today — a wide, error-prone surface change for a purely cosmetic distinction.
-**Do this instead:** push summoned creatures directly into `C.foes` (they ARE foes — the player fights them with the exact same `playerStrike`/`killFoe` code, unmodified) and flag them with a narration-only marker field (`f.summonedBy: "<foe name>"`) if the Oracle log wants to call out "reinforcements arrive."
-
-## Integration Points
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| `combat.js#foeTurn` ↔ `foeAbilities.js#resolveFoeAbility` | Direct function call, `(state, foe, rng, events)` | New; foeTurn owns the per-foe loop and the ability-attempt gate/cooldown bookkeeping; the resolver owns effect application only |
-| `foeAbilities.js` ↔ `combat.js`'s exported `liveFoes`/`killFoe`/(new)`pickFoeTarget`/(new)`applyFoeDamageToPlayer` | Import, reuse | Mirrors `magic.js`'s existing reuse of `combat.js`'s `liveFoes`/`killFoe`/`afterPlayerAction` (magic.js:25) |
-| `content/bestiary.js` ↔ `content/foe-abilities.js` | Bestiary entries reference ability ids by string; resolved at `startCombat` foe-build time | Mirrors `c.grimoire` (array of spell names) ↔ `SPELLS[]` (lookup-by-name) — an established, proven pattern in this codebase, not a new one |
-| `engine/difficulty.js` ↔ `engine/maze.js#genFloor` (existing) and `engine/combat.js#startCombat` (new) | Both call pure difficulty.js exports BEFORE drawing any rng for that floor/encounter | Preserves the "difficulty knobs are a pure function of depth, consulted before any roll" invariant the module's own header already establishes |
-| `engine/derived.js#conditionsOf` ↔ `src/browser` status-chip UI (existing, unmodified) | `conditionsOf(state)` is the UI's one canonical read | New `c.foeEffect` entry slots into the existing array shape — zero UI code changes needed |
-| Everything new ↔ `src/browser/eventNarration.js#EVENT_NARRATION` | Every new event `type` needs a builder entry | **Hard gate** — `test/unit/formatEventsCoverage.test.js` derives the full event-type vocabulary from `engine/*.js` source and fails the build if any is missing (eventNarration.js:6-9) |
-| Everything new ↔ `test/parity/harness/comparables.js` | New fields/array-length changes must be carved out | **Hard gate** — `test/parity/prototype-master.js.txt` is frozen; any un-carved-out divergence fails `full-suite.test.js` |
-
-## Pitfalls Specific to This Migration
-
-### Pitfall 1 (CRITICAL): The bestiary rebalance breaks combat/magic parity fixtures independently of the ability-RNG question
-
-`test/parity/harness/sandboxPrototype.js` runs `test/parity/prototype-master.js.txt` — a **complete, independent, frozen copy of the OLD prototype**, including its OWN embedded `BESTIARY` table (verified: `const BESTIARY = {` at prototype-master.js.txt:304, structurally identical to and the direct source of `content/bestiary.js`). The four `combat-parity.test.js` fixtures (win/lose/flee/parley) and the magic-parity fixtures roll specific foes via `rng.pick(roster)` at specific seeds. **The instant `content/bestiary.js`'s numeric fields (`wp`, `sp.dmg`, `sp.toHit`, etc.) diverge from the frozen sandbox's copy for any creature a fixture's seed actually rolls, the parity comparison fails on that creature's stats** — this is entirely independent of the ability-RNG-order concern (Pattern 1) and would happen even for a value-only rebalance that draws no new rng at all.
-
-**This has an established precedent and fix in this exact codebase:** `stripFoeDamageClosures` (comparables.js:154-173) already carves the un-comparable `sp.dmg`/`acid.dmg` **closure-vs-data** representation out of the comparison "because the two representations can never be structurally compared anyway... stripping the un-comparable 'recipe' field... loses no real parity coverage." **Recommendation:** extend the exact same reasoning to rebalanced VALUE fields: before rebalancing, inventory which BESTIARY entries the frozen fixtures' seeds actually roll (a one-time grep/run of the fixtures with logging); for any creature that IS exercised, either (a) leave its stats untouched in this milestone, or (b) add a documented, narrow carve-out (`stripRebalancedFoeStats`, listing exactly which fields/creatures diverge and why) mirroring `stripFoeDamageClosures`'s own precedent and comment style. **Do not attempt a full bestiary rebalance without first running this inventory** — it directly gates the "bestiary rebalance" build-order step below.
-
-### Pitfall 2: `f.abilityCooldown` decrementing on the WRONG turn boundary breaks the "once per round" invariant
-
-`foeTurn` is called once per COMBAT ROUND per the surrounding `afterPlayerAction` logic (674-724), but can be called TWICE in one round if foes win the fresh initiative reroll (707-720, the documented "ROUND-COUNT FIX" behavior). Decrement `abilityCooldown` exactly once per `foeTurn` invocation (not per swing, not per foe-loop-iteration-that-didn't-cast) to avoid abilities coming off cooldown twice as fast as intended when foes act twice in a round — mirror `c.ward`/`c.mirror`'s existing once-per-foeTurn-call decrement pattern at combat.js:984-988 exactly.
-
-### Pitfall 3: Language/parley retune and the symmetric INT resistance are two independent value changes that must not be tuned in isolation
-
-Per the milestone brief itself (proposed-milestone-monster-balancing.md:27): "Tune Language's parley reach together with this parley balance pass so they aren't balanced twice." The same logic extends to INT resistance: widening `TALKATIVE`/Language's reach makes MORE encounters avoidable (reducing exposure to foe abilities), while symmetric INT resistance makes the encounters players DO fight less punishing for high-INT characters. Both dials affect the same `tools/tune-difficulty.mjs` death-depth signal — retune them together, in the same tuning pass, not sequentially.
-
-## Recommended Build Order
-
-Dependencies flow left→right; items on the same line have no ordering constraint between them.
-
-1. **Bestiary-fixture inventory (research spike, no code)** — grep/run the 4 combat-parity + magic-parity fixture seeds, log exactly which `BESTIARY[type][level]` entries they roll. This is a hard prerequisite for step 3 (gates which creatures are "safe" to rebalance without a new carve-out) and should happen before any bestiary edits land.
-2. **Low-risk refactors (parity-neutral, unit-tested before any new feature depends on them):**
-   - Extract `pickFoeTarget(state, rng)` out of `foeTurn`'s inline targeting roll (Pattern 4).
-   - Extract `applyFoeDamageToPlayer(state, foe, dmg, rng, events, opts)` out of `foeTurn`'s ward/armor/Hardiness pipeline (Pattern 2's trade-off note).
-   - Both ship with tests proving byte-identical behavior to today before anything new calls them.
-3. **Bestiary rebalance** (depends on step 1's inventory) — adjust wp/dmg/toHit/ar per creature vs. intended depth; add the required `comparables.js` carve-out(s) for any fixture-exercised creature whose stats changed (Pitfall 1).
-4. **Difficulty retune, phase A: extend `difficulty.js`'s scope to combat scaling** (depends on step 3 — needs final bestiary numbers to tune against) — wire `startCombat`'s foe-count/level rolls to consult new `difficulty.js` exports (Pattern 5); re-run `tools/tune-economy.mjs`/`tools/tune-difficulty.mjs` against the rebalanced bestiary alone (no abilities yet) to get a clean baseline.
-5. **Foe ability content + engine (depends on steps 2 and 4's baseline):**
-   - `content/foe-abilities.js` registry + `abilities` field added to a small, deliberately narrow set of bestiary entries (the existing `sp.caster` creatures are strong content candidates, since their flavor text already describes the intended ability — but they get a NEW `abilities` field, `sp.caster` itself stays untouched, per Anti-Pattern 2).
-   - `engine/foeAbilities.js#resolveFoeAbility` + the `foeTurn` ability-attempt gate (Pattern 1).
-   - Symmetric player-INT resistance (Pattern 3) — lands together with the resolver since it's a branch inside it, not a separate seam.
-   - New `c.foeEffect` slot + `conditionsOf` entry (Pattern 3).
-   - New `EVENT_NARRATION` entries (hard gate, Integration Points table).
-   - New `comparables.js` carve-outs for `f.abilities`/`f.abilityCooldown`/`c.foeEffect`/summoned-foe entries (New Serialized State table).
-6. **Difficulty retune, phase B: fold ability threat into the budget** (depends on step 5 existing) — add `abilityThreatWeight`/`foeThreatBudget` to `difficulty.js` (or confirm the simpler hand-tuned fallback suffices, per Pattern 5's two-option flag); extend `tools/tune-difficulty.mjs` to tally `foeCast`/ability-damage events (Pattern 5's measurement hook); re-run the full tuning pass ONE more time with abilities live.
-7. **Parley + Language rebalance** (can start in parallel with step 5, but its FINAL numbers depend on step 6's tuning pass being done, per Pitfall 3) — retune `canParley`/`parley`'s odds/reward/failure-cost constants; widen Language/`tongue` reach if desired; add a `C.parleyAttempts` cap + its carve-out if adopted.
-8. **Final consolidated tuning pass** — one more `tools/tune-difficulty.mjs`/`tools/tune-economy.mjs` run across the fully-landed feature set (bestiary + abilities + parley + Language), closing PARTY-10/ECON-deep-tuning/Phase-3-feel-tuning as the milestone's single retune.
+- **`genFloor`'s water-blob rng draws are the single highest parity risk in the milestone** — they MUST be gated behind a new run-level flag mirroring `storeRoll` (state.js:201-212). An ungated draw breaks every movement/combat/economy/magic parity fixture simultaneously, since all of them start from `genFloor(1)`. There is no strip-helper remedy for this class of divergence — only a run-flag gate prevents it in the first place.
+- Every new serialized field (`c.worn`, ability-cooldown entries, `c.mapRevealUntil` + cell `revealedAt` markers, the maze cell's `water` flag, `state.terrainRoll`) needs a strip helper added to all three comparables, mirroring `stripDarkForField`/`stripFlightFields`/`stripBagField` (comparables.js:103-151) — including a structural no-op tripwire where no current fixture would ever reach it (the `stripFoeAbilityState` precedent, 302-322, is the model to copy: cheap insurance against a future fixture reaching a currently-unreachable field).
+- The Cutthroat murder draw inside `descend()` (a fixture-exposed `INTERNAL_FNS` entry, comparables.js:763) must be gated on `c.sub === "Cutthroat"` and verified, via a live fixture-roster scan (mirroring the Phase 17 `FIXTURE-INVENTORY.md` precedent), to never fire on any existing fixture before landing.
+- Every new event type needs both an `EVENT_NARRATION` entry (coverage-guarded per `test/unit/formatEventsCoverage.test.js`) and a `toasts.js#TOAST_FOR`/`ORACLE_ONLY` entry (coverage-guarded per Phase 25's `toastsCoverage.test.js`) — these are machine-checked CI gates, not optional cleanup, and should be budgeted into every plan that adds an event.
+- `derived.js#castableAttackSpells`/`ATTACK_SPELL_KINDS` (699-733) is the established precedent for "what can this character legally do right now" as a pure, state-scoped, no-rng query — the new ability system's own availability query (feeding `combatMenu.js`'s ABILITIES submenu) should follow this exact shape rather than inventing a new one.
+- The `eff()` refactor (§6) is the one item in this milestone with the widest blast radius on EXISTING, already-parity-tested behavior (toHit, damage, upkeep, sight, greed, and more all read it) — it should ship with its own full regression pass (unit + parity) before any feature that depends on it (magic items, Gear-tab split) begins, not bundled into the same phase as new content.
 
 ## Sources
 
-- Direct read of `engine/combat.js` (foeTurn 819-990, startCombat 98-270, killFoe 409-462, parley/canParley 502-576) — CONFIDENCE: HIGH, primary source
-- Direct read of `engine/magic.js` (castSpell 45-361, resistance block 85-97) — CONFIDENCE: HIGH, primary source
-- Direct read of `engine/difficulty.js` (full file, confirms floor-gen-only scope) and `engine/maze.js:111` (genFloor's consumption site) — CONFIDENCE: HIGH, primary source
-- Direct read of `engine/derived.js` (conditionsOf 139-193, intelBonus 376-394) — CONFIDENCE: HIGH, primary source
-- Direct read of `content/bestiary.js` and `content/spells.js` (confirms `sp.caster` flavor-only flags, SPELLS[]/grimoire reference pattern) — CONFIDENCE: HIGH, primary source
-- Direct read of `test/parity/harness/comparables.js`, `test/parity/combat-parity.test.js`, and `test/parity/harness/sandboxPrototype.js` (confirms the frozen prototype has its own independent embedded BESTIARY at prototype-master.js.txt:304 — the basis for Pitfall 1) — CONFIDENCE: HIGH, primary source
-- Direct read of `tools/tune-difficulty.mjs` (confirms events are currently discarded, not tallied) — CONFIDENCE: HIGH, primary source
-- `.planning/proposed-milestone-monster-balancing.md` and `.planning/PROJECT.md` — milestone scope/constraints — CONFIDENCE: HIGH, primary source
+- `engine/maze.js:65-186` (genFloor), `:204-208` (reveal) — direct code read
+- `engine/movement.js:56-101` (phobia penalty constants, isDeadEnd), `:116-378` (move, per-step ticks), `:389-571` (newDay/makeCamp/nightlyEats), `:691-726` (descend/winGame) — direct code read
+- `engine/state.js:137-231` (newRun, `storeRoll`/`dev` run-flag precedent) — direct code read
+- `engine/magic.js:22-517` (castSpell, drinkPotion, canRead, readScroll) — direct code read
+- `engine/items.js:1-1014` (giveItem, treasure rollers, equip legality, takeItem/equipItem/unequipSlot, pendingLoot family, itemReady/useItem) — direct code read
+- `engine/derived.js:1-773` (skill/eff/slotItems, conditionsOf, armorSoak, strikeDie/toHit/afraidNeed/afraidDamage, foeToHitVs/foeToHitBreakdown, resistRoll, killSpFor, fluency, canCast/castableAttackSpells/bestAttackSpell) — direct code read
+- `engine/combat.js:328-422` (fight, refuseIfPending), `:435-500` (playerStrike excerpt, dead-target retarget at 461-462), `:756-842` (flee), `:844-885` (canParley excerpt), `:1463-1471` (pickFoeTarget) — direct code read
+- `engine/encounters.js:440-521` (meetJoiner, resolveJoiner — Cutthroat refusal at line 473) — direct code read
+- `test/parity/harness/comparables.js:1-783` (every strip helper, run-flag precedent, `INTERNAL_FNS`, action-path divergence machinery) — direct code read
+- `src/browser/combatMenu.js:1-256` (combatMenuViewModel, ABILITIES stub branch at 134-148) — direct code read
+- `src/browser/combatPanel.js:1-211` (foeListViewModel dead-foe tag suppression at 76-89) — direct code read
+- `src/browser/eventNarration.js:1-150`, `src/browser/toasts.js:1-120` — direct code read (narration/toast coverage conventions)
+- `content/flavor.js:17-20` (PHOBIAS catalog), `content/skills.js:9-32` (SKILLS catalog, ability-conversion candidates) — direct code read
+- `mazeworld.html:3182-3265` (Gear tab `#s-carry`, worn rows + flat carried list), `:3685+` (renderCarriedList), `:5291-5356` (renderFoeCards, guardTap wiring), `:5895-5919` (renderEncounter, foe-card tap → `S.combat.target = i`), `:5052-5061` (guardTap definition) — direct code read
+- `.planning/PROJECT.md` Key Decisions table (esp. the 34-03 "no engine retarget action exists" decision, and the Phase 33 `storeRoll` decision) — direct read, used to confirm architectural precedent rather than re-derive it
+- `.planning/STATE.md` Ground Truth + Decisions log — direct read, used for milestone scope and engine-gate confirmation
 
 ---
-*Architecture research for: Mazeworld / Delve, Die, Repeat — v1.1 Monster Balancing & Abilities*
-*Researched: 2026-09-13*
+*Architecture research for: v1.5 Meaningful Choices — Spells, Gear & Abilities*
+*Researched: 2026-09-17*
