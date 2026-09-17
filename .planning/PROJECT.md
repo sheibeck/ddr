@@ -72,7 +72,14 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v1.3 Feel, Loot & Combat Flow
+## Last Milestone: v1.4 Combat & Map Screens (shipped 2026-09-16, override closeout — device UAT batch pending)
+
+**Goal:** replace the combat AND map UX with the Claude Design "Mazeworld Combat" and "Mazeworld Map" screens — a dark combat screen (foes, YOUR LOT, › fight log, four actions) and a map with no D-pad and no toasts (tap-to-step, a bottom RAIL for every event and decision, a MAJOR OVERLAY for encounters / descents / death, HUD + condition chips) — keeping the engine, parity, refusals, loot, joiners and the Phase 32 input guards exactly as shipped. **Delivered** in Phases 34–35 (10 plans, 28 tasks, one day; 2170 tests; engine/content/parity untouched). Open: the 54-item Pixel 7 UAT batch (CSCR-10 / MAP-10), the climb dice payload quick task, the ⧗ glyph check.
+
+**Next milestone candidates:** whatever the UAT batch turns up; the v1.0 launch tail (UX-06 first-run tutorial — now against the finished combat + map screens — and Google Play production launch STR-01..04/06); the deferred tuning pass (TUNE-06/07); the store screen restyle to the dark vocabulary; a dice-mode setting; haptics.
+
+<details>
+<summary>Previous milestone: v1.3 Feel, Loot & Combat Flow (shipped 2026-09-16)</summary>
 
 **Goal:** Make gear and combat legible and honest — armor behaves the way the screen says it does, kill drops become a real end-of-combat loot decision, and the combat narrative is delivered through a researched, less tap-heavy, tap-safe UI — while landing the parked Feel & Polish backlog (inventory integrity, UI feel, combat start, store stock).
 
@@ -87,6 +94,8 @@
 **Out of this milestone (user decision 2026-09-15):** the tuning pass (TUNE-07 human DR round, TUNE-06 roster decision — `docs/DIFFICULTY-RETUNE.md`), the Play versionCode-4 upload (pending the phone), the first-run tutorial (UX-06), production launch (STR-01..04/06), Developer API upload automation. Phase numbering continues from 27.
 
 **Engine gate applies as always:** pure/deterministic engine, parity byte-identical for solo/empty-party play, new rng draws (store stock, bag loot, drop collection) only behind new-feature guards, new serialized fields (item-carried durability, pending loot) carved out of all three `*Comparable()` fns, every new event type gets an `EVENT_NARRATION` + toast-table entry, prototype master never edited.
+
+</details>
 
 ## Current State (v1.2 shipped 2026-09-15; v1.3 started 2026-09-15)
 
@@ -216,4 +225,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-17 — v1.4 code-complete (Phases 34–35); Pixel 7 UAT batch (v1.3 + Phase 34 + Phase 35) pending against the versionCode-3 debug APK*
+*Last updated: 2026-09-16 after v1.4 milestone (override closeout — Pixel 7 UAT batch of 54 checks pending against the versionCode-3 debug APK)*

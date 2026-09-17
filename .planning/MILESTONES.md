@@ -1,5 +1,31 @@
 # Milestones
 
+## v1.4 Combat & Map Screens (Shipped: 2026-09-16)
+
+**Phases completed:** 2 phases, 10 plans, 28 tasks
+
+**Key accomplishments:**
+
+- Three new pure src/browser/ view-model modules (fightLog.js, combatMenu.js, combatPanel.js) plus a non-destructive toasts.js extension (opts.withIdx, oracleDetailText) that give Phase 34's later shell plans everything they need to build the fight log, the four-action grid, and the foe/YOUR LOT/overlay content — zero mazeworld.html edits.
+- Re-routed the Phase 32 seam from the single-round Round Card to the whole-fight › log: `dispatchWithToasts` now writes every folded line (narrative and dull refusals alike, uncapped) to `window.__mzFightLog` via one `wasCombat||inCombat` if/else, parks the ending action's own lines on `window.__mzFightEnd` for Plan 05's over-panel, and `renderFightLog`/`syncFightLogLive` render it newest-first with in-place tap-to-reveal — the Round Card is fully retired.
+- Rebuilt `renderEncounter`'s live-combat branch into the mock's three-band layout (header -> cb-mid[foes, YOUR LOT, log] -> cb-act) from the Plan 01 view-models, moved the Fight! gate out of the combat markup into a new generic `renderMajorOverlay(host, spec)` (the map's MAJOR OVERLAY, reused by Phase 35), and closed a real CSCR-08 gap by wrapping foe-card retargeting in `guardTap` for the first time.
+- Replaced the old 7-button combat action bar with the mock's 2x2 STRIKE/SPELLS-or-ABILITIES/ITEMS/SOCIAL grid and its guarded submenus (driven by `combatMenuViewModel`), reworked the keyboard map so every key click-throughs the same guarded buttons a tap would, and moved the last two shell-side in-combat toasts (potion at full health / no potions) into dull fight-log entries — no toast can fire during a fight any more.
+- All four fight endings (won/soothed/fled/dead) now render through one `renderCombatOver(host, kind, opts)` in the mock's dark over-panel vocabulary — loot rows, the victory/soothed report, the parked killing-blow line, and the death card's epitaph/last-words/Review-the-Oracle/Bury-Them all fold in; the joiner and find cards opt into the same dark styling; the dismissal transition now clears the phase's transient globals; and the whole phase closes with a green executor gate (2047/2047 tests, clean build, untouched engine/content/parity) plus the aggregated 27-item deferred Pixel 7 checklist.
+- Three pure presentation modules — `rail.js`'s event-family fold, `tapStep.js`'s dominant-axis step resolver, and `mapMarks.js`'s coloured-glyph palette — ready for the Wave 2-4 shell wiring, with 39 new tests and zero engine/content/parity/toasts.js/controls.js/icons.js edits.
+- The map screen's persistent bottom RAIL now carries every out-of-combat event and every decision (joiner/find/climb) with a global movement lock, and the Phase 25.1 toast host and Move-on card are fully retired — zero toast anywhere in the app.
+- The map column's chrome now matches the mock — a two-row HUD (FLOOR/DAY/SQUARES/RATIONS + x/y WP bar) with its own condition-chip strip beneath it, a canvas renderer painting coloured text-glyph marks + a pulsing party ring from `src/browser/mapMarks.js`, and MARKS/MAKE CAMP as guarded bottom sheets — with 19 new source-assertion tests and zero engine/content/parity/icons.js edits.
+- Tap-to-step (dominant-axis-then-fallback) and hold-to-inspect replace the D-pad on the map viewport; a shell pre-dispatch interception shows THE STAIR DOWN before the engine's unconditional descend can fire, with GO DOWN dispatching the identical stepNow(dir) every step uses — 25 new source-assertion tests, zero engine/content/parity edits.
+- One `shell-map-invariants.test.js` suite (37 tests, zero fixes required) pins every Phase 35 retirement/guard/copy invariant file-wide; the full executor gate is green (2170/2170 tests, clean build, untouched engine/content/parity); the v1.4 milestone's one debug APK is built (1.2.0 (3), 9.0 MB) with no device install attempted; and the aggregated 27-item deferred Pixel 7 checklist closes out MAP-10's plan-side deliverable, ready for the same milestone-close DR round that also works through Phase 34's own 27-item list.
+
+### Known Gaps (carried forward)
+
+- **CSCR-10 / MAP-10 — on-device DR round (override closeout, 2026-09-16):** the user ran this milestone with `/gsd-autonomous defer uat to end`; both device requirements are satisfied only by the 54-item Pixel 7 batch (27 in `milestones/v1.4-phases/34-combat-screen-rebuild/34-VERIFICATION.md`, 27 in `…/35-map-screen-rebuild/35-VERIFICATION.md`) against the versionCode-3 debug APK installed 2026-09-16 22:54. Findings become a quick task or the next milestone.
+- **Climb dice payload** — `fellClimbing`/`fellInGorge`/`climbedOver`/`leaptOver` carry no `roll`/`need`; the rail shows climb outcomes without a dice line. Additive, parity-safe engine change queued as a quick task after UAT (`rail.js#rollLineFor` already renders it).
+- **⧗ crevice glyph** may render as tofu on the Pixel 7 — UAT item; one-line swap in `src/browser/mapMarks.js` if so.
+- Known verification overrides: 2 (CSCR-10, MAP-10 — see STATE.md Deferred Items). Stale quick-task records (rules-text-audit-pass, product rename) re-acknowledged — both shipped long ago.
+
+---
+
 ## v1.3 Feel, Loot & Combat Flow (Shipped: 2026-09-16)
 
 **Closeout type:** autonomous run, on-device UAT deferred to the end (50 Pixel 7 checks batched; CMBUI-06 DR round pending on the installed build)

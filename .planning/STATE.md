@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Combat & Map Screens
-current_phase: 35
-status: completed
+status: Awaiting next milestone
 stopped_at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
-last_updated: "2026-09-17T02:53:14.673Z"
+last_updated: "2026-09-17T02:57:05.732Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 35 complete
+last_activity_desc: Milestone v1.4 completed and archived
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 10
   completed_plans: 10
   percent: 100
+current_phase: 35
 current_phase_name: Map Screen Rebuild
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 ## Current Position
 
-Phase: 35
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-16 — Phase 35 complete
+Phase: Milestone v1.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-16 — Milestone v1.4 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -83,6 +83,17 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 | requirement | PARTY-10 consolidated difficulty retune | landed in Phase 21 (v1.1); TUNE-04 re-attempt now Phase 27 (v1.2) |
 | v2 | Networked multiplayer (MP-01/02) | post-launch; party layer already shipped as its foundation |
 | v2 | DR16-G "squares of opponents" / Amulet of Stone 4-target | tracked as UI-V2-03 in REQUIREMENTS.md v2 Requirements |
+
+
+Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override closeout — `defer uat to end`):
+
+| Category | Item | Status |
+|----------|------|--------|
+| requirement | CSCR-10 combat screen DR round (Phase 34) | Deferred — UAT pending; 27 checks in `milestones/v1.4-phases/34-combat-screen-rebuild/34-VERIFICATION.md` |
+| requirement | MAP-10 map screen DR round (Phase 35) | Deferred — UAT pending; 27 checks in `milestones/v1.4-phases/35-map-screen-rebuild/35-VERIFICATION.md` |
+| follow-up | Climb dice payload (`roll`/`need` on the four climb events) | quick task after UAT — additive, parity-safe; rail already renders it |
+| follow-up | ⧗ crevice glyph tofu risk | UAT item; one-line `mapMarks.js` swap if it fails |
+| quick_task | rules-text-audit-pass (20260909), 260908-kkq-rename… | stale records, both shipped (re-acknowledged) |
 
 ## Session Continuity
 
