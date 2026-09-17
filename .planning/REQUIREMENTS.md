@@ -34,10 +34,10 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 - [x] **MAP-02**: Movement is tap-to-step: a tap anywhere on the viewport moves one square toward the tap (dominant axis first, the other axis as fallback; both blocked → a dull rail line); hold ≥ 450 ms inspects the square (unwalked / rock / mark legend / empty corridor lines); drag pans; pinch zooms (0.6–2.0, origin on the party); a move recenters. TAP-TO-STEP IS DISABLED while any rail decision or obstacle is pending (user ruling 2026-09-16: "never move past an active choice"): taps then re-show the pending rail card (no step), and a wall/crevice square holds the party until a successful roll. The D-pad and its footer are removed; keyboard arrows remain for desktop; every existing move guard (encounter, settle window) still applies.
 - [x] **MAP-03**: The bottom RAIL replaces every out-of-combat toast: icon · title · line · dice line, toned info/good/bad/odd/dull, auto-clearing after the mock's hold times; idle it reads "FLOOR N · NOTHING IS HAPPENING" + the how-to line; every event still reaches the Oracle unabridged; `#mw-toast-host`, `mzToast` and the toast lifetimes are retired (no toast anywhere in the app).
 - [x] **MAP-04**: Decisions live in the rail's action row — joiner offer (take along / leave), find / locked box (pick the lock / leave it), crevice and wall-type obstacles (CLIMB IT only — no go-round; dice shown; the square stays blocked until a success), and any other yes/no the engine offers; NOTHING can be skipped — movement stays disabled until the choice is answered or the obstacle is crossed (the mock's walk-away-declines rule is REJECTED by the user); the Move-on cards for level-up and floor arrival are gone (rail lines, level-up with a longer hold).
-- [ ] **MAP-05**: The MAJOR OVERLAY handles the big moments full-screen: the encounter (FIGHT IT OUT → `fight`), the stair down (GO DOWN / NOT YET), and death outside combat (THAT IS THAT variant with Review the Oracle / Bury them); it is the only surface that blocks the map.
+- [x] **MAP-05**: The MAJOR OVERLAY handles the big moments full-screen: the encounter (FIGHT IT OUT → `fight`), the stair down (GO DOWN / NOT YET), and death outside combat (THAT IS THAT variant with Review the Oracle / Bury them); it is the only surface that blocks the map.
 - [x] **MAP-06**: MARKS opens the "WHAT THE MARKS MEAN" bottom sheet (glyph · name · description rows, scrim tap closes); CENTRE recenters; MAKE CAMP opens the camp sheet (copy, SLEEP 1 RATION / WALK ON) and a refused camp (no food, party appetites) is a bad-toned rail line — all three as the mock's top chips over the viewport.
 - [x] **MAP-07**: The canvas maze renderer keeps its engine-fed drawing but adopts the mock's palette (fog / wall / floor / border), the colored mark glyphs, the gold pulsing party marker and the inset vignette; fog-of-war and marks behave as today.
-- [ ] **MAP-08**: Phase 32's guards survive: every rail/overlay/sheet button goes through `guardTap`; the settle window still gates movement after an overlay/sheet closes; `aria-live` announces new rail lines once; no tap-anywhere-to-dismiss except the sheets' scrim.
+- [x] **MAP-08**: Phase 32's guards survive: every rail/overlay/sheet button goes through `guardTap`; the settle window still gates movement after an overlay/sheet closes; `aria-live` announces new rail lines once; no tap-anywhere-to-dismiss except the sheets' scrim.
 - [ ] **MAP-09**: Engine, content and parity untouched; every shell test re-pinned or replaced (toast wiring, D-pad/controls, party-camp, Move-on/beats, HUD, marks legend); `npm test` green; `npm run build:www` exit 0; voice scan on all new copy.
 - [ ] **MAP-10**: The rebuilt map screen is validated in an on-device DR round on the Pixel 7 before the milestone closes.
 
@@ -67,9 +67,9 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 | MAP-02 | Phase 35 | Complete |
 | MAP-03 | Phase 35 | Complete |
 | MAP-04 | Phase 35 | Complete |
-| MAP-05 | Phase 35 | Pending |
+| MAP-05 | Phase 35 | Complete |
 | MAP-06 | Phase 35 | Complete |
 | MAP-07 | Phase 35 | Complete |
-| MAP-08 | Phase 35 | Pending |
+| MAP-08 | Phase 35 | Complete |
 | MAP-09 | Phase 35 | Pending |
 | MAP-10 | Phase 35 | Pending |

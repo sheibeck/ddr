@@ -246,3 +246,7 @@ No device check was run for this plan (per the project's Deferred UAT protocol â
 ---
 *Phase: 35-map-screen-rebuild*
 *Completed: 2026-09-16*
+
+## Self-Check: PASSED
+
+`mazeworld.html`, `test/unit/shell-map-viewport.test.js`, and this SUMMARY.md confirmed present on disk. All four commits (`e4889cf`, `2d504b6`, `0f148a3`, `bacfa32`) confirmed present in `git log`.

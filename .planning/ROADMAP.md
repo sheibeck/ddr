@@ -164,7 +164,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 35-04-PLAN.md — Tap-to-step / hold / drag / pinch pointer model, D-pad retired, the stair-down gate as a shell pre-dispatch interception on `window.move` (THE STAIR DOWN / GO DOWN / NOT YET), keys, back-button context (decision 5)
+- [x] 35-04-PLAN.md — Tap-to-step / hold / drag / pinch pointer model, D-pad retired, the stair-down gate as a shell pre-dispatch interception on `window.move` (THE STAIR DOWN / GO DOWN / NOT YET), keys, back-button context (decision 5)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -205,7 +205,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete    | 2026-09-16 |
-| 35. Map Screen Rebuild | v1.4 | 3/5 | In Progress|  |
+| 35. Map Screen Rebuild | v1.4 | 4/5 | In Progress|  |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |

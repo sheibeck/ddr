@@ -5,15 +5,15 @@ milestone_name: Combat & Map Screens
 current_phase: 35
 current_phase_name: Map Screen Rebuild
 status: executing
-stopped_at: Completed 35-03-PLAN.md (HUD, condition chips, canvas palette/glyphs, MARKS/MAKE CAMP sheets)
-last_updated: "2026-09-17T02:17:53.840Z"
+stopped_at: Completed 35-04-PLAN.md (viewport pointer model, D-pad retirement, stair-down gate)
+last_updated: "2026-09-17T02:35:55.198Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 35 execution started
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 35 (Map Screen Rebuild) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 35 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T02:17:53.814Z
-Stopped at: Completed 35-03-PLAN.md (HUD, condition chips, canvas palette/glyphs, MARKS/MAKE CAMP sheets)
+Last session: 2026-09-17T02:35:55.173Z
+Stopped at: Completed 35-04-PLAN.md (viewport pointer model, D-pad retirement, stair-down gate)
 Resume file: None
 
 ## Operator Next Steps
@@ -173,6 +173,7 @@ Resume file: None
 | Phase 35 P01 | 25min | 2 tasks | 6 files |
 | Phase 35 P02 | 30min | 3 tasks | 11 files |
 | Phase 35 P03 | 50min | 3 tasks | 3 files |
+| Phase 35 P04 | 45min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -327,6 +328,7 @@ Resume file: None
 - [Phase ?]: Phase 35 Plan 02: railLocked() (orchestrator decision 2) locks EVERY movement path globally on a pending joiner/find or a failed climb; joiner/find/climb moved from renderEncounter into renderRail's own decision cards; the Phase 25.1 toast host and Move-on card (CARD_EVENTS/FEATURE_EVENT_TITLE/beatsTitleFor/a-next/stepping()) are fully retired — zero occurrences anywhere in mazeworld.html
 - [Phase ?]: Phase 35 Plan 02: MAP-05/MAP-08 deliberately left unmarked in REQUIREMENTS.md despite being in this plan's own frontmatter — their full text spans Plan 03/04 work (stair-down overlay, sheets) not yet built, mirroring 34-02-SUMMARY's identical CSCR-08 precedent
 - [Phase ?]: Phase 35 Plan 03: decision 3 (colored glyphs replace PNG marks in draw()/legend) and ruling 5 (condition chips + party rail move out of the HUD into their own strips) landed exactly as specified; the camp chip's onclick was retargeted from a direct dispatch to openCampSheet(), deleting the old assignment outright to keep shell-gear-toolbar's singular-onclick pin intact.
+- [Phase ?]: 35-04: stair-down gate is a SHELL pre-dispatch interception (stepTargetsExit peeks read-only before dispatch); the D-pad/control bar are fully retired, tap-to-step/hold-to-inspect replace them; ZOOM_MAX re-ranged 2.4->2.0
 
 ### Blockers
 
