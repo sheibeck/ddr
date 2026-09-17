@@ -2888,6 +2888,15 @@ const MAP_COPY = {
     sleep: "SLEEP\n1 RATION",
     walk: "WALK\nON",
   },
+  // Phase 35 (MAP-05, decision 5): THE STAIR DOWN — the MAJOR OVERLAY shown
+  // before the shell dispatches the identical stepNow(dir) descent every
+  // other step uses.
+  stair: {
+    title: "THE STAIR DOWN",
+    line: "Floor {n} is colder, longer, and considerably less forgiving. Nobody has asked you to do this.",
+    go: "GO DOWN",
+    stay: "NOT YET",
+  },
 };
 
 // Phase 32 (CMBUI-02) archival note: the Round Card's header copy lived
@@ -4952,7 +4961,10 @@ function hasActiveEncounter() {
   // over-map decision surface — it parks the map (window.move re-checks this
   // predicate) until every drop is taken or left, and it is what makes the
   // loot card re-appear on resume, since the pile is serialized.
-  return !!(S && (S.dead || S.won || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length)));
+  // Phase 35 (MAP-05): the stair-down overlay (window.__mzStair, presentation
+  // only, never S/state) blocks the map exactly like every other over-map
+  // overlay above.
+  return !!(S && (S.dead || S.won || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length))) || !!window.__mzStair;
 }
 
 // railLocked() (orchestrator decision 2, ruling 3): a pending rail decision
@@ -5639,6 +5651,29 @@ function renderEncounter() {
   // DR13: the vitals strip (HP bar, then potions/ward) is gone from the
   // encounter panel entirely — HP lives in the MAP header now, and this header
   // space is reclaimed for the encounter-specific text itself.
+
+  // Phase 35 (MAP-05, decision 5): THE STAIR DOWN — a pre-dispatch shell
+  // interception (window.__mzStair, set by engineMove before stepNow ever
+  // runs), shown BEFORE the death/won/beats branches below so a step that
+  // both reaches the stair AND would end the run never races them (in
+  // practice window.__mzStair is only set on a live, undead, unwon step).
+  // NOT YET's re-render flips hasActiveEncounter() true->false, so the
+  // dismissal transition further down stamps the settle window and
+  // recenters — no extra code needed here.
+  if (window.__mzStair && !S.combat && !S.dead && !S.won) {
+    panel.dataset.mode = "dark";
+    const s = window.__mzStair;
+    renderMajorOverlay(body, {
+      icon: "▼",
+      iconTone: "",
+      title: MAP_COPY.stair.title,
+      line: MAP_COPY.stair.line.replace("{n}", S.floor.depth + 1),
+      roll: null,
+      primary: { label: MAP_COPY.stair.go, onTap: () => window.__mzDescend?.() },
+      secondary: { label: MAP_COPY.stair.stay, onTap: () => { window.__mzStair = null; renderEncounter(); } },
+    });
+    return;
+  }
 
   // Phase 35 (MAP-05, RESEARCH Pitfall 7): out-of-combat death — the
   // pre-death "what got you" beat is folded straight into THAT IS THAT's own
@@ -6403,6 +6438,15 @@ addEventListener("keydown", e => {
       }
       return;
     }
+    // Phase 35 (MAP-05): the stair-down overlay's own key mirror — Enter/
+    // Space = GO DOWN, Escape/Backspace = NOT YET, one arm window covering
+    // both taps and keys (mirrors the combat MAJOR OVERLAY's own key
+    // mirror above).
+    if (window.__mzStair) {
+      if (k === "enter" || k === " ") { e.preventDefault(); document.getElementById("mw-major-primary")?.click(); }
+      else if (k === "escape" || k === "backspace") { e.preventDefault(); document.getElementById("mw-major-secondary")?.click(); }
+      return;
+    }
     // Phase 35 (MAP-04): the header dismiss control (the Phase 25.1 Move-on
     // card's Next button) is retired — every beat that reaches this branch
     // is an over-panel ending now (renderCombatOver's own primary button,
@@ -6619,6 +6663,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzFightEnd/__mzCombatMenu).
   window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY };
   window.__mzRail = emptyRail();
+  // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
+  // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
+  // field on S/state (serializeRun spreads S wholesale), same rule as
+  // window.__mzRail/__mzFightEnd/__mzCombatMenu.
+  window.__mzStair = null;
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
@@ -7013,26 +7062,61 @@ window.__mzClassicBoot = async function classicBoot() {
     return result;
   }
 
-  // window.move (Phase 35, MAP-02/04): the single choke point every
-  // movement path (tap-to-step, keyboard arrows, the D-pad) funnels
-  // through. Orchestrator decision 2 / ruling 3: railLocked() sits AFTER
-  // the settle clause and BEFORE any dispatch — a pending rail decision or
-  // a failed climb refuses EVERY direction, pulsing the pending card
-  // instead of stepping. stepNow(dir) below is the actual dispatching half.
+  // stepTargetsExit(dir) (Phase 35, MAP-05, decision 5): a read-only peek at
+  // the square `dir` steps toward — true only when it is open (not a wall)
+  // AND its feat is "exit"/"gate" (engine/movement.js's own descend-tile
+  // check). engine/movement.js#move descends UNCONDITIONALLY and
+  // SYNCHRONOUSLY the instant the party steps onto such a tile, so — unlike
+  // the Fight! gate, which reads the engine's own combat.pending mid-flight
+  // — the confirmation must come BEFORE any dispatch; this mirrors the
+  // Phase 31 "nothing resolves before the tap" rule by a different
+  // mechanism than combat.pending.
+  function stepTargetsExit(dir) {
+    const f = S && S.floor;
+    if (!f) return false;
+    const v = DIR_VECTORS[dir];
+    if (!v) return false;
+    const row = f.g[f.py + v[1]];
+    const c = row && row[f.px + v[0]];
+    return !!(c && !c.wall && (c.feat === "exit" || c.feat === "gate"));
+  }
+
+  // window.move (Phase 35, MAP-02/04/05): the single choke point every
+  // movement path (tap-to-step, keyboard arrows) funnels through.
+  // Orchestrator decision 2 / ruling 3: railLocked() sits AFTER the settle
+  // clause and BEFORE any dispatch — a pending rail decision or a failed
+  // climb refuses EVERY direction, pulsing the pending card instead of
+  // stepping. The stair-down gate (decision 5) sits AFTER railLocked() and
+  // BEFORE stepNow(dir) — stepping onto an exit/gate tile shows THE STAIR
+  // DOWN instead of dispatching; stepNow(dir) below is the actual
+  // dispatching half, called both by a normal step and by GO DOWN
+  // (__mzDescend, below).
   window.move = function engineMove(dir) {
     // Device-review revision #5 (extended): this is the single choke point
-    // every movement path (D-pad clicks, keydown, any future tap) funnels
+    // every movement path (tap-to-step, keydown, any future input) funnels
     // through — re-assert the encounter/feature-overlay gate here too, so
     // no move can ever register while it's up, even from a call site that
     // forgets its own check.
     if (hasActiveEncounter()) return;
     // Phase 32 (CMBUI-05, design §6.3 rule 2): the ONE dismiss-settle guard —
     // a step that arrives within DISMISS_SETTLE_MS of the overlay closing
-    // was aimed at the card, not the corridor. Covers D-pad, viewport tap
-    // and WASD/arrows because every movement path funnels through here.
+    // was aimed at the card, not the corridor. Covers tap-to-step and
+    // WASD/arrows because every movement path funnels through here.
     if (!encounterSettled()) return;
     if (railLocked()) { window.mzRailPulse?.(); return; }
+    if (stepTargetsExit(dir)) { window.__mzStair = { dir }; window.renderEncounter(); return; }
     stepNow(dir);
+  };
+
+  // window.__mzDescend (Phase 35, MAP-05, decision 5) — THE STAIR DOWN's GO
+  // DOWN button: clears the flag and calls the SAME stepNow(dir) every step
+  // uses (identical engine call, identical rng); the guards were already
+  // satisfied when the overlay opened, and the overlay's own button is
+  // guarded (renderMajorOverlay, unmodified).
+  window.__mzDescend = () => {
+    const s = window.__mzStair;
+    window.__mzStair = null;
+    if (s) stepNow(s.dir);
   };
 
   function stepNow(dir) {
@@ -7693,12 +7777,17 @@ window.__mzClassicBoot = async function classicBoot() {
       getGameContext: () => ({
         // Phase 35 (ruling 3): a pending rail decision or a failed climb is
         // NOT a modal — it is presentation state on window.__mzRail, never
-        // S/state, and the hardware back button can never skip it (the
-        // stair-down overlay, Plan 04, adds its own case here).
-        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)),
+        // S/state, and the hardware back button can never skip it. The
+        // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
+        // sheets ARE modals — the back button closes them (never a rail
+        // decision, and never a step).
+        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden,
         hasLiveRun: !!(S && S.c && !S.dead && !S.won),
-        isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)),
+        isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
+          window.__mzStair = null;
+          closeCampSheet();
+          closeMarksLegend();
           if (S) {
             S.beats = null;
             S.store = null;

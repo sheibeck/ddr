@@ -276,9 +276,13 @@ test("(j.1) lock: railLocked() is the ONE global movement lock; hasActiveEncount
 
 test("(j.2) lock: engineMove/stepNow carry the exact Task 2 shapes — the lock clause after the settle clause, the climb-pending stash, preDeath survives", () => {
   const moveRegion = engineMoveRegion().replace(/\s+/g, " ");
+  // Phase 35 Plan 04 (MAP-05, decision 5) re-pin: the stair-down gate
+  // (stepTargetsExit) now sits between the railLocked() clause and
+  // stepNow(dir) — the lock-clause-after-settle-clause shape this test
+  // exists to pin is otherwise unchanged.
   assert.match(
     moveRegion,
-    /if \(hasActiveEncounter\(\)\) return; if \(!encounterSettled\(\)\) return; if \(railLocked\(\)\) \{ window\.mzRailPulse\?\.\(\); return; \} stepNow\(dir\);/,
+    /if \(hasActiveEncounter\(\)\) return; if \(!encounterSettled\(\)\) return; if \(railLocked\(\)\) \{ window\.mzRailPulse\?\.\(\); return; \} if \(stepTargetsExit\(dir\)\) \{ window\.__mzStair = \{ dir \}; window\.renderEncounter\(\); return; \} stepNow\(dir\);/,
   );
 
   const stepRegion = stepNowRegion();
