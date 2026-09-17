@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
+See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 37 — Equipment Slot Model & eff() Refactor
+**Current focus:** Phase 38 — Melee Active Abilities (v1.5; Phases 36–37 done)
 
 ## Current Position
 
@@ -108,7 +108,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-17T20:12:49.666Z
-Stopped at: Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)
+Stopped at: Phase 37 complete (autonomous run, defer-UAT-to-end; 14 Pixel 7 checks queued in 37-VERIFICATION.md), ready to discuss/plan Phase 38
 Resume file: None
 
 ## Operator Next Steps
