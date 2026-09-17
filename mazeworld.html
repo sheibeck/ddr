@@ -907,6 +907,8 @@ html,body{height:100%}
 .mw-party-sub{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--ditto);white-space:nowrap;flex:none}
 .mw-party-hp-lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft)}
 .mw-party-hp-lab b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.mw-party-line{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--ditto)}
+.mw-party-dismiss{margin-top:4px;align-self:flex-start}
 .mw-party-status{align-self:flex-start;margin-top:1px}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
@@ -2396,7 +2398,7 @@ const SUB_NOTE = {
   "Pickpocket":    "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught. You have never been thanked either.",
   "Pilfer":        "Traps disarm themselves in your presence and no sealed room has ever held you. You cannot use a single magic item that doesn't heal, which the dungeon finds hilarious and stocks accordingly.",
   "Cat Burglar":   "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
-  "Cutthroat":     "Double damage on your first landed blow, and one member of every party dies by your hand before the dungeon is done. Delving alone has simplified this enormously.",
+  "Cutthroat":     "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in twenty, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
   "Cloaker":       "You can always vanish, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
   "Ninja":         "You never speak. Your opening strike lands for maximum damage and after that a 1 or a 2 opens something up. The silence isn't a vow, it's a tactic.",
   "Con Artist":    "You talk first, and anything with wit of 6 or under simply declines to fight you. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
@@ -5136,6 +5138,19 @@ function foeStatusBadges(f) {
   return out;
 }
 
+// Phase 36 (JOIN-01) — the Company panel's DISMISS confirm. DOM-local
+// presentation state, never on S (serializeRun spreads S); one row armed at
+// a time; the revert is a setTimeout of DISMISS_CONFIRM_MS, never a CSS
+// transition — mirrors the Gear tab's Drop confirm (DROP_CONFIRM_MS /
+// dropConfirmRevert / revertDropConfirm()) exactly. Not an encounter
+// button, so no guardTap here by design.
+const DISMISS_CONFIRM_MS = 3000;
+let dismissConfirmRevert = null;
+function revertDismissConfirm() { if (!dismissConfirmRevert) return; const r = dismissConfirmRevert; dismissConfirmRevert = null; r(); }
+// Member sheet strings (name/sub/race/cls/weapon) are interpolated into the
+// Company card's innerHTML — escape them the same way eventNarration.js does.
+const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 // 2026-09-17 UAT (user ruling): the party roster is a Hero-tab panel
 // (#hero-party / #hero-party-list), no longer a map-column strip. Reads the
 // engine's own persistent roster (S.party) and renders one card per member:
@@ -5143,6 +5158,12 @@ function foeStatusBadges(f) {
 // and a Downed chip. Data-driven: the panel is hidden when solo. Called from
 // paint() — never from tab init (S is in its TDZ there) — so member HP stays
 // live through combat.
+// Phase 36 (JOIN-01) — the card is now a real sheet: name · sub/race, then
+// class · level, then the HP track, then Weapon/Eats lines, then (outside
+// combat) a DISMISS control with the same two-tap inline confirm pattern as
+// the Gear tab's Drop. On confirm the bridge (window.mzDismissJoiner) routes
+// through the same dispatchWithToasts seam as window.mzResolveJoiner — the
+// parting line surfaces on the rail only, never here, never as a toast.
 function renderPartyRoster() {
   const panel = document.getElementById("hero-party");
   const host = document.getElementById("hero-party-list");
@@ -5151,7 +5172,7 @@ function renderPartyRoster() {
   panel.hidden = party.length === 0;
   host.innerHTML = "";
   if (!party.length) return;
-  party.forEach((m) => {
+  party.forEach((m, idx) => {
     const lvl = m.lvl ?? m.level ?? 1;
     const maxWP = m.maxWP || 1;
     const wp = Math.max(0, m.wp ?? 0);
@@ -5161,12 +5182,48 @@ function renderPartyRoster() {
     card.className = "mw-party-member" + (downed ? " downed" : "");
     card.innerHTML =
       `<div class="mw-party-head">
-         <span class="mw-party-name">${m.name || "Companion"}</span>
-         <span class="mw-party-sub">${m.sub ? m.sub + " · " : ""}${ROMAN[lvl - 1] || lvl}</span>
+         <span class="mw-party-name">${escText(m.name || "Companion")}</span>
+         <span class="mw-party-sub">${escText(m.sub || "")}${m.sub && m.race ? " / " : ""}${escText(m.race || "")}</span>
        </div>
+       <div class="mw-party-line">${escText(m.cls || "—")} · ${ROMAN[lvl - 1] || lvl}</div>
        <div class="mw-party-hp-lab">HP <b>${wp}</b>/<b>${maxWP}</b></div>
        <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
-       ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}`;
+       ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}
+       <div class="mw-party-line">Weapon: ${escText(m.weapon || "—")}</div>
+       <div class="mw-party-line">Eats ${RACES[m.race]?.eats || 1} a rest</div>`;
+    if (!S.combat) {
+      const dismiss = document.createElement("button");
+      dismiss.className = "small mw-party-dismiss";
+      dismiss.textContent = "DISMISS";
+      const arm = () => {
+        revertDismissConfirm();
+        const wrap = document.createElement("span");
+        wrap.className = "mw-drop-confirm";
+        const label = document.createElement("span");
+        label.textContent = "Send them off?";
+        const mkConfirmBtn = (text, onClick) => {
+          const bt = document.createElement("button");
+          bt.className = "small";
+          bt.textContent = text;
+          bt.onclick = onClick;
+          return bt;
+        };
+        const yes = mkConfirmBtn("Yes", () => { revertDismissConfirm(); window.mzDismissJoiner?.(idx); });
+        const no = mkConfirmBtn("No", () => revertDismissConfirm());
+        wrap.appendChild(label); wrap.appendChild(yes); wrap.appendChild(no);
+        dismiss.replaceWith(wrap);
+        const timer = setTimeout(revertDismissConfirm, DISMISS_CONFIRM_MS);
+        const onAnyTap = (e) => { if (!wrap.contains(e.target)) revertDismissConfirm(); };
+        document.addEventListener("pointerdown", onAnyTap, true);
+        dismissConfirmRevert = () => {
+          clearTimeout(timer);
+          document.removeEventListener("pointerdown", onAnyTap, true);
+          if (wrap.isConnected) wrap.replaceWith(dismiss);
+        };
+      };
+      dismiss.onclick = arm;
+      card.appendChild(dismiss);
+    }
     host.appendChild(card);
   });
 }
@@ -7583,6 +7640,20 @@ window.__mzClassicBoot = async function classicBoot() {
   // is cleared), mirroring the buy/leave bridges' render tail exactly.
   window.mzResolveJoiner = function resolveJoinerBridge(accept) {
     const { state, html } = dispatchWithToasts({ type: "resolveJoiner", accept: !!accept });
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+  };
+
+  // Phase 36 (JOIN-01) — the Company panel's DISMISS confirm routes through
+  // the SAME dispatch()->applyAction() seam as mzResolveJoiner above: the
+  // engine owns the roster splice and the named refusals (dismissJoiner
+  // draws zero rng); dispatchWithToasts already turns the joinerDismissed
+  // line into the rail's COMPANY card (dull) out of combat; paint()
+  // re-runs renderPartyRoster() so the panel empties.
+  window.mzDismissJoiner = function dismissJoinerBridge(i) {
+    const { state, html } = dispatchWithToasts({ type: "dismissJoiner", i: Number.isInteger(i) && i >= 0 ? i : 0 });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
