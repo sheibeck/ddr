@@ -133,7 +133,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 Plans:
 **Wave 1**
 
-- [ ] 36-01-PLAN.md — BAL-01 v1.5 BEFORE class-matrix pin (both runs, ledger section, additive guard) — wave 1, before any engine change
+- [x] 36-01-PLAN.md — BAL-01 v1.5 BEFORE class-matrix pin (both runs, ledger section, additive guard) — wave 1, before any engine change
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -319,7 +319,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 0/? | Not started | - |
+| 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 1/6 | In Progress|  |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 0/? | Not started | - |
 | 38. Melee Active Abilities | v1.5 | 0/? | Not started | - |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |

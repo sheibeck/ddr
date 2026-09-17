@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 36
 current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
 status: executing
-stopped_at: "v1.4 fully closed — DR round findings fixed and shipped (1.4.0 / versionCode 5, Play internal testing, 2026-09-17). Open follow-up: climb dice payload quick task (Play Developer API upload dropped by the user — manual Console upload stays). Next: /gsd-new-milestone"
-last_updated: "2026-09-17T15:55:58.841Z"
+stopped_at: Completed 36-01-PLAN.md (v1.5 BEFORE class-matrix pin, BAL-01)
+last_updated: "2026-09-17T16:24:07.680Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 36 execution started
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 ## Current Position
 
 Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 36
+Plan: 2 of 6
+Status: Ready to execute
 Last activity: 2026-09-17 — Phase 36 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -107,8 +107,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T02:48:36.757Z
-Stopped at: v1.4 fully closed — DR round findings fixed and shipped (1.4.0 / versionCode 5, Play internal testing, 2026-09-17). Open follow-up: climb dice payload quick task (Play Developer API upload dropped by the user — manual Console upload stays). Next: /gsd-new-milestone
+Last session: 2026-09-17T16:24:07.651Z
+Stopped at: Completed 36-01-PLAN.md (v1.5 BEFORE class-matrix pin, BAL-01)
 Resume file: None
 
 ## Operator Next Steps
@@ -196,6 +196,7 @@ Resume file: None
 | Phase 35 P03 | 50min | 3 tasks | 3 files |
 | Phase 35 P04 | 45min | 3 tasks | 5 files |
 | Phase 35 P05 | 15min | 2 tasks | 1 files |
+| Phase 36 P01 | 27min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -352,6 +353,7 @@ Resume file: None
 - [Phase ?]: Phase 35 Plan 03: decision 3 (colored glyphs replace PNG marks in draw()/legend) and ruling 5 (condition chips + party rail move out of the HUD into their own strips) landed exactly as specified; the camp chip's onclick was retargeted from a direct dispatch to openCampSheet(), deleting the old assignment outright to keep shell-gear-toolbar's singular-onclick pin intact.
 - [Phase ?]: 35-04: stair-down gate is a SHELL pre-dispatch interception (stepTargetsExit peeks read-only before dispatch); the D-pad/control bar are fully retired, tap-to-step/hold-to-inspect replace them; ZOOM_MAX re-ranged 2.4->2.0
 - [Phase ?]: Phase 35 closed: shell-map-invariants.test.js (37 tests) proves the whole-phase sweep with zero fixes needed; full executor gate green (npm test 2170/2170, build:www exit 0, engine/content/parity diff empty, master hash unchanged, no new packages/fonts); the v1.4 milestone debug APK built (1.2.0 (3), 9,474,974 bytes) with no adb install attempted; MAP-09 marked complete, MAP-10 deferred with the 27-item aggregated Pixel 7 checklist
+- [Phase ?]: 36-01: v1.5 BEFORE class-matrix pin (BAL-01) captured against e69ff07 (byte-identical to v1.4.0) — docs/class-pass/v15-before*.json + docs/CLASS-PASS.md ninth H2 + additive ledger-guard extension
 
 ### Blockers
 

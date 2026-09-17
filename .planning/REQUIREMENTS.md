@@ -68,7 +68,7 @@
 
 ### Balance (BAL)
 
-- [ ] **BAL-01**: A BEFORE class-matrix pin (`tools/tune-classes.mjs`) is captured before any new player power lands, and the tuning bot is taught to use the new abilities, spells, items and tools before the AFTER run
+- [x] **BAL-01**: A BEFORE class-matrix pin (`tools/tune-classes.mjs`) is captured before any new player power lands, and the tuning bot is taught to use the new abilities, spells, items and tools before the AFTER run
 - [ ] **BAL-02**: One consolidated AFTER matrix diff covers abilities + gear + spells together, with pick-rates for the new spells/abilities and verdicts recorded in `docs/CLASS-PASS.md`; out-of-band rows are tuned or accepted with a written reason against the depth-20 target
 
 ## Future Requirements (deferred)
@@ -97,7 +97,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BAL-01 | Phase 36 | Pending |
+| BAL-01 | Phase 36 | Complete |
 | TGT-01 | Phase 36 | Pending |
 | TGT-02 | Phase 36 | Pending |
 | CUT-01 | Phase 36 | Pending |
@@ -135,6 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLAR-05 | Phase 43 | Pending |
 
 **Coverage:**
+
 - v1.5 requirements: 36 total
 - Mapped to phases: 36
 - Unmapped: 0 ✓
