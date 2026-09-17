@@ -82,6 +82,29 @@
 
 **Numbers:** 7 phases, 31 plans, 85 tasks, 161 commits; tests 951 → 1448; parity 33/33; matrix runs 7,150 BEFORE + 7,150 AFTER + 7,150 retune AFTER.
 
+## v1.4 Combat & Map Screens (2026-09-16, one day)
+
+**What was built**
+- Combat screen rebuilt to the imported Claude Design mock: dark three-band panel, foe cards with guarded tap-to-target, YOUR LOT strip, newest-first › fight log with tap-to-reveal dice (refusals as dull entries), 2×2 STRIKE / SPELLS-or-ABILITIES / ITEMS / SOCIAL grid with per-class submenus, the Fight! gate as a reusable MAJOR OVERLAY, and the won / stand-down / fled / dead endings folded into one over-panel.
+- Map screen rebuilt: HUD strip + condition chips, tap-to-step viewport (D-pad gone), the bottom RAIL replacing every toast in the app and carrying every decision under a global movement lock, the stair-down overlay, MARKS / CENTRE / MAKE CAMP chips + sheets, canvas on the mock palette with glyph marks.
+- Six new pure presentation modules (`fightLog`, `combatMenu`, `combatPanel`, `rail`, `tapStep`, `mapMarks`), nine new shell test suites incl. a phase-wide invariant sweep; engine/content/parity untouched for the whole milestone.
+
+**What worked**
+- Importing a Claude Design mock as the spec (template + style objects in a trailing comment) gave the planner exact colours/fonts/copy; the user answered the open questions in CONTEXT before the run, so both phases went discuss-free.
+- Pure-module-first waves (34-01, 35-01) let the view-model layer be unit-tested before a single `mazeworld.html` line moved, and every later shell wave imported rather than re-derived.
+- One plan per wave for the 7k-line `mazeworld.html` on the main tree (worktree base-check degraded to sequential) — zero merge conflicts across ten plans.
+- Research caught three CONTEXT inaccuracies before planning (no engine `retarget`, no `pickLock`, climb rolls synchronous inside `move`), and the orchestrator decided them up front so no executor guessed.
+- "Defer UAT to end" with orchestrator-authored VERIFICATION.md files kept the run moving with the phone offline; the one APK built after the last edit was installed the moment the phone came back.
+- Phase-wide invariant suites (34-05 gate, 35-05 `shell-map-invariants`) turned "no toast anywhere / no D-pad anywhere" from a claim into 37 standing tests.
+
+**What did not**
+- Two plans wrote literal grep acceptance criteria that collided with pre-existing dead code (`if (S.dead) {` in the unreachable classic `move()`) — documented, not fixed; grep-count criteria need a scoped region, not a whole-file count.
+- Collateral test breakage in files outside a plan's `files_modified` (35-02 → `shell-armor-display`, 35-04 → `shell-map-rail`, `shell-map-hud`) — the planner should list every suite that slices a region an edit can shift.
+- The mock's toy mechanics leaked into CONTEXT (pick-the-lock, pre-roll climb preview); the climb dice payload is now a post-UAT quick task instead of landing in-phase.
+- STATE.md still pointed at the archived v1.3 when the run started (the new milestone was scaffolded by hand) — phase discovery returned zero phases until the frontmatter was patched.
+
+**Numbers:** 2 phases, 10 plans, 28 tasks, 55 commits; tests 1955 → 2170; parity master untouched; 54 Pixel 7 checks deferred to the milestone-close batch.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -91,6 +114,8 @@
 | v1.0 | ~8 | 17 | GSD phases for systems + on-device DR rounds for UX; autonomous runs per inserted milestone; human UAT deferred to milestone end |
 | v1.1 | 1 (autonomous) | 5 | Baseline-first phases; smart discuss + research-resolved follow-ups; verification agents switched off for cost; retune deferred after human tune-again |
 | v1.2 | 1 (autonomous, compacted once) | 7 (one inserted) | Hard gates that stop the phase; planner calibration before user decisions; device-feedback phases inserted mid-milestone; DR verdict deferred by the user |
+| v1.3 | 1 (autonomous) | 6 | Research phase (30) before a UI build; override closeout with the device batch deferred |
+| v1.4 | 1 (autonomous, no compaction) | 2 | Claude Design mocks as specs; pure-module-first waves; orchestrator-authored VERIFICATION with deferred UAT; APK built once after the last edit |
 
 ### Cumulative Quality
 
@@ -99,6 +124,8 @@
 | v1.0 | 683 | parity byte-identical (solo); every event type narrated (guarded); all copy safety-scanned | 0 runtime deps beyond Capacitor plugins |
 | v1.1 | 951 | parity 30/30 with one documented divergence (seed-303 parley); determinism suites for caster encounters; draw-count pins | 0 |
 | v1.2 | 1448 | parity 33/33 with four declared divergences (chargen 15/24, combat 14, economy 3, parley 303); class identity contract (70); toast-table partition guard; ledger guards for class pass and retune | 0 |
+| v1.3 | 1955 | parity byte-identical (storeRoll carved out); armor/loot/fight-gate suites | 0 |
+| v1.4 | 2170 | parity master untouched; 9 new shell suites incl. phase-wide invariant sweeps (no toast / no D-pad / guards / no S-resident presentation state) | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
