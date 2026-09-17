@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-17T14:07:53.295Z"
 last_activity: 2026-09-17
 progress:
-  total_phases: 0
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.5 Meaningful Choices — Spells, Gear & Abilities (started 2026-09-17) — defining requirements → roadmap
+**Current focus:** v1.5 Meaningful Choices — Spells, Gear & Abilities (started 2026-09-17) — roadmap created (Phases 36–43), ready to plan Phase 36
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-17 — Milestone v1.5 started
+Status: Roadmap created, awaiting `/gsd-plan-phase 36`
+Last activity: 2026-09-17 — ROADMAP.md created for v1.5 (Phases 36–43, 35/35 requirements mapped)
 
 ## Ground Truth (durable facts every session needs)
 

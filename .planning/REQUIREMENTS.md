@@ -52,10 +52,11 @@
 - [ ] **TGT-01**: A dead foe can never be the target — the target auto-switches to the next living foe the moment a foe dies, before the player's next action
 - [ ] **TGT-02**: Tapping a dead foe card does nothing (guarded), and the auto-switch cannot race a guarded tap into a mis-target
 
-### Cutthroat (CUT)
+### Cutthroat & Joiners (CUT / JOIN)
 
 - [ ] **CUT-01**: A Cutthroat can accept a Joiner (the Phase 24 refusal is reversed as a declared canon change); the sub-class blurb is rewritten to match
-- [ ] **CUT-02**: Each time a Cutthroat with a Joiner descends there is a small, stated chance the Joiner is murdered — narrated with its own event type and several sarcastic lines so it reads as a joke, not a bug; the blurb states the odds
+- [ ] **CUT-02**: Each time a Cutthroat with a Joiner descends there is a small, stated chance the Joiner is murdered, narrated with its own event type and several sarcastic lines so it reads as a joke, not a bug; the blurb states the odds
+- [ ] **JOIN-01**: Player can dismiss a Joiner from the Hero tab's Company panel, which shows the Joiner's sheet (class/sub/race, HP, weapon, "eats N a rest"); dismissal needs a confirmation tap, and the departing Joiner gets a sarcastic parting line of their own (a new event type, no rng)
 
 ### Clarity (CLAR)
 
@@ -96,21 +97,48 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SPELL-01..07 | — | Pending |
-| ABIL-01..05 | — | Pending |
-| GEAR-01..05 | — | Pending |
-| TERR-01..05 | — | Pending |
-| FLEE-01..02 | — | Pending |
-| TGT-01..02 | — | Pending |
-| CUT-01..02 | — | Pending |
-| CLAR-01..05 | — | Pending |
-| BAL-01..02 | — | Pending |
+| BAL-01 | Phase 36 | Pending |
+| TGT-01 | Phase 36 | Pending |
+| TGT-02 | Phase 36 | Pending |
+| CUT-01 | Phase 36 | Pending |
+| CUT-02 | Phase 36 | Pending |
+| JOIN-01 | Phase 36 | Pending |
+| GEAR-03 | Phase 37 | Pending |
+| GEAR-04 | Phase 37 | Pending |
+| ABIL-01 | Phase 38 | Pending |
+| ABIL-02 | Phase 38 | Pending |
+| ABIL-03 | Phase 38 | Pending |
+| ABIL-04 | Phase 38 | Pending |
+| ABIL-05 | Phase 38 | Pending |
+| GEAR-01 | Phase 39 | Pending |
+| GEAR-02 | Phase 39 | Pending |
+| GEAR-05 | Phase 39 | Pending |
+| SPELL-01 | Phase 40 | Pending |
+| SPELL-02 | Phase 40 | Pending |
+| SPELL-03 | Phase 40 | Pending |
+| SPELL-04 | Phase 40 | Pending |
+| SPELL-05 | Phase 40 | Pending |
+| SPELL-06 | Phase 40 | Pending |
+| SPELL-07 | Phase 40 | Pending |
+| TERR-01 | Phase 41 | Pending |
+| TERR-02 | Phase 41 | Pending |
+| TERR-03 | Phase 41 | Pending |
+| TERR-04 | Phase 41 | Pending |
+| TERR-05 | Phase 41 | Pending |
+| FLEE-01 | Phase 42 | Pending |
+| FLEE-02 | Phase 42 | Pending |
+| BAL-02 | Phase 42 | Pending |
+| CLAR-01 | Phase 43 | Pending |
+| CLAR-02 | Phase 43 | Pending |
+| CLAR-03 | Phase 43 | Pending |
+| CLAR-04 | Phase 43 | Pending |
+| CLAR-05 | Phase 43 | Pending |
 
 **Coverage:**
-- v1.5 requirements: 35 total
-- Mapped to phases: 0
-- Unmapped: 35 ⚠️
+- v1.5 requirements: 36 total
+- Mapped to phases: 36
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-17*
-*Last updated: 2026-09-17 after research + user scoping*
+*Last updated: 2026-09-17 — roadmap created, 35/35 requirements mapped to Phases 36–43*
