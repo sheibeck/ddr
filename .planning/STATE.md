@@ -5,15 +5,15 @@ milestone_name: Combat & Map Screens
 current_phase: 35
 current_phase_name: Map Screen Rebuild
 status: executing
-stopped_at: Completed 35-01-PLAN.md (rail.js, tapStep.js, mapMarks.js + tests)
-last_updated: "2026-09-17T01:22:17.692Z"
+stopped_at: Completed 35-02-PLAN.md (rail, decisions, movement lock, Move-on retirement)
+last_updated: "2026-09-17T01:55:29.660Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 35 execution started
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 ## Current Position
 
 Phase: 35 (Map Screen Rebuild) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-16 — Phase 35 execution started
 
@@ -86,8 +86,8 @@ Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T01:22:17.666Z
-Stopped at: Completed 35-01-PLAN.md (rail.js, tapStep.js, mapMarks.js + tests)
+Last session: 2026-09-17T01:55:29.635Z
+Stopped at: Completed 35-02-PLAN.md (rail, decisions, movement lock, Move-on retirement)
 Resume file: None
 
 ## Operator Next Steps
@@ -171,6 +171,7 @@ Resume file: None
 | Phase 34 P04 | 55min | 3 tasks | 6 files |
 | Phase 34 P05 | 55min | 3 tasks | 4 files |
 | Phase 35 P01 | 25min | 2 tasks | 6 files |
+| Phase 35 P02 | 30min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -322,6 +323,8 @@ Resume file: None
 - [Phase ?]: 34-04: dropped dead-code spellOpen writes in classic startCombat()/castSpell() (unread, pre-Phase-31 dead code) to satisfy the retired presentation flag's zero-occurrence pin; ITEMS submenu rows reuse cbRow() rather than a fifth renderCarriedList host; a disabled grid button with no opens is a guarded no-op
 - [Phase ?]: Phase 34 (CSCR-07/08) closed: fight endings fold into one renderCombatOver over-panel; joiner/find restyled dark; dismissal clears window.__mzFightEnd/__mzCombatMenu. CSCR-10 (on-device DR round) deferred to milestone close per the 27-item aggregated Pixel 7 checklist in 34-05-SUMMARY.md.
 - [Phase ?]: Phase 35 Plan 01: rail.js/tapStep.js/mapMarks.js built pure per orchestrator decisions 1/3/4 (no climb-dice engine change, colored glyphs replace PNG marks, no PICK THE LOCK action) — 39 new tests, engine/content/parity/toasts.js/controls.js/icons.js untouched
+- [Phase ?]: Phase 35 Plan 02: railLocked() (orchestrator decision 2) locks EVERY movement path globally on a pending joiner/find or a failed climb; joiner/find/climb moved from renderEncounter into renderRail's own decision cards; the Phase 25.1 toast host and Move-on card (CARD_EVENTS/FEATURE_EVENT_TITLE/beatsTitleFor/a-next/stepping()) are fully retired — zero occurrences anywhere in mazeworld.html
+- [Phase ?]: Phase 35 Plan 02: MAP-05/MAP-08 deliberately left unmarked in REQUIREMENTS.md despite being in this plan's own frontmatter — their full text spans Plan 03/04 work (stair-down overlay, sheets) not yet built, mirroring 34-02-SUMMARY's identical CSCR-08 precedent
 
 ### Blockers
 

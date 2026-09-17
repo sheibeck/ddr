@@ -156,7 +156,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 35-02-PLAN.md — The RAIL surface + routing seam → rail, toast retirement, joiner/find/CLIMB IT as rail decisions, the GLOBAL movement lock, Move-on cards retired, out-of-combat death folded, static tab bar; eight suites re-pinned (decisions 2, 4, 5, 6)
+- [x] 35-02-PLAN.md — The RAIL surface + routing seam → rail, toast retirement, joiner/find/CLIMB IT as rail decisions, the GLOBAL movement lock, Move-on cards retired, out-of-combat death folded, static tab bar; eight suites re-pinned (decisions 2, 4, 5, 6)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -205,7 +205,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete    | 2026-09-16 |
-| 35. Map Screen Rebuild | v1.4 | 1/5 | In Progress|  |
+| 35. Map Screen Rebuild | v1.4 | 2/5 | In Progress|  |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
