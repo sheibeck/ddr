@@ -4,9 +4,9 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 38
 current_phase_name: Melee Active Abilities
-status: planning
+status: executing
 stopped_at: "Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)"
-last_updated: "2026-09-17T20:15:13.006Z"
+last_updated: "2026-09-17T21:30:14.286Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 37 complete, transitioned to Phase 38
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 Phase: 38 — Melee Active Abilities
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-17 — Phase 37 complete, transitioned to Phase 38
 
 ## Ground Truth (durable facts every session needs)

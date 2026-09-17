@@ -207,10 +207,24 @@ Plans:
 **Plans**: 5 plans (sequential waves 1-5)
 
 Plans:
+**Wave 1**
+
 - [ ] 38-01-PLAN.md — Reshaped skills tables (positions/costs preserved) + FREE_SKILL same-position repoint, the 20-entry `content/abilities.js` catalog, derived rng stream, `c.abilities` + level-1/level-up/Joiner pool rolls + tolerant load, parity carve-out and the 20 declared chargen-field divergences
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 38-02-PLAN.md — Retire every old passive read (Tracking/Language/Climbing/Leaping dropped; Agility/Death-touch/Kata/Silence converted), the transient `abilityStrike` descriptor in `playerStrike`, timer-driven need shifts in the twin need functions, identity-contract updates + the SC-4 guard
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 38-03-PLAN.md — `engine/abilities.js` `useAbility { key }` dispatcher (named refusal ladder, cooldowns on `c.timers`, all 20 effect resolutions on existing hooks), foe-side hooks in `foeTurn`/`pickFoeTarget`/`applyFoeDamageToPlayer`/`flee`, action registration, narration for every new event
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 38-04-PLAN.md — Joiners use their own abilities by the class policy (opener round 1 / damage above half / defensive below half) through shared primitives, member timers on the sheet with per-member tick/clear sites, party-wide Battle Roar
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 38-05-PLAN.md — Combat ABILITIES submenu rows (READY / N ROUNDS / ONCE A FIGHT · USED, tappable on cooldown), shell dispatch bridge, Hero-tab abilities list, first-paint pool rail card, fight-report learned line, ledger close, phase gate + aggregated Pixel 7 checklist
 
 **Research flag**: Yes — which specific Special Skills convert to actives (vs. staying passive) is a per-skill judgment call against the `docs/CLASS-PASS.md` good/bad identity-contract table; start with a small (2–3 skill) initial set. Recommend `/gsd-discuss-phase` or `--research-phase` before planning.
