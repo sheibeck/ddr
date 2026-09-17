@@ -204,7 +204,15 @@ Plans:
   4. Every sub-class that had one code-verified good and one bad (Phase 24) still has both after any of its passive skills converts to an active — the identity-contract suite is updated in this same phase, not deferred.
   5. A melee-class Joiner in the party uses its own abilities in combat by the same class-driven policy Joiners already fight with.
 
-**Plans**: TBD
+**Plans**: 5 plans (sequential waves 1-5)
+
+Plans:
+- [ ] 38-01-PLAN.md — Reshaped skills tables (positions/costs preserved) + FREE_SKILL same-position repoint, the 20-entry `content/abilities.js` catalog, derived rng stream, `c.abilities` + level-1/level-up/Joiner pool rolls + tolerant load, parity carve-out and the 20 declared chargen-field divergences
+- [ ] 38-02-PLAN.md — Retire every old passive read (Tracking/Language/Climbing/Leaping dropped; Agility/Death-touch/Kata/Silence converted), the transient `abilityStrike` descriptor in `playerStrike`, timer-driven need shifts in the twin need functions, identity-contract updates + the SC-4 guard
+- [ ] 38-03-PLAN.md — `engine/abilities.js` `useAbility { key }` dispatcher (named refusal ladder, cooldowns on `c.timers`, all 20 effect resolutions on existing hooks), foe-side hooks in `foeTurn`/`pickFoeTarget`/`applyFoeDamageToPlayer`/`flee`, action registration, narration for every new event
+- [ ] 38-04-PLAN.md — Joiners use their own abilities by the class policy (opener round 1 / damage above half / defensive below half) through shared primitives, member timers on the sheet with per-member tick/clear sites, party-wide Battle Roar
+- [ ] 38-05-PLAN.md — Combat ABILITIES submenu rows (READY / N ROUNDS / ONCE A FIGHT · USED, tappable on cooldown), shell dispatch bridge, Hero-tab abilities list, first-paint pool rail card, fight-report learned line, ledger close, phase gate + aggregated Pixel 7 checklist
+
 **Research flag**: Yes — which specific Special Skills convert to actives (vs. staying passive) is a per-skill judgment call against the `docs/CLASS-PASS.md` good/bad identity-contract table; start with a small (2–3 skill) initial set. Recommend `/gsd-discuss-phase` or `--research-phase` before planning.
 **UI hint**: yes
 
