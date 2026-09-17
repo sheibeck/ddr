@@ -19,6 +19,12 @@ import { canCast } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 
+// Phase 37 (GEAR-03): a Poplar Staff (worn activatable), used as the fixed
+// staff literal across the new "worn activatables" section below.
+function fixedWornStaff(overrides = {}) {
+  return { n: "Poplar Staff", kind: "staff", use: "heal", every: 250, usedAt: 0, txt: "1d20+10 wp to up to 6", ...overrides };
+}
+
 // ─── fixed* helpers, copied verbatim from test/unit/round-card-worst-case.test.js ──
 
 function fixedFighter(overrides = {}) {
@@ -223,6 +229,56 @@ test("ITEMS: nothing usable at all collapses to one disabled NOTHING TO USE row"
     { id: "none", label: COMBAT_MENU_COPY.noItems, cost: "", desc: COMBAT_MENU_COPY.noItemsDesc, enabled: false, dispatch: null },
   ]);
   assert.equal(vm.actions[2].sub, "0 usable");
+});
+
+// ─── Phase 37 (GEAR-03): worn activatables ─────────────────────────────────
+
+test("ITEMS: a worn activatable staff appears after the potion row; a passive worn ring is not listed", () => {
+  const c = {
+    potions: 0, scrolls: 0, wp: 40, items: [],
+    worn: {
+      staff: fixedWornStaff(),
+      ring: { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
+    },
+  };
+  const state = fixedState({ c, steps: 4, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
+  assert.equal(vm.actions[2].sub, "1 usable");
+  assert.deepEqual(vm.submenus.items.rows, [
+    { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
+    { id: "worn-staff", label: "POPLAR STAFF", cost: "246 SQ", desc: "1d20+10 wp to up to 6", enabled: false, dispatch: { type: "useItem", slot: "staff" } },
+  ]);
+});
+
+test("ITEMS: a worn activatable with no usedAt yet is ready (empty cost, enabled)", () => {
+  const c = { potions: 0, scrolls: 0, items: [], worn: { staff: fixedWornStaff({ usedAt: undefined }) } };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  const row = vm.submenus.items.rows.find((r) => r.id === "worn-staff");
+  assert.equal(row.cost, "");
+  assert.equal(row.enabled, true);
+});
+
+test("ITEMS: a worn row is appended AFTER any carried rows", () => {
+  const c = {
+    potions: 0, scrolls: 0,
+    items: [{ n: "Staff of Fire", kind: "staff", use: "fire", every: 10, usedAt: 0, txt: "a bolt" }],
+    worn: { cloak: { n: "Cloak of Invisibility", kind: "cloak", use: "invis", every: 100, usedAt: 0, txt: "invisible" } },
+  };
+  const state = fixedState({ c, steps: 0, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.deepEqual(vm.submenus.items.rows.map((r) => r.id), ["potion", "item-0", "worn-cloak"]);
+});
+
+test("ITEMS: a legacy c (no worn key) produces exactly today's rows — zero worn rows", () => {
+  const c = { potions: 2, scrolls: 0, items: [] };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.ok(
+    !vm.submenus.items.rows.some((r) => r.id && r.id.startsWith("worn-")),
+    "no worn rows when c carries no worn key at all",
+  );
 });
 
 // ─── combat: null never throws ─────────────────────────────────────────────

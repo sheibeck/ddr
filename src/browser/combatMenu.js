@@ -14,7 +14,7 @@
 
 import { SPELLS } from "../../content/index.js";
 import { characterSheetViewModel } from "./viewModels.js";
-import { canCast } from "../../engine/derived.js";
+import { canCast, WORN_SLOTS } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 
@@ -163,7 +163,24 @@ export function combatMenuViewModel(state) {
         dispatch: { type: "useItem", i },
       };
     });
-  const usableCount = ((c.potions || 0) > 0 ? 1 : 0) + (hasScroll ? 1 : 0) + carriedRows.length;
+  // Phase 37 (GEAR-03): worn activatables must be worn to work in the new
+  // model, so a worn staff/cloak/jewel must be reachable from the fight's
+  // ITEMS submenu — the shell's COMBAT_DISPATCH forwards `slot` (Plan 04).
+  // A legacy c (no c.worn key) contributes zero rows here, byte-identical
+  // to before this phase.
+  const wornRows = WORN_SLOTS.filter((slot) => c.worn && c.worn[slot] && c.worn[slot].use).map((slot) => {
+    const it = c.worn[slot];
+    const cd = it.every ? Math.max(0, it.every - (state.steps - (it.usedAt ?? -99999))) : 0;
+    return {
+      id: `worn-${slot}`,
+      label: String(it.n).toUpperCase(),
+      cost: cd > 0 ? `${cd} SQ` : "",
+      desc: it.txt || "",
+      enabled: cd === 0,
+      dispatch: { type: "useItem", slot },
+    };
+  });
+  const usableCount = ((c.potions || 0) > 0 ? 1 : 0) + (hasScroll ? 1 : 0) + carriedRows.length + wornRows.length;
 
   let itemRows;
   if (usableCount === 0) {
@@ -189,7 +206,7 @@ export function combatMenuViewModel(state) {
         dispatch: { type: "readScroll" },
       });
     }
-    itemRows.push(...carriedRows);
+    itemRows.push(...carriedRows, ...wornRows);
   }
   submenus.items = { title: `${heroName} · ITEMS · ${usableCount} USABLE`, rows: itemRows };
 

@@ -54,6 +54,15 @@ export const RAIL_HOLD = Object.freeze({
 });
 
 /**
+ * WORN_RECONCILE_HOLD — Phase 37 (GEAR-04): the hold duration (ms) for the
+ * one-shot worn-reconciliation card `wornReconcileCard` builds below. A
+ * standalone export (not folded into RAIL_HOLD) since this card is built
+ * directly by the shell's resume path (Plan 04), never through
+ * `railCardFor`'s fold pipeline.
+ */
+export const WORN_RECONCILE_HOLD = 6000;
+
+/**
  * RAIL_COPY — every player-facing string this module owns, in one object
  * literal so the voice scan (rail.test.js) can walk it recursively.
  */
@@ -77,6 +86,22 @@ export const RAIL_COPY = Object.freeze({
   },
   climb: { retry: "CLIMB IT" },
   quit: { title: "BACK AGAIN TO QUIT", line: "Press back once more and this delve is abandoned. Nobody will write it down." },
+  // Phase 37 (GEAR-04): the one-shot worn-reconciliation copy —
+  // wornReconcileCard (below) builds the actual card; `title` is reused
+  // verbatim, `line` is a template `wornReconcileCard` fills in per slot,
+  // `what` maps a WORN_SLOTS key to its plural noun-phrase.
+  wornReconciled: {
+    title: "GEAR",
+    line: "You were wearing {count} {what}. Physics has filed a complaint — {bagged} {verb} in your bag now.",
+    what: {
+      ring: "rings on one finger",
+      bracelet: "bracelets on one wrist",
+      amulet: "amulets on one neck",
+      helm: "helms on one head",
+      cloak: "cloaks on one back",
+      staff: "staves in one hand",
+    },
+  },
   fallback: {
     block: "NOTHING DOING",
     hurt: "THAT HURT",
@@ -319,6 +344,45 @@ export function railCardFor(type, events, folded, ctx = {}) {
  */
 export function railLineCard(title, line, tone, hold, icon = "·", iconKey = null) {
   return { icon, iconKey, title, lines: [{ text: line, roll: null }], tone, hold };
+}
+
+// COUNT_WORDS — Phase 37 (GEAR-04): the small-number words wornReconcileCard
+// spells out ("two rings", not "2 rings"); a count of seven or more falls
+// back to the plain digit (index 0 is unused — a report entry's bagged
+// array is only ever built with length >= 1, so count is always >= 2).
+const COUNT_WORDS = ["", "one", "two", "three", "four", "five", "six"];
+
+/**
+ * wornReconcileCard(report) — Phase 37 (GEAR-04): builds the one-shot rail
+ * card for `engine/saveState.js#validateSave`'s `wornReport` (surfaced once
+ * via `engineAdapter#takeBootWornReport`, Plan 04's resume path). `null` for
+ * a missing/empty report, or a report whose every entry bagged nothing
+ * (worn cleanly, nothing to narrate). Otherwise builds one sentence pair per
+ * populated (non-empty `bagged`) entry from `RAIL_COPY.wornReconciled`'s
+ * template (`{count}` a spelled-out small number or a digit at 7+, `{what}`
+ * the slot's plural noun-phrase, `{bagged}` the bagged item names joined
+ * with ", ", `{verb}` "is"/"are") and joins them with a single space. Pure:
+ * never mutates `report`, no Date/Math.random/DOM. Not folded through
+ * `railCardFor` — this is a standalone, directly-built card (mirrors
+ * `railLineCard`'s posture), since the migration is a load-time event, not
+ * an `applyAction` dispatch this module's fold pipeline ever sees.
+ */
+export function wornReconcileCard(report) {
+  if (!Array.isArray(report)) return null;
+  const entries = report.filter((r) => r && Array.isArray(r.bagged) && r.bagged.length > 0);
+  if (!entries.length) return null;
+
+  const { title, line, what } = RAIL_COPY.wornReconciled;
+  const sentences = entries.map((r) => {
+    const count = r.bagged.length + 1;
+    const countWord = COUNT_WORDS[count] || String(count);
+    const noun = what[r.slot] || "of those";
+    const bagged = r.bagged.join(", ");
+    const verb = r.bagged.length === 1 ? "is" : "are";
+    return line.replace("{count}", countWord).replace("{what}", noun).replace("{bagged}", bagged).replace("{verb}", verb);
+  });
+
+  return { title, line: sentences.join(" "), tone: "dull", hold: WORN_RECONCILE_HOLD, icon: "▪" };
 }
 
 /** emptyRail() — the rail's zero state: no card up, no decision pending. */
