@@ -1653,6 +1653,13 @@ html,body{height:100%}
   sync();
 })();
 
+// 2026-09-16 UAT (user ruling): the rail is a map-tab element. Declared
+// BEFORE initTabs runs so its first showTab("maze") assignment is not a
+// TDZ error; renderRail() (further down) reads it. showTab never reads S
+// directly (S is declared later) — it re-runs the rail's own visibility
+// check through window.renderRail?.(), which is undefined until the
+// classic bridge line executes and is a harmless no-op at tab-init.
+let mwActiveTab = "maze";
 (function initTabs() {
   const tabs = Array.from(document.querySelectorAll(".mw-tab"));
   const screens = {
@@ -1670,6 +1677,14 @@ html,body{height:100%}
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-current", on ? "true" : "false");
     }
+    // 2026-09-16 UAT (user ruling): the rail is a map-tab element. Off-Map
+    // the rail is hidden outright; on return to Map renderRail re-derives
+    // hidden from BOTH conditions (combat/dead/won and the active tab) and
+    // shows a card that arrived meanwhile if it is still within its hold.
+    mwActiveTab = name;
+    const railEl = document.getElementById("mw-rail");
+    if (railEl) railEl.hidden = name !== "maze";
+    if (name === "maze") window.renderRail?.();
     // DFB-03: every open of the Oracle lands on the most recent line.
     if (name === "oracle") window.__mzOracleToNewest?.();
     // Phase 33 (UIF-02, site 2): returning to the map from Hero/Gear/Oracle/
@@ -5916,7 +5931,9 @@ function renderRail() {
   const vm = window.__mzRailVM;
   const copy = vm ? vm.copy : null;
   if (!vm || !copy) return;
-  railEl.hidden = !!(S.combat || S.dead || S.won);
+  // 2026-09-16 UAT (user ruling): both conditions hide — the column owners
+  // (combat/dead/won) AND any non-Map tab.
+  railEl.hidden = !!(S.combat || S.dead || S.won) || mwActiveTab !== "maze";
 
   let key, tone, icon, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
   if (S.pendingJoiner && !S.combat && !S.store) {

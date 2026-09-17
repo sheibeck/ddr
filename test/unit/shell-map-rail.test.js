@@ -10,9 +10,10 @@
 // railButtons()/syncRailLive()/railPulse() trio and its key-gated rise/
 // announce/auto-clear cycle, the joiner/find/climb decision cards, the
 // GLOBAL movement lock (railLocked()), the retired Move-on card path, and
-// the static tab bar layout. A final BEHAVIOUR section proves the real
+// the static tab bar layout. A BEHAVIOUR section proves the real
 // rail.js/toasts.js/eventNarration.js fold produces the exact cards this
-// plan's CONTEXT sample copy describes.
+// plan's CONTEXT sample copy describes. (o) pins the 2026-09-16 UAT ruling
+// that the rail is a map-tab element (mwActiveTab in showTab/renderRail).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -355,4 +356,19 @@ test('(n) BEHAVIOUR: a failed climb folds to a bad "FELL" card whose only line h
   const region = keydownRegion();
   assert.match(region, /const n = document\.getElementById\("cb-over-btn"\); if \(n\) n\.click\(\);/);
   assert.doesNotMatch(region, /document\.getElementById\("a-next"\)/);
+});
+
+// ─── (o) 2026-09-16 UAT ruling: the rail is a map-tab element ────────────
+
+test("(o) 2026-09-16 UAT ruling: the rail is a map-tab element — mwActiveTab is declared once before initTabs, showTab sets it and hides the rail off-Map without reading S, renderRail combines both hide conditions", () => {
+  assert.equal((CODE.match(/^let mwActiveTab = "maze";/gm) || []).length, 1);
+  assert.ok(CODE.indexOf('let mwActiveTab = "maze";') < CODE.indexOf("(function initTabs() {"));
+
+  const showTabRegion = sliceBetween(CODE, "function showTab(name) {", 'for (const btn of tabs) btn.addEventListener("click"');
+  assert.match(showTabRegion, /mwActiveTab = name;/);
+  assert.match(showTabRegion, /railEl\.hidden = name !== "maze";/);
+  assert.match(showTabRegion, /if \(name === "maze"\) window\.renderRail\?\.\(\);/);
+  assert.doesNotMatch(showTabRegion, /\bS\./);
+
+  assert.match(railRegion(), /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| mwActiveTab !== "maze";/);
 });
