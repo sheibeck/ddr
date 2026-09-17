@@ -47,9 +47,9 @@ import {
   spellLevelFor,
 } from "../../engine/derived.js";
 import { canEquipArmor, canEquipWeapon, armorRefusalReason, useItem, gainWilmst } from "../../engine/items.js";
-import { meetJoiner, springTrap, openChest } from "../../engine/encounters.js";
+import { meetJoiner, resolveJoiner, springTrap, openChest } from "../../engine/encounters.js";
 import { priceFor, sellPriceFor } from "../../engine/economy.js";
-import { newDay, makeCamp } from "../../engine/movement.js";
+import { newDay, makeCamp, cutthroatMurderCheck } from "../../engine/movement.js";
 import { castSpell, canRead } from "../../engine/magic.js";
 import { makeRng } from "../../engine/rng.js";
 import { CLASSES, RACES, ARMORS, ENC_TYPES, WEAPON_MAX, SPELLS, STRIKE_DICE } from "../../content/index.js";
@@ -792,16 +792,26 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "no Joiner will ever travel with you",
+      name: "one descent in twenty, the Joiner beside you does not reach the next floor",
       run() {
         const cutthroat = hero("Cutthroat");
-        const events = meetJoiner(cutthroat, makeRng(555), []);
-        assert.equal(cutthroat.pendingJoiner, null);
-        expectEvent(events, "joinerRefused", { reason: "cutthroat" });
+        meetJoiner(cutthroat, makeRng(555), []);
+        assert.ok(cutthroat.pendingJoiner, "a Cutthroat is offered a Joiner like anyone else (CUT-01)");
+        resolveJoiner(cutthroat, true, []);
+        assert.equal(cutthroat.party.length, 1);
+        const memberName = cutthroat.party[0].name;
+        const memberSub = cutthroat.party[0].sub;
+        const events = cutthroatMurderCheck(cutthroat, fakeRng([1]), []);
+        expectEvent(events, "joinerMurdered", { name: memberName, sub: memberSub });
+        assert.equal(cutthroat.party.length, 0);
 
         const control = hero("Soldier");
         meetJoiner(control, makeRng(555), []);
-        assert.deepEqual(cutthroat.c.joiner, control.c.joiner, "the joiner is rolled identically regardless of sub");
+        resolveJoiner(control, true, []);
+        assert.equal(control.party.length, 1);
+        const controlEvents = cutthroatMurderCheck(control, fakeRng([]), []);
+        assert.deepEqual(controlEvents, []);
+        assert.equal(control.party.length, 1, "a non-Cutthroat control keeps the Joiner");
       },
     },
   },
@@ -1280,12 +1290,12 @@ test("idempotency: the Cutthroat joiner scenario replays byte-identical event li
   assert.equal(firstRng.getState(), secondRng.getState());
 });
 
-test("idempotency: a Cutthroat's meetJoiner refusal consumes the identical rng cursor as an accepted Soldier control", () => {
+test("idempotency: a Cutthroat's meetJoiner OFFER consumes the identical rng cursor as an accepted Soldier control", () => {
   const control = makeRng(777);
   meetJoiner(hero("Soldier"), control, []);
   const controlNext = control.d(20);
 
   const cutthroat = makeRng(777);
   meetJoiner(hero("Cutthroat"), cutthroat, []);
-  assert.equal(cutthroat.d(20), controlNext, "the draw following a refused meetJoiner matches an accepted one");
+  assert.equal(cutthroat.d(20), controlNext, "the draw following a Cutthroat's meetJoiner offer matches an accepted Soldier's");
 });

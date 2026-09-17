@@ -77,10 +77,11 @@ function fixedState(overrides = {}) {
  * Task 1 — Joiners refuse a Cutthroat; Magic User Joiners refuse a Wilmsry
  * ============================================================ */
 
-test("meetJoiner: a Cutthroat's Joiner is rolled exactly as usual, then refused (reason cutthroat), pendingJoiner stays null", () => {
+test("meetJoiner: a Cutthroat's Joiner is rolled exactly as usual and OFFERED — pendingJoiner set, joinerMet fires, no joinerRefused (Phase 36 CUT-01)", () => {
   const cutthroat = fixedState({ c: { sub: "Cutthroat" } });
   const events = meetJoiner(cutthroat, makeRng(555), []);
-  assert.equal(cutthroat.pendingJoiner, null, "no candidate is stashed for a Cutthroat");
+  assert.ok(cutthroat.pendingJoiner, "a candidate is stashed for a Cutthroat");
+  assert.equal(cutthroat.pendingJoiner.name, cutthroat.c.joiner.name);
 
   const control = fixedState({ c: { sub: "Soldier" } });
   meetJoiner(control, makeRng(555), []);
@@ -89,13 +90,10 @@ test("meetJoiner: a Cutthroat's Joiner is rolled exactly as usual, then refused 
   const met = events.find((e) => e.type === "joinerMet");
   const refused = events.find((e) => e.type === "joinerRefused");
   assert.ok(met, "joinerMet still fires");
-  assert.ok(refused, "joinerRefused fires");
-  assert.equal(refused.reason, "cutthroat");
-  assert.equal(refused.name, cutthroat.c.joiner.name, "refusal names the rolled joiner");
-  assert.equal(events.indexOf(met) < events.indexOf(refused), true, "joinerRefused is pushed after joinerMet");
+  assert.ok(!refused, "no joinerRefused for a Cutthroat anymore");
 });
 
-test("meetJoiner: a Cutthroat's refusal consumes NO extra rng (cursor matches the 4-draw control)", () => {
+test("meetJoiner: a Cutthroat's OFFER consumes NO extra rng (cursor matches the 4-draw control)", () => {
   const ctrl = makeRng(777);
   ctrl.d(10);
   rollCharacter(ctrl);
@@ -106,7 +104,7 @@ test("meetJoiner: a Cutthroat's refusal consumes NO extra rng (cursor matches th
   const state = fixedState({ c: { sub: "Cutthroat" } });
   const rng = makeRng(777);
   meetJoiner(state, rng, []);
-  assert.equal(rng.d(20), ctrlNext, "the draw following a refused meetJoiner is unchanged");
+  assert.equal(rng.d(20), ctrlNext, "the draw following a Cutthroat's meetJoiner offer is unchanged");
 });
 
 test("meetJoiner: a Wilmsry refuses a Magic User Joiner (pinned seed 1) — reason wilmsry, pendingJoiner null", () => {

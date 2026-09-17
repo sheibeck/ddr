@@ -794,7 +794,7 @@ are deliberately left as-is and flagged as a v1.3 spell-audit candidate.
 | Pickpocket | An extra take off every kill/chest | Shopkeepers know your face — buys x1.25, sells x0.75 |
 | Pilfer | Disarms every trap, opens every chest for free | Cannot use a single item that does not heal |
 | Cat Burglar | The first strike of any fight always lands | Every trap that catches them deals double damage |
-| Cutthroat | The first landed blow always crits, even in armor a backstab would refuse | No Joiner will ever travel with you |
+| Cutthroat | The first landed blow always crits, even in armor a backstab would refuse | One descent in twenty, the Joiner beside you does not reach the next floor |
 | Cloaker | A free vanish while nobody has seen your face | Once seen, the vanish is denied |
 | Ninja | The opener always lands for max weapon damage; a later roll of 2 crits | You never speak — canParley is false unconditionally |
 | Con Artist | Can talk anyone down except Magical/Walking Dead; a weak foe leaves before the fight starts | The opening blow is a warning, not an injury |

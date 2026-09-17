@@ -140,7 +140,7 @@ const BRANCH_TOGGLES = [
   // branch the toast builders (and their extended EVENT_NARRATION siblings)
   // read, so each ternary/reason-map path renders under the scan.
   { reason: "pilfer" }, { reason: "acrobat" }, { reason: "woodsman" }, { reason: "noRunes" },
-  { reason: "knight" }, { reason: "conArtist" }, { reason: "cutthroat" }, { reason: "wilmsry" },
+  { reason: "knight" }, { reason: "conArtist" }, { reason: "wilmsry" },
   { why: "pickpocket" }, { pickpocket: true }, { bard: true }, { doubled: "Soldier" },
   { halved: true, wear: 2 }, { soaked: { hide: 2, hardiness: 3, ward: 1 } },
   { needMods: [{ name: "Guard", delta: -1 }] }, { critBy: "cutthroat" }, { soldierCrit: true },

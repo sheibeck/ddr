@@ -1318,7 +1318,6 @@ export const TOAST_FOR = {
   joinerDeclined: (e) => ({ text: `You wave ${e?.name ?? "them"} off.`, tone: "beat", priority: PRIORITY.feature }),
   joinerRefused: (e) => {
     const map = {
-      cutthroat: `${e?.name ?? "The Joiner"} wants no part of a Cutthroat.`,
       wilmsry: `${e?.name ?? "The Joiner"} takes one look at a Wilmsry and leaves.`,
     };
     return block(map[e?.reason] ?? "Word has reached the Joiners.");

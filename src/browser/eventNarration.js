@@ -592,8 +592,9 @@ export const EVENT_NARRATION = {
     const line = JOINER_MURDER_LINES[idx].replaceAll("{name}", escapeHtml(rawName)).replaceAll("{depth}", String(depth));
     return `<span class="hurt">${line}</span>`;
   },
-  // Phase 24 (IDENT-05): a Joiner is rolled exactly as normal, then declines
-  // to travel with a Cutthroat, or (a Magic User Joiner) with a Wilmsry.
+  // Phase 24 (IDENT-05), reversed for Cutthroat in Phase 36 (CUT-01): a
+  // Joiner is rolled exactly as normal, then declines to travel ONLY when
+  // it is a Magic User Joiner meeting a Wilmsry.
   joinerRefused: (e) =>
     e.reason === "wilmsry"
       ? `<span class="beat">${e.name ?? "The Joiner"}, a Magic User, takes one look at a Wilmsry and remembers an appointment elsewhere.</span>`

@@ -26,7 +26,7 @@ import { makeRng } from "../../engine/rng.js";
 import { narrateEvent, EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { TOAST_FOR, FEATURE_EVENTS, PRIORITY, toastsForAction } from "../../src/browser/toasts.js";
 import { RAIL_FAMILY, railCardFor } from "../../src/browser/rail.js";
-import { JOINER_MURDER_LINES } from "../../content/flavor.js";
+import { JOINER_MURDER_LINES, SUB_NOTE } from "../../content/flavor.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq`; throws on underflow
  * (doubles as a "no more rng draws expected" assertion). Copied from
@@ -287,4 +287,90 @@ test("RAIL_FAMILY.joinerMurdered: COMPANY / bad; railCardFor surfaces the murder
   assert.equal(card.title, "COMPANY");
   assert.equal(card.tone, "bad");
   assert.ok(card.lines[0].text.includes("Ada Brook"), `expected the murder sentence, got: ${JSON.stringify(card.lines[0])}`);
+});
+
+/* ============================================================
+ * Task 2 (CUT-01) — the reversed refusal: a Cutthroat is OFFERED a Joiner
+ * like anyone else; the Wilmsry-vs-Magic-User refusal is untouched.
+ * ============================================================ */
+
+test("meetJoiner: a Cutthroat is offered a Joiner (pendingJoiner set, joinerMet, no joinerRefused); rng cursor matches a Soldier control", () => {
+  const cutthroat = hero("Cutthroat");
+  const events = meetJoiner(cutthroat, makeRng(555), []);
+  assert.ok(cutthroat.pendingJoiner, "pendingJoiner is set for a Cutthroat");
+  assert.ok(cutthroat.pendingJoiner.name && cutthroat.pendingJoiner.sub && cutthroat.pendingJoiner.race && cutthroat.pendingJoiner.cls, "a full sheet");
+  assert.ok(Number.isFinite(cutthroat.pendingJoiner.lvl) && Number.isFinite(cutthroat.pendingJoiner.level));
+  assert.ok(Number.isFinite(cutthroat.pendingJoiner.wp) && Number.isFinite(cutthroat.pendingJoiner.maxWP));
+  assert.ok(events.some((e) => e.type === "joinerMet"));
+  assert.ok(!events.some((e) => e.type === "joinerRefused"), "no refusal for a Cutthroat anymore");
+
+  const control = hero("Soldier");
+  meetJoiner(control, makeRng(555), []);
+  assert.deepEqual(cutthroat.c.joiner, control.c.joiner, "the joiner is rolled identically regardless of sub");
+
+  const rngCutthroat = makeRng(555);
+  const cutRunner = countingRng(rngCutthroat);
+  meetJoiner(hero("Cutthroat"), cutRunner, []);
+  const rngSoldier = makeRng(555);
+  const solRunner = countingRng(rngSoldier);
+  meetJoiner(hero("Soldier"), solRunner, []);
+  assert.equal(cutRunner.draws, solRunner.draws, "same draw count (4) either way");
+  assert.equal(rngCutthroat.getState(), rngSoldier.getState(), "the next d20 after the call matches the Soldier control");
+});
+
+test("meetJoiner: a Wilmsry still refuses a Magic User Joiner (reason wilmsry), pendingJoiner null — unchanged by CUT-01", () => {
+  const state = hero("Soldier", "Wilmsry");
+  const events = meetJoiner(state, makeRng(1), []);
+  assert.equal(state.c.joiner.cls, "Magic User", "pinned seed rolls a Magic User joiner");
+  assert.equal(state.pendingJoiner, null);
+  const refused = events.find((e) => e.type === "joinerRefused");
+  assert.ok(refused);
+  assert.equal(refused.reason, "wilmsry");
+});
+
+test("full flow: a Cutthroat meets, accepts, then loses the Joiner to a natural 1 on the murder check", () => {
+  const state = hero("Cutthroat");
+  meetJoiner(state, makeRng(555), []);
+  const joinerName = state.pendingJoiner.name;
+  const joinerSub = state.pendingJoiner.sub;
+  const joinEvents = resolveJoiner(state, true, []);
+  assert.equal(state.party.length, 1);
+  assert.ok(joinEvents.some((e) => e.type === "joinerJoined"));
+
+  const murderEvents = cutthroatMurderCheck(state, fakeRng([1]), []);
+  assert.deepEqual(
+    murderEvents.map((e) => e.type),
+    ["joinerMurdered"],
+  );
+  assert.equal(murderEvents[0].name, joinerName);
+  assert.equal(murderEvents[0].sub, joinerSub);
+  assert.deepEqual(state.party, []);
+});
+
+test("identity-contract Cutthroat BAD (new rule): a Cutthroat with an accepted Joiner loses it on a natural 1; a Soldier control keeps it", () => {
+  const cutthroat = hero("Cutthroat");
+  meetJoiner(cutthroat, makeRng(555), []);
+  resolveJoiner(cutthroat, true, []);
+  assert.equal(cutthroat.party.length, 1);
+  const events = cutthroatMurderCheck(cutthroat, fakeRng([1]), []);
+  assert.ok(events.some((e) => e.type === "joinerMurdered"));
+  assert.equal(cutthroat.party.length, 0);
+
+  const control = hero("Soldier");
+  meetJoiner(control, makeRng(555), []);
+  resolveJoiner(control, true, []);
+  assert.equal(control.party.length, 1);
+  const controlEvents = cutthroatMurderCheck(control, fakeRng([]), []);
+  assert.deepEqual(controlEvents, []);
+  assert.equal(control.party.length, 1, "a non-Cutthroat never loses the Joiner to this check");
+});
+
+test("TOAST_FOR.joinerRefused: wilmsry text differs from the generic fallback; SUB_NOTE.Cutthroat states the odds and the new blurb", () => {
+  const wilmsryText = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry" }).text;
+  const fallbackText = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "definitelyNotAReason" }).text;
+  assert.notEqual(wilmsryText, fallbackText);
+
+  assert.match(SUB_NOTE.Cutthroat, /one descent in twenty/i);
+  assert.match(SUB_NOTE.Cutthroat, /first landed blow/i);
+  assert.doesNotMatch(SUB_NOTE.Cutthroat, /no Joiner will ever/i);
 });

@@ -89,8 +89,8 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   assert.notEqual(pilferScroll, scrollFallback);
 
   const joinerFallback = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "definitelyNotAReason" }).text;
-  const cutthroat = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "cutthroat" }).text;
-  assert.notEqual(cutthroat, joinerFallback);
+  const wilmsryRefusal = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry" }).text;
+  assert.notEqual(wilmsryRefusal, joinerFallback);
 
   const freeze = TOAST_FOR.strikeRefused({ type: "strikeRefused", reason: "wizard", spell: "Freeze" }).text;
   assert.ok(freeze.includes("Freeze"), `expected strikeRefused wizard text to name the spell: "${freeze}"`);
