@@ -147,7 +147,29 @@ Plans:
   4. HUD + condition chips match the mock; MARKS / CENTRE / MAKE CAMP work from the top chips with their sheets.
   5. Guards hold on every new button; `npm test` green with every shell test re-pinned; `build:www` exit 0; engine/content/parity diff empty; the Pixel 7 DR round signs it off.
 
-**Plans**: TBD
+**Plans**: 5 plans (sequential waves 1–5 — every wave after the first edits `mazeworld.html`, so none run in parallel)
+
+Plans:
+**Wave 1**
+
+- [ ] 35-01-PLAN.md — Pure modules: `rail.js` (event family → icon/title/tone/hold, generic roll line, one card per dispatch), `tapStep.js` (step-toward-a-tap, hold-inspect), `mapMarks.js` (palette, coloured glyphs, legend rows) + unit tests (decisions 1, 3, 4)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 35-02-PLAN.md — The RAIL surface + routing seam → rail, toast retirement, joiner/find/CLIMB IT as rail decisions, the GLOBAL movement lock, Move-on cards retired, out-of-combat death folded, static tab bar; eight suites re-pinned (decisions 2, 4, 5, 6)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 35-03-PLAN.md — HUD strip + condition-chip strip (ruling 5), MARKS / CENTRE / MAKE CAMP chips + the two sheets, canvas palette + glyph marks + pulsing party ring, `MAP_COPY` (decision 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 35-04-PLAN.md — Tap-to-step / hold / drag / pinch pointer model, D-pad retired, the stair-down gate as a shell pre-dispatch interception on `window.move` (THE STAIR DOWN / GO DOWN / NOT YET), keys, back-button context (decision 5)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 35-05-PLAN.md — Phase-wide invariant suite, full executor gate, the milestone's debug APK build (no adb install), the aggregated deferred Pixel 7 checklist (MAP-10) and the climb-dice deferred note
+
 **UI hint**: yes
 
 <details>
