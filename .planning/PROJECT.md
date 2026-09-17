@@ -61,6 +61,12 @@
 - ✓ **Store stock random and floor-appropriate** — v1.3 Phase 33 (STORE-01): depth-tiered potions/weapons/armor/premium behind the `state.storeRoll` run flag (new runs only; fixtures, bots and old saves stay on the frozen roll)
 - ✓ **Combat screen rebuilt to the Claude Design mock** — v1.4 Phase 34 (CSCR-01..09): one dark full-screen panel (ENCOUNTER · ROUND N · N STANDING header, foe cards with guarded tap-to-target, YOUR LOT strip for hero + joiners, newest-first › fight log with tap-to-reveal dice — refusals as dull entries, no in-combat toasts), the 2×2 STRIKE / SPELLS-or-ABILITIES / ITEMS / SOCIAL grid with per-class submenus and keyboard map, the Fight! gate as the map's MAJOR OVERLAY (`renderMajorOverlay`, reused by Phase 35), and the THEY ARE DOWN / YOU GOT OUT / THAT IS THAT endings folded into the same screen; presentation view-models in `src/browser/{fightLog,combatMenu,combatPanel}.js`; 2047/2047 tests, engine/content/parity untouched; CSCR-10 = 27 Pixel 7 checks deferred to the end-of-run UAT batch
 - ✓ **Map screen rebuilt to the Claude Design mock** — v1.4 Phase 35 (MAP-01..09): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with the condition-chip strip beneath (tap → rail explanation); tap-to-step viewport (dominant axis → fallback, hold to inspect, drag to pan, pinch to zoom) — the D-pad is gone, keyboard arrows stay; the bottom RAIL (`src/browser/rail.js`) replaces every toast in the app and carries every decision (joiner, find, CLIMB IT) with movement locked globally until it is answered; FLOOR N / SKILL LEVEL N are auto-clearing rail cards; the MAJOR OVERLAY now also gates the stair down (GO DOWN / NOT YET, shell pre-dispatch interception of the same engine `move`) and hosts out-of-combat death; MARKS / CENTRE / MAKE CAMP chips with glyph legend + camp sheets; canvas on the mock palette with coloured glyph marks and a pulsing party marker; 2170/2170 tests, engine/content/parity untouched; MAP-10 = 27 Pixel 7 checks deferred to the end-of-run UAT batch (climb dice payload deferred as a post-UAT quick task)
+- [ ] **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
+- [ ] **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
+- [ ] **Gear & magic-item rework** — v1.5 (weapon/armor choices, use/duration/cooldown items, one item per slot type, one-shot tools)
+- [ ] **Phobias, water & darkness** — v1.5 (every phobia fires; water squares; 3×3 dark view; dark floor triggers the Darkness phobia)
+- [ ] **Flee retune, Cutthroat Joiner, dead-foe targeting** — v1.5
+- [ ] **Clarity pass** — v1.5 (causes named in the Oracle/rail, loot gating shown, rations per camp on Hero, Gear split On You / Bag)
 - [ ] **Next tuning pass** (deferred, not v1.3) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone
 
 ### Out of Scope
@@ -71,6 +77,25 @@
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v1.5 Meaningful Choices — Spells, Gear & Abilities (started 2026-09-17)
+
+**Goal:** Every spell, item, skill, phobia and piece of gear does something you can feel and choose between — no budget picks, no dead phobias, no silent causes — with the gear/target/ration UI made honest to match.
+
+**Target features:**
+- **Spell rework** — every utility spell useful; combat spells unique and situational (not "cheapest damage wins"); Shield shows its remaining pool on the hero; Detect Magic renamed to a map-reveal that lasts N turns, not permanent; add/remove/rebalance spells for balance and fun; every wizard sub-class starts with at least one damage spell; a scroll scribed into the grimoire is castable immediately if the caster qualifies for its level
+- **Melee variety (user decision 2026-09-17: BOTH)** — convert the Special Skills that make sense into activated cooldown abilities AND add a class-flavored active-ability pool rolled at level 1 and on each skill level; surfaced in the combat ABILITIES submenu
+- **Gear rework** — weapons/armor add/remove/rebalance for meaningful choices; magic items (cloaks, staves, rings, potions) as *use → effect for X → cooldown for Y squares*; one worn item per slot type (ring/bracelet/cloak/…), no stacking of a type; new one-shot tools (rope for pits, ladder for walls, torch for darkness, …)
+- **Phobias & terrain** — every phobia has a real trigger; **water squares** (blue multi-square pools like dark blobs, 2 moves per square, triggers the Bodies-of-water phobia); dark unlit floor triggers the Darkness phobia; Heights gets a hook (crevices/gorges)
+- **Darkness** — on a dark square the map shows only the 3×3 around you (explored squares fogged until you leave the dark); Night Vision / light effects waive it
+- **Flee retune** — lower base chance, Thief edge kept, small class/race modifiers, roll/need shown in the fight log (today: d20 + Thief 5 ≥ 11 = 50 % / 75 %, no race input)
+- **Cutthroat** — can accept a Joiner; each descent carries a small chance the Cutthroat murders them, narrated with snark
+- **Combat targeting** — dead foes never targetable; the target auto-switches to the next live foe
+- **Clarity** — every Oracle/rail line names its cause (the "Four walls and one door you already used" line is the Being-trapped phobia and must say so); every loot offer (encounter dot, find, victory) shows its "(usable by …)" class gating; the Hero screen shows rations needed per camp for the hero + joiner; the Gear tab splits into two panels — *On You* (Worn: armor/cloak/jewelry · Carried: weapon/staff/shield) and *Bag*; the bag-full drop prompt lists bag items only
+
+**Key context:** engine gate as always — several of these are deliberate canon divergences (Detect Magic duration, flee odds, phobia triggers, item cooldowns) and must be declared per phase with their fixtures; tone stays family-friendly sarcasm; `tools/tune-classes.mjs` + `docs/CLASS-PASS.md` are the balance yardstick for anything that moves player power; phase numbering continues from 36; Fable does the planning passes, the balanced profile executes.
+
+**Out of this milestone:** the v1.0 launch tail (UX-06 tutorial, STR production launch), the deferred tuning pass (TUNE-06/07), store restyle, dice-mode setting, haptics, networked multiplayer.
 
 ## Last Milestone: v1.4 Combat & Map Screens (shipped 2026-09-16; device round closed 2026-09-17; on Play internal testing as 1.4.0 / versionCode 5)
 
@@ -225,4 +250,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-17 — v1.4 closed: device round done, 1.4.0 (versionCode 5) on Play internal testing*
+*Last updated: 2026-09-17 — v1.5 Meaningful Choices started (spells, gear, abilities, phobias, clarity)*

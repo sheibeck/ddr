@@ -1,36 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Combat & Map Screens
-status: Awaiting next milestone
-stopped_at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
-last_updated: "2026-09-17T12:57:46.409Z"
+milestone: v1.5
+milestone_name: Meaningful Choices — Spells, Gear & Abilities
+status: planning
+last_updated: "2026-09-17T14:07:53.295Z"
 last_activity: 2026-09-17
-last_activity_desc: "Completed quick task 260917-bbs: v1.4 UAT fixes round 2 (pulse, party roster to Hero, bag-full line, PNG icons, idle rail)"
 progress:
   total_phases: 0
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-current_phase: 35
-current_phase_name: Map Screen Rebuild
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
+See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.4 closed 2026-09-17 (device round done, 1.4.0 versionCode 5 on Play internal testing) — next: /gsd-new-milestone
+**Current focus:** v1.5 Meaningful Choices — Spells, Gear & Abilities (started 2026-09-17) — defining requirements → roadmap
 
 ## Current Position
 
-Phase: Milestone v1.4 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-17 - Completed quick task 260917-bbs: v1.4 UAT fixes round 2 (pulse, party roster to Hero, bag-full line, PNG icons, idle rail)
+Status: Defining requirements
+Last activity: 2026-09-17 — Milestone v1.5 started
 
 ## Ground Truth (durable facts every session needs)
 
