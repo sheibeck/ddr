@@ -72,4 +72,4 @@ Requirements for this milestone. Each maps to exactly one roadmap phase.
 | MAP-07 | Phase 35 | Complete |
 | MAP-08 | Phase 35 | Complete |
 | MAP-09 | Phase 35 | Complete |
-| MAP-10 | Phase 35 | Pending |
+| MAP-10 | Phase 35 | Deferred — UAT pending (end-of-run Pixel 7 batch; 27 checks in 35-VERIFICATION.md) |

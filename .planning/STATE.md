@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Combat & Map Screens
 current_phase: 35
-current_phase_name: Map Screen Rebuild
-status: verifying
+status: completed
 stopped_at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
-last_updated: "2026-09-17T02:48:36.784Z"
+last_updated: "2026-09-17T02:53:14.673Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 35 execution started
+last_activity_desc: Phase 35 complete
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
-  percent: 50
+  completed_plans: 10
+  percent: 100
+current_phase_name: Map Screen Rebuild
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 ## Current Position
 
-Phase: 35 (Map Screen Rebuild) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-09-16 — Phase 35 execution started
+Phase: 35
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-09-16 — Phase 35 complete
 
 ## Ground Truth (durable facts every session needs)
 

@@ -31,7 +31,7 @@ Every phase in this milestone touches serialized character/combat state and/or i
 **Milestone Goal:** Replace the combat AND map UX with the Claude Design "Mazeworld Combat" and "Mazeworld Map" screens — a dark combat screen (foes, your lot, › fight log, four actions) and a map with no D-pad and no toasts (tap-to-step, a bottom rail for every event and decision, a major overlay for encounters and descents, HUD + condition chips) — keeping the engine, parity, refusals, loot, joiners and the Phase 32 input guards exactly as shipped.
 
 - [x] **Phase 34: Combat Screen Rebuild** - The encounter panel becomes the mock's full-screen layout (header, foes, YOUR LOT, › log, four-action bar with submenus), with the Fight! gate and the loot/flee/death endings folded into the same screen, engine untouched, validated on the Pixel 7. (completed 2026-09-16)
-- [ ] **Phase 35: Map Screen Rebuild** - The map tab becomes the mock's column: HUD + condition chips, tap-to-step viewport (no D-pad), the bottom rail that replaces every toast and carries every decision, the major overlay for encounters (FIGHT IT OUT) / descents / death, and the MARKS / CENTRE / MAKE CAMP chips with their sheets — engine untouched, validated on the Pixel 7.
+- [x] **Phase 35: Map Screen Rebuild** - The map tab becomes the mock's column: HUD + condition chips, tap-to-step viewport (no D-pad), the bottom rail that replaces every toast and carries every decision, the major overlay for encounters (FIGHT IT OUT) / descents / death, and the MARKS / CENTRE / MAKE CAMP chips with their sheets — engine untouched, validated on the Pixel 7. (completed 2026-09-16)
 
 <details>
 <summary>✅ v1.0 Delve, Die, Repeat (Phases 1–16 + 04.1/04.2) — SHIPPED 2026-09-13 (internal testing)</summary>
@@ -205,7 +205,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.3 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete    | 2026-09-16 |
-| 35. Map Screen Rebuild | v1.4 | 5/5 | In Progress|  |
+| 35. Map Screen Rebuild | v1.4 | 5/5 | Complete    | 2026-09-16 |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 22–27 (+25.1) | v1.2 | 31/31 | Shipped (override closeout: TUNE-07 deferred by user) | 2026-09-15 |
