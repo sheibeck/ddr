@@ -4,7 +4,7 @@ milestone: v1.4
 milestone_name: Combat & Map Screens
 status: Awaiting next milestone
 stopped_at: Completed 35-05-PLAN.md (phase-wide invariants, executor gate, debug APK, aggregated deferred UAT checklist) — Phase 35 and v1.4 milestone execution complete
-last_updated: "2026-09-17T12:01:52.843Z"
+last_updated: "2026-09-17T12:14:55.650Z"
 last_activity: 2026-09-16
 last_activity_desc: "Completed quick task 260916-w0c: v1.4 UAT fixes (tap-to-move, PNG icons, gear chip, rail map-only)"
 progress:
@@ -66,6 +66,7 @@ Last activity: 2026-09-16 - Completed quick task 260916-w0c: v1.4 UAT fixes (tap
 |---|-------------|------|--------|-----------|
 | 260916-w0c | v1.4 UAT fixes: tap-to-move bridge timing (classic IIFE captured the module bridge before assignment), v1.3 PNG map icons restored (user reversed Phase 35 decision 3), settings gear moved to a chip right of MAKE CAMP, RAIL is a map-tab element | 2026-09-16 | c0e8032 | [260916-w0c-v1-4-uat-fixes-tap-to-move-bridge-timing](./quick/260916-w0c-v1-4-uat-fixes-tap-to-move-bridge-timing/) |
 | 2 | fast: boot crash fix — showTab's renderRail call guarded on window.__mzState (hoisted classic global read S in its TDZ; black screen after splash) \| 2026-09-17 \| 7ab68d3 \| inline (/gsd-fast) | 2026-09-17 | 7ab68d3 | — |
+| 3 | fast: stuck-after-win fix — renderCombatOver attaches mid before fillMid; won-branch loot hosts resolved inside wrap \| 2026-09-17 \| 49e01fc \| inline (/gsd-fast) | 2026-09-17 | 49e01fc | — |
 
 ### Pending Todos
 
