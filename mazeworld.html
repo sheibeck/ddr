@@ -15,7 +15,7 @@
    WebView paints its own translucent white/grey highlight on ANY tapped
    element the instant a touch registers — independent of and BEFORE any
    CSS :active/:hover rule applies — so per-button :active color overrides
-   (the .mw-chip/.dpad/#btn-camp treatments already in this file) were never
+   (the .mw-chip/#btn-camp treatments already in this file) were never
    enough on their own; this app-wide reset removes the native overlay so
    only the deliberate CSS pressed-states below are ever visible. */
 *{-webkit-tap-highlight-color:transparent}
@@ -295,8 +295,8 @@ ul.grimoire li button{flex:none}
 .mw-map-hpfill.low{background:var(--stamp)}
 /* DR5: position:relative so #enc-panel (moved here from inside
    .mw-maze-viewport — see the .mw-overlay CSS comment) can absolutely
-   position itself against THIS box, covering the map viewport AND
-   .mazefoot's MAKE CAMP + D-pad bar, not just the canvas above them. */
+   position itself against THIS box, covering the map viewport, not just
+   the canvas above it. */
 .mazebox{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;background:#14110c;padding:0;border:0;box-shadow:none}
 canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px solid var(--rule);touch-action:manipulation}
 
@@ -335,9 +335,9 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 /* Device-review revision #5: the encounter/feature-event panel as an
    OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
    .mw-maze-viewport, which only covered the canvas, to .mazebox itself —
-   the nearest positioned ancestor is now the box containing BOTH the map
-   viewport AND .mazefoot's MAKE CAMP + D-pad bar — so the overlay covers the
-   whole play area, giving it more real estate, not just the map). Replaces
+   the nearest positioned ancestor is now the box containing the map
+   viewport — so the overlay covers the whole play area, giving it more
+   real estate, not just the map). Replaces
    the old permanent `.panel` styling (border/shadow/margin) with a
    self-contained modal-over-map treatment; its own overflow-y:auto lets long
    combat/narration content scroll internally without the outer box's own
@@ -367,42 +367,6 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
   border-bottom:1px solid var(--rule);margin:0 0 10px;padding-bottom:6px;
 }
 .mw-overlay .enc-topbar h2{border-bottom:none;margin:0;padding-bottom:0;flex:0 1 auto}
-
-/* Phase 33 (UIF-05): the control bar holds only the centered D-pad; the camp
-   button moved to the top-right chip over the viewport (.mw-map-chips
-   above); the former handed-layout option is gone. */
-.mazefoot{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-top:10px}
-
-/* 04-06: 52x52 cells / 7px gap per 04-UI-SPEC.md's D-pad contract (clears
-   48dp as-is). Device-review revision (04-CONTEXT.md "Device-review
-   revisions" #2): the D-pad is now the SOLE, ALWAYS-VISIBLE control in the
-   MAP tab (reverses the earlier tap-to-move-default/settings-gated
-   display) — always display:grid, no JS toggle. */
-.dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:7px}
-.dpad button{grid-column:auto}
-.dpad .up{grid-column:2;grid-row:1}
-.dpad .lf{grid-column:1;grid-row:2}
-.dpad .dn{grid-column:2;grid-row:2}
-.dpad .rt{grid-column:3;grid-row:2}
-/* DR2 "Fix tiny arrows": the base `button` rule's 13px font made the
-   glyphs tiny inside a 52px cell — force ALL FOUR arrows to one big, equal
-   fixed size (not a glyph-font-metrics-dependent size) and give the cell
-   the mock's chunky border/shadow/color treatment (design/Mazeworld
-   Mobile.dc.html's up/left/down/right cells). */
-.dpad button{
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--body);font-weight:700;font-size:28px;line-height:1;
-  border:2px solid var(--mw-btn-border);background:var(--paper-3);color:var(--ink);
-  box-shadow:0 4px 0 var(--mw-btn-shadow);padding:0;
-}
-.dpad button:active:not(:disabled){
-  transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow);
-  background:var(--ditto);color:var(--paper);
-}
-/* DR5: same generic-hover-wins-on-specificity bug as .mw-chip/#btn-camp —
-   the D-pad cells had no scoped :hover, so a sticky-hover tap fell through
-   to the generic button rule. Neutralize hover to the resting D-pad look. */
-.dpad button:hover:not(:disabled){background:var(--paper-3);color:var(--ink)}
 
 button{
   font-family:var(--disp);font-size:13px;letter-spacing:.06em;
@@ -977,7 +941,7 @@ html,body{height:100%}
    browser's own tap feedback (now suppressed above) would have shown. */
 .mw-tab:active:not(:disabled){transform:none;box-shadow:none;background:#241d12;color:var(--ditto)}
 /* DR5: scoped :hover overrides (same generic-hover-wins-on-specificity bug
-   as .mw-chip/#btn-camp/.dpad button above) — an inactive tab must fall
+   as .mw-chip/#btn-camp above) — an inactive tab must fall
    back to its own muted resting look, not the generic panel-tone hover,
    and the SELECTED tab must stay gold even while a sticky hover lingers on
    it (a plain `.mw-tab:hover` alone would be outranked by neither rule
@@ -1442,33 +1406,18 @@ html,body{height:100%}
                (called from positionCanvas()), never a canvas rAF loop. -->
           <div class="mw-party-pulse" id="mw-party-pulse" aria-hidden="true"></div>
         </div>
-        <div class="mazefoot">
-          <!-- Phase 33 (UIF-05) — the D-pad is the ONLY child of the control
-               bar and sits centered (justify-content:center); MAKE CAMP now
-               lives at the far right of the Marks/Centre chip row above the
-               map (.mw-map-chips). -->
-          <!-- Device-review revision #2: the D-pad is now the SOLE,
-               ALWAYS-VISIBLE movement control (see .dpad CSS — no more
-               settings-gated display:none/grid toggle). -->
-          <div class="dpad" id="dpad">
-            <button class="up" data-dir="N" aria-label="Move north">↑</button>
-            <button class="lf" data-dir="W" aria-label="Move west">←</button>
-            <button class="dn" data-dir="S" aria-label="Move south">↓</button>
-            <button class="rt" data-dir="E" aria-label="Move east">→</button>
-          </div>
-        </div>
 
         <!-- DR5: the encounter/feature-event panel is a direct child of
              .mazebox (moved from inside .mw-maze-viewport) so its
-             absolute inset:0 overlay covers BOTH the map viewport above AND
-             this MAKE CAMP + D-pad bar — giving it the full play area, not
-             just the map. hidden by default; renderEncounter() toggles the
-             `hidden` attribute via hasActiveEncounter() — shown only while a
-             feature tile/combat/store/death/win narration is active, and
-             dismissed by the in-body "Move on"/"Leave"/"Roll another
-             delver" action, returning focus to the map. Movement (D-pad
-             clicks + keydown) is gated on !hasActiveEncounter() while this
-             is up — see the dpad/keydown handlers. -->
+             absolute inset:0 overlay covers the viewport — giving it the
+             full play area, not just the map. hidden by default;
+             renderEncounter() toggles the `hidden` attribute via
+             hasActiveEncounter() — shown only while a feature tile/combat/
+             store/death/win narration is active, and dismissed by the
+             in-body "Move on"/"Leave"/"Roll another delver" action,
+             returning focus to the map. Movement (tap-to-step + keydown,
+             Phase 35) is gated on !hasActiveEncounter() while this is up —
+             see tapStep()/the keydown handler. -->
         <section class="mw-overlay" id="enc-panel" hidden>
           <!-- DR16 Fix 4: the header row that once held a right-aligned
                beat/encounter dismiss control (Phase 35: retired — every beat
@@ -2566,8 +2515,10 @@ let pan = { x: 0, y: 0 };
 // between fully-out (ZOOM_MIN 0.6) and that old default; pinch in for less
 // map. SESSION-ONLY -- this variable is never persisted (no settings row,
 // never written to S), so every cold start returns here.
+// Phase 35 (MAP-02): the mock's pinch range is 0.6-2.0 -- ZOOM_MAX re-ranged
+// from the Phase 33 2.4 down to 2.0; the 0.8 default above is unchanged.
 let zoom = 0.8;
-const ZOOM_MIN = 0.6, ZOOM_MAX = 2.4;
+const ZOOM_MIN = 0.6, ZOOM_MAX = 2.0;
 const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 const CANVAS_PAD = 0;
 
@@ -6168,24 +6119,11 @@ document.getElementById("btn-abandon-character").onclick = () => {
 // onclick used to call straight from the chip.
 // audit-batch E12 (part 3): the #btn-clearyard control and its handler were
 // removed — the lifetime death total is non-clearable by design now.
-document.getElementById("dpad").addEventListener("click", e => {
-  // Device-review revision #5 (extended): block movement outright while the
-  // encounter/feature overlay is up (combat, store, feature narration,
-  // death/win) — the player must dismiss it via its own "Move on"/"Leave"
-  // action first. See hasActiveEncounter() and the matching keydown gate
-  // below; window.move (engineMove, set later) re-asserts this same gate as
-  // the single choke point every movement path funnels through.
-  if (hasActiveEncounter()) return;
-  const b = e.target.closest("button[data-dir]");
-  if (b) {
-    // UX-07: haptics are now fired from window.move's event path
-    // (hapticForEvents → trap-sprung/level-up on a step), not on every raw
-    // d-pad tap — a buzz on each tap (including blocked moves into walls)
-    // was too noisy once @capacitor/haptics became a real installed plugin.
-    // Plain steps stay silent; only meaningful beats buzz.
-    move(b.dataset.dir);
-  }
-});
+// Phase 35 (MAP-02, ruling 2): the retired control bar's click listener that
+// dispatched move(dir) on a direction-button tap is gone — tap-to-step
+// (tapStep(), below) and keyboard arrows are the only movement input now;
+// UX-07's haptic buzz (hapticForEvents, fired from window.move's event path
+// on trap-sprung/level-up) is unaffected — it never lived here.
 
 // DR18 (DR15-E): the 04-DR9 dice-reveal tap listeners on #log/#enc-body were
 // removed alongside the `diceMode` setting — dice detail is now statically
@@ -6286,23 +6224,55 @@ document.getElementById("mw-chip-centre").addEventListener("click", centerMap);
 // naming the bridge explicitly keeps the pattern consistent and greppable.
 window.mzCenterMap = centerMap;
 
+// Phase 35 (MAP-02, MAP-05): the viewport's pointer model — tap = one square
+// toward the tap; hold = inspect; drag = pan; pinch = zoom. Every step still
+// funnels through window.move (the encounter gate, the settle window, the
+// rail lock all still run there); screenToCell (src/browser/controls.js) is
+// the single screen->cell transform both tapStep()/inspectAt() and the
+// pointer pipeline below feed from — never re-derived a second time.
+function tapStep(clientX, clientY) {
+  if (!S || hasActiveEncounter()) return;
+  // Ruling 3: a tap while a rail decision/obstacle is pending re-shows the
+  // pending card — it never steps.
+  if (railLocked()) { railPulse(); return; }
+  const vp = document.getElementById("mw-maze-viewport");
+  const rect = vp.getBoundingClientRect();
+  const { px, py, g } = S.floor;
+  const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, pan, CELL, CANVAS_PAD);
+  const isOpen = (x, y) => !!(g[y] && g[y][x] && !g[y][x].wall);
+  const res = window.__mzTapStep.resolveStep({ x: px, y: py }, cell, isOpen);
+  const copy = window.__mzRailVM.copy;
+  if (res.kind === "here") { window.mzRailLine?.(copy.here.title, copy.here.line, "dull", 2200); return; }
+  if (res.kind === "blocked") { window.mzRailLine?.(copy.noWay.title, copy.noWay.line, "dull", 2400); return; }
+  // `move` resolves to window.move (engineMove), exactly as the keyboard
+  // path does — the engine's own wall/one-way/bounds checks still run.
+  move(res.dir);
+}
+function inspectAt(clientX, clientY) {
+  if (!S) return;
+  const vp = document.getElementById("mw-maze-viewport");
+  const rect = vp.getBoundingClientRect();
+  const { px, py, g } = S.floor;
+  const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, pan, CELL, CANVAS_PAD);
+  const c = g[cell.y] && g[cell.y][cell.x] ? g[cell.y][cell.x] : null;
+  const M = window.__mzMapMarks;
+  const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat));
+  const mark = c && c.seen && c.feat ? M.markForCell(c) : null;
+  // No dispatch, no S mutation — a hold only reports, never moves.
+  window.mzRailLine?.(card.title, card.line, card.tone, card.hold, mark ? mark.glyph : "·");
+}
+
 // 04-06: one pointerdown/move/up gesture pipeline on the viewport — a drag
-// only updates `pan` (camera-only, never touches S.floor.px/py). Device-
-// review revision (04-CONTEXT.md "Device-review revisions" #2): tap-to-move
-// is DISABLED outright — a tap on the viewport no longer moves the player
-// regardless of settings.controlScheme; the D-pad is the sole movement
-// control now (see the dpad click handler above, routed through
-// window.move()/dispatch() same as always). classifyPointerGesture/
-// screenToCell/resolveTapDirection (src/browser/controls.js, bridged via
-// window.__mzControls) stay imported/bridged and fully usable — this block
-// just no longer calls them to resolve a movement direction; they remain
-// dormant/available for a future re-enable. hasActiveEncounter() also gates
-// pan-start: while the encounter/feature overlay is up (over-map, see
-// renderEncounter()), a drag on the viewport underneath would be a confusing
-// no-op, so panning is suppressed until the overlay is dismissed.
+// only updates `pan` (camera-only, never touches S.floor.px/py); a tap steps
+// (tapStep, above); a hold (no travel, HOLD_MS) inspects (inspectAt, above).
+// hasActiveEncounter() also gates pan-start: while the encounter/feature
+// overlay is up (over-map, see renderEncounter()), a drag on the viewport
+// underneath would be a confusing no-op, so panning is suppressed until the
+// overlay is dismissed.
 (function initMazeViewportControls() {
   const vp = document.getElementById("mw-maze-viewport");
   if (!vp) return;
+  const T = window.__mzTapStep;
   // DR13: one pipeline handles BOTH a one-finger pan and a two-finger
   // pinch-to-zoom. `pts` tracks every active pointer; a single pointer drags
   // `pan`, a second pointer switches to pinch (distance ratio -> `zoom`), and
@@ -6310,6 +6280,10 @@ window.mzCenterMap = centerMap;
   const pts = new Map();          // pointerId -> {x, y}
   let pointerStart = null;        // active single-finger pan
   let pinch = null;               // { dist, zoom } captured at pinch start
+  // Phase 35 (MAP-02): the single-finger tap/hold gesture tracker, alongside
+  // the pre-existing pan/pinch state above -- { id, x0, y0, travel, multi,
+  // holdFired, holdTimer }, armed on pointerdown, cleared on release.
+  let gesture = null;
   const spread = () => {
     const [a, b] = [...pts.values()];
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -6319,8 +6293,21 @@ window.mzCenterMap = centerMap;
     if (!S || hasActiveEncounter()) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { vp.setPointerCapture(e.pointerId); } catch (err) { /* off-element capture is non-fatal */ }
-    if (pts.size >= 2) { pointerStart = null; pinch = { dist: spread(), zoom }; }
-    else startPan(e.pointerId, e.clientX, e.clientY);
+    if (pts.size >= 2) {
+      pointerStart = null; pinch = { dist: spread(), zoom };
+      // A second finger down turns any in-flight single-finger gesture into
+      // a pinch -- never a tap or a hold.
+      if (gesture) { gesture.multi = true; clearTimeout(gesture.holdTimer); }
+    } else {
+      startPan(e.pointerId, e.clientX, e.clientY);
+      // Phase 35 (MAP-02, RESEARCH A5): the hold detector fires BY TIMER
+      // while the finger is still down -- a plain setTimeout, not a
+      // transition/animation-completion event (those are zeroed by the
+      // blanket prefers-reduced-motion rule).
+      gesture = { id: e.pointerId, x0: e.clientX, y0: e.clientY, travel: 0, multi: false, holdFired: false, holdTimer: setTimeout(() => {
+        if (gesture && gesture.id === e.pointerId && !gesture.multi && gesture.travel <= T.TAP_MAX_TRAVEL_PX) { gesture.holdFired = true; inspectAt(gesture.x0, gesture.y0); }
+      }, T.HOLD_MS) };
+    }
   });
   vp.addEventListener("pointermove", e => {
     if (!pts.has(e.pointerId)) return;
@@ -6333,6 +6320,10 @@ window.mzCenterMap = centerMap;
     if (pointerStart && e.pointerId === pointerStart.id) {
       pan = { x: pointerStart.panStart.x + (e.clientX - pointerStart.x), y: pointerStart.panStart.y + (e.clientY - pointerStart.y) };
       positionCanvas();
+    }
+    if (gesture && e.pointerId === gesture.id) {
+      gesture.travel = Math.max(gesture.travel, Math.hypot(e.clientX - gesture.x0, e.clientY - gesture.y0));
+      if (gesture.travel > T.TAP_MAX_TRAVEL_PX) clearTimeout(gesture.holdTimer);
     }
   });
   const release = e => {
@@ -6351,9 +6342,20 @@ window.mzCenterMap = centerMap;
       const [id, p] = [...pts.entries()][0];
       startPan(id, p.x, p.y);
     }
+    // Phase 35 (MAP-02): a clean pointerup with no travel, one finger ever
+    // down and no hold already fired is a TAP -- step toward it. A
+    // pointercancel (or a hold that already fired) never steps.
+    if (gesture && e.pointerId === gesture.id) {
+      clearTimeout(gesture.holdTimer);
+      const gst = gesture;
+      gesture = null;
+      if (e.type === "pointerup" && !gst.multi && !gst.holdFired && gst.travel <= T.TAP_MAX_TRAVEL_PX) tapStep(gst.x0, gst.y0);
+    }
   };
   vp.addEventListener("pointerup", release);
   vp.addEventListener("pointercancel", release);
+  // A long press must inspect, not open the browser/WebView context menu.
+  vp.addEventListener("contextmenu", e => e.preventDefault());
 })();
 
 addEventListener("keydown", e => {
@@ -6475,8 +6477,8 @@ window.__mzClassicBoot = async function classicBoot() {
   import { combatHeaderViewModel, foeListViewModel, yourLotViewModel, encounterOverlaySpec } from "./src/browser/combatPanel.js";
   import { combatMenuViewModel } from "./src/browser/combatMenu.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
-  // Reroutes the movement input surface — dpad clicks and arrow/WASD
-  // keydown, both of which already call the plain `move(dir)` global
+  // Reroutes the movement input surface — tap-to-step (Phase 35) and arrow/
+  // WASD keydown, both of which already call the plain `move(dir)` global
   // declared in the classic <script> above — through engine/engine.js's
   // applyAction, via src/browser/engineAdapter.js. IN-03: as of 03-03
   // (RUN-05), New-Delve is ALSO rerouted this way — see window.newGame
@@ -6486,8 +6488,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // above; those slices are wired in later plans (01-08/01-09) and the
   // Phase 4/5 presentation rewrite replaces this temporary adapter wholesale.
   //
-  // This script never touches the dpad/keydown event listeners themselves:
-  // overwriting `window.move` below redirects every existing call site,
+  // This script never touches the tap-to-step/keydown event listeners
+  // themselves: overwriting `window.move` below redirects every existing
+  // call site,
   // because `function move(dir){...}` in the classic script created a
   // mutable global-object property, and bare-identifier calls resolve that
   // property at call time, not at parse time.
@@ -6514,6 +6517,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // can call them without an ES `import` (see this module's own doc comment
   // on why window.move/window.__mzState use the same bridge pattern).
   import { screenToCell, resolveTapDirection, classifyPointerGesture } from "./src/browser/controls.js";
+  // Phase 35 (MAP-02) — the tap-to-step direction resolver + hold-inspect
+  // cards (Plan 01); bridged beside window.__mzControls below for the
+  // classic script's tapStep()/inspectAt() to consume.
+  import { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS } from "./src/browser/tapStep.js";
   // Phase 32 (CMBUI-04/05) — the pure tap-safety timing guards, bridged
   // below for renderEncounter/window.move.
   import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
@@ -6775,6 +6782,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // first time — no first-paint pop, fail-open per icons.js's own contract
   // (a missing/broken icon just resolves without drawing).
   window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture };
+  // Phase 35 (MAP-02) — tapStep()/inspectAt() (classic script) read the
+  // dominant-axis step resolver and hold-inspect cards through this bridge.
+  window.__mzTapStep = { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS };
   window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale };
   window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON };
   window.__mzIconMap = await preloadIcons("./icons/optimized");
@@ -7083,8 +7093,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
   // script above created a mutable global `window.newGame` property;
   // overwriting it here reroutes it through the engine adapter's
-  // startNewRun(), exactly like window.move above reroutes the dpad/keydown
-  // handlers. Device-review Pass B1 items 2/3: "Save & quit"/"Abandon this
+  // startNewRun(), exactly like window.move above reroutes the tap-to-step/
+  // keydown handlers. Device-review Pass B1 items 2/3: "Save & quit"/"Abandon this
   // character" only fall back to the bare `newGame()` identifier if their
   // own module functions (window.mzAbandonRun/window.mzAbandonCharacter,
   // below) somehow failed to load. 04-DR3: the won-path btn-again and the
