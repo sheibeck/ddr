@@ -15,6 +15,7 @@
 import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
 import { clearRoundTimers } from "./effects.js";
+import { reconcileWorn } from "./derived.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -166,6 +167,37 @@ function clearStaleTimers(c) {
 }
 
 /**
+ * sanitizeWorn(c) — Phase 37 (GEAR-04, T-37-07) load-tolerance for
+ * `c.worn`, mirroring clearStaleTimers/clearFoeEffect immediately above:
+ * when `c` is a non-null, non-array object AND the `"worn"` key is PRESENT,
+ * a non-plain-object value (a tampered `"999"`, `[]`, `null`, `7`) becomes
+ * `{}`; inside a genuine map, every entry whose value is not a non-null,
+ * non-array object is deleted (a tampered `worn.ring = "not an object"` is
+ * dropped, a genuine `worn.cloak = {...}` survives). When the key is ABSENT
+ * this does NOTHING — a save that never had `c.worn` must not gain one here
+ * (this is what keeps `sanitizeWorn` from ever injecting the key on a
+ * no-option load; the option-gated `reconcileWorn` below is the only thing
+ * that creates it). Runs on BOTH load chains (validateSave/rehydrate)
+ * BEFORE any rule reads `c.worn` — `combat` is always reset to null on load,
+ * but `c.worn` is persistent run state, so a tampered value must be
+ * neutralised, not merely combat-scoped like `foeEffect`. Mutates and
+ * returns the passed `c`.
+ */
+function sanitizeWorn(c) {
+  if (c && typeof c === "object" && !Array.isArray(c) && "worn" in c) {
+    if (!c.worn || typeof c.worn !== "object" || Array.isArray(c.worn)) {
+      c.worn = {};
+    } else {
+      for (const slot of Object.keys(c.worn)) {
+        const it = c.worn[slot];
+        if (!it || typeof it !== "object" || Array.isArray(it)) delete c.worn[slot];
+      }
+    }
+  }
+  return c;
+}
+
+/**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
  * shape. Never throws: malformed JSON or a save with a malformed/missing
@@ -175,12 +207,28 @@ function clearStaleTimers(c) {
  * instead, via `options.freshSeed` (a caller-supplied integer; defaults to
  * 1).
  *
+ * `options.wornSlots` (Phase 37, GEAR-04) is a second option, OFF by
+ * default: when `true` (only `engineAdapter#boot` passes it, in the real
+ * shell load path), a save whose `c` lacks an own `worn` key is migrated via
+ * `reconcileWorn(value.c)` — the first item of each slot type (in bag order)
+ * is worn, every later copy stays bagged; this can never overflow the bag
+ * (bag -> worn only frees slots). A save that already carries `c.worn` is
+ * NEVER re-migrated (reconcileWorn is itself a no-op on a `c` that already
+ * has the key). The reconciliation is returned as `wornReport` — a NEW,
+ * additive return-value key, never a serialized field — attached ONLY when
+ * the migration actually ran (`wornSlots: true`); it is `[]`, not omitted,
+ * when nothing was wearable. Without the option (every fixture, bot, tools
+ * caller, and test that calls `validateSave` today) `c.worn` is NEVER
+ * injected — `sanitizeWorn` above only neutralises a key that is already
+ * present, it does not create one.
+ *
  * @param {string|object} raw
- * @param {{ freshSeed?: number }} [options]
- * @returns {{ ok: true, value: object } | { ok: false, reason: string }}
+ * @param {{ freshSeed?: number, wornSlots?: boolean }} [options]
+ * @returns {{ ok: true, value: object, wornReport?: Array } | { ok: false, reason: string }}
  */
 export function validateSave(raw, options = {}) {
   const freshSeed = typeof options.freshSeed === "number" ? options.freshSeed : 1;
+  const wornSlots = options.wornSlots === true;
 
   let obj;
   try {
@@ -225,9 +273,11 @@ export function validateSave(raw, options = {}) {
     // Phase 19 FID-04: null a present-but-stale c.foeEffect (see clearFoeEffect).
     // Phase 36 (BAL foundation): clear a present-but-stale c.timers rounds
     // record / drop a tampered value (see clearStaleTimers); never injected.
-    // pendingFind is transient (like combat/store) — not carried through
+    // Phase 37 (GEAR-04): neutralise a present-but-tampered c.worn (see
+    // sanitizeWorn) before the option-gated reconcileWorn below ever reads
+    // it. pendingFind is transient (like combat/store) — not carried through
     // validateSave's value; rehydrate() nulls it below.
-    c: clearStaleTimers(clearFoeEffect(migrateCarry(obj.c))),
+    c: sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))),
     floor: obj.floor,
     day,
     steps,
@@ -255,16 +305,42 @@ export function validateSave(raw, options = {}) {
   if (obj.deathAt !== undefined) value.deathAt = obj.deathAt;
   if (obj.lastWords !== undefined) value.lastWords = obj.lastWords;
 
-  return { ok: true, value };
+  // Phase 37 (GEAR-04): the ONE option-gated call site that ever CREATES
+  // c.worn on load. reconcileWorn(value.c) is itself a no-op (returns null)
+  // when value.c already carries an own `worn` key — a save this migrated
+  // last time, or a fresh { wornSlots: true } run's save, round-trips
+  // through validateSave byte-identical, never re-migrated. `wornReport` is
+  // attached to the return value (NEVER a serialized field) only when the
+  // migration ran at all — `[]` when nothing was wearable, an array of
+  // `{ slot, worn, bagged }` entries when at least one slot was reconciled.
+  // Without `wornSlots: true` (every fixture/bot/tools/test caller today),
+  // this branch never runs and `wornReport` is never a key on the result.
+  const wornReport = wornSlots ? reconcileWorn(value.c) : null;
+  return wornReport ? { ok: true, value, wornReport } : { ok: true, value };
 }
 
 /**
- * rehydrate(obj) — turns a validated save (`validateSave(...).value`, or an
- * equally-shaped `serializeRun` output) into a GameState ready for
+ * rehydrate(obj, options) — turns a validated save (`validateSave(...).value`,
+ * or an equally-shaped `serializeRun` output) into a GameState ready for
  * `applyAction`: combat/store/beats always reset to null (the prototype's
  * load() never resumed mid-combat or mid-store either).
+ *
+ * `options.wornSlots` (Phase 37, GEAR-04) mirrors validateSave's own option:
+ * OFF by default (every fixture/bot/tools/test caller), so `c.worn` is never
+ * injected on a save that lacks it. `engineAdapter#boot` passes `true` after
+ * its own `validateSave(raw, { wornSlots: true })` call — reconcileWorn is a
+ * no-op on a `c` that already has `worn` (validateSave's own migration, if it
+ * ran, already created the key), so calling both in sequence never
+ * double-migrates; a caller that reaches `rehydrate` directly with the
+ * option (bypassing validateSave, e.g. a test) still gets the same one-shot
+ * migration. The report is discarded here — `boot()` reads it from
+ * `validateSave`'s own return value instead (Plan 03/04's
+ * `takeBootWornReport`).
+ *
+ * @param {object} obj
+ * @param {{ wornSlots?: boolean }} [options]
  */
-export function rehydrate(obj) {
+export function rehydrate(obj, options = {}) {
   const state = {
     version: STATE_VERSION,
     seed: obj.seed,
@@ -275,8 +351,10 @@ export function rehydrate(obj) {
     // c.foeEffect (see clearFoeEffect) — combat is already reset to null
     // below, so a mid-combat debuff must not survive either. Phase 36 (BAL
     // foundation): clear a present-but-stale c.timers rounds record / drop a
-    // tampered value (see clearStaleTimers); never injected.
-    c: clearStaleTimers(clearFoeEffect(migrateCarry(obj.c))),
+    // tampered value (see clearStaleTimers); never injected. Phase 37
+    // (GEAR-04): neutralise a present-but-tampered c.worn (see sanitizeWorn)
+    // before the option-gated reconcileWorn below ever reads it.
+    c: sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))),
     floor: obj.floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
@@ -317,5 +395,12 @@ export function rehydrate(obj) {
   // reached a terminal state doesn't gain spurious `undefined` fields.
   if (obj.deathAt !== undefined) state.deathAt = obj.deathAt;
   if (obj.lastWords !== undefined) state.lastWords = obj.lastWords;
+  // Phase 37 (GEAR-04): option-gated migration, mirroring validateSave's own
+  // call above — a no-op (reconcileWorn returns null and touches nothing)
+  // when state.c already carries an own `worn` key, so a save validateSave
+  // already migrated (or a fresh { wornSlots: true } run's save) is never
+  // re-migrated here. The report is discarded — a caller that needs it uses
+  // validateSave directly (Plan 03/04's engineAdapter#boot does exactly that).
+  if (options.wornSlots === true) reconcileWorn(state.c);
   return state;
 }
