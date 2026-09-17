@@ -5590,8 +5590,12 @@ function renderCombatOver(host, kind, opts = {}) {
     });
   }
   mid.appendChild(lines);
-  if (typeof opts.fillMid === "function") opts.fillMid(mid);
+  // 2026-09-17 UAT fix: attach `mid` BEFORE fillMid runs — the won branch's
+  // fillMid looks its loot host up by id, and a detached subtree returned
+  // null (renderCarriedList threw, THEY ARE DOWN never finished rendering,
+  // the player was stuck on NONE STANDING).
   host.appendChild(mid);
+  if (typeof opts.fillMid === "function") opts.fillMid(mid);
   const over = document.createElement("div");
   over.className = "cb-over";
   over.id = "cb-over";
@@ -5777,7 +5781,9 @@ function renderEncounter() {
               <div class="shelf" id="loot-drop-shelf"></div>`
             : "");
         mid.appendChild(wrap);
-        renderCarriedList(document.getElementById("loot-list"), S.pendingLoot, {
+        // Resolve the hosts inside `wrap` itself (never by document id) so
+        // this works whether or not `mid` is attached yet.
+        renderCarriedList(wrap.querySelector("#loot-list"), S.pendingLoot, {
           actions: ["lootEquip", "lootTake", "lootLeave"],
           guard: true,
           subFor: (it) => {
@@ -5785,7 +5791,7 @@ function renderEncounter() {
             return cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line;
           },
         });
-        const dropShelf = document.getElementById("loot-drop-shelf");
+        const dropShelf = wrap.querySelector("#loot-drop-shelf");
         if (dropShelf) renderDropShelf(dropShelf, c.items || []);
       },
       buttons: [

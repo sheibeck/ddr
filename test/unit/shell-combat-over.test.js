@@ -182,6 +182,14 @@ test("CSCR-07: the loot branch renders won/soothed through renderCombatOver with
   assert.match(region, /renderCombatOver\(body, kind/);
   assert.match(region, /rep\.over === "soothed"/);
   assert.match(region, /fillMid/);
+  // 2026-09-17 UAT fix (stuck on NONE STANDING): renderCombatOver must attach
+  // `mid` BEFORE fillMid runs, and the won branch resolves its loot hosts
+  // inside the wrap it just built — never by document id on a detached node.
+  const over = overRegion();
+  assert.ok(over.indexOf("host.appendChild(mid);") !== -1 && over.indexOf("host.appendChild(mid);") < over.indexOf("opts.fillMid(mid)"), "mid attached before fillMid");
+  assert.match(region, /renderCarriedList\(wrap\.querySelector\("#loot-list"\)/);
+  assert.match(region, /wrap\.querySelector\("#loot-drop-shelf"\)/);
+  assert.doesNotMatch(region, /document\.getElementById\("loot-list"\)/);
   const literals = [
     "window.__mzBagUsage(c)",
     "window.__mzLootReport",
