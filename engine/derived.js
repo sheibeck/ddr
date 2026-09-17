@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF } from "../content/index.js";
 import { rollDice } from "./dice.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -47,8 +47,27 @@ export const skill = (c, n) => !!(c.skills && c.skills[n]);
 /** skillTier(c, name) — 0 (none), 1, or 2 (raised). */
 export const skillTier = (c, n) => (c.skills && c.skills[n]) || 0;
 
-/** eff(c, key) — sum of the named effect across the character's items. */
+/**
+ * eff(c, key) — sum of the named effect across the character's items.
+ *
+ * Phase 37 (GEAR-03/eff-refactor): TWO-PATH. When `c` carries an own `worn`
+ * key (the new one-per-slot model, `c.worn = { ring?, bracelet?, amulet?,
+ * helm?, cloak?, staff? }`, lazily created by reconcileWorn/newRun's
+ * `wornSlots` option), only the populated `c.worn` entries are summed — a
+ * bag copy of a worn item's type is NEVER counted (this is the whole point
+ * of the model: one-per-slot, not sum-of-every-carried-copy). When `c`
+ * carries NO `worn` key (every existing fixture, bot run, and un-migrated
+ * save — the legacy path), this is the BYTE-IDENTICAL prototype rule:
+ * sum over every item in `c.items`, exactly as before this phase. Pure, no
+ * rng, no mutation.
+ */
 export function eff(c, key) {
+  if ("worn" in c) {
+    let t = 0;
+    const worn = c.worn && typeof c.worn === "object" ? c.worn : {};
+    for (const it of Object.values(worn)) if (it && it.eff && it.eff[key]) t += it.eff[key];
+    return t;
+  }
   let t = 0;
   for (const it of c.items || []) if (it.eff && it.eff[key]) t += it.eff[key];
   return t;
@@ -65,6 +84,51 @@ export function eff(c, key) {
  */
 export function slotItems(c) {
   return (c && Array.isArray(c.items) ? c.items : []).filter((it) => it && it.kind !== "potion");
+}
+
+/**
+ * WORN_SLOTS — Phase 37 (GEAR-03): the six worn-slot keys, in a fixed
+ * display/report order. Frozen. `c.worn = { ring?, bracelet?, amulet?,
+ * helm?, cloak?, staff? }` is the one-per-slot map these keys address.
+ */
+export const WORN_SLOTS = Object.freeze(["ring", "bracelet", "amulet", "helm", "cloak", "staff"]);
+
+/**
+ * slotFor(it) — Phase 37 (GEAR-03): which worn slot item `it` belongs to, or
+ * `null` if it is not a slot item at all (weapon/armor/potion/scroll/picks/
+ * bag/etc). Resolution order: `it.slot` when the item itself carries a
+ * string `slot` (forward-compat — no current construction site spreads one,
+ * see content/treasure-tables.js's header comment, but a future one might);
+ * else `SLOT_OF[it.n]` (content/treasure-tables.js's name-keyed taxonomy,
+ * covering every current JEWELRY/CLOAKS/STAVES row); else a `kind` fallback
+ * for a cloak/staff rolled under a name SLOT_OF doesn't recognize (e.g. a
+ * save from before this taxonomy existed, or test fixtures). Null-safe: a
+ * non-object `it` returns null. Pure, no rng, no mutation.
+ */
+export function slotFor(it) {
+  if (!it || typeof it !== "object") return null;
+  if (typeof it.slot === "string") return it.slot;
+  if (SLOT_OF[it.n] !== undefined) return SLOT_OF[it.n];
+  if (it.kind === "cloak") return "cloak";
+  if (it.kind === "staff") return "staff";
+  return null;
+}
+
+/**
+ * carriedItems(c) — Phase 37 (GEAR-03): bag ∪ worn — every item the
+ * character has on their person, whether in `c.items` or a populated
+ * `c.worn` slot. This is what `hasItemNamed` (and therefore `isFlying`,
+ * `conditionsOf`'s item-backed chips, and engine/movement.js's climb block)
+ * routes through, so a worn Bracelet of Flight / Cloak of Flying / Helm of
+ * Knowledge is seen exactly as it was when it lived in the bag. Returns a
+ * NEW array (`c.items` first, in order, then the truthy `c.worn` values);
+ * never mutates `c`. Defensive: a missing/non-array `c.items` and a
+ * missing/non-object `c.worn` both contribute nothing rather than throwing.
+ */
+export function carriedItems(c) {
+  const items = c && Array.isArray(c.items) ? c.items : [];
+  const worn = c && c.worn && typeof c.worn === "object" ? Object.values(c.worn).filter(Boolean) : [];
+  return [...items, ...worn];
 }
 
 /**
@@ -117,16 +181,74 @@ export function clampCarry(c) {
   return c;
 }
 
-/** hasItemNamed(c, name) — does the character currently carry an item whose
- * exact display name (`.n`) is `name`? Used below to tell the Bracelet of
- * Flight and the Cloak of Flying apart even though both set the identical
- * `eff:{fly:1}` flag (content/treasure-tables.js) — `eff()` alone can only
- * sum that flag, not identify its source. Exported so engine/movement.js's
- * climb/gorge block can reuse the identical name check to decide whether
- * ACTIVATING flight should touch the Cloak's charge counters (never the
- * Bracelet's — it has none). */
+/**
+ * reconcileWorn(c) — Phase 37 (GEAR-04): the load-time / newRun-option
+ * migration that creates the worn-slot model on a character that lacks it.
+ * A COMPLETE no-op — returns `null` — unless `c` is a non-null, non-array
+ * object WITHOUT an own `worn` key (never re-migrates a `c` that already
+ * has one, even an empty `{}`). Otherwise: sets `c.worn = {}`, then walks
+ * `c.items` in bag order — for each item with a non-null `slotFor(it)`
+ * whose slot is still empty in `c.worn` (and, for a staff, only when
+ * `c.cls === "Magic User"` — a staff stays bagged for every other class,
+ * exactly like `equipItem`'s existing staff-class gate), moves it (the SAME
+ * object, not a copy) into `c.worn[slot]`; every later item of an
+ * already-populated slot stays in the bag. Rebuilds `c.items` from the
+ * items that stayed bagged, in their original relative order (only when
+ * `c.items` was itself an array).
+ *
+ * Returns a reconciliation report — one `{ slot, worn, bagged }` entry per
+ * populated slot, in WORN_SLOTS order (`worn` = the display name now worn;
+ * `bagged` = the display names of any later same-slot items left behind) —
+ * or `[]` when nothing was worn. Report objects use only `slot`/`worn`/
+ * `bagged` keys (never `type` — test/unit/toastsCoverage.test.js's
+ * event-vocabulary scanner greps every `type:` key across engine/*.js).
+ *
+ * Moving bag -> worn only ever FREES bag slots (items leave the bag, none
+ * are added), so this can never overflow a bag-cap. Adds NO rng draw — pure
+ * reads/reassignment. The ONLY callers are Plan 03's `newRun(seed, exclude,
+ * { wornSlots: true })` option (shell-only, mirroring the `storeRoll`
+ * precedent) and the option-gated save-load path (`validateSave`/
+ * `rehydrate`) — nothing in THIS plan calls it, so no fixture/bot/newRun(seed)
+ * caller in this plan ever creates `c.worn`.
+ */
+export function reconcileWorn(c) {
+  if (!c || typeof c !== "object" || Array.isArray(c) || "worn" in c) return null;
+  c.worn = {};
+  const hadItems = Array.isArray(c.items);
+  const source = hadItems ? c.items : [];
+  const kept = [];
+  const reportBySlot = new Map();
+  for (const it of source) {
+    const slot = it && slotFor(it);
+    const eligible = !!slot && (slot !== "staff" || c.cls === "Magic User");
+    if (eligible && !c.worn[slot]) {
+      c.worn[slot] = it;
+      reportBySlot.set(slot, { slot, worn: it.n, bagged: [] });
+    } else {
+      if (eligible) reportBySlot.get(slot).bagged.push(it.n);
+      kept.push(it);
+    }
+  }
+  if (hadItems) c.items = kept;
+  const report = [];
+  for (const slot of WORN_SLOTS) if (reportBySlot.has(slot)) report.push(reportBySlot.get(slot));
+  return report;
+}
+
+/** hasItemNamed(c, name) — does the character currently carry (bag ∪ worn)
+ * an item whose exact display name (`.n`) is `name`? Used below to tell the
+ * Bracelet of Flight and the Cloak of Flying apart even though both set the
+ * identical `eff:{fly:1}` flag (content/treasure-tables.js) — `eff()` alone
+ * can only sum that flag, not identify its source. Exported so
+ * engine/movement.js's climb/gorge block can reuse the identical name check
+ * to decide whether ACTIVATING flight should touch the Cloak's charge
+ * counters (never the Bracelet's — it has none).
+ *
+ * Phase 37 (GEAR-03): routed through `carriedItems(c)` (bag ∪ worn) instead
+ * of a raw `c.items` scan, so a Bracelet/Cloak/Helm moved into `c.worn` by
+ * the new one-per-slot model is seen exactly as it was in the bag. */
 export function hasItemNamed(c, name) {
-  return (c.items || []).some((it) => it.n === name);
+  return carriedItems(c).some((it) => it && it.n === name);
 }
 
 /**
