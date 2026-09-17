@@ -152,7 +152,8 @@ test("CSCR-05: COMBAT_DISPATCH carries exactly the eight row-dispatch types, eac
     sing: /sing:\s*\(\)\s*=>\s*window\.mzSing\?\.\(\)/,
     drinkPotion: /drinkPotion:\s*\(\)\s*=>\s*window\.mzDrinkPotion\?\.\(\)/,
     readScroll: /readScroll:\s*\(\)\s*=>\s*window\.mzReadScroll\?\.\(\)/,
-    useItem: /useItem:\s*\(d\)\s*=>\s*window\.mzUseItem\?\.\(d\.i\)/,
+    // Phase 37 (GEAR-03): forwards the worn-slot use form
+    useItem: /useItem:\s*\(d\)\s*=>\s*window\.mzUseItem\?\.\(d\.slot !== undefined \? \{ slot: d\.slot \} : d\.i\)/,
     flee: /flee:\s*\(\)\s*=>\s*window\.mzFlee\?\.\(\)/,
     parley: /parley:\s*\(\)\s*=>\s*window\.mzParley\?\.\(\)/,
   };
