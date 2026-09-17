@@ -66,7 +66,12 @@ function storeRegion() {
 }
 
 function chipsMarkup() {
-  return sliceBetween(HTML, '<div class="mw-viewport-chips">', '<div class="mw-flash"');
+  // Phase 35 (MAP-06): the chip row now ends at the viewport's closing
+  // </div> — sliced through <section class="mw-overlay" (the next markup
+  // landmark), which also covers the party-pulse ring and the control bar
+  // (the control bar is retired outright in Plan 04, so the mazefoot test
+  // below stays valid for now).
+  return sliceBetween(HTML, '<div class="mw-map-chips"', '<section class="mw-overlay"');
 }
 
 function mazefootMarkup() {
@@ -152,7 +157,7 @@ test("UIF-01: engine/actions.js still whitelists dropItem (no new engine action 
 
 // ─── UIF-05: Make Camp joins the Marks/Centre row; handedness is gone ────
 
-test("UIF-05: the chip row holds Marks, Centre, then the camp chip, in that order", () => {
+test("UIF-05/Phase 35 (MAP-06): the chip row holds Marks, Centre, then the camp chip, in that order", () => {
   const markup = chipsMarkup();
   const marksIdx = markup.indexOf('id="mw-chip-marks"');
   const centreIdx = markup.indexOf('id="mw-chip-centre"');
@@ -162,7 +167,7 @@ test("UIF-05: the chip row holds Marks, Centre, then the camp chip, in that orde
 
   const campButtonMatch = markup.match(/<button[^>]*id="btn-camp"[^>]*>/);
   assert.ok(campButtonMatch, "camp button tag found in the chip row");
-  assert.match(campButtonMatch[0], /class="mw-chip"/);
+  assert.match(campButtonMatch[0], /class="mw-map-chip camp"/);
 });
 
 test("UIF-05: the control bar's own markup (before the D-pad) holds no button — MAKE CAMP moved out", () => {
@@ -176,12 +181,12 @@ test("UIF-05: no trace of the former handed-layout option remains in the shell",
   assert.doesNotMatch(RAW_HTML, /#app\[data-/);
 });
 
-test("UIF-05: the chip row spans full width and pins the camp chip to the far right", () => {
-  const chipsRuleMatch = HTML.match(/^\.mw-viewport-chips\{[^}]*\}/m);
-  assert.ok(chipsRuleMatch, ".mw-viewport-chips rule found");
-  assert.match(chipsRuleMatch[0], /left:8px/);
-  assert.match(chipsRuleMatch[0], /right:8px/);
-  assert.match(HTML, /^\.mw-viewport-chips #btn-camp\{margin-left:auto\}/m);
+test("UIF-05/Phase 35 (MAP-06): the chip row spans the viewport width and pins the camp chip to the far right via the gap span", () => {
+  const chipsRuleMatch = HTML.match(/^\.mw-map-chips\{[^}]*\}/m);
+  assert.ok(chipsRuleMatch, ".mw-map-chips rule found");
+  assert.match(chipsRuleMatch[0], /left:10px/);
+  assert.match(chipsRuleMatch[0], /right:10px/);
+  assert.match(HTML, /^\.mw-map-chips-gap\{flex:1\}$/m);
   assert.doesNotMatch(HTML, /#btn-camp:hover/);
   assert.doesNotMatch(HTML, /#btn-camp:active/);
   assert.match(HTML, /#btn-camp\[data-short="1"\]\{/);
