@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 Phase: Milestone v1.4 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-09-16 — Milestone v1.4 completed and archived
+Last activity: 2026-09-16 - Completed quick task 260916-w0c: v1.4 UAT fixes (tap-to-move, PNG icons, gear chip, rail map-only)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -60,6 +60,12 @@ Last activity: 2026-09-16 — Milestone v1.4 completed and archived
 - [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
 - [Play testers]: internal testers are on the pre-DR18 build until the versionCode-2 AAB is uploaded.
 - [Baseline caveat]: the 400-seed pre-milestone bot baseline (`docs/CLASS-PASS.md` once written) casts only thrown spells, so caster sub-classes were under-measured before Phase 22's harness fix — treat pre-Phase-22 numbers as a floor, not a true reading.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260916-w0c | v1.4 UAT fixes: tap-to-move bridge timing (classic IIFE captured the module bridge before assignment), v1.3 PNG map icons restored (user reversed Phase 35 decision 3), settings gear moved to a chip right of MAKE CAMP, RAIL is a map-tab element | 2026-09-16 | c0e8032 | [260916-w0c-v1-4-uat-fixes-tap-to-move-bridge-timing](./quick/260916-w0c-v1-4-uat-fixes-tap-to-move-bridge-timing/) |
 
 ### Pending Todos
 
