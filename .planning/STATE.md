@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 37
-current_phase_name: Equipment Slot Model & eff
+current_phase_name: Equipment Slot Model & eff(
 status: executing
 stopped_at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
-last_updated: "2026-09-17T18:56:03.440Z"
+last_updated: "2026-09-17T18:56:35.764Z"
 last_activity: 2026-09-17
-last_activity_desc: Phase 36 complete, transitioned to Phase 37
+last_activity_desc: Phase 37 execution started
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 6
+  total_plans: 10
   completed_plans: 6
   percent: 13
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-17 after Phase 36)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 37 — Equipment Slot Model & eff() Refactor (v1.5; Phase 36 done — BEFORE pin, effects.js, targeting, Cutthroat, dismiss)
+**Current focus:** Phase 37 — Equipment Slot Model & eff() Refactor
 
 ## Current Position
 
-Phase: 37 — Equipment Slot Model & eff() Refactor
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-17 — Phase 36 complete, transitioned to Phase 37
+Phase: 37 (Equipment Slot Model & eff() Refactor) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 37
+Last activity: 2026-09-17 — Phase 37 execution started
 
 ## Ground Truth (durable facts every session needs)
 
