@@ -102,7 +102,10 @@ function comparable(state) {
     // c.timers map too (see harness stripTimersField) — same treatment as
     // name/darkFor/flight/bag, mirrored here because this file keeps its own
     // local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, ...cRest } = rest.c;
+    // Phase 37 (GEAR-03/GEAR-04): strip the new engine-only lazily-created
+    // c.worn slot map too (see harness stripWornField) — mirrored here
+    // because this file keeps its own local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, ...cRest } = rest.c;
     rest.c = cRest;
   }
   return rest;

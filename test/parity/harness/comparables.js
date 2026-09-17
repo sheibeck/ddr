@@ -182,6 +182,24 @@ function stripTimersField(c) {
   return rest;
 }
 
+/** stripWornField(c) — Phase 37 (GEAR-03/GEAR-04) adds `c.worn`, a
+ * brand-new engine-only lazily-created slot map (`{ ring?, bracelet?,
+ * amulet?, helm?, cloak?, staff? }`, engine/derived.js#reconcileWorn) with
+ * NO prototype-side equivalent — the frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) never sets it, and NO fixture ever
+ * creates one (nothing in the fixture/bot replay path calls reconcileWorn
+ * or passes newRun's `wornSlots` option — that option is Plan 03's shell-
+ * only new-game path), so this is carved out purely as a STRUCTURAL
+ * tripwire, exactly like stripTimersField immediately above: a no-op on
+ * every current fixture, that keeps a FUTURE worn-driving fixture (or a
+ * determinism test reusing this comparable) from ever reaching the diff on
+ * this genuine, permanent, deliberate divergence. */
+function stripWornField(c) {
+  if (!c || !("worn" in c)) return c;
+  const { worn, ...rest } = c;
+  return rest;
+}
+
 /** stripNameField(c) — DR-name-generator (2026-09-09) makes `c.name` a
  * GENERATIVE first × surname build (engine/character.js's nameFor over the new
  * content/names.js { first, sur } banks) instead of the frozen prototype's
@@ -289,7 +307,7 @@ export function movementComparable(state) {
   // never carries a live combat), added so D-14's "all three comparables"
   // carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))))))));
   return rest;
 }
 
@@ -367,7 +385,7 @@ export function combatComparable(state) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c)))))))));
   return rest;
 }
 
@@ -760,7 +778,7 @@ export function economyComparable(state) {
   // (neither family carries a live combat), added so D-14's "all three
   // comparables" carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))));
+  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c)))))))))));
   return rest;
 }
 
