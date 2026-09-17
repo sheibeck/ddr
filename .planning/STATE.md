@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-current_phase: 36
-current_phase_name: Balance Foundation, Effect Timers & Small Independent Wins
-status: verifying
+current_phase: 37
+current_phase_name: Equipment Slot Model & eff
+status: planning
 stopped_at: Completed 36-06-PLAN.md (Company sheet + DISMISS confirm + bridge; SUB_NOTE sync; Phase 36 closed)
-last_updated: "2026-09-17T17:30:23.433Z"
+last_updated: "2026-09-17T17:33:16.983Z"
 last_activity: 2026-09-17
-last_activity_desc: Phase 36 execution started
+last_activity_desc: Phase 36 complete, transitioned to Phase 37
 progress:
   total_phases: 8
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-17 — v1.5 started)
 
 ## Current Position
 
-Phase: 36 (Balance Foundation, Effect Timers & Small Independent Wins) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-09-17 — Phase 36 execution started
+Phase: 37 — Equipment Slot Model & eff() Refactor
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-17 — Phase 36 complete, transitioned to Phase 37
 
 ## Ground Truth (durable facts every session needs)
 
