@@ -36,6 +36,7 @@ import {
   formatEvents,
   startNewRun,
   getBest,
+  takeBootWornReport,
 } from "../../src/browser/engineAdapter.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
@@ -78,6 +79,10 @@ test("boot(freshSeed) starts a fresh run when there is no save", async () => {
     assert.equal(state.floor.depth, 1);
     assert.equal(state.seed, 4242);
     assert.equal(getState(), state);
+    // Phase 37 (GEAR-04): the throwaway pre-title fresh run never migrates
+    // anything (there was no save at all) — no worn key, no report.
+    assert.ok(!("worn" in state.c), "a fresh boot fallback run never creates c.worn");
+    assert.equal(takeBootWornReport(), null, "nothing to report when boot() never migrated a save");
   });
 });
 
@@ -87,7 +92,14 @@ test("boot(freshSeed) rehydrates a valid existing save instead of starting fresh
     store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
     const state = await boot(1);
     assert.equal(state.seed, 99, "rehydrated the saved run, not a fresh one");
-    assert.deepStrictEqual(state.c, original.c);
+    // Phase 37 (GEAR-04): DECLARED contract update — boot() is the shell's
+    // real load path and now migrates every legacy save through the
+    // option-gated worn model. A pre-Phase-37 save (Court Mage, no items)
+    // has nothing to wear, so the migration adds only an empty worn map;
+    // every other field is byte-identical to the pre-migration original.
+    assert.deepStrictEqual(state.c, { ...original.c, worn: {} }, "Phase 37 (GEAR-04): boot() migrates a pre-Phase-37 save into the worn model — an empty map when nothing is wearable");
+    assert.deepStrictEqual(takeBootWornReport(), [], "a migration that had nothing to wear still reports (empty), not null");
+    assert.equal(takeBootWornReport(), null, "the report is consumed on read — a second call returns null");
   });
 });
 
@@ -96,6 +108,53 @@ test("boot(freshSeed) fails closed to a fresh run on a corrupt save", async () =
     store.setItem(SAVE_KEY, "{not json");
     const state = await boot(777);
     assert.equal(state.seed, 777, "fell back to a brand-new run rather than throwing");
+    // Phase 37 (GEAR-04): a corrupt save falls back to a fresh run through
+    // the SAME no-save path as above — no migration, no worn key, no report.
+    assert.ok(!("worn" in state.c));
+    assert.equal(takeBootWornReport(), null);
+  });
+});
+
+// --- Phase 37 (GEAR-04): boot()'s legacy-save migration + takeBootWornReport() ---
+
+test("GEAR-04: boot() migrates a legacy save carrying two Rings of Power — wears the first, bags the second, reports once", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const original = newRun(1); // Fighter, no starting items
+    const ringA = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
+    const ringB = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
+    original.c.items = [ringA, ringB];
+    store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
+
+    const state = await boot(1);
+    assert.equal(state.c.worn.ring.n, "Ring of Power");
+    assert.equal(state.c.items.length, 1, "the second ring stays bagged");
+    assert.equal(state.c.items[0].n, "Ring of Power");
+
+    assert.deepStrictEqual(takeBootWornReport(), [{ slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] }]);
+    assert.equal(takeBootWornReport(), null, "consumed on read — a second call returns null");
+  });
+});
+
+test("GEAR-04: a save that already carries worn boots byte-identical and reports nothing", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const original = newRun(5, [], { wornSlots: true }); // already-migrated shape
+    store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
+
+    const state = await boot(1);
+    assert.deepStrictEqual(state.c.worn, original.c.worn);
+    assert.deepStrictEqual(state.c.items, original.c.items);
+    assert.equal(takeBootWornReport(), null, "never re-migrated — nothing to report");
+  });
+});
+
+test("GEAR-03: startNewRun() creates c.worn on the fresh roll; initRun(seed) directly does not", async () => {
+  await withFakeLocalStorage(async () => {
+    const started = await startNewRun(4300);
+    assert.ok("worn" in getState().c, "a shell-started run carries the worn model");
+    assert.deepStrictEqual(getState().c, started.c);
+
+    initRun(4302);
+    assert.ok(!("worn" in getState().c), "initRun(seed) directly (tools/ bots, boot's fresh-run fallback) never creates c.worn");
   });
 });
 
