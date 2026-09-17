@@ -76,10 +76,10 @@ What Google Play advertises is **Google Play Games Services (PGS) v2** — the p
 - Any balance milestone that changes the depth curve invalidates cross-version comparisons → boards should carry a **rules/season version** (`rules: "1.5"`) from day one so tuning changes don't poison the all-time boards.
 - Multiplayer ("play with friends") remains a later milestone; friends-leaderboards is the cheap social layer before that.
 
-## Open questions for /gsd-new-milestone
-- Is PGS auto sign-in acceptable in a "no accounts" app, given it's the Google account already on the phone and opt-out-able? (If no → A + D only, and C stays shelved.)
-- Named runs on global boards: PGS shows the Play Games profile name, not the adventurer's name — fine, or do we want "Sir Reginald (Bob)" style display?
-- Season resets: per rules-version, or never?
+## Decisions (user, 2026-09-17)
+- **PGS auto sign-in: YES.** Opt-out-able, non-blocking; the game stays fully playable signed-out. Full milestone scope (A + D + B + account chip) is in.
+- **Display name on global boards: Play Games profile name.** No adventurer-name composite; the adventurer's name/epitaph lives in the local graveyard and the shared tombstone card.
+- **Seasons: YES.** Boards carry a `rules`/season version so we can reset on new versions and balance changes. Implication: PGS leaderboards are created per season (Play Console IDs generated per ruleset; old-season boards left read-only), and the run summary records `rules` from day one. Personal bests stay all-time locally, tagged by season.
 
 ## Sources
 - Leaderboards concept + tamper protection: https://developers.google.com/games/services/common/concepts/leaderboards
