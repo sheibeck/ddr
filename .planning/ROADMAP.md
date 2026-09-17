@@ -128,7 +128,16 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
   5. The Hero tab's Company panel shows the Joiner's sheet (class/sub/race, HP, weapon, "eats N a rest") and a DISMISS control that asks for confirmation; on confirm the Joiner leaves with a sarcastic parting line of their own and the party slot is free.
   6. `npm test` is green and the engine/content/parity diff is empty; `engine/effects.js` has no player-visible behavior yet — it exists so later phases don't each build a bespoke timer.
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 36-01-PLAN.md — BAL-01 v1.5 BEFORE class-matrix pin (both runs, ledger section, additive guard) — wave 1, before any engine change
+- [ ] 36-02-PLAN.md — engine/effects.js timer model + guarded tick sites + load tolerance + parity carve-out (no records created) — wave 2
+- [ ] 36-03-PLAN.md — TGT-01/02 normalizeTarget export, shell post-dispatch normalize, inert dead cards, arm-window race test — wave 3
+- [ ] 36-04-PLAN.md — CUT-01/02 Cutthroat Joiner reversal, one guarded d20 murder check, six lines, blurb + identity row — wave 3
+- [ ] 36-05-PLAN.md — JOIN-01 dismissJoiner engine action + parting/refusal narration, toast and rail entries — wave 4
+- [ ] 36-06-PLAN.md — JOIN-01 Company sheet + two-tap DISMISS + bridge, SUB_NOTE sync, phase gate + aggregated deferred checklist — wave 5
+
 **Research flag**: Standard/precedented (research: both changes are fully specified by existing code precedent — display suppression already correct, the Cutthroat refusal ternary already isolated, the effects-model shape is fully specified from existing `c.ward`/`f.cd`/`c.darkFor` precedents). `--research-phase` optional; the Cutthroat murder-odds value is a small balance call that can be settled directly in the plan.
 
 ### Phase 37: Equipment Slot Model & eff() Refactor
