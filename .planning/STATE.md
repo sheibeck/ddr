@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 38
 current_phase_name: Melee Active Abilities
 status: executing
-stopped_at: "Completed 37-04-PLAN.md (Phase 37 closed: shell worn rows, EQUIP swap confirm, mzUseItem/COMBAT_DISPATCH slot forms, resume reconciliation card, docs/GEAR-SLOTS.md canon ledger)"
-last_updated: "2026-09-17T21:30:17.903Z"
+stopped_at: Completed 38-01-PLAN.md (reshaped Special Skills tables, 20-entry ability catalog, level-pool machinery, c.abilities wiring, 20 measured parity divergence records)
+last_updated: "2026-09-17T22:09:23.916Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 38 execution started
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 15
-  completed_plans: 10
+  completed_plans: 11
   percent: 25
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 ## Current Position
 
 Phase: 38 (Melee Active Abilities) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 38
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-09-17 — Phase 38 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -110,8 +110,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T20:12:49.666Z
-Stopped at: Phase 37 complete (autonomous run, defer-UAT-to-end; 14 Pixel 7 checks queued in 37-VERIFICATION.md), ready to discuss/plan Phase 38
+Last session: 2026-09-17T22:09:23.887Z
+Stopped at: Completed 38-01-PLAN.md (reshaped Special Skills tables, 20-entry ability catalog, level-pool machinery, c.abilities wiring, 20 measured parity divergence records)
 Resume file: None
 
 ## Operator Next Steps
@@ -209,6 +209,7 @@ Resume file: None
 | Phase 37 P02 | 40min | 3 tasks | 8 files |
 | Phase 37 P03 | 15min | 3 tasks | 8 files |
 | Phase 37 P04 | 25min | 3 tasks | 4 files |
+| Phase 38 P01 | 45min | 3 tasks | 28 files |
 
 ## Decisions
 
@@ -390,6 +391,9 @@ Resume file: None
 - [Phase ?]: 37-04: the swap confirm's unarmed button reads Equip (not a pre-labelled Swap) — mirrors the empty-slot Equip button until tapped
 - [Phase ?]: 37-04: wornSlotRowRegion() in the new test file is a narrower slice than the full paint-carry region so the once pins on window.mzUnequip?.(slot)/window.mzUseItem?.({ slot }) aren't confused by wornRow's own pre-existing identical call
 - [Phase ?]: 37-04: docs/GEAR-SLOTS.md's locked reconciliation copy lives in a markdown blockquote, not inline prose, so the sentence is never word-wrapped across a line break and the doc's own acceptance-criteria grep stays exact
+- [Phase ?]: FREE_SKILL repointed to the OLD free key's exact table position (not merely any still-valid key) to preserve the Fisher-Yates shuffle-exclusion-by-index
+- [Phase ?]: Every level-pool ability roll (level-1 guarantee, per-level-up, Joiner) draws from a derived rng stream keyed by seed/level, never the main rng
+- [Phase ?]: 20 fixture divergence records measured live and declared (never a blanket regeneration); new chargenShiftOf/stripChargenShift/chargenShiftDiffs helpers extend the Phase 23 mechanism to scenario/script-level fixtures
 
 ### Blockers
 

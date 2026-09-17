@@ -240,3 +240,7 @@ This plan's only player-visible surface is the `abilityLearned` narration line o
 ---
 *Phase: 38-melee-active-abilities*
 *Completed: 2026-09-17*
+
+## Self-Check: PASSED
+
+All created files found on disk; all four task/summary commits found in git log (67aeccd, 8f1bd6c, f1b2f70, 0eaa4fd).
