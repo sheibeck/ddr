@@ -4,9 +4,9 @@ milestone: v1.4
 milestone_name: Combat & Map Screens
 current_phase: 35
 current_phase_name: Map Screen Rebuild
-status: planning
+status: executing
 stopped_at: Completed 34-05-PLAN.md (fight end over-panel, phase gate, deferred UAT checklist) — Phase 34 complete
-last_updated: "2026-09-16T23:59:14.732Z"
+last_updated: "2026-09-17T01:07:41.373Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 34 complete, transitioned to Phase 35
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-16 after Phase 30)
 
 Phase: 35 — Map Screen Rebuild
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-16 — Phase 34 complete, transitioned to Phase 35
 
 ## Ground Truth (durable facts every session needs)
