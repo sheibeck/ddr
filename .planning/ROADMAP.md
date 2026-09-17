@@ -170,7 +170,25 @@ Plans:
   3. Loading a save created before this phase that illegally has two items of one slot type does not crash; the extra item is narrated into the bag on load.
   4. Every pre-existing gear/`eff()` code path (armor, weapons, potions) behaves identically to before for any save or fixture that was already slot-legal.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 37-01-PLAN.md — slot taxonomy (authored on content rows, exported byte-identical + SLOT_OF) + `c.worn` model helpers (WORN_SLOTS/slotFor/carriedItems/reconcileWorn) + two-path `eff()` + bag ∪ worn lookups + `stripWornField` carve-out + pinned legacy-equivalence and invariant tests — wave 1
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 37-02-PLAN.md — `equipItem`/`unequipSlot` six-slot branches (direct swap, `replaced` payload, staff class gate, `bagFull`), auto-wear on take, `useItem { slot }` + `useRefused notWorn`, action validation, toast/Oracle copy, refusal-ledger row — wave 2
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 37-03-PLAN.md — `newRun({ wornSlots })` shell-only option, option-gated load migration + returned reconciliation report + tampered-`worn` tolerance, engineAdapter plumbing (`takeBootWornReport`), rail reconciliation copy/card, combat ITEMS worn rows — wave 3
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 37-04-PLAN.md — shell: classic `eff` routing, Gear-tab worn rows, EQUIP + two-tap swap confirm, `mzUseItem`/`COMBAT_DISPATCH` slot forms, resume-time reconciliation rail card + Oracle line; `docs/GEAR-SLOTS.md` canon ledger; phase gate + aggregated Pixel 7 checklist — wave 4
+
 **Research flag**: Standard shape (research: the worn-slot model and refactor scope are already mapped file-by-file in ARCHITECTURE.md). No `--research-phase` needed — this phase's risk is regression breadth, not design ambiguity; plan carefully around every `eff()` call site.
 
 ### Phase 38: Melee Active Abilities
