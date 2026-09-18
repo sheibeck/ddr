@@ -157,7 +157,7 @@ export function rollInitiative(state, rng) {
 
 /**
  * startCombat(state, wandering, forced, rng, events) — builds `state.combat`
- * from the BESTIARY: encounter type, level-scaled foe count/roster, Tracking,
+ * from the BESTIARY: encounter type, level-scaled foe count/roster,
  * Warlock's walking-dead boost, Knight/Con Artist/Court Mage foe removals,
  * phobia freeze, ally join, and first-move via rollInitiative. Ports
  * mazeworld.html startCombat() (lines 2257-2315).
@@ -175,12 +175,11 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   const c = state.c;
   const curve = difficultyCurve(state.floor.depth);
   const type = forced || rng.pick(ENC_TYPES);
+  // Phase 38 (ABIL-02): the retired Tracking read — `tracked` stays a real
+  // field (flee's round-1 clean-withdrawal branch and the `trackable` event
+  // both still read it) but nothing sets it true anymore; it is dormant
+  // until a future source assigns it.
   let tracked = false;
-  if (skill(c, "Tracking")) {
-    const r = rng.d(20);
-    tracked = r <= 5;
-    events.push({ type: "trackingRolled", roll: r, tracked });
-  }
   const maxLvl = clamp(Math.min(c.level, state.floor.depth) + curve.foeLvlBias, 1, 5);
   // a level I delver never faces a mob; the maze scales up as you do
   const cap = c.level <= 2 ? 2 : 3;
@@ -450,8 +449,16 @@ export function refuseIfPending(state, events, type, extra = {}) {
  * (Barbarian/Ambidextrous/haste/Fridgian frenzy — the second wild swing
  * always targets the live foe; see the Phase 24 note below), per-attack
  * toHit vs strikeDie, all the critical-strike rules (Stealth/Cat
- * Burglar/Cutthroat/Ninja/Death-touch/Guard/Soldier no-crit), weaponDamage,
- * and killFoe on lethal.
+ * Burglar/Cutthroat/Ninja/Guard/Soldier no-crit), weaponDamage, and killFoe
+ * on lethal.
+ *
+ * Phase 38 (ABIL-02, strike_descriptor_spec): Death Touch and Silent Step are
+ * now descriptor-driven, not standing passives — `useAbility` (Plan 03) sets
+ * a transient `state.combat.abilityStrike` descriptor (`{ key, autoHit?,
+ * forceCrit?, finishUnder?, bonusDmg?, dmgMul?, needShift?, attacks? }`)
+ * immediately before calling this function, and this function clears it
+ * again after its own attack loop — every read below is additive and
+ * zero-draw (it only reinterprets the roll this function already makes).
  */
 export function playerStrike(state, rng, events = []) {
   const c = state.c;
@@ -483,12 +490,17 @@ export function playerStrike(state, rng, events = []) {
   normalizeTarget(C);
   const t = C.foes[C.target];
   if (!t) return events;
+  // Phase 38 (ABIL-02): the transient descriptor Plan 03's useAbility sets
+  // immediately before calling this function, taken once. `null` for every
+  // ordinary STRIKE dispatch (every pre-Phase-38 fixture and caller).
+  const AS = C.abilityStrike || null;
 
   const R = RACES[c.race];
   let attacks = 1;
   if (c.sub === "Barbarian") attacks = 2;
   if (skill(c, "Ambidextrous")) attacks = Math.max(attacks, 2);
   if (c.haste > 0) attacks = Math.max(attacks, 2);
+  if (AS && AS.attacks) attacks = Math.max(attacks, AS.attacks);
   // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-08): the
   // prototype's frenzy could roll a d10 <= 5 against a dead foe and waste
   // BOTH swings on a corpse (mazeworld.html playerStrike, the wasted-swing
@@ -498,7 +510,7 @@ export function playerStrike(state, rng, events = []) {
   // rng.d(10) draw whenever a Fridgian frenzies with a dead foe present; the
   // sole parity consequence is the declared combat/lose (seed 14) divergence.
   if (R.frenzy && rng.d(8) <= 5) {
-    attacks = 2;
+    attacks = Math.max(attacks, 2);
     events.push({ type: "frenzy" });
   }
 
@@ -516,6 +528,18 @@ export function playerStrike(state, rng, events = []) {
     if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
     if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
     if (t.sp && t.sp.magicOnly && !c.magicWpn) need = 0; // only magic touches it
+    // Phase 38 (ABIL-02, need_shift_spec): Overhead Blow's party-agnostic
+    // "you need two better to land it" self-penalty — a transient descriptor
+    // term, zero draws, applied BEFORE Afraid so Afraid's own penalty stacks
+    // on top of it like any other need rule. Floors at 1 (never revives an
+    // untouchable need-0 foe, mirroring Afraid's own floor below); a no-op
+    // (need unchanged) when magicOnly has already zeroed need.
+    let abilityMods = [];
+    if (AS && AS.needShift && need > 0) {
+      const before = need;
+      need = Math.max(1, need + AS.needShift);
+      abilityMods = need !== before ? [{ name: "overhead", delta: need - before }] : [];
+    }
     // Phase 31 Afraid — pure arithmetic on already-rolled values, zero rng;
     // false (afraidMods empty) for every non-phobia fixture. The LAST
     // modifier, after every other need rule; never revives an untouchable
@@ -523,8 +547,15 @@ export function playerStrike(state, rng, events = []) {
     const needBeforeAfraid = need;
     need = afraidNeed(state, need);
     const afraidMods = need !== needBeforeAfraid ? [{ name: "afraid", delta: need - needBeforeAfraid }] : [];
-    const auto = (c.sub === "Cat Burglar" || c.sub === "Ninja") && !C.opened;
-    if (auto) C.opened = true;
+    const needMods = [...abilityMods, ...afraidMods];
+    // Phase 38 (ABIL-02, strike_descriptor_spec): `subAuto` is the ORIGINAL
+    // sub-class auto-hit (Cat Burglar/Ninja opener, which also claims
+    // C.opened); `auto` additionally honours a descriptor's autoHit without
+    // ever touching C.opened — an ability auto-hit never burns the sub's own
+    // free opener.
+    const subAuto = (c.sub === "Cat Burglar" || c.sub === "Ninja") && !C.opened;
+    if (subAuto) C.opened = true;
+    const auto = subAuto || !!(AS && AS.autoHit);
     const hit = auto || (need > 0 && roll <= need);
     if (!hit) {
       events.push({
@@ -534,12 +565,14 @@ export function playerStrike(state, rng, events = []) {
         need,
         dieN,
         untouchable: need === 0,
-        ...(afraidMods.length ? { needMods: afraidMods } : {}),
+        ...(needMods.length ? { needMods } : {}),
+        ...(AS ? { via: AS.key } : {}),
       });
       continue;
     }
 
     let dmg = weaponDamage(c, rng);
+    if (AS && AS.bonusDmg) dmg += AS.bonusDmg;
     // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
     // Strength (content/treasure-tables.js, eff:{noCrit:1}, "no critical
     // damage ever lands on you") was inert — the prototype's noCrit was
@@ -559,16 +592,24 @@ export function playerStrike(state, rng, events = []) {
     const opening = !C.opened2;
     C.opened2 = true;
 
-    // Death-touch: a 1 kills anything already weak
-    if (roll === 1 && skill(c, "Death-touch") && t.wp < 15) {
-      events.push({ type: "deathTouch", target: t.name });
+    // Phase 38 (ABIL-02, strike_descriptor_spec item 4): Death Touch's finish
+    // — a descriptor-driven replacement for the retired Death-touch passive.
+    // finishUnder ignores noCrit (a Guard's Death Touch still finishes under
+    // 15, it just never doubles) and fires unconditionally on the descriptor,
+    // not gated on a natural 1.
+    if (AS && AS.finishUnder && t.wp < AS.finishUnder) {
+      events.push({ type: "deathTouch", target: t.name, via: AS.key });
       t.wp = 0;
       killFoe(state, t, rng, events);
       continue;
     }
     // "Heavy armor negates any advantages they may gain for stealthiness"
     const heavy = c.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(c.armor);
-    if (opening && heavy) events.push({ type: "backstabDenied", reason: "heavyArmor" });
+    let heavyBackstabDenied = false;
+    if (opening && heavy) {
+      events.push({ type: "backstabDenied", reason: "heavyArmor" });
+      heavyBackstabDenied = true;
+    }
     // opening strike: Stealth, Silence, and the plain Thief backstab.
     // DELIBERATE FIX (04.2 Bugs B, E7): a Con Artist's opening blow is a
     // deliberate no-damage "warning" (the `conArtistOpener` bail below emits
@@ -579,11 +620,7 @@ export function playerStrike(state, rng, events = []) {
     // opener event. No rng change (crit only doubles already-rolled damage
     // that is then discarded by the bail), so determinism/parity are intact.
     if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
-      if (skill(c, "Silence")) {
-        crit = true;
-        critBy = "silence";
-        events.push({ type: "silenceStrike" });
-      } else if (skill(c, "Stealth") && roll <= 2 && c.armor !== "Plate") {
+      if (skill(c, "Stealth") && roll <= 2 && c.armor !== "Plate") {
         crit = true;
         critBy = "stealth";
         events.push({ type: "stealthStrike" });
@@ -602,7 +639,7 @@ export function playerStrike(state, rng, events = []) {
       events.push({ type: "conArtistOpener" });
       continue;
     }
-    if (c.sub === "Ninja" && auto) {
+    if (c.sub === "Ninja" && subAuto) {
       dmg = c.level * c.level + (WEAPON_MAX[c.weapon] || 6) + c.prof;
       events.push({ type: "ninjaFirstStrike" });
     }
@@ -611,7 +648,26 @@ export function playerStrike(state, rng, events = []) {
       critBy = "cutthroat";
       C.cut = true;
     }
+    // Phase 38 (ABIL-02, strike_descriptor_spec item 5): a forced crit obeys
+    // the Guard/Soldier/dark/noCrit-gear rule exactly like a natural 1 (a
+    // Guard's Death Touch still finishes under 15 above, but does not
+    // double). Silent Step's crit is specifically denied by heavy armour,
+    // like the old Silence branch — the strike still auto-hits (autoHit is
+    // independent of forceCrit) — but only pushes ONE backstabDenied for
+    // this attack even when the opening-strike heavy check above already did.
+    if (AS && AS.forceCrit) {
+      const deniedByHeavy = AS.key === "silentStep" && heavy;
+      if (!noCrit && !deniedByHeavy) {
+        crit = true;
+        critBy = AS.key;
+      } else if (deniedByHeavy && !heavyBackstabDenied) {
+        events.push({ type: "backstabDenied", reason: "heavyArmor" });
+        heavyBackstabDenied = true;
+      }
+    }
     if (crit) dmg *= 2;
+    if (AS && AS.dmgMul) dmg *= AS.dmgMul;
+    if (t.marked) dmg += 2;
     // Phase 19 D-10: weakened is the hero-side mirror of the foe-side
     // C.weakened halving below (same ceil rounding, opposite direction) —
     // pure read, 0 draws, false for every fixture.
@@ -634,10 +690,16 @@ export function playerStrike(state, rng, events = []) {
         dmg: landed.applied,
         critical: crit,
         ...(crit && critBy ? { critBy } : {}),
-        ...(afraidMods.length ? { needMods: afraidMods, afraid: true } : {}),
+        ...(needMods.length ? { needMods } : {}),
+        ...(afraidMods.length ? { afraid: true } : {}),
+        ...(AS ? { via: AS.key } : {}),
       });
     if (t.wp <= 0) killFoe(state, t, rng, events);
   }
+  // Phase 38 (ABIL-02, strike_descriptor_spec item 8): the descriptor is
+  // transient — never present on state.combat once this function returns,
+  // so afterPlayerAction (and anything after it) never sees it.
+  if (C.abilityStrike) delete C.abilityStrike;
   afterPlayerAction(state, rng, events);
   return events;
 }
@@ -889,6 +951,13 @@ export function flee(state, rng, events = []) {
  * IMPORTANT — mazeworld.html's classic (non-module) `canParley()` duplicate
  * (D-17, ~line 4200) and test/unit/parley-button-mirror.test.js (20-03) MUST
  * mirror this exact decision order line for line: change one, change both.
+ *
+ * Phase 38 (ABIL-02): the Language skill is dropped outright — `fluency(c)`
+ * (engine/derived.js) now comes ENTIRELY from a tongue-effect item (the Helm
+ * of Knowledge), so its ceiling is 1, not 2. The fluency-2 `talkable`/Magical
+ * branch below is therefore unreachable until a future fluency source
+ * exists; it is left in place (a data-driven threshold, not a dead read) per
+ * docs/ABILITIES.md.
  */
 export function canParley(state) {
   if (!state.combat) return false;
@@ -1817,10 +1886,13 @@ export function foeTurn(state, rng, events = []) {
         // the member's own `wp`; a member at 0 wp is downed + departs.
         const mDieN = foeDie(c, f);
         const mRoll = rng.d(mDieN);
-        let mNeed = foeToHitVs(state);
+        // Phase 38 (ABIL-02): a party member is its own body — Battle Roar
+        // (party-wide) still applies, but Sidestep/Smoke (the hero's own
+        // body) do not, hence `vs = "member"`.
+        let mNeed = foeToHitVs(state, "member");
         // Phase 25 (FEED-01, additive payload): same breakdown + post-mods
         // pattern as the hero branch below — narration only, 0 new draws.
-        const mNeedMods = foeToHitBreakdown(state).mods.slice();
+        const mNeedMods = foeToHitBreakdown(state, "member").mods.slice();
         if (f.blind) {
           const before = mNeed;
           mNeed = 1;

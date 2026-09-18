@@ -207,7 +207,6 @@ export const FEATURE_EVENTS = [
   "foeFled",
   "foeBored",
   "backstab",
-  "silenceStrike",
   "stealthStrike",
   "ninjaFirstStrike",
   "conArtistOpener",
@@ -304,7 +303,14 @@ function soakSuffix(soaked) {
   return parts.length ? ` · ${parts.join(", ")} soaked` : "";
 }
 
-const CRIT_BY_TEXT = { silence: "silence", stealth: "stealth", backstab: "backstab", ninja: "ninja", cutthroat: "Cutthroat" };
+const CRIT_BY_TEXT = {
+  stealth: "stealth",
+  backstab: "backstab",
+  ninja: "ninja",
+  cutthroat: "Cutthroat",
+  deathTouch: "Death Touch",
+  silentStep: "Silent Step",
+};
 
 const EQUIP_REJECT_TEXT = {
   wrongClass: "Not for the likes of you.",
@@ -765,9 +771,6 @@ function encounterStart(events, consumed) {
     if (consumed.has(j)) continue;
     const fe = events[j];
     switch (fe.type) {
-      case "trackingRolled":
-        consumed.add(j);
-        break;
       case "trackable":
         text += " · unnoticed";
         consumed.add(j);
@@ -947,11 +950,6 @@ export const TOAST_FOR = {
 
   /* ---------------- combat.js ---------------- */
 
-  trackingRolled: (e) => ({
-    text: e?.tracked ? "You clock them first." : "They keep their lead.",
-    tone: "beat",
-    priority: PRIORITY.other,
-  }),
   // Phase 24 (IDENT-05): the never-first flag clauses append, unflagged text unchanged.
   encounterStarted: (e) => {
     const names = (e?.foes ?? []).map((f) => f?.name).filter(Boolean).join(", ") || "something";
@@ -1007,7 +1005,6 @@ export const TOAST_FOR = {
       : { text: `You miss ${e?.target ?? "it"}${e?.quip ? ` — ${e.quip}` : ""}`, tone: "miss", priority: PRIORITY.you },
   deathTouch: (e) => ({ text: `One touch — ${e?.target ?? "it"} drops.`, tone: "hit", priority: PRIORITY.feature }),
   backstabDenied: () => block("Heavy armour gave you away."),
-  silenceStrike: () => ({ text: "Silent strike — critical.", tone: "hit", priority: PRIORITY.feature }),
   stealthStrike: () => ({ text: "Unseen strike — critical.", tone: "hit", priority: PRIORITY.feature }),
   backstab: () => ({ text: "Backstab — critical.", tone: "hit", priority: PRIORITY.feature }),
   conArtistOpener: () => ({ text: "Con Artist opener: all flourish, no damage.", tone: "miss", priority: PRIORITY.feature }),

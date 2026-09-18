@@ -136,26 +136,44 @@ const FILL = new Array(24).fill(20);
 
 // --- 1. foeToHitBreakdown equality matrix -----------------------------------
 
-test("foeToHitBreakdown: need matches foeToHitVs across the full race x sub x Agility x mirror x invis x dark(+Silence) matrix; mods sum to need-5", () => {
+// Phase 38 (ABIL-02): Agility/Silence-in-the-dark are retired outright; the
+// matrix's "does a passive shift the need" dimension is now the three
+// c.timers-driven actives (Battle Roar/Sidestep/Smoke) x both `vs` values x
+// an "effect" vs "cooldown" phase control (a cooldown-phase record must read
+// as inactive, exactly like having no record at all).
+const ABILITY_TIMER_CASES = [
+  null,
+  { key: "battleRoar", phase: "effect" },
+  { key: "sidestep", phase: "effect" },
+  { key: "smoke", phase: "effect" },
+  { key: "battleRoar", phase: "cooldown" },
+];
+
+function timersFor(abilityCase) {
+  if (!abilityCase) return {};
+  const rec = { cadence: "rounds", left: abilityCase.phase === "effect" ? 2 : 3, phase: abilityCase.phase };
+  if (abilityCase.phase === "effect") rec.cd = 4;
+  return { [`ability:${abilityCase.key}`]: rec };
+}
+
+test("foeToHitBreakdown: need matches foeToHitVs across the full race x sub x ability-timer x mirror x invis x vs matrix; mods sum to need-5", () => {
   const subs = ["Soldier", "Guard", "Acrobat", "Wizard"];
   for (const race of Object.keys(RACES)) {
     for (const sub of subs) {
-      for (const agility of [0, 1]) {
+      for (const abilityCase of ABILITY_TIMER_CASES) {
         for (const mirror of [0, 1]) {
           for (const invis of [0, 1]) {
-            for (const dark of [false, true]) {
-              const skills = {};
-              if (agility) skills.Agility = 1;
-              if (dark) skills.Silence = 1;
+            for (const vs of ["hero", "member"]) {
+              const timers = timersFor(abilityCase);
               const state = fixedState({
-                c: { race, sub, skills, mirror: mirror ? 3 : 0, invis: invis ? 3 : 0 },
-                floor: { dark },
+                c: { race, sub, timers, mirror: mirror ? 3 : 0, invis: invis ? 3 : 0 },
               });
-              const expected = foeToHitVs(state);
-              const { need, mods } = foeToHitBreakdown(state);
-              assert.equal(need, expected, `${race}/${sub}/ag${agility}/mir${mirror}/inv${invis}/dk${dark}`);
+              const label = `${race}/${sub}/${abilityCase ? `${abilityCase.key}:${abilityCase.phase}` : "none"}/mir${mirror}/inv${invis}/${vs}`;
+              const expected = foeToHitVs(state, vs);
+              const { need, mods } = foeToHitBreakdown(state, vs);
+              assert.equal(need, expected, label);
               const deltaSum = mods.reduce((s, m) => s + m.delta, 0);
-              assert.equal(5 + deltaSum, need, `mods must sum to need-5 for ${race}/${sub}/ag${agility}/mir${mirror}/inv${invis}/dk${dark}`);
+              assert.equal(5 + deltaSum, need, `mods must sum to need-5 for ${label}`);
             }
           }
         }
@@ -164,18 +182,36 @@ test("foeToHitBreakdown: need matches foeToHitVs across the full race x sub x Ag
   }
 });
 
-test("foeToHitBreakdown: a plain Human Soldier has zero mods; a Guard has exactly one; Guard+Agility orders Agility then Guard", () => {
-  const human = fixedState({ c: { race: "Human", sub: "Soldier", skills: {} } });
+test("foeToHitBreakdown: a plain Human Soldier has zero mods; a Guard has exactly one; Guard+Sidestep stacks -2 with the Guard -1 (Guard then Sidestep)", () => {
+  const human = fixedState({ c: { race: "Human", sub: "Soldier" } });
   assert.deepEqual(foeToHitBreakdown(human).mods, []);
 
-  const guard = fixedState({ c: { race: "Human", sub: "Guard", skills: {} } });
+  const guard = fixedState({ c: { race: "Human", sub: "Guard" } });
   assert.deepEqual(foeToHitBreakdown(guard).mods, [{ name: "Guard", delta: -1 }]);
 
-  const guardAgile = fixedState({ c: { race: "Human", sub: "Guard", skills: { Agility: 1 } } });
-  assert.deepEqual(foeToHitBreakdown(guardAgile).mods, [
-    { name: "Agility", delta: -1 },
+  const guardSidestep = fixedState({
+    c: { race: "Human", sub: "Guard", timers: { "ability:sidestep": { cadence: "rounds", left: 2, phase: "effect", cd: 4 } } },
+  });
+  assert.deepEqual(foeToHitBreakdown(guardSidestep).mods, [
     { name: "Guard", delta: -1 },
+    { name: "Sidestep", delta: -2 },
   ]);
+  assert.equal(foeToHitVs(guardSidestep), foeToHitVs(guard) - 2);
+});
+
+test("foeToHitVs/foeToHitBreakdown: Battle Roar (-2) applies to both vs values; Sidestep/Smoke apply only to vs='hero'", () => {
+  const battleRoar = fixedState({ c: { timers: { "ability:battleRoar": { cadence: "rounds", left: 2, phase: "effect", cd: 5 } } } });
+  const control = fixedState({});
+  assert.equal(foeToHitVs(battleRoar, "hero"), foeToHitVs(control, "hero") - 2);
+  assert.equal(foeToHitVs(battleRoar, "member"), foeToHitVs(control, "member") - 2);
+
+  const sidestep = fixedState({ c: { timers: { "ability:sidestep": { cadence: "rounds", left: 2, phase: "effect", cd: 4 } } } });
+  assert.equal(foeToHitVs(sidestep, "hero"), foeToHitVs(control, "hero") - 2);
+  assert.equal(foeToHitVs(sidestep, "member"), foeToHitVs(control, "member"));
+
+  const smoke = fixedState({ c: { timers: { "ability:smoke": { cadence: "rounds", left: 2, phase: "effect", cd: 999 } } } });
+  assert.equal(foeToHitVs(smoke, "hero"), 1);
+  assert.equal(foeToHitVs(smoke, "member"), foeToHitVs(control, "member"));
 });
 
 // --- 2. needMods on events ---------------------------------------------------
@@ -415,13 +451,18 @@ test("playerStrike: struck.critBy = 'roll' for a plain roll-of-1 crit", () => {
   assert.equal(struck.critBy, "roll");
 });
 
-test("playerStrike: struck.critBy = 'silence' for a Silence opening strike", () => {
-  const state = fixedState({ c: { sub: "X", cls: "Fighter", skills: { Silence: 1 } } });
+// Phase 38 (ABIL-02): Silence's opening-strike passive is retired; Silent
+// Step is now a descriptor-driven forceCrit, reachable any round (not
+// opener-only) via the transient state.combat.abilityStrike.
+test("playerStrike: struck.critBy = 'silentStep' for a forceCrit abilityStrike descriptor", () => {
+  const state = fixedState({ c: { sub: "X", cls: "Fighter" } });
   const foe = fixedFoe({ wp: 100, maxWP: 100 });
-  state.combat = fixedCombat([foe]);
+  state.combat = fixedCombat([foe], { abilityStrike: { key: "silentStep", forceCrit: true } });
   const events = playerStrike(state, fakeRng([3, 4, ...FILL]), []);
   const struck = events.find((e) => e.type === "struck");
-  assert.equal(struck.critBy, "silence");
+  assert.equal(struck.critBy, "silentStep");
+  assert.equal(struck.via, "silentStep");
+  assert.equal("abilityStrike" in state.combat, false);
 });
 
 test("playerStrike: struck.critBy = 'stealth' for a Stealth opening strike (roll <= 2)", () => {

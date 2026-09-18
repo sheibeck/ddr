@@ -48,6 +48,19 @@ export const skill = (c, n) => !!(c.skills && c.skills[n]);
 export const skillTier = (c, n) => (c.skills && c.skills[n]) || 0;
 
 /**
+ * abilityEffectActive(c, key) — Phase 38 (ABIL-02): true only when the
+ * character carries a live `ability:<key>` timers record (Phase 36's
+ * `c.timers`) currently in the "effect" phase with rounds remaining. A
+ * record that has rolled over into "cooldown" phase (the effect has worn
+ * off, only the cooldown remains) reads false, as does a missing record or
+ * any other shape. Pure read; no rng, no mutation.
+ */
+export function abilityEffectActive(c, key) {
+  const rec = c && c.timers && c.timers[`ability:${key}`];
+  return !!(rec && rec.phase === "effect" && rec.left > 0);
+}
+
+/**
  * eff(c, key) — sum of the named effect across the character's items.
  *
  * Phase 37 (GEAR-03/eff-refactor): TWO-PATH. When `c` carries an own `worn`
@@ -476,7 +489,6 @@ export function toHit(state) {
   if (R.toHit) h = Math.max(h, R.toHit); // Elves strike at 5 whatever their class
   if (c.sub === "Acrobat") h = 5; // strikes as a fighter with the dagger
   if (c.sub === "Cleric") h = Math.max(h, 4); // Clerics roll 4, not 3
-  if (skill(c, "Kata")) h = Math.max(h, c.cls === "Fighter" ? 6 : 5);
   if (state.combat && state.combat.inspired) h += state.combat.inspired;
   h += eff(c, "toHit");
   // Phase 19 D-10: dazed — you need 2 lower to hit, never below 1; the
@@ -524,7 +536,6 @@ export function memberToHit(m) {
   if (R && R.toHit) h = Math.max(h, R.toHit);
   if (m.sub === "Acrobat") h = 5;
   if (m.sub === "Cleric") h = Math.max(h, 4);
-  if (skill(m, "Kata")) h = Math.max(h, m.cls === "Fighter" ? 6 : 5);
   return h;
 }
 
@@ -540,46 +551,59 @@ export function foeDie(c, f) {
 }
 
 /**
- * foeToHitVs(state) — what a creature needs to land on this character. Reads
- * state.c and state.floor; ports mazeworld.html foeToHitVs() (lines 1473-1483).
+ * foeToHitVs(state, vs) — what a creature needs to land on this
+ * character. Reads state.c and state.floor; ports mazeworld.html
+ * foeToHitVs() (lines 1473-1483).
  *
  * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-06): "the profession
  * is standing there" made real — a Guard is flat-out harder to land a blow
- * on. Stacks with Agility (both -1s apply), still floors at 1 via the
- * Math.max below, and still loses to the dark/mirror/invis overrides (those
- * assign h=1 directly, after this line). Zero draws — pure arithmetic.
+ * on. Still floors at 1 via the Math.max below, and still loses to the
+ * mirror/invis overrides (those assign h=1 directly, after this line). Zero
+ * draws — pure arithmetic.
+ *
+ * Phase 38 (ABIL-02, need-shift spec): the retired Agility passive and the
+ * retired Silence-in-the-dark clause are replaced by three timers-driven
+ * active terms, read via `abilityEffectActive` — Battle Roar (-2, applies to
+ * ANY `vs`, since it covers the whole side), Sidestep (-2, `vs === "hero"`
+ * only — the hero's own body), and Smoke (an override to `h = 1`, `vs ===
+ * "hero"` only). Battle Roar's -2 stacks with the Guard -1 exactly the way
+ * Agility used to. `vs` is `"hero"` (default — every pre-Phase-38 caller) or
+ * `"member"` (foeTurn's party-member branch — Battle Roar still applies,
+ * Sidestep/Smoke do not, since those are the hero's own body).
  */
-export function foeToHitVs(state) {
+export function foeToHitVs(state, vs = "hero") {
   const c = state.c;
   const R = RACES[c.race];
   let h = 5;
   if (R.foeToHit) h += R.foeToHit;
   if (c.sub === "Acrobat") h = 3;
-  if (skill(c, "Agility")) h -= 1;
   if (c.sub === "Guard") h -= 1;
   h += eff(c, "foeToHit");
-  if (inDark(state) && skill(c, "Silence")) h = 1; // a silent thief in the dark
+  if (abilityEffectActive(c, "battleRoar")) h -= 2;
+  if (vs === "hero" && abilityEffectActive(c, "sidestep")) h -= 2;
+  if (vs === "hero" && abilityEffectActive(c, "smoke")) h = 1;
   if (c.mirror > 0) h = 1; // Mirror Self
   if (c.invis > 0) h = 1; // invisible
   return Math.max(1, h);
 }
 
 /**
- * foeToHitBreakdown(state) — Phase 25 (FEED-01, additive payload): a
- * narration-only breakdown of foeToHitVs's own arithmetic, reproducing every
- * step in the SAME order and recording a `{ name, delta }` entry for every
- * step that actually changed the running value (delta = after − before, so
- * an override such as Acrobat's `h = 3` records `3 - hBefore`, not a raw
- * assignment). Returns `{ need, mods }` where `need` MUST always equal
- * `foeToHitVs(state)` — this function reads exactly the same fields
- * (`c.race`, `c.sub`, skill/eff reads, `inDark(state)`, `c.mirror`,
- * `c.invis`) via the same helpers, so the two can never diverge for any
- * (race, sub, skill, override) combination; test/unit/feedback-payload.test.js
- * proves this by matrix. Pure (no rng, no mutation) — this is a narration
- * helper, not a second source of truth: foeToHitVs's own body is left
- * untouched (zero risk) rather than delegating to this function.
+ * foeToHitBreakdown(state, vs) — Phase 25 (FEED-01, additive
+ * payload): a narration-only breakdown of foeToHitVs's own arithmetic,
+ * reproducing every step in the SAME order and recording a `{ name, delta }`
+ * entry for every step that actually changed the running value (delta =
+ * after − before, so an override such as Acrobat's `h = 3` records `3 -
+ * hBefore`, not a raw assignment). Returns `{ need, mods }` where `need`
+ * MUST always equal `foeToHitVs(state, vs)` — this function reads exactly
+ * the same fields (`c.race`, `c.sub`, skill/eff reads, the three
+ * `abilityEffectActive` terms, `c.mirror`, `c.invis`) via the same helpers,
+ * so the two can never diverge for any (race, sub, timers, vs) combination;
+ * test/unit/feedback-payload.test.js proves this by matrix. Pure (no rng, no
+ * mutation) — this is a narration helper, not a second source of truth:
+ * foeToHitVs's own body is left untouched (zero risk) rather than delegating
+ * to this function.
  */
-export function foeToHitBreakdown(state) {
+export function foeToHitBreakdown(state, vs = "hero") {
   const c = state.c;
   const R = RACES[c.race];
   const mods = [];
@@ -594,11 +618,6 @@ export function foeToHitBreakdown(state) {
     h = 3;
     if (h !== before) mods.push({ name: "Acrobat", delta: h - before });
   }
-  if (skill(c, "Agility")) {
-    const before = h;
-    h -= 1;
-    if (h !== before) mods.push({ name: "Agility", delta: h - before });
-  }
   if (c.sub === "Guard") {
     const before = h;
     h -= 1;
@@ -610,10 +629,20 @@ export function foeToHitBreakdown(state) {
     h += gear;
     if (h !== before) mods.push({ name: "gear", delta: h - before });
   }
-  if (inDark(state) && skill(c, "Silence")) {
+  if (abilityEffectActive(c, "battleRoar")) {
     const before = h;
-    h = 1; // a silent thief in the dark
-    if (h !== before) mods.push({ name: "Silence", delta: h - before });
+    h -= 2;
+    if (h !== before) mods.push({ name: "Battle Roar", delta: h - before });
+  }
+  if (vs === "hero" && abilityEffectActive(c, "sidestep")) {
+    const before = h;
+    h -= 2;
+    if (h !== before) mods.push({ name: "Sidestep", delta: h - before });
+  }
+  if (vs === "hero" && abilityEffectActive(c, "smoke")) {
+    const before = h;
+    h = 1;
+    if (h !== before) mods.push({ name: "Smoke", delta: h - before });
   }
   if (c.mirror > 0) {
     const before = h;
@@ -645,7 +674,6 @@ export function weaponDamage(c, rng) {
   if (R.dmg) d += R.dmg;
   if (R.wpnBonus) d += R.wpnBonus;
   if (c.might) d += c.might;
-  if (skill(c, "Kata")) d += c.level;
   if (skill(c, "Heft")) d += 2;
   // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of
   // Arms subclass blurb (content/flavor.js SUB_NOTE["Master of Arms"]) reads
@@ -753,15 +781,17 @@ export function killSpFor(c, f, roll) {
 /**
  * fluency(c) — LANG-01 (Phase 20, D-09): the single source of truth for
  * language fluency, read by BOTH `engine/combat.js#canParley`'s availability
- * gate and `#parley`'s bonus term (never balanced twice). Returns 0
- * (neither), 1 (the Language skill OR a tongue-effect item such as the Helm
- * of Knowledge), 2 (both) — skill TIER does not matter (a raised Language is
- * still 1). The data keys `Language` (content/skills.js) / `tongue`
- * (content/treasure-tables.js) are unchanged. Pure read (`skill`/`eff`), no
- * rng, no mutation.
+ * gate and `#parley`'s bonus term (never balanced twice). Phase 38 (ABIL-02):
+ * the Language skill is dropped outright — fluency is now sourced ENTIRELY
+ * from a tongue-effect item (the Helm of Knowledge), so the ceiling drops
+ * from 2 to 1 (the fluency-2 "Magical parley" tier in canParley is
+ * unreachable until a future fluency source exists, documented in
+ * docs/ABILITIES.md — canParley's fluency-2 branch is left in place, since
+ * it is a data-driven threshold, not a dead read). Returns 0 or 1. Pure read
+ * (`eff`), no rng, no mutation.
  */
 export function fluency(c) {
-  return (skill(c, "Language") ? 1 : 0) + (eff(c, "tongue") > 0 ? 1 : 0);
+  return eff(c, "tongue") > 0 ? 1 : 0;
 }
 
 /**

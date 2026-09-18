@@ -24,10 +24,12 @@ function skillTableFor(cls) {
  * damageBracket(c) — a deterministic [min, max] damage range for the
  * character's current weapon, mirroring engine/derived.js's weaponDamage()
  * modifier stack EXACTLY (level^2 + prof + magicWpn + race dmg/wpnBonus +
- * might + Kata/Heft skills + eff("dmg") + Guard/Sorcerer adjustments) but
+ * might + Heft skill + eff("dmg") + Guard/Sorcerer adjustments) but
  * resolving the weapon's dice notation as a [min, max] range instead of
  * drawing from an rng — so the sheet NEVER advances GameState.rngState
- * (T-04-06). Reads only `c`.
+ * (T-04-06). Reads only `c`. Phase 38 (ABIL-02): the retired Kata passive's
+ * flat damage term is gone (Kata is now an active, resolved per-strike via
+ * the abilityStrike descriptor, not a standing bonus this bracket can show).
  */
 function damageBracket(c) {
   const w = WEAPONS[c.weapon] || WEAPONS["Club"];
@@ -42,7 +44,6 @@ function damageBracket(c) {
   if (R.dmg) flat += R.dmg;
   if (R.wpnBonus) flat += R.wpnBonus;
   if (c.might) flat += c.might;
-  if (skill(c, "Kata")) flat += c.level;
   if (skill(c, "Heft")) flat += 2;
   flat += eff(c, "dmg");
   if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;

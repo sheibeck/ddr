@@ -171,13 +171,6 @@ export const EVENT_NARRATION = {
 
   /* ---------------- combat.js ---------------- */
 
-  // A1 sibling (04.2 Text batch): the roll span sat mid-sentence and left a
-  // dangling ": . You clock them first." after stripRollDetail. Prose now sits
-  // outside the span (a clean overlay sentence), the dice detail inside it.
-  trackingRolled: (e) =>
-    e.tracked
-      ? `You clock them first. <span class="roll">Tracking roll ${e.roll ?? "?"} — it pays off.</span>`
-      : `They keep their lead, for now. <span class="roll">Tracking roll ${e.roll ?? "?"} — no luck.</span>`,
   encounterStarted: (e) => {
     const names = (e.foes ?? []).map((f) => f.name).join(", ") || "something";
     let line = `<span class="banner">${e.wandering ? "A wandering encounter." : "An encounter."}</span> ${names}.`;
@@ -236,7 +229,6 @@ export const EVENT_NARRATION = {
       : `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   backstabDenied: () => `<span class="miss">Heavy armor gives you away.</span>`,
-  silenceStrike: () => `<span class="hit">Not a sound. Critical.</span>`,
   stealthStrike: () => `<span class="hit">They never saw you. Critical.</span>`,
   backstab: () => `<span class="hit">A blade in the back. Critical.</span>`,
   conArtistOpener: () => `<span class="beat">You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.</span>`,
@@ -246,11 +238,12 @@ export const EVENT_NARRATION = {
   // absent fields render exactly the prior "Critical!"/plain sentence.
   struck: (e) => {
     const CRIT_BY_TEXT = {
-      silence: "Silent. Critical!",
       stealth: "Unseen. Critical!",
       backstab: "From behind. Critical!",
       ninja: "A Ninja's two. Critical!",
       cutthroat: "The Cutthroat's first blow. Critical!",
+      deathTouch: "Called it. Critical!",
+      silentStep: "Not a sound. Critical!",
     };
     const critText = e.critical ? `<span class="hit">${CRIT_BY_TEXT[e.critBy] ?? "Critical!"}</span> ` : "";
     // Phase 31 (Afraid): needModsClause names the -3 afraid penalty when
