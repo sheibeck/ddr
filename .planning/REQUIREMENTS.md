@@ -24,7 +24,7 @@
 - [x] **ABIL-02**: A chosen subset of existing passive Special Skills becomes activated abilities (the conversion list decided in the phase's discussion against the good/bad identity contract); unconverted skills stay passive and every sub-class keeps one good and one bad
 - [x] **ABIL-03**: A class-flavored active-ability pool is rolled (never chosen) — one ability at level 1 and one more at each skill level — and the roll is narrated with the ability's effect
 - [ ] **ABIL-04**: Each ability's effect, cooldown and readiness are legible in the submenu ("ready" / "N rounds"), and using one on cooldown is a named refusal in the fight log
-- [ ] **ABIL-05**: Party Joiners of melee classes use their own abilities by the same class-driven policy Joiners already use to fight
+- [x] **ABIL-05**: Party Joiners of melee classes use their own abilities by the same class-driven policy Joiners already use to fight
 
 ### Gear & magic items (GEAR)
 
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ABIL-02 | Phase 38 | Complete |
 | ABIL-03 | Phase 38 | Complete |
 | ABIL-04 | Phase 38 | Pending |
-| ABIL-05 | Phase 38 | Pending |
+| ABIL-05 | Phase 38 | Complete |
 | GEAR-01 | Phase 39 | Pending |
 | GEAR-02 | Phase 39 | Pending |
 | GEAR-05 | Phase 39 | Pending |
