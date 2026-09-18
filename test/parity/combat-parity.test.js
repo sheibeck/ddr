@@ -121,8 +121,10 @@ function comparable(state) {
   // reconcilePendingFight's own JSDoc (harness/comparables.js).
   // Phase 33 (STORE-01): strip `state.storeRoll` too — a sixth analog of party/pendingJoiner/pendingFind/pendingLoot/dev, mirroring harness combatComparable,
   // since this file defines its own local comparable(); always false on a fixture; a plain strip (no reconcile — `store` is transient).
+  // Phase 39 (GEAR-05): strip `state.pendingHazard` too — a seventh analog,
+  // mirroring harness combatComparable; always null on a fixture.
   state = reconcilePendingFight(state);
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, ...state0 } = state;
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   const rest = reconcilePendingLoot(state0, pendingLoot);
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects

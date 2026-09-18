@@ -374,7 +374,14 @@ export function movementComparable(state) {
   // just dropped) via reconcilePendingLoot below.
   // Phase 33 (STORE-01): strip `state.storeRoll` too — a sixth analog of party/pendingJoiner/pendingFind/pendingLoot/dev; always false on a fixture; the
   // prototype master has no such field; a plain strip (no reconcile — `store` is transient, and the flag only gates the NEXT openStore call).
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, ...state0 } = state;
+  // Phase 39 (GEAR-05): strip `state.pendingHazard` too — a SEVENTH analog of
+  // party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll: transient
+  // decision state (engine/movement.js's hazard pre-check), always null on
+  // every fixture and the bot (neither ever carries a rope/ladder), no
+  // prototype-side equivalent. A plain strip (no reconcile needed — it is
+  // always null here, unlike pendingFind/pendingLoot which can be genuinely
+  // populated mid-fixture).
+  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
   // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST (drops happen
@@ -453,7 +460,10 @@ export function combatComparable(state) {
   // just dropped) via reconcilePendingLoot below.
   // Phase 33 (STORE-01): strip `state.storeRoll` too — a sixth analog of party/pendingJoiner/pendingFind/pendingLoot/dev; always false on a fixture; the
   // prototype master has no such field; a plain strip (no reconcile — `store` is transient, and the flag only gates the NEXT openStore call).
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, ...state0 } = state;
+  // Phase 39 (GEAR-05): strip `state.pendingHazard` too — see
+  // movementComparable's rationale (seventh analog of party/pendingJoiner/
+  // pendingFind/pendingLoot/dev/storeRoll).
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find (no-op when none pending).
   // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST — see
   // movementComparable's rationale above (drops happen in the fight, a find
@@ -954,7 +964,10 @@ export function economyComparable(state) {
   // just dropped) via reconcilePendingLoot below.
   // Phase 33 (STORE-01): strip `state.storeRoll` too — a sixth analog of party/pendingJoiner/pendingFind/pendingLoot/dev; always false on a fixture; the
   // prototype master has no such field; a plain strip (no reconcile — `store` is transient, and the flag only gates the NEXT openStore call).
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, ...state0 } = state;
+  // Phase 39 (GEAR-05): strip `state.pendingHazard` too — see
+  // movementComparable's rationale (seventh analog of party/pendingJoiner/
+  // pendingFind/pendingLoot/dev/storeRoll).
+  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing — the `chest` (seed 2) and `faerie` (seed 38)
   // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.

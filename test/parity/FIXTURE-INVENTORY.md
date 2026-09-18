@@ -959,4 +959,84 @@ reset to null on load and Acuteness now ticks only inside `foeTurn`) — a
 mid-fight Acuteness dose never survives a save/load round-trip, same as
 every other combat-scoped timer.
 
-<!-- 39-04 -->
+## Phase 39: one-shot tools (GEAR-05) — derived-stream loot row, pre-roll hazard state
+
+**The derived-stream rationale.** `engine/items.js#rollTreasureItem` now runs
+a tool-loot check immediately after the lockpick gate and BEFORE the main
+`rng.d(10)` table roll: `derivedRng(rng.getState(), "tool", depth)` — a
+FULLY SEPARATE `derivedRng` instance (`engine/rng.js`, the Phase 38
+milestone-wide "keyed rng stream for a new roll that must not reorder an
+existing seeded draw sequence" pattern), keyed by the MAIN cursor
+(`rng.getState()`) so the outcome is deterministic per replay while never
+drawing from the caller's `rng` itself. The no-tool-fires path therefore
+advances the main rng by EXACTLY the same number of draws as before this
+plan (proven live: `test/unit/tools.test.js` replays 200 seeds at depth 1
+and 3 against a hand-preserved copy of the pre-plan control flow
+(`legacyRollTreasureItem`) and asserts the two rng cursors land byte-
+identical whenever the derived roll does not fire); when it fires, the main
+rng advances by exactly the one lockpick `d(12)` draw above (the tool row's
+own `d(8)` and any weighted pick both run on the separate `toolRng`
+instance).
+
+**The one exposed call: the `chest` scenario, seed 2.** MEASURED (not
+assumed): `newRun(2)` then `openChest` still rolls a Cloak of Speed —
+`derivedRng(rng.getState(), "tool", 1).d(8)` does NOT land on 1 for this
+scenario's cursor, so the tool row never fires and `state.pendingFind`
+(`findOffered`'s payload) is byte-identical to the pre-plan roll. No
+declaration was needed. Every OTHER parity fixture (chargen/movement/
+combat/magic/economy) either never calls `rollTreasureItem` at all (no
+`killFoe` treasure drop, no chest/find/faerie encounter reached) or — for
+the `killFoe` treasure-drop paths combat/magic fixtures DO exercise — the
+same live-measurement discipline applies: `npm test`'s full parity suite
+(`combat-parity.test.js`/`magic-parity.test.js`/`economy-parity.test.js`/
+`encounters-parity` sub-tests inside `economy-parity.test.js`/
+`full-suite.test.js`) is green with ZERO new divergence records, proving
+the derived roll never fires for any OTHER fixture's cursor either.
+
+**The `pendingHazard` carve-out.** `state.pendingHazard` (`engine/state.js`
+newRun, `engine/saveState.js` validateSave/rehydrate) is a SEVENTH
+top-level analog of `party`/`pendingJoiner`/`pendingFind`/`pendingLoot`/
+`dev`/`storeRoll` — transient decision state
+(`{ feat, dir, tool, declined }` while a climbable wall/gorge tile with a
+matching carried tool is being decided, else `null`), with NO
+prototype-side equivalent. Always `null` on every fixture and the bot
+(neither ever carries a rope/ladder — the pre-check's `hasTool` gate is
+false, so the pending record is never created), so a PLAIN strip (no
+reconcile needed, unlike `pendingFind`/`pendingLoot` which can be genuinely
+populated mid-fixture) suffices: added to all three shared comparables'
+top-level destructure (`test/parity/harness/comparables.js`) AND the three
+per-domain local `comparable()` duplicates
+(`combat-parity.test.js`/`magic-parity.test.js`/`movement-parity.test.js`).
+
+**The `giveTool` engine-only store lines.** `engine/economy.js#openStore`
+now appends up to three flat-priced tool lines (Torch/Rope from tier 0,
+Ladder from tier 1, only when not already carried) after the Rations line —
+a SECOND `ENGINE_ONLY_STORE_EFFECTS` member alongside `buyRations`
+(RATION-01), replacing the old buyRations-only filter in both
+`stripStoreClosures` (drops engine-only lines from every store-roll-
+identity comparison) and `stockMarkupDiff`'s routed-line detection. The
+economy fixture's own declared action-path record
+(`test/parity/fixtures/action-script.economy.json`, seed 3, a Human
+Pickpocket) was extended — MEASURED live, not hand-typed — with the two
+new lines its depth-1 (tier 0) store now offers (`["Torch", 25]`,
+`["Rope", 60]`, both flat-priced, no Pickpocket markup): appended to the
+record's `stockAfter` array (the raw engine `[n, cost]` snapshot); the
+record's `stockNames` array (the store-roll IDENTITY check) is UNCHANGED —
+`ENGINE_ONLY_STORE_EFFECTS` strips both engine-only lines from that
+comparison on both sides, exactly like Rations always has. The action-path
+fields (`gold`/`weapon`/`items`) are unaffected — the fixture's script never
+buys either new line.
+
+**Byte-identical elsewhere.** No fixture hero carries a rope/ladder/torch
+(chargen never rolls one — tools are loot/store-only), so
+`engine/movement.js`'s hazard pre-check and `useTool` never fire for any
+fixture or the bot; `engine/items.js#useItem`'s new `case "light"` and
+`notDark` refusal are likewise never reached (no fixture carries a torch);
+`engine/encounters.js#fallDark`'s new `itemEffectActive(c, "lit")` guard is
+a no-op for every fixture (no live `item:Torch` effect ever exists on a
+fixture character). `npm test`: 2664/2664, `# fail 0`; master hash
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged;
+`git status --porcelain test/parity/fixtures` shows only the one
+economy-fixture edit (a `stockAfter` extension of an EXISTING declared
+record, not a new divergence).
+

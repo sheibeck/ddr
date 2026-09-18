@@ -545,7 +545,152 @@ charges) instead of relying on the static flavor text to stay accurate.
 
 ## One-shot tools (GEAR-05) — Plan 04
 
-Appended by Plan 04.
+Three hazard tools — Rope, Ladder, Torch — each answer exactly one hazard,
+consumed on use, appearing as loot and store stock at depth-appropriate
+tiers (`content/tools.js#TOOLS`).
+
+### The three tools
+
+| Tool   | Cost | Store tier | Loot weight | Answers                              | Consumed when |
+|--------|------|------------|-------------|---------------------------------------|---------------|
+| Torch  | 25   | 0 (depth 1+) | 4 (commonest) | `c.darkFor` darkness (not a movement tile) | Used from the Gear tab / a Darkness card while `inDark(state)` — `useItem`, `use: "light"` |
+| Rope   | 60   | 0 (depth 1+) | 3           | a `gorge` movement tile               | `useTool` at the pending gorge decision, or via the CLIMB IT retry card's LEAP IT/USE ROPE choice |
+| Ladder | 150  | 1 (depth 2+) | 1 (rarest)  | a `climb` movement tile               | `useTool` at the pending climb decision, or the retry card's CLIMB IT/USE LADDER choice |
+
+One bag slot each (`slotItems` counts a tool like any other gear/treasure
+item — `bagCap` applies); never stacks — a second copy is refused
+(`itemRejected {reason:"haveOne"}`), mirroring the Lockpicks `kind:"picks"`
+precedent (`engine/items.js#hasPicks`). Sell price is half the buy cost
+(`sellPriceFor`/`baseValueFor`, same `SELL_SPREAD` every other item uses,
+rounded): Rope sells for 30, Ladder for 75, Torch for 13.
+
+### The decision-point design (CONTEXT Area 1)
+
+Stepping onto a climbable wall while carrying a ladder, or a gorge while
+carrying a rope, PAUSES before any roll — a pre-roll card (the shell half,
+Plan 05) with USE LADDER/CLIMB IT or USE ROPE/LEAP IT. Choosing the tool
+consumes it and passes the tile with NO roll and NO fall damage; the other
+button runs today's synchronous roll unchanged. The SAME choice re-appears
+on the existing post-fall CLIMB IT/LEAP IT retry card when the tool is
+carried — you fell, you're still standing there, the tool is still the way
+past. The Torch instead gets a dark card: `USE TORCH` when a Darkness table
+result fires (or from the Gear tab / ITEMS submenu any time `inDark(state)`
+is true) — using it clears the CURRENT darkness and grants a 40-square lit
+window during which a LATER Darkness result is suppressed entirely.
+
+### `state.pendingHazard` — shape and lifecycle
+
+```
+state.pendingHazard = null                                    // no decision pending
+state.pendingHazard = { feat, dir, tool, declined: false }     // a decision IS pending
+```
+
+- **Created**: `engine/movement.js#move`'s climb/gorge block, the roll
+  branch's pre-check — ONLY when the hero carries the matching tool
+  (`hasTool(state.c, toolFor)`) and there is no already-pending record at
+  this exact tile/direction. Pushes `hazardChoice { feat, dir, tool }` and
+  returns WITHOUT moving or rolling — zero rng draws, zero mutation besides
+  the pending record itself.
+- **Declined**: a second `move(dir)` at the SAME pending tile/direction (the
+  CLIMB IT/LEAP IT button) flips `declined: true` in place and falls
+  through to the SAME roll code path that always ran here — the pending
+  record deliberately stays on the tile (never cleared by the decline
+  itself) so a FAILED roll's retry card can offer both buttons again with
+  no second prompt.
+- **Cleared**: any genuine successful step (`move`'s normal step-tail, right
+  after `f.px`/`f.py` are assigned), a `useTool` spend (the tool branch,
+  explicitly), a `teleport`, or a `descend` — all four reset it to `null`.
+  A FAILED roll does NOT clear it (the character never left the tile).
+- **Never rehydrated**: `state.pendingHazard` is transient like
+  `pendingFind` — both `engine/state.js#newRun` and
+  `engine/saveState.js#validateSave`/`rehydrate` always set it to `null`,
+  regardless of what a save file claims (T-39-11 — a tampered/stale save-
+  side value is never trusted; the engine re-derives the decision on the
+  next step).
+
+### The zero-draw invariant and the derived-stream loot row
+
+Two structurally separate "zero new main-rng draws" guarantees:
+
+1. **The hazard pre-check** (`engine/movement.js`) never draws — the
+   `hasTool`/pending-record logic is pure reads/writes; a character without
+   the matching tool never enters either branch, so movement stays
+   byte-identical to before this plan.
+2. **The loot row** (`engine/items.js#rollTreasureItem`) runs a derived
+   stream check — `derivedRng(rng.getState(), "tool", depth)` — immediately
+   after the lockpick gate and BEFORE the main `rng.d(10)` table roll. This
+   is a FULLY SEPARATE rng instance (the Phase 38 milestone-wide
+   "`derivedRng` for a roll that must not reorder an existing seeded draw
+   sequence" pattern): it never draws from the caller's `rng`. The no-fire
+   path therefore advances the main rng by EXACTLY the same number of draws
+   as before this plan; when it fires, the main rng advances by exactly the
+   ONE lockpick `d(12)` draw already spent above (the tool row's own `d(8)`
+   and any weighted candidate pick both run on the separate stream). See
+   `test/parity/FIXTURE-INVENTORY.md`'s Phase 39 GEAR-05 section for the
+   measured proof (200-seed replay + the one exposed fixture call).
+
+### The torch's exact scope
+
+The torch touches ONLY `c.darkFor` — the persistent darkness counter
+`engine/encounters.js#fallDark` sets and `engine/movement.js`'s per-step
+tick decrements. It does NOT touch a tile's own `.dark` flag or the
+reveal-radius/fog-of-war model — that is Phase 41's territory
+(TERR-02/the map-reveal rework), explicitly out of scope here. Using the
+torch while `inDark(state)` (true for EITHER a live `c.darkFor` counter OR
+the current tile's own `.dark` flag — `inDark`'s existing definition,
+unchanged) clears `c.darkFor` to 0 and starts a 40-square `lit` effect
+(`content/tools.js#TOOL_ACTIVATION_OF.Torch = { kind: "lit", effect: 40 }`,
+spread into `content/activations.js#ACTIVATION_OF` — the SAME
+`c.timers["item:Torch"]` activation model every other magic item uses,
+Phase 39 GEAR-02). While that effect is live, `fallDark` checks
+`itemEffectActive(state.c, "lit")` FIRST and, if true, emits
+`darknessResisted { by: "torch" }` and returns WITHOUT painting any tile
+dark or touching `c.darkFor` at all — a later Darkness table result is
+completely suppressed for the window's duration. 40 squares comfortably
+satisfies the once-a-day rule (`effect <= 100`; the torch carries no
+cooldown at all — a fresh torch must be bought/found again).
+
+### The refusal vocabulary
+
+| Event | reason | Fires when |
+|-------|--------|-----------|
+| `toolRefused` | `noTool` | `useTool` targets a tool not carried |
+| `toolRefused` | `noHazard` | the target tile is missing/a wall/not the matching feat |
+| `toolRefused` | `unknown` | `tool` is not a recognized hazard tool (torch, or a malformed value — `validateAction` already blocks this on the wire) |
+| `useRefused` | `notDark` | the torch is used while NOT `inDark(state)` — not consumed |
+| `itemRejected` | `haveOne` | a second copy of an already-carried tool is offered (loot, store, or a direct `takeItem`) |
+
+### Events
+
+`hazardChoice { feat, dir, tool }` — the pre-roll pause (rail decision card
+IS the UI; SILENT on the toast side, like `findOffered`). `toolUsed
+{ tool, feat, item }` — the tool was spent, tile passed. `toolRefused
+{ tool, reason }`. `torchLit { left, wasDark }` — the torch cleared a live
+darkness. `darknessResisted { by: "torch" }` — a LATER `fallDark` held off.
+All five (plus the two reason-only additions to the pre-existing
+`useRefused`/`itemRejected` types) are narrated in
+`src/browser/eventNarration.js` (Oracle), `src/browser/toasts.js`
+(TOAST_FOR/ORACLE_ONLY/FEATURE_EVENTS), and `src/browser/rail.js`
+(RAIL_FAMILY, plus `toolUsed`'s one `RAIL_FEATURE_ICON` exception — its
+icon depends on the raw event's own `.feat`, climb -> wall / gorge ->
+crevice, read directly at `railCardFor`'s one lookup site since the table
+itself is keyed by event type only).
+
+### The bot's pending-hazard handler
+
+`tools/lib/tuning-bot.mjs#decideAction`: `if (state.pendingHazard &&
+!state.pendingHazard.declined) return { type: "useTool", tool:
+state.pendingHazard.tool, dir: state.pendingHazard.dir };` — placed right
+after the `pendingJoiner`/`pendingFind` checks. This is a PENDING-STATE
+handler (answering a decision the engine itself already parked in one
+dispatch, avoiding a wasted decline-then-reroll round trip), NOT a timing
+tactic. The bot does not buy or carry a tool today
+(`chooseStorePurchase` only scans `buyWeapon`/`buyArmor`/`buyPremium`
+lines, never `giveTool`), so this handler is currently reachable only via a
+hand-built pending state in a unit test — it never fires in a real
+400-seed bot run yet. **Deferred to Phase 42** (bot tactics): teaching the
+bot to actually buy/carry rope/ladder/torch, and any WHEN-to-use-it timing
+beyond this one always-answer-if-carried rule.
 
 ## Chips and row states — Plan 05
 
