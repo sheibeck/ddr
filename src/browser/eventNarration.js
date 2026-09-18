@@ -627,6 +627,11 @@ export const EVENT_NARRATION = {
             ? `<span class="miss">Fight! first.</span> The scroll will keep.`
             : `<span class="miss">It stays rolled.</span>`,
   scrollCopiedToGrimoire: (e) => `<span class="hit">${e.spell ?? "It"} copied into your grimoire.</span>`,
+  // Phase 40 (SPELL-07): the scroll's spell is not yet scribable (level or
+  // school gate not met) — it names the level needed and falls through to
+  // the free cast (the following `scrollCast` line narrates that part).
+  scrollTooAdvanced: (e) =>
+    `<span class="miss">${e.spell ?? "It"} needs level ${e.need ?? "?"}; you are ${e.have ?? "?"}. The scroll reads itself once and crumbles.</span>`,
   scrollCast: (e) => `The scroll casts itself: ${e.spell ?? "something"}.`,
 
   /* ---------------- economy.js ---------------- */

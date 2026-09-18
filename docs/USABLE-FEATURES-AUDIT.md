@@ -162,6 +162,20 @@ scroll and its narration stay spent) but the CAST itself refuses
 `readScroll`'s internal call) — `spellsUsed` is restored to its pre-scroll
 value either way.
 
+**Scroll scribing gate (Phase 40, SPELL-07):** a scroll's spell is copied
+into a Magic User's grimoire ONLY when it is already castable — the exact
+same two checks `canCast` uses (`spellLevelFor(c.sub, sp) <= c.level && c.level
+>= schoolGate(c.sub, sp.s)`). When the caster can learn the school but is not
+yet leveled or gated enough, the scroll is NOT scribed — it pushes
+`scrollTooAdvanced { spell, need, have, school }` (`need` is the higher of the
+two checks) and falls through to the existing free-cast path unchanged (the
+scroll still pays for itself once). A spell the caster's sub cannot learn at
+all (`canLearn` false) is unaffected — same free cast as always, no
+`scrollTooAdvanced`. Old saves that already carry a scribed-but-uncastable
+entry from before this phase are untouched (tolerant, no migration) — the
+next cast attempt refuses with the existing `spellSchoolLocked`/
+`spellAboveLevel`, which already names the level needed.
+
 **Lockpicks:** passive (`hasPicks`), no `use`/refusal concept — consumed by
 `openChest`'s lock-roll gate, not by `useItem`.
 

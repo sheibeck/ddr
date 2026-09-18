@@ -5,24 +5,31 @@
 // instruction. Copies test/unit/magic.test.js's/combat.test.js's fakeRng/
 // fixedState/fixedFoe/fixedCombat helpers verbatim (same discipline).
 //
-// SPELL-02 (Task 1, this section): Mirror Self, Sense Presence,
-// Regeneration, and an armed Sense Danger each get a `conditionsOf` chip
-// (mirror/senses/regen/foresight, fixed order after ward, before flight);
-// Sense Presence's "never surprised" gets a real initiative-side effect
-// (waives every forced foe-first rule while `c.senses` is up) and endCombat
-// narrates the expiry of a still-running mirror/senses/regen when the fight
-// ends.
+// SPELL-02 (Task 1): Mirror Self, Sense Presence, Regeneration, and an armed
+// Sense Danger each get a `conditionsOf` chip (mirror/senses/regen/
+// foresight, fixed order after ward, before flight); Sense Presence's
+// "never surprised" gets a real initiative-side effect (waives every forced
+// foe-first rule while `c.senses` is up) and endCombat narrates the expiry
+// of a still-running mirror/senses/regen when the fight ends.
 //
-// SPELL-07 (Task 2): appended below by Task 2's own TDD pass.
+// SPELL-07 (Task 2): `readScroll`'s copy-to-grimoire gate is now exactly
+// `canCast`'s own two checks — a scroll can never scribe a spell the caster
+// cannot already cast; when it cannot, `scrollTooAdvanced` names the level
+// needed and the scroll still casts itself once for free, unchanged.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { conditionsOf } from "../../engine/derived.js";
+import { conditionsOf, canCast } from "../../engine/derived.js";
 import { rollInitiative, fight, endCombat } from "../../engine/combat.js";
+import { castSpell, readScroll } from "../../engine/magic.js";
+import { SPELLS } from "../../content/index.js";
+import { GW, GH } from "../../engine/maze.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { TOAST_FOR } from "../../src/browser/toasts.js";
 import { RAIL_FAMILY } from "../../src/browser/rail.js";
+
+const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 
 function fixedChar(overrides = {}) {
   return {
@@ -45,6 +52,18 @@ function fixedFloor(overrides = {}) {
   for (let y = 0; y < 3; y++) {
     g.push([]);
     for (let x = 0; x < 3; x++) g[y].push({ wall: false, dark: false, seen: true, feat: null });
+  }
+  return { g, px: 1, py: 1, depth: 1, ...overrides };
+}
+
+// engine/magic.js's "reveal" kind (Map the Floor) iterates the WHOLE grid
+// unconditionally — only the ONE test that free-casts it needs the real
+// GW x GH size (mirrors test/unit/magic.test.js's own fixedFloor note).
+function fullFloor(overrides = {}) {
+  const g = [];
+  for (let y = 0; y < GH; y++) {
+    g.push([]);
+    for (let x = 0; x < GW; x++) g[y].push({ wall: false, dark: false, seen: false, feat: null });
   }
   return { g, px: 1, py: 1, depth: 1, ...overrides };
 }
@@ -292,3 +311,99 @@ function fakeRng(seq, { pick = (arr) => arr[0] } = {}) {
     shuffle: (a) => a,
   };
 }
+
+// ============================================================================
+// SPELL-07: readScroll aligned with canCast's own two checks
+// ============================================================================
+
+test("readScroll: a level-1 Warlock's Heal scroll (healing gated to 3) is NOT scribed — scrollTooAdvanced names the level, then casts for free", () => {
+  const state = fixedState({ c: { cls: "Magic User", sub: "Warlock", level: 1, grimoire: [], scrolls: 1, wp: 10, maxWP: 40 } });
+  const events = readScroll(state, fakeRng([8], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
+  assert.ok(events.some((e) => e.type === "scrollRead" && e.spell === "Heal"));
+  assert.deepStrictEqual(
+    events.find((e) => e.type === "scrollTooAdvanced"),
+    { type: "scrollTooAdvanced", spell: "Heal", need: 3, have: 1, school: "healing" },
+  );
+  assert.ok(events.some((e) => e.type === "scrollCast" && e.spell === "Heal"));
+  assert.ok(events.some((e) => e.type === "healed"));
+  assert.equal(events.some((e) => e.type === "scrollCopiedToGrimoire"), false);
+  assert.equal(state.c.grimoire.includes("Heal"), false, "Heal is NOT scribed");
+  assert.equal(state.c.scrolls, 0);
+});
+
+test("readScroll: a level-1 Wizard's Heal scroll IS scribed (already castable) — scrollCopiedToGrimoire, no free cast", () => {
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: [], scrolls: 1 } });
+  const events = readScroll(state, fakeRng([], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
+  assert.ok(events.some((e) => e.type === "scrollCopiedToGrimoire" && e.spell === "Heal"));
+  assert.equal(events.some((e) => e.type === "scrollTooAdvanced"), false);
+  assert.equal(events.some((e) => e.type === "scrollCast"), false, "a scribed spell is NOT also cast for free");
+  assert.ok(state.c.grimoire.includes("Heal"));
+  assert.equal(canCast(state, SPELLS[SPELL_IDX.Heal]), true, "a scribed spell is always castable immediately");
+});
+
+test("readScroll: a level-1 Wizard's Fireball scroll (lvl 3, combatOnly) — scrollTooAdvanced, then the existing combatOnly refusal, outside combat", () => {
+  // depth 2 so Fireball (lvl 3) is within the scroll's own filter
+  // (sp.lvl <= min(5, depth+1)) — unrelated to the new scribe gate.
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: [], scrolls: 1 }, floor: { depth: 2 } });
+  const events = readScroll(state, fakeRng([], { pick: (arr) => arr.find((sp) => sp.n === "Fireball") }), []);
+  assert.deepStrictEqual(
+    events.find((e) => e.type === "scrollTooAdvanced"),
+    { type: "scrollTooAdvanced", spell: "Fireball", need: 3, have: 1, school: "offense" },
+  );
+  assert.ok(events.some((e) => e.type === "scrollCast" && e.spell === "Fireball"));
+  assert.ok(events.some((e) => e.type === "castRefused" && e.spell === "Fireball" && e.reason === "combatOnly"));
+  assert.equal(state.c.grimoire.includes("Fireball"), false);
+  assert.equal(state.c.scrolls, 0, "the scroll is still consumed even though the cast itself refuses");
+});
+
+test("readScroll: a Fighter with Runes/Signs never scribes at all — the outer Magic-User gate short-circuits before scrollTooAdvanced", () => {
+  const state = fixedState({ c: { cls: "Fighter", sub: "Soldier", skills: { "Runes/Signs": 1 }, grimoire: [], scrolls: 1, wp: 10, maxWP: 40 } });
+  const events = readScroll(state, fakeRng([8], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
+  assert.equal(events.some((e) => e.type === "scrollTooAdvanced"), false);
+  assert.equal(events.some((e) => e.type === "scrollCopiedToGrimoire"), false);
+  assert.ok(events.some((e) => e.type === "scrollCast"));
+  assert.ok(events.some((e) => e.type === "healed"));
+});
+
+test("readScroll: a Magic User whose sub cannot learn the school (canLearn false) never scribes and never scrollTooAdvanced — free cast as today", () => {
+  // Illusionist's healing school is null (schoolAllowed false) — canLearn is false outright.
+  const state = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 1, grimoire: [], scrolls: 1, wp: 10, maxWP: 40 } });
+  const events = readScroll(state, fakeRng([8], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
+  assert.equal(events.some((e) => e.type === "scrollTooAdvanced"), false);
+  assert.equal(events.some((e) => e.type === "scrollCopiedToGrimoire"), false);
+  assert.ok(events.some((e) => e.type === "scrollCast"));
+  assert.ok(events.some((e) => e.type === "healed"));
+});
+
+test("readScroll: a spell already in the grimoire is never re-scribed and never scrollTooAdvanced — falls straight to the free cast", () => {
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal"], scrolls: 1, wp: 10, maxWP: 40, spellsUsed: 4 } });
+  const events = readScroll(state, fakeRng([8], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
+  assert.equal(events.some((e) => e.type === "scrollTooAdvanced"), false);
+  assert.equal(events.some((e) => e.type === "scrollCopiedToGrimoire"), false);
+  assert.ok(events.some((e) => e.type === "scrollCast"));
+  assert.equal(state.c.spellsUsed, 4, "the caster's own charge count is untouched by the free cast");
+});
+
+test("readScroll: need is the HIGHER of spellLevelFor and schoolGate", () => {
+  // Court Mage: divination gated to 4; Map the Floor is lvl 1 divination —
+  // spellLevelFor(1) <= schoolGate(4), so need is the school gate, not the
+  // level. The free cast that follows resolves "reveal", which needs the
+  // real GW x GH grid.
+  const state = fixedState({ c: { cls: "Magic User", sub: "Court Mage", level: 1, grimoire: [], scrolls: 1 }, floor: fullFloor() });
+  const events = readScroll(state, fakeRng([], { pick: (arr) => arr.find((sp) => sp.n === "Map the Floor") }), []);
+  const tooAdvanced = events.find((e) => e.type === "scrollTooAdvanced");
+  assert.ok(tooAdvanced);
+  assert.equal(tooAdvanced.need, 4, "need is the school gate (4), the higher of the two checks");
+});
+
+test("tolerant proof: an old save's scribed-but-uncastable grimoire entry refuses cleanly by naming the level, no migration needed", () => {
+  // Simulates a pre-Phase-40 save where a level-1 Warlock's Heal was
+  // scribed under the old (buggy) sp.lvl <= c.level-only check.
+  const state = fixedState({ c: { cls: "Magic User", sub: "Warlock", level: 1, grimoire: ["Heal"] } });
+  const events = castSpell(state, SPELL_IDX.Heal, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "spellSchoolLocked", spell: "Heal", school: "healing", need: 3, have: 1 }]);
+  assert.equal(canCast(state, SPELLS[SPELL_IDX.Heal]), false);
+  // No crash, no mutation of the grimoire itself — the entry simply stays,
+  // permanently refused until the character's level catches up.
+  assert.ok(state.c.grimoire.includes("Heal"));
+});

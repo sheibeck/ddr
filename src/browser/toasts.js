@@ -1346,6 +1346,9 @@ export const TOAST_FOR = {
     return block(map[e?.reason] ?? "It stays rolled.");
   },
   scrollCopiedToGrimoire: (e) => ({ text: `${e?.spell ?? "It"} copied into your grimoire.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-07): the scroll's own spell isn't scribable yet — names
+  // the level needed; the scroll still casts once for free right after.
+  scrollTooAdvanced: (e) => ({ text: `${e?.spell ?? "It"} needs level ${e?.need ?? "?"}; you are ${e?.have ?? "?"}.`, tone: "miss", priority: PRIORITY.you }),
   scrollCast: (e) => ({ text: `The scroll casts: ${e?.spell ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
 
   /* ---------------- economy.js ---------------- */

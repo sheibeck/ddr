@@ -226,6 +226,9 @@ export const RAIL_FAMILY = Object.freeze({
   // Phase 40 (SPELL-02) — endCombat's own utility-effect expiry narration.
   sensesFaded: { icon: "·", title: "SENSES FADE", tone: "dull" },
   regenFaded: { icon: "·", title: "REGENERATION ENDS", tone: "dull" },
+
+  // Phase 40 (SPELL-07) — a scroll's own spell isn't scribable yet.
+  scrollTooAdvanced: { icon: "▪", title: "TOO ADVANCED", tone: "dull" },
 });
 
 /**

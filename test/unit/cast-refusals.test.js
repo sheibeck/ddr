@@ -186,6 +186,19 @@ test("readScroll: a scroll that unrolls a combatOnly spell outside combat is con
   assert.equal(doze.combatOnly, true, "sanity: Doze really is combatOnly");
 });
 
+// --- Phase 40 (SPELL-07): the scroll scribe-gate refusal --------------------
+
+test("readScroll: a scroll's spell not yet gated in scribes nothing — scrollTooAdvanced names the level, then still casts for free", () => {
+  // Warlock: healing gated to 3; Heal is lvl 1 healing — spellLevelFor(1) <=
+  // level(1), but level(1) < schoolGate(3), so it is NOT scribed.
+  const state = fixedState({ c: { sub: "Warlock", level: 1, grimoire: [], scrolls: 1, wp: 10, maxWP: 40 } });
+  const events = readScroll(state, fakeRng([6], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
+  assert.ok(events.some((e) => e.type === "scrollTooAdvanced" && e.spell === "Heal" && e.need === 3 && e.have === 1 && e.school === "healing"));
+  assert.equal(events.some((e) => e.type === "scrollCopiedToGrimoire"), false);
+  assert.ok(events.some((e) => e.type === "scrollCast" && e.spell === "Heal"));
+  assert.equal(state.c.grimoire.includes("Heal"), false);
+});
+
 // --- negative pin: an afraid caster/reader is NEVER refused for fear -------
 
 test("negative pin: with combat.afraid = 2, castSpell (thrown) and readScroll both proceed — no castRefused/scrollRefused for fear", () => {

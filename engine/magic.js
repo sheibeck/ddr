@@ -554,8 +554,28 @@ export function canRead(state) {
  * readScroll(state, rng, events) — unrolls one carried scroll. Ports
  * mazeworld.html readScroll() (lines 2776-2794): a random spell (capped by
  * floor depth), transferred straight into a Magic User's grimoire if it's
- * learnable and not already known, otherwise cast for free (ignoring the
+ * learnable AND already castable, otherwise cast for free (ignoring the
  * caster's own charge economy and grimoire/level gates via `scrollCast`).
+ *
+ * DELIBERATE RULES CHANGE (Phase 40, SPELL-07, 2026-09-18): the prototype's
+ * copy-to-grimoire condition checked only the spell's raw PRINTED level
+ * against the caster's own level — never `schoolGate`. Five reachable
+ * level-1 (sub, spell) pairs (Warlock+Heal, Court Mage+Map the Floor,
+ * Apprentice+Map the Floor, Illusionist+Shield, Summoner+Freeze —
+ * 40-RESEARCH.md "Scroll Scribing Bug") got scribed into the grimoire
+ * permanently uncastable: the "scroll copied" narration implied success, but
+ * the entry could never be cast until the caster's level caught up to its
+ * OWN school's gate, which readScroll never checked. The scribe gate is now
+ * exactly `canCast`'s own two checks (`spellLevelFor(c.sub, sp) <= c.level &&
+ * c.level >= schoolGate(c.sub, sp.s)`) — a spell is scribed if and only if it
+ * is ALREADY castable, so a scribed spell is always usable immediately. When
+ * the checks fail, the scroll is NOT scribed — it pushes `scrollTooAdvanced
+ * { spell, need, have, school }` (need = the higher of the two checks) and
+ * falls through to the existing free-cast path unchanged (the scroll still
+ * pays for itself once). Old saves that already carry a scribed-but-
+ * uncastable entry from before this phase are untouched (tolerant — no
+ * migration): `canCast`'s existing `spellSchoolLocked`/`spellAboveLevel`
+ * refusal already names the level needed the next time that spell is cast.
  */
 export function readScroll(state, rng, events = []) {
   const c = state.c;
@@ -577,10 +597,16 @@ export function readScroll(state, rng, events = []) {
   const sp = rng.pick(options);
   events.push({ type: "scrollRead", spell: sp.n });
   // "Scrolls contain spells; transfer to grimoire erases scroll."
-  if (c.cls === "Magic User" && canLearn(c.sub, sp) && sp.lvl <= c.level && !c.grimoire.includes(sp.n)) {
-    c.grimoire.push(sp.n);
-    events.push({ type: "scrollCopiedToGrimoire", spell: sp.n });
-    return events;
+  if (c.cls === "Magic User" && canLearn(c.sub, sp) && !c.grimoire.includes(sp.n)) {
+    const need = Math.max(spellLevelFor(c.sub, sp), schoolGate(c.sub, sp.s));
+    if (spellLevelFor(c.sub, sp) <= c.level && c.level >= schoolGate(c.sub, sp.s)) {
+      c.grimoire.push(sp.n);
+      events.push({ type: "scrollCopiedToGrimoire", spell: sp.n });
+      return events;
+    }
+    events.push({ type: "scrollTooAdvanced", spell: sp.n, need, have: c.level, school: sp.s });
+    // falls through to the free-cast path below — the scroll still pays for
+    // itself once, exactly as a spell the caster could never learn at all.
   }
   events.push({ type: "scrollCast", spell: sp.n });
   const saved = c.spellsUsed;
