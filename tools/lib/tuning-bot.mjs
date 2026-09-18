@@ -25,12 +25,13 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, slotFor, activationFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canRead } from "../../engine/magic.js";
-import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta } from "../../engine/items.js";
+import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex } from "../../engine/items.js";
+import { isReady } from "../../engine/effects.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
-import { SPELLS, RACES } from "../../content/index.js";
+import { SPELLS, RACES, ABILITY_BY_ID } from "../../content/index.js";
 
 // The four cardinal directions the movement domain understands. Defined
 // locally so this module only ever talks to the engine through its public
@@ -73,6 +74,30 @@ export const BOT_DEFAULTS = Object.freeze({
   maxActions: 20000, // Pitfall 4: hard safety stop, prevents a runaway loop from hanging the harness
   party: false, // D-12/D-20: --party forces one member at run start via forceParty
   startDepth: 1, // HARN-04: reuses newRun's dev-only start-at-depth option exactly as the Settings toggle does; no extra kit/gear grants
+});
+
+/**
+ * BOT_TACTICS — Phase 42 (BAL-01 second half, 42-02-PLAN.md): the ability/
+ * item/spell TACTICS constants — Claude's discretion, NOT a verified balance
+ * target and NOT part of the frozen `Bot:` line (`botLine`/`BOT_DEFAULTS`
+ * stay byte-identical to the BEFORE pin's `meta.bot` — see the parameter-
+ * parity gate this separation exists to satisfy). Transcribed verbatim into
+ * docs/CLASS-PASS.md by Plan 03.
+ *   hardFoeLvl      — a live foe at/above this level makes `hardFight` true
+ *                      (buff-before-a-hard-fight gate).
+ *   staffMinFoes    — a worn targeted-kind staff (freeze/weaken/stone/fire/
+ *                      gas) is fired only at/above this many live foes.
+ *   dotToughMargin  — consumed by Plan 03's spell-by-niche rules (a DOT spell
+ *                      prefers a foe at least this many levels tougher than
+ *                      the party's own).
+ *   mapBankRatio    — consumed by Plan 03's Map the Floor timing rule (cast
+ *                      only when spell charges banked exceed this fraction).
+ */
+export const BOT_TACTICS = Object.freeze({
+  hardFoeLvl: 3,
+  staffMinFoes: 2,
+  dotToughMargin: 1,
+  mapBankRatio: 0.5,
 });
 
 /**
@@ -187,6 +212,83 @@ export function dotsRemaining(floor) {
 /** liveFoesHaveAbilities(state) — does the current encounter hold any live, kit-bearing foe? */
 export function liveFoesHaveAbilities(state) {
   return !!state.combat && state.combat.foes.some((f) => f.alive && Array.isArray(f.abilities) && f.abilities.length > 0);
+}
+
+/**
+ * hardestFoeIndex(state) — Phase 42 (BAL-01 second half): the live foe a
+ * once-a-fight, foe-targeted ability (mark/hamstring/cutpurse/lastStand)
+ * should be aimed at — the highest `lvl`, ties broken by higher `wp`, then
+ * the lowest index. Returns `null` with no live foe. Pure, no rng.
+ */
+export function hardestFoeIndex(state) {
+  const C = state.combat;
+  if (!C || !Array.isArray(C.foes)) return null;
+  let best = -1;
+  let bestFoe = null;
+  for (let i = 0; i < C.foes.length; i++) {
+    const f = C.foes[i];
+    if (!f || !f.alive) continue;
+    if (
+      !bestFoe ||
+      f.lvl > bestFoe.lvl ||
+      (f.lvl === bestFoe.lvl && f.wp > bestFoe.wp)
+    ) {
+      best = i;
+      bestFoe = f;
+    }
+  }
+  return best === -1 ? null : best;
+}
+
+/**
+ * chooseAbility(state, ctx) — Phase 42 (BAL-01 second half): mirrors
+ * engine/combat.js#pickMemberAbility's exact Joiner class-driven use policy
+ * (round-1 opener; else an above-half-hp damage ability, Last Stand gated on
+ * the hero's own death-panic threshold; else a below-half-hp defensive
+ * ability; else null) — with `sheet = ally = state.c` (the hero uses its own
+ * kit by the same rule a Joiner's own kit follows). Returns `null` outside
+ * combat, for a Magic User, with no/empty `c.abilities`, when every owned
+ * ability is on cooldown, or when nothing matches the policy. A once-a-fight
+ * (`cd === "fight"`) FOE-targeted ability carries `target: hardestFoeIndex(state)`;
+ * a self/cooldown-only ability carries no `target`. Pure, no rng.
+ */
+export function chooseAbility(state, ctx) {
+  const C = state.combat;
+  if (!C) return null;
+  const c = state.c;
+  if (c.cls !== "Fighter" && c.cls !== "Thief") return null;
+  const owned = Array.isArray(c.abilities) ? c.abilities : [];
+  const ready = owned
+    .filter(
+      (id) =>
+        ABILITY_BY_ID[id] &&
+        ABILITY_BY_ID[id].cls === c.cls &&
+        isReady(c, `ability:${id}`) &&
+        !ctx.abilityBlocked.has(id),
+    )
+    .map((id) => ABILITY_BY_ID[id]);
+  if (!ready.length) return null;
+
+  const cur = C.foes[C.target];
+  const target = cur && cur.alive ? cur : liveFoes(state)[0];
+
+  let meta = null;
+  if (C.round === 1) {
+    meta = ready.find((m) => m.tag === "opener") || null;
+  }
+  if (!meta && target && target.wp > target.maxWP / 2) {
+    meta = ready.find((m) => m.tag === "damage" && (m.id !== "lastStand" || c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD)) || null;
+  }
+  if (!meta && c.wp < c.maxWP / 2) {
+    meta = ready.find((m) => m.tag === "defensive") || null;
+  }
+  if (!meta) return null;
+
+  const result = { key: meta.id };
+  if (meta.cd === "fight" && meta.target === "foe") {
+    result.target = hardestFoeIndex(state);
+  }
+  return result;
 }
 
 /** expectedDamage(sp) — mean damage of a spell's dice notation (no dmg field -> 0). */
@@ -375,6 +477,11 @@ export function isTalkFirst(state) {
  * makeBotContext(opts) — per-run mutable bot state: resolved options, the
  * per-floor action counter, the full-bag flag, `parleyBlocked` (Rule 1 fix)
  * and `fleeBlocked`/`strikeBlocked` (HARN-02 Rule-1 fixes — see decideAction).
+ * Phase 42 (BAL-01 second half): `abilityBlocked`/`itemBlocked` are the
+ * matching Rule-1 safety nets for a refused ability/item — a refusal returns
+ * with NO state change, so a bot that re-picks the same key/label loops to
+ * `maxActions`; both sets are cleared on `encounterStarted` (`itemBlocked`
+ * also on `floorChanged`, see `observe`).
  */
 export function makeBotContext(opts = {}) {
   return {
@@ -384,6 +491,8 @@ export function makeBotContext(opts = {}) {
     parleyBlocked: false,
     fleeBlocked: false,
     strikeBlocked: false,
+    abilityBlocked: new Set(),
+    itemBlocked: new Set(),
   };
 }
 
@@ -495,6 +604,10 @@ export function chooseStorePurchase(state, ctx) {
  *       otherwise flees (unless flee is also blocked, in which case attack —
  *       once charges hit 0 the melee refusal lifts on its own);
  *   (h) the scoring table (`chooseSpell`, HARN-02);
+ *   (h2) a ready ability (`chooseAbility`, Phase 42 BAL-01 second half) — a
+ *       Fighter/Thief uses its own kit by the exact policy a Joiner's own
+ *       kit follows (opener round 1; damage above half hp; defensive below
+ *       half); a once-a-fight foe-targeted pick aims at the hardest live foe;
  *   (i) attack.
  * Out of combat: (j) decline every pending Joiner (D-20); (k) take/leave a
  * pending find; (l) buy the best affordable weapon/armor upgrade via
@@ -585,6 +698,13 @@ export function decideAction(state, policyRng, ctx) {
     // (h) HARN-02 scoring table
     const pick = chooseSpell(state, ctx);
     if (pick) return { type: "castSpell", idx: pick.idx };
+
+    // (h2) Phase 42 (BAL-01 second half): a ready ability by the Joiner
+    // policy, checked after the spell table and before the plain attack
+    // fallback — never fires for a Magic User (chooseAbility itself gates on
+    // c.cls).
+    const ab = chooseAbility(state, ctx);
+    if (ab) return ab.target === undefined ? { type: "useAbility", key: ab.key } : { type: "useAbility", key: ab.key, target: ab.target };
 
     // (i)
     return { type: "attack" };
@@ -723,7 +843,10 @@ export function tallyEvents(tallies, events, stateAfter) {
  * Rule-1 bugfix comment — both refusals return WITHOUT a foe turn, so a bot
  * that repeats the refused action loops until the action cap, the exact
  * shape of the v1.1 wilmsryVsMagical parley loop) — set the instant a
- * refusal lands, cleared the instant a fresh encounter starts.
+ * refusal lands, cleared the instant a fresh encounter starts. Phase 42 (BAL-01
+ * second half): `abilityRefused { key }` adds `key` to `ctx.abilityBlocked`
+ * (same Rule-1 shape — a refused ability returns with NO state change); both
+ * `abilityBlocked` and `itemBlocked` clear on `encounterStarted`.
  */
 export function observe(ctx, events) {
   let floorChangedThisStep = false;
@@ -734,10 +857,13 @@ export function observe(ctx, events) {
     else if (e.type === "parleyRefused") ctx.parleyBlocked = true;
     else if (e.type === "fleeRefused") ctx.fleeBlocked = true;
     else if (e.type === "strikeRefused") ctx.strikeBlocked = true;
+    else if (e.type === "abilityRefused") ctx.abilityBlocked.add(e.key);
     else if (e.type === "encounterStarted") {
       ctx.parleyBlocked = false;
       ctx.fleeBlocked = false;
       ctx.strikeBlocked = false;
+      ctx.abilityBlocked.clear();
+      ctx.itemBlocked.clear();
     }
   }
   if (floorChangedThisStep) ctx.floorActions = 0;
@@ -792,6 +918,17 @@ export function forceParty(state) {
  *     death happened while `state.combat` was non-null at the top of that
  *     step (computed from the PRE-action state each step, since `die()`
  *     nulls `state.combat` before this loop can inspect it after the fact).
+ *
+ * Phase 42 (BAL-01 second half): a SECOND harness-only write-path bypass
+ * (after `forceParty`) — when `decideAction` picks a once-a-fight
+ * foe-targeted ability (`{ type: "useAbility", key, target }`), this loop
+ * assigns the combat target field from the action's own `target` BEFORE
+ * dispatching, then dispatches the bare `{ type: "useAbility", key }` (no
+ * `target` field — `useAbility`/`validateAction` only require `key`). This
+ * mirrors `mazeworld.html`'s own foe-card tap handler (`S.combat.target = i`)
+ * — a presentation-layer target selection, never an rng-bearing mutation.
+ * `decideAction` itself never mutates `state` — this write happens here, in
+ * the harness loop, exactly once per dispatch.
  */
 export function playRun(seed, opts, onStep) {
   const policyRng = makeRng(seed ^ 0x9e3779b9);
@@ -806,8 +943,13 @@ export function playRun(seed, opts, onStep) {
   while (!state.dead && !state.won && actions < ctx.opts.maxActions) {
     const action = decideAction(state, policyRng, ctx);
     const inCombat = !!state.combat;
+    let dispatched = action;
+    if (action.type === "useAbility" && Number.isInteger(action.target) && state.combat) {
+      state.combat.target = action.target;
+      dispatched = { type: "useAbility", key: action.key };
+    }
     let events;
-    ({ state, events } = applyAction(state, action));
+    ({ state, events } = applyAction(state, dispatched));
     if (state.dead && inCombat) diedInCombat = true;
     tallyEvents(tallies, events, state);
     observe(ctx, events);

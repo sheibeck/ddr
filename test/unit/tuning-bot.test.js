@@ -761,6 +761,13 @@ test("purity: decideAction never mutates its state argument; module source draws
     // songReady/type gate).
     mkState({ combat: fight("Beasts", 2, 1), c: mu({ sub: "Sorcerer", level: 5, grimoire: ["Mangle", "Stun", "Heal"] }) }),
     mkState({ steps: 500, combat: fight("Beasts", 1, 1), c: { cls: "Fighter", sub: "Bard", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 } }),
+    // Phase 42 (BAL-01 second half): a Fighter with abilities/timers in round
+    // 2 — chooseAbility's own read-only policy (pickMemberAbility's mirror)
+    // must never write to state.c.timers/state.combat either.
+    mkState({
+      combat: fight("Beasts", 1, 2),
+      c: { cls: "Fighter", sub: "Knight", level: 1, wp: 40, maxWP: 40, potions: 0, rations: 0, abilities: ["kata", "brace"], timers: {} },
+    }),
   ];
   for (const state of states) {
     const before = structuredClone(state);
@@ -794,12 +801,20 @@ test("Phase 41 (TERR-02): the bot paths across water and never stalls", () => {
   // naturally to a Werebeast at action 623, never routing-stuck) — 600 would
   // report a false "stuck" purely from an undersized budget, not a real
   // stall. Measured against a live run (node -e against playRun): all three
-  // seeds complete (die naturally) well under 1000 actions, so 1000 is the
-  // smallest round budget that keeps this a genuine stuck-vs-not-stuck
-  // proof rather than a budget artifact.
+  // seeds complete (die naturally) well under 1000 actions, so 1000 was the
+  // smallest round budget that kept this a genuine stuck-vs-not-stuck proof
+  // rather than a budget artifact.
+  //
+  // [Rule 1 deviation, Phase 42 (BAL-01 second half) fallout]: chooseAbility
+  // now lets seed 2's Fighter survive longer (defensive/damage abilities
+  // change the fight's length) — re-measured live: seed 2 now dies naturally
+  // at action 1106, not <1000. 1000 would report a false "stuck" purely from
+  // this plan's own legitimate behavior change, not a real routing stall.
+  // 1500 is the smallest round budget that keeps every seed's die-naturally
+  // outcome comfortably clear of the cap.
   let sawWaded = false;
   for (const seed of [1, 2, 3]) {
-    const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1000 }, (events) => {
+    const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1500 }, (events) => {
       if (events.some((e) => e.type === "waded")) sawWaded = true;
     });
     assert.strictEqual(r.stuck, false, `seed ${seed}: the bot must not stall`);
