@@ -128,7 +128,12 @@ test("rollGrimoire draws a constant, pinned number of rng values per sub-class, 
   for (const sub of subs) {
     // The independently-derived formula: two shuffles (low, high) + one d10
     // + one more shuffle (spare), each shuffle costing max(0, len-1) draws.
-    const pool = SPELLS.filter((sp) => canLearn(sub, sp));
+    // Phase 40 (SPELL-04): rows flagged `roll: "derived"` (content/spells.js
+    // — today, only Lesser Summon) never enter these MAIN-rng shuffles —
+    // engine/character.js#rollGrimoire splices them in afterward via a
+    // separate derived rng stream — so the formula excludes them here; the
+    // three pin tables above are otherwise unchanged.
+    const pool = SPELLS.filter((sp) => canLearn(sub, sp) && sp.roll !== "derived");
     const low = pool.filter((sp) => sp.lvl <= 2).length;
     const high = pool.filter((sp) => sp.lvl > 2).length;
     const spare = pool.filter((sp) => sp.lvl === 1 && schoolGate(sub, sp.s) <= 1).length;

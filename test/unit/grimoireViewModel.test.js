@@ -125,15 +125,20 @@ test("grimoireViewModel: a school-locked spell names the school and level it ope
   assert.equal(row.disabledReason, "healing opens at level 4");
 });
 
-test("grimoireViewModel: a level-1 Summoner's Summon is castable — the Phase 23 spell-level-override regression stays fixed (CMB-02)", () => {
-  // Summon is printed lvl 2 but SPELL_LEVEL_OVERRIDES gives Summoner an
-  // effective level of 1 — grimoireViewModel must consult spellLevelFor,
-  // never sp.lvl directly, or this reads "Needs level 2" forever.
-  const state = fixedState({ c: { grimoire: ["Summon"], level: 1, sub: "Summoner", spellsUsed: 0 }, combat: null });
+// Phase 40 (SPELL-04): the Phase 23 Summoner/Summon override is retired —
+// Summon is printed lvl 2 and spellLevelFor now falls back to sp.lvl for
+// the Summoner, so a level-1 Summoner's Summon row reads "Needs level 2"
+// again. The Summoner's level-1 summon is the new Lesser Summon row
+// instead, which IS castable at level 1.
+test("grimoireViewModel: a level-1 Summoner's Summon needs level 2 (Phase 40 retires the override); Lesser Summon is castable instead", () => {
+  const state = fixedState({ c: { grimoire: ["Summon", "Lesser Summon"], level: 1, sub: "Summoner", spellsUsed: 0 }, combat: null });
   const vm = grimoireViewModel(state);
-  const row = vm.rows.find((r) => r.name === "Summon");
-  assert.equal(row.castable, true);
-  assert.equal(row.disabledReason, null);
+  const summonRow = vm.rows.find((r) => r.name === "Summon");
+  assert.equal(summonRow.castable, false);
+  assert.equal(summonRow.disabledReason, "Needs level 2");
+  const lesserRow = vm.rows.find((r) => r.name === "Lesser Summon");
+  assert.equal(lesserRow.castable, true);
+  assert.equal(lesserRow.disabledReason, null);
 });
 
 test("grimoireViewModel: a non-combat spell with no charges left is disabled (No charges left)", () => {

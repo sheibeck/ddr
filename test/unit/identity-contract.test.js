@@ -302,14 +302,27 @@ const CONTRACT = [
     key: "Summoner",
     kind: "sub",
     good: {
-      name: "summons at level one instead of level two",
+      // Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, user ruling
+      // 2026-09-18): the Phase 23 Summoner/Summon level-1 override is
+      // retired — Summon is spell level 2 again. In its place, a small,
+      // safe summon on day one — Lesser Summon is guaranteed and castable
+      // at level 1.
+      name: "a small, safe summon on day one — Lesser Summon is guaranteed and castable at level 1",
       run() {
-        const summon = SPELLS.find((sp) => sp.n === "Summon");
-        assert.equal(spellLevelFor("Summoner", summon), 1);
+        const lesserSummon = SPELLS.find((sp) => sp.n === "Lesser Summon");
+        for (let seed = 1; seed <= 25; seed++) {
+          const state = newRun(seed, [], { force: { sub: "Summoner", race: "Human" } });
+          assert.ok(state.c.grimoire.includes("Lesser Summon"), `seed ${seed}: grimoire missing the granted Lesser Summon`);
+        }
         const state = hero("Summoner");
-        state.c.grimoire = ["Summon"];
-        const events = castSpell(state, SPELLS.indexOf(summon), fakeRng([5, 3]), []);
+        state.c.grimoire = ["Lesser Summon"];
+        assert.equal(canCast(state, lesserSummon), true);
+        // The cast still runs the ordinary summon branch this plan (a
+        // Summoner draws the d8 backfire check first) — Plan 02 re-pins this
+        // cast to the lesser-specific numbers once magic.js reads `sp.lesser`.
+        const events = castSpell(state, SPELLS.indexOf(lesserSummon), fakeRng([5, 3, 1]), []);
         assert.ok(!events.some((e) => e.type === "spellAboveLevel"));
+        assert.ok(!events.some((e) => e.type === "spellSchoolLocked"));
         expectEvent(events, "allyPending");
       },
     },

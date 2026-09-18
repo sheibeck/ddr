@@ -63,10 +63,26 @@ test("CMB-02: the module script bridges window.__mzCanCast = canCast", () => {
 
 // --- named pins (the Phase 23 regression, closed) --------------------------
 
-test("CMB-02: a level-1 Summoner with Summon in the grimoire — classic canCast agrees with the engine (true)", () => {
+// Phase 40 (SPELL-04): Summon is spell level 2 again for the Summoner (the
+// Phase 23 level-1 override is retired) — classic and engine now agree on
+// false at level 1, true at level 2; the Summoner's level-1 summon is the
+// new Lesser Summon row instead, castable at level 1.
+test("CMB-02: a level-1 Summoner with Summon in the grimoire — classic canCast agrees with the engine (false, Phase 40 retires the override)", () => {
   const state = stateFor("Summoner", 1, ["Summon"]);
+  assert.equal(engineCanCast(state, SPELLS.find((sp) => sp.n === "Summon")), false);
+  assert.equal(classicFor(state)(SPELLS.find((sp) => sp.n === "Summon")), false);
+});
+
+test("CMB-02: a level-2 Summoner with Summon in the grimoire — classic canCast agrees with the engine (true)", () => {
+  const state = stateFor("Summoner", 2, ["Summon"]);
   assert.equal(engineCanCast(state, SPELLS.find((sp) => sp.n === "Summon")), true);
   assert.equal(classicFor(state)(SPELLS.find((sp) => sp.n === "Summon")), true);
+});
+
+test("CMB-02: a level-1 Summoner with Lesser Summon in the grimoire — classic canCast agrees with the engine (true)", () => {
+  const state = stateFor("Summoner", 1, ["Lesser Summon"]);
+  assert.equal(engineCanCast(state, SPELLS.find((sp) => sp.n === "Lesser Summon")), true);
+  assert.equal(classicFor(state)(SPELLS.find((sp) => sp.n === "Lesser Summon")), true);
 });
 
 test("CMB-02: a level-1 Illusionist with Phantom Host in the grimoire — classic canCast agrees with the engine (true)", () => {

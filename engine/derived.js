@@ -1209,6 +1209,39 @@ export function isAttackSpell(sp) {
 }
 
 /**
+ * DAMAGE_SPELL_KINDS — Phase 40 (SPELL-04, DELIBERATE RULES CHANGE,
+ * 2026-09-18): the day-one guarantee narrows from "any ATTACK_SPELL_KINDS
+ * member" (Phase 23) to "a spell that actually deals damage" — the user's
+ * own ruling (40-CONTEXT.md Area 3) singled out that a small summon counts
+ * as a damage SOURCE, not a damage KIND, so it is carried by dealsDamage's
+ * separate `sp.lesser` check below, not folded into this set.
+ *
+ * Deliberate exclusions, matching the research finding this plan closes:
+ *   - Summon / Phantom Host (`kind: "summon"`) do NOT count on their own —
+ *     ROADMAP SC-3 says Summoner/Illusionist "additionally qualify" via
+ *     their own overrides/grants, not that every summon spell is a damage
+ *     spell; a Summoner's Lesser Summon is a GRANT (engine/character.js#
+ *     rollGrimoire), not a kind-based inclusion here.
+ *   - Doze / Stun / Weaken (`status`/`stun`/`weaken`) do NOT count — they
+ *     disable, they never move a foe's wp.
+ * ATTACK_SPELL_KINDS above is UNTOUCHED by this addition — it still gates
+ * the Wizard melee-refusal rule and member/ally casts, a different
+ * question ("is this a combat spell to lean on") from "does this spell
+ * deal damage".
+ */
+export const DAMAGE_SPELL_KINDS = new Set(["thrown", "dot", "acid", "volley", "quake", "death"]);
+
+/**
+ * dealsDamage(sp) — does casting this spell deal damage to a foe? True for
+ * any DAMAGE_SPELL_KINDS member, OR any spell flagged `lesser: true`
+ * (Lesser Summon — the Summoner's small, safe, guaranteed day-one damage
+ * source per the user's ruling). Pure read, no rng, no mutation.
+ */
+export function dealsDamage(sp) {
+  return DAMAGE_SPELL_KINDS.has(sp.kind) || sp.lesser === true;
+}
+
+/**
  * castableAttackSpells(state) — every attack-kind spell the current character
  * could cast RIGHT NOW: known (grimoire), level-legal (via spellLevelFor,
  * honoring the override table), and school-legal (canCast's schoolGate

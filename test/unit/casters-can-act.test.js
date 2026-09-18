@@ -172,33 +172,46 @@ test("IDENT-01: a non-Wizard caster never refuses, even holding an attack spell 
   assert.ok(events.some((e) => e.type === "struck"));
 });
 
-// --- IDENT-03: Summoner at level 1, unchanged formula -------------------
+// --- IDENT-03: Summoner Summon, level 2 again (Phase 40 override retired) ---
 
-test("IDENT-03: a level-1 Summoner summons in combat with the unchanged doubled formula", () => {
+// Phase 40 (SPELL-04, DELIBERATE RULES CHANGE): SPELL_LEVEL_OVERRIDES.Summoner
+// is retired — Summon is spell level 2 for the Summoner again (the new
+// Lesser Summon row is the Summoner's level-1 summon instead). The doubled
+// formula itself is unchanged; it now only fires at level 2+.
+test("IDENT-03: a level-1 Summoner casting Summon is refused (spellAboveLevel need 2) — Phase 40 retires the level-1 override", () => {
   const state = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Summon"] } });
+  const combat = fixedCombat([]);
+  state.combat = combat;
+  const events = castSpell(state, SPELL_IDX.Summon, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "spellAboveLevel", spell: "Summon", need: 2, have: 1 }]);
+  assert.equal(state.c.spellsUsed, 0);
+});
+
+test("IDENT-03: a level-2 Summoner summons in combat with the unchanged doubled formula", () => {
+  const state = fixedState({ c: { sub: "Summoner", level: 2, grimoire: ["Summon"] } });
   const combat = fixedCombat([]); // empty foe list: afterPlayerAction clears the encounter with 0 extra draws
   state.combat = combat;
   const events = castSpell(state, SPELL_IDX.Summon, fakeRng([2, 3]), []); // d8=2 (no backfire), d4=3 (rounds)
-  assert.ok(events.some((e) => e.type === "allySummoned" && e.lvl === 2 && e.rounds === 8), "lvl min(5,1+1)=2, rounds 2*3+2=8");
-  assert.equal(combat.ally.lvl, 2);
+  assert.ok(events.some((e) => e.type === "allySummoned" && e.lvl === 3 && e.rounds === 8), "lvl min(5,2+1)=3, rounds 2*3+2=8");
+  assert.equal(combat.ally.lvl, 3);
   assert.equal(combat.ally.rounds, 8);
   assert.equal(state.c.spellsUsed, 1);
 });
 
-test("IDENT-03: out of combat, Summon queues a pendingAlly with the same doubled formula", () => {
-  const state = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Summon"] }, combat: null });
+test("IDENT-03: out of combat, a level-2 Summoner's Summon queues a pendingAlly with the same doubled formula", () => {
+  const state = fixedState({ c: { sub: "Summoner", level: 2, grimoire: ["Summon"] }, combat: null });
   const events = castSpell(state, SPELL_IDX.Summon, fakeRng([5, 1]), []); // d8=5 (no backfire), d4=1 (rounds)
   assert.ok(state.c.pendingAlly, "queued for the next encounter");
-  assert.equal(state.c.pendingAlly.lvl, 2);
+  assert.equal(state.c.pendingAlly.lvl, 3, "min(5, 2+1)");
   assert.equal(state.c.pendingAlly.rounds, 4, "2*1+2");
   assert.ok(events.some((e) => e.type === "allyPending"));
 });
 
-test("IDENT-03: the Summoner's one-in-eight backfire is kept", () => {
-  const state = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Summon"], wp: 50, maxWP: 50 }, combat: null });
+test("IDENT-03: a level-2 Summoner's one-in-eight backfire is kept", () => {
+  const state = fixedState({ c: { sub: "Summoner", level: 2, grimoire: ["Summon"], wp: 50, maxWP: 50 }, combat: null });
   const events = castSpell(state, SPELL_IDX.Summon, fakeRng([1, 4]), []); // d8=1 -> backfire, d6=4
-  assert.ok(events.some((e) => e.type === "summonBackfired" && e.amount === 8), "lvl^2(2*2=4) + d6(4) = 8");
-  assert.equal(state.c.wp, 42, "50 - 8");
+  assert.ok(events.some((e) => e.type === "summonBackfired" && e.amount === 13), "lvl^2(3*3=9) + d6(4) = 13");
+  assert.equal(state.c.wp, 37, "50 - 13");
   assert.equal(state.c.pendingAlly, undefined, "no ally on a backfire");
 });
 

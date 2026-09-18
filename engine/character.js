@@ -29,7 +29,7 @@
 
 import { rollDice } from "./dice.js";
 import { leveled } from "./events.js";
-import { canLearn, schoolGate, levelFromSP, clampCarry, spellLevelFor, isAttackSpell } from "./derived.js";
+import { canLearn, schoolGate, levelFromSP, clampCarry, spellLevelFor, dealsDamage } from "./derived.js";
 import { derivedRng } from "./rng.js";
 import {
   CLASSES,
@@ -291,31 +291,63 @@ export function ensureAbilities(c, base) {
 /**
  * rollGrimoire(rng, sub) — d10 spells (minimum 4) drawn from what the subclass
  * may ever learn, with the subclass "must-have" grants, the first-day
- * usability top-up, and (Phase 23, IDENT-02) a guaranteed day-one ATTACK
- * spell. Ports mazeworld.html rollGrimoire() (lines 890-909); the prototype
- * only ever guaranteed "two usable-now spells" of ANY kind, so an Apprentice
- * could roll Heal + Strength and be unable to hurt anything on day one.
+ * usability top-up, and a guaranteed day-one DAMAGE-dealing spell. Ports
+ * mazeworld.html rollGrimoire() (lines 890-909); the prototype only ever
+ * guaranteed "two usable-now spells" of ANY kind, so an Apprentice could
+ * roll Heal + Strength and be unable to hurt anything on day one.
  *
- * ZERO-DRAW GUARANTEE (FID-06): both the low/high pool shuffles and the
- * `spare` shuffle below consume EXACTLY the same rng draws as before this
- * phase — the attack top-up walks the ALREADY-shuffled `spare` array in its
- * existing order and never calls `rng.shuffle`/`rng.d`/`rng.pick` itself. See
- * test/unit/chargen-rng-pin.test.js (pinned pre-Phase-23) and
- * test/unit/guaranteed-attack-spell.test.js (zero-draw proof, this phase).
+ * ZERO-DRAW GUARANTEE (FID-06): the low/high pool shuffles and the `spare`
+ * shuffle below consume EXACTLY the same MAIN-rng draws as before Phase 40 —
+ * a Phase-40 row flagged `roll: "derived"` (content/spells.js) NEVER enters
+ * these shuffles or lengthens them; it is spliced in AFTER each shuffle
+ * completes, at a position drawn from a completely separate, DERIVED rng
+ * stream (`derivedRng`, engine/rng.js) keyed on the main cursor. The damage
+ * top-up below walks the ALREADY-built `spare` array in its existing order
+ * and makes no further rng call of its own — zero new MAIN-rng draws. See
+ * test/unit/chargen-rng-pin.test.js (the pinned pre-Phase-23 order, still
+ * green) and test/unit/day-one-damage.test.js (the Phase 40 zero-draw proof
+ * + the 8-sub day-one damage guarantee).
  */
 export function rollGrimoire(rng, sub) {
   const pool = SPELLS.filter((sp) => canLearn(sub, sp));
-  const low = pool.filter((sp) => sp.lvl <= 2),
-    high = pool.filter((sp) => sp.lvl > 2);
+  // Phase 40 (SPELL-04): a row flagged `roll: "derived"` (today, only
+  // Lesser Summon) never enters the main-rng-shuffled `rolled` pools below —
+  // it is spliced in afterward via a derived stream (see `dr` below), so the
+  // main rng draw COUNT/order this function consumes is unchanged from
+  // before this phase.
+  const rolled = pool.filter((sp) => sp.roll !== "derived");
+  const added = pool.filter((sp) => sp.roll === "derived");
+  const low = rolled.filter((sp) => sp.lvl <= 2),
+    high = rolled.filter((sp) => sp.lvl > 2);
   rng.shuffle(low);
   rng.shuffle(high);
   const n = Math.max(4, rng.d(10));
+
+  // ONE derived rng stream for this whole call, keyed on the MAIN cursor so
+  // every seed gets its own placement but the main rng itself never advances
+  // (engine/rng.js#derivedRng — the same pattern engine/items.js's tool
+  // rolls and engine/character.js#rollPoolAbility already use). A rng
+  // lacking `getState` (e.g. a bespoke test double) falls back to cursor 0 —
+  // still deterministic, never throws.
+  const dr = derivedRng(typeof rng.getState === "function" ? rng.getState() : 0, "grimoire", sub);
+  for (const sp of added) {
+    if (sp.lvl <= 2) low.splice(dr.d(low.length + 1) - 1, 0, sp);
+    else high.splice(dr.d(high.length + 1) - 1, 0, sp);
+  }
+
   const book = [];
   for (const sp of low) { if (book.length < Math.min(n, 6)) book.push(sp.n); }
   for (const sp of high) { if (book.length < n) book.push(sp.n); }
   if (sub === "Cleric") for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
   if (sub === "Illusionist") for (const n2 of ["Mirror Self", "Phantom Host"]) if (!book.includes(n2)) book.push(n2);
   if (sub === "Summoner" && !book.includes("Summon")) book.push("Summon");
+  // Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, user ruling 2026-09-18):
+  // "Give the summoner a level 1 summon" — a deterministic grant, zero
+  // draws, mirroring the Summon grant directly above. Retires the Phase 23
+  // SPELL_LEVEL_OVERRIDES.Summoner entry (content/spell-level-overrides.js);
+  // Summon itself is spell level 2 for the Summoner again (its offense gate
+  // stays 3 — untouched, per the user's own point).
+  if (sub === "Summoner" && !book.includes("Lesser Summon")) book.push("Lesser Summon");
   if (sub === "Sorcerer") for (const n2 of ["Freeze", "Fireball"]) if (!book.includes(n2)) book.push(n2);
   // you must be able to actually do something on your first day
   //
@@ -326,49 +358,52 @@ export function rollGrimoire(rng, sub) {
   // (e.g. adding Summon/Phantom Host to a Summoner's/Illusionist's `spare`)
   // lengthens `rng.shuffle(spare)` by one draw and shifts the rng cursor for
   // seeds 8 and 15 — breaking the frozen magic/maze fixtures. `spare`'s
-  // LENGTH is load-bearing (engine/rng.js's Fisher-Yates shuffle draws
-  // `arr.length - 1` values), so this predicate is frozen.
+  // LENGTH (BEFORE any Phase-40 derived splice) is load-bearing
+  // (engine/rng.js's Fisher-Yates shuffle draws `arr.length - 1` values), so
+  // this predicate is frozen and `spare` is built from `rolled`, never
+  // `pool` — a Phase-40 derived row is spliced in AFTER the shuffle below,
+  // exactly like the low/high splice above.
   const dayOnePool = (sp) => sp.lvl === 1 && schoolGate(sub, sp.s) <= 1;
-  // `usableNow` (the READY-COUNT predicate, used only by `ready()` and the
-  // attack top-up below) IS routed through spellLevelFor (Phase 23,
-  // IDENT-03: "rollGrimoire's usableNow uses spellLevelFor") — a Summoner's
-  // Summon and an Illusionist's Phantom Host now count as day-one-usable.
-  // Measured consequence: a Summoner's grants already yield two usable-now
-  // spells (Shield + Summon), so the two-usable-now loop below stops one
-  // spell earlier than before (parity seed 15 drops Heal) — this is
-  // declared under FID-06 in this plan's fixture `divergences` record, not
-  // hidden. This does NOT affect `spare`'s pool/length/shuffle above.
+  // `usableNow` (the READY-COUNT predicate, used by `ready()` and the
+  // damage top-up below) IS routed through spellLevelFor (Phase 23,
+  // IDENT-03: "rollGrimoire's usableNow uses spellLevelFor") — an
+  // Illusionist's Phantom Host counts as day-one-usable; a Summoner's
+  // Lesser Summon (its own printed lvl 1, no override needed) counts too.
   const usableNow = (sp) => spellLevelFor(sub, sp) === 1 && schoolGate(sub, sp.s) <= 1;
   const ready = () => book.filter((n2) => usableNow(SPELLS.find((sp) => sp.n === n2))).length;
-  const spare = pool.filter(dayOnePool);
+  const spare = rolled.filter(dayOnePool);
   rng.shuffle(spare);
+  // Phase 40: splice any derived-added row that ALSO satisfies dayOnePool
+  // (today, Lesser Summon for the 5 special-school subs) into `spare` AFTER
+  // the shuffle above completes — `spare`'s shuffle draw count is unchanged
+  // by this splice; only its post-shuffle CONTENT/length grows.
+  for (const sp of added) {
+    if (dayOnePool(sp)) spare.splice(dr.d(spare.length + 1) - 1, 0, sp);
+  }
   for (const sp of spare) { if (ready() >= 2) break; if (!book.includes(sp.n)) book.push(sp.n); }
 
-  // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-02): the prototype
-  // only ever guaranteed "two usable-now spells" of ANY kind above — an
-  // Apprentice could roll Heal + Strength and have no way to hurt anything.
-  // Every Magic User except the Summoner now gets a guaranteed day-one
-  // ATTACK spell (Doze/Freeze/Stun/Weaken — see engine/derived.js's
-  // ATTACK_SPELL_KINDS); the Summoner's day-one attack is Summon itself, via
-  // the spell-level-override table consumed by `usableNow` above. This walks
-  // the SAME already-shuffled `spare` array in its EXISTING order and makes
-  // NO rng call of its own — zero new draws, so the rng-consumption order
-  // pinned by test/unit/chargen-rng-pin.test.js is unchanged; only the
-  // grimoire CONTENT changes for a sub-class that lacked a day-one attack.
-  // The `sub !== "Summoner"` guard is belt-and-braces: a Summoner's `spare`
-  // (built from `dayOnePool`, frozen above) never contains an attack-kind
-  // spell anyway, since its offense school is gated to level 3
-  // (content/mu-chart.js). Fighters/Thieves never call rollGrimoire.
-  const attackReady = () =>
+  // DELIBERATE RULES CHANGE (Phase 40, 2026-09-18, SPELL-04): narrows the
+  // Phase 23 guarantee ("any ATTACK_SPELL_KINDS member") to "a spell that
+  // actually DEALS DAMAGE" (engine/derived.js#dealsDamage) — Doze/Stun/
+  // Weaken no longer satisfy the day-one guarantee for anyone (research
+  // finding: they disable, they never hurt). The day-one guarantee is now
+  // DAMAGE (Freeze at level 1 for most subs, or the Summoner's granted
+  // Lesser Summon — already in `book` by this point, so `damageReady()` is
+  // immediately true and the walk below is a no-op for the Summoner). No
+  // sub-class exemption (the old Summoner-only skip guard is gone — every
+  // Magic User sub, including the Summoner, is walked the same way). This
+  // walks the SAME already-shuffled `spare` array (post Phase-40 splice) in
+  // its EXISTING order and makes NO further rng call — zero new draws, so
+  // test/unit/chargen-rng-pin.test.js stays unchanged; only the grimoire
+  // CONTENT changes for a sub-class that lacked a day-one damage spell.
+  const damageReady = () =>
     book.some((n2) => {
       const sp = SPELLS.find((s2) => s2.n === n2);
-      return usableNow(sp) && isAttackSpell(sp);
+      return usableNow(sp) && dealsDamage(sp);
     });
-  if (sub !== "Summoner") {
-    for (const sp of spare) {
-      if (attackReady()) break;
-      if (isAttackSpell(sp) && !book.includes(sp.n)) book.push(sp.n);
-    }
+  for (const sp of spare) {
+    if (damageReady()) break;
+    if (dealsDamage(sp) && !book.includes(sp.n)) book.push(sp.n);
   }
   return book;
 }
