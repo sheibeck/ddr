@@ -36,6 +36,7 @@ import {
   railAnnouncement,
   WORN_RECONCILE_HOLD,
   wornReconcileCard,
+  abilityPoolCard,
 } from "../../src/browser/rail.js";
 
 // ─── Test 1: RAIL_TONES / RAIL_HOLD sanity ─────────────────────────────────
@@ -342,6 +343,32 @@ test("wornReconcileCard never mutates its report argument", () => {
   const before = JSON.parse(JSON.stringify(report));
   wornReconcileCard(report);
   assert.deepStrictEqual(report, before);
+});
+
+// ─── Phase 38 (ABIL-01/03): abilityPoolCard — first-paint pool-pick card ───
+
+test("RAIL_COPY.abilityPool: title and line template", () => {
+  assert.equal(RAIL_COPY.abilityPool.title, "UP YOUR SLEEVE");
+  assert.equal(RAIL_COPY.abilityPool.line, "New trick: {name} — {txt}");
+});
+
+test("abilityPoolCard: the FIRST pool-source id in c.abilities builds the exact card", () => {
+  const card = abilityPoolCard({ cls: "Fighter", abilities: ["kata", "brace"] });
+  assert.deepStrictEqual(card, {
+    title: "UP YOUR SLEEVE",
+    line: "New trick: Brace — halve the next blow that lands on you",
+    tone: "good",
+    hold: RAIL_HOLD.level,
+    icon: "★",
+  });
+});
+
+test("abilityPoolCard: null/invalid/empty/table-only c all yield null", () => {
+  assert.equal(abilityPoolCard(null), null);
+  assert.equal(abilityPoolCard(undefined), null);
+  assert.equal(abilityPoolCard({ cls: "Magic User", abilities: [] }), null);
+  assert.equal(abilityPoolCard({ cls: "Fighter", abilities: ["kata"] }), null, "kata is table-sourced");
+  assert.equal(abilityPoolCard({ cls: "Fighter" }), null, "no abilities array at all");
 });
 
 // ─── Test 14: voice scan ───────────────────────────────────────────────────

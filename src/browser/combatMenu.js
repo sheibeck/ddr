@@ -12,11 +12,13 @@
 // PRESENTATION ONLY, pure module: no DOM/global access, no timers, no
 // storage, no rng draws, no mutation of `state` anywhere in this file.
 
-import { SPELLS } from "../../content/index.js";
+import { SPELLS, ABILITY_BY_ID } from "../../content/index.js";
 import { characterSheetViewModel } from "./viewModels.js";
 import { canCast, WORN_SLOTS } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
+import { abilityRoundsLeft } from "../../engine/abilities.js";
+import { isReady } from "../../engine/effects.js";
 
 /** COMBAT_MENU_COPY — every literal string this module emits (voice-scanned by test/unit/combatMenu.test.js). */
 export const COMBAT_MENU_COPY = Object.freeze({
@@ -29,6 +31,12 @@ export const COMBAT_MENU_COPY = Object.freeze({
   socialSub: "FLEE · PARLEY",
   noAbilities: "NOTHING UP YOUR SLEEVE",
   noAbilitiesDesc: "Hit it with the pointy end.",
+  // Phase 38 (ABIL-01/04) — the melee ABILITIES branch's cost/sub vocabulary.
+  abilityReady: "READY",
+  abilityUsedUp: "ONCE A FIGHT · USED",
+  abilityRound: "1 ROUND",
+  abilityRounds: "{n} ROUNDS",
+  abilitiesSub: "{ready}/{n} READY",
   noSpells: "NOTHING IN THE GRIMOIRE",
   noSpellsDesc: "Not one spell. Bold.",
   noItems: "NOTHING TO USE",
@@ -49,6 +57,46 @@ export const COMBAT_MENU_COPY = Object.freeze({
   parleyDesc: "Talk it down. An insult is permanent.",
   back: "BACK",
 });
+
+/**
+ * abilityRows(c) — Phase 38 (ABIL-01/04): one row per `c.abilities` catalog
+ * id, in `c.abilities` order. Every row is `enabled: true` — CONTEXT's
+ * "unavailable rows render disabled-styled but stay tappable" rule applies
+ * to SPELLS, not this branch: a tap on cooldown dispatches `useAbility`
+ * exactly like a ready one, and the engine's own `abilityRefused { reason:
+ * "cooldown" }` lands the canon refusal line in the fight log (a deliberate
+ * departure from SPELLS' castable-gated `enabled`). `cost` reads READY /
+ * "N ROUND(S)" / the abilityUsedUp copy (a `cd: "fight"` ability that is not
+ * ready, regardless of its remaining phase). An id absent from the catalog
+ * (a tampered save) is silently dropped. Pure, no rng.
+ */
+function abilityRows(c) {
+  return (c.abilities || [])
+    .map((key) => {
+      const meta = ABILITY_BY_ID[key];
+      if (!meta) return null;
+      const id = `ability:${key}`;
+      const ready = isReady(c, id);
+      let cost;
+      if (ready) {
+        cost = COMBAT_MENU_COPY.abilityReady;
+      } else if (meta.cd === "fight") {
+        cost = COMBAT_MENU_COPY.abilityUsedUp;
+      } else {
+        const left = abilityRoundsLeft(c, key);
+        cost = left === 1 ? COMBAT_MENU_COPY.abilityRound : COMBAT_MENU_COPY.abilityRounds.replace("{n}", left);
+      }
+      return {
+        id: `ability-${key}`,
+        label: meta.name.toUpperCase(),
+        cost,
+        desc: meta.txt || "",
+        enabled: true,
+        dispatch: { type: "useAbility", key },
+      };
+    })
+    .filter(Boolean);
+}
 
 /**
  * combatMenuViewModel(state) — `{ prompt, actions, submenus }`. `actions`
@@ -129,7 +177,29 @@ export function combatMenuViewModel(state) {
           enabled: singReady,
           dispatch: { type: "sing" },
         },
+        // Phase 38 (ABIL-01): the Bard keeps Sing FIRST (CONTEXT); because a
+        // Bard is a Fighter it also rolls abilities, so its own rows follow.
+        ...abilityRows(c),
       ],
+    };
+  } else if (Array.isArray(c.abilities) && c.abilities.length) {
+    // Phase 38 (ABIL-01/03/04) — a melee (Fighter/Thief) c with at least one
+    // rolled ability. An empty/absent c.abilities falls through to the
+    // fallback branch below, byte-identical to before this phase.
+    const rows = abilityRows(c);
+    const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady).length;
+    secondAction = {
+      key: "abilities",
+      num: 2,
+      label: COMBAT_MENU_COPY.abilities,
+      sub: COMBAT_MENU_COPY.abilitiesSub.replace("{ready}", readyCount).replace("{n}", rows.length),
+      enabled: true,
+      accent: false,
+      opens: "abilities",
+    };
+    submenus.abilities = {
+      title: `${heroName} · ABILITIES`,
+      rows,
     };
   } else {
     secondAction = {

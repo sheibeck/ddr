@@ -6,10 +6,12 @@
 // Pitfall 1, never the design mockup's throwaway state-object field names.
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
-import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS } from "../../content/index.js";
+import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID } from "../../content/index.js";
 import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
+import { abilityRoundsLeft } from "../../engine/abilities.js";
+import { isReady } from "../../engine/effects.js";
 
 /**
  * skillTableFor(cls) — the special-skill description pool for a class
@@ -228,6 +230,56 @@ export function bagUsage(c) {
 }
 
 /**
+ * ABILITY_VIEW_COPY — Phase 38 (ABIL-01/04): every player-facing string the
+ * Hero-tab abilities list needs beyond the catalog's own name/txt — the
+ * in-combat/out-of-combat state-suffix vocabulary and the two source-
+ * provenance tags. A frozen literal object like COMBAT_MENU_COPY/RAIL_COPY
+ * elsewhere in this codebase.
+ */
+export const ABILITY_VIEW_COPY = Object.freeze({
+  ready: "READY",
+  rounds: "{n} rounds",
+  used: "once a fight · used",
+  cd: "cd {n} rounds",
+  once: "once a fight",
+  tagTable: "special skill · active",
+  tagPool: "trick",
+  noAbilitiesCaster: "Spells are the trick.",
+});
+
+/**
+ * abilitiesViewFor(c, inCombat) — Phase 38 (ABIL-01/04): characterSheetViewModel's
+ * `abilities[]` (Hero tab) — one `{ id, name, description, source, state }`
+ * row per `c.abilities` catalog id (`source` is the catalog's own literal
+ * "table" | "pool", NOT a display tag — the Hero-tab shell maps that to
+ * ABILITY_VIEW_COPY.tagTable/tagPool). `state` is the ONE place the state-
+ * suffix rule lives: in combat, READY / "{n} rounds" / "once a fight ·
+ * used" (mirrors combatMenu.js#abilityRows' cost rule); out of combat, the
+ * ability's OWN declared cooldown length ("cd {n} rounds" / "once a
+ * fight") — never a live timer read, since c.timers is combat-scoped and
+ * cleared every fight anyway. An id absent from the catalog (a tampered
+ * save) is silently dropped. Pure, no rng.
+ */
+function abilitiesViewFor(c, inCombat) {
+  return (c.abilities || [])
+    .map((key) => {
+      const meta = ABILITY_BY_ID[key];
+      if (!meta) return null;
+      let state;
+      if (inCombat) {
+        const id = `ability:${key}`;
+        if (isReady(c, id)) state = ABILITY_VIEW_COPY.ready;
+        else if (meta.cd === "fight") state = ABILITY_VIEW_COPY.used;
+        else state = ABILITY_VIEW_COPY.rounds.replace("{n}", abilityRoundsLeft(c, key));
+      } else {
+        state = meta.cd === "fight" ? ABILITY_VIEW_COPY.once : ABILITY_VIEW_COPY.cd.replace("{n}", meta.cd);
+      }
+      return { id: key, name: meta.name, description: meta.txt || "", source: meta.source, state };
+    })
+    .filter(Boolean);
+}
+
+/**
  * characterSheetViewModel(state) — the HERO tab's ("THE DOOMED") render-
  * ready data, bound to the real GameState. Returns a flat object: name,
  * level, classLabel, raceLabel, subLabel, snarkLine, stats[] (the 8 UI-SPEC
@@ -277,6 +329,8 @@ export function characterSheetViewModel(state) {
       })
     : [];
 
+  const abilities = abilitiesViewFor(c, !!state.combat);
+
   return {
     name: c.name,
     level: c.level,
@@ -288,6 +342,7 @@ export function characterSheetViewModel(state) {
     winPotential,
     quirk: { label: "QUIRK", text: quirkText(c) },
     skills,
+    abilities,
   };
 }
 

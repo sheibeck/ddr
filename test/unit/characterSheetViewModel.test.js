@@ -16,7 +16,8 @@ import assert from "node:assert/strict";
 import { newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { strikeDie, toHit, upkeep, weaponDamage } from "../../engine/derived.js";
-import { THRESHOLDS } from "../../content/index.js";
+import { THRESHOLDS, ABILITY_BY_ID } from "../../content/index.js";
+import { startCooldown } from "../../engine/effects.js";
 import { characterSheetViewModel } from "../../src/browser/viewModels.js";
 
 function statByKey(vm, key) {
@@ -151,6 +152,48 @@ test("characterSheetViewModel(state): ARMOR row reflects a no-armor Fridgian (re
   assert.equal(state.c.ar, 0);
   const vm = characterSheetViewModel(state);
   assert.equal(statByKey(vm, "armor").value, `NOTHING · AR 0`);
+});
+
+// ─── Phase 38 (ABIL-01/04): abilities[] ────────────────────────────────────
+
+test("characterSheetViewModel(state): abilities[] out of combat reads the ability's OWN cd/once-a-fight text, tagged table/pool by source", () => {
+  const state = newRun(42); // Fighter/Soldier/Human
+  state.c.abilities = ["feint", "mark"];
+  state.combat = null;
+  const vm = characterSheetViewModel(state);
+  assert.deepEqual(vm.abilities, [
+    { id: "feint", name: "Feint", description: ABILITY_BY_ID.feint.txt, source: "table", state: "cd 3 rounds" },
+    { id: "mark", name: "Mark", description: ABILITY_BY_ID.mark.txt, source: "pool", state: "once a fight" },
+  ]);
+});
+
+test("characterSheetViewModel(state): abilities[] in combat reads READY / N rounds / once a fight · used", () => {
+  const state = newRun(42);
+  state.c.abilities = ["feint", "secondWind"];
+  state.combat = {};
+  const readyVm = characterSheetViewModel(state);
+  assert.equal(readyVm.abilities.find((a) => a.id === "feint").state, "READY");
+
+  startCooldown(state.c, "ability:feint", { rounds: 2 });
+  startCooldown(state.c, "ability:secondWind", { rounds: 999 });
+  const vm = characterSheetViewModel(state);
+  assert.equal(vm.abilities.find((a) => a.id === "feint").state, "2 rounds");
+  assert.equal(vm.abilities.find((a) => a.id === "secondWind").state, "once a fight · used");
+});
+
+test("characterSheetViewModel(state): abilities[] is [] for a Magic User", () => {
+  const state = newRun(7); // Magic User / Wizard / Human
+  assert.deepEqual(state.c.abilities, []);
+  const vm = characterSheetViewModel(state);
+  assert.deepEqual(vm.abilities, []);
+});
+
+test("characterSheetViewModel(state): calling the view-model with abilities present never advances state.rngState", () => {
+  const state = newRun(1234);
+  state.c.abilities = ["feint"];
+  const before = structuredClone(state.rngState);
+  characterSheetViewModel(state);
+  assert.deepEqual(state.rngState, before);
 });
 
 test("src/browser/viewModels.js does not read the design mockup's placeholder field shape (s.ch, s.pos, s.feats, .wp as a lone field)", async () => {

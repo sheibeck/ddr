@@ -18,6 +18,11 @@ import { SPELLS } from "../../content/index.js";
 import { canCast } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+// Phase 38 (ABIL-01/04) — new imports for the ABILITIES-branch section below;
+// added as their own lines (never editing the pre-existing import above) so
+// the "only additions" acceptance criterion for this file stays exact.
+import { ABILITY_BY_ID } from "../../content/index.js";
+import { startEffect, startCooldown } from "../../engine/effects.js";
 
 // Phase 37 (GEAR-03): a Poplar Staff (worn activatable), used as the fixed
 // staff literal across the new "worn activatables" section below.
@@ -290,6 +295,84 @@ test("state.combat === null never throws; strike/social rows still compute from 
   assert.equal(vm.actions[0].key, "strike");
   assert.equal(vm.submenus.social.rows[0].label, "FLEE");
   assert.equal(vm.submenus.social.rows[1].enabled, false, "canParley refuses with no active combat");
+});
+
+// ─── Phase 38 (ABIL-01/04): ABILITIES submenu — melee active abilities ─────
+
+test("Fighter with c.abilities = ['kata', 'brace']: grid sub, submenu rows; an empty/absent abilities array keeps today's fallback", () => {
+  const c = { cls: "Fighter", sub: "Soldier", abilities: ["kata", "brace"] };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+
+  assert.deepEqual(vm.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "2/2 READY", enabled: true, accent: false, opens: "abilities" });
+  assert.deepEqual(vm.submenus.abilities.rows, [
+    { id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" } },
+    { id: "ability-brace", label: "BRACE", cost: "READY", desc: ABILITY_BY_ID.brace.txt, enabled: true, dispatch: { type: "useAbility", key: "brace" } },
+  ]);
+
+  const emptyState = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: [] }, combat: fixedCombat([]) });
+  const emptyVm = combatMenuViewModel(emptyState);
+  assert.deepEqual(emptyVm.submenus.abilities.rows, [
+    { id: "none", label: COMBAT_MENU_COPY.noAbilities, cost: "", desc: COMBAT_MENU_COPY.noAbilitiesDesc, enabled: false, dispatch: null },
+  ]);
+  assert.equal(emptyVm.actions[1].enabled, false);
+
+  const legacyVm = combatMenuViewModel(fixedState({ combat: fixedCombat([]) }));
+  assert.equal(legacyVm.actions[1].enabled, false);
+  assert.deepEqual(legacyVm.submenus.abilities.rows, [
+    { id: "none", label: COMBAT_MENU_COPY.noAbilities, cost: "", desc: COMBAT_MENU_COPY.noAbilitiesDesc, enabled: false, dispatch: null },
+  ]);
+});
+
+test("ABILITIES cost text: '3 ROUNDS' / '1 ROUND' on a plain cooldown; 'ONCE A FIGHT · USED' on a used once-a-fight ability; '6 ROUNDS' on a sidestep effect record (left 2, cd 4); a row stays enabled on cooldown", () => {
+  const c = { cls: "Fighter", sub: "Soldier", abilities: ["kata", "brace"] };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  startCooldown(state.c, "ability:kata", { rounds: 3 });
+  const vm = combatMenuViewModel(state);
+  const kataRow = vm.submenus.abilities.rows.find((r) => r.id === "ability-kata");
+  assert.equal(kataRow.cost, "3 ROUNDS");
+  assert.equal(kataRow.enabled, true);
+  assert.equal(vm.actions[1].sub, "1/2 READY");
+
+  const state1 = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: ["kata"] }, combat: fixedCombat([]) });
+  startCooldown(state1.c, "ability:kata", { rounds: 1 });
+  assert.equal(combatMenuViewModel(state1).submenus.abilities.rows[0].cost, "1 ROUND");
+
+  const c2 = { cls: "Fighter", sub: "Soldier", abilities: ["secondWind", "sidestep"] };
+  const state2 = fixedState({ c: c2, combat: fixedCombat([]) });
+  startCooldown(state2.c, "ability:secondWind", { rounds: 999 });
+  startEffect(state2.c, "ability:sidestep", { rounds: 2, cd: 4 });
+  const vm2 = combatMenuViewModel(state2);
+  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-secondWind").cost, "ONCE A FIGHT · USED");
+  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-sidestep").cost, "6 ROUNDS");
+});
+
+test("Bard: ABILITIES rows are [sing row, ...ability rows], sing row/sub-line byte-identical", () => {
+  const c = { sub: "Bard", abilities: ["kata"] };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  assert.equal(vm.actions[1].sub, "SING · READY");
+  assert.deepEqual(vm.submenus.abilities.rows[0], {
+    id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" },
+  });
+  assert.deepEqual(vm.submenus.abilities.rows[1], {
+    id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" },
+  });
+
+  const noAbilities = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));
+  assert.deepEqual(noAbilities.submenus.abilities.rows, [
+    { id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" } },
+  ]);
+});
+
+test("Magic User: the ABILITIES branch is untouched even when c.abilities is populated", () => {
+  const c = { cls: "Magic User", sub: "Wizard", level: 1, grimoire: [], abilities: ["kata"] };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  assert.equal(vm.actions[1].key, "spells");
+});
+
+test("state.combat === null never throws with a populated c.abilities", () => {
+  const c = { cls: "Fighter", sub: "Soldier", abilities: ["kata"] };
+  assert.doesNotThrow(() => combatMenuViewModel(fixedState({ c, combat: null })));
 });
 
 // ─── Voice scan ─────────────────────────────────────────────────────────────

@@ -33,6 +33,10 @@
 
 import { PRIORITY, ORACLE_ONLY, TOAST_FOR, narrativeToastText, oracleDetailText } from "./toasts.js";
 import { narrateEvent } from "./eventNarration.js";
+// Phase 38 (ABIL-01/03) — abilityPoolCard (below) reads the catalog's own
+// name/txt for the level-1 pool-pick narration; pure content data, same
+// discipline as eventNarration.js's existing content/flavor.js import.
+import { ABILITY_BY_ID } from "../../content/index.js";
 
 /** RAIL_TONES — the five tones every rail card and legend row speaks. */
 export const RAIL_TONES = Object.freeze(["info", "good", "bad", "odd", "dull"]);
@@ -102,6 +106,10 @@ export const RAIL_COPY = Object.freeze({
       staff: "staves in one hand",
     },
   },
+  // Phase 38 (ABIL-01/03) — the first-paint narration of a fresh run's
+  // guaranteed level-1 pool pick (SC-3): abilityPoolCard (below) fills
+  // {name}/{txt} from the catalog entry.
+  abilityPool: { title: "UP YOUR SLEEVE", line: "New trick: {name} — {txt}" },
   fallback: {
     block: "NOTHING DOING",
     hurt: "THAT HURT",
@@ -388,6 +396,34 @@ export function wornReconcileCard(report) {
   });
 
   return { title, line: sentences.join(" "), tone: "dull", hold: WORN_RECONCILE_HOLD, icon: "▪" };
+}
+
+/**
+ * abilityPoolCard(c) — Phase 38 (ABIL-01/03): the first-paint rail card for
+ * a fresh run's guaranteed level-1 pool pick (SC-3) — the FIRST "pool"-
+ * source id in `c.abilities` (chargen's own roll order: the level-1
+ * guarantee is always the earliest pool id a fresh run has). `null` for a
+ * missing/invalid `c`, an empty `c.abilities`, or a `c` whose abilities are
+ * all table-sourced (a Magic User; structurally unreachable for a fresh
+ * Fighter/Thief per SC-3, but never assumed). Not folded through
+ * `railCardFor` — a standalone, directly-built card mirroring
+ * `wornReconcileCard`'s own posture (a load-time/first-paint event, not an
+ * `applyAction` dispatch this module's fold pipeline ever sees). Pure: no
+ * mutation, no Date/Math.random/DOM.
+ */
+export function abilityPoolCard(c) {
+  if (!c || !Array.isArray(c.abilities)) return null;
+  const key = c.abilities.find((id) => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].source === "pool");
+  if (!key) return null;
+  const meta = ABILITY_BY_ID[key];
+  const { title, line } = RAIL_COPY.abilityPool;
+  return {
+    title,
+    line: line.replace("{name}", meta.name).replace("{txt}", meta.txt),
+    tone: "good",
+    hold: RAIL_HOLD.level,
+    icon: "★",
+  };
 }
 
 /** emptyRail() — the rail's zero state: no card up, no decision pending. */
