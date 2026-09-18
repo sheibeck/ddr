@@ -68,6 +68,16 @@ test("conditionsOf: ward surfaces {pool, remaining, name} after might, before fl
   assert.deepStrictEqual(conds, [{ key: "ward", polarity: "good", pool: 34, remaining: 3, name: "Shield" }]);
 });
 
+// Phase 40 (SPELL-06): the ward chip must show OUTSIDE combat too (Shield is
+// combatOnly: false) — conditionsOf reads only `state.c`, so an explicit
+// `combat: null` case proves the chip is present with BOTH numbers (pool
+// AND rounds) regardless of combat state, not just inferred from the
+// signature.
+test("conditionsOf: ward surfaces pool AND rounds outside combat (combat: null) — SPELL-06", () => {
+  const conds = conditionsOf({ c: cleanChar({ ward: { pool: 34, rounds: 3, name: "Shield" } }), combat: null });
+  assert.deepStrictEqual(conds, [{ key: "ward", polarity: "good", pool: 34, remaining: 3, name: "Shield" }]);
+});
+
 // --- Phase 40 (SPELL-02): mirror/senses/regen/foresight, after ward, before flight ---
 // --- Phase 40 (SPELL-05), Plan 04: reveal, after foresight, before flight ---
 

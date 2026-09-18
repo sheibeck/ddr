@@ -56,6 +56,19 @@ test("MAP_PALETTE: carries the CONTEXT-spec'd chrome hexes", () => {
   assert.equal(MAP_PALETTE.party, "#f4dc94");
 });
 
+// Phase 40 (SPELL-05), Plan 05 — the "borrowed sight" tint for a
+// spell-revealed (cell.spellSeen) floor cell: distinct from every other
+// floor-adjacent hex, and MAP_PALETTE stays frozen with every existing
+// key/value unchanged.
+test("MAP_PALETTE.floorSpell: a distinct 'borrowed sight' tint; the palette stays frozen with prior keys unchanged", () => {
+  assert.equal(typeof MAP_PALETTE.floorSpell, "string");
+  assert.notEqual(MAP_PALETTE.floorSpell, MAP_PALETTE.floor);
+  assert.notEqual(MAP_PALETTE.floorSpell, MAP_PALETTE.floorDark);
+  assert.notEqual(MAP_PALETTE.floorSpell, MAP_PALETTE.fog);
+  assert.equal(Object.isFrozen(MAP_PALETTE), true);
+  assert.equal(MAP_PALETTE.floor, "#645c48");
+});
+
 // ─── MARKS_LEGEND: move-verbatim proof ─────────────────────────────────────
 
 // Literal copy of the old mazeworld.html MARKS_LEGEND table (icon -> key),

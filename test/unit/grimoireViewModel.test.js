@@ -11,6 +11,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { grimoireViewModel } from "../../src/browser/viewModels.js";
+import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 
 function fixedState(overrides = {}) {
   const { c: cOverrides, ...rest } = overrides;
@@ -73,6 +74,36 @@ test("grimoireViewModel: each row carries name/lvl/txt/combatOnly/idx matching c
   assert.equal(typeof row.txt, "string");
   assert.equal(row.combatOnly, false);
   assert.equal(typeof row.idx, "number");
+  assert.equal(row.niche, "healing");
+  assert.equal(row.nicheLabel, NICHE_LABELS.healing);
+});
+
+// --- Phase 40 (SPELL-01): niche + nicheLabel on every row ---
+
+test("grimoireViewModel: every row carries niche + nicheLabel, and txt begins with nicheLabel + ' · '", () => {
+  // One representative spell name per distinct niche in the SPELLS table —
+  // proves the contract holds across every niche the content declares, not
+  // just a single hand-picked row.
+  const seenNiches = new Set();
+  const names = [];
+  for (const sp of SPELLS) {
+    if (seenNiches.has(sp.niche)) continue;
+    seenNiches.add(sp.niche);
+    names.push(sp.n);
+  }
+  assert.ok(names.length >= Object.keys(NICHE_LABELS).length, "expected at least one spell per NICHE_LABELS key");
+
+  const state = fixedState({ c: { grimoire: names, level: 5 } });
+  const vm = grimoireViewModel(state);
+  assert.equal(vm.rows.length, names.length);
+  for (const row of vm.rows) {
+    assert.equal(typeof row.niche, "string");
+    assert.equal(row.nicheLabel, NICHE_LABELS[row.niche]);
+    assert.ok(
+      row.txt.startsWith(row.nicheLabel + " · "),
+      `${row.name}: txt "${row.txt}" must start with "${row.nicheLabel} · "`,
+    );
+  }
 });
 
 test("grimoireViewModel: a non-combat spell outside combat with charges available is castable", () => {

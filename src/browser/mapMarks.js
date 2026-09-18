@@ -31,6 +31,12 @@ export const MAP_PALETTE = Object.freeze({
   floor: "#645c48",
   floorDark: "#3d372a",
   floorInset: "#554d3b",
+  // Phase 40 (SPELL-05), Plan 05: a spell-revealed cell (cell.spellSeen,
+  // engine/maze.js#reveal) — a cool "borrowed sight" tint distinct from
+  // every other floor hex, so the player can see what will re-fog when the
+  // reveal window expires (draw()'s own sweep never runs early; the cell
+  // simply reads P.floor again once `seen` reverts to false).
+  floorSpell: "#4e5a6a",
   border: "#443a26",
   party: "#f4dc94",
   partyGlow: "rgba(232,201,122,.55)",

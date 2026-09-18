@@ -14,7 +14,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
-import { SPELLS } from "../../content/index.js";
+import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { canCast } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
@@ -153,6 +153,10 @@ test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order 
     assert.deepEqual(row.dispatch, { type: "castSpell", idx });
     const expectedEnabled = canCast(state, sp) && 4 > 0;
     assert.equal(row.enabled, expectedEnabled, `${sp.n}: enabled must mirror canCast && charges>0`);
+    // Phase 40 (SPELL-01): every spell row carries the same niche/nicheLabel
+    // pair the Hero-tab Grimoire rows carry (grimoireViewModel.test.js).
+    assert.equal(row.niche, sp.niche);
+    assert.equal(row.nicheLabel, NICHE_LABELS[sp.niche]);
   });
 
   const lightning = SPELLS.find((sp) => sp.n === "Lightning");

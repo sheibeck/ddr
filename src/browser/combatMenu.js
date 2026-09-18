@@ -12,7 +12,7 @@
 // PRESENTATION ONLY, pure module: no DOM/global access, no timers, no
 // storage, no rng draws, no mutation of `state` anywhere in this file.
 
-import { SPELLS, ABILITY_BY_ID } from "../../content/index.js";
+import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel, itemRowState } from "./viewModels.js";
 import { canCast, WORN_SLOTS } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
@@ -146,6 +146,11 @@ export function combatMenuViewModel(state) {
         label: sp.n.toUpperCase(),
         cost: `LVL ${sp.lvl}`,
         desc: sp.txt || "",
+        // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
+        // Grimoire rows carry (src/browser/viewModels.js#grimoireViewModel) —
+        // desc stays sp.txt, unchanged.
+        niche: sp.niche,
+        nicheLabel: NICHE_LABELS[sp.niche] ?? sp.niche,
         enabled: canCast(state, sp) && charges > 0,
         dispatch: { type: "castSpell", idx },
       };

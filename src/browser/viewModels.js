@@ -6,7 +6,7 @@
 // Pitfall 1, never the design mockup's throwaway state-object field names.
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
-import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID } from "../../content/index.js";
+import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
@@ -470,6 +470,11 @@ export function grimoireViewModel(state) {
         name: sp.n,
         lvl: sp.lvl,
         txt: sp.txt,
+        // Phase 40 (SPELL-01): the niche KEY + its display label, beside the
+        // existing txt (which already begins with `nicheLabel + " · "`) — so
+        // the shell can group/badge by niche without parsing txt.
+        niche: sp.niche,
+        nicheLabel: NICHE_LABELS[sp.niche] ?? sp.niche,
         combatOnly: !!sp.combatOnly,
         castable,
         disabledReason,
