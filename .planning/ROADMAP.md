@@ -38,7 +38,7 @@ Every phase in this milestone touches serialized character/combat/floor state an
 - [x] **Phase 38: Melee Active Abilities** - Fighters and Thieves get a rolled pool of class-flavored active abilities with cooldowns, plus select passive skills converted to actives, all surfaced in the combat ABILITIES submenu. (completed 2026-09-18)
 - [x] **Phase 39: Gear, Magic Items & One-Shot Tools** - Weapons/armor are rebalanced for real trade-offs, every activatable magic item follows one use-effect-cooldown model, and rope/ladder/torch give players a consumable answer to a specific hazard each. (completed 2026-09-18)
 - [x] **Phase 40: Spell Rework** - Combat spells are differentiated by niche instead of a damage ladder, every utility spell has a felt effect, every Wizard sub-class starts with a damage spell, Detect Magic is renamed and time-boxed, and scribed scrolls are instantly castable. (completed 2026-09-18)
-- [ ] **Phase 41: Terrain, Darkness & Phobias** - Water squares cost extra movement and can scare swimmers, a dark square fogs the view to a 3×3 window, and every phobia has a real, once-per-entry trigger.
+- [x] **Phase 41: Terrain, Darkness & Phobias** - Water squares cost extra movement and can scare swimmers, a dark square fogs the view to a 3×3 window, and every phobia has a real, once-per-entry trigger. (completed 2026-09-18)
 - [ ] **Phase 42: Flee Retune & Consolidated Balance Close** - Flee odds are lower and shown transparently, and the ONE consolidated AFTER class-matrix run verifies abilities + gear + spells together against the depth-20 target.
 - [ ] **Phase 43: Clarity Pass** - Every costly line names its cause, every loot offer shows who can use it, ration math is honest, and the Gear screen splits into ON YOU and BAG.
 
@@ -323,19 +323,19 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 41-01-PLAN.md — Water pools on a derived rng stream: `placeWater` LAST in `genFloor` keyed `derivedRng(cursor, "terrain", depth)`, `difficultyCurve().waterPools` depth curve (1 → 3 by depth 9, breathers 1, pools 3–8 cells, never on feats/spawn/exit-adjacent), the pre-change draw-count/rng-state pin, `cell.water` structural carve-out (3 comparables + 3 dupes), tolerant load, `tools/terrain-fixture-scan.mjs` live fixture-roster scan (measured, recorded in FIXTURE-INVENTORY.md), `docs/TERRAIN.md` created
+- [x] 41-01-PLAN.md — Water pools on a derived rng stream: `placeWater` LAST in `genFloor` keyed `derivedRng(cursor, "terrain", depth)`, `difficultyCurve().waterPools` depth curve (1 → 3 by depth 9, breathers 1, pools 3–8 cells, never on feats/spawn/exit-adjacent), the pre-change draw-count/rng-state pin, `cell.water` structural carve-out (3 comparables + 3 dupes), tolerant load, `tools/terrain-fixture-scan.mjs` live fixture-roster scan (measured, recorded in FIXTURE-INVENTORY.md), `docs/TERRAIN.md` created
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 41-02-PLAN.md — TERR-02 Key Decision "one tap, two squares of time": `moveCost(state, cell)` derived read, `state.steps += cost` with a `crossings(n)` cadence rule (a +2 step never skips the 20/100-square boundaries), `tickSquares(c, cost)` once, `c.darkFor`/affliction/cloak/spell-charge/newDay by cost, flying/ether exempt, `waded` narration, bot water-pathing proof, the measured movement-fixture `action-path` declaration (only if the scan hit), ledger section
+- [x] 41-02-PLAN.md — TERR-02 Key Decision "one tap, two squares of time": `moveCost(state, cell)` derived read, `state.steps += cost` with a `crossings(n)` cadence rule (a +2 step never skips the 20/100-square boundaries), `tickSquares(c, cost)` once, `c.darkFor`/affliction/cloak/spell-charge/newDay by cost, flying/ether exempt, `waded` narration, bot water-pathing proof, the measured movement-fixture `action-path` declaration (only if the scan hit), ledger section
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 41-03-PLAN.md — TERR-04/05 Key Decision "arm Afraid for the next fight": `engine/phobias.js` region model (`c.phobiaState`), five triggers (water cell / unlit square / climb-gorge attempt before the roll / dead end / HP ≤ 25% re-arming above 50%, in and out of combat), `c.fearArmed` read as `fight()`'s fourth OR-condition and consumed there, existing roll penalties + trapped hp loss untouched, `phobiaTriggered` narration naming the trigger on all three surfaces, `fearArmed` chip data, harness carve-out + tolerant load, ledger section
+- [x] 41-03-PLAN.md — TERR-04/05 Key Decision "arm Afraid for the next fight": `engine/phobias.js` region model (`c.phobiaState`), five triggers (water cell / unlit square / climb-gorge attempt before the roll / dead end / HP ≤ 25% re-arming above 50%, in and out of combat), `c.fearArmed` read as `fight()`'s fourth OR-condition and consumed there, existing roll penalties + trapped hp loss untouched, `phobiaTriggered` narration naming the trigger on all three surfaces, `fearArmed` chip data, harness carve-out + tolerant load, ledger section
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 41-04-PLAN.md — Shell close: TERR-03 `mapViewRadius`/`inViewWindow` pure reads consumed by `draw()` as a 3×3 render filter (seen untouched, restores on leaving), water paint (`MAP_PALETTE.water`/`waterDark`, Phase 40 spellSeen pin intact), water hold-inspect copy, "Rattled" chip copy, source-pin tests, `docs/TERRAIN.md` UI + requirements map close, REQUIREMENTS.md TERR-01..05 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md` (two Key Decisions)
+- [x] 41-04-PLAN.md — Shell close: TERR-03 `mapViewRadius`/`inViewWindow` pure reads consumed by `draw()` as a 3×3 render filter (seen untouched, restores on leaving), water paint (`MAP_PALETTE.water`/`waterDark`, Phase 40 spellSeen pin intact), water hold-inspect copy, "Rattled" chip copy, source-pin tests, `docs/TERRAIN.md` UI + requirements map close, REQUIREMENTS.md TERR-01..05 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md` (two Key Decisions)
 
 **Research flag**: Yes — the `genFloor`/`terrainRoll` parity gate is the single highest parity risk in the milestone (every fixture, bot run, and old save calls `genFloor`); the phase's own plan must include a live fixture-roster scan and an explicit draw-count table before any code lands, mirroring `storeRoll` exactly. Recommend `--research-phase`.
 **UI hint**: yes
@@ -426,7 +426,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 38. Melee Active Abilities | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 40. Spell Rework | v1.5 | 5/5 | Complete    | 2026-09-18 |
-| 41. Terrain, Darkness & Phobias | v1.5 | 0/? | Not started | - |
+| 41. Terrain, Darkness & Phobias | v1.5 | 4/4 | Complete    | 2026-09-18 |
 | 42. Flee Retune & Consolidated Balance Close | v1.5 | 0/? | Not started | - |
 | 43. Clarity Pass | v1.5 | 0/? | Not started | - |
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete | 2026-09-16 |

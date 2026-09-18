@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-status: executing
+current_phase: 42
+current_phase_name: Flee Retune & Consolidated Balance Close
+status: planning
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-18T19:20:09.209Z"
+last_updated: "2026-09-18T20:48:10.499Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 41 complete, transitioned to Phase 42
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 29
-  completed_plans: 25
-  percent: 63
-current_phase: 41
-current_phase_name: Terrain, Darkness & Phobias
+  completed_plans: 29
+  percent: 75
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 ## Current Position
 
-Phase: null — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase null
-Last activity: 2026-09-18 — Phase null execution started
+Phase: 42 — Flee Retune & Consolidated Balance Close
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-18 — Phase 41 complete, transitioned to Phase 42
 
 ## Ground Truth (durable facts every session needs)
 
