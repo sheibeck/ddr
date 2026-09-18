@@ -68,6 +68,30 @@ test("conditionsOf: ward surfaces {pool, remaining, name} after might, before fl
   assert.deepStrictEqual(conds, [{ key: "ward", polarity: "good", pool: 34, remaining: 3, name: "Shield" }]);
 });
 
+// --- Phase 40 (SPELL-02): mirror/senses/regen/foresight, after ward, before flight ---
+
+test("conditionsOf: mirror/senses/regen/foresight surface in fixed order after ward, before flight", () => {
+  const conds = conditionsOf({
+    c: cleanChar({
+      ward: { pool: 34, rounds: 3, name: "Shield" },
+      mirror: 4,
+      senses: 1,
+      regen: true,
+      foresight: true,
+      items: [{ n: "Bracelet of Flight" }],
+    }),
+  });
+  assert.deepStrictEqual(keys(conds), ["ward", "mirror", "senses", "regen", "foresight", "flight"]);
+  assert.deepStrictEqual(byKey(conds, "mirror"), { key: "mirror", polarity: "good", remaining: 4 });
+  assert.deepStrictEqual(byKey(conds, "senses"), { key: "senses", polarity: "good" });
+  assert.deepStrictEqual(byKey(conds, "regen"), { key: "regen", polarity: "good" });
+  assert.deepStrictEqual(byKey(conds, "foresight"), { key: "foresight", polarity: "good" });
+});
+
+test("conditionsOf: mirror/senses/regen/foresight are absent at 0/false/undefined", () => {
+  assert.deepEqual(conditionsOf({ c: cleanChar({ mirror: 0, senses: 0, regen: false, foresight: false }) }), []);
+});
+
 test("conditionsOf: ward with pool 0 (about to be nulled) is absent", () => {
   assert.deepEqual(conditionsOf({ c: cleanChar({ ward: { pool: 0, rounds: 1, name: "Shield" } }) }), []);
 });
@@ -84,6 +108,20 @@ test("conditionsOf: ward + might + flight order in a fully-loaded character", ()
   });
   const conds = conditionsOf({ c });
   assert.deepStrictEqual(keys(conds), ["might", "ward", "flight"]);
+});
+
+test("conditionsOf: ward + might + mirror/senses/regen/foresight + flight order in a fully-loaded character", () => {
+  const c = cleanChar({
+    might: 8,
+    ward: { pool: 50, rounds: 5, name: "Shield" },
+    mirror: 2,
+    senses: 1,
+    regen: true,
+    foresight: true,
+    items: [{ n: "Bracelet of Flight" }],
+  });
+  const conds = conditionsOf({ c });
+  assert.deepStrictEqual(keys(conds), ["might", "ward", "mirror", "senses", "regen", "foresight", "flight"]);
 });
 
 test("conditionsOf: BAD affliction names its kind", () => {
@@ -135,13 +173,17 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
       "item:Cloak of Ether": rec("squares", 20, 80),
     },
     might: 8,
+    mirror: 3,
+    senses: 1,
+    regen: true,
+    foresight: true,
     items: [{ n: "Bracelet of Flight" }],
     affliction: { kind: "Poison", left: 10 },
     darkFor: 12,
   });
   const conds = conditionsOf({ c });
   assert.deepEqual(keys(conds), [
-    "haste", "invis", "acute", "ether", "might", "flight", "affliction", "darkness",
+    "haste", "invis", "acute", "ether", "might", "mirror", "senses", "regen", "foresight", "flight", "affliction", "darkness",
   ]);
   // Good conditions all precede bad ones.
   const firstBad = conds.findIndex((x) => x.polarity === "bad");

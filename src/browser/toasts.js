@@ -994,8 +994,10 @@ export const TOAST_FOR = {
   encounterCleared: () => ({ text: "Nothing left standing.", tone: "hit", priority: PRIORITY.feature }),
   // Phase 31 (CMB-01): the FIGHT step's own initiative outcome — the
   // encounter step no longer knows who moves first.
+  // Phase 40 (SPELL-02): Sense Presence's own short form when it decided the
+  // roll.
   combatJoined: (e) => ({
-    text: e?.first === "you" ? "You move first." : "They move first.",
+    text: e?.first === "you" ? (e?.senses ? "You move first. Nothing gets the jump on you." : "You move first.") : "They move first.",
     tone: e?.first === "you" ? "hit" : "hurt",
     priority: PRIORITY.feature,
   }),
@@ -1158,6 +1160,10 @@ export const TOAST_FOR = {
   },
   wardFaded: () => ({ text: "The ward fades.", tone: "beat", priority: PRIORITY.other }),
   mirrorFaded: () => ({ text: "The mirror fades.", tone: "beat", priority: PRIORITY.other }),
+  // Phase 40 (SPELL-02): endCombat's own expiry narration for a
+  // still-running Regeneration/Sense Presence when the fight ends.
+  sensesFaded: () => ({ text: "Your senses dull back to normal.", tone: "beat", priority: PRIORITY.other }),
+  regenFaded: () => ({ text: "The wounds stop closing on their own.", tone: "beat", priority: PRIORITY.other }),
 
   /* ---------------- foe abilities (engine/foeAbilities.js) ---------------- */
 

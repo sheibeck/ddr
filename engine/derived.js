@@ -440,14 +440,19 @@ export function isFlying(state) {
  * because nothing is written.
  *
  * Returns an array of descriptors in a STABLE order — live item effects
- * (insertion order), the spell-`c.might` chip, ward, flight, item cooldowns,
- * staff charges, THEN the bad block — each `{ key, polarity, ... }`:
+ * (insertion order), the spell-`c.might` chip, ward, mirror, senses, regen,
+ * foresight, flight, item cooldowns, staff charges, THEN the bad block —
+ * each `{ key, polarity, ... }`:
  *   - haste/invis/acute/ether/might (Phase 39, GEAR-02, one chip per LIVE
  *     `c.timers` item effect, via liveItemEffects): {polarity:"good",
  *     remaining:<left>, cadence:"squares"|"rounds", source:<item display
  *     name>, might?:<amount, "might"-kind only>}
  *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining:<rounds>, name:<spell/item name>} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape
+ *   - mirror {polarity:"good", remaining:<rounds>}         — Phase 40 (SPELL-02): Mirror Self — c.mirror counts down once per foeTurn; cleared at endCombat
+ *   - senses {polarity:"good"}                             — Phase 40 (SPELL-02): Sense Presence — a flat 0/1 flag (no count), lasts until endCombat clears it; also waives every forced foe-first initiative rule (see combat.js#rollInitiative)
+ *   - regen  {polarity:"good"}                              — Phase 40 (SPELL-02): Regeneration — a flat boolean (no count, the d8/round tick has no duration field), cleared at endCombat
+ *   - foresight {polarity:"good"}                           — Phase 40 (SPELL-02): an ARMED Sense Danger, waiting for the next fight (consumed by rollInitiative, which always sets it back to false)
  *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
  *   - itemCooldown (Phase 39, GEAR-02, one per COOLING duration+cooldown item): {polarity:"good", item:<display name>, remaining:<sq left>}
  *   - staffCharges (Phase 39, GEAR-02, one per RECHARGING staff): {polarity:"good", item:<display name>, charges:<current>, max:<pool>, remaining:<sq left>}
@@ -488,6 +493,20 @@ export function conditionsOf(state) {
   if (c.ward && c.ward.pool > 0) {
     out.push({ key: "ward", polarity: "good", pool: c.ward.pool, remaining: c.ward.rounds, name: c.ward.name });
   }
+
+  // Phase 40 (SPELL-02): the three utility spells with a real effect but no
+  // prior chip (Mirror Self, Sense Presence, Regeneration), plus an ARMED
+  // Sense Danger (foresight, waiting for the next fight) — copying the
+  // might/ward precedent above exactly. Fixed order after ward, before
+  // flight: mirror -> senses -> regen -> foresight. All four are pure reads
+  // of fields the engine already writes (magic.js's senses/foresee/mirror/
+  // regen branches; combat.js#foeTurn's per-round mirror countdown;
+  // combat.js#endCombat's unconditional resets) — no rng, no mutation, no
+  // new serialized field.
+  if (c.mirror > 0) out.push({ key: "mirror", polarity: "good", remaining: c.mirror });
+  if (c.senses) out.push({ key: "senses", polarity: "good" });
+  if (c.regen) out.push({ key: "regen", polarity: "good" });
+  if (c.foresight) out.push({ key: "foresight", polarity: "good" });
 
   // Flight mirrors isFlying's item logic: the Bracelet is unconditional; the
   // Cloak of Flying is a real effect/cooldown resource (Phase 39, GEAR-02:

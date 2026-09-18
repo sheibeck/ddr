@@ -137,6 +137,18 @@ export function knightFacesBigFoe(state) {
  * re-rolling initiative each subsequent round, so `C.round === 1` is true
  * only for the encounter-start call). A foreseen character still always
  * goes first, exactly as the Samurai/Fridgian case already does.
+ *
+ * DELIBERATE RULES CHANGE (Phase 40, SPELL-02, 2026-09-18): Sense Presence's
+ * canon "never surprised" (`c.senses`) had no engine read before this phase
+ * — only the in-dark to-hit waiver (derived.js#toHit) consulted it. It now
+ * ALSO waives every forced foe-first rule above (Samurai/Fridgian
+ * slow/Knight-vs-big-foe/Court Mage round 1) for as long as `c.senses` is
+ * truthy — until the fight it is active in ends (combat.js#endCombat's
+ * unconditional `c.senses = 0` reset; a narrated `sensesFaded` fires there
+ * too, see endCombat below). The two d20s are still ALWAYS drawn — this only
+ * changes which branch the ternary takes, never the draw count. A foreseen
+ * character still always goes first regardless of senses (the `foreseen`
+ * check is unchanged and evaluated after).
  */
 export function rollInitiative(state, rng) {
   const C = state.combat;
@@ -152,7 +164,7 @@ export function rollInitiative(state, rng) {
   const foreseen = c.foresight;
   c.foresight = false;
   C.first =
-    (samurai || slow || knightBig || courtMage) && !foreseen
+    (samurai || slow || knightBig || courtMage) && !foreseen && !c.senses
       ? "foe"
       : foreseen || skill(c, "Acute Hearing")
         ? "you"
@@ -374,7 +386,11 @@ export function fight(state, rng, events = []) {
   const type = C.type;
   const first = rollInitiative(state, rng);
   delete C.pending; // the joined combat object's key set stays byte-identical to the prototype's — deleted, never set false
-  events.push({ type: "combatJoined", first });
+  // Phase 40 (SPELL-02): `senses` is additive — spread only when Sense
+  // Presence is up AND it actually decided the roll (first === "you") — so a
+  // plain combatJoined event (no senses, or senses that merely rode along
+  // with a normal win) stays byte-identical to the pre-Phase-40 shape.
+  events.push({ type: "combatJoined", first, ...(c.senses && first === "you" ? { senses: true } : {}) });
 
   // DELIBERATE RULES CHANGE (04.1-05/04.1-06, 2026-09-09, PHOBIA-01): the
   // phobia trigger fires on THREE mutually-exclusive conditions per
@@ -1227,6 +1243,15 @@ export function endCombat(state, events = []) {
     state.party = state.party.filter((m) => m.status !== "downed");
   }
   state.combat = null; // Phase 31: this also clears combat.afraid — the fear ends with the fight, not with a fearPassed line
+  // Phase 40 (SPELL-02): narrate the expiry of every utility effect still
+  // live when the fight ends, BEFORE the unconditional resets just below
+  // wipe them — order regenFaded, sensesFaded, mirrorFaded. A mirror that
+  // already ran out mid-fight (combat.js#foeTurn's own per-round countdown)
+  // already pushed its own mirrorFaded there and is 0 here, so this never
+  // double-narrates; only a STILL-RUNNING mirror at fight-end reaches this.
+  if (state.c.regen) events.push({ type: "regenFaded" });
+  if (state.c.senses) events.push({ type: "sensesFaded" });
+  if (state.c.mirror > 0) events.push({ type: "mirrorFaded" });
   state.c.regen = false;
   state.c.ward = null;
   state.c.mirror = 0;

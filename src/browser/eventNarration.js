@@ -207,9 +207,14 @@ export const EVENT_NARRATION = {
   },
   // Phase 31 (CMB-01): the FIGHT step's own initiative outcome — the
   // encounter step no longer knows who moves first.
+  // Phase 40 (SPELL-02): Sense Presence's own line when it is the reason no
+  // one got the jump on you — a plain "you" win (no senses, or senses that
+  // didn't ride along) keeps the pre-Phase-40 wording.
   combatJoined: (e) =>
     e.first === "you"
-      ? `<span class="beat">You move first.</span>`
+      ? e.senses
+        ? `<span class="beat">You move first. Nothing gets the jump on you.</span>`
+        : `<span class="beat">You move first.</span>`
       : `<span class="hurt">They move first.</span>`,
   trackable: () => `<span class="beat">They have not noticed you yet.</span>`,
   allyJoined: (e) => `<span class="hit">${e.name ?? "An ally"} falls in beside you.</span>`,
@@ -425,6 +430,10 @@ export const EVENT_NARRATION = {
     `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
+  // Phase 40 (SPELL-02): endCombat's own expiry narration for a
+  // still-running Regeneration/Sense Presence when the fight ends.
+  sensesFaded: () => `<span class="beat">Your senses dull back to normal.</span>`,
+  regenFaded: () => `<span class="beat">The wounds stop closing on their own.</span>`,
 
   // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
   // second. Every builder here defends a bare `{ type }` call (the coverage

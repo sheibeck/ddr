@@ -222,6 +222,10 @@ export const RAIL_FAMILY = Object.freeze({
   iceApplied: { icon: "·", title: "ICE", tone: "odd" },
   weakenFaded: { icon: "·", title: "WEAKEN FADES", tone: "dull" },
   foeStupefied: { icon: "·", title: "STUPEFIED", tone: "odd" },
+
+  // Phase 40 (SPELL-02) — endCombat's own utility-effect expiry narration.
+  sensesFaded: { icon: "·", title: "SENSES FADE", tone: "dull" },
+  regenFaded: { icon: "·", title: "REGENERATION ENDS", tone: "dull" },
 });
 
 /**

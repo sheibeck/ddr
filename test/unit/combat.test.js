@@ -317,6 +317,20 @@ test("rollInitiative: a Samurai never wins the first roll unless foreseen", () =
   assert.equal(state2.c.foresight, false, "foresight is consumed by the roll");
 });
 
+// Phase 40 (SPELL-02, DELIBERATE RULES CHANGE): Sense Presence (`c.senses`)
+// now ALSO waives every forced foe-first rule — a Samurai with c.senses up
+// rolls a fair d20 pair like anyone else; with c.senses at 0 the existing
+// forced-foe pin above is untouched.
+test("rollInitiative: a Samurai with c.senses up is no longer forced foe — the two d20s decide it fairly", () => {
+  const state = fixedState({ c: { sub: "Samurai", senses: 1 } });
+  state.combat = fixedCombat([]);
+  assert.equal(rollInitiative(state, fakeRng([10, 1])), "you", "mine(10) >= theirs(1) — senses waived the forced clause");
+
+  const state2 = fixedState({ c: { sub: "Samurai", senses: 0 } });
+  state2.combat = fixedCombat([]);
+  assert.equal(rollInitiative(state2, fakeRng([19, 1])), "foe", "senses at 0 — the forced clause still applies, byte-identical to before");
+});
+
 // --- weaponDamage: Master of Arms "+2 with every weapon" (RULE-02) --------
 
 test("weaponDamage: Master of Arms deals exactly +2 versus an identical non-Master-of-Arms fighter", () => {
