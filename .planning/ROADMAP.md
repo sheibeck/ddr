@@ -36,7 +36,7 @@ Every phase in this milestone touches serialized character/combat/floor state an
 - [x] **Phase 36: Balance Foundation, Effect Timers & Small Independent Wins** - The BEFORE class-matrix pin is captured before any new power lands, a general-purpose effect/cooldown/timer model exists for later phases to build on, dead foes can never be targeted, Cutthroats can accept (and occasionally lose) a Joiner, and any hero can dismiss one from the Company panel. (completed 2026-09-17)
 - [x] **Phase 37: Equipment Slot Model & eff() Refactor** - One worn item per slot type, with a narrated migration for any old save that illegally has two — the widest-blast-radius change in the milestone, landed alone. (completed 2026-09-17)
 - [x] **Phase 38: Melee Active Abilities** - Fighters and Thieves get a rolled pool of class-flavored active abilities with cooldowns, plus select passive skills converted to actives, all surfaced in the combat ABILITIES submenu. (completed 2026-09-18)
-- [ ] **Phase 39: Gear, Magic Items & One-Shot Tools** - Weapons/armor are rebalanced for real trade-offs, every activatable magic item follows one use-effect-cooldown model, and rope/ladder/torch give players a consumable answer to a specific hazard each.
+- [x] **Phase 39: Gear, Magic Items & One-Shot Tools** - Weapons/armor are rebalanced for real trade-offs, every activatable magic item follows one use-effect-cooldown model, and rope/ladder/torch give players a consumable answer to a specific hazard each. (completed 2026-09-18)
 - [ ] **Phase 40: Spell Rework** - Combat spells are differentiated by niche instead of a damage ladder, every utility spell has a felt effect, every Wizard sub-class starts with a damage spell, Detect Magic is renamed and time-boxed, and scribed scrolls are instantly castable.
 - [ ] **Phase 41: Terrain, Darkness & Phobias** - Water squares cost extra movement and can scare swimmers, a dark square fogs the view to a 3×3 window, and every phobia has a real, once-per-entry trigger.
 - [ ] **Phase 42: Flee Retune & Consolidated Balance Close** - Flee odds are lower and shown transparently, and the ONE consolidated AFTER class-matrix run verifies abilities + gear + spells together against the depth-20 target.
@@ -247,23 +247,23 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 39-01-PLAN.md — GEAR-01 axes: weapon `need`/`crit`, armor `bulk`, re-diced/re-priced tables (key order pinned), engine reads (toHit/crit/climb/leap/flee/stealth), expected-strike upgrade heuristic, declared fixture divergences (economy + measured combat)
+- [x] 39-01-PLAN.md — GEAR-01 axes: weapon `need`/`crit`, armor `bulk`, re-diced/re-priced tables (key order pinned), engine reads (toHit/crit/climb/leap/flee/stealth), expected-strike upgrade heuristic, declared fixture divergences (economy + measured combat)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 39-02-PLAN.md — GEAR-01 close: tuning-bot store buy/equip policy on expectedStrike + bulk, 429-run class-matrix smoke vs the v1.5 BEFORE pin, `docs/GEAR-BALANCE.md` before/after ledger
+- [x] 39-02-PLAN.md — GEAR-01 close: tuning-bot store buy/equip policy on expectedStrike + bulk, 429-run class-matrix smoke vs the v1.5 BEFORE pin, `docs/GEAR-BALANCE.md` before/after ledger
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 39-03-PLAN.md — GEAR-02 engine: `ACTIVATION_OF` content declarations (duration+cd / charges+recharge / consumables), timer-backed `itemReady`/`useItem` on `c.timers`, counter retirement (haste/invis/ether/acute/flight/potion might/usedAt), tick-site narration, `conditionsOf` chips, tolerant save fold, harness carve-out
+- [x] 39-03-PLAN.md — GEAR-02 engine: `ACTIVATION_OF` content declarations (duration+cd / charges+recharge / consumables), timer-backed `itemReady`/`useItem` on `c.timers`, counter retirement (haste/invis/ether/acute/flight/potion might/usedAt), tick-site narration, `conditionsOf` chips, tolerant save fold, harness carve-out
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 39-04-PLAN.md — GEAR-05 engine: rope/ladder/torch as `kind: "tool"` items (loot via derived rng, store by tier), `pendingHazard` pre-roll decision + `useTool` action, torch lights/holds off `c.darkFor`, narration, `pendingHazard` carve-out
+- [x] 39-04-PLAN.md — GEAR-05 engine: rope/ladder/torch as `kind: "tool"` items (loot via derived rng, store by tier), `pendingHazard` pre-roll decision + `useTool` action, torch lights/holds off `c.darkFor`, narration, `pendingHazard` carve-out
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 39-05-PLAN.md — Shell + close: hazard decision/retry/dark rail cards (USE LADDER / USE ROPE / USE TORCH), `itemRowState` for Gear-tab + ITEMS rows, item chips + tap explanations, engine-routed Hero-tab to-hit, ledger requirements map, whole-phase gate, aggregated Pixel 7 checklist
+- [x] 39-05-PLAN.md — Shell + close: hazard decision/retry/dark rail cards (USE LADDER / USE ROPE / USE TORCH), `itemRowState` for Gear-tab + ITEMS rows, item chips + tap explanations, engine-routed Hero-tab to-hit, ledger requirements map, whole-phase gate, aggregated Pixel 7 checklist
 
 **Research flag**: Standard/precedented for the item-cooldown extension (research: `itemReady`/`useItem` already has this exact shape; Lockpicks is the existing 1:1 tool precedent). Light discussion optional for GEAR-01's specific weapon/armor rebalance numbers only.
 
@@ -384,7 +384,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
 | 38. Melee Active Abilities | v1.5 | 5/5 | Complete    | 2026-09-18 |
-| 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |
+| 39. Gear, Magic Items & One-Shot Tools | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 40. Spell Rework | v1.5 | 0/? | Not started | - |
 | 41. Terrain, Darkness & Phobias | v1.5 | 0/? | Not started | - |
 | 42. Flee Retune & Consolidated Balance Close | v1.5 | 0/? | Not started | - |

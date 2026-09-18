@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-status: executing
+current_phase: 40
+current_phase_name: Spell Rework
+status: planning
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-18T11:26:50.819Z"
+last_updated: "2026-09-18T14:55:45.876Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 39 complete, transitioned to Phase 40
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 20
-  completed_plans: 15
-  percent: 38
-current_phase: 39
-current_phase_name: Gear, Magic Items & One-Shot Tools
+  completed_plans: 20
+  percent: 50
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 ## Current Position
 
-Phase: null — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase null
-Last activity: 2026-09-18 — Phase null execution started
+Phase: 40 — Spell Rework
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-18 — Phase 39 complete, transitioned to Phase 40
 
 ## Ground Truth (durable facts every session needs)
 
