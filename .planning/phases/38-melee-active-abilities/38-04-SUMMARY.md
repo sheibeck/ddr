@@ -183,3 +183,7 @@ This plan's new engine surface (the Joiner ability policy, all 20 member resolut
 ---
 *Phase: 38-melee-active-abilities*
 *Completed: 2026-09-18*
+
+## Self-Check: PASSED
+
+All created files found on disk (test/unit/party-abilities.test.js, docs/ABILITIES.md, this SUMMARY.md); all four commits found in git log (df8ebf3, ef40527, 29ce0aa, 49cb203).
