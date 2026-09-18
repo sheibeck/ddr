@@ -44,8 +44,8 @@
 
 ### Flee (FLEE)
 
-- [ ] **FLEE-01**: Base flee success is lowered from 50 % to a tuned value, the Thief edge is kept, and small class/race modifiers apply (recorded as a canon divergence with a before/after table)
-- [ ] **FLEE-02**: The fight log shows the flee roll, modifiers and the need on every attempt, and a failed flee still hands the foes their swing as today
+- [x] **FLEE-01**: Base flee success is lowered from 50 % to a tuned value, the Thief edge is kept, and small class/race modifiers apply (recorded as a canon divergence with a before/after table)
+- [x] **FLEE-02**: The fight log shows the flee roll, modifiers and the need on every attempt, and a failed flee still hands the foes their swing as today
 
 ### Combat targeting (TGT)
 
@@ -69,7 +69,7 @@
 ### Balance (BAL)
 
 - [x] **BAL-01**: A BEFORE class-matrix pin (`tools/tune-classes.mjs`) is captured before any new player power lands, and the tuning bot is taught to use the new abilities, spells, items and tools before the AFTER run
-- [ ] **BAL-02**: One consolidated AFTER matrix diff covers abilities + gear + spells together, with pick-rates for the new spells/abilities and verdicts recorded in `docs/CLASS-PASS.md`; out-of-band rows are tuned or accepted with a written reason against the depth-20 target
+- [x] **BAL-02**: One consolidated AFTER matrix diff covers abilities + gear + spells together, with pick-rates for the new spells/abilities and verdicts recorded in `docs/CLASS-PASS.md`; out-of-band rows are tuned or accepted with a written reason against the depth-20 target
 
 ## Future Requirements (deferred)
 
@@ -125,9 +125,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TERR-03 | Phase 41 | Complete |
 | TERR-04 | Phase 41 | Complete |
 | TERR-05 | Phase 41 | Complete |
-| FLEE-01 | Phase 42 | Pending |
-| FLEE-02 | Phase 42 | Pending |
-| BAL-02 | Phase 42 | Pending |
+| FLEE-01 | Phase 42 | Complete |
+| FLEE-02 | Phase 42 | Complete |
+| BAL-02 | Phase 42 | Complete |
 | CLAR-01 | Phase 43 | Pending |
 | CLAR-02 | Phase 43 | Pending |
 | CLAR-03 | Phase 43 | Pending |
