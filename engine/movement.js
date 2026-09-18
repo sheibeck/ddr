@@ -27,15 +27,16 @@
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged, won } from "./events.js";
-import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES } from "../content/index.js";
-import { tickSquares } from "./effects.js";
+import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, ACTIVATION_OF } from "../content/index.js";
+import { tickSquares, startEffect } from "./effects.js";
+import { narrateTimerTransitions } from "./items.js";
 
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
 export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
@@ -71,13 +72,6 @@ const waterPenalty = (c) =>
 // has actually panicked in — every other character's save/parity surface is
 // untouched). No rng draw either way.
 const TRAPPED_PHOBIA_PANIC = 4;
-
-// DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): the Cloak of
-// Flying's real charge/cooldown resource — see engine/derived.js's isFlying
-// for the full design rationale. Constants named/documented here since this
-// is the ONLY module that ever mutates c.flightLeft/c.flightCooldown.
-const FLIGHT_CHARGE_SQUARES = 20;
-const FLIGHT_COOLDOWN_SQUARES = 50;
 
 // Phase 15 item-wiring (ECON-08): the Cloak of Healing / Cloak of Regeneration
 // per-step tick cadence + flat-heal magnitude. Named/documented here since
@@ -136,33 +130,36 @@ export function move(state, dir, rng, events = [], now = Date.now) {
     const climbing = there.feat === "climb";
     // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): flight
     // (Bracelet of Flight = unconditional; Cloak of Flying = a real
-    // 20-square charge on a 50-square cooldown — see engine/derived.js's
+    // 20-square effect on a 50-square cooldown — see engine/derived.js's
     // isFlying for the full rationale) skips the climb/leap roll AND all
     // fall-damage math entirely — "walls and crevices are nothing" and
     // "flight ... once every 50" were both inert `eff.fly` flags read
     // nowhere in the engine before this. No rng draw either way on this
     // branch, so determinism/parity are unaffected for every character
-    // without a flight item. A Cloak-only character activates a fresh
-    // 20-square charge window right here if one is not already open (the
-    // per-step tick below then burns it down); the Bracelet never touches
-    // the Cloak's counters.
+    // without a flight item. Phase 39 (GEAR-02): a Cloak-only character
+    // starts a fresh `item:Cloak of Flying` effect record right here if none
+    // is already running (the per-step tick below then burns it down); the
+    // Bracelet never touches the Cloak's own record.
     if (isFlying(state)) {
-      if (!hasItemNamed(state.c, "Bracelet of Flight") && state.c.flightLeft <= 0) {
-        state.c.flightLeft = FLIGHT_CHARGE_SQUARES;
+      if (!hasItemNamed(state.c, "Bracelet of Flight") && !itemEffectActive(state.c, "fly")) {
+        const act = ACTIVATION_OF["Cloak of Flying"];
+        startEffect(state.c, "item:Cloak of Flying", { squares: act.effect, cd: act.cd });
+        events.push({ type: "itemEffectStarted", item: "Cloak of Flying", kind: "fly", left: act.effect, cadence: "squares" });
       }
       events.push({ type: "flownOver" });
       there.feat = null;
-    } else if (state.c.ether > 0) {
+    } else if (itemEffectActive(state.c, "ether")) {
       // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08 §8 design call):
       // the Cloak of Ether (content/treasure-tables.js, use:"ether", "walk
       // through walls") set `c.ether=20` (items.js:"ether") but the field was
       // only ever set + ticked down (per-step below), READ NOWHERE. Wired here
       // by MIRRORING isFlying: while ethereal you phase through the wall/crevice
       // with no climb/leap roll and no fall damage. Deliberately NOT touching
-      // the Cloak-of-Flying charge counters (ether is its own 20-square window,
-      // already ticked below). No rng draw either way on this branch, so
-      // determinism/parity are unaffected for every character with ether === 0
-      // (every parity fixture — ether is only ever raised by USING the cloak).
+      // the Cloak-of-Flying effect record (ether is its own item:Cloak of
+      // Ether window). No rng draw either way on this branch, so
+      // determinism/parity are unaffected for every character with no live
+      // ether effect (every parity fixture — ether is only ever raised by
+      // USING the cloak).
       events.push({ type: "phasedThrough" });
       there.feat = null;
     } else {
@@ -292,16 +289,9 @@ export function move(state, dir, rng, events = [], now = Date.now) {
       if (c.darkFor === 0) events.push({ type: "darknessLifted" });
     }
   }
-  if (c.haste > 0) c.haste--;
-  if (c.invis > 0) c.invis--;
-  if (c.ether > 0) c.ether--;
-  // Phase 31 (CMB-05): Acuteness — drunk from Gear outside combat, its
-  // "round" timer has no round to tick until a fight resolves it (via
-  // combat.js#foeTurn's mirroring tick), so it also ticks once per
-  // exploration STEP here (the Key Decision: option 3, RESEARCH §6.1) and
-  // clears unconditionally at combat.js#endCombat. Zero-event, zero-draw
-  // no-op for a character with acute <= 0.
-  if (c.acute > 0 && --c.acute <= 0) events.push({ type: "acuteFaded" });
+  // Phase 39 (GEAR-02): the retired haste/invis/ether/acute per-step
+  // decrements — every item effect ticks through the shared c.timers
+  // squares-tick below instead (its expiry is mapped to events there).
   // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
   // Healing (eff:{cloakHeal:1}, "heals up to 10 wp every 20 squares") and the
   // Cloak of Regeneration (eff:{cloakRegen:1}, "d6 wp back every 20 squares")
@@ -328,27 +318,18 @@ export function move(state, dir, rng, events = [], now = Date.now) {
     c.wp = Math.min(c.maxWP, c.wp + r);
     events.push({ type: "cloakRegenerated", amount: c.wp - before });
   }
-  // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): tick the Cloak of
-  // Flying's charge/cooldown exactly like haste/invis/ether above — the
-  // active charge (`flightLeft`) burns down first; the instant it is spent,
-  // the 50-square cooldown (`flightCooldown`) starts. The Bracelet of Flight
-  // never sets either field, so this is a no-op for every character who
-  // never activated the Cloak (both fields start and stay at 0).
-  if (c.flightLeft > 0) {
-    c.flightLeft--;
-    if (c.flightLeft === 0) c.flightCooldown = FLIGHT_COOLDOWN_SQUARES;
-  } else if (c.flightCooldown > 0) {
-    c.flightCooldown--;
-  }
+  // Phase 39 (GEAR-02): the retired Cloak-of-Flying flightLeft/flightCooldown
+  // pair — its effect/cooldown now rides the same c.timers squares tick
+  // below like every other item.
 
   // Phase 36 (BAL foundation) — the squares tick for engine/effects.js
   // records; GUARDED on the lazily-created c.timers so every fixture, bot
   // run and pre-Phase-36 save (none carries the key) is byte-identical; the
   // literal 1 is this step's cost — Phase 41 (TERR-02) passes a water
   // square's 2 here so squares-cadence timers stay consistent with the step
-  // counter. The returned transition list is deliberately ignored until
-  // Phase 38 maps expiries to events (effects.js narrates nothing).
-  if (c.timers) tickSquares(c, 1);
+  // counter. Phase 39 (GEAR-02): the returned transition list is now mapped
+  // to events (itemEffectFaded/itemCooled/staffRecharged) below.
+  if (c.timers) narrateTimerTransitions(state, tickSquares(c, 1), events);
 
   // the book recharges a Magic User every hundred squares; a solo caster
   // needs it oftener.

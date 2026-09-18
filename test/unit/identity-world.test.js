@@ -18,6 +18,7 @@ import { makeRng } from "../../engine/rng.js";
 import { canEquipArmor, armorRefusalReason, takeItem, equipItem, useItem } from "../../engine/items.js";
 import { openStore } from "../../engine/economy.js";
 import { newDay } from "../../engine/movement.js";
+import { potionMight } from "../../engine/derived.js";
 import { ARMORS } from "../../content/index.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
@@ -296,7 +297,9 @@ test("useItem: a Cat Burglar using the same Strength potion is NOT refused", () 
   const state = fixedState({ c: { sub: "Cat Burglar", might: 0, items: [strength] } });
   const events = useItem(state, 0, fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "itemUsed"));
-  assert.equal(state.c.might, 8);
+  // Phase 39 (GEAR-02): the retired c.might += 8 write is now a timed
+  // c.timers effect record read through potionMight(c).
+  assert.equal(potionMight(state.c), 8);
 });
 
 test("canRead: a Pilfer still cannot read scrolls (unchanged)", async () => {

@@ -19,7 +19,7 @@ import { castSpell, readScroll } from "../../engine/magic.js";
 import { useItem, TARGETED_KINDS } from "../../engine/items.js";
 import { playerStrike, flee, parley, sing } from "../../engine/combat.js";
 import { makeCamp } from "../../engine/movement.js";
-import { SPELLS, POTIONS, STAVES, CLOAKS, JEWELRY } from "../../content/index.js";
+import { SPELLS, POTIONS, STAVES, CLOAKS, JEWELRY, TREASURE_ACTIVATION_OF } from "../../content/index.js";
 import { TOAST_FOR } from "../../src/browser/toasts.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { makeRng } from "../../engine/rng.js";
@@ -221,7 +221,9 @@ for (const st of STAVES) {
   CASES.push({
     name: `staff outside combat (MU): ${st.n}`,
     run: () => {
-      const item = { kind: "staff", n: st.n, use: st.use };
+      // Phase 39 (GEAR-02): a real content staff name needs a positive
+      // charge for itemReady's staff branch — read the max from content.
+      const item = { kind: "staff", n: st.n, use: st.use, charges: TREASURE_ACTIVATION_OF[st.n].charges };
       const state = fixedState({ c: { cls: "Magic User", items: [item] } });
       const events = TARGETED_KINDS.has(st.use) ? useItem(state, 0, fakeRng([]), [], NOW) : useItem(state, 0, makeRng(200 + STAVES.indexOf(st)), [], NOW);
       return { events, state };
@@ -231,7 +233,7 @@ for (const st of STAVES) {
   CASES.push({
     name: `staff in combat (MU): ${st.n}`,
     run: () => {
-      const item = { kind: "staff", n: st.n, use: st.use };
+      const item = { kind: "staff", n: st.n, use: st.use, charges: TREASURE_ACTIVATION_OF[st.n].charges };
       const state = fixedState({ c: { cls: "Magic User", items: [item] } });
       state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
       return { events: useItem(state, 0, makeRng(300 + STAVES.indexOf(st)), [], NOW), state };
@@ -250,13 +252,16 @@ for (const st of STAVES) {
   });
 }
 CASES.push({
-  name: "staff on cooldown is refused cooldown with a positive integer left",
+  // Phase 39 (GEAR-02): a staff refuses "recharging" (never "cooldown",
+  // which is a duration+cooldown jewelry/cloak's own reason) with a positive
+  // integer squares-left, once its charge pool is empty.
+  name: "an empty staff is refused recharging with a positive integer left",
   run: () => {
-    const item = { kind: "staff", n: "Rowan Staff", use: "dome", every: 250, usedAt: 10 };
+    const item = { kind: "staff", n: "Rowan Staff", use: "dome", charges: 0 };
     const state = fixedState({ c: { cls: "Magic User", items: [item] }, steps: 20 });
     return { events: useItem(state, 0, fakeRng([]), [], NOW), state };
   },
-  expect: { refused: { type: "useRefused", reason: "cooldown" } },
+  expect: { refused: { type: "useRefused", reason: "recharging" } },
 });
 
 // Cloak/jewelry `use` kinds — half/invis/haste/ether work anywhere; stone

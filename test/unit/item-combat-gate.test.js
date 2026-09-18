@@ -81,7 +81,10 @@ test("every TARGETED_KINDS staff refuses combatOnly outside combat — zero draw
 });
 
 test("a non-Magic-User's staff use is refused wrongClass, even in combat with a live target", () => {
-  const staff = { kind: "staff", n: "Oak Staff", use: "stone" };
+  // Phase 39 (GEAR-02): "Oak Staff" is a real content activation key — give
+  // it a charge so itemReady's staff branch (Number.isInteger(it.charges) &&
+  // it.charges > 0) isn't what refuses this use; wrongClass must fire first.
+  const staff = { kind: "staff", n: "Oak Staff", use: "stone", charges: 1 };
   const state = fixedState({ c: { cls: "Fighter", items: [staff] }, combat: fixedCombat([fixedFoe()]) });
   const events = useItem(state, 0, fakeRng([]), [], NOW);
   assert.deepStrictEqual(events, [{ type: "useRefused", item: staff, reason: "wrongClass" }]);
@@ -175,7 +178,8 @@ test("Amulet of Stone on 5 foes stones only 4 (aoe:4), leaving combat open with 
 // --- item kills close the encounter through the normal cleared path -------
 
 test("Oak Staff (aoe default 2) on 2 foes clears the encounter", () => {
-  const OAK_STAFF = { kind: "staff", n: "Oak Staff", use: "stone" };
+  // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
+  const OAK_STAFF = { kind: "staff", n: "Oak Staff", use: "stone", charges: 1 };
   const foes = [fixedFoe({ name: "A", wp: 10, maxWP: 10, type: "Humans" }), fixedFoe({ name: "B", wp: 10, maxWP: 10, type: "Humans" })];
   const state = fixedState({ c: { cls: "Magic User", items: [OAK_STAFF] }, combat: fixedCombat(foes) });
   const events = useItem(state, 0, makeRng(3), [], NOW);
@@ -186,7 +190,8 @@ test("Oak Staff (aoe default 2) on 2 foes clears the encounter", () => {
 
 test("the Pine Staff's fire kill on the last foe clears the encounter", () => {
   const foe = fixedFoe({ name: "Ember", wp: 1, maxWP: 1, type: "Humans" });
-  const state = fixedState({ c: { items: [{ n: "Pine Staff", use: "fire" }] }, combat: fixedCombat([foe]) });
+  // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
+  const state = fixedState({ c: { items: [{ n: "Pine Staff", use: "fire", charges: 1 }] }, combat: fixedCombat([foe]) });
   // n=d6=1 ball; dmg d10=1 -> 1+4=5, lethal at 1 wp; killFoe: sp d6=1, coin d10=1, loot d20=20 skip.
   const events = useItem(state, 0, fakeRng([1, 1, 1, 1, 20]), [], NOW);
   assert.ok(events.some((e) => e.type === "encounterCleared"));
@@ -195,7 +200,8 @@ test("the Pine Staff's fire kill on the last foe clears the encounter", () => {
 });
 
 test("a freeze/gas use with no kill leaves combat open", () => {
-  const freezeStaff = { kind: "staff", n: "Birch Staff", use: "freeze" };
+  // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
+  const freezeStaff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
   const foe = fixedFoe({ wp: 20, maxWP: 20 });
   const state = fixedState({ c: { cls: "Magic User", items: [freezeStaff] }, combat: fixedCombat([foe]) });
   const events = useItem(state, 0, fakeRng([]), [], NOW);

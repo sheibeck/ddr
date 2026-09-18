@@ -24,7 +24,8 @@ never a generic "you can't do that."
 |---|---|---|---|
 | `notFought` | `castRefused`, `useRefused`, `scrollRefused`, `actionRefused`, `strikeRefused`, `fleeRefused`, `parleyRefused` | the encounter is still a preview — Fight! has not been pressed | every combat-gated action, via the single `refuseIfPending` guard |
 | `combatOnly` | `castRefused`, `useRefused` | a combat-only spell/targeted item used with no active encounter | `castRefused`, `useRefused` |
-| `cooldown {left}` | `useRefused`, `actionRefused` | an `every`-N-squares item, or a Bard's song, still counting down; `left` is the exact squares remaining | `useRefused`, `actionRefused` |
+| `cooldown {left}` | `useRefused`, `actionRefused` | (Phase 39, GEAR-02: a `c.timers` duration+cooldown jewelry/cloak still cooling), or a Bard's song, still counting down; `left` is the exact squares remaining | `useRefused`, `actionRefused` |
+| `recharging {left,charges,max}` | `useRefused` | (Phase 39, GEAR-02) an EMPTY staff still refilling its charge pool — `left` is the squares to the next charge, `charges`/`max` the current/full pool | `useRefused` |
 | `wrongClass` | `useRefused`, `actionRefused` | a staff used by a non-Magic-User; Sing attempted by a non-Bard | `useRefused`, `actionRefused` |
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |

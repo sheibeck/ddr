@@ -506,7 +506,8 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
 // --- (xiii) Item damage: the Pine Staff's fire halves too -------------------
 
 test("(xiii) the Pine Staff's fire damage halves while afraid (ceil)", () => {
-  const pineStaff = () => ({ n: "Pine Staff", kind: "item", use: "fire" });
+  // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
+  const pineStaff = () => ({ n: "Pine Staff", kind: "item", use: "fire", charges: 1 });
 
   const foeA = fixedFoe({ wp: 999, maxWP: 999 });
   const stateA = fixedState({ c: { items: [pineStaff()] } });

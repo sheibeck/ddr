@@ -13,15 +13,24 @@ import assert from "node:assert/strict";
 import { conditionsOf } from "../../engine/derived.js";
 
 /** A minimal character with every condition field cleared. conditionsOf reads
- * only c.*, so a bare-bones c is a valid, fully-inert baseline. */
+ * only c.*, so a bare-bones c is a valid, fully-inert baseline. Phase 39
+ * (GEAR-02): the retired haste/invis/ether/acute/flightLeft/flightCooldown
+ * scalar counters are gone — a live item effect/cooldown is expressed as a
+ * c.timers record instead (see the `rec` helper below). */
 function cleanChar(overrides = {}) {
   return {
-    haste: 0, invis: 0, ether: 0, acute: 0, might: 0, ward: null,
-    flightLeft: 0, flightCooldown: 0,
+    might: 0, ward: null,
     affliction: null, darkFor: 0,
     items: [],
     ...overrides,
   };
+}
+
+/** rec(cadence, left, cd) — a plain c.timers "effect"-phase record. */
+function rec(cadence, left, cd) {
+  const r = { cadence, left, phase: "effect" };
+  if (cd !== undefined) r.cd = cd;
+  return r;
 }
 
 const keys = (conds) => conds.map((x) => x.key);
@@ -32,17 +41,17 @@ test("conditionsOf: no conditions active → empty array", () => {
 });
 
 test("conditionsOf: each GOOD counter surfaces with its remaining count", () => {
-  assert.deepEqual(conditionsOf({ c: cleanChar({ haste: 34 }) }), [
-    { key: "haste", polarity: "good", remaining: 34 },
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "item:Cloak of Speed": rec("squares", 34, 50) } }) }), [
+    { key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" },
   ]);
-  assert.deepEqual(conditionsOf({ c: cleanChar({ invis: 100 }) }), [
-    { key: "invis", polarity: "good", remaining: 100 },
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "item:Invisible": rec("squares", 100) } }) }), [
+    { key: "invis", polarity: "good", remaining: 100, cadence: "squares", source: "Invisible" },
   ]);
-  assert.deepEqual(conditionsOf({ c: cleanChar({ acute: 5 }) }), [
-    { key: "acute", polarity: "good", remaining: 5 },
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "item:Acuteness": rec("rounds", 5) } }) }), [
+    { key: "acute", polarity: "good", remaining: 5, cadence: "rounds", source: "Acuteness" },
   ]);
-  assert.deepEqual(conditionsOf({ c: cleanChar({ ether: 20 }) }), [
-    { key: "ether", polarity: "good", remaining: 20 },
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "item:Cloak of Ether": rec("squares", 20, 80) } }) }), [
+    { key: "ether", polarity: "good", remaining: 20, cadence: "squares", source: "Cloak of Ether" },
   ]);
 });
 
@@ -100,10 +109,17 @@ test("conditionsOf: flight — Bracelet is always-on, no charge count", () => {
 });
 
 test("conditionsOf: flight — Cloak of Flying charged / recharging / ready sub-states", () => {
-  const charged = conditionsOf({ c: cleanChar({ items: [{ n: "Cloak of Flying" }], flightLeft: 14 }) });
+  const charged = conditionsOf({
+    c: cleanChar({ items: [{ n: "Cloak of Flying" }], timers: { "item:Cloak of Flying": rec("squares", 14, 50) } }),
+  });
   assert.deepEqual(charged, [{ key: "flight", polarity: "good", flight: "charged", remaining: 14 }]);
 
-  const cooling = conditionsOf({ c: cleanChar({ items: [{ n: "Cloak of Flying" }], flightCooldown: 30 }) });
+  const cooling = conditionsOf({
+    c: cleanChar({
+      items: [{ n: "Cloak of Flying" }],
+      timers: { "item:Cloak of Flying": { cadence: "squares", left: 30, phase: "cooldown" } },
+    }),
+  });
   assert.deepEqual(cooling, [{ key: "flight", polarity: "good", flight: "cooldown", remaining: 30 }]);
 
   const ready = conditionsOf({ c: cleanChar({ items: [{ n: "Cloak of Flying" }] }) });
@@ -112,7 +128,13 @@ test("conditionsOf: flight — Cloak of Flying charged / recharging / ready sub-
 
 test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable order", () => {
   const c = cleanChar({
-    haste: 34, invis: 100, acute: 5, ether: 20, might: 8,
+    timers: {
+      "item:Cloak of Speed": rec("squares", 34, 50),
+      "item:Invisible": rec("squares", 100),
+      "item:Acuteness": rec("rounds", 5),
+      "item:Cloak of Ether": rec("squares", 20, 80),
+    },
+    might: 8,
     items: [{ n: "Bracelet of Flight" }],
     affliction: { kind: "Poison", left: 10 },
     darkFor: 12,
@@ -130,7 +152,11 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
 });
 
 test("conditionsOf: is a PURE read — no mutation of state or c, no rng needed", () => {
-  const c = cleanChar({ haste: 34, affliction: { kind: "Poison", left: 10 }, darkFor: 12 });
+  const c = cleanChar({
+    timers: { "item:Cloak of Speed": rec("squares", 34, 50) },
+    affliction: { kind: "Poison", left: 10 },
+    darkFor: 12,
+  });
   const before = JSON.stringify(c);
   // No rng object is passed at all — a draw would throw here, proving purity.
   const conds = conditionsOf({ c });

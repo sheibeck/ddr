@@ -210,7 +210,12 @@ test("strikeDie is a pure function of the passed character", () => {
   assert.equal(strikeDie(fixedFighter({ level: 5 })), STRIKE_DICE[4]); // d6
   assert.equal(strikeDie(fixedFighter({ race: "Elven" })), STRIKE_DICE[1]); // strikeStep +1 → d12
   assert.equal(strikeDie(fixedFighter({ sub: "Illusionist", level: 2 })), STRIKE_DICE[0]); // d20 until L3
-  assert.equal(strikeDie(fixedFighter({ acute: 1 })), STRIKE_DICE[4]); // Acuteness → d6
+  // Phase 39 (GEAR-02): the retired c.acute counter — a live "acute" item
+  // effect (Acuteness) now reads through c.timers.
+  assert.equal(
+    strikeDie(fixedFighter({ timers: { "item:Acuteness": { cadence: "rounds", left: 1, phase: "effect" } } })),
+    STRIKE_DICE[4],
+  ); // Acuteness → d6
 });
 
 test("toHit is a pure function of the passed state", () => {

@@ -15,8 +15,21 @@
 // it) — re-exported here so item-domain callers have one place to import
 // item/treasure helpers from, without duplicating the implementation.
 
-import { eff, skill, slotItems, afraidDamage, slotFor, WORN_SLOTS, expectedStrike } from "./derived.js";
+import {
+  eff,
+  skill,
+  slotItems,
+  afraidDamage,
+  slotFor,
+  WORN_SLOTS,
+  expectedStrike,
+  activationFor,
+  itemTimerId,
+  chargesTimerId,
+  carriedItems,
+} from "./derived.js";
 import { rollDice } from "./dice.js";
+import { startEffect, startCooldown, isReady, remaining } from "./effects.js";
 import { die } from "./death.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
 // rollTreasureItem/LOOT_DIVISOR from here) is safe: both modules only touch
@@ -49,6 +62,8 @@ import {
   BAG_ORDER,
   BAG_FLOORS,
   BAG_ITEMS,
+  TREASURE_ACTIVATION_OF,
+  ACTIVATION_OF,
 } from "../content/index.js";
 
 export { eff, slotItems };
@@ -113,7 +128,11 @@ export function rollCloak(rng) {
 }
 
 export function rollStaff(rng) {
-  return Object.assign({ kind: "staff", every: 250 }, STAVES[rng.d(8) - 1]);
+  const row = STAVES[rng.d(8) - 1];
+  // Phase 39 (GEAR-02): the old every-250-squares cooldown field is retired
+  // — a staff now carries a charge pool (`charges`), looked up by name from
+  // the content declaration; the same single `rng.d(8)` draw as before.
+  return Object.assign({ kind: "staff", charges: TREASURE_ACTIVATION_OF[row.n].charges }, row);
 }
 
 /** Magical Weapons, p.48: the weapon table, then d6 on the bonus table. */
@@ -890,17 +909,25 @@ export function leaveAllLoot(state, events = []) {
 
 /**
  * itemReady(state, it) — is an item off cooldown? Ports mazeworld.html
- * itemReady() (lines 1958-1962). NOTE: unlike the plan artifact's shorthand
- * `itemReady(c,it)`, this needs the run's step counter (`state.steps`) to
- * evaluate an `every`-squares cooldown, which the character alone does not
- * carry — so it takes the full `state`, not just `c` (Rule 1: the
- * documented character-only signature cannot express the prototype's
- * behavior).
+ * itemReady() (lines 1958-1962), rewritten (Phase 39, GEAR-02) onto the ONE
+ * `c.timers`-backed activation model — the retired counter-field-based
+ * cooldown is gone. A non-use, non-potion item is never usable at all. A
+ * potion is always ready (consumption, not a cooldown, gates re-drinking —
+ * an active effect record from an earlier dose of the SAME potion must never
+ * refuse a second one). An item with no activation at all (`activationFor`
+ * returns null — a passive-only jewel, or Plan 04's tools before they gain
+ * one) is always ready, matching the pre-Phase-39 "no `every`" behavior. A
+ * staff is ready iff it currently holds an integer charge > 0. Everything
+ * else (duration+cooldown jewelry/cloaks) is ready iff its OWN `item:<key>`
+ * timer record does not exist (neither an effect nor a cooldown phase).
  */
 export function itemReady(state, it) {
   if (!it.use && it.kind !== "potion") return false;
-  if (!it.every) return true;
-  return state.steps - (it.usedAt ?? -99999) >= it.every;
+  if (it.kind === "potion") return true;
+  const act = activationFor(it);
+  if (!act) return true;
+  if (act.charges !== undefined) return Number.isInteger(it.charges) && it.charges > 0;
+  return isReady(state.c, itemTimerId(it));
 }
 
 // CMB-03 (Phase 31): the targeted attack kinds — the ones that read
@@ -908,6 +935,87 @@ export function itemReady(state, it) {
 // cooldown, RESEARCH §4.2) with no active combat. Exported for the
 // usable-features audit test (Plan 02, Task 3).
 export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas"]);
+
+/**
+ * applyActivation(state, it, rng, events) — Phase 39 (GEAR-02), module-
+ * private: the ONE timer-bookkeeping step every real (non-fizzled) `useItem`
+ * call runs AFTER the kind switch resolves its own side effect (fire's
+ * damage, stone's kills, dome's ward, …). A no-op when `it` has no
+ * activation at all (`activationFor` returns null). Otherwise: for a staff
+ * (`act.charges` defined), spends one charge (clamped at 0, tolerant of a
+ * tampered non-integer `it.charges`) and, only when no recharge cooldown is
+ * ALREADY counting down, starts a fresh one (`charges:<key>`, `act.recharge`
+ * squares) — spending a second charge while one is already recharging never
+ * restarts the countdown. Then resolves the item's own effect: a numeric
+ * `act.effect` is used directly; a dice-notation `act.effect` (the Crystal
+ * Staff's `d10+5`) is rolled via the injected rng. A positive `left` starts
+ * an `item:<key>` effect record (with `cd` set when the activation also
+ * carries a cooldown — a duration+cooldown jewelry/cloak) and pushes
+ * `itemEffectStarted`; an instant effect (`left` 0 or absent) with a `cd`
+ * (the Pendant's `half`) starts a bare cooldown record instead; an instant
+ * effect with NO `cd` (every staff kind except Crystal) starts nothing
+ * further — the charge spend above is the item's only c.timers footprint.
+ */
+function applyActivation(state, it, rng, events) {
+  const c = state.c;
+  const act = activationFor(it);
+  if (!act) return;
+  if (act.charges !== undefined) {
+    const current = Number.isInteger(it.charges) ? it.charges : act.charges;
+    it.charges = Math.max(0, current - 1);
+    if (isReady(c, chargesTimerId(it))) startCooldown(c, chargesTimerId(it), { squares: act.recharge });
+  }
+  const left = typeof act.effect === "object" && act.effect !== null ? rollDice(rng, act.effect) : act.effect;
+  const cadence = act.cadence ?? "squares";
+  if (left > 0) {
+    const opts = act.cd ? { [cadence]: left, cd: act.cd } : { [cadence]: left };
+    startEffect(c, itemTimerId(it), opts);
+    const started = { type: "itemEffectStarted", item: it.n, kind: act.kind, left, cadence };
+    if (act.kind === "might" && typeof act.might === "number") started.might = act.might;
+    events.push(started);
+  } else if (act.cd) {
+    startCooldown(c, itemTimerId(it), { squares: act.cd });
+  }
+}
+
+/**
+ * narrateTimerTransitions(state, transitions, events) — Phase 39 (GEAR-02):
+ * maps a list of engine/effects.js `{ id, from, to }` transitions (as
+ * returned by `tickSquares`/`tickRounds`) onto the item-domain events the
+ * Oracle/toasts/rail narrate — the ONE place a tick's return value becomes
+ * player-visible feedback. `ability:` ids are ignored (Phase 38's abilities
+ * narrate nothing on expiry). Pure bookkeeping, zero rng: the ONE exception
+ * is a staff's charge refill (a `charges:` id, always a cooldown -> null
+ * transition), which mutates `it.charges` on the staff object itself (found
+ * via `carriedItems`, bag ∪ worn — a dropped staff's record simply vanishes,
+ * no event) and, only when the pool isn't yet full, restarts the recharge
+ * cooldown so the NEXT charge keeps counting down.
+ */
+export function narrateTimerTransitions(state, transitions, events = []) {
+  const c = state.c;
+  for (const { id, from } of transitions || []) {
+    if (id.startsWith("item:")) {
+      const key = id.slice("item:".length);
+      if (from === "effect") {
+        events.push({ type: "itemEffectFaded", item: key, kind: ACTIVATION_OF[key]?.kind ?? null });
+      } else if (from === "cooldown") {
+        events.push({ type: "itemCooled", item: key });
+      }
+    } else if (id.startsWith("charges:")) {
+      const key = id.slice("charges:".length);
+      const act = ACTIVATION_OF[key];
+      const max = act ? act.charges : undefined;
+      const it = carriedItems(c).find((x) => x && x.n === key);
+      if (it) {
+        it.charges = (Number.isInteger(it.charges) ? it.charges : 0) + 1;
+        events.push({ type: "staffRecharged", item: key, charges: it.charges, max });
+        if (it.charges < max) startCooldown(c, id, { squares: act.recharge });
+      }
+    }
+    // ability: ids — Phase 38 narrates nothing on expiry; ignored here.
+  }
+  return events;
+}
 
 /**
  * useItem(state, ref, rng, events, now) — triggers a carried OR worn item's
@@ -921,8 +1029,8 @@ export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas
  * when it calls into a live `state.combat`.
  *
  * CMB-02/03 (Phase 31) + Phase 37 (GEAR-03): the full refusal ladder, every
- * step BEFORE `it.usedAt`/`itemUsed` fire (so a refused use never burns a
- * cooldown, never consumes the item, never draws): pending fight ->
+ * step BEFORE `itemUsed` fires (so a refused use never burns a
+ * cooldown/charge, never consumes the item, never draws): pending fight ->
  * wrongClass (a staff used by a non-caster) -> notWorn (a bagged cloak/
  * jewelry/staff activatable in the new worn-slot model — "activatables must
  * be worn to work") -> pilfer -> combatOnly (a targeted kind outside
@@ -965,7 +1073,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // kind is discretionarily scoped to the two wp-restoring potion effects
   // (Healing "heal", Xtra Healing "full") — cures, buffs, staves, cloaks and
   // every other `use:` item are refused BEFORE any side effect, so a refused
-  // use leaves usedAt/inventory/rng completely untouched. drinkPotion (the
+  // use leaves the timers/inventory/rng completely untouched. drinkPotion (the
   // separate generic healing-draught action) and canRead (engine/magic.js)
   // already gate a Pilfer independently and are untouched by this change.
   if (c.sub === "Pilfer" && kind !== "heal" && kind !== "full") {
@@ -977,34 +1085,49 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // silently fizzle (foes = [], every forEach/for a no-op) while STILL
   // burning its cooldown and, for `fire`, drawing a narratively-invisible
   // rng.d(6) and pushing a misleading `itemBurned {total:0}` (RESEARCH
-  // §4.2) — refuse it explicitly instead, before usedAt/itemUsed fire.
+  // §4.2) — refuse it explicitly instead, before itemUsed fires.
   if (!state.combat && TARGETED_KINDS.has(kind)) {
     events.push({ type: "useRefused", item: it, reason: "combatOnly" });
     return events;
   }
 
-  // CMB-02 (Phase 31): itemReady's silent no-op (RESEARCH §3.4) replaced
-  // with an explaining refusal naming exactly how many squares remain —
-  // only when the item actually carries a cooldown; an item with no `use`
-  // effect and not a potion (never itemReady, never on cooldown) stays the
-  // pre-existing silent no-op, since there is nothing to explain.
+  // CMB-02 (Phase 31) + Phase 39 (GEAR-02): itemReady's silent no-op
+  // (RESEARCH §3.4) replaced with an explaining refusal naming exactly how
+  // many squares remain — only when the item actually carries an activation
+  // (`activationFor` non-null); an item with no `use` effect and not a
+  // potion (never itemReady, never has an activation) stays the pre-existing
+  // silent no-op, since there is nothing to explain. Two named reasons: a
+  // staff (`act.charges` defined) is `"recharging"`; every duration+cooldown
+  // jewelry/cloak is `"cooldown"`.
   if (!itemReady(state, it)) {
-    if (it.every) {
+    const act = activationFor(it);
+    if (act && act.charges !== undefined) {
+      events.push({
+        type: "useRefused",
+        item: it,
+        reason: "recharging",
+        left: remaining(c, chargesTimerId(it)),
+        charges: Number.isInteger(it.charges) ? it.charges : 0,
+        max: act.charges,
+      });
+    } else if (act) {
+      const rec = c.timers && c.timers[itemTimerId(it)];
       events.push({
         type: "useRefused",
         item: it,
         reason: "cooldown",
-        left: it.every - (state.steps - (it.usedAt ?? -99999)),
+        left: remaining(c, itemTimerId(it)),
+        phase: rec ? rec.phase : "cooldown",
       });
     }
     return events;
   }
 
-  it.usedAt = state.steps;
   events.push({ type: "itemUsed", item: it });
 
   const combat = state.combat;
   const foes = combat && combat.foes ? combat.foes.filter((f) => f.alive) : [];
+  let fizzled = false;
 
   switch (kind) {
     case "heal": {
@@ -1024,29 +1147,17 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       events.push({ type: "cured", kind });
       break;
     }
-    case "strength": {
-      c.might = (c.might || 0) + 8;
-      break;
-    }
-    case "enlarge": {
-      c.might = (c.might || 0) + 4;
-      break;
-    }
+    // Phase 39 (GEAR-02): the retired scattered counters (c.might += 8/4
+    // never expiring, c.haste/c.acute/c.invis/c.ether) — applyActivation
+    // (below, after this switch) starts the item's own c.timers record
+    // instead; no direct character-field write happens here anymore.
+    case "strength":
+    case "enlarge":
     case "speed":
-    case "haste": {
-      c.haste = 50;
-      break;
-    }
-    case "acute": {
-      c.acute = rng.d(8);
-      break;
-    }
-    case "invis": {
-      c.invis = 100;
-      break;
-    }
+    case "haste":
+    case "acute":
+    case "invis":
     case "ether": {
-      c.ether = 20;
       break;
     }
     case "half": {
@@ -1124,8 +1235,16 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       break;
     }
     default:
+      fizzled = true;
       events.push({ type: "itemFizzled" });
   }
+
+  // Phase 39 (GEAR-02): the ONE timer-bookkeeping step every real
+  // (non-fizzled) use runs — spends a staff charge / starts the item's own
+  // effect-or-cooldown c.timers record. A fizzled use (the default branch
+  // above) skips it entirely — nothing to start for a kind this switch does
+  // not recognize.
+  if (!fizzled) applyActivation(state, it, rng, events);
 
   if (it.kind === "potion" || it.uses === 1) {
     if (slot) delete c.worn[slot];

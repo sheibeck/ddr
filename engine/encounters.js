@@ -31,7 +31,7 @@ import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
-import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
+import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
 import { teleport } from "./movement.js";
@@ -45,7 +45,6 @@ import {
   POTIONS,
   SPELLS,
   CLOAKS,
-  STAVES,
   JEWELRY,
   MISC_MAGIC,
   FAERIE,
@@ -400,7 +399,10 @@ export function findMisc(state, rng, events = []) {
   } else if (what === "Cloak") {
     offerFind(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1]), events);
   } else if (what === "Staff") {
-    offerFind(state, Object.assign({ kind: "staff", every: 250 }, STAVES[rng.d(8) - 1]), events);
+    // Phase 39 (GEAR-02): rollStaff (engine/items.js) is the one staff
+    // constructor now — same single rng.d(8) draw, charge pool instead of
+    // the retired every:250 cooldown.
+    offerFind(state, rollStaff(rng), events);
   } else if (what === "Jewelry") {
     offerFind(state, Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]), events);
   }

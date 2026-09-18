@@ -184,6 +184,12 @@ export const RAIL_FAMILY = Object.freeze({
   heightsFear: { icon: "·", title: "AFRAID", tone: "bad" },
   waterFear: { icon: "·", title: "AFRAID", tone: "bad" },
   trappedPanic: { icon: "·", title: "AFRAID", tone: "bad" },
+
+  // Phase 39 (GEAR-02): the item activation model's four transition events.
+  itemEffectStarted: { icon: "◇", title: "IN EFFECT", tone: "good" },
+  itemEffectFaded: { icon: "◇", title: "WORN OFF", tone: "odd" },
+  itemCooled: { icon: "◇", title: "READY", tone: "good" },
+  staffRecharged: { icon: "◇", title: "CHARGED", tone: "good" },
 });
 
 /**

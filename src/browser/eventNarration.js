@@ -406,7 +406,6 @@ export const EVENT_NARRATION = {
     `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
-  acuteFaded: () => `<span class="beat">The Acuteness wears off.</span>`,
 
   // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
   // second. Every builder here defends a bare `{ type }` call (the coverage
@@ -721,9 +720,12 @@ export const EVENT_NARRATION = {
   // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason with
   // cooldown/wrongClass/combatOnly/exploreOnly/noTarget/notFought — the
   // pilfer line stays byte-identical.
+  // Phase 39 (GEAR-02): cooldown's wording moved to the vending-machine line
+  // below; a NEW "recharging" reason (an empty staff) gets its own line.
   useRefused: (e) => {
     const item = e.item?.n ?? "That";
-    if (e.reason === "cooldown") return `<span class="miss">${item} needs ${e.left ?? "more"} more squares.</span>`;
+    if (e.reason === "cooldown") return `<span class="miss">${item}: ${e.left ?? "?"} squares.</span> It is not a vending machine.`;
+    if (e.reason === "recharging") return `<span class="miss">${item}: ${e.left ?? "?"} squares to the next charge.</span> Patience is also a spell.`;
     if (e.reason === "wrongClass") return `<span class="miss">${item} is a stick to anyone who is not a Magic User.</span>`;
     // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
     // BAG in the new worn-slot model — activatables must be worn to work.
@@ -739,6 +741,24 @@ export const EVENT_NARRATION = {
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,
   itemFizzled: () => `<span class="miss">Nothing happens.</span>`,
   itemConsumed: (e) => `${e.item?.n ?? "It"} is spent.`,
+  // Phase 39 (GEAR-02): the item activation model's four new events — a use
+  // starts an effect (itemEffectStarted, kind-keyed line), the tick sites
+  // narrate the transitions (itemEffectFaded/itemCooled/staffRecharged).
+  itemEffectStarted: (e) => {
+    const n = e.left;
+    const map = {
+      haste: `<span class="hit">Double attacks for ${n} squares.</span>`,
+      invis: `<span class="hit">Unseen for ${n} squares. They swing at where you were.</span>`,
+      ether: `<span class="hit">${n} squares of walking through stone.</span>`,
+      acute: `<span class="hit">You strike on a d6 for ${n} rounds.</span>`,
+      might: `<span class="hit">+${e.might ?? "?"} damage for ${n} squares. Hit things.</span>`,
+      fly: `<span class="hit">Twenty squares of not touching the floor.</span>`,
+    };
+    return map[e.kind] ?? `<span class="hit">${e.item ?? "It"}: ${n} squares.</span>`;
+  },
+  itemEffectFaded: (e) => `<span class="beat">${e.item ?? "It"} wears off.</span>`,
+  itemCooled: (e) => `<span class="hit">${e.item ?? "It"} is ready again.</span>`,
+  staffRecharged: (e) => `<span class="hit">${e.item ?? "It"} hums.</span> ${e.charges ?? "?"}/${e.max ?? "?"}.`,
 
   /* ---------------- inventory actions (ECON-03/04/05, Phase 13) ----------------
      The find offer/accept/decline + bag keep/drop + equip/unequip lines. Deadpan,

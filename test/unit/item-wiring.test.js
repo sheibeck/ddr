@@ -94,7 +94,8 @@ const CLOAK_HEALING = { kind: "cloak", n: "Cloak of Healing", eff: { cloakHeal: 
 const CLOAK_REGEN = { kind: "cloak", n: "Cloak of Regeneration", eff: { cloakRegen: 1 }, txt: "" };
 const GAUNTLET = { kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: "" };
 const AMULET_STONE = { kind: "jewel", n: "Amulet of Stone", eff: {}, use: "stone", every: 200, aoe: 4, txt: "" };
-const OAK_STAFF = { kind: "staff", n: "Oak Staff", use: "stone", txt: "" };
+// Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
+const OAK_STAFF = { kind: "staff", n: "Oak Staff", use: "stone", charges: 1, txt: "" };
 
 // --- 1. Helm of Knowledge tongue -> canParley (DR15-A) --------------------
 
@@ -233,7 +234,9 @@ test("Amulet of Stone petrifies up to 4 foes (per-item aoe:4); a plain stone sou
 // --- 8. ether pass-through + Gauntlet of the Giant size -------------------
 
 test("Cloak of Ether: while ethereal you phase through a wall/crevice with no roll and no rng", () => {
-  const st = fixedState({ c: { ether: 20 } });
+  // Phase 39 (GEAR-02): the retired c.ether counter — a live "ether" item
+  // effect now reads through c.timers.
+  const st = fixedState({ c: { timers: { "item:Cloak of Ether": { cadence: "squares", left: 20, cd: 80, phase: "effect" } } } });
   open(st.floor.g, 5, 4, { feat: "climb" });
   const events = move(st, "N", fakeRng([]), []); // no climb roll drawn while phasing
   assert.equal(st.floor.py, 4, "you move through");
@@ -252,7 +255,8 @@ test("Gauntlet of the Giant adds a flat size damage bonus to weaponDamage", () =
 
 test("Pine Staff's fire effect routes through damageFoe: soakable by sp.ar, never multiplied", () => {
   const soaked = fixedState({
-    c: { items: [{ n: "Pine Staff", use: "fire" }] },
+    // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
+    c: { items: [{ n: "Pine Staff", use: "fire", charges: 1 }] },
     combat: fixedCombat([fixedFoe({ sp: { ar: 12 }, wp: 30, maxWP: 30 })]),
   });
   // n=d6=1 ball; dmg = d10=6 + 4 = 10; armor-soak d20=3, 3<=12 soaks entirely.
@@ -262,7 +266,7 @@ test("Pine Staff's fire effect routes through damageFoe: soakable by sp.ar, neve
   assert.equal(soaked.combat.foes[0].wp, 30, "the soaked ball left the foe untouched");
 
   const unarmoured = fixedState({
-    c: { items: [{ n: "Pine Staff", use: "fire" }] },
+    c: { items: [{ n: "Pine Staff", use: "fire", charges: 1 }] },
     combat: fixedCombat([fixedFoe({ wp: 30, maxWP: 30 })]),
   });
   const controlEvents = useItem(unarmoured, 0, fakeRng([1, 6]), []);

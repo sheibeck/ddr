@@ -23,6 +23,7 @@ export * from "./spells.js";
 export * from "./mu-chart.js";
 export * from "./spell-level-overrides.js";
 export * from "./potions.js";
+export * from "./activations.js";
 export * from "./foods.js";
 export * from "./traps.js";
 export * from "./afflictions.js";

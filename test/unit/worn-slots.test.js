@@ -35,6 +35,7 @@ import {
 } from "../../engine/items.js";
 import { TOAST_FOR } from "../../src/browser/toasts.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { itemEffectActive } from "../../engine/derived.js";
 
 /** hero(overrides) — a minimal, fixed level-1 Fighter with `bag: "medium"`
  * (6 slots) and `c.worn = {}` planted by hand (Plan 03 owns the real
@@ -81,10 +82,10 @@ function CLOAK_SPEED() {
   return { kind: "cloak", n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "double attacks, once every 50 squares" };
 }
 function OAK_STAFF() {
-  return { kind: "staff", n: "Oak Staff", use: "stone", every: 250, txt: "turns 2 squares of opponents to stone" };
+  return { kind: "staff", n: "Oak Staff", use: "stone", charges: 1, txt: "turns 2 squares of opponents to stone" };
 }
 function POPLAR_STAFF() {
-  return { kind: "staff", n: "Poplar Staff", use: "heal", every: 250, txt: "1d20+10 wp to up to 6" };
+  return { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3, txt: "1d20+10 wp to up to 6" };
 }
 function POTION() {
   return { kind: "potion", n: "Healing potion", eff2: "heal", txt: "restores wp" };
@@ -407,14 +408,14 @@ test("validateAction: unequipSlot accepts weapon/armor and the six worn slots; r
  * dispatch + actions validation + toast/Oracle copy
  * ============================================================ */
 
-test("useItem slot form: a worn staff heals, stamps usedAt on the WORN object, and a second immediate use refuses cooldown", () => {
-  const staff = POPLAR_STAFF();
+test("useItem slot form: a worn staff heals, spends its one charge, and a second immediate use refuses recharging (Phase 39, GEAR-02)", () => {
+  const staff = { ...POPLAR_STAFF(), charges: 1 };
   const state = hero({ c: { cls: "Magic User", worn: { staff }, wp: 20, maxWP: 55 } });
   const rng = fakeRng([5]);
   const events = useItem(state, { slot: "staff" }, rng, [], () => 12345);
   assert.equal(state.c.worn.staff, staff);
   assert.deepStrictEqual(state.c.items, []);
-  assert.equal(staff.usedAt, state.steps);
+  assert.equal(staff.charges, 0);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("itemUsed"));
   assert.ok(types.includes("healed"));
@@ -422,7 +423,7 @@ test("useItem slot form: a worn staff heals, stamps usedAt on the WORN object, a
   const events2 = useItem(state, { slot: "staff" }, rng, [], () => 12345);
   assert.equal(events2.length, 1);
   assert.equal(events2[0].type, "useRefused");
-  assert.equal(events2[0].reason, "cooldown");
+  assert.equal(events2[0].reason, "recharging");
   assert.equal(typeof events2[0].left, "number");
 });
 
@@ -434,11 +435,11 @@ test("useItem slot form on an empty slot is a silent no-op (mirrors the bag out-
 
 test("useItem (new model): a bagged activatable is refused notWorn before any side effect", () => {
   const cloak = CLOAK_SPEED();
-  const state = hero({ c: { worn: {}, items: [cloak], haste: 0 } });
+  const state = hero({ c: { worn: {}, items: [cloak] } });
   const events = useItem(state, 0, fakeRng([]), [], () => 1);
   assert.deepStrictEqual(events, [{ type: "useRefused", item: cloak, reason: "notWorn" }]);
-  assert.equal(cloak.usedAt, undefined);
-  assert.equal(state.c.haste, 0);
+  assert.equal(itemEffectActive(state.c, "haste"), false);
+  assert.equal(state.c.timers, undefined);
 });
 
 test("useItem notWorn ordering: wrongClass fires before notWorn for a bagged staff on a non-caster", () => {
@@ -462,13 +463,14 @@ test("useItem notWorn: a bagged passive Ring of Power (no use) with worn {} is r
   assert.deepStrictEqual(events, [{ type: "useRefused", item: ring, reason: "notWorn" }]);
 });
 
-test("useItem legacy identity: a bagged Cloak of Speed without c.worn still hastes exactly as today", () => {
+test("useItem legacy identity: a bagged Cloak of Speed without c.worn still hastes exactly as today (Phase 39, GEAR-02: via c.timers)", () => {
   const cloak = CLOAK_SPEED();
-  const state = legacyHero({ c: { items: [cloak], haste: 0 } });
+  const state = legacyHero({ c: { items: [cloak] } });
   const events = useItem(state, 0, fakeRng([]), [], () => 1);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("itemUsed"));
-  assert.equal(state.c.haste, 50);
+  assert.ok(types.includes("itemEffectStarted"));
+  assert.equal(itemEffectActive(state.c, "haste"), true);
   assert.equal("worn" in state.c, false);
 });
 

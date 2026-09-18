@@ -208,17 +208,24 @@ test("idempotence: validateSave does not mutate a JSON-string input's parsed twi
 // ─── Task 1e: staff class gate ─────────────────────────────────────────────
 
 test("staff gate: a staff in an old Fighter save stays bagged with no report entry; on a Magic User it is worn", () => {
+  // Phase 39 (GEAR-02): validateSave's foldLegacyCounters strips the legacy
+  // `every`/`usedAt` staff fields and gives a missing `charges` a full pool
+  // (Rowan Staff's real pool is 2) — the migrated item is no longer
+  // byte-identical to the input literal.
+  const migratedRowanStaff = { kind: "staff", n: "Rowan Staff", use: "dome", txt: "a protective dome of 100 wp", charges: 2 };
+
   const fighterSave = newRun(1); // Fighter
   fighterSave.c.items = [rowanStaff()];
   const fighterCheck = validateSave(JSON.stringify(serializeRun(fighterSave)), { wornSlots: true });
   assert.deepStrictEqual(fighterCheck.value.c.worn, {});
-  assert.deepStrictEqual(fighterCheck.value.c.items, [rowanStaff()]);
+  assert.deepStrictEqual(fighterCheck.value.c.items, [migratedRowanStaff]);
   assert.deepStrictEqual(fighterCheck.wornReport, []);
 
   const wizardSave = newRun(7); // Magic User
   wizardSave.c.items = [rowanStaff()];
   const wizardCheck = validateSave(JSON.stringify(serializeRun(wizardSave)), { wornSlots: true });
   assert.equal(wizardCheck.value.c.worn.staff.n, "Rowan Staff");
+  assert.deepStrictEqual(wizardCheck.value.c.worn.staff, migratedRowanStaff);
   assert.deepStrictEqual(wizardCheck.value.c.items, []);
 });
 

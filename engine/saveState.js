@@ -14,9 +14,10 @@
 
 import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
-import { clearRoundTimers } from "./effects.js";
-import { reconcileWorn } from "./derived.js";
+import { clearRoundTimers, startEffect, startCooldown } from "./effects.js";
+import { reconcileWorn, activationFor, activationKeyFor, itemTimerId, carriedItems } from "./derived.js";
 import { ensureAbilities } from "./character.js";
+import { ACTIVATION_OF } from "../content/index.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -222,6 +223,105 @@ function sanitizeWorn(c) {
   return c;
 }
 
+// Phase 39 (GEAR-02): the retired scattered counters -> the ONE c.timers
+// representation. `fallback` is the ACTIVATION_OF key used when NO carried
+// item's own activation matches the counter's `kind` (a plain potion dose
+// with no matching cloak/staff in the bag) — Speed/Invisible/Acuteness are
+// the potion rows; ether has no potion source, so its fallback IS the cloak.
+const LEGACY_COUNTER_META = {
+  haste: { kind: "haste", fallback: "Speed", cadence: "squares" },
+  invis: { kind: "invis", fallback: "Invisible", cadence: "squares" },
+  ether: { kind: "ether", fallback: "Cloak of Ether", cadence: "squares" },
+  acute: { kind: "acute", fallback: "Acuteness", cadence: "rounds" },
+};
+
+/**
+ * foldItemActivation(c, it, steps) — module-private, Phase 39 (GEAR-02): the
+ * ITEM half of foldLegacyCounters' migration, called once per carried item
+ * (bag ∪ worn) BEFORE the counter half. Always strips a present `it.usedAt`.
+ * A staff ALSO loses its legacy `it.every` outright (staves never had a real
+ * per-use cooldown under the old model) and gets its `it.charges` clamped
+ * into `[0, max]`, defaulting to a FULL pool when missing or a tampered
+ * non-integer (T-39-06) — never reconstructed into a c.timers record. Every
+ * other activatable item with a captured `usedAt` reconstructs a COOLDOWN
+ * record (a saved elapsed-since-use time cannot tell an effect phase from a
+ * cooldown phase apart, and the scattered-counter fold below is the more
+ * trustworthy effect-duration signal anyway) — only when the reconstructed
+ * cooldown still has time left; an item with no activation at all, or whose
+ * activation carries no `cd`, is untouched beyond the `usedAt` strip.
+ */
+function foldItemActivation(c, it, steps) {
+  if (!it || typeof it !== "object" || Array.isArray(it)) return;
+  const usedAt = it.usedAt;
+  delete it.usedAt;
+  if (it.kind === "staff") {
+    delete it.every;
+    const act = activationFor(it);
+    const max = act ? act.charges : undefined;
+    if (max !== undefined) {
+      it.charges = Number.isInteger(it.charges) ? Math.max(0, Math.min(max, it.charges)) : max;
+    }
+    return;
+  }
+  if (typeof usedAt !== "number" || typeof steps !== "number") return;
+  const act = activationFor(it);
+  if (!act || act.charges !== undefined || !act.cd) return;
+  const left = act.cd - (steps - usedAt);
+  if (left > 0) startCooldown(c, itemTimerId(it), { squares: left });
+}
+
+/**
+ * foldLegacyCounters(c, steps) — Phase 39 (GEAR-02) tolerant-load migration:
+ * rehydrates the six retired scattered counters (`haste`/`invis`/`ether`/
+ * `acute` on `c`; `flightLeft`/`flightCooldown`) and every carried item's
+ * legacy `it.usedAt`/`it.every`-based cooldown gate into the ONE `c.timers`
+ * representation, then always deletes the six legacy character keys (when
+ * present). Runs LAST in both load chains (after `ensureCharacterAbilities`)
+ * so it sees an already-migrated `c.worn` when `wornSlots` was requested.
+ *
+ * Order: items FIRST (`foldItemActivation` above, per carried item), then
+ * counters SECOND — a POSITIVE legacy counter always starts a fresh EFFECT
+ * record (`startEffect` always overwrites, per effects.js), so "an active
+ * effect wins over a folded cooldown for the same id" the item pass may have
+ * started a moment earlier. The record id is resolved to whichever CARRIED
+ * item's own activation shares the counter's `kind` (bag ∪ worn), or the
+ * `LEGACY_COUNTER_META` fallback key when none matches. `flightLeft`/
+ * `flightCooldown` fold the same way into the ONE `item:Cloak of Flying`
+ * record (effect when `flightLeft > 0`, else a cooldown when
+ * `flightCooldown > 0`, else nothing — already ready).
+ *
+ * Never injects `c.timers` (or any record) when nothing actually needs
+ * folding — every call site here is additive-with-default, mirroring
+ * `clearStaleTimers`/`clearFoeEffect`'s own discipline. Pure w.r.t. rng;
+ * mutates and returns the passed `c`.
+ */
+export function foldLegacyCounters(c, steps) {
+  if (!c || typeof c !== "object" || Array.isArray(c)) return c;
+  const carried = carriedItems(c);
+  for (const it of carried) foldItemActivation(c, it, steps);
+
+  for (const meta of Object.values(LEGACY_COUNTER_META)) {
+    const val = c[meta.kind];
+    if (typeof val === "number" && val > 0) {
+      const source = carried.find((x) => x && activationFor(x)?.kind === meta.kind);
+      const key = source ? activationKeyFor(source) : meta.fallback;
+      const act = ACTIVATION_OF[key];
+      const opts = act && act.cd ? { [meta.cadence]: val, cd: act.cd } : { [meta.cadence]: val };
+      startEffect(c, `item:${key}`, opts);
+    }
+  }
+
+  if (typeof c.flightLeft === "number" && c.flightLeft > 0) {
+    const act = ACTIVATION_OF["Cloak of Flying"];
+    startEffect(c, "item:Cloak of Flying", { squares: c.flightLeft, cd: act.cd });
+  } else if (typeof c.flightCooldown === "number" && c.flightCooldown > 0) {
+    startCooldown(c, "item:Cloak of Flying", { squares: c.flightCooldown });
+  }
+
+  for (const k of ["haste", "invis", "ether", "acute", "flightLeft", "flightCooldown"]) delete c[k];
+  return c;
+}
+
 /**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
@@ -303,9 +403,12 @@ export function validateSave(raw, options = {}) {
     // it. pendingFind is transient (like combat/store) — not carried through
     // validateSave's value; rehydrate() nulls it below. Phase 38 (ABIL-02):
     // ensureCharacterAbilities is the tolerant-load rebuild for c.abilities
-    // (a no-op once the field is already an array) — runs LAST in the chain
-    // so it sees c.skills already migrated/sanitized by everything before it.
-    c: ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), seed),
+    // (a no-op once the field is already an array). Phase 39 (GEAR-02):
+    // foldLegacyCounters runs LAST of all — the retired haste/invis/ether/
+    // acute/flightLeft/flightCooldown counters and every item's legacy
+    // usedAt/every fold into c.timers here, after everything else above has
+    // finished migrating/sanitizing c.
+    c: foldLegacyCounters(ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), seed), steps),
     floor: obj.floor,
     day,
     steps,
@@ -385,8 +488,12 @@ export function rehydrate(obj, options = {}) {
     // (GEAR-04): neutralise a present-but-tampered c.worn (see sanitizeWorn)
     // before the option-gated reconcileWorn below ever reads it. Phase 38
     // (ABIL-02): ensureCharacterAbilities mirrors validateSave's own call —
-    // a no-op once c.abilities is already an array.
-    c: ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), obj.seed),
+    // a no-op once c.abilities is already an array. Phase 39 (GEAR-02):
+    // foldLegacyCounters mirrors validateSave's own call, LAST in the chain.
+    c: foldLegacyCounters(
+      ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), obj.seed),
+      obj.steps ?? 0,
+    ),
     floor: obj.floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,

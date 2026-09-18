@@ -49,12 +49,12 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
-import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR } from "./items.js";
+import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeWpFor, foeDmgBonusFor } from "./difficulty.js";
@@ -506,7 +506,9 @@ export function playerStrike(state, rng, events = []) {
   let attacks = 1;
   if (c.sub === "Barbarian") attacks = 2;
   if (skill(c, "Ambidextrous")) attacks = Math.max(attacks, 2);
-  if (c.haste > 0) attacks = Math.max(attacks, 2);
+  // Phase 39 (GEAR-02): the retired c.haste counter — a live "haste" item
+  // effect (Cloak/potion of Speed) reads through c.timers.
+  if (itemEffectActive(c, "haste")) attacks = Math.max(attacks, 2);
   if (AS && AS.attacks) attacks = Math.max(attacks, AS.attacks);
   // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-08): the
   // prototype's frenzy could roll a d10 <= 5 against a dead foe and waste
@@ -1224,15 +1226,10 @@ export function endCombat(state, events = []) {
   state.c.ward = null;
   state.c.mirror = 0;
   state.c.senses = 0;
-  // Phase 31 (CMB-05): Acuteness ticks per foeTurn round AND per exploration
-  // step (movement.js), but clears unconditionally when the combat it was
-  // active in ends — mirroring ward/mirror/regen/senses above. CONDITIONAL
-  // (only fires + narrates when acute > 0) so a character who never drank it
-  // stays byte-identical, matching foeEffect's own conditional clear below.
-  if (state.c.acute > 0) {
-    state.c.acute = 0;
-    events.push({ type: "acuteFaded" });
-  }
+  // Phase 39 (GEAR-02): the retired c.acute clear — Acuteness is now a
+  // rounds-cadence c.timers effect record, and every rounds-cadence record
+  // (this one included) is already cleared unconditionally by
+  // clearRoundTimers below.
   // Phase 19 D-09: combat-scoped, never leaks between fights; CONDITIONAL so
   // the key is never ADDED to a character that never had a debuff (unlike
   // `senses` above) — keeps every solo parity fixture's `c` byte-identical
@@ -2409,12 +2406,10 @@ export function foeTurn(state, rng, events = []) {
     c.ward = null;
   }
   if (c.mirror > 0 && --c.mirror <= 0) events.push({ type: "mirrorFaded" });
-  // Phase 31 (CMB-05): Acuteness finally counts down — once per foeTurn
-  // round, exactly like ward/mirror above, and per exploration step outside
-  // combat (engine/movement.js); clears unconditionally at endCombat too.
-  // Zero-event, zero-key no-op for a character with acute <= 0 (no fixture
-  // ever sets it, so every parity replay stays byte-identical).
-  if (c.acute > 0 && --c.acute <= 0) events.push({ type: "acuteFaded" });
+  // Phase 39 (GEAR-02): the retired per-foeTurn c.acute countdown —
+  // Acuteness is now a rounds-cadence c.timers effect record, ticked by the
+  // shared tickRounds(c) call below (with the rest of the tail) and cleared
+  // unconditionally at endCombat by clearRoundTimers.
   // Phase 19 (D-09/A8): ticks once per foeTurn like ward/mirror, but never
   // on the turn that applied/refreshed it (resolveFoeAbility always assigns
   // a NEW object to c.foeEffect), so `rounds: 1` is never a no-op.
@@ -2429,11 +2424,12 @@ export function foeTurn(state, rng, events = []) {
   // `C.afraid`).
   if (C.afraid > 0 && --C.afraid <= 0) events.push({ type: "fearPassed" });
   // Phase 36 (BAL foundation) — the rounds tick for engine/effects.js
-  // records, LAST in the tail after ward/mirror/acute/foeEffect/afraid, once
-  // per foeTurn call exactly like ward (a round where the foes win
-  // initiative ticks twice, as ward does); guarded on c.timers; zero draws;
-  // the return value is ignored until Phase 38 maps expiries to events.
-  if (c.timers) tickRounds(c);
+  // records, LAST in the tail after ward/mirror/foeEffect/afraid, once per
+  // foeTurn call exactly like ward (a round where the foes win initiative
+  // ticks twice, as ward does); guarded on c.timers; zero draws. Phase 39
+  // (GEAR-02): the returned transitions are mapped to events below
+  // (itemEffectFaded/itemCooled/staffRecharged).
+  if (c.timers) narrateTimerTransitions(state, tickRounds(c), events);
   // Phase 38 (ABIL-05, post-research ruling): every LIVE party member's own
   // ability cooldowns tick beside the hero's, same cadence, same call —
   // a downed member (wp <= 0) is skipped (it is about to leave the roster at

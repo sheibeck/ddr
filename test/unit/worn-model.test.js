@@ -91,7 +91,8 @@ test("JEWELRY row shapes are byte-identical to the pre-Phase-37 literals", () =>
     "Anklet of Invisibility": { eff: { foeToHit: -2 }, txt: "unseen; foes need two better to land" },
     "Helm of Knowledge": { eff: { tongue: 1 }, txt: "perfect fluency in one language" },
     "Bracelet of Flight": { eff: { fly: 1 }, txt: "flight — walls and crevices are nothing" },
-    "Amulet of Stone": { eff: {}, use: "stone", every: 200, aoe: 4, txt: "turns up to 4 squares of opponents to stone, once every 200 squares" },
+    // Phase 39 (GEAR-02, once-a-day rule): every 200 -> 100.
+    "Amulet of Stone": { eff: {}, use: "stone", every: 100, aoe: 4, txt: "turns up to 4 squares of opponents to stone, once every 100 squares" },
   };
   for (const row of JEWELRY) {
     const { n, ...rest } = row;
@@ -185,18 +186,22 @@ test("a c with worn survives a JSON round-trip with identical eff results", () =
 
 test("hasItemNamed/isFlying/conditionsOf see a worn item exactly as they saw it in the bag", () => {
   const bracelet = { n: "Bracelet of Flight", kind: "jewel", eff: { fly: 1 } };
-  const wornState = { c: { items: [], worn: { bracelet }, haste: 0 } };
+  const wornState = { c: { items: [], worn: { bracelet } } };
   assert.equal(hasItemNamed(wornState.c, "Bracelet of Flight"), true);
   assert.equal(isFlying(wornState), true);
   const conds = conditionsOf(wornState);
   assert.ok(conds.some((x) => x.key === "flight" && x.flight === "always"));
 
+  // Phase 39 (GEAR-02): the retired flightLeft/flightCooldown counters — a
+  // live "fly" effect now reads through c.timers.
   const cloakFlying = { n: "Cloak of Flying", kind: "cloak", eff: { fly: 1 } };
-  const cloakState = { c: { items: [], worn: { cloak: cloakFlying }, flightLeft: 5, flightCooldown: 0, haste: 0 } };
+  const cloakState = {
+    c: { items: [], worn: { cloak: cloakFlying }, timers: { "item:Cloak of Flying": { cadence: "squares", left: 5, cd: 50, phase: "effect" } } },
+  };
   const condsCloak = conditionsOf(cloakState);
   assert.ok(condsCloak.some((x) => x.key === "flight" && x.flight === "charged" && x.remaining === 5));
 
-  const legacyState = { c: { items: [bracelet], haste: 0 } };
+  const legacyState = { c: { items: [bracelet] } };
   assert.equal(hasItemNamed(legacyState.c, "Bracelet of Flight"), true);
   assert.equal(isFlying(legacyState), true);
 });

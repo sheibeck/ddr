@@ -159,7 +159,7 @@ test("takeItem equips strictly-better armor and respects race noArmor", () => {
 });
 
 test("staves only equip for a Magic User; everything else falls through to giveItem", () => {
-  const staff = { kind: "staff", every: 250, n: "Rowan Staff", use: "dome", txt: "a protective dome" };
+  const staff = { kind: "staff", charges: 2, n: "Rowan Staff", use: "dome", txt: "a protective dome" };
   const fighter = fixedState();
   const events = [];
   takeItem(fighter, staff, events);
@@ -211,23 +211,34 @@ test("useItem heals and consumes a single-use potion", () => {
   assert.ok(events.some((e) => e.type === "itemConsumed"));
 });
 
-test("useItem respects a staff/cloak's every-N-squares cooldown", () => {
-  // Phase 31 (CMB-02): a staff now refuses a non-Magic-User first — use a
-  // Magic User caster so this keeps exercising the cooldown gate itself.
-  const staff = { kind: "staff", use: "dome", every: 250, n: "Rowan Staff" };
+test("useItem spends a staff's charge and starts its recharge cooldown (Phase 39, GEAR-02)", () => {
+  // Phase 31 (CMB-02): a staff refuses a non-Magic-User first — use a Magic
+  // User caster so this keeps exercising the charges/recharge model itself.
+  const staff = { kind: "staff", use: "dome", charges: 2, n: "Rowan Staff" };
   const state = fixedState({ c: { cls: "Magic User", items: [staff] }, steps: 10 });
   useItem(state, 0, makeRng(3));
-  assert.equal(state.c.items[0].usedAt, 10);
+  assert.equal(state.c.items[0].charges, 1, "one charge spent");
   assert.ok(state.c.ward, "dome effect should have applied");
+  assert.deepStrictEqual(state.c.timers["charges:Rowan Staff"], { cadence: "squares", left: 100, phase: "cooldown" });
 
-  const state2 = fixedState({ c: { cls: "Magic User", items: [{ ...staff, usedAt: 10 }] }, steps: 20 });
+  const state2 = fixedState({
+    c: { cls: "Magic User", items: [{ kind: "staff", use: "dome", charges: 0, n: "Rowan Staff" }] },
+    steps: 20,
+  });
   const events = useItem(state2, 0, makeRng(3));
-  assert.equal(state2.c.ward, null, "cooldown not yet elapsed — no effect applied");
-  // Phase 31 (CMB-02): the old silent no-op is now an explaining useRefused —
-  // exactly one event, naming the squares left (every 250, usedAt 10, steps 20).
-  assert.equal(events.length, 1, "exactly one event — the cooldown refusal");
-  assert.deepStrictEqual(events[0], { type: "useRefused", item: state2.c.items[0], reason: "cooldown", left: 240 });
-  assert.equal(state2.c.items[0].usedAt, 10, "usedAt untouched by a refused use");
+  assert.equal(state2.c.ward, null, "no charge left — no effect applied");
+  // Phase 39 (GEAR-02): the two named refusals — a staff at 0 charges gets
+  // "recharging" (never "cooldown", which is a duration+cooldown item's own reason).
+  assert.equal(events.length, 1, "exactly one event — the recharging refusal");
+  assert.deepStrictEqual(events[0], {
+    type: "useRefused",
+    item: state2.c.items[0],
+    reason: "recharging",
+    left: 0,
+    charges: 0,
+    max: 2,
+  });
+  assert.equal(state2.c.items[0].charges, 0, "charges untouched by a refused use");
 });
 
 test("useItem's potion of death kills the character via engine/death.js", () => {
@@ -240,12 +251,27 @@ test("useItem's potion of death kills the character via engine/death.js", () => 
   assert.ok(events.some((e) => e.type === "died"));
 });
 
-test("itemReady requires an every-N cooldown to have elapsed", () => {
+test("itemReady reads the c.timers-backed activation model (Phase 39, GEAR-02)", () => {
   const state = fixedState({ steps: 100 });
-  assert.equal(itemReady(state, { use: "dome", every: 50, usedAt: 40 }), true);
-  assert.equal(itemReady(state, { use: "dome", every: 50, usedAt: 60 }), false);
-  assert.equal(itemReady(state, { use: "dome" }), true, "no cooldown means always ready");
+  const pendant = { kind: "jewel", use: "half", n: "Pendant of Fortitude" };
+  assert.equal(itemReady(state, pendant), true, "a cd item with no record is ready");
+
+  const busy = fixedState({
+    c: { timers: { "item:Pendant of Fortitude": { cadence: "squares", left: 40, phase: "cooldown" } } },
+  });
+  assert.equal(itemReady(busy, pendant), false, "a live cooldown record refuses");
+
+  assert.equal(itemReady(state, { use: "dome", n: "Rowan Staff", charges: 1 }), true, "a staff with a spare charge is ready");
+  assert.equal(itemReady(state, { use: "dome", n: "Rowan Staff", charges: 0 }), false, "an empty staff is not ready");
+  assert.equal(itemReady(state, { use: "dome", n: "Rowan Staff", charges: "x" }), false, "a tampered non-integer charge count is not ready");
+
+  assert.equal(itemReady(state, { kind: "potion", eff2: "heal", n: "Healing potion" }), true, "a potion is always ready");
   assert.equal(itemReady(state, {}), false, "no use and not a potion — never ready");
+  assert.equal(
+    itemReady(state, { use: "dmg", n: "Ring of Power" }),
+    true,
+    "an item with no activation at all is always ready",
+  );
 });
 
 // --- purity / serializability -----------------------------------------

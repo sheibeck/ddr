@@ -76,14 +76,10 @@ function fixedFighter(overrides = {}) {
     armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
     temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x",
     potions: 1, rations: 6, gold: 50, scrolls: 0,
-    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
+    affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Delver",
     darkFor: 0,
-    // audit-batch1 (2026-09-09, A2): Cloak of Flying's charge/cooldown
-    // fields — 0/0 (ready-to-activate) by default, same treatment as
-    // darkFor above.
-    flightLeft: 0, flightCooldown: 0,
     ...overrides,
   };
 }
@@ -312,15 +308,16 @@ test("move: a successful gorge leap clears the feature", () => {
   assert.ok(events.some((e) => e.type === "leaptOver"));
 });
 
-// --- audit-batch1 (2026-09-09, A2): flight (Bracelet of Flight / Cloak of
-// Flying) skips the climb/leap roll and all fall damage entirely. Bracelet
-// of Flight is unconditional and never touches c.flightLeft/flightCooldown;
-// Cloak of Flying is a real 20-square charge on a 50-square cooldown, ticked
-// by the same per-step block as haste/invis/ether. `fakeRng([])` throws if
-// ANY die is drawn, so a flownOver test that passes proves the roll (and its
-// fall-damage math) was skipped entirely, not just that it happened to pass.
+// --- audit-batch1 (2026-09-09, A2) + Phase 39 (GEAR-02): flight (Bracelet of
+// Flight / Cloak of Flying) skips the climb/leap roll and all fall damage
+// entirely. Bracelet of Flight is unconditional and never starts a c.timers
+// record; Cloak of Flying is a real 20-square effect on a 50-square
+// cooldown, ticked by the same per-step squares tick as every other item
+// effect. `fakeRng([])` throws if ANY die is drawn, so a flownOver test that
+// passes proves the roll (and its fall-damage math) was skipped entirely,
+// not just that it happened to pass.
 
-test("move: Bracelet of Flight skips the climb roll/fall damage entirely (no rng draw) and never touches flightLeft/flightCooldown", () => {
+test("move: Bracelet of Flight skips the climb roll/fall damage entirely (no rng draw) and never starts a c.timers record", () => {
   const state = fixedState({ c: { items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const events = move(state, "N", fakeRng([]), []);
@@ -329,8 +326,7 @@ test("move: Bracelet of Flight skips the climb roll/fall damage entirely (no rng
   assert.equal(state.floor.py, 4);
   assert.ok(events.some((e) => e.type === "flownOver"));
   assert.ok(!events.some((e) => e.type === "climbedOver"));
-  assert.equal(state.c.flightLeft, 0, "the Bracelet never banks a charge");
-  assert.equal(state.c.flightCooldown, 0, "the Bracelet never starts a cooldown");
+  assert.equal(state.c.timers, undefined, "the Bracelet never starts an item record");
 });
 
 test("move: Bracelet of Flight also skips a gorge leap (no rng draw)", () => {
@@ -342,35 +338,52 @@ test("move: Bracelet of Flight also skips a gorge leap (no rng draw)", () => {
   assert.ok(events.some((e) => e.type === "flownOver"));
 });
 
-test("move: a ready Cloak of Flying (0 charge, 0 cooldown) flies over a climb, banking a fresh 20-square charge that the per-step tick immediately starts burning down", () => {
+test("move: a ready Cloak of Flying (no record) flies over a climb, starting a fresh 20-square effect that the per-step tick immediately starts burning down", () => {
   const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }] } });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const events = move(state, "N", fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "flownOver"));
+  assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.item === "Cloak of Flying" && e.kind === "fly"));
   assert.equal(state.floor.g[4][5].feat, null);
-  // activation banks 20, then this same move's per-step tick burns 1 off it.
-  assert.equal(state.c.flightLeft, 19, "20-square charge activated, then ticked once by this same step");
-  assert.equal(state.c.flightCooldown, 0, "cooldown has not started — the charge is still active");
+  // activation starts an effect record of 20, then this same move's per-step
+  // squares tick burns 1 off it.
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Flying"], { cadence: "squares", left: 19, cd: 50, phase: "effect" });
 });
 
-test("move: while a Cloak of Flying charge is still active, a SECOND climb in the same window flies over again without re-banking the charge", () => {
-  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }], flightLeft: 5, flightCooldown: 0 } });
+test("move: while a Cloak of Flying effect is still active, a SECOND climb in the same window flies over again without re-starting the effect", () => {
+  const state = fixedState({
+    c: {
+      items: [{ n: "Cloak of Flying", eff: { fly: 1 } }],
+      timers: { "item:Cloak of Flying": { cadence: "squares", left: 5, cd: 50, phase: "effect" } },
+    },
+  });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const events = move(state, "N", fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "flownOver"));
-  assert.equal(state.c.flightLeft, 4, "the existing charge just ticks down by one step — never resets to 20");
+  assert.equal(events.some((e) => e.type === "itemEffectStarted"), false, "the existing effect is not re-started");
+  assert.equal(state.c.timers["item:Cloak of Flying"].left, 4, "the existing effect just ticks down by one step — never resets to 20");
 });
 
-test("move: a Cloak of Flying charge exhausting on a plain step starts the 50-square cooldown", () => {
-  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }], flightLeft: 1, flightCooldown: 0 } });
+test("move: a Cloak of Flying effect exhausting on a plain step starts the 50-square cooldown (narrating itemEffectFaded)", () => {
+  const state = fixedState({
+    c: {
+      items: [{ n: "Cloak of Flying", eff: { fly: 1 } }],
+      timers: { "item:Cloak of Flying": { cadence: "squares", left: 1, cd: 50, phase: "effect" } },
+    },
+  });
   open(state.floor.g, 5, 4); // a plain corridor step, not a climb/gorge tile
-  move(state, "N", fakeRng([]), []);
-  assert.equal(state.c.flightLeft, 0, "the last square of charge is spent");
-  assert.equal(state.c.flightCooldown, 50, "the cooldown starts the instant the charge hits zero");
+  const events = move(state, "N", fakeRng([]), []);
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Flying"], { cadence: "squares", left: 50, cd: 50, phase: "cooldown" });
+  assert.ok(events.some((e) => e.type === "itemEffectFaded" && e.item === "Cloak of Flying"));
 });
 
 test("move: while a Cloak of Flying is on cooldown, climb/gorge rolls resume normally (isFlying is false) and the cooldown keeps ticking", () => {
-  const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }], flightLeft: 0, flightCooldown: 5 } });
+  const state = fixedState({
+    c: {
+      items: [{ n: "Cloak of Flying", eff: { fly: 1 } }],
+      timers: { "item:Cloak of Flying": { cadence: "squares", left: 5, phase: "cooldown" } },
+    },
+  });
   open(state.floor.g, 5, 4, { feat: "climb" });
   // Same successful-climb roll sequence as the plain climb test above.
   const rng = fakeRng([1, 5, 5]);
@@ -378,10 +391,10 @@ test("move: while a Cloak of Flying is on cooldown, climb/gorge rolls resume nor
   assert.ok(events.some((e) => e.type === "climbedOver"), "on cooldown, a real roll happens — not flownOver");
   assert.ok(!events.some((e) => e.type === "flownOver"));
   assert.equal(state.c.wp, 55, "the roll succeeded, so still no fall damage");
-  assert.equal(state.c.flightCooldown, 4, "the cooldown still ticks down on an ordinary step");
+  assert.equal(state.c.timers["item:Cloak of Flying"].left, 4, "the cooldown still ticks down on an ordinary step");
 });
 
-test("move: carrying BOTH items, the Bracelet flies unconditionally and the Cloak's charge counters are left untouched", () => {
+test("move: carrying BOTH items, the Bracelet flies unconditionally and the Cloak's own record is left untouched", () => {
   const state = fixedState({
     c: {
       items: [
@@ -393,8 +406,7 @@ test("move: carrying BOTH items, the Bracelet flies unconditionally and the Cloa
   open(state.floor.g, 5, 4, { feat: "climb" });
   const events = move(state, "N", fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "flownOver"));
-  assert.equal(state.c.flightLeft, 0, "the Bracelet's flight never banks a Cloak charge");
-  assert.equal(state.c.flightCooldown, 0);
+  assert.equal(state.c.timers, undefined, "the Bracelet's flight never starts a Cloak record");
 });
 
 // --- PHOBIA-01: Heights/Bodies-of-water climb/leap penalties (04.1-06) ----
@@ -614,13 +626,25 @@ test("move: a character with darkFor at 0 gets no darkness tick/event at all", (
   assert.ok(!events.some((e) => e.type === "darknessLifted"));
 });
 
-test("move: haste/invis/ether all decrement by one on a step", () => {
-  const state = fixedState({ c: { haste: 5, invis: 3, ether: 1 } });
+test("move: haste/invis/ether item effects (c.timers, squares cadence) all decrement by one on a step", () => {
+  // Phase 39 (GEAR-02): the retired c.haste/c.invis/c.ether counters — every
+  // item effect now lives on c.timers, squares-cadence, ticked identically.
+  const state = fixedState({
+    c: {
+      timers: {
+        "item:Cloak of Speed": { cadence: "squares", left: 5, cd: 50, phase: "effect" },
+        "item:Invisible": { cadence: "squares", left: 3, phase: "effect" },
+        "item:Cloak of Ether": { cadence: "squares", left: 1, cd: 80, phase: "effect" },
+      },
+    },
+  });
   open(state.floor.g, 5, 4);
-  move(state, "N", fakeRng([]), []);
-  assert.equal(state.c.haste, 4);
-  assert.equal(state.c.invis, 2);
-  assert.equal(state.c.ether, 0);
+  const events = move(state, "N", fakeRng([]), []);
+  assert.equal(state.c.timers["item:Cloak of Speed"].left, 4);
+  assert.equal(state.c.timers["item:Invisible"].left, 2);
+  // ether had 1 left with a cd (80) — flips to cooldown, narrating itemEffectFaded.
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Ether"], { cadence: "squares", left: 80, cd: 80, phase: "cooldown" });
+  assert.ok(events.some((e) => e.type === "itemEffectFaded" && e.item === "Cloak of Ether"));
 });
 
 test("move: a Magic User recovers a spell charge every 20 steps if any are spent", () => {

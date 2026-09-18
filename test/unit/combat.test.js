@@ -371,7 +371,13 @@ test("playerStrike: a non-lethal hit lowers wp but leaves maxWP (starting hp) un
 });
 
 test("playerStrike: Barbarian, Ambidextrous, and haste each grant two attacks", () => {
-  const cases = [{ sub: "Barbarian" }, { skills: { Ambidextrous: 1 } }, { haste: 5 }];
+  // Phase 39 (GEAR-02): the retired c.haste counter — a live "haste" item
+  // effect now reads through c.timers.
+  const cases = [
+    { sub: "Barbarian" },
+    { skills: { Ambidextrous: 1 } },
+    { timers: { "item:Cloak of Speed": { cadence: "squares", left: 5, cd: 50, phase: "effect" } } },
+  ];
   for (const cOverrides of cases) {
     const state = fixedState({ c: cOverrides });
     state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);

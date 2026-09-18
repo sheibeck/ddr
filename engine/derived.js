@@ -7,8 +7,9 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF } from "../content/index.js";
 import { rollDice } from "./dice.js";
+import { remaining, isReady } from "./effects.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -283,6 +284,103 @@ export function hasItemNamed(c, name) {
   return carriedItems(c).some((it) => it && it.n === name);
 }
 
+/* ---------------- item activation model (Phase 39, GEAR-02) ---------------
+ *
+ * ONE activation model for every item that does something when used:
+ * duration+cooldown (jewelry/cloaks), charges+recharge (staves),
+ * consumable-with-duration (potions) — all as `c.timers` records on Phase
+ * 36's engine/effects.js. `content/activations.js#ACTIVATION_OF` is the pure
+ * data declaration; these functions are the ONLY engine-side readers.
+ */
+
+/**
+ * activationKeyFor(it) — Phase 39 (GEAR-02): the `content/activations.js#
+ * ACTIVATION_OF` lookup key for carried item `it` — a potion resolves
+ * through its `eff2` field (POTIONS[].eff) back to the POTIONS row's OWN
+ * display name `n` (a potion item's own `.n` carries a color suffix from a
+ * find, or is a plain "<name> potion" from the store — neither matches the
+ * POTIONS row name directly); a tool (Plan 04) or any treasure item resolves
+ * by its own `.n` directly. Returns `null` for a weapon/armor/picks/bag item,
+ * or any item this lookup cannot resolve. Pure, no rng, no mutation.
+ */
+export function activationKeyFor(it) {
+  if (!it || typeof it !== "object") return null;
+  if (it.kind === "potion") {
+    const p = POTIONS.find((row) => row.eff === it.eff2);
+    return p ? p.n : null;
+  }
+  return typeof it.n === "string" ? it.n : null;
+}
+
+/** activationFor(it) — Phase 39 (GEAR-02): the item's own activation record
+ * (`ACTIVATION_OF[activationKeyFor(it)]`), or `null` when it has none. Pure. */
+export function activationFor(it) {
+  const key = activationKeyFor(it);
+  return key ? (ACTIVATION_OF[key] ?? null) : null;
+}
+
+/** itemTimerId(it) — Phase 39 (GEAR-02): the `c.timers` id for item `it`'s
+ * own effect/cooldown record (`"item:<key>"`), or `null` when `it` has no
+ * resolvable activation key. Pure. */
+export function itemTimerId(it) {
+  const key = activationKeyFor(it);
+  return key ? `item:${key}` : null;
+}
+
+/** chargesTimerId(it) — Phase 39 (GEAR-02): the `c.timers` id for a staff's
+ * own recharge-cooldown record (`"charges:<key>"`), or `null`. Pure. */
+export function chargesTimerId(it) {
+  const key = activationKeyFor(it);
+  return key ? `charges:${key}` : null;
+}
+
+/**
+ * liveItemEffects(c) — Phase 39 (GEAR-02): every currently-LIVE item effect
+ * on `c` — a `c.timers` record whose id starts with `"item:"`, is in
+ * `phase: "effect"` with `left > 0`, and whose key resolves to a known
+ * `ACTIVATION_OF` entry (an unknown key — e.g. a stripped item, or a tampered
+ * save, T-39-07 — is silently skipped, never thrown). Returns an array of
+ * `{ key, act, rec }` in `c.timers`'s own insertion (`Object.keys`) order.
+ * Pure read, no rng, no mutation.
+ */
+export function liveItemEffects(c) {
+  const out = [];
+  if (!c || !c.timers || typeof c.timers !== "object") return out;
+  for (const id of Object.keys(c.timers)) {
+    if (!id.startsWith("item:")) continue;
+    const rec = c.timers[id];
+    if (!rec || rec.phase !== "effect" || !(rec.left > 0)) continue;
+    const key = id.slice("item:".length);
+    const act = ACTIVATION_OF[key];
+    if (!act) continue;
+    out.push({ key, act, rec });
+  }
+  return out;
+}
+
+/**
+ * itemEffectActive(c, kind) — Phase 39 (GEAR-02): is ANY live item effect of
+ * activation `kind` (e.g. `"haste"`, `"invis"`, `"ether"`, `"acute"`, `"fly"`)
+ * currently active on `c`? The one read every retired-counter consumer
+ * (strikeDie/foeToHitVs/weaponDamage/isFlying/the climb block) re-points to.
+ * Pure, no rng.
+ */
+export function itemEffectActive(c, kind) {
+  return liveItemEffects(c).some((e) => e.act.kind === kind);
+}
+
+/**
+ * potionMight(c) — Phase 39 (GEAR-02): the sum of `act.might` across every
+ * live `kind: "might"` item effect on `c` (Strength/Enlarge potions) — the
+ * timed replacement for the old never-expiring `c.might += 8/4` write.
+ * Pure, no rng.
+ */
+export function potionMight(c) {
+  let t = 0;
+  for (const e of liveItemEffects(c)) if (e.act.kind === "might" && typeof e.act.might === "number") t += e.act.might;
+  return t;
+}
+
 /**
  * isFlying(state) — DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2):
  * `eff(c,"fly")` (set by the Bracelet of Flight and the Cloak of Flying,
@@ -293,16 +391,15 @@ export function hasItemNamed(c, name) {
  *   - Bracelet of Flight ("walls and crevices are nothing") = unconditional,
  *     always-on flight — no charge, no cooldown, ever.
  *   - Cloak of Flying ("flight for 20 squares, once every 50") = a real
- *     resource, backed by `c.flightLeft`/`c.flightCooldown` (chargen-
- *     initialized to 0 in engine/character.js, ticked once per step by
- *     engine/movement.js's move(), exactly like haste/invis/ether): flying
- *     while an active charge window is still open (`flightLeft > 0`), or the
- *     instant the cooldown has fully elapsed and a fresh window is about to
- *     open (`flightCooldown <= 0`) — movement.js's climb/gorge block is what
- *     actually starts that fresh window (sets `flightLeft`) the moment this
- *     returns true for a Cloak-only character.
+ *     resource. Phase 39 (GEAR-02): the retired `c.flightLeft`/
+ *     `c.flightCooldown` counters are gone — flying while a live `item:
+ *     Cloak of Flying` effect record is running (`itemEffectActive`), or the
+ *     instant no record exists at all (`isReady` — ready to start a fresh
+ *     window) — movement.js's climb/gorge block is what actually starts that
+ *     fresh effect record the moment this returns true for a Cloak-only
+ *     character.
  * If a character somehow carries BOTH items, the Bracelet takes precedence
- * unconditionally and the Cloak's counters are left untouched (per the
+ * unconditionally and the Cloak's own record is left untouched (per the
  * audit's explicit decision) — this is a pure read of already-computed
  * state; no rng, no mutation, so determinism/parity are unaffected for every
  * character without either item.
@@ -311,7 +408,7 @@ export function isFlying(state) {
   const c = state.c;
   if (hasItemNamed(c, "Bracelet of Flight")) return true;
   if (!hasItemNamed(c, "Cloak of Flying")) return false;
-  return c.flightLeft > 0 || c.flightCooldown <= 0;
+  return itemEffectActive(c, "fly") || isReady(c, "item:Cloak of Flying");
 }
 
 /**
@@ -322,41 +419,52 @@ export function isFlying(state) {
  * the engine keeps this reusable (e.g. a future party-member tracker) and
  * presentation-agnostic.
  *
- * Reads ONLY already-computed `state.c.*` fields (haste/invis/acute/ether/
- * might/flight counters, affliction, darkFor) plus the two flight item-name
- * checks isFlying already consults — NO rng draw, NO mutation of state or c,
- * NO new serialized field. It is therefore a zero-parity-impact read: every
- * frozen fixture round-trips byte-identical because nothing is written.
+ * Reads ONLY already-computed `state.c.*` fields (`c.timers` item effects/
+ * cooldowns/charges, spell `c.might`, `c.ward`, affliction, darkFor) plus the
+ * flight item-name checks isFlying already consults — NO rng draw, NO
+ * mutation of state or c, NO new serialized field. It is therefore a
+ * zero-parity-impact read: every frozen fixture round-trips byte-identical
+ * because nothing is written.
  *
- * Returns an array of descriptors in a STABLE order (good conditions first,
- * then bad), each `{ key, polarity, ... }`:
- *   - haste  {polarity:"good", remaining:<sq left>}       — double attacks
- *   - invis  {polarity:"good", remaining:<sq left>}       — foes barely see you
- *   - acute  {polarity:"good", remaining:<rounds>}        — strike on a d6
- *   - ether  {polarity:"good", remaining:<sq left>}       — pass through walls
- *   - might  {polarity:"good"}                            — +damage, lasts the day (no count)
+ * Returns an array of descriptors in a STABLE order — live item effects
+ * (insertion order), the spell-`c.might` chip, ward, flight, item cooldowns,
+ * staff charges, THEN the bad block — each `{ key, polarity, ... }`:
+ *   - haste/invis/acute/ether/might (Phase 39, GEAR-02, one chip per LIVE
+ *     `c.timers` item effect, via liveItemEffects): {polarity:"good",
+ *     remaining:<left>, cadence:"squares"|"rounds", source:<item display
+ *     name>, might?:<amount, "might"-kind only>}
+ *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining:<rounds>, name:<spell/item name>} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape
  *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
+ *   - itemCooldown (Phase 39, GEAR-02, one per COOLING duration+cooldown item): {polarity:"good", item:<display name>, remaining:<sq left>}
+ *   - staffCharges (Phase 39, GEAR-02, one per RECHARGING staff): {polarity:"good", item:<display name>, charges:<current>, max:<pool>, remaining:<sq left>}
  *   - affliction {polarity:"bad", kind:"Poison"|"Disease"|…}
  *   - darkness   {polarity:"bad", remaining:<sq left>}    — the persistent Darkness/phobia state
  *   - afraid     {polarity:"bad", remaining:<rounds>, phobia:<fear name>} — Phase 31 (user ruling 2026-09-16): the Afraid penalty from a triggered phobia in the CURRENT combat, only while combat.afraid > 0 (a Hardiness shrug-off shows nothing)
  *
  * Only currently-active conditions are included; a character with none set
- * yields an empty array. `remaining` is the raw engine counter (squares or
- * rounds) where a countdown is knowable — omitted where the effect has no
- * square/round count (might lasts until the next day; flight "always" from the
- * Bracelet has no charge). The flight `flight` sub-state mirrors isFlying's
- * Bracelet/Cloak logic so the chip can read "Flying" vs "recharging".
+ * yields an empty array. The flight `flight` sub-state mirrors isFlying's
+ * Bracelet/Cloak logic so the chip can read "Flying" vs "recharging"; the
+ * Cloak of Flying's OWN `item:`/`charges:` records are excluded from the
+ * generic item-effect/cooldown loops below so it is never double-reported.
  */
 export function conditionsOf(state) {
   const c = (state && state.c) || {};
   const out = [];
 
   // --- GOOD conditions (in a fixed order for deterministic rendering) -------
-  if (c.haste > 0) out.push({ key: "haste", polarity: "good", remaining: c.haste });
-  if (c.invis > 0) out.push({ key: "invis", polarity: "good", remaining: c.invis });
-  if (c.acute > 0) out.push({ key: "acute", polarity: "good", remaining: c.acute });
-  if (c.ether > 0) out.push({ key: "ether", polarity: "good", remaining: c.ether });
+
+  // Phase 39 (GEAR-02): one chip per LIVE c.timers item effect (haste/invis/
+  // acute/ether/might via the timed activation model) — the Cloak of
+  // Flying's own "fly" effect is reported by the dedicated flight block
+  // below instead, so it is skipped here to avoid a duplicate chip.
+  for (const { key, act, rec } of liveItemEffects(c)) {
+    if (act.kind === "fly") continue;
+    const chip = { key: act.kind, polarity: "good", remaining: rec.left, cadence: rec.cadence, source: key };
+    if (act.kind === "might" && typeof act.might === "number") chip.might = act.might;
+    out.push(chip);
+  }
+
   if (c.might > 0) out.push({ key: "might", polarity: "good" });
   // Phase 31 (CMB-04): the Shield chip — c.ward is the same field the
   // engine's absorb/reflect/shatter code (engine/combat.js) already reads;
@@ -369,14 +477,57 @@ export function conditionsOf(state) {
   }
 
   // Flight mirrors isFlying's item logic: the Bracelet is unconditional; the
-  // Cloak of Flying is a real charge/cooldown resource. Surface all knowable
-  // sub-states so the chip can read "Flying" vs "recharging".
+  // Cloak of Flying is a real effect/cooldown resource (Phase 39, GEAR-02:
+  // read from its own `item:Cloak of Flying` c.timers record). Surface all
+  // knowable sub-states so the chip can read "Flying" vs "recharging".
   if (hasItemNamed(c, "Bracelet of Flight")) {
     out.push({ key: "flight", polarity: "good", flight: "always" });
   } else if (hasItemNamed(c, "Cloak of Flying")) {
-    if (c.flightLeft > 0) out.push({ key: "flight", polarity: "good", flight: "charged", remaining: c.flightLeft });
-    else if (c.flightCooldown > 0) out.push({ key: "flight", polarity: "good", flight: "cooldown", remaining: c.flightCooldown });
-    else out.push({ key: "flight", polarity: "good", flight: "ready" });
+    if (itemEffectActive(c, "fly")) {
+      out.push({ key: "flight", polarity: "good", flight: "charged", remaining: remaining(c, "item:Cloak of Flying") });
+    } else {
+      const rec = c.timers && c.timers["item:Cloak of Flying"];
+      if (rec && rec.phase === "cooldown") {
+        out.push({ key: "flight", polarity: "good", flight: "cooldown", remaining: rec.left });
+      } else {
+        out.push({ key: "flight", polarity: "good", flight: "ready" });
+      }
+    }
+  }
+
+  // Phase 39 (GEAR-02): one `itemCooldown` chip per duration+cooldown item
+  // CURRENTLY cooling (an `item:<key>` record in `phase: "cooldown"`),
+  // insertion order, excluding the Cloak of Flying's own record (already
+  // reported above).
+  for (const id of Object.keys(c.timers || {})) {
+    if (!id.startsWith("item:")) continue;
+    const rec = c.timers[id];
+    if (!rec || rec.phase !== "cooldown") continue;
+    const key = id.slice("item:".length);
+    if (key === "Cloak of Flying") continue;
+    out.push({ key: "itemCooldown", polarity: "good", item: key, remaining: rec.left });
+  }
+
+  // Phase 39 (GEAR-02): one `staffCharges` chip per RECHARGING staff (a
+  // `charges:<key>` record, always a cooldown), insertion order. `charges`
+  // reads the staff's own current count off `c` (bag ∪ worn); `max` reads
+  // the pool size from the activation declaration — both `undefined` (never
+  // thrown) for a staff no longer carried when its record still exists.
+  for (const id of Object.keys(c.timers || {})) {
+    if (!id.startsWith("charges:")) continue;
+    const rec = c.timers[id];
+    if (!rec) continue;
+    const key = id.slice("charges:".length);
+    const act = ACTIVATION_OF[key];
+    const it = carriedItems(c).find((x) => x && x.n === key);
+    out.push({
+      key: "staffCharges",
+      polarity: "good",
+      item: key,
+      charges: it && Number.isInteger(it.charges) ? it.charges : 0,
+      max: act ? act.charges : undefined,
+      remaining: rec.left,
+    });
   }
 
   // --- BAD conditions -------------------------------------------------------
@@ -457,7 +608,9 @@ export function strikeDie(c) {
   const R = RACES[c.race];
   if (R.strikeStep) idx = Math.min(4, idx + R.strikeStep);
   if (c.sub === "Illusionist" && c.level < 3) idx = 0; // d20 until level three
-  if (c.acute > 0) idx = 4; // Potion of Acuteness: strike on a d6
+  // Phase 39 (GEAR-02): the retired c.acute counter — a live "acute" item
+  // effect (Potion of Acuteness) reads through c.timers now.
+  if (itemEffectActive(c, "acute")) idx = 4; // strike on a d6
   return STRIKE_DICE[idx];
 }
 
@@ -750,7 +903,9 @@ export function foeToHitVs(state, vs = "hero") {
   if (vs === "hero" && abilityEffectActive(c, "sidestep")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "smoke")) h = 1;
   if (c.mirror > 0) h = 1; // Mirror Self
-  if (c.invis > 0) h = 1; // invisible
+  // Phase 39 (GEAR-02): the retired c.invis counter — a live "invis" item
+  // effect (Cloak/potion/staff of invisibility) reads through c.timers.
+  if (itemEffectActive(c, "invis")) h = 1; // invisible
   return Math.max(1, h);
 }
 
@@ -816,7 +971,8 @@ export function foeToHitBreakdown(state, vs = "hero") {
     h = 1; // Mirror Self
     if (h !== before) mods.push({ name: "Mirror Self", delta: h - before });
   }
-  if (c.invis > 0) {
+  // Phase 39 (GEAR-02): the retired c.invis counter — read through c.timers.
+  if (itemEffectActive(c, "invis")) {
     const before = h;
     h = 1; // invisible
     if (h !== before) mods.push({ name: "invisible", delta: h - before });
@@ -841,6 +997,10 @@ export function weaponDamage(c, rng) {
   if (R.dmg) d += R.dmg;
   if (R.wpnBonus) d += R.wpnBonus;
   if (c.might) d += c.might;
+  // Phase 39 (GEAR-02): the retired never-expiring c.might += 8/4 potion
+  // write — a live Strength/Enlarge potion effect now reads through
+  // c.timers (potionMight), additive alongside the spell's own c.might.
+  d += potionMight(c);
   if (skill(c, "Heft")) d += 2;
   // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of
   // Arms subclass blurb (content/flavor.js SUB_NOTE["Master of Arms"]) reads

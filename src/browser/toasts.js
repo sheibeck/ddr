@@ -1148,9 +1148,6 @@ export const TOAST_FOR = {
   },
   wardFaded: () => ({ text: "The ward fades.", tone: "beat", priority: PRIORITY.other }),
   mirrorFaded: () => ({ text: "The mirror fades.", tone: "beat", priority: PRIORITY.other }),
-  // Phase 31 (CMB-05): Acuteness finally wears off (per foeTurn round, per
-  // exploration step, or unconditionally at endCombat).
-  acuteFaded: () => ({ text: "Your edge dulls.", tone: "beat", priority: PRIORITY.other }),
 
   /* ---------------- foe abilities (engine/foeAbilities.js) ---------------- */
 
@@ -1414,11 +1411,14 @@ export const TOAST_FOR = {
   // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason map with
   // cooldown/wrongClass/combatOnly/exploreOnly/noTarget/notFought — the
   // pilfer text and the generic fallback stay byte-identical.
+  // Phase 39 (GEAR-02): cooldown's wording moved to the vending-machine line;
+  // a NEW "recharging" reason (an empty staff) gets its own line.
   useRefused: (e) => {
     const item = e?.item?.n ?? "That";
     const map = {
       pilfer: `${item} does not heal. Pilfers use only healing.`,
-      cooldown: `${item} needs ${e?.left ?? "more"} more squares.`,
+      cooldown: `${item}: ${e?.left ?? "?"} squares. It is not a vending machine.`,
+      recharging: `${item}: ${e?.left ?? "?"} squares to the next charge. Patience is also a spell.`,
       wrongClass: `${item} is a stick to anyone who is not a Magic User.`,
       combatOnly: `${item} wants a target. Save it for a fight.`,
       exploreOnly: `${item} needs quieter surroundings.`,
@@ -1435,6 +1435,22 @@ export const TOAST_FOR = {
   // per-foe foeKilled lines that follow.
   foeStoned: (e) => ({ text: `${(e?.names ?? []).join(", ") || "It"} turn to stone. Statues don't hit back.`, tone: "hit", priority: PRIORITY.you }),
   itemBurned: (e) => ({ text: `${e?.total ?? 0} fire damage spread.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 39 (GEAR-02): the item activation model's four new events.
+  itemEffectStarted: (e) => {
+    const n = e?.left;
+    const map = {
+      haste: `Double attacks for ${n} squares.`,
+      invis: `Unseen for ${n} squares.`,
+      ether: `${n} squares of walking through stone.`,
+      acute: `You strike on a d6 for ${n} rounds.`,
+      might: `+${e?.might ?? "?"} damage for ${n} squares.`,
+      fly: `Twenty squares of not touching the floor.`,
+    };
+    return { text: map[e?.kind] ?? `${e?.item ?? "It"}: ${n} squares.`, tone: "magic", priority: PRIORITY.you };
+  },
+  itemEffectFaded: (e) => ({ text: `${e?.item ?? "It"} wears off.`, tone: "beat", priority: PRIORITY.other }),
+  itemCooled: (e) => ({ text: `${e?.item ?? "It"} is ready again.`, tone: "hit", priority: PRIORITY.other }),
+  staffRecharged: (e) => ({ text: `${e?.item ?? "It"} hums. ${e?.charges ?? "?"}/${e?.max ?? "?"}.`, tone: "hit", priority: PRIORITY.other }),
   itemFizzled: () => ({ text: "Nothing happens.", tone: "miss", priority: PRIORITY.you }),
   // Phase 29 (LOOT-04): richer text when the event carries the have/slots
   // count (every current push site does); a bare {type} call (safety-scan

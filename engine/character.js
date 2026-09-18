@@ -507,7 +507,9 @@ export function rollCharacter(rng, exclude = [], force = null) {
     rations: cls === "Fighter" ? 6 : cls === "Thief" ? 5 : 4,
     gold: 50,
     scrolls: cls === "Magic User" ? 1 : 0,
-    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
+    // Phase 39 (GEAR-02): haste/invis/ether/acute retired — every item
+    // effect (potion/cloak/staff) now lives on c.timers instead.
+    affliction: null, joiner: null,
     items: cls === "Thief" ? [Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1])] : [],
     grimoire: cls === "Magic User" ? rollGrimoire(rng, sub) : [],
     spellsUsed: 0, kills: 0, might: 0, ward: null, regen: false, mirror: 0, foresight: false,
@@ -519,20 +521,10 @@ export function rollCharacter(rng, exclude = [], force = null) {
     // NO chargen rng draw and does not shift the rng-consumption order the
     // chargen-parity/determinism suites depend on.
     darkFor: 0,
-    // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): two brand-new
-    // fields backing the Cloak of Flying's real charge/cooldown resource
-    // (see engine/derived.js's isFlying and engine/movement.js's climb/gorge
-    // block + per-step tick) — a 20-square active-flight charge
-    // (`flightLeft`) and, once that charge is spent, a 50-square cooldown
-    // (`flightCooldown`) before the cloak is ready again. Both start at 0
-    // ("no banked charge, no cooldown running" = ready-to-activate) for
-    // EVERY character, whether or not they end up ever carrying the cloak —
-    // plain assignments alongside darkFor above, so this adds NO chargen rng
-    // draw and does not shift the rng-consumption order the chargen-parity/
-    // determinism suites depend on. The Bracelet of Flight never reads or
-    // writes either field (it grants unconditional flight regardless).
-    flightLeft: 0,
-    flightCooldown: 0,
+    // Phase 39 (GEAR-02): the retired Cloak-of-Flying flightLeft/
+    // flightCooldown pair — its effect/cooldown now rides a c.timers
+    // "item:Cloak of Flying" record instead, started by
+    // engine/movement.js's climb/gorge block (no chargen field needed at all).
     // ECON-01 (Phase 12, Economy A): the carry-capacity bag tier, a plain
     // string key into content/bags.js's BAGS. Assigned by class per rulebook
     // p.10 — Magic User = "small", Fighter = "medium", Thief = "small". This

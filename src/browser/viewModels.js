@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -46,6 +46,9 @@ function damageBracket(c) {
   if (R.dmg) flat += R.dmg;
   if (R.wpnBonus) flat += R.wpnBonus;
   if (c.might) flat += c.might;
+  // Phase 39 (GEAR-02): a live Strength/Enlarge potion effect (c.timers),
+  // additive alongside the spell's own c.might.
+  flat += potionMight(c);
   if (skill(c, "Heft")) flat += 2;
   flat += eff(c, "dmg");
   if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;
