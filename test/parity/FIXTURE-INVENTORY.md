@@ -1207,3 +1207,28 @@ in `conditions.test.js`, 1 in `combat.test.js`, 1 in `cast-refusals.test.js`);
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
 test/parity/fixtures` empty.
 
+### Plan 04 — `spellSeen` provenance flag: structural carve-out, zero fixture moves
+
+Plan 04 (SPELL-05: Map the Floor's time-boxed, re-fogging reveal — the
+`spellSeen` per-cell provenance flag, the `spell:reveal` squares timer, the
+one expiry sweep, recast refresh, descend clears the record, the `reveal`
+chip, tolerant load) moves **zero** fixtures. Why: `spellSeen` is a
+brand-new, LAZILY-SET engine-only field (`engine/maze.js#reveal`'s cell
+literal never carries it — `genFloor` doesn't add it, only a live cast
+does) with no prototype-side equivalent whatsoever, and **no parity fixture
+ever casts the reveal spell** (grepped every fixture grimoire literal and
+scripted-action list — none). `reveal()`'s new graduation line
+(`if (cell.spellSeen) delete cell.spellSeen;`) is therefore a no-op on
+EVERY cell in EVERY fixture floor — there is no floor state this plan's
+engine changes could possibly move, which is why this is a **structural**
+carve-out (`test/parity/harness/comparables.js#stripSpellSeen`, wired into
+all three exported comparables plus the three per-domain local
+`comparable()` duplicates) rather than a measured content divergence, the
+same category as `stripTimersField`/`stripWornField`/`stripAbilitiesField`
+before it. `npm test`: 2800/2800, `# fail 0` (2782 baseline + 18 new tests
+in the new `test/unit/map-reveal.test.js`, plus 8 more in
+`test/unit/save-validation.test.js` for the tolerant-load helpers);
+`test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
+test/parity/fixtures` empty.
+

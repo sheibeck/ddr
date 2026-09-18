@@ -486,7 +486,158 @@ test/parity/fixtures` empty.
 
 ## Map the Floor — Key Decision: re-fog provenance (Plan 04)
 
-(appended by Plan 04)
+Plans 01-03 renamed the spell and reshaped everything ELSE about the
+grimoire; Plan 04 turns Map the Floor into the time-boxed, re-fogging
+reveal SPELL-05 actually asks for (the prototype's Detect Magic was a
+permanent, one-way whole-floor `seen=true` sweep with no re-fog mechanism
+at all).
+
+### The Key Decision, verbatim (40-CONTEXT.md Area 1, user-chosen, ratified)
+
+> The renamed reveal spell marks every cell it reveals with a per-cell
+> provenance flag (e.g. `cell.spellSeen = true`) and starts
+> `c.timers["spell:reveal"]` with `cadence: "squares"`, `left: N` (N stated
+> in the grimoire text; ≤ 100). Normal walking during the window clears the
+> flag on the cells it sees (they become permanently seen). At expiry, ONE
+> sweep re-fogs cells still flagged (`seen = false`, flag cleared) and
+> narrates `revealFaded`; the sweep runs once at expiry, never per step
+> (research Pitfall 4). Re-casting during the window extends/refreshes the
+> timer, never double-marks.
+
+In one sentence, for PROJECT.md's Key Decisions at phase close: "Only what the spell alone showed" re-fogs — a cell the player actually walked to
+during the window is never taken away from them, even though the spell's
+own temporary light over the rest of the floor fades right on schedule.
+
+### The two research options, and why A won
+
+`40-RESEARCH.md`'s "Detect Magic / Map Reveal (SPELL-05)" section laid out
+two mechanisms for telling "seen because the player walked here" apart from
+"seen only because the spell's window is open":
+
+- **Option A — per-cell provenance mark (chosen).** A lazily-set
+  `cell.spellSeen` flag, cleared the instant real exploration (`reveal()`)
+  touches the cell, swept once at the window's expiry. Correctly satisfies
+  the requirement's literal wording — including a cell that BOTH the spell
+  AND normal walking would have revealed during the window (it graduates
+  the moment either happens, whichever comes first).
+- **Option B — snapshot diff.** Capture the `seen` grid as a coordinate set
+  at cast time; revert every cell NOT in that snapshot back to `false` at
+  expiry. Rejected: this loses any cell the player genuinely walked to
+  during the window unless a SECOND live diff is computed at expiry —
+  which is mechanically identical to Option A's provenance mark, just
+  computed lazily instead of maintained incrementally. Strictly more
+  complex for zero behavioral benefit.
+
+Option A won on directness: one lazy field, one graduation point (the
+existing `reveal()` call every move/teleport/descend site already makes),
+one sweep function, no second data structure to keep in sync.
+
+### The mechanism
+
+- **Cast** (`engine/magic.js`'s `reveal` kind branch): every cell that is
+  `!wall && !seen` gets BOTH `seen = true` and `spellSeen = true`; a cell
+  already seen (walked earlier, or already spell-marked by an earlier cast
+  this window) is left completely alone — no double-marking, and the
+  `floorMapped { squares, cells }` event's `cells` count is only the
+  NEWLY-marked cells. `startEffect(c, "spell:reveal", { squares: sp.squares })`
+  starts the window; `SPELLS[5].squares === 40` (the txt already states the
+  same number; ≤ 100 per the once-a-day rule below).
+- **Graduation** (`engine/maze.js#reveal`, the shared function EVERY
+  move/teleport/descend/newRun call already routes through): after marking
+  a touched cell `seen = true`, `if (cell.spellSeen) delete cell.spellSeen;`
+  — a cell the player actually sees, by any means, leaves the spell's
+  provenance and becomes ordinary permanent memory. A no-op delete on a
+  cell that never carried the flag, so every fixture floor (none ever casts
+  the reveal spell) stays byte-identical.
+- **The one sweep** (`engine/maze.js#refogSpellSeen`, called from
+  `engine/movement.js`'s per-step tick site): reacts to the ONE
+  `{ id: "spell:reveal", from: "effect", to: null }` transition
+  `tickSquares` returns on the exact step the window's `left` hits 0 —
+  never a per-step poll of the record (research Pitfall 4, the pitfall this
+  plan was explicitly warned about). Every cell still carrying `spellSeen`
+  at that instant becomes `seen = false` with the flag removed; the count
+  is narrated as `revealFaded { cells }`. This step's own `reveal()` call
+  (the player's normal per-step exploration) runs BEFORE the tick site, so
+  a cell the player walks onto on the exact 40th step is already graduated
+  and never re-fogs, even on the step the window closes.
+- **Recast** overwrites the timer via `startEffect`'s own overwrite
+  semantics — `left` resets to 40, and because the cast branch only marks
+  cells that are NOT already `seen`, a recast on an unchanged floor marks
+  zero new cells and never double-flags one already flagged.
+- **Descend** (`engine/movement.js#descend`): a live `spell:reveal` record
+  is deleted silently — no sweep, no `revealFaded` — before the new floor
+  is even generated. The mapped floor is behind you; the chip simply
+  disappears with the floor, by design. **Teleport does NOT touch the
+  record** — it graduates whatever cells its own `reveal()` call touches
+  (like any move), but never ticks or clears the window itself.
+- **The once-a-day rule** (standing ruling, 2026-09-18): any squares-cadence
+  effect must be usable at least once per 100-square day. 40 ≤ 100 —
+  Map the Floor can be recast well within a single day's walking.
+
+### The chip
+
+`engine/derived.js#conditionsOf` gains the `reveal` chip
+(`{ key: "reveal", polarity: "good", remaining: <left>, cadence: "squares" }`)
+in the FIXED order after `foresight`, before `flight` — reading the SAME
+`spell:reveal` record, only while `phase === "effect"` and `left > 0` (a
+cooldown-phase or already-expired record — neither of which this id ever
+actually reaches, since the record has no `cd` and is deleted outright at
+expiry — would correctly show nothing either way). Pure read, no new
+serialized field.
+
+### Tolerant load
+
+- **Stale flags, no live record** (`engine/saveState.js#clearStaleSpellSeen`,
+  wired into BOTH `validateSave` and `rehydrate`, mirroring `clearStaleTimers`'s
+  exact discipline, T-40-07): a floor whose grid carries `spellSeen` flags
+  with NO live `spell:reveal` record on `c` has every flag stripped —
+  `seen` is left EXACTLY as saved (a cell the player genuinely walked
+  during a previous session is never re-fogged by a tolerant load; worst
+  case a cell the player never walked stays lit one load longer, corrected
+  by the next live sweep or the next cast). A floor with a LIVE record
+  (`phase: "effect", left > 0`) is left completely untouched.
+- **The retired spell name** (`engine/saveState.js#migrateSpellNames`,
+  wired the same way): a grimoire entry named "Detect Magic" is rewritten
+  to "Map the Floor" in place — position preserved, first-occurrence
+  dedupe if both names were somehow present — no card, no narration, no
+  rng. `engine/saveState.js` is the ONLY place in `engine/` the retired
+  name survives at all (grep-verified).
+
+### The harness carve-out
+
+`spellSeen` is a brand-new, lazily-set, engine-only per-cell field with NO
+prototype-side equivalent — exactly the same structural-tripwire shape as
+`c.timers`/`c.worn`/`c.abilities` before it. `test/parity/harness/
+comparables.js#stripSpellSeen(floor)` strips it (a cheap same-object no-op
+when nothing is flagged), wired into all three exported comparables
+(`movementComparable`/`combatComparable`/`economyComparable`) AND mirrored
+into the three per-domain local `comparable()` duplicates
+(`combat-parity.test.js`/`magic-parity.test.js`/`movement-parity.test.js`),
+per Phase 21's own "keep the local duplicates in sync" lesson.
+
+### Byte-identical elsewhere
+
+No parity fixture ever casts the reveal spell — `reveal()`'s graduation
+`delete cell.spellSeen` is a no-op on every cell in every fixture floor
+(none ever carries the flag to begin with), so this is a **structural**
+carve-out, not a measured content divergence: zero fixture moves. `npm
+test`: 2800/2800, `# fail 0` (2782 baseline + 18 new tests in the new
+`test/unit/map-reveal.test.js`, plus 8 more in `save-validation.test.js`);
+`test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
+test/parity/fixtures` empty.
+
+### Phase 41 note (orthogonal, not designed here)
+
+Phase 41's darkness rework is explicitly a RENDER-TIME filter over `seen`
+("the engine's `seen` memory is unchanged" — 40-RESEARCH.md) limiting the
+visible window while standing on a dark square. This plan changes what
+`seen` actually CONTAINS (temporarily, for a spell-lit cell); Phase 41
+changes what's RENDERED from whatever `seen` already contains. The two are
+orthogonal — the shell's `draw()` reads `cell.seen` fresh every paint
+(verified), so a re-fog sweep is picked up immediately with no coupling
+needed. Plan 05 (this phase) paints spell-only cells in their own distinct
+map tint; Phase 41's later filter simply applies on top, unmodified.
 
 ## UI (Plan 05)
 
