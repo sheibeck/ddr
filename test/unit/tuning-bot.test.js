@@ -22,14 +22,17 @@ import {
   forceParty,
   makeTallies,
   tallyEvents,
+  tallyUsage,
   abilitySummary,
   reachTable,
   actionsPerFloorDist,
   sharedJson,
   isTalkFirst,
   botLine,
+  chooseSpell,
   playRun,
   BOT_DEFAULTS,
+  BOT_TACTICS,
 } from "../../tools/lib/tuning-bot.mjs";
 import { newRun } from "../../engine/engine.js";
 import { SPELLS, RACES } from "../../content/index.js";
@@ -454,6 +457,65 @@ test("HARN-02: DAMAGE-tier ordering — Mangle > Fireball(s) > Acid/Lightning > 
   assert.deepStrictEqual(decideAction(acidAlreadyTicking, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Ice") });
 });
 
+test("Phase 42 (BAL-01 second half): a DOT (niche 'dot') is skipped when the target won't outlast the party's best castable burst, kept when it will", () => {
+  const ctx = makeBotContext();
+  const base = { sub: "Sorcerer", level: 5 };
+  const grimoire = ["Fireball", "Acid"];
+  // Fireball's expected damage is 15 (2d10+4); BOT_TACTICS.dotToughMargin is
+  // 1, so bestBurstExpected(state)=15 makes the skip threshold exactly 16 —
+  // a CLOSED boundary (<=, not <). Acid's own plain score (318) would
+  // otherwise outscore Fireball's plain score (315), so this pair is chosen
+  // specifically because skipping Acid actually FLIPS the winner, rather
+  // than merely removing an already-losing option.
+  assert.strictEqual(BOT_TACTICS.dotToughMargin, 1);
+
+  const atBoundary = mkState({
+    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 16, maxWP: 16 }] }),
+    c: mu({ ...base, grimoire }),
+  });
+  // 16 <= 15+1 -> Acid skipped; only Fireball scores (300+15=315, no finish
+  // since 15 < 16) -> Fireball wins by elimination, not by raw score.
+  assert.deepStrictEqual(decideAction(atBoundary, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Fireball") });
+
+  const justOverBoundary = mkState({
+    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 17, maxWP: 17 }] }),
+    c: mu({ ...base, grimoire }),
+  });
+  // 17 > 15+1 -> Acid is KEPT and outscores Fireball's plain 315 with its
+  // own 318 (expected 9 x2) -> Acid wins.
+  assert.deepStrictEqual(decideAction(justOverBoundary, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Acid") });
+});
+
+test("Phase 42 (BAL-01 second half): a burst spell (niche 'burst') expected to finish the target scores 350+expected, not 300+expected", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Sorcerer", level: 5, grimoire: ["Fireball"] });
+  const fireballIdx = idx("Fireball");
+
+  const weakTarget = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 10, maxWP: 10 }] }), c });
+  const finishPick = chooseSpell(weakTarget, ctx);
+  assert.deepStrictEqual(finishPick, { idx: fireballIdx, tier: "damage", score: 365 }); // 350 + 15
+
+  const toughTarget = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 20, maxWP: 20 }] }), c });
+  const plainPick = chooseSpell(toughTarget, ctx);
+  assert.deepStrictEqual(plainPick, { idx: fireballIdx, tier: "damage", score: 315 }); // 300 + 15
+
+  // The finish threshold is CLOSED (>=, not >): expected 15 exactly equals
+  // the target's wp -> still scores the finish bonus.
+  const exactMatch = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 15, maxWP: 15 }] }), c });
+  assert.deepStrictEqual(chooseSpell(exactMatch, ctx), { idx: fireballIdx, tier: "damage", score: 365 });
+});
+
+test("Phase 42 (BAL-01 second half): Summon in combat picks the highest-LEVEL castable summon spell — level 1 has only Lesser Summon, level 3 also has Summon", () => {
+  const ctx = makeBotContext();
+  const c = mu({ sub: "Summoner", level: 1, grimoire: ["Lesser Summon", "Summon"] });
+
+  const level1 = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c });
+  assert.deepStrictEqual(decideAction(level1, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Lesser Summon") });
+
+  const level3 = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c: { ...c, level: 3 } });
+  assert.deepStrictEqual(decideAction(level3, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
+});
+
 test("HARN-02: disables score only at 2+ live foes; weaken is skipped once C.weakened is set", () => {
   const ctx = makeBotContext();
   const c = mu({ sub: "Sorcerer", level: 2, grimoire: ["Stun", "Doze", "Weaken"] });
@@ -768,6 +830,10 @@ test("purity: decideAction never mutates its state argument; module source draws
       combat: fight("Beasts", 1, 2),
       c: { cls: "Fighter", sub: "Knight", level: 1, wp: 40, maxWP: 40, potions: 0, rations: 0, abilities: ["kata", "brace"], timers: {} },
     }),
+    // Phase 42 (BAL-01 second half): a Magic User out of combat, on an
+    // unmapped floor (ctx.mappedDepth starts null), with a castable Map the
+    // Floor and charges to spare — the field step reads `state`/`ctx` only.
+    mkState({ c: mu({ sub: "Sorcerer", level: 1, grimoire: ["Map the Floor"], scrolls: 0 }) }),
   ];
   for (const state of states) {
     const before = structuredClone(state);

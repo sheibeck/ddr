@@ -20,12 +20,43 @@ import {
   chooseCombatItem,
   chooseFieldItem,
   itemLabel,
+  tallyUsage,
+  makeTallies,
   RUN_FLAGS,
   playRun,
   BOT_DEFAULTS,
   BOT_TACTICS,
 } from "../../tools/lib/tuning-bot.mjs";
 import { DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
+import { SPELLS } from "../../content/index.js";
+import { maxCharges } from "../../engine/movement.js";
+
+/** idx(name) — the SPELLS index for a spell by exact display name. */
+function idx(name) {
+  return SPELLS.findIndex((s) => s.n === name);
+}
+
+/** mu(over) — a Magic User character sheet (Sorcerer default), zero scrolls/potions/rations. */
+function mu(over = {}) {
+  return {
+    cls: "Magic User",
+    sub: "Sorcerer",
+    race: "Human",
+    level: 1,
+    wp: 40,
+    maxWP: 40,
+    potions: 0,
+    rations: 0,
+    scrolls: 0,
+    spellsUsed: 0,
+    grimoire: [],
+    items: [],
+    skills: {},
+    gold: 0,
+    timers: {},
+    ...over,
+  };
+}
 
 // A policyRng whose .pick() always returns the first element (unused by any
 // test in this file — combat/pending-state decisions never reach it — kept
@@ -281,6 +312,71 @@ test("playRun: a forced Fighter/Knight cell uses at least one ability and never 
 test("BOT_TACTICS: frozen constants exist for the item/spell tactics this plan and Plan 03 consume", () => {
   assert.deepStrictEqual(BOT_TACTICS, { hardFoeLvl: 3, staffMinFoes: 2, dotToughMargin: 1, mapBankRatio: 0.5 });
   assert.ok(Object.isFrozen(BOT_TACTICS));
+});
+
+// ============================================================================
+// Plan 03, Task 1: Map the Floor once per floor, and observe's new
+// (ctx, events, stateAfter) signature.
+// ============================================================================
+
+test("decideAction: Map the Floor casts out of combat when charges are plentiful on an unmapped floor", () => {
+  const ctx = makeBotContext();
+  const state = mkState({ c: mu({ grimoire: ["Map the Floor"] }) });
+  assert.strictEqual(ctx.mappedDepth, null);
+  assert.deepStrictEqual(decideAction(state, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Map the Floor") });
+});
+
+test("decideAction: Map the Floor is skipped once ctx.mappedDepth already matches the current floor", () => {
+  const ctx = makeBotContext();
+  const state = mkState({ c: mu({ grimoire: ["Map the Floor"] }) });
+  ctx.mappedDepth = state.floor.depth; // already mapped THIS depth
+  const result = decideAction(state, fixedPolicyRng, ctx);
+  assert.notDeepStrictEqual(result, { type: "castSpell", idx: idx("Map the Floor") });
+});
+
+test("decideAction: Map the Floor is skipped when banked charges do not clear BOT_TACTICS.mapBankRatio", () => {
+  const ctx = makeBotContext();
+  const c = mu({ grimoire: ["Map the Floor"] });
+  const mc = maxCharges(c);
+  const noChargesToSpare = mkState({ c: { ...c, spellsUsed: mc } }); // 0 left, not > mc*0.5
+  const result = decideAction(noChargesToSpare, fixedPolicyRng, ctx);
+  assert.notDeepStrictEqual(result, { type: "castSpell", idx: idx("Map the Floor") });
+});
+
+test("decideAction: a floor change re-arms Map the Floor even after ctx.mappedDepth was set for the previous floor", () => {
+  const ctx = makeBotContext();
+  const c = mu({ grimoire: ["Map the Floor"] });
+  ctx.mappedDepth = 1; // already mapped floor 1
+  const newFloor = { g: [[{ wall: false, seen: true, feat: null }]], px: 0, py: 0, depth: 2 };
+  const state = mkState({ c, floor: newFloor });
+  assert.deepStrictEqual(decideAction(state, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Map the Floor") });
+});
+
+test("decideAction: Map the Floor never fires for a non-Magic-User", () => {
+  const ctx = makeBotContext();
+  const state = mkState({ c: fighter({}) });
+  const result = decideAction(state, fixedPolicyRng, ctx);
+  assert.notStrictEqual(result.type, "castSpell");
+});
+
+test("observe(ctx, events, stateAfter): floorMapped sets ctx.mappedDepth from stateAfter.floor.depth; the pre-Phase-42 two-argument call is a safe no-op for it", () => {
+  const ctx = makeBotContext();
+  assert.strictEqual(ctx.mappedDepth, null);
+
+  // Two-argument call — every pre-existing observe() call site in this repo
+  // (and every other test in this file) — floorMapped is silently ignored
+  // with no stateAfter to read from; no throw, ctx.mappedDepth untouched.
+  observe(ctx, [{ type: "floorMapped", squares: 40, cells: 12 }]);
+  assert.strictEqual(ctx.mappedDepth, null);
+
+  // Three-argument call (playRun's own call site) reads stateAfter.floor.depth.
+  const stateAfter = mkState({ floor: { g: [[{ wall: false, seen: true, feat: null }]], px: 0, py: 0, depth: 4 } });
+  observe(ctx, [{ type: "floorMapped", squares: 40, cells: 12 }], stateAfter);
+  assert.strictEqual(ctx.mappedDepth, 4);
+
+  // A non-floorMapped event with a stateAfter present never touches it.
+  observe(ctx, [{ type: "moved" }], stateAfter);
+  assert.strictEqual(ctx.mappedDepth, 4);
 });
 
 // ============================================================================

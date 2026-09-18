@@ -302,6 +302,25 @@ function expectedDamage(sp) {
 }
 
 /**
+ * bestBurstExpected(state) — Phase 42 (BAL-01 second half): the highest
+ * `expectedDamage(sp)` over every CASTABLE `niche === "burst"` spell that
+ * also carries a `dmg` field (Death has no `dmg` field and is excluded) — 0
+ * when none qualify. Feeds chooseSpell's DOT-vs-burst toughness rule (a DOT
+ * is skipped against a foe a burst spell could simply finish) and that same
+ * burst spell's own finish-score bonus. Pure, no rng.
+ */
+function bestBurstExpected(state) {
+  let best = 0;
+  for (const sp of SPELLS) {
+    if (sp.niche !== "burst" || !sp.dmg) continue;
+    if (!canCast(state, sp)) continue;
+    const expected = expectedDamage(sp);
+    if (expected > best) best = expected;
+  }
+  return best;
+}
+
+/**
  * bestCastableSummonIdx(state) — the index of the highest-lvl castable
  * `kind: "summon"` spell (Summon or Phantom Host), or null. Shared by
  * decideAction's in-combat and out-of-combat Summon branches (HARN-02).
@@ -372,6 +391,22 @@ function lowestCastableUtilitySpellIdx(state) {
  *           mean tick count of the real `d4+1` duration (3.5, rounded to a
  *           documented constant like Acid's own x2); skipped when the
  *           current target already carries `dot`.
+ *
+ *           Phase 42 (BAL-01 second half, CONTEXT.md "DOT on a tough single
+ *           foe, burst on a weak single foe") — both rules below are keyed
+ *           on `sp.niche`, never a spell name or `sp.kind` alone:
+ *             - DOT-vs-toughness: a `niche==="dot"` spell (Acid, Ice) is
+ *               SKIPPED when the target won't outlast the party's own best
+ *               castable `niche==="burst"` spell — `target.wp <=
+ *               bestBurstExpected(state) + BOT_TACTICS.dotToughMargin`. A
+ *               DOT is only worth its multi-round tail against a foe tough
+ *               enough to survive a burst outright.
+ *             - Burst-finish: a `niche==="burst"` spell with a `dmg` field
+ *               whose plain `expected` damage already meets or exceeds the
+ *               target's current `wp` scores `350 + expected` instead of the
+ *               usual `300 + expected` — a likely one-shot kill outranks
+ *               every other DAMAGE-tier pick (but never a KILL-tier spell,
+ *               scored 400+).
  *   DISABLE (200+, only when liveFoes(state).length >= 2): `kind==="stun"`
  *           230, `kind==="weaken"` 220 (skipped when `C.weakened`),
  *           `kind==="shrink"` 215, `kind==="status"` (Doze) 210,
@@ -400,6 +435,7 @@ export function chooseSpell(state, ctx) {
   const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold; // D-06
   const target = C ? C.foes[C.target] : null;
   const nFoes = liveFoes(state).length;
+  const burstBest = bestBurstExpected(state); // Phase 42 (BAL-01 second half)
   let best = null;
   for (let i = 0; i < SPELLS.length; i++) {
     const sp = SPELLS[i];
@@ -424,6 +460,11 @@ export function chooseSpell(state, ctx) {
     } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid" || sp.kind === "dot") {
       if (sp.kind === "acid" && target && target.acid) continue; // already ticking
       if (sp.kind === "dot" && target && target.dot) continue; // already ticking (Phase 40)
+      // Phase 42 (BAL-01 second half): a DOT (niche "dot" — Acid/Ice) is
+      // skipped against a foe the party's own best castable burst spell
+      // could simply finish this turn — see bestBurstExpected/chooseSpell's
+      // JSDoc above.
+      if (sp.niche === "dot" && target && target.wp <= burstBest + BOT_TACTICS.dotToughMargin) continue;
       let expected = expectedDamage(sp);
       if (sp.aoe === "all") expected *= Math.max(1, nFoes);
       else if (sp.kind === "volley") expected *= 4.5;
@@ -433,7 +474,15 @@ export function chooseSpell(state, ctx) {
       // f.dot tick/freeze payoff) — scored with the same "documented mean
       // tick count" constant Acid uses, per its own d4+1 duration (mean 3.5).
       else if (sp.kind === "dot") expected *= 3;
-      score = 300 + expected;
+      // Phase 42 (BAL-01 second half): a burst spell (niche "burst") whose
+      // plain expected damage already meets/exceeds the target's current wp
+      // outranks every other DAMAGE-tier pick — a likely finish beats a
+      // slower DOT or a multi-target spread, but never a KILL-tier spell.
+      if (sp.niche === "burst" && sp.dmg && target && expected >= target.wp) {
+        score = 350 + expected;
+      } else {
+        score = 300 + expected;
+      }
       tier = "damage";
     } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {
       if (!C || nFoes < 2) continue;
@@ -486,7 +535,10 @@ export function isTalkFirst(state) {
  * matching Rule-1 safety nets for a refused ability/item — a refusal returns
  * with NO state change, so a bot that re-picks the same key/label loops to
  * `maxActions`; both sets are cleared on `encounterStarted` (`itemBlocked`
- * also on `floorChanged`, see `observe`).
+ * also on `floorChanged`, see `observe`). `mappedDepth` (Phase 42, BAL-01
+ * second half) is the depth Map the Floor was last cast on this run (`null`
+ * until the first cast) — set by `observe` on the spell's `floorMapped`
+ * event.
  */
 export function makeBotContext(opts = {}) {
   return {
@@ -498,6 +550,7 @@ export function makeBotContext(opts = {}) {
     strikeBlocked: false,
     abilityBlocked: new Set(),
     itemBlocked: new Set(),
+    mappedDepth: null,
   };
 }
 
@@ -774,10 +827,14 @@ export function chooseFieldItem(state, ctx) {
  * maxCharges; (p) read a carried scroll when able (Claude's Discretion —
  * `useItem` is deliberately NOT used for potions: found potions are
  * unidentified, one of the ten is Death, so a blind quaff is not
- * human-like); (q) head to the exit once the floor's dots are cleared or the
- * exploration budget is spent; (r) otherwise explore toward the nearest
- * unseen tile. `policyRng` is a SEPARATE rng stream from the engine's own
- * (see playRun), so harness decisions never perturb engine determinism.
+ * human-like); (p2) Phase 42 (BAL-01 second half): Map the Floor — a Magic
+ * User on a floor it hasn't mapped yet (`state.floor.depth !== ctx.mappedDepth`)
+ * with spell charges to spare (`> maxCharges(c) * BOT_TACTICS.mapBankRatio`)
+ * casts the castable `kind==="reveal"` spell; (q) head to the exit once the
+ * floor's dots are cleared or the exploration budget is spent; (r) otherwise
+ * explore toward the nearest unseen tile. `policyRng` is a SEPARATE rng
+ * stream from the engine's own (see playRun), so harness decisions never
+ * perturb engine determinism.
  *
  * Two refusal-loop bugs found during the BEFORE readout (both auto-fixed,
  * Rule 1 — see 22-02-PLAN.md's stuck-investigation writeup):
@@ -918,6 +975,19 @@ export function decideAction(state, policyRng, ctx) {
   // not human-like; kept simple per 22-CONTEXT.md.
   if (c.scrolls > 0 && canRead(state)) return { type: "readScroll" };
 
+  // Phase 42 (BAL-01 second half): Map the Floor, once per floor, when
+  // charges are plentiful — a Magic User banks the rest for combat
+  // otherwise. `ctx.mappedDepth` is set by `observe` on the spell's own
+  // `floorMapped` event, so a second decideAction on the same floor after
+  // the cast never re-casts, and a floor change re-arms it.
+  if (c.cls === "Magic User" && state.floor.depth !== ctx.mappedDepth) {
+    const left = maxCharges(c) - c.spellsUsed;
+    if (left > maxCharges(c) * BOT_TACTICS.mapBankRatio) {
+      const i = SPELLS.findIndex((sp) => sp.kind === "reveal" && canCast(state, sp));
+      if (i !== -1) return { type: "castSpell", idx: i };
+    }
+  }
+
   if (dotsRemaining(state.floor) === 0 || ctx.floorActions >= ctx.opts.exploreBudget) {
     const dir = dirTowardExit(state) || nearestUnseenDir(state) || pickFallbackDir(state, policyRng);
     return { type: "move", dir };
@@ -926,7 +996,11 @@ export function decideAction(state, policyRng, ctx) {
   return { type: "move", dir };
 }
 
-/** makeTallies() — a fresh D-07 ability-tally accumulator. */
+/**
+ * makeTallies() — a fresh D-07 ability-tally accumulator. `usage` (Phase 42,
+ * BAL-02) is the per-run pick-rate source `tallyUsage` fills in place:
+ * `{ abilities: {}, spells: {}, items: {} }`, each a label -> use-count map.
+ */
 export function makeTallies() {
   return {
     foeCast: 0,
@@ -943,6 +1017,7 @@ export function makeTallies() {
     casterEncounters: 0,
     encountersByBand: {},
     casterEncountersByBand: {},
+    usage: { abilities: {}, spells: {}, items: {} },
   };
 }
 
@@ -1008,12 +1083,56 @@ export function tallyEvents(tallies, events, stateAfter) {
 }
 
 /**
- * observe(ctx, events) — per-step bookkeeping the policy itself reads next
- * turn: the per-floor action counter resets on any `floorChanged` event
- * (else increments once), the full-bag flag tracks `bagFull` / `findTaken` /
- * `findLeft` so the bot never loops offering/declining a find against a
- * full bag, and `parleyBlocked`/`fleeBlocked`/`strikeBlocked` track a
- * `parleyRefused`/`fleeRefused`/`strikeRefused` event (see decideAction's
+ * tallyUsage(tallies, action, events, before, after) — Phase 42 (BAL-02): the
+ * per-run pick-rate tally (`tallies.usage`) BAL-02's "pick-rates for every
+ * new spell/ability" number is rendered from — see
+ * tools/lib/class-matrix.mjs#formatUsageMarkdown. In place, increments:
+ *   - `usage.abilities[key]` on an `abilityUsed { key }` event;
+ *   - `usage.items[itemLabel(item)]` on an `itemUsed { item }` event (a
+ *     potion -> `potion:<eff2>`, a torch/tool -> `tool:<tool>`, a
+ *     staff/cloak/jewel -> its own `.n`);
+ *   - `usage.items["tool:" + tool]` on a `toolUsed { tool }` event (a
+ *     rope/ladder hazard-tool spend, engine/movement.js);
+ *   - `usage.items.scroll` on a `scrollCast { spell }` event — a scroll is an
+ *     ITEM use, never a spell use (readScroll saves/restores `c.spellsUsed`
+ *     around its own free `castSpell` call, so the spellsUsed-delta check
+ *     below never fires for it);
+ *   - `usage.spells[SPELLS[action.idx].n]` when `action.type === "castSpell"`
+ *     AND `after.c.spellsUsed === before.c.spellsUsed + 1` — the ONE signal
+ *     that a cast actually happened (there is no standalone "spell cast"
+ *     event; a refused cast, e.g. `noChargesLeft`/`spellResisted`, never
+ *     bumps `spellsUsed` and is correctly NOT tallied).
+ * Pure bookkeeping, no rng, no mutation beyond `tallies` itself.
+ */
+export function tallyUsage(tallies, action, events, before, after) {
+  const u = tallies.usage;
+  for (const e of events) {
+    if (e.type === "abilityUsed") {
+      u.abilities[e.key] = (u.abilities[e.key] || 0) + 1;
+    } else if (e.type === "itemUsed") {
+      const label = itemLabel(e.item);
+      u.items[label] = (u.items[label] || 0) + 1;
+    } else if (e.type === "toolUsed") {
+      const label = `tool:${e.tool}`;
+      u.items[label] = (u.items[label] || 0) + 1;
+    } else if (e.type === "scrollCast") {
+      u.items.scroll = (u.items.scroll || 0) + 1;
+    }
+  }
+  if (action.type === "castSpell" && after.c.spellsUsed === before.c.spellsUsed + 1) {
+    const sp = SPELLS[action.idx];
+    if (sp) u.spells[sp.n] = (u.spells[sp.n] || 0) + 1;
+  }
+  return tallies;
+}
+
+/**
+ * observe(ctx, events, stateAfter) — per-step bookkeeping the policy itself
+ * reads next turn: the per-floor action counter resets on any `floorChanged`
+ * event (else increments once), the full-bag flag tracks `bagFull` /
+ * `findTaken` / `findLeft` so the bot never loops offering/declining a find
+ * against a full bag, and `parleyBlocked`/`fleeBlocked`/`strikeBlocked` track
+ * a `parleyRefused`/`fleeRefused`/`strikeRefused` event (see decideAction's
  * Rule-1 bugfix comment — both refusals return WITHOUT a foe turn, so a bot
  * that repeats the refused action loops until the action cap, the exact
  * shape of the v1.1 wilmsryVsMagical parley loop) — set the instant a
@@ -1024,9 +1143,17 @@ export function tallyEvents(tallies, events, stateAfter) {
  * `lootTaken`/`lootLeft` clear `findFull` the same way `findTaken`/
  * `findLeft` do; `abilityBlocked` clears on `encounterStarted`, `itemBlocked`
  * on EITHER `encounterStarted` OR `floorChanged` (a torch/staff/cloak
- * refusal doesn't survive a floor change either).
+ * refusal doesn't survive a floor change either). `stateAfter` is the
+ * OPTIONAL post-action state (defaults to `null` so every pre-existing
+ * two-argument call site — including every test in this repo — keeps
+ * working unchanged); it is read ONLY on a `floorMapped` event, guarded on
+ * its own presence, to set `ctx.mappedDepth = stateAfter.floor.depth`
+ * (Phase 42, BAL-01 second half — Map the Floor's once-per-floor gate).
+ * `playRun` passes the real post-action state; a caller with no state to
+ * offer simply omits the third argument and Map the Floor's own
+ * decideAction branch never re-fires from a stale `mappedDepth`.
  */
-export function observe(ctx, events) {
+export function observe(ctx, events, stateAfter = null) {
   let floorChangedThisStep = false;
   for (const e of events) {
     if (e.type === "floorChanged") floorChangedThisStep = true;
@@ -1038,7 +1165,9 @@ export function observe(ctx, events) {
     else if (e.type === "strikeRefused") ctx.strikeBlocked = true;
     else if (e.type === "abilityRefused") ctx.abilityBlocked.add(e.key);
     else if (e.type === "useRefused") ctx.itemBlocked.add(itemLabel(e.item)); // Phase 42
-    else if (e.type === "encounterStarted") {
+    else if (e.type === "floorMapped") {
+      if (stateAfter) ctx.mappedDepth = stateAfter.floor.depth; // Phase 42
+    } else if (e.type === "encounterStarted") {
       ctx.parleyBlocked = false;
       ctx.fleeBlocked = false;
       ctx.strikeBlocked = false;
@@ -1125,6 +1254,7 @@ export function playRun(seed, opts, onStep) {
   while (!state.dead && !state.won && actions < ctx.opts.maxActions) {
     const action = decideAction(state, policyRng, ctx);
     const inCombat = !!state.combat;
+    const before = state; // Phase 42 (BAL-02): pre-action state — applyAction returns a NEW object, so this reference stays valid after the reassignment below
     let dispatched = action;
     if (action.type === "useAbility" && Number.isInteger(action.target) && state.combat) {
       state.combat.target = action.target;
@@ -1134,7 +1264,8 @@ export function playRun(seed, opts, onStep) {
     ({ state, events } = applyAction(state, dispatched));
     if (state.dead && inCombat) diedInCombat = true;
     tallyEvents(tallies, events, state);
-    observe(ctx, events);
+    tallyUsage(tallies, action, events, before, state); // Phase 42 (BAL-02)
+    observe(ctx, events, state); // Phase 42 (BAL-01 second half): stateAfter for floorMapped
     if (onStep) onStep(events, state);
     actions++;
   }
