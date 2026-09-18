@@ -53,8 +53,11 @@ import { gainWilmst } from "./items.js";
  * DURATION_ROUNDS — the duration abilities' effect-phase length (rounds).
  * Every ability NOT listed here is an "immediate" kind: a plain cooldown
  * with no effect phase of its own (its `cd` IS its readiness gate).
+ * Exported (Plan 04, ABIL-05) so combat.js#resolveMemberAbility's own
+ * startMemberAbilityTimer can apply the EXACT SAME mapping to a Joiner's own
+ * sheet.timers, rather than duplicating the table.
  */
-const DURATION_ROUNDS = { sidestep: 2, battleRoar: 2, riposte: 1, taunt: 1, smoke: 2 };
+export const DURATION_ROUNDS = { sidestep: 2, battleRoar: 2, riposte: 1, taunt: 1, smoke: 2 };
 
 /**
  * startAbilityTimer(c, meta) — the ONE cooldown-dispatch site every

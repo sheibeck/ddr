@@ -58,8 +58,15 @@ import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LO
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeWpFor, foeDmgBonusFor } from "./difficulty.js";
-import { tickRounds, clearRoundTimers } from "./effects.js";
-import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER } from "../content/index.js";
+import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
+import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
+// Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
+// DURATION_ROUNDS mapping and foe-flag appliers verbatim — the SAME
+// combat.js <-> foeAbilities.js cycle precedent above applies here
+// (abilities.js imports several combat.js functions; neither module reads
+// the other's binding at top-level module-evaluation time, only inside
+// function bodies, so the cycle is safe).
+import { DURATION_ROUNDS, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -1186,6 +1193,7 @@ export function endCombat(state, events = []) {
     for (const ally of C.allies) {
       if (typeof ally.partyIdx === "number" && state.party[ally.partyIdx]) {
         state.party[ally.partyIdx].wp = ally.wp;
+        // TASK2-PLACEHOLDER: per-member clearRoundTimers lands in Task 2.
       }
     }
     state.party = state.party.filter((m) => m.status !== "downed");
@@ -1363,21 +1371,24 @@ export function alliesTurn(state, rng, events = []) {
       continue;
     }
 
-    // a READ view of the persistent sheet: the combat level wins (`ally.lvl`),
-    // every field weaponDamage/maxCharges/canCast touch is defaulted so a
-    // sparse sheet never produces NaN damage (T-25.1-14). Writes go to
-    // `sheet` (the persistent object), never to `view`.
-    const view = {
-      ...sheet,
-      level: ally.lvl,
-      prof: sheet.prof ?? 0,
-      magicWpn: sheet.magicWpn ?? 0,
-      might: sheet.might ?? 0,
-      items: sheet.items ?? [],
-      skills: sheet.skills ?? {},
-      grimoire: sheet.grimoire ?? [],
-      spellsUsed: sheet.spellsUsed ?? 0,
-    };
+    const view = memberView(sheet, ally);
+
+    // Phase 38 (ABIL-05) — a classed Fighter/Thief member fights by class
+    // AND by kit: a READY ability matching pickMemberAbility's policy
+    // (an opener in round 1; else a damage ability against a foe above half
+    // hp; else a defensive ability while the member itself is below half)
+    // is used instead of a plain strike, checked BEFORE the Magic User cast
+    // branch below. Structural guard (FID-02): a sheet with no `abilities`
+    // key, an empty list, or nothing ready/matching draws ZERO rng for the
+    // decision itself and falls through to today's cast/strike path
+    // byte-identically — false on every fixture (no fixture has a party).
+    if (sheet.abilities && sheet.abilities.length) {
+      const meta = pickMemberAbility(sheet, ally, C.round, foes[0]);
+      if (meta) {
+        resolveMemberAbility(state, ally, sheet, view, meta, foes[0], rng, events);
+        continue;
+      }
+    }
 
     if (sheet.cls === "Magic User") {
       const sp = bestAttackSpell({ c: view });
@@ -1396,41 +1407,238 @@ export function alliesTurn(state, rng, events = []) {
 }
 
 /**
- * memberStrike(state, ally, sheet, view, t, rng, events) — DFB-05: a party
- * member's melee swing (a Fighter's weapon, a Thief's dagger/backstab, or a
- * Magic User's staff when it has nothing left to cast). Mirrors
- * playerStrike's to-hit/crit/heavy-armor-denies-backstab shapes exactly
- * (VERBATIM heavy-armor list), but always deals physical `kind: "ally"`
- * damage (a member never takes the hero-only Fighter-vs-Trachea multiplier
- * row, D-20).
+ * memberView(sheet, ally) — Phase 38 (ABIL-05): today's `view` literal
+ * (DFB-05, Phase 25.1) factored out unchanged — a READ view of a party
+ * member's persistent sheet, the combat level winning (`ally.lvl`), every
+ * field weaponDamage/maxCharges/canCast/memberToHit/strikeDie touch
+ * defaulted so a sparse sheet never produces NaN (T-25.1-14). Used by
+ * alliesTurn (the class/kit policy + strike/cast dispatch) and foeTurn's
+ * member-branch Riposte counter. Writes go to `sheet` (the persistent
+ * object) or `ally` (the transient combat entry), never to this view.
+ */
+function memberView(sheet, ally) {
+  return {
+    ...sheet,
+    level: ally.lvl,
+    prof: sheet.prof ?? 0,
+    magicWpn: sheet.magicWpn ?? 0,
+    might: sheet.might ?? 0,
+    items: sheet.items ?? [],
+    skills: sheet.skills ?? {},
+    grimoire: sheet.grimoire ?? [],
+    spellsUsed: sheet.spellsUsed ?? 0,
+  };
+}
+
+/**
+ * pickMemberAbility(sheet, ally, round, target) — Phase 38 (ABIL-05): the
+ * Joiner class-driven use policy (38-CONTEXT.md "Joiners"). Pure, no rng —
+ * the pick itself never draws:
+ *   - round 1: the first READY ability tagged "opener" (`sheet.abilities`
+ *     order breaks ties).
+ *   - else a live `target` above half hp: the first READY ability tagged
+ *     "damage" (Last Stand excluded unless the member itself is at/below
+ *     the death-panic threshold — it is a desperation move, not a plain
+ *     damage pick).
+ *   - else the member itself below half hp: the first READY ability tagged
+ *     "defensive".
+ *   - else `null` (falls through to today's plain strike/cast).
+ * "READY" means owned (`sheet.abilities` includes the id), the id resolves
+ * in the catalog for THIS member's own class (T-38-09: an id belonging to
+ * the other class, or an unknown id, is silently ignored), and
+ * `isReady(sheet, "ability:"+id)` (Phase 36 `sheet.timers`).
+ */
+export function pickMemberAbility(sheet, ally, round, target) {
+  const owned = Array.isArray(sheet.abilities) ? sheet.abilities : [];
+  const ready = owned
+    .filter((id) => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].cls === sheet.cls && isReady(sheet, `ability:${id}`))
+    .map((id) => ABILITY_BY_ID[id]);
+  if (round === 1) {
+    const opener = ready.find((m) => m.tag === "opener");
+    if (opener) return opener;
+  }
+  if (target && target.wp > target.maxWP / 2) {
+    const dmg = ready.find((m) => m.tag === "damage" && (m.id !== "lastStand" || ally.wp <= ally.maxWP * DEATH_PANIC_THRESHOLD));
+    if (dmg) return dmg;
+  }
+  if (ally.wp < ally.maxWP / 2) {
+    const def = ready.find((m) => m.tag === "defensive");
+    if (def) return def;
+  }
+  return null;
+}
+
+/**
+ * startMemberAbilityTimer(sheet, meta) — the member-sheet analog of
+ * abilities.js#useAbility's own startAbilityTimer: the EXACT SAME
+ * DURATION_ROUNDS/ONCE_A_FIGHT mapping, applied to a Joiner's own
+ * `sheet.timers` (Phase 36) instead of the hero's `c.timers`.
+ */
+function startMemberAbilityTimer(sheet, meta) {
+  const id = `ability:${meta.id}`;
+  const cd = meta.cd === "fight" ? ONCE_A_FIGHT : meta.cd;
+  const durationRounds = DURATION_ROUNDS[meta.id];
+  if (durationRounds) {
+    startEffect(sheet, id, { rounds: durationRounds, cd });
+  } else {
+    startCooldown(sheet, id, { rounds: cd });
+  }
+}
+
+/**
+ * resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) —
+ * Phase 38 (ABIL-05): a Joiner's own ability use, mirroring
+ * abilities.js#useAbility's resolution switch one-for-one but on the
+ * member's OWN combat entry (`ally`) and persistent sheet (`sheet`), never
+ * the hero's `state.c`/`state.combat`. `applyPommel`/`applyDirtyTrick`/
+ * `applyPoison`/`applyHamstring`/`applyMark` (Plan 03) are reused verbatim —
+ * a Joiner's foe-flag ability sets the exact same fields on the exact same
+ * foe object shape the hero's does. Every Plan 03 activation/effect event
+ * this switch reuses gains an additive `member` field naming the actor.
+ */
+function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
+  events.push({
+    type: "memberAbilityUsed",
+    name: ally.name,
+    key: meta.id,
+    ability: meta.name,
+    ...(meta.target === "foe" ? { target: t.name } : {}),
+  });
+  startMemberAbilityTimer(sheet, meta);
+
+  switch (meta.id) {
+    case "kata":
+    case "feint":
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, autoHit: true, bonusDmg: ally.lvl });
+      return;
+    case "deathTouch":
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, forceCrit: true, finishUnder: 15 });
+      return;
+    case "silentStep":
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, autoHit: true, forceCrit: true });
+      return;
+    case "overheadBlow":
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, dmgMul: 2, needShift: -2 });
+      return;
+    case "lastStand": {
+      events.push({ type: "lastStandCalled", attacks: 3, member: ally.name });
+      const mod = { key: meta.id };
+      for (let i = 0; i < 3 && t.alive; i++) memberStrike(state, ally, sheet, view, t, rng, events, mod);
+      return;
+    }
+    case "pommelStrike":
+      applyPommel(t);
+      events.push({ type: "pommelStruck", target: t.name, member: ally.name });
+      return;
+    case "dirtyTrick":
+      applyDirtyTrick(t);
+      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: 2, member: ally.name });
+      return;
+    case "poisonedEdge":
+      applyPoison(t, { left: 3, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" });
+      events.push({ type: "poisonedEdgeApplied", target: t.name, rounds: 3, member: ally.name });
+      return;
+    case "hamstring":
+      applyHamstring(t);
+      events.push({ type: "hamstrung", target: t.name, member: ally.name });
+      return;
+    case "mark":
+      applyMark(t);
+      events.push({ type: "marked", target: t.name, member: ally.name });
+      return;
+    case "cutpurse": {
+      const amount = rng.d(10) * ally.lvl;
+      events.push({ type: "cutpursed", target: t.name, amount, member: ally.name });
+      gainWilmst(state, amount, "cutpurse", rng, events);
+      return;
+    }
+    // TASK2-PLACEHOLDER-START (secondWind/sweep/brace/riposte/taunt/sidestep/battleRoar/smoke land in Task 2)
+    default:
+      return;
+  }
+}
+
+/**
+ * memberStrike(state, ally, sheet, view, t, rng, events, mod = null) — DFB-05:
+ * a party member's melee swing (a Fighter's weapon, a Thief's dagger/
+ * backstab, or a Magic User's staff when it has nothing left to cast).
+ * Mirrors playerStrike's to-hit/crit/heavy-armor-denies-backstab shapes
+ * exactly (VERBATIM heavy-armor list), but always deals physical
+ * `kind: "ally"` damage (a member never takes the hero-only
+ * Fighter-vs-Trachea multiplier row, D-20).
  *
  * DELIBERATE RULES CHANGE (Phase 25.1, 2026-09-15, DFB-05): members fight by
  * class. `backstabUsed` is transient COMBAT state on the `C.allies` entry
  * (`ally`) — rebuilt by every startCombat, never synced to the persistent
  * sheet (endCombat only syncs `wp` out), and nulled with combat on load
  * (T-25.1-15: no new field on the persistent member sheet).
+ *
+ * Phase 38 (ABIL-05): `mod` is the member analog of playerStrike's transient
+ * `C.abilityStrike` descriptor — passed in directly by resolveMemberAbility
+ * rather than stashed on `ally`/`state.combat` (a Joiner never dispatches
+ * `useAbility`; there is no shared combat-scoped slot to clash over). `null`
+ * (the default) leaves every line below BYTE-IDENTICAL to before this plan.
+ * With a `mod`: `attacks` is never read here (a multi-attack ability's own
+ * loop, e.g. Last Stand, is the CALLER's — resolveMemberAbility); `needShift`
+ * shifts `need` before the roll (floor 1); `autoHit` skips the miss branch
+ * entirely; `bonusDmg` is added right after `weaponDamage`; `finishUnder`
+ * mirrors playerStrike's own gate exactly (ignores `noCrit`; the
+ * `weaponDamage` roll just taken is discarded, not skipped — same draw
+ * order as an ordinary strike); `forceCrit` sets `crit` subject to the
+ * member's own Guard/Soldier `noCrit` rule, with Silent Step specifically
+ * denied by the heavy-armor list (mirrors `AS.forceCrit`'s `deniedByHeavy`);
+ * `dmgMul` applies after the crit doubling; `allyMissed`/`allyStruck` gain
+ * an additive `via: mod.key`. `t.marked`'s +2 (playerStrike's own rule)
+ * applies UNCONDITIONALLY, `mod` or not — a marked foe takes +2 from every
+ * striker, hero or member alike; false on every fixture (no foe is ever
+ * marked before this plan's Mark ability exists).
  */
-function memberStrike(state, ally, sheet, view, t, rng, events) {
-  const need = memberToHit(view);
+function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
+  let need = memberToHit(view);
+  if (mod && mod.needShift) need = Math.max(1, need + mod.needShift);
   const roll = rng.d(strikeDie(view));
   const weapon = sheet.weapon;
-  if (roll > need) {
-    events.push({ type: "allyMissed", name: ally.name, target: t.name, roll, need, ...(weapon ? { weapon } : {}) });
+  const auto = !!(mod && mod.autoHit);
+  if (!auto && roll > need) {
+    events.push({
+      type: "allyMissed",
+      name: ally.name,
+      target: t.name,
+      roll,
+      need,
+      ...(weapon ? { weapon } : {}),
+      ...(mod ? { via: mod.key } : {}),
+    });
     return;
   }
   let dmg = weaponDamage(view, rng);
+  if (mod && mod.bonusDmg) dmg += mod.bonusDmg;
   const noCrit = view.sub === "Guard" || view.sub === "Soldier";
   let crit = roll === 1 && !noCrit;
+  // Phase 38 (ABIL-05): Death Touch's finish, mirroring playerStrike's own
+  // gate exactly.
+  if (mod && mod.finishUnder && t.wp < mod.finishUnder) {
+    events.push({ type: "deathTouch", target: t.name, via: mod.key, member: ally.name });
+    t.wp = 0;
+    killFoe(state, t, rng, events);
+    return;
+  }
   let backstab = false;
   // "Heavy armor negates any advantages they may gain for stealthiness" —
   // the hero's exact list (playerStrike), copied verbatim.
   const heavy = view.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(view.armor);
-  if (view.cls === "Thief" && !ally.backstabUsed && !heavy) {
+  if (mod && mod.forceCrit) {
+    const deniedByHeavy = mod.key === "silentStep" && heavy;
+    if (!noCrit && !deniedByHeavy) crit = true;
+  }
+  if (!mod && view.cls === "Thief" && !ally.backstabUsed && !heavy) {
     crit = true;
     backstab = true;
     ally.backstabUsed = true; // the transient combat entry, not the sheet
   }
   if (crit) dmg *= 2;
+  if (mod && mod.dmgMul) dmg *= mod.dmgMul;
+  if (t.marked) dmg += 2;
   const hit = damageFoe(state, t, dmg, { kind: "ally", crit }, rng, events);
   if (!hit.soaked)
     events.push({
@@ -1441,6 +1649,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events) {
       ...(weapon ? { weapon } : {}),
       ...(crit ? { crit: true } : {}),
       ...(backstab ? { backstab: true } : {}),
+      ...(mod ? { via: mod.key } : {}),
     });
   if (t.wp <= 0) killFoe(state, t, rng, events);
 }
@@ -1576,6 +1785,7 @@ export function pickFoeTarget(state, rng, foe = null) {
   // False on every fixture (only useAbility's "taunt" case ever starts this
   // timer).
   if (abilityEffectActive(state.c, "taunt")) return null;
+  // TASK2-PLACEHOLDER: the member-own-Taunt bypass lands in Task 2.
   const pick = rng.d(liveMembers.length + 1);
   if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
@@ -1978,6 +2188,7 @@ export function foeTurn(state, rng, events = []) {
           mNeed += 1;
           mNeedMods.push({ name: "insulted", delta: mNeed - before });
         }
+        // TASK2-PLACEHOLDER: member-own Sidestep/Smoke need shifts land in Task 2.
         if (mRoll > mNeed) {
           // name the member as the intended target so a whiff at a party
           // member reads distinctly from a whiff at the hero (PARTY: Oracle
@@ -1991,6 +2202,7 @@ export function foeTurn(state, rng, events = []) {
             member: member.name,
             ...(mNeedMods.length ? { needMods: mNeedMods } : {}),
           });
+          // TASK2-PLACEHOLDER: member-own Riposte counter lands in Task 2.
           continue;
         }
         // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
@@ -2002,6 +2214,7 @@ export function foeTurn(state, rng, events = []) {
         // ever sets it).
         if (f.hamstrung) mDmg = Math.ceil(mDmg / 2);
         if (mRoll === 1) mDmg *= 2;
+        // TASK2-PLACEHOLDER: member-own Brace consumption lands in Task 2.
         member.wp -= mDmg;
         events.push({
           type: "memberStruck",
@@ -2113,5 +2326,6 @@ export function foeTurn(state, rng, events = []) {
   // initiative ticks twice, as ward does); guarded on c.timers; zero draws;
   // the return value is ignored until Phase 38 maps expiries to events.
   if (c.timers) tickRounds(c);
+  // TASK2-PLACEHOLDER: the per-member tickRounds tail loop lands in Task 2.
   return events;
 }
