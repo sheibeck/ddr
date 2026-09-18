@@ -43,7 +43,7 @@ already-tested, already-narrated shapes with no clarity gain from a rename).
 in the engine is named after fear (`frozen`/`afraid` never appear as a
 `reason` value); grep confirms zero occurrences in `engine/*.js`.
 
-## §2. Spells (`content/spells.js`, 32 rows)
+## §2. Spells (`content/spells.js`, 33 rows — Phase 40 adds Lesser Summon)
 
 Every spell's `combatOnly` flag classifies it as castable from the Hero tab
 outside an encounter (`false`) or requiring an active encounter to have any
@@ -58,7 +58,7 @@ outcome for every gated circumstance.
 | Strength | 1 | offense | might | false | `strengthCast` | `strengthCast` | `castRefused notFought` | casts at the penalty |
 | Doze | 1 | offense | status | true | `castRefused combatOnly` | `dozed` | `castRefused notFought` | casts at the penalty |
 | Freeze | 1 | offense | thrown | true | `castRefused combatOnly` | `spellThrown`/`spellHit`/`frozenSolid` | `castRefused notFought` | need −3 (6→3), dmg halved |
-| Detect Magic | 1 | divination | reveal | false | `detectMagic` | `detectMagic` | `castRefused notFought` | casts at the penalty |
+| Map the Floor (was Detect Magic) | 1 | divination | reveal | false | `detectMagic` | `detectMagic` | `castRefused notFought` | casts at the penalty |
 | Mirror Self | 1 | illusion | mirror | false | `mirrorSelf` | `mirrorSelf` | `castRefused notFought` | casts at the penalty |
 | Stun | 1 | offense | stun | true | `castRefused combatOnly` | `stunned` | `castRefused notFought` | casts at the penalty |
 | Weaken | 1 | offense | weaken | true | `castRefused combatOnly` | `weakened` | `castRefused notFought` | casts at the penalty |
@@ -66,13 +66,13 @@ outcome for every gated circumstance.
 | Stupidity | 2 | offense | stupid | true | `castRefused combatOnly` | `stupefied` | `castRefused notFought` | casts at the penalty |
 | Blind | 3 | offense | blind | true | `castRefused combatOnly` | `blinded` | `castRefused notFought` | casts at the penalty |
 | Shrink | 3 | offense | shrink | true | `castRefused combatOnly` | `shrunk` | `castRefused notFought` | casts at the penalty |
-| Ice | 3 | offense | thrown | true | `castRefused combatOnly` | `spellThrown`/`spellHit`/`frozenSolid` | `castRefused notFought` | need −3 (6→3), dmg halved |
+| Ice | 3 | offense | dot | true | `castRefused combatOnly` | `iceApplied` (Plan 02) | `castRefused notFought` | need −3 (6→3), dmg halved |
 | Earthquake | 4 | offense | quake | true | `castRefused combatOnly` | `earthquake` | `castRefused notFought` | dmg (incl. self-dmg) halved |
 | Noxious Vapor | 4 | offense | vapor | true | `castRefused combatOnly` | `vaporRolled` | `castRefused notFought` | casts at the penalty (no direct hero damage) |
 | Fireballs | 4 | offense | volley | true | `castRefused combatOnly` | `volley` | `castRefused notFought` | each bolt's dmg halved |
 | Petrify | 5 | offense | petrify | true | `castRefused combatOnly` | `petrified` | `castRefused notFought` | casts at the penalty |
 | Insane | 2 | offense | insane | true | `castRefused combatOnly` | `insaneRolled` | `castRefused notFought` | casts at the penalty |
-| Summon | 2 (★ Summoner: 1) | special | summon | false | `allyPending` | `allySummoned` | `castRefused notFought` | casts at the penalty |
+| Summon | 2 | special | summon | false | `allyPending` | `allySummoned` | `castRefused notFought` | casts at the penalty |
 | Fireball | 3 | offense | thrown | true | `castRefused combatOnly` | `spellThrown`/`spellHit` | `castRefused notFought` | need −3 (4→1), dmg halved |
 | Major Heal | 3 | healing | heal | false | `healed` | `healed` | `castRefused notFought` | casts at the penalty |
 | Bubble | 3 | protection | ward | false | `wardRaised` | `wardRaised` | `castRefused notFought` | casts at the penalty |
@@ -85,6 +85,7 @@ outcome for every gated circumstance.
 | Regeneration | 4 | healing | regen | false | `regenerationCast` | `regenerationCast` | `castRefused notFought` | casts at the penalty |
 | Mangle | 5 | offense | thrown | true | `castRefused combatOnly` | `spellThrown`/`spellHit` | `castRefused notFought` | need −3 (4→1), dmg halved |
 | Death | 5 | offense | death | true | `castRefused combatOnly` | `deathCast` | `castRefused notFought` | casts at the penalty |
+| Lesser Summon (new, Phase 40) | 1 | special | summon | false | `allyPending` | `allySummoned` | `castRefused notFought` | casts at the penalty |
 
 Every combat-only cast outside combat is `castRefused {spell, reason:
 "combatOnly"}` — no charge spent, zero rng, and (Earthquake/Death) no

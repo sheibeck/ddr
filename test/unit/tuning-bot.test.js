@@ -640,11 +640,11 @@ test("HARN-02: a strike-refused Wizard casts something else while charges remain
 
   const withUtilitySpells = mkState({
     combat,
-    c: mu({ sub: "Wizard", level: 1, grimoire: ["Detect Magic", "Strength"], spellsUsed: 0 }),
+    c: mu({ sub: "Wizard", level: 1, grimoire: ["Map the Floor", "Strength"], spellsUsed: 0 }),
   });
   const result = decideAction(withUtilitySpells, fixedPolicyRng, strikeBlockedCtx());
   assert.strictEqual(result.type, "castSpell");
-  assert.ok([idx("Detect Magic"), idx("Strength")].includes(result.idx));
+  assert.ok([idx("Map the Floor"), idx("Strength")].includes(result.idx));
 
   const emptyGrimoire = mkState({ combat, c: mu({ sub: "Wizard", level: 1, grimoire: [], spellsUsed: 0 }) });
   assert.deepStrictEqual(decideAction(emptyGrimoire, fixedPolicyRng, strikeBlockedCtx()), { type: "flee" });

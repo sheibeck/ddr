@@ -110,7 +110,7 @@ const lethalFoe = () => fixedFoe({ wp: 1, maxWP: 1 });
 // --- IDENT-01: Wizard melee rule --------------------------------------
 
 test("IDENT-01: a Wizard with a utility-only grimoire fights with the staff", () => {
-  const state = fixedState({ c: { sub: "Wizard", level: 1, grimoire: ["Heal", "Shield", "Detect Magic"], spellsUsed: 0 } });
+  const state = fixedState({ c: { sub: "Wizard", level: 1, grimoire: ["Heal", "Shield", "Map the Floor"], spellsUsed: 0 } });
   state.combat = fixedCombat([lethalFoe()]);
   const events = playerStrike(state, fakeRng(KILL_SEQUENCE), []);
   assert.equal(events.some((e) => e.type === "strikeRefused"), false, "no attack spell in the book -> no refusal");

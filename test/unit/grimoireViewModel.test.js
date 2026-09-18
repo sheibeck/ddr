@@ -58,9 +58,9 @@ test("grimoireViewModel: a Magic User with an empty grimoire reports isCaster=tr
 test("grimoireViewModel: rows sort by level, then alphabetically within a level", () => {
   // Wizard learns every school at level 0 (schoolGate defaults to 1) so no
   // gate blocks these — all four are lvl-1 spells except Acid (lvl 2).
-  const state = fixedState({ c: { grimoire: ["Weaken", "Detect Magic", "Acid", "Doze"], level: 3 } });
+  const state = fixedState({ c: { grimoire: ["Weaken", "Map the Floor", "Acid", "Doze"], level: 3 } });
   const vm = grimoireViewModel(state);
-  assert.deepEqual(vm.rows.map((r) => r.name), ["Detect Magic", "Doze", "Weaken", "Acid"]);
+  assert.deepEqual(vm.rows.map((r) => r.name), ["Doze", "Map the Floor", "Weaken", "Acid"]);
   assert.deepEqual(vm.rows.map((r) => r.lvl), [1, 1, 1, 2]);
 });
 
@@ -145,7 +145,7 @@ test("grimoireViewModel: a non-combat spell with no charges left is disabled (No
 });
 
 test("grimoireViewModel: never mutates state or advances rngState (read-only)", () => {
-  const state = fixedState({ c: { grimoire: ["Heal", "Fireball", "Detect Magic"], level: 3 } });
+  const state = fixedState({ c: { grimoire: ["Heal", "Fireball", "Map the Floor"], level: 3 } });
   const before = structuredClone(state);
   grimoireViewModel(state);
   assert.deepEqual(state, before);

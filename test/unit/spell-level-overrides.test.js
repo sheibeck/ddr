@@ -130,7 +130,7 @@ test("castableAttackSpells: Wizard L1 with Heal/Freeze/Doze returns Doze,Freeze 
 });
 
 test("castableAttackSpells: Wizard L1 with only utility spells returns []", () => {
-  const state = stateFor("Wizard", 1, ["Heal", "Shield", "Detect Magic"]);
+  const state = stateFor("Wizard", 1, ["Heal", "Shield", "Map the Floor"]);
   assert.deepStrictEqual(castableAttackSpells(state), []);
 });
 
@@ -164,9 +164,14 @@ test("ATTACK_SPELL_KINDS is exactly {status, thrown, stun, weaken}", () => {
   assert.deepStrictEqual([...ATTACK_SPELL_KINDS].sort(), ["status", "stun", "thrown", "weaken"]);
 });
 
-test("isAttackSpell: true for Doze/Freeze/Stun/Weaken/Ice/Fireball/Lightning/Mangle, false for the rest", () => {
-  const trueNames = ["Doze", "Freeze", "Stun", "Weaken", "Ice", "Fireball", "Lightning", "Mangle"];
-  const falseNames = ["Heal", "Shield", "Summon", "Phantom Host", "Acid", "Fireballs", "Earthquake", "Death"];
+// Phase 40 (SPELL-01): Ice's kind changed offense/thrown -> offense/dot (a
+// real per-round DOT, Plan 02) — `dot` was never in ATTACK_SPELL_KINDS
+// (Acid, the table's other dot-kind spell, was never an attack kind either),
+// so Ice moves from the true-list to the false-list here. This is a content
+// reshape, not an ATTACK_SPELL_KINDS definition change.
+test("isAttackSpell: true for Doze/Freeze/Stun/Weaken/Fireball/Lightning/Mangle, false for the rest (Ice is dot-kind, not an attack kind)", () => {
+  const trueNames = ["Doze", "Freeze", "Stun", "Weaken", "Fireball", "Lightning", "Mangle"];
+  const falseNames = ["Heal", "Shield", "Summon", "Phantom Host", "Acid", "Ice", "Fireballs", "Earthquake", "Death"];
   for (const n of trueNames) {
     const sp = SPELLS.find((s) => s.n === n);
     assert.ok(sp, `${n} must exist in SPELLS`);

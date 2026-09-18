@@ -34,8 +34,10 @@ test("RACE_D8: 6 distinct races, Human appears 3 times", () => {
   assert.equal(humanCount, 3);
 });
 
-test("SPELLS: 32 entries (the prototype's actual count)", () => {
-  assert.equal(SPELLS.length, 32);
+// Phase 40 (SPELL-01/05): the table grew to 33 rows — 32 canon rows plus
+// the new Lesser Summon (row 32).
+test("SPELLS: 33 entries (Phase 40 — the canon 32 plus Lesser Summon)", () => {
+  assert.equal(SPELLS.length, 33);
 });
 
 test("ENC_TYPES: 6 entries", () => {
@@ -126,12 +128,14 @@ test("SPELLS: every entry has a boolean combatOnly field", () => {
   }
 });
 
-test("SPELLS: 12 non-combat (utility/self) castable outside an encounter", () => {
+// Phase 40: Detect Magic -> Map the Floor (rename, still non-combat) and
+// Lesser Summon (new row, combatOnly: false) join the list — 13 entries.
+test("SPELLS: 13 non-combat (utility/self) castable outside an encounter", () => {
   const nonCombat = SPELLS.filter((sp) => !sp.combatOnly).map((sp) => sp.n).sort();
   assert.deepStrictEqual(nonCombat, [
-    "Bubble", "Detect Magic", "Heal", "Major Heal", "Mirror Self",
-    "Phantom Host", "Regeneration", "Sense Danger", "Sense Presence",
-    "Shield", "Strength", "Summon",
+    "Bubble", "Heal", "Lesser Summon", "Major Heal", "Map the Floor",
+    "Mirror Self", "Phantom Host", "Regeneration", "Sense Danger",
+    "Sense Presence", "Shield", "Strength", "Summon",
   ]);
 });
 

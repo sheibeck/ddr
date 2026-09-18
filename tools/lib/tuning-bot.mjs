@@ -307,12 +307,19 @@ export function chooseSpell(state, ctx) {
       if (!C || (C.type !== "Demons" && C.type !== "Walking Dead")) continue;
       score = 402;
       tier = "kill";
-    } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid") {
+    } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid" || sp.kind === "dot") {
       if (sp.kind === "acid" && target && target.acid) continue; // already ticking
       let expected = expectedDamage(sp);
       if (sp.n === "Lightning") expected *= Math.max(1, nFoes);
       else if (sp.kind === "volley") expected *= 4.5;
       else if (sp.kind === "acid") expected *= 2; // two rounds of ticks
+      // Phase 40 (SPELL-01): Ice's kind is now "dot" (content/spells.js), but
+      // its castSpell mechanic is still the plain single-hit default branch
+      // (engine/magic.js) until Plan 02 wires a real per-round tick — score
+      // it as a PLAIN thrown-tier hit (no multiplier) so it stays correctly
+      // ranked below Acid's proven x2 ticking value. Plan 02 revisits this
+      // once Ice gets its own f.dot tick and a real total-expected-damage
+      // formula (test/unit/tuning-bot.test.js's DAMAGE-tier ordering test).
       score = 300 + expected;
       tier = "damage";
     } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {

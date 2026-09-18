@@ -40,9 +40,9 @@
 // "cockatrice" never matches "cock"; "Scunthorpe" never matches). Because of
 // that, the ALLOWLIST below only needs to carry WHOLE words the game genuinely
 // uses that are themselves on a profanity list (e.g. the "Bastard Sword"
-// weapon, "balls" as magical fireball projectiles) — the true Scunthorpe
-// exceptions for THIS corpus. Every allowlist entry is annotated with where
-// the game actually uses it; nothing speculative is allowlisted.
+// weapon) — the true Scunthorpe exceptions for THIS corpus. Every allowlist
+// entry is annotated with where the game actually uses it; nothing
+// speculative is allowlisted.
 
 // ─── Vendored profanity / crude (LDNOOBW en subset, CC BY 4.0) ──────────────
 // Deliberately EXCLUDES words that are core, family-friendly fantasy-roguelike
@@ -224,9 +224,4 @@ export const ALLOWLIST = [
   // name in content/weapons.js (WEAPONS["Bastard Sword"]) and content/kit.js.
   // Collides with PROFANITY "bastard".
   "bastard",
-  // "d8 balls at d10+2 each" — the Fireballs spell description
-  // (content/spells.js), i.e. magical fire projectiles. Collides with
-  // PROFANITY "balls". (The spell NAME "Fireballs" does not collide: \bballs\b
-  // does not match mid-word, only the standalone projectile noun does.)
-  "balls",
 ];
