@@ -318,7 +318,25 @@ Plans:
   3. Standing on a dark square without Night Vision or a light effect shows only the 3×3 area around the party on the map; leaving the dark square restores the previously explored view.
   4. Entering water once triggers the Bodies-of-water phobia; a crevice/gorge climb can trigger Heights; a dead end can trigger Being-trapped; near-death can trigger Death — each named in the rail line, firing once on fresh entry rather than every step inside the region.
 
-**Plans**: TBD
+**Plans**: 4 plans (sequential waves 1–4; `mazeworld.html` touched only by 41-04). NOTE (planning, 2026-09-18): the `state.terrainRoll` run-flag wording in the goal/SC-1/Research flag above is SUPERSEDED by 41-CONTEXT.md's greenfield ruling — water is generated for every run from a derived rng stream after every existing `genFloor` draw (zero main-rng draws, proven by a draw-count/rng-state pin); SC-1 reads "no main-rng draw moves; the fixtures that step onto water are measured and declared".
+
+Plans:
+**Wave 1**
+
+- [ ] 41-01-PLAN.md — Water pools on a derived rng stream: `placeWater` LAST in `genFloor` keyed `derivedRng(cursor, "terrain", depth)`, `difficultyCurve().waterPools` depth curve (1 → 3 by depth 9, breathers 1, pools 3–8 cells, never on feats/spawn/exit-adjacent), the pre-change draw-count/rng-state pin, `cell.water` structural carve-out (3 comparables + 3 dupes), tolerant load, `tools/terrain-fixture-scan.mjs` live fixture-roster scan (measured, recorded in FIXTURE-INVENTORY.md), `docs/TERRAIN.md` created
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 41-02-PLAN.md — TERR-02 Key Decision "one tap, two squares of time": `moveCost(state, cell)` derived read, `state.steps += cost` with a `crossings(n)` cadence rule (a +2 step never skips the 20/100-square boundaries), `tickSquares(c, cost)` once, `c.darkFor`/affliction/cloak/spell-charge/newDay by cost, flying/ether exempt, `waded` narration, bot water-pathing proof, the measured movement-fixture `action-path` declaration (only if the scan hit), ledger section
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 41-03-PLAN.md — TERR-04/05 Key Decision "arm Afraid for the next fight": `engine/phobias.js` region model (`c.phobiaState`), five triggers (water cell / unlit square / climb-gorge attempt before the roll / dead end / HP ≤ 25% re-arming above 50%, in and out of combat), `c.fearArmed` read as `fight()`'s fourth OR-condition and consumed there, existing roll penalties + trapped hp loss untouched, `phobiaTriggered` narration naming the trigger on all three surfaces, `fearArmed` chip data, harness carve-out + tolerant load, ledger section
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 41-04-PLAN.md — Shell close: TERR-03 `mapViewRadius`/`inViewWindow` pure reads consumed by `draw()` as a 3×3 render filter (seen untouched, restores on leaving), water paint (`MAP_PALETTE.water`/`waterDark`, Phase 40 spellSeen pin intact), water hold-inspect copy, "Rattled" chip copy, source-pin tests, `docs/TERRAIN.md` UI + requirements map close, REQUIREMENTS.md TERR-01..05 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md` (two Key Decisions)
+
 **Research flag**: Yes — the `genFloor`/`terrainRoll` parity gate is the single highest parity risk in the milestone (every fixture, bot run, and old save calls `genFloor`); the phase's own plan must include a live fixture-roster scan and an explicit draw-count table before any code lands, mirroring `storeRoll` exactly. Recommend `--research-phase`.
 **UI hint**: yes
 
