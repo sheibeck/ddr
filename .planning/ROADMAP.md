@@ -37,7 +37,7 @@ Every phase in this milestone touches serialized character/combat/floor state an
 - [x] **Phase 37: Equipment Slot Model & eff() Refactor** - One worn item per slot type, with a narrated migration for any old save that illegally has two — the widest-blast-radius change in the milestone, landed alone. (completed 2026-09-17)
 - [x] **Phase 38: Melee Active Abilities** - Fighters and Thieves get a rolled pool of class-flavored active abilities with cooldowns, plus select passive skills converted to actives, all surfaced in the combat ABILITIES submenu. (completed 2026-09-18)
 - [x] **Phase 39: Gear, Magic Items & One-Shot Tools** - Weapons/armor are rebalanced for real trade-offs, every activatable magic item follows one use-effect-cooldown model, and rope/ladder/torch give players a consumable answer to a specific hazard each. (completed 2026-09-18)
-- [ ] **Phase 40: Spell Rework** - Combat spells are differentiated by niche instead of a damage ladder, every utility spell has a felt effect, every Wizard sub-class starts with a damage spell, Detect Magic is renamed and time-boxed, and scribed scrolls are instantly castable.
+- [x] **Phase 40: Spell Rework** - Combat spells are differentiated by niche instead of a damage ladder, every utility spell has a felt effect, every Wizard sub-class starts with a damage spell, Detect Magic is renamed and time-boxed, and scribed scrolls are instantly castable. (completed 2026-09-18)
 - [ ] **Phase 41: Terrain, Darkness & Phobias** - Water squares cost extra movement and can scare swimmers, a dark square fogs the view to a 3×3 window, and every phobia has a real, once-per-entry trigger.
 - [ ] **Phase 42: Flee Retune & Consolidated Balance Close** - Flee odds are lower and shown transparently, and the ONE consolidated AFTER class-matrix run verifies abilities + gear + spells together against the depth-20 target.
 - [ ] **Phase 43: Clarity Pass** - Every costly line names its cause, every loot offer shows who can use it, ration math is honest, and the Gear screen splits into ON YOU and BAG.
@@ -286,23 +286,23 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 40-01-PLAN.md — Content reshape + day-one damage: the 33-row table (`niche` + one-line niche `txt` on every row, Detect Magic → Map the Floor, `onHit`/`aoe` flags, Ice as `dot`, the level-1 special-school Lesser Summon), `SPELL_LEVEL_OVERRIDES.Summoner` retired, `rollGrimoire` derived-stream insertion (chargen cursor unmoved) + Summoner grant + `dealsDamage` day-one walk, 8-sub × 200-seed proof, declared grimoire fixture divergences, `docs/SPELLS.md` created
+- [x] 40-01-PLAN.md — Content reshape + day-one damage: the 33-row table (`niche` + one-line niche `txt` on every row, Detect Magic → Map the Floor, `onHit`/`aoe` flags, Ice as `dot`, the level-1 special-school Lesser Summon), `SPELL_LEVEL_OVERRIDES.Summoner` retired, `rollGrimoire` derived-stream insertion (chargen cursor unmoved) + Summoner grant + `dealsDamage` day-one walk, 8-sub × 200-seed proof, declared grimoire fixture divergences, `docs/SPELLS.md` created
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 40-02-PLAN.md — Offense mechanics: data flags replace every name-keyed check (engine + bot), Ice DOT via `f.dot` with the frozen-solid payoff, Lesser Summon cast branch (no doubling/backfire), Weaken on a `spell:weaken` rounds timer with `weakenFaded`, Stupidity for the fight, Shrink's half damage made true, narration
+- [x] 40-02-PLAN.md — Offense mechanics: data flags replace every name-keyed check (engine + bot), Ice DOT via `f.dot` with the frozen-solid payoff, Lesser Summon cast branch (no doubling/backfire), Weaken on a `spell:weaken` rounds timer with `weakenFaded`, Stupidity for the fight, Shrink's half damage made true, narration
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 40-03-PLAN.md — Utility visibility + scrolls: `conditionsOf` chips for mirror/senses/regen/foresight, Sense Presence's initiative meaning + stated expiry, endCombat expiry narration, `readScroll` aligned with `canCast` + `scrollTooAdvanced` naming the level
+- [x] 40-03-PLAN.md — Utility visibility + scrolls: `conditionsOf` chips for mirror/senses/regen/foresight, Sense Presence's initiative meaning + stated expiry, endCombat expiry narration, `readScroll` aligned with `canCast` + `scrollTooAdvanced` naming the level
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 40-04-PLAN.md — Map the Floor: per-cell `spellSeen` provenance, `spell:reveal` 40-square timer, walking graduates cells, one expiry sweep + `revealFaded`, recast refresh, descend clears, `reveal` chip, harness carve-out (3 comparables + 3 dupes), tolerant load (stale flags + retired name), the ratified re-fog Key Decision in the ledger
+- [x] 40-04-PLAN.md — Map the Floor: per-cell `spellSeen` provenance, `spell:reveal` 40-square timer, walking graduates cells, one expiry sweep + `revealFaded`, recast refresh, descend clears, `reveal` chip, harness carve-out (3 comparables + 3 dupes), tolerant load (stale flags + retired name), the ratified re-fog Key Decision in the ledger
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 40-05-PLAN.md — Shell + close: niche on both spell-row view models, chip copy for the five new chips, Hero-tab ward rounds + spell rows, foe-badge durations, spell-seen map tint, ledger UI/requirements map, REQUIREMENTS SPELL-01..07 complete, whole-phase gate, aggregated Pixel 7 checklist, PROJECT.md call-outs for the orchestrator
+- [x] 40-05-PLAN.md — Shell + close: niche on both spell-row view models, chip copy for the five new chips, Hero-tab ward rounds + spell rows, foe-badge durations, spell-seen map tint, ledger UI/requirements map, REQUIREMENTS SPELL-01..07 complete, whole-phase gate, aggregated Pixel 7 checklist, PROJECT.md call-outs for the orchestrator
 
 **Research flag**: Yes — the offense-school niche re-derivation and the control-spell scope/duration axis are genuine design/balance decisions, not mechanical extensions; the Detect Magic re-fog provenance question (does normal exploration during the reveal window keep what it would have revealed anyway, or does everything the spell touched re-fog unconditionally?) must be ratified as a Key Decision before implementation. Recommend `/gsd-discuss-phase` or `--research-phase` before planning.
 
@@ -407,7 +407,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
 | 38. Melee Active Abilities | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 5/5 | Complete    | 2026-09-18 |
-| 40. Spell Rework | v1.5 | 0/? | Not started | - |
+| 40. Spell Rework | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 41. Terrain, Darkness & Phobias | v1.5 | 0/? | Not started | - |
 | 42. Flee Retune & Consolidated Balance Close | v1.5 | 0/? | Not started | - |
 | 43. Clarity Pass | v1.5 | 0/? | Not started | - |

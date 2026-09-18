@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-status: executing
+current_phase: 41
+current_phase_name: Terrain, Darkness & Phobias
+status: planning
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-18T15:58:10.452Z"
+last_updated: "2026-09-18T18:12:28.769Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 40 complete, transitioned to Phase 41
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 25
-  completed_plans: 20
-  percent: 50
-current_phase: 40
-current_phase_name: Spell Rework
+  completed_plans: 25
+  percent: 63
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 ## Current Position
 
-Phase: null — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase null
-Last activity: 2026-09-18 — Phase null execution started
+Phase: 41 — Terrain, Darkness & Phobias
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-18 — Phase 40 complete, transitioned to Phase 41
 
 ## Ground Truth (durable facts every session needs)
 
