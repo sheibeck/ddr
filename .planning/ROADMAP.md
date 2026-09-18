@@ -245,11 +245,26 @@ Plans:
 **Plans**: 5 plans (sequential waves 1–5; `mazeworld.html` touched only by 39-05)
 
 Plans:
+**Wave 1**
+
 - [ ] 39-01-PLAN.md — GEAR-01 axes: weapon `need`/`crit`, armor `bulk`, re-diced/re-priced tables (key order pinned), engine reads (toHit/crit/climb/leap/flee/stealth), expected-strike upgrade heuristic, declared fixture divergences (economy + measured combat)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 39-02-PLAN.md — GEAR-01 close: tuning-bot store buy/equip policy on expectedStrike + bulk, 429-run class-matrix smoke vs the v1.5 BEFORE pin, `docs/GEAR-BALANCE.md` before/after ledger
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 39-03-PLAN.md — GEAR-02 engine: `ACTIVATION_OF` content declarations (duration+cd / charges+recharge / consumables), timer-backed `itemReady`/`useItem` on `c.timers`, counter retirement (haste/invis/ether/acute/flight/potion might/usedAt), tick-site narration, `conditionsOf` chips, tolerant save fold, harness carve-out
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 39-04-PLAN.md — GEAR-05 engine: rope/ladder/torch as `kind: "tool"` items (loot via derived rng, store by tier), `pendingHazard` pre-roll decision + `useTool` action, torch lights/holds off `c.darkFor`, narration, `pendingHazard` carve-out
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 39-05-PLAN.md — Shell + close: hazard decision/retry/dark rail cards (USE LADDER / USE ROPE / USE TORCH), `itemRowState` for Gear-tab + ITEMS rows, item chips + tap explanations, engine-routed Hero-tab to-hit, ledger requirements map, whole-phase gate, aggregated Pixel 7 checklist
+
 **Research flag**: Standard/precedented for the item-cooldown extension (research: `itemReady`/`useItem` already has this exact shape; Lockpicks is the existing 1:1 tool precedent). Light discussion optional for GEAR-01's specific weapon/armor rebalance numbers only.
 
 ### Phase 40: Spell Rework
