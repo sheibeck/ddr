@@ -44,6 +44,11 @@ Applied:
 - **Chips:** `conditionsOf(state)` (`engine/derived.js:351`) enumerates one chip per live item effect ("Haste · 23") and one per cooling item ("Cloak of Speed · cd 41") and one per recharging staff ("Pine Staff · 1/3 · 17"); the Gear tab / ITEMS submenu rows show the same remaining numbers and READY, mirroring the Phase 38 ability rows (READY / N ROUNDS). Tapping a chip explains it (existing behaviour).
 - **Fixtures follow:** the magic/movement/economy fixtures that use an item or drink a potion WILL move (the timer records replace the counters; Strength now expires). Declare each in `test/parity/FIXTURE-INVENTORY.md` with the before/after and regenerate only those. The Phase 37 `docs/GEAR-SLOTS.md` inventory of `eff()` call sites is the map for the counter retirement.
 
+### Post-planning ruling — ONCE A DAY (user, 2026-09-18, after 39-01 dispatch)
+> "100 squares is one day. Given that, items should be usable at least once a day"
+
+Applied to Area 2: for every activation `effect + cd <= 100` squares and every staff `recharge <= 100` squares per charge. Rows that exceeded it are re-authored in `content/treasure-tables.js` (`every` AND `txt`, no stale text): Amulet of Stone 200 → 100; Cloak of Invisibility 100/100 → 50 effect / 50 cd; Cloak of Ether 20 + 100 → 20 + 80; Oak/Pine/Cedar Staff recharge 150 → 100. Fixtures that roll those items are measured and declared. 39-03-PLAN.md carries the updated numbers; `docs/GEAR-BALANCE.md` states the rule once.
+
 ### Area 3 — GEAR-01 gear axes: **option 1 (new axes on weapons AND armor, prices rebanded)** with the user's correction
 > "The problem with - to hit is that our current hit ranges are lowest never hits. A range of 1-6 is a hit with a to hit penalty is brutal at low levels. But still seems best. Remember, that would make it a + to hit as a penalty instead of minus. So, go with option #1"
 
