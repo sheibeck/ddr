@@ -169,6 +169,45 @@ function clearFoeEffect(c) {
 }
 
 /**
+ * sanitizePhobiaFields(c) — Phase 41 (TERR-04/05) load-tolerance for
+ * `c.phobiaState`/`c.fearArmed` (engine/phobias.js), mirroring clearFoeEffect
+ * immediately above's "present-but-tampered is neutralised, absent is never
+ * injected" discipline:
+ * - `"phobiaState" in c` and the value is not a plain (non-null, non-array)
+ *   object -> the key is DELETED outright (a tampered `"x"`/`[]`/`null`/`7`).
+ * - a genuine `c.phobiaState` object has every entry whose value is neither
+ *   a `boolean` NOR a `string` deleted (the Heights tile-key entry is a
+ *   string; every other entry is a boolean) — a tampered `Death: 7` or
+ *   `Heights: {}` is dropped, a genuine `Death: true`/`Heights: "3,4"`
+ *   survives.
+ * - `"fearArmed" in c` and the value is not a plain object with a string
+ *   `phobia` AND a string `trigger` -> the key is DELETED outright.
+ * When either key is ABSENT this does NOTHING — a save that never had
+ * either field must not gain one (this function NEVER injects — only
+ * engine/phobias.js's own trigger functions ever create the keys). Mutates
+ * and returns the passed `c`.
+ */
+function sanitizePhobiaFields(c) {
+  if (!c || typeof c !== "object" || Array.isArray(c)) return c;
+  if ("phobiaState" in c) {
+    if (!c.phobiaState || typeof c.phobiaState !== "object" || Array.isArray(c.phobiaState)) {
+      delete c.phobiaState;
+    } else {
+      for (const key of Object.keys(c.phobiaState)) {
+        const v = c.phobiaState[key];
+        if (typeof v !== "boolean" && typeof v !== "string") delete c.phobiaState[key];
+      }
+    }
+  }
+  if ("fearArmed" in c) {
+    const fa = c.fearArmed;
+    const valid = fa && typeof fa === "object" && !Array.isArray(fa) && typeof fa.phobia === "string" && typeof fa.trigger === "string";
+    if (!valid) delete c.fearArmed;
+  }
+  return c;
+}
+
+/**
  * clearStaleTimers(c) — Phase 36 (BAL foundation) load-tolerance for
  * `c.timers` (engine/effects.js), mirroring clearFoeEffect immediately
  * above: when `c` is a non-null, non-array object AND the `"timers"` key is
@@ -499,7 +538,7 @@ export function validateSave(raw, options = {}) {
   // see whatever c.timers looks like AFTER foldLegacyCounters, since that is
   // the only migration step that could ever touch c.timers.
   const migratedC = foldLegacyCounters(
-    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c))))), seed),
+    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), seed),
     steps,
   );
 
@@ -608,7 +647,7 @@ export function rehydrate(obj, options = {}) {
   // output), so it needs the identical migrateSpellNames/clearStaleSpellSeen
   // treatment to stay consistent between the two entry points.
   const migratedC = foldLegacyCounters(
-    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c))))), obj.seed),
+    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), obj.seed),
     obj.steps ?? 0,
   );
   const state = {

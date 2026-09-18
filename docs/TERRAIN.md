@@ -198,7 +198,125 @@ dial blind.
 
 ## Phobia triggers — Key Decision (Plan 03)
 
-(appended by Plan 03)
+**"Arm Afraid for the next fight"** (user-chosen, ratified — `41-CONTEXT.md`
+Area 3, 2026-09-18):
+
+> A fresh terrain-phobia trigger: (1) narrates immediately on the rail with
+> the trigger named (`phobiaTriggered { phobia, trigger }` — e.g. "Water.
+> You knew this was coming."), (2) sets a zero-rng `c.fearArmed = { phobia,
+> trigger }` flag that `fight()`'s existing Afraid trigger check reads as
+> one more OR-condition, so the NEXT fight opens Afraid through the real
+> mechanism; the flag clears when that fight ends [planner ruling: clears at
+> `fight()` itself, consumed whether or not Hardiness shrugs it off — not on
+> leaving the region, not at `endCombat`/`descend`]. Never a lost action.
+> Existing mechanics stay as-is and are NOT double-counted:
+> `heightsPenalty`/`waterPenalty` still land on the climb/leap roll itself;
+> Being-trapped keeps its existing flat hp loss (`trappedPanic`) and gains
+> only the fresh-entry debounce + narration.
+
+**CONTEXT clarification (planner interpretation, binding for this plan):**
+ALL FIVE terrain phobias arm Afraid for the next fight (TERR-05's literal
+text) — "Being-trapped keeps its existing flat hp loss and gains only the
+fresh-entry debounce + narration" means the hp loss is retained and NOT
+replaced; the arm applies to it like the other four.
+
+### Trigger table
+
+| Phobia | Trigger key | Region model | Re-arm rule | Existing mechanic kept |
+|---|---|---|---|---|
+| Bodies of water | `water` | `cell.water === true` at the hero's tile | leaving the water cell | none (no prior standalone mechanic) |
+| Darkness | `dark` | `inDark(state)` (tile `.dark` OR `c.darkFor > 0`) | leaving dark (`inDark` false) | none (`heightsFear`/`waterFear` are Heights/Water only) |
+| Heights | `heights` | a tile-key string on the ATTEMPTED climb/gorge tile | more than 1 square (Manhattan) from that tile | `heightsPenalty` still lands on the climb roll itself |
+| Being trapped | `deadEnd` | `isDeadEnd(f, px, py)` (<=1 open orthogonal neighbour) | leaving the dead end | `trappedPanic`'s flat hp loss (its own per-tile debounce, unchanged) |
+| Death | `nearDeath` | hp <= 25% of maxWP (`DEATH_PANIC_THRESHOLD`) | hp climbs back ABOVE 50% (`DEATH_REARM_FRACTION`) | `fight()`'s existing `nearDeathPanic` start-of-combat check, unaffected |
+
+### `fearArmed` lifecycle
+
+- **Set** by `armFear(state, trigger, events)` (engine/phobias.js) — the ONE
+  push site for `{ type: "phobiaTriggered", phobia, trigger }` in the whole
+  engine.
+- **Read + consumed** at `engine/combat.js#fight()`, BEFORE the trigger
+  check: `armed = fearArmed && fearArmed.phobia === c.phobia`, then
+  `delete c.fearArmed` unconditionally (spent whether or not Hardiness then
+  shrugs off the resulting Afraid effect, and even when the arm is STALE —
+  a `newPhobia` reroll between the trigger and the fight drops a now-
+  mismatched arm here too, via the same phobia-match guard).
+- **Survives** `endCombat` and `descend()` — deliberately, so a Death
+  crossing mid-fight (or a wade with no fight on that floor) still lands on
+  the NEXT fight, not just the current floor.
+- **Additive event shape:** `phobiaAfraid` gains a `trigger` key ONLY when
+  armed (`{ ...(armedTrigger ? { trigger: armedTrigger } : {}) }`) — the
+  pre-Phase-41 shape (`{ type, rounds }`) is byte-identical for every
+  non-armed trigger (every parity fixture).
+- Hardiness's existing `rng.d(2)` shrug-off check is UNCHANGED — still drawn
+  only when some OR-condition (now four instead of three) is already true.
+
+### The Heights tile-key model and the one-square leave rule
+
+Heights is the one phobia whose region is not a plain boolean: `noteHeights
+Attempt(state, x, y, events)` (called from the climb/gorge roll branch,
+BEFORE the roll, for every attempt regardless of phobia) stores
+`c.phobiaState.Heights = "x,y"` (via `tileKey`) on a FRESH tile only — a
+retry of the identical tile is silent. `checkTerrainPhobias`'s own Heights
+branch runs ONLY the leave-check: once the hero's current position is more
+than 1 square (Manhattan distance) from the stored tile, the key flips to
+`false`, so a later attempt (even at the SAME tile) fires again. The
+`hazardChoice` pending pre-check (a carried rope/ladder) never reaches
+`noteHeightsAttempt` — only the declined ("CLIMB IT"/"LEAP IT") retry does;
+the flyOver/ether/tool branches never reach it either (all three are
+alternate branches inside the SAME climb/gorge block, exclusive of the roll
+branch `noteHeightsAttempt` sits in).
+
+### The dead-end definition
+
+`isDeadEnd(f, x, y)` (moved verbatim from `engine/movement.js` into
+`engine/phobias.js` — `trappedPanic`'s own entry check now imports it from
+there too): a cell with AT MOST one non-wall orthogonal neighbour. Unchanged
+from the 04.1-06 PHOBIA-01 definition; `trappedPanic`'s existing per-TILE
+debounce (`there.trapPanicked`) is completely independent of the region
+model's per-CHARACTER `c.phobiaState["Being trapped"]` toggle — the two can
+diverge (trappedPanic silent on a re-entry into the SAME dead end;
+phobiaTriggered fires again, since leaving the tile already reset the
+region).
+
+### The Death hysteresis
+
+`checkDeathPhobia(state, events)` — called both from `checkTerrainPhobias`
+(the movement/teleport fresh-entry site) and directly from
+`engine/combat.js#foeTurn`'s tail (after the allies ability-cooldown loop,
+before `return events`) — is the in-combat half of the same trigger: a
+foe's blows can cross the 25%/50% lines mid-fight, not just at `fight()`'s
+own start-of-combat `nearDeathPanic` check. `was`/`enter`/`stay` compute the
+hysteresis: enters at/below 25% of maxWP, stays armed until hp climbs back
+ABOVE 50% — a deliberately wide band so a hero hovering near 25% does not
+re-trigger on every single hp tick. Zero rng draws either way.
+
+### Harness/tolerant-load rules
+
+`c.phobiaState`/`c.fearArmed` are a STRUCTURAL parity carve-out
+(`stripPhobiaFields`, `test/parity/harness/comparables.js`), the same
+category as `stripTimersField`/`stripWornField`/`stripAbilitiesField` — no
+fixture hero with a terrain phobia ever has a `move` action in its script
+(measured: `TERRAIN TRIGGER EXPOSURE: 0`, `tools/terrain-fixture-scan.mjs`;
+full table in `test/parity/FIXTURE-INVENTORY.md`'s Plan 03 section), so this
+is a tripwire for a future phobia-driving fixture, not a declared, measured
+divergence. `engine/saveState.js#sanitizePhobiaFields` mirrors
+`clearStaleTimers`/`sanitizeWorn`'s exact discipline: a present-but-tampered
+value is neutralised (a non-object `phobiaState` deleted outright; a
+non-boolean/non-string entry inside a genuine map dropped; a `fearArmed`
+missing a string `phobia`/`trigger` deleted), absent is NEVER injected —
+wired into both `validateSave` and `rehydrate`'s `migratedC` chains, right
+after `clearFoeEffect`.
+
+### "Never a lost action"
+
+Every trigger in this plan (including the Death crossing mid-fight) only
+ever ARMS a flag or narrates — nothing here refuses an action, matching the
+Phase 31 ruling (user, 2026-09-16: "Phobia should be penalties, never a no
+actions state"). See `test/unit/afraid.test.js` (iv)'s action list (strike/
+cast/drink/read/use/flee/parley/sing, all never refused for fear) — this
+plan's own tests re-prove the same guarantee for an armed-then-fought
+character (`test/unit/phobia-triggers.test.js`).
 
 ## Darkness filter, map paint and UI (Plan 04)
 

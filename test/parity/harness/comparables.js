@@ -241,6 +241,24 @@ function stripAbilitiesField(c) {
   return rest;
 }
 
+/** stripPhobiaFields(c) — Phase 41 (TERR-04/05) adds `c.phobiaState` (the
+ * region model — engine/phobias.js) and `c.fearArmed` (the "arm Afraid for
+ * the next fight" flag), both brand-new engine-only fields with NO
+ * prototype-side equivalent — the frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) never sets either. A STRUCTURAL
+ * carve-out, the same category as stripTimersField/stripWornField/
+ * stripAbilitiesField above: no fixture hero with a terrain phobia ever has
+ * a `move` action in its script (measured by the live scan — see
+ * tools/terrain-fixture-scan.mjs's TERRAIN TRIGGER EXPOSURE line and
+ * test/parity/FIXTURE-INVENTORY.md's Plan 03 section), so both fields are a
+ * no-op on every current fixture — this strip is a tripwire for a FUTURE
+ * phobia-driving fixture, not a declared, measured divergence today. */
+function stripPhobiaFields(c) {
+  if (!c) return c;
+  const { phobiaState, fearArmed, ...rest } = c;
+  return rest;
+}
+
 /** stripSpellSeen(floor) — Phase 40 (SPELL-05, Plan 04) adds `cell.spellSeen`,
  * a brand-new engine-only LAZILY-SET per-cell provenance flag (engine/
  * maze.js#reveal/refogSpellSeen) with NO prototype-side equivalent — the
@@ -470,7 +488,7 @@ export function movementComparable(state) {
   // Phase 41 (TERR-01): strip the new engine-only water flag too (see
   // stripWaterField above) — the same structural-carve-out category.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
   return rest;
 }
 
@@ -554,7 +572,7 @@ export function combatComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
   // Phase 41 (TERR-01): see movementComparable's rationale above.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
   return rest;
 }
 
@@ -1063,7 +1081,7 @@ export function economyComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
   // Phase 41 (TERR-01): see movementComparable's rationale above.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(stripPhobiaFields(rest.c)))))))))))))));
   return rest;
 }
 

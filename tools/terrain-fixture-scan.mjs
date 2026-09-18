@@ -26,6 +26,8 @@ import url from "node:url";
 
 import { newRun, applyAction } from "../engine/engine.js";
 import { applyStartCombat } from "../test/parity/harness/comparables.js";
+import { isDeadEnd, TERRAIN_PHOBIAS } from "../engine/phobias.js";
+import { DIRV } from "../engine/movement.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, "..", "test", "parity", "fixtures");
@@ -51,6 +53,14 @@ function waterCellsOf(floor) {
  * and records a hit. Also snapshots the full water-cell list for depth 1
  * (the starting floor) and depth 2 (the first floor reached after a
  * descend, if the script ever descends) for the report's reference table.
+ *
+ * Phase 41 (TERR-04/05, Plan 03): also flags, per `move`, whether the
+ * destination is `.dark` (darkHits) or a dead end (deadEndHits, via the
+ * SAME `isDeadEnd` engine/phobias.js exports), and whether the ATTEMPTED
+ * tile (read BEFORE the move — before a successful climb/gorge clears its
+ * `.feat`) is a climb/gorge tile (climbGorgeAttempts) — the three region/
+ * attempt triggers this fixture's hero could ever exercise, measured live
+ * rather than assumed.
  */
 function scanMovementFixture(fixtureFile) {
   const fixture = readFixture(fixtureFile);
@@ -64,9 +74,20 @@ function scanMovementFixture(fixtureFile) {
   snapshotDepth(state);
 
   let moveCount = 0;
+  let darkHits = 0;
+  let deadEndHits = 0;
+  let climbGorgeAttempts = 0;
   for (let i = 0; i < fixture.actions.length; i++) {
     const action = fixture.actions[i];
-    if (action.type === "move") moveCount++;
+    if (action.type === "move") {
+      moveCount++;
+      const f = state.floor;
+      const [dx, dy] = DIRV[action.dir] || [0, 0];
+      const tx = f.px + dx;
+      const ty = f.py + dy;
+      const target = f.g[ty] && f.g[ty][tx];
+      if (target && (target.feat === "climb" || target.feat === "gorge")) climbGorgeAttempts++;
+    }
     const before = { px: state.floor.px, py: state.floor.py, depth: state.floor.depth };
     const { state: next } = applyAction(state, action);
     if (action.type === "move") {
@@ -77,13 +98,15 @@ function scanMovementFixture(fixtureFile) {
         if (cell && cell.water === true) {
           hits.push({ fixture: fixtureFile, seed: fixture.seed, action: i, depth, x: px, y: py });
         }
+        if (cell && cell.dark === true) darkHits++;
+        if (isDeadEnd(next.floor, px, py)) deadEndHits++;
       }
     }
     state = next;
     snapshotDepth(state);
   }
 
-  return { seed: fixture.seed, moveCount, hits, waterByDepth };
+  return { seed: fixture.seed, moveCount, hits, waterByDepth, darkHits, deadEndHits, climbGorgeAttempts };
 }
 
 /**
@@ -114,6 +137,7 @@ function main() {
       moveCount: 0,
       hitsCell: "—",
       phobia: "—",
+      phobiaHitsCell: "—",
     });
   }
 
@@ -128,6 +152,11 @@ function main() {
       ? result.hits.map((h) => `#${h.action}@d${h.depth} (${h.x},${h.y})`).join("; ")
       : "none";
     const state = newRun(result.seed);
+    // Phase 41 (TERR-04/05, Plan 03): the phobia-trigger column — dark/dead-
+    // end/climb-gorge hit COUNTS (not indices — the movement fixture's own
+    // hero phobia, "Vampires and the undead", is not a terrain phobia, so
+    // these counts are exposure surface, not actual triggers; see the
+    // TERRAIN TRIGGER EXPOSURE line below for the real measurement).
     rows.push({
       fixture: fixtureFile,
       scenario: "(script)",
@@ -135,6 +164,7 @@ function main() {
       moveCount: result.moveCount,
       hitsCell,
       phobia: state.c.phobia,
+      phobiaHitsCell: `dark:${result.darkHits} deadEnd:${result.deadEndHits} climbGorge:${result.climbGorgeAttempts}`,
     });
   }
 
@@ -144,7 +174,7 @@ function main() {
     const fixture = readFixture(fixtureFile);
     for (const scenario of fixture.scenarios) {
       const r = scanNonMoveFixture(fixtureFile, scenario.name, scenario.seed, scenario.actions);
-      rows.push({ ...r, hitsCell: "n/a (no move actions)" });
+      rows.push({ ...r, hitsCell: "n/a (no move actions)", phobiaHitsCell: "n/a (no move actions)" });
     }
   }
 
@@ -154,7 +184,7 @@ function main() {
     const fixture = readFixture(fixtureFile);
     for (const scenario of fixture.scenarios) {
       const r = scanNonMoveFixture(fixtureFile, scenario.name, scenario.seed, scenario.actions);
-      rows.push({ ...r, hitsCell: "n/a (no move actions)" });
+      rows.push({ ...r, hitsCell: "n/a (no move actions)", phobiaHitsCell: "n/a (no move actions)" });
     }
   }
 
@@ -163,7 +193,7 @@ function main() {
     const fixtureFile = "action-script.economy.json";
     const fixture = readFixture(fixtureFile);
     const r = scanNonMoveFixture(fixtureFile, "(script)", fixture.seed, fixture.actions);
-    rows.push({ ...r, hitsCell: "n/a (no move actions)" });
+    rows.push({ ...r, hitsCell: "n/a (no move actions)", phobiaHitsCell: "n/a (no move actions)" });
   }
 
   // encounters: five independent scenarios — none has a move action.
@@ -172,15 +202,15 @@ function main() {
     const fixture = readFixture(fixtureFile);
     for (const scenario of fixture.scenarios) {
       const r = scanNonMoveFixture(fixtureFile, scenario.name, scenario.seed, scenario.actions);
-      rows.push({ ...r, hitsCell: "n/a (no move actions)" });
+      rows.push({ ...r, hitsCell: "n/a (no move actions)", phobiaHitsCell: "n/a (no move actions)" });
     }
   }
 
   const lines = [];
-  lines.push("| Fixture | Scenario | Seed | Move actions | Water hits (action idx @ depth x,y) | Hero phobia |");
-  lines.push("|---|---|---|---|---|---|");
+  lines.push("| Fixture | Scenario | Seed | Move actions | Water hits (action idx @ depth x,y) | Hero phobia | Phobia trigger hits (dark/deadEnd/climbGorge) |");
+  lines.push("|---|---|---|---|---|---|---|");
   for (const r of rows) {
-    lines.push(`| ${r.fixture} | ${r.scenario} | ${r.seed} | ${r.moveCount} | ${r.hitsCell} | ${r.phobia} |`);
+    lines.push(`| ${r.fixture} | ${r.scenario} | ${r.seed} | ${r.moveCount} | ${r.hitsCell} | ${r.phobia} | ${r.phobiaHitsCell} |`);
   }
   console.log(lines.join("\n"));
   console.log("");
@@ -189,6 +219,15 @@ function main() {
   }
   console.log("");
   console.log(`WATER HITS: ${totalHits}`);
+
+  // Phase 41 (TERR-04/05, Plan 03): TERRAIN TRIGGER EXPOSURE — the count of
+  // fixtures whose hero carries a phobia in TERRAIN_PHOBIAS (engine/
+  // phobias.js) AND whose script contains at least one `move` action (the
+  // ONLY way checkTerrainPhobias/noteHeightsAttempt can ever fire — both are
+  // wired at move()/teleport(), never at a non-move action). Measured, not
+  // assumed: read straight off the rows built above.
+  const exposure = rows.filter((r) => TERRAIN_PHOBIAS.includes(r.phobia) && r.moveCount > 0).length;
+  console.log(`TERRAIN TRIGGER EXPOSURE: ${exposure}`);
 }
 
 main();

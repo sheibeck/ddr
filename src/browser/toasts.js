@@ -936,6 +936,19 @@ export const TOAST_FOR = {
   heightsFear: () => ({ text: "Your stomach reaches the ground first.", tone: "hurt", priority: PRIORITY.other }),
   waterFear: () => ({ text: "Something down there may be wet.", tone: "hurt", priority: PRIORITY.other }),
   trappedPanic: (e) => ({ text: `Four walls, one used door (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 41 (TERR-04/05): a fresh terrain-phobia region entry — the same
+  // headline sentence eventNarration.js's phobiaTriggered uses, minus the
+  // trailing "It will show in the next fight." clause (too long for a toast).
+  phobiaTriggered: (e) => {
+    const lines = {
+      water: "Water. You knew this was coming.",
+      dark: "The dark. It was always going to be the dark.",
+      heights: "That is a long way down.",
+      deadEnd: "A dead end. The walls lean in a little.",
+      nearDeath: "You can hear your own pulse.",
+    };
+    return { text: lines[e?.trigger] ?? "Your phobia has noticed where you are.", tone: "hurt", priority: PRIORITY.other };
+  },
   afflictionTick: (e) => ({ text: `${e?.kind ?? "It"} (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   afflictionPassed: (e) => ({ text: `The ${e?.kind ?? "worst of it"} passes.`, tone: "hit", priority: PRIORITY.other }),
   afflictionCured: (e) => ({ text: `Cured of the ${e?.kind ?? "sickness"}.`, tone: "hit", priority: PRIORITY.other }),

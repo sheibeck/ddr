@@ -167,7 +167,10 @@ function comparable(state) {
     // still carries these at 0/whatever value it never raised further, the
     // engine no longer builds them at all; mirrored here because this file
     // keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, haste, invis, ether, acute, ...cRest } = rest.c;
+    // Phase 41 (TERR-04/05): strip the new engine-only phobiaState/fearArmed
+    // fields too (see harness stripPhobiaFields) — mirrored here because
+    // this file keeps its own local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, haste, invis, ether, acute, phobiaState, fearArmed, ...cRest } = rest.c;
     // Phase 28 (ARMOR-04): the Cloak of Armor's rewritten `txt` is a purely
     // cosmetic content divergence (see harness/comparables.js's
     // stripCloakArmorTxt) — the `flee` scenario's seed 17 rolls this cloak

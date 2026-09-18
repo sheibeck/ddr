@@ -211,6 +211,10 @@ export const RAIL_FAMILY = Object.freeze({
   heightsFear: { icon: "·", title: "AFRAID", tone: "bad" },
   waterFear: { icon: "·", title: "AFRAID", tone: "bad" },
   trappedPanic: { icon: "·", title: "AFRAID", tone: "bad" },
+  // Phase 41 (TERR-04/05): a fresh terrain-phobia region entry — its own
+  // family (distinct title from the AFRAID rows above, which are the
+  // existing roll-penalty/hp-loss events); this one arms the NEXT fight.
+  phobiaTriggered: { icon: "·", title: "A PHOBIA", tone: "bad" },
 
   // Phase 39 (GEAR-02): the item activation model's four transition events.
   itemEffectStarted: { icon: "◇", title: "IN EFFECT", tone: "good" },

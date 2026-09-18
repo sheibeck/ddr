@@ -1331,3 +1331,74 @@ support this plan — there is nothing for it to skip. `npm test`: `# fail 0`;
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
 test/parity/fixtures` empty (zero fixture files touched by this plan).
 
+### Plan 03 — `c.phobiaState` / `c.fearArmed`: structural carve-out, measured zero fixture moves
+
+`c.phobiaState` and `c.fearArmed` (engine/phobias.js — TERR-04/05's "arm
+Afraid for the next fight" region model) are a STRUCTURAL parity carve-out
+(`stripPhobiaFields`, wired into all three exported `*Comparable()`
+functions plus the three per-domain local `comparable()` duplicates in
+movement/combat/magic-parity.test.js) — the frozen prototype has no
+equivalent field on `c`, ever. `tools/terrain-fixture-scan.mjs` was extended
+this plan with a phobia-trigger column and a `TERRAIN TRIGGER EXPOSURE`
+summary line. Measured output, pasted verbatim (the new column appended to
+the same table Plan 01/02 built):
+
+```
+| Fixture | Scenario | Seed | Move actions | Water hits (action idx @ depth x,y) | Hero phobia | Phobia trigger hits (dark/deadEnd/climbGorge) |
+|---|---|---|---|---|---|---|
+| action-script.chargen.json | (14 seeds, no actions) | 20260907 | 0 | — | — | — |
+| action-script.movement.json | (script) | 256 | 101 | none | Vampires and the undead | dark:0 deadEnd:45 climbGorge:0 |
+| action-script.combat.json | win | 3 | 0 | n/a (no move actions) | Fire | n/a (no move actions) |
+| action-script.combat.json | lose | 14 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.combat.json | lose-apprentice | 127 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.combat.json | lose-plain | 1119 | 0 | n/a (no move actions) | Fire | n/a (no move actions) |
+| action-script.combat.json | flee | 17 | 0 | n/a (no move actions) | Being trapped | n/a (no move actions) |
+| action-script.combat.json | parley | 303 | 0 | n/a (no move actions) | Heights | n/a (no move actions) |
+| action-script.magic.json | cast-damage | 8 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.magic.json | heal | 7 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.magic.json | potion | 1 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.magic.json | scroll | 7 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.economy.json | (script) | 3 | 0 | n/a (no move actions) | Fire | n/a (no move actions) |
+| action-script.encounters.json | trap | 1 | 0 | n/a (no move actions) | Bats and rats | n/a (no move actions) |
+| action-script.encounters.json | chest | 2 | 0 | n/a (no move actions) | Being trapped | n/a (no move actions) |
+| action-script.encounters.json | tablefour | 3 | 0 | n/a (no move actions) | Fire | n/a (no move actions) |
+| action-script.encounters.json | faerie | 38 | 0 | n/a (no move actions) | Heights | n/a (no move actions) |
+| action-script.encounters.json | affliction | 160 | 0 | n/a (no move actions) | Bodies of water | n/a (no move actions) |
+
+WATER HITS: 0
+TERRAIN TRIGGER EXPOSURE: 0
+```
+
+**Which fixture heroes carry a terrain phobia, and why none can ever trigger:**
+
+| Fixture | Scenario | Seed | Phobia | Move actions | Why it cannot trigger |
+|---|---|---|---|---|---|
+| combat.json | flee | 17 | Being trapped | 0 | `checkTerrainPhobias` fires only from `move()`/`teleport()` — a script with zero `move` actions never reaches it |
+| combat.json | parley | 303 | Heights | 0 | same — `noteHeightsAttempt` fires only from the climb/gorge roll branch inside `move()` |
+| encounters.json | chest | 2 | Being trapped | 0 | same |
+| encounters.json | faerie | 38 | Heights | 0 | same |
+| encounters.json | affliction | 160 | Bodies of water | 0 | same |
+
+The movement fixture (seed 256, the ONLY fixture with real `move` actions)
+carries **Vampires and the undead** — a combat-type phobia, not one of the
+five `TERRAIN_PHOBIAS` — so `checkTerrainPhobias`/`noteHeightsAttempt` are
+no-ops for it on every one of its 101 moves (measured: `phobiaState` in
+`engine/phobias.js#checkTerrainPhobias` gates on `TERRAIN_PHOBIAS.includes(c.
+phobia)` before ever touching `c.phobiaState`/`c.fearArmed` — no key is ever
+created for this hero). Its exposure column (`dark:0 deadEnd:45
+climbGorge:0`) shows the RAW surface the script walks across regardless of
+phobia — 45 of its 101 moves land on a dead-end-shaped tile, zero on a dark
+tile, zero attempt a climb/gorge — a measurement kept for a future fixture
+regeneration, not a divergence declaration (a Being-trapped-phobic hero on
+this exact script would have triggered 45 times).
+
+`checkDeathPhobia` needs the Death phobia specifically, which no fixture
+hero carries anywhere in the roster (grepped the full table above — none of
+the 18 rows read "Death").
+
+**Consequence:** `TERRAIN TRIGGER EXPOSURE: 0` — no fixture ever exercises
+the region model. `git status --porcelain test/parity/fixtures` stayed
+empty throughout this plan (zero fixture files touched); `npm test`: `#
+fail 0`; `test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`).
+

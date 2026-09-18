@@ -76,6 +76,20 @@ function needModsClause(mods, need) {
   return mods && mods.length ? ` (needs ${need ?? "?"}: ${needModsText(mods)})` : "";
 }
 
+// Phase 41 (TERR-05): the short `trigger` key engine/phobias.js pushes on
+// every `phobiaTriggered` event (and stashes on `c.fearArmed.trigger`) maps
+// to this narrated phrase — used both by `phobiaTriggered`'s own line below
+// and by `phobiaAfraid`'s "Still rattled from ..." clause once the armed
+// fear actually opens a fight. Exported so other modules (rail/toasts) never
+// need to re-derive the same vocabulary by hand.
+export const PHOBIA_TRIGGER_PHRASE = Object.freeze({
+  water: "the water",
+  dark: "the dark",
+  heights: "the drop",
+  deadEnd: "the dead end",
+  nearDeath: "your own pulse",
+});
+
 export const EVENT_NARRATION = {
   /* ---------------- movement.js (migrated verbatim from the prior formatEvent switch) ---------------- */
 
@@ -130,6 +144,26 @@ export const EVENT_NARRATION = {
   heightsFear: () => `<span class="beat">Your stomach reaches the ground well before your feet do.</span>`,
   waterFear: () => `<span class="beat">Something down there may be wet. That is enough.</span>`,
   trappedPanic: (e) => `<span class="hurt">Four walls and one door you already used. −${e.loss ?? 0} hp.</span>`,
+  // Phase 41 (TERR-04/05, user-ratified Key Decision 2026-09-18: "arm Afraid
+  // for the next fight"): a fresh terrain-phobia region entry — named by
+  // `e.trigger` — fires ONCE per fresh entry (engine/phobias.js's region
+  // model), narrates immediately, and arms `c.fearArmed` for the next fight
+  // (no mechanical effect here — see phobiaAfraid's own "Still rattled"
+  // clause below for where the penalty actually lands). The dead-end line is
+  // deliberately DIFFERENT from trappedPanic's "Four walls..." line above —
+  // both can fire on the very same step (trappedPanic's hp loss is retained,
+  // unchanged; this is the additional, once-per-entry region narration).
+  phobiaTriggered: (e) => {
+    const lines = {
+      water: `<span class="hurt">Water. You knew this was coming. Your knees did too.</span>`,
+      dark: `<span class="hurt">The dark. It was always going to be the dark.</span>`,
+      heights: `<span class="hurt">That is a long way down. Your stomach has already left.</span>`,
+      deadEnd: `<span class="hurt">A dead end. The walls lean in a little, just to be sure.</span>`,
+      nearDeath: `<span class="hurt">You can hear your own pulse. It sounds unimpressed.</span>`,
+    };
+    const line = lines[e?.trigger] ?? `<span class="hurt">Your phobia has noticed where you are.</span>`;
+    return `${line} It will show in the next fight.`;
+  },
   afflictionTick: (e) =>
     (e.loss ?? 0) > 0
       ? `<span class="hurt">${e.kind ?? "It"}: −${e.loss} hp.</span>`
@@ -234,8 +268,14 @@ export const EVENT_NARRATION = {
   // Phase 31 (renamed from phobiaFrozen — "Phobia should be penalties, never
   // a no actions state", user ruling 2026-09-16): a triggered phobia is now
   // a −to-hit/half-damage penalty for e.rounds rounds — you can still swing.
-  phobiaAfraid: (e) =>
-    `<span class="hurt">Your phobia has you shaking.</span> Harder to hit and softer blows for ${e.rounds ?? 2} rounds. You can still swing — you just will not enjoy it.`,
+  phobiaAfraid: (e) => {
+    const base = `<span class="hurt">Your phobia has you shaking.</span> Harder to hit and softer blows for ${e.rounds ?? 2} rounds. You can still swing — you just will not enjoy it.`;
+    // Phase 41 (TERR-05): when this fight opened Afraid from an ARMED
+    // terrain trigger (engine/phobias.js's fourth OR-condition), name what
+    // armed it — the same phrase phobiaTriggered's own line used.
+    const phrase = e?.trigger && PHOBIA_TRIGGER_PHRASE[e.trigger];
+    return phrase ? `${base} Still rattled from ${phrase}.` : base;
+  },
   combatInDark: () => `<span class="beat">You cannot see what you are fighting.</span>`,
   // Phase 23 (IDENT-01): the refusal now names the attack spell the Wizard
   // should cast instead, when the engine supplies one.

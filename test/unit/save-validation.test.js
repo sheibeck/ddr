@@ -556,3 +556,71 @@ test("sanitizeWaterCells: a genuine water: true cell survives both load chains",
   const rehydrated = rehydrate({ c: { ...validChar }, floor: validFloor, seed: 1, rngState: 1 });
   assert.equal(rehydrated.floor.g[0][0].water, true);
 });
+
+// --- Phase 41 (TERR-04/05): sanitizePhobiaFields ---
+
+test("sanitizePhobiaFields: a pre-Phase-41 save (no phobiaState/fearArmed key) round-trips with neither key injected", () => {
+  const original = newRun(2026);
+  delete original.c.phobiaState;
+  delete original.c.fearArmed;
+  const json = JSON.stringify(serializeRun(original));
+
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+  assert.equal("phobiaState" in check.value.c, false, "validateSave must never inject phobiaState");
+  assert.equal("fearArmed" in check.value.c, false, "validateSave must never inject fearArmed");
+
+  const rehydrated = rehydrate(check.value);
+  assert.equal("phobiaState" in rehydrated.c, false, "rehydrate must never inject phobiaState");
+  assert.equal("fearArmed" in rehydrated.c, false, "rehydrate must never inject fearArmed");
+});
+
+test("sanitizePhobiaFields: a tampered non-object phobiaState ('x', [], null, 7) is dropped outright", () => {
+  for (const tampered of ["x", [], null, 7]) {
+    const validChar = { wp: 10, maxWP: 10, level: 1, skills: {}, phobiaState: tampered };
+    const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+    const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+    assert.equal(check.ok, true);
+    assert.equal("phobiaState" in check.value.c, false, `tampered phobiaState ${JSON.stringify(tampered)} must be dropped`);
+
+    const rehydrated = rehydrate({ c: { wp: 10, maxWP: 10, level: 1, skills: {}, phobiaState: tampered }, floor: validFloor, seed: 1, rngState: 1 });
+    assert.equal("phobiaState" in rehydrated.c, false, "rehydrate mirrors validateSave's own drop");
+  }
+});
+
+test("sanitizePhobiaFields: inside a genuine phobiaState object, an entry whose value is neither boolean nor string is dropped; booleans and the Heights tile-key string survive", () => {
+  const validChar = {
+    wp: 10, maxWP: 10, level: 1, skills: {},
+    phobiaState: { Death: 7, "Bodies of water": true, Darkness: false, Heights: "3,4", "Being trapped": {} },
+  };
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(check.value.c.phobiaState, { "Bodies of water": true, Darkness: false, Heights: "3,4" });
+});
+
+test("sanitizePhobiaFields: a tampered fearArmed (not an object, or missing a string phobia/trigger) is dropped outright", () => {
+  for (const tampered of [5, "x", null, {}, { phobia: 1, trigger: "water" }, { phobia: "Heights" }]) {
+    const validChar = { wp: 10, maxWP: 10, level: 1, skills: {}, fearArmed: tampered };
+    const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+    const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+    assert.equal(check.ok, true);
+    assert.equal("fearArmed" in check.value.c, false, `tampered fearArmed ${JSON.stringify(tampered)} must be dropped`);
+  }
+});
+
+test("sanitizePhobiaFields: valid phobiaState/fearArmed survive a full serializeRun -> JSON -> validateSave -> rehydrate round trip", () => {
+  const original = newRun(2026);
+  original.c.phobiaState = { Death: true, Heights: "3,4" };
+  original.c.fearArmed = { phobia: "Death", trigger: "nearDeath" };
+  const json = JSON.stringify(serializeRun(original));
+
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(check.value.c.phobiaState, { Death: true, Heights: "3,4" });
+  assert.deepStrictEqual(check.value.c.fearArmed, { phobia: "Death", trigger: "nearDeath" });
+
+  const rehydrated = rehydrate(check.value);
+  assert.deepStrictEqual(rehydrated.c.phobiaState, { Death: true, Heights: "3,4" });
+  assert.deepStrictEqual(rehydrated.c.fearArmed, { phobia: "Death", trigger: "nearDeath" });
+});
