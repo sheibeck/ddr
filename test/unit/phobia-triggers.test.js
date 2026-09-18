@@ -1,0 +1,302 @@
+// test/unit/phobia-triggers.test.js
+//
+// Phase 41 (TERR-04/05) — the region-model phobia triggers: engine/
+// phobias.js's checkTerrainPhobias/checkDeathPhobia/noteHeightsAttempt/
+// resetFloorPhobiaRegions, wired into engine/movement.js's move()/teleport()/
+// descend(). Task 1 covers the five triggers' fresh-entry/re-arm mechanics
+// through movement/teleport/descend, using copies of test/unit/movement.
+// test.js's own helpers (fakeRng/wallGrid/open/fixedFighter/fixedState) so
+// this file stays independently readable. Task 2 (engine/combat.js#fight's
+// fourth OR-condition, the fearArmed chip, in-combat Death) appends its own
+// tests below Task 1's, in the same file.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { GW, GH } from "../../engine/maze.js";
+import { move, teleport, descend } from "../../engine/movement.js";
+import { makeRng } from "../../engine/rng.js";
+
+/** fakeRng(seq) — verbatim copy of test/unit/movement.test.js's helper:
+ * `.d()` pops the next value off `seq` regardless of requested side count;
+ * `.pick(arr)` returns `arr[0]` unless a picker is supplied (and never
+ * consumes `seq`); throws if the sequence underflows — a zero-rng proof for
+ * every test that passes `fakeRng([])`. */
+function fakeRng(seq, { pick = (arr) => arr[0] } = {}) {
+  let i = 0;
+  return {
+    d(_sides) {
+      if (i >= seq.length) throw new Error(`fakeRng: sequence exhausted at index ${i}`);
+      return seq[i++];
+    },
+    pick,
+    shuffle: (a) => a,
+  };
+}
+
+/** A minimal, fully-walled 21x21 grid (matches engine/maze.js's GW/GH) with
+ * a hole punched wherever a test needs an open cell. */
+function wallGrid() {
+  const g = [];
+  for (let y = 0; y < GH; y++) {
+    g.push([]);
+    for (let x = 0; x < GW; x++) g[y].push({ wall: true, seen: false, feat: null });
+  }
+  return g;
+}
+
+function open(g, x, y, extra = {}) {
+  g[y][x] = { wall: false, seen: false, feat: null, ...extra };
+}
+
+function fixedFighter(overrides = {}) {
+  return {
+    cls: "Fighter", sub: "Soldier", race: "Human", level: 1, sp: 0,
+    maxWP: 55, wp: 55, skills: {}, vp: 0,
+    weapon: "Club", prof: 0, magicWpn: 0,
+    armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x",
+    potions: 1, rations: 6, gold: 50, scrolls: 0,
+    affliction: null, joiner: null,
+    items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    darkFor: 0,
+    ...overrides,
+  };
+}
+
+function fixedState(overrides = {}) {
+  const { c: cOverrides, floor: floorOverrides, ...rest } = overrides;
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: fixedFighter(cOverrides),
+    floor: { g: wallGrid(), px: 5, py: 5, depth: 1, ...floorOverrides },
+    day: 1, steps: 0, combat: null, store: null, beats: null,
+    dead: false, won: false, deathNote: "", epitaph: "",
+    ...rest,
+  };
+}
+
+// --- Bodies of water -------------------------------------------------------
+
+test("water: fresh entry fires once, arms fearArmed, sets phobiaState true; a second step inside stays silent", () => {
+  const state = fixedState({ c: { phobia: "Bodies of water", phobiaType: null } });
+  open(state.floor.g, 5, 4, { water: true });
+  open(state.floor.g, 5, 3, { water: true });
+  const e1 = move(state, "N", fakeRng([]), []);
+  assert.equal(e1.filter((e) => e.type === "phobiaTriggered").length, 1);
+  assert.deepEqual(e1.find((e) => e.type === "phobiaTriggered"), { type: "phobiaTriggered", phobia: "Bodies of water", trigger: "water" });
+  assert.deepEqual(state.c.fearArmed, { phobia: "Bodies of water", trigger: "water" });
+  assert.equal(state.c.phobiaState["Bodies of water"], true);
+
+  const e2 = move(state, "N", fakeRng([]), []);
+  assert.ok(!e2.some((e) => e.type === "phobiaTriggered"), "water -> water stays silent");
+});
+
+test("water: leaving the pool sets the region false but leaves fearArmed set; re-entering fires again", () => {
+  const state = fixedState({ c: { phobia: "Bodies of water", phobiaType: null } });
+  open(state.floor.g, 5, 4, { water: true });
+  open(state.floor.g, 5, 3, { water: true });
+  open(state.floor.g, 5, 2); // dry
+  move(state, "N", fakeRng([]), []); // (5,5)->(5,4) water: fires
+  move(state, "N", fakeRng([]), []); // (5,4)->(5,3) water: silent
+  move(state, "N", fakeRng([]), []); // (5,3)->(5,2) dry: region false, fearArmed untouched
+  assert.equal(state.c.phobiaState["Bodies of water"], false);
+  assert.deepEqual(state.c.fearArmed, { phobia: "Bodies of water", trigger: "water" }, "fearArmed survives leaving the region — only fight() consumes it");
+
+  const e = move(state, "S", fakeRng([]), []); // (5,2)->(5,3) water again: fires again
+  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "water"));
+});
+
+// --- Darkness ----------------------------------------------------------------
+
+test("darkness: entering a .dark tile fires once; c.darkFor keeps the region active on a subsequent LIT tile", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, darkFor: 5 } });
+  open(state.floor.g, 5, 4); // a plain, lit cell — darkFor alone keeps inDark() true
+  const e = move(state, "N", fakeRng([]), []);
+  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "dark"));
+  assert.equal(state.c.phobiaState["Darkness"], true);
+});
+
+test("darkness: Night Vision does NOT suppress the trigger", () => {
+  const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { "Night Vision": 1 } } });
+  open(state.floor.g, 5, 4, { dark: true });
+  const e = move(state, "N", fakeRng([]), []);
+  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "dark"), "Night Vision waives the reveal/to-hit penalties, never the phobia trigger itself");
+});
+
+// --- Being trapped -------------------------------------------------------------
+
+test("trapped: a dead-end entry fires trappedPanic THEN phobiaTriggered (deadEnd), in that order", () => {
+  const state = fixedState({ c: { phobia: "Being trapped", phobiaType: null } });
+  open(state.floor.g, 5, 5); // start tile
+  open(state.floor.g, 5, 6); // second neighbor, so (5,5) is never itself a dead end
+  open(state.floor.g, 5, 4); // a genuine dead end
+  const e = move(state, "N", fakeRng([]), []);
+  const iPanic = e.findIndex((ev) => ev.type === "trappedPanic");
+  const iTrigger = e.findIndex((ev) => ev.type === "phobiaTriggered");
+  assert.ok(iPanic !== -1 && iTrigger !== -1 && iPanic < iTrigger, "trappedPanic must precede phobiaTriggered");
+  assert.equal(e[iTrigger].trigger, "deadEnd");
+  assert.equal(state.c.phobiaState["Being trapped"], true);
+});
+
+test("trapped: re-entering the SAME dead end after leaving does not re-fire trappedPanic (tile debounce) but DOES re-fire phobiaTriggered (region re-entry)", () => {
+  const state = fixedState({ c: { phobia: "Being trapped", phobiaType: null } });
+  open(state.floor.g, 5, 5);
+  open(state.floor.g, 5, 6);
+  open(state.floor.g, 5, 4);
+  move(state, "N", fakeRng([]), []); // first entry: panics + triggers
+  move(state, "S", fakeRng([]), []); // leaves — region clears
+  const e = move(state, "N", fakeRng([]), []); // second entry
+  assert.ok(!e.some((ev) => ev.type === "trappedPanic"), "the tile marker suppresses a second panic");
+  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "deadEnd"), "the region model re-fires on a fresh entry");
+});
+
+// --- Heights -------------------------------------------------------------------
+
+test("heights: a climb attempt fires phobiaTriggered BEFORE heightsFear and before any roll result", () => {
+  const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  // feet=10*(1+d(2)=1)=20; rung1: r=d(10)=6+hPenalty(2)=8>7(rope success) -> fail;
+  // fall check g=0: d(20)=15(>2, hurt rolls); fall damage d6=4.
+  const e = move(state, "N", fakeRng([1, 6, 15, 4]), []);
+  const iTrigger = e.findIndex((ev) => ev.type === "phobiaTriggered");
+  const iFear = e.findIndex((ev) => ev.type === "heightsFear");
+  const iRoll = e.findIndex((ev) => ev.type === "fellClimbing" || ev.type === "climbedOver");
+  assert.ok(iTrigger !== -1 && iFear !== -1 && iRoll !== -1);
+  assert.ok(iTrigger < iFear && iFear < iRoll, "phobiaTriggered must precede heightsFear, which must precede the roll outcome");
+  assert.equal(e[iTrigger].trigger, "heights");
+});
+
+test("heights: a retry of the SAME tile after a fall is silent", () => {
+  const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  move(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, stays at (5,5), key stored
+  const e = move(state, "N", fakeRng([1, 5, 5]), []); // succeeds this time
+  assert.ok(!e.some((ev) => ev.type === "phobiaTriggered"), "the same tile does not re-fire");
+});
+
+test("heights: stepping more than one square away from the attempted tile and back fires again", () => {
+  const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
+  open(state.floor.g, 5, 5); // the start tile itself, so the return trip stays legal
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  open(state.floor.g, 4, 5);
+  move(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, key = "5,4"
+  move(state, "W", fakeRng([]), []); // (5,5)->(4,5): Manhattan dist to (5,4) is 2 -> clears the key
+  move(state, "E", fakeRng([]), []); // back to (5,5)
+  const e = move(state, "N", fakeRng([1, 5, 5]), []); // re-attempt: fires again
+  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"));
+});
+
+test("heights: the hazardChoice pause (a carried rope) does NOT fire noteHeightsAttempt — the second (declined) move does", () => {
+  const state = fixedState({ c: { phobia: "Heights", phobiaType: null, items: [{ kind: "tool", tool: "rope", n: "Rope" }] } });
+  open(state.floor.g, 5, 4, { feat: "gorge" });
+  const e1 = move(state, "N", fakeRng([]), []); // stashes pendingHazard, zero draws
+  assert.ok(e1.some((ev) => ev.type === "hazardChoice"));
+  assert.ok(!e1.some((ev) => ev.type === "phobiaTriggered"), "the pause itself must not fire the trigger");
+  assert.equal("phobiaState" in state.c, false);
+
+  // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=6 <= 10 -> clear.
+  const e2 = move(state, "N", fakeRng([1, 6]), []); // declines the tool, rolls instead
+  assert.ok(e2.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "the declined (second) CLIMB IT/LEAP IT move fires it");
+  assert.deepEqual(state.c.fearArmed, { phobia: "Heights", trigger: "heights" });
+});
+
+test("heights: the flyOver (Bracelet of Flight) branch never calls noteHeightsAttempt", () => {
+  const flying = fixedState({ c: { phobia: "Heights", phobiaType: null, items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  open(flying.floor.g, 5, 4, { feat: "climb" });
+  const e1 = move(flying, "N", fakeRng([]), []);
+  assert.ok(e1.some((ev) => ev.type === "flownOver"));
+  assert.ok(!e1.some((ev) => ev.type === "phobiaTriggered"));
+  assert.equal("phobiaState" in flying.c, false);
+});
+
+test("heights: the ether branch never calls noteHeightsAttempt", () => {
+  const ethereal = fixedState({
+    c: { phobia: "Heights", phobiaType: null, timers: { "item:Cloak of Ether": { cadence: "squares", left: 5, cd: 80, phase: "effect" } } },
+  });
+  open(ethereal.floor.g, 5, 4, { feat: "gorge" });
+  const e2 = move(ethereal, "N", fakeRng([]), []);
+  assert.ok(e2.some((ev) => ev.type === "phasedThrough"));
+  assert.ok(!e2.some((ev) => ev.type === "phobiaTriggered"));
+  assert.equal("phobiaState" in ethereal.c, false);
+});
+
+test("heights: the tool (opts.tool) branch never calls noteHeightsAttempt", () => {
+  const toolUser = fixedState({ c: { phobia: "Heights", phobiaType: null, items: [{ kind: "tool", tool: "rope", n: "Rope" }] } });
+  open(toolUser.floor.g, 5, 4, { feat: "gorge" });
+  const e3 = move(toolUser, "N", fakeRng([]), [], Date.now, { tool: "rope" });
+  assert.ok(e3.some((ev) => ev.type === "toolUsed"));
+  assert.ok(!e3.some((ev) => ev.type === "phobiaTriggered"));
+  assert.equal("phobiaState" in toolUser.c, false);
+});
+
+// --- Teleport --------------------------------------------------------------
+
+test("teleport: landing on water / a dark cell / a dead end each fire the matching trigger once", () => {
+  const water = fixedState({ c: { phobia: "Bodies of water", phobiaType: null } });
+  open(water.floor.g, 5, 2, { water: true });
+  const ew = teleport(water, fakeRng([1, 1, 3]), []); // dir N (d8=1 twice), dist 3 -> lands exactly on (5,2)
+  assert.ok(ew.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "water"));
+
+  const dark = fixedState({ c: { phobia: "Darkness", phobiaType: null } });
+  open(dark.floor.g, 5, 2, { dark: true });
+  const ed = teleport(dark, fakeRng([1, 1, 3]), []);
+  assert.ok(ed.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "dark"));
+
+  const trapped = fixedState({ c: { phobia: "Being trapped", phobiaType: null } });
+  open(trapped.floor.g, 5, 2); // a lone open cell surrounded by walls is itself a dead end
+  const et = teleport(trapped, fakeRng([1, 1, 3]), []);
+  assert.ok(et.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "deadEnd"));
+});
+
+// --- Descend -----------------------------------------------------------------
+
+test("descend: the four floor-bound phobia region keys clear; Death and fearArmed survive", () => {
+  const state = fixedState({
+    c: {
+      phobiaState: { "Bodies of water": true, Darkness: true, Heights: "3,4", "Being trapped": true, Death: true },
+      fearArmed: { phobia: "Death", trigger: "nearDeath" },
+    },
+  });
+  descend(state, makeRng(12345), []);
+  assert.deepEqual(state.c.phobiaState, { Death: true });
+  assert.deepEqual(state.c.fearArmed, { phobia: "Death", trigger: "nearDeath" });
+});
+
+// --- Death (out of combat) --------------------------------------------------
+
+test("Death: hp at/below 25% of maxWP fires nearDeath once on the next step; recovering above 50% re-arms it", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10, maxWP: 55 } }); // 18% <= 25%
+  open(state.floor.g, 5, 4);
+  open(state.floor.g, 5, 3);
+  const e1 = move(state, "N", fakeRng([]), []);
+  assert.ok(e1.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "nearDeath"));
+  assert.equal(state.c.phobiaState.Death, true);
+  assert.deepEqual(state.c.fearArmed, { phobia: "Death", trigger: "nearDeath" });
+
+  const e2 = move(state, "N", fakeRng([]), []); // still at 10/55 — stays silent (was already true)
+  assert.ok(!e2.some((ev) => ev.type === "phobiaTriggered"));
+
+  state.c.wp = 30; // 54.5% > 50% re-arm line
+  move(state, "S", fakeRng([]), []);
+  assert.equal(state.c.phobiaState.Death, false);
+});
+
+// --- Non-terrain (combat-type) phobia: no key creation ---------------------
+
+test("a combat-type-phobic character never gains c.phobiaState/c.fearArmed while walking water/dark/dead-end/climbing", () => {
+  const state = fixedState({ c: { phobia: "Fire", phobiaType: "Demons" } });
+  open(state.floor.g, 5, 4, { water: true });
+  open(state.floor.g, 5, 3, { dark: true });
+  open(state.floor.g, 5, 2, { feat: "climb" });
+  move(state, "N", fakeRng([]), []); // onto water
+  assert.equal("phobiaState" in state.c, false);
+  assert.equal("fearArmed" in state.c, false);
+  move(state, "N", fakeRng([]), []); // onto dark
+  assert.equal("phobiaState" in state.c, false);
+  const e = move(state, "N", fakeRng([1, 5, 5]), []); // a successful climb attempt
+  assert.equal("phobiaState" in state.c, false);
+  assert.equal("fearArmed" in state.c, false);
+  assert.ok(!e.some((ev) => ev.type === "phobiaTriggered"));
+});

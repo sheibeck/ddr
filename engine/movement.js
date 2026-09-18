@@ -37,6 +37,7 @@ import { moved, floorChanged, won } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, ACTIVATION_OF, TOOLS } from "../content/index.js";
 import { tickSquares, startEffect } from "./effects.js";
 import { narrateTimerTransitions, toolIndex } from "./items.js";
+import { isDeadEnd, checkTerrainPhobias, noteHeightsAttempt, resetFloorPhobiaRegions } from "./phobias.js";
 
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
 export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
@@ -80,16 +81,11 @@ const TRAPPED_PHOBIA_PANIC = 4;
 // CLOAK_HEAL_PER_TICK ("up to 10 wp every 20 squares") stays a Phase-16 knob.
 const CLOAK_TICK_SQUARES = 20;
 const CLOAK_HEAL_PER_TICK = 10;
-/** isDeadEnd(f, x, y) — does (x,y) have exactly one (or zero) non-wall orthogonal neighbor? */
-function isDeadEnd(f, x, y) {
-  let openNeighbors = 0;
-  for (const [ddx, ddy] of Object.values(DIRV)) {
-    const ax = x + ddx;
-    const ay = y + ddy;
-    if (f.g[ay] && f.g[ay][ax] && !f.g[ay][ax].wall) openNeighbors++;
-  }
-  return openNeighbors <= 1;
-}
+// isDeadEnd(f, x, y) — does (x,y) have exactly one (or zero) non-wall
+// orthogonal neighbor? MOVED to engine/phobias.js (Phase 41, TERR-04) since
+// the new phobia region model needs it too (its own leave-check for Being
+// trapped) — imported above, still used by trappedPanic's entry check below
+// exactly as before.
 
 /** maxCharges(c) — a Magic User's spell charges. Ports mazeworld.html line 914. */
 export const maxCharges = (c) => 2 * c.level + 2 + eff(c, "charges");
@@ -216,6 +212,15 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         events.push({ type: "hazardChoice", feat: there.feat, dir, tool: toolFor });
         return events;
       }
+      // DELIBERATE RULES CHANGE (Phase 41, TERR-04/05, user-ratified Key
+      // Decision 2026-09-18: "arm Afraid for the next fight"): Heights fires
+      // on the ATTEMPT, before the roll — a fresh tile (or a fresh return to
+      // one more than one square away) narrates and arms c.fearArmed here;
+      // heightsPenalty/waterPenalty below still land on the roll itself
+      // (a different roll from the next fight's Afraid — no double count,
+      // per 41-RESEARCH.md Pitfall 2). No-op for every non-Heights-phobic
+      // character (noteHeightsAttempt gates on c.phobia itself).
+      noteHeightsAttempt(state, nx, ny, events);
       let ok = true;
       let hurt = 0;
       if (climbing) {
@@ -455,6 +460,17 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
 
   if (crossings(100) > 0) newDay(state, false, rng, events, now);
   if (state.dead) return events;
+
+  // DELIBERATE RULES CHANGE (Phase 41, TERR-04/05, user-ratified Key
+  // Decision 2026-09-18: "arm Afraid for the next fight"): the hero's
+  // fresh-entry phobia region check. Runs AFTER every per-square hp/dark
+  // tick of this step (so the Death crossing and the darkFor-driven Darkness
+  // region both read this step's already-settled state) and BEFORE feature
+  // dispatch below (so a pending combat started by newDay's wandering-
+  // monster roll or by the dot/trap dispatch already sees c.fearArmed set).
+  // No-op for a character whose phobia is not one of the five terrain
+  // phobias (checkTerrainPhobias gates on TERRAIN_PHOBIAS itself).
+  checkTerrainPhobias(state, events);
 
   const cell = f.g[ny][nx];
   if (state.combat) return events; // a wandering monster already found you (01-08)
@@ -777,6 +793,8 @@ export function teleport(state, rng, events = []) {
   state.pendingHazard = null;
   reveal(f, revealRadius(state));
   events.push({ type: "teleported", dir, other, dist, used, travelled, to: { x, y } });
+  // Phase 41 (TERR-04/05): a teleport landing is a fresh entry too.
+  checkTerrainPhobias(state, events);
 
   const cell = f.g[y][x];
   if (cell.feat === "dot") {
@@ -880,6 +898,9 @@ export function descend(state, rng, events = []) {
   state.pendingHazard = null;
   reveal(state.floor, revealRadius(state));
   events.push(floorChanged(state.floor.depth));
+  // Phase 41 (TERR-04/05): floor-bound phobia regions die with the floor —
+  // Death (hp-based) and any still-pending c.fearArmed both survive.
+  resetFloorPhobiaRegions(state.c);
   // CUT-02 (Phase 36): LAST — after checkLevel and genFloor (both draw) and
   // after floorChanged, so the murder is narrated on the new floor and the
   // new floor is identical with or without the draw.
