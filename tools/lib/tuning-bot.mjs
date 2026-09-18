@@ -16,16 +16,21 @@
 // import canParley from engine/combat.js): canCast (engine/derived.js),
 // maxCharges (engine/movement.js), songReady/liveFoes (engine/combat.js,
 // Phase 22 HARN-02), canRead (engine/magic.js, Phase 22 HARN-02),
-// SPELLS/RACES (content/index.js). There is exactly ONE write-path bypass —
-// forceParty, below — which mirrors test/parity/harness/comparables.js's
-// applyStartCombat precedent for calling an engine internal directly outside
-// applyAction. HARNESS-ONLY: never shipped, never a pattern for UI/
-// presentation code.
+// SPELLS/RACES (content/index.js). Phase 42 (BAL-01 second half) adds:
+// isReady (engine/effects.js); itemReady/toolIndex/TARGETED_KINDS
+// (engine/items.js); inDark/itemEffectActive/activationFor/
+// DEATH_PANIC_THRESHOLD (engine/derived.js); ABILITY_BY_ID (content/index.js).
+// There are exactly TWO write-path bypasses — forceParty (below), which
+// mirrors test/parity/harness/comparables.js's applyStartCombat precedent
+// for calling an engine internal directly outside applyAction, and playRun's
+// combat-target selection before a useAbility dispatch, which mirrors the
+// shell's own foe-card tap. HARNESS-ONLY: never shipped, never a pattern for
+// UI/presentation code.
 
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, slotFor, activationFor } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canRead } from "../../engine/magic.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
