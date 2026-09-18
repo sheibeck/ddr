@@ -694,8 +694,136 @@ beyond this one always-answer-if-carried rule.
 
 ## Chips and row states — Plan 05
 
-Appended by Plan 05.
+### The one row-state rule
+
+`src/browser/viewModels.js#itemRowState(state, it)` is the ONE rule the Gear
+tab's worn/carried rows AND the ITEMS combat submenu (`src/browser/
+combatMenu.js`) both read — mirroring the Phase 38 ability-row precedent
+(`READY`/`N ROUNDS`/`ONCE A FIGHT · USED` lives in exactly one place).
+Returns `{ text, kind, remaining? }`, reading `state.c.timers` ONLY through
+`engine/effects.js#remaining`/`isReady` and the item's own activation via
+`engine/derived.js#activationFor` — never `it.usedAt`/`it.every` (the
+counter-based fields Plan 03 already retired engine-side):
+
+| State | `text` | `kind` |
+|---|---|---|
+| not activatable (no `use`, not a potion — weapon/armor/rope/ladder/passive jewel) | `""` | `none` |
+| a one-shot consumable (a potion, or the torch — the one `kind:"tool"` item with a `use`) | `""` | `consumable` |
+| a duration+cooldown item, no `item:<key>` record | `ITEM_STATE_COPY.ready` = `"READY"` | `ready` |
+| a duration+cooldown item, mid-effect | `ITEM_STATE_COPY.squares` = `"{n} SQ"` (singular `"1 SQ"` at exactly 1) | `effect` |
+| a duration+cooldown item, cooling | `ITEM_STATE_COPY.cooling` = `"cd {n} SQ"` | `cooldown` |
+| a staff at full charges, no recharge record | `ITEM_STATE_COPY.ready` = `"READY"` | `ready` |
+| a staff recharging (`k` may be 0) | `ITEM_STATE_COPY.charges` = `"{k}/{max} · {n} SQ"` | `charges` |
+
+Every activatable row (Gear-tab worn/carried, ITEMS submenu) stays
+`enabled: true` regardless of this state — the Phase 38 ruling, carried
+forward: a tap on cooldown/recharging dispatches exactly like a ready one,
+and the engine's own named `useRefused {reason:"cooldown"|"recharging"}`
+line lands in the fight log/Oracle rather than a disabled no-op. A tool with
+no `use` (rope/ladder) never appears as an ITEMS submenu row or a Gear-tab
+"Use" button — unchanged from before this plan (the combat-menu `carriedRows`
+filter and the Gear-tab row's `it.use` gate are both untouched).
+
+### The condition-chip strip
+
+`engine/derived.js#conditionsOf(state)` (Plan 03) already enumerates one
+chip per live item effect (`haste`/`invis`/`acute`/`ether`/`might`/`lit`, via
+`liveItemEffects`), one `itemCooldown` chip per cooling duration+cooldown
+item, and one `staffCharges` chip per recharging staff. This plan wires the
+shell's copy tables and tap explanation onto that shape (`mazeworld.html`'s
+`CONDITION_COPY`/`CONDITION_TONE`/`CONDITION_EXPLAIN`, `paintConditions`):
+
+| Chip key | Label | Detail | Tone |
+|---|---|---|---|
+| `lit` (the torch) | `Lit` | `{n} sq` | good |
+| `itemCooldown` | the item's OWN name (`cn.item`, no fixed label) | `cd {n} sq` | odd |
+| `staffCharges` | the staff's OWN name (`cn.item`) | `{charges}/{max} · {n} sq` | odd |
+| `might` (now ALSO a timed Strength/Enlarge potion effect, not only the untimed spell buff) | `Strong` | `{n} sq` when the chip carries a live `remaining` (a potion effect); nothing when it doesn't (the spell buff, lasts the day, unchanged) | good |
+| `acute` | `Acute` | `{n} rds` in combat, `{n} sq` outside — now read from the chip's OWN `cadence` field (Acuteness's potion activation declares `cadence:"rounds"`), not a live-`S.combat` guess | good |
+
+Tapping any chip pushes a one-line rail explanation via
+`explainCondition(cn, label)` (new): for an ITEM-sourced chip (one carrying
+`cn.source` — a live item effect — or `cn.item` — `itemCooldown`/
+`staffCharges`) the line names the item and what's counting first —
+`"{Item} — {what}, {n} {squares|rounds}."` (`what` is `"cooling"` for
+`itemCooldown`, `"{k} of {max} charges, next in"` for `staffCharges`, else
+the chip's own label lower-cased) — then appends the plain
+`CONDITION_EXPLAIN[cn.key]` sentence, e.g. `"Cloak of Speed — cooling, 41
+squares. Used, and not ready to be used again. Squares fix that."` or
+`"Cloak of Speed — hasted, 23 squares. Two strikes a round while it lasts.
+Spend them on something that deserves it."` (matching the CONTEXT.md
+specifics example verbatim for the cooling case). A non-item chip (ward,
+darkness, afraid, the spell might buff, a foe debuff, an affliction) falls
+straight through to the plain `CONDITION_EXPLAIN` sentence, unchanged from
+before this plan.
+
+### The three rail cards
+
+1. **Hazard pre-roll decision** (`S.pendingHazard`, set by `engine/
+   movement.js` per Plan 04) — a fresh wall/gorge tile with the matching
+   tool carried pauses BEFORE any roll: `RAIL_COPY.hazard.title = "A
+   CHOICE"`, buttons `USE LADDER`/`USE ROPE` (`window.mzUseTool(tool, dir)`,
+   zero roll, zero fall damage) beside `CLIMB IT`/`LEAP IT` (`window.
+   move(dir)`, the same synchronous roll as always). Wins over an older
+   joiner/find card (a fresh movement decision), gated `!S.combat && !S.store`.
+2. **Retry with tool** (`window.__mzRail.pending.kind === "climb"`) — the
+   existing post-fall CLIMB IT/LEAP IT card now ALSO offers `USE LADDER`/
+   `USE ROPE` when the matching tool is carried, via `window.
+   __mzHasTool(S.c, tool)`; the retry label itself reads the pending
+   record's own `feat` (`CLIMB IT` for a wall, `LEAP IT` for a gorge,
+   falling back to the plain `RAIL_COPY.climb.retry` when `feat` is
+   somehow absent).
+3. **Dark with torch** (`window.__mzRail.pending.kind === "dark"`, gated on
+   a still-live `S.c.darkFor` AND a carried torch) — a fresh `darknessFell`
+   offers `USE TORCH` (`RAIL_COPY.dark.torch`), dispatching `window.
+   mzUseItem(window.__mzToolIndex(S.c, "torch"))` — the bag index is
+   resolved at TAP time, never stashed (T-39-15), so a stale card can never
+   dispatch a wrong slot.
+
+`stepNow(dir)` was refactored into `stepWith(action)` — the action-agnostic
+dispatch body (`dispatchWithToasts`, `noteCombat`, haptics, the pending-rail
+computation, the pre-death beat, narration stash, paint/draw/log, the
+moved-event recenter) `stepNow`/`window.mzUseTool` both call, so a spent
+tool goes through the EXACT same post-dispatch pipeline a normal step does.
+
+### The Hero-tab to-hit routing
+
+`#s-die`/`#s-hit` now read `window.__mzStrikeDie(S.c)`/`window.
+__mzToHit(S)` — the SAME `engine/derived.js#strikeDie`/`toHit` functions
+`engine/combat.js`'s own strike resolution reads — instead of the classic
+script's stale `strikeDie()`/`toHit()` duplicates (left in place, unread,
+as dead code for the cleanup milestone's classic-duplicate deletion). This
+is what makes the weapon `need` axis (Plan 01) and Acuteness's crit-die
+swap visible on the sheet: a Fighter with a Rapier (`need: +1`) now shows
+`1–6`, a Flail (`need: -1`) shows `1–4`.
+
+### What stays for the cleanup milestone
+
+The classic script's `strikeDie()`/`toHit()`/`useItem()` duplicates (dead
+code, unread by any live call site after this plan) are explicitly left in
+place — deleting dead code is the cleanup milestone's job (`.planning/
+proposed-milestone-shell-cleanup.md`), not this phase's.
 
 ## Requirements map — Plan 05
 
-Appended by Plan 05.
+| Requirement | Landed in | Proof |
+|---|---|---|
+| GEAR-01 | Plan 01 (weapon need/crit + armor bulk axes, expectedStrike) + Plan 02 (bot buy policy, the ledger) | `test/unit/gear-axes.test.js`; `test/unit/bot-buy-policy.test.js` |
+| GEAR-02 | Plan 03 (the `c.timers` activation model — use → effect → cooldown/charges, the four narrated transitions, tolerant load) + Plan 05 (the rendered row states + chips, satisfying the requirement's own "shown on the item and as a condition chip" text) | `test/unit/item-activation.test.js`; `test/unit/itemRowState.test.js`; `test/unit/conditions.test.js`; `test/unit/shell-gear-39.test.js` |
+| GEAR-05 | Plan 04 (the tools content, the `pendingHazard` pre-roll engine, the torch's `lit` effect) + Plan 05 (the rendered decision-point cards, satisfying the requirement's own "offered at the matching decision point" text) | `test/unit/tools.test.js`; `test/unit/shell-gear-39.test.js` |
+| SC-1: store and loot present meaningful weapon/armor trade-offs, recorded as a before/after ledger | Plan 01 + Plan 02 | `test/unit/gear-axes.test.js` (band role coverage); this ledger's per-class table |
+| SC-2: an activated item shows its effect-remaining, then its cooldown-remaining, as a condition chip until it's usable again | Plan 03 (the timer records) + Plan 05 (the chip render + row-state rule) | `test/unit/item-activation.test.js` (effect → cooldown records); `test/unit/itemRowState.test.js`; `test/unit/conditions.test.js` (chips) |
+| SC-3: a one-shot tool is offered and consumed at its decision point (e.g. the CLIMB IT rail card) | Plan 04 (the engine's `pendingHazard`/`useTool`/torch model) + Plan 05 (the actual cards) | `test/unit/tools.test.js` (hazardChoice/useTool/torch sections); `test/unit/shell-gear-39.test.js` (the card wiring) |
+| SC-4: tools appear as loot and store stock at depth-appropriate tiers | Plan 04 | `test/unit/tools.test.js` (loot row + store tiers sections) |
+
+## Out of scope / next
+
+- Spells and scrolls sharing the same `c.timers` model — Phase 40.
+- The torch vs. the map reveal/timed-light rework — Phase 41 (this phase's
+  torch only ever touches `c.darkFor`, never the reveal-radius model).
+- Tuning-bot tactics for buying/carrying/timing a tool, and for popping an
+  item mid-run at the right moment — Phase 42 (BAL-02 prep), before the
+  consolidated AFTER matrix.
+- The cleanup milestone's deletion of the classic script's now-dead
+  `strikeDie()`/`toHit()`/`useItem()` duplicates (`.planning/
+  proposed-milestone-shell-cleanup.md`).
