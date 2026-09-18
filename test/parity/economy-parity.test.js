@@ -48,6 +48,7 @@ import {
   skipsByteDiffAt,
   declaredEndDiffs,
   stockMarkupDiff as checkStockMarkup,
+  declaredStockDiffs,
   chargenShiftOf,
   stripChargenShift,
   chargenShiftDiffs,
@@ -112,6 +113,16 @@ test("economy parity (store visit): engine matches the frozen prototype after ev
     if (pathDiv?.stockCostMul != null && action.type === "openStore") {
       const markupDivergence = checkStockMarkup(ctx.S.store, engineState.store, pathDiv.stockCostMul);
       assert.equal(markupDivergence, null, `action ${i}: store markup diverged at ${markupDivergence}`);
+    }
+    // Phase 39 (GEAR-01, Task 3): the re-priced WEAPONS/ARMORS tables mean a
+    // flat cost multiplier can no longer describe the engine's stock — the
+    // stronger stockNames/stockAfter pin replaces it: the store ROLL
+    // (names/order/subs) is still byte-identical to the prototype, and the
+    // engine's own re-priced [n, cost] pairs are pinned exactly.
+    if (pathDiv?.stockAfter && action.type === "openStore") {
+      const stockDivergence = declaredStockDiffs(ctx.S.store, engineState.store, pathDiv);
+      assert.equal(stockDivergence.names, null, `action ${i}: store roll (names) diverged at ${stockDivergence.names}`);
+      assert.equal(stockDivergence.after, null, `action ${i}: engine stock diverged at ${stockDivergence.after}`);
     }
 
     if (!skipsByteDiffAt(pathDiv, i)) {

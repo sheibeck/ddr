@@ -236,10 +236,21 @@ const FULL_FIGHT_PINS = {
   // outcome, confirmed live via this file's own runFullFight/runVisits
   // helpers (the deeper wp cut still rounds to a fight that resolves the
   // same way).
+  // Phase 39 (GEAR-01, 2026-09-18): seed 1's Fridgian Knight wields an Awl
+  // Pike (KIT-issued) — re-diced 2026-09-18 from d8+2 (n:1) to 2d6+2 (n:2,
+  // need:-1, crit:1), a genuinely stronger, more reliable heavy weapon. All
+  // four seed-1 fights (magical-t4/demons-t5/walking-dead-t5/beasts-t5) were
+  // re-measured live via this file's own runFullFight — humans-t2 (seed 3,
+  // a Dagger-wielding Pickpocket) is untouched. beasts-t5 flips from "died"
+  // to "won" (see its own comment below); walking-dead-t5's totalDraws/
+  // attacks shrink (the heavier hits resolve the same "died" outcome one
+  // attack sooner) but its outcome is unchanged — an intentional,
+  // escalated, rationale-bearing divergence per this file's own header
+  // rule, not a regression.
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
-  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 46, attacks: 4, outcome: "won" },
-  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 55, attacks: 4, outcome: "won" },
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 36, attacks: 2, outcome: "died" },
+  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 45, attacks: 4, outcome: "won" },
+  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 51, attacks: 3, outcome: "won" },
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 23, attacks: 1, outcome: "died" },
   // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
   // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
   // and rats" (Beasts), so this Beasts-forced encounter now triggers
@@ -250,7 +261,13 @@ const FULL_FIGHT_PINS = {
   // pins below (PER_VISIT_PINS) are UNCHANGED — runVisits never calls
   // playerStrike, so the Afraid penalty (which only touches the player's
   // own strikes) has no effect on foeTurn's own draws.
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 59, attacks: 3, outcome: "died" },
+  //
+  // Phase 39 (GEAR-01, 2026-09-18): the Awl Pike re-dice (see the header
+  // comment above this table) flips this fight's outcome from "died" to
+  // "won" too — the Afraid penalty still halves the hero's damage, but even
+  // halved, the heavier 2d6+2 base now outpaces the Stalka Beast's own
+  // damage. Re-measured live, not assumed.
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 67, attacks: 4, outcome: "won" },
 };
 
 const PER_VISIT_PINS = {

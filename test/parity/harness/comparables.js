@@ -727,6 +727,43 @@ export function stockMarkupDiff(protoStore, engineStore, mul) {
 }
 
 /**
+ * declaredStockDiffs(protoStore, engineStore, record) — Phase 39 (GEAR-01,
+ * Task 3): the store-roll pin an action-path record uses in place of
+ * `stockCostMul` once the WEAPONS/ARMORS content tables themselves carry
+ * different prices than the frozen prototype — `stockMarkupDiff` assumes the
+ * engine cost is derivable from the PROTOTYPE's own cost times a flat
+ * multiplier, which no longer holds when a weapon's base price itself moved
+ * (e.g. Katana 525 -> 650). `stockNames`/`stockAfter` are the stronger
+ * replacement: `stockNames` is the roll IDENTITY (names, in order, both
+ * sides normalized/Rations-stripped via `stripStoreClosures` exactly like
+ * every other economy comparison) — proving the store ROLL itself is still
+ * byte-identical to the prototype even though the line COSTS are not;
+ * `stockAfter` is a direct snapshot of the engine's own `[n, cost]` pairs
+ * (raw, including the engine-only Rations line), pinning the actual re-priced
+ * numbers a typo could otherwise silently drift.
+ *
+ * Returns `{ names, after }`: `names` is `null` only when BOTH the
+ * prototype's stripped names AND the engine's stripped names equal
+ * `record.stockNames` (a `diffState` result, so a caller gets the same
+ * human-readable location string every other comparable check does);
+ * `after` is `diffState` of the engine's raw `[n, cost]` pairs against
+ * `record.stockAfter`. A caller asserts both are `null` before relying on
+ * the record — measured, never hand-typed, exactly like every other
+ * divergence record kind in this file.
+ */
+export function declaredStockDiffs(protoStore, engineStore, record) {
+  const protoNames = stripStoreClosures(protoStore)?.stock?.map((s) => s.n) ?? [];
+  const engineNamesStripped = stripStoreClosures(engineStore)?.stock?.map((s) => s.n) ?? [];
+  const namesVsProto = diffState(protoNames, record.stockNames);
+  const namesVsEngine = diffState(engineNamesStripped, record.stockNames);
+  const engineAfter = (engineStore?.stock ?? []).map((s) => [normalizeHpUnit(s.n), s.cost]);
+  return {
+    names: namesVsProto ?? namesVsEngine,
+    after: diffState(engineAfter, record.stockAfter),
+  };
+}
+
+/**
  * chargenDivergenceFor(fixture, seed) — FID-06 (Phase 23, CONTEXT "Fixture
  * handling"): looks up the seed-scoped divergence record (if any) from a
  * chargen fixture's top-level `divergences` map (see

@@ -798,3 +798,86 @@ identical to the pre-phase measurement; `c.vp` is identical for every
 declared seed above. `test/parity/prototype-master.js.txt` is never edited;
 no existing `seed`/`actions`/`scenarios` array, and no existing `divergence`
 record, was touched by this phase.
+
+## Phase 39: gear axes (GEAR-01) — declared divergences
+
+39-01-PLAN.md lands GEAR-01's mechanical half: every WEAPONS row gets a
+`need` axis (-2/-1/0/1, a to-hit NEED modifier — the to-hit is a LOW range,
+roll <= need, so a light weapon's `need: +1` raises the need/easier-to-hit
+and a heavy weapon's `need: -1`/`-2` lowers it/harder-to-hit, floored at 1
+after every class's base need) and a `crit` axis (1 or 2 — the five precise
+blades, Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit on a roll of 1 OR 2;
+every other weapon still only crits on a natural 1). Every ARMORS row gets a
+`bulk` axis (0/1/2 — Cloth/Leather 0, Studded/Mail 1, Plate 2), added to the
+climb/leap roll comparison, subtracted from the flee roll, and replacing the
+old hard-coded Plate-name checks (`bulk >= 2`) in the Thief Stealth/backstab
+gates. The 24 weapon keys, their object-literal ORDER, and every `cls`
+string are pinned byte-for-byte identical to the pre-phase table (load-
+bearing: `engine/economy.js#openStore`'s `rng.shuffle(Object.keys(WEAPONS)
+.filter(cls))` and `engine/items.js#rollBlade`'s `rng.pick(Object.keys(
+WEAPONS))` both index by that order) — only the `dice`/`lab`/`cost` fields
+and the two new axes moved. `engine/items.js#weaponUpgradeDelta` (the "is
+this weapon better" rule `takeItem`/`lootCompare`/the tuning bot all share)
+is re-based on `engine/derived.js#expectedStrike` (expected damage per
+swing, folding hit chance × (base + crit-chance) together) instead of raw
+`WEAPON_MAX`, so a heavy weapon's lower hit chance and a light weapon's
+higher crit chance both show up in the comparison now.
+
+Exactly ONE `test/parity/fixtures/*.json` scenario moves — measured live via
+the harness's own replay, never reasoned from seeds (per the fixture
+divergence protocol). Every other scenario across
+combat/magic/movement/encounters/chargen was re-run against the finished
+Phase 39 engine and stays byte-identical (0 failures, no new records
+needed) — see the "Byte-identical elsewhere" paragraph below for why.
+
+| Fixture | Scenario / seed | Hero | Weapon | What moved | before → after |
+|---|---|---|---|---|---|
+| action-script.economy.json | script top level / seed 3 | Human Pickpocket | Katana (final) | The store roll's IDENTITY (names/order/subs) stays byte-identical to the prototype (`stockNames`, machine-checked against BOTH sides), but every routed line's COST moved — Katana 525→650 (×1.25 Pickpocket markup: 656→813), the premium Casket's base (Broadsword) 500→550 (688→4128 with its enchant multiplier), Axe/Studded/Rations unchanged (their base prices did not move). The re-based `weaponUpgradeDelta` also flips the Axe purchase (action 3) from an accepted upgrade to a `notBetter` rejection on BOTH sides (a bare Axe no longer out-values the Pickpocket's starting Dagger under expected-strike math) — gold is still spent either way, so this does not change the declared `fields`. | prototype (unchanged, frozen): gold 55, weapon Katana, items = [Cloak of Ether, Healing potion, Lockpicks] → engine (re-measured): gold 2066, weapon Katana, items = [Cloak of Ether, Healing potion, Lockpicks, Speed potion] — the engine now affords everything the frozen prototype does, plus a Speed potion the prototype's lower starting prices never left room for; both sides still hit one genuine insufficient-gold case (the ~4100-gold Casket, action 5) |
+
+The existing Phase 24 `divergence` record (`kind: "action-path"`,
+`fromAction: 0`, `fields: ["gold","weapon","items"]`) is EXTENDED, not
+replaced: `stockCostMul` (a flat multiplier off the prototype's own frozen
+cost — no longer meaningful once the content prices themselves diverge) is
+removed and replaced by `stockNames`/`stockAfter` (`declaredStockDiffs` in
+`test/parity/harness/comparables.js`), and `after`/`phase`/`requirements`/
+`rationale` are updated to the re-measured engine end-state; `before`
+(the prototype's own values) is untouched, exactly as measured, per the
+fixture divergence protocol.
+
+### Byte-identical elsewhere (Phase 39, GEAR-01)
+
+- **Chargen fixture** (`action-script.chargen.json`, every seed) — chargen
+  never reads a weapon's `dice`/`need`/`crit` or an armor's `bulk`; only
+  `c.weapon`/`c.armor` NAMES are assigned at roll time (from `KIT`, itself
+  untouched by this phase), so no chargen seed's `c` diverges.
+- **`movement.json`** (seed 256, the 101-action script) — the fixture's own
+  `_note` documents that its walked path deliberately avoids every
+  unimplemented/rng-dependent feature tile, INCLUDING climb and gorge tiles;
+  `armorBulk(state.c)`'s new climb/leap term is therefore never reached.
+- **`combat.json`'s `flee`/`parley` scenarios** — neither action ever calls
+  `playerStrike`, so the weapon need/crit axes (and `weaponUpgradeDelta`)
+  never enter their draw sequence; `flee`'s own new `bulk` term is 0 for
+  every fixture-exposed hero (none wears Studded/Mail/Plate), so `roll +
+  bonus - bulk >= 11` is arithmetically identical to the old `roll + bonus
+  >= 11` for these seeds.
+- **`combat.json`'s `win`/`lose`/`lose-apprentice`/`lose-plain` scenarios**
+  and **`magic.json`'s scenarios** — each resolves (or fixes its declared
+  divergence) within a small, already-measured number of `playerStrike`
+  calls whose hit/miss/crit outcomes are unchanged by the axes for these
+  specific heroes' weapons (Dagger/Short Sword/Club/Quarter Staff — a
+  precise blade's crit-range widening only matters on a NON-opening swing, a
+  case these short fixture fights never reach; a need shift of ±1 never
+  flips a hit/miss result for these particular pinned roll sequences) — the
+  full parity suite (`npm test`) re-confirms this empirically (0 failures)
+  rather than this document merely asserting it.
+- **`encounters.json`'s `faerie` scenario** (seed 38) — the faerie's
+  `rollMailPiece`/`rng.pick(ARMORS)` draws by ARRAY POSITION, not by name;
+  ARMORS keeps its 5 rows in the exact same order with only `bulk` appended
+  as a new field, so the roll picks the identical armor piece and the
+  `ar`/`wp`/`min`/`cls`/`cost` fields it copies out are byte-identical.
+- **`encounters.json`'s `trap`/`chest`/`tablefour`/`affliction` scenarios**
+  — none reaches a combat or a climb/gorge tile; unaffected by construction.
+
+<!-- 39-03 -->
+
+<!-- 39-04 -->

@@ -277,7 +277,16 @@ const FULL_FIGHTS = [
   // Fridgian Pilfer): the corpse-whiff draw is gone and hide -2 shortens the
   // fight by two rounds. Re-measured live. Unaffected by Phase 31 (this
   // Pilfer has no Beasts phobia).
-  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 101, attacks: 9, outcome: "won" },
+  //
+  // Phase 39 (GEAR-01, 2026-09-18): this Fridgian Pilfer wields a Dagger,
+  // which now carries `crit: 2` (crits on a roll of 1 OR 2, not just 1) —
+  // the whole point of the precise-blade axis. A Thief's backstab/Stealth
+  // openers already forced crits on the opening swings, but every LATER
+  // swing now crits roughly twice as often too, so this fight resolves in
+  // under half the attacks. Re-measured live via this file's own
+  // runFullFight, never hand-computed — an intentional, escalated,
+  // rationale-bearing divergence, not a regression.
+  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 49, attacks: 4, outcome: "won" },
   // Phase 31 (2026-09-16, CMB-01): was 66/10/won (Phase 27's Ned re-measure).
   // Not a phobia trigger — this Con Artist's own level-1-foe escape roll
   // (rng.d(6), still inside the encounter step) now lands BEFORE the two
@@ -598,7 +607,7 @@ for (const row of GATED_DRAWS) {
 // 1119, a plain Human Cutthroat, no Beasts phobia) restores byte-identical
 // death-path coverage. See the FULL_FIGHTS array above for the full
 // rationale on each changed/added row.
-test("FID-02 restated post-Phase-31: the seven FULL_FIGHTS totals (12/36/101/52/32/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
+test("FID-02 restated post-Phase-39: the seven FULL_FIGHTS totals (12/36/49/52/32/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);

@@ -201,15 +201,18 @@ test("flag-off identity: a missing key, storeRoll: false, and a truthy non-boole
   }
 });
 
-test("seed 3 flag-off stock still pins Katana 656 / Axe 63 / Studded 938 / Casket 3750 / Rations 38", () => {
+// Phase 39 (GEAR-01): Katana re-priced 525 -> 650 and the premium Casket's
+// base (Broadsword) re-priced 500 -> 550, so their Pickpocket-marked-up
+// numbers move too (Axe/Studded/Rations are unaffected). Measured live.
+test("seed 3 flag-off stock still pins Katana 813 / Axe 63 / Studded 938 / Casket 4128 / Rations 38", () => {
   const s = newRun(3);
   assert.equal(s.c.sub, "Pickpocket", "seed 3's hero must be a Pickpocket for this pin to prove anything");
   const { stock } = openWith(s, false);
   const byName = Object.fromEntries(stock.map((x) => [x.n, x.cost]));
-  assert.equal(byName["Katana"], 656);
+  assert.equal(byName["Katana"], 813);
   assert.equal(byName["Axe"], 63);
   assert.equal(byName["Studded"], 938);
-  assert.equal(byName["Casket, a broadsword"], 3750);
+  assert.equal(byName["Casket, a broadsword"], 4128);
   assert.equal(byName["Rations (+1 ration)"], 38);
 });
 

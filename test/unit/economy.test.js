@@ -261,16 +261,20 @@ test("a GameState with an open store round-trips JSON deepStrictEqual (the closu
 // and that the SAME seed's store ROLL (names/order/subs) is unchanged when
 // forced to a non-Pickpocket sub — only the routed line costs move.
 
-test("seed 3 (a Human Pickpocket): store roll pins Katana 656 / Axe 63 / Studded 938 / Casket 3750 / Rations 38; flat lines unchanged", () => {
+// Phase 39 (GEAR-01): Katana re-priced 525 -> 650 and the premium Casket's
+// base (Broadsword) re-priced 500 -> 550, so their Pickpocket-marked-up
+// numbers move too (Axe/Studded/Rations are unaffected — their base prices
+// did not change). Measured live, not hand-computed.
+test("seed 3 (a Human Pickpocket): store roll pins Katana 813 / Axe 63 / Studded 938 / Casket 4128 / Rations 38; flat lines unchanged", () => {
   const state = newRun(3);
   assert.equal(state.c.sub, "Pickpocket", "seed 3's hero must be a Pickpocket for this pin to prove anything");
   const rng = makeRng(state.rngState);
   openStore(state, rng, []);
   const byName = Object.fromEntries(state.store.stock.map((s) => [s.n, s.cost]));
-  assert.equal(byName["Katana"], 656);
+  assert.equal(byName["Katana"], 813);
   assert.equal(byName["Axe"], 63);
   assert.equal(byName["Studded"], 938);
-  assert.equal(byName["Casket, a broadsword"], 3750);
+  assert.equal(byName["Casket, a broadsword"], 4128);
   assert.equal(byName["Rations (+1 ration)"], 38);
   // flat lines (food/potions/lockpicks) are never routed through priceFor's
   // Pickpocket markup — unchanged regardless of sub.
@@ -285,7 +289,7 @@ test("seed 3 forced to a Cutthroat: same store roll (names/order/subs), un-marke
   const rng = makeRng(state.rngState);
   openStore(state, rng, []);
   const byName = Object.fromEntries(state.store.stock.map((s) => [s.n, s.cost]));
-  assert.equal(byName["Katana"], 525);
+  assert.equal(byName["Katana"], 650);
   assert.equal(byName["Axe"], 50);
   assert.equal(byName["Studded"], 750);
   assert.equal(byName["Rations (+1 ration)"], 30);

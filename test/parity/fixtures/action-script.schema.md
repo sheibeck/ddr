@@ -83,7 +83,25 @@ exact same ordered action list, so any divergence in resulting state (per
     `Math.max(1, Math.round(prototypeCost * stockCostMul))`, every other
     line's cost must be unchanged, and the store roll itself (names, order,
     subs) must be byte-identical — see `stockMarkupDiff` in
-    `test/parity/harness/comparables.js`.
+    `test/parity/harness/comparables.js`. Superseded by `stockNames`/
+    `stockAfter` below whenever the CONTENT prices themselves diverge from
+    the prototype (a flat multiplier off the prototype's own frozen cost no
+    longer describes the engine's line prices in that case) — a record
+    carries one or the other, never both.
+  - `stockNames` (array of strings, optional; economy fixtures only; Phase
+    39, GEAR-01) — the store roll's IDENTITY at the `openStore` action: the
+    stock's `n` values, in order, after both sides are run through
+    `stripStoreClosures` (Rations dropped, `wp`→`hp` normalized) — proves the
+    roll itself (which items, what order, which subs) is still byte-identical
+    to the prototype even when the line COSTS have moved.
+  - `stockAfter` (array of `[name, cost]` pairs, optional; economy fixtures
+    only; Phase 39, GEAR-01) — a direct snapshot of the ENGINE's own raw
+    stock at the `openStore` action (including the engine-only Rations
+    line), pinning the actual re-priced numbers so a content-table typo
+    fails the suite instead of passing silently. See `declaredStockDiffs` in
+    `test/parity/harness/comparables.js` — it checks `stockNames` against
+    BOTH sides and `stockAfter` against the engine alone; a caller asserts
+    both results are `null`.
 
   The harness helpers for this record kind live in
   `test/parity/harness/comparables.js`: `actionPathDivergenceOf(holder)` looks

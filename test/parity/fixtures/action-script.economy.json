@@ -42,14 +42,43 @@
     }
   ],
   "divergence": {
-    "phase": "24",
+    "phase": "24+39",
     "requirements": [
       "IDENT-05",
-      "FID-07"
+      "FID-07",
+      "GEAR-01"
     ],
     "kind": "action-path",
     "fromAction": 0,
-    "stockCostMul": 1.25,
+    "stockNames": [
+      "Chicken (+12 hp)",
+      "Bread (+5 hp)",
+      "Meat (+15 hp)",
+      "Healing potion",
+      "Xtra Healing potion",
+      "Strength potion",
+      "Speed potion",
+      "Set of lockpicks",
+      "Katana",
+      "Axe",
+      "Studded",
+      "Casket, a broadsword"
+    ],
+    "stockAfter": [
+      ["Chicken (+12 hp)", 20],
+      ["Bread (+5 hp)", 15],
+      ["Meat (+15 hp)", 25],
+      ["Healing potion", 150],
+      ["Xtra Healing potion", 500],
+      ["Strength potion", 100],
+      ["Speed potion", 500],
+      ["Set of lockpicks", 450],
+      ["Katana", 813],
+      ["Axe", 63],
+      ["Studded", 938],
+      ["Casket, a broadsword", 4128],
+      ["Rations (+1 ration)", 38]
+    ],
     "fields": [
       "gold",
       "weapon",
@@ -82,8 +111,8 @@
       ]
     },
     "after": {
-      "gold": 79,
-      "weapon": "Axe",
+      "gold": 2066,
+      "weapon": "Katana",
       "items": [
         {
           "kind": "cloak",
@@ -99,10 +128,22 @@
           "txt": "+d10+2 wp",
           "eff2": "heal",
           "uses": 1
+        },
+        {
+          "kind": "picks",
+          "n": "Lockpicks",
+          "txt": "1–5 on d10 against any lock"
+        },
+        {
+          "kind": "potion",
+          "n": "Speed potion",
+          "txt": "double attacks, 50 squares",
+          "eff2": "speed",
+          "uses": 1
         }
       ]
     },
-    "rationale": "The seed-3 hero is a Human Pickpocket; Phase 24 marks up every priceFor-routed store line (buyWeapon/buyArmor/buyPremium/buyRations/repairArmor) x1.25 for a Pickpocket, floor 1, so the openStore ROLL itself is byte-identical to the frozen prototype (names, order, and subs unchanged, asserted via stockMarkupDiff at action 0) while every routed cost is 1.25x higher. With the same 5000-gold bump on both sides, the engine simply runs out of gold two purchases earlier than the prototype: both sides buy Chicken, Healing potion, Axe, Studded and reject the over-priced Casket at actions 1-5, but action 6 (Set of lockpicks, 450) still fits the prototype's gold (580) while the engine's higher spend on the Axe/Studded/Casket-rejection path leaves it short (79 gold); action 7 (Katana, marked up to 656) then also fails on the engine while the prototype affords it and equips it. Seed/actions/gold bump are deliberately untouched — the divergence is declared, not dodged. Purchase mechanics parity for a non-Pickpocket hero is unchanged code (buyFrom/takeItem/sellItem's arithmetic paths are untouched for a non-Pickpocket sub) and is covered instead by test/unit/economy.test.js's priceFor/sellPriceFor/seed-3-stock-pin cases."
+    "rationale": "The seed-3 hero is a Human Pickpocket; Phase 24 marks up every priceFor-routed store line (buyWeapon/buyArmor/buyPremium/buyRations/repairArmor) x1.25 for a Pickpocket, floor 1. Phase 39 (GEAR-01) re-prices the WEAPONS table itself, so a flat multiplier off the PROTOTYPE's own cost no longer describes the engine's line prices (the prototype is frozen at Katana 525/Axe 50/Broadsword-premium 500; the engine now sells Katana 650, Broadsword 550, before the 1.25x Pickpocket markup) — the stockCostMul check is replaced by the stronger stockNames/stockAfter pin: the store ROLL is still byte-identical to the prototype (same 12 names, in order — Rations is the engine's own extra line, excluded from stockNames and present only in stockAfter) while every routed cost is measured directly. With the same 5000-gold bump on both sides, the higher engine prices no longer starve the run the way the old prices did: the engine now affords everything the prototype does PLUS extra purchases the prototype's own gold ran out before reaching (the fixture's own action order buys Axe/Studded/Casket/Lockpicks/Katana/Speed potion in sequence) — action 5 (Casket, 4128) still fails on both sides (both are far short of a ~4100-gold premium item at this point), but the engine ends the script with 2066 gold left over (vs the prototype's 55) and a Speed potion the prototype could never reach. `weaponUpgradeDelta`'s new expected-strike heuristic also makes the Axe purchase (action 3) a takeItem 'notBetter' rejection on BOTH sides (the Pickpocket's starting Dagger already out-crits a bare Axe) — gold is still spent (the store always deducts on a legal purchase attempt), so this does not change the declared fields. Seed/actions/gold bump are deliberately untouched — the divergence is declared, not dodged. Purchase mechanics parity for a non-Pickpocket hero is unchanged code (buyFrom/takeItem/sellItem's arithmetic paths are untouched for a non-Pickpocket sub) and is covered instead by test/unit/economy.test.js's priceFor/sellPriceFor/seed-3-stock-pin cases."
   },
   "chargenDivergence": {
     "phase": 38,
