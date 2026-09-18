@@ -28,7 +28,7 @@ import { canParley, songReady, liveFoes } from "../../engine/combat.js";
 import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, slotFor, activationFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canRead } from "../../engine/magic.js";
-import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex } from "../../engine/items.js";
+import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES, ABILITY_BY_ID } from "../../content/index.js";
@@ -503,6 +503,19 @@ export function makeBotContext(opts = {}) {
 export const GOLD_RESERVE = 50;
 
 /**
+ * RUN_FLAGS — Phase 42 (BAL-01/02): the bot plays the SHIPPED game's run
+ * rules, exactly what `engineAdapter#startNewRun` passes — `storeRoll`
+ * enables the depth-rolled store stock, `wornSlots` creates `c.worn` via
+ * `reconcileWorn` (so a Thief's starting cloak, a rolled staff, etc. all live
+ * in the worn-slot model this plan's item tactics read). The BEFORE pin
+ * (`e69ff07`) predates `wornSlots` and ran with the legacy bag-summed `eff()`
+ * and the fixed store, so the AFTER run records these flags in
+ * `meta.runFlags` (Plan 03) rather than pretending the harness is unchanged —
+ * greenfield ruling 2026-09-17: the bot always plays the new rules.
+ */
+export const RUN_FLAGS = Object.freeze({ storeRoll: true, wornSlots: true });
+
+/**
  * chooseStorePurchase(state, ctx) — Phase 39 (GEAR-01, 39-02-PLAN.md Task 1):
  * the store buy/equip policy that replaces the pre-Phase-39 "always leave a
  * store" step (l) below. Deliberately reads the engine's OWN
@@ -583,13 +596,147 @@ export function chooseStorePurchase(state, ctx) {
 }
 
 /**
+ * itemLabel(it) — Phase 42 (BAL-01 second half): the `ctx.itemBlocked` label
+ * for item `it` — `potion:<eff2>` for a potion, `tool:<tool>` for a tool,
+ * else the item's own display name `.n` (a cloak/staff/jewel). Exported so
+ * Plan 03's usage tallies can key off the exact same label `observe` blocks
+ * on. Pure, null-safe.
+ */
+export function itemLabel(it) {
+  if (!it || typeof it !== "object") return "";
+  if (it.kind === "potion") return `potion:${it.eff2}`;
+  if (it.kind === "tool") return `tool:${it.tool}`;
+  return it.n;
+}
+
+/**
+ * hardFight(state) — Phase 42 (BAL-01 second half): true when the current
+ * encounter holds any kit-bearing live foe OR any live foe at/above
+ * `BOT_TACTICS.hardFoeLvl` — the "pop a buff before this one" gate. Pure.
+ */
+export function hardFight(state) {
+  if (liveFoesHaveAbilities(state)) return true;
+  return liveFoes(state).some((f) => f.lvl >= BOT_TACTICS.hardFoeLvl);
+}
+
+/**
+ * chooseCombatItem(state, ctx) — Phase 42 (BAL-01 second half): the bot's
+ * in-combat item policy, checked only while `state.combat` exists. Returns
+ * `{ action, reason }` or `null`:
+ *   (1) "heal" — below the flee line, a bag Healing/Xtra Healing potion
+ *       (Xtra Healing preferred) drunk BEFORE the flee/parley decision;
+ *   (2) "buff" — round 1 of a `hardFight`, a bag Speed/Strength/Enlarge
+ *       potion (in that preference order) whose activation kind is not
+ *       already active, or a ready worn Cloak of Speed;
+ *   (3) "staff" — a Magic User's ready worn (or, on a legacy state with no
+ *       `c.worn`, bagged) staff: a targeted kind at `staffMinFoes`+ live
+ *       foes, `dome` or `heal` below `potionThreshold`.
+ * Every candidate passes `itemReady` (covers the death-potion/no-charges/
+ * cooldown cases) and is skipped when `ctx.itemBlocked` already carries its
+ * `itemLabel`; a Pilfer is skipped entirely for the buff tier (a non-heal
+ * item — `useItem` would refuse it `pilfer`). Pure, no rng.
+ */
+export function chooseCombatItem(state, ctx) {
+  const c = state.c;
+  const C = state.combat;
+  if (!C) return null;
+  const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
+  const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold;
+  const items = Array.isArray(c.items) ? c.items : [];
+  const eligible = (it) => !!it && !ctx.itemBlocked.has(itemLabel(it)) && itemReady(state, it);
+
+  // (1) heal below the flee line — Xtra Healing ("full") preferred over
+  // Healing ("heal").
+  if (ratio < fleeAt) {
+    let bestIdx = -1;
+    let bestFull = false;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (!it || it.kind !== "potion" || (it.eff2 !== "heal" && it.eff2 !== "full")) continue;
+      if (!eligible(it)) continue;
+      const isFull = it.eff2 === "full";
+      if (bestIdx === -1 || (isFull && !bestFull)) {
+        bestIdx = i;
+        bestFull = isFull;
+      }
+    }
+    if (bestIdx !== -1) return { action: { type: "useItem", i: bestIdx }, reason: "heal" };
+  }
+
+  // (2) round-1 buff before a hard fight
+  if (C.round === 1 && hardFight(state) && c.sub !== "Pilfer") {
+    for (const eff2 of ["speed", "strength", "enlarge"]) {
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (!it || it.kind !== "potion" || it.eff2 !== eff2) continue;
+        if (!eligible(it)) continue;
+        const act = activationFor(it);
+        if (act && itemEffectActive(c, act.kind)) continue;
+        return { action: { type: "useItem", i }, reason: "buff" };
+      }
+    }
+    const cloak = c.worn && c.worn.cloak;
+    if (cloak && cloak.use === "haste" && eligible(cloak)) {
+      return { action: { type: "useItem", slot: "cloak" }, reason: "buff" };
+    }
+  }
+
+  // (3) a Magic User's ready staff — worn when the run has a worn-slot model
+  // (`"worn" in c`), else a bagged one (legacy state, T-39-04 precedent).
+  if (c.cls === "Magic User") {
+    const hasWornModel = c && typeof c === "object" && "worn" in c && c.worn && typeof c.worn === "object";
+    const staff = hasWornModel ? c.worn.staff : items.find((it) => it && it.kind === "staff");
+    const staffRef = hasWornModel ? { slot: "staff" } : { i: items.indexOf(staff) };
+    if (staff && eligible(staff)) {
+      const kind = staff.use;
+      if (TARGETED_KINDS.has(kind) && liveFoes(state).length >= BOT_TACTICS.staffMinFoes) {
+        return { action: { type: "useItem", ...staffRef }, reason: "staff" };
+      }
+      if (kind === "dome" && ratio < ctx.opts.potionThreshold && !c.ward) {
+        return { action: { type: "useItem", ...staffRef }, reason: "staff" };
+      }
+      if (kind === "heal" && ratio < ctx.opts.potionThreshold) {
+        return { action: { type: "useItem", ...staffRef }, reason: "staff" };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * chooseFieldItem(state, ctx) — Phase 42 (BAL-01 second half): the bot's
+ * out-of-combat field item policy — a bag torch (`kind === "tool" && use ===
+ * "light"`) lit while `inDark(state)` and no `lit` effect is already running.
+ * Rope/ladder stay on the existing `pendingHazard` answer (a decision the
+ * engine already parked, not a timing tactic). Pure, no rng.
+ */
+export function chooseFieldItem(state, ctx) {
+  const c = state.c;
+  if (!inDark(state) || itemEffectActive(c, "lit")) return null;
+  const i = toolIndex(c, "torch");
+  if (i === -1) return null;
+  const it = c.items[i];
+  if (ctx.itemBlocked.has(itemLabel(it)) || !itemReady(state, it)) return null;
+  return { type: "useItem", i };
+}
+
+/**
  * decideAction(state, policyRng, ctx) — the shared, deterministic auto-play
- * policy (D-05/D-06/D-12/D-20, extended HARN-02). In combat, priority order:
+ * policy (D-05/D-06/D-12/D-20, extended HARN-02). In combat, `chooseCombatItem`
+ * is computed once up front; priority order:
+ *   (a0) Phase 42 (BAL-01 second half): a "heal" pick from `chooseCombatItem`
+ *       — a bag Healing/Xtra Healing potion drunk BEFORE the flee/parley
+ *       decision below, so a hero who could simply heal doesn't run instead;
  *   (a) caster-aware flee/parley threshold (D-06): parley if available, else
  *       flee — UNLESS the character is a Samurai (canon: never flees) or a
  *       flee attempt was already refused this encounter (`ctx.fleeBlocked`),
  *       in which case fall through to fight instead of looping the refusal;
  *   (b) drink below potionThreshold (D-05);
+ *   (b2)/(b3) Phase 42 (BAL-01 second half): a "buff" or "staff" pick from
+ *       `chooseCombatItem` — a round-1 Speed/Strength/Enlarge potion (or a
+ *       ready worn Cloak of Speed) before a hard fight, or a Magic User's
+ *       ready worn staff;
  *   (c) talk-first (HARN-02): the identity talkers (`isTalkFirst`) try
  *       parley once at round 1, before anything else;
  *   (d) sing (HARN-02): a Bard's song, once ready, every round 1 (level 1
@@ -609,12 +756,16 @@ export function chooseStorePurchase(state, ctx) {
  *       kit follows (opener round 1; damage above half hp; defensive below
  *       half); a once-a-fight foe-targeted pick aims at the hardest live foe;
  *   (i) attack.
- * Out of combat: (j) decline every pending Joiner (D-20); (k) take/leave a
- * pending find; (l) buy the best affordable weapon/armor upgrade via
- * `chooseStorePurchase` (Phase 39, GEAR-01), else leave the store;
- * (m) drink below potionThreshold;
- * (n) camp below campThreshold (rations permitting); (o) Summon out of
- * combat (HARN-02) when no ally is pending and charges exceed half of
+ * Out of combat: (loot) Phase 42 (BAL-01 second half): a non-empty
+ * `state.pendingLoot` — `takeAllLoot` unless `ctx.findFull`, then
+ * `leaveAllLoot` — checked FIRST, before even a pending Joiner (the victory
+ * loot pile the bot has ignored since v1.3); (j) decline every pending
+ * Joiner (D-20); (k) take/leave a pending find; (l) buy the best affordable
+ * weapon/armor upgrade via `chooseStorePurchase` (Phase 39, GEAR-01), else
+ * leave the store; (m) drink below potionThreshold; (n) camp below
+ * campThreshold (rations permitting); (torch) Phase 42 (BAL-01 second half):
+ * `chooseFieldItem` — light a carried torch while in the dark; (o) Summon out
+ * of combat (HARN-02) when no ally is pending and charges exceed half of
  * maxCharges; (p) read a carried scroll when able (Claude's Discretion —
  * `useItem` is deliberately NOT used for potions: found potions are
  * unidentified, one of the ten is Death, so a blind quaff is not
@@ -653,6 +804,10 @@ export function decideAction(state, policyRng, ctx) {
     const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
     const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold; // D-06
     const chargesLeft = c.cls === "Magic User" ? maxCharges(c) - c.spellsUsed : 0;
+    const itemPick = chooseCombatItem(state, ctx); // Phase 42 (BAL-01 second half)
+
+    // (a0) Phase 42: heal before the flee/parley decision below
+    if (itemPick && itemPick.reason === "heal") return itemPick.action;
 
     // (a)
     if (ratio < fleeAt) {
@@ -664,6 +819,10 @@ export function decideAction(state, policyRng, ctx) {
 
     // (b) D-05
     if (c.potions > 0 && ratio < ctx.opts.potionThreshold) return { type: "drinkPotion" };
+
+    // (b2)/(b3) Phase 42: a round-1 buff before a hard fight, or a Magic
+    // User's ready worn staff
+    if (itemPick && (itemPick.reason === "buff" || itemPick.reason === "staff")) return itemPick.action;
 
     // (c) HARN-02 talk-first
     if (C.round === 1 && isTalkFirst(state) && !ctx.parleyBlocked && canParley(state)) return { type: "parley" };
@@ -709,6 +868,12 @@ export function decideAction(state, policyRng, ctx) {
     // (i)
     return { type: "attack" };
   }
+  // Phase 42 (BAL-01 second half): the victory loot pile — take it (or leave
+  // it against a full bag), before even a pending Joiner. The bot has
+  // ignored state.pendingLoot entirely since v1.3.
+  if (Array.isArray(state.pendingLoot) && state.pendingLoot.length) {
+    return ctx.findFull ? { type: "leaveAllLoot" } : { type: "takeAllLoot" };
+  }
   if (state.pendingJoiner) return { type: "resolveJoiner", accept: false }; // D-20
   if (state.pendingFind) return ctx.findFull ? { type: "leaveFind" } : { type: "takeFind" };
   // Phase 39 (GEAR-05): a pending hazard the bot is already carrying the
@@ -728,6 +893,10 @@ export function decideAction(state, policyRng, ctx) {
   const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
   if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
   if (ratio < ctx.opts.campThreshold && c.rations >= (RACES[c.race]?.eats || 1)) return { type: "camp" }; // D-05
+
+  // Phase 42 (BAL-01 second half): light a carried torch while in the dark.
+  const field = chooseFieldItem(state, ctx);
+  if (field) return field;
 
   // HARN-02: Summon out of combat — bank charges for the fight unless there
   // is plenty to spare (no pendingAlly, more than half of maxCharges left).
@@ -844,9 +1013,13 @@ export function tallyEvents(tallies, events, stateAfter) {
  * that repeats the refused action loops until the action cap, the exact
  * shape of the v1.1 wilmsryVsMagical parley loop) — set the instant a
  * refusal lands, cleared the instant a fresh encounter starts. Phase 42 (BAL-01
- * second half): `abilityRefused { key }` adds `key` to `ctx.abilityBlocked`
- * (same Rule-1 shape — a refused ability returns with NO state change); both
- * `abilityBlocked` and `itemBlocked` clear on `encounterStarted`.
+ * second half): `abilityRefused { key }` adds `key` to `ctx.abilityBlocked`;
+ * `useRefused { item }` adds `itemLabel(item)` to `ctx.itemBlocked` (same
+ * Rule-1 shape — a refused ability/item returns with NO state change);
+ * `lootTaken`/`lootLeft` clear `findFull` the same way `findTaken`/
+ * `findLeft` do; `abilityBlocked` clears on `encounterStarted`, `itemBlocked`
+ * on EITHER `encounterStarted` OR `floorChanged` (a torch/staff/cloak
+ * refusal doesn't survive a floor change either).
  */
 export function observe(ctx, events) {
   let floorChangedThisStep = false;
@@ -854,10 +1027,12 @@ export function observe(ctx, events) {
     if (e.type === "floorChanged") floorChangedThisStep = true;
     else if (e.type === "bagFull") ctx.findFull = true;
     else if (e.type === "findTaken" || e.type === "findLeft") ctx.findFull = false;
+    else if (e.type === "lootTaken" || e.type === "lootLeft") ctx.findFull = false; // Phase 42
     else if (e.type === "parleyRefused") ctx.parleyBlocked = true;
     else if (e.type === "fleeRefused") ctx.fleeBlocked = true;
     else if (e.type === "strikeRefused") ctx.strikeBlocked = true;
     else if (e.type === "abilityRefused") ctx.abilityBlocked.add(e.key);
+    else if (e.type === "useRefused") ctx.itemBlocked.add(itemLabel(e.item)); // Phase 42
     else if (e.type === "encounterStarted") {
       ctx.parleyBlocked = false;
       ctx.fleeBlocked = false;
@@ -866,8 +1041,10 @@ export function observe(ctx, events) {
       ctx.itemBlocked.clear();
     }
   }
-  if (floorChangedThisStep) ctx.floorActions = 0;
-  else ctx.floorActions++;
+  if (floorChangedThisStep) {
+    ctx.floorActions = 0;
+    ctx.itemBlocked.clear(); // Phase 42: a torch/staff/cloak refusal doesn't survive a floor change either
+  } else ctx.floorActions++;
 }
 
 /**
@@ -932,7 +1109,7 @@ export function forceParty(state) {
  */
 export function playRun(seed, opts, onStep) {
   const policyRng = makeRng(seed ^ 0x9e3779b9);
-  let state = newRun(seed, [], { startDepth: opts.startDepth, force: opts.force });
+  let state = newRun(seed, [], { startDepth: opts.startDepth, force: opts.force, ...RUN_FLAGS });
   const startDepth = state.floor.depth; // the sanitized value newRun actually used
   if (opts.party) forceParty(state);
   const memberAtStart = opts.party ? state.party.length : 0;
