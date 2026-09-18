@@ -1184,3 +1184,26 @@ test/parity/magic-parity.test.js`, green, no new declaration needed).
 hash unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
 `git status --porcelain test/parity/fixtures` empty.
 
+### Plan 03 — utility visibility + scroll gate: zero fixture moves
+
+Plan 03 (SPELL-02 utility chips + Sense Presence's initiative meaning +
+endCombat expiry narration; SPELL-07 scroll scribing aligned with `canCast`)
+moves **zero** fixtures. No parity fixture casts a utility spell (Mirror
+Self, Sense Presence, Regeneration, Sense Danger) — `conditionsOf`'s four new
+chips and `rollInitiative`'s `c.senses` initiative waiver are both read-only
+against fields no fixture ever sets. The `scroll` scenario
+(`action-script.magic.json`, seed 7) exercises `readScroll` directly: its
+Wizard has every `MU_CHART` school at the default gate (1, no `.gate` object
+on `MU_CHART.Wizard`) and no `SPELL_LEVEL_OVERRIDES` entry, so
+`spellLevelFor(sub, sp) === sp.lvl` and `schoolGate(sub, sp.s) === 1` for
+every row in the filtered options — the new two-check scribe condition
+(`spellLevelFor <= c.level && c.level >= schoolGate`) is arithmetically
+identical to the OLD `sp.lvl <= c.level` check for this specific Wizard,
+measured by the suite (`node --test test/parity/magic-parity.test.js`,
+green, no new declaration needed). `npm test`: 2773/2773, `# fail 0` (2739
+baseline + 34 new tests: 29 in the new `test/unit/spell-utility.test.js`, 3
+in `conditions.test.js`, 1 in `combat.test.js`, 1 in `cast-refusals.test.js`);
+`test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
+test/parity/fixtures` empty.
+

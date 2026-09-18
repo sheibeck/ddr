@@ -368,7 +368,121 @@ hash unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
 
 ## Utility visibility and scrolls (Plan 03)
 
-(appended by Plan 03)
+Plan 01/02 reshaped and wired the OFFENSE school. Plan 03 closes the
+research's own "Utility Spell Audit" (SPELL-02) — the ten utility kinds
+(`heal`/`ward`/`might`/`mirror`/`senses`/`foresee`/`regen`/`summon`/`turn`/
+`gate`) — and fixes the scroll scribing bug (SPELL-07).
+
+### The ten-kind utility audit, closed out
+
+| Kind | Spell(s) | Effect | Surface (chip / events) | Expiry |
+|---|---|---|---|---|
+| `heal` | Heal, Major Heal | `wp += dice` | `healed` event; `wp` bar moves | instant, no chip needed |
+| `ward` | Shield, Bubble | soak pool + rounds | `ward` chip (Phase 31, unchanged) | `wardFaded` on the per-foeTurn countdown |
+| `might` | Strength | one-time `+dice` maxWP/might boost | `might` chip (unchanged) | lasts the day, no expiry event |
+| `mirror` | Mirror Self | foes need a natural 1 to hit the hero, d6 rounds | **NEW `mirror` chip** `{remaining}` | `mirrorFaded` — per-foeTurn countdown (existing) OR endCombat if still running when the fight ends (new) |
+| `senses` | Sense Presence | waives the in-dark to-hit cap AND (new, this plan) every forced foe-first initiative rule, till the next fight ends | **NEW `senses` chip** (flat boolean) | `sensesFaded` — endCombat's own unconditional reset (new) |
+| `foresee` | Sense Danger | arms `c.foresight`; narrates the next encounter type on cast; consumed by the next `rollInitiative` | **NEW `foresight` chip** (flat boolean, while armed) | consumed silently by `rollInitiative` (always sets it back to `false`); no separate expiry event needed — the cast's own `senseDanger` line already told the player what to expect |
+| `regen` | Regeneration | `d8`/round heal, ticks only inside `foeTurn` | **NEW `regen` chip** (flat boolean) | `regenFaded` — endCombat's own unconditional reset (new) |
+| `summon` | Summon, Phantom Host, Lesser Summon | spawns an ally | `allySummoned`/`allyPending` (unchanged, Plan 02 added `lesser`) | ally's own `rounds` countdown (unchanged) |
+| `turn` | Turn Walking Dead | situational multi-target removal | `walkingDeadTurned`/`nothingToTurn` (unchanged) | instant |
+| `gate` | Plane Gate | situational multi-target removal | `planeGated`/`gateRefused` (unchanged) | instant |
+
+Three kinds (`mirror`/`senses`/`regen`) had a real engine effect but zero
+chip before this plan — the research's "cheapest SPELL-02 fix in the whole
+phase," confirmed: `engine/derived.js#conditionsOf` gains four new `if`
+blocks, copying the `might`/`ward` precedent verbatim, in a fixed order
+**after `ward`, before `flight`**: `mirror -> senses -> regen -> foresight`.
+All four are pure reads of fields the engine already writes — no rng, no
+mutation, no new serialized field, so no comparables carve-out is needed.
+
+### Sense Presence's rules change — a real initiative effect
+
+Sense Presence's canon "never surprised" (`txt`: "fight in the dark at full
+skill and nothing gets the jump on you, till your next fight ends") had no
+engine read before this phase beyond the in-dark to-hit waiver. Now, while
+`c.senses` is truthy, `engine/combat.js#rollInitiative`'s forced-foe-first
+clause (`samurai || slow || knightBig || courtMage`) is ALSO waived — the
+character's own d20 pair decides the roll like anyone else's, instead of the
+result being forced to `"foe"`. **The two d20s are still always drawn** —
+this is a branch change, never a draw-count change, so no fixture moves. A
+foreseen character (`c.foresight`) still always goes first regardless,
+exactly as before. `engine/combat.js#fight`'s own `combatJoined` event gains
+an additive `senses: true` key, spread in ONLY when `c.senses` is up AND it
+is the reason the roll went the hero's way (`first === "you"`) — a plain win
+with no senses, or a senses-carrying character who still lost the fair roll,
+keeps the byte-identical pre-Phase-40 event shape. `c.senses` itself clears
+at `endCombat` exactly as before (unconditional reset, unchanged) — "till
+your next fight ends" is now a literal engine guarantee, not just flavor
+text.
+
+### The endCombat expiry lines
+
+`engine/combat.js#endCombat` now narrates the expiry of any of the three
+utility effects still running when the fight ends, **before** its existing
+unconditional resets (`regen = false`, `ward = null`, `mirror = 0`, `senses
+= 0`) wipe them — in order `regenFaded`, `sensesFaded`, `mirrorFaded`, then
+the existing `combatEnded`. A mirror that already ran out mid-fight (the
+existing per-foeTurn countdown) already narrated its own `mirrorFaded` and
+is `0` by the time `endCombat` runs, so this never double-narrates — only a
+STILL-RUNNING effect at fight-end reaches the new lines. A bare character
+(nothing live) pushes none of the three; every pre-existing `endCombat`
+event pin holds byte-identical.
+
+### The scroll rule (SPELL-07)
+
+`engine/magic.js#readScroll`'s copy-to-grimoire condition used to check only
+`canLearn(c.sub, sp) && sp.lvl <= c.level` — the spell's raw PRINTED level
+against the caster's own level, **never** `schoolGate`. `canCast` (what
+actually gates whether a scribed spell can be cast) checks THREE things:
+known in grimoire, `spellLevelFor(sub, sp) <= level`, AND `level >=
+schoolGate(sub, sp.s)`. The gap let a scroll scribe a spell whose SCHOOL was
+gated higher than its printed level, permanently uncastable until the
+caster's level caught up — five reachable level-1 cases (40-RESEARCH.md
+"Scroll Scribing Bug"): Warlock+Heal (healing gate 3), Court Mage+Map the
+Floor (divination gate 4), Apprentice+Map the Floor (divination gate 3),
+Illusionist+Shield (protection gate 3), Summoner+Freeze (offense gate 3).
+
+The scribe gate is now exactly `canCast`'s own two checks:
+`spellLevelFor(c.sub, sp) <= c.level && c.level >= schoolGate(c.sub, sp.s)`.
+When they pass, the spell is scribed exactly as before — a scribed spell is
+therefore ALWAYS castable immediately. When they fail, the scroll is NOT
+scribed — it pushes `scrollTooAdvanced { spell, need, have, school }` (`need`
+is the higher of `spellLevelFor` and `schoolGate`) and falls through to the
+EXISTING free-cast path unchanged (the scroll still pays for itself once, in
+or out of combat, exactly as a spell the caster's sub could never learn at
+all already did). A spell the sub cannot learn (`canLearn` false) is
+unaffected either way — same free cast as always, no `scrollTooAdvanced`. A
+spell already in the grimoire is never re-scribed and never
+`scrollTooAdvanced` — the outer `!c.grimoire.includes(sp.n)` gate short-
+circuits first, falling straight to the free cast.
+
+**Tolerant old-grimoire proof.** A pre-Phase-40 save whose grimoire already
+holds a scribed-but-uncastable entry (scribed under the old, buggier check)
+is untouched by this plan — no migration runs. The next time that spell is
+cast, `canCast` refuses it with the existing `spellSchoolLocked`/
+`spellAboveLevel` event, which already names the level needed. Verified live
+(`test/unit/spell-utility.test.js`'s "tolerant proof" test): a level-1
+Warlock with `grimoire: ["Heal"]` calling `castSpell` gets exactly
+`{ type: "spellSchoolLocked", spell: "Heal", school: "healing", need: 3,
+have: 1 }` — no crash, no mutation of the grimoire entry itself.
+
+### Byte-identical elsewhere
+
+No fixture casts a utility spell (Mirror Self, Sense Presence, Regeneration,
+Sense Danger) or reaches the new `scrollTooAdvanced` branch — the `scroll`
+scenario's seed-7 Wizard has every school at gate 1 (`MU_CHART.Wizard` has
+no `.gate` object) and no `SPELL_LEVEL_OVERRIDES` entry, so
+`spellLevelFor(sub, sp) === sp.lvl` for every row and `schoolGate` is always
+`1` — the new two-check condition collapses to the OLD `sp.lvl <= c.level`
+check for this Wizard specifically, arithmetically identical, confirmed by
+`test/parity/magic-parity.test.js` replaying byte-identical with no new
+declaration needed. `npm test`: 2773/2773, `# fail 0` (2739 baseline + 34
+new tests: 29 in the new `test/unit/spell-utility.test.js`, 3 in
+`conditions.test.js`, 1 in `combat.test.js`, 1 in `cast-refusals.test.js`);
+`test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
+test/parity/fixtures` empty.
 
 ## Map the Floor — Key Decision: re-fog provenance (Plan 04)
 
