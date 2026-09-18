@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 38
 current_phase_name: Melee Active Abilities
 status: executing
-stopped_at: Completed 38-01-PLAN.md (reshaped Special Skills tables, 20-entry ability catalog, level-pool machinery, c.abilities wiring, 20 measured parity divergence records)
-last_updated: "2026-09-17T22:09:23.916Z"
+stopped_at: Completed 38-02-PLAN.md (abilityStrike descriptor, need-shift actives, four dropped-skill reads deleted, SC-4 identity guard)
+last_updated: "2026-09-18T02:44:37.484Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 38 execution started
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 15
-  completed_plans: 11
+  completed_plans: 12
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 ## Current Position
 
 Phase: 38 (Melee Active Abilities) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 38 execution started
 
@@ -110,8 +110,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-17T22:09:23.887Z
-Stopped at: Completed 38-01-PLAN.md (reshaped Special Skills tables, 20-entry ability catalog, level-pool machinery, c.abilities wiring, 20 measured parity divergence records)
+Last session: 2026-09-18T02:44:37.448Z
+Stopped at: Completed 38-02-PLAN.md (abilityStrike descriptor, need-shift actives, four dropped-skill reads deleted, SC-4 identity guard)
 Resume file: None
 
 ## Operator Next Steps
@@ -210,6 +210,7 @@ Resume file: None
 | Phase 37 P03 | 15min | 3 tasks | 8 files |
 | Phase 37 P04 | 25min | 3 tasks | 4 files |
 | Phase 38 P01 | 45min | 3 tasks | 28 files |
+| Phase 38 P02 | 75min | 3 tasks | 17 files |
 
 ## Decisions
 
@@ -394,6 +395,9 @@ Resume file: None
 - [Phase ?]: FREE_SKILL repointed to the OLD free key's exact table position (not merely any still-valid key) to preserve the Fisher-Yates shuffle-exclusion-by-index
 - [Phase ?]: Every level-pool ability roll (level-1 guarantee, per-level-up, Joiner) draws from a derived rng stream keyed by seed/level, never the main rng
 - [Phase ?]: 20 fixture divergence records measured live and declared (never a blanket regeneration); new chargenShiftOf/stripChargenShift/chargenShiftDiffs helpers extend the Phase 23 mechanism to scenario/script-level fixtures
+- [Phase ?]: 38-02: playerStrike's AS descriptor read once after the !t return; subAuto (sub free-opener) kept structurally separate from auto (subAuto||AS.autoHit) so an ability auto-hit never touches C.opened
+- [Phase ?]: 38-02: fluency(c) now reads eff(c,"tongue") alone (ceiling 1, not 2); canParley's fluency-2 Magical branch and parley()'s wilmsryVsMagical refusal are left in place as unreachable-but-documented code (mazeworld.html/combatMenu.js are out of this plan's scope)
+- [Phase ?]: 38-02: Rule-1 fixes beyond this plan's file list — test/unit/parley-button-mirror.test.js and test/unit/tuning-bot.test.js both broke as direct fallout of the fluency-ceiling drop and were updated to keep npm test at # fail 0
 
 ### Blockers
 

@@ -213,7 +213,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 38-02-PLAN.md — Retire every old passive read (Tracking/Language/Climbing/Leaping dropped; Agility/Death-touch/Kata/Silence converted), the transient `abilityStrike` descriptor in `playerStrike`, timer-driven need shifts in the twin need functions, identity-contract updates + the SC-4 guard
+- [x] 38-02-PLAN.md — Retire every old passive read (Tracking/Language/Climbing/Leaping dropped; Agility/Death-touch/Kata/Silence converted), the transient `abilityStrike` descriptor in `playerStrike`, timer-driven need shifts in the twin need functions, identity-contract updates + the SC-4 guard
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -361,7 +361,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
-| 38. Melee Active Abilities | v1.5 | 1/5 | In Progress|  |
+| 38. Melee Active Abilities | v1.5 | 2/5 | In Progress|  |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |
 | 40. Spell Rework | v1.5 | 0/? | Not started | - |
 | 41. Terrain, Darkness & Phobias | v1.5 | 0/? | Not started | - |
