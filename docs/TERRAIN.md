@@ -320,8 +320,117 @@ character (`test/unit/phobia-triggers.test.js`).
 
 ## Darkness filter, map paint and UI (Plan 04)
 
-(appended by Plan 04)
+### The darkness render filter (TERR-03)
+
+`engine/derived.js#mapViewRadius(state)` / `#inViewWindow(state, x, y)` — a
+PURE render-time filter, never a mutation of `cell.seen`/`cell.spellSeen`:
+
+- `mapViewRadius(state)` returns `Infinity` (show every already-`seen` cell)
+  UNLESS the player is currently `inDark(state)` (a `.dark` tile, or
+  `c.darkFor > 0` — the persistent-darkness counter) AND carries none of the
+  established waivers, in which case it returns `DARK_VIEW_RADIUS` (`1` — a
+  3x3 window).
+- **The waiver set is the SAME one every other darkness consumer in this
+  codebase already uses** — "a light effect" means one thing everywhere:
+  Night Vision (`skill(c, "Night Vision")`, `revealRadius`'s own waiver),
+  a live Amulet of Light (`eff(c, "light") > 0`, the exact same read
+  `engine/movement.js`'s `darkFor`-dispel check uses), or a lit torch
+  (`itemEffectActive(c, "lit")`, the Torch's `ACTIVATION_OF.Torch = { kind:
+  "lit", effect: 40 }` record).
+- `inViewWindow(state, x, y)` is `true` for every cell when the radius is
+  `Infinity`; when it is `1`, `true` only for the 3x3 cells around the
+  party (Chebyshev distance <= 1 from `state.floor.px/py`) — `false` for
+  every other cell, **including a cell already `seen`** (the window hides
+  previously-explored cells too, not just gates new reveals).
+
+**Why a render filter, not a `seen` mutation:** the Phase 40 orthogonality
+note (SPELLS.md's "Phase 41 note") is honoured exactly — Map the Floor's
+`spell:reveal` window keeps counting its own squares-cadence countdown
+under this filter; the filter only HIDES what's already explored, it never
+pauses or resets any other system. `draw()` re-reads `mapViewRadius`/
+`inViewWindow` fresh on EVERY paint (research Pitfall 4: never a stored
+flag) — so leaving the dark square restores the FULL explored view for
+free, because nothing was ever taken away from `seen` in the first place.
+
+**Shell wiring:** `window.__mzMapView = { mapViewRadius, inViewWindow }` —
+the same read-only bridge pattern as `window.__mzConditionsOf`. `draw()`
+builds `const visible = (x, y) => !view || view.inViewWindow(S, x, y);`
+(fail-open on a missing bridge, matching the fallback-palette discipline)
+and gates BOTH the floor-fill loop (after `if (!c.seen) continue;`) and the
+feature-icon pass (after `if (!c.seen || !c.feat) continue;`) on it. The
+party marker, glow and `positionCanvas()` are untouched — the party is
+always inside its own window.
+
+### The water palette (TERR-01)
+
+`src/browser/mapMarks.js#MAP_PALETTE` gains two hexes: `water: "#2f5f7a"`
+(a lit pool) and `waterDark: "#1f3a4a"` (a pool on a `.dark` tile) — both
+distinct from every other palette key, frozen alongside the rest. `draw()`'s
+existing Phase 40 fill line (`ctx.fillStyle = c.spellSeen ? P.floorSpell :
+(c.dark ? P.floorDark : P.floor);`) stays BYTE-IDENTICAL (the
+`test/unit/shell-spells-40.test.js` pin still matches); a water OVERRIDE
+line follows it: `if (c.water && !c.spellSeen) ctx.fillStyle = c.dark ?
+P.waterDark : P.water;` — the spellSeen "borrowed sight" tint keeps
+priority over either water shade, since it IS the "this will re-fog"
+signal (unchanged from Phase 40).
+
+### The water hold-inspect (TERR-01/02)
+
+`src/browser/rail.js#RAIL_COPY.water = { title: "WATER", line: "Two
+squares a step, and your boots never dry. Wade, or go around." }`.
+`src/browser/tapStep.js#inspectCell` reads it AFTER the `cell.feat` branch
+(a water cell that somehow also carries a feature keeps the feature's own
+legend row) and BEFORE the EMPTY CORRIDOR fallback — so a seen, non-wall,
+feat-less water cell names itself and its cost on a hold; an unseen water
+cell still returns UNWALKED (fog never reveals water).
+
+### The Rattled chip (TERR-05)
+
+`c.fearArmed` (Plan 03's region model) already emits a `fearArmed` chip via
+`conditionsOf` — this plan adds its shell copy row, mirroring the flat
+`foresight`/"Forewarned" precedent (no count, the generic detail branch
+renders nothing extra):
+
+- `CONDITION_COPY.fearArmed = { label: "Rattled" }`
+- `CONDITION_TONE.fearArmed = "warn"`
+- `CONDITION_EXPLAIN.fearArmed = "Something out there got to you. The next
+  fight opens Afraid — harder to hit, softer blows — until it passes."`
+
+The chip shows between the trigger moment and the next fight; it vanishes
+the instant `fight()` consumes `c.fearArmed` (Plan 03), at which point the
+in-fight `afraid` chip takes over instead.
+
+### What stays for the cleanup milestone
+
+The shell's own legacy classic `move()`/`reveal()` function bodies
+(mazeworld.html) are DEAD CODE — superseded by `engine/movement.js`'s real
+`move()`/`reveal()` long before this phase — and are explicitly NOT touched
+by this plan (`test/unit/shell-terrain-41.test.js` pins that neither body
+references `mapViewRadius` nor `moveCost`). They remain owned by the
+pending "Shell Debt & Dead Code" cleanup milestone (STATE.md Pending
+Todos), not this phase.
 
 ## Requirements map (Plan 04)
 
-(appended by Plan 04)
+| Requirement | Landed in | Proof |
+|---|---|---|
+| TERR-01 (water pools, blue on the map) | Plan 01 (generation) + Plan 04 (map paint + hold-inspect) | `test/unit/terrain.test.js`; `test/unit/floor-gen-rng-pin.test.js`; `test/unit/mapMarks.test.js`; `test/unit/tapStep.test.js`; `test/unit/shell-terrain-41.test.js` |
+| TERR-02 (2-square water move cost, HUD/timers reflect it) | Plan 02 | `test/unit/water-cost.test.js`; `test/unit/tuning-bot.test.js` |
+| TERR-03 (the 3x3 darkness render filter) | Plan 04 | `test/unit/darkness-filter.test.js`; `test/unit/shell-terrain-41.test.js`; the parity suite (zero new serialized field — a pure derived read) |
+| TERR-04 (every phobia has a real trigger) | Plan 03 | `test/unit/phobia-triggers.test.js` |
+| TERR-05 (fresh-entry-only, arms Afraid, trigger named in the rail) | Plan 03 (engine) + Plan 04 (the Rattled chip's shell copy) | `test/unit/phobia-triggers.test.js`; `test/unit/conditions.test.js`; `test/unit/shell-terrain-41.test.js` |
+
+## Out of scope / next
+
+- **Phase 42** owns bot tactics around water/fear (the tuning bot already
+  paths across water and never stalls on a phobia — Plan 02/03 — but no
+  water-cost-aware routing preference or phobia-avoidance heuristic exists
+  yet) and the AFTER matrix re-measurement against
+  `docs/class-pass/v15-before*.json` (water's 2-square cost is expected to
+  shift the hunger/depth curve — measured there, not retuned here).
+- **Swimming/drowning rules, water-breathing items** — deferred, not in
+  v1.5 (`41-CONTEXT.md`'s Deferred Ideas).
+- **New terrain kinds beyond water (lava, ice, etc.)** — backlog.
+- **The tutorial** — out of scope for this phase; a future onboarding pass
+  should mention water's cost and the darkness window once they exist to
+  explain.

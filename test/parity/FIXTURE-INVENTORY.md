@@ -1402,3 +1402,27 @@ empty throughout this plan (zero fixture files touched); `npm test`: `#
 fail 0`; `test/parity/prototype-master.js.txt` hash unchanged
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`).
 
+### Plan 04 — shell close: zero engine-state changes
+
+`engine/derived.js#mapViewRadius`/`#inViewWindow` (TERR-03's 3x3 darkness
+render filter) are PURE reads consumed only by `mazeworld.html#draw()` — no
+new serialized field, no new `c.*`/`cell.*` write, no rng draw. No fixture,
+comparable or floor byte changed in this plan; the structural carve-outs
+Plans 01/03 already wired (`stripWaterField`, `stripPhobiaFields`) needed no
+extension. Re-running `tools/terrain-fixture-scan.mjs` after this plan's
+edits landed reproduces the EXACT same table as Plans 01-03 (byte-identical
+`WATER HITS`/`TERRAIN TRIGGER EXPOSURE` lines) — expected, since this plan
+touches no engine movement/generation code at all, only the shell's render
+pass and condition-chip copy. Final phase readings, recorded once at the
+end of Plan 04's whole-phase gate:
+
+```
+WATER HITS: 0
+TERRAIN TRIGGER EXPOSURE: 0
+```
+
+`npm test`: 2915/2915, `# fail 0`. `test/parity/prototype-master.js.txt`
+hash unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`). `npm run
+build:www`: exit 0. `git status --porcelain test/parity/fixtures`: empty
+(zero fixture files touched across all four plans of this phase).
+

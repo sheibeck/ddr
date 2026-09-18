@@ -176,7 +176,9 @@ test("eff(key) routes through window.__mzEff, keeping the legacy sum-over-c.item
 test("Bridges: derived.js import carries eff/slotFor/WORN_SLOTS; window.__mzEff/__mzSlotFor/__mzWornSlots assigned once each, after __mzConditionsOf", () => {
   // Phase 39 (GEAR-01/GEAR-02/GEAR-05), Plan 05: the shared derived.js
   // import line gained hasTool/toHit/strikeDie as sibling named imports.
-  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie \} from "\.\/engine\/derived\.js";/);
+  // Phase 41 (TERR-03), Plan 04: mapViewRadius/inViewWindow joined the same
+  // import line.
+  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 1);

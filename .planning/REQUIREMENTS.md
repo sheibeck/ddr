@@ -36,11 +36,11 @@
 
 ### Terrain, darkness & phobias (TERR)
 
-- [ ] **TERR-01**: Floors can contain water regions — multi-square pools drawn blue on the map, generated behind a run flag so every existing fixture, bot and old save is unaffected
-- [ ] **TERR-02**: Stepping onto a water square costs 2 moves; the HUD square counter and every squares-based timer reflect the cost consistently (ratified as a Key Decision)
-- [ ] **TERR-03**: While standing on a dark square without Night Vision or a light effect, the map shows only the 3×3 squares around the party; explored squares outside it are fogged and return when the player leaves the dark (a render filter — the engine's `seen` memory is unchanged)
-- [ ] **TERR-04**: Every phobia has a real trigger: Bodies of water on entering water, Darkness on entering an unlit square (as well as in dark combat), Heights at a crevice/gorge climb, Being trapped at a dead end, Death near death, and the six type-matched combat phobias as today
-- [ ] **TERR-05**: Terrain phobias fire once on fresh entry into a region (not every step inside it) and apply the Phase 31 Afraid penalty — never a lost action — with the trigger named in the rail line
+- [x] **TERR-01**: Floors can contain water regions — multi-square pools drawn blue on the map, generated behind a run flag so every existing fixture, bot and old save is unaffected
+- [x] **TERR-02**: Stepping onto a water square costs 2 moves; the HUD square counter and every squares-based timer reflect the cost consistently (ratified as a Key Decision)
+- [x] **TERR-03**: While standing on a dark square without Night Vision or a light effect, the map shows only the 3×3 squares around the party; explored squares outside it are fogged and return when the player leaves the dark (a render filter — the engine's `seen` memory is unchanged)
+- [x] **TERR-04**: Every phobia has a real trigger: Bodies of water on entering water, Darkness on entering an unlit square (as well as in dark combat), Heights at a crevice/gorge climb, Being trapped at a dead end, Death near death, and the six type-matched combat phobias as today
+- [x] **TERR-05**: Terrain phobias fire once on fresh entry into a region (not every step inside it) and apply the Phase 31 Afraid penalty — never a lost action — with the trigger named in the rail line
 
 ### Flee (FLEE)
 
@@ -120,11 +120,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SPELL-05 | Phase 40 | Complete |
 | SPELL-06 | Phase 40 | Complete |
 | SPELL-07 | Phase 40 | Complete |
-| TERR-01 | Phase 41 | Pending |
-| TERR-02 | Phase 41 | Pending |
-| TERR-03 | Phase 41 | Pending |
-| TERR-04 | Phase 41 | Pending |
-| TERR-05 | Phase 41 | Pending |
+| TERR-01 | Phase 41 | Complete |
+| TERR-02 | Phase 41 | Complete |
+| TERR-03 | Phase 41 | Complete |
+| TERR-04 | Phase 41 | Complete |
+| TERR-05 | Phase 41 | Complete |
 | FLEE-01 | Phase 42 | Pending |
 | FLEE-02 | Phase 42 | Pending |
 | BAL-02 | Phase 42 | Pending |

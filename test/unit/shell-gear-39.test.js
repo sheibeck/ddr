@@ -56,7 +56,9 @@ function sliceBetween(source, startMarker, endMarker) {
 // ─── 1. Bridges ──────────────────────────────────────────────────────────
 
 test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridged read-only, once each", () => {
-  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie \} from "\.\/engine\/derived\.js";/);
+  // Phase 41 (TERR-03), Plan 04: the shared derived.js import line gained
+  // mapViewRadius/inViewWindow as sibling named imports.
+  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.match(CODE, /import \{ toolIndex \} from "\.\/engine\/items\.js";/);
   assert.match(
     CODE,
