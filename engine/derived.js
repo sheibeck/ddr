@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD } from "../content/index.js";
 import { rollDice } from "./dice.js";
 import { remaining, isReady } from "./effects.js";
 
@@ -844,6 +844,31 @@ export function weaponCrit(c) {
 export function armorBulk(c) {
   const a = ARMORS.find((x) => x.name === (c && c.armor));
   return a ? a.bulk : 0;
+}
+
+/**
+ * fleeBreakdown(c) — Phase 42 (FLEE-01/FLEE-02): the ONE flee-need rule,
+ * mirroring foeToHitBreakdown's `{ name, delta }` shape so every surface
+ * (the fight log, toasts, the rail, the combat submenu) narrates the SAME
+ * modifier list without re-deriving the formula. Builds `mods` in this
+ * fixed order, pushing an entry ONLY when it is non-zero: Thief (+5, "the
+ * whole trade") -> class (content/flee.js#FLEE_CLASS_MOD) -> race
+ * (content/flee.js#FLEE_RACE_MOD) -> armor (-armorBulk(c), only when bulk >
+ * 0). A race/class missing from its table (a tampered save) contributes 0,
+ * never throws. `bonus` is the sum of every mods[].delta; `need` is the
+ * fixed content/flee.js#FLEE_NEED. Pure, no rng.
+ */
+export function fleeBreakdown(c) {
+  const mods = [];
+  if (c && c.cls === "Thief") mods.push({ name: "Thief", delta: FLEE_THIEF_BONUS });
+  const classMod = (c && FLEE_CLASS_MOD[c.cls]) || 0;
+  if (classMod) mods.push({ name: c.cls, delta: classMod });
+  const raceMod = (c && FLEE_RACE_MOD[c.race]) || 0;
+  if (raceMod) mods.push({ name: c.race, delta: raceMod });
+  const bulk = armorBulk(c);
+  if (bulk > 0) mods.push({ name: c.armor, delta: -bulk });
+  const bonus = mods.reduce((sum, m) => sum + m.delta, 0);
+  return { need: FLEE_NEED, mods, bonus };
 }
 
 /**

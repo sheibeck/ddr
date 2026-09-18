@@ -267,11 +267,13 @@ test("foeTurn: the member branch (memberStruck + its miss) carries needMods too 
 });
 
 test("flee: pursuitStrike's foeMissed carries needMods for a Guard hero (module-private, exercised via flee)", () => {
+  // Phase 42 (FLEE-01): need is 14 (was 11) — a Human Fighter/Guard has no
+  // flee modifiers, so the escaping roll moves from 11 to 14.
   const state = fixedState({ c: { sub: "Guard", cls: "Fighter" } });
   const foe = fixedFoe({ sp: { pursues: true } });
   state.combat = fixedCombat([foe]);
-  // flee roll 11 (>=11, bonus 0 for a non-Thief) succeeds; pursuit roll 5 (> need 4) misses.
-  const events = flee(state, fakeRng([11, 5]), []);
+  // flee roll 14 (>=14, bonus 0 for a non-Thief) succeeds; pursuit roll 5 (> need 4) misses.
+  const events = flee(state, fakeRng([14, 5]), []);
   const missed = events.find((e) => e.type === "foeMissed");
   assert.deepEqual(missed.needMods, [{ name: "Guard", delta: -1 }]);
   assert.ok(events.some((e) => e.type === "fled" && e.reason === "escaped"));

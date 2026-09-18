@@ -30,6 +30,7 @@ export * from "./afflictions.js";
 export * from "./treasure-tables.js";
 export * from "./tools.js";
 export * from "./misc-tables.js";
+export * from "./flee.js";
 export * from "./flavor.js";
 export * from "./epitaphs.js";
 export * from "./names.js";

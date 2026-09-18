@@ -292,21 +292,25 @@ test("Stealth/backstab gates read armorBulk: Studded (bulk 1) still backstabs, P
   assert.ok(plateEvents.some((e) => e.type === "backstabDenied"), "Plate (bulk 2) must deny the backstab");
 });
 
-test("flee: fleeRolled carries bulk; success is roll + bonus - bulk >= 11 (a Fighter in Plate needs a natural 13)", () => {
+test("flee: fleeRolled carries mods (not bulk/bonus); success is roll + mods >= 14 (a Fighter in Plate needs a natural 16)", () => {
+  // Phase 42 (FLEE-01/FLEE-02): need is 14 (was 11); the old bulk/bonus
+  // fields are gone from the event — every modifier (armor included) is
+  // now named in `mods`, mirroring foeToHitBreakdown's shape.
   const state = fixedState({ c: fixedFighter({ cls: "Fighter", sub: "Knight", armor: "Plate" }) });
   state.combat = fixedCombat([fixedFoe()], { tracked: false });
   // a failed flee runs a full foeTurn afterward, so pad with filler draws.
   const events = flee(state, fakeRng([12, ...FILL]), []);
   const rolled = events.find((e) => e.type === "fleeRolled");
   assert.ok(rolled);
-  assert.equal(rolled.bulk, 2);
-  assert.equal(rolled.bonus, 0);
-  assert.ok(events.some((e) => e.type === "fleeFailed"), "roll 12 - bulk 2 = 10 < 11: fails");
+  assert.deepStrictEqual(rolled.mods, [{ name: "Plate", delta: -2 }]);
+  assert.equal(rolled.total, 10);
+  assert.equal(rolled.need, 14);
+  assert.ok(events.some((e) => e.type === "fleeFailed"), "roll 12 - 2 = 10 < 14: fails");
 
   const state2 = fixedState({ c: fixedFighter({ cls: "Fighter", sub: "Knight", armor: "Plate" }) });
   state2.combat = fixedCombat([fixedFoe()], { tracked: false });
-  const events2 = flee(state2, fakeRng([13]), []);
-  assert.ok(events2.some((e) => e.type === "fled"), "roll 13 - bulk 2 = 11 >= 11: succeeds");
+  const events2 = flee(state2, fakeRng([16]), []);
+  assert.ok(events2.some((e) => e.type === "fled"), "roll 16 - 2 = 14 >= 14: succeeds");
 });
 
 test("climb: armorBulk(state.c) is added to r — a stubbed d10 that a Leather wearer passes fails for a Plate wearer", () => {

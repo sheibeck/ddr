@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -899,8 +899,11 @@ function pursuitStrike(state, rng, events) {
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
  * (lines 2684-2697): Samurai never runs, a Cloaker gets away for free while
  * unseen, a tracked round-1 withdrawal is clean (denied for a Master of
- * Arms), otherwise d20 (+5 Thief) vs 11; failure triggers a foeTurn and
- * advances the round. Phase 19 (CANON-02/D-19): a live pursuing foe gets one
+ * Arms), otherwise d20 + fleeBreakdown(c).bonus vs 14, with every modifier
+ * named in fleeRolled (DELIBERATE RULES CHANGE, Phase 42, 2026-09-18,
+ * FLEE-01/FLEE-02, docs/FLEE.md — was "d20 (+5 Thief) vs 11"); failure is
+ * unchanged: it triggers a foeTurn and advances the round. Phase 19
+ * (CANON-02/D-19): a live pursuing foe gets one
  * melee strike on every success exit, BEFORE the `fled` event; a lethal
  * strike returns without `endCombat`. Phase 19 (CANON-02/D-03) also adds a
  * cleared-check after a failed flee's foeTurn, since a fleesBelow caster can
@@ -931,8 +934,8 @@ export function flee(state, rng, events = []) {
   // free vanish only works before it has struck this fight — "you can
   // always vanish, as long as nobody has seen your face". Once `C.opened2`
   // is set (playerStrike's first LANDED blow), a Cloaker narrates the
-  // denial and falls through to the ordinary Thief roll below (d20+5 vs 11)
-  // instead of returning here. Zero new draws; `opened2` already exists.
+  // denial and falls through to the ordinary flee roll below instead of
+  // returning here. Zero new draws; `opened2` already exists.
   if (c.sub === "Cloaker" && !C.opened2) {
     if (pursuitStrike(state, rng, events).died) return events;
     forfeitLoot(state, "fled", events);
@@ -968,13 +971,15 @@ export function flee(state, rng, events = []) {
     endCombat(state, events);
     return events;
   }
-  const bonus = c.cls === "Thief" ? 5 : 0; // getting out is the Thief's whole trade
-  // Phase 39 (GEAR-01): heavier armor makes a clean escape harder — bulk is
-  // SUBTRACTED from the flee roll, mirroring the climb/leap penalty below.
-  const bulk = armorBulk(c);
+  // Phase 42 (FLEE-01/FLEE-02): fleeBreakdown(c) is the ONE source of the
+  // flee need/modifiers — every surface (this event, the fight log, toasts,
+  // the rail, the combat submenu) reads the SAME `mods` list rather than
+  // re-deriving the formula.
+  const { need, mods, bonus } = fleeBreakdown(c);
   const roll = rng.d(20);
-  events.push({ type: "fleeRolled", roll, bonus, bulk, need: 11 });
-  if (roll + bonus - bulk >= 11) {
+  const total = roll + bonus;
+  events.push({ type: "fleeRolled", roll, mods, total, need });
+  if (total >= need) {
     if (pursuitStrike(state, rng, events).died) return events;
     forfeitLoot(state, "fled", events);
     events.push({ type: "fled", reason: "escaped" });
