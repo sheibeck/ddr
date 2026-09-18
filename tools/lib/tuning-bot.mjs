@@ -25,9 +25,10 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canRead } from "../../engine/magic.js";
+import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta } from "../../engine/items.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES } from "../../content/index.js";
 
@@ -373,6 +374,92 @@ export function makeBotContext(opts = {}) {
   };
 }
 
+// GOLD_RESERVE — Phase 39 (GEAR-01, 39-02-PLAN.md Task 1): wilmst
+// chooseStorePurchase always keeps in reserve, never spent on a buy. Keeps
+// the bot from walking out of a store with 0 gold before a later repair/food
+// need in the same run.
+export const GOLD_RESERVE = 50;
+
+/**
+ * chooseStorePurchase(state, ctx) — Phase 39 (GEAR-01, 39-02-PLAN.md Task 1):
+ * the store buy/equip policy that replaces the pre-Phase-39 "always leave a
+ * store" step (l) below. Deliberately reads the engine's OWN
+ * legality/upgrade rules — canEquipWeapon/canEquipArmor and
+ * weaponUpgradeDelta/armorUpgradeDelta (engine/items.js, the latter rebased
+ * on engine/derived.js#expectedStrike) — so a line this function picks is
+ * NEVER refused `notBetter` by the engine's own takeItem (T-39-04: a bad
+ * pick here would re-offer the same refused line forever and stall the
+ * matrix). `ctx` is accepted for call-shape symmetry with every other
+ * decideAction helper but is not read — the policy is a pure function of
+ * `state.c`/`state.store.stock`.
+ *
+ * Weapon pass (checked FIRST): among unsold `buyWeapon`/`buyPremium`
+ * (`effectParams.item.kind === "weapon"`) lines, legal via canEquipWeapon,
+ * affordable (`cost <= c.gold - GOLD_RESERVE`), and a genuine upgrade
+ * (`weaponUpgradeDelta(c, item) > 0`) — picks the highest
+ * `expectedStrike(c, item.base, item.bonus || 0, 0)`, ties broken by the
+ * lower cost. Returns immediately on a weapon hit — `decideAction` dispatches
+ * the `buyItem`, and the CALLER's next `decideAction` invocation (the bought
+ * line is now `sold`) is what lets the armor pass below ever run.
+ *
+ * Armor pass (only reached once the weapon pass finds nothing): among unsold
+ * `buyArmor`/`buyPremium` (`item.kind === "armor"`) lines, legal via
+ * canEquipArmor, affordable, a genuine upgrade
+ * (`armorUpgradeDelta(c, item) > 0`) — a Thief additionally skips any line
+ * whose `armorBulk({ armor: item.armor }) > 1` (the CONTEXT.md GEAR-01
+ * ruling: heavy armor is a Thief's own "bad") — picks the highest `item.ar`,
+ * ties broken by the lower cost.
+ *
+ * Returns `null` when nothing qualifies (including a missing/empty
+ * `state.store.stock`) — `decideAction`'s step (l) falls back to
+ * `{ type: "leaveStore" }`, exactly the pre-Phase-39 behaviour.
+ */
+export function chooseStorePurchase(state, ctx) {
+  const stock = state.store && Array.isArray(state.store.stock) ? state.store.stock : null;
+  if (!stock) return null;
+  const c = state.c;
+  const budget = c.gold - GOLD_RESERVE; // GOLD_RESERVE kept back, never spent
+
+  let weaponIdx = null;
+  let weaponScore = -Infinity;
+  for (let i = 0; i < stock.length; i++) {
+    const line = stock[i];
+    if (line.sold || line.cost > budget) continue;
+    if (line.effectId !== "buyWeapon" && line.effectId !== "buyPremium") continue;
+    const item = line.effectParams && line.effectParams.item;
+    if (!item || item.kind !== "weapon") continue;
+    if (!canEquipWeapon(c, item)) continue;
+    if (weaponUpgradeDelta(c, item) <= 0) continue;
+    const score = expectedStrike(c, item.base, item.bonus || 0, 0);
+    if (weaponIdx === null || score > weaponScore || (score === weaponScore && line.cost < stock[weaponIdx].cost)) {
+      weaponIdx = i;
+      weaponScore = score;
+    }
+  }
+  if (weaponIdx !== null) return { type: "buyItem", idx: weaponIdx };
+
+  let armorIdx = null;
+  let armorScore = -Infinity;
+  for (let i = 0; i < stock.length; i++) {
+    const line = stock[i];
+    if (line.sold || line.cost > budget) continue;
+    if (line.effectId !== "buyArmor" && line.effectId !== "buyPremium") continue;
+    const item = line.effectParams && line.effectParams.item;
+    if (!item || item.kind !== "armor") continue;
+    if (!canEquipArmor(c, item)) continue;
+    if (armorUpgradeDelta(c, item) <= 0) continue;
+    if (c.cls === "Thief" && armorBulk({ armor: item.armor }) > 1) continue;
+    const score = item.ar;
+    if (armorIdx === null || score > armorScore || (score === armorScore && line.cost < stock[armorIdx].cost)) {
+      armorIdx = i;
+      armorScore = score;
+    }
+  }
+  if (armorIdx !== null) return { type: "buyItem", idx: armorIdx };
+
+  return null;
+}
+
 /**
  * decideAction(state, policyRng, ctx) — the shared, deterministic auto-play
  * policy (D-05/D-06/D-12/D-20, extended HARN-02). In combat, priority order:
@@ -397,7 +484,9 @@ export function makeBotContext(opts = {}) {
  *   (h) the scoring table (`chooseSpell`, HARN-02);
  *   (i) attack.
  * Out of combat: (j) decline every pending Joiner (D-20); (k) take/leave a
- * pending find; (l) always leave a store; (m) drink below potionThreshold;
+ * pending find; (l) buy the best affordable weapon/armor upgrade via
+ * `chooseStorePurchase` (Phase 39, GEAR-01), else leave the store;
+ * (m) drink below potionThreshold;
  * (n) camp below campThreshold (rations permitting); (o) Summon out of
  * combat (HARN-02) when no ally is pending and charges exceed half of
  * maxCharges; (p) read a carried scroll when able (Claude's Discretion —
@@ -489,7 +578,7 @@ export function decideAction(state, policyRng, ctx) {
   }
   if (state.pendingJoiner) return { type: "resolveJoiner", accept: false }; // D-20
   if (state.pendingFind) return ctx.findFull ? { type: "leaveFind" } : { type: "takeFind" };
-  if (state.store) return { type: "leaveStore" };
+  if (state.store) return chooseStorePurchase(state, ctx) ?? { type: "leaveStore" };
 
   const c = state.c;
   const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
