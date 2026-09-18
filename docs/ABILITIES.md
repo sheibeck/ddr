@@ -245,11 +245,130 @@ everyone, not just non-Climbing characters. No current fixture reaches this
 code path (movement fixture's own `_note` documents its 101-action path as
 deliberately climb/gorge-avoiding).
 
+## Play rules (Plan 03)
+
+`engine/abilities.js#useAbility(state, key, rng, events)` — the ABILITIES
+submenu's action, parallel to `engine/magic.js#castSpell`.
+
+### The ladder
+
+Each refusal is a single `abilityRefused` event and nothing else — no draw,
+no timer, `combat.round` unchanged:
+
+1. **`notFought`** (`refuseIfPending`, first) — the encounter is a preview,
+   Fight! not yet pressed.
+2. **`unknown`** — `key` is not in the catalog, or the character never
+   rolled/learned it (`c.abilities` doesn't include it).
+3. **`notInCombat`** — no active encounter.
+4. **`cooldown { left, name }`** — `!isReady(c, "ability:"+key)`; `left` is
+   `abilityRoundsLeft`.
+5. **`noTarget`** — a `foe`/`foes`-target ability with nothing to aim at.
+   Structurally unreachable in real play, same reasoning `castSpell`'s own
+   comment documents: `normalizeTarget` always finds a live foe while
+   `state.combat` exists (an empty encounter has already cleared) — only a
+   hand-built zero-foe combat reaches this branch.
+6. **`notLowEnough { have, max }`** — Last Stand's own gate: `c.wp > c.maxWP
+   * DEATH_PANIC_THRESHOLD` (0.25) refuses.
+
+Canon refusal register: `"<Name>: N round(s). Your arm has opinions."` for
+`cooldown` (singular "round" at exactly 1); every other reason names the
+ability without a rounds figure.
+
+### The cooldown model
+
+`engine/effects.js`'s Phase 36 `c.timers`, id `ability:<key>`:
+
+- **Immediate kind** (everything except sidestep/battleRoar/riposte/taunt/
+  smoke): `startCooldown(c, id, { rounds: cd })`, or `{ rounds:
+  ONCE_A_FIGHT }` when `cd === "fight"` (Second Wind, Last Stand, Cutpurse,
+  Hamstring, Mark).
+- **Duration kind** (sidestep 2/4, battleRoar 2/5, riposte 1/4, taunt 1/4):
+  `startEffect(c, id, { rounds: N, cd })` — flips from `"effect"` phase to
+  its own `cd`-round `"cooldown"` phase the instant the duration ticks to 0
+  (`effects.js`'s own transition, no bespoke bookkeeping). Smoke is a
+  duration kind with `cd: "fight"` — `startEffect(c, id, { rounds: 2, cd:
+  ONCE_A_FIGHT })`.
+- **Once a fight** (`ONCE_A_FIGHT = 999`) is cleared unconditionally by
+  `endCombat`'s existing `clearRoundTimers`, so every ability is READY at
+  the start of every fight.
+- **The one-tick invariant:** using an ability IS the round's action — the
+  SAME dispatch's own `afterPlayerAction` → `foeTurn` call always ticks
+  every `c.timers` "rounds" record once before `useAbility` returns. A
+  duration-1 ability (riposte, taunt) is therefore ALREADY in its cooldown
+  phase by the time the dispatch returns — its one-round window IS that
+  same foeTurn, not a window you can observe from outside afterward.
+  `abilityRoundsLeft(c, key)` = the effect phase's remaining rounds + its
+  `cd`, or just the cooldown's own remaining rounds.
+
+### Per-ability resolution (condensed — see `ability_effects_spec` in
+38-03-PLAN.md for the verbatim table)
+
+| Key | Kind | Resolution |
+|---|---|---|
+| kata / feint | strike | `abilityStrike = { autoHit: true, bonusDmg: c.level }` → `playerStrike` |
+| deathTouch | strike | `{ forceCrit: true, finishUnder: 15 }` |
+| silentStep | strike | `{ autoHit: true, forceCrit: true }` |
+| overheadBlow | strike | `{ dmgMul: 2, needShift: -2 }` |
+| lastStand | strike | gated by `notLowEnough`; `lastStandCalled` then `{ attacks: 3 }` |
+| pommelStrike | foe | `t.stunned = true` → `pommelStruck` |
+| dirtyTrick | foe | `t.blind = true; t.blindFor = 2` → `dirtyTrickLanded` |
+| poisonedEdge | foe | `t.dot = { left: 3, dmg: {n:1,sides:4,bonus:0}, by: "poisonedEdge" }` → `poisonedEdgeApplied` |
+| hamstring | foe | `t.hamstrung = true` → `hamstrung` |
+| mark | foe | `t.marked = true` → `marked` (already read by `playerStrike`'s +2 since Plan 02) |
+| cutpurse | foe | `rng.d(10) * c.level` gold → `cutpursed` + `gainWilmst(..., "cutpurse", ...)` |
+| secondWind | self | `rng.d(8) + c.level`, capped at `maxWP` → `secondWindHealed` |
+| sweep | foes | `ceil(weaponDamage(c,rng)/2)` to every live foe via `damageFoe` → `swept`/`sweptFoe` |
+| brace | self | `C.braced = true` → `braced` |
+| riposte / taunt / sidestep / battleRoar / smoke | self | starts the timer → `riposteReady`/`taunted`/`sidestepped`/`battleRoarRaised`/`smokeThrown` |
+
+Strike-kind abilities delegate ENTIRELY to `combat.js#playerStrike` (which
+already tail-calls `afterPlayerAction`) — `useAbility` never also calls
+`afterPlayerAction` on that branch (would double-run the foe's turn). Every
+other kind resolves its own effect and calls `afterPlayerAction` itself,
+exactly once, at its own tail — mirroring `castSpell`'s exact pattern.
+
+### The Task 2 combat.js hooks
+
+- **`foeTurn`**: the `f.dot` tick (Poisoned Edge, the `f.acid` template,
+  spell-kind damage so it bypasses armour) directly after the acid block;
+  the `f.stunned` skip (Pommel Strike, the `f.asleep` template) directly
+  after the asleep check; `f.hamstrung` halving at both the hero-branch and
+  member-branch damage sites, right after the existing `C.weakened`
+  halving; a hero-branch miss's Riposte counter (`abilityEffectActive(c,
+  "riposte")`, a `weaponDamage` counter-hit via `damageFoe`) — member
+  misses never trigger it; the `f.blindFor` countdown (Dirty Trick) at the
+  END of each foe's own visit, after its swings — a spell-blinded foe with
+  no `blindFor` stays blind indefinitely.
+- **`pickFoeTarget`**: `abilityEffectActive(state.c, "taunt")` returns
+  `null` before the target die is drawn — zero draws while active.
+- **`applyFoeDamageToPlayer`**: Brace's single-charge halving (the Pendant
+  of Fortitude's `c.halfNext` pattern, `state.combat.braced`) right after
+  the `halfNext` block; Taunt doubles the armour-soak target (`soakAr =
+  min(20, av.ar * 2)`), the `av.ar > 0` GATE itself unchanged.
+- **`flee`**: `abilityEffectActive(c, "smoke")` — an unconditional escape,
+  no roll, no pursuit strike, `fled { reason: "smoke" }`.
+
+Every hook is a pure read, false/absent on every existing fixture — only
+`useAbility`'s own cases ever set these fields/timers.
+
+### Draw statement
+
+No ability adds a draw outside its own `useAbility` dispatch or the
+foeTurn/pickFoeTarget/applyFoeDamageToPlayer/flee hooks above, and every one
+of those hooks fires ONLY when its flag/timer is present (never on an
+existing fixture). Draws inside a dispatch: Second Wind (`rng.d(8)`),
+Poisoned Edge's per-tick `d4` (foeTurn), Cutpurse (`rng.d(10)`, plus the
+Pickpocket bonus draws inside `gainWilmst`), Sweep (one `weaponDamage` roll
+shared by every foe, plus each `sp.ar` foe's own armour `d20` inside
+`damageFoe`), Riposte's counter (`weaponDamage` + the target's own armour
+`d20` inside `damageFoe`), and the five strike-modifier abilities' exact
+`playerStrike` draw sequence (zero NEW draws — they only reinterpret the
+roll `playerStrike` already makes).
+
 ## Out of scope / next
 
-- The `useAbility` action, cooldown dispatch, and effect resolution
-  (Plan 03, next); Joiner class-driven use policy (Plan 04); the combat
-  submenu, Hero-tab list, and first-paint pool card (Plan 05).
+- Joiner class-driven use policy (Plan 04); the combat submenu, Hero-tab
+  list, and first-paint pool card (Plan 05).
 - Magic User actives beyond spells (not requested this phase — spells are
   Phase 40).
 - Bot use policy for abilities — Phase 42 (BAL-02 prep), before the

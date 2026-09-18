@@ -274,7 +274,9 @@ export const EVENT_NARRATION = {
       ? `<span class="hit">You vanish. Clean escape.</span>`
       : e.reason === "tracked"
         ? `<span class="hit">You slip away before it even sees you.</span>`
-        : `<span class="hit">You get clear.</span>`,
+        : e.reason === "smoke"
+          ? `<span class="hit">You leave through the smoke. Nobody follows.</span>`
+          : `<span class="hit">You get clear.</span>`,
   fleeRolled: (e) => `Flee: <span class="roll">${e.roll ?? "?"}</span>+${e.bonus ?? 0} vs ${e.need ?? "?"}.`,
   fleeFailed: () => `<span class="miss">You do not make it.</span>`,
   // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a
@@ -427,6 +429,48 @@ export const EVENT_NARRATION = {
     `You try to shrug it off. <span class="roll">${e.roll ?? "?"} vs intel ${e.intel ?? "?"}.</span> <span class="miss">You do not.</span>`,
   foePursued: (e) => `<span class="hurt">${e.name ?? "It"} follows you out. Of course it does.</span>`,
   foeOutOfSpells: (e) => `${e.name ?? "It"} gestures grandly. Nothing happens. <span class="miss">It appears to be out of spells.</span>`,
+
+  /* ---------------- abilities.js (Phase 38, ABIL-01/04) ---------------- */
+
+  abilityUsed: (e) => `<span class="beat">You call ${e.name ?? "it"}.</span>`,
+  // The canon refusal register (38-CONTEXT.md): the cooldown line names the
+  // ability, the rounds left, and closes on the same wry aside every time;
+  // every other reason names the ability without a rounds figure.
+  abilityRefused: (e) => {
+    const name = e.name ?? e.key ?? "That";
+    const map = {
+      notFought: `<span class="miss">Fight! first, then swing.</span>`,
+      unknown: `<span class="miss">${e.name ?? e.key ?? "That"}? You do not know that one.</span>`,
+      cooldown: `<span class="miss">${name}: ${e.left ?? "?"} round${e.left === 1 ? "" : "s"}. Your arm has opinions.</span>`,
+      notInCombat: `<span class="miss">${name}: nothing to use it on out here.</span>`,
+      noTarget: `<span class="miss">${name}: nothing left standing to use it on.</span>`,
+      notLowEnough: `<span class="miss">Last Stand: you are not desperate enough yet (${e.have ?? "?"} of ${e.max ?? "?"} hp).</span>`,
+    };
+    return map[e.reason] ?? `<span class="miss">${name} refuses you.</span>`;
+  },
+  pommelStruck: (e) => `<span class="hit">The pommel finds ${e.target ?? "it"}'s temple. It will need a moment.</span>`,
+  foeStunned: (e) => `${e.name ?? "It"} spends its turn remembering where it is.`,
+  battleRoarRaised: () => `<span class="hit">Loud enough. For two rounds they all need two better to hit anyone on your side.</span>`,
+  sidestepped: () => `<span class="hit">Not where the blade is. Two rounds of that.</span>`,
+  secondWindHealed: (e) => `<span class="hit">You remember why you came. +${e.amount ?? 0} hp.</span>`,
+  swept: (e) => `<span class="hit">One wide arc — ${e.dmg ?? 0} to everything still standing.</span>`,
+  sweptFoe: (e) => `${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span>.`,
+  braced: () => `<span class="hit">Braced. The next one lands on your terms.</span>`,
+  braceHeld: (e) => `<span class="hit">Braced — ${e.name ?? "it"}'s blow lands half as hard (−${e.soaked ?? 0}).</span>`,
+  riposteReady: () => `<span class="hit">Every miss is an invitation.</span>`,
+  riposted: (e) => `${e.target ?? "It"} misses, and pays <span class="roll">${e.dmg ?? 0}</span> for it.`,
+  taunted: () => `<span class="hit">Every foe looks at you. Armour doubles. Good luck.</span>`,
+  lastStandCalled: (e) => `<span class="beat">Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
+  dirtyTrickLanded: (e) => `<span class="hit">Sand, thumb, elbow. ${e.target ?? "it"} is blinded for ${e.rounds ?? 2} rounds.</span>`,
+  foeSightReturned: (e) => `${e.name ?? "It"} blinks the sand out.`,
+  smokeThrown: () => `<span class="hit">Gone. For two rounds they need a natural 1 to find you.</span>`,
+  cutpursed: (e) => `<span class="hit">You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
+  poisonedEdgeApplied: (e) => `<span class="hit">The blade weeps into ${e.target ?? "it"}. ${e.rounds ?? 3} rounds of that.</span>`,
+  // dotTick is generic on `by` — Phase 40's spells will share this same
+  // event shape, so the line never names Poisoned Edge specifically.
+  dotTick: (e) => `${e.target ?? "It"} takes <span class="hurt">${e.dmg ?? 0}</span> from the poison.`,
+  hamstrung: (e) => `<span class="hit">Tendon cut. ${e.target ?? "It"} hits half as hard from here on.</span>`,
+  marked: (e) => `<span class="hit">Studied. Every blow on ${e.target ?? "it"} lands +2.</span>`,
 
   /* ---------------- magic.js ---------------- */
 

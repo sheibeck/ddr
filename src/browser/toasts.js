@@ -278,6 +278,8 @@ export const FEATURE_EVENTS = [
   "dismissRefused",
   "buyFailed",
   "backstabDenied",
+  // Phase 38 (ABIL-01/04): the ABILITIES submenu's own refusal vocabulary.
+  "abilityRefused",
 ];
 
 // ─── Shared helpers (mirrors eventNarration.js's soakedText/needMods pattern) ─
@@ -1028,7 +1030,7 @@ export const TOAST_FOR = {
   withdrawalDenied: () => block("Slipping away untouched would mean not attacking."),
   vanishDenied: () => block("They have already seen your face."),
   fled: (e) => {
-    const map = { cloaker: "You vanish — clean escape.", tracked: "You slip away before it sees you." };
+    const map = { cloaker: "You vanish — clean escape.", tracked: "You slip away before it sees you.", smoke: "Gone through the smoke. Nobody follows." };
     return { text: map[e?.reason] ?? "You get clear.", tone: "hit", priority: PRIORITY.you };
   },
   fleeRolled: (e) => ({ text: `Flee: ${e?.roll ?? "?"}+${e?.bonus ?? 0} vs ${e?.need ?? "?"}`, tone: "beat", priority: PRIORITY.other }),
@@ -1164,6 +1166,45 @@ export const TOAST_FOR = {
   heroResistFailed: (e) => ({ text: `${e?.name ?? "It"} gets through — you fail to resist.`, tone: "hurt", priority: PRIORITY.them }),
   foePursued: (e) => ({ text: `${e?.name ?? "It"} follows you out.`, tone: "hurt", priority: PRIORITY.them }),
   foeOutOfSpells: (e) => ({ text: `${e?.name ?? "It"} is out of spells.`, tone: "dodge", priority: PRIORITY.them }),
+
+  /* ---------------- abilities.js (Phase 38, ABIL-01/04) ---------------- */
+
+  abilityUsed: (e) => ({ text: `You call ${e?.name ?? "it"}.`, tone: "hit", priority: PRIORITY.feature }),
+  // Canon refusal register (38-CONTEXT.md): a cooldown names the ability,
+  // the rounds left, and the same wry closing line every time.
+  abilityRefused: (e) => {
+    const name = e?.name ?? e?.key ?? "That";
+    const map = {
+      notFought: "Fight! first, then swing.",
+      unknown: `${e?.name ?? e?.key ?? "That"}? You do not know that one.`,
+      cooldown: `${name}: ${e?.left ?? "?"} round${e?.left === 1 ? "" : "s"}. Your arm has opinions.`,
+      notInCombat: `${name}: nothing to use it on out here.`,
+      noTarget: `${name}: nothing left standing to use it on.`,
+      notLowEnough: `Last Stand: you are not desperate enough yet (${e?.have ?? "?"} of ${e?.max ?? "?"} hp).`,
+    };
+    return block(map[e?.reason] ?? `${name} refuses you.`);
+  },
+  pommelStruck: (e) => ({ text: `The pommel finds ${e?.target ?? "it"}'s temple.`, tone: "hit", priority: PRIORITY.them }),
+  foeStunned: (e) => ({ text: `${e?.name ?? "It"} loses its turn.`, tone: "hit", priority: PRIORITY.them }),
+  battleRoarRaised: () => ({ text: "Loud enough. Two rounds of it.", tone: "hit", priority: PRIORITY.feature }),
+  sidestepped: () => ({ text: "Not where the blade is. Two rounds of that.", tone: "hit", priority: PRIORITY.feature }),
+  secondWindHealed: (e) => ({ text: `+${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.you }),
+  swept: (e) => ({ text: `One wide arc — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.feature }),
+  sweptFoe: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0}.`, tone: "hit", priority: PRIORITY.them }),
+  braced: () => ({ text: "Braced. The next one lands on your terms.", tone: "hit", priority: PRIORITY.feature }),
+  braceHeld: (e) => ({ text: `Braced — ${e?.name ?? "it"}'s blow lands half as hard (−${e?.soaked ?? 0}).`, tone: "hit", priority: PRIORITY.you }),
+  riposteReady: () => ({ text: "Every miss is an invitation.", tone: "hit", priority: PRIORITY.feature }),
+  riposted: (e) => ({ text: `${e?.target ?? "It"} misses, and pays ${e?.dmg ?? 0} for it.`, tone: "hit", priority: PRIORITY.them }),
+  taunted: () => ({ text: "Every foe looks at you. Armour doubles.", tone: "hit", priority: PRIORITY.feature }),
+  lastStandCalled: (e) => ({ text: `Under a quarter. ${e?.attacks ?? 3} attacks this round.`, tone: "beat", priority: PRIORITY.feature }),
+  dirtyTrickLanded: (e) => ({ text: `${e?.target ?? "It"} is blinded for ${e?.rounds ?? 2} rounds.`, tone: "hit", priority: PRIORITY.them }),
+  foeSightReturned: (e) => ({ text: `${e?.name ?? "It"} blinks the sand out.`, tone: "dodge", priority: PRIORITY.them }),
+  smokeThrown: () => ({ text: "Gone. They need a natural 1 to find you.", tone: "hit", priority: PRIORITY.feature }),
+  cutpursed: (e) => ({ text: `You lift ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"}.`, tone: "hit", priority: PRIORITY.them }),
+  poisonedEdgeApplied: (e) => ({ text: `${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds.`, tone: "hit", priority: PRIORITY.them }),
+  dotTick: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0} from the poison.`, tone: "hurt", priority: PRIORITY.them }),
+  hamstrung: (e) => ({ text: `${e?.target ?? "It"} hits half as hard from here on.`, tone: "hit", priority: PRIORITY.them }),
+  marked: (e) => ({ text: `Every blow on ${e?.target ?? "it"} lands +2.`, tone: "hit", priority: PRIORITY.them }),
 
   /* ---------------- magic.js ---------------- */
 

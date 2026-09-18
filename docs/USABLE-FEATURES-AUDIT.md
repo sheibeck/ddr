@@ -31,6 +31,7 @@ never a generic "you can't do that."
 | `pilfer` | `useRefused`, `scrollRefused` | a Pilfer cannot use a non-heal magic item or read a scroll | `useRefused`, `scrollRefused` |
 | notWorn | useRefused | (Phase 37, GEAR-03) a cloak/jewelry/staff activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use | useRefused |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
+| `abilityRefused` reasons | `abilityRefused` | (Phase 38, ABIL-01/04) the ABILITIES submenu's own ladder: `unknown` (not in the catalog, or not owned) · `cooldown {left}` (rounds remaining — the canon "Your arm has opinions." line) · `notInCombat` (no active encounter) · `noTarget` (structurally unreachable in combat, same reasoning as `castSpell`'s own retarget) · `notLowEnough` (Last Stand above a quarter hp, payload `have`/`max`) — plus the shared `notFought` above. Every reason names the ability; rows stay TAPPABLE on cooldown (never disabled) — the dispatch itself is the refusal | `abilityRefused` |
 
 `noChargesLeft` / `spellNotKnown` / `spellAboveLevel` / `spellSchoolLocked`
 already self-explain via their OWN dedicated event type + copy — they are

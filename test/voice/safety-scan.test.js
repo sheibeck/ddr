@@ -126,6 +126,9 @@ const BASE_EVENT = {
   // Phase 20 (D-14): fluency annotation on parleyRolled; why on goldGained
   // (distinguishes the rare parley wilmst payout from every other source).
   fluency: 2, why: "parley",
+  // Phase 38 (ABIL-01/04): abilityRefused's cooldown/notLowEnough fields,
+  // dotTick's generic `by`, lastStandCalled's `attacks`.
+  left: 3, have: 10, by: "poisonedEdge", attacks: 3,
 };
 
 // Branch-discriminator overrides so every ternary path in every builder renders.
@@ -152,6 +155,10 @@ const BRANCH_TOGGLES = [
   // Phase 37 (GEAR-03): the notWorn refusal and itemEquipped's additive
   // replaced payload.
   { reason: "notWorn" }, { replaced: { n: "Ring of Power" } },
+  // Phase 38 (ABIL-01/04): abilityRefused's own reason register, and fled's
+  // new smoke branch.
+  { reason: "cooldown" }, { reason: "unknown" }, { reason: "notInCombat" },
+  { reason: "noTarget" }, { reason: "notLowEnough" }, { reason: "smoke" },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every
