@@ -376,7 +376,172 @@ GEAR-01)" subsection for why each one never reaches the new axes.
 
 ## Item activation model (GEAR-02) — Plan 03
 
-Appended by Plan 03.
+### The user's ruling, verbatim
+
+> "Every activated item gets an effect that counts with chip. The effect
+> lasts for x (number of squares moved), upon expiration the cooldown is x
+> number of squares before reuse is available. Items with charges recharge
+> every x squares. Consumables are one time uses that effect last for x
+> squares. Staves, cloaks, jewelry, everything that has an effect on use."
+
+### Post-planning ruling — ONCE A DAY (2026-09-18)
+
+> "100 squares is one day. Given that, items should be usable at least once
+> a day."
+
+Applied: `effect + cd <= 100` squares for every duration+cooldown
+activation; `recharge <= 100` squares per charge for every staff. Three rows
+were re-authored to fit (both `every` AND `txt`, so the flavor text stays
+true — never a stale number left in prose): **Amulet of Stone** `every` 200
+-> 100 (instant effect, so this is purely the cooldown); **Cloak of
+Invisibility** `every`/effect 100/100 -> 50/50 (50+50 = one day); **Cloak of
+Ether** `every` 100 -> 80 (effect stays 20; 20+80 = one day, txt unchanged
+since it already read "once every 100 squares" describing the total cycle,
+not the literal cooldown). Every other row already fit and kept its literal
+canon/prototype value.
+
+### The three tables
+
+**Duration + cooldown** (JEWELRY/CLOAKS rows with a `use`, plus the
+auto-activating Cloak of Flying) — source: canon `every`/duration text,
+re-authored per the once-a-day rule where noted above:
+
+| Row | act.kind | effect (squares) | cd (squares) | source |
+|---|---|---|---|---|
+| Pendant of Fortitude | half | 0 (instant: `c.halfNext = true`) | 100 | canon `every: 100`, unchanged |
+| Amulet of Stone | stone | 0 (instant, AoE 4 kill) | 100 | once-a-day rule, was 200 |
+| Cloak of Invisibility | invis | 50 | 50 | once-a-day rule, was 100/100 |
+| Cloak of Speed | haste | 50 | 50 | canon `every: 50`, unchanged |
+| Cloak of Ether | ether | 20 | 80 | once-a-day rule, cd was 100 |
+| Cloak of Flying | fly | 20 | 50 | canon "once every 50" — the row has no `every` field (it auto-activates, no `use`), so `act.cd: 50` is the explicit override |
+
+**Charges + recharge** (STAVES rows; `effect` only where the use has its
+own duration) — source: Claude's discretion per the CONTEXT's explicit
+grant, a deliberate mild buff correcting the prototype's `every: 250`
+(effectively-infinite reuse) into a real, scarce resource for the Magic
+User's one weapon:
+
+| Row | act.kind | charges | recharge (squares) | effect |
+|---|---|---|---|---|
+| Rowan Staff | dome | 2 | 100 | instant |
+| Birch Staff | freeze | 2 | 100 | instant |
+| Walnut Staff | weaken | 2 | 80 | instant |
+| Oak Staff | stone | 1 | 100 | instant |
+| Crystal Staff | invis | 2 | 100 | `{ n: 1, sides: 10, bonus: 5 }` squares (canon "d10+5 squares") |
+| Poplar Staff | heal | 3 | 60 | instant |
+| Pine Staff | fire | 1 | 100 | instant |
+| Cedar Staff | gas | 1 | 100 | instant |
+
+**Consumables** (POTIONS rows; consumed on use; no cd) — source: canon
+duration text verbatim:
+
+| Row | act.kind | effect | extra |
+|---|---|---|---|
+| Speed | haste | 50 squares | |
+| Strength | might | 25 squares | `might: 8` |
+| Enlarge | might | 50 squares | `might: 4` |
+| Acuteness | acute | `{ n: 1, sides: 8, bonus: 0 }` rounds | `cadence: "rounds"` |
+| Invisible | invis | 100 squares | canon text says "a day"; the prototype set 100 — kept |
+
+Healing / Xtra Healing / Cure Poison / Cure Disease / Death: instant, no
+`act`. Passive rows (Ring of Power, Gauntlet, Amulet of Light, Anklet, Helm,
+Bracelet of Flight, Cloak of Healing/Strength/Regeneration/Armor): no `act`.
+
+### The representation
+
+Every live effect or cooldown is ONE `c.timers[id]` record on Phase 36's
+`engine/effects.js` (`startEffect`/`startCooldown`/`tickRounds`/
+`tickSquares`/`remaining`/`isReady`), keyed `item:<name>` (a duration+
+cooldown jewelry/cloak, or a consumable potion's own effect) or
+`charges:<name>` (a staff's recharge countdown — always a cooldown record,
+never an effect). `content/activations.js#ACTIVATION_OF` (merged from
+`content/treasure-tables.js#TREASURE_ACTIVATION_OF` and `content/potions.js#
+POTION_ACTIVATION_OF`) is the pure-data declaration; `engine/derived.js`'s
+`activationKeyFor`/`activationFor`/`itemTimerId`/`chargesTimerId`/
+`liveItemEffects`/`itemEffectActive`/`potionMight` are the ONLY readers.
+
+A staff's charge COUNT rides the item object itself (`it.charges`) — not a
+`c.timers` record — because it travels with the physical staff: drop it,
+sell it, hand it to a Joiner, and the remaining charges go with it. Only the
+COUNTDOWN to the next charge (`charges:<name>`) lives on the character, since
+recharging is something the character's own attunement does, not the item.
+When a staff's charge pool is not full, `engine/items.js#
+narrateTimerTransitions` restarts the countdown the instant the previous one
+expires — charges refill CONTINUOUSLY (one every `recharge` squares) until
+the pool is full, never all at once.
+
+### Retired fields — where each consumer now reads
+
+| Retired field | Old writer(s) | New read |
+|---|---|---|
+| `c.haste` | `engine/items.js#useItem` (`speed`/`haste` cases) | `engine/combat.js#playerStrike` — `itemEffectActive(c, "haste")` (double attacks) |
+| `c.invis` | `engine/items.js#useItem` (`invis` case) | `engine/derived.js#foeToHitVs`/`foeToHitBreakdown` — `itemEffectActive(c, "invis")` (h = 1) |
+| `c.ether` | `engine/items.js#useItem` (`ether` case) | `engine/movement.js`'s climb/gorge block — `itemEffectActive(c, "ether")` (phase through) |
+| `c.acute` | `engine/items.js#useItem` (`acute` case) | `engine/derived.js#strikeDie` — `itemEffectActive(c, "acute")` (strike on a d6) |
+| `c.might` (potion writes only — the SPELL's own `c.might` write is untouched) | `engine/items.js#useItem` (`strength`/`enlarge` cases, `+= 8`/`+= 4`, never expiring) | `engine/derived.js#weaponDamage`, `src/browser/viewModels.js#damageBracket` — `potionMight(c)`, additive alongside the spell's `c.might` |
+| `c.flightLeft`/`c.flightCooldown` | `engine/character.js#rollCharacter` (init), `engine/movement.js` (climb block + per-step tick) | `engine/derived.js#isFlying`/`conditionsOf` — `itemEffectActive(c, "fly")` / `isReady(c, "item:Cloak of Flying")` |
+| `it.usedAt` (every activatable item) | `engine/items.js#useItem` (unconditional stamp before the retired `!itemReady` block) | `engine/items.js#itemReady` — `isReady(state.c, itemTimerId(it))` (cd items) / `Number.isInteger(it.charges) && it.charges > 0` (staves) |
+| `it.every` (STAVES rows only — JEWELRY/CLOAKS rows keep `every` as legitimate fallback-default content, read only by `buildActivation` when `act.cd` is absent) | `content/treasure-tables.js` STAVES rows, `engine/items.js#rollStaff` | retired outright — a staff's readiness is `it.charges`, never a squares-since-use gate |
+
+### Refusal vocabulary (new/changed rows)
+
+| Reason | Item class | Payload | Line |
+|---|---|---|---|
+| `cooldown` | duration+cooldown jewelry/cloak, still cooling or mid-effect | `{ left, phase }` | "{item}: {left} squares. It is not a vending machine." |
+| `recharging` | an EMPTY staff (0 charges) | `{ left, charges, max }` | "{item}: {left} squares to the next charge. Patience is also a spell." |
+
+### New events
+
+`itemEffectStarted { item, kind, left, cadence, might? }` — a use started a
+timed effect (kind-keyed narration: haste/invis/ether/acute/might/fly each
+get their own line; an unrecognized kind falls back to "{item}: {n}
+squares."). `itemEffectFaded { item, kind }` — an effect record expired
+(from either the `item:` phase-effect->deleted OR phase-effect->cooldown
+transition — a duration+cooldown item narrates the SAME event whether it is
+now fully spent or has simply moved into its cooldown). `itemCooled { item
+}` — a duration+cooldown item's cooldown phase finished; it is ready again.
+`staffRecharged { item, charges, max }` — a staff regained one charge.
+
+### Tolerant-load fold
+
+`engine/saveState.js#foldLegacyCounters(c, steps)` runs LAST in both load
+chains (`validateSave`/`rehydrate`, after `ensureCharacterAbilities`).
+Items are folded FIRST (a captured `it.usedAt` on a duration+cooldown item
+reconstructs a COOLDOWN record scaled by elapsed squares; a staff loses its
+legacy `every`/`usedAt` outright and gets a full charge pool if its
+`charges` field is missing or a tampered non-integer, T-39-06), then the six
+character-level counters SECOND — an active (positive) counter always wins,
+overwriting whatever cooldown the item pass reconstructed for the same id
+(`startEffect` always overwrites). The six legacy keys are always deleted
+when present; nothing is ever injected when there is nothing to fold.
+
+**The one accepted loss:** a mid-fight, rounds-cadence Acuteness effect does
+NOT survive a save/load round-trip. `combat` is always reset to `null` on
+load (unconditionally, long before this phase), and Phase 36's own
+`clearStaleTimers` clears every ROUNDS-cadence `c.timers` record on load
+for exactly that reason — Acuteness now ticks ONLY inside `foeTurn` (never
+per exploration step, a deliberate behavior change from the old dual-tick
+model), so it is combat-scoped exactly like every other rounds-cadence
+timer and pays the same reload cost. This mirrors the `c.ward`/`c.foeEffect`
+precedent (both also die on reload) rather than inventing a new rule.
+
+### Members never activate items
+
+`alliesTurn`/`memberStrike` (`engine/combat.js`) have no item-use branch —
+verified by grepping `useItem` across `engine/combat.js`. Party members
+therefore never carry an `item:`/`charges:` timer record on their own
+sheet; their passive `eff(view, …)` reads (worn-item flat bonuses) are
+completely untouched by this plan.
+
+### The `txt` note
+
+Every JEWELRY/CLOAKS/STAVES row's flavor `txt` field is left BYTE-IDENTICAL
+on export (`content/treasure-tables.js#dropAuthored` strips `slot` and `act`
+the same way Phase 37 stripped `slot` alone) — seven parity fixtures carry a
+starting cloak's `txt` in their compared `c.items`/`c.worn` shape, so
+editing it would move fixtures this plan explicitly declares untouched. The
+Gear tab's row state (Plan 05) renders the LIVE numbers (remaining/cooldown/
+charges) instead of relying on the static flavor text to stay accurate.
 
 ## One-shot tools (GEAR-05) — Plan 04
 

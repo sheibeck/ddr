@@ -878,6 +878,85 @@ fixture divergence protocol.
 - **`encounters.json`'s `trap`/`chest`/`tablefour`/`affliction` scenarios**
   — none reaches a combat or a climb/gorge tile; unaffected by construction.
 
-<!-- 39-03 -->
+## Phase 39: item activation model (GEAR-02) — retired-field carve-out, zero fixture moves
+
+**What was retired.** The scattered counters `c.haste`/`c.invis`/`c.ether`/
+`c.acute` (set directly by `useItem`, ticked per exploration step and per
+`foeTurn` round) and `c.flightLeft`/`c.flightCooldown` (the Cloak of Flying's
+bespoke charge/cooldown pair) no longer exist as engine state at all —
+`engine/character.js#rollCharacter` no longer initialises any of the six
+fields. Every item that does something when used (duration+cooldown
+jewelry/cloaks, charges+recharge staves, consumable-with-duration potions)
+now lives as ONE `c.timers[id]` record on Phase 36's `engine/effects.js`,
+keyed `item:<name>` or `charges:<name>`.
+
+**Why the prototype's `haste/invis/ether/acute` zeros are stripped from
+BOTH sides — a harness carve-out, not a regeneration.** The frozen prototype
+(`test/parity/prototype-master.js.txt` — never edited) still initialises all
+four fields to 0 at chargen and NO fixture ever raises one above 0 (no
+fixture ever calls `useItem` on a duration item). The engine side no longer
+builds the fields at all. `test/parity/harness/comparables.js#
+stripRetiredCounterFields` destructures the four keys off whichever side
+carries them (mirroring `stripNameField`'s "strip from whichever side" own
+discipline) in all three shared comparables, plus the three per-domain local
+`comparable()` duplicates (`combat-parity.test.js`/`magic-parity.test.js`/
+`movement-parity.test.js`) and `chargen-parity.test.js`/`full-suite.test.js`'s
+own field-list + destructure. `flightLeft`/`flightCooldown` needed NO
+carve-out at all — the frozen prototype never built them in the first
+place (audit-batch1, 2026-09-09), and now neither does the engine, so
+`stripFlightFields` is a permanent no-op kept only because removing it costs
+nothing.
+
+**Why no fixture moved.** No parity fixture (chargen/movement/combat/magic/
+economy/encounters) ever calls `useItem`, carries a staff, or drinks a
+duration potion — cloak/jewel/potion item SHAPES stay byte-identical because
+the new `act` field is stripped from every exported `JEWELRY`/`CLOAKS`/
+`STAVES` row exactly like `slot` was in Phase 37 (`content/treasure-tables.js#
+dropAuthored`). The standing rule going forward: a future fixture whose
+action script drinks a potion, uses a cloak, or fires a staff must be
+DECLARED as an action-path record (the effect now lives in `c.timers`, which
+is carved out structurally by `stripTimersField` — Phase 36 — but the
+declared before/after belongs in that fixture's own divergence record, same
+as any other action-path change).
+
+**The ONE genuine content-value divergence (once-a-day rule, user ruling
+2026-09-18): re-authored `every` values.** Three treasure rows' canon
+cooldown value changed to satisfy "every item must be usable at least once a
+day" (`effect + cd <= 100` squares): Amulet of Stone `every` 200 -> 100,
+Cloak of Invisibility `every` 100 -> 50 (with `act.effect` 100 -> 50), Cloak
+of Ether `every` 100 -> 80 (with `act.effect` unchanged at 20). `it.every` is
+now PURELY a fallback-default content field (`buildActivation` reads it only
+when a row's `act.cd` is absent) — no engine RULE reads `it.every` off an
+item object anymore (`itemReady`/`useItem` are timer-backed). MEASURED
+(grepped every fixture JSON and the parity suite's live prototype-vs-engine
+runs for the three re-authored names): **only the Cloak of Ether is ever
+rolled** — as the Thief's chargen starting cloak, independently by THREE
+different fixture seeds (3, 1119, 303 — pure coincidence of the dice, not a
+shared derivation). Declared and carved out via a NEW, permanent
+`stripReauthoredEveryField` helper (`test/parity/harness/comparables.js`,
+wired beside `stripCloakArmorTxt` — the exact same "one re-authored FIELD on
+a NAMED item" shape as the Cloak of Armor's `txt` rewrite in Phase 28),
+applied everywhere `stripCloakArmorTxt` already runs plus
+`chargen-parity.test.js`/`full-suite.test.js`'s own chargen diff. The ONE
+fixture file that needed actual regeneration (a stored literal, not a
+live-vs-live comparison): `test/parity/fixtures/action-script.economy.json`'s
+declared Pickpocket-markup divergence record (`fromAction 0, stockCostMul
+1.25`, seed 3) carries the Thief's starting Cloak of Ether in its `after`
+snapshot — its `every` value was measured live against the re-authored
+content and updated `100 -> 80` (the `before` snapshot, the prototype's own
+canon value, is untouched at 100). No other fixture JSON stores a literal
+`every` value.
+
+**Tolerant-load fold — the one accepted loss.** `engine/saveState.js#
+foldLegacyCounters(c, steps)` rehydrates a pre-Phase-39 save's six retired
+fields and every carried item's legacy `it.usedAt`/`it.every` gate into the
+`c.timers` model (items folded first, counters second — an active counter
+always wins over a same-id cooldown the item fold reconstructed). One
+accepted loss, matching Phase 36's own `clearStaleTimers` precedent: a
+rounds-cadence Acuteness effect is DROPPED on reload (`clearStaleTimers`
+clears every rounds-cadence record unconditionally, since `combat` is always
+reset to null on load and Acuteness now ticks only inside `foeTurn`) — a
+mid-fight Acuteness dose never survives a save/load round-trip, same as
+every other combat-scoped timer.
 
 <!-- 39-04 -->

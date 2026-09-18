@@ -133,6 +133,27 @@ function stripFlightFields(c) {
   return rest;
 }
 
+/** stripRetiredCounterFields(c) — Phase 39 (GEAR-02, greenfield retirement):
+ * `c.haste`/`c.invis`/`c.ether`/`c.acute` are retired ENTIRELY — every item
+ * effect (potion/cloak/staff) now lives on `c.timers` (engine/effects.js)
+ * instead. The frozen prototype (test/parity/prototype-master.js.txt — DO
+ * NOT EDIT) still initialises all four to 0 at chargen and no fixture ever
+ * raises one above 0, while the engine no longer carries the fields at all
+ * (engine/character.js#rollCharacter). This is a permanent, deliberate
+ * divergence — a harness carve-out, not a fixture regeneration — mirroring
+ * stripNameField's "strip from WHICHEVER side carries it" discipline:
+ * applied uniformly as both the engine's own state and the reconstructed
+ * prototype state pass through the SAME comparable() pipeline, so stripping
+ * is a genuine no-op difference either way (0 vs absent). `stripFlightFields`
+ * immediately above is left in place (now a permanent no-op on both sides —
+ * neither ever sets flightLeft/flightCooldown post-Phase-39 — see its own
+ * doc comment) rather than removed, since it costs nothing to keep. */
+function stripRetiredCounterFields(c) {
+  if (!c) return c;
+  const { haste, invis, ether, acute, ...rest } = c;
+  return rest;
+}
+
 /** stripBagField(c) — ECON-01 (Phase 12, Economy A) adds a brand-new class-
  * derived carry-capacity field (`c.bag`, a plain string assigned at chargen by
  * engine/character.js's rollCharacter) with NO prototype-side equivalent at
@@ -279,6 +300,43 @@ export function stripCloakArmorTxt(c) {
   return { ...c, items };
 }
 
+/** REAUTHORED_EVERY_ITEMS — Phase 39 (GEAR-02, once-a-day rule, user ruling
+ * 2026-09-18): the three treasure rows whose `every` cooldown value was
+ * re-authored to fit "every item must be usable at least once a day"
+ * (`effect + cd <= 100` squares): Amulet of Stone 200 -> 100, Cloak of
+ * Invisibility 100 -> 50, Cloak of Ether 100 -> 80. See
+ * docs/GEAR-BALANCE.md's "Item activation model (GEAR-02)" section for the
+ * full numbers ledger. */
+const REAUTHORED_EVERY_ITEMS = new Set(["Amulet of Stone", "Cloak of Invisibility", "Cloak of Ether"]);
+
+/** stripReauthoredEveryField(c) — Phase 39 (GEAR-02): mirrors
+ * stripCloakArmorTxt's exact precedent immediately above — a re-authored
+ * content FIELD (not the field's mere presence/absence) on a NAMED item.
+ * `it.every` is now purely fallback default data (`content/treasure-
+ * tables.js#buildActivation` reads it ONLY when a row's `act.cd` is absent —
+ * no engine RULE reads `it.every` off an item object anymore, see
+ * engine/items.js#itemReady/useItem), so a chargen roll landing one of the
+ * three re-authored rows in the bag (e.g. the chargen/combat/economy
+ * fixtures' seed 3 Thief, whose starting cloak is a Cloak of Ether) surfaces
+ * as an `items[N].every` value diff against the frozen prototype-master.js.txt
+ * (DO NOT EDIT, and canonically unchanged: the CANON `every` is still
+ * 100/100/100 there). MEASURED: `chargen` (seed 3), `combat` (win/lose-plain/
+ * parley — all share seed 3's Thief base), `economy` (seed 3) all roll a
+ * Cloak of Ether at chargen and were the only fixtures affected (grepped for
+ * all three re-authored names across every fixture JSON) — no fixture rolls
+ * the Amulet of Stone or Cloak of Invisibility. No JSON fixture file itself
+ * needed regeneration (chargen/combat/economy compare LIVE prototype-sandbox
+ * output against the live engine, never a stored literal `every` value) —
+ * this harness carve-out IS the declared, measured divergence; see
+ * test/parity/FIXTURE-INVENTORY.md's Phase 39 section. */
+export function stripReauthoredEveryField(c) {
+  if (!c || !Array.isArray(c.items)) return c;
+  const items = c.items.map((it) =>
+    it && REAUTHORED_EVERY_ITEMS.has(it.n) && "every" in it ? (({ every, ...rest }) => rest)(it) : it
+  );
+  return { ...c, items };
+}
+
 /** movementComparable(state) — strips engine-only bookkeeping and the
  * prototype's presentation-only `beats`. No domain-specific closures to
  * strip (movement never touches combat/store/affliction sub-state), but
@@ -327,7 +385,7 @@ export function movementComparable(state) {
   // never carries a live combat), added so D-14's "all three comparables"
   // carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
   return rest;
 }
 
@@ -405,7 +463,7 @@ export function combatComparable(state) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(rest.c))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
   return rest;
 }
 
@@ -895,7 +953,7 @@ export function economyComparable(state) {
   // (neither family carries a live combat), added so D-14's "all three
   // comparables" carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
-  if (rest.c) rest.c = stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))))))));
   return rest;
 }
 

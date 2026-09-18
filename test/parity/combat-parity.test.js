@@ -35,6 +35,7 @@ import {
   skipsByteDiffAt,
   declaredEndDiffs,
   stripCloakArmorTxt,
+  stripReauthoredEveryField,
   reconcilePendingLoot,
   reconcilePendingFight,
   chargenShiftOf,
@@ -151,13 +152,22 @@ function comparable(state) {
     // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
     // too (see harness stripAbilitiesField) — mirrored here because this
     // file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, ...cRest } = rest.c;
+    // Phase 39 (GEAR-02): strip the retired haste/invis/ether/acute counters
+    // too (see harness stripRetiredCounterFields) — the frozen prototype
+    // still carries these at 0/whatever value it never raised further, the
+    // engine no longer builds them at all; mirrored here because this file
+    // keeps its own local comparable().
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, haste, invis, ether, acute, ...cRest } = rest.c;
     // Phase 28 (ARMOR-04): the Cloak of Armor's rewritten `txt` is a purely
     // cosmetic content divergence (see harness/comparables.js's
     // stripCloakArmorTxt) — the `flee` scenario's seed 17 rolls this cloak
     // into the bag at chargen, so strip it here too since this file keeps
     // its own local comparable().
-    rest.c = stripCloakArmorTxt(cRest);
+    // Phase 39 (GEAR-02, once-a-day rule): strip the three re-authored
+    // treasure rows' `every` value too — win/lose-plain/parley's seeds
+    // (3/1119/303) each independently roll a Thief starting with a Cloak of
+    // Ether; see harness/comparables.js's stripReauthoredEveryField.
+    rest.c = stripReauthoredEveryField(stripCloakArmorTxt(cRest));
   }
   return rest;
 }

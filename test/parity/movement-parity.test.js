@@ -88,7 +88,8 @@ function comparable(state) {
     // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
     // too (see harness stripAbilitiesField) — mirrored here because this
     // file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, ...cRest } = rest.c;
+    // Phase 39 (GEAR-02): strip the retired haste/invis/ether/acute counters too.
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, haste, invis, ether, acute, ...cRest } = rest.c;
     rest.c = cRest;
   }
   return rest;

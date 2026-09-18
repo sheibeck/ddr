@@ -49,6 +49,7 @@ import {
   chargenShiftOf,
   stripChargenShift,
   chargenShiftDiffs,
+  stripReauthoredEveryField,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -67,9 +68,13 @@ const CHARACTER_FIELDS = [
   "cls", "sub", "race", "intel", "level", "sp", "maxWP", "wp", "skills", "vp",
   "weapon", "prof", "magicWpn", "armor", "ar", "armorMin", "armorWP", "armorMax",
   "patches", "temperament", "motive", "phobia", "phobiaType", "potions", "rations",
-  "gold", "scrolls", "haste", "invis", "ether", "acute", "affliction", "joiner",
+  "gold", "scrolls", "affliction", "joiner",
   "items", "grimoire", "spellsUsed", "kills", "might", "ward", "regen", "mirror",
   "foresight",
+  // Phase 39 (GEAR-02, greenfield retirement): "haste"/"invis"/"ether"/
+  // "acute"/"flightLeft"/"flightCooldown" are REMOVED entirely — the engine
+  // no longer builds these fields at all. See chargen-parity.test.js's
+  // identical comment for the full rationale.
   // DR-name-generator (2026-09-09): "name" is carved out of the parity field
   // list — nameFor now builds a GENERATIVE first × surname name (a cosmetic
   // divergence from the frozen prototype) while making the SAME single rng
@@ -81,11 +86,6 @@ const CHARACTER_FIELDS = [
   // prototype-side equivalent — see chargen-parity.test.js's identical
   // comment for the full rationale; stripped again below before diffState.
   "darkFor",
-  // audit-batch1 (2026-09-09, A2): engine-only Cloak-of-Flying charge/
-  // cooldown fields, no prototype-side equivalent — same treatment as
-  // darkFor immediately above; stripped again below before diffState.
-  "flightLeft",
-  "flightCooldown",
   // ECON-01 (Phase 12): engine-only class-derived carry bag key, no
   // prototype-side equivalent — plain assignment (no rng), stripped again
   // below before diffState. See chargen-parity.test.js for the full rationale.
@@ -107,8 +107,15 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       assert.deepStrictEqual(Object.keys(engineC).sort(), [...CHARACTER_FIELDS, "name"].sort());
       // DR-name-generator: strip the generative "name" from both sides — a
       // deliberate cosmetic divergence with no rng-order effect.
-      const { name: _en, darkFor, flightLeft, flightCooldown, bag, abilities, ...engineCForDiff } = engineC;
-      const { name: _pn, ...protoCForDiff } = ctx.S.c;
+      const { name: _en, darkFor, bag, abilities, ...engineCForDiff0 } = engineC;
+      // Phase 39 (GEAR-02): the prototype still carries haste/invis/ether/
+      // acute at chargen — strip them off protoC only.
+      const { name: _pn, haste, invis, ether, acute, ...protoCForDiff0 } = ctx.S.c;
+      // Phase 39 (GEAR-02, once-a-day rule): strip the three re-authored
+      // treasure rows' `every` value too — seed 3's Thief starts with a
+      // Cloak of Ether.
+      const engineCForDiff = stripReauthoredEveryField(engineCForDiff0);
+      const protoCForDiff = stripReauthoredEveryField(protoCForDiff0);
 
       // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
       // divergence (see the chargen fixture's `divergences` map) — assert the

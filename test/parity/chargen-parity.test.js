@@ -19,7 +19,7 @@ import url from "node:url";
 import { newRun } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { chargenDivergenceFor, stripDeclaredFields } from "./harness/comparables.js";
+import { chargenDivergenceFor, stripDeclaredFields, stripReauthoredEveryField } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -37,9 +37,22 @@ const CHARACTER_FIELDS = [
   "cls", "sub", "race", "intel", "level", "sp", "maxWP", "wp", "skills", "vp",
   "weapon", "prof", "magicWpn", "armor", "ar", "armorMin", "armorWP", "armorMax",
   "patches", "temperament", "motive", "phobia", "phobiaType", "potions", "rations",
-  "gold", "scrolls", "haste", "invis", "ether", "acute", "affliction", "joiner",
+  "gold", "scrolls", "affliction", "joiner",
   "items", "grimoire", "spellsUsed", "kills", "might", "ward", "regen", "mirror",
   "foresight",
+  // Phase 39 (GEAR-02, greenfield retirement): the four scattered item-
+  // duration counters are REMOVED from this field list entirely — the
+  // engine no longer BUILDS these fields at all (they retired into
+  // c.timers item-effect records). The frozen prototype still initialises
+  // all four to 0, so they are stripped off `protoC` before the diff
+  // instead (below) — the harness carve-out `stripRetiredCounterFields` in
+  // comparables.js does the same job for the movement/combat/magic/economy
+  // comparables.
+  // audit-batch1 (2026-09-09, A2) + Phase 39 (GEAR-02): the Cloak-of-Flying
+  // charge/cooldown pair is ALSO removed entirely (not just stripped
+  // below) — the engine no longer builds either field (its effect/cooldown
+  // now rides a c.timers record); the frozen prototype never built them in
+  // the first place, so there is nothing left to strip.
   // DR-name-generator (2026-09-09): "name" is DELIBERATELY carved out of the
   // parity comparison. nameFor now builds a GENERATIVE first × surname name
   // (content/names.js), which is a cosmetic divergence from the frozen
@@ -55,12 +68,6 @@ const CHARACTER_FIELDS = [
   // against the frozen prototype's S.c, mirroring how RATION-01 handles
   // engine-only additions elsewhere in this parity suite.
   "darkFor",
-  // audit-batch1 (2026-09-09, A2): two more brand-new, engine-only fields
-  // backing the Cloak of Flying's charge/cooldown resource (see engine/
-  // character.js's rollCharacter and engine/derived.js's isFlying) — same
-  // no-prototype-equivalent treatment as darkFor immediately above.
-  "flightLeft",
-  "flightCooldown",
   // ECON-01 (Phase 12, Economy A): a brand-new, engine-only class-derived
   // carry-capacity bag key (see engine/character.js's rollCharacter) with NO
   // prototype-side equivalent — set as a PLAIN assignment (no rng draw), so
@@ -101,21 +108,32 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
     // PHOBIA-01 (04.1-05): strip the engine-only darkFor field (always 0 at
     // chargen) before comparing against the prototype, which never carries
     // this field at all — see the CHARACTER_FIELDS comment above.
-    // audit-batch1 (2026-09-09, A2): same treatment for flightLeft/
-    // flightCooldown (also always 0 at chargen).
     // DR-name-generator (2026-09-09): strip the generative "name" from BOTH
     // sides — it is a deliberate cosmetic divergence (the prototype's flat-pool
     // name differs from the engine's first × surname build), with no mechanical
     // effect and no change to the rng draw count/order, so every OTHER field
     // still compares byte-identical.
-    const { name: _engineName, darkFor, flightLeft, flightCooldown, bag, abilities, ...engineCForDiff } = engineC;
-    const { name: _protoName, ...protoCForDiff } = protoC;
+    const { name: _engineName, darkFor, bag, abilities, ...engineCForDiff0 } = engineC;
+    // Phase 39 (GEAR-02): the prototype still carries haste/invis/ether/
+    // acute (all 0 at chargen) — strip them off protoC only, since the
+    // engine side no longer builds them at all.
+    const { name: _protoName, haste, invis, ether, acute, ...protoCForDiff0 } = protoC;
+    let engineCForDiff = engineCForDiff0;
+    let protoCForDiff = protoCForDiff0;
 
     // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
     // divergence (see test/parity/fixtures/action-script.chargen.json's
     // `divergences` map) — assert the before/after values BEFORE stripping
     // the declared fields from both sides. Every other seed has no record
     // and is compared byte-identically with NO strip.
+    // Phase 39 (GEAR-02, once-a-day rule): strip the three re-authored
+    // treasure rows' `every` cooldown value off BOTH sides — a chargen roll
+    // landing a Cloak of Ether in a Thief's starting bag (seed 3) is the
+    // measured, affected seed; see harness/comparables.js's
+    // stripReauthoredEveryField for the full rationale.
+    protoCForDiff = stripReauthoredEveryField(protoCForDiff);
+    engineCForDiff = stripReauthoredEveryField(engineCForDiff);
+
     const record = chargenDivergenceFor(FIXTURE, seed);
     let strippedProto = protoCForDiff;
     let strippedEngine = engineCForDiff;
