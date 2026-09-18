@@ -284,6 +284,19 @@ export function hasItemNamed(c, name) {
   return carriedItems(c).some((it) => it && it.n === name);
 }
 
+/**
+ * hasTool(c, tool) — Phase 39 (GEAR-05): does the character currently carry
+ * (BAG only — a tool has no worn slot) a `kind:"tool"` item whose `tool` key
+ * is `tool` ("torch"|"rope"|"ladder")? The ONE gate engine/movement.js's
+ * hazard pre-check and `useTool` consult, and engine/items.js's
+ * `rollTreasureItem`/`takeItem` haveOne refusal. False for every parity
+ * fixture and the bot (neither carries a tool), so the roll/no-tool
+ * movement path stays byte-identical. Pure, no rng, no mutation.
+ */
+export function hasTool(c, tool) {
+  return (c && Array.isArray(c.items) ? c.items : []).some((it) => it && it.kind === "tool" && it.tool === tool);
+}
+
 /* ---------------- item activation model (Phase 39, GEAR-02) ---------------
  *
  * ONE activation model for every item that does something when used:

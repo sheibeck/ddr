@@ -299,7 +299,17 @@ const FULL_FIGHTS = [
   // Phase 31 (2026-09-16, CMB-01): this Wilmsry Illusionist's Beasts phobia
   // ALSO triggers Afraid (same trigger as seed 14) — re-measured live and
   // found, by coincidence, byte-identical to the pre-Phase-31 total (32/4).
-  { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 32, attacks: 4, outcome: "won" },
+  //
+  // Phase 39 (GEAR-05, 2026-09-18): the Shriek's kill drops treasure via
+  // killFoe -> rollTreasureItem, which now runs the derived tool-loot roll
+  // (engine/items.js) BEFORE the normal d(10) table — it fires for this
+  // exact rng cursor and drops a Torch instead of the pre-plan roll's
+  // multi-draw table pick, so the fight resolves in fewer total main-rng
+  // draws (32 -> 27); the roster/attack count/outcome are all unaffected
+  // (still Shriek/4/won — the derived stream never touches combat draws,
+  // only the one treasure roll at kill time). Re-measured live via this
+  // file's own runFullFight, never hand-computed.
+  { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 27, attacks: 4, outcome: "won" },
   // Phase 24 (2026-09-14, race pass): new row. A plain Human Apprentice
   // (unaffected by the race pass — no Fridgian/Dwarven mechanic in play),
   // added to restore death-path FID-02 coverage now that seed 14's Fridgian
@@ -607,7 +617,11 @@ for (const row of GATED_DRAWS) {
 // 1119, a plain Human Cutthroat, no Beasts phobia) restores byte-identical
 // death-path coverage. See the FULL_FIGHTS array above for the full
 // rationale on each changed/added row.
-test("FID-02 restated post-Phase-39: the seven FULL_FIGHTS totals (12/36/49/52/32/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
+//
+// Phase 39 (GEAR-05, 2026-09-18): seed 8's total moved 32 -> 27 (the Shriek's
+// kill now drops a Torch via the new derived tool-loot roll instead of the
+// pre-plan multi-draw table pick — see the FULL_FIGHTS row's own comment).
+test("FID-02 restated post-Phase-39-GEAR-05: the seven FULL_FIGHTS totals (12/36/49/52/27/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);

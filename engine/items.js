@@ -27,10 +27,13 @@ import {
   itemTimerId,
   chargesTimerId,
   carriedItems,
+  hasTool,
+  inDark,
 } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { startEffect, startCooldown, isReady, remaining } from "./effects.js";
 import { die } from "./death.js";
+import { derivedRng } from "./rng.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
 // rollTreasureItem/LOOT_DIVISOR from here) is safe: both modules only touch
 // each other's bindings from inside function bodies invoked at RUNTIME,
@@ -64,6 +67,9 @@ import {
   BAG_ITEMS,
   TREASURE_ACTIVATION_OF,
   ACTIVATION_OF,
+  TOOLS,
+  TOOL_ORDER,
+  TOOL_LOOT_WEIGHTS,
 } from "../content/index.js";
 
 export { eff, slotItems };
@@ -166,16 +172,83 @@ export function rollMailPiece(rng) {
 }
 
 /**
+ * toolItem(key) — Phase 39 (GEAR-05): a FRESH `kind:"tool"` bag item for
+ * `key` ("torch"|"rope"|"ladder"), built from content/tools.js#TOOLS. Never
+ * carries `cost`/`fromTier`/`feat`/`act` (store/loot/engine-gate-only
+ * content fields) — only `n`/`txt` and, for the torch, `use` (its useItem
+ * activation kind; rope/ladder have none — they are spent through
+ * engine/movement.js#useTool, never useItem).
+ */
+export function toolItem(key) {
+  const t = TOOLS[key];
+  const it = { kind: "tool", tool: key, n: t.n, txt: t.txt };
+  if (t.use) it.use = t.use;
+  return it;
+}
+
+/** toolIndex(c, tool) — the bag index of `c`'s `tool` item, or -1. Pure. */
+export function toolIndex(c, tool) {
+  return (c.items || []).findIndex((it) => it && it.kind === "tool" && it.tool === tool);
+}
+
+/**
+ * pickLootTool(toolRng, depth, c) — Phase 39 (GEAR-05), module-private: the
+ * weighted tool pick for rollTreasureItem's derived-stream loot row below.
+ * NEVER consults the main rng — `toolRng` is the caller's own separate
+ * `derivedRng` instance. Candidates: TOOL_ORDER filtered to depth-legal (a
+ * Ladder only from depth 2, `depth >= 2 || key !== "ladder"`) and not
+ * already carried (`!hasTool(c, key)`); a weighted pick via
+ * `toolRng.d(totalWeight)` walking cumulative TOOL_LOOT_WEIGHTS; `null` when
+ * no candidate remains (every eligible tool already carried).
+ */
+function pickLootTool(toolRng, depth, c) {
+  const candidates = TOOL_ORDER.filter((key) => (depth >= 2 || key !== "ladder") && !hasTool(c, key));
+  if (!candidates.length) return null;
+  const totalWeight = candidates.reduce((sum, key) => sum + TOOL_LOOT_WEIGHTS[key], 0);
+  let r = toolRng.d(totalWeight);
+  for (const key of candidates) {
+    r -= TOOL_LOOT_WEIGHTS[key];
+    if (r <= 0) return key;
+  }
+  return candidates[candidates.length - 1]; // defensive: unreachable given totalWeight's derivation
+}
+
+/**
  * rollTreasureItem(rng, depth, c) — the depth-scaled treasure roll. `c` is
- * the OPTIONAL carrying character, consulted only for the "already has
- * lockpicks" gate (ports mazeworld.html's `!hasPicks()` global read); a
- * caller with no character in hand (as the acceptance test does) is treated
- * as not yet carrying picks, matching the prototype's fresh-character case.
- * Ports mazeworld.html rollTreasureItem() (lines 1919-1927).
+ * the OPTIONAL carrying character, consulted for the "already has lockpicks"
+ * gate (ports mazeworld.html's `!hasPicks()` global read) and the tool
+ * haveOne gate below; a caller with no character in hand (as the acceptance
+ * test does) is treated as carrying neither, matching the prototype's
+ * fresh-character case. Ports mazeworld.html rollTreasureItem() (lines
+ * 1919-1927).
+ *
+ * Phase 39 (GEAR-05): immediately after the lockpick gate and BEFORE the
+ * `rng.d(10)` table roll, a derived rng stream (STATE.md engine-gate
+ * amendment) decides the tool loot row — keyed by the MAIN cursor
+ * (`rng.getState()`) so it is deterministic per replay, but the stream
+ * itself is a fully separate `derivedRng` instance: it NEVER draws from the
+ * caller's `rng`. The no-tool-fires path therefore advances the main rng by
+ * EXACTLY the same number of draws as before this plan; when it fires, the
+ * main rng advances by exactly the one lockpick d12 draw above (the `d(8)`
+ * and any weighted pick both run on `toolRng`, not `rng`). Both real
+ * production callers (engine/combat.js#killFoe, engine/encounters.js's find
+ * handlers) always thread a real `makeRng(state.rngState)` instance, which
+ * always implements `getState`; the `typeof` guard below only ever matters
+ * for a pre-existing bare `{d,pick,shuffle}` test double passed directly by
+ * an unrelated unit test — such a double never had a tool-loot cursor to
+ * key from, so this mechanic is a structural no-op for it (byte-identical
+ * to the pre-plan behavior), never a crash.
  */
 export function rollTreasureItem(rng, depth, c) {
   if (!hasPicks(c || {}) && rng.d(12) === 1) {
     return { kind: "picks", n: "Lockpicks", txt: "1–5 on d10 against any lock" };
+  }
+  if (typeof rng.getState === "function") {
+    const toolRng = derivedRng(rng.getState(), "tool", depth);
+    if (toolRng.d(8) === 1) {
+      const key = pickLootTool(toolRng, depth, c || {});
+      if (key) return toolItem(key);
+    }
   }
   const r = rng.d(10);
   if (r <= 3) return rollBlade(rng, depth, true);
@@ -383,6 +456,15 @@ export function takeItem(state, it, events = []) {
     c.armorMax = it.wp;
     c.armorWP = it.wp;
     c.patches = 0;
+    return events;
+  }
+
+  // Phase 39 (GEAR-05): a tool never duplicates — mirrors the Lockpicks
+  // `kind:"picks"` precedent (hasPicks/rollTreasureItem's lockpick gate
+  // above), just item-keyed instead of kind-keyed since there are three
+  // distinct tools.
+  if (it.kind === "tool" && hasTool(c, it.tool)) {
+    events.push({ type: "itemRejected", item: it, reason: "haveOne" });
     return events;
   }
 

@@ -488,23 +488,33 @@ export function applyStartCombat(state, wandering, forced) {
   return { state: next, events };
 }
 
+/**
+ * ENGINE_ONLY_STORE_EFFECTS — Phase 39 (GEAR-05): store lines that exist
+ * ONLY on the engine side, with no prototype-side equivalent at all —
+ * `buyRations` (RATION-01) and `giveTool` (the Rope/Ladder/Torch lines).
+ * Both are dropped before any prototype-vs-engine store comparison
+ * (`stripStoreClosures`, `stockMarkupDiff`'s routed-line flag).
+ */
+export const ENGINE_ONLY_STORE_EFFECTS = new Set(["buyRations", "giveTool"]);
+
 /** stripStoreClosures(store) — see this module's header + economy-parity's
  * rationale: a live `buy` closure on the prototype can never structurally
  * equal the engine's plain `{effectId, effectParams}` descriptor. */
 export function stripStoreClosures(store) {
   if (!store) return store;
-  // RATION-01 (04.1-03): "Rations" is a deliberate, engine-only new store
-  // line item (see engine/economy.js's STORE_EFFECTS.buyRations) with no
+  // RATION-01 (04.1-03) + Phase 39 (GEAR-05): "Rations" and the three tool
+  // lines are deliberate, engine-only new store lines (see
+  // engine/economy.js's STORE_EFFECTS.buyRations/giveTool) with no
   // prototype-side equivalent — the frozen prototype (test/parity/
-  // prototype-master.js.txt) still only sells food, never rations
-  // directly. Filter it out of the comparison the same way TERM-02's
-  // normalizeHpUnit below handles the wp/hp rename: a permanent,
-  // deliberate, documented divergence, not a fidelity regression. The
-  // prototype-side stock entries have no `effectId` field at all (they
-  // carry a live `buy` closure instead), so this filter is a no-op on
-  // that side and only ever removes the engine's extra entry.
+  // prototype-master.js.txt) never sells them. Filter both out of the
+  // comparison the same way TERM-02's normalizeHpUnit below handles the
+  // wp/hp rename: permanent, deliberate, documented divergences, not a
+  // fidelity regression. The prototype-side stock entries have no
+  // `effectId` field at all (they carry a live `buy` closure instead), so
+  // this filter is a no-op on that side and only ever removes the engine's
+  // extra entries.
   const stock = store.stock
-    .filter((s) => s.effectId !== "buyRations")
+    .filter((s) => !ENGINE_ONLY_STORE_EFFECTS.has(s.effectId))
     .map((s) => ({ n: normalizeHpUnit(s.n), sub: normalizeHpUnit(s.sub ?? null), cost: s.cost, sold: !!s.sold }));
   return { ...store, stock };
 }
@@ -760,7 +770,7 @@ export function stockMarkupDiff(protoStore, engineStore, mul) {
   const protoStock = stripStoreClosures(protoStore)?.stock ?? [];
   const engineStock = stripStoreClosures(engineStore)?.stock ?? [];
   const engineRouted = (engineStore?.stock ?? [])
-    .filter((s) => s.effectId !== "buyRations")
+    .filter((s) => !ENGINE_ONLY_STORE_EFFECTS.has(s.effectId))
     .map((s) => PRICEFOR_ROUTED_EFFECTS.includes(s.effectId));
 
   if (protoStock.length !== engineStock.length) {
@@ -803,11 +813,14 @@ export function stockMarkupDiff(protoStore, engineStore, mul) {
  * Returns `{ names, after }`: `names` is `null` only when BOTH the
  * prototype's stripped names AND the engine's stripped names equal
  * `record.stockNames` (a `diffState` result, so a caller gets the same
- * human-readable location string every other comparable check does);
- * `after` is `diffState` of the engine's raw `[n, cost]` pairs against
- * `record.stockAfter`. A caller asserts both are `null` before relying on
- * the record — measured, never hand-typed, exactly like every other
- * divergence record kind in this file.
+ * human-readable location string every other comparable check does) — every
+ * `ENGINE_ONLY_STORE_EFFECTS` line (Rations, Rope/Ladder/Torch) is dropped
+ * on both sides via `stripStoreClosures` before this comparison, so a
+ * record's `stockNames` never needs to list them; `after` is `diffState` of
+ * the engine's RAW `[n, cost]` pairs (including every engine-only line)
+ * against `record.stockAfter`. A caller asserts both are `null` before
+ * relying on the record — measured, never hand-typed, exactly like every
+ * other divergence record kind in this file.
  */
 export function declaredStockDiffs(protoStore, engineStore, record) {
   const protoNames = stripStoreClosures(protoStore)?.stock?.map((s) => s.n) ?? [];

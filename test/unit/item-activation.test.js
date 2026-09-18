@@ -66,8 +66,11 @@ function fixedState(overrides = {}) {
 
 // --- content/activations.js#ACTIVATION_OF -----------------------------
 
-test("ACTIVATION_OF: 19 entries (6 treasure cd rows + 8 staves + 5 potions), frozen, keyed correctly", () => {
-  assert.equal(Object.keys(ACTIVATION_OF).length, 19);
+test("ACTIVATION_OF: 20 entries (6 treasure cd rows + 8 staves + 5 potions + 1 tool), frozen, keyed correctly", () => {
+  // Phase 39 (GEAR-05, Plan 04): the torch (content/tools.js#TOOL_ACTIVATION_OF)
+  // is spread in as the 20th entry — a consumable-with-duration, exactly
+  // like a potion, keyed by its display name like a treasure row.
+  assert.equal(Object.keys(ACTIVATION_OF).length, 20);
   assert.ok(Object.isFrozen(ACTIVATION_OF));
   assert.deepStrictEqual(ACTIVATION_OF["Cloak of Speed"], { kind: "haste", effect: 50, cd: 50 });
   assert.deepStrictEqual(ACTIVATION_OF["Pendant of Fortitude"], { kind: "half", effect: 0, cd: 100 });
@@ -79,6 +82,7 @@ test("ACTIVATION_OF: 19 entries (6 treasure cd rows + 8 staves + 5 potions), fro
   assert.deepStrictEqual(ACTIVATION_OF["Speed"], { kind: "haste", effect: 50 });
   assert.deepStrictEqual(ACTIVATION_OF["Strength"], { kind: "might", effect: 25, might: 8 });
   assert.deepStrictEqual(ACTIVATION_OF["Acuteness"], { kind: "acute", effect: { n: 1, sides: 8, bonus: 0 }, cadence: "rounds" });
+  assert.deepStrictEqual(ACTIVATION_OF["Torch"], { kind: "lit", effect: 40 });
   assert.equal(ACTIVATION_OF["Ring of Power"], undefined);
   // Once-a-day rule: effect + cd <= 100 for every cd-based row; recharge <= 100 for every staff.
   for (const [key, act] of Object.entries(ACTIVATION_OF)) {

@@ -15,9 +15,22 @@
 // No DOM, no localStorage, no Math.random — every roll goes through the
 // injected engine rng, in the prototype's exact consumption order.
 
-import { giveItem, takeItem, stowItem, canStow, bagCap, hasPicks, rollBlade, rollMailPiece, canEquipArmor } from "./items.js";
-import { clampCarry, slotItems } from "./derived.js";
-import { WEAPONS, ARMORS, FOODS, POTIONS, RACES, BAG_FLOORS, STORE_POTION_POOL, STORE_WEAPON_BANDS, STORE_ARMOR_CAP, STORE_PREMIUM_BONUS } from "../content/index.js";
+import { giveItem, takeItem, stowItem, canStow, bagCap, hasPicks, rollBlade, rollMailPiece, canEquipArmor, toolItem } from "./items.js";
+import { clampCarry, slotItems, hasTool } from "./derived.js";
+import {
+  WEAPONS,
+  ARMORS,
+  FOODS,
+  POTIONS,
+  RACES,
+  BAG_FLOORS,
+  STORE_POTION_POOL,
+  STORE_WEAPON_BANDS,
+  STORE_ARMOR_CAP,
+  STORE_PREMIUM_BONUS,
+  TOOLS,
+  TOOL_ORDER,
+} from "../content/index.js";
 
 /**
  * priceFor(base, race, sub = null) — "Costs are triple for trolls, and half
@@ -120,6 +133,9 @@ function baseValueFor(item) {
     return p ? p.price : TREASURE_FALLBACK_VALUE;
   }
   if (item.kind === "picks") return 450;
+  // Phase 39 (GEAR-05): a tool's buy cost (content/tools.js#TOOLS), never
+  // the flat fallback — every tool has a real authored price.
+  if (item.kind === "tool") return TOOLS[item.tool]?.cost ?? TREASURE_FALLBACK_VALUE;
   // jewelry, cloaks, staves (Phase 15, ECON-08): read the real per-item base
   // value from the name-keyed TREASURE_BASE_VALUES table above; only an
   // unrecognised/renamed treasure item now falls back to the flat default.
@@ -207,6 +223,9 @@ export const STORE_EFFECTS = {
     giveItem(state, params.item, false, events);
   },
   giveLockpicks(state, params, events) {
+    stowItem(state, params.item, events, false);
+  },
+  giveTool(state, params, events) {
     stowItem(state, params.item, events, false);
   },
   repairArmor(state, params, events) {
@@ -408,6 +427,18 @@ export function openStore(state, rng, events = []) {
   // (which has no Rations line at all — see comparables.js's stripStoreClosures).
   add("Rations (+1 ration)", priceFor(RATIONS_BASE_PRICE, race, c.sub), "buyRations", { amount: 1 });
 
+  // Phase 39 (GEAR-05): the three one-shot tools, offered like the lockpick
+  // line above — flat price (no priceFor route, so a Pickpocket's buy
+  // markup never applies), depth-tier gated (Torch/Rope from tier 0, Ladder
+  // from tier 1), and only when not already carried (mirrors `!hasPicks(c)`
+  // above). Appended LAST (after Rations) so every existing stock index
+  // built above stays stable; zero rng draws either way.
+  for (const key of TOOL_ORDER) {
+    if (TOOLS[key].fromTier <= storeTier(d) && !hasTool(c, key)) {
+      add(TOOLS[key].n, TOOLS[key].cost, "giveTool", { item: toolItem(key) }, TOOLS[key].txt);
+    }
+  }
+
   const haggle = race === "Wilmsry" ? 0.7 : 1;
   if (haggle < 1) stock.forEach((x) => (x.cost = Math.round(x.cost * haggle)));
 
@@ -432,7 +463,7 @@ export function openStore(state, rng, events = []) {
 // potions are slot-exempt (LOOT-04) — as are buyWeapon/buyArmor/buyPremium
 // (they equip-or-reject via takeItem, consuming no slot either way) and
 // buyScroll/buyRations/repairArmor/eatRation (scalar effects, no bag write).
-const STOWING_EFFECTS = new Set(["giveLockpicks"]);
+const STOWING_EFFECTS = new Set(["giveLockpicks", "giveTool"]);
 
 /**
  * buyFrom(state, idx, events) — purchases stock slot `idx`: bounds/sold/
