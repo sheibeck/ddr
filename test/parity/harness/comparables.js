@@ -241,6 +241,42 @@ function stripAbilitiesField(c) {
   return rest;
 }
 
+/** stripSpellSeen(floor) — Phase 40 (SPELL-05, Plan 04) adds `cell.spellSeen`,
+ * a brand-new engine-only LAZILY-SET per-cell provenance flag (engine/
+ * maze.js#reveal/refogSpellSeen) with NO prototype-side equivalent — the
+ * frozen prototype (test/parity/prototype-master.js.txt — DO NOT EDIT) has
+ * no such field on ANY cell, ever. No fixture ever casts Map the Floor (the
+ * only source of the flag), so this is carved out purely as a STRUCTURAL
+ * tripwire, exactly like stripTimersField/stripWornField/stripAbilitiesField
+ * above: a no-op on every current fixture, that keeps a FUTURE reveal-
+ * casting fixture (or a determinism test reusing this comparable) from ever
+ * reaching the diff on this genuine, permanent, deliberate divergence.
+ * Returns the SAME floor object unchanged (cheap no-op) when no cell
+ * anywhere carries the flag; never mutates its input otherwise — maps a
+ * fresh grid of shallow cell copies instead. */
+export function stripSpellSeen(floor) {
+  if (!floor || !Array.isArray(floor.g)) return floor;
+  let any = false;
+  for (const row of floor.g) {
+    for (const cell of row) {
+      if (cell && "spellSeen" in cell) {
+        any = true;
+        break;
+      }
+    }
+    if (any) break;
+  }
+  if (!any) return floor;
+  const g = floor.g.map((row) =>
+    row.map((cell) => {
+      if (!cell || !("spellSeen" in cell)) return cell;
+      const { spellSeen, ...rest } = cell;
+      return rest;
+    }),
+  );
+  return { ...floor, g };
+}
+
 /** stripNameField(c) — DR-name-generator (2026-09-09) makes `c.name` a
  * GENERATIVE first × surname build (engine/character.js's nameFor over the new
  * content/names.js { first, sur } banks) instead of the frozen prototype's
@@ -392,6 +428,10 @@ export function movementComparable(state) {
   // never carries a live combat), added so D-14's "all three comparables"
   // carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
+  // Phase 40 (SPELL-05, Plan 04): strip the new engine-only spellSeen
+  // provenance flag too (see stripSpellSeen above) — a structural tripwire,
+  // mirrored at every comparable's own `rest.c` chain.
+  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
   if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
   return rest;
 }
@@ -473,6 +513,8 @@ export function combatComparable(state) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
+  // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
+  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
   if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
   return rest;
 }
@@ -979,6 +1021,8 @@ export function economyComparable(state) {
   // (neither family carries a live combat), added so D-14's "all three
   // comparables" carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
+  // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
+  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
   if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))))))));
   return rest;
 }

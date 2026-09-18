@@ -589,7 +589,11 @@ export const EVENT_NARRATION = {
   planeGated: (e) => `<span class="hit">${e.count ?? 0} are gated straight back out.</span>`,
   gateRefused: () => `<span class="miss">There is no plane here worth opening.</span>`,
   sensesGained: () => `<span class="hit">Your senses sharpen.</span>`,
-  detectMagic: () => `<span class="hit">The floor lights up. You see all of it now.</span>`,
+  // Phase 40 (SPELL-05, Plan 04): Map the Floor is now a time-boxed,
+  // re-fogging reveal — the old permanent whole-floor reveal event is
+  // retired outright; floorMapped/revealFaded replace it.
+  floorMapped: (e) => `<span class="hit">The floor lays itself out in your head — every corridor on this level, for ${e.squares ?? 0} squares.</span>`,
+  revealFaded: () => `<span class="beat">The map forgets what it was told.</span>`,
   senseDanger: (e) => `<span class="beat">You get a bad feeling about the next ${e.nextEncounter ?? "encounter"}.</span>`,
   mirrorSelf: (e) => `<span class="hit">A mirror image holds for ${e.rounds ?? 0} rounds.</span>`,
   wardRaised: (e) => `<span class="hit">${e.spell ?? "The ward"} raises a ward: ${e.pool ?? 0} points${e.reflect ? ", reflecting" : ""}.</span>`,

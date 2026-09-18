@@ -223,6 +223,78 @@ function sanitizeWorn(c) {
   return c;
 }
 
+/**
+ * clearStaleSpellSeen(floor, c) — Phase 40 (SPELL-05, Plan 04) load-
+ * tolerance for `cell.spellSeen` (engine/maze.js#reveal/refogSpellSeen),
+ * mirroring clearStaleTimers's exact discipline (T-40-07): a floor whose
+ * grid carries stale provenance flags with NO live `spell:reveal` record on
+ * `c` (the window already expired, or the record was tampered/removed) has
+ * every flag stripped — `seen` is left exactly as saved, only the flag is
+ * removed, so a cell the player genuinely walked (seen but unflagged, or
+ * seen and stale-flagged) is never re-fogged by this tolerant load; worst
+ * case is a cell the player never walked staying lit one load longer than
+ * it should, which the NEXT live sweep or the next cast's own marking
+ * corrects. A floor with a LIVE record (`phase: "effect", left > 0`) is left
+ * completely untouched — its flags simply keep counting down toward their
+ * own eventual sweep, exactly as if the save had never round-tripped.
+ * Never adds a `spellSeen` key to any cell; walks `floor.g` only when it is
+ * a genuine array of arrays (a malformed floor has already failed
+ * `isValidFloor` upstream in validateSave, so this never needs to guard
+ * against a non-array `g` in practice — guarded anyway, additive-with-
+ * default discipline). Mutates and returns the passed `floor`.
+ */
+function clearStaleSpellSeen(floor, c) {
+  if (!floor || typeof floor !== "object" || !Array.isArray(floor.g)) return floor;
+  const rec = c && c.timers && c.timers["spell:reveal"];
+  const live = !!(rec && rec.phase === "effect" && rec.left > 0);
+  if (live) return floor;
+  for (const row of floor.g) {
+    if (!Array.isArray(row)) continue;
+    for (const cell of row) {
+      if (cell && typeof cell === "object" && "spellSeen" in cell) delete cell.spellSeen;
+    }
+  }
+  return floor;
+}
+
+/**
+ * RETIRED_SPELL_NAMES — Phase 40 (SPELL-05): the one rename this migration
+ * ever needs to know about — "Detect Magic" became "Map the Floor". A
+ * frozen, single-entry map so a FUTURE rename can extend it without
+ * touching migrateSpellNames itself.
+ */
+const RETIRED_SPELL_NAMES = Object.freeze({ "Detect Magic": "Map the Floor" });
+
+/**
+ * migrateSpellNames(c) — Phase 40 (SPELL-05, Plan 04) tolerant-load rename
+ * for `c.grimoire`: an old save's grimoire entry for a retired spell name
+ * (RETIRED_SPELL_NAMES) is rewritten to its current name IN PLACE (position
+ * preserved), with first-occurrence dedupe — if both the old and new name
+ * were somehow present (never happens on a genuine save, only a hand-
+ * tampered one), only the FIRST occurrence survives the rewrite and any
+ * later duplicate of the resulting name is dropped, so the grimoire never
+ * gains a second copy of the same spell. No card, no narration, no rng — a
+ * silent, additive rewrite exactly like clearFoeEffect/clearStaleTimers
+ * above. A `c` with no grimoire, or a grimoire with no retired name at all,
+ * is returned completely untouched (a genuine no-op, not merely a no-op on
+ * the RETURNED value — `c.grimoire` itself is never reassigned unless a
+ * rewrite is needed). Mutates and returns the passed `c`.
+ */
+function migrateSpellNames(c) {
+  if (!c || typeof c !== "object" || Array.isArray(c) || !Array.isArray(c.grimoire)) return c;
+  if (!c.grimoire.some((n) => Object.prototype.hasOwnProperty.call(RETIRED_SPELL_NAMES, n))) return c;
+  const seen = new Set();
+  const next = [];
+  for (const n of c.grimoire) {
+    const renamed = Object.prototype.hasOwnProperty.call(RETIRED_SPELL_NAMES, n) ? RETIRED_SPELL_NAMES[n] : n;
+    if (seen.has(renamed)) continue;
+    seen.add(renamed);
+    next.push(renamed);
+  }
+  c.grimoire = next;
+  return c;
+}
+
 // Phase 39 (GEAR-02): the retired scattered counters -> the ONE c.timers
 // representation. `fallback` is the ACTIVATION_OF key used when NO carried
 // item's own activation matches the counter's `kind` (a plain potion dose
@@ -390,6 +462,20 @@ export function validateSave(raw, options = {}) {
   const seed = typeof obj.seed === "number" ? obj.seed : freshSeed;
   const rngState = typeof obj.rngState === "number" ? obj.rngState : makeRng(seed).getState();
 
+  // Phase 40 (SPELL-05, Plan 04): the fully migrated/sanitized c, computed
+  // FIRST in a local — migrateSpellNames runs innermost (before
+  // migrateCarry/clearFoeEffect/clearStaleTimers/sanitizeWorn/
+  // ensureCharacterAbilities/foldLegacyCounters, exactly like every other
+  // additive-with-default helper in this chain) so a retired grimoire name
+  // is rewritten before anything else ever reads c.grimoire. The floor-side
+  // clearStaleSpellSeen below needs this SAME final c (not obj.c) — it must
+  // see whatever c.timers looks like AFTER foldLegacyCounters, since that is
+  // the only migration step that could ever touch c.timers.
+  const migratedC = foldLegacyCounters(
+    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c))))), seed),
+    steps,
+  );
+
   const value = {
     version: STATE_VERSION,
     seed,
@@ -407,9 +493,13 @@ export function validateSave(raw, options = {}) {
     // foldLegacyCounters runs LAST of all — the retired haste/invis/ether/
     // acute/flightLeft/flightCooldown counters and every item's legacy
     // usedAt/every fold into c.timers here, after everything else above has
-    // finished migrating/sanitizing c.
-    c: foldLegacyCounters(ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), seed), steps),
-    floor: obj.floor,
+    // finished migrating/sanitizing c. See migratedC's own comment above for
+    // the Phase 40 (SPELL-05) addition to this chain.
+    c: migratedC,
+    // Phase 40 (SPELL-05, Plan 04): clearStaleSpellSeen strips every stale
+    // spellSeen flag when migratedC carries no LIVE spell:reveal record
+    // (T-40-07); a live record is left completely untouched.
+    floor: clearStaleSpellSeen(obj.floor, migratedC),
     day,
     steps,
     // Phase 38 (ABIL-05): each party member gets the same tolerant-load
@@ -479,6 +569,16 @@ export function validateSave(raw, options = {}) {
  * @param {{ wornSlots?: boolean }} [options]
  */
 export function rehydrate(obj, options = {}) {
+  // Phase 40 (SPELL-05, Plan 04): mirrors validateSave's own migratedC local
+  // (see its comment there) — rehydrate() is exercised standalone against a
+  // raw serialized state in tests (and is idempotent on an already-migrated
+  // one, since boot()'s real path always calls it on validateSave's OWN
+  // output), so it needs the identical migrateSpellNames/clearStaleSpellSeen
+  // treatment to stay consistent between the two entry points.
+  const migratedC = foldLegacyCounters(
+    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c))))), obj.seed),
+    obj.steps ?? 0,
+  );
   const state = {
     version: STATE_VERSION,
     seed: obj.seed,
@@ -495,11 +595,10 @@ export function rehydrate(obj, options = {}) {
     // (ABIL-02): ensureCharacterAbilities mirrors validateSave's own call —
     // a no-op once c.abilities is already an array. Phase 39 (GEAR-02):
     // foldLegacyCounters mirrors validateSave's own call, LAST in the chain.
-    c: foldLegacyCounters(
-      ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(clearFoeEffect(migrateCarry(obj.c)))), obj.seed),
-      obj.steps ?? 0,
-    ),
-    floor: obj.floor,
+    // Phase 40 (SPELL-05, Plan 04): migrateSpellNames/clearStaleSpellSeen
+    // mirror validateSave's own calls too — see migratedC above.
+    c: migratedC,
+    floor: clearStaleSpellSeen(obj.floor, migratedC),
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
     combat: null,

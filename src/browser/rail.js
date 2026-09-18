@@ -229,6 +229,12 @@ export const RAIL_FAMILY = Object.freeze({
 
   // Phase 40 (SPELL-07) — a scroll's own spell isn't scribable yet.
   scrollTooAdvanced: { icon: "▪", title: "TOO ADVANCED", tone: "dull" },
+
+  // Phase 40 (SPELL-05, Plan 04) — Map the Floor's time-boxed reveal: the
+  // cast itself and the one sweep at expiry (Plan 05 paints spell-only
+  // cells in a distinct map tint; this is the rail's own card identity).
+  floorMapped: { icon: "◆", title: "MAPPED", tone: "odd" },
+  revealFaded: { icon: "◆", title: "THE MAP FORGETS", tone: "dull" },
 });
 
 /**

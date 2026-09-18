@@ -27,6 +27,11 @@ import { conditionsOf } from "../../engine/derived.js";
 import { newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { SPELLS } from "../../content/index.js";
+import { serializeRun, validateSave } from "../../engine/saveState.js";
+import { stripSpellSeen, movementComparable, combatComparable, economyComparable } from "../parity/harness/comparables.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { TOAST_FOR, ORACLE_ONLY } from "../../src/browser/toasts.js";
+import { RAIL_FAMILY } from "../../src/browser/rail.js";
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 
@@ -355,5 +360,82 @@ test("newRun(seed): no cell ever carries a spellSeen key, and c has no timers ke
         assert.equal("spellSeen" in cell, false, `seed ${seed}: a fresh floor must carry no spellSeen key`);
       }
     }
+  }
+});
+
+// --- Task 2: the harness carve-out (structural tripwire) -------------------
+
+test("stripSpellSeen (harness): returns the SAME floor object, unmutated, when no cell anywhere carries the flag", () => {
+  const floor = fixedFloor();
+  const stripped = stripSpellSeen(floor);
+  assert.equal(stripped, floor, "a cheap no-op — the identical reference, not merely an equal one");
+});
+
+test("stripSpellSeen (harness): strips the flag from every carrying cell without mutating the input floor", () => {
+  const state = fixedState({ c: { grimoire: ["Map the Floor"] } });
+  castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
+  assert.ok(countFlagged(state.floor) > 0);
+
+  const before = JSON.stringify(state.floor);
+  const stripped = stripSpellSeen(state.floor);
+  assert.equal(JSON.stringify(state.floor), before, "the input floor is never mutated");
+  assert.equal(countFlagged(stripped), 0, "every spellSeen key is gone from the stripped copy");
+  for (const row of stripped.g) for (const cell of row) assert.equal("spellSeen" in cell, false);
+});
+
+// --- Task 2: narration coverage (floorMapped/revealFaded; detectMagic gone)
+
+test("floorMapped/revealFaded: both have EVENT_NARRATION + TOAST_FOR + RAIL_FAMILY entries; the retired event is gone from all three", () => {
+  for (const type of ["floorMapped", "revealFaded"]) {
+    assert.equal(typeof EVENT_NARRATION[type], "function", `EVENT_NARRATION.${type} must be a builder`);
+    assert.equal(typeof TOAST_FOR[type], "function", `TOAST_FOR.${type} must be a builder`);
+    assert.ok(RAIL_FAMILY[type], `RAIL_FAMILY.${type} must have a card identity`);
+  }
+  assert.equal("detectMagic" in EVENT_NARRATION, false);
+  assert.equal("detectMagic" in TOAST_FOR, false);
+  assert.equal("detectMagic" in ORACLE_ONLY, false);
+  assert.equal("detectMagic" in RAIL_FAMILY, false);
+
+  const mapped = EVENT_NARRATION.floorMapped({ squares: 40 });
+  assert.ok(/40/.test(mapped) && /squares/.test(mapped));
+  const faded = EVENT_NARRATION.revealFaded({});
+  assert.ok(/forgets/.test(faded));
+});
+
+// --- Task 2: the saveState boundary end to end ------------------------------
+
+test("serializeRun -> validateSave round-trip: a LIVE spell:reveal window and its still-flagged cells survive intact", () => {
+  const state = fixedState({ c: { grimoire: ["Map the Floor"] } });
+  castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
+  move(state, "E", fakeRng([]), []); // graduate a few cells, leave the rest flagged
+  const flaggedBefore = countFlagged(state.floor);
+  assert.ok(flaggedBefore > 0);
+
+  const check = validateSave(JSON.stringify(serializeRun(state)));
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(check.value.c.timers["spell:reveal"], state.c.timers["spell:reveal"]);
+  assert.equal(countFlagged(check.value.floor), flaggedBefore, "a live window's flags survive the round-trip untouched");
+});
+
+test("serializeRun -> validateSave round-trip: an expired/tampered-away window (no live record) has its stale flags cleared on load", () => {
+  const state = fixedState({ c: { grimoire: ["Map the Floor"] } });
+  castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
+  delete state.c.timers["spell:reveal"]; // simulate the record having already expired/been dropped
+  assert.ok(countFlagged(state.floor) > 0);
+
+  const check = validateSave(JSON.stringify(serializeRun(state)));
+  assert.equal(check.ok, true);
+  assert.equal(countFlagged(check.value.floor), 0, "stale flags with no live record are cleared on load");
+});
+
+test("movementComparable/combatComparable/economyComparable (harness): a flagged floor never leaks a spellSeen key through any of the three", () => {
+  const state = fixedState({ c: { grimoire: ["Map the Floor"] } });
+  castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
+  assert.ok(countFlagged(state.floor) > 0);
+
+  for (const cmp of [movementComparable, combatComparable, economyComparable]) {
+    const out = cmp(structuredClone(state));
+    assert.ok(out.floor, `${cmp.name}: floor must survive the comparable`);
+    assert.equal(countFlagged(out.floor), 0, `${cmp.name}: no spellSeen key may leak through`);
   }
 });

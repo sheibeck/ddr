@@ -36,6 +36,7 @@ import {
   declaredEndDiffs,
   stripCloakArmorTxt,
   stripReauthoredEveryField,
+  stripSpellSeen,
   reconcilePendingLoot,
   reconcilePendingFight,
   chargenShiftOf,
@@ -130,6 +131,10 @@ function comparable(state) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);
   }
+  // Phase 40 (SPELL-05, Plan 04): strip the new engine-only spellSeen
+  // provenance flag too (see harness stripSpellSeen) — mirrored here
+  // because this file keeps its own local comparable().
+  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
   // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field with no
   // prototype-side equivalent — strip it the same way test/parity/harness/
   // comparables.js's combatComparable does (this file predates that shared

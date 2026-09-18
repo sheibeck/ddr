@@ -1303,7 +1303,10 @@ export const TOAST_FOR = {
   planeGated: (e) => ({ text: `${e?.count ?? 0} gated straight back out.`, tone: "magic", priority: PRIORITY.you }),
   gateRefused: () => block("There is no plane here worth opening."),
   sensesGained: () => ({ text: "Your senses sharpen.", tone: "magic", priority: PRIORITY.you }),
-  detectMagic: () => ({ text: "The floor lights up.", tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-05, Plan 04): see eventNarration.js's matching comment —
+  // floorMapped/revealFaded replace the old retired permanent reveal event.
+  floorMapped: (e) => ({ text: `The floor lays itself out in your head (${e?.squares ?? 0} squares).`, tone: "magic", priority: PRIORITY.you }),
+  revealFaded: () => ({ text: "The map forgets what it was told.", tone: "beat", priority: PRIORITY.other }),
   senseDanger: (e) => ({ text: `Bad feeling about the ${e?.nextEncounter ?? "next encounter"}.`, tone: "magic", priority: PRIORITY.you }),
   mirrorSelf: (e) => ({ text: `A mirror image holds (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   wardRaised: (e) => ({ text: `${e?.spell ?? "The ward"} raises a ward (${e?.pool ?? 0})${e?.reflect ? ", reflecting" : ""}.`, tone: "magic", priority: PRIORITY.you }),

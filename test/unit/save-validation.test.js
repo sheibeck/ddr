@@ -407,3 +407,112 @@ test("STORE-01: storeRoll is coerced to a strict boolean", () => {
     assert.equal(rehydrate({ ...check.value, storeRoll: raw }).storeRoll, expected, `storeRoll: ${JSON.stringify(raw)} must coerce to ${expected} via rehydrate`);
   }
 });
+
+// --- Phase 40 (SPELL-05, Plan 04): clearStaleSpellSeen / migrateSpellNames ---
+
+/** A fresh 1x3 floor with two cells carrying a stale spellSeen flag (one
+ * seen, one not — the flag never implies seen) and one plain already-
+ * graduated cell, for the clearStaleSpellSeen tests below. Freshly built
+ * per call so validateSave/rehydrate calls in the same test never share a
+ * mutated object. */
+function makeFlaggedFloor() {
+  return {
+    g: [
+      [
+        { wall: false, seen: true, spellSeen: true },
+        { wall: false, seen: false, spellSeen: true },
+        { wall: false, seen: true },
+      ],
+    ],
+    px: 0,
+    py: 0,
+    depth: 1,
+  };
+}
+
+test("clearStaleSpellSeen (validateSave/rehydrate): stale spellSeen flags with NO live spell:reveal record are removed; seen is left exactly as saved", () => {
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: makeFlaggedFloor() }));
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(
+    check.value.floor.g[0].map((c) => ({ seen: c.seen, hasFlag: "spellSeen" in c })),
+    [
+      { seen: true, hasFlag: false },
+      { seen: false, hasFlag: false },
+      { seen: true, hasFlag: false },
+    ],
+    "every flag removed, seen values untouched",
+  );
+
+  const rehydrated = rehydrate({ c: { ...validChar }, floor: makeFlaggedFloor(), seed: 1, rngState: 1 });
+  assert.deepStrictEqual(
+    rehydrated.floor.g[0].map((c) => ({ seen: c.seen, hasFlag: "spellSeen" in c })),
+    [
+      { seen: true, hasFlag: false },
+      { seen: false, hasFlag: false },
+      { seen: true, hasFlag: false },
+    ],
+    "rehydrate mirrors validateSave's own stale-flag clearing",
+  );
+});
+
+test("clearStaleSpellSeen: a LIVE spell:reveal record (phase effect, left > 0) leaves every spellSeen flag untouched", () => {
+  const validChar = {
+    wp: 10, maxWP: 10, level: 1, skills: {},
+    timers: { "spell:reveal": { cadence: "squares", left: 12, phase: "effect" } },
+  };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: makeFlaggedFloor() }));
+  assert.equal(check.ok, true);
+  assert.equal(check.value.floor.g[0][0].spellSeen, true, "a live record leaves the flag alone");
+  assert.equal(check.value.floor.g[0][1].spellSeen, true);
+});
+
+test("clearStaleSpellSeen: a cooldown-phase or exhausted (left <= 0) spell:reveal record is NOT live — flags are still cleared", () => {
+  for (const rec of [
+    { cadence: "squares", left: 5, phase: "cooldown" },
+    { cadence: "squares", left: 0, phase: "effect" },
+  ]) {
+    const validChar = { wp: 10, maxWP: 10, level: 1, skills: {}, timers: { "spell:reveal": rec } };
+    const check = validateSave(JSON.stringify({ c: validChar, floor: makeFlaggedFloor() }));
+    assert.equal(check.ok, true);
+    assert.equal("spellSeen" in check.value.floor.g[0][0], false, `record ${JSON.stringify(rec)}: flags must still clear`);
+  }
+});
+
+test("clearStaleSpellSeen: never injects a spellSeen key onto a floor that never carried one", () => {
+  const validFloor = { g: [[{ wall: false, seen: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+  assert.equal(check.ok, true);
+  assert.equal("spellSeen" in check.value.floor.g[0][0], false);
+});
+
+test("migrateSpellNames (validateSave/rehydrate): a grimoire entry named 'Detect Magic' is rewritten to 'Map the Floor' in place — no card, no narration, no rng", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {}, grimoire: ["Heal", "Detect Magic", "Shield"] };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(check.value.c.grimoire, ["Heal", "Map the Floor", "Shield"], "position preserved");
+
+  const rehydrated = rehydrate({ c: { ...validChar }, floor: validFloor, seed: 1, rngState: 1 });
+  assert.deepStrictEqual(rehydrated.c.grimoire, ["Heal", "Map the Floor", "Shield"], "rehydrate mirrors validateSave's own rename");
+});
+
+test("migrateSpellNames: dedupes when both the retired and current names are present, keeping the first occurrence; every other name is untouched", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {}, grimoire: ["Detect Magic", "Heal", "Map the Floor"] };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+  assert.equal(check.ok, true);
+  assert.deepStrictEqual(check.value.c.grimoire, ["Map the Floor", "Heal"], "the later duplicate is dropped, not the earlier rename");
+});
+
+test("migrateSpellNames: a grimoire with no retired name, or no grimoire at all, is left completely untouched", () => {
+  const validFloor = { g: [[{ wall: false }]], px: 0, py: 0, depth: 1 };
+  const untouchedGrimoire = { wp: 10, maxWP: 10, level: 1, skills: {}, grimoire: ["Heal", "Shield"] };
+  const check1 = validateSave(JSON.stringify({ c: untouchedGrimoire, floor: validFloor }));
+  assert.deepStrictEqual(check1.value.c.grimoire, ["Heal", "Shield"]);
+
+  const noGrimoire = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const check2 = validateSave(JSON.stringify({ c: noGrimoire, floor: validFloor }));
+  assert.equal("grimoire" in check2.value.c, false, "no grimoire key is ever injected");
+});
