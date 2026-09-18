@@ -88,6 +88,11 @@ function engineMoveRegion() {
 function stepNowRegion() {
   return sliceBetween(CODE, "function stepNow(dir)", "window.newGame = ");
 }
+// Phase 39 (GEAR-05), Plan 05: the dispatch body moved into stepWith(action)
+// — stepNow(dir) above is now a thin { type: "move", dir } wrapper over it.
+function stepWithRegion() {
+  return sliceBetween(CODE, "function stepWith(action)", "function stepNow(dir)");
+}
 function deathBranch() {
   return sliceBetween(CODE, "if (S.dead) {", "if (S.won) {");
 }
@@ -290,9 +295,20 @@ test("(j.2) lock: engineMove/stepNow carry the exact Task 2 shapes — the lock 
     /if \(hasActiveEncounter\(\)\) return; if \(!encounterSettled\(\)\) return; if \(railLocked\(\)\) \{ window\.mzRailPulse\?\.\(\); return; \} if \(stepTargetsExit\(dir\)\) \{ window\.__mzStair = \{ dir \}; window\.renderEncounter\(\); return; \} stepNow\(dir\);/,
   );
 
-  const stepRegion = stepNowRegion();
-  assert.match(stepRegion, /pending: fell && !state\.dead \? \{ kind: "climb", dir \} : null/);
+  const stepRegion = stepWithRegion();
+  // Phase 39 (GEAR-05), Plan 05: the pending shape widened to also stash a
+  // hazard's own `feat` and, when no torch is carried, nothing at all for a
+  // darknessFell.
+  assert.match(stepRegion, /const fellClimb = events\.some\(\(e\) => e\.type === "fellClimbing"\);/);
+  assert.match(stepRegion, /const fellGorge = events\.some\(\(e\) => e\.type === "fellInGorge"\);/);
+  assert.match(stepRegion, /const darkFell = events\.some\(\(e\) => e\.type === "darknessFell"\);/);
+  assert.match(stepRegion, /const torch = window\.__mzHasTool\(state\.c, "torch"\);/);
+  assert.match(stepRegion, /\{ kind: "climb", dir: action\.dir, feat: fellGorge \? "gorge" : "climb" \}/);
+  assert.match(stepRegion, /darkFell && torch/);
+  assert.match(stepRegion, /\{ kind: "dark" \}/);
   assert.match(stepRegion, /preDeath: true/);
+  const stepNowRegionText = stepNowRegion();
+  assert.match(stepNowRegionText, /stepWith\(\{ type: "move", dir \}\);/);
 });
 
 // ─── (k) Move-on retirement ───────────────────────────────────────────────

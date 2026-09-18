@@ -142,7 +142,14 @@ test("Worn rows: wornSlotRow sits between the armor wornRow call and renderCarri
   const iRenderCarried = carryRegion.indexOf("renderCarriedList(carry, items, {");
   assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1, "all three anchors found in the paint carry region");
   assert.ok(iArmorRow < iWornSlotRow && iWornSlotRow < iRenderCarried, "wornSlotRow sits after the armor wornRow call and before renderCarriedList");
-  assert.ok((carryRegion.match(/<span class="mw-worn-tag">worn<\/span>/g) || []).length >= 2, "the worn tag appears at least twice (wornRow + wornSlotRow)");
+  assert.ok((carryRegion.match(/<span class="mw-worn-tag">worn<\/span>/g) || []).length >= 1, "wornRow's innerHTML template still carries the worn tag");
+  // Phase 39 (GEAR-02/GEAR-05), Plan 05 (T-38-11): wornSlotRow's OWN worn
+  // tag moved off the innerHTML template onto createElement/textContent —
+  // no innerHTML carries an item name in this region anymore.
+  const wornSlotRegion = sliceBetween(CODE, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, items, {");
+  assert.doesNotMatch(wornSlotRegion, /innerHTML/);
+  assert.match(wornSlotRegion, /tag\.className = "mw-worn-tag";/);
+  assert.match(wornSlotRegion, /tag\.textContent = "worn";/);
   assert.equal((CODE.match(/gearRow: true/g) || []).length, 1, "gearRow:true is still passed at exactly the GEAR call site");
 });
 
@@ -151,7 +158,9 @@ test("Worn rows: the new wornSlotRow block dispatches Use({slot})/Unequip(slot) 
   assert.equal((region.match(/window\.mzUseItem\?\.\(\{ slot \}\)/g) || []).length, 1);
   assert.equal((region.match(/window\.mzUnequip\?\.\(slot\)/g) || []).length, 1);
   assert.equal((region.match(/for \(const slot of \(window\.__mzWornSlots \|\| \[\]\)\)/g) || []).length, 1);
-  assert.match(region, /it\.every \? Math\.max\(0, it\.every - \(S\.steps - \(it\.usedAt \?\? -99999\)\)\) : 0/);
+  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the row-state rule moved off
+  // it.every/usedAt onto window.__mzItemRowState(S, it).
+  assert.match(region, /window\.__mzItemRowState\(S, it\)/);
 });
 
 // ─── 5. Classic eff routing ─────────────────────────────────────────────────
@@ -165,7 +174,9 @@ test("eff(key) routes through window.__mzEff, keeping the legacy sum-over-c.item
 // ─── 6. Module bridges ───────────────────────────────────────────────────────
 
 test("Bridges: derived.js import carries eff/slotFor/WORN_SLOTS; window.__mzEff/__mzSlotFor/__mzWornSlots assigned once each, after __mzConditionsOf", () => {
-  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS \} from "\.\/engine\/derived\.js";/);
+  // Phase 39 (GEAR-01/GEAR-02/GEAR-05), Plan 05: the shared derived.js
+  // import line gained hasTool/toHit/strikeDie as sibling named imports.
+  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie \} from "\.\/engine\/derived\.js";/);
   assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 1);

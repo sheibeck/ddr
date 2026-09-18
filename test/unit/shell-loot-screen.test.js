@@ -51,9 +51,11 @@ const CODE = stripComments(HTML);
 // ─── 1. module bridges ──────────────────────────────────────────────────
 
 test("Phase 29 (LOOT-03/04): the module bridges lootCompare/bagUsage from viewModels.js", () => {
+  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the shared viewModels.js import
+  // line gained itemRowState as a sibling named import.
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState \} from "\.\/src\/browser\/viewModels\.js";/,
   );
   assert.match(CODE, /window\.__mzBagUsage = bagUsage;/);
   assert.match(CODE, /window\.__mzLootCompare = lootCompare;/);

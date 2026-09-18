@@ -2892,9 +2892,21 @@ const CONDITION_COPY = {
   // the in-combat "rds" reading right beside the ward branch.
   acute:  { label: "Acute",     unit: "sq" },  // strike on a d6
   ether:  { label: "Ethereal",  unit: "sq"  },  // pass through walls
-  might:  { label: "Strong"                  },  // +damage; lasts the day, no count
+  // Phase 39 (GEAR-02): `unit: "sq"` now also covers a TIMED potion "might"
+  // effect (Strength/Enlarge) — the untimed SPELL might chip carries no
+  // `remaining`, so the generic detail branch below prints nothing for it
+  // (unchanged behaviour).
+  might:  { label: "Strong", unit: "sq" },  // +damage; a potion effect counts down, the spell effect lasts the day
   flight: { label: "Flying"                  },  // detail comes from the flight sub-state
   darkness: { label: "In the dark", unit: "sq" },
+  // Phase 39 (GEAR-05): the torch's lit effect.
+  lit: { label: "Lit", unit: "sq" },
+  // Phase 39 (GEAR-02): a cooling duration+cooldown item / a recharging
+  // staff — both carry their OWN item name as `cn.item` (paintConditions'
+  // label rule below reads that directly), so these two rows carry no fixed
+  // label of their own.
+  itemCooldown: { label: "", unit: "sq" },
+  staffCharges: { label: "", unit: "sq" },
   // Phase 31 (user ruling 2026-09-16, "Phobia = penalty, never a lost
   // action"): replaces the old DR17 `phobia` freeze-chip row — the engine's
   // conditionsOf now emits {key:"afraid", remaining, phobia} only while
@@ -2978,7 +2990,7 @@ const FOE_EFFECT_LABEL = { weakened: "Weakened", dazed: "Dazed" };
 // entry, mirroring the old good/bad chip split); CONDITION_EXPLAIN is the
 // sentence a guarded chip tap puts in the rail. Both are ONE object literal
 // each (voice-scannable) — presentation copy only, no engine data.
-const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad" };
+const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad", lit: "good", itemCooldown: "odd", staffCharges: "odd" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
   invis: "They swing at where you were. Enjoy it; it wears off.",
@@ -2991,8 +3003,35 @@ const CONDITION_EXPLAIN = {
   ward: "A pool of hit points that is not yours, soaking blows until it runs dry.",
   foeEffect: "Something they did to you. It wears off in a few rounds, which is more than most things do.",
   affliction: "It takes a bite out of you on a schedule. Find a cure before it finds the rest.",
+  // Phase 39 (GEAR-05): the torch's lit effect.
+  lit: "You are carrying a light. Darkness will have to wait its turn.",
+  // Phase 39 (GEAR-02): a cooling item / a recharging staff.
+  itemCooldown: "Used, and not ready to be used again. Squares fix that.",
+  staffCharges: "The staff is remembering how to do that. Walk it off.",
   default: "A condition. The maze does not explain itself further.",
 };
+
+/**
+ * explainCondition(cn, label) — Phase 39 (GEAR-02/GEAR-05): the chip-tap
+ * explanation for an ITEM-sourced chip (one carrying `cn.source` — a live
+ * item effect — or `cn.item` — itemCooldown/staffCharges) names the item and
+ * what's counting first ("Cloak of Speed — cooling, 41 squares."), then
+ * appends the plain CONDITION_EXPLAIN sentence for the chip's key. A
+ * non-item chip (the spell might/ward/darkness/afraid/foeEffect/affliction
+ * rows) falls straight through to the plain CONDITION_EXPLAIN sentence,
+ * unchanged from before this plan.
+ */
+function explainCondition(cn, label) {
+  const itemName = cn.source || cn.item;
+  const tail = CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default;
+  if (!itemName) return tail;
+  const unit = cn.cadence === "rounds" ? "rounds" : "squares";
+  const what =
+    cn.key === "itemCooldown" ? "cooling"
+      : cn.key === "staffCharges" ? `${cn.charges} of ${cn.max} charges, next in`
+      : label.toLowerCase();
+  return `${itemName} — ${what}, ${cn.remaining} ${unit}. ${tail}`;
+}
 
 // Render the unified good/bad condition-chip strip from conditionsOf(S). Reads
 // the shared engine helper (bridged) so the active SET is single-sourced; maps
@@ -3022,8 +3061,12 @@ function paintConditions(c) {
     // phobia-names-its-own-fear branch is gone — "afraid" now renders through
     // the plain CONDITION_COPY/generic-detail path below like any other timed
     // condition (no special case needed).
+    // Phase 39 (GEAR-02): itemCooldown/staffCharges carry their OWN item
+    // name (`cn.item`) as the label — neither has a fixed CONDITION_COPY
+    // label (both rows are `label: ""`).
     let label = cn.key === "affliction" ? (cn.kind || "Afflicted")
       : cn.key === "foeEffect" ? (FOE_EFFECT_LABEL[cn.kind] || CONDITION_COPY.foeEffect.label)
+      : cn.key === "itemCooldown" || cn.key === "staffCharges" ? cn.item
       : (CONDITION_COPY[cn.key]?.label || cn.key);
     let detail = "";
     if (cn.key === "flight") {
@@ -3035,10 +3078,17 @@ function paintConditions(c) {
       // Phase 31 (CMB-04): both numbers on one chip, mirroring the flight
       // special case above — "Shield 34 hp · 3 rds".
       detail = `${cn.pool} hp · ${cn.remaining} rds`;
+    } else if (cn.key === "itemCooldown") {
+      // Phase 39 (GEAR-02): a cooling duration+cooldown item.
+      detail = `cd ${cn.remaining} sq`;
+    } else if (cn.key === "staffCharges") {
+      // Phase 39 (GEAR-02): a recharging staff's own charge pool + countdown.
+      detail = `${cn.charges}/${cn.max} · ${cn.remaining} sq`;
     } else if (cn.key === "acute" && typeof cn.remaining === "number") {
-      // Acuteness reads rounds in combat, squares outside (engine ticks it
-      // both ways — see CONDITION_COPY.acute's own comment).
-      detail = `${cn.remaining} ${S.combat ? "rds" : "sq"}`;
+      // Acuteness ticks in ROUNDS during a fight, SQUARES outside one
+      // (Phase 39, GEAR-02: read from the item-effect chip's own `cadence`,
+      // not a live-combat guess).
+      detail = `${cn.remaining} ${cn.cadence === "rounds" ? "rds" : "sq"}`;
     } else if (typeof cn.remaining === "number") {
       const unit = CONDITION_COPY[cn.key]?.unit || "";
       detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
@@ -3056,7 +3106,7 @@ function paintConditions(c) {
       btn.appendChild(d);
     }
     host.appendChild(btn);
-    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default, "info", 4200, "·"));
+    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), explainCondition(cn, label), "info", 4200, "·"));
   }
   // Key-gated: only re-arm when the chip SET actually changed, not on every
   // repaint after a step — armEncounterButtons() is cheap but pointless
@@ -3145,8 +3195,14 @@ function paint() {
   // text label baked into .mw-cond-good/.mw-cond-bad.
   paintConditions(c);
 
-  document.getElementById("s-die").textContent = "d" + strikeDie();
-  document.getElementById("s-hit").textContent = "1–" + toHit();
+  // Phase 39 (GEAR-01), Plan 05 — routed through the engine's own
+  // strikeDie(c)/toHit(state) (window.__mzStrikeDie/__mzToHit) instead of
+  // the classic script's stale duplicates below, so the Hero tab shows the
+  // weapon's real need modifier and Acuteness's crit-die swap; the classic
+  // strikeDie()/toHit() functions stay in place as dead code for the
+  // cleanup milestone.
+  document.getElementById("s-die").textContent = "d" + window.__mzStrikeDie(S.c);
+  document.getElementById("s-hit").textContent = "1–" + window.__mzToHit(S);
   const w = WEAPONS[c.weapon] || WEAPONS["Club"];
   const bonus = c.prof + c.magicWpn + (R_().dmg || 0) + (R_().wpnBonus || 0) + eff("dmg");
   document.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
@@ -3296,8 +3352,22 @@ function paint() {
   const wornSlotRow = (slot, it) => {
     const li = document.createElement("li");
     li.className = "mw-worn";
-    const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
-    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""} <span class="mw-worn-tag">worn</span></b><i>${it.txt ?? ""}</i>`;
+    // Phase 39 (GEAR-02/GEAR-05), Plan 05 — the ONE row-state rule
+    // (READY / N SQ / cd N SQ / k/max · N SQ), never it.every/usedAt; built
+    // via createElement/textContent (T-38-11 — no innerHTML carrying an
+    // item name in this region).
+    const st = window.__mzItemRowState(S, it);
+    const b = document.createElement("b");
+    b.textContent = it.n + (st.text ? ` · ${st.text}` : "");
+    b.appendChild(document.createTextNode(" "));
+    const tag = document.createElement("span");
+    tag.className = "mw-worn-tag";
+    tag.textContent = "worn";
+    b.appendChild(tag);
+    const desc = document.createElement("i");
+    desc.textContent = it.txt ?? "";
+    li.appendChild(b);
+    li.appendChild(desc);
     if (it.use) li.appendChild(gearBtn("Use", () => window.mzUseItem?.({ slot })));
     li.appendChild(gearBtn(bagFull ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull));
     carry.appendChild(li);
@@ -3875,7 +3945,11 @@ function renderCarriedList(container, items, opts = {}) {
   };
   rows.forEach(({ it, i }) => {
     const li = document.createElement("li");
-    const cd = it.every ? Math.max(0, it.every - (S.steps - (it.usedAt ?? -99999))) : 0;
+    // Phase 39 (GEAR-02/GEAR-05), Plan 05 — the ONE row-state rule
+    // (READY / N SQ / cd N SQ / k/max · N SQ) replaces the retired
+    // it.every/usedAt cooldown gate here too (this builder is shared by the
+    // GEAR tab, the store sell list and the loot card).
+    const st = window.__mzItemRowState(S, it);
     // Phase 28 (ARMOR-03): a stowed armor piece carries `left` — the row
     // must show remaining durability, never the frozen `txt`. Phase 29
     // (LOOT-03): the loot screen instead supplies opts.subFor to show the
@@ -3883,7 +3957,14 @@ function renderCarriedList(container, items, opts = {}) {
     // every pre-existing host (GEAR tab, store sell list, combat use list)
     // renders byte-identically.
     const sub = typeof opts.subFor === "function" ? opts.subFor(it) : (it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : (it.txt ?? ""));
-    li.innerHTML = `<b>${it.n}${cd ? ` · ${cd} sq` : ""}</b><i>${sub}</i>`;
+    // Built via createElement/textContent (T-38-11 — no innerHTML carrying
+    // an item name in this region).
+    const b = document.createElement("b");
+    b.textContent = it.n + (st.text ? ` · ${st.text}` : "");
+    const descEl = document.createElement("i");
+    descEl.textContent = sub;
+    li.appendChild(b);
+    li.appendChild(descEl);
     for (const a of (opts.actions || [])) {
       if (a === "use") {
         // Phase 31 (CMB-02/CMB-03, Phase 25.1 DFB-06 precedent): never
@@ -6178,7 +6259,24 @@ function renderRail() {
   // bagFull refusal) still shows.
 
   let key, tone, icon, iconKey = null, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
-  if (S.pendingJoiner && !S.combat && !S.store) {
+  if (S.pendingHazard && !S.pendingHazard.declined && !S.combat && !S.store) {
+    // The hazard pre-roll decision card (Phase 39, GEAR-05, Plan 05, CONTEXT
+    // Area 1 "both"): stepping onto a climbable wall while carrying a
+    // ladder, or a gorge while carrying a rope, PAUSES here before any roll
+    // — a fresh movement decision, so it wins over an older joiner/find
+    // card below (both of those are re-shown untouched on the NEXT paint
+    // once this one clears).
+    const pend = S.pendingHazard;
+    const { feat, dir, tool } = pend;
+    key = "hazard:" + feat + ":" + dir;
+    tone = "info"; icon = "⧗"; title = copy.hazard.title;
+    const narrated = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
+    lines = narrated.length ? narrated : [{ text: feat === "gorge" ? copy.hazard.crevice : copy.hazard.wall, roll: null }];
+    buttons = [
+      { id: "a-hazard-tool", label: tool === "ladder" ? copy.hazard.ladder : copy.hazard.rope, onTap: () => window.mzUseTool(tool, dir) },
+      { id: "a-hazard-roll", label: feat === "gorge" ? copy.hazard.leap : copy.hazard.climb, cls: "secondary", onTap: () => window.move(dir) },
+    ];
+  } else if (S.pendingJoiner && !S.combat && !S.store) {
     // The joiner decision card (MAP-04) — the accept/decline prompt that
     // used to be renderEncounter's own over-map branch, now a rail card
     // with a guarded action row. DFB-04's who-walks rule (a full roster
@@ -6225,18 +6323,50 @@ function renderRail() {
     // The CLIMB IT retry card (decision 1/4, RESEARCH Pitfall 3): the climb
     // roll already happened inside stepNow's dispatch — this only re-offers
     // the SAME direction; the engine re-rolls synchronously inside move().
-    // No go-round, no pre-roll preview.
+    // No go-round, no pre-roll preview. Phase 39 (GEAR-05): when the
+    // matching tool is carried, USE LADDER/USE ROPE is ALSO offered — you
+    // fell, you're still standing there, the tool is still the way past.
     const pend = rail.pending;
     const base = rail.card || vm.lineCard("FELL", "", "bad", 0, "⧗");
     key = "climb:" + rail.seq;
     tone = base.tone; icon = base.icon; iconKey = base.iconKey ?? null; title = base.title; lines = base.lines;
+    const retryLabel = pend.feat === "gorge" ? copy.hazard.leap : pend.feat === "climb" ? copy.hazard.climb : copy.climb.retry;
     buttons = [
       {
         id: "mw-rail-climb",
-        label: copy.climb.retry,
+        label: retryLabel,
         onTap: () => {
           window.__mzRail = { ...window.__mzRail, pending: null };
           window.move(pend.dir);
+        },
+      },
+    ];
+    const retryTool = pend.feat === "gorge" ? "rope" : "ladder";
+    if (pend.feat && window.__mzHasTool(S.c, retryTool)) {
+      buttons.unshift({
+        id: "mw-rail-tool",
+        label: retryTool === "ladder" ? copy.hazard.ladder : copy.hazard.rope,
+        onTap: () => {
+          window.__mzRail = { ...window.__mzRail, pending: null };
+          window.mzUseTool(retryTool, pend.dir);
+        },
+      });
+    }
+  } else if (rail.pending && rail.pending.kind === "dark" && S.c.darkFor > 0 && window.__mzHasTool(S.c, "torch")) {
+    // The Darkness card's USE TORCH offer (Phase 39, GEAR-05, Plan 05): a
+    // fresh darknessFell held off ONLY while a torch is actually carried
+    // (stepWith's own pending computation already gates on that); the
+    // narration is whatever the Darkness table result already said.
+    const base = rail.card || vm.lineCard("IN THE DARK", "", "info", 0, "◇");
+    key = "dark:" + rail.seq;
+    tone = base.tone; icon = base.icon; iconKey = base.iconKey ?? null; title = base.title; lines = base.lines;
+    buttons = [
+      {
+        id: "mw-rail-torch",
+        label: copy.dark.torch,
+        onTap: () => {
+          window.__mzRail = { ...window.__mzRail, pending: null };
+          window.mzUseItem(window.__mzToolIndex(S.c, "torch"));
         },
       },
     ];
@@ -6850,10 +6980,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // content tables (content/index.js) used ONLY to build the reel-flicker's
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
-  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage } from "./src/browser/viewModels.js";
+  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
-  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS } from "./engine/derived.js";
+  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -6861,6 +6991,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // read the SAME cooldown source the engine's useAbility dispatch does.
   import { abilityRoundsLeft } from "./engine/abilities.js";
   import { isReady } from "./engine/effects.js";
+  // Phase 39 (GEAR-05), Plan 05 — the ONE bag-index resolver the dark card's
+  // USE TORCH button uses to dispatch window.mzUseItem at tap time (never a
+  // stashed index — the engine re-validates on its own).
+  import { toolIndex } from "./engine/items.js";
 
   // Phase 13 (ECON-04): expose the read-only BAGS capacity table so the classic
   // script's GEAR tab + find keep/drop prompt can show the "used / slots"
@@ -6938,6 +7072,20 @@ window.__mzClassicBoot = async function classicBoot() {
   // safe every paint. The engine alone enforces the actual cap (stowItem).
   window.__mzBagUsage = bagUsage;
   window.__mzLootCompare = lootCompare;
+
+  // Phase 39 (GEAR-02/GEAR-05), Plan 05 — read-only bridges for the hazard/
+  // dark rail cards, the Gear-tab/ITEMS row-state rule and the Hero tab's
+  // engine-routed to-hit/strike-die: hasTool gates whether a carried tool
+  // offers itself at a decision point; toolIndex resolves a tool's bag slot
+  // at TAP time (never stashed); toHit/strikeDie are the SAME functions
+  // engine/combat.js's own strike resolution reads, so the sheet can never
+  // disagree with a real swing; itemRowState is Plan 05's one row-state rule
+  // (src/browser/viewModels.js). No rng, no mutation — safe every paint.
+  window.__mzHasTool = hasTool;
+  window.__mzToolIndex = toolIndex;
+  window.__mzToHit = toHit;
+  window.__mzStrikeDie = strikeDie;
+  window.__mzItemRowState = itemRowState;
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithToasts and
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
@@ -7402,6 +7550,17 @@ window.__mzClassicBoot = async function classicBoot() {
     stepNow(dir);
   };
 
+  // window.mzUseTool(tool, dir) (Phase 39, GEAR-05, Plan 05) — the hazard
+  // decision card's tool button (USE LADDER/USE ROPE) and the retry card's
+  // same offer: spends the tool via the engine's own useTool action,
+  // consuming the tile with no roll. Guarded by the SAME railLocked() gate
+  // every movement path already funnels through (a stale/duplicate tap
+  // pulses the pending card instead of double-dispatching).
+  window.mzUseTool = (tool, dir) => {
+    if (railLocked()) { window.mzRailPulse?.(); return; }
+    stepWith({ type: "useTool", tool, dir });
+  };
+
   // window.__mzDescend (Phase 35, MAP-05, decision 5) — THE STAIR DOWN's GO
   // DOWN button: clears the flag and calls the SAME stepNow(dir) every step
   // uses (identical engine call, identical rng); the guards were already
@@ -7413,9 +7572,15 @@ window.__mzClassicBoot = async function classicBoot() {
     if (s) stepNow(s.dir);
   };
 
-  function stepNow(dir) {
+  // stepWith(action) (Phase 39, GEAR-05, Plan 05) — the action-agnostic
+  // dispatch body a plain move(dir) step AND a spent useTool share:
+  // dispatchWithToasts, noteCombat, haptics, the pending-obstacle/hazard/
+  // dark computation, the pre-death beat, narration stash, paint/draw/log,
+  // and the moved-event recenter. `stepNow(dir)` (below) is the thin
+  // move-shaped wrapper every existing call site keeps using.
+  function stepWith(action) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
-    const { state, events, html } = dispatchWithToasts({ type: "move", dir });
+    const { state, events, html } = dispatchWithToasts(action);
     window.__mzState.set(state);
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
@@ -7423,9 +7588,25 @@ window.__mzClassicBoot = async function classicBoot() {
     // on its square until a CLIMB IT retry succeeds — the pending flag is
     // presentation-only (window.__mzRail, never S/state) and cleared by any
     // success (climbedOver/leaptOver) or a death, both of which never set
-    // it in the first place.
-    const fell = events.some((e) => e.type === "fellClimbing" || e.type === "fellInGorge");
-    window.__mzRail = { ...(window.__mzRail || { seq: 0, card: null, pending: null }), pending: fell && !state.dead ? { kind: "climb", dir } : null };
+    // it in the first place. Phase 39 (GEAR-05): a carried matching tool
+    // widens this to the pre-roll hazard decision (the pending record's own
+    // `feat` names which retry label/tool applies — CLIMB IT/USE LADDER vs
+    // LEAP IT/USE ROPE), and a live darknessFell held off by NO torch stays
+    // silent (the dark card only appears when a torch is actually carried).
+    const fellClimb = events.some((e) => e.type === "fellClimbing");
+    const fellGorge = events.some((e) => e.type === "fellInGorge");
+    const darkFell = events.some((e) => e.type === "darknessFell");
+    const torch = window.__mzHasTool(state.c, "torch");
+    window.__mzRail = {
+      ...(window.__mzRail || { seq: 0, card: null, pending: null }),
+      pending: state.dead
+        ? null
+        : fellClimb || fellGorge
+          ? { kind: "climb", dir: action.dir, feat: fellGorge ? "gorge" : "climb" }
+          : darkFell && torch
+            ? { kind: "dark" }
+            : null,
+    };
     // Death ON A MOVE — you stepped onto a tile and this one dispatch killed you
     // before you could see what happened: a combat ambush (foes won initiative +
     // a pre-emptive killing turn), a Table-4 "-N HP" toll, a trap, a poison tick,
@@ -7442,9 +7623,15 @@ window.__mzClassicBoot = async function classicBoot() {
     // accept/decline / Take-Leave buttons (see renderRail) — so DON'T build
     // an intermediate "Move on" beat for those; stash the stripped narration for
     // that prompt branch to show instead. Cleared to null on any move that has
-    // no pending prompt so it never leaks into a later prompt.
+    // no pending prompt so it never leaks into a later prompt. Phase 39
+    // (GEAR-05): a fresh, un-declined pendingHazard is ALSO a rail decision
+    // (the hazard pre-roll card) — its own narration (if any) stashes the
+    // same way; a DECLINED pendingHazard has already shown its narration on
+    // the dispatch that declined it, so it is excluded here.
     window.__mzPendingNarration =
-      (state.pendingJoiner || state.pendingFind) && html.length ? stripRollDetail(html) : null;
+      (state.pendingJoiner || state.pendingFind || (state.pendingHazard && !state.pendingHazard.declined)) && html.length
+        ? stripRollDetail(html)
+        : null;
     if (diedOnMove && html.length) {
       // Phase 31 (CMB-01): a move can no longer kill via an encounter — the
       // pre-emptive opener now runs inside the `fight` action, dispatched
@@ -7466,6 +7653,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // pushes `moved` first, so this check alone already covers both cases)
     // — the player was reporting drifting off-center while just walking.
     if (events.some((e) => e.type === "moved")) window.mzCenterMap?.();
+  }
+
+  function stepNow(dir) {
+    stepWith({ type: "move", dir });
   }
 
   // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic

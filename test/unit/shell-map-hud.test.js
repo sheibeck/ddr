@@ -241,7 +241,11 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
   assert.match(region, /document\.createElement\("button"\)/);
   assert.match(region, /btn\.dataset\.tone = CONDITION_TONE\[cn\.key\] \|\| \(cn\.polarity === "bad" \? "bad" : "good"\)/);
   assert.match(region, /guardTap\(btn, \(\) => window\.mzRailLine\?\.\(/);
-  assert.match(region, /CONDITION_EXPLAIN\[cn\.key\] \|\| CONDITION_EXPLAIN\.default/);
+  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the tap explanation now routes
+  // through explainCondition(cn, label) — the item-sourced-chip-aware
+  // wrapper around the plain CONDITION_EXPLAIN[cn.key] fallback (which
+  // explainCondition itself still reads, just no longer inline here).
+  assert.match(region, /explainCondition\(cn, label\)/);
   assert.match(region, /lastCondKeyShown/);
   assert.match(region, /armEncounterButtons\(\);/);
   assert.equal((region.match(/innerHTML/g) || []).length, 2, 'exactly the two innerHTML clears (empty-branch + the "" reset before the loop)');
