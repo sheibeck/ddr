@@ -117,9 +117,11 @@ test("probe FEED-02 adjacency: strikeRefused names the spell and produces no str
 });
 
 test("probe FEED-02 adjacency: withdrawalDenied + fleeRolled + fleeFailed order block toast before the outcome", () => {
+  // Phase 42 (FLEE-01): need is now 14 (was 11); the payload carries `mods`/
+  // `total`, not the old `bonus` field.
   const events = [
     { type: "withdrawalDenied", reason: "masterOfArms" },
-    { type: "fleeRolled", roll: 3, bonus: 0, need: 11 },
+    { type: "fleeRolled", roll: 3, mods: [], total: 3, need: 14 },
     { type: "fleeFailed" },
   ];
   const out = toastsForAction("flee", events, {});
@@ -482,25 +484,25 @@ test("encounter start: knightBigFoe renders as its own clause", () => {
 
 // ─── Chains ──────────────────────────────────────────────────────────────────
 
-test("chains: fleeRolled + fled folds the roll into one hit toast", () => {
+test("chains: fleeRolled + fled folds the roll into one hit toast, roll first (Phase 42, FLEE-02)", () => {
   const events = [
-    { type: "fleeRolled", roll: 7, bonus: 5, need: 11 },
+    { type: "fleeRolled", roll: 9, mods: [{ name: "Thief", delta: 5 }], total: 14, need: 14 },
     { type: "fled", reason: "escaped" },
   ];
   const out = toastsForAction("flee", events, {});
   assert.equal(out.length, 1);
-  assert.ok(out[0].text.includes("(7+5 vs 11)"));
+  assert.equal(out[0].text, "Flee: 9 (Thief +5) = 14 vs 14. You get clear.");
   assert.equal(out[0].tone, "hit");
 });
 
-test("chains: fleeRolled + fleeFailed folds the roll into one miss toast", () => {
+test("chains: fleeRolled + fleeFailed folds the roll into one miss toast, roll first (Phase 42, FLEE-02)", () => {
   const events = [
-    { type: "fleeRolled", roll: 3, bonus: 0, need: 11 },
+    { type: "fleeRolled", roll: 3, mods: [], total: 3, need: 14 },
     { type: "fleeFailed" },
   ];
   const out = toastsForAction("flee", events, {});
   assert.equal(out.length, 1);
-  assert.ok(out[0].text.includes("(3 vs 11)"));
+  assert.equal(out[0].text, "Flee: 3 = 3 vs 14. You do not make it.");
   assert.equal(out[0].tone, "miss");
 });
 

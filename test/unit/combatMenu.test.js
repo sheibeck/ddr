@@ -108,7 +108,8 @@ test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallbac
   ]);
 
   // Reused below: a Fighter's flee cost has no Thief +5.
-  assert.equal(vm.submenus.social.rows[0].cost, "d20, 11+");
+  // Phase 42 (FLEE-01): need is now 14 (was 11).
+  assert.equal(vm.submenus.social.rows[0].cost, "d20, 14+");
 });
 
 // ─── Bard: ABILITIES opens Sing ────────────────────────────────────────────
@@ -177,10 +178,12 @@ test("Magic User with an empty grimoire: SPELLS submenu is the single disabled N
 // ─── Thief: SOCIAL flee cost bonus, WITHDRAW, PARLEY ───────────────────────
 
 test("Thief (Pilfer): FLEE carries the +5 Thief bonus; a tracked round-1 combat becomes a clean WITHDRAW", () => {
+  // Phase 42 (FLEE-01/FLEE-02): need is now 14 (was 11); the desc names the
+  // Thief +5 modifier instead of staying silent.
   const c = { cls: "Thief", sub: "Pilfer" };
   const normal = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
   assert.deepEqual(normal.submenus.social.rows[0], {
-    id: "flee", label: "FLEE", cost: "d20+5, 11+", desc: COMBAT_MENU_COPY.fleeDesc, enabled: true, dispatch: { type: "flee" },
+    id: "flee", label: "FLEE", cost: "d20+5, 14+", desc: `${COMBAT_MENU_COPY.fleeDesc} (Thief +5)`, enabled: true, dispatch: { type: "flee" },
   });
 
   const withdrawState = fixedState({ c, combat: fixedCombat([], { tracked: true, round: 1 }) });
@@ -194,6 +197,13 @@ test("Thief (Pilfer): FLEE carries the +5 Thief bonus; a tracked round-1 combat 
   assert.equal(parleyRow.cost, "d20");
   assert.deepEqual(parleyRow.dispatch, { type: "parley" });
   assert.equal(parleyRow.enabled, canParley(withdrawState));
+});
+
+test("Troll Fighter in Plate (Phase 42, FLEE-01/FLEE-02): FLEE cost/desc name both the race and armor penalty", () => {
+  const c = { cls: "Fighter", race: "Troll", armor: "Plate" };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  assert.equal(vm.submenus.social.rows[0].cost, "d20−3, 14+");
+  assert.ok(vm.submenus.social.rows[0].desc.endsWith("(Troll −1, Plate −2)"));
 });
 
 // ─── ITEMS: potion always present, scroll conditional, carried items, cooldowns ─

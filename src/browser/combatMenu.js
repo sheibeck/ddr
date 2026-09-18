@@ -14,7 +14,7 @@
 
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel, itemRowState } from "./viewModels.js";
-import { canCast, WORN_SLOTS } from "../../engine/derived.js";
+import { canCast, WORN_SLOTS, fleeBreakdown } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -57,6 +57,13 @@ export const COMBAT_MENU_COPY = Object.freeze({
   parleyDesc: "Talk it down. An insult is permanent.",
   back: "BACK",
 });
+
+/** fleeModsText(mods) — "Thief +5" / "Troll −1, Plate −2" (Phase 42, FLEE-02;
+ * mirrors eventNarration.js's needModsText format so this row's honest cost
+ * speaks the same modifier vocabulary as the fight log/toast/rail). */
+function fleeModsText(mods) {
+  return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
+}
 
 /**
  * abilityRows(c) — Phase 38 (ABIL-01/04): one row per `c.abilities` catalog
@@ -299,16 +306,19 @@ export function combatMenuViewModel(state) {
   };
 
   // ─── slot 4: SOCIAL (FLEE/WITHDRAW, PARLEY) ────────────────────────────
-  // Cost mirrors engine/combat.js's own flee roll for display only (the
-  // engine still rolls): a plain Fighter needs 11+ on d20; a Thief adds +5
-  // (engine/combat.js:818); a round-1 tracked encounter gets a clean,
-  // guaranteed WITHDRAW instead of a roll (engine/combat.js:801-817).
+  // Cost mirrors engine/derived.js#fleeBreakdown for display only — the
+  // engine still rolls; a round-1 tracked encounter gets a clean,
+  // guaranteed WITHDRAW instead of a roll (engine/combat.js). Phase 42
+  // (FLEE-01/FLEE-02): the honest per-character need/modifiers replace the
+  // old hard-coded "11+"/"+5" strings.
   const withdraw = !!(C.tracked && C.round === 1);
+  const fb = fleeBreakdown(c);
+  const net = fb.bonus === 0 ? "" : fb.bonus > 0 ? `+${fb.bonus}` : `−${Math.abs(fb.bonus)}`;
   const fleeRow = {
     id: "flee",
     label: withdraw ? COMBAT_MENU_COPY.withdraw : COMBAT_MENU_COPY.flee,
-    cost: withdraw ? COMBAT_MENU_COPY.withdrawCost : c.cls === "Thief" ? "d20+5, 11+" : "d20, 11+",
-    desc: withdraw ? COMBAT_MENU_COPY.withdrawDesc : COMBAT_MENU_COPY.fleeDesc,
+    cost: withdraw ? COMBAT_MENU_COPY.withdrawCost : `d20${net}, ${fb.need}+`,
+    desc: withdraw ? COMBAT_MENU_COPY.withdrawDesc : fb.mods.length ? `${COMBAT_MENU_COPY.fleeDesc} (${fleeModsText(fb.mods)})` : COMBAT_MENU_COPY.fleeDesc,
     enabled: true,
     dispatch: { type: "flee" },
   };

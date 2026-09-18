@@ -82,6 +82,9 @@ test("railFamilyFor: explicit RAIL_FAMILY entries carry the exact icon/title/ton
   assert.equal(railFamilyFor("heightsFear", "hurt", PRIORITY.other).title, "AFRAID");
   assert.equal(railFamilyFor("waterFear", "hurt", PRIORITY.other).title, "AFRAID");
   assert.equal(railFamilyFor("trappedPanic", "hurt", PRIORITY.other).title, "AFRAID");
+  // Phase 42 (FLEE-02): a family entry for completeness — the fight log is
+  // the real destination for this combat-only event.
+  assert.deepEqual(RAIL_FAMILY.fleeRolled, { icon: "·", title: "FLEE", tone: "info" });
 });
 
 // ─── Test 3: railFamilyFor — the block/tone fallback ───────────────────────

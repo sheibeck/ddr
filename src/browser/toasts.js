@@ -314,6 +314,13 @@ function soakSuffix(soaked) {
   return parts.length ? ` · ${parts.join(", ")} soaked` : "";
 }
 
+/** fleeModsText(mods) — "Thief +5" / "Thief +5, Mail −1" (Phase 42, FLEE-02;
+ * mirrors eventNarration.js's needModsText format so the toast/Oracle/fight-
+ * log surfaces all speak the same modifier vocabulary). */
+function fleeModsText(mods) {
+  return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
+}
+
 const CRIT_BY_TEXT = {
   stealth: "stealth",
   backstab: "backstab",
@@ -691,10 +698,14 @@ function spellChain(events, consumed) {
 
 /**
  * fleeChain(events, consumed) — `fleeRolled` + (`fled` | `fleeFailed`) fold
- * into ONE toast: the outcome's own text plus the roll detail
- * `(${roll}+${bonus} vs ${need})` (the `+${bonus}` segment omitted when
- * `bonus` is 0). A `fled` with no preceding `fleeRolled` (Cloaker/tracked)
- * keeps its own builder untouched.
+ * into ONE toast, ROLL FIRST (Phase 42, FLEE-02, ROADMAP SC-1): the roll and
+ * every named modifier lead, the outcome's own text follows —
+ * `${TOAST_FOR.fleeRolled(e).text}. ${outcome text}` — so the fight log
+ * shows roll/modifiers/need before the outcome in one line (the 34-CONTEXT
+ * "log line count = folded count" pin still holds: still ONE line per
+ * attempt). Reuses TOAST_FOR.fleeRolled itself rather than restating the
+ * format. A `fled` with no preceding `fleeRolled` (Cloaker/tracked) keeps
+ * its own builder untouched.
  */
 function fleeChain(events, consumed) {
   const built = [];
@@ -707,8 +718,8 @@ function fleeChain(events, consumed) {
         consumed.add(i);
         consumed.add(j);
         const b = TOAST_FOR[oe.type](oe);
-        const bonusPart = e.bonus ? `+${e.bonus}` : "";
-        built.push({ text: `${b.text} (${e.roll}${bonusPart} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
+        const rollText = TOAST_FOR.fleeRolled(e).text;
+        built.push({ text: `${rollText}. ${b.text}`, tone: b.tone, priority: b.priority, idx: i });
         break;
       }
       if (oe.type === "fleeRolled") break;
@@ -1066,7 +1077,15 @@ export const TOAST_FOR = {
     const map = { cloaker: "You vanish — clean escape.", tracked: "You slip away before it sees you.", smoke: "Gone through the smoke. Nobody follows." };
     return { text: map[e?.reason] ?? "You get clear.", tone: "hit", priority: PRIORITY.you };
   },
-  fleeRolled: (e) => ({ text: `Flee: ${e?.roll ?? "?"}+${e?.bonus ?? 0} vs ${e?.need ?? "?"}`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 42 (FLEE-02): named modifiers replace the old flat "+bonus" —
+  // null-safe (`e?.mods ?? []`) for the voice scan's sparse-event calls.
+  fleeRolled: (e) => {
+    const roll = e?.roll ?? "?";
+    const mods = e?.mods ?? [];
+    const total = e?.total ?? e?.roll ?? "?";
+    const need = e?.need ?? "?";
+    return { text: `Flee: ${roll}${mods.length ? ` (${fleeModsText(mods)})` : ""} = ${total} vs ${need}`, tone: "beat", priority: PRIORITY.other };
+  },
   fleeFailed: () => ({ text: "You do not make it.", tone: "miss", priority: PRIORITY.you }),
   parleyRefused: (e) => {
     const map = {

@@ -349,7 +349,19 @@ export const EVENT_NARRATION = {
         : e.reason === "smoke"
           ? `<span class="hit">You leave through the smoke. Nobody follows.</span>`
           : `<span class="hit">You get clear.</span>`,
-  fleeRolled: (e) => `Flee: <span class="roll">${e.roll ?? "?"}</span>+${e.bonus ?? 0} vs ${e.need ?? "?"}.`,
+  // Phase 42 (FLEE-02): the roll, every named modifier and the need,
+  // narrated BEFORE the outcome line (`fled`/`fleeFailed` keep their own
+  // entries above/below). Reuses `needModsText` (the same "Guard −1" format
+  // foeToHitBreakdown's narration already uses) so every modifier surface
+  // in the app speaks the same vocabulary. Null-safe (`e?.mods ?? []`) — the
+  // voice scan invokes every builder with sparse event variants.
+  fleeRolled: (e) => {
+    const roll = e?.roll ?? "?";
+    const mods = e?.mods ?? [];
+    const total = e?.total ?? e?.roll ?? "?";
+    const need = e?.need ?? "?";
+    return `Flee: rolled <span class="roll">${roll}</span>${mods.length ? ` (${needModsText(mods)})` : ""} — ${total} against ${need}.`;
+  },
   fleeFailed: () => `<span class="miss">You do not make it.</span>`,
   // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a
   // fluency-2 Wilmsry facing Magical) and gets the canon grudge line; every
