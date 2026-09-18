@@ -79,6 +79,10 @@ export const RAIL_COPY = Object.freeze({
   here: { title: "YOU ARE HERE", line: "For the moment, and with no particular claim to it." },
   unwalked: { title: "UNWALKED", line: "The lantern does not reach. Walk it and find out." },
   rock: { title: "SOLID ROCK", line: "A square of it, same as the corridor. No way through." },
+  // Phase 41 (TERR-01/02), Plan 04 — the water hold-inspect: names the tile
+  // and its cost (waded's own rail line, RAIL_FAMILY.waded above, narrates
+  // the moment of entry; this is what a HOLD on a water tile answers).
+  water: { title: "WATER", line: "Two squares a step, and your boots never dry. Wade, or go around." },
   empty: { title: "EMPTY CORRIDOR", line: "Walked, lit, and entirely uninteresting. Enjoy it." },
   joiner: { title: "COMPANY", yes: "TAKE THEM ALONG", no: "LEAVE THEM" },
   find: {

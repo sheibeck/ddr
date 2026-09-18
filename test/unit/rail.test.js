@@ -352,6 +352,14 @@ test("RAIL_COPY.abilityPool: title and line template", () => {
   assert.equal(RAIL_COPY.abilityPool.line, "New trick: {name} — {txt}");
 });
 
+// Phase 41 (TERR-01/02), Plan 04 — RAIL_COPY.water: the hold-inspect row
+// tapStep.js#inspectCell reads for a seen, non-wall, feat-less water cell.
+test("RAIL_COPY.water: title WATER, and a non-empty cost line", () => {
+  assert.equal(RAIL_COPY.water.title, "WATER");
+  assert.equal(typeof RAIL_COPY.water.line, "string");
+  assert.ok(RAIL_COPY.water.line.length > 0);
+});
+
 test("abilityPoolCard: the FIRST pool-source id in c.abilities builds the exact card", () => {
   const card = abilityPoolCard({ cls: "Fighter", abilities: ["kata", "brace"] });
   assert.deepStrictEqual(card, {

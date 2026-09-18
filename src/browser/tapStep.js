@@ -100,5 +100,10 @@ export function inspectCell(cell, legendFor) {
     const row = typeof legendFor === "function" ? legendFor(cell.feat) : null;
     if (row) return { title: row.name, line: row.desc, tone: "odd", hold: RAIL_HOLD.mark };
   }
+  // Phase 41 (TERR-01/02), Plan 04 — a seen, non-wall, feat-less water cell
+  // names itself and its cost on a hold. Checked AFTER the feat branch (a
+  // water cell that somehow carries a feature keeps the feature's own
+  // legend row) and BEFORE the EMPTY CORRIDOR fallback.
+  if (cell.water) return { title: RAIL_COPY.water.title, line: RAIL_COPY.water.line, tone: "odd", hold: RAIL_HOLD.mark };
   return { title: RAIL_COPY.empty.title, line: RAIL_COPY.empty.line, tone: "dull", hold: RAIL_HOLD.dull };
 }

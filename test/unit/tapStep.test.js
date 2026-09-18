@@ -139,6 +139,30 @@ test("inspectCell: a seen, non-wall cell with an unrecognized feat (no legend ro
   assert.deepEqual(inspectCell({ seen: true, wall: false, feat: "not-a-real-feat" }, legendFor).title, RAIL_COPY.empty.title);
 });
 
+// ─── inspectCell: water (Phase 41, TERR-01/02, Plan 04) ────────────────────
+
+test("inspectCell: a seen, non-wall, feat-less water cell shows the WATER row (tone odd, RAIL_HOLD.mark)", () => {
+  assert.deepEqual(inspectCell({ seen: true, wall: false, feat: null, water: true }, legendFor), {
+    title: RAIL_COPY.water.title,
+    line: RAIL_COPY.water.line,
+    tone: "odd",
+    hold: RAIL_HOLD.mark,
+  });
+});
+
+test("inspectCell: an unseen water cell still returns the UNWALKED row (fog never reveals water)", () => {
+  assert.deepEqual(inspectCell({ seen: false, water: true }, legendFor).title, RAIL_COPY.unwalked.title);
+});
+
+test("inspectCell: a water cell that also carries a feat returns the feat's own legend row (the feat branch stays first)", () => {
+  assert.deepEqual(inspectCell({ seen: true, wall: false, feat: "trap", water: true }, legendFor), {
+    title: "TRAP",
+    line: legend.desc,
+    tone: "odd",
+    hold: RAIL_HOLD.mark,
+  });
+});
+
 // ─── purity ─────────────────────────────────────────────────────────────────
 
 test("tapStep.js is pure: no window/document/Date.now/localStorage/setTimeout/innerHTML/Math.random in live code", () => {

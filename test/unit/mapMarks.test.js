@@ -69,6 +69,24 @@ test("MAP_PALETTE.floorSpell: a distinct 'borrowed sight' tint; the palette stay
   assert.equal(MAP_PALETTE.floor, "#645c48");
 });
 
+// Phase 41 (TERR-01), Plan 04 — the two water shades: a lit pool
+// (MAP_PALETTE.water) and a pool inside a dark blob (MAP_PALETTE.waterDark)
+// — both distinct 6-digit hexes, from each other and from every other
+// palette key, with the palette still frozen and every prior key/value
+// unchanged.
+test("MAP_PALETTE.water/waterDark: two distinct 6-digit hex shades; the palette stays frozen with prior keys unchanged", () => {
+  assert.match(MAP_PALETTE.water, /^#[0-9a-fA-F]{6}$/);
+  assert.match(MAP_PALETTE.waterDark, /^#[0-9a-fA-F]{6}$/);
+  assert.notEqual(MAP_PALETTE.water, MAP_PALETTE.waterDark);
+  for (const key of ["fog", "wall", "floor", "floorDark", "floorSpell", "border", "party"]) {
+    assert.notEqual(MAP_PALETTE.water, MAP_PALETTE[key], `water must differ from ${key}`);
+    assert.notEqual(MAP_PALETTE.waterDark, MAP_PALETTE[key], `waterDark must differ from ${key}`);
+  }
+  assert.equal(Object.isFrozen(MAP_PALETTE), true);
+  assert.equal(MAP_PALETTE.floor, "#645c48");
+  assert.equal(MAP_PALETTE.floorSpell, "#4e5a6a");
+});
+
 // ─── MARKS_LEGEND: move-verbatim proof ─────────────────────────────────────
 
 // Literal copy of the old mazeworld.html MARKS_LEGEND table (icon -> key),

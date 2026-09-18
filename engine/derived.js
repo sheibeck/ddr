@@ -737,6 +737,53 @@ export function revealRadius(state) {
   return (inDark(state) && !skill(state.c, "Night Vision") ? 1 : 2) + eff(state.c, "sight");
 }
 
+// Phase 41 (TERR-03) — DARK_VIEW_RADIUS: while standing on a dark square
+// without Night Vision, a light effect (e.g. the Amulet of Light) or a lit
+// torch, the map shows only the 3x3 window around the party (Chebyshev
+// distance <= 1) — a pure RENDER filter, never a mutation of `cell.seen`/
+// `cell.spellSeen`. The waiver set is the SAME one revealRadius (Night
+// Vision) and engine/movement.js's darkFor-dispel check (`eff(c, "light") >
+// 0`) already use, plus a lit torch (`itemEffectActive(c, "lit")`) — "a
+// light effect" means one thing everywhere in this codebase.
+export const DARK_VIEW_RADIUS = 1;
+
+/**
+ * mapViewRadius(state) — TERR-03: `Infinity` (show every already-`seen`
+ * cell) unless the player is currently in the dark (`inDark(state)`) and
+ * carries none of the three waivers above (Night Vision, a live Amulet of
+ * Light, or a lit torch), in which case `DARK_VIEW_RADIUS` (1) — a 3x3
+ * window. The shell (`draw()`) re-reads this fresh on EVERY paint — never a
+ * stored flag (research Pitfall 4) — so leaving the dark square restores
+ * the full explored view for free: nothing was ever taken away from
+ * `seen`, only hidden at render time. Map the Floor's `spellSeen` window
+ * keeps counting under this filter — it is orthogonal, the filter only
+ * HIDES, it never pauses the reveal-window's own squares-cadence countdown
+ * (CONTEXT routine decision). Pure, zero rng, mutates nothing.
+ */
+export function mapViewRadius(state) {
+  if (!inDark(state)) return Infinity;
+  const c = state.c;
+  if (skill(c, "Night Vision")) return Infinity;
+  if (eff(c, "light") > 0) return Infinity;
+  if (itemEffectActive(c, "lit")) return Infinity;
+  return DARK_VIEW_RADIUS;
+}
+
+/**
+ * inViewWindow(state, x, y) — TERR-03: `true` for every cell when
+ * `mapViewRadius(state)` is `Infinity`; when it is `DARK_VIEW_RADIUS` (1),
+ * `true` only for the 3x3 cells around the party (Chebyshev distance <= 1
+ * from `state.floor.px/py`), `false` for every other cell — including a
+ * cell already `seen` (the window hides previously-explored cells too, it
+ * does not merely gate NEW reveals). Pure, zero rng, mutates nothing.
+ */
+export function inViewWindow(state, x, y) {
+  const r = mapViewRadius(state);
+  if (!Number.isFinite(r)) return true;
+  const f = state.floor;
+  return Math.abs(x - f.px) <= r && Math.abs(y - f.py) <= r;
+}
+
 /**
  * classNeed(c) — the class/race/sub part of the player's to-hit need, with NO
  * weapon, combat, or darkness term. Byte-identical arithmetic to toHit(state)'s

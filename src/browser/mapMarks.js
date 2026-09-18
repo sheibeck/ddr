@@ -37,6 +37,14 @@ export const MAP_PALETTE = Object.freeze({
   // reveal window expires (draw()'s own sweep never runs early; the cell
   // simply reads P.floor again once `seen` reverts to false).
   floorSpell: "#4e5a6a",
+  // Phase 41 (TERR-01), Plan 04: a water cell (cell.water) — `water` for a
+  // lit pool, `waterDark` for a pool on a `.dark` tile (the Phase 40
+  // spellSeen tint still takes priority over either — see draw()'s water
+  // override line). Distinct from floor/floorDark/floorSpell so a pool
+  // reads as water at a glance, never mistaken for ordinary or borrowed-
+  // sight floor.
+  water: "#2f5f7a",
+  waterDark: "#1f3a4a",
   border: "#443a26",
   party: "#f4dc94",
   partyGlow: "rgba(232,201,122,.55)",
