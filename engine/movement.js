@@ -25,7 +25,7 @@
 // move()/teleport() call them) is safe — see engine/encounters.js's header
 // comment for why.
 
-import { GW, GH, genFloor, reveal } from "./maze.js";
+import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor, hasTool } from "./derived.js";
 import { rollDice } from "./dice.js";
@@ -385,7 +385,20 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // square's 2 here so squares-cadence timers stay consistent with the step
   // counter. Phase 39 (GEAR-02): the returned transition list is now mapped
   // to events (itemEffectFaded/itemCooled/staffRecharged) below.
-  if (c.timers) narrateTimerTransitions(state, tickSquares(c, 1), events);
+  if (c.timers) {
+    const trans = tickSquares(c, 1);
+    narrateTimerTransitions(state, trans, events);
+    // Phase 40 (SPELL-05, Plan 04): the ONE sweep that re-fogs whatever Map
+    // the Floor's window never graduated (research Pitfall 4) — reacts to
+    // the transition itself, never a per-step poll of the record. This
+    // step's own reveal() call above has already graduated THIS step's
+    // cells before this runs, so a cell just walked onto never re-fogs even
+    // on the exact step the window closes.
+    if (trans.some((t) => t.id === "spell:reveal" && t.from === "effect")) {
+      const cells = refogSpellSeen(f);
+      events.push({ type: "revealFaded", cells });
+    }
+  }
 
   // the book recharges a Magic User every hundred squares; a solo caster
   // needs it oftener.
@@ -809,6 +822,12 @@ export function descend(state, rng, events = []) {
   state.c.sp += bonus;
   events.push({ type: "spGained", amount: bonus, reason: "descend" });
   checkLevel(state, rng, events);
+  // Phase 40 (SPELL-05, Plan 04): the mapped floor is behind you — a live
+  // spell:reveal record has no meaning for a floor that no longer exists.
+  // Deleted silently (no revealFaded, no sweep — the whole floor object is
+  // about to be replaced below, so there is nothing left to re-fog); the
+  // chip simply disappears with the floor, by design.
+  if (state.c.timers && state.c.timers["spell:reveal"]) delete state.c.timers["spell:reveal"];
   state.floor = genFloor(state.floor.depth + 1, rng);
   // Phase 39 (GEAR-05): a descent resolves any pending hazard decision too
   // (a new floor has no meaning for a decision tied to the old one's tile).

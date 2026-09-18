@@ -287,15 +287,18 @@ test("castSpell: Earthquake (combat-only) cast with combat: null is refused comb
 // the Grimoire UI (src/browser/viewModels.js#grimoireViewModel) also keeps
 // a combatOnly spell's Cast button disabled outside an encounter.
 
-// Phase 40 (SPELL-05): renamed Detect Magic -> Map the Floor; the event type
-// (`detectMagic`) and mechanic assertions stay as they are — Plan 04 rewrites
-// the mechanic to a timed, re-fogging reveal.
+// Phase 40 (SPELL-05, Plan 04): Map the Floor is now a TIME-BOXED,
+// re-fogging reveal — see test/unit/map-reveal.test.js for the full
+// provenance/timer/sweep/recast/descend/teleport/conditionsOf/tolerant-load
+// coverage. This test stays as the minimal "the kind still works with no
+// active encounter" smoke check.
 test("castSpell: Map the Floor (non-combat) works with no active encounter", () => {
   const state = fixedState({ c: { grimoire: ["Map the Floor"] }, combat: null });
   state.floor.g[2][2].wall = true; // one wall cell, left alone by reveal
   const events = castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
-  assert.ok(events.some((e) => e.type === "detectMagic"));
+  assert.ok(events.some((e) => e.type === "floorMapped" && e.squares === 40));
   assert.equal(state.floor.g[0][0].seen, true, "every non-wall cell is revealed");
+  assert.equal(state.floor.g[0][0].spellSeen, true, "a newly-revealed cell carries the provenance flag");
   assert.equal(state.floor.g[2][2].seen, false, "wall cells are left alone");
 });
 

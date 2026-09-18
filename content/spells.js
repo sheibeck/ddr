@@ -85,7 +85,11 @@ export const SPELLS = [
   { n: "Strength", lvl: 1, s: "offense", kind: "might", dmg: { n: 1, sides: 10, bonus: 0 }, niche: "buff", txt: "buff · you · +d10 damage till tomorrow", combatOnly: false },
   { n: "Doze", lvl: 1, s: "offense", kind: "status", niche: "control", txt: "control · one foe · asleep d4 rounds", combatOnly: true },
   { n: "Freeze", lvl: 1, s: "offense", kind: "thrown", dmg: { n: 1, sides: 6, bonus: 0 }, onHit: "freeze", niche: "burst", txt: "burst · one foe · d6, and frozen solid on a hit", combatOnly: true },
-  { n: "Map the Floor", lvl: 1, s: "divination", kind: "reveal", niche: "sight", txt: "sight · the whole floor · mapped for 40 squares, then the map forgets what it was told", combatOnly: false },
+  // Phase 40 (SPELL-05, Plan 04): `squares` is the reveal window the engine
+  // reads (engine/magic.js's reveal branch -> a c.timers["spell:reveal"]
+  // record) — the once-a-day rule caps it at <=100; the txt above already
+  // states the same number in voice.
+  { n: "Map the Floor", lvl: 1, s: "divination", kind: "reveal", squares: 40, niche: "sight", txt: "sight · the whole floor · mapped for 40 squares, then the map forgets what it was told", combatOnly: false },
   { n: "Mirror Self", lvl: 1, s: "illusion", kind: "mirror", niche: "defensive", txt: "defensive · you · foes need a 1 to hit, d6 rounds", combatOnly: false },
   { n: "Stun", lvl: 1, s: "offense", kind: "stun", niche: "control", txt: "control · up to d6 foes · asleep d4 rounds", combatOnly: true },
   { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · they hit on a 3 and do half, d4+1 rounds", combatOnly: true },

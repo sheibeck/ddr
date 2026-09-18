@@ -361,9 +361,26 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     c.senses = 1;
     events.push({ type: "sensesGained" });
   } else if (sp.kind === "reveal") {
+    // Phase 40 (SPELL-05, Plan 04): Map the Floor is a TIME-BOXED reveal,
+    // not the old permanent whole-floor sweep. Every not-yet-seen non-wall
+    // cell is marked BOTH seen and spellSeen (the provenance flag) — a cell
+    // already seen (walked earlier, or already spell-marked from an earlier
+    // cast this window) is left alone, so a recast never double-marks and
+    // the reported `cells` count is only the NEWLY-marked cells. startEffect
+    // OVERWRITES any existing `spell:reveal` record, so a recast mid-window
+    // simply refreshes the timer back to sp.squares. Zero rng draws.
     const f = state.floor;
-    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (!f.g[y][x].wall) f.g[y][x].seen = true;
-    events.push({ type: "detectMagic" });
+    let cells = 0;
+    for (let y = 0; y < GH; y++)
+      for (let x = 0; x < GW; x++) {
+        const cell = f.g[y][x];
+        if (cell.wall || cell.seen) continue;
+        cell.seen = true;
+        cell.spellSeen = true;
+        cells++;
+      }
+    startEffect(c, "spell:reveal", { squares: sp.squares });
+    events.push({ type: "floorMapped", squares: sp.squares, cells });
   } else if (sp.kind === "foresee") {
     c.foresight = true;
     const type = rng.pick(ENC_TYPES);

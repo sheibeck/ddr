@@ -154,6 +154,19 @@ test("SPELLS: exactly the three deliberate data flags (onHit on Freeze, aoe on L
   }
 });
 
+// Phase 40 (SPELL-05), Plan 04: Map the Floor's reveal window. The txt
+// already states "40 squares" in voice; this pins the data field the engine
+// actually reads (engine/magic.js's reveal branch -> startEffect's
+// `squares` option), and that no other row carries it.
+test("SPELLS[5] (Map the Floor): squares === 40, and no other row carries a squares field", () => {
+  assert.equal(SPELLS[5].n, "Map the Floor");
+  assert.equal(SPELLS[5].squares, 40);
+  for (const sp of SPELLS) {
+    if (sp.n === "Map the Floor") continue;
+    assert.equal(sp.squares, undefined, `${sp.n} must not carry squares`);
+  }
+});
+
 test("SPELLS: every row carries a niche key present in NICHE_LABELS, and txt starts with the niche's label", () => {
   for (const sp of SPELLS) {
     assert.equal(typeof sp.niche, "string", `${sp.n}: niche must be a string`);

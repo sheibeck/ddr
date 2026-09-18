@@ -69,8 +69,9 @@ test("conditionsOf: ward surfaces {pool, remaining, name} after might, before fl
 });
 
 // --- Phase 40 (SPELL-02): mirror/senses/regen/foresight, after ward, before flight ---
+// --- Phase 40 (SPELL-05), Plan 04: reveal, after foresight, before flight ---
 
-test("conditionsOf: mirror/senses/regen/foresight surface in fixed order after ward, before flight", () => {
+test("conditionsOf: mirror/senses/regen/foresight/reveal surface in fixed order after ward, before flight", () => {
   const conds = conditionsOf({
     c: cleanChar({
       ward: { pool: 34, rounds: 3, name: "Shield" },
@@ -78,18 +79,26 @@ test("conditionsOf: mirror/senses/regen/foresight surface in fixed order after w
       senses: 1,
       regen: true,
       foresight: true,
+      timers: { "spell:reveal": { cadence: "squares", left: 17, phase: "effect" } },
       items: [{ n: "Bracelet of Flight" }],
     }),
   });
-  assert.deepStrictEqual(keys(conds), ["ward", "mirror", "senses", "regen", "foresight", "flight"]);
+  assert.deepStrictEqual(keys(conds), ["ward", "mirror", "senses", "regen", "foresight", "reveal", "flight"]);
   assert.deepStrictEqual(byKey(conds, "mirror"), { key: "mirror", polarity: "good", remaining: 4 });
   assert.deepStrictEqual(byKey(conds, "senses"), { key: "senses", polarity: "good" });
   assert.deepStrictEqual(byKey(conds, "regen"), { key: "regen", polarity: "good" });
   assert.deepStrictEqual(byKey(conds, "foresight"), { key: "foresight", polarity: "good" });
+  assert.deepStrictEqual(byKey(conds, "reveal"), { key: "reveal", polarity: "good", remaining: 17, cadence: "squares" });
 });
 
 test("conditionsOf: mirror/senses/regen/foresight are absent at 0/false/undefined", () => {
   assert.deepEqual(conditionsOf({ c: cleanChar({ mirror: 0, senses: 0, regen: false, foresight: false }) }), []);
+});
+
+test("conditionsOf: reveal is absent with no spell:reveal record, a cooldown-phase record, or left <= 0", () => {
+  assert.deepEqual(conditionsOf({ c: cleanChar() }), []);
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "spell:reveal": { cadence: "squares", left: 5, phase: "cooldown" } } }) }), []);
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "spell:reveal": { cadence: "squares", left: 0, phase: "effect" } } }) }), []);
 });
 
 test("conditionsOf: ward with pool 0 (about to be nulled) is absent", () => {
@@ -110,7 +119,7 @@ test("conditionsOf: ward + might + flight order in a fully-loaded character", ()
   assert.deepStrictEqual(keys(conds), ["might", "ward", "flight"]);
 });
 
-test("conditionsOf: ward + might + mirror/senses/regen/foresight + flight order in a fully-loaded character", () => {
+test("conditionsOf: ward + might + mirror/senses/regen/foresight/reveal + flight order in a fully-loaded character", () => {
   const c = cleanChar({
     might: 8,
     ward: { pool: 50, rounds: 5, name: "Shield" },
@@ -118,10 +127,11 @@ test("conditionsOf: ward + might + mirror/senses/regen/foresight + flight order 
     senses: 1,
     regen: true,
     foresight: true,
+    timers: { "spell:reveal": { cadence: "squares", left: 9, phase: "effect" } },
     items: [{ n: "Bracelet of Flight" }],
   });
   const conds = conditionsOf({ c });
-  assert.deepStrictEqual(keys(conds), ["might", "ward", "mirror", "senses", "regen", "foresight", "flight"]);
+  assert.deepStrictEqual(keys(conds), ["might", "ward", "mirror", "senses", "regen", "foresight", "reveal", "flight"]);
 });
 
 test("conditionsOf: BAD affliction names its kind", () => {
@@ -171,6 +181,7 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
       "item:Invisible": rec("squares", 100),
       "item:Acuteness": rec("rounds", 5),
       "item:Cloak of Ether": rec("squares", 20, 80),
+      "spell:reveal": rec("squares", 22),
     },
     might: 8,
     mirror: 3,
@@ -183,8 +194,9 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
   });
   const conds = conditionsOf({ c });
   assert.deepEqual(keys(conds), [
-    "haste", "invis", "acute", "ether", "might", "mirror", "senses", "regen", "foresight", "flight", "affliction", "darkness",
+    "haste", "invis", "acute", "ether", "might", "mirror", "senses", "regen", "foresight", "reveal", "flight", "affliction", "darkness",
   ]);
+  assert.equal(byKey(conds, "reveal").remaining, 22);
   // Good conditions all precede bad ones.
   const firstBad = conds.findIndex((x) => x.polarity === "bad");
   assert.ok(conds.slice(0, firstBad).every((x) => x.polarity === "good"));

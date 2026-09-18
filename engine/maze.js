@@ -200,9 +200,46 @@ export function genFloor(depth, rng) {
  * now computes and passes the true radius via engine/derived.js's
  * revealRadius(state) (HI-01), matching the prototype's dark/Night
  * Vision/sight behavior exactly.
+ *
+ * Phase 40 (SPELL-05, Plan 04) graduation: a cell this reveal actually
+ * touches loses its `spellSeen` provenance flag (engine/magic.js's reveal
+ * branch), the ratified Key Decision that ONLY what Map the Floor alone
+ * showed re-fogs at the window's expiry — normal exploration during the
+ * window "earns" the cell permanently. `delete cell.spellSeen` is a no-op on
+ * every cell that never carried the flag, so every fixture floor (none ever
+ * casts the reveal spell) stays byte-identical.
  */
 export function reveal(floor, radius = 2) {
   const { g, px, py } = floor;
   for (let y = py - radius; y <= py + radius; y++)
-    for (let x = px - radius; x <= px + radius; x++) if (g[y] && g[y][x]) g[y][x].seen = true;
+    for (let x = px - radius; x <= px + radius; x++) {
+      const cell = g[y] && g[y][x];
+      if (!cell) continue;
+      cell.seen = true;
+      if (cell.spellSeen) delete cell.spellSeen;
+    }
+}
+
+/**
+ * refogSpellSeen(floor) — Phase 40 (SPELL-05, Plan 04): the ONE sweep that
+ * runs when Map the Floor's `spell:reveal` timer expires (research Pitfall
+ * 4 — never a per-step poll). Walks every cell still carrying the
+ * `spellSeen` provenance flag (i.e. never graduated by an actual `reveal()`
+ * touch during the window) and re-fogs it: `seen = false`, flag removed.
+ * Every OTHER cell (walked, or never revealed at all) is untouched. Pure
+ * mutation of the passed floor's grid; no RNG. Returns the count of cells
+ * re-fogged (for the caller's `revealFaded { cells }` narration).
+ */
+export function refogSpellSeen(floor) {
+  let count = 0;
+  for (const row of floor.g) {
+    for (const cell of row) {
+      if (cell.spellSeen) {
+        cell.seen = false;
+        delete cell.spellSeen;
+        count++;
+      }
+    }
+  }
+  return count;
 }

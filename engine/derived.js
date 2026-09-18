@@ -441,8 +441,8 @@ export function isFlying(state) {
  *
  * Returns an array of descriptors in a STABLE order — live item effects
  * (insertion order), the spell-`c.might` chip, ward, mirror, senses, regen,
- * foresight, flight, item cooldowns, staff charges, THEN the bad block —
- * each `{ key, polarity, ... }`:
+ * foresight, reveal, flight, item cooldowns, staff charges, THEN the bad
+ * block — each `{ key, polarity, ... }`:
  *   - haste/invis/acute/ether/might (Phase 39, GEAR-02, one chip per LIVE
  *     `c.timers` item effect, via liveItemEffects): {polarity:"good",
  *     remaining:<left>, cadence:"squares"|"rounds", source:<item display
@@ -453,6 +453,7 @@ export function isFlying(state) {
  *   - senses {polarity:"good"}                             — Phase 40 (SPELL-02): Sense Presence — a flat 0/1 flag (no count), lasts until endCombat clears it; also waives every forced foe-first initiative rule (see combat.js#rollInitiative)
  *   - regen  {polarity:"good"}                              — Phase 40 (SPELL-02): Regeneration — a flat boolean (no count, the d8/round tick has no duration field), cleared at endCombat
  *   - foresight {polarity:"good"}                           — Phase 40 (SPELL-02): an ARMED Sense Danger, waiting for the next fight (consumed by rollInitiative, which always sets it back to false)
+ *   - reveal {polarity:"good", remaining:<sq left>, cadence:"squares"}     — Phase 40 (SPELL-05): Map the Floor's window — the `spell:reveal` c.timers record, while its phase is "effect"
  *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
  *   - itemCooldown (Phase 39, GEAR-02, one per COOLING duration+cooldown item): {polarity:"good", item:<display name>, remaining:<sq left>}
  *   - staffCharges (Phase 39, GEAR-02, one per RECHARGING staff): {polarity:"good", item:<display name>, charges:<current>, max:<pool>, remaining:<sq left>}
@@ -507,6 +508,16 @@ export function conditionsOf(state) {
   if (c.senses) out.push({ key: "senses", polarity: "good" });
   if (c.regen) out.push({ key: "regen", polarity: "good" });
   if (c.foresight) out.push({ key: "foresight", polarity: "good" });
+
+  // Phase 40 (SPELL-05, Plan 04): Map the Floor's reveal window — a squares-
+  // cadence c.timers record read the same way the item-effect chips above
+  // read theirs; ONLY while the window is open (phase "effect", left > 0).
+  // No rng, no mutation, no new c.* field (the record already lives on
+  // c.timers via engine/effects.js#startEffect).
+  const rev = c.timers && c.timers["spell:reveal"];
+  if (rev && rev.phase === "effect" && rev.left > 0) {
+    out.push({ key: "reveal", polarity: "good", remaining: rev.left, cadence: "squares" });
+  }
 
   // Flight mirrors isFlying's item logic: the Bracelet is unconditional; the
   // Cloak of Flying is a real effect/cooldown resource (Phase 39, GEAR-02:
