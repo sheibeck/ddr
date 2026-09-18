@@ -19,6 +19,7 @@ import { makeRng } from "./rng.js";
 import { move, makeCamp } from "./movement.js";
 import { fight, playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
+import { useAbility } from "./abilities.js";
 import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
 import { buyFrom, leaveStore, sellItem } from "./economy.js";
 import { resolveJoiner, dismissJoiner } from "./encounters.js";
@@ -76,6 +77,10 @@ export function applyAction(state, action) {
       break;
     case "castSpell":
       castSpell(next, action.idx, rng, events);
+      break;
+    case "useAbility":
+      // Phase 38 (ABIL-01/04): the ABILITIES submenu's action.
+      useAbility(next, action.key, rng, events);
       break;
     case "drinkPotion":
       drinkPotion(next, rng, events);

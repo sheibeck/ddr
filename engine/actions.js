@@ -58,6 +58,11 @@ export const ACTION_TYPES = new Set([
   "leaveLoot",
   "takeAllLoot",
   "leaveAllLoot",
+  // Phase 38 (ABIL-01/04): the ABILITIES submenu's action — carries a
+  // catalog id `key`. On cooldown/unowned/out-of-combat, useAbility itself
+  // yields a named abilityRefused event rather than being rejected here —
+  // this validator only guards the wire shape (a non-empty string).
+  "useAbility",
 ]);
 
 const DIRS = new Set(["N", "S", "E", "W"]);
@@ -171,6 +176,14 @@ export function validateAction(action) {
     case "takeAllLoot":
     case "leaveAllLoot":
       // Phase 29 (LOOT-02): no payload fields — same shape as takeFind/leaveFind.
+      break;
+    case "useAbility":
+      // Phase 38 (ABIL-01/04): the ONE wire-shape guard — everything else
+      // (unowned/on-cooldown/out-of-combat/etc.) is a named engine refusal,
+      // not a validation failure.
+      if (typeof action.key !== "string" || action.key.length === 0) {
+        return { ok: false, reason: "useAbility.key must be a non-empty string" };
+      }
       break;
     default:
       break;
