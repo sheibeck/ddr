@@ -467,6 +467,94 @@ prefix in BOTH tables — absent (byte-identical) for a hero-cast use.
 `allyStruck`/`allyMissed` gain an optional trailing clause naming the
 ability (its canon catalog name) behind a member's strike-kind ability use.
 
+## UI (Plan 05)
+
+### Submenu rows
+
+`src/browser/combatMenu.js#abilityRows(c)` — one row per `c.abilities`
+catalog id, in `c.abilities` order: `{ id: "ability-<key>", label:
+<NAME UPPERCASE>, cost, desc: <catalog txt>, enabled: true, dispatch: {
+type: "useAbility", key } }`. Every row is `enabled: true` — a deliberate
+departure from the SPELLS rows' castable-gated `enabled`: a row on cooldown
+stays tappable, and the engine's own `abilityRefused { reason: "cooldown" }`
+lands the canon refusal line ("<Name>: N round(s). Your arm has opinions.")
+in the fight log instead of a disabled/greyed row.
+
+Cost vocabulary: `READY` when `isReady(c, "ability:"+key)`; `"ONCE A FIGHT ·
+USED"` for a `cd: "fight"` ability that is not ready (regardless of its
+remaining phase); otherwise `"N ROUNDS"` (`"1 ROUND"` at exactly 1),
+`abilityRoundsLeft(c, key)`. This branch replaces the disabled `NOTHING UP
+YOUR SLEEVE` fallback for any Fighter/Thief with a non-empty `c.abilities` —
+an empty/absent `c.abilities` keeps today's fallback unchanged.
+
+The grid's slot-2 sub-line reads `"{ready}/{n} READY"` — `ready` counts rows
+whose cost is `READY`, `n` is the row count.
+
+**The Bard ruling:** Sing stays the FIRST row of the ABILITIES submenu
+(CONTEXT: "Bard's Sing — keep it"); because a Bard is a Fighter it also
+rolls abilities, so `[sing row, ...abilityRows(c)]` — nothing a Bard rolled
+is unreachable, and the sing row/sub-line are byte-identical to before this
+plan.
+
+### Hero tab
+
+A new `#s-abilities` list sits directly beside `#s-skills` ("Special
+skills"), rendered by `mazeworld.html`'s paint-local `renderAbilityRows(c)`
+via the `window.__mzAbilities` bridge (`byId`, `roundsLeft`, `isReady`,
+`sheet: characterSheetViewModel`) — createElement/textContent only, no
+innerHTML in the region (T-38-11). One row per `characterSheetViewModel(state)
+.abilities` entry: `<b>{name}</b>`, a provenance `<small>` tag (`"special
+skill · active"` for a `source: "table"` entry, `"trick"` for `"pool"`), the
+catalog `<i>{description}</i>`, and a `<span>{state}</span>` suffix. A Magic
+User's list shows the single none row `"Spells are the trick."`.
+`src/browser/viewModels.js#characterSheetViewModel(...).abilities` is
+`{ id, name, description, source, state }[]` — `source` is the catalog's
+own literal `"table"` | `"pool"` (the tag-text mapping is the shell's job,
+never re-derived twice). `state`: in combat, `"READY"` / `"{n} rounds"` /
+`"once a fight · used"` (mirrors the submenu's own rule); out of combat, the
+ability's OWN declared cooldown length — `"cd {n} rounds"` / `"once a
+fight"` — never a live timer read, since `c.timers` is combat-scoped and
+cleared every fight anyway. `#s-skills` above is untouched — passives-only,
+byte-identical.
+
+### First paint
+
+A fresh run's guaranteed level-1 pool pick (SC-3) is narrated exactly once:
+`commitRolledState(state)` (the roll-screen commit) and
+`window.mzDevStartAtDepth` (the dev start-at-depth path) both call
+`surfaceAbilityPool(state)` as their tail step, which reads
+`src/browser/rail.js#abilityPoolCard(state.c)` — the FIRST `source: "pool"`
+id in `c.abilities` (chargen's own roll order) — and, when non-null, pushes
+it via `window.mzRailLine?.(card.title, card.line, card.tone, card.hold,
+card.icon)` and logs the same line to the Oracle. `RAIL_COPY.abilityPool =
+{ title: "UP YOUR SLEEVE", line: "New trick: {name} — {txt}" }`. `null` for
+a Magic User (no pool pick) — nothing is pushed.
+
+### Level-up folding and the fight report
+
+A level-up's `abilityLearned` event already folds into the same SKILL LEVEL
+N rail card as `leveled` (Plan 01: `RAIL_FAMILY.abilityLearned` is
+identical to `RAIL_FAMILY.leveled`). The end-of-fight victory report
+(`window.mzCombatReport`) gains a `"New trick: {name}."` line per
+`d.learned` entry, right after the "Now skill level N." line;
+`noteCombat`'s report `data` carries `learned: events.filter((e) => e.type
+=== "abilityLearned").map((e) => e.name)`.
+
+## Requirements map
+
+| Requirement | Landed in | Proof |
+|---|---|---|
+| ABIL-01 | Plan 03 (`useAbility`, the refusal ladder, all 20 resolutions) + Plan 05 (the submenu row that dispatches it, so it is actually "shown and used from the ABILITIES submenu") | `test/unit/abilities.test.js`; `test/unit/combatMenu.test.js` (ABILITIES-branch section); `test/unit/shell-abilities.test.js` |
+| ABIL-02 | Plan 01 (table reshape, catalog) + Plan 02 (retired-passive deletion, the strike descriptor, the need-shift actives) | `test/unit/abilities-catalog.test.js`; `test/unit/ability-strike.test.js`; `test/unit/identity-contract.test.js` (SC-4) |
+| ABIL-03 | Plan 01 (the level pool: level-1 guarantee, per-level-up roll, Joiner roll, all from a derived rng stream, narrated) | `test/unit/ability-pool.test.js`; `test/unit/chargen-rng-pin.test.js` (rngState unchanged) |
+| ABIL-04 | Plan 03 (the named refusal register) + Plan 05 (the submenu's READY/N ROUNDS/ONCE A FIGHT · USED legibility, the Hero-tab list's mirrored state text) | `test/unit/abilities.test.js` (refusal ladder); `test/unit/combatMenu.test.js` + `test/unit/characterSheetViewModel.test.js` (ABILITIES-branch/abilities[] sections) |
+| ABIL-05 | Plan 04 (the Joiner class-driven use policy, all 20 member resolutions) | `test/unit/party-abilities.test.js` |
+| SC-1: a Fighter/Thief opens the ABILITIES submenu mid-combat and sees at least one usable ability with a clear "ready" / "N rounds" state | Plan 05 | `test/unit/combatMenu.test.js` ("Fighter with c.abilities = ['kata', 'brace']..." section) |
+| SC-2: using an ability on cooldown produces a named refusal in the fight log, never a silent no-op | Plan 03 | `test/unit/abilities.test.js` (refusal ladder section) |
+| SC-3: a fresh level-1 Fighter/Thief already has a rolled ability; each skill-level gain can add another, narrated when it happens | Plan 01 (the level-1 guarantee + per-level-up roll) + Plan 05 (the first-paint rail card narrating the level-1 pick; the level-up "New trick" line already folded into the SKILL LEVEL N card) | `test/unit/ability-pool.test.js`; `test/unit/rail.test.js` (abilityPoolCard section) |
+| SC-4: every sub-class that had one good/one bad still has both after any passive-to-active conversion | Plan 02 (the Guard→Sidestep stacking proof; the identity-contract SC-4 guard, updated in the same phase) | `test/unit/identity-contract.test.js` |
+| SC-5: a melee-class Joiner in the party uses its own abilities by the same class-driven policy Joiners already fight with | Plan 04 | `test/unit/party-abilities.test.js` (policy matrix) |
+
 ## Out of scope / next
 
 - The combat submenu, Hero-tab ability list, and first-paint pool card
