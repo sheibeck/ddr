@@ -20,6 +20,9 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import { newRun } from "../../engine/state.js";
 import {
@@ -52,6 +55,7 @@ import { priceFor, sellPriceFor } from "../../engine/economy.js";
 import { newDay, makeCamp, cutthroatMurderCheck } from "../../engine/movement.js";
 import { castSpell, canRead } from "../../engine/magic.js";
 import { makeRng } from "../../engine/rng.js";
+import { startEffect } from "../../engine/effects.js";
 import { CLASSES, RACES, ARMORS, ENC_TYPES, WEAPON_MAX, SPELLS, STRIKE_DICE } from "../../content/index.js";
 
 /* ============================================================
@@ -476,8 +480,8 @@ const CONTRACT = [
         const guard = hero("Guard");
         const control = hero("Soldier");
         assert.equal(foeToHitVs(guard) + 1, foeToHitVs(control));
-        guard.c.skills = { Agility: 1 };
-        assert.equal(foeToHitVs(guard), foeToHitVs(control) - 2, "Agility stacks with the Guard -1");
+        startEffect(guard.c, "ability:sidestep", { rounds: 2, cd: 4 });
+        assert.equal(foeToHitVs(guard), foeToHitVs(control) - 3, "Sidestep's active -2 stacks with the Guard -1");
       },
     },
     bad: {
@@ -611,7 +615,6 @@ const CONTRACT = [
       name: "cannot parley, ever; no clean round-1 tracked withdrawal",
       run() {
         const state = hero("Master of Arms");
-        state.c.skills = { Language: 1 };
         for (const type of ENC_TYPES) {
           withCombat(state, [fixedFoe({ type })], { type });
           assert.equal(canParley(state), false, `Master of Arms vs ${type}`);
@@ -871,7 +874,6 @@ const CONTRACT = [
       name: "you never speak — canParley is false unconditionally",
       run() {
         const state = hero("Ninja");
-        state.c.skills = { Language: 1 };
         for (const type of ENC_TYPES) {
           withCombat(state, [fixedFoe({ type })], { type });
           assert.equal(canParley(state), false, `Ninja vs ${type}`);
@@ -1218,6 +1220,58 @@ test("IDENT-08: the contract table is complete and canonically ordered", () => {
 
   const keys = CONTRACT.map((e) => e.key);
   assert.equal(new Set(keys).size, keys.length, "no duplicate keys");
+});
+
+// Phase 38 (ABIL-02, SC-4): the Special Skills reshape retired/converted
+// eight skill keys — see RESHAPED_SKILLS below for the exact list (four
+// dropped outright, four converted to actives) — none of them is a
+// Fighter/Thief sub's identity mechanic (identity is `c.sub` rules, entirely
+// separate from the Special Skills table), so this regression guard proves
+// every Fighter/Thief sub row STILL carries a non-empty good AND bad whose
+// source never references a reshaped key, and that docs/CLASS-PASS.md's own
+// good/bad table names none of them either.
+const RESHAPED_SKILLS = ["Agility", "Death-touch", "Kata", "Silence", "Language", "Tracking", "Climbing", "Leaping"];
+
+test("Phase 38 (ABIL-02, SC-4): every Fighter/Thief sub still has a non-empty good AND bad that depend on no reshaped skill", () => {
+  const meleeSubs = new Set([...CLASSES.Fighter.subs, ...CLASSES.Thief.subs]);
+  const meleeRows = CONTRACT.filter((e) => e.kind === "sub" && meleeSubs.has(e.key));
+  assert.equal(meleeRows.length, CLASSES.Fighter.subs.length + CLASSES.Thief.subs.length, "one CONTRACT row per Fighter/Thief sub");
+
+  for (const entry of meleeRows) {
+    for (const half of ["good", "bad"]) {
+      const descriptor = entry[half];
+      assert.ok(descriptor && typeof descriptor.name === "string" && descriptor.name.length > 0, `${entry.key} ${half} has a name`);
+      const src = descriptor.run.toString();
+      for (const skillName of RESHAPED_SKILLS) {
+        assert.equal(src.includes(`"${skillName}"`), false, `${entry.key} ${half}.run references the reshaped skill "${skillName}"`);
+        assert.equal(src.includes(`${skillName}:`), false, `${entry.key} ${half}.run references the reshaped skill key ${skillName}:`);
+      }
+      // Re-run: must still not throw (the run already executed once above
+      // when the outer `for (const entry of CONTRACT)` block registered it
+      // as its own node:test case — this is an independent second call).
+      assert.doesNotThrow(() => descriptor.run(), `${entry.key} ${half}.run() must not throw`);
+    }
+  }
+});
+
+test("Phase 38 (ABIL-02, SC-4): docs/CLASS-PASS.md's good/bad table names none of the reshaped skills", () => {
+  const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+  const REPO_ROOT = path.resolve(__dirname, "..", "..");
+  const doc = fs.readFileSync(path.join(REPO_ROOT, "docs", "CLASS-PASS.md"), "utf8");
+  const lines = doc.split("\n");
+  const startIdx = lines.findIndex((l) => l.includes("### Good / bad table"));
+  assert.ok(startIdx >= 0, "docs/CLASS-PASS.md must have a '### Good / bad table' heading");
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    if (/^#{2,3} /.test(lines[i])) {
+      endIdx = i;
+      break;
+    }
+  }
+  const slice = lines.slice(startIdx, endIdx).join("\n");
+  for (const skillName of RESHAPED_SKILLS) {
+    assert.equal(slice.includes(skillName), false, `docs/CLASS-PASS.md's good/bad table mentions the reshaped skill "${skillName}"`);
+  }
 });
 
 // --- Negative cases (probe IDENT-05/IDENT-07 empty) -------------------

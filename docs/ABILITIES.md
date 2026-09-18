@@ -155,13 +155,101 @@ chargen field, `c.vp`, and every seed's `rngState` stay byte-identical. See
 measured before/after table (reproduced from the same live measurement
 against `loadPrototypeSandbox`/`newRun`).
 
+## Retired passives (Plan 02)
+
+Plan 01 reshaped the tables and split table actives into `c.abilities`;
+Plan 02 deletes every OLD passive read the reshape retired and installs the
+hooks the actives (Plan 03) will drive. Seven read sites gone, zero
+replacement, plus two converted passives now resolve through a descriptor:
+
+| Skill | Old read site (file#function) | Disposition |
+|-------|-------------------------------|-------------|
+| Agility | `engine/derived.js#foeToHitVs`/`#foeToHitBreakdown` | Dropped; replaced by Sidestep's `abilityEffectActive` term |
+| Silence (in-dark) | `engine/derived.js#foeToHitVs`/`#foeToHitBreakdown` | Dropped; replaced by Smoke's `abilityEffectActive` term |
+| Silence (opening strike) | `engine/combat.js#playerStrike` | Dropped outright — the plain Thief backstab fallback already crits an opening strike with neither Silence nor Stealth, so removing this branch changes only the emitted event (`silenceStrike` → `backstab`), never `crit`/`dmg` |
+| Death-touch | `engine/combat.js#playerStrike` | Dropped; replaced by Death Touch's `finishUnder`/`forceCrit` descriptor fields |
+| Kata (Fighter, `toHit`) | `engine/derived.js#toHit` | Dropped outright — Kata's auto-hit is now descriptor-driven (`autoHit`), never a standing to-hit bonus |
+| Kata (Fighter, `weaponDamage`) | `engine/derived.js#weaponDamage` | Dropped outright — Kata's `+level` damage is now `bonusDmg`, resolved per-strike |
+| Kata (member, `memberToHit`) | `engine/derived.js#memberToHit` | Dropped outright — no member equivalent of the descriptor exists yet (Plan 04) |
+| Tracking | `engine/combat.js#startCombat` | Dropped outright — `let tracked = false;` and every downstream `tracked` reader (`C.tracked`, the `trackable` event, flee's round-1 clean withdrawal) survive as dormant machinery; nothing sets it true until a future source does |
+| Climbing (fall-damage halving) | `engine/movement.js` (climb branch AND the leap/gorge branch — a pre-existing prototype quirk where the leap branch also checked "Climbing") | Dropped outright, both branches |
+| Climbing/Leaping (roll bonus) | `engine/movement.js` (`climbBonus`/`leapBonus`) | Dropped outright — no replacement; Phase 39's rope/ladder tools are the hazard answer |
+| Agility/Leaping (trap dodge) | `engine/encounters.js#springTrap` | Dropped outright — only the Acrobat sub bonus (`+3`) remains in `nimble` |
+| Language | `engine/derived.js#fluency` (parley fluency gate/bonus) | Dropped outright — see "Fluency ceiling" below |
+
+### The `state.combat.abilityStrike` descriptor
+
+`playerStrike` reads a transient, zero-persisted descriptor Plan 03's
+`useAbility` sets immediately before delegating to it, and clears again
+right after its own attack loop (never visible to `afterPlayerAction` or
+any later dispatch):
+
+```
+{ key, autoHit?: true, forceCrit?: true, finishUnder?: number,
+  bonusDmg?: number, dmgMul?: number, needShift?: number, attacks?: number }
+```
+
+- `attacks` raises the swing count via `Math.max` (never stacks additively
+  with a Fridgian's frenzy or Ambidextrous/haste).
+- `needShift` widens the strike's own need (floored at 1, never revives a
+  `magicOnly`/untouchable need-0 foe), narrated as a `{ name: "overhead",
+  delta }` needMods entry alongside any Afraid penalty.
+- `autoHit` never touches `C.opened` — the Cat Burglar/Ninja free opener
+  (`subAuto`) is a structurally separate flag from an ability's own auto-hit.
+- `forceCrit` obeys the Guard/Soldier/dark/noCrit-gear rule exactly like a
+  natural 1 (a Guard's Death Touch still finishes under 15 via `finishUnder`,
+  it just never doubles); Silent Step's forced crit is additionally denied by
+  heavy armour on a Thief, exactly like the old Silence branch, pushing
+  `backstabDenied` only once per attack even when the opening-strike heavy
+  check already fired it.
+- `finishUnder` (Death Touch) ignores `noCrit` entirely — the finish always
+  fires under the threshold, on any sub.
+- `bonusDmg`/`dmgMul` stack additively/multiplicatively after `weaponDamage`
+  and the natural crit doubling, in that order; `t.marked` (Mark, a Thief
+  level-pool active) adds a flat +2 AFTER both, for every landed hero strike
+  regardless of any descriptor.
+- Every read above is additive and zero-draw — it only reinterprets the roll
+  `playerStrike` already makes for an ordinary STRIKE.
+
+### Need-shift actives (`foeToHitVs`/`foeToHitBreakdown`)
+
+`abilityEffectActive(c, key)` reads a live `c.timers["ability:"+key]` record
+in `phase: "effect"` with `left > 0` (a cooldown-phase record reads false).
+Three terms, read in this order, after the existing gear term and before the
+mirror/invis/floor overrides: Battle Roar (-2, any `vs`), Sidestep (-2,
+`vs === "hero"` only), Smoke (override to `h = 1`, `vs === "hero"` only).
+`vs = "member"` is the new second parameter `foeTurn`'s party-member branch
+passes so Battle Roar still shields the whole side while Sidestep/Smoke stay
+the hero's own body. Battle Roar's -2 stacks additively with the Guard -1,
+exactly the way Agility used to.
+
+### Fluency ceiling: 2 → 1 (gameplay change, flagged)
+
+`fluency(c)` now reads `eff(c, "tongue")` alone — a tongue-effect item (the
+Helm of Knowledge). The "both skill and item" fluency-2 tier is
+**structurally unreachable** until a future fluency source exists; canParley's
+`flu >= 2` Magical branch is therefore dead in practice, and the Wilmsry-vs-
+Magical `parleyRefused` branch inside `parley()` (which sits BEHIND
+`canParley`) is now unreachable too. Both are left in place (data-driven
+thresholds, not dead reads) rather than deleted — this is Claude's Discretion
+per the plan, not a requested removal. `mazeworld.html`'s classic
+canParley()/fluency() duplicate is UNCHANGED (out of this plan's scope,
+prohibited by name) — harmless in real play since chargen can no longer
+grant the retired skill on either script.
+
+### Climbing/leaping (gameplay change, flagged)
+
+Every character, regardless of skill, now rolls the climb/leap check with no
+bonus and takes full fall damage on a failure — the halving is gone for
+everyone, not just non-Climbing characters. No current fixture reaches this
+code path (movement fixture's own `_note` documents its 101-action path as
+deliberately climb/gorge-avoiding).
+
 ## Out of scope / next
 
 - The `useAbility` action, cooldown dispatch, and effect resolution
-  (Plan 03); the strike-modifying hooks in `engine/combat.js`/`derived.js`
-  and the four dropped-skill engine reads (Plan 02); Joiner class-driven use
-  policy (Plan 04); the combat submenu, Hero-tab list, and first-paint pool
-  card (Plan 05).
+  (Plan 03, next); Joiner class-driven use policy (Plan 04); the combat
+  submenu, Hero-tab list, and first-paint pool card (Plan 05).
 - Magic User actives beyond spells (not requested this phase — spells are
   Phase 40).
 - Bot use policy for abilities — Phase 42 (BAL-02 prep), before the
