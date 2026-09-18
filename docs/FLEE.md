@@ -184,3 +184,10 @@ untouched** (`git status --porcelain test/parity/fixtures` is empty).
 (REQUIREMENTS.md itself is flipped to complete by Plan 04 at phase close,
 alongside BAL-02.) `docs/CLASS-PASS.md`'s v1.5 AFTER section (Plan 04) cites
 this ledger for the flee-side half of the consolidated retune.
+
+**Cross-link (Plan 04):** see `docs/CLASS-PASS.md`'s
+`## v1.5 AFTER — commit 38a08cdcc68538c47ee573e7a02c1dba32ada4ba (Phase 42 — BAL-02)`
+section, `### Pin and provenance (Phase 42 capture)`, for the consolidated
+AFTER class matrix this flee retune is measured inside — the flee formula
+above is fully landed in that pin (no fixture regenerated; the seed-17
+reading did not move).

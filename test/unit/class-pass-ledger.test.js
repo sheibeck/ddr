@@ -46,6 +46,9 @@ const afterDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class
 const verdicts = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "verdicts.json"), "utf8"));
 const v15Before = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-before.json"), "utf8"));
 const v15BeforeDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-before-depth20.json"), "utf8"));
+const v15After = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-after.json"), "utf8"));
+const v15AfterDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-after-depth20.json"), "utf8"));
+const v15Verdicts = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "v15-verdicts.json"), "utf8"));
 
 // --- doc-parsing helpers -------------------------------------------------
 
@@ -81,9 +84,9 @@ function section(text, headingRegex) {
 
 // --- (1) section presence and fixed order -------------------------------
 
-test("sections: exactly nine H2 headings, in the fixed order, v1.5 BEFORE last", () => {
+test("sections: exactly ten H2 headings, in the fixed order, v1.5 AFTER last", () => {
   const headings = h2s(doc);
-  assert.equal(headings.length, 9, `expected exactly 9 H2 headings, found ${headings.length}: ${headings.join(" | ")}`);
+  assert.equal(headings.length, 10, `expected exactly 10 H2 headings, found ${headings.length}: ${headings.join(" | ")}`);
 
   const expected = [
     /^## Bot proxy/,
@@ -95,11 +98,13 @@ test("sections: exactly nine H2 headings, in the fixed order, v1.5 BEFORE last",
     /^## Outliers \(Phase 26 — revisit list\)$/,
     /^## Handoff to Phase 27$/,
     /^## v1\.5 BEFORE — commit [0-9a-f]{40} \(Phase 36 — BAL-01\)$/,
+    /^## v1\.5 AFTER — commit [0-9a-f]{40} \(Phase 42 — BAL-02\)$/,
   ];
   expected.forEach((re, i) => {
     assert.ok(re.test(headings[i]), `heading ${i} ("${headings[i]}") should match ${re}`);
   });
   assert.equal(headings[7], "## Handoff to Phase 27");
+  assert.equal(headings[9], headings[headings.length - 1], "v1.5 AFTER must be the last H2 heading");
 });
 
 // --- (2) AFTER placeholder replaced, BEFORE/Rulings anchors intact -------
@@ -390,4 +395,144 @@ test("v1.5 BEFORE: identical 143 cell keys and zero cannot-act / zero stuck", ()
   };
   walk(v15Before);
   walk(v15BeforeDeep);
+});
+
+// --- (15) v1.5 AFTER hash equals v15-after.json / v15-after-depth20.json meta.commit ---
+
+test("v1.5 AFTER hash equals v15-after.json and v15-after-depth20.json meta.commit", () => {
+  const afterHeadingMatch = doc.match(/^## v1\.5 AFTER — commit ([0-9a-f]{40}) \(Phase 42 — BAL-02\)$/m);
+  assert.ok(afterHeadingMatch, "v1.5 AFTER heading with a 40-hex commit hash not found");
+  const afterHash = afterHeadingMatch[1];
+  assert.ok(afterHash.startsWith(v15After.meta.commit), "v1.5 AFTER heading hash does not start with v15-after.json's meta.commit");
+  assert.equal(v15After.meta.commit, v15AfterDeep.meta.commit, "v15-after.json and v15-after-depth20.json must share the same pin");
+
+  const v15AfterSection = section(doc, /^## v1\.5 AFTER — commit/);
+  assert.ok(v15AfterSection.includes(`\`${v15After.meta.commit}\``), "v1.5 AFTER section is missing the backticked short commit hash");
+  assert.ok(v15AfterSection.includes(v15After.meta.bot), "v1.5 AFTER section is missing v15-after.json's verbatim Bot: line");
+  assert.ok(v15AfterSection.includes(v15AfterDeep.meta.bot), "v1.5 AFTER section is missing v15-after-depth20.json's verbatim Bot: line");
+  assert.ok(v15AfterSection.includes("### Pin and provenance (Phase 42 capture)"), "v1.5 AFTER section is missing the pin/provenance sub-heading");
+  assert.ok(v15AfterSection.includes("### Depth-20 target verdict"), "v1.5 AFTER section is missing the depth-20 target verdict sub-heading");
+  assert.ok(v15AfterSection.includes("### Pick-rates — abilities"), "v1.5 AFTER section is missing the abilities pick-rate sub-heading");
+
+  const transcriptHeadings = [...v15AfterSection.matchAll(/^### v1\.5 AFTER transcript — tune-classes.*$/gm)];
+  assert.equal(transcriptHeadings.length, 2, `expected exactly two "### v1.5 AFTER transcript" sub-headings, found ${transcriptHeadings.length}`);
+
+  const linesAfterHeading = v15AfterSection.split("\n").slice(1);
+  const firstNonBlank = linesAfterHeading.find((l) => l.trim() !== "");
+  assert.ok(firstNonBlank.startsWith("**Zero cannot-act cells.**"), `v1.5 AFTER section's first non-blank line should be the zero-cannot-act headline, got: ${firstNonBlank}`);
+});
+
+// --- (16) v1.5 AFTER meta parity with the v1.5 BEFORE pair (modulo commit) ---
+
+test("v1.5 AFTER meta parity with the v1.5 BEFORE pair (modulo commit), runFlags present", () => {
+  const naturalParity = metaParity(v15Before.meta, v15After.meta);
+  assert.equal(naturalParity.ok, true, `v1.5 BEFORE vs v1.5 AFTER natural pair parity mismatches: ${naturalParity.mismatches.join(", ")}`);
+  const deepParity = metaParity(v15BeforeDeep.meta, v15AfterDeep.meta);
+  assert.equal(deepParity.ok, true, `v1.5 BEFORE vs v1.5 AFTER deep pair parity mismatches: ${deepParity.mismatches.join(", ")}`);
+
+  assert.equal(v15After.meta.bot, v15Before.meta.bot);
+  assert.equal(v15AfterDeep.meta.bot, v15BeforeDeep.meta.bot);
+  assert.notEqual(v15Before.meta.commit, v15After.meta.commit, "v1.5 BEFORE and v1.5 AFTER must be different pins — a self-diff would be a mistake");
+
+  assert.deepStrictEqual(v15After.meta.runFlags, { storeRoll: true, wornSlots: true }, "v1.5 AFTER natural must carry the shipped-game run flags");
+  assert.deepStrictEqual(v15AfterDeep.meta.runFlags, { storeRoll: true, wornSlots: true }, "v1.5 AFTER depth-20 must carry the shipped-game run flags");
+});
+
+// --- (17) v1.5 AFTER: identical 143 cell keys vs v1.5 BEFORE, zero cannot-act / zero stuck ---
+
+test("v1.5 AFTER: identical 143 cell keys vs v1.5 BEFORE, zero cannot-act / zero stuck", () => {
+  const v15BeforeKeys = new Set(v15Before.cells.map(cellKey));
+  const v15AfterKeys = new Set(v15After.cells.map(cellKey));
+  assert.deepStrictEqual(v15BeforeKeys, v15AfterKeys, "v1.5 BEFORE / v1.5 AFTER natural cell key sets differ");
+  assert.equal(v15AfterKeys.size, 143);
+
+  const v15BeforeDeepKeys = new Set(v15BeforeDeep.cells.map(cellKey));
+  const v15AfterDeepKeys = new Set(v15AfterDeep.cells.map(cellKey));
+  assert.deepStrictEqual(v15BeforeDeepKeys, v15AfterDeepKeys, "v1.5 BEFORE / v1.5 AFTER depth-20 cell key sets differ");
+  assert.equal(v15AfterDeepKeys.size, 143);
+
+  const flagged = cannotActCells(v15After);
+  assert.deepStrictEqual(flagged, [], `cannot-act cells found in v15-after.json: ${JSON.stringify(flagged)}`);
+
+  assert.ok(v15After.cells.every((c) => c.stuck === 0 && c.completed === c.n && c.meanKills !== null && c.meanKills >= 0.5), "every v15-after.json cell should have zero stuck runs, all runs completed, and non-null meanKills at or above the cannot-act floor");
+  assert.ok(v15AfterDeep.cells.every((c) => c.stuck === 0), "the v1.5 AFTER depth-20 slice should have no stuck runs either");
+
+  const walk = (obj, seen = new Set()) => {
+    if (obj === null || typeof obj !== "object" || seen.has(obj)) return;
+    seen.add(obj);
+    for (const val of Object.values(obj)) {
+      if (typeof val === "number") assert.ok(!Number.isNaN(val), "found NaN in a v1.5 AFTER file");
+      walk(val, seen);
+    }
+  };
+  walk(v15After);
+  walk(v15AfterDeep);
+});
+
+// --- (18) v15-verdicts.json: schema, commits, editorial completeness (CONTEXT Area 2) ---
+
+test("v15-verdicts.json: schema, commits, editorial completeness (CONTEXT Area 2)", () => {
+  assert.equal(v15Verdicts.schema, "class-pass-verdicts/1");
+  assert.equal(v15Verdicts.meta.after.commit, v15After.meta.commit);
+  assert.equal(v15Verdicts.meta.before.commit, v15Before.meta.commit);
+  assert.equal(v15Verdicts.meta.parity.natural.ok, true);
+  assert.equal(v15Verdicts.meta.parity.deep.ok, true);
+  assert.equal(v15Verdicts.subs.length, 24);
+  assert.equal(v15Verdicts.races.length, 6);
+  assert.equal(v15Verdicts.cannotAct.length, 0);
+  assert.equal(v15Verdicts.cells.inBand + v15Verdicts.cells.outOfBand.length, 143);
+
+  const validBands = new Set(["fine", "too weak", "too strong", "cannot act"]);
+  const allRows = [...v15Verdicts.subs, ...v15Verdicts.races];
+  for (const row of allRows) {
+    assert.ok(validBands.has(row.band), `row "${row.key}" has an unrecognized band "${row.band}"`);
+    assert.notEqual(row.band, "cannot act", `row "${row.key}" carries a cannot-act band — cannotAct.length is asserted zero above`);
+    if (row.band !== "fine") {
+      // CONTEXT Area 2: every out-of-band row must carry a verdict AND a
+      // non-empty reason — the accept/tune editorial-completeness rule.
+      assert.ok(["accept", "revisit"].includes(row.verdict), `out-of-band row "${row.key}" must have verdict accept or revisit`);
+      assert.ok(row.reason && row.reason.length > 20, `out-of-band row "${row.key}" must have a substantive (>20 char) reason`);
+    }
+    if (row.verdict === "revisit") {
+      assert.ok(row.lever && row.lever.length > 0, `revisit row "${row.key}" must have a non-empty lever`);
+    }
+    if (row.band === "fine") {
+      assert.notEqual(row.verdict, "revisit", `in-band row "${row.key}" must not be marked revisit`);
+    }
+  }
+
+  for (const group of [v15Verdicts.deep.byClass, v15Verdicts.deep.bySub, v15Verdicts.deep.byRace]) {
+    for (const row of group) {
+      assert.ok(!("band" in row), `deep row "${row.key}" must never carry a band`);
+      assert.ok(!("verdict" in row), `deep row "${row.key}" must never carry a verdict`);
+    }
+  }
+});
+
+// --- (19) v1.5 AFTER section is byte-identical to a fresh render ---
+
+test("v1.5 AFTER section is byte-identical to a fresh render", () => {
+  const rerendered = buildVerdicts({ before: v15Before, after: v15After, beforeDeep: v15BeforeDeep, afterDeep: v15AfterDeep, prior: v15Verdicts });
+  const rendered = renderMarkdown(rerendered, "after").trim();
+  assert.ok(doc.includes(rendered), "the v1.5 AFTER section rendered fresh from the script is not a byte-identical substring of the ledger");
+  assert.equal(JSON.stringify(rerendered), JSON.stringify(v15Verdicts), "docs/class-pass/v15-verdicts.json is not a fixed point of the script's own render");
+});
+
+// --- (20) v1.5 AFTER pretune note, only if a pretune pair exists ---
+
+test("v1.5 AFTER pretune note is present only when a pretune JSON pair exists", () => {
+  const pretunePath = path.join(REPO_ROOT, "docs", "class-pass", "v15-after-pretune.json");
+  const v15AfterSection = section(doc, /^## v1\.5 AFTER — commit/);
+  if (fs.existsSync(pretunePath)) {
+    const pretune = JSON.parse(fs.readFileSync(pretunePath, "utf8"));
+    assert.notEqual(pretune.meta.commit, v15After.meta.commit, "a pretune pair's commit must differ from the final AFTER pair's commit");
+    assert.ok(v15AfterSection.includes("v15-after-pretune"), "the ledger must mention v15-after-pretune when a pretune pair exists on disk");
+  } else {
+    // No one-knob tune ran this plan — every out-of-band row was accepted
+    // with reason on the first (and only) AFTER matrix run. The section
+    // must not claim a pretune pair exists when none is on disk, and must
+    // mention "pretune" (in whatever wrapping) to say so explicitly.
+    assert.ok(!v15AfterSection.includes("v15-after-pretune"), "the ledger must not mention v15-after-pretune when no pretune pair exists on disk");
+    assert.ok(/pretune/i.test(v15AfterSection), 'with no pretune pair on disk, the ledger should still mention "pretune" to say explicitly that none ran');
+  }
 });
