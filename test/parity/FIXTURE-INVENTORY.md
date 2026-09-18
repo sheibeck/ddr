@@ -1232,3 +1232,86 @@ in the new `test/unit/map-reveal.test.js`, plus 8 more in
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
 test/parity/fixtures` empty.
 
+## Phase 41: water terrain (TERR-01) — derived-stream placement, structural carve-out, live fixture scan
+
+Water pools land on **every** floor at **every** depth via a derived rng
+stream (`engine/maze.js#placeWater`, called LAST in `genFloor` as
+`derivedRng(rng.getState(), "terrain", dc.depth)`), per the 2026-09-17
+greenfield ruling — no run flag, no dual path. `test/unit/floor-gen-rng-pin.test.js`
+(committed FIRST, before any engine edit) pins genFloor's exact
+per-(seed,depth) main-rng draw count and post-generation cursor for 14
+seeds x 7 depths, plus a redundant `newRun(seed).rngState` pin — **both
+stayed unchanged, byte-for-byte, through Plan 01's engine edits**: zero
+main-rng draws, proven, not assumed.
+
+`cell.water` itself is a **structural** parity carve-out
+(`test/parity/harness/comparables.js#stripWaterField`, wired into all three
+exported `*Comparable()` functions plus the three per-domain local
+`comparable()` duplicates in movement/combat/magic-parity.test.js) — the
+same category as `stripSpellSeen`/`stripTimersField` before it. The frozen
+prototype has no water field on any cell, ever; the field is compared
+NOWHERE, on ANY fixture, regardless of content. **Plan 01 changes no
+`state.steps`, no fixture file, no declared divergence record** — the move
+COST (the real, comparable-visible risk research Pitfall 1 names) is
+Plan 02's job, not this plan's.
+
+### The live scan (research Pitfall 1 recipe)
+
+`tools/terrain-fixture-scan.mjs` replays `action-script.movement.json`
+(seed 256, its full 101-action scripted path) through the real engine
+(`newRun` + `applyAction` per action), checking the destination cell of
+every `move` action against `cell.water === true`. Every other fixture
+(combat/magic/economy/encounters — none has a `move` action in its script)
+is reported for its move-action count (a sanity check, expected 0 — proven,
+not assumed) and the hero's `c.phobia` (Plan 03's own future reference
+column). Measured output, pasted verbatim:
+
+```
+| Fixture | Scenario | Seed | Move actions | Water hits (action idx @ depth x,y) | Hero phobia |
+|---|---|---|---|---|---|
+| action-script.chargen.json | (14 seeds, no actions) | 20260907 | 0 | — | — |
+| action-script.movement.json | (script) | 256 | 101 | none | Vampires and the undead |
+| action-script.combat.json | win | 3 | 0 | n/a (no move actions) | Fire |
+| action-script.combat.json | lose | 14 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.combat.json | lose-apprentice | 127 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.combat.json | lose-plain | 1119 | 0 | n/a (no move actions) | Fire |
+| action-script.combat.json | flee | 17 | 0 | n/a (no move actions) | Being trapped |
+| action-script.combat.json | parley | 303 | 0 | n/a (no move actions) | Heights |
+| action-script.magic.json | cast-damage | 8 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.magic.json | heal | 7 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.magic.json | potion | 1 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.magic.json | scroll | 7 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.economy.json | (script) | 3 | 0 | n/a (no move actions) | Fire |
+| action-script.encounters.json | trap | 1 | 0 | n/a (no move actions) | Bats and rats |
+| action-script.encounters.json | chest | 2 | 0 | n/a (no move actions) | Being trapped |
+| action-script.encounters.json | tablefour | 3 | 0 | n/a (no move actions) | Fire |
+| action-script.encounters.json | faerie | 38 | 0 | n/a (no move actions) | Heights |
+| action-script.encounters.json | affliction | 160 | 0 | n/a (no move actions) | Bodies of water |
+
+Movement fixture (seed 256) water cells at depth 1: (3,2), (3,3), (4,3), (5,3), (6,3), (7,3), (8,3)
+Movement fixture (seed 256) water cells at depth 2: (17,1), (18,1), (19,1)
+
+WATER HITS: 0
+```
+
+### Consequence: WATER HITS is 0 — no fixture ever steps onto water
+
+Every scripted `move` in `action-script.movement.json` (seed 256, the one
+fixture with real move actions) crosses a dry path across both floor 1 and
+floor 2 (the script does descend once — the depth-2 snapshot above proves
+the replay reached a second floor). No other fixture's script ever issues a
+`move` action at all. **Plan 02 (the water move-cost surcharge) declares
+nothing for this scan** — there is no `action-path` divergence to record,
+no `test/parity/movement-parity.test.js`/`full-suite.test.js`/
+`test/roundtrip/serialize-rehydrate.test.js` support to add. Plan 02
+re-runs this exact scan (its own engine edits are read-only with respect to
+water PLACEMENT — the pools themselves don't move) to confirm this holds
+once the cost lands.
+
+### Byte-identical elsewhere (Phase 41, Plan 01)
+
+Every fixture, every scenario, every seed — `npm test`: 2826/2826,
+`# fail 0`; `test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
+test/parity/fixtures` empty (zero fixture files touched by this plan).
+
