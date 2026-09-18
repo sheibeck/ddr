@@ -394,6 +394,38 @@ export function potionMight(c) {
   return t;
 }
 
+// TUNING KNOB — Phase 41 (TERR-02, user-ratified Key Decision 2026-09-18,
+// "one tap, two squares of time"): a single step onto a water cell costs
+// TWO squares of `state.steps` instead of one — the HUD SQUARES counter and
+// every squares-cadence system (item/spell/ability timers, the day/spell-
+// charge cadences) advance by the full 2 on that one dispatch, in one tap.
+// Phase 42 measures the resulting hunger/depth drift against the v1.5
+// BEFORE pin; this knob is not retuned here.
+export const WATER_MOVE_COST = 2;
+
+/**
+ * moveCost(state, cell) — Phase 41 (TERR-02): the `state.steps`/`tickSquares`
+ * cost of a single step onto `cell` — `1` for a normal (or missing/null)
+ * cell, `WATER_MOVE_COST` (2) for a genuine water cell. Flight and Ether are
+ * exempt from the surcharge ("walls and crevices are nothing" — water too):
+ * the Bracelet of Flight (unconditional), a LIVE `fly` item effect (a
+ * started Cloak of Flying window), or a LIVE `ether` item effect all pay 1
+ * on water. A READY-but-unstarted Cloak of Flying is deliberately NOT
+ * flying here (unlike `isFlying`, which treats "ready" as flying so the
+ * climb block can start a fresh window) — a puddle does not spend the
+ * cloak's charge the way a wall/crevice does; the water step simply costs 2
+ * and no effect record is started. Pure, zero rng: reads only `state.c` and
+ * the passed cell.
+ */
+export function moveCost(state, cell) {
+  if (!cell || cell.water !== true) return 1;
+  const c = state.c;
+  if (hasItemNamed(c, "Bracelet of Flight")) return 1;
+  if (itemEffectActive(c, "fly")) return 1;
+  if (itemEffectActive(c, "ether")) return 1;
+  return WATER_MOVE_COST;
+}
+
 /**
  * isFlying(state) — DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2):
  * `eff(c,"fly")` (set by the Bracelet of Flight and the Cloak of Flying,

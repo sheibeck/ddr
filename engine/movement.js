@@ -27,7 +27,7 @@
 
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor, hasTool } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor, hasTool, moveCost } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
@@ -262,14 +262,47 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
     }
   }
 
+  // DELIBERATE RULES CHANGE (Phase 41, TERR-02, user-ratified Key Decision
+  // 2026-09-18: "one tap, two squares of time"): a single step's cost in
+  // `state.steps` — and therefore every squares-cadence system below that
+  // reads `crossings(...)` or is fed `cost` directly — is `moveCost(state,
+  // there)`: 1 for a normal cell, 2 for water (flight/ether exempt, see
+  // moveCost's own doc in engine/derived.js). Every per-square system this
+  // cost widens, in one dispatch: the HUD SQUARES counter (state.steps
+  // itself); the affliction's own per-N cadence; c.darkFor; both
+  // Cloak-of-Healing/Regeneration 20-square ticks; c.timers (tickSquares(c,
+  // cost), engine/effects.js — ability/item/spell-reveal timers, once per
+  // step, never twice, per 41-RESEARCH.md Pitfall 3); the Magic User
+  // 20-square spell-charge recovery; the 100-square newDay. Note for
+  // CONTEXT.md's own phrasing: "the encounter clock"/"member timers" have no
+  // separate per-square counterpart anywhere in this engine (verified — the
+  // wandering-monster check IS newDay's own crossings(100) roll, and party
+  // members carry no squares-cadence state of their own), so the list above
+  // is the complete set.
+  const cost = moveCost(state, there);
   f.px = nx;
   f.py = ny;
   // Phase 39 (GEAR-05): a genuine step anywhere resolves the hazard
   // decision — mirrors the same reset in teleport()/descend() below.
   state.pendingHazard = null;
-  state.steps++;
+  const stepsBefore = state.steps;
+  state.steps += cost;
+  // crossings(n) — how many multiples of `n` this step's `state.steps`
+  // advance crossed. For cost 1 this is exactly the old `state.steps % n
+  // === 0` cadence test (0 or 1 — a +1 step can cross at most one boundary),
+  // so every cost-1 step stays byte-identical to before this plan. For cost
+  // 2 (or any future cost > 1) a crossed boundary fires exactly once and is
+  // never skipped: 99 -> 101 still rolls the day, 19 -> 21 still recovers a
+  // spell charge / heals a cloak tick.
+  const crossings = (n) => Math.floor(state.steps / n) - Math.floor(stepsBefore / n);
   reveal(f, revealRadius(state));
   events.push(moved({ x: nx, y: ny }));
+  // Phase 41 (TERR-02): narrate entering water ONCE per wade, not once per
+  // step — `here` (captured before the position update, still the same cell
+  // object) is the departure cell, so a water -> water re-step stays silent
+  // (an 8-cell pool never stacks eight toasts) and only the entry step
+  // narrates. The HUD counter still carries the per-step cost regardless.
+  if (cost > 1 && !here.water) events.push({ type: "waded", cost });
 
   const c = state.c;
 
@@ -292,7 +325,16 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
 
   if (c.affliction) {
     const af = c.affliction;
-    if (state.steps % af.per === 0) {
+    // Phase 41 (TERR-02): a cost>1 step can cross the affliction's own
+    // per-N cadence more than once in one dispatch (a per:1 affliction
+    // crosses TWICE on a 2-cost water step) — the crossings helper above,
+    // called against `af.per`, counts exactly how many boundaries this step
+    // crossed, and the loop below runs the EXISTING tick body once per
+    // crossing, stopping the instant
+    // the affliction clears inside it (an affliction that already burned
+    // out on the first tick this step must never tick a second time).
+    const afflictionTicks = crossings(af.per);
+    for (let i = 0; i < afflictionTicks && c.affliction; i++) {
       const l = Math.min(rollDice(rng, af.loss), Math.max(0, c.wp - 1));
       c.wp -= l;
       // DELIBERATE RULES CHANGE (audit-bugs, 2026-09-09, E5): the clamp above
@@ -341,7 +383,10 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       c.darkFor = 0;
       events.push({ type: "darknessDispelled" });
     } else {
-      c.darkFor--;
+      // Phase 41 (TERR-02): decrement by this step's cost, not a bare 1, so
+      // a water step burns the darkness counter down twice as fast — same
+      // clamp-at-0-with-one-event discipline as before.
+      c.darkFor = Math.max(0, c.darkFor - cost);
       if (c.darkFor === 0) events.push({ type: "darknessLifted" });
     }
   }
@@ -363,12 +408,12 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   //     carrying the Cloak of Regeneration draws NOTHING here and the seeded
   //     cursor is byte-identical (verified: no parity fixture carries it —
   //     treasure finds are not part of chargen/fixtures).
-  if (eff(c, "cloakHeal") > 0 && state.steps % CLOAK_TICK_SQUARES === 0 && c.wp < c.maxWP) {
+  if (eff(c, "cloakHeal") > 0 && crossings(CLOAK_TICK_SQUARES) > 0 && c.wp < c.maxWP) {
     const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + CLOAK_HEAL_PER_TICK);
     events.push({ type: "cloakHealed", amount: c.wp - before });
   }
-  if (eff(c, "cloakRegen") > 0 && state.steps % CLOAK_TICK_SQUARES === 0 && c.wp < c.maxWP) {
+  if (eff(c, "cloakRegen") > 0 && crossings(CLOAK_TICK_SQUARES) > 0 && c.wp < c.maxWP) {
     const r = rng.d(6);
     const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + r);
@@ -380,13 +425,14 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
 
   // Phase 36 (BAL foundation) — the squares tick for engine/effects.js
   // records; GUARDED on the lazily-created c.timers so every fixture, bot
-  // run and pre-Phase-36 save (none carries the key) is byte-identical; the
-  // literal 1 is this step's cost — Phase 41 (TERR-02) passes a water
-  // square's 2 here so squares-cadence timers stay consistent with the step
-  // counter. Phase 39 (GEAR-02): the returned transition list is now mapped
+  // run and pre-Phase-36 save (none carries the key) is byte-identical.
+  // Phase 41 (TERR-02): this now passes the step's OWN cost (1 normally, 2
+  // on water) — ONE call, called once per step (research Pitfall 3: never
+  // call tickSquares twice to "double" a tick — `n` already carries the
+  // full cost). Phase 39 (GEAR-02): the returned transition list is mapped
   // to events (itemEffectFaded/itemCooled/staffRecharged) below.
   if (c.timers) {
-    const trans = tickSquares(c, 1);
+    const trans = tickSquares(c, cost);
     narrateTimerTransitions(state, trans, events);
     // Phase 40 (SPELL-05, Plan 04): the ONE sweep that re-fogs whatever Map
     // the Floor's window never graduated (research Pitfall 4) — reacts to
@@ -402,12 +448,12 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
 
   // the book recharges a Magic User every hundred squares; a solo caster
   // needs it oftener.
-  if (c.cls === "Magic User" && state.steps % 20 === 0 && c.spellsUsed > 0) {
+  if (c.cls === "Magic User" && crossings(20) > 0 && c.spellsUsed > 0) {
     c.spellsUsed--;
     events.push({ type: "spellChargeRecovered", charges: maxCharges(c) - c.spellsUsed, max: maxCharges(c) });
   }
 
-  if (state.steps % 100 === 0) newDay(state, false, rng, events, now);
+  if (crossings(100) > 0) newDay(state, false, rng, events, now);
   if (state.dead) return events;
 
   const cell = f.g[ny][nx];
