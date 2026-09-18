@@ -39,7 +39,7 @@ Every phase in this milestone touches serialized character/combat/floor state an
 - [x] **Phase 39: Gear, Magic Items & One-Shot Tools** - Weapons/armor are rebalanced for real trade-offs, every activatable magic item follows one use-effect-cooldown model, and rope/ladder/torch give players a consumable answer to a specific hazard each. (completed 2026-09-18)
 - [x] **Phase 40: Spell Rework** - Combat spells are differentiated by niche instead of a damage ladder, every utility spell has a felt effect, every Wizard sub-class starts with a damage spell, Detect Magic is renamed and time-boxed, and scribed scrolls are instantly castable. (completed 2026-09-18)
 - [x] **Phase 41: Terrain, Darkness & Phobias** - Water squares cost extra movement and can scare swimmers, a dark square fogs the view to a 3×3 window, and every phobia has a real, once-per-entry trigger. (completed 2026-09-18)
-- [ ] **Phase 42: Flee Retune & Consolidated Balance Close** - Flee odds are lower and shown transparently, and the ONE consolidated AFTER class-matrix run verifies abilities + gear + spells together against the depth-20 target.
+- [x] **Phase 42: Flee Retune & Consolidated Balance Close** - Flee odds are lower and shown transparently, and the ONE consolidated AFTER class-matrix run verifies abilities + gear + spells together against the depth-20 target. (completed 2026-09-18)
 - [ ] **Phase 43: Clarity Pass** - Every costly line names its cause, every loot offer shows who can use it, ration math is honest, and the Gear screen splits into ON YOU and BAG.
 
 <details>
@@ -357,19 +357,19 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 42-01-PLAN.md — FLEE-01/02: `d20 + Thief 5 + class + race − bulk >= 14` (35% base) via `content/flee.js` + `engine/derived.js#fleeBreakdown`, `fleeRolled { roll, mods, total, need }` narrated roll-first on fight log/toast/rail, honest FLEE submenu cost, failed flee untouched, seed-17 fixture measured, `docs/FLEE.md` ledger + pin test
+- [x] 42-01-PLAN.md — FLEE-01/02: `d20 + Thief 5 + class + race − bulk >= 14` (35% base) via `content/flee.js` + `engine/derived.js#fleeBreakdown`, `fleeRolled { roll, mods, total, need }` narrated roll-first on fight log/toast/rail, honest FLEE submenu cost, failed flee untouched, seed-17 fixture measured, `docs/FLEE.md` ledger + pin test
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 42-02-PLAN.md — BAL-01 second half (abilities + items): bot mirrors `pickMemberAbility`, once-a-fight on the hardest foe, heal-before-flee / round-1 buffs / worn staves / torch / pendingHazard tools, takes the victory loot pile, plays `storeRoll`+`wornSlots` run rules, refusal blocks, forced-cell no-stall proof (`Bot:` line frozen)
+- [x] 42-02-PLAN.md — BAL-01 second half (abilities + items): bot mirrors `pickMemberAbility`, once-a-fight on the hardest foe, heal-before-flee / round-1 buffs / worn staves / torch / pendingHazard tools, takes the victory loot pile, plays `storeRoll`+`wornSlots` run rules, refusal blocks, forced-cell no-stall proof (`Bot:` line frozen)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 42-03-PLAN.md — BAL-01 second half (spells) + BAL-02 prep: `chooseSpell` by niche (DOT on tough foes, burst finishes, Lesser Summon opener, Map the Floor once per floor), per-run usage tallies → per-cell/rollup `{ uses, runs }`, `meta.runFlags`, `tools/class-pass-usage.mjs` pick-rate renderer, 143×3 tactics smoke, CLASS-PASS `### Phase 42 tactics` addendum
+- [x] 42-03-PLAN.md — BAL-01 second half (spells) + BAL-02 prep: `chooseSpell` by niche (DOT on tough foes, burst finishes, Lesser Summon opener, Map the Floor once per floor), per-run usage tallies → per-cell/rollup `{ uses, runs }`, `meta.runFlags`, `tools/class-pass-usage.mjs` pick-rate renderer, 143×3 tactics smoke, CLASS-PASS `### Phase 42 tactics` addendum
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 42-04-PLAN.md — BAL-02: the ONE AFTER matrix pair (143×40 natural + 143×10 depth-20, background + logged, same params as the BEFORE pins), `class-pass-diff --gate`, `## v1.5 AFTER` ledger section with machine-rendered tables + pick-rates + a written verdict per out-of-band row against the depth-20 target (one-knob tune, one re-run, or accept), ledger test re-pin, REQUIREMENTS FLEE-01/02 + BAL-02 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md`
+- [x] 42-04-PLAN.md — BAL-02: the ONE AFTER matrix pair (143×40 natural + 143×10 depth-20, background + logged, same params as the BEFORE pins), `class-pass-diff --gate`, `## v1.5 AFTER` ledger section with machine-rendered tables + pick-rates + a written verdict per out-of-band row against the depth-20 target (one-knob tune, one re-run, or accept), ledger test re-pin, REQUIREMENTS FLEE-01/02 + BAL-02 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md`
 
 **Research flag**: Flee retune is a standard numeric retune of one existing formula — skip `--research-phase`. BAL-02's matrix read may surface out-of-band rows worth a short discussion before accepting or tuning them.
 
@@ -445,7 +445,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 40. Spell Rework | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 41. Terrain, Darkness & Phobias | v1.5 | 4/4 | Complete    | 2026-09-18 |
-| 42. Flee Retune & Consolidated Balance Close | v1.5 | 0/? | Not started | - |
+| 42. Flee Retune & Consolidated Balance Close | v1.5 | 4/4 | Complete    | 2026-09-18 |
 | 43. Clarity Pass | v1.5 | 0/? | Not started | - |
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete | 2026-09-16 |
 | 35. Map Screen Rebuild | v1.4 | 5/5 | Complete | 2026-09-16 |
