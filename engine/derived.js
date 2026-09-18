@@ -61,6 +61,25 @@ export function abilityEffectActive(c, key) {
 }
 
 /**
+ * partyEffectActive(state, key) — Phase 38 (ABIL-05): true when ANY live
+ * party member's own persistent sheet carries a live `ability:<key>` effect
+ * (Battle Roar's "covers the whole side" term — a member's Battle Roar
+ * shifts the hero's own to-hit too, and vice versa). Scans
+ * `state.combat.allies` (wp > 0) against `state.party[a.partyIdx]`, reusing
+ * `abilityEffectActive`'s exact live-effect check per member. False on
+ * every fixture (no fixture carries a party) and on a `state` with no
+ * combat/party/allies at all. Pure read, no rng, no mutation.
+ */
+export function partyEffectActive(state, key) {
+  return !!(
+    Array.isArray(state.party) &&
+    state.combat &&
+    Array.isArray(state.combat.allies) &&
+    state.combat.allies.some((a) => a.wp > 0 && abilityEffectActive(state.party[a.partyIdx], key))
+  );
+}
+
+/**
  * eff(c, key) — sum of the named effect across the character's items.
  *
  * Phase 37 (GEAR-03/eff-refactor): TWO-PATH. When `c` carries an own `worn`
@@ -570,6 +589,11 @@ export function foeDie(c, f) {
  * Agility used to. `vs` is `"hero"` (default — every pre-Phase-38 caller) or
  * `"member"` (foeTurn's party-member branch — Battle Roar still applies,
  * Sidestep/Smoke do not, since those are the hero's own body).
+ *
+ * Phase 38 (ABIL-05): Battle Roar's term also honours ANY live party
+ * member's own Battle Roar (`partyEffectActive`) — a Joiner's Battle Roar
+ * covers the whole side exactly like the hero's. False on every fixture (no
+ * fixture carries a party).
  */
 export function foeToHitVs(state, vs = "hero") {
   const c = state.c;
@@ -579,7 +603,7 @@ export function foeToHitVs(state, vs = "hero") {
   if (c.sub === "Acrobat") h = 3;
   if (c.sub === "Guard") h -= 1;
   h += eff(c, "foeToHit");
-  if (abilityEffectActive(c, "battleRoar")) h -= 2;
+  if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "sidestep")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "smoke")) h = 1;
   if (c.mirror > 0) h = 1; // Mirror Self
@@ -629,7 +653,7 @@ export function foeToHitBreakdown(state, vs = "hero") {
     h += gear;
     if (h !== before) mods.push({ name: "gear", delta: h - before });
   }
-  if (abilityEffectActive(c, "battleRoar")) {
+  if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) {
     const before = h;
     h -= 2;
     if (h !== before) mods.push({ name: "Battle Roar", delta: h - before });

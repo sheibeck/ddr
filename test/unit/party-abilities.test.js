@@ -1,25 +1,23 @@
 // test/unit/party-abilities.test.js
 //
-// Phase 38 Plan 04 (ABIL-05), Task 1 — direct coverage for engine/combat.js's
-// Joiner class-driven ability policy: pickMemberAbility (pure), the
-// strike-kind and foe-flag-kind resolutions of resolveMemberAbility
-// (kata/feint/deathTouch/silentStep/overheadBlow/lastStand/pommelStrike/
-// dirtyTrick/poisonedEdge/hamstring/mark/cutpurse), memberStrike's `mod`
-// parameter, and the alliesTurn ability branch's zero-draw fall-through.
-// Task 2 extends this file with the remaining member_spec items (self/
-// defensive kinds, the foeTurn member-branch hooks, pickFoeTarget's Taunt
-// read, per-member tick/clear, and derived.js#partyEffectActive). Local
-// helper copies (fakeRng/fixedFighter/fixedFloor/fixedState/fixedFoe/
-// fixedCombat/fixedAlly/fixedMember/classedMember) mirror test/unit/
-// party-combat.test.js verbatim — this repo's established
-// per-file-fixture convention (never imported cross-file).
+// Phase 38 Plan 04 (ABIL-05) — direct coverage for engine/combat.js's Joiner
+// class-driven ability policy: pickMemberAbility (pure), resolveMemberAbility
+// (all 20 member resolutions via the shared abilities.js primitives), the
+// alliesTurn ability branch's zero-draw fall-through, memberStrike's `mod`
+// parameter, the foeTurn member-branch need shifts/riposte/brace hooks,
+// pickFoeTarget's member Taunt bypass, the per-member tick/clear sites, and
+// derived.js#partyEffectActive. Local helper copies (fakeRng/fixedFighter/
+// fixedFloor/fixedState/fixedFoe/fixedCombat/fixedAlly/fixedMember/
+// classedMember) mirror test/unit/party-combat.test.js verbatim — this
+// repo's established per-file-fixture convention (never imported
+// cross-file).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { startCombat, alliesTurn, pickMemberAbility } from "../../engine/combat.js";
-import { isReady, startEffect } from "../../engine/effects.js";
-import { DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
+import { startCombat, alliesTurn, foeTurn, endCombat, pickFoeTarget, pickMemberAbility } from "../../engine/combat.js";
+import { isReady, remaining, startEffect, startCooldown, clearRoundTimers } from "../../engine/effects.js";
+import { abilityEffectActive, partyEffectActive, foeToHitVs, foeToHitBreakdown, DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count; throws on underflow (a "no more draws expected"
@@ -371,4 +369,278 @@ test("cutpurse: rng.d(10) * level gold, paid to the HERO via gainWilmst", () => 
   assert.equal(ev.amount, 7);
   assert.equal(ev.member, "Ada");
   assert.equal(state.c.gold, goldBefore + 7);
+});
+
+test("secondWind: heals rng.d(8)+level, capped at maxWP, memberSecondWind names amount", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: ["secondWind"] });
+  const state = fixedState({ party: [sheet] });
+  const ally = fixedAlly({ wp: 8, maxWP: 20 }); // strictly below half (< 10)
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  const events = alliesTurn(state, fakeRng([5]), []); // heal = 5 + 1 = 6
+  const ev = events.find((e) => e.type === "memberSecondWind");
+  assert.equal(ev.amount, 6);
+  assert.equal(ally.wp, 14);
+});
+
+test("sweep: half weapon damage to every live foe, memberSwept + sweptFoe", () => {
+  const foes = [fixedFoe({ name: "A", wp: 30, maxWP: 30 }), fixedFoe({ name: "B", wp: 30, maxWP: 30 })];
+  const sheet = classedMember({ abilities: ["sweep"] });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat(foes, { allies: [fixedAlly()], round: 2 });
+  // weaponDamage base d6=4 -> (1+4+2)=7, ceil(7/2)=4
+  const events = alliesTurn(state, fakeRng([4]), []);
+  const ev = events.find((e) => e.type === "memberSwept");
+  assert.equal(ev.dmg, 4);
+  assert.equal(ev.count, 2);
+  assert.equal(foes[0].wp, 26);
+  assert.equal(foes[1].wp, 26);
+});
+
+test("brace: sets ally.braced, braced event carries member", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: ["brace"] });
+  const state = fixedState({ party: [sheet] });
+  const ally = fixedAlly({ wp: 5, maxWP: 20 }); // below half -> defensive picked
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  const events = alliesTurn(state, fakeRng([]), []);
+  assert.equal(ally.braced, true);
+  const ev = events.find((e) => e.type === "braced");
+  assert.equal(ev.member, "Ada");
+});
+
+// riposte/taunt/sidestep/smoke are tag: "defensive" — picked with a
+// below-half-hp member outside round 1.
+for (const [id, cls, type] of [
+  ["riposte", "Fighter", "riposteReady"],
+  ["taunt", "Fighter", "taunted"],
+  ["sidestep", "Fighter", "sidestepped"],
+  ["smoke", "Thief", "smokeThrown"],
+]) {
+  test(`${id}: starts its timer and narrates ${type} with member`, () => {
+    const foe = fixedFoe({ wp: 30, maxWP: 30 });
+    const sheet = classedMember({ cls, abilities: [id] });
+    const state = fixedState({ party: [sheet] });
+    const ally = fixedAlly({ wp: 5, maxWP: 20 });
+    state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+    const events = alliesTurn(state, fakeRng([]), []);
+    const ev = events.find((e) => e.type === type);
+    assert.ok(ev, `${id} did not push ${type}`);
+    assert.equal(ev.member, "Ada");
+    assert.equal(isReady(sheet, `ability:${id}`), false);
+  });
+}
+
+// battleRoar is tag: "opener" — picked in round 1 only.
+test("battleRoar: starts its timer and narrates battleRoarRaised with member (round 1, opener)", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: ["battleRoar"] });
+  const state = fixedState({ party: [sheet] });
+  const ally = fixedAlly();
+  state.combat = fixedCombat([foe], { allies: [ally], round: 1 });
+  const events = alliesTurn(state, fakeRng([]), []);
+  const ev = events.find((e) => e.type === "battleRoarRaised");
+  assert.ok(ev);
+  assert.equal(ev.member, "Ada");
+  assert.equal(isReady(sheet, "ability:battleRoar"), false);
+});
+
+// ---------------------------------------------------------------------------
+// 5. foeTurn member-branch hooks: Sidestep/Smoke need shifts, Riposte, Brace
+// ---------------------------------------------------------------------------
+
+test("foeTurn member branch: the member's OWN Sidestep shifts its own need (-2, floor 1)", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: [] });
+  startEffect(sheet, "ability:sidestep", { rounds: 2 });
+  const ally = fixedAlly();
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  // pool pick 2 -> member; mRoll 4 vs need 3 (5 - 2) -> miss.
+  const events = foeTurn(state, fakeRng([2, 4]), []);
+  const missed = events.find((e) => e.type === "foeMissed");
+  assert.ok(missed);
+  assert.equal(missed.member, "Ada");
+  assert.equal(missed.need, 3);
+  assert.ok(missed.needMods.some((m) => m.name === "Sidestep" && m.delta === -2));
+});
+
+test("foeTurn member branch: the member's OWN Smoke overrides its own need to 1", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: [] });
+  startEffect(sheet, "ability:smoke", { rounds: 2 });
+  const ally = fixedAlly();
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  // pool pick 2 -> member; mRoll 2 vs need 1 -> miss.
+  const events = foeTurn(state, fakeRng([2, 2]), []);
+  const missed = events.find((e) => e.type === "foeMissed");
+  assert.ok(missed);
+  assert.equal(missed.need, 1);
+  assert.ok(missed.needMods.some((m) => m.name === "Smoke"));
+});
+
+test("foeTurn member branch: the member's OWN Riposte counters a miss on THAT member", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: [] });
+  startEffect(sheet, "ability:riposte", { rounds: 1 });
+  const ally = fixedAlly();
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  // pool pick 2 -> member; mRoll 20 -> miss (need 5); riposte counter: weaponDamage base d6=4 -> dmg 7.
+  const events = foeTurn(state, fakeRng([2, 20, 4]), []);
+  const rip = events.find((e) => e.type === "memberRiposted");
+  assert.ok(rip);
+  assert.equal(rip.name, "Ada");
+  assert.equal(rip.target, "Target");
+  assert.equal(rip.dmg, 7);
+  assert.equal(foe.wp, 23);
+});
+
+test("foeTurn: a member's Riposte does not fire when the foe misses the HERO instead", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: [] });
+  startEffect(sheet, "ability:riposte", { rounds: 1 });
+  const ally = fixedAlly();
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  // pool pick 1 -> hero; hero-branch roll 20 -> miss; hero's own riposte is
+  // inactive (only the member's sheet carries the timer) — no counter.
+  const events = foeTurn(state, fakeRng([1, 20]), []);
+  assert.equal(events.some((e) => e.type === "memberRiposted"), false);
+  assert.equal(events.some((e) => e.type === "riposted"), false);
+});
+
+test("foeTurn member branch: the member's OWN Brace halves the next landed blow once, then clears", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: [] });
+  const ally = fixedAlly({ wp: 20, maxWP: 20, braced: true });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
+  // pool pick 2 -> member; mRoll 3 hits (need 5); mDmg = 1 + 6 = 7, halved to 4.
+  const events = foeTurn(state, fakeRng([2, 3, 6]), []);
+  const braceHeld = events.find((e) => e.type === "braceHeld");
+  assert.ok(braceHeld);
+  assert.equal(braceHeld.member, "Ada");
+  assert.equal(ally.braced, false);
+  const struck = events.find((e) => e.type === "memberStruck");
+  assert.equal(struck.dmg, 4);
+  assert.equal(ally.wp, 16);
+});
+
+// ---------------------------------------------------------------------------
+// 6. pickFoeTarget: a member's own Taunt
+// ---------------------------------------------------------------------------
+
+test("pickFoeTarget: a member's OWN Taunt makes every foe target that member without drawing", () => {
+  const sheetA = classedMember({});
+  const sheetB = classedMember({});
+  startEffect(sheetB, "ability:taunt", { rounds: 1 });
+  const allyA = fixedAlly({ name: "Ada", partyIdx: 0, wp: 20 });
+  const allyB = fixedAlly({ name: "Beo", partyIdx: 1, wp: 20 });
+  const state = { combat: { foes: [], allies: [allyA, allyB] }, party: [sheetA, sheetB] };
+  const target = pickFoeTarget(state, fakeRng([]));
+  assert.equal(target.name, "Beo");
+});
+
+test("pickFoeTarget: the hero's own Taunt still wins over a member's Taunt (checked first)", () => {
+  const sheetA = classedMember({});
+  startEffect(sheetA, "ability:taunt", { rounds: 1 });
+  const allyA = fixedAlly({ name: "Ada", partyIdx: 0, wp: 20 });
+  const state = { c: fixedFighter(), combat: { foes: [], allies: [allyA] }, party: [sheetA] };
+  startEffect(state.c, "ability:taunt", { rounds: 1 });
+  assert.equal(pickFoeTarget(state, fakeRng([])), null);
+});
+
+// ---------------------------------------------------------------------------
+// 7. Per-member tick/clear sites
+// ---------------------------------------------------------------------------
+
+test("tick: a live member's own sheet.timers rounds-cadence record ticks once per foeTurn call", () => {
+  const sheet = classedMember({ abilities: ["kata"] });
+  startCooldown(sheet, "ability:kata", { rounds: 3 });
+  const ally = fixedAlly({ wp: 20, maxWP: 20 });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([], { allies: [ally], round: 2 });
+  foeTurn(state, fakeRng([]), []);
+  assert.equal(remaining(sheet, "ability:kata"), 2);
+});
+
+test("tick: a downed member's sheet is NOT ticked", () => {
+  const sheet = classedMember({ abilities: ["kata"] });
+  startCooldown(sheet, "ability:kata", { rounds: 3 });
+  const ally = fixedAlly({ wp: 0, maxWP: 20 }); // downed
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([], { allies: [ally], round: 2 });
+  foeTurn(state, fakeRng([]), []);
+  assert.equal(remaining(sheet, "ability:kata"), 3);
+});
+
+test("tick: a sheet without timers gains no key", () => {
+  const sheet = classedMember({ abilities: [] });
+  const ally = fixedAlly({ wp: 20, maxWP: 20 });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([], { allies: [ally], round: 2 });
+  foeTurn(state, fakeRng([]), []);
+  assert.equal("timers" in sheet, false);
+});
+
+test("clear: endCombat clears every surviving member's rounds records, leaves a squares record alone", () => {
+  const sheet = classedMember({ abilities: ["kata"] });
+  startCooldown(sheet, "ability:kata", { rounds: 3 });
+  startEffect(sheet, "campfire", { squares: 5 });
+  const ally = fixedAlly({ wp: 20, maxWP: 20, partyIdx: 0 });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([], { allies: [ally] });
+  endCombat(state, []);
+  assert.equal(isReady(sheet, "ability:kata"), true);
+  assert.equal(remaining(sheet, "campfire"), 5);
+});
+
+// ---------------------------------------------------------------------------
+// 8. derived.js#partyEffectActive
+// ---------------------------------------------------------------------------
+
+test("partyEffectActive: false with no party, no combat, no allies, a downed member, or a cooldown-phase record", () => {
+  assert.equal(partyEffectActive({ party: null, combat: { allies: [] } }, "battleRoar"), false, "no party");
+  assert.equal(partyEffectActive({ party: [classedMember()] }, "battleRoar"), false, "no combat");
+  assert.equal(partyEffectActive({ party: [classedMember()], combat: {} }, "battleRoar"), false, "no allies");
+
+  const sheet = classedMember({});
+  startEffect(sheet, "ability:battleRoar", { rounds: 2, cd: 5 });
+  const downedAlly = fixedAlly({ partyIdx: 0, wp: 0 });
+  assert.equal(
+    partyEffectActive({ party: [sheet], combat: { allies: [downedAlly] } }, "battleRoar"),
+    false,
+    "a downed carrier does not count",
+  );
+
+  const sheet2 = classedMember({});
+  startCooldown(sheet2, "ability:battleRoar", { rounds: 3 });
+  const liveAlly = fixedAlly({ partyIdx: 0, wp: 20 });
+  assert.equal(
+    partyEffectActive({ party: [sheet2], combat: { allies: [liveAlly] } }, "battleRoar"),
+    false,
+    "a cooldown-phase record does not count",
+  );
+});
+
+test("partyEffectActive: true when a LIVE member's own sheet carries a live effect for the key", () => {
+  const sheet = classedMember({});
+  startEffect(sheet, "ability:battleRoar", { rounds: 2, cd: 5 });
+  const ally = fixedAlly({ partyIdx: 0, wp: 20 });
+  assert.equal(partyEffectActive({ party: [sheet], combat: { allies: [ally] } }, "battleRoar"), true);
+});
+
+test("foeToHitVs/foeToHitBreakdown: a member's OWN Battle Roar shifts the hero's own to-hit too (party-wide)", () => {
+  const sheet = classedMember({});
+  startEffect(sheet, "ability:battleRoar", { rounds: 2, cd: 5 });
+  const ally = fixedAlly({ wp: 20 });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([], { allies: [ally] });
+  assert.equal(foeToHitVs(state), 3); // 5 - 2
+  const bd = foeToHitBreakdown(state);
+  assert.equal(bd.need, 3);
+  assert.ok(bd.mods.some((m) => m.name === "Battle Roar" && m.delta === -2));
+  assert.equal(bd.need, foeToHitVs(state), "twin equality (must_haves)");
 });

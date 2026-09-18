@@ -1192,8 +1192,15 @@ export function endCombat(state, events = []) {
   if (C && C.allies && Array.isArray(state.party)) {
     for (const ally of C.allies) {
       if (typeof ally.partyIdx === "number" && state.party[ally.partyIdx]) {
-        state.party[ally.partyIdx].wp = ally.wp;
-        // TASK2-PLACEHOLDER: per-member clearRoundTimers lands in Task 2.
+        const sheet = state.party[ally.partyIdx];
+        sheet.wp = ally.wp;
+        // Phase 38 (ABIL-05, post-research ruling): a surviving member's own
+        // ability cooldowns clear at endCombat exactly like the hero's — same
+        // rounds-cadence-only clear, same unconditional-when-timers-present
+        // guard. `C.allies` only ever holds SURVIVING members here (downMember
+        // splices a downed one out the instant it happens), so this loop
+        // never needs its own "is this member downed" check.
+        if (sheet.timers) clearRoundTimers(sheet);
       }
     }
     state.party = state.party.filter((m) => m.status !== "downed");
@@ -1552,7 +1559,45 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       gainWilmst(state, amount, "cutpurse", rng, events);
       return;
     }
-    // TASK2-PLACEHOLDER-START (secondWind/sweep/brace/riposte/taunt/sidestep/battleRoar/smoke land in Task 2)
+    case "secondWind": {
+      const heal = rng.d(8) + ally.lvl;
+      const before = ally.wp;
+      ally.wp = Math.min(ally.maxWP, ally.wp + heal);
+      events.push({ type: "memberSecondWind", name: ally.name, amount: ally.wp - before });
+      return;
+    }
+    case "sweep": {
+      const dmg = Math.ceil(weaponDamage(view, rng) / 2);
+      const foesNow = liveFoes(state);
+      events.push({ type: "memberSwept", name: ally.name, dmg, count: foesNow.length });
+      for (const f of foesNow.slice()) {
+        const hit = damageFoe(state, f, dmg, { kind: "ally", crit: false }, rng, events);
+        if (!hit.soaked) events.push({ type: "sweptFoe", target: f.name, dmg: hit.applied });
+        if (f.wp <= 0) killFoe(state, f, rng, events);
+      }
+      return;
+    }
+    case "brace":
+      // Phase 38 (ABIL-05): a transient combat-entry flag, exactly like
+      // `ally.backstabUsed` — never synced to the sheet, rebuilt per fight.
+      ally.braced = true;
+      events.push({ type: "braced", member: ally.name });
+      return;
+    case "riposte":
+      events.push({ type: "riposteReady", rounds: 1, member: ally.name });
+      return;
+    case "taunt":
+      events.push({ type: "taunted", rounds: 1, member: ally.name });
+      return;
+    case "sidestep":
+      events.push({ type: "sidestepped", rounds: 2, member: ally.name });
+      return;
+    case "battleRoar":
+      events.push({ type: "battleRoarRaised", rounds: 2, member: ally.name });
+      return;
+    case "smoke":
+      events.push({ type: "smokeThrown", rounds: 2, member: ally.name });
+      return;
     default:
       return;
   }
@@ -1785,7 +1830,16 @@ export function pickFoeTarget(state, rng, foe = null) {
   // False on every fixture (only useAbility's "taunt" case ever starts this
   // timer).
   if (abilityEffectActive(state.c, "taunt")) return null;
-  // TASK2-PLACEHOLDER: the member-own-Taunt bypass lands in Task 2.
+  // Phase 38 (ABIL-05) — a member's OWN Taunt makes every foe swing at THAT
+  // member this round, zero draws, checked before the pool die (mirrors the
+  // hero's own Taunt bypass immediately above). False on every fixture (only
+  // resolveMemberAbility's "taunt" case ever starts this timer on a member's
+  // own sheet).
+  const taunter = liveMembers.find((m) => {
+    const s = state.party?.[m.partyIdx];
+    return s && abilityEffectActive(s, "taunt");
+  });
+  if (taunter) return taunter;
   const pick = rng.d(liveMembers.length + 1);
   if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
@@ -2188,7 +2242,22 @@ export function foeTurn(state, rng, events = []) {
           mNeed += 1;
           mNeedMods.push({ name: "insulted", delta: mNeed - before });
         }
-        // TASK2-PLACEHOLDER: member-own Sidestep/Smoke need shifts land in Task 2.
+        // Phase 38 (ABIL-05): a member is its own body — its OWN Sidestep/
+        // Smoke shift its own need, exactly like the hero's equivalent terms
+        // in foeToHitVs("hero") (which this "member" vs never reads). Pure
+        // reads of the member's own persistent sheet.timers; false on every
+        // fixture (no fixture carries a party).
+        const mSheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
+        if (mSheet && abilityEffectActive(mSheet, "sidestep")) {
+          const before = mNeed;
+          mNeed = Math.max(1, mNeed - 2);
+          if (mNeed !== before) mNeedMods.push({ name: "Sidestep", delta: mNeed - before });
+        }
+        if (mSheet && abilityEffectActive(mSheet, "smoke")) {
+          const before = mNeed;
+          mNeed = 1;
+          if (mNeed !== before) mNeedMods.push({ name: "Smoke", delta: mNeed - before });
+        }
         if (mRoll > mNeed) {
           // name the member as the intended target so a whiff at a party
           // member reads distinctly from a whiff at the hero (PARTY: Oracle
@@ -2202,7 +2271,21 @@ export function foeTurn(state, rng, events = []) {
             member: member.name,
             ...(mNeedMods.length ? { needMods: mNeedMods } : {}),
           });
-          // TASK2-PLACEHOLDER: member-own Riposte counter lands in Task 2.
+          // Phase 38 (ABIL-05, Riposte) — "for one round every foe that
+          // misses you eats your weapon damage": a miss on THIS member with
+          // that member's OWN Riposte active counters it — a miss on the
+          // hero or a different member never triggers this branch. False on
+          // every fixture (only resolveMemberAbility's "riposte" case ever
+          // starts this timer on a member's own sheet).
+          if (mSheet && abilityEffectActive(mSheet, "riposte")) {
+            const rd = weaponDamage(memberView(mSheet, member), rng);
+            const hit = damageFoe(state, f, rd, { kind: "ally", crit: false }, rng, events);
+            if (!hit.soaked) events.push({ type: "memberRiposted", name: member.name, target: f.name, dmg: hit.applied });
+            if (f.wp <= 0) {
+              killFoe(state, f, rng, events);
+              break;
+            }
+          }
           continue;
         }
         // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
@@ -2214,7 +2297,17 @@ export function foeTurn(state, rng, events = []) {
         // ever sets it).
         if (f.hamstrung) mDmg = Math.ceil(mDmg / 2);
         if (mRoll === 1) mDmg *= 2;
-        // TASK2-PLACEHOLDER: member-own Brace consumption lands in Task 2.
+        // Phase 38 (ABIL-05, Brace) — a single-charge buffer on the member's
+        // OWN transient combat entry, mirroring applyFoeDamageToPlayer's
+        // `state.combat.braced` pattern exactly. Pure (no rng); false on
+        // every fixture (only resolveMemberAbility's "brace" case ever sets
+        // it).
+        if (member.braced && mDmg > 0) {
+          const before = mDmg;
+          mDmg = Math.ceil(mDmg / 2);
+          member.braced = false;
+          events.push({ type: "braceHeld", name: f.name, member: member.name, soaked: before - mDmg });
+        }
         member.wp -= mDmg;
         events.push({
           type: "memberStruck",
@@ -2326,6 +2419,16 @@ export function foeTurn(state, rng, events = []) {
   // initiative ticks twice, as ward does); guarded on c.timers; zero draws;
   // the return value is ignored until Phase 38 maps expiries to events.
   if (c.timers) tickRounds(c);
-  // TASK2-PLACEHOLDER: the per-member tickRounds tail loop lands in Task 2.
+  // Phase 38 (ABIL-05, post-research ruling): every LIVE party member's own
+  // ability cooldowns tick beside the hero's, same cadence, same call —
+  // a downed member (wp <= 0) is skipped (it is about to leave the roster at
+  // endCombat, never mid-fight); a sheet without timers is a no-op. Guarded
+  // on `C.allies` existing at all; false/inert on every fixture (no fixture
+  // carries a party).
+  for (const ally of C.allies || []) {
+    if (ally.wp <= 0) continue;
+    const s = Array.isArray(state.party) ? state.party[ally.partyIdx] : null;
+    if (s && s.timers) tickRounds(s);
+  }
   return events;
 }
