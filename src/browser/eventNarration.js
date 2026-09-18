@@ -497,9 +497,9 @@ export const EVENT_NARRATION = {
   smokeThrown: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Gone. For two rounds they need a natural 1 to find you.</span>`,
   cutpursed: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
   poisonedEdgeApplied: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}The blade weeps into ${e.target ?? "it"}. ${e.rounds ?? 3} rounds of that.</span>`,
-  // dotTick is generic on `by` — Phase 40's spells will share this same
-  // event shape, so the line never names Poisoned Edge specifically.
-  dotTick: (e) => `${e.target ?? "It"} takes <span class="hurt">${e.dmg ?? 0}</span> from the poison.`,
+  // dotTick is generic on `by` — Phase 40 (SPELL-01, Ice) is the first spell
+  // to share this event shape with Poisoned Edge; the line names the source.
+  dotTick: (e) => `${e.target ?? "It"} takes <span class="hurt">${e.dmg ?? 0}</span> from ${e.by === "ice" ? "the ice" : "the poison"}.`,
   hamstrung: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Tendon cut. ${e.target ?? "It"} hits half as hard from here on.</span>`,
   marked: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Studied. Every blow on ${e.target ?? "it"} lands +2.</span>`,
   // Plan 04 (ABIL-05): a Joiner's own ability use — the four new member-only
@@ -541,14 +541,35 @@ export const EVENT_NARRATION = {
   spellResisted: (e) => `${e.target ?? "It"} shrugs it off. <span class="roll">${e.roll ?? "?"}</span> vs intel ${e.intel ?? "?"}.`,
   resistFailed: (e) => `${e.target ?? "It"} tries to resist and fails. <span class="roll">${e.roll ?? "?"}</span>.`,
   summonBackfired: (e) => `<span class="hurt">The summoning turns on you for ${e.amount ?? 0} hp.</span>`,
-  allySummoned: (e) => `<span class="hit">${e.name ?? "Something"} answers the call.</span>`,
-  allyPending: (e) => `<span class="beat">${e.name ?? "Something"} is coming, once there is a fight to join.</span>`,
+  // Phase 40 (SPELL-04): `e.lesser` (Lesser Summon) swaps the wording for a
+  // smaller, wittier line — never a new event type.
+  allySummoned: (e) =>
+    e.lesser
+      ? `<span class="hit">${e.name ?? "Something"} answers the call, sort of.</span>`
+      : `<span class="hit">${e.name ?? "Something"} answers the call.</span>`,
+  allyPending: (e) =>
+    e.lesser
+      ? `<span class="beat">${e.name ?? "Something"} is coming, in a small way.</span>`
+      : `<span class="beat">${e.name ?? "Something"} is coming, once there is a fight to join.</span>`,
   stunned: (e) => `<span class="hit">${e.count ?? 0} freeze in place.</span>`,
-  weakened: () => `<span class="hit">They hit softer now.</span>`,
+  // Phase 40 (SPELL-01, Weaken): names the duration when the payload carries
+  // one (a member's own weakened line predates the timer and may not).
+  weakened: (e) => `<span class="hit">They hit softer now${e.rounds ? `, for ${e.rounds} rounds` : ""}.</span>`,
+  // Phase 40 (SPELL-01) — combat.js#foeTurn's tail narrates this on the
+  // `spell:weaken` timer's own effect->null transition.
+  weakenFaded: () => `<span class="hit">Their arms remember how to swing.</span>`,
   stupefied: (e) => `<span class="hit">${e.target ?? "It"} forgets what it is doing.</span>`,
+  // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's own per-round skip
+  // (the cast-time `stupefied` line above narrates the moment it lands; this
+  // one narrates every subsequent turn it does nothing).
+  foeStupefied: (e) => `${e.name ?? "It"} stands there, thinking about nothing.`,
   blinded: (e) => `<span class="hit">${e.target ?? "It"} cannot see a thing.</span>`,
   shrunk: (e) => `<span class="hit">${e.count ?? 0} shrink to half size.</span>`,
   acidApplied: (e) => `${e.target ?? "It"} starts to dissolve. <span class="roll">${e.rounds ?? 0}</span> rounds of it.`,
+  // Phase 40 (SPELL-01, Ice) — the cast-time line; combat.js#foeTurn's
+  // existing dotTick handles every round after (see dotTick's own `by`
+  // branch above), and frozenSolid (below) narrates the payoff.
+  iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${e.rounds ?? 0} rounds, then it stops moving.</span>`,
   earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> to everyone in the room.`,
   earthquakeSelfDamage: (e) => `<span class="hurt">The shaking costs you ${e.amount ?? 0} hp too.</span>`,
   vaporRolled: (e) => `Noxious vapor: <span class="roll">${e.roll ?? "?"}</span>.`,

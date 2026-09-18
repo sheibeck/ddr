@@ -339,10 +339,14 @@ test("castSpell: a d20 of 12 fails to resist — resistFailed { target, roll: 12
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // 12 -> resistRoll fails to resist (12 is NOT < 12); same 7/15/10 tail.
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 7, 15, 10]), []);
+  // 12 -> resistRoll fails to resist (12 is NOT < 12); Phase 40 (SPELL-01)
+  // adds ONE d4 draw for the new spell:weaken duration (2 -> rounds 3)
+  // between the resist roll and the same 7/15/10 tail.
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 2, 7, 15, 10]), []);
   assert.ok(events.some((e) => e.type === "resistFailed" && e.target === "Target" && e.roll === 12));
-  assert.ok(events.some((e) => e.type === "weakened"));
+  const weakened = events.find((e) => e.type === "weakened");
+  assert.ok(weakened);
+  assert.equal(weakened.rounds, 3, "d4(2)+1");
   assert.equal(state.combat.weakened, true, "an unresisted Weaken sets the foe-side weakened flag");
 });
 
@@ -354,10 +358,14 @@ test("castSpell: an intel-1 foe never triggers a resist roll (the cast-damage fi
   });
   // No leading d20 in the sequence at all — a resist draw here would throw
   // (fakeRng underflow), proving zero draws for an intel-below-12 target.
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([7, 15, 10]), []);
+  // Phase 40 (SPELL-01) adds the ONE d4 duration draw (3 -> rounds 4) ahead
+  // of the same 7/15/10 tail.
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([3, 7, 15, 10]), []);
   assert.ok(!events.some((e) => e.type === "spellResisted"));
   assert.ok(!events.some((e) => e.type === "resistFailed"));
-  assert.ok(events.some((e) => e.type === "weakened"));
+  const weakened = events.find((e) => e.type === "weakened");
+  assert.ok(weakened);
+  assert.equal(weakened.rounds, 4, "d4(3)+1");
 });
 
 test("castSpell: Summon (non-combat) queues a pendingAlly instead of C.ally when there is no encounter", () => {

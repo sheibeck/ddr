@@ -241,23 +241,30 @@ function lowestCastableUtilitySpellIdx(state) {
  * thresholds/constants are Claude's discretion, NOT a verified balance
  * target; only "every branch fires under a synthetic state" is asserted.
  *
- *   KILL    (400+): "Freeze" 410 (frozenSolid on hit); `kind==="death"` 405
- *           only when the post-cost wp stays above the flee line
+ *   KILL    (400+): Freeze's own `onHit` data flag (Phase 40 SPELL-01, never
+ *           the spell's name, per research Pitfall 2) 410 (frozenSolid on
+ *           hit); `kind==="death"` 405 only when the post-cost wp stays
+ *           above the flee line
  *           (`c.wp - 25 > fleeAt * c.maxWP` — the engine itself refuses at
  *           wp<=26 anyway); `kind==="turn"` 402 only vs Walking Dead;
  *           `kind==="gate"` 402 only vs Demons/Walking Dead.
  *   DAMAGE  (300 + expected damage, ties -> higher sp.lvl): expected(sp) =
  *           sp.dmg.n * (sp.dmg.sides + 1) / 2 + sp.dmg.bonus.
- *           `kind==="thrown"` (Mangle/Lightning/Fireball/Ice — Freeze is
- *           already KILL): Lightning's expected is multiplied by
- *           liveFoes(state).length (it hits every foe). `kind==="volley"`
- *           (Fireballs) x4.5 (mean d8 balls). `kind==="acid"` (Acid) x2 (a
- *           documented "two rounds of ticks" constant — NOTE: this makes
- *           Acid score 318 vs 1 foe, not the 309 a plain-expected reading of
- *           22-02-PLAN.md's illustrative "Resulting order" text would give;
- *           the x2 multiplier is this function's actual, documented
- *           behavior — Claude's Discretion per the flagged assumption above);
- *           skipped when the current target already carries `acid`.
+ *           `kind==="thrown"` (Mangle/Lightning/Fireball — Freeze is already
+ *           KILL) or `kind==="dot"` (Ice, Phase 40): Lightning's own `aoe`
+ *           data flag (never the spell's name) multiplies the expected
+ *           damage by liveFoes(state).length (it hits every foe).
+ *           `kind==="volley"` (Fireballs) x4.5 (mean d8 balls). `kind==="acid"`
+ *           (Acid) x2 (a documented "two rounds of ticks" constant — NOTE:
+ *           this makes Acid score 318 vs 1 foe, not the 309 a plain-expected
+ *           reading of 22-02-PLAN.md's illustrative "Resulting order" text
+ *           would give; the x2 multiplier is this function's actual,
+ *           documented behavior — Claude's Discretion per the flagged
+ *           assumption above); skipped when the current target already
+ *           carries `acid`. `kind==="dot"` (Ice, Phase 40 SPELL-01) x3 — the
+ *           mean tick count of the real `d4+1` duration (3.5, rounded to a
+ *           documented constant like Acid's own x2); skipped when the
+ *           current target already carries `dot`.
  *   DISABLE (200+, only when liveFoes(state).length >= 2): `kind==="stun"`
  *           230, `kind==="weaken"` 220 (skipped when `C.weakened`),
  *           `kind==="shrink"` 215, `kind==="status"` (Doze) 210,
@@ -292,7 +299,7 @@ export function chooseSpell(state, ctx) {
     if (!canCast(state, sp)) continue;
     let score;
     let tier;
-    if (sp.n === "Freeze") {
+    if (sp.onHit === "freeze") {
       score = 410;
       tier = "kill";
     } else if (sp.kind === "death") {
@@ -309,17 +316,16 @@ export function chooseSpell(state, ctx) {
       tier = "kill";
     } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid" || sp.kind === "dot") {
       if (sp.kind === "acid" && target && target.acid) continue; // already ticking
+      if (sp.kind === "dot" && target && target.dot) continue; // already ticking (Phase 40)
       let expected = expectedDamage(sp);
-      if (sp.n === "Lightning") expected *= Math.max(1, nFoes);
+      if (sp.aoe === "all") expected *= Math.max(1, nFoes);
       else if (sp.kind === "volley") expected *= 4.5;
       else if (sp.kind === "acid") expected *= 2; // two rounds of ticks
-      // Phase 40 (SPELL-01): Ice's kind is now "dot" (content/spells.js), but
-      // its castSpell mechanic is still the plain single-hit default branch
-      // (engine/magic.js) until Plan 02 wires a real per-round tick — score
-      // it as a PLAIN thrown-tier hit (no multiplier) so it stays correctly
-      // ranked below Acid's proven x2 ticking value. Plan 02 revisits this
-      // once Ice gets its own f.dot tick and a real total-expected-damage
-      // formula (test/unit/tuning-bot.test.js's DAMAGE-tier ordering test).
+      // Phase 40 (SPELL-01): Ice is now a real per-round DOT
+      // (engine/magic.js#castSpell's `dot` branch + combat.js#foeTurn's own
+      // f.dot tick/freeze payoff) — scored with the same "documented mean
+      // tick count" constant Acid uses, per its own d4+1 duration (mean 3.5).
+      else if (sp.kind === "dot") expected *= 3;
       score = 300 + expected;
       tier = "damage";
     } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {

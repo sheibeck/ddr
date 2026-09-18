@@ -579,6 +579,10 @@ const RESIST_FOLD_EFFECTS = new Set([
   "blinded",
   "shrunk",
   "acidApplied",
+  // Phase 40 (SPELL-01, Ice) — resistible exactly like Acid (both kinds are
+  // absent from RESIST_IMMUNE_KINDS), so a resistFailed preceding a landed
+  // Ice cast folds the same way.
+  "iceApplied",
   "petrified",
   "walkingDeadTurned",
   "planeGated",
@@ -1218,7 +1222,9 @@ export const TOAST_FOR = {
   smokeThrown: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Gone. They need a natural 1 to find you.`, tone: "hit", priority: PRIORITY.feature }),
   cutpursed: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}You lift ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"}.`, tone: "hit", priority: PRIORITY.them }),
   poisonedEdgeApplied: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds.`, tone: "hit", priority: PRIORITY.them }),
-  dotTick: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0} from the poison.`, tone: "hurt", priority: PRIORITY.them }),
+  // Phase 40 (SPELL-01, Ice) — the generic-on-`by` shape now covers two
+  // sources; the short form names whichever one this tick came from.
+  dotTick: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0} from ${e?.by === "ice" ? "the ice" : "the poison"}.`, tone: "hurt", priority: PRIORITY.them }),
   hamstrung: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} hits half as hard from here on.`, tone: "hit", priority: PRIORITY.them }),
   marked: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every blow on ${e?.target ?? "it"} lands +2.`, tone: "hit", priority: PRIORITY.them }),
   // Plan 04 (ABIL-05): a Joiner's own ability use — four new member-only
@@ -1264,14 +1270,23 @@ export const TOAST_FOR = {
   spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.spell ?? "it"}`, tone: "miss", priority: PRIORITY.you }),
   resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist.`, tone: "hit", priority: PRIORITY.you }),
   summonBackfired: (e) => ({ text: `The summoning costs you ${e?.amount ?? 0} hp.`, tone: "hurt", priority: PRIORITY.you }),
-  allySummoned: (e) => ({ text: `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
-  allyPending: (e) => ({ text: `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-04): `e?.lesser` (Lesser Summon) swaps the short form.
+  allySummoned: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} answers the call, sort of.` : `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
+  allyPending: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} is coming, in a small way.` : `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
   stunned: (e) => ({ text: `${e?.count ?? 0} freeze in place.`, tone: "magic", priority: PRIORITY.you }),
-  weakened: () => ({ text: "They hit softer now.", tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-01, Weaken): the rounds count, when the payload carries one.
+  weakened: (e) => ({ text: `They hit softer now${e?.rounds ? ` (${e.rounds})` : ""}.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-01) — combat.js#foeTurn's `spell:weaken` expiry.
+  weakenFaded: () => ({ text: "Their arms remember how to swing.", tone: "magic", priority: PRIORITY.you }),
   stupefied: (e) => ({ text: `${e?.target ?? "It"} forgets what it is doing.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's per-round skip.
+  foeStupefied: (e) => ({ text: `${e?.name ?? "It"} stands there, thinking about nothing.`, tone: "dodge", priority: PRIORITY.them }),
   blinded: (e) => ({ text: `${e?.target ?? "It"} cannot see a thing.`, tone: "magic", priority: PRIORITY.you }),
   shrunk: (e) => ({ text: `${e?.count ?? 0} shrink to half size.`, tone: "magic", priority: PRIORITY.you }),
   acidApplied: (e) => ({ text: `${e?.target ?? "It"} starts to dissolve (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-01, Ice) — the cast-time line; dotTick's own `by` branch
+  // (Phase 38's combat.js hooks section, below) narrates every round after.
+  iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"} (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   earthquake: (e) => ({ text: `The floor heaves (${e?.amount ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   earthquakeSelfDamage: (e) => ({ text: `The shaking costs you ${e?.amount ?? 0} hp too.`, tone: "hurt", priority: PRIORITY.you }),
   vaporRolled: (e) => ({ text: `Noxious vapor (${e?.roll ?? "?"}).`, tone: "magic", priority: PRIORITY.other }),

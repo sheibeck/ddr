@@ -163,6 +163,10 @@ const BRANCH_TOGGLES = [
   // ternary this plan adds — a hero-cast use (BASE_EVENT's own `member`
   // value covers the Joiner-cast side already).
   { member: null },
+  // Phase 40 (SPELL-01/04): dotTick's ice branch (BASE_EVENT's own `by`
+  // covers the poison side), Lesser Summon's `lesser` wording, and
+  // `weakened`'s fallback wording when no `rounds` payload is present.
+  { by: "ice" }, { lesser: true }, { rounds: 0 },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

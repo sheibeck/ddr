@@ -533,7 +533,9 @@ export function playerStrike(state, rng, events = []) {
     // exactly one die, unchanged.
     if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
     let need = a === 1 && R.frenzy ? 3 : toHit(state);
-    if (t.asleep > 0) need = Math.max(need, 5); // p.27: 5 to hit a dozing creature
+    // Phase 40 (SPELL-01, Stupidity): a stupid foe is hit exactly like a
+    // dozing one — it never reacts, so the same need-5 floor applies.
+    if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
     if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
     if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
     if (t.sp && t.sp.magicOnly && !c.magicWpn) need = 0; // only magic touches it
@@ -851,6 +853,9 @@ function pursuitStrike(state, rng, events) {
   // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
   let dmg = pursuer.lvl * pursuer.lvl + (pursuer.dmgBonus || 0) + (pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6));
   if (C.weakened) dmg = Math.ceil(dmg / 2);
+  // Phase 40 (SPELL-01, Shrink) — a shrunk pursuer's parting strike is
+  // halved too, same rule as its ordinary melee swing.
+  if (pursuer.shrunk) dmg = Math.ceil(dmg / 2);
   if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
   return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need, needMods });
 }
@@ -1730,7 +1735,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
   const base = { name: ally.name, spell: sp.n, target: t.name };
   if (sp.kind === "thrown") {
-    const freeze = sp.n === "Freeze";
+    // Phase 40 (SPELL-01): the THIRD name-keyed Freeze check (a member cast)
+    // — repointed to the data flag alongside magic.js's own two sites
+    // (research Pitfall 2).
+    const freeze = sp.onHit === "freeze";
     const dieN = freeze ? 10 : 8;
     const need = freeze ? 6 : 4;
     const bonus = schoolBonus(view.sub, sp.s) + eff(view, "throw");
@@ -1761,12 +1769,18 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     return;
   }
   if (sp.kind === "weaken") {
+    // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
+    // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
+    // (party-wide duration lives in one place) — its own d4+1 draw, after
+    // the resist roll above.
     const C = state.combat;
+    const rounds = rng.d(4) + 1;
     if (C) {
       C.weakened = true;
       C.foeToHitPenalty = 3;
+      startEffect(state.c, "spell:weaken", { rounds });
     }
-    events.push({ type: "allySpellHit", ...base, effect: "weakened" });
+    events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   } else {
     t.asleep = Math.max(t.asleep || 0, rng.d(4));
     events.push({ type: "allySpellHit", ...base, effect: "asleep", rounds: t.asleep });
@@ -2090,19 +2104,25 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
 
 /**
  * foeTurn(state, rng, events) — every live foe's attack. Step order (Phase
- * 19 additions marked *NEW*, Phase 38 additions marked *ABIL*): *NEW* a
- * queued summon joins C.foes -> regen tick -> per foe: acid-over-time tick,
- * *ABIL* the f.dot tick (Poisoned Edge, the acid template), alive check,
- * sleep, *ABIL* the f.stunned skip (Pommel Strike, the asleep template),
- * *NEW* fleesBelow check, *NEW* the ability gate (cast or fall through to
- * melee), the melee swings (per-swing foeDie vs foeToHitVs with
- * blind/weakened/*ABIL* hamstrung overrides, sp.dmg dice, criticals,
- * *ABIL* a hero-branch miss's Riposte counter, Hardiness reduction, *ABIL*
- * Brace's single-charge halving, a ward's absorb/reflect/shatter, *ABIL*
- * Taunt's doubled armor-soak target, armor soak, die() on wp<=0) -> *ABIL*
- * the f.blindFor countdown (Dirty Trick) at the end of each foe's own visit
- * -> ward/mirror ticks -> *NEW* the c.foeEffect tick -> *ABIL* the
- * engine/effects.js rounds tick (Phase 36, ability cooldowns). Ports
+ * 19 additions marked *NEW*, Phase 38 additions marked *ABIL*, Phase 40
+ * additions marked *SPELL*): *NEW* a queued summon joins C.foes -> regen tick
+ * -> per foe: acid-over-time tick, *ABIL* the f.dot tick (Poisoned Edge, the
+ * acid template — *SPELL* shares the SAME record shape for Ice, plus its own
+ * frozen/killFoe payoff when an ice dot's last tick leaves the foe standing),
+ * alive check, sleep, *SPELL* the f.stupid skip (Stupidity — the asleep
+ * template, no counter, lasts the fight), *ABIL* the f.stunned skip (Pommel
+ * Strike, the same template), *NEW* fleesBelow check, *NEW* the ability gate
+ * (cast or fall through to melee), the melee swings (per-swing foeDie vs
+ * foeToHitVs with blind/weakened/*SPELL* shrunk/*ABIL* hamstrung overrides,
+ * sp.dmg dice, criticals, *ABIL* a hero-branch miss's Riposte counter,
+ * Hardiness reduction, *ABIL* Brace's single-charge halving, a ward's
+ * absorb/reflect/shatter, *ABIL* Taunt's doubled armor-soak target, armor
+ * soak, die() on wp<=0) -> *ABIL* the f.blindFor countdown (Dirty Trick) at
+ * the end of each foe's own visit -> ward/mirror ticks -> *NEW* the
+ * c.foeEffect tick -> *ABIL/SPELL* the engine/effects.js rounds tick (Phase
+ * 36 ability cooldowns; Phase 40's `spell:weaken` record clears
+ * C.weakened/C.foeToHitPenalty and narrates weakenFaded on its own
+ * effect->null transition, off the SAME tick call). Ports
  * mazeworld.html foeTurn() (lines 2838-2903). Uses pickFoeTarget (*ABIL*:
  * Taunt bypasses it entirely, 0 draws) for target selection and
  * applyFoeDamageToPlayer (Hardiness onward, *ABIL*: Brace/Taunt) for the
@@ -2157,11 +2177,27 @@ export function foeTurn(state, rng, events = []) {
     if (f.dot && f.dot.left > 0 && f.alive) {
       const d = rollDice(rng, f.dot.dmg);
       const tick = damageFoe(state, f, d, { kind: "spell", school: f.dot.by, casterSub: c.sub }, rng, events);
+      // Captured before the delete below — `by` is the switch the ice payoff
+      // reads (Phase 40, SPELL-01), so Poisoned Edge's own dot is unaffected.
+      const by = f.dot.by;
       f.dot.left--;
-      events.push({ type: "dotTick", target: f.name, dmg: tick.applied, by: f.dot.by, left: f.dot.left });
-      if (f.dot.left <= 0) delete f.dot;
+      const dotRanOut = f.dot.left <= 0;
+      events.push({ type: "dotTick", target: f.name, dmg: tick.applied, by, left: f.dot.left });
+      if (dotRanOut) delete f.dot;
       if (f.wp <= 0 && f.alive) {
         killFoe(state, f, rng, events);
+        continue;
+      }
+      // Phase 40 (SPELL-01, Ice) — the promised "then frozen solid": when the
+      // ICE dot's last tick leaves the foe still standing, it freezes solid
+      // and dies through killFoe (pays like any other kill), mirroring the
+      // thrown Freeze branch's own frozen/killFoe/revive lines exactly.
+      // Zero extra draws before killFoe's own.
+      if (dotRanOut && by === "ice" && f.alive) {
+        f.frozen = true;
+        events.push({ type: "frozenSolid", target: f.name });
+        killFoe(state, f, rng, events);
+        if (f.alive) f.frozen = false; // kill-twice revived it — a standing foe is not frozen
         continue;
       }
     }
@@ -2169,6 +2205,16 @@ export function foeTurn(state, rng, events = []) {
     if (f.asleep > 0) {
       f.asleep--;
       events.push({ type: "foeSlept", name: f.name });
+      continue;
+    }
+    // Phase 40 (SPELL-01, Stupidity) — a stupid foe skips EVERY turn for the
+    // rest of the fight: no counter (f.stupid never clears itself — only the
+    // foe's own death or the fight's end retires it), placed directly after
+    // the asleep block, mirroring Pommel Strike's f.stunned skip immediately
+    // below. A foe cannot be both asleep and stupid-skipped the same turn
+    // (the asleep branch's own `continue` already exited).
+    if (f.stupid) {
+      events.push({ type: "foeStupefied", name: f.name });
       continue;
     }
     // Phase 38 (ABIL-01, Pommel Strike) — f.asleep's own skip-turn pattern,
@@ -2303,6 +2349,11 @@ export function foeTurn(state, rng, events = []) {
         // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
         let mDmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
+        // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
+        // too (a shrunk-AND-weakened foe is quartered, ceil applied twice —
+        // both are independent post-roll halvings). Pure read, 0 draws;
+        // false on every fixture.
+        if (f.shrunk) mDmg = Math.ceil(mDmg / 2);
         // Phase 38 (ABIL-01, Hamstring) — this specific foe's own blows do
         // half damage for the rest of the fight, member side. Pure read, 0
         // draws; false on every fixture (only useAbility's "hamstring" case
@@ -2379,6 +2430,11 @@ export function foeTurn(state, rng, events = []) {
       // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
       let dmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
       if (C.weakened) dmg = Math.ceil(dmg / 2);
+      // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
+      // too, hero side (see the member-branch twin above for the
+      // shrunk+weakened quartering note). Pure read, 0 draws; false on every
+      // fixture.
+      if (f.shrunk) dmg = Math.ceil(dmg / 2);
       // Phase 38 (ABIL-01, Hamstring) — this specific foe's own blows do
       // half damage for the rest of the fight, hero side. Pure read, 0
       // draws; false on every fixture.
@@ -2429,7 +2485,23 @@ export function foeTurn(state, rng, events = []) {
   // ticks twice, as ward does); guarded on c.timers; zero draws. Phase 39
   // (GEAR-02): the returned transitions are mapped to events below
   // (itemEffectFaded/itemCooled/staffRecharged).
-  if (c.timers) narrateTimerTransitions(state, tickRounds(c), events);
+  // Phase 40 (SPELL-01, Weaken) — the ONE tickRounds(c) call for this tail:
+  // the same transitions list feeds BOTH the generic item/ability narration
+  // (narrateTimerTransitions, unchanged) AND this spell-specific expiry
+  // check, so a round never ticks the timers map twice. On the
+  // `spell:weaken` record's effect->null transition, clear the same
+  // C.weakened/C.foeToHitPenalty fields the cast set and narrate
+  // `weakenFaded` — clearRoundTimers at endCombat already drops a still-live
+  // record when the fight ends first.
+  if (c.timers) {
+    const trans = tickRounds(c);
+    narrateTimerTransitions(state, trans, events);
+    if (C && trans.some((t) => t.id === "spell:weaken" && t.from === "effect")) {
+      C.weakened = false;
+      C.foeToHitPenalty = 0;
+      events.push({ type: "weakenFaded" });
+    }
+  }
   // Phase 38 (ABIL-05, post-research ruling): every LIVE party member's own
   // ability cooldowns tick beside the hero's, same cadence, same call —
   // a downed member (wp <= 0) is skipped (it is about to leave the roster at

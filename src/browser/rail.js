@@ -215,6 +215,13 @@ export const RAIL_FAMILY = Object.freeze({
   itemEffectFaded: { icon: "◇", title: "WORN OFF", tone: "odd" },
   itemCooled: { icon: "◇", title: "READY", tone: "good" },
   staffRecharged: { icon: "◇", title: "CHARGED", tone: "good" },
+
+  // Phase 40 (SPELL-01) — combat-only spell events, given a family entry for
+  // completeness even though they fire only mid-fight (the fight log, not
+  // this out-of-combat rail, is their real destination).
+  iceApplied: { icon: "·", title: "ICE", tone: "odd" },
+  weakenFaded: { icon: "·", title: "WEAKEN FADES", tone: "dull" },
+  foeStupefied: { icon: "·", title: "STUPEFIED", tone: "odd" },
 });
 
 /**

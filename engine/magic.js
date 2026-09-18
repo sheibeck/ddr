@@ -26,6 +26,12 @@ import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget 
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
+// Phase 40 (SPELL-01, Weaken): the ONE timer shape every v1.5 timer shares
+// (Phase 36) — Weaken's duration lives on a rounds-cadence `spell:weaken`
+// record, ticked by combat.js#foeTurn's shared tickRounds(c) tail exactly
+// like an ability cooldown or an item effect. A cycle-free leaf import, no
+// combat.js/magic.js cycle risk.
+import { startEffect } from "./effects.js";
 // Phase 18 (D-09/CANON-01/03/04): every damage-to-foe site below routes
 // through the shared seam instead of decrementing foe.wp directly.
 import { damageFoe } from "./foeDamage.js";
@@ -35,15 +41,34 @@ import { damageFoe } from "./foeDamage.js";
 // array literal (line 2509) verbatim as a named set.
 const RESIST_IMMUNE_KINDS = new Set(["thrown", "ward", "might", "regen", "heal", "reveal", "foresee", "summon", "mirror"]);
 
+// Phase 40 (SPELL-01/SPELL-04): the summon branch's two ally name tables,
+// moved to module consts (byte-identical strings, same order) so both the
+// full Summon/Phantom Host table and the new Lesser Summon table live in one
+// place. ALLY_NAMES is the pre-Phase-40 inline literal, unchanged.
+const ALLY_NAMES = ["A horned thing", "Something with too many arms", "A shape that hurts to look at", "A tall grey silence"];
+const LESSER_ALLY_NAMES = [
+  "A thing with one horn, mostly",
+  "Something with nearly enough arms",
+  "A small grey sulk",
+  "A shape that is mildly upsetting to look at",
+];
+
 /**
  * castSpell(state, idx, rng, events, now) — resolves SPELLS[idx] by kind.
  * Ports mazeworld.html castSpell() (lines 2483-2672): the charge check,
  * grimoire/school gating (skipped for a scroll-cast spell), the Apprentice's
  * one-in-eight backfire, the intelligent-target resistance roll, and every
  * spell kind's effect (heal/ward/might/status/thrown/reveal/mirror/stun/
- * weaken/acid/quake/vapor/volley/petrify/insane/summon/turn/gate/senses/
+ * weaken/acid/dot/quake/vapor/volley/petrify/insane/summon/turn/gate/senses/
  * foresee/regen/death/stupid/blind/shrink). A bad `idx` (T-01-09a: no
  * validated range check upstream) is a safe no-op.
+ *
+ * Phase 40 (SPELL-01, research Pitfall 2): the thrown branch and the summon
+ * branch read DATA FLAGS, never a spell name — Freeze's own `onHit` flag
+ * (its frozen-solid kill), Lightning's own `aoe` flag (its every-foe case),
+ * Lesser Summon's own `lesser` flag (its no-doubling/no-backfire rule) — so a
+ * content-table rename can never silently break any of the three. See the
+ * thrown branch and the summon branch below for the exact comparisons.
  */
 export function castSpell(state, idx, rng, events = [], now = Date.now) {
   const sp = SPELLS[idx];
@@ -136,8 +161,15 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   }
 
   if (sp.kind === "summon") {
-    const doubled = c.sub === "Summoner"; // a Summoner's creatures come doubled
-    const lvl = Math.min(5, c.level + (doubled ? 1 : 0));
+    // Phase 40 (SPELL-04): `sp.lesser === true` (Lesser Summon, the new
+    // level-1 row) is a data flag, never a spell name — the Summoner's
+    // doubled-creature and one-in-eight backfire rules NEVER apply to it (it
+    // is the safe, small trick the user ruling asked for). `doubled` stays
+    // exactly the pre-Phase-40 Summoner rule for every OTHER summon kind
+    // (Summon, Phantom Host).
+    const lesser = sp.lesser === true;
+    const doubled = c.sub === "Summoner" && !lesser; // a Summoner's FULL creatures come doubled
+    const lvl = lesser ? Math.max(1, Math.min(3, c.level - 1)) : Math.min(5, c.level + (doubled ? 1 : 0));
     if (doubled && rng.d(8) === 1) {
       const hurt = lvl * lvl + rng.d(6);
       c.wp -= hurt;
@@ -149,15 +181,18 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     } else {
       const ally = {
         lvl,
-        rounds: (doubled ? 2 : 1) * rng.d(4) + 2,
-        name: rng.pick(["A horned thing", "Something with too many arms", "A shape that hurts to look at", "A tall grey silence"]),
+        // Lesser Summon: a plain d4, never doubled, never the +2 tacked onto
+        // the full table's roll — shorter, and never lengthened by a
+        // Summoner's own doubling (it isn't doubled here at all).
+        rounds: lesser ? rng.d(4) : (doubled ? 2 : 1) * rng.d(4) + 2,
+        name: rng.pick(lesser ? LESSER_ALLY_NAMES : ALLY_NAMES),
       };
       if (C) {
         C.ally = ally;
-        events.push({ type: "allySummoned", name: ally.name, rounds: ally.rounds, lvl: ally.lvl });
+        events.push({ type: "allySummoned", name: ally.name, rounds: ally.rounds, lvl: ally.lvl, ...(lesser ? { lesser: true } : {}) });
       } else {
         c.pendingAlly = ally;
-        events.push({ type: "allyPending", name: ally.name, rounds: ally.rounds, lvl: ally.lvl });
+        events.push({ type: "allyPending", name: ally.name, rounds: ally.rounds, lvl: ally.lvl, ...(lesser ? { lesser: true } : {}) });
       }
     }
   } else if (sp.kind === "stun") {
@@ -168,16 +203,35 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     });
     events.push({ type: "stunned", count: Math.min(n, liveFoes(state).length) });
   } else if (sp.kind === "weaken") {
+    // Phase 40 (SPELL-01, Weaken): a scope x duration axis, stated in the
+    // grimoire's own txt ("every foe, d4+1 rounds") — today undefined in
+    // canon. A rounds-cadence `spell:weaken` timer names the duration;
+    // combat.js#foeTurn's tail clears C.weakened/C.foeToHitPenalty and
+    // narrates `weakenFaded` on its effect->null transition. ONE-TICK-
+    // ALREADY-SPENT INVARIANT (38-03 SUMMARY): a cast IS the round's action,
+    // so THIS SAME dispatch's own afterPlayerAction->foeTurn tail ticks the
+    // freshly-started record once before castSpell returns — the caller
+    // observes `left` one short of the full draw, never the full duration.
+    // Re-casting mid-window overwrites the record (refresh), never stacks.
+    // sp.combatOnly (true for Weaken) guarantees C exists whenever this
+    // branch runs — the `if (C)` guard is defensive (engine V5 discipline),
+    // not reachable-false in real play.
+    const rounds = rng.d(4) + 1;
     if (C) {
       C.weakened = true;
       C.foeToHitPenalty = 3;
+      startEffect(c, "spell:weaken", { rounds });
     }
-    events.push({ type: "weakened" });
+    events.push({ type: "weakened", rounds });
   } else if (sp.kind === "stupid") {
     const t = C && liveFoes(state)[0];
     if (t) {
       t.stupid = true;
-      t.asleep = Math.max(t.asleep, rng.d(10));
+      // DELIBERATE RULES CHANGE (Phase 40, SPELL-01, CONTEXT "Stupidity
+      // (single, the fight)"): the old rng.d(10) nap is retired — Stupidity
+      // now disables the target for the REST OF THE FIGHT via
+      // combat.js#foeTurn's f.stupid skip (it never reaches its own melee/
+      // ability turn again) instead of a timed sleep. Zero draws.
       events.push({ type: "stupefied", target: t.name });
     }
   } else if (sp.kind === "blind") {
@@ -200,6 +254,22 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     if (t && t.alive) {
       t.acid = { rounds: rng.d(6), dmg: sp.dmg };
       events.push({ type: "acidApplied", target: t.name, rounds: t.acid.rounds });
+    }
+  } else if (sp.kind === "dot") {
+    // Phase 40 (SPELL-01, Ice): the real per-round damage-over-time the
+    // spell's txt has always promised — the exact `f.dot = { left, dmg, by }`
+    // shape Poisoned Edge (Phase 38) and combat.js#foeTurn's existing tick
+    // already read; this module never freezes anything itself — foeTurn's
+    // own payoff does that when the last tick leaves the foe standing. One
+    // draw (the duration); no to-hit roll, like Acid; resistible ("dot" is
+    // absent from RESIST_IMMUNE_KINDS, so an intel >= 12 foe still gets its
+    // d20 above); recasting on a foe already carrying an ice dot REFRESHES
+    // `left` (overwrite), never stacks. T-40-03: guarded on `sp.dmg` — a
+    // tampered/unknown dot row missing it never writes a broken record.
+    const t = C && C.foes[C.target];
+    if (t && t.alive && sp.dmg) {
+      t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" };
+      events.push({ type: "iceApplied", target: t.name, rounds: t.dot.left });
     }
   } else if (sp.kind === "quake") {
     const mult = Math.max(1, c.level - sp.lvl);
@@ -374,14 +444,23 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else {
     // thrown: d8, 4 to hit, plus the offensive bonus from the subclass chart
     const bonus = schoolBonus(c.sub, sp.s) + eff(c, "throw");
-    const targets = sp.n === "Lightning" ? liveFoes(state) : [C ? C.foes[C.target] : null].filter(Boolean);
+    // Phase 40 (SPELL-01, research Pitfall 2): Lightning's own `aoe` data
+    // flag drives the every-foe case below — replaces the old name-keyed
+    // special case (a direct comparison against the literal spell name
+    // "Lightning") so a rename can never silently break it.
+    const targets = sp.aoe === "all" ? liveFoes(state) : [C ? C.foes[C.target] : null].filter(Boolean);
     if (!targets.length) {
       events.push({ type: "nothingToThrowAt" });
       return events;
     }
     for (const t of targets) {
       if (!t.alive) continue;
-      const freeze = sp.n === "Freeze";
+      // Phase 40 (SPELL-01): Freeze's own `onHit` data flag drives the
+      // frozen-solid case below — replaces the old name-keyed check (a
+      // direct comparison against the literal spell name "Freeze"), per
+      // research Pitfall 2. The frozenSolid/killFoe/revive machinery below
+      // is byte-identical to before this phase.
+      const freeze = sp.onHit === "freeze";
       const dieN = freeze ? 10 : 8;
       // Phase 31 Afraid — to-hit is a LOW range, so the target SHRINKS
       // (4 → 1, Freeze 6 → 3), never the roll; pure arithmetic, zero rng;
