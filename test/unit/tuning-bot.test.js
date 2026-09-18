@@ -186,14 +186,23 @@ test("D-06: caster threshold raises flee/parley to 0.5 vs any kit-bearing live f
   // a bot that always prefers parley over flee would retry it every turn
   // for the rest of the fight. ctx.parleyBlocked (set by observe() on a
   // parleyRefused event) makes decideAction fall through to flee instead.
+  //
+  // Phase 38 (ABIL-02, Rule 1 fix): the Language skill is dropped outright,
+  // so fluency(c) now maxes at 1 (a tongue-effect item alone) — a fluency-2
+  // Wilmsry is structurally unreachable, and canParley's Magical branch
+  // (which requires flu >= 2) is never true for ANY character anymore. This
+  // scenario's Wilmsry (still planting a retired Language skill AND a tongue
+  // item, both harmless no-ops now) therefore never even sees a "parley"
+  // option — decideAction goes straight to "flee", with or without
+  // ctx.parleyBlocked, since canParley is false from the very first check.
   const wilmsryC = {
     race: "Wilmsry", cls: "Fighter", sub: "Soldier", level: 1, wp: 8, maxWP: 40,
     potions: 0, rations: 0, spellsUsed: 0, grimoire: [], items: [{ eff: { tongue: 1 } }],
-    skills: { Language: 1 }, gold: 0,
+    skills: {}, gold: 0,
   };
   const magicalCombat = { type: "Magical", foes: [plainFoe], round: 1 };
   const wilmsryState = mkState({ combat: magicalCombat, c: wilmsryC });
-  assert.deepStrictEqual(decideAction(wilmsryState, fixedPolicyRng, ctx), { type: "parley" });
+  assert.deepStrictEqual(decideAction(wilmsryState, fixedPolicyRng, ctx), { type: "flee" });
   ctx.parleyBlocked = true;
   assert.deepStrictEqual(decideAction(wilmsryState, fixedPolicyRng, ctx), { type: "flee" });
 });

@@ -80,22 +80,25 @@ function fixedCombat(foes, overrides = {}) {
 
 // --- D-09: fluency tiers -----------------------------------------------
 
-test("D-09: fluency is 0 / 1 / 1 / 2 for neither / skill / Helm / both", () => {
+// Phase 38 (ABIL-02): the Language skill is dropped outright — fluency now
+// comes ENTIRELY from a tongue-effect item, so the ceiling drops from 2 to 1.
+// A planted (retired) Language skill is a no-op at every tier.
+test("D-09 (Phase 38): fluency is 0 / 0 / 1 / 1 for neither / retired-Language / Helm / Helm+retired-Language", () => {
   assert.equal(fluency({ skills: {}, items: [] }), 0, "neither");
-  assert.equal(fluency({ skills: { Language: 1 } }), 1, "skill tier 1");
-  assert.equal(fluency({ skills: { Language: 2 } }), 1, "skill tier is irrelevant — still 1");
-  assert.equal(fluency({ items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }), 1, "Helm alone");
+  assert.equal(fluency({ skills: { Language: 1 } }), 0, "a retired Language skill no longer counts");
+  assert.equal(fluency({ skills: { Language: 2 } }), 0, "skill tier is irrelevant — still a no-op");
+  assert.equal(fluency({ items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }), 1, "Helm alone — the max");
   assert.equal(
     fluency({ skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }),
-    2,
-    "both",
+    1,
+    "Helm + a retired Language skill is still just 1 — the ceiling is 1, not 2",
   );
 });
 
 test("D-09 boundaries: undefined skills/items, a zero tongue effect, and an unrelated skill all read 0", () => {
   assert.equal(fluency({}), 0, "no skills/items keys at all");
   assert.equal(fluency({ items: [{ n: "x", eff: { tongue: 0 } }] }), 0, "a zero tongue effect does not count");
-  assert.equal(fluency({ skills: { Tracking: 1 } }), 0, "an unrelated skill does not count");
+  assert.equal(fluency({ skills: { Tracking: 1 } }), 0, "an unrelated (also retired) skill does not count");
 });
 
 test("D-09 purity: fluency neither draws nor mutates", () => {

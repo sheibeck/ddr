@@ -40,10 +40,6 @@ import { tickSquares } from "./effects.js";
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
 export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
 
-/** climbBonus/leapBonus(c) — ports mazeworld.html lines 1467-1468. */
-const climbBonus = (c) => (skill(c, "Climbing") ? 4 : 0);
-const leapBonus = (c) => (skill(c, "Leaping") ? 2 : 0);
-
 // DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Heights and
 // Bodies-of-water phobias (both `t: null` in content/flavor.js's PHOBIAS
 // catalog — inert per 04.1-RESEARCH.md's audit) get a documented, DETERMINISTIC
@@ -179,22 +175,24 @@ export function move(state, dir, rng, events = [], now = Date.now) {
         const tbl = CLIMB_TABLE[kind];
         const feet = 10 * (1 + rng.d(2));
         for (let ft = 0; ft < feet && ok; ft += 10) {
-          const r = rng.d(10) - climbBonus(state.c) + hPenalty;
+          // Phase 38 (ABIL-02): the retired climb bonus — no term subtracted here anymore.
+          const r = rng.d(10) + hPenalty;
           if (r <= tbl.success) continue;
           ok = false;
           for (let g = 0; g <= ft; g += 10) if (rng.d(20) > 2) hurt += rollDice(rng, tbl.fall);
-          if (skill(state.c, "Climbing")) hurt = Math.ceil(hurt / 2);
+          // Phase 38 (ABIL-02): the retired climb and leap fall-damage halving — gone for everyone.
         }
       } else {
         const wPenalty = waterPenalty(state.c);
         if (wPenalty) events.push({ type: "waterFear" });
         const row = LEAP_TABLE[rng.d(4) - 1];
         const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
-        const r = rng.d(10) - leapBonus(state.c) + wPenalty;
+        // Phase 38 (ABIL-02): the retired leap bonus — no term subtracted here anymore.
+        const r = rng.d(10) + wPenalty;
         if (r > need) {
           ok = false;
           hurt = rng.d(6) + rng.d(6);
-          if (skill(state.c, "Climbing")) hurt = Math.ceil(hurt / 2);
+          // Phase 38 (ABIL-02): the retired climb and leap fall-damage halving — gone for everyone.
         }
       }
       if (!ok) {

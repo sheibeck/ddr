@@ -81,7 +81,7 @@ test("probe FEED-02 ordering: one refusal plus 6 features keeps the refusal at i
   const events = [
     { type: "frenzy" },
     { type: "backstab" },
-    { type: "silenceStrike" },
+    { type: "deathTouch", target: "Viper" },
     { type: "stealthStrike" },
     { type: "ninjaFirstStrike" },
     { type: "strikeRefused", reason: "wizard", spell: "Freeze" },

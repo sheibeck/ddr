@@ -830,7 +830,7 @@ test("flee: a failed roll triggers the foe's turn and advances the round", () =>
 
 // --- canParley / parley ------------------------------------------------
 
-test("canParley: Con Artist/Woodsman/Bard/Language/Wilmsry/Elven gates match the prototype", () => {
+test("canParley: Con Artist/Woodsman/Bard/Wilmsry/Elven gates match the prototype", () => {
   const mk = (cOverrides, type) => {
     const state = fixedState({ c: cOverrides });
     state.combat = fixedCombat([], { type });
@@ -845,15 +845,18 @@ test("canParley: Con Artist/Woodsman/Bard/Language/Wilmsry/Elven gates match the
   assert.equal(canParley(mk({ race: "Wilmsry" }, "Magical")), false);
   assert.equal(canParley(mk({ race: "Elven" }, "Humans")), true);
   assert.equal(canParley(mk({ race: "Elven" }, "Beasts")), false);
-  assert.equal(canParley(mk({ skills: { Language: 1 } }, "Demons")), true);
+  assert.equal(canParley(mk({}, "Demons")), false);
   assert.equal(canParley(mk({}, "Humans")), false);
   // D-11: Walking Dead is refused for everyone, even a Con Artist.
   assert.equal(canParley(mk({ sub: "Con Artist" }, "Walking Dead")), false);
-  // D-11/D-12: full fluency (skill + Helm) opens Magical, even for a Con
-  // Artist — canParley's gate is race/sub-agnostic at fluency 2.
+  // Phase 38 (ABIL-02): Language is retired outright — a planted Language
+  // skill changes nothing versus a plain {} character (both fluency 0).
+  assert.equal(canParley(mk({ skills: { Language: 1 } }, "Demons")), canParley(mk({}, "Demons")));
+  // Fluency now maxes at 1 (a tongue item alone) — the fluency-2 Magical
+  // gate is unreachable for anyone, including a Con Artist with the Helm.
   assert.equal(
-    canParley(mk({ sub: "Con Artist", skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }, "Magical")),
-    true,
+    canParley(mk({ sub: "Con Artist", items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }, "Magical")),
+    false,
   );
 });
 

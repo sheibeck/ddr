@@ -8,6 +8,19 @@
 // test/unit/foe-effect-chip.test.js's source-read pattern — mazeworld.html
 // has no module surface a test could import) and replays the engine's
 // availability matrix through it.
+//
+// Phase 38 (ABIL-02): the Language skill is dropped outright from
+// engine/derived.js#fluency (this plan's engine-side change) — the classic
+// script's own fluency() duplicate is UNCHANGED (mazeworld.html is out of
+// this plan's scope per its own prohibitions; a later shell plan owns it).
+// This is harmless in real play: chargen never grants Language anymore, so
+// the classic `skill("Language")` read is permanently false for every real
+// character, meaning it too effectively caps at fluency 1 going forward.
+// The ONLY place the two scripts can still be made to disagree is a
+// synthetic test state that directly plants `c.skills.Language` — a shape
+// chargen can no longer produce — so this file's matrix drops that
+// unreachable dimension, matching the same declared-divergence discipline
+// test/unit/parley.test.js/combat.test.js apply.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -105,24 +118,22 @@ function mk(cOverrides, type, combatOverrides = {}) {
 
 // --- tests --------------------------------------------------------------
 
-test("D-17: the classic canParley() agrees with engine/combat.js#canParley on all 1008 matrix cases", () => {
+test("D-17 (Phase 38): the classic canParley() agrees with engine/combat.js#canParley on all 504 reachable matrix cases", () => {
   let cases = 0;
   for (const race of Object.keys(RACES)) {
     for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier", "Ninja", "Master of Arms", "Court Mage"]) {
-      for (const lang of [false, true]) {
-        for (const helm of [false, true]) {
-          for (const t of ENC_TYPES) {
-            cases++;
-            const state = mk({ race, sub, skills: lang ? { Language: 1 } : {}, items: helm ? [HELM] : [] }, t);
-            const engineResult = canParley(state);
-            const classicResult = classicFor(state)();
-            assert.equal(classicResult, engineResult, `race=${race} sub=${sub} lang=${lang} helm=${helm} type=${t}`);
-          }
+      for (const helm of [false, true]) {
+        for (const t of ENC_TYPES) {
+          cases++;
+          const state = mk({ race, sub, items: helm ? [HELM] : [] }, t);
+          const engineResult = canParley(state);
+          const classicResult = classicFor(state)();
+          assert.equal(classicResult, engineResult, `race=${race} sub=${sub} helm=${helm} type=${t}`);
         }
       }
     }
   }
-  assert.equal(cases, 1008);
+  assert.equal(cases, 504);
 });
 
 test("Phase 24 (IDENT-05): a Ninja and a Master of Arms never parley, even at fluency 2 (Language + Helm)", () => {
@@ -154,9 +165,13 @@ test("D-17: the classic gate hides the button after the one attempt and with no 
   assert.equal(classicFor(noCombat)(), false);
   assert.equal(canParley(noCombat), false);
 
-  const wilmsryMagical = mk({ race: "Wilmsry", skills: { Language: 1 }, items: [HELM] }, "Magical");
-  assert.equal(classicFor(wilmsryMagical)(), true, "the gate opens; parley()'s refusal is a separate concern");
-  assert.equal(canParley(wilmsryMagical), true);
+  // Phase 38 (ABIL-02): fluency 2 is unreachable in real play on EITHER
+  // script (Language is never granted by chargen anymore) — a Wilmsry vs
+  // Magical at the real-play-reachable fluency ceiling (1, Helm alone)
+  // stays refused on both.
+  const wilmsryMagical = mk({ race: "Wilmsry", items: [HELM] }, "Magical");
+  assert.equal(classicFor(wilmsryMagical)(), false, "fluency 1 (Helm alone) does not open Magical on the classic script either");
+  assert.equal(canParley(wilmsryMagical), false);
 });
 
 test("D-17 source pins: the classic canParley reads parleyTried and opens Magical only at fluency 2", () => {

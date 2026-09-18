@@ -143,11 +143,17 @@ function mk(cOverrides, type, combatOverrides = {}) {
  * expectedCanParley(c, t, tried) — an INDEPENDENT prose restatement of
  * D-11/D-12 (LANG-02: the oracle must never call engine/combat.js#canParley).
  * Written from the locked decisions, not copied from the implementation.
+ *
+ * Phase 38 (ABIL-02): the Language skill is dropped outright — fluency is
+ * now sourced ENTIRELY from a tongue-effect item, so its ceiling is 1, not
+ * 2. `t === "Magical"` is therefore structurally unreachable (kept as
+ * `flu === 2` for fidelity to the still-live engine gate, which is simply
+ * never satisfied by any character anymore).
  */
 function expectedCanParley(c, t, tried) {
   if (tried) return false;
   if (t === "Walking Dead") return false;
-  const flu = (c.skills && c.skills.Language ? 1 : 0) + ((c.items || []).some((it) => it.eff && it.eff.tongue > 0) ? 1 : 0);
+  const flu = (c.items || []).some((it) => it.eff && it.eff.tongue > 0) ? 1 : 0;
   if (t === "Magical") return flu === 2;
   if (c.sub === "Con Artist") return true;
   if (c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
@@ -160,33 +166,48 @@ function expectedCanParley(c, t, tried) {
 
 // --- Test 1: the full availability matrix ---------------------------------
 
-test("LANG-02 / D-11: availability matrix — 6 races × 4 subs × skill × Helm × 6 types (576 cases) match the rule oracle", () => {
+// Phase 38 (ABIL-02): the Language skill is dropped outright — the matrix's
+// `lang` dimension is gone (a planted Language skill is now a pure no-op,
+// asserted separately below), leaving 6 races × 4 subs × Helm × 6 types.
+test("LANG-02 / D-11: availability matrix — 6 races × 4 subs × Helm × 6 types (288 cases) match the rule oracle", () => {
   let cases = 0;
   let magicalTrue = 0;
   let walkingDeadTrue = 0;
   let plainHumanSoldierTrue = 0;
   for (const race of Object.keys(RACES)) {
     for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier"]) {
-      for (const lang of [false, true]) {
-        for (const helm of [false, true]) {
-          for (const t of ENC_TYPES) {
-            cases++;
-            const state = mk({ race, sub, skills: lang ? { Language: 1 } : {}, items: helm ? [HELM] : [] }, t);
-            const actual = canParley(state);
-            const expected = expectedCanParley(state.c, t, false);
-            assert.equal(actual, expected, `race=${race} sub=${sub} lang=${lang} helm=${helm} type=${t}`);
-            if (t === "Magical" && actual) magicalTrue++;
-            if (t === "Walking Dead" && actual) walkingDeadTrue++;
-            if (race === "Human" && sub === "Soldier" && !lang && !helm) plainHumanSoldierTrue += actual ? 1 : 0;
-          }
+      for (const helm of [false, true]) {
+        for (const t of ENC_TYPES) {
+          cases++;
+          const state = mk({ race, sub, items: helm ? [HELM] : [] }, t);
+          const actual = canParley(state);
+          const expected = expectedCanParley(state.c, t, false);
+          assert.equal(actual, expected, `race=${race} sub=${sub} helm=${helm} type=${t}`);
+          if (t === "Magical" && actual) magicalTrue++;
+          if (t === "Walking Dead" && actual) walkingDeadTrue++;
+          if (race === "Human" && sub === "Soldier" && !helm) plainHumanSoldierTrue += actual ? 1 : 0;
         }
       }
     }
   }
-  assert.equal(cases, 576);
-  assert.equal(magicalTrue, 24, "Magical is available in exactly 24 of the 576 cases (only at fluency 2)");
+  assert.equal(cases, 288);
+  assert.equal(magicalTrue, 0, "Magical is available to nobody now — fluency 2 is structurally unreachable");
   assert.equal(walkingDeadTrue, 0, "Walking Dead never parleys, for anyone");
   assert.equal(plainHumanSoldierTrue, 0, "a plain Human Soldier at fluency 0 can never parley, for any type");
+});
+
+test("Phase 38 (ABIL-02): a planted (retired) Language skill changes canParley for nobody, with or without the Helm", () => {
+  for (const race of Object.keys(RACES)) {
+    for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier"]) {
+      for (const helm of [false, true]) {
+        for (const t of ENC_TYPES) {
+          const without = canParley(mk({ race, sub, items: helm ? [HELM] : [] }, t));
+          const withLang = canParley(mk({ race, sub, skills: { Language: 1 }, items: helm ? [HELM] : [] }, t));
+          assert.equal(withLang, without, `race=${race} sub=${sub} helm=${helm} type=${t}`);
+        }
+      }
+    }
+  }
 });
 
 // --- Test 2: every canParley gate, explicitly -------------------------------
@@ -200,18 +221,20 @@ test("PARLEY-04 / D-12: every canParley gate, explicitly", () => {
   assert.equal(canParley(mk({ sub: "Con Artist" }, "Walking Dead")), false, "Con Artist vs Walking Dead -> false");
   assert.equal(canParley(mk({ race: "Wilmsry" }, "Walking Dead")), false, "Wilmsry vs Walking Dead -> false");
   assert.equal(
-    canParley(mk({ skills: { Language: 1 }, items: [HELM] }, "Walking Dead")),
+    canParley(mk({ items: [HELM] }, "Walking Dead")),
     false,
-    "fluency-2 character vs Walking Dead -> false",
+    "fluency-1 (max reachable) character vs Walking Dead -> false",
   );
-  // Magical at fluency 0/1/2 for a Con Artist
+  // Magical at fluency 0/1 for a Con Artist — fluency 2 is structurally
+  // unreachable (Phase 38: Language is retired), so Magical is refused at
+  // every reachable fluency, Helm or no Helm, planted (retired) skill or not.
   assert.equal(canParley(mk({ sub: "Con Artist" }, "Magical")), false, "Con Artist fluency 0 vs Magical -> false");
-  assert.equal(canParley(mk({ sub: "Con Artist", skills: { Language: 1 } }, "Magical")), false, "fluency 1 (skill only) vs Magical -> false");
+  assert.equal(canParley(mk({ sub: "Con Artist", skills: { Language: 1 } }, "Magical")), false, "a retired Language skill alone does nothing vs Magical -> false");
   assert.equal(canParley(mk({ sub: "Con Artist", items: [HELM] }, "Magical")), false, "fluency 1 (Helm only) vs Magical -> false");
   assert.equal(
     canParley(mk({ sub: "Con Artist", skills: { Language: 1 }, items: [HELM] }, "Magical")),
-    true,
-    "fluency 2 (skill + Helm) vs Magical -> true",
+    false,
+    "Helm + a retired Language skill is still just fluency 1 vs Magical -> false (the ceiling is 1, not 2)",
   );
   // Woodsman
   assert.equal(canParley(mk({ sub: "Woodsman" }, "Beasts")), true, "Woodsman vs Beasts -> true");
@@ -221,18 +244,19 @@ test("PARLEY-04 / D-12: every canParley gate, explicitly", () => {
   // Bard
   assert.equal(canParley(mk({ sub: "Bard" }, "Humans")), true, "Bard vs Humans -> true");
   assert.equal(canParley(mk({ sub: "Bard" }, "Beasts")), false, "Bard vs Beasts -> false");
-  // Skill-only fluency 1
+  // Skill-only: a retired Language skill grants NOTHING on its own anymore.
   for (const t of ["Humans", "Demons", "Lair Beasts", "Beasts"]) {
-    assert.equal(canParley(mk({ skills: { Language: 1 } }, t)), true, `skill-only fluency 1 vs ${t} -> true`);
+    assert.equal(canParley(mk({ skills: { Language: 1 } }, t)), false, `retired-Language-only (fluency 0) vs ${t} -> false`);
   }
-  assert.equal(canParley(mk({ skills: { Language: 1 } }, "Magical")), false, "skill-only fluency 1 vs Magical -> false");
+  assert.equal(canParley(mk({ skills: { Language: 1 } }, "Magical")), false, "retired-Language-only vs Magical -> false");
   // Helm-only fluency 1
   for (const t of ["Humans", "Demons", "Lair Beasts", "Beasts"]) {
     assert.equal(canParley(mk({ items: [HELM] }, t)), true, `Helm-only fluency 1 vs ${t} -> true`);
   }
   assert.equal(canParley(mk({ items: [HELM] }, "Magical")), false, "Helm-only fluency 1 vs Magical -> false");
-  // fluency 2 (skill + Helm) opens Magical, even for a plain Human Soldier
-  assert.equal(canParley(mk({ skills: { Language: 1 }, items: [HELM] }, "Magical")), true, "Human Soldier fluency 2 vs Magical -> true");
+  // Helm + a retired Language skill is STILL just fluency 1 — Magical stays
+  // refused even for a plain Human Soldier (the fluency-2 tier is gone).
+  assert.equal(canParley(mk({ skills: { Language: 1 }, items: [HELM] }, "Magical")), false, "Human Soldier Helm+retired-Language vs Magical -> false");
   // Wilmsry
   for (const t of ["Beasts", "Humans", "Demons", "Lair Beasts"]) {
     assert.equal(canParley(mk({ race: "Wilmsry" }, t)), true, `Wilmsry vs ${t} -> true`);
@@ -240,8 +264,8 @@ test("PARLEY-04 / D-12: every canParley gate, explicitly", () => {
   assert.equal(canParley(mk({ race: "Wilmsry" }, "Magical")), false, "Wilmsry fluency 0 vs Magical -> false");
   assert.equal(
     canParley(mk({ race: "Wilmsry", skills: { Language: 1 }, items: [HELM] }, "Magical")),
-    true,
-    "Wilmsry fluency 2 vs Magical -> true",
+    false,
+    "Wilmsry Helm+retired-Language (still fluency 1) vs Magical -> false — wilmsryVsMagical is now structurally unreachable",
   );
   // Elven
   assert.equal(canParley(mk({ race: "Elven" }, "Humans")), true, "Elven vs Humans -> true");
@@ -252,17 +276,25 @@ test("PARLEY-04 / D-12: every canParley gate, explicitly", () => {
   }
 });
 
-// --- Test 3: the reachable Wilmsry-vs-Magical refusal ----------------------
+// --- Test 3: the (now unreachable) Wilmsry-vs-Magical refusal --------------
 
-test("PARLEY-04 / D-12: a fluency-2 Wilmsry vs Magical is refused with the canon reason, draws nothing, and does NOT spend the attempt", () => {
+// Phase 38 (ABIL-02): the wilmsryVsMagical refusal branch inside parley()
+// is STRUCTURALLY UNREACHABLE now — it sits behind `if (!canParley(state))
+// return events;`, and canParley's own Magical gate requires fluency 2,
+// which no character can reach anymore (Language is retired; a tongue item
+// alone caps fluency at 1). The branch is left in engine/combat.js as inert
+// code (not this plan's target file), but a direct call proves it: canParley
+// is false, so parley() is a silent, zero-draw no-op, exactly like any other
+// never-eligible encounter.
+test("PARLEY-04 / D-12 (Phase 38): a Wilmsry vs Magical at the reachable fluency ceiling (1) never sees the button; parley() is a silent, zero-draw no-op", () => {
   const state = mk({ race: "Wilmsry", skills: { Language: 1 }, items: [HELM] }, "Magical");
-  assert.equal(canParley(state), true);
+  assert.equal(canParley(state), false, "fluency 2 is unreachable — the Magical gate never opens");
   const first = parley(state, fakeRng([]), []);
-  assert.deepStrictEqual(first, [{ type: "parleyRefused", reason: "wilmsryVsMagical" }]);
-  assert.equal(state.combat.parleyTried, undefined, "a refusal never consumes the one attempt");
+  assert.deepStrictEqual(first, [], "canParley false -> the silent unchanged-events path, zero draws");
+  assert.equal(state.combat.parleyTried, undefined, "never spent, never even attempted");
   assert.ok(state.combat, "combat is still active");
   const second = parley(state, fakeRng([]), []);
-  assert.deepStrictEqual(second, [{ type: "parleyRefused", reason: "wilmsryVsMagical" }], "refused again, not exhausted");
+  assert.deepStrictEqual(second, [], "still a silent no-op, not exhausted");
   assert.equal(state.c.sp, 0);
   assert.equal(state.c.gold, 50);
 });
@@ -374,10 +406,14 @@ test("PARLEY-03 / D-08: need clamps at 17 — inactive at bonus 8, active at bon
   assert.equal(e1.find((e) => e.type === "parleyRolled").need, 17);
   assert.ok(e1.some((e) => e.type === "spGained"), "clamp inactive here: 17 succeeds");
 
+  // Phase 38 (ABIL-02): fluency now maxes at 1 (a tongue item alone — the
+  // planted Language skill below is a no-op), so bonus tops out at
+  // 4+4+2(flu)=10 rather than the pre-Phase-38 12; 9+10=19 still clamps to
+  // 17, so the clamp behaviour this test targets is unaffected.
   const s2 = fixedState({ c: { sub: "Con Artist", race: "Wilmsry", skills: { Language: 1 }, items: [HELM] } });
   s2.combat = fixedCombat([fixedFoe({ type: "Beasts", lvl: 1 })]);
   const e2 = parley(s2, fakeRng([17, 3]), []);
-  assert.equal(e2.find((e) => e.type === "parleyRolled").need, 17, "clamped from 21 down to 17");
+  assert.equal(e2.find((e) => e.type === "parleyRolled").need, 17, "clamped from 19 down to 17");
   assert.ok(e2.some((e) => e.type === "spGained"), "still succeeds at the ceiling");
 
   const s3 = fixedState({ c: { sub: "Con Artist", race: "Wilmsry", skills: { Language: 1 }, items: [HELM] } });
@@ -389,12 +425,16 @@ test("PARLEY-03 / D-08: need clamps at 17 — inactive at bonus 8, active at bon
 
 // --- Test 9: fluency bonus term ---------------------------------------------
 
-test("LANG-01 / D-10: fluency adds +2 per tier to need and is reported on parleyRolled", () => {
+// Phase 38 (ABIL-02): the Language skill is retired — fluency now comes
+// entirely from a tongue item, capped at 1, so the +4 "both" tier is gone.
+// A planted (retired) Language skill alongside the Helm still reads exactly
+// like the Helm alone (need 11, fluency 1), never the old need-13 tier.
+test("LANG-01 / D-10 (Phase 38): fluency adds +2 at its single reachable tier and is reported on parleyRolled", () => {
   const cases = [
     { lang: false, helm: false, need: 9, fluency: 0 },
-    { lang: true, helm: false, need: 11, fluency: 1 },
+    { lang: true, helm: false, need: 9, fluency: 0, note: "a retired Language skill alone is a no-op" },
     { lang: false, helm: true, need: 11, fluency: 1 },
-    { lang: true, helm: true, need: 13, fluency: 2 },
+    { lang: true, helm: true, need: 11, fluency: 1, note: "Helm + retired Language is still just fluency 1" },
   ];
   for (const { lang, helm, need, fluency: flu } of cases) {
     const state = fixedState({ c: { sub: "Bard", skills: lang ? { Language: 1 } : {}, items: helm ? [HELM] : [] } });
@@ -404,11 +444,6 @@ test("LANG-01 / D-10: fluency adds +2 per tier to need and is reported on parley
     assert.equal(rolled.need, need, `lang=${lang} helm=${helm}`);
     assert.equal(rolled.fluency, flu, `lang=${lang} helm=${helm}`);
   }
-  // Restated with literal expected numbers (skill alone +2, Helm alone +2, both +4):
-  assert.equal(cases[0].need, 9);
-  assert.equal(cases[1].need, 11, "skill alone");
-  assert.equal(cases[2].need, 11, "Helm alone");
-  assert.equal(cases[3].need, 13, "both");
 });
 
 // --- Test 10: payout formula --------------------------------------------
@@ -489,15 +524,18 @@ test("PARLEY-01 / D-03 / D-04: the Humans wilmst check pays only on a 6 and draw
 
 // --- Test 13: countingRng draw-shape pins ------------------------------------
 
-test("D-04 draw shape pinned with countingRng: exhausted 0, refused 0, success 1 + N (+1 Humans check, +1 payout)", () => {
+test("D-04 draw shape pinned with countingRng: exhausted 0, never-eligible 0, success 1 + N (+1 Humans check, +1 payout)", () => {
   const exhausted = mk({ sub: "Con Artist" }, "Humans", { parleyTried: true });
   const c1 = countingRng(fakeRng([]));
   parley(exhausted, c1, []);
   assert.equal(c1.draws, 0);
 
-  const refused = mk({ race: "Wilmsry", skills: { Language: 1 }, items: [HELM] }, "Magical");
+  // Phase 38 (ABIL-02): a Wilmsry vs Magical at the max reachable fluency
+  // (1, Helm + a retired Language skill) never passes canParley — the
+  // silent "not eligible" path, still zero draws, same as before this plan.
+  const neverEligible = mk({ race: "Wilmsry", skills: { Language: 1 }, items: [HELM] }, "Magical");
   const c2 = countingRng(fakeRng([]));
-  parley(refused, c2, []);
+  parley(neverEligible, c2, []);
   assert.equal(c2.draws, 0);
 
   const twoBeasts = fixedState({ c: { sub: "Con Artist" } });

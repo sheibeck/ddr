@@ -22,6 +22,7 @@ import {
   parley,
 } from "../../engine/combat.js";
 import { foeToHitVs } from "../../engine/derived.js";
+import { startEffect } from "../../engine/effects.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count; `.pick(arr)` returns `arr[0]` unless a picker is
@@ -220,11 +221,17 @@ test("startCombat: encounterStarted carries knightBigFoe/courtMageTalksFirst, ad
   assert.equal(cmStarted.courtMageTalksFirst, true);
 });
 
-// --- Guard: -1 to be hit, stacking with Agility, floored/overridden -------
+// --- Guard: -1 to be hit, stacking with Sidestep, floored/overridden -------
+// Phase 38 (ABIL-02): Agility (a standing passive) is retired outright;
+// Sidestep (a c.timers-driven active with the same -2 shape Agility never
+// had — Agility was -1) is its replacement. The Guard's own -1 still stacks
+// additively with Sidestep's -2.
 
-test("foeToHitVs: a Guard needs one better, stacking with Agility, never beating a hard override", () => {
+test("foeToHitVs: a Guard needs one better, stacking with Sidestep, never beating a hard override", () => {
   assert.equal(foeToHitVs(fixedState({ c: { sub: "Guard" } })), 4);
-  assert.equal(foeToHitVs(fixedState({ c: { sub: "Guard", skills: { Agility: 1 } } })), 3);
+  const guardSidestep = fixedState({ c: { sub: "Guard" } });
+  startEffect(guardSidestep.c, "ability:sidestep", { rounds: 2, cd: 4 });
+  assert.equal(foeToHitVs(guardSidestep), 2, "Guard -1 stacks with Sidestep's -2");
   assert.equal(foeToHitVs(fixedState({ c: { sub: "Guard", mirror: 1 } })), 1, "Mirror Self still wins");
   assert.equal(foeToHitVs(fixedState({ c: { sub: "Soldier" } })), 5, "a non-Guard is unaffected");
 });
@@ -305,11 +312,14 @@ test("pickFoeTarget: an intel<=3 foe always targets a Bard hero when a live part
 
 // --- canParley / parley: Ninja + Master of Arms bads, Court Mage good -----
 
-test("canParley: a Ninja and a Master of Arms are refused for every encounter type, even at fluency 2", () => {
+// Phase 38 (ABIL-02): the Language skill is retired outright (dropped from
+// this plant); the sub gate this test proves fires BEFORE fluency is even
+// read, so it holds regardless.
+test("canParley: a Ninja and a Master of Arms are refused for every encounter type", () => {
   const types = ["Beasts", "Demons", "Humans", "Lair Beasts", "Magical", "Walking Dead"];
   for (const sub of ["Ninja", "Master of Arms"]) {
     for (const type of types) {
-      const state = fixedState({ c: { sub, skills: { Language: 1 } } });
+      const state = fixedState({ c: { sub } });
       state.combat = fixedCombat([fixedFoe({ type })], { type });
       assert.equal(canParley(state), false, `${sub} vs ${type}`);
     }

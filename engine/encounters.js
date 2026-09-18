@@ -56,14 +56,17 @@ import {
 } from "../content/index.js";
 
 /**
- * springTrap(state, rng, events) — Agility/Leaping/Acrobat dodge, a Pilfer's
- * free disarm, TRAPS[d8] damage (Cat Burglar doubles it, Hardiness reduces
- * it), a poisoned arrow's affliction, and die() on lethal. Ports
- * mazeworld.html springTrap() (lines 2065-2079).
+ * springTrap(state, rng, events) — Acrobat dodge, a Pilfer's free disarm,
+ * TRAPS[d8] damage (Cat Burglar doubles it, Hardiness reduces it), a
+ * poisoned arrow's affliction, and die() on lethal. Ports mazeworld.html
+ * springTrap() (lines 2065-2079).
+ *
+ * Phase 38 (ABIL-02): the retired Agility and Leaping dodge terms are gone —
+ * only the Acrobat sub bonus remains.
  */
 export function springTrap(state, rng, events = []) {
   const c = state.c;
-  const nimble = 5 + (skill(c, "Agility") ? 2 : 0) + (skill(c, "Leaping") ? 1 : 0) + (c.sub === "Acrobat" ? 3 : 0);
+  const nimble = 5 + (c.sub === "Acrobat" ? 3 : 0);
   const dodge = rng.d(20);
   if (dodge <= nimble) {
     events.push({ type: "trapAvoided", roll: dodge, need: nimble });
