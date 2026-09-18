@@ -242,7 +242,14 @@ Plans:
   3. Facing a pit, an unclimbable wall, or a dark region, a player carrying rope/ladder/torch respectively can consume it at that decision point (e.g. the CLIMB IT rail card) to bypass or ease the hazard; each tool is consumed exactly once.
   4. Rope, ladder, and torch appear as loot and store stock at depth-appropriate tiers.
 
-**Plans**: TBD
+**Plans**: 5 plans (sequential waves 1–5; `mazeworld.html` touched only by 39-05)
+
+Plans:
+- [ ] 39-01-PLAN.md — GEAR-01 axes: weapon `need`/`crit`, armor `bulk`, re-diced/re-priced tables (key order pinned), engine reads (toHit/crit/climb/leap/flee/stealth), expected-strike upgrade heuristic, declared fixture divergences (economy + measured combat)
+- [ ] 39-02-PLAN.md — GEAR-01 close: tuning-bot store buy/equip policy on expectedStrike + bulk, 429-run class-matrix smoke vs the v1.5 BEFORE pin, `docs/GEAR-BALANCE.md` before/after ledger
+- [ ] 39-03-PLAN.md — GEAR-02 engine: `ACTIVATION_OF` content declarations (duration+cd / charges+recharge / consumables), timer-backed `itemReady`/`useItem` on `c.timers`, counter retirement (haste/invis/ether/acute/flight/potion might/usedAt), tick-site narration, `conditionsOf` chips, tolerant save fold, harness carve-out
+- [ ] 39-04-PLAN.md — GEAR-05 engine: rope/ladder/torch as `kind: "tool"` items (loot via derived rng, store by tier), `pendingHazard` pre-roll decision + `useTool` action, torch lights/holds off `c.darkFor`, narration, `pendingHazard` carve-out
+- [ ] 39-05-PLAN.md — Shell + close: hazard decision/retry/dark rail cards (USE LADDER / USE ROPE / USE TORCH), `itemRowState` for Gear-tab + ITEMS rows, item chips + tap explanations, engine-routed Hero-tab to-hit, ledger requirements map, whole-phase gate, aggregated Pixel 7 checklist
 **Research flag**: Standard/precedented for the item-cooldown extension (research: `itemReady`/`useItem` already has this exact shape; Lockpicks is the existing 1:1 tool precedent). Light discussion optional for GEAR-01's specific weapon/armor rebalance numbers only.
 
 ### Phase 40: Spell Rework
