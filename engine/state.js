@@ -211,6 +211,15 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // Phase 13. The parity harness strips this top-level field the same way it
     // strips `party`/`pendingJoiner`.
     pendingFind: null,
+    // Phase 39 (GEAR-05): the hazard pre-roll decision — a top-level
+    // sibling of pendingFind/pendingJoiner (NOT a field on `c`), a SEVENTH
+    // analog of party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll.
+    // `{ feat, dir, tool, declined }` while a climbable wall/gorge tile is
+    // being decided, else `null`. Initialized to `null` here as a plain
+    // assignment (NO rng draw) — transient like pendingFind, always reset
+    // to `null` on load (engine/saveState.js). The parity harness strips
+    // this top-level field the same way it strips pendingFind.
+    pendingHazard: null,
     // Phase 29 (LOOT-01/06): the end-of-combat drop pile — a top-level
     // sibling of pendingFind, initialized to a plain empty array (NO rng
     // draw, so the seeded chargen cursor the determinism/parity suites pin

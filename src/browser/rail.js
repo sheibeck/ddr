@@ -152,6 +152,16 @@ export const RAIL_FAMILY = Object.freeze({
   fellInGorge: { icon: "⧗", title: "FELL", tone: "bad" },
   flownOver: { icon: "⧗", title: "OVER IT", tone: "odd" },
   phasedThrough: { icon: "⧗", title: "OVER IT", tone: "odd" },
+  // Phase 39 (GEAR-05): the hazard pre-roll decision card (hazardChoice is
+  // ORACLE_ONLY on the toast side — the card IS the UI, mirroring findOffered
+  // — but still gets a family entry here for Plan 05's dedicated card) and
+  // the spent-tool outcome.
+  hazardChoice: { icon: "⧗", title: "A CHOICE", tone: "info" },
+  toolUsed: { icon: "⧗", title: "OVER IT", tone: "good" },
+  // Phase 39 (GEAR-05): the torch — lighting a live darkness, and a LATER
+  // Darkness result held off entirely by the same lit effect.
+  torchLit: { icon: "◇", title: "LIT", tone: "good" },
+  darknessResisted: { icon: "◇", title: "LIT", tone: "good" },
 
   floorChanged: { icon: "▼", title: "FLOOR {n}", tone: "odd", hold: RAIL_HOLD.floor },
   leveled: { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level },
@@ -204,6 +214,14 @@ export const RAIL_FAMILY = Object.freeze({
  * "the actual icon" — so this table matches the map, not the crevice glyph.
  * flownOver/phasedThrough carry no feat (Flight/Ethereal fly over either
  * obstacle), so they keep the crevice icon per the ruling's literal text.
+ *
+ * Phase 39 (GEAR-05): `toolUsed` fires on EITHER a climb ("wall") OR a
+ * gorge ("crevice") hazard — a single event TYPE covering both, unlike
+ * climbedOver/leaptOver's separate types — so it is NOT listed here (this
+ * table is keyed by type only, with no room to branch per instance).
+ * `railCardFor` below reads the raw event's own `.feat` field directly at
+ * its one lookup site instead, exactly mirroring this table's own
+ * climb-is-wall / gorge-is-crevice mapping.
  */
 export const RAIL_FEATURE_ICON = Object.freeze({
   trapSprung: "trap",
@@ -343,10 +361,17 @@ export function railCardFor(type, events, folded, ctx = {}) {
   const hold = Math.max(...raw.map((l) => railFamilyFor(l.type, l.tone ?? "beat", l.priority).hold));
   const sorted = [...raw].sort((a, b) => b.idx - a.idx);
 
+  // Phase 39 (GEAR-05): toolUsed is the one RAIL_FEATURE_ICON exception —
+  // its icon depends on the raw event's own `.feat` (climb -> wall, gorge
+  // -> crevice), not just its type (see the table's own header comment).
+  const headEvent = evts[head.idx];
+  const iconKey =
+    head.type === "toolUsed" ? (headEvent?.feat === "climb" ? "wall" : "crevice") : (RAIL_FEATURE_ICON[head.type] ?? null);
+
   return {
     tone: fam.tone,
     icon: fam.icon,
-    iconKey: RAIL_FEATURE_ICON[head.type] ?? null,
+    iconKey,
     title,
     lines: sorted.map(({ text, roll }) => ({ text, roll })),
     hold,

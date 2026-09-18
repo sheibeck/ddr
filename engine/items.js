@@ -1173,6 +1173,17 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     return events;
   }
 
+  // Phase 39 (GEAR-05): a torch used while NOT dark is refused before any
+  // side effect and NOT consumed — "save it for when it's dark" (CONTEXT
+  // Area 1). `inDark` already covers both the current tile's `.dark` flag
+  // and the persistent `c.darkFor` counter, exactly the darkness this torch
+  // answers; the torch only ever touches `c.darkFor` (Phase 41 owns the
+  // tile `.dark` model).
+  if (kind === "light" && !inDark(state)) {
+    events.push({ type: "useRefused", item: it, reason: "notDark" });
+    return events;
+  }
+
   // CMB-02 (Phase 31) + Phase 39 (GEAR-02): itemReady's silent no-op
   // (RESEARCH §3.4) replaced with an explaining refusal naming exactly how
   // many squares remain — only when the item actually carries an activation
@@ -1244,6 +1255,17 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     }
     case "half": {
       c.halfNext = true;
+      break;
+    }
+    case "light": {
+      // Phase 39 (GEAR-05): the torch — refused above (notDark) unless
+      // inDark(state) is already true. Clears the persistent counter
+      // outright (like the Amulet of Light's `light` eff, movement.js's
+      // per-step tick); applyActivation (below, after this switch) starts
+      // the 40-square `lit` effect record from TOOL_ACTIVATION_OF.Torch.
+      const wasDark = c.darkFor > 0;
+      c.darkFor = 0;
+      events.push({ type: "torchLit", left: ACTIVATION_OF.Torch.effect, wasDark });
       break;
     }
     case "death": {
@@ -1328,7 +1350,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // not recognize.
   if (!fizzled) applyActivation(state, it, rng, events);
 
-  if (it.kind === "potion" || it.uses === 1) {
+  if (it.kind === "potion" || it.uses === 1 || it.kind === "tool") {
     if (slot) delete c.worn[slot];
     else c.items.splice(i, 1);
     events.push({ type: "itemConsumed", item: it });

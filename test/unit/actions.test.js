@@ -30,3 +30,27 @@ test("validateAction accepts a useAbility with any non-empty string key (catalog
   // abilityRefused { reason: "unknown" } event, never a validation failure.
   assert.equal(validateAction({ type: "useAbility", key: "not-a-real-ability" }).ok, true);
 });
+
+// --- Phase 39 (GEAR-05): useTool { tool, dir } ------------------------------
+
+test("ACTION_TYPES includes useTool", () => {
+  assert.ok(ACTION_TYPES.has("useTool"));
+});
+
+test("validateAction accepts useTool with tool ladder or rope and a cardinal dir", () => {
+  assert.equal(validateAction({ type: "useTool", tool: "ladder", dir: "N" }).ok, true);
+  assert.equal(validateAction({ type: "useTool", tool: "rope", dir: "S" }).ok, true);
+});
+
+test("validateAction rejects useTool.tool that is not ladder/rope (including torch — it is a useItem activatable, not a movement tool)", () => {
+  const torch = validateAction({ type: "useTool", tool: "torch", dir: "N" });
+  assert.equal(torch.ok, false);
+  assert.equal(torch.reason, "useTool.tool must be ladder or rope");
+  assert.equal(validateAction({ type: "useTool", tool: "pickaxe", dir: "N" }).ok, false);
+  assert.equal(validateAction({ type: "useTool", dir: "N" }).ok, false);
+});
+
+test("validateAction rejects a bad useTool.dir", () => {
+  assert.equal(validateAction({ type: "useTool", tool: "ladder", dir: "NE" }).ok, false);
+  assert.equal(validateAction({ type: "useTool", tool: "ladder" }).ok, false);
+});

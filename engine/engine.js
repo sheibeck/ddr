@@ -16,7 +16,7 @@
 import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
-import { move, makeCamp } from "./movement.js";
+import { move, makeCamp, useTool } from "./movement.js";
 import { fight, playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useAbility } from "./abilities.js";
@@ -53,6 +53,10 @@ export function applyAction(state, action) {
   switch (action.type) {
     case "move":
       move(next, action.dir, rng, events);
+      break;
+    case "useTool":
+      // Phase 39 (GEAR-05): spend a pending hazard's tool (ladder/rope).
+      useTool(next, action.tool, action.dir, rng, events);
       break;
     case "camp":
       makeCamp(next, rng, events);

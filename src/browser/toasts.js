@@ -189,6 +189,7 @@ export const ORACLE_ONLY = new Set([
   "storeLeft", // the store screen closing IS the signal
   "encounterRolled", // internal table-roll bookkeeping; tableFour/tableFourNoop narrate the outcome
   "findOffered", // the dedicated Take it/Leave it prompt IS the UI
+  "hazardChoice", // Phase 39 (GEAR-05): the pre-roll USE LADDER/USE ROPE decision card IS the UI, like findOffered
   "findTaken", // the dedicated Take it/Leave it prompt IS the UI
   "findLeft", // the dedicated Take it/Leave it prompt IS the UI
   "itemDropped", // the inventory screen's own drop action is the UI signal
@@ -286,6 +287,8 @@ export const FEATURE_EVENTS = [
   "backstabDenied",
   // Phase 38 (ABIL-01/04): the ABILITIES submenu's own refusal vocabulary.
   "abilityRefused",
+  // Phase 39 (GEAR-05): a spent tool's refusal.
+  "toolRefused",
 ];
 
 // ─── Shared helpers (mirrors eventNarration.js's soakedText/needMods pattern) ─
@@ -330,6 +333,9 @@ const EQUIP_REJECT_TEXT = {
   notEquippable: "That does not equip.",
 };
 function equipRejectText(e) {
+  // Phase 39 (GEAR-05): a tool never duplicates — the item's own name is
+  // dynamic, so this one reason is special-cased ahead of the static map.
+  if (e?.reason === "haveOne") return `You already carry one ${e?.item?.n ?? "of those"}. One is the limit; two is a hobby.`;
   return EQUIP_REJECT_TEXT[e?.reason] ?? "Not for the likes of you.";
 }
 
@@ -1398,6 +1404,11 @@ export const TOAST_FOR = {
   darknessFell: () => ({ text: "The dark closes in.", tone: "hurt", priority: PRIORITY.other }),
   darknessLifted: () => ({ text: "The dark loosens its grip.", tone: "hit", priority: PRIORITY.other }),
   darknessDispelled: () => ({ text: "Your amulet burns the dark away.", tone: "hit", priority: PRIORITY.other }),
+  // Phase 39 (GEAR-05): the torch — lights a live darkness (torchLit) and
+  // holds off a LATER Darkness result entirely (darknessResisted), sharing
+  // itemEffectStarted's `other` tone family below.
+  torchLit: () => ({ text: "You light the torch. The dark files a complaint.", tone: "hit", priority: PRIORITY.you }),
+  darknessResisted: () => ({ text: "Darkness tries. Your torch declines.", tone: "hit", priority: PRIORITY.other }),
   miscMagicRolled: (e) => ({ text: `Miscellaneous magic: ${e?.what ?? "something"}.`, tone: "beat", priority: PRIORITY.other }),
 
   /* ---------------- items.js / inventory actions ---------------- */
@@ -1407,6 +1418,22 @@ export const TOAST_FOR = {
   // fallback covers wrongClass/notBetter/noArmor/tooHeavy/notEquippable.
   itemRejected: (e) => block(equipRejectText(e)),
   itemTaken: (e) => ({ text: `Equipped: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.other }),
+  // Phase 39 (GEAR-05): the hazard-tool spend — the card's other button
+  // (USE LADDER/USE ROPE); hazardChoice itself is SILENT (ORACLE_ONLY
+  // above) — the card IS the UI, this toasts the outcome.
+  toolUsed: (e) => ({
+    text: e?.tool === "ladder" ? "Up the ladder, over the wall. It did not need to be dramatic." : "Rope across the gap. Boring, safe, gone.",
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
+  toolRefused: (e) => {
+    const map = {
+      noTool: `No ${e?.tool ?? "tool"} on you. Wishing is not a tool.`,
+      noHazard: `Nothing here for a ${e?.tool ?? "tool"}.`,
+      unknown: "That is not a tool.",
+    };
+    return block(map[e?.reason] ?? "That does not work here.");
+  },
   itemUsed: (e) => ({ text: `You use ${e?.item?.n ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason map with
   // cooldown/wrongClass/combatOnly/exploreOnly/noTarget/notFought — the
@@ -1427,6 +1454,8 @@ export const TOAST_FOR = {
       // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
       // BAG in the new worn-slot model — activatables must be worn to work.
       notWorn: `${item} is in your bag, doing what things in bags do: nothing. Wear it first.`,
+      // Phase 39 (GEAR-05): the torch used while not dark.
+      notDark: "It is not dark. Save the torch for when it is.",
     };
     return block(map[e?.reason] ?? "That does not work for you.");
   },
@@ -1445,6 +1474,7 @@ export const TOAST_FOR = {
       acute: `You strike on a d6 for ${n} rounds.`,
       might: `+${e?.might ?? "?"} damage for ${n} squares.`,
       fly: `Twenty squares of not touching the floor.`,
+      lit: `Forty squares of carrying a light.`,
     };
     return { text: map[e?.kind] ?? `${e?.item ?? "It"}: ${n} squares.`, tone: "magic", priority: PRIORITY.you };
   },

@@ -27,16 +27,16 @@
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor, hasTool } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged, won } from "./events.js";
-import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, ACTIVATION_OF } from "../content/index.js";
+import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, ACTIVATION_OF, TOOLS } from "../content/index.js";
 import { tickSquares, startEffect } from "./effects.js";
-import { narrateTimerTransitions } from "./items.js";
+import { narrateTimerTransitions, toolIndex } from "./items.js";
 
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
 export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
@@ -97,14 +97,23 @@ export const maxCharges = (c) => 2 * c.level + 2 + eff(c, "charges");
 /* ---------------- movement ---------------- */
 
 /**
- * move(state, dir, rng, events, now) — the core traversal action. Ports
- * mazeworld.html move() (lines 1618-1715). Mutates `state` (a fresh
+ * move(state, dir, rng, events, now, opts) — the core traversal action.
+ * Ports mazeworld.html move() (lines 1618-1715). Mutates `state` (a fresh
  * applyAction clone) in place and pushes structured events; returns
  * `events`. A wall/out-of-bounds move, or a one-way door entered/exited from
  * the wrong side, is a no-op: no state mutation beyond (for the door case) a
  * pushed event.
+ *
+ * Phase 39 (GEAR-05): `opts.tool` ("ladder"|"rope") is the ONE extra
+ * caller-facing knob, set ONLY by `useTool` below (never passed directly by
+ * `applyAction`'s "move" case) — the tile/bag are already validated by the
+ * time it arrives, so the climb/gorge block's tool branch does no further
+ * legality checking, only the spend. Every plain `move(state, dir, rng,
+ * events, now)` call (every fixture, the bot, every existing caller) passes
+ * no fifth argument, so `opts` defaults to `{}` and the tool branch never
+ * runs for them — byte-identical to before this plan.
  */
-export function move(state, dir, rng, events = [], now = Date.now) {
+export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   if (state.combat || state.store || state.dead || state.won) return events;
 
   const f = state.floor;
@@ -140,7 +149,7 @@ export function move(state, dir, rng, events = [], now = Date.now) {
     // starts a fresh `item:Cloak of Flying` effect record right here if none
     // is already running (the per-step tick below then burns it down); the
     // Bracelet never touches the Cloak's own record.
-    if (isFlying(state)) {
+    const flyOver = () => {
       if (!hasItemNamed(state.c, "Bracelet of Flight") && !itemEffectActive(state.c, "fly")) {
         const act = ACTIVATION_OF["Cloak of Flying"];
         startEffect(state.c, "item:Cloak of Flying", { squares: act.effect, cd: act.cd });
@@ -148,6 +157,26 @@ export function move(state, dir, rng, events = [], now = Date.now) {
       }
       events.push({ type: "flownOver" });
       there.feat = null;
+    };
+    if (opts.tool) {
+      // Phase 39 (GEAR-05): reached ONLY from `useTool` below, which has
+      // already validated the tile and the bag — this branch does the
+      // spend, nothing else. `isFlying` is checked FIRST even here: flight
+      // is unconditional/free, a tool is a spent resource, so a flying hero
+      // tapping USE LADDER/USE ROPE still flies over for free and keeps the
+      // tool (mirrors the plain-flight branch below exactly, via the same
+      // `flyOver` closure).
+      if (isFlying(state)) {
+        flyOver();
+      } else {
+        const i = toolIndex(state.c, opts.tool);
+        const [used] = state.c.items.splice(i, 1);
+        events.push({ type: "toolUsed", tool: opts.tool, feat: there.feat, item: used });
+        there.feat = null;
+        state.pendingHazard = null;
+      }
+    } else if (isFlying(state)) {
+      flyOver();
     } else if (itemEffectActive(state.c, "ether")) {
       // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08 §8 design call):
       // the Cloak of Ether (content/treasure-tables.js, use:"ether", "walk
@@ -163,6 +192,30 @@ export function move(state, dir, rng, events = [], now = Date.now) {
       events.push({ type: "phasedThrough" });
       there.feat = null;
     } else {
+      // Phase 39 (GEAR-05): the hazard pre-roll pending-decision pre-check
+      // (CONTEXT Area 1) — a character carrying the matching tool gets ONE
+      // pause before the roll: `state.pendingHazard` is stashed and a
+      // `hazardChoice` event fires, WITHOUT moving or rolling (return below,
+      // zero draws, zero mutation besides the pending record). A second
+      // `move(dir)` at the SAME tile/direction (the "CLIMB IT"/"LEAP IT"
+      // button) flips `declined: true` in place and falls through to the
+      // roll below — the pending record deliberately stays on the tile
+      // (never cleared here) so a failed roll's retry card can offer both
+      // buttons again with no second prompt; only a genuine successful
+      // step/tool-use/teleport/descend clears it (see below/teleport/
+      // descend). A character without the matching tool never enters either
+      // branch — `hasTool` false, `pendingHazard` stays whatever it already
+      // was (usually null) — so the roll runs immediately, exactly as
+      // before this plan.
+      const toolFor = climbing ? "ladder" : "rope";
+      const pend = state.pendingHazard;
+      if (pend && pend.dir === dir && pend.feat === there.feat) {
+        pend.declined = true;
+      } else if (hasTool(state.c, toolFor)) {
+        state.pendingHazard = { feat: there.feat, dir, tool: toolFor, declined: false };
+        events.push({ type: "hazardChoice", feat: there.feat, dir, tool: toolFor });
+        return events;
+      }
       let ok = true;
       let hurt = 0;
       if (climbing) {
@@ -211,6 +264,9 @@ export function move(state, dir, rng, events = [], now = Date.now) {
 
   f.px = nx;
   f.py = ny;
+  // Phase 39 (GEAR-05): a genuine step anywhere resolves the hazard
+  // decision — mirrors the same reset in teleport()/descend() below.
+  state.pendingHazard = null;
   state.steps++;
   reveal(f, revealRadius(state));
   events.push(moved({ x: nx, y: ny }));
@@ -367,6 +423,44 @@ export function move(state, dir, rng, events = [], now = Date.now) {
   }
 
   return events;
+}
+
+/**
+ * useTool(state, tool, dir, rng, events, now) — Phase 39 (GEAR-05): spends
+ * a ladder/rope carried tool at a climbable wall/gorge in `dir`, passing the
+ * tile with no roll and no fall damage. The torch is NOT reachable here — it
+ * is a `useItem` activatable (engine/items.js), not a movement-tile tool.
+ * The full refusal ladder, every step BEFORE any mutation: combat/store/
+ * dead/won (silent no-op, mirrors `move`'s own guard) -> `unknown` (`tool`
+ * is not a recognized hazard tool — `validateAction` already rejects
+ * anything but "ladder"/"rope", so this only ever fires for a `TOOLS[tool]`
+ * lookup miss on a tampered/malformed call) -> `noTool` (not carried) ->
+ * `noHazard` (the target tile is missing/a wall/not the matching feat).
+ * Once past every refusal, delegates to `move(state, dir, rng, events, now,
+ * { tool })` — the SAME climb/gorge block, tool branch (isFlying still wins
+ * there, per that block's own header comment).
+ */
+export function useTool(state, tool, dir, rng, events = [], now = Date.now) {
+  if (state.combat || state.store || state.dead || state.won) return events;
+  const feat = TOOLS[tool]?.feat;
+  if (!feat) {
+    events.push({ type: "toolRefused", tool, reason: "unknown" });
+    return events;
+  }
+  if (!hasTool(state.c, tool)) {
+    events.push({ type: "toolRefused", tool, reason: "noTool" });
+    return events;
+  }
+  const f = state.floor;
+  const [dx, dy] = DIRV[dir];
+  const nx = f.px + dx;
+  const ny = f.py + dy;
+  const there = f.g[ny] && f.g[ny][nx];
+  if (!there || there.wall || there.feat !== feat) {
+    events.push({ type: "toolRefused", tool, reason: "noHazard" });
+    return events;
+  }
+  return move(state, dir, rng, events, now, { tool });
 }
 
 /* ---------------- day cycle / camp ---------------- */
@@ -620,6 +714,8 @@ export function teleport(state, rng, events = []) {
   }
   f.px = x;
   f.py = y;
+  // Phase 39 (GEAR-05): a teleport resolves any pending hazard decision too.
+  state.pendingHazard = null;
   reveal(f, revealRadius(state));
   events.push({ type: "teleported", dir, other, dist, used, travelled, to: { x, y } });
 
@@ -714,6 +810,9 @@ export function descend(state, rng, events = []) {
   events.push({ type: "spGained", amount: bonus, reason: "descend" });
   checkLevel(state, rng, events);
   state.floor = genFloor(state.floor.depth + 1, rng);
+  // Phase 39 (GEAR-05): a descent resolves any pending hazard decision too
+  // (a new floor has no meaning for a decision tied to the old one's tile).
+  state.pendingHazard = null;
   reveal(state.floor, revealRadius(state));
   events.push(floorChanged(state.floor.depth));
   // CUT-02 (Phase 36): LAST — after checkLevel and genFloor (both draw) and

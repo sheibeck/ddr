@@ -103,6 +103,25 @@ export const EVENT_NARRATION = {
   phasedThrough: () => `<span class="hit">You step through it like it was a rumour of a wall.</span>`,
   fellClimbing: (e) => `<span class="hurt">Gravity remembers you exist — ${e.hurt ?? 0} hp.</span>`,
   fellInGorge: (e) => `<span class="hurt">Short. The floor of the crevice makes its introduction — ${e.hurt ?? 0} hp.</span>`,
+  // Phase 39 (GEAR-05): the hazard pre-roll decision — a rail card IS the
+  // UI (ORACLE_ONLY on the toast side, like findOffered), but the Oracle
+  // still gets its own line.
+  hazardChoice: (e) =>
+    e.tool === "ladder"
+      ? `<span class="beat">A wall. Also: a ladder. Someone thought of everything, and it was you.</span>`
+      : `<span class="beat">A crevice, and you happen to have rope. The honest way across.</span>`,
+  toolUsed: (e) =>
+    e.tool === "ladder"
+      ? `<span class="hit">Up the ladder, over the wall. It did not need to be dramatic.</span>`
+      : `<span class="hit">Rope across the gap. Boring, safe, gone.</span>`,
+  toolRefused: (e) => {
+    const map = {
+      noTool: `<span class="miss">No ${e.tool ?? "tool"} on you. Wishing is not a tool.</span>`,
+      noHazard: `<span class="miss">Nothing here for a ${e.tool ?? "tool"}.</span>`,
+      unknown: `<span class="miss">That is not a tool.</span>`,
+    };
+    return map[e.reason] ?? `<span class="miss">That does not work here.</span>`;
+  },
   // PHOBIA-01 (04.1-06): the three formerly-inert movement-triggered phobias
   // — deadpan, no exclamation, matching the module's established tone.
   heightsFear: () => `<span class="beat">Your stomach reaches the ground well before your feet do.</span>`,
@@ -698,6 +717,12 @@ export const EVENT_NARRATION = {
   // Phase 15 item-wiring (ECON-08): the Amulet of Light's standing light spell
   // burns the persistent darkness off outright, rather than waiting it out.
   darknessDispelled: () => `<span class="hit">Your amulet's light swallows the dark whole. It does not argue.</span>`,
+  // Phase 39 (GEAR-05): the torch — lights a live c.darkFor darkness and
+  // starts the 40-square lit effect (itemEffectStarted below narrates the
+  // effect start itself); darknessResisted is the SAME lit effect holding
+  // off a LATER Darkness table result entirely.
+  torchLit: () => `<span class="hit">You light the torch. The dark files a complaint.</span>`,
+  darknessResisted: () => `<span class="hit">Darkness tries. Your torch declines.</span>`,
   miscMagicRolled: (e) => `<span class="beat">Miscellaneous magic:</span> ${e.what ?? "something"}.`,
 
   /* ---------------- items.js ---------------- */
@@ -707,12 +732,16 @@ export const EVENT_NARRATION = {
   // clause ahead of the generic reasons below, which stay byte-identical.
   // Phase 25 (FEED-02): an Acrobat's dagger-only rule gets its own clause
   // too, ahead of the same generic fallback.
+  // Phase 39 (GEAR-05): a tool never duplicates — its own clause ahead of
+  // the generic fallback, mirroring the woodsman/acrobat clauses above.
   itemRejected: (e) =>
     e.reason === "woodsman"
       ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
       : e.reason === "acrobat"
         ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
-        : `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
+        : e.reason === "haveOne"
+          ? `<span class="miss">You already carry one ${e.item?.n ?? "of those"}.</span> One is the limit; two is a hobby.`
+          : `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
   itemTaken: (e) => `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.`,
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
@@ -734,6 +763,8 @@ export const EVENT_NARRATION = {
     if (e.reason === "exploreOnly") return `<span class="miss">${item} needs quieter surroundings.</span>`;
     if (e.reason === "noTarget") return `<span class="miss">Nothing left to aim at.</span>`;
     if (e.reason === "notFought") return `<span class="miss">Fight! first.</span> It will keep.`;
+    // Phase 39 (GEAR-05): the torch used while not dark.
+    if (e.reason === "notDark") return `<span class="miss">It is not dark.</span> Save the torch for when it is.`;
     return `<span class="miss">${item} does not heal,</span> so as far as a Pilfer is concerned it does not work.`;
   },
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
@@ -753,6 +784,8 @@ export const EVENT_NARRATION = {
       acute: `<span class="hit">You strike on a d6 for ${n} rounds.</span>`,
       might: `<span class="hit">+${e.might ?? "?"} damage for ${n} squares. Hit things.</span>`,
       fly: `<span class="hit">Twenty squares of not touching the floor.</span>`,
+      // Phase 39 (GEAR-05): the torch's lit effect.
+      lit: `<span class="hit">Forty squares of carrying a light.</span>`,
     };
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"}: ${n} squares.</span>`;
   },

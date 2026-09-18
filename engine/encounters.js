@@ -26,7 +26,7 @@
 // declaration, and each only touches the other module's binding from inside
 // a function body invoked at runtime, never at module-evaluation time.
 
-import { skill, skillTier, canLearn, intelBonus } from "./derived.js";
+import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
@@ -649,8 +649,18 @@ const DARKNESS_DURATION = 30;
  * engine/movement.js's per-step tick decrements and clears it. This is a
  * plain assignment — no rng draw added — so determinism/parity are
  * unaffected.
+ *
+ * Phase 39 (GEAR-05): a live torch `lit` effect (`itemEffectActive(state.c,
+ * "lit")`) holds this off entirely — one `darknessResisted` event, no tile
+ * painted, `c.darkFor` left exactly as it was (0 for a torch-carrying
+ * character who was not already dark). The torch touches ONLY `c.darkFor`
+ * — Phase 41 owns the tile `.dark` model, unaffected either way.
  */
 export function fallDark(state, rng, events = []) {
+  if (itemEffectActive(state.c, "lit")) {
+    events.push({ type: "darknessResisted", by: "torch" });
+    return events;
+  }
   const f = state.floor;
   const r = 4;
   for (let y = f.py - r; y <= f.py + r; y++)

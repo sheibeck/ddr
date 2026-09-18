@@ -225,3 +225,37 @@ test("decideAction is unchanged for one in-combat and one exploration decision (
   assert.strictEqual(decision.type, "move");
   assert.ok(["N", "S", "E", "W"].includes(decision.dir));
 });
+
+// --- Phase 39 (GEAR-05): the pending-hazard handler -------------------------
+// A pending-STATE handler (answers a decision the engine already parked),
+// NOT a timing tactic (WHEN to pop an item stays Phase 42's bot-tactics
+// scope) — the bot never buys/carries a tool today (chooseStorePurchase
+// only scans buyWeapon/buyArmor/buyPremium lines), so this only proves the
+// dispatch shape; it never actually fires in a real 400-seed run yet.
+
+test("decideAction: a pending hazard (not yet declined) is answered with useTool in one dispatch", () => {
+  const c = hero({ gold: 0 });
+  const state = mkState(c, null);
+  state.pendingHazard = { feat: "climb", dir: "E", tool: "ladder", declined: false };
+  const ctx = makeBotContext();
+  assert.deepStrictEqual(decideAction(state, { pick: (arr) => arr[0] }, ctx), { type: "useTool", tool: "ladder", dir: "E" });
+});
+
+test("decideAction: a DECLINED pending hazard falls through to the normal exploration chain instead of re-answering", () => {
+  const c = hero({ gold: 0 });
+  const explFloor = {
+    px: 0,
+    py: 0,
+    depth: 1,
+    g: [
+      [{ wall: false, seen: true, feat: "dot" }, { wall: false, seen: false, feat: null }],
+      [{ wall: false, seen: true, feat: null }, { wall: false, seen: true, feat: null }],
+    ],
+  };
+  const state = mkState(c, null);
+  state.floor = explFloor;
+  state.pendingHazard = { feat: "climb", dir: "E", tool: "ladder", declined: true };
+  const ctx = makeBotContext();
+  const result = decideAction(state, { pick: (arr) => arr[0] }, ctx);
+  assert.notEqual(result.type, "useTool");
+});

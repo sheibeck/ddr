@@ -63,6 +63,11 @@ export const ACTION_TYPES = new Set([
   // yields a named abilityRefused event rather than being rejected here —
   // this validator only guards the wire shape (a non-empty string).
   "useAbility",
+  // Phase 39 (GEAR-05): spend a pending hazard's tool — the ladder/rope
+  // half of the pre-roll decision card (`state.pendingHazard`). The torch
+  // goes through the existing `useItem` action instead (it is a
+  // useItem-activatable consumable, not a movement-tile tool).
+  "useTool",
 ]);
 
 const DIRS = new Set(["N", "S", "E", "W"]);
@@ -183,6 +188,18 @@ export function validateAction(action) {
       // not a validation failure.
       if (typeof action.key !== "string" || action.key.length === 0) {
         return { ok: false, reason: "useAbility.key must be a non-empty string" };
+      }
+      break;
+    case "useTool":
+      // Phase 39 (GEAR-05): only the two movement-tile tools may be spent
+      // this way (the torch is a useItem activatable, not a useTool target)
+      // — everything else (not carried, wrong tile) is a named `toolRefused`
+      // engine refusal, not a validation failure.
+      if (action.tool !== "ladder" && action.tool !== "rope") {
+        return { ok: false, reason: "useTool.tool must be ladder or rope" };
+      }
+      if (!DIRS.has(action.dir)) {
+        return { ok: false, reason: "useTool.dir must be one of N/S/E/W" };
       }
       break;
     default:

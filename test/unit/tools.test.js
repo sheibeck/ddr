@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 
 import { makeRng, derivedRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/engine.js";
+import { GW, GH } from "../../engine/maze.js";
 import { TOOLS, TOOL_ORDER, TOOL_LOOT_WEIGHTS, TOOL_ACTIVATION_OF, ACTIVATION_OF } from "../../content/index.js";
 import {
   rollTreasureItem,
@@ -24,9 +25,70 @@ import {
   rollJewel,
   rollCloak,
   rollStaff,
+  useItem,
 } from "../../engine/items.js";
-import { hasTool } from "../../engine/derived.js";
+import { hasTool, itemEffectActive, inDark } from "../../engine/derived.js";
 import { openStore, buyFrom, sellPriceFor, storeTier } from "../../engine/economy.js";
+import { move, useTool, teleport, descend } from "../../engine/movement.js";
+import { fallDark } from "../../engine/encounters.js";
+import { validateSave, rehydrate } from "../../engine/saveState.js";
+
+/** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
+ * requested side count; `.pick(arr)` returns `arr[0]` unless a picker is
+ * supplied. Throws if the sequence underflows (a "no more draws expected"
+ * assertion) — mirrors test/unit/movement.test.js's helper. */
+function fakeRng(seq, { pick = (arr) => arr[0] } = {}) {
+  let i = 0;
+  return {
+    d(_sides) {
+      if (i >= seq.length) throw new Error(`fakeRng: sequence exhausted at index ${i}`);
+      return seq[i++];
+    },
+    pick,
+    shuffle: (a) => a,
+  };
+}
+
+/** wallGrid()/open(g,x,y,extra) — mirrors test/unit/movement.test.js's floor builder. */
+function wallGrid() {
+  const g = [];
+  for (let y = 0; y < GH; y++) {
+    g.push([]);
+    for (let x = 0; x < GW; x++) g[y].push({ wall: true, seen: false, feat: null });
+  }
+  return g;
+}
+function open(g, x, y, extra = {}) {
+  g[y][x] = { wall: false, seen: false, feat: null, ...extra };
+}
+
+function fixedFighter(overrides = {}) {
+  return {
+    cls: "Fighter", sub: "Soldier", race: "Human", level: 1, sp: 0,
+    maxWP: 55, wp: 55, skills: {}, vp: 0,
+    weapon: "Club", prof: 0, magicWpn: 0,
+    armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x",
+    potions: 1, rations: 6, gold: 50, scrolls: 0,
+    affliction: null, joiner: null,
+    items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    darkFor: 0,
+    ...overrides,
+  };
+}
+
+function fixedState(overrides = {}) {
+  const { c: cOverrides, floor: floorOverrides, ...rest } = overrides;
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: fixedFighter(cOverrides),
+    floor: { g: wallGrid(), px: 5, py: 5, depth: 1, ...floorOverrides },
+    day: 1, steps: 0, combat: null, store: null, beats: null, pendingHazard: null,
+    dead: false, won: false, deathNote: "", epitaph: "",
+    ...rest,
+  };
+}
 
 /** heroOf(seed, cls, depth, extraForce) — a forced-class hero on an
  * arbitrary floor.depth (mirrors test/unit/store-roll.test.js's helper). */
@@ -326,4 +388,261 @@ test("buyFrom: a full bag refuses the tool line with bagFull, no gold spent, ite
   assert.ok(events.some((e) => e.type === "bagFull"));
   assert.equal(state.c.gold, goldBefore, "no gold spent on a refused stow");
   assert.equal(state.c.items.some((it) => it.kind === "tool" && it.tool === "torch"), false);
+});
+
+// =============================================================================
+// Task 2: the hazard pre-roll pending state, useTool, and the torch
+// =============================================================================
+
+// --- pendingHazard is transient, like pendingFind ---------------------------
+
+test("newRun/validateSave/rehydrate: pendingHazard is always null (transient, like pendingFind)", () => {
+  const state = newRun(1);
+  assert.equal(state.pendingHazard, null);
+
+  const tampered = { ...state, pendingHazard: { feat: "climb", dir: "E", tool: "ladder", declined: false } };
+  const validated = validateSave(tampered);
+  assert.equal(validated.ok, true);
+  assert.equal(validated.value.pendingHazard, null);
+
+  const rehydrated = rehydrate(tampered);
+  assert.equal(rehydrated.pendingHazard, null);
+});
+
+// --- the hazard pre-roll pending decision (ladder / rope) -------------------
+
+test("move: a Ladder-carrying hero at a wall gets ONE pause — hazardChoice, no move, no roll, pendingHazard stashed", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  const events = move(state, "E", fakeRng([]), []);
+  assert.deepStrictEqual(
+    events.filter((e) => e.type === "hazardChoice"),
+    [{ type: "hazardChoice", feat: "climb", dir: "E", tool: "ladder" }],
+  );
+  assert.equal(state.floor.px, 5, "position unchanged");
+  assert.equal(state.steps, 0);
+  assert.deepStrictEqual(state.pendingHazard, { feat: "climb", dir: "E", tool: "ladder", declined: false });
+});
+
+test("move: a second move(E) at the pending tile declines — no new hazardChoice, declined flips true, the roll runs", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  move(state, "E", fakeRng([]), []); // the pending card
+  // Capture the pending record's OWN reference before the second move() —
+  // a SUCCESSFUL roll's normal step-tail reassigns state.pendingHazard to
+  // null (a genuine step resolves the decision), but never mutates the
+  // object itself, so `pend.declined` still reads true either way.
+  const pend = state.pendingHazard;
+  // pick "rope"; feet=10*(1+d(2)=1)=20; two rungs, both succeed (<=7).
+  const events = move(state, "E", fakeRng([1, 5, 5]), []);
+  assert.equal(events.some((e) => e.type === "hazardChoice"), false);
+  assert.equal(pend.declined, true);
+  assert.ok(events.some((e) => e.type === "climbedOver" || e.type === "fellClimbing"));
+});
+
+test("move: after a declined fellClimbing, pendingHazard is still present with declined:true; a third move(E) rolls again with no new hazardChoice", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  move(state, "E", fakeRng([]), []); // the pending card
+  // feet=20; first rung fails (9>7); fall check d20=15 (>2, hurt rolls); d6=4.
+  const failEvents = move(state, "E", fakeRng([1, 9, 15, 4]), []);
+  assert.ok(failEvents.some((e) => e.type === "fellClimbing"));
+  assert.deepStrictEqual(state.pendingHazard, { feat: "climb", dir: "E", tool: "ladder", declined: true });
+  assert.equal(state.floor.g[5][6].feat, "climb", "the wall is still there to retry");
+
+  // a third move(E): rolls again (declined stays true, no new prompt).
+  const thirdEvents = move(state, "E", fakeRng([1, 5, 5]), []);
+  assert.equal(thirdEvents.some((e) => e.type === "hazardChoice"), false);
+  assert.ok(thirdEvents.some((e) => e.type === "climbedOver"));
+});
+
+test("move: moving to a free tile instead clears pendingHazard to null", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  open(state.floor.g, 5, 4); // a free tile to the north
+  move(state, "E", fakeRng([]), []); // the pending card (declines nothing yet)
+  assert.ok(state.pendingHazard);
+  move(state, "N", fakeRng([]), []);
+  assert.equal(state.pendingHazard, null);
+});
+
+test("move: a Rope-carrying hero at a gorge gets the same pending decision (feat/tool = gorge/rope)", () => {
+  const state = fixedState({ c: { items: [toolItem("rope")] } });
+  open(state.floor.g, 6, 5, { feat: "gorge" });
+  const events = move(state, "E", fakeRng([]), []);
+  assert.deepStrictEqual(
+    events.filter((e) => e.type === "hazardChoice"),
+    [{ type: "hazardChoice", feat: "gorge", dir: "E", tool: "rope" }],
+  );
+  assert.deepStrictEqual(state.pendingHazard, { feat: "gorge", dir: "E", tool: "rope", declined: false });
+});
+
+test("move: a hero carrying only a Ladder at a gorge gets NO pending state and rolls immediately (and vice versa)", () => {
+  const ladderState = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(ladderState.floor.g, 6, 5, { feat: "gorge" });
+  // LEAP_TABLE[d(4)-1=0]; Fighter need 10; r=d(10)=11 fails; fall d6+d6.
+  const events = move(ladderState, "E", fakeRng([1, 11, 3, 4]), []);
+  assert.equal(events.some((e) => e.type === "hazardChoice"), false);
+  assert.equal(ladderState.pendingHazard, null);
+  assert.ok(events.some((e) => e.type === "fellInGorge"));
+
+  const ropeState = fixedState({ c: { items: [toolItem("rope")] } });
+  open(ropeState.floor.g, 6, 5, { feat: "climb" });
+  const climbEvents = move(ropeState, "E", fakeRng([1, 9, 15, 4]), []);
+  assert.equal(climbEvents.some((e) => e.type === "hazardChoice"), false);
+  assert.equal(ropeState.pendingHazard, null);
+  assert.ok(climbEvents.some((e) => e.type === "fellClimbing"));
+});
+
+test("move: a hero with no tool sees byte-identical movement (no hazardChoice, no pendingHazard, rng consumed as before)", () => {
+  const state = fixedState();
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  const rng = fakeRng([1, 5, 5]);
+  const events = move(state, "E", rng, []);
+  assert.equal(events.some((e) => e.type === "hazardChoice"), false);
+  assert.equal(state.pendingHazard, null);
+  assert.ok(events.some((e) => e.type === "climbedOver"));
+});
+
+// --- useTool ------------------------------------------------------------
+
+test("useTool: spends the ladder, passes the tile with no roll, clears pendingHazard, ticks steps, draws nothing beyond a plain step", () => {
+  const withTool = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(withTool.floor.g, 6, 5, { feat: "climb" });
+  const events = useTool(withTool, "ladder", "E", fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "toolUsed" && e.tool === "ladder" && e.feat === "climb"));
+  assert.ok(events.some((e) => e.type === "moved"));
+  assert.equal(events.some((e) => e.type === "climbedOver" || e.type === "fellClimbing"), false);
+  assert.equal(withTool.floor.px, 6, "the wall tile is now occupied");
+  assert.equal(withTool.floor.g[5][6].feat, null);
+  assert.equal(withTool.pendingHazard, null);
+  assert.equal(withTool.steps, 1);
+  assert.equal(withTool.c.items.some((it) => it.kind === "tool" && it.tool === "ladder"), false, "the ladder is gone");
+
+  // Zero climb-roll draws: a plain step onto an already-open tile, same seed,
+  // consumes the exact same real-rng cursor as the tool-assisted step above.
+  const plainState = fixedState();
+  open(plainState.floor.g, 6, 5); // a plain open tile, no feature at all
+  const seed = 12345;
+  const rngA = makeRng(seed);
+  const toolState = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(toolState.floor.g, 6, 5, { feat: "climb" });
+  useTool(toolState, "ladder", "E", rngA, []);
+  const rngB = makeRng(seed);
+  move(plainState, "E", rngB, []);
+  assert.equal(rngA.getState(), rngB.getState(), "useTool draws nothing beyond a plain step's own ticks");
+});
+
+test("useTool: refusals — noTool (not carried), noHazard (wrong tile/wall/oob); no mutation, no consumption", () => {
+  const noToolState = fixedState();
+  open(noToolState.floor.g, 6, 5, { feat: "climb" });
+  const noToolEvents = useTool(noToolState, "ladder", "E", fakeRng([]), []);
+  assert.deepStrictEqual(noToolEvents, [{ type: "toolRefused", tool: "ladder", reason: "noTool" }]);
+  assert.equal(noToolState.floor.px, 5);
+
+  const wrongTileState = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(wrongTileState.floor.g, 6, 5, { feat: "gorge" }); // a gorge, not a climb
+  const wrongTileEvents = useTool(wrongTileState, "ladder", "E", fakeRng([]), []);
+  assert.deepStrictEqual(wrongTileEvents, [{ type: "toolRefused", tool: "ladder", reason: "noHazard" }]);
+  assert.equal(wrongTileState.c.items.length, 1, "the ladder is not consumed on a refusal");
+
+  const wallState = fixedState({ c: { items: [toolItem("ladder")] } }); // (6,5) stays a solid wall
+  const wallEvents = useTool(wallState, "ladder", "E", fakeRng([]), []);
+  assert.deepStrictEqual(wallEvents, [{ type: "toolRefused", tool: "ladder", reason: "noHazard" }]);
+});
+
+test("useTool: no-op in combat/store/dead/won", () => {
+  const combatState = fixedState({ c: { items: [toolItem("ladder")] }, combat: {} });
+  open(combatState.floor.g, 6, 5, { feat: "climb" });
+  assert.deepStrictEqual(useTool(combatState, "ladder", "E", fakeRng([]), []), []);
+  assert.equal(combatState.floor.px, 5);
+});
+
+test("useTool: isFlying wins — the tool is NOT consumed and flownOver fires instead", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder"), { n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  const events = useTool(state, "ladder", "E", fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "flownOver"));
+  assert.equal(events.some((e) => e.type === "toolUsed"), false);
+  assert.equal(state.c.items.some((it) => it.kind === "tool" && it.tool === "ladder"), true, "the ladder is still carried");
+});
+
+// --- teleport / descend clear a pending hazard too --------------------------
+
+test("teleport clears a pending hazard", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder")] } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  move(state, "E", fakeRng([]), []);
+  assert.ok(state.pendingHazard);
+  open(state.floor.g, 3, 3);
+  teleport(state, fakeRng([1, 1, 1]), []);
+  assert.equal(state.pendingHazard, null);
+});
+
+test("descend clears a pending hazard", () => {
+  const state = fixedState({ c: { items: [toolItem("ladder")], sp: 500 } });
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  move(state, "E", fakeRng([]), []);
+  assert.ok(state.pendingHazard);
+  const rng = makeRng(99);
+  descend(state, rng, []);
+  assert.equal(state.pendingHazard, null);
+});
+
+// --- torch: lights c.darkFor darkness ----------------------------------
+
+test("useItem torch: while inDark (c.darkFor>0), lights, clears darkFor, starts a 40-square lit effect, is consumed", () => {
+  const state = fixedState({ c: { items: [toolItem("torch")], darkFor: 12 } });
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "itemUsed"));
+  assert.ok(events.some((e) => e.type === "torchLit" && e.left === 40));
+  assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.kind === "lit" && e.left === 40));
+  assert.ok(events.some((e) => e.type === "itemConsumed"));
+  assert.equal(state.c.darkFor, 0);
+  assert.equal(state.c.items.length, 0, "the torch is gone");
+  assert.deepStrictEqual(state.c.timers["item:Torch"], { cadence: "squares", left: 40, phase: "effect" });
+});
+
+test("useItem torch: on a lit tile with darkFor 0, inDark still reads true off the tile's own .dark flag — same lit result", () => {
+  const state = fixedState({ c: { items: [toolItem("torch")], darkFor: 0 }, floor: { g: wallGrid(), px: 5, py: 5, depth: 1 } });
+  state.floor.g[5][5] = { wall: false, seen: false, feat: null, dark: true };
+  assert.equal(inDark(state), true);
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "torchLit"));
+  assert.ok(events.some((e) => e.type === "itemConsumed"));
+});
+
+test("useItem torch: NOT dark — useRefused notDark, torch stays in the bag, no timers key", () => {
+  const state = fixedState({ c: { items: [toolItem("torch")], darkFor: 0 } });
+  state.floor.g[5][5] = { wall: false, seen: false, feat: null, dark: false };
+  assert.equal(inDark(state), false);
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: state.c.items[0], reason: "notDark" }]);
+  assert.equal(state.c.items.length, 1, "the torch is still carried");
+  assert.equal(state.c.timers, undefined);
+});
+
+test("fallDark: a live torch lit effect resists — darknessResisted, no tile painted, darkFor unchanged", () => {
+  const state = fixedState({ c: { darkFor: 0, timers: { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } } } });
+  const events = fallDark(state, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "darknessResisted", by: "torch" }]);
+  assert.equal(state.c.darkFor, 0);
+  assert.equal(state.floor.g[state.floor.py][state.floor.px].dark, undefined);
+});
+
+test("fallDark: after the lit effect fades (40 steps), fallDark works again", () => {
+  const state = fixedState({ c: { items: [toolItem("torch")], darkFor: 5 } });
+  useItem(state, 0, fakeRng([]), []); // starts the 40-square lit effect, darkFor -> 0
+  assert.equal(itemEffectActive(state.c, "lit"), true);
+  // Walk 40 plain steps to burn the effect down (no feature tiles, no rng
+  // draws) — an open corridor the whole row, so E/W oscillation never hits
+  // an unopened (still-walled) cell.
+  for (let x = 1; x < GW - 1; x++) open(state.floor.g, x, 5);
+  for (let i = 0; i < 40; i++) {
+    move(state, i % 2 === 0 ? "E" : "W", fakeRng([]), []);
+  }
+  assert.equal(itemEffectActive(state.c, "lit"), false, "the lit effect has faded");
+  const events = fallDark(state, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "darknessFell"));
+  assert.equal(state.c.darkFor, 30, "fallDark works normally again");
 });

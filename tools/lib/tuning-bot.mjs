@@ -578,6 +578,17 @@ export function decideAction(state, policyRng, ctx) {
   }
   if (state.pendingJoiner) return { type: "resolveJoiner", accept: false }; // D-20
   if (state.pendingFind) return ctx.findFull ? { type: "leaveFind" } : { type: "takeFind" };
+  // Phase 39 (GEAR-05): a pending hazard the bot is already carrying the
+  // matching tool for is answered in one dispatch (spend it) rather than
+  // declining and re-rolling — a pending-STATE handler, not a timing tactic
+  // (WHEN to pop an item is Phase 42's bot-tactics scope; this only answers
+  // a decision the engine itself already parked). A DECLINED pending record
+  // (the retry card) falls through — the bot has already said no once, so
+  // the normal movement/action chain below re-issues the same `move` and the
+  // roll runs.
+  if (state.pendingHazard && !state.pendingHazard.declined) {
+    return { type: "useTool", tool: state.pendingHazard.tool, dir: state.pendingHazard.dir };
+  }
   if (state.store) return chooseStorePurchase(state, ctx) ?? { type: "leaveStore" };
 
   const c = state.c;

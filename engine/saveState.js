@@ -428,6 +428,11 @@ export function validateSave(raw, options = {}) {
     // pre-Phase-33 save → false, so an old save keeps today's fixed store
     // stock and never gains the new draws mid-run.
     storeRoll: !!obj.storeRoll,
+    // Phase 39 (GEAR-05): pendingHazard is transient run state — always
+    // reset to null (rehydrate below mirrors this), exactly like
+    // pendingFind above; a tampered/stale save-side value is never trusted
+    // (T-39-11) — the engine re-derives the decision on the next step.
+    pendingHazard: null,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
@@ -504,6 +509,10 @@ export function rehydrate(obj, options = {}) {
     // null on load, exactly like combat/store above (the prototype's load()
     // never resumed a mid-find prompt either). Defaults a missing field to null.
     pendingFind: null,
+    // Phase 39 (GEAR-05): pendingHazard is transient run state — always
+    // reset to null on load, exactly like pendingFind just above (mirrors
+    // validateSave's own reset above).
+    pendingHazard: null,
     // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (unlike
     // pendingFind just above) — the player must still get their loot screen
     // back on resume, so it is carried through here, never reset.
