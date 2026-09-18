@@ -24,7 +24,7 @@ import url from "node:url";
 import { newRun, applyAction } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { reconcilePendingFight, chargenShiftOf, stripChargenShift, chargenShiftDiffs, stripSpellSeen } from "./harness/comparables.js";
+import { reconcilePendingFight, chargenShiftOf, stripChargenShift, chargenShiftDiffs, stripSpellSeen, stripWaterField } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -71,7 +71,11 @@ function comparable(state) {
   // provenance flag too (see harness stripSpellSeen) — mirrored here
   // because this file keeps its own local comparable(). No movement
   // fixture ever casts Map the Floor, so this is a no-op today.
-  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
+  // Phase 41 (TERR-01): strip the new engine-only water flag too (see
+  // harness stripWaterField) — mirrored here for the same reason. Water
+  // lands on every floor (no run flag), so this is a genuine no-op-ONLY-
+  // because-it's-stripped, not a "never happens" case like spellSeen above.
+  if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
   // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field (see
   // engine/character.js's rollCharacter) with no prototype-side equivalent
   // at all — strip it the same way test/parity/harness/comparables.js's

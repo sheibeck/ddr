@@ -30,6 +30,7 @@ import {
   skipsByteDiffAt,
   declaredEndDiffs,
   stripSpellSeen,
+  stripWaterField,
   reconcilePendingFight,
   chargenShiftOf,
   stripChargenShift,
@@ -95,7 +96,9 @@ function comparable(state) {
   // provenance flag too (see harness stripSpellSeen) — mirrored here
   // because this file keeps its own local comparable(). No magic fixture
   // ever casts Map the Floor, so this is a no-op today.
-  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
+  // Phase 41 (TERR-01): strip the new engine-only water flag too (see
+  // harness stripWaterField) — mirrored here for the same reason.
+  if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
   // PHOBIA-01 (04.1-05): c.darkFor is a brand-new engine-only field with no
   // prototype-side equivalent — strip it the same way test/parity/harness/
   // comparables.js's combatComparable does (this file predates that shared

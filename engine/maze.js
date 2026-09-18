@@ -6,7 +6,8 @@
 // preserving the exact RNG-consumption order so the same seed produces a
 // byte-identical floor. No DOM, no module-global state, no Math.random.
 
-import { difficultyCurve } from "./difficulty.js";
+import { difficultyCurve, WATER_POOL_SIZE_MIN, WATER_POOL_SIZE_MAX } from "./difficulty.js";
+import { derivedRng } from "./rng.js";
 
 export const GW = 21;
 export const GH = 21;
@@ -58,9 +59,16 @@ export function bfs(g, sx, sy) {
  * consumes no RNG, so the seeded RNG cursor order is unchanged for the
  * depths (1-5) where its output matches the old formulas exactly.
  *
+ * Phase 41 (TERR-01): the LAST pass before `return` places multi-square
+ * water pools (`cell.water = true`) via `placeWater`, drawing exclusively
+ * from a DERIVED rng stream keyed on the post-generation cursor, "terrain",
+ * and the floor's depth (see the call site below and placeWater's own doc
+ * comment).
+ *
  * @param {number} depth - current floor depth (1-based); no upper bound
  * @param {{next: () => number, pick: (a: any[]) => any, shuffle: (a: any[]) => any[]}} rng
- * @returns {{g: object[][], px: number, py: number, depth: number}}
+ * @returns {{g: object[][], px: number, py: number, depth: number}} cells may
+ *   additionally carry `water: true` (Phase 41, TERR-01) — never `false`
  */
 export function genFloor(depth, rng) {
   const g = [];
@@ -171,6 +179,18 @@ export function genFloor(depth, rng) {
     doors.push([x, y]);
   }
 
+  // Phase 41 (TERR-01): water pools on a DERIVED rng stream. The key is
+  // read via `rng.getState()` AFTER every existing draw above (the
+  // backtracker, loop-carving, feature scatter, dark blobs, one-way doors)
+  // so NO main-rng draw moves — test/unit/floor-gen-rng-pin.test.js pins the
+  // exact per-(seed,depth) draw count and post-generation cursor and proves
+  // this byte-for-byte. This reuses the Phase 38/39/40 derived-stream
+  // discipline (engine/rng.js#derivedRng) verbatim, not a new invention.
+  // Water is generated for EVERY run — fixture, bot, and old save alike —
+  // per the 2026-09-17 greenfield ruling (STATE.md's Engine Gate AMENDMENT):
+  // no run flag, no dual path.
+  placeWater(g, dc.depth, derivedRng(rng.getState(), "terrain", dc.depth));
+
   // WR-01: return dc.depth (difficultyCurve's sanitized, clamped-to-positive-
   // integer depth), not the raw `depth` parameter. difficultyCurve()'s own
   // safeDepth() guard was written specifically so a corrupted/non-integer/
@@ -242,4 +262,119 @@ export function refogSpellSeen(floor) {
     }
   }
   return count;
+}
+
+/**
+ * placeWater(g, depth, rng) — Phase 41 (TERR-01): places
+ * `difficultyCurve(depth).waterPools` contiguous, bounded-flood-fill water
+ * pools onto `g` (mutated in place), each a target size drawn from
+ * [WATER_POOL_SIZE_MIN, WATER_POOL_SIZE_MAX]. Called by `genFloor` LAST,
+ * after every other pass, with an rng that is ALREADY a derived stream —
+ * every draw inside this function comes off the `rng` PARAMETER only; it
+ * receives no reference to any caller's main rng, so it can never perturb
+ * one even by accident. `genFloor` constructs that derived stream at the
+ * call site immediately below (see its own comment there for the exact
+ * expression).
+ *
+ * A cell (x, y) is ELIGIBLE for water iff it is open (`!wall`), carries no
+ * feature (`!feat`), is farther than 4 BFS steps from the spawn cell (the
+ * SAME `far`-list threshold `genFloor`'s own feature scatter already uses,
+ * so the spawn cell and its first corridor are never wet), is not already
+ * water, and is not orthogonally adjacent to the exit tile (Manhattan
+ * distance exactly 1 — diagonal neighbours are fine). Water is always
+ * passable, so no placement here can ever make a floor unsolvable.
+ *
+ * Per pool: pick a seed cell from the (re-scanned, row-major, excluding
+ * already-water cells) eligible list, draw a target size, mark the seed
+ * water, then grow by repeatedly picking a random cell from a frontier of
+ * eligible, not-yet-water orthogonal neighbours of any pool cell (a
+ * discovery-order-deduplicated array — never a Set, so `rng.pick` stays
+ * deterministic) until the pool reaches its target size or the frontier is
+ * exhausted (a pool can legitimately end up smaller than its target size
+ * when it runs out of room — this is the design, not a bug). Cells only
+ * ever gain `water: true` — this function never writes `false` and never
+ * touches `wall`/`feat`/`dark`/`seen`/`dir`.
+ *
+ * @param {object[][]} g - the floor grid, mutated in place
+ * @param {number} depth - the floor's (already-sanitized) depth
+ * @param {{d: (n: number) => number, pick: (a: any[]) => any}} rng - a
+ *   DERIVED stream, never the caller's main rng
+ * @returns {number[][][]} pools - one array per pool, each an array of
+ *   `[x, y]` cell coordinates (in growth order, seed first)
+ */
+export function placeWater(g, depth, rng) {
+  const dc = difficultyCurve(depth);
+  const pools = [];
+  if (dc.waterPools <= 0) return pools;
+
+  const dist = bfs(g, 1, 1);
+  let ex = -1;
+  let ey = -1;
+  for (let y = 0; y < GH; y++) {
+    for (let x = 0; x < GW; x++) {
+      if (g[y][x].feat === "exit") {
+        ex = x;
+        ey = y;
+      }
+    }
+  }
+
+  const isEligible = (x, y) => {
+    const row = g[y];
+    const cell = row && row[x];
+    if (!cell || cell.wall || cell.feat || cell.water) return false;
+    const drow = dist[y];
+    if (!drow || !(drow[x] > 4)) return false;
+    if (ex >= 0 && Math.abs(x - ex) + Math.abs(y - ey) === 1) return false;
+    return true;
+  };
+
+  const eligibleSeeds = () => {
+    const out = [];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (isEligible(x, y)) out.push([x, y]);
+    return out;
+  };
+
+  for (let k = 0; k < dc.waterPools; k++) {
+    const seeds = eligibleSeeds();
+    if (!seeds.length) break;
+    const [sx, sy] = rng.pick(seeds);
+    const target = WATER_POOL_SIZE_MIN + rng.d(WATER_POOL_SIZE_MAX - WATER_POOL_SIZE_MIN + 1) - 1;
+    g[sy][sx].water = true;
+    const pool = [[sx, sy]];
+
+    const frontier = [];
+    const inFrontier = new Set();
+    const addFrontierNeighbors = (x, y) => {
+      for (const [dx, dy] of [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0],
+      ]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const key = `${nx},${ny}`;
+        if (isEligible(nx, ny) && !inFrontier.has(key)) {
+          inFrontier.add(key);
+          frontier.push([nx, ny]);
+        }
+      }
+    };
+    addFrontierNeighbors(sx, sy);
+
+    while (pool.length < target && frontier.length) {
+      const [nx, ny] = rng.pick(frontier);
+      const idx = frontier.findIndex(([fx, fy]) => fx === nx && fy === ny);
+      frontier.splice(idx, 1);
+      inFrontier.delete(`${nx},${ny}`);
+      g[ny][nx].water = true;
+      pool.push([nx, ny]);
+      addFrontierNeighbors(nx, ny);
+    }
+
+    pools.push(pool);
+  }
+
+  return pools;
 }

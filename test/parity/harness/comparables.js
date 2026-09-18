@@ -277,6 +277,42 @@ export function stripSpellSeen(floor) {
   return { ...floor, g };
 }
 
+/** stripWaterField(floor) — Phase 41 (TERR-01) adds `cell.water`, a brand-new
+ * engine-only boolean (engine/maze.js#placeWater) with NO prototype-side
+ * equivalent — the frozen prototype (test/parity/prototype-master.js.txt —
+ * DO NOT EDIT) has no water terrain on ANY cell, ever. This is a STRUCTURAL
+ * carve-out, the same category as stripSpellSeen/stripTimersField above: the
+ * field is compared NOWHERE, on ANY fixture, regardless of content — unlike a
+ * declared behavior divergence (a genuine value disagreement to measure and
+ * record), there is no value here to disagree about, only a key's presence.
+ * Water lands on EVERY floor (no run flag — the 2026-09-17 greenfield
+ * ruling), so this strip fires on every fixture's floor, not just a rare
+ * declared case. Returns the SAME floor object unchanged (cheap no-op) when
+ * no cell anywhere carries the flag; never mutates its input otherwise —
+ * maps a fresh grid of shallow cell copies instead. */
+export function stripWaterField(floor) {
+  if (!floor || !Array.isArray(floor.g)) return floor;
+  let any = false;
+  for (const row of floor.g) {
+    for (const cell of row) {
+      if (cell && "water" in cell) {
+        any = true;
+        break;
+      }
+    }
+    if (any) break;
+  }
+  if (!any) return floor;
+  const g = floor.g.map((row) =>
+    row.map((cell) => {
+      if (!cell || !("water" in cell)) return cell;
+      const { water, ...rest } = cell;
+      return rest;
+    }),
+  );
+  return { ...floor, g };
+}
+
 /** stripNameField(c) — DR-name-generator (2026-09-09) makes `c.name` a
  * GENERATIVE first × surname build (engine/character.js's nameFor over the new
  * content/names.js { first, sur } banks) instead of the frozen prototype's
@@ -431,7 +467,9 @@ export function movementComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): strip the new engine-only spellSeen
   // provenance flag too (see stripSpellSeen above) — a structural tripwire,
   // mirrored at every comparable's own `rest.c` chain.
-  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
+  // Phase 41 (TERR-01): strip the new engine-only water flag too (see
+  // stripWaterField above) — the same structural-carve-out category.
+  if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
   if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
   return rest;
 }
@@ -514,7 +552,8 @@ export function combatComparable(state) {
     rest.combat = stripFoeAbilityState(stripFoeDamageClosures(combatRest));
   }
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
-  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
+  // Phase 41 (TERR-01): see movementComparable's rationale above.
+  if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
   if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(rest.c))))))))))));
   return rest;
 }
@@ -1022,7 +1061,8 @@ export function economyComparable(state) {
   // comparables" carve-out holds structurally, not just for combatComparable.
   if (rest.combat) rest.combat = stripFoeAbilityState(rest.combat);
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
-  if (rest.floor) rest.floor = stripSpellSeen(rest.floor);
+  // Phase 41 (TERR-01): see movementComparable's rationale above.
+  if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
   if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(rest.c))))))))))))));
   return rest;
 }

@@ -258,6 +258,33 @@ function clearStaleSpellSeen(floor, c) {
 }
 
 /**
+ * sanitizeWaterCells(floor) — Phase 41 (TERR-01) load-tolerance for
+ * `cell.water`, mirroring clearStaleTimers/sanitizeWorn's exact discipline:
+ * when `floor.g` is a genuine array of arrays, every cell whose own
+ * `"water"` key is PRESENT but whose value is not exactly `true` (a
+ * tampered `"yes"`, `1`, `false`, `null`) has the key deleted outright. A
+ * cell that never carried the key is left completely untouched — this
+ * function NEVER adds a `water` key, so a pre-Phase-41 save (no cell has the
+ * key at all) round-trips with zero water cells and stays waterless until
+ * its next descent (no card, no migration — the ratified greenfield tolerant
+ * -load ruling). A genuine `water: true` cell always survives. Runs on BOTH
+ * load chains (validateSave/rehydrate), mirroring clearStaleSpellSeen's own
+ * placement. Mutates and returns the passed `floor`.
+ */
+function sanitizeWaterCells(floor) {
+  if (!floor || typeof floor !== "object" || !Array.isArray(floor.g)) return floor;
+  for (const row of floor.g) {
+    if (!Array.isArray(row)) continue;
+    for (const cell of row) {
+      if (cell && typeof cell === "object" && "water" in cell && cell.water !== true) {
+        delete cell.water;
+      }
+    }
+  }
+  return floor;
+}
+
+/**
  * RETIRED_SPELL_NAMES — Phase 40 (SPELL-05): the one rename this migration
  * ever needs to know about — "Detect Magic" became "Map the Floor". A
  * frozen, single-entry map so a FUTURE rename can extend it without
@@ -498,8 +525,13 @@ export function validateSave(raw, options = {}) {
     c: migratedC,
     // Phase 40 (SPELL-05, Plan 04): clearStaleSpellSeen strips every stale
     // spellSeen flag when migratedC carries no LIVE spell:reveal record
-    // (T-40-07); a live record is left completely untouched.
-    floor: clearStaleSpellSeen(obj.floor, migratedC),
+    // (T-40-07); a live record is left completely untouched. Phase 41
+    // (TERR-01): sanitizeWaterCells runs OUTERMOST — it only ever drops a
+    // tampered non-true water value, never injects one, so composing it
+    // after clearStaleSpellSeen (which never touches `water`) is order-
+    // independent in practice, but outermost matches this chain's own
+    // "newest migration wraps the previous one" convention.
+    floor: sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC)),
     day,
     steps,
     // Phase 38 (ABIL-05): each party member gets the same tolerant-load
@@ -598,7 +630,9 @@ export function rehydrate(obj, options = {}) {
     // Phase 40 (SPELL-05, Plan 04): migrateSpellNames/clearStaleSpellSeen
     // mirror validateSave's own calls too — see migratedC above.
     c: migratedC,
-    floor: clearStaleSpellSeen(obj.floor, migratedC),
+    // Phase 41 (TERR-01): sanitizeWaterCells mirrors validateSave's own call
+    // above — see its comment there.
+    floor: sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC)),
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
     combat: null,

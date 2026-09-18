@@ -85,6 +85,36 @@ export const DARK_RADIUS_CAP = 7;
  * eases floors 4+ while keeping floor 2's single canon blob untouched. */
 export const DARK_HOLD_THROUGH_DEPTH = 3;
 
+// --- Phase 41 (TERR-01): water pool knobs -----------------------------------
+// Mirrors the darkBlobs/darkRadius depth-curve pattern above (Decision 2,
+// Option A). Consumes NO rng and touches NO DOM — like every other knob in
+// this module, difficultyCurve's `waterPools` field is a pure lookup on
+// `depth`, so calling it never perturbs the seeded main-rng cursor. The
+// actual pool PLACEMENT (engine/maze.js#placeWater) draws exclusively from a
+// derived stream (`derivedRng(rng.getState(), "terrain", depth)`), per the
+// 2026-09-17 greenfield ruling — no run flag, water for every run. Water is
+// always passable (never blocks a path), so no pool count/size here can ever
+// make a floor unsolvable — the only design axis is "detour vs. slog".
+
+/** WATER_POOL_MIN — the pool count on floor 1 and on every breather floor
+ * (a breather is lighter in density/darkness, and water follows the same
+ * "lighter" convention rather than the combat-knob convention of staying
+ * flat through a breather). */
+export const WATER_POOL_MIN = 1;
+/** WATER_POOL_CAP — the pool count ceiling water eases toward by depth
+ * (reached at depth 9 and held from there on, per WATER_POOL_GROWTH_EVERY). */
+export const WATER_POOL_CAP = 3;
+/** WATER_POOL_GROWTH_EVERY — pool count rises by one every this-many depths
+ * past floor 1 (depths 1-4 -> 1, 6-8 -> 2, 9+ -> 3, capped at
+ * WATER_POOL_CAP; breather floors always report WATER_POOL_MIN instead). */
+export const WATER_POOL_GROWTH_EVERY = 4;
+/** WATER_POOL_SIZE_MIN — a single pool's minimum cell count (inclusive). */
+export const WATER_POOL_SIZE_MIN = 3;
+/** WATER_POOL_SIZE_MAX — a single pool's maximum cell count (inclusive); the
+ * per-pool target size is drawn uniformly from
+ * [WATER_POOL_SIZE_MIN, WATER_POOL_SIZE_MAX] on the derived terrain stream. */
+export const WATER_POOL_SIZE_MAX = 8;
+
 // --- Phase 21/27 (TUNE-01/06, D-01/D-19): combat-scaling knobs -------------
 // Identity band: depth < COMBAT_SCALE_FROM_DEPTH (see difficultyCurve's
 // `over` computation below) — grace band floors 2..FOE_GRACE_CANON_FROM_DEPTH-1,
@@ -334,6 +364,9 @@ function graceFor(d) {
  *     eased linearly back to 1.0
  *   - abilityThreat: soft-capped cadence scalar (Phase 21, D-03) for caster
  *     kits (every/uses) — identity (1.0) through depth < COMBAT_SCALE_FROM_DEPTH
+ *   - waterPools: Phase 41 (TERR-01) — the multi-square water pool count for
+ *     this floor (see the water-pool-knobs block above); consumes NO rng,
+ *     zeroed to WATER_POOL_MIN (never 0) on a breather floor
  */
 export function difficultyCurve(depth) {
   const d = safeDepth(depth);
@@ -372,6 +405,14 @@ export function difficultyCurve(depth) {
         ? HAZARD_SCALE_AT_START
         : HAZARD_SCALE_AT_START + (1 - HAZARD_SCALE_AT_START) * (d - HAZARD_FLAT_THROUGH_DEPTH) / (HAZARD_CANON_FROM_DEPTH - HAZARD_FLAT_THROUGH_DEPTH);
 
+  // Phase 41 (TERR-01): pool count rises by one every WATER_POOL_GROWTH_EVERY
+  // depths past floor 1, capped at WATER_POOL_CAP; a breather floor always
+  // reports WATER_POOL_MIN instead (the "lighter floor" convention). Zero
+  // rng consumed — a pure lookup on `d`/`breather`, exactly like darkBlobs.
+  const waterPools = breather
+    ? WATER_POOL_MIN
+    : Math.min(WATER_POOL_MIN + Math.floor((d - 1) / WATER_POOL_GROWTH_EVERY), WATER_POOL_CAP);
+
   return {
     depth: d,
     breather,
@@ -384,6 +425,7 @@ export function difficultyCurve(depth) {
     foePower: d < COMBAT_SCALE_FROM_DEPTH ? graceFor(d) : softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K),
     hazardScale,
     abilityThreat: softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K),
+    waterPools,
   };
 }
 

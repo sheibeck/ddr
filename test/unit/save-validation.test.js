@@ -516,3 +516,43 @@ test("migrateSpellNames: a grimoire with no retired name, or no grimoire at all,
   const check2 = validateSave(JSON.stringify({ c: noGrimoire, floor: validFloor }));
   assert.equal("grimoire" in check2.value.c, false, "no grimoire key is ever injected");
 });
+
+// --- Phase 41 (TERR-01): sanitizeWaterCells ---
+
+test("sanitizeWaterCells (validateSave/rehydrate): a pre-Phase-41 save (no cell ever carried a water key) round-trips through serializeRun -> JSON -> validateSave -> rehydrate with zero water cells and no injected key", () => {
+  const original = newRun(2026);
+  for (const row of original.floor.g) for (const cell of row) delete cell.water;
+  const json = JSON.stringify(serializeRun(original));
+
+  const check = validateSave(json);
+  assert.equal(check.ok, true);
+  for (const row of check.value.floor.g) for (const cell of row) assert.equal("water" in cell, false, "validateSave must never inject a water key");
+
+  const rehydrated = rehydrate(check.value);
+  for (const row of rehydrated.floor.g) for (const cell of row) assert.equal("water" in cell, false, "rehydrate must never inject a water key");
+});
+
+test("sanitizeWaterCells: a tampered non-true water value ('yes', 1, false) is dropped", () => {
+  for (const tampered of ["yes", 1, false, null]) {
+    const validFloor = { g: [[{ wall: false, water: tampered }]], px: 0, py: 0, depth: 1 };
+    const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+    const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+    assert.equal(check.ok, true);
+    assert.equal("water" in check.value.floor.g[0][0], false, `tampered water ${JSON.stringify(tampered)} must be dropped`);
+
+    const rehydrated = rehydrate({ c: { ...validChar }, floor: { g: [[{ wall: false, water: tampered }]], px: 0, py: 0, depth: 1 }, seed: 1, rngState: 1 });
+    assert.equal("water" in rehydrated.floor.g[0][0], false, "rehydrate mirrors validateSave's own tampered-value drop");
+  }
+});
+
+test("sanitizeWaterCells: a genuine water: true cell survives both load chains", () => {
+  const validFloor = { g: [[{ wall: false, water: true }, { wall: false }]], px: 0, py: 0, depth: 1 };
+  const validChar = { wp: 10, maxWP: 10, level: 1, skills: {} };
+  const check = validateSave(JSON.stringify({ c: validChar, floor: validFloor }));
+  assert.equal(check.ok, true);
+  assert.equal(check.value.floor.g[0][0].water, true);
+  assert.equal("water" in check.value.floor.g[0][1], false);
+
+  const rehydrated = rehydrate({ c: { ...validChar }, floor: validFloor, seed: 1, rngState: 1 });
+  assert.equal(rehydrated.floor.g[0][0].water, true);
+});
