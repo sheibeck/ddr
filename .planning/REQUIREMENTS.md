@@ -10,13 +10,13 @@
 
 ### Spells (SPELL)
 
-- [ ] **SPELL-01**: Player choosing a combat spell faces a real situational choice — offense spells are differentiated by niche (single-target burst, damage-over-time, multi-target, control with a scope/duration axis, defensive), not a strict best-damage-per-level ladder; each spell's grimoire text states its niche in one line
-- [ ] **SPELL-02**: Every utility spell (heal/ward/might/mirror/senses/foresee/regen/summon/turn/gate) has a measurable in-game effect the player can observe when cast, and none is a dead pick
-- [ ] **SPELL-03**: Spells can be added, removed or renamed for balance and fun, with every change recorded as a deliberate canon divergence (before/after table) and the day-one grimoire rolls for every caster sub-class still valid
-- [ ] **SPELL-04**: Every Magic User sub-class starts with at least one spell that deals damage (Summoner/Illusionist keep their Phase 23 level-1 overrides and additionally qualify)
-- [ ] **SPELL-05**: Detect Magic is renamed to say what it does (a map reveal) and reveals the floor for a stated number of steps, after which cells it revealed re-fog to their pre-spell state; cells the player walked and saw normally stay seen (re-fog provenance ratified as a Key Decision)
-- [ ] **SPELL-06**: An active Shield/ward (pool + rounds remaining) is visible on the Hero sheet and as a condition chip on the map HUD, not only in combat
-- [ ] **SPELL-07**: A scroll scribed into the grimoire is castable immediately when the caster's spell level qualifies, with a refusal that names the level needed when it does not
+- [x] **SPELL-01**: Player choosing a combat spell faces a real situational choice — offense spells are differentiated by niche (single-target burst, damage-over-time, multi-target, control with a scope/duration axis, defensive), not a strict best-damage-per-level ladder; each spell's grimoire text states its niche in one line
+- [x] **SPELL-02**: Every utility spell (heal/ward/might/mirror/senses/foresee/regen/summon/turn/gate) has a measurable in-game effect the player can observe when cast, and none is a dead pick
+- [x] **SPELL-03**: Spells can be added, removed or renamed for balance and fun, with every change recorded as a deliberate canon divergence (before/after table) and the day-one grimoire rolls for every caster sub-class still valid
+- [x] **SPELL-04**: Every Magic User sub-class starts with at least one spell that deals damage (Summoner/Illusionist keep their Phase 23 level-1 overrides and additionally qualify)
+- [x] **SPELL-05**: Detect Magic is renamed to say what it does (a map reveal) and reveals the floor for a stated number of steps, after which cells it revealed re-fog to their pre-spell state; cells the player walked and saw normally stay seen (re-fog provenance ratified as a Key Decision)
+- [x] **SPELL-06**: An active Shield/ward (pool + rounds remaining) is visible on the Hero sheet and as a condition chip on the map HUD, not only in combat
+- [x] **SPELL-07**: A scroll scribed into the grimoire is castable immediately when the caster's spell level qualifies, with a refusal that names the level needed when it does not
 
 ### Melee abilities (ABIL)
 
@@ -113,13 +113,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GEAR-01 | Phase 39 | Complete |
 | GEAR-02 | Phase 39 | Complete |
 | GEAR-05 | Phase 39 | Complete |
-| SPELL-01 | Phase 40 | Pending |
-| SPELL-02 | Phase 40 | Pending |
-| SPELL-03 | Phase 40 | Pending |
-| SPELL-04 | Phase 40 | Pending |
-| SPELL-05 | Phase 40 | Pending |
-| SPELL-06 | Phase 40 | Pending |
-| SPELL-07 | Phase 40 | Pending |
+| SPELL-01 | Phase 40 | Complete |
+| SPELL-02 | Phase 40 | Complete |
+| SPELL-03 | Phase 40 | Complete |
+| SPELL-04 | Phase 40 | Complete |
+| SPELL-05 | Phase 40 | Complete |
+| SPELL-06 | Phase 40 | Complete |
+| SPELL-07 | Phase 40 | Complete |
 | TERR-01 | Phase 41 | Pending |
 | TERR-02 | Phase 41 | Pending |
 | TERR-03 | Phase 41 | Pending |

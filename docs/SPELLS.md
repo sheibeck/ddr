@@ -641,8 +641,123 @@ map tint; Phase 41's later filter simply applies on top, unmodified.
 
 ## UI (Plan 05)
 
-(appended by Plan 05)
+Plans 01-04 built every engine surface this phase promises; Plan 05 puts all
+of it on screen and closes the ledger.
+
+### The niche line, on both spell surfaces
+
+`content/spells.js#SPELLS[i].txt` already begins with `NICHE_LABELS[niche]
++ " · "` (Plan 01's contract). Both places a player reads a spell now carry
+the KEY, not just the pre-formatted string, so the shell (or a future UI)
+can group/badge by niche without parsing `txt`:
+
+- `src/browser/viewModels.js#grimoireViewModel` — the Hero-tab Grimoire
+  rows each gain `niche`/`nicheLabel` beside the existing `name`/`lvl`/
+  `txt`/`combatOnly`/`castable`/`disabledReason` fields; `txt` itself is
+  unchanged (already niche-first). `mazeworld.html#renderGrimoire`'s
+  `<i>${row.txt}</i>` line needed no markup change — the niche is already
+  the first thing the row renders.
+- `src/browser/combatMenu.js`'s SPELLS submenu rows gain the identical two
+  fields; `desc` stays `sp.txt`.
+
+### The chip table (`CONDITION_COPY`/`CONDITION_TONE`/`CONDITION_EXPLAIN`)
+
+Five new rows, copying the `might`/`ward` precedent Phase 31/39 established
+(one object-literal entry per key, read by the generic
+`typeof cn.remaining === "number"` detail branch — no chip needed a special
+case):
+
+| Chip key | Label | Detail (generic branch) | Tone | Explanation (tap) |
+|---|---|---|---|---|
+| `mirror` | Mirrored | `{n} rds` | good | "They swing at a reflection for a few rounds. Try not to look smug." |
+| `senses` | Senses | (flat, no count) | good | "You fight in the dark at full skill and nothing gets the jump on you, until this fight ends." |
+| `regen` | Regenerating | (flat, no count) | good | "Wounds close on their own every round of this fight. It is not a licence." |
+| `foresight` | Forewarned | (flat, no count) | odd | "You already know what the next encounter is. Whether that helps is up to you." |
+| `reveal` | Mapped | `{n} sq` | odd | "The floor is on loan. When the squares run out, the parts you never walked go dark again." |
+
+### The Hero-tab kit rows
+
+`mazeworld.html`'s `#s-kit` list (built in `paint()`):
+
+- **Shield row (SPELL-06):** `[c.ward.name, "${pool} hp left · ${rounds}
+  rds"]` — was pool-only before this plan; now matches the map-HUD `ward`
+  chip's own `{pool, remaining}` shape exactly, and (per `conditions.
+  test.js`'s explicit `combat: null` proof) the chip already showed outside
+  combat before this plan — SPELL-06 was purely a Hero-tab display gap.
+- **Four new rows**, each gated on the SAME field the condition chip reads:
+  `["Mirror Self", "{n} rds"]` (`c.mirror > 0`), `["Sense Presence", "till
+  the fight ends"]` (`c.senses`), `["Sense Danger", "armed"]`
+  (`c.foresight`), `["Map the Floor", "{n} sq"]` (a live
+  `c.timers["spell:reveal"]` record, `phase === "effect" && left > 0`) —
+  placed after the existing Regeneration row.
+
+### The foe badges
+
+`mazeworld.html#foeStatusBadges(f)`:
+
+- **Weakened · N** — the existing `S.combat.weakened` combat-wide flag chip
+  now reads the hero's own `c.timers["spell:weaken"]` record for its
+  duration (`Weakened · ${wk.left}` when a live record exists, plain
+  `"Weakened"` as a fallback for a legacy mid-fight state with no record).
+- **Ice · N / Poison · N** — a foe's `f.dot` record (the shared
+  `{left, dmg, by}` shape Ice and Poisoned Edge both write, `engine/
+  combat.js`) now surfaces beside the existing Acid badge: `by === "ice"`
+  reads "Ice", anything else (Poisoned Edge's `by: "poisonedEdge"`, and any
+  future dot source) reads "Poison" — `by` is the only switch, matching the
+  engine's own `by`-gated ice-freeze payoff (Plan 02).
+
+### The spell-seen map tint (SPELL-05)
+
+`src/browser/mapMarks.js#MAP_PALETTE.floorSpell` (`#4e5a6a`, a cool
+"borrowed sight" tint distinct from `floor`/`floorDark`/`fog`) is mirrored
+byte-identically into `mazeworld.html#draw()`'s own fallback palette
+literal (used only if the ESM module bridge is somehow absent) so a missing
+module never paints an undefined `fillStyle`. `draw()`'s floor-fill line
+becomes `ctx.fillStyle = c.spellSeen ? P.floorSpell : (c.dark ? P.floorDark
+: P.floor)` — `spellSeen` takes priority over `dark`, since the tint IS the
+"this will re-fog" signal. `draw()` already re-reads `cell.seen`/
+`cell.spellSeen` fresh every paint (Plan 04's own note), so the one expiry
+sweep (`engine/maze.js#refogSpellSeen`) is picked up immediately with zero
+shell-side coupling — the tinted cells simply repaint as ordinary fog (or
+floor, if walked) the instant the sweep clears the flag.
+
+### What stays for the cleanup milestone
+
+The classic script's `SPELLS` table duplicate, `castSpell()`, and
+`rollGrimoire()` (dead code, unread by any live call site since the DR10/
+DR13-era migration to the real `engine/magic.js`/`engine/character.js`
+modules) are left in place — deleting dead code is the cleanup milestone's
+job (`.planning/proposed-milestone-shell-cleanup.md`), not this phase's,
+exactly as Phases 34-39 have each left their own classic duplicates.
 
 ## Requirements map (Plan 05)
 
-(appended by Plan 05)
+| Requirement | Landed in | Proof |
+|---|---|---|
+| SPELL-01 | Plans 01 (the 33-row niche/txt table) / 02 (the mechanics the niches promise) / 05 (the niche line rendered on both spell surfaces) | `test/unit/spell-table.test.js`; `test/unit/spell-mechanics.test.js`; `test/unit/grimoireViewModel.test.js`; `test/unit/combatMenu.test.js` |
+| SPELL-02 | Plan 03 (the four new `conditionsOf` chips + Sense Presence's initiative effect) / Plan 05 (the chip copy + Hero-tab rows rendered) | `test/unit/spell-utility.test.js`; `test/unit/conditions.test.js`; `test/unit/shell-spells-40.test.js` |
+| SPELL-03 | Plan 01 (every declared fixture divergence, measured and recorded) — Plan 02's zero-fixture-move offense mechanics and Plan 04's structural `spellSeen` carve-out are both additionally covered by SPELL-05 | `test/parity/FIXTURE-INVENTORY.md`'s Phase 40 sections; `npm test` full parity glob green throughout |
+| SPELL-04 | Plan 01 (Lesser Summon, the Summoner's deterministic grant, `dealsDamage`'s damage-walk) | `test/unit/day-one-damage.test.js`; `test/unit/guaranteed-attack-spell.test.js` |
+| SPELL-05 | Plan 01 (the rename) / Plan 04 (the re-fog provenance mechanism, the Key Decision, tolerant load, the harness carve-out) / Plan 05 (the spell-seen map tint) | `test/unit/map-reveal.test.js`; `test/unit/save-validation.test.js`; `test/unit/mapMarks.test.js`; `test/unit/shell-spells-40.test.js` |
+| SPELL-06 | Plan 05 (the Hero-tab row gains rounds; `conditions.test.js`'s explicit `combat: null` proof that the map-HUD chip already showed outside combat) | `test/unit/conditions.test.js`; `test/unit/shell-spells-40.test.js` |
+| SPELL-07 | Plan 03 (`readScroll`'s scribe gate aligned with `canCast`'s two checks; `scrollTooAdvanced`) | `test/unit/spell-utility.test.js`; `test/unit/cast-refusals.test.js` |
+| ROADMAP SC-1: a player can tell two same-level spells solve different problems | Plan 01 (the niche map) + Plan 02 (the mechanics) | `test/unit/spell-table.test.js` (niche-map proof); `test/unit/spell-mechanics.test.js` |
+| ROADMAP SC-2: every utility spell has an observable effect | Plan 03 (the chips + narration) | `test/unit/spell-utility.test.js`; `test/unit/conditions.test.js` |
+| ROADMAP SC-3: every Magic User sub starts day one with a spell that deals damage | Plan 01 | `test/unit/day-one-damage.test.js` |
+| ROADMAP SC-4: Map the Floor's window is legible and re-fogs only what it alone showed | Plan 04 (the mechanism) + Plan 05 (the map tint) | `test/unit/map-reveal.test.js`; `test/unit/mapMarks.test.js` |
+| ROADMAP SC-5: a scroll's refusal is visible and names the level needed | Plan 03 | `test/unit/spell-utility.test.js` (the `readScroll` gate matrix, including `scrollTooAdvanced`) |
+| ROADMAP SC-6: Shield's pool + rounds are visible on the Hero sheet and as a map-HUD chip, outside combat too | Plan 05 (the Hero-tab row) + Plan 03/31's pre-existing `conditionsOf` ward chip (no-combat proof added this plan) | `test/unit/conditions.test.js`; `test/unit/shell-spells-40.test.js` |
+
+## Out of scope / next
+
+- Bot casting tactics by niche (choosing WHICH spell to cast for a given
+  situation) — Phase 42; `tools/lib/tuning-bot.mjs#chooseSpell` stays
+  kind-generic this phase, already able to cast every reshaped kind.
+- Darkness/light interplay with the reveal window (Phase 41's render-time
+  `seen` filter) — orthogonal to this phase's `spellSeen` provenance model,
+  documented in Plan 04's own "Phase 41 note" above.
+- Spell cooldowns / a mana model — not in v1.5; spells stay per-day
+  slot-casts as canon (40-CONTEXT.md "Deferred Ideas").
+- The classic script's `SPELLS`/`castSpell`/`rollGrimoire` duplicates —
+  deletion is the cleanup milestone's job, not this phase's (see "What
+  stays for the cleanup milestone" above).
