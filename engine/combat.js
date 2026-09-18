@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -898,6 +898,16 @@ export function flee(state, rng, events = []) {
       return events;
     }
   }
+  // Phase 38 (ABIL-01, Smoke) — "a flee during it just works": no roll, no
+  // pursuit strike, unconditional escape while the effect is active. False
+  // on every fixture (only useAbility's "smoke" case ever starts this
+  // timer).
+  if (abilityEffectActive(c, "smoke")) {
+    forfeitLoot(state, "fled", events);
+    events.push({ type: "fled", reason: "smoke" });
+    endCombat(state, events);
+    return events;
+  }
   const bonus = c.cls === "Thief" ? 5 : 0; // getting out is the Thief's whole trade
   const roll = rng.d(20);
   events.push({ type: "fleeRolled", roll, bonus, need: 11 });
@@ -1560,6 +1570,12 @@ export function pickFoeTarget(state, rng, foe = null) {
   if (!C) return null;
   const liveMembers = C.allies ? C.allies.filter((a) => a.wp > 0) : [];
   if (!liveMembers.length) return null;
+  // Phase 38 (ABIL-01, Taunt) — "every foe swings at you this round": while
+  // active, a member is never picked — no target die is drawn at all (0
+  // draws), matching FID-02's own zero-draw structural-guard precedent.
+  // False on every fixture (only useAbility's "taunt" case ever starts this
+  // timer).
+  if (abilityEffectActive(state.c, "taunt")) return null;
   const pick = rng.d(liveMembers.length + 1);
   if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
@@ -1650,6 +1666,20 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
     events.push({ type: "damageHalved", name: foe.name });
   }
 
+  // Phase 38 (ABIL-01, Brace) — "halve the next blow that lands on you": a
+  // single-charge buffer, consumed by the first landed blow that reaches
+  // this pipeline (foe swing, pursuit strike, foe ability bolt), then
+  // clears — mirrors the Pendant of Fortitude's c.halfNext pattern exactly.
+  // Pure (no rng); false on every fixture (only useAbility's "brace" case
+  // ever sets it).
+  if (state.combat && state.combat.braced && dmg > 0) {
+    const before = dmg;
+    dmg = Math.ceil(dmg / 2);
+    state.combat.braced = false;
+    soaked.brace = before - dmg;
+    events.push({ type: "braceHeld", name: foe.name, soaked: before - dmg });
+  }
+
   // a ward eats the blow before armour or flesh does
   let warded = 0;
   if (c.ward && c.ward.pool > 0) {
@@ -1700,9 +1730,15 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
   // soaks as plate; the magical plate never wears out (av.magic), so no
   // worn-armour durability is consumed and armorDestroyed never fires.
   const av = armorSoak(c);
+  // Phase 38 (ABIL-01, Taunt) — "your armour soaks double" while active; the
+  // av.ar > 0 GATE below is unchanged (Taunt cannot grant armour to a
+  // character with none) — only the soak roll's target number doubles,
+  // capped at 20 (a d20's own ceiling). Identity (soakAr === av.ar) on every
+  // fixture.
+  const soakAr = abilityEffectActive(c, "taunt") ? Math.min(20, av.ar * 2) : av.ar;
   if (av.wp > 0 && av.ar > 0 && !ignores) {
     const soak = rng.d(20);
-    if (soak <= av.ar) {
+    if (soak <= soakAr) {
       onArmour = true;
       blocked = dmg;
       // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-09):
@@ -1778,15 +1814,23 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
 
 /**
  * foeTurn(state, rng, events) — every live foe's attack. Step order (Phase
- * 19 additions marked *NEW*): *NEW* a queued summon joins C.foes -> regen
- * tick -> per foe: acid-over-time tick, alive check, sleep, *NEW* fleesBelow
- * check, *NEW* the ability gate (cast or fall through to melee), the melee
- * swings (per-swing foeDie vs foeToHitVs with blind/weakened overrides,
- * sp.dmg dice, criticals, Hardiness reduction, a ward's absorb/reflect/
- * shatter, armor soak, die() on wp<=0) -> ward/mirror ticks -> *NEW* the
- * c.foeEffect tick. Ports mazeworld.html foeTurn() (lines 2838-2903). Uses
- * pickFoeTarget for target selection and applyFoeDamageToPlayer (Hardiness
- * onward) for the hero-damage pipeline.
+ * 19 additions marked *NEW*, Phase 38 additions marked *ABIL*): *NEW* a
+ * queued summon joins C.foes -> regen tick -> per foe: acid-over-time tick,
+ * *ABIL* the f.dot tick (Poisoned Edge, the acid template), alive check,
+ * sleep, *ABIL* the f.stunned skip (Pommel Strike, the asleep template),
+ * *NEW* fleesBelow check, *NEW* the ability gate (cast or fall through to
+ * melee), the melee swings (per-swing foeDie vs foeToHitVs with
+ * blind/weakened/*ABIL* hamstrung overrides, sp.dmg dice, criticals,
+ * *ABIL* a hero-branch miss's Riposte counter, Hardiness reduction, *ABIL*
+ * Brace's single-charge halving, a ward's absorb/reflect/shatter, *ABIL*
+ * Taunt's doubled armor-soak target, armor soak, die() on wp<=0) -> *ABIL*
+ * the f.blindFor countdown (Dirty Trick) at the end of each foe's own visit
+ * -> ward/mirror ticks -> *NEW* the c.foeEffect tick -> *ABIL* the
+ * engine/effects.js rounds tick (Phase 36, ability cooldowns). Ports
+ * mazeworld.html foeTurn() (lines 2838-2903). Uses pickFoeTarget (*ABIL*:
+ * Taunt bypasses it entirely, 0 draws) for target selection and
+ * applyFoeDamageToPlayer (Hardiness onward, *ABIL*: Brace/Taunt) for the
+ * hero-damage pipeline.
  */
 export function foeTurn(state, rng, events = []) {
   const C = state.combat;
@@ -1829,10 +1873,35 @@ export function foeTurn(state, rng, events = []) {
         continue;
       }
     }
+    // Phase 38 (ABIL-01, Poisoned Edge) — a generic per-foe DOT record, the
+    // exact f.acid tick template above, so Phase 40's spells can share the
+    // same `f.dot = { left, dmg, by }` shape. Poison bypasses armour like
+    // acid (kind "spell"). Absent on every fixture — only useAbility's
+    // "poisonedEdge" case ever sets f.dot.
+    if (f.dot && f.dot.left > 0 && f.alive) {
+      const d = rollDice(rng, f.dot.dmg);
+      const tick = damageFoe(state, f, d, { kind: "spell", school: f.dot.by, casterSub: c.sub }, rng, events);
+      f.dot.left--;
+      events.push({ type: "dotTick", target: f.name, dmg: tick.applied, by: f.dot.by, left: f.dot.left });
+      if (f.dot.left <= 0) delete f.dot;
+      if (f.wp <= 0 && f.alive) {
+        killFoe(state, f, rng, events);
+        continue;
+      }
+    }
     if (!f.alive) continue;
     if (f.asleep > 0) {
       f.asleep--;
       events.push({ type: "foeSlept", name: f.name });
+      continue;
+    }
+    // Phase 38 (ABIL-01, Pommel Strike) — f.asleep's own skip-turn pattern,
+    // reused verbatim: a stunned foe loses this ONE turn, then the flag
+    // clears (no counter needed — a single stun, not a duration). Absent on
+    // every fixture — only useAbility's "pommelStrike" case ever sets it.
+    if (f.stunned) {
+      f.stunned = false;
+      events.push({ type: "foeStunned", name: f.name });
       continue;
     }
     // Phase 19 (CANON-02/D-03): a caster that has dropped below its own
@@ -1927,6 +1996,11 @@ export function foeTurn(state, rng, events = []) {
         // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
         let mDmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
+        // Phase 38 (ABIL-01, Hamstring) — this specific foe's own blows do
+        // half damage for the rest of the fight, member side. Pure read, 0
+        // draws; false on every fixture (only useAbility's "hamstring" case
+        // ever sets it).
+        if (f.hamstrung) mDmg = Math.ceil(mDmg / 2);
         if (mRoll === 1) mDmg *= 2;
         member.wp -= mDmg;
         events.push({
@@ -1967,15 +2041,46 @@ export function foeTurn(state, rng, events = []) {
       }
       if (roll > need) {
         events.push({ type: "foeMissed", name: f.name, roll, need, ...(needMods.length ? { needMods } : {}) });
+        // Phase 38 (ABIL-01, Riposte) — "for one round every foe that misses
+        // you eats your weapon damage": hero-branch misses ONLY (a miss on a
+        // member never triggers this — that branch `continue`s well above,
+        // before this point is ever reached). abilityEffectActive is false
+        // on every fixture (only useAbility's "riposte" case ever starts
+        // this timer), so this never fires or draws for a non-carrier.
+        if (abilityEffectActive(c, "riposte")) {
+          const rd = weaponDamage(c, rng);
+          const hit = damageFoe(state, f, rd, { kind: "melee", casterClass: c.cls, casterSub: c.sub, crit: false }, rng, events);
+          if (!hit.soaked) events.push({ type: "riposted", target: f.name, dmg: hit.applied });
+          if (f.wp <= 0) {
+            killFoe(state, f, rng, events);
+            break;
+          }
+        }
         continue;
       }
       // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
       let dmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
       if (C.weakened) dmg = Math.ceil(dmg / 2);
+      // Phase 38 (ABIL-01, Hamstring) — this specific foe's own blows do
+      // half damage for the rest of the fight, hero side. Pure read, 0
+      // draws; false on every fixture.
+      if (f.hamstrung) dmg = Math.ceil(dmg / 2);
       if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
 
       const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need, needMods });
       if (hit.died) return events;
+    }
+    // Phase 38 (ABIL-01, Dirty Trick) — the blindFor countdown, at the END
+    // of this foe's own visit (after its swings, whether it swung or was
+    // asleep/stunned/dot-killed above): a spell-blinded foe (no blindFor)
+    // stays blind indefinitely, exactly as before. Absent on every fixture.
+    if (f.blindFor) {
+      f.blindFor--;
+      if (f.blindFor <= 0) {
+        delete f.blindFor;
+        f.blind = false;
+        events.push({ type: "foeSightReturned", name: f.name });
+      }
     }
   }
   if (c.ward && --c.ward.rounds <= 0) {

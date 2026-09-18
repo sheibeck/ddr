@@ -18,9 +18,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { useAbility, abilityRoundsLeft, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "../../engine/abilities.js";
-import { isReady, remaining } from "../../engine/effects.js";
+import { isReady, remaining, startEffect } from "../../engine/effects.js";
 import { abilityEffectActive, foeToHitVs, DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
-import { endCombat, foeTurn } from "../../engine/combat.js";
+import { endCombat, foeTurn, pickFoeTarget, applyFoeDamageToPlayer, flee } from "../../engine/combat.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count; throws on underflow (a "no more draws expected"
@@ -344,12 +344,11 @@ test("lastStand: three strike attempts in one dispatch", () => {
   assert.ok(events.some((e) => e.type === "lastStandCalled" && e.attacks === 3));
 });
 
-test("pommelStrike: sets t.stunned and pushes pommelStruck", () => {
+test("pommelStrike: pushes pommelStruck (foeTurn's own consumption of t.stunned is proven in the Task 2 section below)", () => {
   const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["pommelStrike"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
   const events = useAbility(state, "pommelStrike", fakeRng([...FILL]), []);
-  assert.equal(foe.stunned, true);
   assert.ok(events.some((e) => e.type === "pommelStruck" && e.target === "Rat"));
 });
 
@@ -359,13 +358,12 @@ test("applyPommel(t) is a pure setter — Plan 04 reuses it directly", () => {
   assert.equal(t.stunned, true);
 });
 
-test("dirtyTrick: sets t.blind + t.blindFor=2 and pushes dirtyTrickLanded", () => {
+test("dirtyTrick: pushes dirtyTrickLanded and leaves the target blind (the exact blindFor countdown is proven in the Task 2 section below)", () => {
   const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["dirtyTrick"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
   const events = useAbility(state, "dirtyTrick", fakeRng([...FILL]), []);
   assert.equal(foe.blind, true);
-  assert.equal(foe.blindFor, 2);
   assert.ok(events.some((e) => e.type === "dirtyTrickLanded" && e.target === "Rat" && e.rounds === 2));
 });
 
@@ -381,7 +379,12 @@ test("poisonedEdge: sets t.dot shape and pushes poisonedEdgeApplied", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["poisonedEdge"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
   const events = useAbility(state, "poisonedEdge", fakeRng([...FILL]), []);
-  assert.deepEqual(foe.dot, { left: 3, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" });
+  // this dispatch's own foeTurn already ticks the dot once (Task 2's dot
+  // hook, exercised in full in the section below) — left starts at 3 but
+  // reads 2 by the time useAbility returns.
+  assert.equal(foe.dot.left, 2);
+  assert.deepEqual(foe.dot.dmg, { n: 1, sides: 4, bonus: 0 });
+  assert.equal(foe.dot.by, "poisonedEdge");
   assert.ok(events.some((e) => e.type === "poisonedEdgeApplied" && e.target === "Rat" && e.rounds === 3));
 });
 
@@ -535,4 +538,161 @@ test("smoke: pushes smokeThrown", () => {
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   const events = useAbility(state, "smoke", fakeRng([...FILL]), []);
   assert.ok(events.some((e) => e.type === "smokeThrown" && e.rounds === 2));
+});
+
+// ---------------------------------------------------------------------------
+// 6. Task 2 hooks — foeTurn/pickFoeTarget/applyFoeDamageToPlayer/flee. These
+//    were RED at the Task 1 commit (see 38-03-SUMMARY.md); Task 2 lands the
+//    combat.js hooks that turn them green.
+// ---------------------------------------------------------------------------
+
+test("Task 2: pommelStrike's f.stunned makes the target skip THIS SAME round's foeTurn (its 'next turn')", () => {
+  const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
+  const state = fixedState({ c: fixedFighter({ abilities: ["pommelStrike"], wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([foe]);
+  const events = useAbility(state, "pommelStrike", fakeRng([...FILL]), []);
+  assert.ok(events.some((e) => e.type === "foeStunned" && e.name === "Rat"));
+  assert.equal(events.some((e) => e.type === "foeMissed" || e.type === "struckByFoe"), false, "the stunned foe never reaches its swing");
+  assert.equal(foe.stunned, false, "consumed — a single stun, not a duration");
+});
+
+test("Task 2: dirtyTrick's f.blindFor counts down across foeTurn visits, then restores sight", () => {
+  const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
+  const state = fixedState({ c: fixedFighter({ abilities: ["dirtyTrick"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([foe]);
+  // this dispatch's own foeTurn already ticks blindFor once: 2 -> 1
+  useAbility(state, "dirtyTrick", fakeRng([...FILL]), []);
+  assert.equal(foe.blind, true);
+  assert.equal(foe.blindFor, 1);
+  const events2 = foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(foe.blind, false);
+  assert.equal(foe.blindFor, undefined);
+  assert.ok(events2.some((e) => e.type === "foeSightReturned" && e.name === "Rat"));
+});
+
+test("Task 2: a spell-blinded foe (no blindFor) never regains sight on its own", () => {
+  const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999, blind: true }); // no blindFor — e.g. Blind spell
+  const state = fixedState({ c: fixedFighter({ wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([foe]);
+  foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(foe.blind, true, "still blind — no blindFor counter to expire");
+});
+
+test("Task 2: poisonedEdge ticks a d4 three times total (one already inside its own dispatch), then f.dot is deleted", () => {
+  const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
+  const state = fixedState({ c: fixedFighter({ abilities: ["poisonedEdge"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([foe]);
+  const events0 = useAbility(state, "poisonedEdge", fakeRng([2, ...FILL]), []);
+  const tick0 = events0.find((e) => e.type === "dotTick");
+  assert.ok(tick0);
+  assert.equal(tick0.dmg, 2);
+  assert.equal(tick0.by, "poisonedEdge");
+  assert.equal(tick0.left, 2);
+  assert.equal(foe.dot.left, 2);
+  const events1 = foeTurn(state, fakeRng([3, ...FILL]), []);
+  assert.equal(events1.find((e) => e.type === "dotTick").left, 1);
+  const events2 = foeTurn(state, fakeRng([1, ...FILL]), []);
+  const tick2 = events2.find((e) => e.type === "dotTick");
+  assert.equal(tick2.left, 0);
+  assert.equal(foe.dot, undefined);
+});
+
+test("Task 2: poisonedEdge's dot kills a low-hp foe on its very first tick", () => {
+  const foe = fixedFoe({ name: "Rat", wp: 2, maxWP: 2 });
+  const state = fixedState({ c: fixedFighter({ abilities: ["poisonedEdge"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([foe]);
+  const events = useAbility(state, "poisonedEdge", fakeRng([4, ...FILL]), []); // d4 rolls 4 -> lethal
+  assert.ok(events.some((e) => e.type === "foeKilled" && e.name === "Rat"));
+  assert.ok(events.some((e) => e.type === "encounterCleared"));
+});
+
+test("Task 2: hamstring halves this foe's own landed damage on the hero (hero branch)", () => {
+  const mk = (hamstrung) => {
+    const foe = fixedFoe({ name: "Rat", lvl: 1, wp: 999, maxWP: 999 });
+    if (hamstrung) foe.hamstrung = true;
+    const state = fixedState({ c: fixedFighter({ wp: 999, maxWP: 999 }) });
+    state.combat = fixedCombat([foe]);
+    return state;
+  };
+  const control = mk(false);
+  const controlEvents = foeTurn(control, fakeRng([3, 5]), []); // roll 3 hits (need 5), dmg = 1 + 5 = 6, no crit
+  const controlHit = controlEvents.find((e) => e.type === "struckByFoe");
+  assert.equal(controlHit.dmg, 6);
+
+  const hamstrungState = mk(true);
+  const hamstrungEvents = foeTurn(hamstrungState, fakeRng([3, 5]), []);
+  const hamstrungHit = hamstrungEvents.find((e) => e.type === "struckByFoe");
+  assert.equal(hamstrungHit.dmg, 3, "half of the control's 6, ceil-rounded");
+});
+
+test("Task 2: hamstring halves this foe's own landed damage on a party member too", () => {
+  const foe = fixedFoe({ name: "Rat", lvl: 1, wp: 999, maxWP: 999, hamstrung: true });
+  const state = fixedState({ c: fixedFighter({ wp: 999, maxWP: 999 }), party: [{ name: "Ada", level: 1, sub: "Fighter", cls: "Fighter", race: "Human", wp: 20, maxWP: 20, status: "ok" }] });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Fighter", wp: 20, maxWP: 20 }] });
+  // pick = rng.d(2) -> 2 targets the (only) member; mDieN roll hits; damage die
+  const events = foeTurn(state, fakeRng([2, 3, 5]), []);
+  const memberHit = events.find((e) => e.type === "memberStruck");
+  assert.ok(memberHit);
+  assert.equal(memberHit.dmg, 3, "half of 6, ceil-rounded, same as the hero-branch control above");
+});
+
+test("Task 2: riposte counters a hero-branch foe miss during its own effect round with weaponDamage dice", () => {
+  const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
+  const state = fixedState({ c: fixedFighter({ abilities: ["riposte"], wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([foe]);
+  // sequence: the foe's own to-hit roll (20 -> miss vs need 5), then
+  // riposte's weaponDamage die (Club, 6), then rollInitiative's tied 20s.
+  const events = useAbility(state, "riposte", fakeRng([20, 6, 20, 20, ...FILL]), []);
+  const riposted = events.find((e) => e.type === "riposted");
+  assert.ok(riposted, "the foe's miss triggered a counter");
+  assert.equal(riposted.target, "Rat");
+  assert.equal(riposted.dmg, 7); // level^2(1) + Club die(6) + prof(0) + magicWpn(0)
+});
+
+test("Task 2: pickFoeTarget returns null with zero draws while taunt is active", () => {
+  const state = fixedState({ c: fixedFighter({ wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Fighter", wp: 20, maxWP: 20 }] });
+  startEffect(state.c, "ability:taunt", { rounds: 1, cd: 4 });
+  const rng = fakeRng([]); // throws on any draw
+  const result = pickFoeTarget(state, rng);
+  assert.equal(result, null);
+});
+
+test("Task 2: pickFoeTarget can pick a live member when taunt is NOT active (control)", () => {
+  const state = fixedState({ c: fixedFighter({ wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Fighter", wp: 20, maxWP: 20 }] });
+  const result = pickFoeTarget(state, fakeRng([2])); // d(2) -> 2 picks the member
+  assert.ok(result, "a member CAN be targeted when taunt is not active");
+});
+
+test("Task 2: taunt doubles the armour soak target (capped at 20)", () => {
+  const mk = () => {
+    const c = fixedFighter({ ar: 5, armorWP: 20, armorMax: 20, armorMin: 0, wp: 999, maxWP: 999 });
+    const state = fixedState({ c });
+    state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+    return state;
+  };
+  const withoutTaunt = mk();
+  const withoutResult = applyFoeDamageToPlayer(withoutTaunt, withoutTaunt.combat.foes[0], fakeRng([7]), [], { dmg: 8, roll: 3, need: 5 });
+  assert.equal(withoutResult.onArmour, false, "roll 7 > ar 5 — not soaked without taunt");
+
+  const withTaunt = mk();
+  startEffect(withTaunt.c, "ability:taunt", { rounds: 1, cd: 4 });
+  const withResult = applyFoeDamageToPlayer(withTaunt, withTaunt.combat.foes[0], fakeRng([7]), [], { dmg: 8, roll: 3, need: 5 });
+  assert.equal(withResult.onArmour, true, "roll 7 <= doubled ar 10 — soaked with taunt");
+});
+
+test("Task 2: smoke's flee bypass — no roll, no pursuit strike, unconditional escape", () => {
+  const state = fixedState({ c: fixedFighter({ abilities: ["smoke"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+  useAbility(state, "smoke", fakeRng([...FILL]), []);
+  // the smoke effect is this same dispatch's own 1-round window too — but
+  // smoke's DURATION is 2 rounds (unlike riposte/taunt's 1), so it is STILL
+  // active immediately after useAbility returns.
+  assert.equal(abilityEffectActive(state.c, "smoke"), true);
+  const events = flee(state, fakeRng([]), []); // throws on any draw — smoke never rolls
+  assert.ok(events.some((e) => e.type === "fled" && e.reason === "smoke"));
+  assert.equal(events.some((e) => e.type === "fleeRolled"), false);
+  assert.equal(events.some((e) => e.type === "foePursued"), false);
+  assert.equal(state.combat, null);
 });
