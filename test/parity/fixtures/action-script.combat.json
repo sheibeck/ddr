@@ -87,6 +87,14 @@
         "stateBefore": { "dead": true },
         "stateAfter": { "dead": true },
         "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the new lose-plain scenario (seed 1119, below). Re-measured live on 2026-09-16: the hero still dies (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differs."
+      },
+      "chargenDivergence": {
+        "phase": 40,
+        "requirements": ["SPELL-04", "SPELL-05"],
+        "fields": ["grimoire"],
+        "before": { "grimoire": ["Strength", "Shield", "Detect Magic", "Heal", "Stun"] },
+        "after": { "grimoire": ["Strength", "Shield", "Map the Floor", "Heal", "Stun", "Freeze"] },
+        "rationale": "Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). This Apprentice's ready set (Strength/Shield/Heal/Stun) had no damage-dealing spell under the narrowed SPELL-04 guarantee — Stun no longer counts (control, not damage; it satisfied the OLD attack-kind guarantee, which is why this seed was byte-identical to the prototype before this phase). The day-one top-up now appends Freeze. This scenario only ever `attack`s (never casts), so the action path itself and its already-declared action-path divergence (above) are unaffected — only the chargen-time grimoire differs."
       }
     },
     {

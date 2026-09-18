@@ -1040,3 +1040,128 @@ fixture character). `npm test`: 2664/2664, `# fail 0`; master hash
 economy-fixture edit (a `stockAfter` extension of an EXISTING declared
 record, not a new divergence).
 
+## Phase 40: spell table reshape + day-one damage (SPELL-01/03/04) — declared grimoire divergences
+
+**The mechanism.** `content/spells.js` grows to 33 rows (SPELL-01's niche
+reshape + SPELL-05's Detect Magic -> Map the Floor rename + the new level-1
+Lesser Summon, row 32, `roll: "derived"`). `engine/character.js#rollGrimoire`
+(SPELL-04) narrows the Phase 23 day-one guarantee from "any
+`ATTACK_SPELL_KINDS` member" to "a spell that actually deals damage"
+(`engine/derived.js#dealsDamage`, new `DAMAGE_SPELL_KINDS` set — Doze/Stun/
+Weaken no longer count), applied to every Magic User sub with no Summoner
+exemption; the Summoner is additionally, deterministically granted Lesser
+Summon (zero draws). `content/spell-level-overrides.js`'s Phase 23
+`Summoner: { Summon: 1 }` row is retired — Summon is spell level 2 for
+everyone again. The new Lesser Summon row (`roll: "derived"`) NEVER enters
+`rollGrimoire`'s main-rng-shuffled `low`/`high`/`spare` pools; it is spliced
+in AFTER each shuffle completes, at a position drawn from a completely
+separate `derivedRng` stream (`engine/rng.js`) keyed on the main cursor — so
+the main-rng draw COUNT and every seed's chargen rng cursor stay
+byte-identical (`test/unit/chargen-rng-pin.test.js`'s three pin tables are
+unedited; only that file's own third test's independently-derived formula
+gained a one-line `sp.roll !== "derived"` filter, documented inline). This
+is the SAME derived-stream discipline Phase 38's ability-pool rolls and
+Phase 39's tool-loot roll established — reused here, not invented.
+
+Every fixture the rename and/or the reshaped guarantee moves is a
+**grimoire-content-only** change: no seed's rng cursor moves (proven by
+`test/unit/chargen-rng-pin.test.js` staying green and byte-unedited), so
+every declared record below is `fields: ["grimoire"]`, following the exact
+`chargenDivergenceFor`/`chargenShiftOf` mechanisms Phase 23/Phase 38
+established (never invented fresh).
+
+**Measured, not assumed** (per the standing rule): the plan's own predicted
+moved set was chargen seeds 7/8/15/19/24/29; live measurement (a scratch
+script mirroring `chargen-parity.test.js`'s exact comparison logic across
+all 14 chargen-fixture seeds) found seeds **7, 15, 24, 29** genuinely
+diverge, while seeds **8** (Illusionist) and **19** (Sorcerer) turned out
+BYTE-IDENTICAL — their seed-specific derived-splice position for Lesser
+Summon happened to land outside the day-one/spare cutoff for those two
+particular seeds (the "genuinely varies" property `test/unit/day-one-
+damage.test.js` proves at 200-seed scale over-and-under-samples any single
+14-seed fixture). No fixture-seed set was trimmed or re-picked to dodge
+this — the fixture's existing 14 seeds are used as-is.
+
+### Chargen: seeds 7, 15 (updated), 24 (updated), 29
+
+`action-script.chargen.json`'s `divergences` map: seeds 15 and 24 already
+carried a Phase 23 record (IDENT-02/IDENT-03) — their `after`/`phase`/
+`requirements`/`rationale` are UPDATED in place (their `before`, the
+prototype's own frozen output, is untouched, since the prototype is never
+re-run against new rules). Seeds 7 and 29 are NEW records.
+
+| Seed | Class/Sub/Race | BEFORE grimoire | AFTER grimoire | Cause |
+|---|---|---|---|---|
+| 7 | Magic User / Wizard / Human | `["Sense Presence","Mirror Self","Stun","Heal"]` | `["Sense Presence","Mirror Self","Stun","Heal","Lesser Summon"]` | SPELL-04: no damage-dealing spell in the ready book (Stun no longer counts); the derived-splice Lesser Summon lands in the day-one pool for this seed and itself satisfies the guarantee (no Freeze needed — Lesser Summon's `lesser: true` flag makes `dealsDamage` true). |
+| 15 | Magic User / Summoner / Human | `["Stupidity","Stun","Shield","Summon","Heal"]` | `["Stupidity","Stun","Lesser Summon","Shield","Summon"]` | SPELL-04: the Phase 23 Summoner/Summon level-1 override is retired (Summon no longer counts as usable-now on its own); Lesser Summon's derived splice lands inside this seed's shuffled low-level pool, displacing Heal; the Summoner's deterministic Lesser Summon grant is already satisfied by the splice (no duplicate push). |
+| 24 | Magic User / Apprentice / Wilmsry | `["Heal","Strength","Stupidity","Detect Magic","Sense Presence"]` | `["Heal","Strength","Stupidity","Map the Floor","Sense Presence","Freeze"]` | SPELL-05 rename (same position) + SPELL-04: this Apprentice's ready book still has no damage-dealing spell (Stupidity is control), so Freeze is still appended by the top-up (now checking `dealsDamage`, same outcome as the old `isAttackSpell` top-up for this seed); this seed's Lesser Summon derived splice landed outside the day-one cutoff (absent, expected variance). |
+| 29 | Magic User / Warlock / Wilmsry | `["Detect Magic","Shield","Strength","Acid","Insane","Freeze","Sense Danger"]` | `["Map the Floor","Shield","Strength","Acid","Insane","Freeze","Sense Danger"]` | SPELL-05 rename only — the Warlock cannot learn the special school (`content/mu-chart.js`: `special: null`), so Lesser Summon never enters its pool; Freeze already satisfied the guarantee before and after this phase. |
+
+`newRun(seed).rngState` is unchanged for all 20 rng-pin seeds
+(`test/unit/chargen-rng-pin.test.js`, unedited by this phase) — the
+derived-stream splice and the damage top-up both walk already-shuffled
+arrays / make zero new main-rng draws; only the four seeds above have their
+grimoire CONTENT change.
+
+### Magic: `heal` and `scroll` scenarios, seed 7 (chargenDivergence)
+
+`action-script.magic.json`'s `heal` and `scroll` scenarios both use seed 7
+(the same Wizard as the chargen record above) — both gained a
+`chargenDivergence` record (`fields: ["grimoire"]`, same before/after as
+chargen seed 7). `cast-damage` (seed 8) and `potion` (seed 1) are
+untouched: seed 8's chargen output is BYTE-IDENTICAL (measured above), and
+seed 1 is a Fighter with no grimoire at all.
+
+Measured live, not assumed: `heal`'s cast (Heal, idx 0) and `scroll`'s
+`readScroll()` call both replay byte-identical to the frozen prototype once
+the chargen-time grimoire shift is declared — `readScroll`'s own picked
+spell/option-list outcome for this specific seed's cursor is unaffected by
+the SPELLS array growing from 32 to 33 rows (confirmed by `npm test`
+passing with ONLY the `chargenDivergence` strip — no additional
+action-path record was needed for either scenario).
+
+### Combat: `lose-apprentice` scenario, seed 127 (chargenDivergence)
+
+`action-script.combat.json`'s `lose-apprentice` scenario (seed 127, a Human
+Apprentice who ONLY ever `attack`s — no spell cast) already carries a Phase
+31 action-path `divergence` (the Afraid-penalty phobia re-measurement,
+untouched by this phase) — it now ALSO carries a `chargenDivergence`
+record layered outermost (mirroring Phase 38's win/lose/lose-plain/flee/
+parley precedent of combining a `chargenDivergence` with an existing
+action-path/parley-strip record on the same scenario).
+
+| Field | BEFORE | AFTER | Cause |
+|---|---|---|---|
+| `c.grimoire` | `["Strength","Shield","Detect Magic","Heal","Stun"]` | `["Strength","Shield","Map the Floor","Heal","Stun","Freeze"]` | SPELL-05 rename + SPELL-04: Stun no longer counts as a damage spell (it satisfied the OLD attack-kind guarantee, which is why this seed was byte-identical to the prototype before this phase), so the day-one top-up now appends Freeze. |
+
+The scenario's own action path (14 plain `attack`s, no cast) and its
+existing action-path divergence's declared end fields are UNCHANGED — only
+the chargen-time grimoire differs; re-measured live and confirmed the
+scenario's outcome (`dead: true`, the same `wp`/`sp`/`gold`/`kills`/
+`rations` end values) is unaffected.
+
+### rngState sentence
+
+Every seed's `rollCharacter`/`newRun` cursor is unchanged by this plan —
+`test/unit/chargen-rng-pin.test.js`'s three pin tables (`ROLL_CHARACTER_PINS`,
+`NEW_RUN_PINS`, `ROLL_GRIMOIRE_DRAW_COUNTS`) are byte-unedited and green;
+the only edit in that file is the third test's own independently-derived
+formula gaining a `sp.roll !== "derived"` filter (a test-internal
+recalculation, not a pin value).
+
+### Byte-identical elsewhere (Phase 40, Plan 01)
+
+Every other chargen seed (10 of 14 — 1, 2, 3, 4, 6, 8, 13, 19, 32, 35), the
+`potion` magic scenario, every movement/economy/encounters fixture, the
+`win`/`lose`/`lose-plain`/`flee`/`parley` combat scenarios (none of their
+heroes is a Magic User whose day-one guarantee moved), and
+`test/parity/prototype-master.js.txt` (hash
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`, NEVER edited) are all
+byte-identical, with no carve-out. `npm test`: 2711/2711, `# fail 0`;
+`node --test test/parity/chargen-parity.test.js test/parity/magic-parity.test.js
+test/parity/combat-parity.test.js test/parity/full-suite.test.js`: all
+green; `git status --porcelain test/parity/fixtures` shows only the three
+edited fixture files above (chargen/magic/combat), no untracked files;
+`git diff` against this plan's start commit shows zero `"before"` value
+lines changed anywhere in `test/parity/fixtures`.
+

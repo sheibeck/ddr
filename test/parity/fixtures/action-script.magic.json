@@ -26,7 +26,15 @@
     {
       "name": "heal",
       "seed": 7,
-      "actions": [{ "type": "castSpell", "idx": 0 }]
+      "actions": [{ "type": "castSpell", "idx": 0 }],
+      "chargenDivergence": {
+        "phase": 40,
+        "requirements": ["SPELL-04"],
+        "fields": ["grimoire"],
+        "before": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal"] },
+        "after": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal", "Lesser Summon"] },
+        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). The cast itself (Heal, idx 0) is unaffected — Heal's mechanic/txt position is byte-identical."
+      }
     },
     {
       "name": "potion",
@@ -44,7 +52,15 @@
     {
       "name": "scroll",
       "seed": 7,
-      "actions": [{ "type": "readScroll" }]
+      "actions": [{ "type": "readScroll" }],
+      "chargenDivergence": {
+        "phase": 40,
+        "requirements": ["SPELL-04"],
+        "fields": ["grimoire"],
+        "before": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal"] },
+        "after": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal", "Lesser Summon"] },
+        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). readScroll's own picked spell/option-list length is unaffected — measured live, see FIXTURE-INVENTORY.md's Phase 40 section."
+      }
     }
   ]
 }

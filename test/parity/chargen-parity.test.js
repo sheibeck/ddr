@@ -173,11 +173,14 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
 test("chargen fixture divergence records are narrow and well-formed (FID-06)", () => {
   const divergences = FIXTURE.divergences || {};
   const keys = Object.keys(divergences);
-  // Phase 23 (FID-06) contributed 2 records (seeds 15, 24); Phase 38
-  // (ABIL-02, the Special Skills table reshape) contributes 7 more (seeds
-  // 1, 2, 3, 4, 6, 13, 32) — see test/parity/FIXTURE-INVENTORY.md's Phase 38
-  // section for the full measured before/after table.
-  assert.ok(keys.length <= 9, `expected at most 9 divergence records, got ${keys.length}`);
+  // Phase 23 (FID-06) originally contributed 2 records (seeds 15, 24), both
+  // since UPDATED by Phase 40's spell table reshape + day-one damage
+  // guarantee (SPELL-04/SPELL-05), which also adds seeds 7 and 29 — see
+  // test/parity/FIXTURE-INVENTORY.md's Phase 40 section. Phase 38 (ABIL-02,
+  // the Special Skills table reshape) contributes 7 more (seeds 1, 2, 3, 4,
+  // 6, 13, 32) — see that file's Phase 38 section for the full measured
+  // before/after table.
+  assert.ok(keys.length <= 11, `expected at most 11 divergence records, got ${keys.length}`);
   for (const key of keys) {
     assert.ok(SEEDS.includes(Number(key)), `divergence key ${key} is not in the fixture's seeds array`);
     const record = divergences[key];

@@ -2,23 +2,39 @@
   "seed": 20260907,
   "seeds": [1, 2, 3, 4, 6, 7, 8, 13, 15, 19, 24, 29, 32, 35],
   "actions": [],
-  "_note": "Character generation happens entirely at newRun/newGame with no further actions, so `actions` is empty (per action-script.schema.md, an empty actions array is valid). The `seeds` array is the covering set this chargen fixture iterates: across it every class (Fighter/Thief/Magic User), all six races (Human/Elven/Dwarven/Wilmsry/Fridgian/Troll), a Samurai (plate + magic weapon), and the special-grant grimoire branches (Wizard/Illusionist/Summoner/Sorcerer/Apprentice/Warlock/Cleric) are exercised at least once. `seed` is the schema-required scalar (a representative single seed); the parity and determinism tests iterate `seeds`. See `divergences` below for the two seeds Phase 23's IDENT-02/IDENT-03 rule changes deliberately altered.",
+  "_note": "Character generation happens entirely at newRun/newGame with no further actions, so `actions` is empty (per action-script.schema.md, an empty actions array is valid). The `seeds` array is the covering set this chargen fixture iterates: across it every class (Fighter/Thief/Magic User), all six races (Human/Elven/Dwarven/Wilmsry/Fridgian/Troll), a Samurai (plate + magic weapon), and the special-grant grimoire branches (Wizard/Illusionist/Summoner/Sorcerer/Apprentice/Warlock/Cleric) are exercised at least once. `seed` is the schema-required scalar (a representative single seed); the parity and determinism tests iterate `seeds`. See `divergences` below: Phase 23 (IDENT-02/IDENT-03) originally declared seeds 15/24, both since UPDATED (after/rationale) by Phase 40's spell table reshape + day-one damage guarantee (SPELL-04/SPELL-05), which also adds seeds 7 and 29; Phase 38 (ABIL-02, the Special Skills table reshape) contributed seeds 1/2/3/4/6/13/32.",
   "divergences": {
+    "7": {
+      "phase": 40,
+      "requirements": ["SPELL-04"],
+      "fields": ["grimoire"],
+      "before": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal"] },
+      "after": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal", "Lesser Summon"] },
+      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited."
+    },
     "15": {
-      "phase": "23",
-      "requirements": ["IDENT-02", "IDENT-03", "FID-06"],
+      "phase": 40,
+      "requirements": ["SPELL-04", "FID-06"],
       "fields": ["grimoire"],
       "before": { "grimoire": ["Stupidity", "Stun", "Shield", "Summon", "Heal"] },
-      "after": { "grimoire": ["Stupidity", "Stun", "Shield", "Summon"] },
-      "rationale": "Summon is a level-1 spell for a Summoner (content/spell-level-overrides.js), so it now counts toward rollGrimoire's two-usable-now requirement and the top-up loop stops one spell earlier (Heal is no longer appended); the Summoner is exempt from the new attack top-up (no attack spell is added, since it has no legal level-1 offense spell). Zero new rng draws — the rng cursor is pinned unchanged by test/unit/chargen-rng-pin.test.js."
+      "after": { "grimoire": ["Stupidity", "Stun", "Lesser Summon", "Shield", "Summon"] },
+      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited."
     },
     "24": {
-      "phase": "23",
-      "requirements": ["IDENT-02", "FID-06"],
+      "phase": 40,
+      "requirements": ["SPELL-04", "SPELL-05", "FID-06"],
       "fields": ["grimoire"],
       "before": { "grimoire": ["Heal", "Strength", "Stupidity", "Detect Magic", "Sense Presence"] },
-      "after": { "grimoire": ["Heal", "Strength", "Stupidity", "Detect Magic", "Sense Presence", "Freeze"] },
-      "rationale": "The Apprentice's ready set was Heal/Strength with no attack spell; the new IDENT-02 guaranteed-attack top-up appends the first attack-kind spell of the already-shuffled `spare` list (Freeze). Zero new rng draws — the rng cursor is pinned unchanged by test/unit/chargen-rng-pin.test.js."
+      "after": { "grimoire": ["Heal", "Strength", "Stupidity", "Map the Floor", "Sense Presence", "Freeze"] },
+      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws."
+    },
+    "29": {
+      "phase": 40,
+      "requirements": ["SPELL-05"],
+      "fields": ["grimoire"],
+      "before": { "grimoire": ["Detect Magic", "Shield", "Strength", "Acid", "Insane", "Freeze", "Sense Danger"] },
+      "after": { "grimoire": ["Map the Floor", "Shield", "Strength", "Acid", "Insane", "Freeze", "Sense Danger"] },
+      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool and this is the ONLY change; Freeze already satisfied the day-one damage guarantee before and after this phase."
     },
     "1": {
       "phase": 38,
