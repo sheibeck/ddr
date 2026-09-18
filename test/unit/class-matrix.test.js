@@ -28,9 +28,10 @@ import {
   rollups,
   buildReport,
   formatText,
+  formatUsageMarkdown,
 } from "../../tools/lib/class-matrix.mjs";
-import { playRun, BOT_DEFAULTS } from "../../tools/lib/tuning-bot.mjs";
-import { CLASSES, RACES } from "../../content/index.js";
+import { playRun, BOT_DEFAULTS, RUN_FLAGS } from "../../tools/lib/tuning-bot.mjs";
+import { CLASSES, RACES, ABILITIES, SPELLS } from "../../content/index.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -91,6 +92,14 @@ test("seedList: the fixed i*7919+1 stride", () => {
   assert.deepStrictEqual(seedList(3), [1, 7920, 15839]);
 });
 
+// --- (5b) rowFromRun.usage (Phase 42, BAL-02) ------------------------------
+
+test("rowFromRun: carries run.tallies.usage straight through unchanged", () => {
+  const run = { seed: 1, deathDepth: 5, floorsGained: 4, state: { c: { kills: 2, level: 2 } }, actions: 50, stuck: false, cause: "trap", won: false, tallies: { encounters: 1, usage: { abilities: { kata: 2 }, spells: {}, items: { "tool:torch": 1 } } }, encountersSurvived: 1 };
+  const row = rowFromRun(run);
+  assert.deepStrictEqual(row.usage, { abilities: { kata: 2 }, spells: {}, items: { "tool:torch": 1 } });
+});
+
 // --- (6) summarizeRows -------------------------------------------------------
 
 test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from depth metrics; topCauses caps at 3", () => {
@@ -124,6 +133,33 @@ test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from
   assert.ok(mixed.topCauses.length <= 3);
   // trap(2) > combat(2) tie broken by cause asc; beast(1) is 3rd or dropped
   assert.equal(mixed.topCauses[0].count >= mixed.topCauses[mixed.topCauses.length - 1].count, true);
+
+  // Phase 42 (BAL-02): usage is never null, and rows carrying no `usage`
+  // field at all (every row above) contribute zero uses everywhere.
+  assert.deepStrictEqual(allStuck.usage, { abilities: {}, spells: {}, items: {} });
+  assert.deepStrictEqual(mixed.usage, { abilities: {}, spells: {}, items: {} });
+});
+
+// --- (6a2) summarizeRows.usage (Phase 42, BAL-02) --------------------------
+
+test("summarizeRows: usage sums uses and counts runs over COMPLETED rows only, in sorted label order", () => {
+  const row = (seed, stuck, usage) => ({
+    seed, deathDepth: 5, stuck, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false, usage,
+  });
+  const rows = [
+    row(1, false, { abilities: { kata: 2 }, spells: {}, items: { "potion:heal": 1 } }),
+    row(2, false, { abilities: { kata: 1, brace: 3 }, spells: { Freeze: 1 }, items: {} }),
+    // a stuck row's usage must never contribute, even if present
+    row(3, true, { abilities: { kata: 99 }, spells: {}, items: {} }),
+    // a completed row with no usage field at all contributes zero
+    { seed: 4, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false },
+  ];
+  const result = summarizeRows(rows);
+  assert.deepStrictEqual(result.usage.abilities, { brace: { uses: 3, runs: 1 }, kata: { uses: 3, runs: 2 } });
+  assert.deepStrictEqual(result.usage.spells, { Freeze: { uses: 1, runs: 1 } });
+  assert.deepStrictEqual(result.usage.items, { "potion:heal": { uses: 1, runs: 1 } });
+  // label insertion order is sorted ascending (brace before kata)
+  assert.deepStrictEqual(Object.keys(result.usage.abilities), ["brace", "kata"]);
 });
 
 // --- (6b) reach20 (Phase 27, TUNE-05) -------------------------------------------------------
@@ -228,6 +264,23 @@ test("rollups: pools rows by class/sub/race; byClass sums n across member cells"
   assert.deepStrictEqual(ru.byRace.map((r) => r.key).sort(), ["Elven", "Human"]);
 });
 
+// --- (8b) rollups usage pass-through (Phase 42, BAL-02) --------------------
+
+test("rollups: usage flows through byClass/bySub/byRace/pooled for free, pooled over every cell's rows", () => {
+  const rows1 = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false, usage: { abilities: { kata: 2 }, spells: {}, items: {} } }];
+  const rows2 = [{ seed: 2, deathDepth: 7, stuck: false, cause: "combat", kills: 2, level: 2, actions: 80, floorsGained: 6, encounters: 2, encountersSurvived: 1, won: false, usage: { abilities: {}, spells: { Freeze: 3 }, items: { "tool:torch": 1 } } }];
+  const cellRows = [
+    { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: rows1 },
+    { cell: { cls: "Magic User", sub: "Sorcerer", race: "Elven" }, rows: rows2 },
+  ];
+  const ru = rollups(cellRows);
+  const knight = ru.bySub.find((r) => r.key === "Knight");
+  assert.deepStrictEqual(knight.usage.abilities, { kata: { uses: 2, runs: 1 } });
+  assert.deepStrictEqual(ru.pooled.usage.abilities, { kata: { uses: 2, runs: 1 } });
+  assert.deepStrictEqual(ru.pooled.usage.spells, { Freeze: { uses: 3, runs: 1 } });
+  assert.deepStrictEqual(ru.pooled.usage.items, { "tool:torch": { uses: 1, runs: 1 } });
+});
+
 // --- (9) buildReport / formatText -------------------------------------------------------
 
 test("buildReport: correct meta.cells/excluded, no timing fields; formatText contains footnote/Stuck/Bot lines, no verdict words", () => {
@@ -243,6 +296,7 @@ test("buildReport: correct meta.cells/excluded, no timing fields; formatText con
   assert.equal(report.meta.cells, 2);
   assert.equal(report.meta.excluded.length, 1);
   assert.ok(report.meta.bot.startsWith("Bot: "));
+  assert.deepStrictEqual(report.meta.runFlags, RUN_FLAGS); // Phase 42 (BAL-01/02)
 
   const walk = (obj, seen = new Set()) => {
     if (obj === null || typeof obj !== "object" || seen.has(obj)) return;
@@ -300,6 +354,83 @@ test("buildReport: rollups.pooled present with key ALL; formatText's POOLED bloc
   const pooledBlock = text.slice(pooledBlockStart, text.indexOf("\n\n", pooledBlockStart));
   assert.ok(pooledBlock.includes(">=20%"), "POOLED block header is missing the >=20% column");
   assert.ok(pooledBlock.includes("survived"), "POOLED block at a deep start depth is missing the deep 'survived' column");
+});
+
+// --- (9c) formatUsageMarkdown (Phase 42, BAL-02) ----------------------------
+
+/** mkUsageReport(usage) — a minimal two-cell report with a synthetic rollups.pooled/byClass/bySub, enough for formatUsageMarkdown. */
+function mkUsageReport(usage) {
+  const knightCompleted = 10;
+  const sorcererCompleted = 5;
+  return {
+    meta: { cells: 2 },
+    rollups: {
+      byClass: [
+        { key: "Fighter", completed: knightCompleted },
+        { key: "Magic User", completed: sorcererCompleted },
+      ],
+      bySub: [
+        { key: "Knight", usage: { abilities: { kata: { uses: 4, runs: 2 } }, spells: {}, items: {} } },
+        { key: "Sorcerer", usage: { abilities: {}, spells: { Freeze: { uses: 3, runs: 1 } }, items: { "tool:torch": { uses: 1, runs: 1 } } } },
+      ],
+      pooled: { completed: knightCompleted + sorcererCompleted, usage },
+    },
+  };
+}
+
+test("formatUsageMarkdown: exactly four headings in order; abilities/spells rows cover every catalog entry; items sorted by uses desc then label asc; every rate 2 decimals, never NaN", () => {
+  const usage = {
+    abilities: { kata: { uses: 4, runs: 2 } },
+    spells: { Freeze: { uses: 3, runs: 1 } },
+    items: { "tool:torch": { uses: 1, runs: 1 }, "potion:heal": { uses: 5, runs: 3 } },
+  };
+  const md = mkUsageReport(usage);
+  const text = formatUsageMarkdown(md);
+
+  const headings = [...text.matchAll(/^### .+$/gm)].map((m) => m[0]);
+  assert.deepStrictEqual(headings, ["### Pick-rates — abilities", "### Pick-rates — spells", "### Pick-rates — items", "### Top picks by sub-class"]);
+
+  // every ABILITIES/SPELLS catalog entry gets exactly one row (header +
+  // separator + N data rows, all lines starting with "|")
+  const countTableRows = (block) => (block.match(/^\|.*\|$/gm) || []).length - 2; // minus header + separator
+  const abilitiesBlock = text.slice(text.indexOf("### Pick-rates — abilities"), text.indexOf("### Pick-rates — spells"));
+  assert.equal(countTableRows(abilitiesBlock), ABILITIES.length);
+  const spellsBlock = text.slice(text.indexOf("### Pick-rates — spells"), text.indexOf("### Pick-rates — items"));
+  assert.equal(countTableRows(spellsBlock), SPELLS.length);
+
+  // Kata: 4 uses / 10 eligible (Fighter) = 0.40
+  assert.ok(text.includes("| Kata | Fighter | 4 | 2 | 10 | 0.40 |"));
+  // Freeze: 3 uses / 5 eligible (Magic User) = 0.60
+  assert.ok(text.includes("| Freeze | 3 | 1 | 5 | 0.60 |"));
+
+  // items sorted by uses desc (potion:heal 5 before tool:torch 1) then label asc
+  const itemsBlock = text.slice(text.indexOf("### Pick-rates — items"), text.indexOf("### Top picks by sub-class"));
+  const potionIdx = itemsBlock.indexOf("potion:heal");
+  const torchIdx = itemsBlock.indexOf("tool:torch");
+  assert.ok(potionIdx !== -1 && torchIdx !== -1 && potionIdx < torchIdx);
+
+  assert.ok(!text.includes("NaN"));
+});
+
+test("formatUsageMarkdown: a report with NO usage field anywhere renders every table with zero uses and 0.00 rates, never throws", () => {
+  const bare = { meta: { cells: 2 }, rollups: { byClass: [{ key: "Fighter", completed: 10 }, { key: "Magic User", completed: 5 }], bySub: [{ key: "Knight" }], pooled: { completed: 15 } } };
+  const text = formatUsageMarkdown(bare);
+  assert.ok(!text.includes("NaN"));
+  assert.ok(text.includes("0.00"));
+  assert.ok(text.includes("| Kata | Fighter | 0 | 0 | 10 | 0.00 |"));
+  assert.ok(text.includes("- |") || text.includes("| - |")); // the sub row's "no picks" placeholder
+});
+
+test("formatUsageMarkdown: 'Top picks by sub-class' has one row per rollups.bySub entry with its top three uses/runs picks", () => {
+  const usage = { abilities: {}, spells: {}, items: {} };
+  const md = mkUsageReport(usage);
+  const text = formatUsageMarkdown(md);
+  const subBlock = text.slice(text.indexOf("### Top picks by sub-class"));
+  assert.ok(subBlock.includes("Knight"));
+  assert.ok(subBlock.includes("kata (4/2)"));
+  assert.ok(subBlock.includes("Sorcerer"));
+  assert.ok(subBlock.includes("Freeze (3/1)"));
+  assert.ok(subBlock.includes("tool:torch (1/1)"));
 });
 
 // --- (10) force pass-through smoke (HARN-01 via the bot) -------------------------------------------------------

@@ -682,3 +682,79 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x seeds 1-3) never stall;
   }
   assert.ok(sawItem, "at least one of the nine forced-cell runs must use an item or take loot");
 });
+
+// ============================================================================
+// Plan 03, Task 2: tallyUsage — the per-run pick-rate tally.
+// ============================================================================
+
+test("makeTallies: usage is a fresh { abilities: {}, spells: {}, items: {} } every call", () => {
+  const t1 = makeTallies();
+  assert.deepStrictEqual(t1.usage, { abilities: {}, spells: {}, items: {} });
+  t1.usage.abilities.kata = 1;
+  const t2 = makeTallies();
+  assert.deepStrictEqual(t2.usage, { abilities: {}, spells: {}, items: {} }); // no shared reference
+});
+
+test("tallyUsage: abilityUsed increments usage.abilities[key]; repeated events accumulate", () => {
+  const tallies = makeTallies();
+  const action = { type: "useAbility", key: "kata" };
+  tallyUsage(tallies, action, [{ type: "abilityUsed", key: "kata", name: "Kata" }], {}, {});
+  tallyUsage(tallies, action, [{ type: "abilityUsed", key: "kata", name: "Kata" }], {}, {});
+  assert.deepStrictEqual(tallies.usage.abilities, { kata: 2 });
+});
+
+test("tallyUsage: itemUsed increments usage.items[itemLabel(item)] — a potion, a torch, and a staff each label correctly", () => {
+  const tallies = makeTallies();
+  const action = { type: "useItem", i: 0 };
+  tallyUsage(tallies, action, [{ type: "itemUsed", item: { kind: "potion", eff2: "heal" } }], {}, {});
+  tallyUsage(tallies, action, [{ type: "itemUsed", item: { kind: "tool", tool: "torch", n: "Torch" } }], {}, {});
+  tallyUsage(tallies, action, [{ type: "itemUsed", item: { kind: "staff", n: "Birch Staff" } }], {}, {});
+  assert.deepStrictEqual(tallies.usage.items, { "potion:heal": 1, "tool:torch": 1, "Birch Staff": 1 });
+});
+
+test("tallyUsage: toolUsed increments usage.items['tool:' + tool] (a rope/ladder hazard-tool spend)", () => {
+  const tallies = makeTallies();
+  tallyUsage(tallies, { type: "useTool", tool: "rope" }, [{ type: "toolUsed", tool: "rope", feat: "gorge", item: { kind: "tool", tool: "rope" } }], {}, {});
+  assert.deepStrictEqual(tallies.usage.items, { "tool:rope": 1 });
+});
+
+test("tallyUsage: scrollCast increments usage.items.scroll — a scroll is an ITEM use, never a spell use", () => {
+  const tallies = makeTallies();
+  const before = { c: { spellsUsed: 0 } };
+  const after = { c: { spellsUsed: 0 } }; // readScroll saves/restores spellsUsed around its own free castSpell call
+  tallyUsage(tallies, { type: "readScroll" }, [{ type: "scrollCast", spell: "Freeze" }], before, after);
+  assert.deepStrictEqual(tallies.usage.items, { scroll: 1 });
+  assert.deepStrictEqual(tallies.usage.spells, {});
+});
+
+test("tallyUsage: a castSpell action whose spellsUsed delta is +1 tallies usage.spells[name]; a refused cast (delta 0) tallies nothing", () => {
+  const tallies = makeTallies();
+  const freezeIdx = idx("Freeze");
+  const before = { c: { spellsUsed: 0 } };
+  const realCast = { c: { spellsUsed: 1 } };
+  tallyUsage(tallies, { type: "castSpell", idx: freezeIdx }, [{ type: "spellHit" }], before, realCast);
+  assert.deepStrictEqual(tallies.usage.spells, { Freeze: 1 });
+
+  const refused = { c: { spellsUsed: 0 } }; // e.g. noChargesLeft/spellResisted — spellsUsed unchanged
+  tallyUsage(tallies, { type: "castSpell", idx: freezeIdx }, [{ type: "noChargesLeft" }], before, refused);
+  assert.deepStrictEqual(tallies.usage.spells, { Freeze: 1 }); // unchanged — no double count, no phantom entry
+});
+
+test("tallyUsage: a non-castSpell/non-usage action with no matching events tallies nothing and never throws", () => {
+  const tallies = makeTallies();
+  tallyUsage(tallies, { type: "move", dir: "N" }, [{ type: "moved" }], { c: { spellsUsed: 0 } }, { c: { spellsUsed: 0 } });
+  assert.deepStrictEqual(tallies.usage, { abilities: {}, spells: {}, items: {} });
+});
+
+test("playRun: a real run's tallies.usage carries at least one ability/item/spell entry when the matching event fires (measured via onStep)", () => {
+  // [Measured] a live playRun scratch run over a Fighter/Knight cell (seeds
+  // 1-5, the same forced cell the existing no-stall proof above uses)
+  // confirmed at least one abilityUsed event, and tallies.usage.abilities
+  // ends up non-empty at the end of the run that saw it.
+  let sawUsage = false;
+  for (let seed = 1; seed <= 5; seed++) {
+    const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1000, force: { cls: "Fighter", sub: "Knight", race: "Human" } });
+    if (Object.keys(r.tallies.usage.abilities).length > 0) sawUsage = true;
+  }
+  assert.ok(sawUsage, "at least one of seeds 1-5 must end with a non-empty tallies.usage.abilities");
+});

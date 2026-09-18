@@ -25,13 +25,16 @@
 //     meta: {
 //       tool: "tune-classes", commit, seeds, seedList: "i*7919+1", workers,
 //       maxActions, startDepth, exploreBudget, bot (the grep-stable "Bot: "
-//       line), cells (cell count), excluded (EXCLUDED_CELLS), filter:
-//       { cls, sub, race } (each null when unset by the CLI)
+//       line), runFlags (Phase 42, BAL-01/02 — tuning-bot.mjs#RUN_FLAGS,
+//       machine-visible next to the frozen `bot` line, NOT in
+//       class-pass-diff.mjs's PARITY_FIELDS list), cells (cell count),
+//       excluded (EXCLUDED_CELLS), filter: { cls, sub, race } (each null
+//       when unset by the CLI)
 //     },
 //     cells: [{ rank, cls, sub, race, n, completed, stuck, meanDepth,
 //       p50Depth, p90Depth, reach5, reach10, reach20, meanKills, meanLevel,
 //       meanActions, meanFloorsGained, p50FloorsGained,
-//       meanEncountersSurvived, topCauses }],
+//       meanEncountersSurvived, topCauses, usage }],
 //     rollups: { byClass, bySub, byRace, pooled } — byClass/bySub/byRace are
 //       each an array of { key, n, completed, stuck, meanDepth, ...
 //       (same summarizeRows shape) }; pooled is a single object
@@ -39,14 +42,19 @@
 //       Phase 27's (TUNE-05) run-weighted band readout (docs/DIFFICULTY-
 //       RETUNE.md's `## v1.2 retune (Phase 27)`), added by pooledSummary().
 //   }
-// NO timing fields (elapsed/ms/time) appear ANYWHERE in this shape — the
-// CLI tool prints elapsed to stderr only, so BEFORE/AFTER JSON snapshots
-// diff cleanly (22-CONTEXT.md, Claude's Discretion). `reach20`/`pooled` are
-// an ADDITIVE Phase 27 readout change — no run, no rng draw, no Bot: line
-// is affected; tools/lib/tuning-bot.mjs is untouched.
+// `usage` (Phase 42, BAL-02 — every cell/rollup row's own
+// `{ abilities, spells, items }` pick tally, each a label ->
+// `{ uses, runs }` map) is an ADDITIVE readout, exactly like `reach20`/
+// `pooled` before it — see rowFromRun/aggregateUsage/formatUsageMarkdown
+// below. NO timing fields (elapsed/ms/time) appear ANYWHERE in this shape —
+// the CLI tool prints elapsed to stderr only, so BEFORE/AFTER JSON snapshots
+// diff cleanly (22-CONTEXT.md, Claude's Discretion). `reach20`/`pooled`/
+// `usage`/`runFlags` are all ADDITIVE readout changes — no run, no rng draw,
+// no Bot: line is affected; tools/lib/tuning-bot.mjs's own play/scoring
+// logic gains new tactics (Plan 03) but this module never plays a run.
 
-import { CLASSES, RACES } from "../../content/index.js";
-import { percentile, botLine } from "./tuning-bot.mjs";
+import { CLASSES, RACES, ABILITIES, SPELLS } from "../../content/index.js";
+import { percentile, botLine, RUN_FLAGS } from "./tuning-bot.mjs";
 
 /**
  * EXCLUDED_CELLS — the one canon-impossible sub-class x race combo
@@ -182,7 +190,9 @@ export function seedList(n) {
  * rowFromRun(run) — a compact per-run record extracted from a
  * tools/lib/tuning-bot.mjs#playRun result: no `state` object crosses a
  * thread-message boundary or accumulates in memory beyond what
- * summarizeRows needs.
+ * summarizeRows needs. `usage` (Phase 42, BAL-02) carries the run's own
+ * `{ abilities, spells, items }` pick tally straight through — the source
+ * `summarizeRows`/`rollups` aggregate for the pick-rate renderer.
  */
 export function rowFromRun(run) {
   return {
@@ -197,7 +207,41 @@ export function rowFromRun(run) {
     won: run.won,
     encounters: run.tallies.encounters,
     encountersSurvived: run.encountersSurvived,
+    usage: run.tallies.usage,
   };
+}
+
+/**
+ * aggregateUsage(rows) — Phase 42 (BAL-02): sums each row's `usage`
+ * (`{ abilities, spells, items }`, each a label -> use-count map; rows with
+ * no `usage` field at all — e.g. older synthetic-state test rows — are
+ * treated as carrying zero uses everywhere) into
+ * `{ abilities, spells, items }`, each a label -> `{ uses, runs }` map:
+ * `uses` is the summed count across every row, `runs` is the count of rows
+ * whose own count for that label was present (i.e. >= 1 — a label is only
+ * ever recorded on a row when at least one use happened, see
+ * tuning-bot.mjs#tallyUsage). Label keys are inserted in ASCENDING sorted
+ * order so JSON key order (and therefore JSON.stringify output) is stable
+ * regardless of row iteration order. Never NaN, never missing a category.
+ */
+function aggregateUsage(rows) {
+  const out = { abilities: {}, spells: {}, items: {} };
+  for (const cat of ["abilities", "spells", "items"]) {
+    const totals = {};
+    for (const r of rows) {
+      const catUsage = r.usage && r.usage[cat];
+      if (!catUsage) continue;
+      for (const label of Object.keys(catUsage)) {
+        const uses = catUsage[label];
+        if (!uses) continue;
+        if (!totals[label]) totals[label] = { uses: 0, runs: 0 };
+        totals[label].uses += uses;
+        totals[label].runs += 1;
+      }
+    }
+    for (const label of Object.keys(totals).sort()) out[cat][label] = totals[label];
+  }
+  return out;
 }
 
 /** mean(arr) — arithmetic mean rounded to 2 decimals, or null when arr is empty. */
@@ -217,7 +261,11 @@ function mean(arr) {
  * (`reach20` added by Phase 27, TUNE-05 — same `reachPct` closure, same
  * null-in-the-zero-completed-branch discipline as reach5/reach10).
  * `topCauses` is the three most frequent `cause` strings among completed
- * runs, sorted by count desc then cause asc.
+ * runs, sorted by count desc then cause asc. `usage` (Phase 42, BAL-02) is
+ * `aggregateUsage(completed)` — the ability/spell/item pick-rate tally
+ * summed over the SAME completed-rows-only set every other metric here uses;
+ * `{ abilities: {}, spells: {}, items: {} }` (never null) when there are
+ * zero completed rows.
  */
 export function summarizeRows(rows) {
   const sorted = [...rows].sort((a, b) => a.seed - b.seed);
@@ -243,6 +291,7 @@ export function summarizeRows(rows) {
       p50FloorsGained: null,
       meanEncountersSurvived: null,
       topCauses: [],
+      usage: aggregateUsage([]),
     };
   }
 
@@ -274,6 +323,7 @@ export function summarizeRows(rows) {
     p50FloorsGained: percentile(floorsGained, 0.5),
     meanEncountersSurvived: mean(completed.map((r) => r.encountersSurvived)),
     topCauses,
+    usage: aggregateUsage(completed),
   };
 }
 
@@ -398,6 +448,7 @@ export function buildReport({ cellRows, opts, commit }) {
     startDepth: opts.startDepth,
     exploreBudget: opts.exploreBudget,
     bot: botLine(opts),
+    runFlags: RUN_FLAGS, // Phase 42 (BAL-01/02): additive — NOT in class-pass-diff.mjs's PARITY_FIELDS list
     cells: cellRows.length,
     excluded: EXCLUDED_CELLS,
     filter: {
@@ -535,5 +586,134 @@ export function formatText(report) {
     `Stuck: ${totalStuck} of ${totalRuns} runs hit maxActions=${meta.maxActions} (own bucket; excluded from depth stats)`,
   );
   lines.push(meta.bot);
+  return lines.join("\n");
+}
+
+// --- formatUsageMarkdown (Phase 42, BAL-02) ---------------------------------
+//
+// A SEPARATE renderer from formatText's ledger-pasted transcript shape — the
+// BEFORE/AFTER text matrix format stays byte-for-byte unchanged; this is the
+// new pick-rate table BAL-02 needs. mdRow/mdTable are a local copy of
+// tools/class-pass-diff.mjs's own tiny Markdown helpers (that script
+// deliberately never imports content/tools-internal modules, so the two
+// copies stay independent rather than one importing the other).
+
+/** mdRow(cells) — one Markdown table row. */
+function mdRow(cells) {
+  return `| ${cells.join(" | ")} |`;
+}
+
+/** mdTable(headers, rows) — a full Markdown table (header + --- separator + rows). */
+function mdTable(headers, rows) {
+  const lines = [mdRow(headers), mdRow(headers.map(() => "---"))];
+  for (const r of rows) lines.push(mdRow(r));
+  return lines.join("\n");
+}
+
+/** usageRate(uses, eligible) — fixed 2-decimal rate string; "0.00" when eligible is 0 (never NaN). */
+function usageRate(uses, eligible) {
+  return eligible > 0 ? (uses / eligible).toFixed(2) : "0.00";
+}
+
+/**
+ * eligibleForClass(report, cls) — the pooled completed-run count over every
+ * cell of class `cls`, read straight off `report.rollups.byClass` (which
+ * already carries a run-weighted `completed` sum per class) rather than
+ * re-deriving it from `report.cells`.
+ */
+function eligibleForClass(report, cls) {
+  const row = report.rollups && report.rollups.byClass ? report.rollups.byClass.find((r) => r.key === cls) : null;
+  return row ? row.completed : 0;
+}
+
+/**
+ * usageEntry(report, cat, label) — `{ uses, runs }` for one pooled usage
+ * label, `{ uses: 0, runs: 0 }` when the report carries no `usage` at all
+ * (an older report — e.g. the BEFORE pin) or the label was never used.
+ */
+function usageEntry(report, cat, label) {
+  const pooled = report.rollups && report.rollups.pooled && report.rollups.pooled.usage;
+  return (pooled && pooled[cat] && pooled[cat][label]) || { uses: 0, runs: 0 };
+}
+
+/**
+ * formatUsageMarkdown(report) — Phase 42 (BAL-02): the pick-rate Markdown
+ * BAL-02's "pick-rates for every new spell/ability" number is machine-
+ * rendered from, never retyped by hand. Reads `report.rollups.pooled.usage`
+ * (present once this plan's `summarizeRows` has run over a fresh JSON
+ * report) and `report.rollups.byClass`/`bySub` for the per-class/per-sub
+ * denominators and top-picks breakdown; a report carrying NO `usage` field
+ * at all (an older report, e.g. the v1.5 BEFORE pin) renders every table
+ * with zero uses and 0.00 rates — never throws, never NaN.
+ *
+ * Four H3 sections, in this exact order:
+ *   1. `### Pick-rates — abilities` — one row per `ABILITIES` catalog entry
+ *      (catalog order): Ability, Class, Uses, Runs used, Eligible runs (the
+ *      ability's own class's pooled completed-run count via
+ *      `eligibleForClass`), Uses / eligible run.
+ *   2. `### Pick-rates — spells` — one row per `SPELLS` table entry (table
+ *      order): Spell, Uses, Runs used, Eligible runs (Magic User's pooled
+ *      completed-run count), Uses / eligible run.
+ *   3. `### Pick-rates — items` — one row per label ever seen in
+ *      `pooled.usage.items`, sorted by uses desc then label asc: Item, Uses,
+ *      Runs used, Eligible runs (every completed run, pooled — items are
+ *      usable by any class), Uses / eligible run.
+ *   4. `### Top picks by sub-class` — one row per `rollups.bySub` entry (its
+ *      own rank order): Sub-class, the top three `label (uses/runs)` picks
+ *      across abilities+spells+items combined for that sub (uses desc, ties
+ *      by label asc), joined ", " — "-" when the sub used nothing at all.
+ */
+export function formatUsageMarkdown(report) {
+  const lines = [];
+
+  const abilityRows = ABILITIES.map((a) => {
+    const { uses, runs } = usageEntry(report, "abilities", a.id);
+    const eligible = eligibleForClass(report, a.cls);
+    return [a.name, a.cls, String(uses), String(runs), String(eligible), usageRate(uses, eligible)];
+  });
+  lines.push("### Pick-rates — abilities");
+  lines.push(mdTable(["Ability", "Class", "Uses", "Runs used", "Eligible runs", "Uses / eligible run"], abilityRows));
+  lines.push("");
+
+  const spellEligible = eligibleForClass(report, "Magic User");
+  const spellRows = SPELLS.map((sp) => {
+    const { uses, runs } = usageEntry(report, "spells", sp.n);
+    return [sp.n, String(uses), String(runs), String(spellEligible), usageRate(uses, spellEligible)];
+  });
+  lines.push("### Pick-rates — spells");
+  lines.push(mdTable(["Spell", "Uses", "Runs used", "Eligible runs", "Uses / eligible run"], spellRows));
+  lines.push("");
+
+  const pooled = report.rollups && report.rollups.pooled;
+  const pooledUsage = (pooled && pooled.usage) || { abilities: {}, spells: {}, items: {} };
+  const itemEligible = (pooled && pooled.completed) || 0;
+  const itemEntries = Object.entries(pooledUsage.items || {}).sort(
+    (a, b) => b[1].uses - a[1].uses || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
+  );
+  const itemRows = itemEntries.map(([label, { uses, runs }]) => [
+    label,
+    String(uses),
+    String(runs),
+    String(itemEligible),
+    usageRate(uses, itemEligible),
+  ]);
+  lines.push("### Pick-rates — items");
+  lines.push(mdTable(["Item", "Uses", "Runs used", "Eligible runs", "Uses / eligible run"], itemRows));
+  lines.push("");
+
+  const bySub = (report.rollups && report.rollups.bySub) || [];
+  const subRows = bySub.map((sub) => {
+    const usage = sub.usage || { abilities: {}, spells: {}, items: {} };
+    const combined = [];
+    for (const cat of ["abilities", "spells", "items"]) {
+      for (const [label, v] of Object.entries(usage[cat] || {})) combined.push({ label, uses: v.uses, runs: v.runs });
+    }
+    combined.sort((a, b) => b.uses - a.uses || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+    const top3 = combined.slice(0, 3).map((p) => `${p.label} (${p.uses}/${p.runs})`);
+    return [sub.key, top3.length ? top3.join(", ") : "-"];
+  });
+  lines.push("### Top picks by sub-class");
+  lines.push(mdTable(["Sub-class", "Top picks (uses/runs)"], subRows));
+
   return lines.join("\n");
 }
