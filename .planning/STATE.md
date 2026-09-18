@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-current_phase: 39
-current_phase_name: Gear, Magic Items & One-Shot Tools
 status: executing
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-18T11:26:29.763Z"
+last_updated: "2026-09-18T11:26:50.819Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase 38 complete, transitioned to Phase 39
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 15
+  total_plans: 20
   completed_plans: 15
   percent: 38
+current_phase: 39
+current_phase_name: Gear, Magic Items & One-Shot Tools
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 38 — Melee Active Abilities
+**Current focus:** Phase null
 
 ## Current Position
 
-Phase: 39 — Gear, Magic Items & One-Shot Tools
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-18 — Phase 38 complete, transitioned to Phase 39
+Phase: null — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase null
+Last activity: 2026-09-18 — Phase null execution started
 
 ## Ground Truth (durable facts every session needs)
 
