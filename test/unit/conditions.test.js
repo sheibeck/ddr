@@ -201,10 +201,12 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
     items: [{ n: "Bracelet of Flight" }],
     affliction: { kind: "Poison", left: 10 },
     darkFor: 12,
+    // Phase 41 (TERR-05): fearArmed slots between darkness and afraid.
+    fearArmed: { phobia: "Heights", trigger: "heights" },
   });
   const conds = conditionsOf({ c });
   assert.deepEqual(keys(conds), [
-    "haste", "invis", "acute", "ether", "might", "mirror", "senses", "regen", "foresight", "reveal", "flight", "affliction", "darkness",
+    "haste", "invis", "acute", "ether", "might", "mirror", "senses", "regen", "foresight", "reveal", "flight", "affliction", "darkness", "fearArmed",
   ]);
   assert.equal(byKey(conds, "reveal").remaining, 22);
   // Good conditions all precede bad ones.
@@ -213,6 +215,7 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
   assert.ok(conds.slice(firstBad).every((x) => x.polarity === "bad"));
   assert.equal(byKey(conds, "affliction").kind, "Poison");
   assert.equal(byKey(conds, "darkness").remaining, 12);
+  assert.deepEqual(byKey(conds, "fearArmed"), { key: "fearArmed", polarity: "bad", phobia: "Heights", trigger: "heights" });
 });
 
 test("conditionsOf: is a PURE read — no mutation of state or c, no rng needed", () => {
@@ -288,6 +291,26 @@ test("conditionsOf: the afraid read stays PURE (no mutation) inside combat", () 
   const before = JSON.stringify(state);
   conditionsOf(state);
   assert.equal(JSON.stringify(state), before, "conditionsOf must not mutate state or combat");
+});
+
+// --- Phase 41 (TERR-05): the fearArmed chip — an ARMED terrain phobia
+// waiting for the next fight, distinct from `afraid` (the CURRENT fight's
+// live penalty). Placed after darkness, before afraid, in the bad block. ---
+
+test("conditionsOf: fearArmed surfaces a named BAD chip, placed after darkness and before afraid", () => {
+  const c = cleanChar({ fearArmed: { phobia: "Heights", trigger: "heights" }, darkFor: 5 });
+  const conds = conditionsOf({ c, combat: { afraid: 2 } });
+  assert.deepEqual(keys(conds), ["darkness", "fearArmed", "afraid"]);
+  assert.deepEqual(byKey(conds, "fearArmed"), { key: "fearArmed", polarity: "bad", phobia: "Heights", trigger: "heights" });
+});
+
+test("conditionsOf: no fearArmed chip when the field is absent", () => {
+  assert.deepEqual(conditionsOf({ c: cleanChar() }), []);
+});
+
+test("conditionsOf: fearArmed surfaces on its own outside combat (armed, but no fight open yet)", () => {
+  const c = cleanChar({ fearArmed: { phobia: "Bodies of water", trigger: "water" } });
+  assert.deepEqual(conditionsOf({ c }), [{ key: "fearArmed", polarity: "bad", phobia: "Bodies of water", trigger: "water" }]);
 });
 
 // --- Phase 19: foe-inflicted debuff chip (FOE-08 / D-09) ---

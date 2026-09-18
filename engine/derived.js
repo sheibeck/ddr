@@ -491,6 +491,7 @@ export function isFlying(state) {
  *   - staffCharges (Phase 39, GEAR-02, one per RECHARGING staff): {polarity:"good", item:<display name>, charges:<current>, max:<pool>, remaining:<sq left>}
  *   - affliction {polarity:"bad", kind:"Poison"|"Disease"|…}
  *   - darkness   {polarity:"bad", remaining:<sq left>}    — the persistent Darkness/phobia state
+ *   - fearArmed  {polarity:"bad", phobia, trigger}         — Phase 41 (TERR-05): an ARMED terrain phobia waiting for the next fight; cleared when fight() consumes it
  *   - afraid     {polarity:"bad", remaining:<rounds>, phobia:<fear name>} — Phase 31 (user ruling 2026-09-16): the Afraid penalty from a triggered phobia in the CURRENT combat, only while combat.afraid > 0 (a Hardiness shrug-off shows nothing)
  *
  * Only currently-active conditions are included; a character with none set
@@ -619,6 +620,18 @@ export function conditionsOf(state) {
   // asks for: show it while darkFor > 0 (actively in effect), not merely
   // because the character has the Darkness phobia.
   if (c.darkFor > 0) out.push({ key: "darkness", polarity: "bad", remaining: c.darkFor });
+
+  // fearArmed (Phase 41, TERR-05, user-ratified Key Decision 2026-09-18: "arm
+  // Afraid for the next fight"): a terrain phobia trigger (engine/
+  // phobias.js) has set `c.fearArmed` since the last fight — this is the
+  // WAITING-to-consume state, distinct from `afraid` below (the CURRENT
+  // fight's live penalty). Cleared the instant engine/combat.js#fight
+  // consumes it (whether or not Hardiness then shrugs off the actual Afraid
+  // effect). Pure read of an already-computed field; no rng, no mutation, no
+  // new serialized field beyond what engine/phobias.js already writes.
+  if (c.fearArmed && typeof c.fearArmed === "object" && typeof c.fearArmed.phobia === "string") {
+    out.push({ key: "fearArmed", polarity: "bad", phobia: c.fearArmed.phobia, trigger: c.fearArmed.trigger });
+  }
 
   // Afraid (Phase 31, user ruling 2026-09-16: "Phobia should be penalties,
   // never a no actions state" — supersedes the old DR17 "phobia" freeze

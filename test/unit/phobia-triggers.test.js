@@ -16,6 +16,8 @@ import assert from "node:assert/strict";
 import { GW, GH } from "../../engine/maze.js";
 import { move, teleport, descend } from "../../engine/movement.js";
 import { makeRng } from "../../engine/rng.js";
+import { fight, foeTurn, endCombat, playerStrike } from "../../engine/combat.js";
+import { AFRAID_ROUNDS } from "../../engine/derived.js";
 
 /** fakeRng(seq) — verbatim copy of test/unit/movement.test.js's helper:
  * `.d()` pops the next value off `seq` regardless of requested side count;
@@ -299,4 +301,132 @@ test("a combat-type-phobic character never gains c.phobiaState/c.fearArmed while
   assert.equal("phobiaState" in state.c, false);
   assert.equal("fearArmed" in state.c, false);
   assert.ok(!e.some((ev) => ev.type === "phobiaTriggered"));
+});
+
+// ============================================================================
+// Task 2 — engine/combat.js#fight's fourth OR-condition, the consume-at-fight
+// rule, in-combat Death crossing. Mirrors test/unit/afraid.test.js's own
+// fakeRng/countingRng/fixedFoe/fixedCombat discipline.
+// ============================================================================
+
+function countingRng(inner) {
+  let draws = 0;
+  return {
+    d(sides) {
+      draws++;
+      return inner.d(sides);
+    },
+    pick(...args) {
+      draws++;
+      return inner.pick(...args);
+    },
+    shuffle: (...args) => inner.shuffle(...args),
+    get draws() {
+      return draws;
+    },
+  };
+}
+
+function fixedFoe(overrides = {}) {
+  return {
+    name: "Target", type: "Beasts", lvl: 1, size: "S", intel: 1,
+    wp: 10, maxWP: 10, alive: true, asleep: 0, sp: {}, lives: 1,
+    ...overrides,
+  };
+}
+
+function fixedCombat(foes, overrides = {}) {
+  return { foes, type: foes[0]?.type || "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, ...overrides };
+}
+
+test("fight(): an armed terrain fear (not type/darkness/near-death matched) opens the fight Afraid via the fourth OR-condition; fearArmed is consumed", () => {
+  const state = fixedState({
+    c: { phobia: "Bodies of water", phobiaType: null, fearArmed: { phobia: "Bodies of water", trigger: "water" } },
+  });
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([20, 1]), []); // initiative x2, "you" wins, no foeTurn draws
+  assert.equal(state.combat.afraid, AFRAID_ROUNDS);
+  assert.deepStrictEqual(events.find((e) => e.type === "phobiaAfraid"), { type: "phobiaAfraid", rounds: AFRAID_ROUNDS, trigger: "water" });
+  assert.equal("fearArmed" in state.c, false, "the arm is consumed by fight()");
+});
+
+test("fight(): control — a plain type-matched trigger's phobiaAfraid shape is unchanged (no trigger key) when not armed", () => {
+  const state = fixedState({ c: { phobia: "Bats and rats", phobiaType: "Beasts" } });
+  state.combat = fixedCombat([fixedFoe({ type: "Beasts" })], { pending: true, type: "Beasts" });
+  const events = fight(state, fakeRng([20, 1]), []);
+  assert.deepStrictEqual(events.find((e) => e.type === "phobiaAfraid"), { type: "phobiaAfraid", rounds: AFRAID_ROUNDS });
+});
+
+test("fight(): nearDeathPanic (the existing at-fight-start Death check) still fires independently, with no trigger key", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 10, maxWP: 55 } }); // 18% <= 25%
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([20, 1]), []);
+  assert.deepStrictEqual(events.find((e) => e.type === "phobiaAfraid"), { type: "phobiaAfraid", rounds: AFRAID_ROUNDS });
+  assert.equal("fearArmed" in state.c, false);
+});
+
+test("fight(): Hardiness draws exactly one extra d2 for an armed trigger; a 1 shrugs off Afraid but still consumes fearArmed", () => {
+  const shrugged = fixedState({
+    c: { phobia: "Bodies of water", phobiaType: null, skills: { Hardiness: 1 }, fearArmed: { phobia: "Bodies of water", trigger: "water" } },
+  });
+  shrugged.combat = fixedCombat([fixedFoe()], { pending: true });
+  const rng = countingRng(fakeRng([20, 1, 1])); // initiative x2 + Hardiness d2=1 (shrug)
+  const events = fight(shrugged, rng, []);
+  assert.equal(rng.draws, 3);
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
+  assert.equal(shrugged.combat.afraid, undefined);
+  assert.equal("fearArmed" in shrugged.c, false, "the arm is spent even when Hardiness shrugs it off");
+
+  const notShrugged = fixedState({
+    c: { phobia: "Bodies of water", phobiaType: null, skills: { Hardiness: 1 }, fearArmed: { phobia: "Bodies of water", trigger: "water" } },
+  });
+  notShrugged.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events2 = fight(notShrugged, fakeRng([20, 1, 2]), []); // d2=2 -> not a shrug
+  assert.equal(notShrugged.combat.afraid, AFRAID_ROUNDS);
+  assert.ok(events2.some((e) => e.type === "phobiaAfraid" && e.trigger === "water"));
+  assert.equal("fearArmed" in notShrugged.c, false);
+});
+
+test("fight(): a stale arm (fearArmed.phobia !== c.phobia, e.g. after a newPhobia reroll) is ignored but still consumed", () => {
+  const state = fixedState({
+    c: { phobia: "Fire", phobiaType: "Demons", fearArmed: { phobia: "Bodies of water", trigger: "water" } },
+  });
+  state.combat = fixedCombat([fixedFoe({ type: "Beasts" })], { pending: true, type: "Beasts" });
+  const events = fight(state, fakeRng([20, 1]), []);
+  assert.ok(!events.some((e) => e.type === "phobiaAfraid"));
+  assert.equal("fearArmed" in state.c, false);
+});
+
+test("Death: a foeTurn-tail hp crossing (already at/below 25%) fires nearDeath mid-fight; the arm survives endCombat; the NEXT fight opens Afraid with trigger nearDeath; healing above 50% clears the region", () => {
+  const state = fixedState({ c: { phobia: "Death", phobiaType: null, wp: 13, maxWP: 55 } }); // 23.6% <= 25%
+  state.combat = fixedCombat([{ ...fixedFoe(), alive: false }]); // a fully no-op foe roster: zero draws to reach the tail
+  const events = foeTurn(state, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "phobiaTriggered" && e.trigger === "nearDeath"));
+  assert.equal(state.c.phobiaState.Death, true);
+  assert.deepEqual(state.c.fearArmed, { phobia: "Death", trigger: "nearDeath" });
+
+  endCombat(state, []);
+  assert.deepEqual(state.c.fearArmed, { phobia: "Death", trigger: "nearDeath" }, "the arm survives endCombat — only fight() consumes it");
+
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const fightEvents = fight(state, fakeRng([20, 1]), []);
+  assert.deepStrictEqual(fightEvents.find((e) => e.type === "phobiaAfraid"), { type: "phobiaAfraid", rounds: AFRAID_ROUNDS, trigger: "nearDeath" });
+  assert.equal("fearArmed" in state.c, false);
+
+  state.c.wp = 30; // 54.5% > 50% re-arm line
+  state.combat = fixedCombat([{ ...fixedFoe(), alive: false }]);
+  foeTurn(state, fakeRng([]), []);
+  assert.equal(state.c.phobiaState.Death, false);
+});
+
+test("never a lost action: fear armed via a terrain trigger still allows a normal strike once the fight opens Afraid", () => {
+  const state = fixedState({
+    c: { phobia: "Bodies of water", phobiaType: null, fearArmed: { phobia: "Bodies of water", trigger: "water" } },
+  });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { pending: true });
+  fight(state, fakeRng([20, 1]), []);
+  assert.equal(state.combat.afraid, AFRAID_ROUNDS);
+  const events = playerStrike(state, fakeRng([5, 2, 20, 15, 10]), []);
+  assert.ok(events.some((e) => e.type === "struck" || e.type === "strikeMissed"));
+  assert.equal(events.some((e) => e.type === "strikeRefused"), false);
 });

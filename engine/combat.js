@@ -67,6 +67,7 @@ import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER, AB
 // the other's binding at top-level module-evaluation time, only inside
 // function bodies, so the cycle is safe).
 import { DURATION_ROUNDS, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+import { checkDeathPhobia } from "./phobias.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -419,12 +420,30 @@ export function fight(state, rng, events = []) {
   // combat/lose-apprentice, magic/cast-damage) carry declared action-path
   // divergence records (see the fixture JSON files under test/parity/fixtures).
   const nearDeathPanic = c.phobia === "Death" && c.wp <= c.maxWP * DEATH_PANIC_THRESHOLD;
+  // DELIBERATE RULES CHANGE (Phase 41, TERR-05, user-ratified Key Decision
+  // 2026-09-18: "arm Afraid for the next fight"): the FOURTH OR-condition —
+  // a terrain phobia trigger (engine/phobias.js) armed `c.fearArmed` on a
+  // fresh region entry since the last fight. `armed` is computed and the
+  // flag CONSUMED here, BEFORE the trigger check, whether or not this fight
+  // actually ends up Afraid (a Hardiness shrug-off still spends the arm —
+  // the arm is a one-shot "your next fight opens Afraid" ticket, not a
+  // standing condition) and whether or not `c.phobia` even still matches the
+  // armed phobia (a `newPhobia` reroll between the trigger and this fight
+  // drops a now-stale arm here too, via the `armed` phobia-match guard
+  // itself). Deliberately survives `endCombat`/`descend` (see
+  // engine/phobias.js's own header) — only `fight()` ever clears it.
+  const armed = !!(c.fearArmed && typeof c.fearArmed === "object" && c.fearArmed.phobia === c.phobia);
+  const armedTrigger = armed ? c.fearArmed.trigger : null;
+  if ("fearArmed" in c) delete c.fearArmed;
   if (
-    (c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic) &&
+    (c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic || armed) &&
     !(skill(c, "Hardiness") && rng.d(2) === 1)
   ) {
     state.combat.afraid = AFRAID_ROUNDS;
-    events.push({ type: "phobiaAfraid", rounds: AFRAID_ROUNDS });
+    // additive spread: byte-identical `{type, rounds}` shape when not armed
+    // (every parity fixture — none ever carries fearArmed); an armed trigger
+    // adds `trigger` so the shell can narrate "Still rattled from ...".
+    events.push({ type: "phobiaAfraid", rounds: AFRAID_ROUNDS, ...(armedTrigger ? { trigger: armedTrigger } : {}) });
   }
   if (inDark(state) && !skill(c, "Night Vision")) events.push({ type: "combatInDark" });
   if (first === "foe") {
@@ -2538,5 +2557,10 @@ export function foeTurn(state, rng, events = []) {
     const s = Array.isArray(state.party) ? state.party[ally.partyIdx] : null;
     if (s && s.timers) tickRounds(s);
   }
+  // Phase 41 (TERR-04): the in-combat half of the Death trigger — a foe's
+  // blows can cross the 25%/50% hp lines mid-fight, not just at fight()'s
+  // own start-of-combat nearDeathPanic check. Zero draws; a no-op for every
+  // non-Death-phobic hero (every parity fixture).
+  checkDeathPhobia(state, events);
   return events;
 }
