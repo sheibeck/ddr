@@ -225,7 +225,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 38-05-PLAN.md — Combat ABILITIES submenu rows (READY / N ROUNDS / ONCE A FIGHT · USED, tappable on cooldown), shell dispatch bridge, Hero-tab abilities list, first-paint pool rail card, fight-report learned line, ledger close, phase gate + aggregated Pixel 7 checklist
+- [x] 38-05-PLAN.md — Combat ABILITIES submenu rows (READY / N ROUNDS / ONCE A FIGHT · USED, tappable on cooldown), shell dispatch bridge, Hero-tab abilities list, first-paint pool rail card, fight-report learned line, ledger close, phase gate + aggregated Pixel 7 checklist
 
 **Research flag**: Yes — which specific Special Skills convert to actives (vs. staying passive) is a per-skill judgment call against the `docs/CLASS-PASS.md` good/bad identity-contract table; start with a small (2–3 skill) initial set. Recommend `/gsd-discuss-phase` or `--research-phase` before planning.
 **UI hint**: yes
@@ -361,7 +361,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
-| 38. Melee Active Abilities | v1.5 | 4/5 | In Progress|  |
+| 38. Melee Active Abilities | v1.5 | 5/5 | In Progress|  |
 | 39. Gear, Magic Items & One-Shot Tools | v1.5 | 0/? | Not started | - |
 | 40. Spell Rework | v1.5 | 0/? | Not started | - |
 | 41. Terrain, Darkness & Phobias | v1.5 | 0/? | Not started | - |

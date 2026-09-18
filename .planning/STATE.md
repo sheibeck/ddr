@@ -4,17 +4,17 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 38
 current_phase_name: Melee Active Abilities
-status: executing
-stopped_at: Completed 38-04-PLAN.md (Joiner class-driven ability policy, all 20 member resolutions, foeTurn/pickFoeTarget hooks, partyEffectActive, narration)
-last_updated: "2026-09-18T04:10:20.147Z"
+status: verifying
+stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
+last_updated: "2026-09-18T04:41:25.619Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 38 execution started
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 25
+  completed_plans: 15
+  percent: 38
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 Phase: 38 (Melee Active Abilities) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-17 — Phase 38 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -110,8 +110,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:10:20.103Z
-Stopped at: Completed 38-04-PLAN.md (Joiner class-driven ability policy, all 20 member resolutions, foeTurn/pickFoeTarget hooks, partyEffectActive, narration)
+Last session: 2026-09-18T04:41:25.590Z
+Stopped at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
 Resume file: None
 
 ## Operator Next Steps
@@ -213,6 +213,7 @@ Resume file: None
 | Phase 38 P02 | 75min | 3 tasks | 17 files |
 | Phase 38 P03 | 40min | 3 tasks | 11 files |
 | Phase 38 P04 | 100min | 3 tasks | 8 files |
+| Phase 38 P05 | 30min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -405,6 +406,9 @@ Resume file: None
 - [Phase ?]: 38-03: ABIL-01/ABIL-04 left unmarked in REQUIREMENTS.md despite being in this plan's own frontmatter — their submenu-visibility text is Plan 05's job (Plan 05's frontmatter independently re-lists both IDs), mirroring the ABIL-02 precedent
 - [Phase ?]: 38-04: pickMemberAbility falls through round1's opener check to damage/defensive checks when no opener is ready (matches the plan's own worked examples)
 - [Phase ?]: 38-04: memberStrike's mod is a plain function argument (never stashed on ally/state.combat) — the member analog of playerStrike's shared C.abilityStrike slot
+- [Phase ?]: 38-05: abilityRows(c) cost rule (READY/ONCE A FIGHT · USED/N ROUNDS) reused independently by combatMenu.js submenu and viewModels.js Hero-tab list, each computing from isReady/abilityRoundsLeft without importing each other
+- [Phase ?]: 38-05: abilityPoolCard(c) narrates the FIRST source:pool id in c.abilities on first paint (commitRolledState + dev start-at-depth) — chargen's roll order guarantees this is always the level-1 guarantee
+- [Phase ?]: 38-05: Phase 38 closed — all five ABIL requirements complete; docs/ABILITIES.md carries the full catalog/level-pool/dispatcher/Joiner-policy/UI ledger
 
 ### Blockers
 
