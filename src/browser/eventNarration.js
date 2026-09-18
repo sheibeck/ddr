@@ -101,6 +101,9 @@ export const EVENT_NARRATION = {
   // Phase 15 item-wiring (ECON-08): the Cloak of Ether phases you straight
   // through the wall/crevice — no roll, no fall. Deadpan, matching flownOver.
   phasedThrough: () => `<span class="hit">You step through it like it was a rumour of a wall.</span>`,
+  // Phase 41 (TERR-02): entering a water cell (once per wade, not per
+  // step) — the water-cost Key Decision's one narrated beat.
+  waded: () => `<span class="beat">Wading. Everything takes twice as long and smells worse.</span>`,
   fellClimbing: (e) => `<span class="hurt">Gravity remembers you exist — ${e.hurt ?? 0} hp.</span>`,
   fellInGorge: (e) => `<span class="hurt">Short. The floor of the crevice makes its introduction — ${e.hurt ?? 0} hp.</span>`,
   // Phase 39 (GEAR-05): the hazard pre-roll decision — a rail card IS the

@@ -167,6 +167,8 @@ export const RAIL_FAMILY = Object.freeze({
   fellInGorge: { icon: "⧗", title: "FELL", tone: "bad" },
   flownOver: { icon: "⧗", title: "OVER IT", tone: "odd" },
   phasedThrough: { icon: "⧗", title: "OVER IT", tone: "odd" },
+  // Phase 41 (TERR-02): entering water (once per wade, not per step).
+  waded: { icon: "·", title: "WADING", tone: "odd" },
   // Phase 39 (GEAR-05): the hazard pre-roll decision card (hazardChoice is
   // ORACLE_ONLY on the toast side — the card IS the UI, mirroring findOffered
   // — but still gets a family entry here for Plan 05's dedicated card) and

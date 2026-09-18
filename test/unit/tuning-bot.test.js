@@ -772,3 +772,38 @@ test("purity: decideAction never mutates its state argument; module source draws
   const codeLines = src.split("\n").filter((line) => !/^\s*\/\//.test(line));
   assert.ok(!codeLines.some((line) => /Math\.random|Date\.now/.test(line)));
 });
+
+test("Phase 41 (TERR-02): the bot paths across water and never stalls", () => {
+  // (1) water is a non-feat cell property, so the bot's feat/wall-based BFS
+  // routing (canStep/bfsFirstStep, keyed on .wall and HAZARD_FEATS by .feat)
+  // never special-cases it — a fresh floor's routing directions must exist
+  // exactly as they do on a floor with no water at all.
+  for (let seed = 1; seed <= 20; seed++) {
+    const state = newRun(seed);
+    assert.ok(dirTowardExit(state) !== null, `seed ${seed}: dirTowardExit must find a direction`);
+    assert.ok(nearestUnseenDir(state) !== null, `seed ${seed}: nearestUnseenDir must find a direction`);
+  }
+
+  // (2) water is passable (costs extra, never blocks) — a real playRun must
+  // never report stuck, and at least one of these three runs must actually
+  // cross a water cell (a "waded" event fires), proving the bot keeps
+  // running INTO and THROUGH water rather than merely never encountering it.
+  //
+  // [Rule 1 deviation] maxActions measured, not hand-typed at the plan's own
+  // literal 600: at 600 actions seed 2's run is still in progress (it dies
+  // naturally to a Werebeast at action 623, never routing-stuck) — 600 would
+  // report a false "stuck" purely from an undersized budget, not a real
+  // stall. Measured against a live run (node -e against playRun): all three
+  // seeds complete (die naturally) well under 1000 actions, so 1000 is the
+  // smallest round budget that keeps this a genuine stuck-vs-not-stuck
+  // proof rather than a budget artifact.
+  let sawWaded = false;
+  for (const seed of [1, 2, 3]) {
+    const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1000 }, (events) => {
+      if (events.some((e) => e.type === "waded")) sawWaded = true;
+    });
+    assert.strictEqual(r.stuck, false, `seed ${seed}: the bot must not stall`);
+    assert.notStrictEqual(r.outcome, "stuck", `seed ${seed}: outcome must not be stuck`);
+  }
+  assert.ok(sawWaded, "at least one of seeds 1-3 must cross a water cell (a waded event) within 1000 actions");
+});

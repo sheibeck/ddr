@@ -1315,3 +1315,19 @@ Every fixture, every scenario, every seed — `npm test`: 2826/2826,
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
 test/parity/fixtures` empty (zero fixture files touched by this plan).
 
+### Plan 02 — the move cost: measured, zero fixture moves
+
+`tools/terrain-fixture-scan.mjs` re-run AFTER `moveCost`/the cost-aware step
+site landed (`engine/derived.js#moveCost`, `engine/movement.js#move`) —
+water PLACEMENT is unchanged by Plan 02 (its own engine edits are read-only
+with respect to `placeWater`), so this is a pure confirmation, not a fresh
+placement run. Measured output: **`WATER HITS: 0`** — `action-script.movement.json`
+(seed 256, its full 101-action scripted path) still never steps onto a
+water cell. No `action-path` divergence record is declared on this fixture;
+`test/parity/movement-parity.test.js`, `test/parity/full-suite.test.js`, and
+`test/roundtrip/serialize-rehydrate.test.js` need no `actionPathDivergenceOf`
+support this plan — there is nothing for it to skip. `npm test`: `# fail 0`;
+`test/parity/prototype-master.js.txt` hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
+test/parity/fixtures` empty (zero fixture files touched by this plan).
+

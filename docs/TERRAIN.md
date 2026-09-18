@@ -115,7 +115,86 @@ water terrain" section.
 
 ## Water cost — Key Decision (Plan 02)
 
-(appended by Plan 02)
+**"One tap, two squares of time"** (user-chosen, ratified — `41-CONTEXT.md`
+Area 1, 2026-09-18):
+
+> A single `move` onto a water cell advances `state.steps` by 2 and runs
+> every per-square system twice: `tickSquares(c, 2)` (item/spell/ability/
+> torch timers, the Map the Floor window), hunger, `c.darkFor`, the
+> encounter clock, member timers — one dispatch, no partial-move state. The
+> HUD square counter jumps by 2. Leaving water (stepping onto a dry cell)
+> costs the normal 1. Flying/ethereal (`isFlying`, ether) skip the surcharge
+> ("walls and crevices are nothing" — water too).
+
+### Mechanism
+
+- `engine/derived.js#moveCost(state, cell)` — a pure derived read: `1` for a
+  normal/missing cell, `WATER_MOVE_COST` (`2`) for `cell.water === true`,
+  with the flight/ether exemption below. The ONE step-cost site
+  (`engine/movement.js#move`) computes it once, before `f.px = nx`.
+- `state.steps += cost` (not `state.steps++`), and a local `crossings(n) =
+  Math.floor(state.steps / n) - Math.floor(stepsBefore / n)` cadence helper
+  — for `cost === 1` this is algebraically identical to the old `state.steps
+  % n === 0` test (0 or 1, since a +1 step crosses at most one boundary), so
+  every dry step stays byte-identical to before this plan. For `cost === 2`
+  a crossed boundary fires exactly once and is never skipped (`99 -> 101`
+  still rolls the day; `19 -> 21` still recovers a spell charge / heals a
+  cloak tick).
+- `tickSquares(c, cost)` — called ONCE per step, `n = cost` (research
+  Pitfall 3: never call it twice to "double" a tick — `n` already carries
+  the full cost).
+- `waded { cost }` — pushed ONLY on genuine entry (`cost > 1 && !here.water`,
+  where `here` is the departure cell) — one line per wade, not per step, so
+  crossing an 8-cell pool never stacks eight toasts. The HUD counter still
+  carries the per-step cost regardless of whether the narration fires.
+
+### Exemption table
+
+| Carrier state | Cost on water |
+|---|---|
+| Bracelet of Flight (unconditional) | 1 |
+| A LIVE `fly` item effect (a started Cloak of Flying window) | 1 |
+| A LIVE `ether` item effect (a started Cloak of Ether window) | 1 |
+| A READY-but-unstarted Cloak of Flying (no live record) | 2 — **not spent on a puddle.** Unlike the climb/gorge block's `flyOver()` (which starts a fresh Cloak-of-Flying window the instant a Cloak-only character reaches a wall/crevice), a water step never calls `startEffect` — the cloak's charge is a wall/crevice resource, not a puddle one. |
+
+### Per-square systems this cost widens (one dispatch)
+
+| System | Site |
+|---|---|
+| HUD SQUARES counter | `state.steps` itself |
+| Affliction cadence | a `crossings(af.per)`-counted loop over the existing tick body, stopping the instant the affliction clears inside it (a `per:1` affliction ticks TWICE on one 2-cost water step) |
+| `c.darkFor` | `Math.max(0, c.darkFor - cost)`, same clamp-at-0-with-one-event discipline |
+| Cloak of Healing / Cloak of Regeneration (20-square ticks) | `crossings(CLOAK_TICK_SQUARES) > 0` |
+| `c.timers` (ability/item/spell-reveal timers) | `tickSquares(c, cost)`, once |
+| Magic User spell-charge recovery (20-square) | `crossings(20) > 0` |
+| `newDay` (100-square, "once-a-day") | `crossings(100) > 0` |
+
+**CONTEXT-vs-code correction:** `41-CONTEXT.md`'s own Area 1 wording lists
+"the encounter clock" and "member timers" as per-square systems this cost
+should widen. Verified against the live engine: neither has a separate
+per-square counterpart. The wandering-monster check is entirely `newDay`'s
+own roll (already covered by `crossings(100)`, not a second site), and party
+members carry no squares-cadence state of their own (`state.party` sheets
+have no `timers`/cadence fields the exploration step tick reads). The table
+above is therefore the complete set — nothing was left unwired.
+
+### Declared divergence
+
+**Measured zero.** `tools/terrain-fixture-scan.mjs`, re-run after this
+plan's engine edits landed, still reports `WATER HITS: 0` —
+`action-script.movement.json` (seed 256) never steps onto a water cell, so
+no `action-path` divergence record exists on it. Full measurement in
+`test/parity/FIXTURE-INVENTORY.md`'s "Plan 02 — the move cost: measured,
+zero fixture moves" subsection.
+
+### Phase 42 note
+
+Water's time cost (2 squares per wade instead of 1) shifts the hunger/depth
+curve — rations burn faster, torches/timers expire sooner, days roll over
+sooner — on any run whose path crosses a pool. This is expected, not a bug;
+Phase 42 (the next tuning pass) measures the drift against the v1.5 BEFORE
+pin (`docs/class-pass/v15-before*.json`) rather than this plan re-tuning any
+dial blind.
 
 ## Phobia triggers — Key Decision (Plan 03)
 

@@ -929,6 +929,8 @@ export const TOAST_FOR = {
   leaptOver: () => ({ text: "Cleared it. No drama.", tone: "hit", priority: PRIORITY.other }),
   flownOver: () => ({ text: "You simply fly over it.", tone: "hit", priority: PRIORITY.other }),
   phasedThrough: () => ({ text: "You step through it like a rumour of a wall.", tone: "hit", priority: PRIORITY.other }),
+  // Phase 41 (TERR-02): entering a water cell (once per wade, not per step).
+  waded: () => ({ text: "Wading. Twice as long, and it smells worse.", tone: "beat", priority: PRIORITY.other }),
   fellClimbing: (e) => ({ text: `You fall (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   fellInGorge: (e) => ({ text: `Short — the crevice introduces itself (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   heightsFear: () => ({ text: "Your stomach reaches the ground first.", tone: "hurt", priority: PRIORITY.other }),
