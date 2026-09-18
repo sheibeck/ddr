@@ -2666,7 +2666,15 @@ function draw() {
   // Phase 40 (SPELL-05): floorSpell (a spell-revealed cell's "borrowed
   // sight" tint) mirrors src/browser/mapMarks.js#MAP_PALETTE.floorSpell —
   // same hex, so a missing module never paints an undefined fillStyle.
-  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", border: "#443a26", party: "#f4dc94" };
+  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", water: "#2f5f7a", waterDark: "#1f3a4a", border: "#443a26", party: "#f4dc94" };
+  // TERR-03 — a dark square without Night Vision/light/torch shows only the
+  // 3x3 around the party; explored cells outside it are fogged at RENDER
+  // time only (`seen` untouched) and return the moment the player steps off
+  // the dark square, because this is re-read fresh on every draw() paint —
+  // never a stored flag. `!view` (a missing bridge) fails open to "show
+  // everything", matching the fallback palette literal's own discipline.
+  const view = window.__mzMapView;
+  const visible = (x, y) => !view || view.inViewWindow(S, x, y);
 
   // fog — the whole grid starts unexplored; only seen cells below repaint
   // over it, so an unseen cell is simply left showing the fog fill.
@@ -2675,6 +2683,7 @@ function draw() {
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
     const c = g[y][x];
     if (!c.seen) continue;
+    if (!visible(x, y)) continue;
     const X = x * CELL, Y = y * CELL;
     if (c.wall) {
       // a raised wall block: base fill, then a 2px light bevel (top/left)
@@ -2692,6 +2701,10 @@ function draw() {
       // in the borrowed-sight tint regardless of dark/lit — the tint IS the
       // "this will re-fog" signal, so it takes priority over the dark fill.
       ctx.fillStyle = c.spellSeen ? P.floorSpell : (c.dark ? P.floorDark : P.floor);
+      // Phase 41 (TERR-01): a lit pool paints P.water, a pool inside a dark
+      // blob paints P.waterDark — the Phase 40 spellSeen tint keeps priority
+      // over either (it IS the "this will re-fog" signal, unchanged above).
+      if (c.water && !c.spellSeen) ctx.fillStyle = c.dark ? P.waterDark : P.water;
       ctx.fillRect(X, Y, CELL, CELL);
       ctx.strokeStyle = P.floorInset; ctx.lineWidth = 1;
       ctx.strokeRect(X + .5, Y + .5, CELL - 1, CELL - 1);
@@ -2713,6 +2726,7 @@ function draw() {
     for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
       const c = g[y][x];
       if (!c.seen || !c.feat) continue;
+      if (!visible(x, y)) continue;
       const key = iconsApi.featureKeyForCell(c);
       const img = key && iconMap[key];
       if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75);
@@ -2933,6 +2947,10 @@ const CONDITION_COPY = {
   regen: { label: "Regenerating" },
   foresight: { label: "Forewarned" },
   reveal: { label: "Mapped", unit: "sq" },
+  // Phase 41 (TERR-05): an armed terrain phobia waiting for the next fight;
+  // the engine's conditionsOf emits {key:"fearArmed", phobia, trigger}, no
+  // count — a flat chip like foresight above, no unit needed.
+  fearArmed: { label: "Rattled" },
 };
 
 // Phase 34 (CSCR-04/05) — every player-facing literal the shell itself adds
@@ -3006,7 +3024,7 @@ const FOE_EFFECT_LABEL = { weakened: "Weakened", dazed: "Dazed" };
 // entry, mirroring the old good/bad chip split); CONDITION_EXPLAIN is the
 // sentence a guarded chip tap puts in the rail. Both are ONE object literal
 // each (voice-scannable) — presentation copy only, no engine data.
-const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad", lit: "good", itemCooldown: "odd", staffCharges: "odd", mirror: "good", senses: "good", regen: "good", foresight: "odd", reveal: "odd" };
+const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad", lit: "good", itemCooldown: "odd", staffCharges: "odd", mirror: "good", senses: "good", regen: "good", foresight: "odd", reveal: "odd", fearArmed: "warn" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
   invis: "They swing at where you were. Enjoy it; it wears off.",
@@ -3030,6 +3048,8 @@ const CONDITION_EXPLAIN = {
   regen: "Wounds close on their own every round of this fight. It is not a licence.",
   foresight: "You already know what the next encounter is. Whether that helps is up to you.",
   reveal: "The floor is on loan. When the squares run out, the parts you never walked go dark again.",
+  // Phase 41 (TERR-05).
+  fearArmed: "Something out there got to you. The next fight opens Afraid — harder to hit, softer blows — until it passes.",
   default: "A condition. The maze does not explain itself further.",
 };
 
@@ -7026,7 +7046,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
-  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie } from "./engine/derived.js";
+  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -7068,6 +7088,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
   // mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // Phase 41 (TERR-03) — bridge the PURE render-window read draw() consults
+  // every paint (no stored flag — a missing bridge falls back to "show
+  // everything" via the `!view` guard at draw()'s own call site, so the map
+  // never goes blank if this module somehow failed to load). Read-only, no
+  // rng, no mutation — same bridge pattern as __mzConditionsOf.
+  window.__mzMapView = { mapViewRadius, inViewWindow };
 
   // Phase 38 (ABIL-01/04) — the Hero-tab abilities list + the classic
   // paint()'s renderAbilityRows(c) read this ONE bridge: the catalog, the
