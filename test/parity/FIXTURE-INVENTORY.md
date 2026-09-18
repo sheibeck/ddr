@@ -1165,3 +1165,22 @@ edited fixture files above (chargen/magic/combat), no untracked files;
 `git diff` against this plan's start commit shows zero `"before"` value
 lines changed anywhere in `test/parity/fixtures`.
 
+### Plan 02 — engine mechanics: zero fixture moves
+
+Plan 02 (offense mechanics: the `onHit`/`aoe` data-flag repoints, the real
+Ice `dot` branch + freeze payoff, the Lesser Summon cast branch, the Weaken
+duration timer, Stupidity's fight-long skip, Shrink's real half damage, and
+the matching `tools/lib/tuning-bot.mjs` repoints) moves **zero** fixtures.
+No parity fixture casts Ice, Weaken, Stupidity, Shrink, Lightning, or Lesser
+Summon; the only fixture-cast spell this plan touches at all is Freeze
+(`action-script.magic.json`'s `cast-damage` scenario, seed 8), and its new
+`sp.onHit === "freeze"` check is draw-for-draw and branch-for-branch
+identical to the `sp.n === "Freeze"` check it replaces — a pure variable
+repoint on the SAME boolean value, never a behavior change — proven by that
+scenario replaying byte-identical (`node --test
+test/parity/magic-parity.test.js`, green, no new declaration needed).
+`npm test`: 2739/2739, `# fail 0` (2711 baseline + 28 new tests in the new
+`test/unit/spell-mechanics.test.js`); `test/parity/prototype-master.js.txt`
+hash unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
+`git status --porcelain test/parity/fixtures` empty.
+

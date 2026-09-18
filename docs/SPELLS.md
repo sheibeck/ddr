@@ -224,7 +224,147 @@ particular seeds. No fixture-seed set was trimmed or re-picked.
 
 ## Offense mechanics (Plan 02)
 
-(appended by Plan 02)
+Plan 01 reshaped the TABLE (niches, flags, Ice's `kind`, the new Lesser
+Summon row). Plan 02 wires the MECHANICS those flags/kinds promise —
+`engine/magic.js#castSpell` and `engine/combat.js#foeTurn` now read data,
+never a spell's name (research Pitfall 2).
+
+### Data flags — the sites that read them
+
+| Flag | Row | Site | Retired name check |
+|---|---|---|---|
+| `onHit: "freeze"` | Freeze | `magic.js`'s thrown branch (freeze var); `combat.js#allyCast`'s thrown branch; `tools/lib/tuning-bot.mjs#chooseSpell`'s KILL tier | `sp.n === "Freeze"` (three sites) |
+| `aoe: "all"` | Lightning | `magic.js`'s thrown branch (`targets`); `tuning-bot.mjs#chooseSpell`'s DAMAGE tier multiplier | `sp.n === "Lightning"` (two sites) |
+| `lesser: true` | Lesser Summon | `magic.js`'s summon branch (`doubled`/`lvl`/`rounds`/name table/event key) | — (new spell, no prior check to retire) |
+
+`grep -rn 'sp\.n === "' engine/ tools/lib/` now prints zero matches anywhere
+in the engine or bot.
+
+### Ice — the real DOT (`kind: "dot"`)
+
+`castSpell`'s new `dot` branch, a peer of `acid`, not a rewrite of the
+thrown branch: `t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" }` on
+`C.foes[C.target]` — one draw, no to-hit roll (like Acid), guarded on
+`sp.dmg` being present (T-40-03: a tampered/unknown `dot` row missing it
+never writes a broken record). `"dot"` is absent from `RESIST_IMMUNE_KINDS`,
+so an intel >= 12 target still gets its resist d20 exactly like Acid.
+Recasting on a foe already carrying an ice dot REFRESHES `left` (a plain
+overwrite — the record is replaced, never stacked).
+
+`combat.js#foeTurn`'s existing `f.dot` tick block (Phase 38, Poisoned
+Edge's own template) already ran the per-round `d6` and the kill check; this
+plan adds the payoff directly after it: when the tick that just ran leaves
+`left <= 0` (the record about to be deleted) AND `by === "ice"` AND the foe
+is still alive, it freezes solid (`f.frozen = true`, `frozenSolid`) and dies
+through `killFoe` — paid exactly like a melee kill (sp/gold/kill count/loot
+roll), mirroring the thrown Freeze branch's own frozen/killFoe/revive lines
+(a kill-twice `lives` foe survives the freeze once and is unfrozen). `by` is
+the ONLY switch — a Poisoned Edge dot running out is completely unaffected,
+and Ice's own tick that itself kills the foe (wp reaches 0 on the DAMAGE,
+not the expiry) pays through the ordinary dot-kill path with no
+`frozenSolid` at all.
+
+**Draw statement:** cast — one `d4` (the duration). Per tick — one `d6` (the
+damage; `damageFoe`'s own draw count is zero for a `kind: "spell"` hit,
+since the natural-armor soak only ever fires for a physical source). Payoff
+— zero extra draws; `killFoe`'s own draws (sp `d6`, coin `d10`, treasure
+`d20`, an optional Beasts/Lair-Beasts cooking `d6`) are the only ones.
+
+### Lesser Summon — small, safe, its own thing
+
+`castSpell`'s summon branch now reads `sp.lesser === true` to pick between
+two entirely separate tracks:
+
+| | Summon / Phantom Host | Lesser Summon |
+|---|---|---|
+| Summoner doubling | yes (`c.sub === "Summoner"`) | **never** |
+| Backfire (1-in-8) | yes, when doubled | **never** — the `d8` check is skipped outright |
+| `lvl` | `min(5, c.level + (doubled ? 1 : 0))` | `clamp(c.level - 1, 1, 3)` — one level UNDER the caster, floored at 1, capped at 3 |
+| `rounds` | `(doubled ? 2 : 1) * d4 + 2` | a plain `d4` — shorter, never doubled/+2 |
+| Name table | `ALLY_NAMES` (unchanged, 4 entries) | `LESSER_ALLY_NAMES` (new, 4 entries, smaller and sillier) |
+| Event payload | `allySummoned`/`allyPending` (no `lesser` key) | the same two events, `lesser: true` added — the ally object itself (`C.ally`/`c.pendingAlly`) gains NO new field |
+
+**Draw statement:** Lesser Summon — a plain `d4` (rounds) + the name pick
+(one production-rng draw; a test-harness `pick` that returns `arr[0]` by
+convention draws nothing observable). Summon by a Summoner — the `d8`
+backfire check, then (on a non-backfire) the doubled `d4` + the pick — one
+MORE draw than Lesser Summon ever makes, and the one Lesser Summon can never
+trigger.
+
+### The control axis — scope x duration, made explicit
+
+| Spell | Scope | Duration | Mechanism |
+|---|---|---|---|
+| Doze | one foe | d4 rounds | `t.asleep = d4` — a timed nap (`foeTurn`'s existing `f.asleep` skip) |
+| Stun | up to d6 foes | d4 rounds | same `asleep` mechanism, multiple targets |
+| Weaken | every foe | **d4+1 rounds** (new, was undefined) | `C.weakened`/`C.foeToHitPenalty` + a `spell:weaken` rounds-cadence timer |
+| Stupidity | one foe | **the rest of the fight** (new — was a d10 nap) | `t.stupid` — `foeTurn`'s own per-round skip, no counter, no expiry |
+| Blind | one foe | the fight | `t.blind = true` — unchanged |
+| Shrink | up to d6 foes | the fight | `f.shrunk` — halves wp (Plan 01) AND now, for real, halves the foe's own melee damage |
+| Petrify | one foe | removal (five days, no spoils) | unchanged |
+
+**Weaken's timer lifecycle.** `castSpell`'s weaken branch draws `rng.d(4) +
+1` and calls `engine/effects.js#startEffect(c, "spell:weaken", { rounds
+})`, on top of the existing `C.weakened = true; C.foeToHitPenalty = 3`.
+ONE-TICK-ALREADY-SPENT INVARIANT (38-03 SUMMARY, restated here for a spell
+timer instead of an ability cooldown): a cast IS the round's action, so the
+SAME dispatch's own `afterPlayerAction` -> `foeTurn` tail always ticks a
+freshly-started `c.timers` record once before `castSpell` returns — a
+Weaken cast that just drew "3 rounds" is therefore already reading `left: 2`
+by the time the caller observes it from outside. `combat.js#foeTurn`'s tail
+captures the SAME `tickRounds(c)` call's transitions for both the generic
+item/ability narration (`narrateTimerTransitions`, unchanged) and a
+spell-specific check: on the `spell:weaken` record's `effect -> null`
+transition, it clears `C.weakened`/`C.foeToHitPenalty` and narrates
+`weakenFaded` — the round's own foe damage was already computed (and
+halved) BEFORE this tail runs, so the expiring round still lands soft.
+Re-casting mid-window overwrites the record (a plain `startEffect` call —
+refresh, never stack). A member's own Weaken cast (`combat.js#allyCast`)
+draws its own `d4+1` and starts the identical `spell:weaken` record on the
+HERO's `state.c` (party-wide duration lives in one place); its
+`allySpellHit` event carries `rounds` too.
+
+**Stupidity's rules change.** The old `t.asleep = Math.max(t.asleep,
+rng.d(10))` line is deleted outright — Stupidity no longer naps the foe for
+a random handful of rounds. `t.stupid = true` is the only mutation now;
+`foeTurn` skips a stupid foe's entire turn every round (placed directly
+after the asleep block, mirroring Pommel Strike's `f.stunned` skip — no
+counter, the flag never clears itself, so it lasts exactly as long as the
+foe does or the fight does). `playerStrike`'s to-hit floor (`need =
+Math.max(need, 5)`, "5 to hit a dozing creature") now also applies to a
+stupid foe — struck exactly like a dozing one.
+
+**Shrink's real half damage.** Three foe-melee damage sites gain `if
+(f.shrunk) dmg = Math.ceil(dmg / 2)` (resp. `mDmg`, and `pursuer.shrunk` in
+`pursuitStrike`), each placed immediately after the existing `C.weakened`
+halving — a foe that is both shrunk AND weakened is quartered (`ceil`
+applied twice, independently). Zero draws; `false` on every fixture.
+
+### The bot repoints
+
+`tools/lib/tuning-bot.mjs#chooseSpell`'s KILL tier reads `sp.onHit ===
+"freeze"` (was `sp.n === "Freeze"`); the DAMAGE tier's every-foe multiplier
+reads `sp.aoe === "all"` (was `sp.n === "Lightning"`); the DAMAGE tier now
+scores `kind === "dot"` (Ice) with its OWN documented constant — `expected
+*= 3`, the mean tick count of the real `d4+1` duration (3.5), rounded like
+Acid's own `x2` — and skips a target that already carries `dot`, mirroring
+Acid's own already-ticking skip. Measured (not assumed) ordering at level 5
+vs 1 foe: Mangle (burst, highest) > Fireball(s) > Acid (318, `x2`) > Ice
+(310.5, `x3`) — Acid still edges out Ice even under Ice's real tick count,
+because Acid's own `2d6+2` base is heavier than Ice's `1d6`.
+
+### Byte-identical elsewhere
+
+No fixture casts Ice, Weaken, Stupidity, Shrink, Lightning, or Lesser Summon
+— the only spell any parity fixture casts that this plan touches is Freeze
+(`action-script.magic.json`'s `cast-damage` scenario, seed 8), and its
+`onHit === "freeze"` flag path draws and resolves byte-identically to the
+`sp.n === "Freeze"` check it replaces (same variable, same value, same
+branch — a pure repoint, not a behavior change). `npm test`: 2739/2739,
+`# fail 0` (2711 baseline + 28 new tests in
+`test/unit/spell-mechanics.test.js`); `test/parity/prototype-master.js.txt`
+hash unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
+`git status --porcelain test/parity/fixtures` empty.
 
 ## Utility visibility and scrolls (Plan 03)
 
