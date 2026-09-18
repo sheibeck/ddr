@@ -195,7 +195,9 @@ test("surfaceWornReconcile() is declared once, wired to the ENTER-resume branch,
   assert.match(fnRegion, /window\.logLine\?\.\(card\.line\)/);
   assert.equal((CODE.match(/if \(resumeIntent\) \{ surfaceWornReconcile\(\); return; \}/g) || []).length, 1);
   assert.match(CODE, /takeBootWornReport \} from "\.\/src\/browser\/engineAdapter\.js";/);
-  assert.match(CODE, /wornReconcileCard \} from "\.\/src\/browser\/rail\.js";/);
+  // Phase 38 (ABIL-01/03): rail.js's import gained abilityPoolCard as a
+  // sibling named import on the same line — re-pinned, not deleted.
+  assert.match(CODE, /wornReconcileCard, abilityPoolCard \} from "\.\/src\/browser\/rail\.js";/);
 });
 
 // ─── 9. CSS ───────────────────────────────────────────────────────────────────

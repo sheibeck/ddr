@@ -227,6 +227,9 @@ ul.skills li.none{border-left-color:var(--rule)}
 ul.skills li b{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.03em;color:var(--ink)}
 ul.skills li i{font-family:var(--body);font-style:normal;font-size:13.5px;line-height:1.35;color:var(--ink-soft)}
 ul.skills li.none{font-family:var(--mono);font-size:11px;color:var(--ink-soft);padding:2px 0 2px 8px}
+/* Phase 38 (ABIL-01/04) — the abilities list's provenance tag/state suffix. */
+ul.skills li small{font-family:var(--mono);font-size:10px;letter-spacing:.03em;color:var(--ink-soft)}
+ul.skills li span{font-family:var(--mono);font-size:11px;color:var(--moss)}
 /* Phase 33 (UIF-01) — the GEAR row's action row + the in-place Drop confirm;
    min-height 48px comes from button.small; the revert is a timer, so there
    is deliberately no transition here. */
@@ -1482,6 +1485,19 @@ html,body{height:100%}
       <section class="panel">
         <h2>Special skills <span id="s-vp"></span></h2>
         <ul class="skills" id="s-skills"></ul>
+      </section>
+
+      <!-- Phase 38 (ABIL-01/04) — the abilities list beside Special skills:
+           one row per c.abilities catalog id, tagged by source ("special
+           skill · active" for a reshaped table entry, "trick" for a rolled
+           level-pool pick), with an in-combat READY/N ROUNDS/ONCE A FIGHT ·
+           USED state or an out-of-combat cd N ROUNDS/once a fight state.
+           Rendered by renderAbilityRows(c) (classic script, called from
+           paint()); a Magic User shows the "Spells are the trick." none
+           row. #s-skills above stays passives-only, byte-identical. -->
+      <section class="panel">
+        <h2>Abilities</h2>
+        <ul class="skills" id="s-abilities"></ul>
       </section>
 
       <!-- 04-DR10: the Grimoire — ALL of the character's own learned spells
@@ -2798,6 +2814,8 @@ window.mzCombatReport = function (d) {
   else if (d.hpDelta > 0) lines.push(`<span class="hit">Recovered ${d.hpDelta} hp.</span>`);
   if (d.goldGained > 0) lines.push(`<span class="roll">+${d.goldGained} wilmst.</span>`);
   if (d.leveled > 0) lines.push(`<span class="hit">Now skill level ${ROMAN[Math.max(0, d.level - 1)] || d.level}.</span>`);
+  // Phase 38 (ABIL-01/03): a level-up's new trick(s), named in the report.
+  for (const n of d.learned || []) lines.push(`<span class="hit">New trick: ${n}.</span>`);
   lines.push(`Left standing on <b>${Math.max(0, d.hpNow)}/${d.hpMax} hp</b>.`);
   return { title, tone, lines };
 };
@@ -3186,6 +3204,45 @@ function paint() {
     li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : ""}</i>`;
     sk.appendChild(li);
   }
+
+  // Phase 38 (ABIL-01/04) — the Hero-tab abilities list, paint-local,
+  // mirroring the s-skills block's position immediately above (special
+  // skills stays passives-only, byte-identical). createElement/textContent
+  // only — T-38-11 (no innerHTML in this function) — reading
+  // window.__mzAbilities.sheet(S) (characterSheetViewModel) so the
+  // READY/N ROUNDS/ONCE A FIGHT · USED / cd N ROUNDS/once a fight
+  // state-suffix rule lives in exactly one place.
+  function renderAbilityRows(c) {
+    const ul = document.getElementById("s-abilities");
+    if (!ul) return;
+    ul.replaceChildren();
+    if (c.cls === "Magic User") {
+      const li = document.createElement("li");
+      li.className = "none";
+      li.textContent = "Spells are the trick.";
+      ul.appendChild(li);
+      return;
+    }
+    const bridge = window.__mzAbilities;
+    const rows = bridge ? bridge.sheet(S).abilities : [];
+    for (const row of rows) {
+      const li = document.createElement("li");
+      const b = document.createElement("b");
+      b.textContent = row.name;
+      li.appendChild(b);
+      const tag = document.createElement("small");
+      tag.textContent = row.source === "pool" ? "trick" : "special skill · active";
+      li.appendChild(tag);
+      const desc = document.createElement("i");
+      desc.textContent = row.description;
+      li.appendChild(desc);
+      const state = document.createElement("span");
+      state.textContent = row.state;
+      li.appendChild(state);
+      ul.appendChild(li);
+    }
+  }
+  renderAbilityRows(c);
 
   // carried treasure (Phase 13, ECON-04/05: the keep/drop/equip UI)
   const carry = document.getElementById("s-carry");
@@ -5540,16 +5597,19 @@ function renderYourLot(host, vm) {
 }
 
 // Phase 34 (CSCR-05) — the ONE map from a submenu row's dispatch payload
-// (combatMenu.js's `row.dispatch`) to the existing engine bridges. No new
-// engine action, no new bridge — every entry here already exists above
-// (window.mzAttack/mzCastSpell/mzSing/mzDrinkPotion/mzReadScroll/mzUseItem/
-// mzFlee/mzParley), this object just routes to the right one by `type`.
+// (combatMenu.js's `row.dispatch`) to the existing engine bridges. Every
+// entry here already exists above (window.mzAttack/mzCastSpell/mzSing/
+// mzDrinkPotion/mzReadScroll/mzUseAbility/mzUseItem/mzFlee/mzParley — Phase
+// 38 (ABIL-01) added mzUseAbility, same pattern as every other bridge), this
+// object just routes to the right one by `type`.
 const COMBAT_DISPATCH = {
   attack: () => window.mzAttack?.(),
   castSpell: (d) => window.mzCastSpell?.(d.idx),
   sing: () => window.mzSing?.(),
   drinkPotion: () => window.mzDrinkPotion?.(),
   readScroll: () => window.mzReadScroll?.(),
+  // Phase 38 (ABIL-01): the ABILITIES submenu's real dispatch.
+  useAbility: (d) => window.mzUseAbility?.(d.key),
   // Phase 37 (GEAR-03): forwards the worn-slot use form when present.
   useItem: (d) => window.mzUseItem?.(d.slot !== undefined ? { slot: d.slot } : d.i),
   flee: () => window.mzFlee?.(),
@@ -6723,7 +6783,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // fightLog.js, folding the same toastsForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
-  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, wornReconcileCard } from "./src/browser/rail.js";
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -6791,12 +6851,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
   import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage } from "./src/browser/viewModels.js";
-  import { RACES, CLASSES, BAGS } from "./content/index.js";
+  import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
+  // Phase 38 (ABIL-01/04) — the Hero-tab abilities list + submenu cost text
+  // read the SAME cooldown source the engine's useAbility dispatch does.
+  import { abilityRoundsLeft } from "./engine/abilities.js";
+  import { isReady } from "./engine/effects.js";
 
   // Phase 13 (ECON-04): expose the read-only BAGS capacity table so the classic
   // script's GEAR tab + find keep/drop prompt can show the "used / slots"
@@ -6827,6 +6891,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
   // mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // Phase 38 (ABIL-01/04) — the Hero-tab abilities list + the classic
+  // paint()'s renderAbilityRows(c) read this ONE bridge: the catalog, the
+  // cooldown/readiness helpers the engine's useAbility already uses, and
+  // characterSheetViewModel itself (so the state-suffix rule — READY/N
+  // ROUNDS/ONCE A FIGHT · USED, cd N ROUNDS/once a fight — lives in exactly
+  // one place, never re-derived in the classic script). Read-only, no rng,
+  // no mutation — same bridge pattern as __mzConditionsOf/__mzEff.
+  window.__mzAbilities = { byId: ABILITY_BY_ID, roundsLeft: abilityRoundsLeft, isReady, sheet: characterSheetViewModel };
 
   // Phase 37 (GEAR-03) — bridge the PURE two-path eff(c, key), slotFor(it)
   // and the frozen WORN_SLOTS order so the classic script's eff(key)
@@ -7183,6 +7256,9 @@ window.__mzClassicBoot = async function classicBoot() {
         leveled: (c.level || 1) - (snap.level || c.level || 1),
         hpDelta: (c.wp || 0) - (snap.hp != null ? snap.hp : c.wp),
         hpNow: c.wp, hpMax: c.maxWP, level: c.level, foes: snap.foes || [],
+        // Phase 38 (ABIL-01/03): named ability level-ups this fight, for the
+        // victory report's "New trick:" line above.
+        learned: events.filter((e) => e.type === "abilityLearned").map((e) => e.name),
       };
       combatSnap = null;
       const rep = window.mzCombatReport ? window.mzCombatReport(data) : null;
@@ -7446,7 +7522,22 @@ window.__mzClassicBoot = async function classicBoot() {
     );
     window.paint();
     window.draw();
+    surfaceAbilityPool(state);
   };
+
+  // Phase 38 (ABIL-01/03) — the first-paint narration of a fresh run's
+  // guaranteed level-1 pool pick (SC-3): rail.js#abilityPoolCard reads the
+  // FIRST pool-source id in state.c.abilities (chargen's own roll order);
+  // null for a Magic User (no pool pick) — a no-op push, never a mutation of
+  // state. Called at the tail of commitRolledState (below) and inside
+  // window.mzDevStartAtDepth (above) — the two commit points a fresh
+  // run's state reaches the live UI through.
+  function surfaceAbilityPool(state) {
+    const card = abilityPoolCard(state.c);
+    if (!card) return;
+    window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon);
+    window.logLine?.(card.line);
+  }
 
   // ---- 04-DR3: character-roll screen ("THE TABLES DECIDE") ----
   // commitRolledState(state) applies an ALREADY-rolled engine state (rolled
@@ -7471,6 +7562,7 @@ window.__mzClassicBoot = async function classicBoot() {
     window.paint();
     window.draw();
     window.mzCenterMap?.(); // Pass B1 item 4: center on the party for the new run
+    surfaceAbilityPool(state);
   }
 
   // Presentation-only word lists for the reel flicker (content/index.js's
@@ -7872,6 +7964,8 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzFlee = () => engineCombatAction("flee");
   window.mzParley = () => engineCombatAction("parley");
   window.mzSing = () => engineCombatAction("sing");
+  // Phase 38 (ABIL-01): the ABILITIES submenu row's dispatch bridge.
+  window.mzUseAbility = (key) => engineCombatAction("useAbility", { key });
   window.mzCastSpell = (idx) => engineCombatAction("castSpell", { idx });
   window.mzDrinkPotion = () => engineCombatAction("drinkPotion");
   window.mzReadScroll = () => engineCombatAction("readScroll");

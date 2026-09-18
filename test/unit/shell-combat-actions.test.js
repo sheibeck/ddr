@@ -141,7 +141,7 @@ test("CSCR-05: cbRow builds every field via textContent/className, guards a disp
 
 // ─── c. Dispatch table ──────────────────────────────────────────────────────
 
-test("CSCR-05: COMBAT_DISPATCH carries exactly the eight row-dispatch types, each mapped to its window.mz* bridge", () => {
+test("CSCR-05/Phase 38 (ABIL-01): COMBAT_DISPATCH carries exactly the nine row-dispatch types, each mapped to its window.mz* bridge", () => {
   const start = CODE.indexOf("const COMBAT_DISPATCH = {");
   assert.ok(start !== -1, "const COMBAT_DISPATCH = { not found");
   const end = CODE.indexOf("\n};", start);
@@ -152,6 +152,8 @@ test("CSCR-05: COMBAT_DISPATCH carries exactly the eight row-dispatch types, eac
     sing: /sing:\s*\(\)\s*=>\s*window\.mzSing\?\.\(\)/,
     drinkPotion: /drinkPotion:\s*\(\)\s*=>\s*window\.mzDrinkPotion\?\.\(\)/,
     readScroll: /readScroll:\s*\(\)\s*=>\s*window\.mzReadScroll\?\.\(\)/,
+    // Phase 38 (ABIL-01): the ABILITIES submenu's real dispatch.
+    useAbility: /useAbility:\s*\(d\)\s*=>\s*window\.mzUseAbility\?\.\(d\.key\)/,
     // Phase 37 (GEAR-03): forwards the worn-slot use form
     useItem: /useItem:\s*\(d\)\s*=>\s*window\.mzUseItem\?\.\(d\.slot !== undefined \? \{ slot: d\.slot \} : d\.i\)/,
     flee: /flee:\s*\(\)\s*=>\s*window\.mzFlee\?\.\(\)/,
@@ -161,7 +163,7 @@ test("CSCR-05: COMBAT_DISPATCH carries exactly the eight row-dispatch types, eac
     assert.match(region, re, `COMBAT_DISPATCH.${key} must map to the expected bridge`);
   }
   const keys = Object.keys(expected);
-  assert.equal(keys.length, 8);
+  assert.equal(keys.length, 9);
   assert.match(pickRegion(), /COMBAT_DISPATCH\[row\.dispatch\.type\]/);
 });
 
