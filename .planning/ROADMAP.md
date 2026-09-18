@@ -355,9 +355,20 @@ Plans:
 **Plans**: 4 plans (sequential — every plan its own wave)
 
 Plans:
+**Wave 1**
+
 - [ ] 42-01-PLAN.md — FLEE-01/02: `d20 + Thief 5 + class + race − bulk >= 14` (35% base) via `content/flee.js` + `engine/derived.js#fleeBreakdown`, `fleeRolled { roll, mods, total, need }` narrated roll-first on fight log/toast/rail, honest FLEE submenu cost, failed flee untouched, seed-17 fixture measured, `docs/FLEE.md` ledger + pin test
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 42-02-PLAN.md — BAL-01 second half (abilities + items): bot mirrors `pickMemberAbility`, once-a-fight on the hardest foe, heal-before-flee / round-1 buffs / worn staves / torch / pendingHazard tools, takes the victory loot pile, plays `storeRoll`+`wornSlots` run rules, refusal blocks, forced-cell no-stall proof (`Bot:` line frozen)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 42-03-PLAN.md — BAL-01 second half (spells) + BAL-02 prep: `chooseSpell` by niche (DOT on tough foes, burst finishes, Lesser Summon opener, Map the Floor once per floor), per-run usage tallies → per-cell/rollup `{ uses, runs }`, `meta.runFlags`, `tools/class-pass-usage.mjs` pick-rate renderer, 143×3 tactics smoke, CLASS-PASS `### Phase 42 tactics` addendum
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 42-04-PLAN.md — BAL-02: the ONE AFTER matrix pair (143×40 natural + 143×10 depth-20, background + logged, same params as the BEFORE pins), `class-pass-diff --gate`, `## v1.5 AFTER` ledger section with machine-rendered tables + pick-rates + a written verdict per out-of-band row against the depth-20 target (one-knob tune, one re-run, or accept), ledger test re-pin, REQUIREMENTS FLEE-01/02 + BAL-02 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md`
 
 **Research flag**: Flee retune is a standard numeric retune of one existing formula — skip `--research-phase`. BAL-02's matrix read may surface out-of-band rows worth a short discussion before accepting or tuning them.

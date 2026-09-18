@@ -4,9 +4,9 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 42
 current_phase_name: Flee Retune & Consolidated Balance Close
-status: planning
+status: executing
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-18T20:48:10.499Z"
+last_updated: "2026-09-18T21:28:42.885Z"
 last_activity: 2026-09-18
 last_activity_desc: Phase 41 complete, transitioned to Phase 42
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 Phase: 42 — Flee Retune & Consolidated Balance Close
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-18 — Phase 41 complete, transitioned to Phase 42
 
 ## Ground Truth (durable facts every session needs)
