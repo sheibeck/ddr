@@ -2663,7 +2663,10 @@ function draw() {
   const { g, px, py } = S.floor;
   const size = CELL * GW;
   const M = window.__mzMapMarks;
-  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", border: "#443a26", party: "#f4dc94" };
+  // Phase 40 (SPELL-05): floorSpell (a spell-revealed cell's "borrowed
+  // sight" tint) mirrors src/browser/mapMarks.js#MAP_PALETTE.floorSpell —
+  // same hex, so a missing module never paints an undefined fillStyle.
+  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", border: "#443a26", party: "#f4dc94" };
 
   // fog — the whole grid starts unexplored; only seen cells below repaint
   // over it, so an unseen cell is simply left showing the fog fill.
@@ -2685,7 +2688,10 @@ function draw() {
       ctx.fillRect(X, Y + CELL - 2, CELL, 2);
       ctx.fillRect(X + CELL - 2, Y, 2, CELL);
     } else {
-      ctx.fillStyle = c.dark ? P.floorDark : P.floor;
+      // Phase 40 (SPELL-05): a spellSeen cell (Map the Floor's window) paints
+      // in the borrowed-sight tint regardless of dark/lit — the tint IS the
+      // "this will re-fog" signal, so it takes priority over the dark fill.
+      ctx.fillStyle = c.spellSeen ? P.floorSpell : (c.dark ? P.floorDark : P.floor);
       ctx.fillRect(X, Y, CELL, CELL);
       ctx.strokeStyle = P.floorInset; ctx.lineWidth = 1;
       ctx.strokeRect(X + .5, Y + .5, CELL - 1, CELL - 1);
@@ -2917,6 +2923,16 @@ const CONDITION_COPY = {
   // sub-state (pool AND rounds, mirroring the flight special case below).
   ward: { label: "Shield" },
   foeEffect: { label: "Hexed", unit: "rds" },  // Phase 19 D-21 — foe-inflicted debuff; the KIND-specific label comes from FOE_EFFECT_LABEL below, this row is the fallback label for an unmapped kind and the rounds unit the detail renders.
+  // Phase 40 (SPELL-02/05): four utility spells that had a real engine
+  // effect but no chip (Mirror Self/Sense Presence/Regeneration/an armed
+  // Sense Danger), plus Map the Floor's own re-fog window. The generic
+  // `typeof cn.remaining === "number"` detail branch below already renders
+  // `${cn.remaining} ${unit}` for mirror/reveal — no special case needed.
+  mirror: { label: "Mirrored", unit: "rds" },
+  senses: { label: "Senses" },
+  regen: { label: "Regenerating" },
+  foresight: { label: "Forewarned" },
+  reveal: { label: "Mapped", unit: "sq" },
 };
 
 // Phase 34 (CSCR-04/05) — every player-facing literal the shell itself adds
@@ -2990,7 +3006,7 @@ const FOE_EFFECT_LABEL = { weakened: "Weakened", dazed: "Dazed" };
 // entry, mirroring the old good/bad chip split); CONDITION_EXPLAIN is the
 // sentence a guarded chip tap puts in the rail. Both are ONE object literal
 // each (voice-scannable) — presentation copy only, no engine data.
-const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad", lit: "good", itemCooldown: "odd", staffCharges: "odd" };
+const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad", lit: "good", itemCooldown: "odd", staffCharges: "odd", mirror: "good", senses: "good", regen: "good", foresight: "odd", reveal: "odd" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
   invis: "They swing at where you were. Enjoy it; it wears off.",
@@ -3008,6 +3024,12 @@ const CONDITION_EXPLAIN = {
   // Phase 39 (GEAR-02): a cooling item / a recharging staff.
   itemCooldown: "Used, and not ready to be used again. Squares fix that.",
   staffCharges: "The staff is remembering how to do that. Walk it off.",
+  // Phase 40 (SPELL-02/05).
+  mirror: "They swing at a reflection for a few rounds. Try not to look smug.",
+  senses: "You fight in the dark at full skill and nothing gets the jump on you, until this fight ends.",
+  regen: "Wounds close on their own every round of this fight. It is not a licence.",
+  foresight: "You already know what the next encounter is. Whether that helps is up to you.",
+  reveal: "The floor is on loan. When the squares run out, the parts you never walked go dark again.",
   default: "A condition. The maze does not explain itself further.",
 };
 
@@ -3233,9 +3255,19 @@ function paint() {
     ["Wilmst", c.gold.toLocaleString()]
   ];
   if (c.cls === "Magic User") rows.push(["Spell charges", `${maxCharges() - c.spellsUsed} / ${maxCharges()}`]);
-  if (c.ward) rows.push([c.ward.name, `${c.ward.pool} hp left`]);
+  // Phase 40 (SPELL-06): the Shield row now reads BOTH numbers (pool AND
+  // rounds), mirroring the map-HUD ward chip's own {pool, remaining} shape —
+  // the Hero tab used to show pool only.
+  if (c.ward) rows.push([c.ward.name, `${c.ward.pool} hp left · ${c.ward.rounds} rds`]);
   if (c.might) rows.push(["Strength", `+${c.might} damage`]);
   if (c.regen) rows.push(["Regeneration", "d8 a round"]);
+  // Phase 40 (SPELL-02/05): the four utility spells that had a real effect
+  // but no Hero-tab row — mirroring the condition-chip strip's own copy.
+  if (c.mirror > 0) rows.push(["Mirror Self", `${c.mirror} rds`]);
+  if (c.senses) rows.push(["Sense Presence", "till the fight ends"]);
+  if (c.foresight) rows.push(["Sense Danger", "armed"]);
+  const rev = c.timers && c.timers["spell:reveal"];
+  if (rev && rev.phase === "effect" && rev.left > 0) rows.push(["Map the Floor", `${rev.left} sq`]);
   rows.push(["Kills", c.kills || 0]);
   for (const [a, b] of rows) {
     const li = document.createElement("li");
@@ -5347,7 +5379,18 @@ function foeStatusBadges(f) {
   // nothing surfaced it on the monsters. Read the shared flag here and show a
   // "Weakened" chip on each foe while it's set (tone "good" — a foe debuff is
   // good for the player, like Asleep/Frozen). Presentation only; engine unchanged.
-  if (S && S.combat && S.combat.weakened) out.push({ t: "Weakened", tone: "good" });
+  // Phase 40 (SPELL-01/02): the hero's own spell:weaken c.timers record now
+  // carries the duration this badge reports — a live record names its rounds
+  // ("Weakened · N"), matching the map-HUD chip family's naming convention;
+  // a Weakened-but-no-record state (legacy save mid-fight) still shows the
+  // plain "Weakened" fallback.
+  const wk = S.c.timers && S.c.timers["spell:weaken"];
+  if (S && S.combat && S.combat.weakened) out.push({ t: wk && wk.left > 0 ? `Weakened · ${wk.left}` : "Weakened", tone: "good" });
+  // Phase 40 (SPELL-01): Ice's real per-round DOT — a foe-carried f.dot
+  // record (shared shape with Poisoned Edge, engine/combat.js) surfaces
+  // beside the Acid badge above; by === "ice" is the only Ice-specific case,
+  // everything else (Poisoned Edge and any future dot source) reads "Poison".
+  if (f.dot && f.dot.left > 0) out.push({ t: `${f.dot.by === "ice" ? "Ice" : "Poison"} · ${f.dot.left}`, tone: "acid" });
   return out;
 }
 
@@ -8201,6 +8244,11 @@ window.__mzClassicBoot = async function classicBoot() {
       li.className = row.combatOnly ? "grim-locked" : "";
       const info = document.createElement("div");
       info.className = "grim-info";
+      // Phase 40 (SPELL-01): row.txt already begins with `row.nicheLabel +
+      // " · "` (content/spells.js's contract) — no markup change needed, the
+      // niche line is already the FIRST thing the <i> renders. innerHTML
+      // stays safe here because row.txt/row.name are content, not user data
+      // (T-40-10, unchanged since 04-DR10).
       info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}</i>`;
       li.appendChild(info);
       if (row.combatOnly) {
