@@ -4,9 +4,9 @@ milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 40
 current_phase_name: Spell Rework
-status: planning
+status: executing
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-18T14:55:45.876Z"
+last_updated: "2026-09-18T15:58:09.332Z"
 last_activity: 2026-09-18
 last_activity_desc: Phase 39 complete, transitioned to Phase 40
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 Phase: 40 — Spell Rework
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-18 — Phase 39 complete, transitioned to Phase 40
 
 ## Ground Truth (durable facts every session needs)
