@@ -5,15 +5,15 @@ milestone_name: Meaningful Choices — Spells, Gear & Abilities
 current_phase: 38
 current_phase_name: Melee Active Abilities
 status: executing
-stopped_at: Completed 38-02-PLAN.md (abilityStrike descriptor, need-shift actives, four dropped-skill reads deleted, SC-4 identity guard)
-last_updated: "2026-09-18T02:44:37.484Z"
+stopped_at: Completed 38-03-PLAN.md (useAbility dispatcher, 20 ability resolutions, combat.js foe-side hooks, narration)
+last_updated: "2026-09-18T03:22:40.527Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 38 execution started
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 ## Current Position
 
 Phase: 38 (Melee Active Abilities) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 38 execution started
 
@@ -110,8 +110,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-18T02:44:37.448Z
-Stopped at: Completed 38-02-PLAN.md (abilityStrike descriptor, need-shift actives, four dropped-skill reads deleted, SC-4 identity guard)
+Last session: 2026-09-18T03:22:40.481Z
+Stopped at: Completed 38-03-PLAN.md (useAbility dispatcher, 20 ability resolutions, combat.js foe-side hooks, narration)
 Resume file: None
 
 ## Operator Next Steps
@@ -211,6 +211,7 @@ Resume file: None
 | Phase 37 P04 | 25min | 3 tasks | 4 files |
 | Phase 38 P01 | 45min | 3 tasks | 28 files |
 | Phase 38 P02 | 75min | 3 tasks | 17 files |
+| Phase 38 P03 | 40min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -398,6 +399,9 @@ Resume file: None
 - [Phase ?]: 38-02: playerStrike's AS descriptor read once after the !t return; subAuto (sub free-opener) kept structurally separate from auto (subAuto||AS.autoHit) so an ability auto-hit never touches C.opened
 - [Phase ?]: 38-02: fluency(c) now reads eff(c,"tongue") alone (ceiling 1, not 2); canParley's fluency-2 Magical branch and parley()'s wilmsryVsMagical refusal are left in place as unreachable-but-documented code (mazeworld.html/combatMenu.js are out of this plan's scope)
 - [Phase ?]: 38-02: Rule-1 fixes beyond this plan's file list — test/unit/parley-button-mirror.test.js and test/unit/tuning-bot.test.js both broke as direct fallout of the fluency-ceiling drop and were updated to keep npm test at # fail 0
+- [Phase ?]: 38-03: strike-modifying abilities delegate entirely to playerStrike via the transient abilityStrike descriptor — useAbility never also calls afterPlayerAction on that branch (avoids the double-foe-turn pitfall)
+- [Phase ?]: 38-03: the one-tick-already-spent invariant — activating an ability IS the round's action, so the same dispatch's own afterPlayerAction->foeTurn call always ticks every freshly-started c.timers record once before useAbility returns; a duration-1 ability (riposte/taunt) is already in its cooldown phase by the time the caller observes it
+- [Phase ?]: 38-03: ABIL-01/ABIL-04 left unmarked in REQUIREMENTS.md despite being in this plan's own frontmatter — their submenu-visibility text is Plan 05's job (Plan 05's frontmatter independently re-lists both IDs), mirroring the ABIL-02 precedent
 
 ### Blockers
 
