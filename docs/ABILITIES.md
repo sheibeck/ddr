@@ -561,5 +561,5 @@ identical to `RAIL_FAMILY.leveled`). The end-of-fight victory report
   (Plan 05).
 - Magic User actives beyond spells (not requested this phase — spells are
   Phase 40).
-- Bot use policy for abilities — Phase 42 (BAL-02 prep), before the
-  consolidated AFTER matrix.
+- Bot use policy for abilities — landed: see `docs/CLASS-PASS.md`
+  `### Phase 42 tactics (BAL-01 second half)`.

@@ -225,10 +225,15 @@ fixture that must never be edited).
   existing assertion (`engineAdapter.test.js`'s boot-rehydrates-a-save
   test) was deliberately updated because `boot()` IS the shell's real load
   path and now genuinely migrates.
-- **Bot / balance:** `tools/lib/tuning-bot.mjs` keeps calling `newRun`
-  without the option this phase (legacy semantics; the v1.5 BEFORE pin
-  stays like-for-like). Passing `{ wornSlots: true }` plus a wear/swap
-  policy is Phase 42's bot extension, before the AFTER matrix.
+- **Bot / balance:** landed (Phase 42) — `tools/lib/tuning-bot.mjs`'s
+  `RUN_FLAGS = { storeRoll: true, wornSlots: true }` is now spread into
+  every `playRun`'s `newRun` call, so the bot plays the worn-slot model
+  real players see (the v1.5 BEFORE pin `e69ff07` stays like-for-like,
+  since it predates this flag). The "wear/swap policy" this note asked for
+  is the engine's own `autoWearSlot` on take, unchanged by this phase — the
+  bot wears the first item per slot on pickup and never swaps a worn item
+  for a better one mid-run; that IS the recorded policy, not a gap. See
+  `docs/CLASS-PASS.md` `### Phase 42 tactics (BAL-01 second half)`.
 
 ## §6. The `eff()` call-site inventory
 
@@ -271,8 +276,10 @@ Name/kind scans that can involve a slot item (routed through
 - **Phase 39** — magic-item use → effect → cooldown chips (visible
   countdown UI beyond the Gear-tab `· N sq` text this phase already
   shows), new one-shot tools (rope, ladder, torch).
-- **Phase 42** — teaching `tools/lib/tuning-bot.mjs` a wear/swap policy
-  under `{ wornSlots: true }`, before the v1.5 AFTER class matrix.
+- **Phase 42** — landed: `tools/lib/tuning-bot.mjs` now plays under
+  `{ wornSlots: true }` (`RUN_FLAGS`); the wear policy is the engine's own
+  `autoWearSlot` on take (first item per slot, never swapped) — see
+  `docs/CLASS-PASS.md` `### Phase 42 tactics (BAL-01 second half)`.
 - **Phase 43** — the Gear tab's ON YOU / BAG two-panel split (worn rows
   currently join the existing worn area beside the weapon/armor `wornRow`
   calls; this phase deliberately does not split the panel), and a

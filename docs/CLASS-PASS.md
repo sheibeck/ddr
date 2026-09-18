@@ -98,6 +98,293 @@ grep-diff the two ledgers):
 | Start depth | 1 (natural-start matrix) / 20 (depth-20 slice) | HARN-04 |
 | Party | off (`--party` not set) | 22-CONTEXT.md — matrix work is solo-only this phase |
 
+### Phase 42 tactics (BAL-01 second half)
+
+Phase 42 (42-01/02/03-PLAN.md) teaches the bot to use everything Phases
+38-41 added — abilities, items/tools, spells by niche — and to play the
+game's shipped run rules, before the v1.5 AFTER matrix (Plan 04) measures
+the combined effect. This section transcribes every new rule and
+`BOT_TACTICS`/`RUN_FLAGS` number verbatim from `tools/lib/tuning-bot.mjs`'s
+own JSDoc, so the AFTER section (once written) can cite it instead of
+re-deriving it.
+
+**Run flags.** `RUN_FLAGS = { storeRoll: true, wornSlots: true }` — the bot
+now plays the SHIPPED game's run rules (`storeRoll` = the depth-rolled store
+stock; `wornSlots` = `c.worn` via `reconcileWorn`, so a Thief's starting
+cloak, a rolled staff, etc. all live in the worn-slot model this plan's item
+tactics read) instead of the legacy bag-summed `eff()`/fixed-store model the
+v1.5 BEFORE pin (`e69ff07`) measured against. Every report's `meta.runFlags`
+carries this object verbatim (additive — NOT in `class-pass-diff.mjs`'s
+`PARITY_FIELDS` list, so the parameter-parity gate still passes) beside the
+frozen `Bot:` line, so the AFTER matrix's harness semantics are
+machine-visible rather than merely asserted in prose.
+
+**Abilities.** `chooseAbility(state, ctx)` mirrors `engine/combat.js#pick
+MemberAbility`'s exact class-driven policy with `sheet = ally = state.c` —
+the hero uses its own rolled kit exactly like a Joiner uses its own:
+
+- Gated to Fighter/Thief (never a Magic User); every candidate must be
+  owned, resolve to the character's own class, be `isReady`, and not
+  already sit in `ctx.abilityBlocked`.
+- Round 1: prefer a ready `tag: "opener"` ability.
+- Else, while the live target is above half hp: a ready `tag: "damage"`
+  ability (`lastStand` excluded unless the hero is at/below
+  `DEATH_PANIC_THRESHOLD`).
+- Else, while the hero itself is below half hp: a ready `tag: "defensive"`
+  ability.
+- Else `null` (falls through to the plain attack).
+- A once-a-fight (`cd === "fight"`) FOE-targeted pick (`mark`/`hamstring`/
+  `cutpurse`/`lastStand`) carries `target: hardestFoeIndex(state)` — the
+  live foe with the highest `lvl` (tie → higher `wp`, tie → lowest index);
+  every other pick carries no `target`.
+- `decideAction` checks this at step (h2), between the spell-scoring table
+  and the plain attack fallback — never reached by a Magic User (the
+  function itself gates on `c.cls`).
+
+**Items.** `hardFight(state)` is true when the encounter holds any
+kit-bearing live foe OR any live foe at/above `BOT_TACTICS.hardFoeLvl` (3).
+`chooseCombatItem(state, ctx)`, checked once per in-combat decision:
+
+1. **Heal** — below the flee line, a bag Healing/Xtra Healing potion (Xtra
+   Healing preferred) drunk BEFORE the flee/parley decision (decideAction
+   step a0).
+2. **Buff** — round 1 of a `hardFight`, a bag Speed/Strength/Enlarge potion
+   (in that preference order, skipped once its activation kind is already
+   live) or a ready worn Cloak of Speed — skipped entirely for a Pilfer (a
+   non-heal/full item, which `useItem` would refuse `pilfer`).
+3. **Staff** — a Magic User's ready staff (worn when `"worn" in c`, else
+   bagged — the legacy T-39-04 path) fires a targeted kind (freeze/weaken/
+   stone/fire/gas) at `BOT_TACTICS.staffMinFoes` (2)+ live foes, or
+   `dome`/`heal` below `potionThreshold` (dome also requires no active
+   `c.ward`).
+
+Every candidate passes `itemReady` (covers the death-potion/no-charge/
+cooldown cases structurally) and is skipped when its `itemLabel` sits in
+`ctx.itemBlocked`. `chooseFieldItem(state, ctx)` lights a bag torch
+(`kind === "tool" && use === "light"`) out of combat while `inDark(state)`
+and no `lit` effect is already running — checked after camp. The victory
+loot pile (`state.pendingLoot`) is taken (or left against a full bag) FIRST
+in the out-of-combat chain, before even a pending Joiner — the bot ignored
+this pile entirely since v1.3.
+
+**`BOT_TACTICS` (Claude's discretion, not a verified balance target, kept
+OFF the frozen `Bot:` line):**
+
+| Constant | Value | Consumer |
+|---|---|---|
+| `hardFoeLvl` | 3 | `hardFight` — a live foe at/above this level makes a fight "hard" (buff gate) |
+| `staffMinFoes` | 2 | a worn targeted-kind staff fires only at/above this many live foes |
+| `dotToughMargin` | 1 | `chooseSpell`'s DOT-vs-toughness skip margin (below) |
+| `mapBankRatio` | 0.5 | Map the Floor casts only when banked charges exceed this fraction of `maxCharges` |
+
+**Spells (`chooseSpell`, kind/niche-generic — never a spell name).** Phase
+42 adds two niche-keyed rules to the existing KILL/DAMAGE/DISABLE/HEAL/
+WARD-OPENER tiers (see the table above), plus two opener/field rules:
+
+- **DOT-vs-toughness**: `bestBurstExpected(state)` is the highest
+  `expectedDamage(sp)` over every CASTABLE `niche === "burst"` spell that
+  also carries a `dmg` field (Death has no `dmg` and is excluded) — 0 when
+  none qualify. A castable `niche === "dot"` spell (Acid, Ice) is SKIPPED
+  when `target.wp <= bestBurstExpected(state) + BOT_TACTICS.dotToughMargin`
+  — a DOT is worth its multi-round tail only against a foe tough enough to
+  outlast a burst outright.
+- **Burst-finish**: a castable `niche === "burst"` spell with a `dmg` field
+  whose plain `expected` damage already meets/exceeds the target's current
+  `wp` scores `350 + expected` instead of the usual `300 + expected` — a
+  likely one-shot finish outranks every other DAMAGE-tier pick, but never a
+  KILL-tier spell (400+). Example measured live: a Sorcerer with Fireball
+  (expected 15) and Acid (expected 9, scored ×2 = 18) — at exactly
+  `wp = bestBurstExpected + margin` (16, closed boundary) Acid is skipped
+  and Fireball wins by elimination (score 315); one hp tougher (17) Acid is
+  kept and outscores Fireball's plain 315 with 318.
+- **Lesser Summon opener**: no new code was needed — Lesser Summon's mere
+  presence in the SPELLS table (Phase 40, `kind: "summon"`, `lvl: 1`) makes
+  the pre-existing `bestCastableSummonIdx` (round-1, no ally, charges
+  remain) pick it automatically at level 1 (Summon needs level 2) and
+  Summon automatically once the caster outlevels it (the function already
+  picked the highest-`lvl` castable summon spell).
+- **Map the Floor, once per floor**: out of combat, after the scroll step
+  and before the exit/explore fallback, a Magic User on a floor it hasn't
+  mapped (`state.floor.depth !== ctx.mappedDepth`) with charges to spare
+  (`maxCharges(c) - c.spellsUsed > maxCharges(c) * BOT_TACTICS.mapBankRatio`)
+  casts the castable `kind === "reveal"` spell. `ctx.mappedDepth` is set by
+  `observe`'s new (optional) third argument on the spell's own
+  `floorMapped` event — `observe(ctx, events, stateAfter = null)`; every
+  pre-existing two-argument call site keeps working unchanged, and
+  `playRun` passes the real post-action state.
+
+**The refusal blocks (Rule-1 safety net).** `ctx.abilityBlocked`/
+`ctx.itemBlocked` (both `Set<string>`) block a refused ability key / item
+label for the rest of the encounter (`itemBlocked` also clears on
+`floorChanged` — a torch/staff/cloak refusal doesn't survive a floor change
+either) — a refusal returns with NO state change, so a bot that re-picks
+the same key/label would otherwise loop to `maxActions`. Both sets clear on
+`encounterStarted`. This is the same `ctx.parleyBlocked`/`fleeBlocked`/
+`strikeBlocked` pattern Phase 22's HARN-02 established, extended to the two
+new refusal-shaped surfaces this phase adds.
+
+**Usage tallies and the pick-rate renderer (BAL-02).** Every ability/spell/
+item USE is tallied per run: `tallyUsage(tallies, action, events, before,
+after)` increments `tallies.usage.abilities[key]` on an `abilityUsed`
+event, `tallies.usage.items[itemLabel(item)]` on an `itemUsed` event,
+`tallies.usage.items["tool:" + tool]` on a `toolUsed` event (a rope/ladder
+spend), `tallies.usage.items.scroll` on a `scrollCast` event (a scroll is
+an item use, never a spell use — `readScroll` saves/restores `c.spellsUsed`
+around its own free cast), and `tallies.usage.spells[SPELLS[idx].n]` when a
+`castSpell` action's `after.c.spellsUsed === before.c.spellsUsed + 1` (the
+one signal a cast actually happened — a refused cast never bumps
+`spellsUsed` and is correctly not tallied). `rowFromRun(run).usage` carries
+this straight through; `summarizeRows(rows).usage` aggregates it over
+COMPLETED rows only into `{ abilities, spells, items }`, each a label →
+`{ uses, runs }` map (`runs` = the count of completed rows with ≥ 1 use);
+`rollups`' byClass/bySub/byRace/pooled tables get this for free once
+`summarizeRows` carries it. `tools/class-pass-usage.mjs` (new CLI,
+`--after PATH [--deep PATH]`) renders `formatUsageMarkdown(report)` —
+four Markdown sections (`### Pick-rates — abilities`, `### Pick-rates —
+spells`, `### Pick-rates — items`, `### Top picks by sub-class`), every
+rate fixed to 2 decimals, 0.00 rather than NaN when nothing was used — so
+BAL-02's "pick-rates for every new spell/ability" is a machine-rendered
+number, never retyped.
+
+#### The 143×3 tactics smoke
+
+A 3-seed smoke is a DIRECTION check — reachability proof for Plan 04's
+AFTER matrix, never a tuning verdict, and never a substitute for the Phase
+27 human DR round. Within-noise-vs-a-40-seed-pin is UNKNOWABLE at 3 seeds;
+read the POOLED row only (GEAR-BALANCE.md's own precedent for a per-cell
+noise warning applies here too).
+
+**Command:** `node tools/tune-classes.mjs --seeds 3 --workers 4
+--max-actions 5000 --out docs/class-pass/v15-tactics-smoke.json` (143 cells
+× 3 seeds = 429 runs). **Wall time:** 67.8s. **Engine commit at run time:**
+`baf6db7` (this plan's own Task 1+2 commits — `tools/lib/`+`tools/`+`test/`
+only, no engine/content/src/shell bytes since the v1.5 BEFORE pin
+`e69ff07`).
+
+| Measure | JSON path | v1.5 BEFORE (e69ff07, 143×40) | v1.5 tactics smoke (baf6db7, 143×3) |
+|---|---|---|---|
+| n (runs) | rollups.pooled.n | 5720 | 429 |
+| meanDepth | rollups.pooled.meanDepth | 3.75 | 3.59 |
+| p50Depth | rollups.pooled.p50Depth | 4 | 3 |
+| p90Depth | rollups.pooled.p90Depth | 6 | 5 |
+| reach5 % | rollups.pooled.reach5 | 30.6 | 24.7 |
+| reach10 % | rollups.pooled.reach10 | 0.7 | 0.5 |
+| reach20 % | rollups.pooled.reach20 | 0.1 | 0.0 |
+| meanKills | rollups.pooled.meanKills | 8.1 | 7.88 |
+| meanLevel | rollups.pooled.meanLevel | 2.47 | 2.44 |
+| stuck total | sum of cells[].stuck | 0 of 5720 | 0 of 429 |
+| top death causes | rollups.pooled.topCauses | starved in the dark, cut down by a Poltergeist, cut down by a Werebeast | cut down by a Poltergeist, starved in the dark, cut down by a Werebeast |
+
+**`node tools/class-pass-diff.mjs --gate --after
+docs/class-pass/v15-tactics-smoke.json`** (exit 0): `cannot-act cells: 0 of
+143` — every cell survived to at least 0.5 mean kills, zero stuck, and the
+new tactics (abilities/items/spells all on, plus the shipped run rules) did
+not introduce a single dead-air sub-class at 429 runs.
+
+The `reach20`/`reach10` dip vs the BEFORE pin (0.0%/0.5% vs 0.1%/0.7%) is
+exactly the kind of low-sample noise a 3-seed smoke cannot distinguish from
+a real shift — `reach20` needs far more than 429 runs to read reliably at
+this magnitude. This is not actioned; Plan 04's full 40-seed AFTER matrix
+is the real comparison.
+
+`node tools/class-pass-usage.mjs --after docs/class-pass/v15-tactics-smoke.json`
+(abilities/spells/items tables only — the per-sub "Top picks" table at 40
+seeds is Plan 04's business):
+
+```
+### Pick-rates — abilities
+| Ability | Class | Uses | Runs used | Eligible runs | Uses / eligible run |
+| --- | --- | --- | --- | --- | --- |
+| Kata | Fighter | 0 | 0 | 141 | 0.00 |
+| Death Touch | Fighter | 86 | 8 | 141 | 0.61 |
+| Sidestep | Fighter | 0 | 0 | 141 | 0.00 |
+| Pommel Strike | Fighter | 497 | 92 | 141 | 3.52 |
+| Battle Roar | Fighter | 33 | 8 | 141 | 0.23 |
+| Second Wind | Fighter | 60 | 39 | 141 | 0.43 |
+| Sweep | Fighter | 281 | 39 | 141 | 1.99 |
+| Brace | Fighter | 139 | 37 | 141 | 0.99 |
+| Riposte | Fighter | 4 | 3 | 141 | 0.03 |
+| Taunt | Fighter | 18 | 10 | 141 | 0.13 |
+| Overhead Blow | Fighter | 667 | 84 | 141 | 4.73 |
+| Last Stand | Fighter | 6 | 4 | 141 | 0.04 |
+| Silent Step | Thief | 187 | 18 | 144 | 1.30 |
+| Feint | Thief | 397 | 47 | 144 | 2.76 |
+| Dirty Trick | Thief | 331 | 54 | 144 | 2.30 |
+| Smoke | Thief | 63 | 32 | 144 | 0.44 |
+| Cutpurse | Thief | 321 | 71 | 144 | 2.23 |
+| Poisoned Edge | Thief | 162 | 48 | 144 | 1.13 |
+| Hamstring | Thief | 170 | 32 | 144 | 1.18 |
+| Mark | Thief | 42 | 16 | 144 | 0.29 |
+
+### Pick-rates — spells
+| Spell | Uses | Runs used | Eligible runs | Uses / eligible run |
+| --- | --- | --- | --- | --- |
+| Heal | 0 | 0 | 144 | 0.00 |
+| Shield | 149 | 27 | 144 | 1.03 |
+| Strength | 21 | 1 | 144 | 0.15 |
+| Doze | 3 | 1 | 144 | 0.02 |
+| Freeze | 1188 | 104 | 144 | 8.25 |
+| Map the Floor | 187 | 56 | 144 | 1.30 |
+| Mirror Self | 105 | 29 | 144 | 0.73 |
+| Stun | 47 | 14 | 144 | 0.33 |
+| Weaken | 20 | 9 | 144 | 0.14 |
+| Acid | 16 | 4 | 144 | 0.11 |
+| Stupidity | 0 | 0 | 144 | 0.00 |
+| Blind | 0 | 0 | 144 | 0.00 |
+| Shrink | 0 | 0 | 144 | 0.00 |
+| Ice | 0 | 0 | 144 | 0.00 |
+| Earthquake | 0 | 0 | 144 | 0.00 |
+| Noxious Vapor | 0 | 0 | 144 | 0.00 |
+| Fireballs | 0 | 0 | 144 | 0.00 |
+| Petrify | 0 | 0 | 144 | 0.00 |
+| Insane | 0 | 0 | 144 | 0.00 |
+| Summon | 148 | 31 | 144 | 1.03 |
+| Fireball | 0 | 0 | 144 | 0.00 |
+| Major Heal | 0 | 0 | 144 | 0.00 |
+| Bubble | 0 | 0 | 144 | 0.00 |
+| Sense Danger | 0 | 0 | 144 | 0.00 |
+| Turn Walking Dead | 1 | 1 | 144 | 0.01 |
+| Plane Gate | 0 | 0 | 144 | 0.00 |
+| Sense Presence | 0 | 0 | 144 | 0.00 |
+| Phantom Host | 112 | 19 | 144 | 0.78 |
+| Lightning | 0 | 0 | 144 | 0.00 |
+| Regeneration | 0 | 0 | 144 | 0.00 |
+| Mangle | 0 | 0 | 144 | 0.00 |
+| Death | 0 | 0 | 144 | 0.00 |
+| Lesser Summon | 257 | 47 | 144 | 1.78 |
+
+### Pick-rates — items
+| Item | Uses | Runs used | Eligible runs | Uses / eligible run |
+| --- | --- | --- | --- | --- |
+| scroll | 235 | 144 | 429 | 0.55 |
+| tool:torch | 45 | 43 | 429 | 0.10 |
+| tool:rope | 21 | 20 | 429 | 0.05 |
+| potion:full | 15 | 15 | 429 | 0.03 |
+| Cloak of Speed | 10 | 9 | 429 | 0.02 |
+| Walnut Staff | 10 | 3 | 429 | 0.02 |
+| potion:heal | 10 | 10 | 429 | 0.02 |
+| potion:strength | 10 | 10 | 429 | 0.02 |
+| Birch Staff | 5 | 2 | 429 | 0.01 |
+| Cedar Staff | 5 | 4 | 429 | 0.01 |
+| potion:speed | 5 | 5 | 429 | 0.01 |
+| Poplar Staff | 4 | 2 | 429 | 0.01 |
+| potion:enlarge | 3 | 3 | 429 | 0.01 |
+| Pine Staff | 2 | 1 | 429 | 0.00 |
+| tool:ladder | 2 | 2 | 429 | 0.00 |
+| Oak Staff | 1 | 1 | 429 | 0.00 |
+```
+
+Every non-zero row above proves that policy is REACHABLE in real play — the
+whole point of the smoke. Rows reading 0 at 3 seeds (e.g. Kata, Ice,
+Fireball, Mangle, Death, every level-4+ offense spell) are low-sample
+artifacts of a bot that rarely survives past floor 5-6 at this seed count
+(the DOT-vs-toughness/burst-finish rules and higher-level spell school
+gates are all real code paths, exercised by the unit tests above and by
+`tallyUsage`'s own dedicated tests — a 3-seed sample simply never rolls the
+right foe/level combination for every one of them) — not evidence any rule
+is unreachable. Plan 04's 40-seed AFTER matrix is the real pick-rate
+reading BAL-02 needs.
+
 ## How to reproduce
 
 Both runs below were produced from these exact command lines against the

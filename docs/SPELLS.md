@@ -751,8 +751,10 @@ exactly as Phases 34-39 have each left their own classic duplicates.
 ## Out of scope / next
 
 - Bot casting tactics by niche (choosing WHICH spell to cast for a given
-  situation) — Phase 42; `tools/lib/tuning-bot.mjs#chooseSpell` stays
-  kind-generic this phase, already able to cast every reshaped kind.
+  situation) — landed (Phase 42): `chooseSpell` now reads `sp.niche` for a
+  DOT-vs-toughness skip and a burst-finish score, on top of the kind-generic
+  scoring this phase already shipped; see `docs/CLASS-PASS.md`
+  `### Phase 42 tactics (BAL-01 second half)`.
 - Darkness/light interplay with the reveal window (Phase 41's render-time
   `seen` filter) — orthogonal to this phase's `spellSeen` provenance model,
   documented in Plan 04's own "Phase 41 note" above.

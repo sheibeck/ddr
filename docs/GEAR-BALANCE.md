@@ -305,13 +305,12 @@ store exactly as before Phase 39. Because the policy reads the engine's OWN
 `weaponUpgradeDelta`/`canEquip*`/`armorBulk` functions, a buy it chooses is
 never refused `notBetter` by the engine's own `takeItem` (T-39-04).
 
-**Deferred to Phase 42 (BAL-02 prep):** item-USE tactics (when to pop a
-potion/staff/scroll mid-run) and any bot awareness of the GEAR-02
-duration/cooldown/charge model or the GEAR-05 one-shot tools — this plan
-only teaches the bot to BUY/EQUIP under the new weapon/armor axes, so the
-smoke below is honest. `tools/lib/tuning-bot.mjs`'s own cell rows carry no
-"bought" counter today — a Phase 42 harness ask, not added here (out of
-this plan's own file list).
+**Landed (Phase 42):** item-USE tactics (when to pop a potion/staff/scroll
+mid-run) and bot awareness of the GEAR-02 duration/cooldown/charge model
+and the GEAR-05 one-shot tools — see `docs/CLASS-PASS.md`
+`### Phase 42 tactics (BAL-01 second half)`. `tools/lib/tuning-bot.mjs`'s
+own cell rows still carry no "bought" counter — the closed gap was the
+item-USE timing, not a store-purchase tally.
 
 ## Smoke — 143 cells × 3 seeds vs the v1.5 BEFORE pin
 
@@ -687,10 +686,17 @@ dispatch, avoiding a wasted decline-then-reroll round trip), NOT a timing
 tactic. The bot does not buy or carry a tool today
 (`chooseStorePurchase` only scans `buyWeapon`/`buyArmor`/`buyPremium`
 lines, never `giveTool`), so this handler is currently reachable only via a
-hand-built pending state in a unit test — it never fires in a real
-400-seed bot run yet. **Deferred to Phase 42** (bot tactics): teaching the
-bot to actually buy/carry rope/ladder/torch, and any WHEN-to-use-it timing
-beyond this one always-answer-if-carried rule.
+hand-built pending state in a unit test in THIS plan's own scope, but is
+now real and reachable in a live bot run — see `docs/CLASS-PASS.md`
+`### Phase 42 tactics (BAL-01 second half)`: `chooseFieldItem` lights a bag
+torch while `inDark`, and the 143×3 tactics smoke measured
+`tool:torch`/`tool:rope`/`tool:ladder` all with non-zero uses. The bot
+still does not BUY a tool from the store (`chooseStorePurchase` scans only
+`buyWeapon`/`buyArmor`/`buyPremium` lines) — every torch/rope/ladder used
+in that smoke came from loot/find, never a purchase; a store-buy policy for
+tools remains unaddressed, tracked as a follow-up, not this note's own
+scope (this note's own ask — WHEN-to-use-it timing for an already-carried
+tool — is closed).
 
 ## Chips and row states — Plan 05
 
@@ -821,9 +827,11 @@ proposed-milestone-shell-cleanup.md`), not this phase's.
 - Spells and scrolls sharing the same `c.timers` model — Phase 40.
 - The torch vs. the map reveal/timed-light rework — Phase 41 (this phase's
   torch only ever touches `c.darkFor`, never the reveal-radius model).
-- Tuning-bot tactics for buying/carrying/timing a tool, and for popping an
-  item mid-run at the right moment — Phase 42 (BAL-02 prep), before the
-  consolidated AFTER matrix.
+- Tuning-bot tactics for timing a carried tool and for popping an item
+  mid-run at the right moment — landed: see `docs/CLASS-PASS.md`
+  `### Phase 42 tactics (BAL-01 second half)`. Buying/carrying a tool from
+  the store specifically (a `chooseStorePurchase` extension) remains
+  unaddressed — a follow-up, not this phase's scope.
 - The cleanup milestone's deletion of the classic script's now-dead
   `strikeDie()`/`toHit()`/`useItem()` duplicates (`.planning/
   proposed-milestone-shell-cleanup.md`).
