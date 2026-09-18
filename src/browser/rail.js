@@ -89,6 +89,21 @@ export const RAIL_COPY = Object.freeze({
     full: "Your bag is full ({have}/{slots}). Drop something to make room, or leave it.",
   },
   climb: { retry: "CLIMB IT" },
+  // Phase 39 (GEAR-05), Plan 05 — the hazard pre-roll decision card (the
+  // pending-tool choice at a fresh wall/gorge tile) and the retry card's
+  // added tool button; RAIL_COPY.climb.retry (above) stays the plain
+  // CLIMB IT fallback when no `feat` is known. `dark.torch` is the
+  // Darkness card's USE TORCH offer.
+  hazard: {
+    title: "A CHOICE",
+    ladder: "USE LADDER",
+    rope: "USE ROPE",
+    climb: "CLIMB IT",
+    leap: "LEAP IT",
+    wall: "A wall. You could climb it. You could also not.",
+    crevice: "A crevice. Leaping is traditional. Rope is smarter.",
+  },
+  dark: { torch: "USE TORCH" },
   quit: { title: "BACK AGAIN TO QUIT", line: "Press back once more and this delve is abandoned. Nobody will write it down." },
   // Phase 37 (GEAR-04): the one-shot worn-reconciliation copy —
   // wornReconcileCard (below) builds the actual card; `title` is reused

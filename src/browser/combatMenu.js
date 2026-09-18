@@ -13,7 +13,7 @@
 // storage, no rng draws, no mutation of `state` anywhere in this file.
 
 import { SPELLS, ABILITY_BY_ID } from "../../content/index.js";
-import { characterSheetViewModel } from "./viewModels.js";
+import { characterSheetViewModel, itemRowState } from "./viewModels.js";
 import { canCast, WORN_SLOTS } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
@@ -219,20 +219,24 @@ export function combatMenuViewModel(state) {
 
   // ─── slot 3: ITEMS ──────────────────────────────────────────────────────
   const hasScroll = (c.scrolls || 0) > 0;
+  // Phase 39 (GEAR-02/GEAR-05): the cost text for every carried/worn row
+  // comes from viewModels.js#itemRowState — the ONE row-state rule (READY /
+  // "N SQ" effect / "cd N SQ" cooldown / "k/max · N SQ" staff charges),
+  // never the retired counter-based item fields. Every activatable row stays `enabled: true`
+  // (the Phase 38 ability-row ruling) — a tap on cooldown dispatches
+  // exactly like a ready one, and the engine's own useRefused {reason:
+  // "cooldown"|"recharging"} lands the canon refusal line in the fight log.
   const carriedRows = (c.items || [])
     .map((it, i) => ({ it, i }))
     .filter(({ it }) => it && (it.kind === "potion" || it.use))
-    .map(({ it, i }) => {
-      const cd = it.every ? Math.max(0, it.every - (state.steps - (it.usedAt ?? -99999))) : 0;
-      return {
-        id: `item-${i}`,
-        label: String(it.n).toUpperCase(),
-        cost: cd > 0 ? `${cd} SQ` : "",
-        desc: it.txt || "",
-        enabled: cd === 0,
-        dispatch: { type: "useItem", i },
-      };
-    });
+    .map(({ it, i }) => ({
+      id: `item-${i}`,
+      label: String(it.n).toUpperCase(),
+      cost: itemRowState(state, it).text,
+      desc: it.txt || "",
+      enabled: true,
+      dispatch: { type: "useItem", i },
+    }));
   // Phase 37 (GEAR-03): worn activatables must be worn to work in the new
   // model, so a worn staff/cloak/jewel must be reachable from the fight's
   // ITEMS submenu — the shell's COMBAT_DISPATCH forwards `slot` (Plan 04).
@@ -240,13 +244,12 @@ export function combatMenuViewModel(state) {
   // to before this phase.
   const wornRows = WORN_SLOTS.filter((slot) => c.worn && c.worn[slot] && c.worn[slot].use).map((slot) => {
     const it = c.worn[slot];
-    const cd = it.every ? Math.max(0, it.every - (state.steps - (it.usedAt ?? -99999))) : 0;
     return {
       id: `worn-${slot}`,
       label: String(it.n).toUpperCase(),
-      cost: cd > 0 ? `${cd} SQ` : "",
+      cost: itemRowState(state, it).text,
       desc: it.txt || "",
-      enabled: cd === 0,
+      enabled: true,
       dispatch: { type: "useItem", slot },
     };
   });

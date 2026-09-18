@@ -25,9 +25,12 @@ import { ABILITY_BY_ID } from "../../content/index.js";
 import { startEffect, startCooldown } from "../../engine/effects.js";
 
 // Phase 37 (GEAR-03): a Poplar Staff (worn activatable), used as the fixed
-// staff literal across the new "worn activatables" section below.
+// staff literal across the "worn activatables" section below. Phase 39
+// (GEAR-02): `charges` (the real content pool — Poplar's own max is 3) is
+// the ready/recharging gate now, not `every`/`usedAt` — a full pool with no
+// planted `c.timers` "charges:Poplar Staff" record reads READY by default.
 function fixedWornStaff(overrides = {}) {
-  return { n: "Poplar Staff", kind: "staff", use: "heal", every: 250, usedAt: 0, txt: "1d20+10 wp to up to 6", ...overrides };
+  return { n: "Poplar Staff", kind: "staff", use: "heal", charges: 3, txt: "1d20+10 wp to up to 6", ...overrides };
 }
 
 // ─── fixed* helpers, copied verbatim from test/unit/round-card-worst-case.test.js ──
@@ -191,14 +194,18 @@ test("Thief (Pilfer): FLEE carries the +5 Thief bonus; a tracked round-1 combat 
 
 // ─── ITEMS: potion always present, scroll conditional, carried items, cooldowns ─
 
-test("ITEMS: potion + scroll + a carried item on cooldown, title and usable count", () => {
+test("ITEMS: potion + scroll + a carried item recharging, title and usable count", () => {
+  // Phase 39 (GEAR-02): a real content staff (Pine Staff, pool 1) reads its
+  // row state through itemRowState — a planted "charges:Pine Staff"
+  // c.timers cooldown, not it.every/usedAt.
   const c = {
     potions: 2,
     scrolls: 1,
     wp: 40,
-    items: [{ n: "Staff of Fire", kind: "staff", use: "fire", every: 10, usedAt: 0, txt: "a bolt" }],
+    items: [{ n: "Pine Staff", kind: "staff", use: "fire", charges: 0, txt: "a bolt" }],
+    timers: { "charges:Pine Staff": { cadence: "squares", left: 94, phase: "cooldown" } },
   };
-  const state = fixedState({ c, steps: 4, combat: fixedCombat([]) });
+  const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
 
   assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 3 USABLE");
@@ -206,7 +213,10 @@ test("ITEMS: potion + scroll + a carried item on cooldown, title and usable coun
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "2 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: true, dispatch: { type: "drinkPotion" } },
     { id: "scroll", label: "SCROLL", cost: "1 LEFT", desc: COMBAT_MENU_COPY.scrollDesc, enabled: true, dispatch: { type: "readScroll" } },
-    { id: "item-0", label: "STAFF OF FIRE", cost: "6 SQ", desc: "a bolt", enabled: false, dispatch: { type: "useItem", i: 0 } },
+    // Phase 38 ruling, reused here (Rule: a row on cooldown stays tappable):
+    // enabled: true even while recharging — a tap reaches the engine's own
+    // "recharging" refusal line.
+    { id: "item-0", label: "PINE STAFF", cost: "0/1 · 94 SQ", desc: "a bolt", enabled: true, dispatch: { type: "useItem", i: 0 } },
   ]);
 });
 
@@ -238,40 +248,41 @@ test("ITEMS: nothing usable at all collapses to one disabled NOTHING TO USE row"
 
 // ─── Phase 37 (GEAR-03): worn activatables ─────────────────────────────────
 
-test("ITEMS: a worn activatable staff appears after the potion row; a passive worn ring is not listed", () => {
+test("ITEMS: a worn activatable staff recharging appears after the potion row; a passive worn ring is not listed", () => {
   const c = {
     potions: 0, scrolls: 0, wp: 40, items: [],
     worn: {
-      staff: fixedWornStaff(),
+      staff: fixedWornStaff({ charges: 1 }),
       ring: { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
     },
+    timers: { "charges:Poplar Staff": { cadence: "squares", left: 17, phase: "cooldown" } },
   };
-  const state = fixedState({ c, steps: 4, combat: fixedCombat([]) });
+  const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
   assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
   assert.equal(vm.actions[2].sub, "1 usable");
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
-    { id: "worn-staff", label: "POPLAR STAFF", cost: "246 SQ", desc: "1d20+10 wp to up to 6", enabled: false, dispatch: { type: "useItem", slot: "staff" } },
+    { id: "worn-staff", label: "POPLAR STAFF", cost: "1/3 · 17 SQ", desc: "1d20+10 wp to up to 6", enabled: true, dispatch: { type: "useItem", slot: "staff" } },
   ]);
 });
 
-test("ITEMS: a worn activatable with no usedAt yet is ready (empty cost, enabled)", () => {
-  const c = { potions: 0, scrolls: 0, items: [], worn: { staff: fixedWornStaff({ usedAt: undefined }) } };
+test("ITEMS: a worn activatable staff at full charges (no recharge record) reads READY", () => {
+  const c = { potions: 0, scrolls: 0, items: [], worn: { staff: fixedWornStaff() } };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
   const row = vm.submenus.items.rows.find((r) => r.id === "worn-staff");
-  assert.equal(row.cost, "");
+  assert.equal(row.cost, "READY");
   assert.equal(row.enabled, true);
 });
 
 test("ITEMS: a worn row is appended AFTER any carried rows", () => {
   const c = {
     potions: 0, scrolls: 0,
-    items: [{ n: "Staff of Fire", kind: "staff", use: "fire", every: 10, usedAt: 0, txt: "a bolt" }],
-    worn: { cloak: { n: "Cloak of Invisibility", kind: "cloak", use: "invis", every: 100, usedAt: 0, txt: "invisible" } },
+    items: [{ n: "Pine Staff", kind: "staff", use: "fire", charges: 1, txt: "a bolt" }],
+    worn: { cloak: { n: "Cloak of Invisibility", kind: "cloak", use: "invis", txt: "invisible" } },
   };
-  const state = fixedState({ c, steps: 0, combat: fixedCombat([]) });
+  const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
   assert.deepEqual(vm.submenus.items.rows.map((r) => r.id), ["potion", "item-0", "worn-cloak"]);
 });

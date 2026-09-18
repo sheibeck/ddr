@@ -110,10 +110,15 @@ test("CMB-02: renderCarriedList's use branch no longer gates the Use button on i
   assert.match(CODE, /it\.kind === "potion" \|\| it\.use\) li\.appendChild\(mkBtn\("Use"/);
 });
 
-test("Phase 34: the ITEMS/ABILITIES rows never hide on readiness — combatMenu.js lists the Sing row and carried usables with enabled flags, never filters them", () => {
+test("Phase 34/39: the ITEMS/ABILITIES rows never hide on readiness — combatMenu.js lists the Sing row and carried usables with enabled flags, never filters them", () => {
   const combatMenuSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "combatMenu.js"), "utf8");
   assert.match(combatMenuSrc, /enabled: singReady/);
-  assert.match(combatMenuSrc, /enabled: cd === 0/);
+  // Phase 39 (GEAR-02/GEAR-05): a carried/worn row's readiness moved from a
+  // local `cd === 0` gate onto viewModels.js#itemRowState's cost TEXT — the
+  // row itself stays `enabled: true` always (the Phase 38 ability-row
+  // ruling: a tap on cooldown reaches the engine's own named refusal).
+  assert.match(combatMenuSrc, /cost: itemRowState\(state, it\)\.text/);
+  assert.doesNotMatch(combatMenuSrc, /enabled: cd === 0/);
   assert.doesNotMatch(combatMenuSrc, /\.filter\(\(it\) => .*itemReady/);
   assert.doesNotMatch(combatMenuSrc, /songReady\(\) \?/);
 });

@@ -7,11 +7,11 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
-import { isReady } from "../../engine/effects.js";
+import { isReady, remaining } from "../../engine/effects.js";
 
 /**
  * skillTableFor(cls) — the special-skill description pool for a class
@@ -230,6 +230,72 @@ export function bagUsage(c) {
   const cap = bagCap(c);
   const slots = cap === Infinity ? null : cap;
   return { have, slots, full: !canStow(c), text: slots ? `${have} / ${slots}` : have ? `${have}` : "" };
+}
+
+/**
+ * ITEM_STATE_COPY — Phase 39 (GEAR-02/GEAR-05): every literal itemRowState
+ * (below) emits — a frozen object like COMBAT_MENU_COPY/RAIL_COPY elsewhere
+ * in this codebase, so the voice scan can walk it as a single leaf group.
+ */
+export const ITEM_STATE_COPY = Object.freeze({
+  ready: "READY",
+  squares: "{n} SQ",
+  square: "1 SQ",
+  cooling: "cd {n} SQ",
+  charges: "{k}/{max} · {n} SQ",
+});
+
+/**
+ * itemRowState(state, it) — Phase 39 (GEAR-02/GEAR-05): the ONE row-state
+ * rule for every carried/worn item — the Gear tab's worn/carried rows and
+ * the ITEMS submenu (combatMenu.js) both read it, mirroring the Phase 38
+ * ability-row precedent (READY/N ROUNDS/ONCE A FIGHT · USED lives in
+ * exactly one place). Returns `{ text, kind, remaining? }`:
+ *   - not activatable at all (no `use`, not a potion — a weapon/armor/rope/
+ *     ladder/passive jewel): `{ text: "", kind: "none" }`
+ *   - a one-shot consumable (a potion, or the torch — `kind: "tool"` WITH a
+ *     `use`; rope/ladder carry no `use` and are already caught by the first
+ *     branch): `{ text: "", kind: "consumable" }`
+ *   - a duration+cooldown jewelry/cloak/staff with NO resolvable activation
+ *     at all (a tampered/unknown item name — `activationFor` returns null):
+ *     `{ text: ITEM_STATE_COPY.ready, kind: "ready" }`
+ *   - a staff (`act.charges` defined): READY when its current charge count
+ *     is at the pool max AND no recharge record is counting down; otherwise
+ *     `"{k}/{max} · {n} SQ"` (k may be 0) via the `charges:<key>` record
+ *   - everything else (duration+cooldown jewelry/cloaks): READY with no
+ *     `item:<key>` record; `"{n} SQ"` (singular `"1 SQ"`) mid-effect;
+ *     `"cd {n} SQ"` while cooling
+ * Reads `state.c.timers` ONLY through `engine/effects.js#remaining`/`isReady`
+ * and the item's own activation via `engine/derived.js#activationFor` —
+ * NEVER the retired counter-based item cooldown fields. Pure, no
+ * rng, no mutation, never throws on a legacy `c` with no `timers` map.
+ */
+export function itemRowState(state, it) {
+  const c = (state && state.c) || {};
+  if (!it || (!it.use && it.kind !== "potion")) return { text: "", kind: "none" };
+  if (it.kind === "potion" || it.kind === "tool") return { text: "", kind: "consumable" };
+
+  const act = activationFor(it);
+  if (!act) return { text: ITEM_STATE_COPY.ready, kind: "ready" };
+
+  if (act.charges !== undefined) {
+    const max = act.charges;
+    const charges = Number.isInteger(it.charges) ? it.charges : max;
+    const left = remaining(c, chargesTimerId(it));
+    if (charges >= max || left <= 0) return { text: ITEM_STATE_COPY.ready, kind: "ready" };
+    const text = ITEM_STATE_COPY.charges.replace("{k}", charges).replace("{max}", max).replace("{n}", left);
+    return { text, kind: "charges", remaining: left };
+  }
+
+  const id = itemTimerId(it);
+  if (isReady(c, id)) return { text: ITEM_STATE_COPY.ready, kind: "ready" };
+  const rec = c.timers && c.timers[id];
+  const left = remaining(c, id);
+  if (rec && rec.phase === "effect") {
+    const text = left === 1 ? ITEM_STATE_COPY.square : ITEM_STATE_COPY.squares.replace("{n}", left);
+    return { text, kind: "effect", remaining: left };
+  }
+  return { text: ITEM_STATE_COPY.cooling.replace("{n}", left), kind: "cooldown", remaining: left };
 }
 
 /**
