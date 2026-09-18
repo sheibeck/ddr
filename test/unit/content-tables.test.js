@@ -74,9 +74,16 @@ test("EPITAPHS.abandon and CAUSE_TEXT.abandon are distinct from every combat/haz
   assert.notEqual(CAUSE_TEXT.abandon, CAUSE_TEXT.combat);
 });
 
-test("WEAPONS: Axe/Bastard Sword/Dagger dice-notation matches the prototype's rolls", () => {
+// Phase 39 (GEAR-01, DELIBERATE RULES CHANGE): the weapon table was
+// re-diced/re-priced to make room for the need/crit axes (39-01-PLAN.md) —
+// Axe and Dagger's dice are unchanged from the prototype; Bastard Sword's
+// dice moved from 2d6 to 2d8+1 (a genuine rebalance, not an extraction
+// error). See content/weapons.js's header comment and
+// test/parity/FIXTURE-INVENTORY.md's "Phase 39: gear axes" section for the
+// full before/after ledger.
+test("WEAPONS: Axe/Bastard Sword/Dagger dice-notation (Bastard Sword re-diced in Phase 39)", () => {
   assert.deepStrictEqual(WEAPONS["Axe"].dice, { n: 1, sides: 6, bonus: 0 });
-  assert.deepStrictEqual(WEAPONS["Bastard Sword"].dice, { n: 2, sides: 6, bonus: 0 });
+  assert.deepStrictEqual(WEAPONS["Bastard Sword"].dice, { n: 2, sides: 8, bonus: 1 });
   assert.deepStrictEqual(WEAPONS["Dagger"].dice, { n: 1, sides: 6, bonus: 0 });
   assert.equal(WEAPONS["Dagger"].halve, true);
 });

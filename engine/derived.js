@@ -497,19 +497,162 @@ export function revealRadius(state) {
 }
 
 /**
- * toHit(state) — the die value the player needs to land a blow. Reads state.c,
- * state.combat (inspired) and state.floor (darkness); ports mazeworld.html
- * toHit() (lines 1452-1462).
+ * classNeed(c) — the class/race/sub part of the player's to-hit need, with NO
+ * weapon, combat, or darkness term. Byte-identical arithmetic to toHit(state)'s
+ * former first four lines (mazeworld.html toHit(), lines 1452-1462): Fighter
+ * 5 / Thief 4 / Magic User 3 base, Elves floor at 5 whatever their class,
+ * Acrobat strikes as a fighter with the dagger (5), Cleric floors at 4.
+ * Factored out (Phase 39, GEAR-01) so expectedStrike below can compute a
+ * weapon's need WITHOUT a live `state` (a fresh character sheet, not yet
+ * wielding anything, is enough). Pure, no rng.
  */
-export function toHit(state) {
-  const c = state.c;
+export function classNeed(c) {
   const R = RACES[c.race];
   let h = CLASSES[c.cls].toHit;
   if (R.toHit) h = Math.max(h, R.toHit); // Elves strike at 5 whatever their class
   if (c.sub === "Acrobat") h = 5; // strikes as a fighter with the dagger
   if (c.sub === "Cleric") h = Math.max(h, 4); // Clerics roll 4, not 3
+  return h;
+}
+
+/**
+ * weaponNeedMod(x) — Phase 39 (GEAR-01): a weapon's to-hit NEED modifier —
+ * `x` is either a weapon base name (string) or a character object (reads
+ * `x.weapon`). Returns `WEAPONS[base].need` (an integer in {-2,-1,0,1}), or 0
+ * for "Fists"/an unrecognized base — the to-hit is a LOW range (a strike
+ * lands on roll <= need), so this modifier is added directly to the need: a
+ * light weapon's `need: +1` raises the target number (easier to hit), a
+ * heavy weapon's `need: -1`/`-2` lowers it (harder to hit) — the SAME
+ * direction the Phase 31 `afraidNeed` penalty already shrinks the need in.
+ * Pure, no rng.
+ */
+export function weaponNeedMod(x) {
+  const base = typeof x === "string" ? x : x && x.weapon;
+  const w = WEAPONS[base];
+  return w ? w.need || 0 : 0;
+}
+
+/**
+ * weaponCrit(c) — Phase 39 (GEAR-01): the die-roll range (1 or 2) that
+ * doubles the character's own weapon damage — `WEAPONS[c.weapon].crit`, or 1
+ * for an unrecognized/missing weapon (never throws on a tampered save's
+ * `c.weapon` name). Pure, no rng.
+ */
+export function weaponCrit(c) {
+  const w = c && WEAPONS[c.weapon];
+  return w ? w.crit || 1 : 1;
+}
+
+/**
+ * armorBulk(c) — Phase 39 (GEAR-01): the character's currently-worn armor's
+ * `bulk` axis (0, 1, or 2) — resolved by `c.armor`'s display NAME against
+ * ARMORS, so "Nothing" and a Warded piece (which sets `c.armor` to the base
+ * armor's own name via takeItem) both resolve correctly. 0 for an
+ * unrecognized/missing armor name (never throws on a tampered save). Added
+ * to the climb/leap roll comparison (engine/movement.js), subtracted from
+ * the flee roll and gating the Thief Stealth/backstab "heavy armor" checks
+ * at `>= 2` (engine/combat.js). Pure, no rng.
+ */
+export function armorBulk(c) {
+  const a = ARMORS.find((x) => x.name === (c && c.armor));
+  return a ? a.bulk : 0;
+}
+
+/**
+ * weaponDiceMean(w) — Phase 39 (GEAR-01), module-private: the exact expected
+ * value of a weapon's dice notation, halve-aware. For a non-halved weapon
+ * this is the closed form `n * (sides + 1) / 2 + bonus` (the standard dN
+ * mean). For a halved weapon (Dagger/Whip today — always a single d6 in this
+ * content) the halving (`Math.ceil((sum of dice + bonus) / 2)`, exactly what
+ * weaponDamage/rollDice apply at roll time) is non-linear, so this
+ * enumerates every face combination of the `n` dice and averages the ceiled
+ * result — exact, not an approximation (cheap: `sides^n` combinations, and
+ * every halve weapon in this content has `n === 1`). Pure, no rng.
+ */
+function weaponDiceMean(w) {
+  if (!w) return 0;
+  const { n, sides, bonus = 0 } = w.dice;
+  if (!w.halve) return (n * (sides + 1)) / 2 + bonus;
+  let total = 0;
+  let count = 0;
+  const walk = (i, sum) => {
+    if (i === n) {
+      total += Math.ceil((sum + bonus) / 2);
+      count++;
+      return;
+    }
+    for (let f = 1; f <= sides; f++) walk(i + 1, sum + f);
+  };
+  walk(0, 0);
+  return total / count;
+}
+
+/**
+ * expectedStrike(c, base, bonus, prof) — Phase 39 (GEAR-01): the ONE
+ * "how good is this weapon for this character, right now" number — expected
+ * damage PER SWING, folding together the chance to hit, the chance to crit,
+ * and the average damage roll. This is the shared arithmetic
+ * engine/items.js#weaponUpgradeDelta (and, through it, takeItem and
+ * src/browser/viewModels.js#lootCompare) reads instead of comparing raw max
+ * damage — a heavy weapon's lower hit chance and a light weapon's higher
+ * crit chance both show up in this ONE number.
+ *
+ * `base` is a WEAPONS key (not necessarily `c.weapon` — a candidate item's
+ * base name); `bonus`/`prof` are the enchantment/proficiency terms that live
+ * on the ITEM/character being evaluated (weaponDamage's `c.magicWpn`/
+ * `c.prof`), passed explicitly so this can evaluate a candidate item OR the
+ * currently-wielded weapon with the same call shape.
+ *
+ * need = classNeed(c) + weaponNeedMod(base), floored at 1 (never negative —
+ * an already-impossible need cannot go lower). hitP = need/dieN, capped at 1.
+ * critP = 0 for a noCrit character (Guard/Soldier/eff("noCrit")), else
+ * min(hitP, weaponCrit/dieN) — a crit is never MORE likely than a hit.
+ * `flat` mirrors weaponDamage's additive terms EXCEPT the weapon's own dice
+ * (folded in separately as `avg`, via weaponDiceMean) and EXCEPT `c.prof`/
+ * `c.magicWpn`/`c.might` (those are either passed explicitly as `prof`/
+ * `bonus`, or — for might — deliberately omitted, since a temporary Potion
+ * of Strength should not make every OTHER weapon look permanently better).
+ * Pure, no rng.
+ */
+export function expectedStrike(c, base, bonus = 0, prof = 0) {
+  const w = WEAPONS[base];
+  if (!w) return 0;
+  const R = RACES[c.race];
+  const need = Math.max(1, classNeed(c) + weaponNeedMod(base));
+  const dieN = strikeDie(c);
+  const hitP = Math.min(1, need / dieN);
+  const noCrit = c.sub === "Guard" || c.sub === "Soldier" || eff(c, "noCrit") > 0;
+  const critP = noCrit ? 0 : Math.min(hitP, w.crit / dieN);
+  const avg = weaponDiceMean(w);
+  let flat = c.level * c.level;
+  if (R.dmg) flat += R.dmg;
+  if (R.wpnBonus) flat += R.wpnBonus;
+  if (skill(c, "Heft")) flat += 2;
+  if (c.sub === "Master of Arms") flat += 2;
+  flat += eff(c, "dmg");
+  flat += 2 * eff(c, "size");
+  if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;
+  return (hitP + critP) * Math.max(1, flat + avg + bonus + prof);
+}
+
+/**
+ * toHit(state) — the die value the player needs to land a blow. Reads state.c,
+ * state.combat (inspired) and state.floor (darkness); ports mazeworld.html
+ * toHit() (lines 1452-1462).
+ *
+ * Phase 39 (GEAR-01): the class/race/sub term is now classNeed(c) (factored
+ * out, byte-identical arithmetic); a weapon's own to-hit modifier
+ * (weaponNeedMod) is added right after the gear `eff("toHit")` term, then the
+ * whole running need is floored at 1 — BEFORE the dazed/dark clamps below,
+ * which are kept in their exact original relative order.
+ */
+export function toHit(state) {
+  const c = state.c;
+  let h = classNeed(c);
   if (state.combat && state.combat.inspired) h += state.combat.inspired;
   h += eff(c, "toHit");
+  h += weaponNeedMod(c);
+  h = Math.max(1, h);
   // Phase 19 D-10: dazed — you need 2 lower to hit, never below 1; the
   // weakened kind is applied at playerStrike's damage line in combat.js, not here.
   if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - 2);

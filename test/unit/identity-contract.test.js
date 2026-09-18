@@ -778,15 +778,18 @@ const CONTRACT = [
     good: {
       name: "the first landed blow always crits, even in armor a backstab would refuse",
       run() {
+        // Phase 39 (GEAR-01): "heavy" is now armorBulk(c) >= 2 — Plate is the
+        // real ARMORS row that denies (the old "Chain Mail" string never
+        // matched one, before or after this phase).
         const cutthroat = withWeapon(hero("Cutthroat"), "Club", 0, 0);
-        cutthroat.c.armor = "Chain Mail"; // triggers combat.js's heavy-armor backstab denial
+        cutthroat.c.armor = "Plate"; // triggers combat.js's heavy-armor backstab denial
         withCombat(cutthroat, [fixedFoe({ wp: 999, maxWP: 999 })]);
         const cutthroatEvents = playerStrike(cutthroat, looseRng([2, 4], 20), []);
         expectEvent(cutthroatEvents, "backstabDenied", { reason: "heavyArmor" });
         const cutthroatStruck = expectEvent(cutthroatEvents, "struck", { critical: true });
 
         const pickpocket = withWeapon(hero("Pickpocket"), "Club", 0, 0);
-        pickpocket.c.armor = "Chain Mail";
+        pickpocket.c.armor = "Plate";
         withCombat(pickpocket, [fixedFoe({ wp: 999, maxWP: 999 })]);
         const pickpocketEvents = playerStrike(pickpocket, looseRng([2, 4], 20), []);
         const pickpocketStruck = expectEvent(pickpocketEvents, "struck", { critical: false });
@@ -932,7 +935,11 @@ const CONTRACT = [
       run() {
         const state = hero("Acrobat");
         assert.equal(foeToHitVs(state), 3);
-        assert.equal(toHit(state), 5);
+        // Phase 39 (GEAR-01): an Acrobat's Dagger (KIT-issued) now carries
+        // its own need:+1 modifier (a light, precise blade) on top of the
+        // Acrobat's classNeed-5 floor, so toHit is 6, not 5 — the Acrobat's
+        // "easier to land one" trait, made even truer by the weapon axis.
+        assert.equal(toHit(state), 6);
       },
     },
     bad: {

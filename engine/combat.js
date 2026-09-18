@@ -49,7 +49,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -591,7 +591,13 @@ export function playerStrike(state, rng, events = []) {
     // for every character not carrying the cloak (eff noCrit === 0).
     const noCrit =
       c.sub === "Guard" || c.sub === "Soldier" || (inDark(state) && !skill(c, "Night Vision")) || eff(c, "noCrit") > 0;
-    let crit = roll === 1 && !noCrit;
+    // Phase 39 (GEAR-01): the crit RANGE is now weapon-driven — a precise
+    // blade (Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit:2) doubles on a 1
+    // OR a 2; every other weapon still doubles only on a natural 1
+    // (weaponCrit(c) defaults to 1 for an unrecognized/Fists weapon, so this
+    // is byte-identical to the old `roll === 1` rule for every weapon that
+    // is not one of the five precise blades).
+    let crit = roll <= weaponCrit(c) && !noCrit;
     // Phase 25 (FEED-01, additive payload): why THIS crit is a crit, so the
     // Oracle can name the reason instead of a bare "Critical!"; later
     // assignments win (most-specific reason, matching code order below).
@@ -611,7 +617,12 @@ export function playerStrike(state, rng, events = []) {
       continue;
     }
     // "Heavy armor negates any advantages they may gain for stealthiness"
-    const heavy = c.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(c.armor);
+    // Phase 39 (GEAR-01): generalized to armorBulk(c) >= 2 — the old
+    // hard-coded list's two lighter-armor strings never matched any real
+    // ARMORS row name, so only Plate (bulk 2) ever actually denied; this is
+    // byte-identical behaviour for every armor that exists, generalized so a
+    // future bulk-2 armor also denies without another hard-coded name.
+    const heavy = c.cls === "Thief" && armorBulk(c) >= 2;
     let heavyBackstabDenied = false;
     if (opening && heavy) {
       events.push({ type: "backstabDenied", reason: "heavyArmor" });
@@ -627,7 +638,7 @@ export function playerStrike(state, rng, events = []) {
     // opener event. No rng change (crit only doubles already-rolled damage
     // that is then discarded by the bail), so determinism/parity are intact.
     if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
-      if (skill(c, "Stealth") && roll <= 2 && c.armor !== "Plate") {
+      if (skill(c, "Stealth") && roll <= 2 && armorBulk(c) < 2) {
         crit = true;
         critBy = "stealth";
         events.push({ type: "stealthStrike" });
@@ -916,9 +927,12 @@ export function flee(state, rng, events = []) {
     return events;
   }
   const bonus = c.cls === "Thief" ? 5 : 0; // getting out is the Thief's whole trade
+  // Phase 39 (GEAR-01): heavier armor makes a clean escape harder — bulk is
+  // SUBTRACTED from the flee roll, mirroring the climb/leap penalty below.
+  const bulk = armorBulk(c);
   const roll = rng.d(20);
-  events.push({ type: "fleeRolled", roll, bonus, need: 11 });
-  if (roll + bonus >= 11) {
+  events.push({ type: "fleeRolled", roll, bonus, bulk, need: 11 });
+  if (roll + bonus - bulk >= 11) {
     if (pursuitStrike(state, rng, events).died) return events;
     forfeitLoot(state, "fled", events);
     events.push({ type: "fled", reason: "escaped" });
@@ -1670,8 +1684,9 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   }
   let backstab = false;
   // "Heavy armor negates any advantages they may gain for stealthiness" —
-  // the hero's exact list (playerStrike), copied verbatim.
-  const heavy = view.cls === "Thief" && ["Studded Leather", "Chain Mail", "Plate"].includes(view.armor);
+  // the hero's exact rule (playerStrike), copied verbatim. Phase 39
+  // (GEAR-01): armorBulk(view) >= 2, mirroring the hero-side generalization.
+  const heavy = view.cls === "Thief" && armorBulk(view) >= 2;
   if (mod && mod.forceCrit) {
     const deniedByHeavy = mod.key === "silentStep" && heavy;
     if (!noCrit && !deniedByHeavy) crit = true;

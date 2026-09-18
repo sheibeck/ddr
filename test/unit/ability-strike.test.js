@@ -190,7 +190,10 @@ test("abilityStrike: forceCrit is denied by the Guard/Soldier no-crit rule", () 
 });
 
 test("abilityStrike: Silent Step's forceCrit is denied by heavy armour on a Thief, with exactly one backstabDenied", () => {
-  const state = fixedState({ c: fixedFighter({ sub: "Pilfer", cls: "Thief", armor: "Chain Mail" }) });
+  // Phase 39 (GEAR-01): "heavy" is now armorBulk(c) >= 2 — Plate (bulk 2) is
+  // the real ARMORS row that denies; the old hard-coded "Chain Mail" string
+  // never matched a real armor name either, before or after this phase.
+  const state = fixedState({ c: fixedFighter({ sub: "Pilfer", cls: "Thief", armor: "Plate" }) });
   state.combat = fixedCombat([fixedFoe()], { abilityStrike: { key: "silentStep", forceCrit: true, autoHit: true } });
   const events = playerStrike(state, fakeRng([4, 4, ...FILL]), []);
   const struck = events.find((e) => e.type === "struck");

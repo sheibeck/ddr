@@ -15,7 +15,7 @@
 // it) — re-exported here so item-domain callers have one place to import
 // item/treasure helpers from, without duplicating the implementation.
 
-import { eff, skill, slotItems, afraidDamage, slotFor, WORN_SLOTS } from "./derived.js";
+import { eff, skill, slotItems, afraidDamage, slotFor, WORN_SLOTS, expectedStrike } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
@@ -247,14 +247,24 @@ export function canEquipArmor(c, it) {
 /* ---------------- equip / consume ---------------- */
 
 /**
- * weaponUpgradeDelta(c, it) — how much MORE max damage weapon item `it` would
- * give `c` than the currently-wielded weapon (may be <= 0). The exact rule
- * takeItem's weapon branch uses to decide "is this better" — extracted here
- * (Phase 29, LOOT-03) so the shell's lootCompare view-model can read the
- * SAME arithmetic instead of restating it. Pure, no rng.
+ * weaponUpgradeDelta(c, it) — how much MORE expected damage-per-swing weapon
+ * item `it` would give `c` than the currently-wielded weapon (may be <= 0).
+ * The exact rule takeItem's weapon branch uses to decide "is this better" —
+ * extracted here (Phase 29, LOOT-03) so the shell's lootCompare view-model
+ * and the tuning bot can read the SAME arithmetic instead of restating it.
+ *
+ * Phase 39 (GEAR-01): re-based on engine/derived.js#expectedStrike — under
+ * the need/crit axes, a weapon's raw max damage no longer tells you whether
+ * it is actually better (a heavy weapon with a lower to-hit need can lose to
+ * a light weapon's higher crit chance). This is now the ONE "is this weapon
+ * better" rule takeItem, lootCompare, and the tuning bot all share. Rounded
+ * to 2 decimals (expectedStrike's own fractional-probability output is
+ * otherwise a noisy float). Pure, no rng.
  */
 export function weaponUpgradeDelta(c, it) {
-  return (WEAPON_MAX[it.base] || 0) + (it.bonus || 0) - ((WEAPON_MAX[c.weapon] || 0) + (c.prof || 0) + (c.magicWpn || 0));
+  const candidate = expectedStrike(c, it.base, it.bonus || 0, 0);
+  const current = expectedStrike(c, c.weapon, c.magicWpn || 0, c.prof || 0);
+  return Math.round((candidate - current) * 100) / 100;
 }
 
 /**

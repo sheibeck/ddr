@@ -238,13 +238,16 @@ test("unequipSlot: at cap, bagFull carries have/slots and the worn weapon stays 
 // --- weaponUpgradeDelta / armorUpgradeDelta --------------------------------
 
 test("weaponUpgradeDelta / armorUpgradeDelta match takeItem's own rule", () => {
-  // fixedChar's Broadsword (prof 0, magicWpn 0): WEAPON_MAX.Broadsword = 12 (see
-  // test/unit/inventory-actions.test.js's comment), so a +2 Broadsword is a
-  // genuine upgrade (delta 2 > 0) and a +0 Broadsword is not (delta 0).
+  // Phase 39 (GEAR-01): weaponUpgradeDelta is now expectedStrike-based, not
+  // WEAPON_MAX-based. fixedChar is a Fighter/Soldier (noCrit) wielding a
+  // Broadsword (need 0, dieN 20 at level 1): expectedStrike(Broadsword, +2,
+  // 0) - expectedStrike(Broadsword, +0, 0) = 0.25*(1+7.5+2) - 0.25*(1+7.5) =
+  // 2.625 - 2.125 = 0.5 — still a genuine upgrade (delta > 0); a +0
+  // Broadsword is not (delta 0).
   const better = { kind: "weapon", base: "Broadsword", bonus: 2, n: "Broadsword +2", txt: "Broadsword +2" };
   const betterState = fixedState();
   const betterDelta = weaponUpgradeDelta(betterState.c, better);
-  assert.equal(betterDelta, 2);
+  assert.equal(betterDelta, 0.5);
   assert.ok(takeItem(betterState, better, []).some((e) => e.type === "itemTaken"));
 
   const same = { kind: "weapon", base: "Broadsword", bonus: 0, n: "Broadsword", txt: "Broadsword" };

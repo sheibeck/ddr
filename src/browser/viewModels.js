@@ -187,7 +187,7 @@ export function lootCompare(c, it) {
     const line = !legal
       ? `can't use (${refusalText(reason, WEAPONS[it.base]?.cls ?? "")})`
       : upgrade
-        ? `+${delta} damage`
+        ? `+${delta.toFixed(1)} a swing`
         : "not an upgrade";
     return { kind: "weapon", legal, reason, delta, upgrade, equipNow, line, sub: it.txt ?? "" };
   }

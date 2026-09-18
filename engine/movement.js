@@ -27,7 +27,7 @@
 
 import { GW, GH, genFloor, reveal } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
@@ -176,7 +176,9 @@ export function move(state, dir, rng, events = [], now = Date.now) {
         const feet = 10 * (1 + rng.d(2));
         for (let ft = 0; ft < feet && ok; ft += 10) {
           // Phase 38 (ABIL-02): the retired climb bonus — no term subtracted here anymore.
-          const r = rng.d(10) + hPenalty;
+          // Phase 39 (GEAR-01): armor bulk is a deterministic penalty on the
+          // roll comparison, exactly like hPenalty above — no new rng draw.
+          const r = rng.d(10) + hPenalty + armorBulk(state.c);
           if (r <= tbl.success) continue;
           ok = false;
           for (let g = 0; g <= ft; g += 10) if (rng.d(20) > 2) hurt += rollDice(rng, tbl.fall);
@@ -188,7 +190,8 @@ export function move(state, dir, rng, events = [], now = Date.now) {
         const row = LEAP_TABLE[rng.d(4) - 1];
         const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
         // Phase 38 (ABIL-02): the retired leap bonus — no term subtracted here anymore.
-        const r = rng.d(10) + wPenalty;
+        // Phase 39 (GEAR-01): armor bulk penalty, same as the climb branch above.
+        const r = rng.d(10) + wPenalty + armorBulk(state.c);
         if (r > need) {
           ok = false;
           hurt = rng.d(6) + rng.d(6);

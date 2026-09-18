@@ -53,8 +53,9 @@ const JEWEL = (name) => ({ kind: "jewel", n: name, eff: {}, txt: "shiny" });
 // --- sellPriceFor (base-value sources + treasure fallback) -------------------
 
 test("sellPriceFor: ~50% of buy value for a weapon", () => {
-  // Long Sword cost 500 (content/weapons.js); Human race → priceFor is identity.
-  assert.equal(sellPriceFor(WEAPON("Long Sword"), "Human"), 250);
+  // Phase 39 (GEAR-01): Long Sword re-priced 500 -> 400 (content/weapons.js);
+  // Human race → priceFor is identity.
+  assert.equal(sellPriceFor(WEAPON("Long Sword"), "Human"), 200);
 });
 
 test("sellPriceFor: ~50% of buy value for armor", () => {
@@ -73,7 +74,7 @@ test("sellPriceFor: treasure item with no base value yields a positive fallback 
 });
 
 test("sellPriceFor: race multiplier flows through priceFor (elf half, troll triple)", () => {
-  const human = sellPriceFor(WEAPON("Long Sword"), "Human"); // 250
+  const human = sellPriceFor(WEAPON("Long Sword"), "Human"); // 200 (Phase 39 re-price)
   assert.equal(sellPriceFor(WEAPON("Long Sword"), "Elven"), Math.round(human / 2), "elves get half");
   assert.equal(sellPriceFor(WEAPON("Long Sword"), "Troll"), human * 3, "trolls get triple");
 });
@@ -90,11 +91,11 @@ test("sellItem: credits gold by sellPriceFor and frees the slot", () => {
   const state = fixedState({ c: { gold: 100, items: [WEAPON("Long Sword")] } });
   const events = [];
   sellItem(state, 0, events);
-  assert.equal(state.c.gold, 100 + 250, "gold credited by the sell price");
+  assert.equal(state.c.gold, 100 + 200, "gold credited by the sell price");
   assert.equal(state.c.items.length, 0, "the slot is freed");
   const sold = events.find((e) => e.type === "itemSold");
   assert.ok(sold, "an itemSold event is pushed");
-  assert.equal(sold.price, 250);
+  assert.equal(sold.price, 200);
   assert.equal(sold.item.n, "Long Sword");
 });
 
@@ -108,7 +109,7 @@ test("sellItem: clamps the credited gold to the bag's wilmst cap", () => {
 test("sellItem: a bag-less character is NOT gold-capped (clampCarry gate)", () => {
   const state = fixedState({ c: { bag: undefined, gold: 1990, items: [WEAPON("Long Sword")] } });
   sellItem(state, 0, []);
-  assert.equal(state.c.gold, 1990 + 250, "no bag → no clamp; full price credited");
+  assert.equal(state.c.gold, 1990 + 200, "no bag → no clamp; full price credited");
 });
 
 test("sellItem: an out-of-range index is a safe no-op", () => {
@@ -125,7 +126,7 @@ test("sellItem: an out-of-range index is a safe no-op", () => {
 test("applyAction: sellItem dispatch credits gold, removes the item, emits itemSold", () => {
   const state = fixedState({ c: { gold: 100, items: [WEAPON("Long Sword")] } });
   const { state: next, events } = applyAction(state, { type: "sellItem", i: 0 });
-  assert.equal(next.c.gold, 350);
+  assert.equal(next.c.gold, 300);
   assert.equal(next.c.items.length, 0);
   assert.ok(events.some((e) => e.type === "itemSold"));
   // purity: the original state is untouched (applyAction deep-clones).

@@ -28,16 +28,20 @@ function fixedChar(overrides = {}) {
 // --- weapon compare ---------------------------------------------------
 
 test("lootCompare: a strictly-better weapon is an upgrade, equip-now", () => {
+  // Phase 39 (GEAR-01): weaponUpgradeDelta is now expectedStrike-based. This
+  // fixedChar is a Fighter/Soldier (noCrit) wielding a Broadsword (need 0,
+  // dieN 20 at level 1): expectedStrike(Broadsword,+2) - expectedStrike
+  // (Broadsword,+0) = 0.25*(1+7.5+2) - 0.25*(1+7.5) = 2.625 - 2.125 = 0.5.
   const c = fixedChar();
   const it = { kind: "weapon", base: "Broadsword", bonus: 2, n: "Broadsword +2", txt: "d10+2 +2" };
   const cmp = lootCompare(c, it);
   assert.equal(cmp.kind, "weapon");
   assert.equal(cmp.legal, true);
   assert.equal(cmp.reason, null);
-  assert.equal(cmp.delta, 2);
+  assert.equal(cmp.delta, 0.5);
   assert.equal(cmp.upgrade, true);
   assert.equal(cmp.equipNow, true);
-  assert.equal(cmp.line, "+2 damage");
+  assert.equal(cmp.line, "+0.5 a swing");
   assert.equal(cmp.sub, it.txt);
 });
 

@@ -484,7 +484,9 @@ test("playerStrike: struck.critBy = 'backstab' for a plain Thief's opening strik
 });
 
 test("playerStrike: struck.critBy = 'cutthroat' for a Cutthroat's first landed blow in heavy armour (backstab suppressed)", () => {
-  const state = fixedState({ c: { sub: "Cutthroat", cls: "Thief", armor: "Chain Mail" } });
+  // Phase 39 (GEAR-01): "heavy" is now armorBulk(c) >= 2 — Plate is the real
+  // ARMORS row that denies (the old "Chain Mail" string never matched one).
+  const state = fixedState({ c: { sub: "Cutthroat", cls: "Thief", armor: "Plate" } });
   const foe = fixedFoe({ wp: 100, maxWP: 100 });
   state.combat = fixedCombat([foe]);
   const events = playerStrike(state, fakeRng([3, 4, ...FILL]), []);
