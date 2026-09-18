@@ -1426,3 +1426,33 @@ hash unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`). `npm run
 build:www`: exit 0. `git status --porcelain test/parity/fixtures`: empty
 (zero fixture files touched across all four plans of this phase).
 
+## Phase 42 — flee retune (FLEE-01)
+
+`grep -rn '"flee"' test/parity/fixtures/*.json` finds exactly one hit: the
+`action-script.combat.json` scenario named `flee` (seed 17) — no other
+fixture file's action list contains a `flee` action anywhere.
+
+**Measured live** (2026-09-18, `node` replay of `newRun(17)` →
+`startCombat`/`fight` (forced Beasts) → `applyAction({ type: "flee" })`,
+against the FINISHED Phase 42 engine — never hand-computed):
+
+| Field | Value |
+|---|---|
+| Hero | Fridgian Thief (Pilfer), no armor |
+| Roll | 18 |
+| Modifiers | Thief +5, Fridgian −1 |
+| Total | 22 |
+| Need | 14 |
+| Outcome | `fled` (escaped) |
+
+**Draw-count statement:** the ordinary flee roll is still exactly ONE
+`rng.d(20)` at the same position (after the Smoke check, before
+`pursuitStrike`) — `grep -c "rng.d(20)" engine/combat.js` is unchanged from
+the pre-Phase-42 commit (9, both before and after this phase's edits).
+
+**Conclusion:** the OLD formula (`18 + 5 = 23 >= 11`) and the NEW formula
+(`18 + 5 - 1 = 22 >= 14`) agree on the outcome — `fled`. Zero fixture
+regenerations; no `divergence` record was declared on the `flee` scenario;
+`git status --porcelain test/parity/fixtures` is empty. See `docs/FLEE.md`
+"Parity fixture reading" for the full ledger entry.
+

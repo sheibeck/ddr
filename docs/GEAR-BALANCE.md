@@ -117,7 +117,7 @@ Bulk's three consumers:
 |---|---|---|
 | Climb roll | `engine/movement.js` (the climb `r` comparison, alongside `heightsPenalty`/`waterPenalty`) | `armorBulk(state.c)` added to `r` |
 | Leap roll | `engine/movement.js` (the leap `r` comparison) | `armorBulk(state.c)` added to `r` |
-| Flee roll | `engine/combat.js#flee` | `roll + bonus - bulk >= 11` (bulk subtracted) |
+| Flee roll | `engine/combat.js#flee` | `roll + fleeBreakdown(c).bonus >= 14` (bulk is one of the named modifiers — see docs/FLEE.md) |
 | Thief Stealth/backstab gate (hero + member) | `engine/combat.js` (heavy-armor gate, hero strike and member strike) | denied when `armorBulk(c) >= 2` |
 
 ## Weapons/armor — per-class picks
