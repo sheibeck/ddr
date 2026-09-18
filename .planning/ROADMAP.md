@@ -281,7 +281,29 @@ Plans:
   5. A scroll scribed into the grimoire is castable immediately once the caster's level qualifies, or refuses by naming the level needed.
   6. An active Shield's remaining pool and rounds show on the Hero sheet and as a map HUD condition chip, not only mid-combat.
 
-**Plans**: TBD
+**Plans**: 5 plans (sequential waves 1–5; `mazeworld.html` touched only by 40-05)
+
+Plans:
+**Wave 1**
+
+- [ ] 40-01-PLAN.md — Content reshape + day-one damage: the 33-row table (`niche` + one-line niche `txt` on every row, Detect Magic → Map the Floor, `onHit`/`aoe` flags, Ice as `dot`, the level-1 special-school Lesser Summon), `SPELL_LEVEL_OVERRIDES.Summoner` retired, `rollGrimoire` derived-stream insertion (chargen cursor unmoved) + Summoner grant + `dealsDamage` day-one walk, 8-sub × 200-seed proof, declared grimoire fixture divergences, `docs/SPELLS.md` created
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 40-02-PLAN.md — Offense mechanics: data flags replace every name-keyed check (engine + bot), Ice DOT via `f.dot` with the frozen-solid payoff, Lesser Summon cast branch (no doubling/backfire), Weaken on a `spell:weaken` rounds timer with `weakenFaded`, Stupidity for the fight, Shrink's half damage made true, narration
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 40-03-PLAN.md — Utility visibility + scrolls: `conditionsOf` chips for mirror/senses/regen/foresight, Sense Presence's initiative meaning + stated expiry, endCombat expiry narration, `readScroll` aligned with `canCast` + `scrollTooAdvanced` naming the level
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 40-04-PLAN.md — Map the Floor: per-cell `spellSeen` provenance, `spell:reveal` 40-square timer, walking graduates cells, one expiry sweep + `revealFaded`, recast refresh, descend clears, `reveal` chip, harness carve-out (3 comparables + 3 dupes), tolerant load (stale flags + retired name), the ratified re-fog Key Decision in the ledger
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 40-05-PLAN.md — Shell + close: niche on both spell-row view models, chip copy for the five new chips, Hero-tab ward rounds + spell rows, foe-badge durations, spell-seen map tint, ledger UI/requirements map, REQUIREMENTS SPELL-01..07 complete, whole-phase gate, aggregated Pixel 7 checklist, PROJECT.md call-outs for the orchestrator
+
 **Research flag**: Yes — the offense-school niche re-derivation and the control-spell scope/duration axis are genuine design/balance decisions, not mechanical extensions; the Detect Magic re-fog provenance question (does normal exploration during the reveal window keep what it would have revealed anyway, or does everything the spell touched re-fog unconditionally?) must be ratified as a Key Decision before implementation. Recommend `/gsd-discuss-phase` or `--research-phase` before planning.
 
 ### Phase 41: Terrain, Darkness & Phobias
