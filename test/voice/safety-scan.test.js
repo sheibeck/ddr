@@ -159,6 +159,10 @@ const BRANCH_TOGGLES = [
   // new smoke branch.
   { reason: "cooldown" }, { reason: "unknown" }, { reason: "notInCombat" },
   { reason: "noTarget" }, { reason: "notLowEnough" }, { reason: "smoke" },
+  // Phase 38 Plan 04 (ABIL-05): the OTHER side of every `e.member ? ... : ""`
+  // ternary this plan adds — a hero-cast use (BASE_EVENT's own `member`
+  // value covers the Joiner-cast side already).
+  { member: null },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

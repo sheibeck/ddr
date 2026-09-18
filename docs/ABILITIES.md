@@ -365,10 +365,112 @@ shared by every foe, plus each `sp.ar` foe's own armour `d20` inside
 `playerStrike` draw sequence (zero NEW draws — they only reinterpret the
 roll `playerStrike` already makes).
 
+## Joiners (Plan 04)
+
+A melee-class Joiner (Fighter/Thief party member) fights by class AND by
+kit: its own `sheet.abilities` (rolled at `meetJoiner`, the same catalog and
+level-pool mechanism as the hero's) are used through the exact class-driven
+policy the phase's CONTEXT locked, checked BEFORE the Magic User cast branch
+in `alliesTurn`:
+
+- **Round 1** — the first READY ability tagged `opener` (`sheet.abilities`
+  order breaks ties).
+- **Else, the live target above half hp** — the first READY ability tagged
+  `damage` (Last Stand excluded unless the member itself is at/below the
+  death-panic threshold, 25% of its own `maxWP` — it is a desperation move,
+  not a plain damage pick).
+- **Else, the member itself below half hp** — the first READY ability
+  tagged `defensive`.
+- **Else** — nothing; falls through to today's plain strike/cast, byte-
+  identical.
+
+"READY" means owned, resolves in the catalog for the member's OWN class
+(an id belonging to the other class, or an unknown id, is silently
+ignored — T-38-09), and has no live `sheet.timers["ability:<id>"]` record
+(Phase 36). The pick itself is PURE — zero rng draws for the decision.
+
+### Sheet timers vs. transient combat-entry flags
+
+A member's ability cooldowns live on its own PERSISTENT sheet
+(`state.party[i].timers`, Phase 36's shape) — never on the transient
+`C.allies` combat entry. `ally.braced` is the one transient flag this plan
+adds (mirroring `ally.backstabUsed`'s existing precedent): rebuilt by every
+`startCombat`, never synced to the sheet, gone with the combat on load.
+
+**Post-research ruling: Joiner ability cooldowns clear at `endCombat`**,
+exactly like the hero's — a per-member `clearRoundTimers` call sits beside
+the hero's own inside `endCombat`'s existing `C.allies` sync block (only for
+a SURVIVING member; a downed member's sheet is about to be dropped from
+`state.party` entirely, never ticked/cleared). A per-member `tickRounds`
+call sits beside the hero's own at `foeTurn`'s tail, once per call, skipping
+a downed member (`wp <= 0`). Both are guarded on `sheet.timers` being
+present — a sheet with no ability ever set stays a no-op forever. Net
+effect: every Joiner ability is READY at the start of every fight.
+
+### Shared primitives — one implementation, not two
+
+Every one of the 20 abilities resolves for a member through the SAME
+primitives the hero's `useAbility` uses:
+
+| Kind | Member resolution |
+|------|--------------------|
+| kata / feint | `memberStrike(..., { autoHit: true, bonusDmg: ally.lvl })` |
+| deathTouch | `memberStrike(..., { forceCrit: true, finishUnder: 15 })` |
+| silentStep | `memberStrike(..., { autoHit: true, forceCrit: true })` (denied by the same heavy-armor list) |
+| overheadBlow | `memberStrike(..., { dmgMul: 2, needShift: -2 })` |
+| lastStand | up to 3 `memberStrike` calls while the target is alive (the loop is the CALLER's — `mod.attacks` is never read inside `memberStrike`) |
+| pommelStrike / dirtyTrick / poisonedEdge / hamstring / mark | the shared `applyPommel`/`applyDirtyTrick`/`applyPoison`/`applyHamstring`/`applyMark` appliers (Plan 03), same foe fields, event gains `member` |
+| cutpurse | `rng.d(10) * ally.lvl` gold, paid to the HERO via `gainWilmst` |
+| secondWind | `rng.d(8) + ally.lvl`, capped at the member's own `maxWP` |
+| sweep | `ceil(weaponDamage(view, rng) / 2)` to every live foe via `damageFoe` |
+| brace | `ally.braced = true` (the transient flag above) |
+| riposte / taunt / sidestep / battleRoar / smoke | starts the timer on the member's own sheet; the effect is read at the SAME sites the hero's is |
+
+`memberStrike`'s new `mod` parameter (default `null`, leaving every existing
+call byte-identical) is the member analog of `playerStrike`'s transient
+`C.abilityStrike` descriptor — passed directly as a function argument rather
+than stashed on a shared combat-scoped slot, since a Joiner never dispatches
+`useAbility`. `t.marked`'s +2 applies unconditionally (hero or member
+striker alike), matching `playerStrike`'s own rule.
+
+### foeTurn / pickFoeTarget hooks — a member's own body
+
+- **Sidestep / Smoke**: shift the member's OWN need in `foeTurn`'s member
+  branch, exactly like the hero's equivalent terms in `foeToHitVs("hero")`
+  (which the member branch's `vs = "member"` call never reads) — read
+  directly off the member's own `sheet.timers`.
+- **Riposte**: a miss on THAT specific member, with that member's OWN
+  Riposte active, counters with `weaponDamage(memberView(mSheet, member),
+  rng)` through `damageFoe` (`memberRiposted`). A miss on the hero or a
+  DIFFERENT member never triggers it.
+- **Brace**: a single-charge halving of the next landed blow on that member
+  (`member.braced`), mirroring `applyFoeDamageToPlayer`'s `state.combat.
+  braced` pattern exactly (`braceHeld`, additive `member` field).
+- **Taunt**: `pickFoeTarget` returns the taunting member with ZERO draws,
+  checked AFTER the hero's own Taunt (the hero's own Taunt still wins if
+  both are active).
+- **Battle Roar**: `derived.js#partyEffectActive(state, key)` — true when
+  ANY live member's own sheet carries the effect — extends BOTH
+  `foeToHitVs`/`foeToHitBreakdown`'s Battle Roar term so a Joiner's Battle
+  Roar covers the whole side exactly like the hero's.
+
+### Narration
+
+The four new member-only events (no hero equivalent exists for these):
+`memberAbilityUsed` ("{name} calls {ability}."), `memberSecondWind`,
+`memberSwept`, `memberRiposted`. Every Plan 03 activation/effect event a
+member's ability use can also reach (`braced`/`braceHeld`/`pommelStruck`/
+`dirtyTrickLanded`/`poisonedEdgeApplied`/`hamstrung`/`marked`/`cutpursed`/
+`riposteReady`/`taunted`/`sidestepped`/`battleRoarRaised`/`smokeThrown`/
+`lastStandCalled`) gains an additive `${e.member ? \`${e.member}: \` : ""}`
+prefix in BOTH tables — absent (byte-identical) for a hero-cast use.
+`allyStruck`/`allyMissed` gain an optional trailing clause naming the
+ability (its canon catalog name) behind a member's strike-kind ability use.
+
 ## Out of scope / next
 
-- Joiner class-driven use policy (Plan 04); the combat submenu, Hero-tab
-  list, and first-paint pool card (Plan 05).
+- The combat submenu, Hero-tab ability list, and first-paint pool card
+  (Plan 05).
 - Magic User actives beyond spells (not requested this phase — spells are
   Phase 40).
 - Bot use policy for abilities — Phase 42 (BAL-02 prep), before the

@@ -37,6 +37,11 @@
 // engine/ import) — importing it here does not violate this module's
 // presentation-only contract.
 import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "../../content/flavor.js";
+// Phase 38 Plan 04 (ABIL-05): ABILITY_BY_ID maps a member ability's `via`
+// key to its canon display name for allyStruck/allyMissed's optional clause
+// — pure content data, no engine/ import, same discipline as the flavor.js
+// import above.
+import { ABILITY_BY_ID } from "../../content/abilities.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -325,18 +330,22 @@ export const EVENT_NARRATION = {
   // DFB-05 (Phase 25.1): extended additively — `weapon`/`crit`/`backstab` on
   // allyStruck and `target`/`roll`/`need`/`weapon` on allyMissed render only
   // when present, so a legacy/summoned-ally payload (no new fields) narrates
-  // byte-identical to before.
+  // byte-identical to before. Plan 04 (ABIL-05): an optional `via` clause
+  // names the ability (its canon catalog name, not the raw id) that drove a
+  // member's strike-kind ability use — absent when `via` is unset, so an
+  // ordinary member swing stays byte-identical.
   allyStruck: (e) => {
     const who = e.name ?? "Your ally";
     const t = e.target ?? "it";
     const w = e.weapon ? ` with a ${e.weapon}` : "";
+    const via = e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : "";
     if (e.backstab)
       return `<span class="hit">${who} backstabs ${t}${w}</span> — <span class="roll">${e.dmg ?? 0}</span> hp. A blade in the back, as advertised.`;
-    return `${who} lands a hit on ${t}${w} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.crit ? ` <span class="hit">Critical.</span>` : ""}`;
+    return `${who} lands a hit on ${t}${w} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.crit ? ` <span class="hit">Critical.</span>` : ""}${via}`;
   },
   allyMissed: (e) =>
     e.target
-      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}.</span>` : ""}`
+      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}.</span>` : ""}${e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : ""}`
       : `${e.name ?? "Your ally"} swings and misses.`,
   allyDeparted: (e) => `${e.name ?? "Your ally"} slips away, obligation met.`,
   // DFB-05 (Phase 25.1): a Magic User party member's cast — allyCast is the
@@ -448,29 +457,40 @@ export const EVENT_NARRATION = {
     };
     return map[e.reason] ?? `<span class="miss">${name} refuses you.</span>`;
   },
-  pommelStruck: (e) => `<span class="hit">The pommel finds ${e.target ?? "it"}'s temple. It will need a moment.</span>`,
+  // Plan 04 (ABIL-05): the fourteen ability-activation/effect lines below
+  // carry an ADDITIVE `${e.member ? \`${e.member}: \` : ""}` prefix — present
+  // only when a Joiner (not the hero) is the actor, so a hero-cast use stays
+  // byte-identical to Plan 03's own text.
+  pommelStruck: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}The pommel finds ${e.target ?? "it"}'s temple. It will need a moment.</span>`,
   foeStunned: (e) => `${e.name ?? "It"} spends its turn remembering where it is.`,
-  battleRoarRaised: () => `<span class="hit">Loud enough. For two rounds they all need two better to hit anyone on your side.</span>`,
-  sidestepped: () => `<span class="hit">Not where the blade is. Two rounds of that.</span>`,
+  battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Loud enough. For two rounds they all need two better to hit anyone on your side.</span>`,
+  sidestepped: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Not where the blade is. Two rounds of that.</span>`,
   secondWindHealed: (e) => `<span class="hit">You remember why you came. +${e.amount ?? 0} hp.</span>`,
   swept: (e) => `<span class="hit">One wide arc — ${e.dmg ?? 0} to everything still standing.</span>`,
   sweptFoe: (e) => `${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span>.`,
-  braced: () => `<span class="hit">Braced. The next one lands on your terms.</span>`,
-  braceHeld: (e) => `<span class="hit">Braced — ${e.name ?? "it"}'s blow lands half as hard (−${e.soaked ?? 0}).</span>`,
-  riposteReady: () => `<span class="hit">Every miss is an invitation.</span>`,
+  braced: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced. The next one lands on your terms.</span>`,
+  braceHeld: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced — ${e.name ?? "it"}'s blow lands half as hard (−${e.soaked ?? 0}).</span>`,
+  riposteReady: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Every miss is an invitation.</span>`,
   riposted: (e) => `${e.target ?? "It"} misses, and pays <span class="roll">${e.dmg ?? 0}</span> for it.`,
-  taunted: () => `<span class="hit">Every foe looks at you. Armour doubles. Good luck.</span>`,
-  lastStandCalled: (e) => `<span class="beat">Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
-  dirtyTrickLanded: (e) => `<span class="hit">Sand, thumb, elbow. ${e.target ?? "it"} is blinded for ${e.rounds ?? 2} rounds.</span>`,
+  taunted: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Every foe looks at you. Armour doubles. Good luck.</span>`,
+  lastStandCalled: (e) => `<span class="beat">${e.member ? `${e.member}: ` : ""}Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
+  dirtyTrickLanded: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Sand, thumb, elbow. ${e.target ?? "it"} is blinded for ${e.rounds ?? 2} rounds.</span>`,
   foeSightReturned: (e) => `${e.name ?? "It"} blinks the sand out.`,
-  smokeThrown: () => `<span class="hit">Gone. For two rounds they need a natural 1 to find you.</span>`,
-  cutpursed: (e) => `<span class="hit">You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
-  poisonedEdgeApplied: (e) => `<span class="hit">The blade weeps into ${e.target ?? "it"}. ${e.rounds ?? 3} rounds of that.</span>`,
+  smokeThrown: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Gone. For two rounds they need a natural 1 to find you.</span>`,
+  cutpursed: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
+  poisonedEdgeApplied: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}The blade weeps into ${e.target ?? "it"}. ${e.rounds ?? 3} rounds of that.</span>`,
   // dotTick is generic on `by` — Phase 40's spells will share this same
   // event shape, so the line never names Poisoned Edge specifically.
   dotTick: (e) => `${e.target ?? "It"} takes <span class="hurt">${e.dmg ?? 0}</span> from the poison.`,
-  hamstrung: (e) => `<span class="hit">Tendon cut. ${e.target ?? "It"} hits half as hard from here on.</span>`,
-  marked: (e) => `<span class="hit">Studied. Every blow on ${e.target ?? "it"} lands +2.</span>`,
+  hamstrung: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Tendon cut. ${e.target ?? "It"} hits half as hard from here on.</span>`,
+  marked: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Studied. Every blow on ${e.target ?? "it"} lands +2.</span>`,
+  // Plan 04 (ABIL-05): a Joiner's own ability use — the four new member-only
+  // events (no hero equivalent exists for these; a hero's own equivalent use
+  // reads "abilityUsed"/"secondWindHealed"/"swept"/"riposted" above).
+  memberAbilityUsed: (e) => `<span class="beat">${e.name ?? "Your companion"} calls ${e.ability ?? "it"}.</span>`,
+  memberSecondWind: (e) => `<span class="hit">${e.name ?? "Your companion"} remembers why they came. +${e.amount ?? 0} hp.</span>`,
+  memberSwept: (e) => `<span class="hit">${e.name ?? "Your companion"} sweeps — ${e.dmg ?? 0} to everything still standing.</span>`,
+  memberRiposted: (e) => `${e.target ?? "It"} misses ${e.name ?? "your companion"}, and pays <span class="roll">${e.dmg ?? 0}</span> for it.`,
 
   /* ---------------- magic.js ---------------- */
 

@@ -24,6 +24,12 @@
 // (25-CONTEXT.md's "Feature manifest" decision) — a strict subset of
 // TOAST_FOR's keys, disjoint from ORACLE_ONLY.
 
+// Phase 38 Plan 04 (ABIL-05): ABILITY_BY_ID maps a member ability's `via`
+// key to its canon display name for allyStruck/allyMissed's optional clause
+// — pure content data (not engine/), same discipline as
+// eventNarration.js's own content/flavor.js import.
+import { ABILITY_BY_ID } from "../../content/abilities.js";
+
 /**
  * TONES — the tone-family vocabulary every toast (and the future host CSS,
  * 25-04) speaks. Two color families + two utilities:
@@ -1063,15 +1069,19 @@ export const TOAST_FOR = {
   thunderRolled: (e) => ({ text: `Thunder rolls — ${e?.n ?? 0} freeze (${e?.r ?? 0}).`, tone: "magic", priority: PRIORITY.feature }),
   // DFB-05 (Phase 25.1): legacy text (no `backstab`/`crit`/`target`) stays
   // byte-identical; a classed member's blow names the target and calls out
-  // a backstab/crit.
+  // a backstab/crit. Plan 04 (ABIL-05): an optional `via` clause names the
+  // ability (canon catalog name) behind a member's strike-kind ability use.
   allyStruck: (e) => {
     const who = e?.name ?? "Your ally";
     const t = e?.target ?? "it";
-    const text = e?.backstab ? `${who} backstabs ${t} (${e?.dmg ?? 0})` : `${who} lands a hit on ${t} (${e?.dmg ?? 0}).${e?.crit ? CRIT_SUFFIX : ""}`;
+    const via = e?.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : "";
+    const text = e?.backstab ? `${who} backstabs ${t} (${e?.dmg ?? 0})` : `${who} lands a hit on ${t} (${e?.dmg ?? 0}).${e?.crit ? CRIT_SUFFIX : ""}${via}`;
     return { text, tone: "hit", priority: PRIORITY.feature };
   },
   allyMissed: (e) => ({
-    text: e?.target ? `${e?.name ?? "Your ally"} misses ${e.target}` : `${e?.name ?? "Your ally"} swings and misses.`,
+    text: e?.target
+      ? `${e?.name ?? "Your ally"} misses ${e.target}${e?.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : ""}`
+      : `${e?.name ?? "Your ally"} swings and misses.`,
     tone: "miss",
     priority: PRIORITY.feature,
   }),
@@ -1184,27 +1194,37 @@ export const TOAST_FOR = {
     };
     return block(map[e?.reason] ?? `${name} refuses you.`);
   },
-  pommelStruck: (e) => ({ text: `The pommel finds ${e?.target ?? "it"}'s temple.`, tone: "hit", priority: PRIORITY.them }),
+  // Plan 04 (ABIL-05): the fourteen ability-activation/effect toasts below
+  // carry an ADDITIVE `${e?.member ? \`${e.member}: \` : ""}` prefix — present
+  // only when a Joiner (not the hero) is the actor.
+  pommelStruck: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}The pommel finds ${e?.target ?? "it"}'s temple.`, tone: "hit", priority: PRIORITY.them }),
   foeStunned: (e) => ({ text: `${e?.name ?? "It"} loses its turn.`, tone: "hit", priority: PRIORITY.them }),
-  battleRoarRaised: () => ({ text: "Loud enough. Two rounds of it.", tone: "hit", priority: PRIORITY.feature }),
-  sidestepped: () => ({ text: "Not where the blade is. Two rounds of that.", tone: "hit", priority: PRIORITY.feature }),
+  battleRoarRaised: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Loud enough. Two rounds of it.`, tone: "hit", priority: PRIORITY.feature }),
+  sidestepped: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Not where the blade is. Two rounds of that.`, tone: "hit", priority: PRIORITY.feature }),
   secondWindHealed: (e) => ({ text: `+${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.you }),
   swept: (e) => ({ text: `One wide arc — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.feature }),
   sweptFoe: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0}.`, tone: "hit", priority: PRIORITY.them }),
-  braced: () => ({ text: "Braced. The next one lands on your terms.", tone: "hit", priority: PRIORITY.feature }),
-  braceHeld: (e) => ({ text: `Braced — ${e?.name ?? "it"}'s blow lands half as hard (−${e?.soaked ?? 0}).`, tone: "hit", priority: PRIORITY.you }),
-  riposteReady: () => ({ text: "Every miss is an invitation.", tone: "hit", priority: PRIORITY.feature }),
+  braced: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Braced. The next one lands on your terms.`, tone: "hit", priority: PRIORITY.feature }),
+  braceHeld: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Braced — ${e?.name ?? "it"}'s blow lands half as hard (−${e?.soaked ?? 0}).`, tone: "hit", priority: PRIORITY.you }),
+  riposteReady: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every miss is an invitation.`, tone: "hit", priority: PRIORITY.feature }),
   riposted: (e) => ({ text: `${e?.target ?? "It"} misses, and pays ${e?.dmg ?? 0} for it.`, tone: "hit", priority: PRIORITY.them }),
-  taunted: () => ({ text: "Every foe looks at you. Armour doubles.", tone: "hit", priority: PRIORITY.feature }),
-  lastStandCalled: (e) => ({ text: `Under a quarter. ${e?.attacks ?? 3} attacks this round.`, tone: "beat", priority: PRIORITY.feature }),
-  dirtyTrickLanded: (e) => ({ text: `${e?.target ?? "It"} is blinded for ${e?.rounds ?? 2} rounds.`, tone: "hit", priority: PRIORITY.them }),
+  taunted: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every foe looks at you. Armour doubles.`, tone: "hit", priority: PRIORITY.feature }),
+  lastStandCalled: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Under a quarter. ${e?.attacks ?? 3} attacks this round.`, tone: "beat", priority: PRIORITY.feature }),
+  dirtyTrickLanded: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is blinded for ${e?.rounds ?? 2} rounds.`, tone: "hit", priority: PRIORITY.them }),
   foeSightReturned: (e) => ({ text: `${e?.name ?? "It"} blinks the sand out.`, tone: "dodge", priority: PRIORITY.them }),
-  smokeThrown: () => ({ text: "Gone. They need a natural 1 to find you.", tone: "hit", priority: PRIORITY.feature }),
-  cutpursed: (e) => ({ text: `You lift ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"}.`, tone: "hit", priority: PRIORITY.them }),
-  poisonedEdgeApplied: (e) => ({ text: `${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds.`, tone: "hit", priority: PRIORITY.them }),
+  smokeThrown: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Gone. They need a natural 1 to find you.`, tone: "hit", priority: PRIORITY.feature }),
+  cutpursed: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}You lift ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"}.`, tone: "hit", priority: PRIORITY.them }),
+  poisonedEdgeApplied: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds.`, tone: "hit", priority: PRIORITY.them }),
   dotTick: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0} from the poison.`, tone: "hurt", priority: PRIORITY.them }),
-  hamstrung: (e) => ({ text: `${e?.target ?? "It"} hits half as hard from here on.`, tone: "hit", priority: PRIORITY.them }),
-  marked: (e) => ({ text: `Every blow on ${e?.target ?? "it"} lands +2.`, tone: "hit", priority: PRIORITY.them }),
+  hamstrung: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} hits half as hard from here on.`, tone: "hit", priority: PRIORITY.them }),
+  marked: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every blow on ${e?.target ?? "it"} lands +2.`, tone: "hit", priority: PRIORITY.them }),
+  // Plan 04 (ABIL-05): a Joiner's own ability use — four new member-only
+  // events (no hero equivalent; a hero's own equivalent reads
+  // abilityUsed/secondWindHealed/swept/riposted above).
+  memberAbilityUsed: (e) => ({ text: `${e?.name ?? "Your companion"} calls ${e?.ability ?? "it"}.`, tone: "hit", priority: PRIORITY.feature }),
+  memberSecondWind: (e) => ({ text: `${e?.name ?? "Your companion"} remembers why they came. +${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.them }),
+  memberSwept: (e) => ({ text: `${e?.name ?? "Your companion"} sweeps — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.them }),
+  memberRiposted: (e) => ({ text: `${e?.target ?? "It"} misses ${e?.name ?? "your companion"}, and pays ${e?.dmg ?? 0} for it.`, tone: "hit", priority: PRIORITY.them }),
 
   /* ---------------- magic.js ---------------- */
 
