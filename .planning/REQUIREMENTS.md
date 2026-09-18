@@ -28,7 +28,7 @@
 
 ### Gear & magic items (GEAR)
 
-- [ ] **GEAR-01**: Weapons and armor are reworked (add/remove/rebalance dice, cost, class gating, depth availability) so store and loot present meaningful trade-offs rather than a single best pick per class, recorded as a before/after ledger
+- [x] **GEAR-01**: Weapons and armor are reworked (add/remove/rebalance dice, cost, class gating, depth availability) so store and loot present meaningful trade-offs rather than a single best pick per class, recorded as a before/after ledger
 - [ ] **GEAR-02**: Every activatable magic item (cloaks, staves, rings/jewelry, potions with a duration) follows one model: use → effect for X rounds or squares → cooldown for Y squares; the effect and cooldown remaining are shown on the item and as a condition chip
 - [x] **GEAR-03**: Player can wear only one item per slot type (ring, bracelet/anklet, amulet/pendant, helm/gauntlet, cloak, staff) and cannot benefit from two of the same type; equipping into an occupied slot swaps with an explicit choice
 - [x] **GEAR-04**: Old saves with two items of one type are reconciled on load without a crash or a silent loss — the extra goes to the bag with a narrated line
@@ -110,7 +110,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ABIL-03 | Phase 38 | Complete |
 | ABIL-04 | Phase 38 | Complete |
 | ABIL-05 | Phase 38 | Complete |
-| GEAR-01 | Phase 39 | Pending |
+| GEAR-01 | Phase 39 | Complete |
 | GEAR-02 | Phase 39 | Pending |
 | GEAR-05 | Phase 39 | Pending |
 | SPELL-01 | Phase 40 | Pending |
