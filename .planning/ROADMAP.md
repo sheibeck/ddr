@@ -175,7 +175,12 @@ Plans:
   5. `npm test` fail 0 and `npm run build:www` green at every commit of the phase.
 
 **Discuss**: Not worth a round — the ruling ("no dual-path code — fixtures follow", 2026-09-17) is already recorded; the only judgment is which fixtures move, and that is measured, not decided.
-**Plans**: TBD
+**Plans**: 3 plans (sequential waves 1–3 — measure, collapse-in-one-commit, close; phase-start baseline 2026-09-19 at `7447629`: `wornSlots` ×67 lines, 3,243 tests, master hash `a1f4d0dc`)
+
+Plans:
+- [ ] 45-01-PLAN.md — Measure first: `tools/worn-fixture-scan.mjs` replays all 31 parity replay sites in lockstep with the prototype sandbox with the engine's fresh character passed through `reconcileWorn` (invariant across the collapse), commits `tools/worn-fixture-scan-output.txt` (the MOVED SET + per-site before/after record values); zero engine/harness bytes
+- [ ] 45-02-PLAN.md — The collapse, ONE commit: `newRun` always reconciles (no option, zero draws), `validateSave`/`rehydrate` unconditional with one return shape, adapter + `RUN_FLAGS = { storeRoll: true }`; harness `dropEmptyWorn` replaces the Phase 37 carve-out, exactly the MOVED SET declared with `items`/`worn` before≠after records, new `divergence-records.test.js` (declared == measured), every option-off/legacy pin re-pinned, the HEDGE-01/HEDGE-02 no-option pins added; scan AFTER byte-identical
+- [ ] 45-03-PLAN.md — Close: FIXTURE-INVENTORY.md Phase 45 section (+ regenerated roster), GEAR-SLOTS.md §2/§3/§5/§7 prose corrected, 143-cell × 3-seed smoke (0 stuck, `Bot:` line = v1.5 AFTER pin modulo `seeds=`, readout in scratch), ROADMAP criteria 1–5 verified verbatim, closing SUMMARY with the deferred Pixel 7 items
 
 ### Phase 46: Honest Names, Dead Exports & the Tutorial Decision
 
