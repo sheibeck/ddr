@@ -30,7 +30,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canRead } from "../../engine/magic.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
@@ -574,6 +574,24 @@ export const GOLD_RESERVE = 50;
 export const RUN_FLAGS = Object.freeze({ storeRoll: true, wornSlots: true });
 
 /**
+ * readyWorn(state, ctx, slot, kinds) — 260918-w4n (use-activated-only): the
+ * ONE "does this hero have a worn, ready, not-yet-blocked activatable of one
+ * of these kinds in this slot" read every item tactic below shares. Returns
+ * the worn item when `c.worn[slot]` exists, `activationFor(it).kind` is a
+ * member of `kinds`, `itemReady(state, it)` is true, and `it` is not already
+ * in `ctx.itemBlocked` (by its own label) — else `null`. Pure.
+ */
+function readyWorn(state, ctx, slot, kinds) {
+  const c = state.c;
+  const it = c.worn && c.worn[slot];
+  if (!it) return null;
+  const act = activationFor(it);
+  if (!act || !kinds.includes(act.kind)) return null;
+  if (ctx.itemBlocked.has(itemLabel(it))) return null;
+  return itemReady(state, it) ? it : null;
+}
+
+/**
  * chooseStorePurchase(state, ctx) — Phase 39 (GEAR-01, 39-02-PLAN.md Task 1):
  * the store buy/equip policy that replaces the pre-Phase-39 "always leave a
  * store" step (l) below. Deliberately reads the engine's OWN
@@ -678,21 +696,24 @@ export function hardFight(state) {
 }
 
 /**
- * chooseCombatItem(state, ctx) — Phase 42 (BAL-01 second half): the bot's
- * in-combat item policy, checked only while `state.combat` exists. Returns
- * `{ action, reason }` or `null`:
+ * chooseCombatItem(state, ctx) — Phase 42 (BAL-01 second half) + 260918-w4n
+ * (use-activated-only): the bot's in-combat item policy, checked only while
+ * `state.combat` exists. Returns `{ action, reason }` or `null`:
  *   (1) "heal" — below the flee line, a bag Healing/Xtra Healing potion
  *       (Xtra Healing preferred) drunk BEFORE the flee/parley decision;
  *   (2) "buff" — round 1 of a `hardFight`, a bag Speed/Strength/Enlarge
  *       potion (in that preference order) whose activation kind is not
- *       already active, or a ready worn Cloak of Speed;
- *   (3) "staff" — a Magic User's ready worn (or, on a legacy state with no
- *       `c.worn`, bagged) staff: a targeted kind at `staffMinFoes`+ live
- *       foes, `dome` or `heal` below `potionThreshold`.
+ *       already active, or the first ready worn buff (haste/brace/plate/
+ *       unseen/power/giant, in WORN_SLOTS order) whose kind is not already
+ *       live;
+ *   (3) "staff" — a Magic User's ready BAGGED staff (a staff has no worn
+ *       slot any more — 260918-w4n staff amendment): a targeted kind at
+ *       `staffMinFoes`+ live foes, `dome` or `heal` below `potionThreshold`.
  * Every candidate passes `itemReady` (covers the death-potion/no-charges/
  * cooldown cases) and is skipped when `ctx.itemBlocked` already carries its
  * `itemLabel`; a Pilfer is skipped entirely for the buff tier (a non-heal
- * item — `useItem` would refuse it `pilfer`). Pure, no rng.
+ * item — `useItem` would refuse it `pilfer`). All reads go through
+ * `activationFor(it).kind` — never `it.use`. Pure, no rng.
  */
 export function chooseCombatItem(state, ctx) {
   const c = state.c;
@@ -733,28 +754,36 @@ export function chooseCombatItem(state, ctx) {
         return { action: { type: "useItem", i }, reason: "buff" };
       }
     }
-    const cloak = c.worn && c.worn.cloak;
-    if (cloak && cloak.use === "haste" && eligible(cloak)) {
-      return { action: { type: "useItem", slot: "cloak" }, reason: "buff" };
+    // 260918-w4n: the first ready worn combat buff, in WORN_SLOTS order,
+    // among the kinds a round-1 buff should ever fire for — haste (Cloak of
+    // Speed), brace (Cloak of Strength), plate (Cloak of Armor), unseen
+    // (Anklet of Invisibility), power (Ring of Power), giant (Gauntlet of
+    // the Giant) — skipped when that kind is already live.
+    const buffKinds = ["haste", "brace", "plate", "unseen", "power", "giant"];
+    for (const slot of WORN_SLOTS) {
+      const it = readyWorn(state, ctx, slot, buffKinds);
+      if (!it) continue;
+      const act = activationFor(it);
+      if (itemEffectActive(c, act.kind)) continue;
+      return { action: { type: "useItem", slot }, reason: "buff" };
     }
   }
 
-  // (3) a Magic User's ready staff — worn when the run has a worn-slot model
-  // (`"worn" in c`), else a bagged one (legacy state, T-39-04 precedent).
+  // (3) a Magic User's ready BAGGED staff (260918-w4n: a staff has no worn
+  // slot any more — the first `kind === "staff"` item in c.items, by index).
   if (c.cls === "Magic User") {
-    const hasWornModel = c && typeof c === "object" && "worn" in c && c.worn && typeof c.worn === "object";
-    const staff = hasWornModel ? c.worn.staff : items.find((it) => it && it.kind === "staff");
-    const staffRef = hasWornModel ? { slot: "staff" } : { i: items.indexOf(staff) };
+    const staffIdx = items.findIndex((it) => it && it.kind === "staff");
+    const staff = staffIdx === -1 ? null : items[staffIdx];
     if (staff && eligible(staff)) {
-      const kind = staff.use;
+      const kind = activationFor(staff)?.kind;
       if (TARGETED_KINDS.has(kind) && liveFoes(state).length >= BOT_TACTICS.staffMinFoes) {
-        return { action: { type: "useItem", ...staffRef }, reason: "staff" };
+        return { action: { type: "useItem", i: staffIdx }, reason: "staff" };
       }
       if (kind === "dome" && ratio < ctx.opts.potionThreshold && !c.ward) {
-        return { action: { type: "useItem", ...staffRef }, reason: "staff" };
+        return { action: { type: "useItem", i: staffIdx }, reason: "staff" };
       }
       if (kind === "heal" && ratio < ctx.opts.potionThreshold) {
-        return { action: { type: "useItem", ...staffRef }, reason: "staff" };
+        return { action: { type: "useItem", i: staffIdx }, reason: "staff" };
       }
     }
   }
@@ -763,20 +792,55 @@ export function chooseCombatItem(state, ctx) {
 }
 
 /**
- * chooseFieldItem(state, ctx) — Phase 42 (BAL-01 second half): the bot's
- * out-of-combat field item policy — a bag torch (`kind === "tool" && use ===
- * "light"`) lit while `inDark(state)` and no `lit` effect is already running.
+ * chooseFieldItem(state, ctx) — Phase 42 (BAL-01 second half) + 260918-w4n
+ * (use-activated-only): the bot's out-of-combat field item policy:
+ *   (1) dark with no live light source (`lit` OR `glow`): a bag torch first
+ *       (`kind === "tool"`, activation kind "lit"); else a ready worn Amulet
+ *       of Light (kind "glow");
+ *   (2) hurt below `potionThreshold`: a ready worn Cloak of Regeneration
+ *       (kind "knit") — a free heal tried BEFORE a potion or camp (the
+ *       caller places this call above both).
  * Rope/ladder stay on the existing `pendingHazard` answer (a decision the
- * engine already parked, not a timing tactic). Pure, no rng.
+ * engine already parked, not a timing tactic). All reads go through
+ * `activationFor(it).kind` — never `it.use`. Pure, no rng.
  */
 export function chooseFieldItem(state, ctx) {
   const c = state.c;
-  if (!inDark(state) || itemEffectActive(c, "lit")) return null;
-  const i = toolIndex(c, "torch");
-  if (i === -1) return null;
-  const it = c.items[i];
-  if (ctx.itemBlocked.has(itemLabel(it)) || !itemReady(state, it)) return null;
-  return { type: "useItem", i };
+  if (inDark(state) && !itemEffectActive(c, "lit") && !itemEffectActive(c, "glow")) {
+    const i = toolIndex(c, "torch");
+    if (i !== -1) {
+      const it = c.items[i];
+      if (!ctx.itemBlocked.has(itemLabel(it)) && itemReady(state, it)) return { type: "useItem", i };
+    }
+    if (readyWorn(state, ctx, "amulet", ["glow"])) return { type: "useItem", slot: "amulet" };
+  }
+  const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
+  if (ratio < ctx.opts.potionThreshold && readyWorn(state, ctx, "cloak", ["knit"])) {
+    return { type: "useItem", slot: "cloak" };
+  }
+  return null;
+}
+
+/**
+ * preHazardFlight(state, dir) — 260918-w4n (use-activated-only): when the
+ * chosen movement direction `dir` targets a climb/gorge tile, no `fly`-kind
+ * effect is currently live, and a ready worn Cloak of Flying (slot cloak) or
+ * Bracelet of Flight (slot bracelet) exists, returns `{ type: "useItem",
+ * slot }` instead of the move — the NEXT decideAction call re-derives the
+ * same `dir` and flies over for free. Returns `null` when none of that
+ * applies (the caller then dispatches the plain `move`). Pure, no rng.
+ */
+function preHazardFlight(state, ctx, dir) {
+  const c = state.c;
+  if (itemEffectActive(c, "fly")) return null;
+  const f = state.floor;
+  const [dx, dy] = DIRS[dir];
+  const there = f.g[f.py + dy] && f.g[f.py + dy][f.px + dx];
+  if (!there || (there.feat !== "climb" && there.feat !== "gorge")) return null;
+  for (const slot of ["cloak", "bracelet"]) {
+    if (readyWorn(state, ctx, slot, ["fly"])) return { type: "useItem", slot };
+  }
+  return null;
 }
 
 /**
@@ -874,6 +938,15 @@ export function decideAction(state, policyRng, ctx) {
     // (a)
     if (ratio < fleeAt) {
       if (!ctx.parleyBlocked && canParley(state)) return { type: "parley" };
+      // 260918-w4n: wants to parley but can't (fluency 0) and a ready worn
+      // Helm of Knowledge is available — use it first; the next
+      // decideAction then parleys with fluency 1.
+      if (
+        !ctx.parleyBlocked && !canParley(state) && !itemEffectActive(c, "tongue") &&
+        readyWorn(state, ctx, "helm", ["tongue"])
+      ) {
+        return { type: "useItem", slot: "helm" };
+      }
       if (!(c.sub === "Samurai" || ctx.fleeBlocked)) return { type: "flee" };
       // Samurai never runs (canon); a flee refused this encounter is not
       // retried (Rule-1 fix) — fall through to the rest of the chain below.
@@ -887,7 +960,13 @@ export function decideAction(state, policyRng, ctx) {
     if (itemPick && (itemPick.reason === "buff" || itemPick.reason === "staff")) return itemPick.action;
 
     // (c) HARN-02 talk-first
-    if (C.round === 1 && isTalkFirst(state) && !ctx.parleyBlocked && canParley(state)) return { type: "parley" };
+    if (C.round === 1 && isTalkFirst(state) && !ctx.parleyBlocked) {
+      if (canParley(state)) return { type: "parley" };
+      // 260918-w4n: same helm assist as branch (a) above.
+      if (!itemEffectActive(c, "tongue") && readyWorn(state, ctx, "helm", ["tongue"])) {
+        return { type: "useItem", slot: "helm" };
+      }
+    }
 
     // (d) HARN-02 sing
     if (songReady(state) && (c.level >= 2 || C.type === "Beasts" || C.type === "Lair Beasts")) return { type: "sing" };
@@ -953,12 +1032,14 @@ export function decideAction(state, policyRng, ctx) {
 
   const c = state.c;
   const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
-  if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
-  if (ratio < ctx.opts.campThreshold && c.rations >= (RACES[c.race]?.eats || 1)) return { type: "camp" }; // D-05
-
-  // Phase 42 (BAL-01 second half): light a carried torch while in the dark.
+  // Phase 42 (BAL-01 second half) + 260918-w4n: light a carried torch (or a
+  // ready worn Amulet of Light) while in the dark, and try a free ready worn
+  // Cloak of Regeneration BEFORE a potion or a camp — moved ahead of the
+  // drinkPotion/camp checks below so the free heal is tried first.
   const field = chooseFieldItem(state, ctx);
   if (field) return field;
+  if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
+  if (ratio < ctx.opts.campThreshold && c.rations >= (RACES[c.race]?.eats || 1)) return { type: "camp" }; // D-05
 
   // HARN-02: Summon out of combat — bank charges for the fight unless there
   // is plenty to spare (no pendingAlly, more than half of maxCharges left).
@@ -990,10 +1071,13 @@ export function decideAction(state, policyRng, ctx) {
 
   if (dotsRemaining(state.floor) === 0 || ctx.floorActions >= ctx.opts.exploreBudget) {
     const dir = dirTowardExit(state) || nearestUnseenDir(state) || pickFallbackDir(state, policyRng);
-    return { type: "move", dir };
+    // 260918-w4n: a ready worn flight item is used BEFORE stepping onto a
+    // climb/gorge tile instead of rolling it — the next decideAction
+    // re-derives the same dir and flies over for free.
+    return preHazardFlight(state, ctx, dir) ?? { type: "move", dir };
   }
   const dir = nearestUnseenDir(state) || pickFallbackDir(state, policyRng);
-  return { type: "move", dir };
+  return preHazardFlight(state, ctx, dir) ?? { type: "move", dir };
 }
 
 /**

@@ -30,7 +30,7 @@ never a generic "you can't do that."
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |
 | `pilfer` | `useRefused`, `scrollRefused` | a Pilfer cannot use a non-heal magic item or read a scroll | `useRefused`, `scrollRefused` |
-| notWorn | useRefused | (Phase 37, GEAR-03) a cloak/jewelry/staff activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use | useRefused |
+| notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no worn slot — it is used from the bag by index, always) | useRefused |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
 | `abilityRefused` reasons | `abilityRefused` | (Phase 38, ABIL-01/04) the ABILITIES submenu's own ladder: `unknown` (not in the catalog, or not owned) · `cooldown {left}` (rounds remaining — the canon "Your arm has opinions." line) · `notInCombat` (no active encounter) · `noTarget` (structurally unreachable in combat, same reasoning as `castSpell`'s own retarget) · `notLowEnough` (Last Stand above a quarter hp, payload `have`/`max`) — plus the shared `notFought` above. Every reason names the ability; rows stay TAPPABLE on cooldown (never disabled) — the dispatch itself is the refusal | `abilityRefused` |
 
@@ -134,23 +134,40 @@ future staff, or a save carrying one, could set `every`).
 | Pine Staff | fire | `useRefused combatOnly` | works (`itemBurned`) | `wrongClass` |
 | Cedar Staff | gas | `useRefused combatOnly` | works (up to all asleep) | `wrongClass` |
 
-**Cloaks (8):** `cloakHeal`/`noCrit`/`cloakRegen`/`cloakArmor`/`fly` are
-passive `eff` flags (no refusal concept — always on). Three carry a `use` +
-`every` cooldown, open to EVERY class (not staff-gated):
+**Cloaks (7 — the dropped healing cloak was removed by the user on
+2026-09-18, quick 260918-w4n; CLOAKS was 8):** 260918-w4n (use-activated-
+only): every row is act-only now — there are no more passive `eff` flags.
+Worn AND used starts the item's own `item:<name>` c.timers record, which
+then starts the cooldown; a bagged or worn-but-unused cloak grants nothing.
+All seven work from ANY class (not staff-gated), open outside combat (none
+are `TARGETED_KINDS`); on cooldown, `useRefused cooldown {left}`:
 
+- Cloak of Strength (`brace`, effect 50 / cd 50 — no critical lands on you)
 - Cloak of Invisibility (`invis`, every 100)
 - Cloak of Speed (`haste`, every 50)
+- Cloak of Regeneration (`knit`, effect 0 / cd 20 — a flat d6 hp back on use)
+- Cloak of Armor (`plate`, effect 50 / cd 50 — soaks as Plate while live)
+- Cloak of Flying (`fly`, effect 20 / cd 50 — the old climb/gorge
+  auto-activation is REMOVED; only `useItem` on the worn cloak starts flight)
 - Cloak of Ether (`ether`, every 100)
 
-None of the three are in `TARGETED_KINDS`, so all three work outside combat
-too; on cooldown, `useRefused cooldown {left}`.
+**Jewelry (8):** 260918-w4n: Ring of Power (`power`, effect 50 / cd 50),
+Gauntlet of the Giant (`giant`, effect 50 / cd 50), Amulet of Light
+(`glow`, effect 50 / cd 50 — also dispels `c.darkFor` at once), Anklet of Invisibility
+(`unseen`, effect 50 / cd 50), Helm of Knowledge (`tongue`, effect 50 / cd
+50), and Bracelet of Flight (`fly`, effect 20 / cd 50 — mirrors the Cloak
+of Flying exactly, same auto-activation removal) are ALL act-only now, worn
+AND used, same as the cloaks above — there are no more passive `eff` flags
+anywhere in JEWELRY either. Pendant of Fortitude (`use:"half"`, every 100,
+`c.halfNext=true`) is open anywhere. Amulet of Stone (`use:"stone"`, every
+200, `aoe:4`) is `TARGETED_KINDS` — `useRefused combatOnly` outside combat;
+in combat, stones up to 4 foes (§6, CMB-06).
 
-**Jewelry (8):** Ring of Power/Gauntlet of the Giant/Amulet of Light/Anklet
-of Invisibility/Helm of Knowledge/Bracelet of Flight are passive `eff`
-flags. Pendant of Fortitude (`use:"half"`, every 100, `c.halfNext=true`) is
-open anywhere. Amulet of Stone (`use:"stone"`, every 200, `aoe:4`) is
-`TARGETED_KINDS` — `useRefused combatOnly` outside combat; in combat, stones
-up to 4 foes (§6, CMB-06).
+**Staff amendment (260918-w4n):** a staff is not equipable at all — it has
+no worn slot anywhere (`WORN_SLOTS` is five keys: ring/bracelet/amulet/
+helm/cloak). A staff lives in `c.items` (one bag slot) and is used from the
+bag by index — never "worn"; the eight staves above are unaffected
+otherwise (charges/recharge unchanged, `wrongClass` for a non-Magic-User).
 
 **Scrolls:** `readScroll` — no scrolls → `scrollRefused noScrolls`; a Pilfer
 → `scrollRefused pilfer`; no Magic-User class and no Runes/Signs skill →

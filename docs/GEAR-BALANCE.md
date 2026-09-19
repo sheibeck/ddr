@@ -399,11 +399,44 @@ since it already read "once every 100 squares" describing the total cycle,
 not the literal cooldown). Every other row already fit and kept its literal
 canon/prototype value.
 
+### Use-activated only (user ruling 2026-09-18, quick 260918-w4n)
+
+> "Items that are equipable must be equipped to be used. Items that are not
+> equipable can be used from the bag."
+
+> "Every cloak must have a Use button; it's only active when you use it.
+> Same for every staff, amulet, etc. Nothing works without using it, which
+> triggers its cooldown."
+
+Staff amendment, verbatim: "A magic staff is a usable item, but not
+equipable. Staff should not be an equipment slot. It just takes up a bag
+slot and is usable from the bag."
+
+And: "Drop Cloak of Healing" — the item leaves the game outright.
+
+Applied: every JEWELRY/CLOAKS row now carries an `act` block — **there are
+no passive rows any more**. An `eff` map is a PAYLOAD applied only while the
+item's own `item:<name>` c.timers record is live (`engine/derived.js#eff`
+sums it there, and nowhere else) — a bagged or worn-but-unused item grants
+nothing. There is no auto-activation: the Cloak of Flying no longer starts
+its own flight window on a climb/gorge tile — only `useItem` on a WORN item
+starts the record, which then starts the cooldown. A staff leaves the
+worn-slot taxonomy entirely: it lives in `c.items` (one bag slot), used by
+bag index, keeping its charges+recharge model unchanged.
+
+~~Cloak of Healing~~ — removed from the game (user, 2026-09-18); CLOAKS
+drops from d8 to d7. The three cloak rolls (Thief starting cloak, the Cloak
+find, `rollCloak`) now draw `rng.d(CLOAKS.length)` instead of a literal 8 —
+still ONE `gen.next()` draw, so the rng cursor never shifts, only the row a
+given draw lands on can change. A save carrying the dropped cloak loads it
+as an inert cloak: `slotFor` still resolves it by kind, but `activationFor`
+is null (no Use button, no effect, no throw).
+
 ### The three tables
 
-**Duration + cooldown** (JEWELRY/CLOAKS rows with a `use`, plus the
-auto-activating Cloak of Flying) — source: canon `every`/duration text,
-re-authored per the once-a-day rule where noted above:
+**Duration + cooldown** (every JEWELRY/CLOAKS row — all are act-only now) —
+source: canon `every`/duration text, re-authored per the once-a-day rule
+where noted above:
 
 | Row | act.kind | effect (squares) | cd (squares) | source |
 |---|---|---|---|---|
@@ -412,7 +445,16 @@ re-authored per the once-a-day rule where noted above:
 | Cloak of Invisibility | invis | 50 | 50 | once-a-day rule, was 100/100 |
 | Cloak of Speed | haste | 50 | 50 | canon `every: 50`, unchanged |
 | Cloak of Ether | ether | 20 | 80 | once-a-day rule, cd was 100 |
-| Cloak of Flying | fly | 20 | 50 | canon "once every 50" — the row has no `every` field (it auto-activates, no `use`), so `act.cd: 50` is the explicit override |
+| Cloak of Flying | fly | 20 | 50 | canon "once every 50" — the row has no `every` field, so `act.cd: 50` is the explicit override; 260918-w4n removes the auto-activation on a climb/gorge tile — a ready-but-unstarted Cloak of Flying is not flying, only `useItem` on the worn cloak starts the record |
+| Ring of Power (260918-w4n) | power | 50 | 50 | `{ dmg: 1 }` while live — outside the orchestrator's originally-proposed list, but inside the rule as the user stated it ("ring... amulet, etc") |
+| Gauntlet of the Giant (260918-w4n) | giant | 50 | 50 | `{ size: 1 }` while live |
+| Amulet of Light (260918-w4n) | glow | 50 | 50 | `{ sight: 1, light: 1 }` while live; dispels `c.darkFor` the instant it is used |
+| Anklet of Invisibility (260918-w4n) | unseen | 50 | 50 | `{ foeToHit: -2 }` while live |
+| Helm of Knowledge (260918-w4n) | tongue | 50 | 50 | `{ tongue: 1 }` while live |
+| Bracelet of Flight (260918-w4n) | fly | 20 | 50 | `{ fly: 1 }` while live — mirrors the Cloak of Flying exactly |
+| Cloak of Regeneration (260918-w4n) | knit | 0 (instant: one `rng.d(6)` back) | 20 | the once-per-use faithful reading of "d6 hp back every 20 squares" |
+| Cloak of Strength (260918-w4n) | brace | 50 | 50 | `{ noCrit: 1 }` while live |
+| Cloak of Armor (260918-w4n) | plate | 50 | 50 | `{ cloakArmor: 1 }` while live |
 
 **Charges + recharge** (STAVES rows; `effect` only where the use has its
 own duration) — source: Claude's discretion per the CONTEXT's explicit
@@ -431,6 +473,10 @@ User's one weapon:
 | Pine Staff | fire | 1 | 100 | instant |
 | Cedar Staff | gas | 1 | 100 | instant |
 
+260918-w4n (staff amendment): staves are not equipable — a staff is a bag
+item, used from the bag by index, Magic User only; it has no worn slot
+anywhere.
+
 **Consumables** (POTIONS rows; consumed on use; no cd) — source: canon
 duration text verbatim:
 
@@ -443,8 +489,8 @@ duration text verbatim:
 | Invisible | invis | 100 squares | canon text says "a day"; the prototype set 100 — kept |
 
 Healing / Xtra Healing / Cure Poison / Cure Disease / Death: instant, no
-`act`. Passive rows (Ring of Power, Gauntlet, Amulet of Light, Anklet, Helm,
-Bracelet of Flight, Cloak of Healing/Strength/Regeneration/Armor): no `act`.
+`act`. There are no passive rows any more (260918-w4n) — every JEWELRY/
+CLOAKS row carries an `act` block; see the duration+cooldown table above.
 
 ### The representation
 

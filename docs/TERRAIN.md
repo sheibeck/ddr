@@ -152,10 +152,9 @@ Area 1, 2026-09-18):
 
 | Carrier state | Cost on water |
 |---|---|
-| Bracelet of Flight (unconditional) | 1 |
-| A LIVE `fly` item effect (a started Cloak of Flying window) | 1 |
+| A LIVE `fly` item effect (a started Cloak of Flying OR Bracelet of Flight window) | 1 |
 | A LIVE `ether` item effect (a started Cloak of Ether window) | 1 |
-| A READY-but-unstarted Cloak of Flying (no live record) | 2 — **not spent on a puddle.** Unlike the climb/gorge block's `flyOver()` (which starts a fresh Cloak-of-Flying window the instant a Cloak-only character reaches a wall/crevice), a water step never calls `startEffect` — the cloak's charge is a wall/crevice resource, not a puddle one. |
+| A READY-but-unstarted Cloak of Flying / Bracelet of Flight (no live record) | 2 — **not spent on a puddle.** 260918-w4n (use-activated-only, user ruling 2026-09-18): the old auto-activation (`flyOver()` starting a fresh Cloak-of-Flying window the instant a Cloak-only character reached a wall/crevice) and the Bracelet's old unconditional-flight special case are BOTH retired — only `useItem` on a WORN flight item ever starts a record. A water step never calls `startEffect` either way; the item's charge is a wall/crevice resource, not a puddle one. |
 
 ### Per-square systems this cost widens (one dispatch)
 
@@ -164,7 +163,6 @@ Area 1, 2026-09-18):
 | HUD SQUARES counter | `state.steps` itself |
 | Affliction cadence | a `crossings(af.per)`-counted loop over the existing tick body, stopping the instant the affliction clears inside it (a `per:1` affliction ticks TWICE on one 2-cost water step) |
 | `c.darkFor` | `Math.max(0, c.darkFor - cost)`, same clamp-at-0-with-one-event discipline |
-| Cloak of Healing / Cloak of Regeneration (20-square ticks) | `crossings(CLOAK_TICK_SQUARES) > 0` |
 | `c.timers` (ability/item/spell-reveal timers) | `tickSquares(c, cost)`, once |
 | Magic User spell-charge recovery (20-square) | `crossings(20) > 0` |
 | `newDay` (100-square, "once-a-day") | `crossings(100) > 0` |

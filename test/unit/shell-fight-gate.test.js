@@ -107,7 +107,10 @@ test("CMB-04: the cn.key === \"ward\" branch renders both hp and rds on one chip
 
 test("CMB-02: renderCarriedList's use branch no longer gates the Use button on itemReady", () => {
   assert.doesNotMatch(CODE, /itemReady\(it\)\) li\.appendChild/);
-  assert.match(CODE, /it\.kind === "potion" \|\| it\.use\) li\.appendChild\(mkBtn\("Use"/);
+  // 260918-w4n (use-activated-only): the gate moved from a raw `it.use`
+  // string to the ONE row-state rule (st.kind !== "none") — see
+  // src/browser/viewModels.js#itemRowState.
+  assert.match(CODE, /st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/);
 });
 
 test("Phase 34/39: the ITEMS/ABILITIES rows never hide on readiness — combatMenu.js lists the Sing row and carried usables with enabled flags, never filters them", () => {

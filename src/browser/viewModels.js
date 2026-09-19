@@ -318,7 +318,9 @@ export function bagUsage(c) {
  * module, so the voice scan and the hp-not-wp guard can both walk it as a
  * single leaf group. `empty` is nested and frozen too. The worn-slot empty
  * states read as SLOTS, in voice (CONTEXT §CLAR-04: "ring — nothing"), never
- * a bare dash.
+ * a bare dash. 260918-w4n (staff amendment): the five worn slots are the
+ * complete set — a staff is a bag item now, so it carries no empty-slot row
+ * at all (the two staff leaves this object used to carry are gone).
  */
 export const GEAR_COPY = Object.freeze({
   onYou: "ON YOU",
@@ -334,8 +336,6 @@ export const GEAR_COPY = Object.freeze({
     amulet: "amulet — nothing. Your neck has never been less interesting.",
     helm: "helm — nothing. Hair, technically, counts for zero.",
     cloak: "cloak — nothing. Cold and unmagical, in that order.",
-    staff: "staff — nothing. Wave your hands and see how far that gets you.",
-    staffNotYou: "staff — nothing, and nothing you could hold. Magic Users only.",
   }),
 });
 
@@ -357,16 +357,15 @@ export function dropShelfItems(c) {
 }
 
 /**
- * emptySlotRows(c) — Phase 43 (CLAR-04): one in-voice row per EMPTY worn
- * slot — armor (via `armorDisplay(c)`, only when neither worn nor the Cloak
- * of Armor's magic plate) followed by the six `WORN_SLOTS`, in that fixed
- * order — so Plan 04's ON YOU panel can render these between the existing
- * wornRow/wornSlotRow rows. A legacy `c` with no `worn` map yields all six
- * slot rows (every `c.worn?.[slot]` read is falsy). The staff row alone
- * carries a class-aware text: `GEAR_COPY.empty.staffNotYou` for anyone but a
- * Magic User (mirrors `engine/items.js#autoWearSlot`'s staff gate — a
- * non-caster could never wear one anyway), else `GEAR_COPY.empty.staff`.
- * Pure, no rng, no mutation.
+ * emptySlotRows(c) — Phase 43 (CLAR-04) + 260918-w4n (staff amendment): one
+ * in-voice row per EMPTY worn slot — armor (via `armorDisplay(c)`, only when
+ * neither worn nor the Cloak of Armor's magic plate) followed by the five
+ * `WORN_SLOTS`, in that fixed order — so Plan 04's ON YOU panel can render
+ * these between the existing wornRow/wornSlotRow rows. A legacy `c` with no
+ * `worn` map yields all five slot rows (every `c.worn?.[slot]` read is
+ * falsy). A staff is a bag item now — it has no worn slot and therefore no
+ * empty-slot row at all; `WORN_SLOTS` no longer contains "staff", so this
+ * loop never needs a class-aware branch. Pure, no rng, no mutation.
  */
 export function emptySlotRows(c) {
   if (!c || typeof c !== "object") return [];
@@ -375,7 +374,7 @@ export function emptySlotRows(c) {
   if (!armor.worn && !armor.magic) rows.push({ slot: "armor", text: GEAR_COPY.empty.armor });
   for (const slot of WORN_SLOTS) {
     if (c.worn && c.worn[slot]) continue;
-    const text = slot === "staff" ? (c.cls === "Magic User" ? GEAR_COPY.empty.staff : GEAR_COPY.empty.staffNotYou) : GEAR_COPY.empty[slot];
+    const text = GEAR_COPY.empty[slot];
     rows.push({ slot, text });
   }
   return rows;
@@ -395,37 +394,37 @@ export const ITEM_STATE_COPY = Object.freeze({
 });
 
 /**
- * itemRowState(state, it) — Phase 39 (GEAR-02/GEAR-05): the ONE row-state
- * rule for every carried/worn item — the Gear tab's worn/carried rows and
- * the ITEMS submenu (combatMenu.js) both read it, mirroring the Phase 38
- * ability-row precedent (READY/N ROUNDS/ONCE A FIGHT · USED lives in
- * exactly one place). Returns `{ text, kind, remaining? }`:
- *   - not activatable at all (no `use`, not a potion — a weapon/armor/rope/
- *     ladder/passive jewel): `{ text: "", kind: "none" }`
- *   - a one-shot consumable (a potion, or the torch — `kind: "tool"` WITH a
- *     `use`; rope/ladder carry no `use` and are already caught by the first
- *     branch): `{ text: "", kind: "consumable" }`
- *   - a duration+cooldown jewelry/cloak/staff with NO resolvable activation
- *     at all (a tampered/unknown item name — `activationFor` returns null):
- *     `{ text: ITEM_STATE_COPY.ready, kind: "ready" }`
+ * itemRowState(state, it) — Phase 39 (GEAR-02/GEAR-05) + 260918-w4n
+ * (use-activated-only): the ONE row-state rule for every carried/worn item —
+ * the Gear tab's worn/carried rows and the ITEMS submenu (combatMenu.js)
+ * both read it, mirroring the Phase 38 ability-row precedent (READY/N
+ * ROUNDS/ONCE A FIGHT · USED lives in exactly one place). Returns
+ * `{ text, kind, remaining? }`:
+ *   - not activatable at all (`activationFor` returns null — a weapon/
+ *     armor/rope/ladder/picks/bag): `{ text: "", kind: "none" }`
+ *   - a potion, or a `kind: "tool"` activatable (the torch): a one-shot
+ *     consumable, `{ text: "", kind: "consumable" }`
  *   - a staff (`act.charges` defined): READY when its current charge count
  *     is at the pool max AND no recharge record is counting down; otherwise
  *     `"{k}/{max} · {n} SQ"` (k may be 0) via the `charges:<key>` record
- *   - everything else (duration+cooldown jewelry/cloaks): READY with no
- *     `item:<key>` record; `"{n} SQ"` (singular `"1 SQ"`) mid-effect;
- *     `"cd {n} SQ"` while cooling
+ *   - everything else (every JEWELRY/CLOAKS row — ALL are act-only now, no
+ *     more "no activation -> READY" fallback): READY with no `item:<key>`
+ *     record; `"{n} SQ"` (singular `"1 SQ"`) mid-effect; `"cd {n} SQ"` while
+ *     cooling
  * Reads `state.c.timers` ONLY through `engine/effects.js#remaining`/`isReady`
  * and the item's own activation via `engine/derived.js#activationFor` —
- * NEVER the retired counter-based item cooldown fields. Pure, no
- * rng, no mutation, never throws on a legacy `c` with no `timers` map.
+ * NEVER the retired counter-based item cooldown fields, and NEVER an `it.use`
+ * string. Pure, no rng, no mutation, never throws on a legacy `c` with no
+ * `timers` map.
  */
 export function itemRowState(state, it) {
   const c = (state && state.c) || {};
-  if (!it || (!it.use && it.kind !== "potion")) return { text: "", kind: "none" };
-  if (it.kind === "potion" || it.kind === "tool") return { text: "", kind: "consumable" };
+  if (!it) return { text: "", kind: "none" };
+  if (it.kind === "potion") return { text: "", kind: "consumable" };
 
   const act = activationFor(it);
-  if (!act) return { text: ITEM_STATE_COPY.ready, kind: "ready" };
+  if (!act) return { text: "", kind: "none" };
+  if (it.kind === "tool") return { text: "", kind: "consumable" };
 
   if (act.charges !== undefined) {
     const max = act.charges;

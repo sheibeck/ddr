@@ -482,46 +482,69 @@ test("chooseCombatItem: a ready worn Cloak of Speed is used at round 1 of a hard
   assert.deepStrictEqual(chooseCombatItem(state, ctx), { action: { type: "useItem", slot: "cloak" }, reason: "buff" });
 });
 
-// --- chooseCombatItem: a Magic User's worn staff ---------------------------
+// 260918-w4n: the round-1 worn-buff tier walks WORN_SLOTS order (ring,
+// bracelet, amulet, helm, cloak) — the first ready buff wins, regardless of
+// which kind it is; a live (already-active) buff of that same kind is
+// skipped even when a different slot could still fire.
+test("chooseCombatItem: round-1 worn buff tier walks WORN_SLOTS order and skips an already-live kind", () => {
+  const ctx = makeBotContext();
+  const hard = fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, lvl: 3, wp: 20, maxWP: 20 }] });
+  const ring = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 } }; // kind: power
+  const cloak = { kind: "cloak", n: "Cloak of Strength", eff: { noCrit: 1 } }; // kind: brace
 
-test("chooseCombatItem: a Magic User's worn targeted staff fires at staffMinFoes+ live foes", () => {
+  // ring (earlier in WORN_SLOTS order) wins over cloak when both are ready.
+  const both = mkState({ combat: hard, c: fighter({ worn: { ring, cloak } }) });
+  assert.deepStrictEqual(chooseCombatItem(both, ctx), { action: { type: "useItem", slot: "ring" }, reason: "buff" });
+
+  // the ring's kind (power) is already live -> falls through to the cloak.
+  const ringLive = mkState({
+    combat: hard,
+    c: fighter({ worn: { ring, cloak }, timers: { "item:Ring of Power": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } }),
+  });
+  assert.deepStrictEqual(chooseCombatItem(ringLive, ctx), { action: { type: "useItem", slot: "cloak" }, reason: "buff" });
+});
+
+// --- chooseCombatItem: a Magic User's BAGGED staff (260918-w4n: a staff
+// has no worn slot any more — it is always addressed by bag index) --------
+
+test("chooseCombatItem: a Magic User's bagged targeted staff fires at staffMinFoes+ live foes", () => {
   const ctx = makeBotContext();
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
 
-  const oneFoe = mkState({ combat: fight("Beasts", 1, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [], worn: { staff }, timers: {} } });
+  const oneFoe = mkState({ combat: fight("Beasts", 1, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
   assert.strictEqual(chooseCombatItem(oneFoe, ctx), null);
 
-  const twoFoes = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [], worn: { staff }, timers: {} } });
-  assert.deepStrictEqual(chooseCombatItem(twoFoes, ctx), { action: { type: "useItem", slot: "staff" }, reason: "staff" });
+  const twoFoes = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
+  assert.deepStrictEqual(chooseCombatItem(twoFoes, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
 
   // a Fighter never fires a staff (class-gated at the top of the check)
-  const fighterWithStaff = mkState({ combat: fight("Beasts", 2, 2), c: fighter({ worn: { staff } }) });
+  const fighterWithStaff = mkState({ combat: fight("Beasts", 2, 2), c: fighter({ items: [staff] }) });
   assert.strictEqual(chooseCombatItem(fighterWithStaff, ctx), null);
 
   // an empty staff (0 charges) is never ready (itemReady's own charge gate)
   const emptyStaff = { ...staff, charges: 0 };
-  const noCharges = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [], worn: { staff: emptyStaff }, timers: {} } });
+  const noCharges = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [emptyStaff], worn: {}, timers: {} } });
   assert.strictEqual(chooseCombatItem(noCharges, ctx), null);
 });
 
-test("chooseCombatItem: a worn dome/heal staff fires below potionThreshold; dome is skipped with an active ward", () => {
+test("chooseCombatItem: a bagged dome/heal staff fires below potionThreshold; dome is skipped with an active ward", () => {
   const ctx = makeBotContext();
   const domeStaff = { kind: "staff", n: "Rowan Staff", use: "dome", charges: 2 };
   const healStaff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
   const combat = fight("Beasts", 1, 2);
-  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 10, maxWP: 40, potions: 0, items: [], timers: {}, ...over }); // 0.25 < potionThreshold 0.5
+  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 10, maxWP: 40, potions: 0, worn: {}, timers: {}, ...over }); // 0.25 < potionThreshold 0.5
 
-  const domeReady = mkState({ combat, c: muC({ worn: { staff: domeStaff }, ward: null }) });
-  assert.deepStrictEqual(chooseCombatItem(domeReady, ctx), { action: { type: "useItem", slot: "staff" }, reason: "staff" });
+  const domeReady = mkState({ combat, c: muC({ items: [domeStaff], ward: null }) });
+  assert.deepStrictEqual(chooseCombatItem(domeReady, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
 
-  const domeAlreadyUp = mkState({ combat, c: muC({ worn: { staff: domeStaff }, ward: { pool: 50 } }) });
+  const domeAlreadyUp = mkState({ combat, c: muC({ items: [domeStaff], ward: { pool: 50 } }) });
   assert.strictEqual(chooseCombatItem(domeAlreadyUp, ctx), null);
 
-  const healReady = mkState({ combat, c: muC({ worn: { staff: healStaff }, ward: null }) });
-  assert.deepStrictEqual(chooseCombatItem(healReady, ctx), { action: { type: "useItem", slot: "staff" }, reason: "staff" });
+  const healReady = mkState({ combat, c: muC({ items: [healStaff], ward: null }) });
+  assert.deepStrictEqual(chooseCombatItem(healReady, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
 });
 
-test("chooseCombatItem: a legacy state (no c.worn) reads a bagged staff by index; a worn-model state never reads it by index", () => {
+test("chooseCombatItem: a bagged staff is read by index regardless of the worn-slot model (legacy or c.worn present)", () => {
   const ctx = makeBotContext();
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
   const combat = fight("Beasts", 2, 2);
@@ -529,13 +552,16 @@ test("chooseCombatItem: a legacy state (no c.worn) reads a bagged staff by index
   const legacy = mkState({ combat, c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], timers: {} } });
   assert.ok(!("worn" in legacy.c));
   assert.deepStrictEqual(chooseCombatItem(legacy, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
+
+  const wornModel = mkState({ combat, c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
+  assert.deepStrictEqual(chooseCombatItem(wornModel, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
 });
 
 test("chooseCombatItem: a torch/staff/cloak label in ctx.itemBlocked is skipped", () => {
   const ctx = makeBotContext();
   ctx.itemBlocked.add("Birch Staff");
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
-  const state = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [], worn: { staff }, timers: {} } });
+  const state = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
   assert.strictEqual(chooseCombatItem(state, ctx), null);
 });
 
@@ -591,12 +617,106 @@ test("chooseFieldItem: lights a bag torch while in the dark and not already lit;
   assert.strictEqual(chooseFieldItem(inDarkState, blockedCtx), null);
 });
 
-test("decideAction: the torch step sits out of combat, after camp", () => {
+test("decideAction: the torch step sits out of combat", () => {
   const ctx = makeBotContext();
   const torch = { kind: "tool", tool: "torch", n: "Torch", use: "light" };
   const darkFloor = { g: [[{ wall: false, seen: true, feat: null, dark: true }]], px: 0, py: 0, depth: 1 };
   const state = mkState({ floor: darkFloor, c: { wp: 40, maxWP: 40, rations: 0, potions: 0, items: [torch] } });
   assert.deepStrictEqual(decideAction(state, fixedPolicyRng, ctx), { type: "useItem", i: 0 });
+});
+
+// --- chooseFieldItem: 260918-w4n additions (Amulet of Light, Cloak of
+// Regeneration, and field-item priority over drinkPotion/camp) -------------
+
+test("chooseFieldItem: in the dark with no torch, a ready worn Amulet of Light is used (kind glow)", () => {
+  const ctx = makeBotContext();
+  const darkFloor = { g: [[{ wall: false, seen: true, feat: null, dark: true }]], px: 0, py: 0, depth: 1 };
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 } };
+
+  const ready = mkState({ floor: darkFloor, c: fighter({ worn: { amulet } }) });
+  assert.deepStrictEqual(chooseFieldItem(ready, ctx), { type: "useItem", slot: "amulet" });
+
+  // a carried torch still wins over the amulet
+  const torch = { kind: "tool", tool: "torch", n: "Torch", use: "light" };
+  const withTorch = mkState({ floor: darkFloor, c: fighter({ items: [torch], worn: { amulet } }) });
+  assert.deepStrictEqual(chooseFieldItem(withTorch, ctx), { type: "useItem", i: 0 });
+
+  // a LIVE glow effect (already used) needs no torch/amulet
+  const alreadyGlowing = mkState({
+    floor: darkFloor,
+    c: fighter({ worn: { amulet }, timers: { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } }),
+  });
+  assert.strictEqual(chooseFieldItem(alreadyGlowing, ctx), null);
+});
+
+test("chooseFieldItem: below potionThreshold, a ready worn Cloak of Regeneration is used (kind knit) — tried before a potion or camp", () => {
+  const ctx = makeBotContext();
+  const cloak = { kind: "cloak", n: "Cloak of Regeneration", eff: { cloakRegen: 1 } };
+  const litFloor = { g: [[{ wall: false, seen: true, feat: null, dark: false }]], px: 0, py: 0, depth: 1 };
+
+  const hurt = mkState({ floor: litFloor, c: fighter({ wp: 5, maxWP: 40, worn: { cloak } }) });
+  assert.deepStrictEqual(chooseFieldItem(hurt, ctx), { type: "useItem", slot: "cloak" });
+
+  // decideAction tries it BEFORE drinkPotion, even with a potion in the bag
+  const hurtWithPotion = mkState({
+    floor: litFloor,
+    c: fighter({ wp: 5, maxWP: 40, potions: 3, worn: { cloak } }),
+  });
+  assert.deepStrictEqual(decideAction(hurtWithPotion, fixedPolicyRng, ctx), { type: "useItem", slot: "cloak" });
+
+  // full health never fires it
+  const healthy = mkState({ floor: litFloor, c: fighter({ wp: 40, maxWP: 40, worn: { cloak } }) });
+  assert.strictEqual(chooseFieldItem(healthy, ctx), null);
+});
+
+// --- preHazardFlight (via decideAction's field-movement dispatch) ---------
+
+test("decideAction: a ready worn Cloak of Flying/Bracelet of Flight is used BEFORE stepping onto a climb/gorge tile", () => {
+  const ctx = makeBotContext();
+  const cloak = { kind: "cloak", n: "Cloak of Flying", eff: { fly: 1 } };
+  // A single-cell floor with a climb tile to the north; dotsRemaining is 0
+  // (no dots), so decideAction heads toward the exit — E in this tiny grid
+  // has no cell, so dirTowardExit/nearestUnseenDir fall back; force the
+  // climb tile to be the ONLY legal direction by open-walling just N.
+  const floor = {
+    g: [
+      [{ wall: false, seen: true, feat: "climb" }],
+      [{ wall: true, seen: true, feat: null }],
+    ],
+    px: 0, py: 1, depth: 1,
+  };
+  const state = mkState({ floor, c: fighter({ worn: { cloak } }) });
+  const action = decideAction(state, fixedPolicyRng, ctx);
+  assert.deepStrictEqual(action, { type: "useItem", slot: "cloak" });
+});
+
+test("decideAction: a LIVE fly effect never re-triggers preHazardFlight (the plain move proceeds)", () => {
+  const ctx = makeBotContext();
+  const cloak = { kind: "cloak", n: "Cloak of Flying", eff: { fly: 1 } };
+  const floor = {
+    g: [
+      [{ wall: false, seen: true, feat: "climb" }],
+      [{ wall: true, seen: true, feat: null }],
+    ],
+    px: 0, py: 1, depth: 1,
+  };
+  const state = mkState({
+    floor,
+    c: fighter({ worn: { cloak }, timers: { "item:Cloak of Flying": { cadence: "squares", left: 20, cd: 50, phase: "effect" } } }),
+  });
+  const action = decideAction(state, fixedPolicyRng, ctx);
+  assert.equal(action.type, "move");
+});
+
+// --- helm-before-parley assist ---------------------------------------------
+
+test("decideAction: below the flee threshold, wants to parley but can't (fluency 0) — a ready worn Helm of Knowledge is used first", () => {
+  const ctx = makeBotContext();
+  const helm = { kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 } };
+  const combat = fight("Humans", 1, 1);
+  const state = mkState({ combat, c: fighter({ sub: "Soldier", wp: 4, maxWP: 40, worn: { helm } }) });
+  const action = decideAction(state, fixedPolicyRng, ctx);
+  assert.deepStrictEqual(action, { type: "useItem", slot: "helm" });
 });
 
 // --- the victory loot pile ---------------------------------------------

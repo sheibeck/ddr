@@ -14,7 +14,7 @@
 
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel, itemRowState } from "./viewModels.js";
-import { canCast, WORN_SLOTS, fleeBreakdown } from "../../engine/derived.js";
+import { canCast, WORN_SLOTS, fleeBreakdown, activationFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -231,16 +231,21 @@ export function combatMenuViewModel(state) {
 
   // ─── slot 3: ITEMS ──────────────────────────────────────────────────────
   const hasScroll = (c.scrolls || 0) > 0;
-  // Phase 39 (GEAR-02/GEAR-05): the cost text for every carried/worn row
-  // comes from viewModels.js#itemRowState — the ONE row-state rule (READY /
-  // "N SQ" effect / "cd N SQ" cooldown / "k/max · N SQ" staff charges),
-  // never the retired counter-based item fields. Every activatable row stays `enabled: true`
-  // (the Phase 38 ability-row ruling) — a tap on cooldown dispatches
-  // exactly like a ready one, and the engine's own useRefused {reason:
-  // "cooldown"|"recharging"} lands the canon refusal line in the fight log.
+  // Phase 39 (GEAR-02/GEAR-05) + 260918-w4n (use-activated-only): the cost
+  // text for every carried/worn row comes from viewModels.js#itemRowState —
+  // the ONE row-state rule (READY / "N SQ" effect / "cd N SQ" cooldown /
+  // "k/max · N SQ" staff charges), never the retired counter-based item
+  // fields. Usable rows are filtered on `activationFor(it)` (the governing
+  // rule), never a raw `it.use` string — every JEWELRY/CLOAKS row is
+  // act-only now, and a Magic User's bagged staff appears here by index too
+  // (a staff has no worn slot, so it can only ever reach this bag branch).
+  // Every activatable row stays `enabled: true` (the Phase 38 ability-row
+  // ruling) — a tap on cooldown dispatches exactly like a ready one, and the
+  // engine's own useRefused {reason: "cooldown"|"recharging"|"notWorn"}
+  // lands the canon refusal line in the fight log.
   const carriedRows = (c.items || [])
     .map((it, i) => ({ it, i }))
-    .filter(({ it }) => it && (it.kind === "potion" || it.use))
+    .filter(({ it }) => it && (it.kind === "potion" || activationFor(it)))
     .map(({ it, i }) => ({
       id: `item-${i}`,
       label: String(it.n).toUpperCase(),
@@ -249,12 +254,13 @@ export function combatMenuViewModel(state) {
       enabled: true,
       dispatch: { type: "useItem", i },
     }));
-  // Phase 37 (GEAR-03): worn activatables must be worn to work in the new
-  // model, so a worn staff/cloak/jewel must be reachable from the fight's
-  // ITEMS submenu — the shell's COMBAT_DISPATCH forwards `slot` (Plan 04).
-  // A legacy c (no c.worn key) contributes zero rows here, byte-identical
-  // to before this phase.
-  const wornRows = WORN_SLOTS.filter((slot) => c.worn && c.worn[slot] && c.worn[slot].use).map((slot) => {
+  // Phase 37 (GEAR-03) + 260918-w4n: worn activatables must be worn to work
+  // in the worn-slot model, so a worn cloak/jewel must be reachable from the
+  // fight's ITEMS submenu — the shell's COMBAT_DISPATCH forwards `slot`
+  // (Plan 04). With WORN_SLOTS now five keys a staff can never appear here
+  // (it has no worn slot). A legacy c (no c.worn key) contributes zero rows
+  // here, byte-identical to before this phase.
+  const wornRows = WORN_SLOTS.filter((slot) => c.worn && activationFor(c.worn[slot])).map((slot) => {
     const it = c.worn[slot];
     return {
       id: `worn-${slot}`,

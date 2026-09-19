@@ -977,7 +977,8 @@ export const TOAST_FOR = {
     tone: "hit",
     priority: PRIORITY.feature,
   }),
-  cloakHealed: (e) => ({ text: `Cloak mends +${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.other }),
+  // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
+  // the game — the "cloakHealed" event type no longer exists anywhere.
   cloakRegenerated: (e) => ({ text: `Flesh knits +${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.other }),
   armorPatched: (e) => ({ text: `${e?.by ?? "Mending"}: +${e?.amount ?? 0} armour.`, tone: "hit", priority: PRIORITY.feature }),
   potionDuplicated: () => ({ text: "Warlock: +1 potion.", tone: "magic", priority: PRIORITY.feature }),
@@ -1559,6 +1560,14 @@ export const TOAST_FOR = {
       might: `+${e?.might ?? "?"} damage for ${n} squares.`,
       fly: `Twenty squares of not touching the floor.`,
       lit: `Forty squares of carrying a light.`,
+      // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
+      power: `+1 damage for ${n} squares. The ring approves.`,
+      giant: `${n} squares of being one size too large for the corridor.`,
+      glow: `Fifty squares of being your own lantern.`,
+      unseen: `Unseen for ${n} squares. They need two better.`,
+      tongue: `${n} squares of perfect fluency. Do not waste it on small talk.`,
+      brace: `${n} squares with nothing critical landing on you.`,
+      plate: `${n} squares of weightless plate.`,
     };
     return { text: map[e?.kind] ?? `${e?.item ?? "It"}: ${n} squares.`, tone: "magic", priority: PRIORITY.you };
   },

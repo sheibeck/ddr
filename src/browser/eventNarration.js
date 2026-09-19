@@ -204,10 +204,11 @@ export const EVENT_NARRATION = {
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
   rested: (e) =>
     `Rest restores <span class="hit">+${e.amount ?? 0} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
-  // Phase 15 item-wiring (ECON-08): the two healing cloaks tick as you walk —
-  // Healing a flat mend every 20 squares, Regeneration a rolled d6. Deadpan.
-  cloakHealed: (e) => `<span class="hit">The cloak mends what it can as you walk — +${e.amount ?? 0} hp.</span>`,
-  cloakRegenerated: (e) => `<span class="hit">Flesh knits itself back over twenty quiet squares — +${e.amount ?? 0} hp.</span>`,
+  // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
+  // the game (the "cloakHealed" event type no longer exists anywhere) — the
+  // Cloak of Regeneration is now use-activated, a flat d6 back ON USE, then
+  // a 20-square cooldown, not a per-step tick.
+  cloakRegenerated: (e) => `<span class="hit">Flesh knits itself back — +${e.amount ?? 0} hp.</span> Ask again in twenty squares.`,
   armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
   potionDuplicated: () => `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`,
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost, cause first — every
@@ -944,6 +945,14 @@ export const EVENT_NARRATION = {
       fly: `<span class="hit">Twenty squares of not touching the floor.</span>`,
       // Phase 39 (GEAR-05): the torch's lit effect.
       lit: `<span class="hit">Forty squares of carrying a light.</span>`,
+      // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
+      power: `<span class="hit">+1 damage for ${n} squares. The ring approves.</span>`,
+      giant: `<span class="hit">${n} squares of being one size too large for the corridor.</span>`,
+      glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
+      unseen: `<span class="hit">Unseen for ${n} squares. They need two better.</span>`,
+      tongue: `<span class="hit">${n} squares of perfect fluency. Do not waste it on small talk.</span>`,
+      brace: `<span class="hit">${n} squares with nothing critical landing on you.</span>`,
+      plate: `<span class="hit">${n} squares of weightless plate.</span>`,
     };
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"}: ${n} squares.</span>`;
   },

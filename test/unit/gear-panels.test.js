@@ -34,7 +34,7 @@ function fixedChar(overrides = {}) {
 
 // ─── GEAR_COPY — frozen shape pin ───────────────────────────────────────────
 
-test("GEAR_COPY carries the exact frozen literal shape", () => {
+test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff leaves — a staff is a bag item)", () => {
   assert.deepEqual(GEAR_COPY, {
     onYou: "ON YOU",
     wielded: "WIELDED",
@@ -49,8 +49,6 @@ test("GEAR_COPY carries the exact frozen literal shape", () => {
       amulet: "amulet — nothing. Your neck has never been less interesting.",
       helm: "helm — nothing. Hair, technically, counts for zero.",
       cloak: "cloak — nothing. Cold and unmagical, in that order.",
-      staff: "staff — nothing. Wave your hands and see how far that gets you.",
-      staffNotYou: "staff — nothing, and nothing you could hold. Magic Users only.",
     },
   });
   assert.ok(Object.isFrozen(GEAR_COPY));
@@ -118,47 +116,50 @@ test("dropShelfItems(c).length === slotItems(c).length across several shapes", (
 
 // ─── emptySlotRows ───────────────────────────────────────────────────────────
 
-test("emptySlotRows: a fresh Fighter with nothing worn and no armor gets all seven rows", () => {
+test("emptySlotRows: a fresh Fighter with nothing worn and no armor gets all six rows (260918-w4n: no staff row)", () => {
   const c = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0 });
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(
     rows.map((r) => r.slot),
-    ["armor", "ring", "bracelet", "amulet", "helm", "cloak", "staff"],
+    ["armor", "ring", "bracelet", "amulet", "helm", "cloak"],
   );
   assert.equal(rows[0].text, GEAR_COPY.empty.armor);
-  assert.equal(rows[rows.length - 1].text, GEAR_COPY.empty.staffNotYou);
+  assert.equal(rows[rows.length - 1].text, GEAR_COPY.empty.cloak);
 });
 
-test("emptySlotRows: worn armor removes the armor row; worn slots are skipped in order", () => {
+test("emptySlotRows: worn armor removes the armor row; worn slots are skipped in order (no staff row)", () => {
   const c = fixedChar({ worn: { ring: { kind: "jewel", n: "Ring" } } });
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(
     rows.map((r) => r.slot),
-    ["bracelet", "amulet", "helm", "cloak", "staff"],
+    ["bracelet", "amulet", "helm", "cloak"],
   );
   assert.equal(rows[0].slot, "bracelet");
-  assert.equal(rows[rows.length - 1].slot, "staff");
-  assert.equal(rows[rows.length - 1].text, GEAR_COPY.empty.staffNotYou);
+  assert.equal(rows[rows.length - 1].slot, "cloak");
 });
 
-test("emptySlotRows: a Magic User's empty staff row reads the plain empty text, not the not-you text", () => {
+test("emptySlotRows: a fully-slotted Magic User (all five worn) yields no worn-slot rows — a staff is never one of them", () => {
   const c = fixedChar({ cls: "Magic User", worn: { ring: {}, bracelet: {}, amulet: {}, helm: {}, cloak: {} } });
   const rows = emptySlotRows(c);
-  assert.deepStrictEqual(rows, [{ slot: "staff", text: GEAR_COPY.empty.staff }]);
+  assert.deepStrictEqual(rows, []);
 });
 
-test("emptySlotRows: the Cloak of Armor's magic plate counts as worn (no armor row) even with c.armor unset", () => {
-  const c = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, worn: { cloak: { kind: "cloak", n: "Cloak of Armor", eff: { cloakArmor: 4 } } } });
+test("emptySlotRows: the Cloak of Armor's magic plate counts as worn (no armor row) even with c.armor unset — worn AND used (260918-w4n)", () => {
+  const c = fixedChar({
+    armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0,
+    worn: { cloak: { kind: "cloak", n: "Cloak of Armor", eff: { cloakArmor: 4 } } },
+    timers: { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+  });
   const rows = emptySlotRows(c);
   assert.ok(!rows.some((r) => r.slot === "armor"));
 });
 
-test("emptySlotRows: a legacy c with no worn map yields all six worn-slot rows (plus armor if unworn)", () => {
+test("emptySlotRows: a legacy c with no worn map yields all five worn-slot rows (plus armor if unworn)", () => {
   const c = { cls: "Fighter", weapon: "Axe", armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, items: [] };
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(
     rows.map((r) => r.slot),
-    ["armor", "ring", "bracelet", "amulet", "helm", "cloak", "staff"],
+    ["armor", "ring", "bracelet", "amulet", "helm", "cloak"],
   );
 });
 

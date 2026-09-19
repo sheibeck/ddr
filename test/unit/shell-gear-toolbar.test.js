@@ -126,8 +126,10 @@ test("Phase 34: guard:true occurs exactly once (Phase 34 folded the combat use-l
   assert.equal((CODE.match(/guard: true/g) || []).length, 1);
 });
 
-test("UIF-01: the Use-button pin (potion/use-kind items) is untouched", () => {
-  assert.equal((CODE.match(/it\.kind === "potion" \|\| it\.use\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 1);
+test("UIF-01: the Use-button pin (every activatable item) is untouched", () => {
+  // 260918-w4n (use-activated-only): the gate moved from a raw `it.use`
+  // string to the ONE row-state rule (st.kind !== "none").
+  assert.equal((CODE.match(/st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 1);
 });
 
 test("UIF-01: .mw-gear-actions carries display:flex, width:100% and touch-action:manipulation; no transition/animation token anywhere in the two new CSS rules", () => {

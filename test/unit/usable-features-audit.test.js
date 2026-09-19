@@ -223,8 +223,11 @@ for (const st of STAVES) {
     run: () => {
       // Phase 39 (GEAR-02): a real content staff name needs a positive
       // charge for itemReady's staff branch — read the max from content.
+      // 260918-w4n: `worn: {}` is planted on the FIRST staff case to prove a
+      // staff has no worn slot — a bagged staff on a worn-slot-model hero is
+      // NEVER refused notWorn (slotFor(staff) is always null).
       const item = { kind: "staff", n: st.n, use: st.use, charges: TREASURE_ACTIVATION_OF[st.n].charges };
-      const state = fixedState({ c: { cls: "Magic User", items: [item] } });
+      const state = fixedState({ c: { cls: "Magic User", items: [item], ...(st === STAVES[0] ? { worn: {} } : {}) } });
       const events = TARGETED_KINDS.has(st.use) ? useItem(state, 0, fakeRng([]), [], NOW) : useItem(state, 0, makeRng(200 + STAVES.indexOf(st)), [], NOW);
       return { events, state };
     },
@@ -512,10 +515,18 @@ test("doc-sync: every POTIONS name appears in the doc", () => {
   for (const p of POTIONS) assert.ok(AUDIT_DOC.includes(p.n), `potion "${p.n}" missing from the doc`);
 });
 
-test("doc-sync: every STAVES/CLOAKS(use)/JEWELRY(use) name appears in the doc", () => {
+// 260918-w4n (use-activated-only): every JEWELRY/CLOAKS row is act-only now
+// (none carry a `use` key at all except the five legacy-`use` rows), so the
+// old `.use` filter would silently stop covering the 9 newly-usable rows.
+// Iterate TREASURE_ACTIVATION_OF's own keys instead — the ONE source of
+// truth for "this item does something when used" — plus every staff by name.
+test("doc-sync: every STAVES name and every TREASURE_ACTIVATION_OF (JEWELRY/CLOAKS) name appears in the doc", () => {
   for (const st of STAVES) assert.ok(AUDIT_DOC.includes(st.n), `staff "${st.n}" missing from the doc`);
-  for (const cl of CLOAKS.filter((x) => x.use)) assert.ok(AUDIT_DOC.includes(cl.n), `cloak "${cl.n}" missing from the doc`);
-  for (const j of JEWELRY.filter((x) => x.use)) assert.ok(AUDIT_DOC.includes(j.n), `jewelry "${j.n}" missing from the doc`);
+  const jewelryCloakNames = new Set([...JEWELRY, ...CLOAKS].map((x) => x.n));
+  for (const name of Object.keys(TREASURE_ACTIVATION_OF)) {
+    if (!jewelryCloakNames.has(name)) continue; // staves share the same table; already covered above
+    assert.ok(AUDIT_DOC.includes(name), `usable jewelry/cloak "${name}" missing from the doc`);
+  }
 });
 
 test("doc-sync: every timed-field name from the expiry section appears in the doc", () => {

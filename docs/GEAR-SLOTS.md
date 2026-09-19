@@ -70,7 +70,6 @@ spread onto the exported row or any rolled item — see §3). 24 rows total.
 | Helm of Knowledge | jewel | helm |
 | Bracelet of Flight | jewel | bracelet |
 | Amulet of Stone | jewel | amulet |
-| Cloak of Healing | cloak | cloak |
 | Cloak of Strength | cloak | cloak |
 | Cloak of Invisibility | cloak | cloak |
 | Cloak of Speed | cloak | cloak |
@@ -91,6 +90,19 @@ spread onto the exported row or any rolled item — see §3). 24 rows total.
 entries) as the runtime lookup — `engine/derived.js#slotFor(it)` consults
 `it.slot` first, then `SLOT_OF[it.n]`, then a `kind` fallback (`cloak` →
 `cloak`, `staff` → `staff`) for a name not in the table, else `null`.
+
+> **260918-w4n update (2026-09-18):** the taxonomy above is now **five
+> slots**, not six. The user dropped the Cloak of Healing from the game
+> outright ("Drop Cloak of Healing") — its row is deleted from the table
+> above, and CLOAKS is 7 rows, not 8. The user also ruled that a staff is
+> "a usable item, but not equipable... Staff should not be an equipment
+> slot" — `staff` is removed from `WORN_SLOTS` and `SLOT_OF` entirely (24 →
+> 15 entries: 8 JEWELRY + 7 CLOAKS); a staff now lives in `c.items` (one bag
+> slot) and is used by bag index, Magic User only. A legacy save's
+> `c.worn.staff` folds back into the bag on load (`engine/saveState.js#
+> sanitizeWorn`) — never re-injected on a save that never had a `worn` key.
+> See `.planning/quick/260918-w4n-magic-items-are-use-activated-only-no-pa/`
+> for the full ruling and conversion table.
 
 **The slot is never spread onto a rolled item object.** `slot` lives only
 on the private `*_ROWS` arrays — the exported `JEWELRY`/`CLOAKS`/`STAVES`

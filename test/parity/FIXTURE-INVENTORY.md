@@ -1551,3 +1551,71 @@ date). `npm test`: green, `# fail 0`. `git hash-object
 test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0`
 (unchanged). `npm run build:www`: exit 0.
 
+## 260918-w4n (2026-09-18) — magic items are use-activated only; the dropped
+## healing cloak; staff leaves the worn-slot taxonomy
+
+**The user's rulings, verbatim:** "Items that are equipable must be
+equipped to be used. Items that are not equipable can be used from the
+bag." / "Every cloak must have a Use button; it's only active when you use
+it. Same for every staff, amulet, etc. Nothing works without using it,
+which triggers its cooldown." / staff amendment: "A magic staff is a usable
+item, but not equipable... Staff should not be an equipment slot. It just
+takes up a bag slot and is usable from the bag." / "Drop Cloak of Healing."
+
+**The dropped healing cloak (d8 → d7):** the Cloak of Healing row is
+deleted from `content/treasure-tables.js#CLOAKS_ROWS` outright — CLOAKS is
+7 rows, not 8. The three cloak rolls (`engine/character.js`'s Thief
+starting cloak, `engine/encounters.js`'s Cloak find, `engine/items.js#
+rollCloak`) now draw `rng.d(CLOAKS.length)` instead of a literal `d(8)` —
+still ONE `gen.next()` draw each (`engine/rng.js#d(sides)` is a single draw
+regardless of `sides`), so the rng cursor never shifts anywhere — only the
+row a given draw's `u` lands on can change. Every fixture seed whose Thief
+starting cloak or Cloak-find roll moved to a different row under the 7-row
+table carries a declared `chargenDivergence`/`divergence` record (`fields`
+includes `"items"`), measured live and citing this task:
+
+| Fixture | Seed | Scenario/context | Before cloak (d8) | After cloak (d7) |
+|---|---|---|---|---|
+| `action-script.chargen.json` | 2 | Thief/Cat Burglar/Wilmsry starting kit | Cloak of Regeneration | Cloak of Armor |
+| `action-script.combat.json` | 17 | `flee` scenario's chargen | Cloak of Armor | Cloak of Flying |
+| `action-script.encounters.json` | 2 | `chest` scenario's chargen | Cloak of Regeneration | Cloak of Armor |
+| `action-script.encounters.json` | 160 | `affliction` scenario's chargen | Cloak of Regeneration | Cloak of Armor |
+| `action-script.movement.json` | 256 | the 101-move script's chargen | Cloak of Healing | Cloak of Strength |
+
+Every other fixture seed's cloak roll (seeds 3/4/1119/303/8/38, etc.) landed
+on the SAME row under both tables — measured live, no divergence declared.
+Seed 17's Cloak of Flying carries its `txt` UNCHANGED from the frozen
+prototype (it is not one of the 9 reworded rows below), so its
+`chargenDivergence.after.items[0].txt` is recorded byte-identical to the
+prototype's own Cloak-of-Armor `before.txt` field name only — the two
+`txt` VALUES differ because the two ITEMS differ, not because of any
+rewording.
+
+**Use-activated-only conversion (9 rows reworded, `txt` carve-out
+re-shaped):** `REWORDED_TXT_ITEMS` (`test/parity/harness/comparables.js`)
+drops `"Cloak of Healing"` (the row no longer exists — nothing left to
+strip) and adds the 7 rows whose `txt` was reworded to state their new
+use-activated behaviour plainly: `"Ring of Power"`, `"Gauntlet of the
+Giant"`, `"Amulet of Light"`, `"Anklet of Invisibility"`, `"Helm of
+Knowledge"`, `"Bracelet of Flight"`, `"Cloak of Strength"` (`"Cloak of
+Regeneration"`/`"Cloak of Armor"` were already present from Phase 43/28).
+The Cloak of Flying's `txt` is deliberately left untouched — it already
+carried an `act` block before this task, so it is not one of the 9
+converted rows.
+
+**Staff amendment:** `SLOT_OF` drops from 24 to 15 entries (8 JEWELRY + 7
+CLOAKS; STAVES rows carry no `slot` at all any more) and `WORN_SLOTS` drops
+from six keys to five (`ring`/`bracelet`/`amulet`/`helm`/`cloak`) — a staff
+is never a worn-slot item. No fixture ever equips/wears a staff (no
+fixture drives `equipItem`/`reconcileWorn` on one), so this is a
+structural, zero-fixture-moving change.
+
+**Conclusion:** `git status --porcelain test/parity/fixtures` shows exactly
+the five files in the table above, each carrying a `260918-w4n`-cited
+`chargenDivergence`/`divergence` record. `npm test`: green, `# fail 0`.
+`git hash-object test/parity/prototype-master.js.txt`:
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged — the frozen
+prototype is never edited). `npm run build:www`: exit 0. `node --test
+"test/parity/**/*.test.js" "test/determinism/**/*.test.js"
+"test/roundtrip/**/*.test.js" "test/persistence/**/*.test.js"`: all green.
+

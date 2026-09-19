@@ -262,30 +262,35 @@ test("ITEMS: nothing usable at all collapses to one disabled NOTHING TO USE row"
 
 // ─── Phase 37 (GEAR-03): worn activatables ─────────────────────────────────
 
-test("ITEMS: a worn activatable staff recharging appears after the potion row; a passive worn ring is not listed", () => {
+// 260918-w4n (staff amendment): a staff has no worn slot any more — it is
+// always a BAGGED item, addressed by index, alongside potions/scrolls. The
+// Ring of Power is use-activated now (the governing rule), so a WORN one
+// appears too — no more "passive worn item is never listed".
+test("ITEMS: a bagged activatable staff recharging appears after the potion row; a worn (use-activated) Ring of Power ALSO appears", () => {
   const c = {
-    potions: 0, scrolls: 0, wp: 40, items: [],
+    potions: 0, scrolls: 0, wp: 40,
+    items: [fixedWornStaff({ charges: 1 })],
     worn: {
-      staff: fixedWornStaff({ charges: 1 }),
       ring: { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
     },
     timers: { "charges:Poplar Staff": { cadence: "squares", left: 17, phase: "cooldown" } },
   };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
-  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
-  assert.equal(vm.actions[2].sub, "1 usable");
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 2 USABLE");
+  assert.equal(vm.actions[2].sub, "2 usable");
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
-    { id: "worn-staff", label: "POPLAR STAFF", cost: "1/3 · 17 SQ", desc: "1d20+10 wp to up to 6", enabled: true, dispatch: { type: "useItem", slot: "staff" } },
+    { id: "item-0", label: "POPLAR STAFF", cost: "1/3 · 17 SQ", desc: "1d20+10 wp to up to 6", enabled: true, dispatch: { type: "useItem", i: 0 } },
+    { id: "worn-ring", label: "RING OF POWER", cost: "READY", desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "ring" } },
   ]);
 });
 
-test("ITEMS: a worn activatable staff at full charges (no recharge record) reads READY", () => {
-  const c = { potions: 0, scrolls: 0, items: [], worn: { staff: fixedWornStaff() } };
+test("ITEMS: a bagged activatable staff at full charges (no recharge record) reads READY", () => {
+  const c = { potions: 0, scrolls: 0, items: [fixedWornStaff()] };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
-  const row = vm.submenus.items.rows.find((r) => r.id === "worn-staff");
+  const row = vm.submenus.items.rows.find((r) => r.id === "item-0");
   assert.equal(row.cost, "READY");
   assert.equal(row.enabled, true);
 });
