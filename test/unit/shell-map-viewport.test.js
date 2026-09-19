@@ -374,3 +374,85 @@ test("(l) BEHAVIOUR: DIR_VECTORS.E is [1, 0] — the shell's f.px + v[0] read de
   assert.deepStrictEqual(DIR_VECTORS.N, [0, -1]);
   assert.deepStrictEqual(DIR_VECTORS.S, [0, 1]);
 });
+
+// ─── (m) stationary camera (quick 260918-vm3) ──────────────────────────────
+
+function positionCanvasRegion() {
+  return sliceBetween(CODE, "function positionCanvas()", "function positionPartyPulse(rect)");
+}
+function keepPartyInViewRegion() {
+  return sliceBetween(CODE, "function keepPartyInView()", "window.mzKeepPartyInView = keepPartyInView;");
+}
+function stepWithRegion() {
+  return sliceBetween(CODE, "function stepWith(action)", "function stepNow(dir)");
+}
+
+test("(m) cam replaces the retired px-pan camera state, exactly once", () => {
+  assert.equal((CODE.match(/let cam = \{ x: 0, y: 0 \};/g) || []).length, 1);
+  assert.doesNotMatch(CODE, /^let pan = /m);
+  assert.doesNotMatch(CODE, /\bpan = \{/);
+});
+
+test("(m) partyCentre/cameraPan/anchorCamOnParty/keepPartyInView are each defined exactly once; the keepPartyInView bridge is set once", () => {
+  assert.equal((CODE.match(/function partyCentre\(\)/g) || []).length, 1);
+  assert.equal((CODE.match(/function cameraPan\(\)/g) || []).length, 1);
+  assert.equal((CODE.match(/function anchorCamOnParty\(offsetPx\)/g) || []).length, 1);
+  assert.equal((CODE.match(/function keepPartyInView\(\)/g) || []).length, 1);
+  assert.equal((CODE.match(/window\.mzKeepPartyInView = keepPartyInView;/g) || []).length, 1);
+});
+
+test("(m) positionCanvas: the forward transform reads cam.x/cam.y, not a px pan offset, and still ends with positionPartyPulse(rect)", () => {
+  const region = positionCanvasRegion();
+  assert.match(region, /rect\.width \/ 2 - cam\.x \* CELL - CANVAS_PAD/);
+  assert.match(region, /rect\.height \/ 2 - cam\.y \* CELL - CANVAS_PAD/);
+  assert.match(region.trimEnd(), /positionPartyPulse\(rect\);\s*\}$/);
+});
+
+test("(m) keepPartyInView(): guards on a 0x0 rect, drives both axes through window.__mzControls.keepInViewAxis, never touches S/dispatches, and always ends with positionCanvas()", () => {
+  const region = keepPartyInViewRegion();
+  assert.match(region, /rect\.width > 0 && rect\.height > 0/);
+  assert.match(region, /C\.keepInViewAxis\(cam\.x, p\.x, rect\.width \/ CELL\)/);
+  assert.match(region, /C\.keepInViewAxis\(cam\.y, p\.y, rect\.height \/ CELL\)/);
+  assert.doesNotMatch(region, /S\.floor\.p[xy] =/);
+  assert.doesNotMatch(region, /dispatch\(/);
+  assert.match(region.trimEnd(), /positionCanvas\(\);\s*\}$/);
+});
+
+test("(m) keepPartyInView() reads the controls bridge fresh inside its own function body (call-time), not as a module-scope/IIFE-closure capture", () => {
+  const region = keepPartyInViewRegion();
+  // The bridge read lives inside keepPartyInView's own body (this slice
+  // starts at the function's opening brace), so `const C` is re-evaluated
+  // on every call — never captured once at classic-script parse time, the
+  // 2026-09-16 UAT bug the pointer-gesture IIFE's own call-time accessor
+  // (const T = () => window.__mzTapStep || {...}, above) also guards against.
+  assert.equal((region.match(/const C = window\.__mzControls;/g) || []).length, 1);
+});
+
+test("(m) stepWith(): floorChanged/teleported centre; a plain moved keeps the party in view; in that order", () => {
+  const region = stepWithRegion();
+  const order = [
+    'e.type === "floorChanged" || e.type === "teleported"',
+    "if (jumped) window.mzCenterMap?.();",
+    'else if (events.some((e) => e.type === "moved")) window.mzKeepPartyInView?.();',
+  ];
+  let cursor = -1;
+  for (const literal of order) {
+    const idx = region.indexOf(literal);
+    assert.ok(idx !== -1, `missing literal in stepWith(): ${literal}`);
+    assert.ok(idx > cursor, `out of order: "${literal}" must appear after the previous literal`);
+    cursor = idx;
+  }
+});
+
+test("(m) the module controls bridge carries keepInViewAxis, exactly once", () => {
+  assert.equal(
+    (CODE.match(/window\.__mzControls = \{ screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis \};/g) || [])
+      .length,
+    1,
+  );
+});
+
+test("(m) drag: the pointermove handler derives cam from camStart and pointer delta over CELL", () => {
+  const region = pointermoveRegion();
+  assert.match(region, /pointerStart\.camStart\.x - \(e\.clientX - pointerStart\.x\) \/ CELL/);
+});
