@@ -40,7 +40,7 @@ Every phase in this milestone touches serialized character/combat/floor state an
 - [x] **Phase 40: Spell Rework** - Combat spells are differentiated by niche instead of a damage ladder, every utility spell has a felt effect, every Wizard sub-class starts with a damage spell, Detect Magic is renamed and time-boxed, and scribed scrolls are instantly castable. (completed 2026-09-18)
 - [x] **Phase 41: Terrain, Darkness & Phobias** - Water squares cost extra movement and can scare swimmers, a dark square fogs the view to a 3×3 window, and every phobia has a real, once-per-entry trigger. (completed 2026-09-18)
 - [x] **Phase 42: Flee Retune & Consolidated Balance Close** - Flee odds are lower and shown transparently, and the ONE consolidated AFTER class-matrix run verifies abilities + gear + spells together against the depth-20 target. (completed 2026-09-18)
-- [ ] **Phase 43: Clarity Pass** - Every costly line names its cause, every loot offer shows who can use it, ration math is honest, and the Gear screen splits into ON YOU and BAG.
+- [x] **Phase 43: Clarity Pass** - Every costly line names its cause, every loot offer shows who can use it, ration math is honest, and the Gear screen splits into ON YOU and BAG. (completed 2026-09-18)
 
 <details>
 <summary>✅ v1.4 Combat & Map Screens (Phases 34–35) — SHIPPED 2026-09-16 (device round closed 2026-09-17)</summary>
@@ -391,19 +391,19 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 43-01-PLAN.md — CLAR-01 (non-day-cycle rows): the cost-event inventory in `docs/CLARITY.md`, nine additive cause keys (trappedPanic.phobia, heights/water penalty, backfire/summon/earthquake spell, Death fee, insanity loss), cause-first rewrites of 24 Oracle/toast lines (`Being trapped: four walls and one door you already used. −4 hp.`), the HP-not-WP sweep with a grep-pin test + the measured `REWORDED_TXT_ITEMS` cosmetic carve-out (seeds 2/4/256/160; economy `after` record re-measured)
+- [x] 43-01-PLAN.md — CLAR-01 (non-day-cycle rows): the cost-event inventory in `docs/CLARITY.md`, nine additive cause keys (trappedPanic.phobia, heights/water penalty, backfire/summon/earthquake spell, Death fee, insanity loss), cause-first rewrites of 24 Oracle/toast lines (`Being trapped: four walls and one door you already used. −4 hp.`), the HP-not-WP sweep with a grep-pin test + the measured `REWORDED_TXT_ITEMS` cosmetic carve-out (seeds 2/4/256/160; economy `after` record re-measured)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 43-02-PLAN.md — CLAR-03/05 (+ CLAR-01 day-cycle rows): the ration/upkeep audit against the prototype + rulebook in `docs/RATIONS.md` (≥ 12 rules, rulebook-only sleep/wandering WP rules not adopted), `eatsFor` as the ONE appetite read, the `rationsEaten { eats, left, eaters }` event naming every rule ("Trolls eat for two."), `wentHungry` need/have/mouths/heft ("Hunger: nobody packed — …"), `RAIL_FAMILY.rationsEaten` (FED), pure `rationsViewModel`/`eatsLineFor`/`RATIONS_COPY`
+- [x] 43-02-PLAN.md — CLAR-03/05 (+ CLAR-01 day-cycle rows): the ration/upkeep audit against the prototype + rulebook in `docs/RATIONS.md` (≥ 12 rules, rulebook-only sleep/wandering WP rules not adopted), `eatsFor` as the ONE appetite read, the `rationsEaten { eats, left, eaters }` event naming every rule ("Trolls eat for two."), `wentHungry` need/have/mouths/heft ("Hunger: nobody packed — …"), `RAIL_FAMILY.rationsEaten` (FED), pure `rationsViewModel`/`eatsLineFor`/`RATIONS_COPY`
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 43-03-PLAN.md — CLAR-02/04 pure view models: `usableBy(it, c)` ("(usable by Fighters — not you)", the Heft clause, engine legality reused), `lootCompare.usable`, `dropShelfItems(c)` (bag-only, true indices, potions excluded), `emptySlotRows(c)` + `GEAR_COPY` (in-voice empty slots, staff-not-you), CLARITY ledger display sections
+- [x] 43-03-PLAN.md — CLAR-02/04 pure view models: `usableBy(it, c)` ("(usable by Fighters — not you)", the Heft clause, engine legality reused), `lootCompare.usable`, `dropShelfItems(c)` (bag-only, true indices, potions excluded), `emptySlotRows(c)` + `GEAR_COPY` (in-voice empty slots, staff-not-you), CLARITY ledger display sections
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 43-04-PLAN.md — the shell (only `mazeworld.html` plan) + close: `(usable by …)` on FIND card / LOOT rows / store rows, `eats N a rest` on the Joiner card + Company panel, the Hero RATIONS panel, the Gear tab as ON YOU (WIELDED / WORN with empty slots / ALSO ON YOU) + BAG, the bag-only drop shelf; CLARITY requirements map, REQUIREMENTS CLAR-01..05 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md`
+- [x] 43-04-PLAN.md — the shell (only `mazeworld.html` plan) + close: `(usable by …)` on FIND card / LOOT rows / store rows, `eats N a rest` on the Joiner card + Company panel, the Hero RATIONS panel, the Gear tab as ON YOU (WIELDED / WORN with empty slots / ALSO ON YOU) + BAG, the bag-only drop shelf; CLARITY requirements map, REQUIREMENTS CLAR-01..05 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md`
 
 **Research flag**: Standard wiring/display sweep — skip `--research-phase`. Verify each earlier phase actually added its cause payload at introduction rather than retrofitting all of it here.
 **UI hint**: yes
@@ -464,7 +464,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 40. Spell Rework | v1.5 | 5/5 | Complete    | 2026-09-18 |
 | 41. Terrain, Darkness & Phobias | v1.5 | 4/4 | Complete    | 2026-09-18 |
 | 42. Flee Retune & Consolidated Balance Close | v1.5 | 4/4 | Complete    | 2026-09-18 |
-| 43. Clarity Pass | v1.5 | 0/? | Not started | - |
+| 43. Clarity Pass | v1.5 | 4/4 | Complete    | 2026-09-18 |
 | 34. Combat Screen Rebuild | v1.4 | 5/5 | Complete | 2026-09-16 |
 | 35. Map Screen Rebuild | v1.4 | 5/5 | Complete | 2026-09-16 |
 | 28–33 | v1.3 | 16/16 | Shipped | 2026-09-16 |
