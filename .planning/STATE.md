@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code started; v1.5 code-complete, UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 44; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 44 — Retire the Classic Engine from the Shell
+**Current focus:** Phase 45 — Collapse the Phase 37 Hedges (autonomous run; Phase 44 complete 2026-09-19, 10 Pixel 7 items deferred to the milestone-close batch)
 
 ## Current Position
 
