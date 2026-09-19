@@ -24,7 +24,7 @@ import url from "node:url";
 import { newRun, applyAction } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { reconcilePendingFight, chargenShiftOf, stripChargenShift, chargenShiftDiffs, stripSpellSeen, stripWaterField, stripCloakArmorTxt } from "./harness/comparables.js";
+import { reconcilePendingFight, chargenShiftOf, stripChargenShift, chargenShiftDiffs, stripSpellSeen, stripWaterField, stripCloakArmorTxt, dropEmptyWorn } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -94,9 +94,10 @@ function comparable(state) {
     // c.timers map too (see harness stripTimersField) — same treatment as
     // name/darkFor/flight/bag, mirrored here because this file keeps its own
     // local comparable().
-    // Phase 37 (GEAR-03/GEAR-04): strip the new engine-only lazily-created
-    // c.worn slot map too (see harness stripWornField) — mirrored here
-    // because this file keeps its own local comparable().
+    // Phase 45 (HEDGE-01/03): drop an empty c.worn map (the engine's
+    // spelling of the prototype's "no worn model"); a populated one is
+    // declared on the script's chargenDivergence, not stripped here —
+    // mirrored here because this file keeps its own local comparable().
     // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
     // too (see harness stripAbilitiesField) — mirrored here because this
     // file keeps its own local comparable().
@@ -104,12 +105,12 @@ function comparable(state) {
     // Phase 41 (TERR-04/05): strip the new engine-only phobiaState/fearArmed
     // fields too (see harness stripPhobiaFields) — mirrored here because
     // this file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, haste, invis, ether, acute, phobiaState, fearArmed, ...cRest } = rest.c;
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, abilities, haste, invis, ether, acute, phobiaState, fearArmed, ...cRest } = rest.c;
     // Phase 43 (CLAR-01 HP-not-WP sweep): strip the REWORDED_TXT_ITEMS'
     // reworded `txt` unit word too (see harness stripCloakArmorTxt) —
     // mirrored here because this file keeps its own local comparable().
     // Seed 256 rolls a Cloak of Healing into the starting bag.
-    rest.c = stripCloakArmorTxt(cRest);
+    rest.c = stripCloakArmorTxt(dropEmptyWorn(cRest));
   }
   return rest;
 }

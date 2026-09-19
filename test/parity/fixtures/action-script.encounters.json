@@ -13,49 +13,65 @@
     {
       "name": "chest", "seed": 2, "actions": [{ "type": "openChest" }],
       "chargenDivergence": {
-        "phase": 38, "requirements": ["ABIL-02", "QUICK-260918-w4n"], "fields": ["skills", "items"],
+        "phase": "38+45", "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"], "fields": ["skills", "items", "worn"],
         "before": {
           "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 },
           "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 }, "txt": "d6 wp back every 20 squares" }]
         },
         "after": {
           "skills": { "Acute Hearing": 1, "Night Vision": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" }]
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" } }
         },
-        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves."
+        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {
       "name": "tablefour", "seed": 3, "actions": [{ "type": "encounterDot" }],
       "chargenDivergence": {
-        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
-        "before": { "skills": { "Heft": 1, "Silence": 1 } },
-        "after": { "skills": { "Heft": 1 } },
-        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills."
+        "phase": "38+45", "requirements": ["ABIL-02", "HEDGE-03"], "fields": ["skills", "items", "worn"],
+        "before": {
+          "skills": { "Heft": 1, "Silence": 1 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+        },
+        "after": {
+          "skills": { "Heft": 1 },
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+        },
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {
       "name": "faerie", "seed": 38, "actions": [{ "type": "encounterDot" }],
       "chargenDivergence": {
-        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
-        "before": { "skills": { "Silence": 1, "Kata": 1 } },
-        "after": { "skills": {} },
-        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills."
+        "phase": "38+45", "requirements": ["ABIL-02", "HEDGE-03"], "fields": ["skills", "items", "worn"],
+        "before": {
+          "skills": { "Silence": 1, "Kata": 1 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+        },
+        "after": {
+          "skills": {},
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+        },
+        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {
       "name": "affliction", "seed": 160, "actions": [{ "type": "encounterDot" }],
       "chargenDivergence": {
-        "phase": 38, "requirements": ["ABIL-02", "QUICK-260918-w4n"], "fields": ["skills", "items"],
+        "phase": "38+45", "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"], "fields": ["skills", "items", "worn"],
         "before": {
           "skills": { "Acute Hearing": 1, "Kata": 1, "Locks": 1 },
           "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 }, "txt": "d6 wp back every 20 squares" }]
         },
         "after": {
           "skills": { "Acute Hearing": 1, "Locks": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" }]
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" } }
         },
-        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves."
+        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     }
   ]

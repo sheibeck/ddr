@@ -408,17 +408,18 @@
   ],
   "_note": "Programmatically discovered (see 01-07-SUMMARY.md). Action 0 (N) is a guaranteed no-op against the boundary wall from the (1,1) start. Actions 1-12 are a feature-avoiding BFS path (blocking dot/trap/chest/tele/climb/gorge as intermediate cells, since those domains are not yet ported) from (1,1) to floor 1's exit tile, passing through exactly one door-direction-validated one-way door before descending to floor 2. Actions 13-100 bounce between floor 2's start (1,1) and its first backtracker-carved neighbor (guaranteed feature-free) to reach exactly 100 cumulative steps, triggering newDay/upkeep on the 100th move. Seed 256 was chosen because its 8-hour wandering-monster check on that first day draws zero 1s on d20, so state.combat stays null on both the engine and the frozen prototype (wandering-monster combat start is out of scope until 01-08).",
   "chargenDivergence": {
-    "phase": 38,
-    "requirements": ["ABIL-02", "QUICK-260918-w4n"],
-    "fields": ["skills", "items"],
+    "phase": "38+45",
+    "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"],
+    "fields": ["skills", "items", "worn"],
     "before": {
       "skills": { "Climbing": 1, "Night Vision": 1, "Kata": 1, "Leaping": 1 },
       "items": [{ "kind": "cloak", "n": "Cloak of Healing", "eff": { "cloakHeal": 1 }, "txt": "heals up to 10 wp every 20 squares" }]
     },
     "after": {
       "skills": { "Night Vision": 1 },
-      "items": [{ "kind": "cloak", "n": "Cloak of Strength", "eff": { "noCrit": 1 }, "txt": "used, no critical damage lands on you for fifty squares; then fifty squares of ordinary luck" }]
+      "items": [],
+      "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Strength", "eff": { "noCrit": 1 }, "txt": "used, no critical damage lands on you for fifty squares; then fifty squares of ordinary luck" } }
     },
-    "rationale": "ABIL-02: Climbing/Leaping were dropped outright and Kata converted to Feint; all three landed in c.abilities (dirtyTrick — the Cat Burglar's FREE_SKILL grant at Climbing's slot —, feint, smoke) instead of c.skills. The 101-move script never reaches a climb/leap tile (see this fixture's own _note above), so no mechanical path is affected. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game outright (user ruling) -- CLOAKS drops to 7 rows and the Thief starting cloak roll now draws rng.d(CLOAKS.length), the SAME single draw as before, landing this seed on Cloak of Strength instead. The rolled cloak is inert (bagged, unused) until worn and used, and this fixture's 101-move script never uses an item, so no mechanical path is affected."
+    "rationale": "ABIL-02: Climbing/Leaping were dropped outright and Kata converted to Feint; all three landed in c.abilities (dirtyTrick — the Cat Burglar's FREE_SKILL grant at Climbing's slot —, feint, smoke) instead of c.skills. The 101-move script never reaches a climb/leap tile (see this fixture's own _note above), so no mechanical path is affected. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game outright (user ruling) -- CLOAKS drops to 7 rows and the Thief starting cloak roll now draws rng.d(CLOAKS.length), the SAME single draw as before, landing this seed on Cloak of Strength instead. The rolled cloak is inert (bagged, unused) until worn and used, and this fixture's 101-move script never uses an item, so no mechanical path is affected. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
   }
 }

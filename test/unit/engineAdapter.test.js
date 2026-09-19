@@ -79,9 +79,10 @@ test("boot(freshSeed) starts a fresh run when there is no save", async () => {
     assert.equal(state.floor.depth, 1);
     assert.equal(state.seed, 4242);
     assert.equal(getState(), state);
-    // Phase 37 (GEAR-04): the throwaway pre-title fresh run never migrates
-    // anything (there was no save at all) — no worn key, no report.
-    assert.ok(!("worn" in state.c), "a fresh boot fallback run never creates c.worn");
+    // Phase 45 (HEDGE-01): the throwaway pre-title fresh run still creates
+    // c.worn (every fresh roll does, unconditionally) — but no SAVE was
+    // migrated here, so takeBootWornReport() stays null.
+    assert.ok("worn" in state.c, "a fresh boot fallback run still creates c.worn via newRun's own reconcile");
     assert.equal(takeBootWornReport(), null, "nothing to report when boot() never migrated a save");
   });
 });
@@ -108,9 +109,10 @@ test("boot(freshSeed) fails closed to a fresh run on a corrupt save", async () =
     store.setItem(SAVE_KEY, "{not json");
     const state = await boot(777);
     assert.equal(state.seed, 777, "fell back to a brand-new run rather than throwing");
-    // Phase 37 (GEAR-04): a corrupt save falls back to a fresh run through
-    // the SAME no-save path as above — no migration, no worn key, no report.
-    assert.ok(!("worn" in state.c));
+    // Phase 45 (HEDGE-01): a corrupt save falls back to a fresh run through
+    // the SAME no-save path as above — no migration (no report), but the
+    // fresh roll itself still creates c.worn unconditionally.
+    assert.ok("worn" in state.c);
     assert.equal(takeBootWornReport(), null);
   });
 });
@@ -120,6 +122,7 @@ test("boot(freshSeed) fails closed to a fresh run on a corrupt save", async () =
 test("GEAR-04 + 260918-wy1: boot() migrates a legacy save carrying two Rings of Power — BOTH wear (two jewelry keys), nothing bagged, no report", async () => {
   await withFakeLocalStorage(async (store) => {
     const original = newRun(1); // Fighter, no starting items
+    delete original.c.worn; // simulate a v1.4-era save that predates the worn model
     const ringA = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
     const ringB = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
     original.c.items = [ringA, ringB];
@@ -141,6 +144,7 @@ test("GEAR-04 + 260918-wy1: boot() migrates a legacy save carrying two Rings of 
 test("GEAR-04 + 260918-wy1: boot() migrates a legacy save carrying THREE Rings of Power — two wear, the third bags, reports once", async () => {
   await withFakeLocalStorage(async (store) => {
     const original = newRun(1); // Fighter, no starting items
+    delete original.c.worn; // simulate a v1.4-era save that predates the worn model
     const ring = () => ({ kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" });
     original.c.items = [ring(), ring(), ring()];
     store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
@@ -156,26 +160,26 @@ test("GEAR-04 + 260918-wy1: boot() migrates a legacy save carrying THREE Rings o
   });
 });
 
-test("GEAR-04: a save that already carries worn boots byte-identical and reports nothing", async () => {
+test("GEAR-04: a save that already carries worn boots byte-identical and reports [] (one report shape — an already-migrated save reports an empty reconciliation; wornReconcileCard([]) renders nothing)", async () => {
   await withFakeLocalStorage(async (store) => {
-    const original = newRun(5, [], { wornSlots: true }); // already-migrated shape
+    const original = newRun(5); // already carries c.worn (unconditional since Phase 45)
     store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
 
     const state = await boot(1);
     assert.deepStrictEqual(state.c.worn, original.c.worn);
     assert.deepStrictEqual(state.c.items, original.c.items);
-    assert.equal(takeBootWornReport(), null, "never re-migrated — nothing to report");
+    assert.deepStrictEqual(takeBootWornReport(), [], "one report shape — an already-migrated save reports an empty reconciliation; wornReconcileCard([]) renders nothing");
   });
 });
 
-test("GEAR-03: startNewRun() creates c.worn on the fresh roll; initRun(seed) directly does not", async () => {
+test("startNewRun() and initRun(seed) both create c.worn on the fresh roll (single path)", async () => {
   await withFakeLocalStorage(async () => {
     const started = await startNewRun(4300);
     assert.ok("worn" in getState().c, "a shell-started run carries the worn model");
     assert.deepStrictEqual(getState().c, started.c);
 
     initRun(4302);
-    assert.ok(!("worn" in getState().c), "initRun(seed) directly (tools/ bots, boot's fresh-run fallback) never creates c.worn");
+    assert.ok("worn" in getState().c, "initRun(seed) directly (tools/ bots, boot's fresh-run fallback) also creates c.worn — the single path has no option to gate it");
   });
 });
 

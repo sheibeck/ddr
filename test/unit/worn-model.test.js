@@ -122,7 +122,12 @@ test("rollJewel/rollCloak/rollStaff and a Thief's starting cloak never carry a s
   assert.equal("slot" in rollStaff(rng), false);
   const thief = newRun(2).c; // seed 2 is a Thief per the chargen fixture
   assert.equal(thief.cls, "Thief");
-  assert.equal(thief.items.length > 0, true);
+  // Phase 45 (HEDGE-01): the starting cloak is now WORN at chargen, not
+  // bagged — c.items is empty for this Thief; the roll itself is checked on
+  // c.worn.cloak instead.
+  assert.deepStrictEqual(thief.items, []);
+  assert.ok(thief.worn && thief.worn.cloak, "a Thief's starting cloak is worn at chargen");
+  assert.equal("slot" in thief.worn.cloak, false, `${thief.worn.cloak.n} must not carry a slot key`);
   for (const it of thief.items) assert.equal("slot" in it, false, `${it.n} must not carry a slot key`);
 });
 
@@ -373,7 +378,7 @@ test("reconcileWorn report objects carry exactly the keys slot, worn, bagged", (
 test("chargen: every fixture seed starts with no c.timers key, so every eff() read is 0", () => {
   for (const seed of CHARGEN_SEEDS) {
     const c = newRun(seed).c;
-    assert.equal("worn" in c, false, `seed ${seed}: newRun must not create c.worn`);
+    assert.equal(typeof c.worn, "object", `seed ${seed}: newRun always creates c.worn (Phase 45, HEDGE-01)`);
     assert.equal("timers" in c, false, `seed ${seed}: newRun must not create c.timers`);
     for (const key of EFF_KEYS) assert.equal(eff(c, key), 0, `seed ${seed} key ${key}`);
   }
@@ -431,17 +436,18 @@ test("companion invariant: no populated c.worn[slot] item is ever also present i
   }
 });
 
-test("chargen shape: newRun(seed).c never carries worn, and two fresh newRun calls in the same process are byte-identical", () => {
+test("chargen shape: newRun(seed).c always carries worn, and two fresh newRun calls in the same process are byte-identical", () => {
   for (const seed of CHARGEN_SEEDS) {
     const a = newRun(seed);
     const b = newRun(seed);
-    assert.equal("worn" in a.c, false);
+    assert.ok("worn" in a.c, `seed ${seed}: newRun always creates c.worn (Phase 45, HEDGE-01)`);
     assert.equal(JSON.stringify(a), JSON.stringify(b), `seed ${seed}: newRun must stay byte-identical across calls in the same process`);
   }
 });
 
-test("rng invariance: 20 legal moves from newRun(3) never create c.worn and produce a deterministic rngState/event sequence", () => {
+test("rng invariance: 20 legal moves from newRun(3) never add a worn key beyond chargen's and produce a deterministic rngState/event sequence", () => {
   const DIRS = ["N", "E", "S", "W"];
+  const chargenWornKeyCount = Object.keys(newRun(3).c.worn).length;
   function drive() {
     let state = newRun(3);
     const eventTypes = [];
@@ -451,12 +457,12 @@ test("rng invariance: 20 legal moves from newRun(3) never create c.worn and prod
       state = result.state;
       for (const ev of result.events) eventTypes.push(ev.type);
     }
-    return { rngState: state.rngState, eventTypes, worn: "worn" in state.c };
+    return { rngState: state.rngState, eventTypes, wornKeyCount: Object.keys(state.c.worn).length };
   }
   const run1 = drive();
   const run2 = drive();
   assert.equal(run1.rngState, run2.rngState);
   assert.deepStrictEqual(run1.eventTypes, run2.eventTypes);
-  assert.equal(run1.worn, false, "no code path in this plan creates c.worn during play");
-  assert.equal(run2.worn, false);
+  assert.equal(run1.wornKeyCount, chargenWornKeyCount, "no code path in this plan grows c.worn beyond chargen's own reconcile (1 — the cloak — for this seed's Thief)");
+  assert.equal(run2.wornKeyCount, chargenWornKeyCount);
 });

@@ -145,7 +145,9 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
   // no-ops here — an empty c.skills has nothing to rename/split — then
   // grantLevelAbilities(c, "777", 2) rolls the level-1 and level-2 picks off
   // the derived stream); every OTHER field is still preserved verbatim.
-  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"] });
+  // Phase 45 (HEDGE-02): an old save with no c.worn gains an empty worn map
+  // from the unconditional reconcile.
+  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"], worn: {} });
 });
 
 // MD-01 regression: die()/winGame() set state.deathAt/lastWords on a
@@ -253,7 +255,9 @@ test("FID-04: a v1.0-shaped save (no foeEffect / pendingFoes / abilities) loads 
   // Phase 38 (ABIL-02): see the identical "an old-shape save" test above —
   // ensureAbilities deterministically rebuilds c.abilities from a save that
   // lacks it (freshSeed 777, level 2: the level-1 + level-2 derived-stream picks).
-  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"] });
+  // Phase 45 (HEDGE-02): an old save with no c.worn gains an empty worn map
+  // from the unconditional reconcile.
+  assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"], worn: {} });
   assert.equal(Object.hasOwn(state.c, "foeEffect"), false, "a v1.0 save must not gain a foeEffect key");
 });
 

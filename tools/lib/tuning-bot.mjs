@@ -561,17 +561,14 @@ export function makeBotContext(opts = {}) {
 export const GOLD_RESERVE = 50;
 
 /**
- * RUN_FLAGS — Phase 42 (BAL-01/02): the bot plays the SHIPPED game's run
- * rules, exactly what `engineAdapter#startNewRun` passes — `storeRoll`
- * enables the depth-rolled store stock, `wornSlots` creates `c.worn` via
- * `reconcileWorn` (so a Thief's starting cloak, a rolled staff, etc. all live
- * in the worn-slot model this plan's item tactics read). The BEFORE pin
- * (`e69ff07`) predates `wornSlots` and ran with the legacy bag-summed `eff()`
- * and the fixed store, so the AFTER run records these flags in
- * `meta.runFlags` (Plan 03) rather than pretending the harness is unchanged —
- * greenfield ruling 2026-09-17: the bot always plays the new rules.
+ * RUN_FLAGS — the bot plays the shipped run rules: `storeRoll` enables the
+ * depth-rolled store stock. The worn-slot model needs no flag since Phase 45
+ * (HEDGE-01) — `newRun` always creates `c.worn`, so a Thief starts with its
+ * cloak worn. `meta.runFlags` records this object; the v1.5 AFTER readouts
+ * (`docs/class-pass/v15-after*.json`) recorded the two-flag era and are
+ * frozen history — never regenerated to match.
  */
-export const RUN_FLAGS = Object.freeze({ storeRoll: true, wornSlots: true });
+export const RUN_FLAGS = Object.freeze({ storeRoll: true });
 
 /**
  * readyWornOfKind(state, ctx, kinds, opts) — 260918-w4n (use-activated-only),

@@ -129,26 +129,21 @@ export function swapPartyMember(state, member) {
  * forced Fridgian Samurai — see engine/character.js#normalizeForce. `force`
  * never flips `dev` on its own; `dev` stays exactly `startAt > 1`.
  *
- * `options.wornSlots` (Phase 37, GEAR-03/GEAR-04) is a THIRD shell-only
- * affordance, mirroring `storeRoll` immediately below it: `false`/omitted by
- * every fixture, bot, tools caller and every existing `newRun(seed)` call —
- * only `engineAdapter#startNewRun` passes `true`. When true, `reconcileWorn(c)`
- * runs directly after the character roll, creating `c.worn` and wearing the
- * Thief's starting cloak (and any other slot item chargen already issued).
- * This is a plain assignment/reassignment pass over `c.items` — NO rng draw
- * — so the seeded chargen cursor stays untouched and every `newRun(seed)`
- * caller without the option stays byte-identical. Do NOT add a `wornSlots`
- * field to the returned state object — the model is carried entirely by
- * `c.worn` itself, exactly like `force` leaves no trace on `state`. The
- * parity harness strips `c.worn` in all six comparables (Plan 01's
- * `stripWornField`).
+ * Phase 45 (HEDGE-01): `reconcileWorn(c)` runs on every fresh roll — it
+ * creates `c.worn` (`{}` for a Fighter/Magic User; a Thief's starting cloak
+ * worn) via plain reassignment, zero rng draws, so `rngState` and the floor
+ * below are byte-identical to the pre-Phase-45 roll
+ * (test/unit/chargen-rng-pin.test.js, unedited). The parity fixtures this
+ * moves are declared per site (test/parity/FIXTURE-INVENTORY.md, Phase 45
+ * section) and the harness keeps a populated `c.worn` in the comparable via
+ * `dropEmptyWorn`.
  *
  * @param {number} seed - an integer seed
  * @param {string[]} [exclude] - recent character names to avoid reusing
- * @param {{ startDepth?: number, force?: {cls?: string, sub?: string, race?: string}|null, storeRoll?: boolean, wornSlots?: boolean }} [options] - startDepth: dev-only start-at-depth (default 1); force: dev-only chargen draw-result override (HARN-01, default null); storeRoll: shell-started run, enables the depth-rolled store stock; default false; wornSlots: shell-started run, creates c.worn via reconcileWorn (GEAR-03/04); default false
+ * @param {{ startDepth?: number, force?: {cls?: string, sub?: string, race?: string}|null, storeRoll?: boolean }} [options] - startDepth: dev-only start-at-depth (default 1); force: dev-only chargen draw-result override (HARN-01, default null); storeRoll: shell-started run, enables the depth-rolled store stock; default false
  * @returns {object} a serializable GameState
  */
-export function newRun(seed, exclude = [], { startDepth = 1, force = null, storeRoll = false, wornSlots = false } = {}) {
+export function newRun(seed, exclude = [], { startDepth = 1, force = null, storeRoll = false } = {}) {
   const rng = makeRng(seed);
   const c = rollCharacter(rng, exclude, force);
   // Phase 38 (ABIL-01/03, SC-3): the level-1 guarantee — every fresh
@@ -161,13 +156,7 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
   // (test/parity/harness/comparables.js#stripAbilitiesField). A no-op for a
   // Magic User (no ABILITY_POOL entry).
   grantLevelAbilities(c, String(seed), 1);
-  // Phase 37 (GEAR-03/GEAR-04): shell-only option, mirroring storeRoll's own
-  // precedent — true only for a run engineAdapter#startNewRun starts. Plain
-  // assignments/reassignment inside reconcileWorn, NO rng draw, so the
-  // seeded chargen cursor stays exactly where rollCharacter left it; every
-  // fixture/bot/tools/test caller (newRun(seed) with no option) never
-  // creates c.worn and stays byte-identical.
-  if (wornSlots) reconcileWorn(c);
+  reconcileWorn(c);
   // Phase 21 (TUNE-04, D-13): Math.min(DEV_START_DEPTH_MAX, difficultyCurve(startDepth).depth)
   // sanitizes ANY input — difficultyCurve's own safeDepth() already floors/
   // clamps 0, negative, NaN, non-integer and ±Infinity down to 1 (the exact

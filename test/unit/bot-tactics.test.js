@@ -784,8 +784,8 @@ test("observe: useRefused blocks the item's label for the rest of the encounter/
 
 // --- RUN_FLAGS / playRun plays the shipped run rules -----------------------
 
-test("RUN_FLAGS is { storeRoll: true, wornSlots: true }; playRun's state carries both, and a Thief starts with its cloak worn", () => {
-  assert.deepStrictEqual(RUN_FLAGS, { storeRoll: true, wornSlots: true });
+test("RUN_FLAGS is { storeRoll: true }; playRun's state carries storeRoll and c.worn, and a Thief starts with its cloak worn", () => {
+  assert.deepStrictEqual(RUN_FLAGS, { storeRoll: true });
 
   const r = playRun(1, { ...BOT_DEFAULTS, maxActions: 5 });
   assert.strictEqual(r.state.storeRoll, true);
@@ -807,7 +807,7 @@ test("RUN_FLAGS is { storeRoll: true, wornSlots: true }; playRun's state carries
 // acquires via takeFind/takeLoot/buy, all of which route through
 // autoWearSlot -> freeWornKey, so it wears up to two pieces and stows the
 // third automatically.
-test("a bot hero with two worn jewels (playRun's wornSlots:true shape) taking a third find stows it — findTaken only, no itemEquipped", () => {
+test("a bot hero with two worn jewels (playRun's single-path shape) taking a third find stows it — findTaken only, no itemEquipped", () => {
   const state = playRun(1, { ...BOT_DEFAULTS, maxActions: 1 }).state;
   const ring1 = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
   const ring2 = { kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: "foes need two better to land" };

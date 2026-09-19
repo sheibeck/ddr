@@ -9,12 +9,19 @@
         { "type": "attack" }
       ],
       "chargenDivergence": {
-        "phase": 38,
-        "requirements": ["ABIL-02"],
-        "fields": ["skills"],
-        "before": { "skills": { "Heft": 1, "Silence": 1 } },
-        "after": { "skills": { "Heft": 1 } },
-        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway)."
+        "phase": "38+45",
+        "requirements": ["ABIL-02", "HEDGE-03"],
+        "fields": ["skills", "items", "worn"],
+        "before": {
+          "skills": { "Heft": 1, "Silence": 1 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+        },
+        "after": {
+          "skills": { "Heft": 1 },
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+        },
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {
@@ -111,12 +118,19 @@
         { "type": "attack" }
       ],
       "chargenDivergence": {
-        "phase": 38,
-        "requirements": ["ABIL-02"],
-        "fields": ["skills"],
-        "before": { "skills": { "Leaping": 1, "Sewing": 1, "Night Vision": 1 } },
-        "after": { "skills": { "Sewing": 1, "Night Vision": 1 } },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The action path stays byte-identical (this scenario carries NO divergence record — the lose-plain pin actionPathDivergenceOf === null still holds)."
+        "phase": "38+45",
+        "requirements": ["ABIL-02", "HEDGE-03"],
+        "fields": ["skills", "items", "worn"],
+        "before": {
+          "skills": { "Leaping": 1, "Sewing": 1, "Night Vision": 1 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+        },
+        "after": {
+          "skills": { "Sewing": 1, "Night Vision": 1 },
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+        },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The action path stays byte-identical (this scenario carries NO divergence record — the lose-plain pin actionPathDivergenceOf === null still holds). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {
@@ -127,18 +141,19 @@
         { "type": "flee" }
       ],
       "chargenDivergence": {
-        "phase": 38,
-        "requirements": ["ABIL-02", "QUICK-260918-w4n"],
-        "fields": ["skills", "items"],
+        "phase": "38+45",
+        "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"],
+        "fields": ["skills", "items", "worn"],
         "before": {
           "skills": { "Heft": 1, "Silence": 1 },
           "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "a full suit of plate that weighs nothing" }]
         },
         "after": {
           "skills": { "Heft": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Flying", "eff": { "fly": 1 }, "txt": "flight for 20 squares, once every 50" }]
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Flying", "eff": { "fly": 1 }, "txt": "flight for 20 squares, once every 50" } }
         },
-        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt is stripped while the engine side's is not; both sides are recorded here exactly as measured. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves -- a flee never reaches the opening strike either way."
+        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt would be stripped while the engine side's is not — moot now: the cloak is worn, not bagged, so stripCloakArmorTxt (a c.items-only strip) never reaches it. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {
@@ -162,12 +177,19 @@
         "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes. Phase 31 (CMB-01, user ruling 2026-09-16): the Fight! split moves rollInitiative (and everything from it onward) out of startCombat into the new fight action, which now runs strictly AFTER the Knight/Con Artist/Court Mage foe-removal loop completes (that loop stays in the encounter step, in its existing position, ahead of the cut line) -- a genuine, structural rng-order change for any character whose sub draws in that loop. This Con Artist's level-1-foe escape roll (rng.d(6), one of the two Neds fled) now lands BEFORE the two initiative d20s instead of after, so the initiative outcome and every downstream draw shift; here the foes win initiative and land one pre-emptive strike before Talk-it-down is even attempted. Re-measured live on 2026-09-16 (wp 40->34, sp 7->5); the outcome is still a successful parley, just with a shallower wp/sp margin."
       },
       "chargenDivergence": {
-        "phase": 38,
-        "requirements": ["ABIL-02"],
-        "fields": ["skills"],
-        "before": { "skills": { "Leaping": 1, "Heft": 1, "Locks": 2 } },
-        "after": { "skills": { "Heft": 1, "Locks": 2 } },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched."
+        "phase": "38+45",
+        "requirements": ["ABIL-02", "HEDGE-03"],
+        "fields": ["skills", "items", "worn"],
+        "before": {
+          "skills": { "Leaping": 1, "Heft": 1, "Locks": 2 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+        },
+        "after": {
+          "skills": { "Heft": 1, "Locks": 2 },
+          "items": [],
+          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+        },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     }
   ]

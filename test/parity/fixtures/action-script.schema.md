@@ -43,6 +43,17 @@ exact same ordered action list, so any divergence in resulting state (per
   record is a stronger check than a blanket carve-out, not a weaker one. A
   seed with no record in `divergences` is compared byte-identically with NO
   strip.
+  - **Omission rule (Phase 45, HEDGE-03):** a field one side never carries at
+    all (e.g. the frozen prototype has no `worn` model) is declared by
+    OMITTING it from that side's `before`/`after` map — JSON has no
+    `undefined`, so there is no other way to spell "this side never had the
+    key." `diffState`'s key-set comparison still catches a field declared on
+    a side that lacks it, or present on a side where the record omits it, so
+    the omission is exactly as strict as an explicit value. `worn` is a
+    declarable field since Phase 45 (alongside `items`) — a Thief's starting
+    cloak moves from `c.items` (the prototype's only representation) into
+    `c.worn.cloak` (engine-only); the record's `after` carries `worn`, its
+    `before` never does.
 - `divergence` (object, optional) — the same shape as one entry of
   `divergences` above, but attached directly to a single SCENARIO object
   (used by scenario-based fixtures, e.g. `action-script.magic.json`, where

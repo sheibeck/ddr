@@ -203,22 +203,27 @@ function stripTimersField(c) {
   return rest;
 }
 
-/** stripWornField(c) — Phase 37 (GEAR-03/GEAR-04) adds `c.worn`, a
- * brand-new engine-only lazily-created slot map (`{ ring?, bracelet?,
- * amulet?, helm?, cloak?, staff? }`, engine/derived.js#reconcileWorn) with
- * NO prototype-side equivalent — the frozen prototype (test/parity/
- * prototype-master.js.txt — DO NOT EDIT) never sets it, and NO fixture ever
- * creates one (nothing in the fixture/bot replay path calls reconcileWorn
- * or passes newRun's `wornSlots` option — that option is Plan 03's shell-
- * only new-game path), so this is carved out purely as a STRUCTURAL
- * tripwire, exactly like stripTimersField immediately above: a no-op on
- * every current fixture, that keeps a FUTURE worn-driving fixture (or a
- * determinism test reusing this comparable) from ever reaching the diff on
- * this genuine, permanent, deliberate divergence. */
-function stripWornField(c) {
+/** dropEmptyWorn(c) — Phase 45 (HEDGE-01/03): `c.worn` exists on EVERY
+ * engine character now (engine/state.js#newRun always calls
+ * engine/derived.js#reconcileWorn). The frozen prototype (test/parity/
+ * prototype-master.js.txt — DO NOT EDIT) has no worn model at all, so an
+ * EMPTY map is the engine's spelling of the prototype's only state and is
+ * dropped, while a POPULATED map is a real, measured divergence that the
+ * holder must declare (`divergences[seed]` / `chargenDivergence` / an
+ * action-path record's `fields`, with `items` and `worn` before/after
+ * values) — measured by `tools/worn-fixture-scan.mjs`, never
+ * blanket-stripped; contrast `stripTimersField` (a structural tripwire on a
+ * field no fixture populates). Returns `c` unchanged when `c` is falsy or
+ * has no own `worn` key; when `c.worn` is a plain object with zero own keys
+ * returns a shallow copy without `worn`; otherwise (a populated map, or a
+ * malformed value) returns `c` unchanged so it reaches the diff. */
+export function dropEmptyWorn(c) {
   if (!c || !("worn" in c)) return c;
-  const { worn, ...rest } = c;
-  return rest;
+  if (c.worn && typeof c.worn === "object" && !Array.isArray(c.worn) && Object.keys(c.worn).length === 0) {
+    const { worn, ...rest } = c;
+    return rest;
+  }
+  return c;
 }
 
 /** stripAbilitiesField(c) — Phase 38 (ABIL-01/02/03) adds `c.abilities`, an
@@ -227,9 +232,9 @@ function stripWornField(c) {
  * level-pool picks rolled from a derived stream (level-1 guarantee,
  * per-level-up, Joiner recruitment). The frozen prototype (test/parity/
  * prototype-master.js.txt — DO NOT EDIT) has NO equivalent field at all, so
- * this is carved out exactly like stripWornField/stripTimersField
- * immediately above: a structural tripwire, wired as the innermost-but-one
- * wrapper directly around stripWornField in all three comparable chains, so
+ * this is carved out exactly like stripTimersField above: a structural
+ * tripwire, wired as the innermost-but-one wrapper directly around
+ * dropEmptyWorn in all three comparable chains, so
  * a future ability-driving fixture (or a determinism test reusing this
  * comparable) never reaches the diff on this genuine, permanent,
  * deliberate divergence. `state.party`/`state.pendingJoiner` member sheets
@@ -246,7 +251,7 @@ function stripAbilitiesField(c) {
  * the next fight" flag), both brand-new engine-only fields with NO
  * prototype-side equivalent — the frozen prototype (test/parity/
  * prototype-master.js.txt — DO NOT EDIT) never sets either. A STRUCTURAL
- * carve-out, the same category as stripTimersField/stripWornField/
+ * carve-out, the same category as stripTimersField/dropEmptyWorn/
  * stripAbilitiesField above: no fixture hero with a terrain phobia ever has
  * a `move` action in its script (measured by the live scan — see
  * tools/terrain-fixture-scan.mjs's TERRAIN TRIGGER EXPOSURE line and
@@ -265,7 +270,7 @@ function stripPhobiaFields(c) {
  * frozen prototype (test/parity/prototype-master.js.txt — DO NOT EDIT) has
  * no such field on ANY cell, ever. No fixture ever casts Map the Floor (the
  * only source of the flag), so this is carved out purely as a STRUCTURAL
- * tripwire, exactly like stripTimersField/stripWornField/stripAbilitiesField
+ * tripwire, exactly like stripTimersField/dropEmptyWorn/stripAbilitiesField
  * above: a no-op on every current fixture, that keeps a FUTURE reveal-
  * casting fixture (or a determinism test reusing this comparable) from ever
  * reaching the diff on this genuine, permanent, deliberate divergence.
@@ -521,7 +526,7 @@ export function movementComparable(state) {
   // Phase 41 (TERR-01): strip the new engine-only water flag too (see
   // stripWaterField above) — the same structural-carve-out category.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
   return rest;
 }
 
@@ -605,7 +610,7 @@ export function combatComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
   // Phase 41 (TERR-01): see movementComparable's rationale above.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
   return rest;
 }
 
@@ -825,10 +830,19 @@ export function skipsByteDiffAt(divergence, actionIndex) {
  * pickFields(obj, keys) — internal helper for declaredEndDiffs: a shallow
  * `{ key: obj?.[key] }` snapshot for each name in `keys`. A no-op-shaped
  * `{}` when `keys` is empty/undefined.
+ *
+ * Phase 45 (HEDGE-03): a field one side never carries (the prototype has no
+ * `worn`) is declared by OMITTING it from that side's map — JSON has no
+ * `undefined` — so a measured value of `undefined` is skipped rather than
+ * assigned; `diffState`'s key-set comparison still catches a field declared
+ * on a side that lacks it, or present where the record omits it.
  */
 function pickFields(obj, keys) {
   const out = {};
-  for (const key of keys ?? []) out[key] = obj?.[key];
+  for (const key of keys ?? []) {
+    const val = obj?.[key];
+    if (val !== undefined) out[key] = val;
+  }
   return out;
 }
 
@@ -1039,6 +1053,12 @@ export function stripChargenShift(state, record) {
  * a caller asserts both are `null`. Throws on a missing/empty
  * `record.fields` array — a record that declares nothing to check is
  * malformed, mirroring `declaredEndDiffs`'s own guard.
+ *
+ * Phase 45 (HEDGE-03): a field one side never carries (the prototype has no
+ * `worn`) is declared by OMITTING it from that side's map — JSON has no
+ * `undefined` — so a measured value of `undefined` is skipped rather than
+ * assigned; `diffState`'s key-set comparison still catches a field declared
+ * on a side that lacks it, or present where the record omits it.
  */
 export function chargenShiftDiffs(protoC, engineC, record) {
   const fields = record?.fields;
@@ -1048,8 +1068,10 @@ export function chargenShiftDiffs(protoC, engineC, record) {
   const before = {};
   const after = {};
   for (const f of fields) {
-    before[f] = protoC?.[f];
-    after[f] = engineC?.[f];
+    const bv = protoC?.[f];
+    const av = engineC?.[f];
+    if (bv !== undefined) before[f] = bv;
+    if (av !== undefined) after[f] = av;
   }
   return {
     before: diffState(before, record.before),
@@ -1114,7 +1136,7 @@ export function economyComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
   // Phase 41 (TERR-01): see movementComparable's rationale above.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(stripWornField(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(stripPhobiaFields(rest.c)))))))))))))));
+  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(stripPhobiaFields(rest.c)))))))))))))));
   return rest;
 }
 

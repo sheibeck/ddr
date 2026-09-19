@@ -574,7 +574,12 @@ test("reconcilePendingLoot: a pendingLoot jewel compares equal to the same jewel
   const s1 = newRun(3);
   s1.pendingLoot = [JEWEL("Bracelet of Flight")];
   const s2 = newRun(3);
-  s2.c.items = [...s2.c.items, JEWEL("Bracelet of Flight")];
+  // Phase 45 (HEDGE-01): newRun(3)'s Thief already carries c.worn (cloak
+  // worn, jewelry1/jewelry2 free) — the real takeItem reconcilePendingLoot
+  // calls now auto-wears a jewel into the first free jewelry key (see
+  // engine/items.js#autoWearSlot, gated on `"worn" in c`), so "already
+  // given" means worn, not bagged.
+  s2.c.worn.jewelry1 = JEWEL("Bracelet of Flight");
 
   assert.equal(diffState(movementComparable(s1), movementComparable(s2)), null);
   assert.equal(diffState(combatComparable(s1), combatComparable(s2)), null);
@@ -585,7 +590,11 @@ test("reconcilePendingLoot: a two-item pile applies in order", () => {
   const s1 = newRun(3);
   s1.pendingLoot = [JEWEL("A"), JEWEL("B")];
   const s2 = newRun(3);
-  s2.c.items = [...s2.c.items, JEWEL("A"), JEWEL("B")];
+  // Phase 45 (HEDGE-01): both jewels auto-wear in order — jewelry1 then
+  // jewelry2 — since newRun(3)'s jewelry keys start free (see the comment
+  // above).
+  s2.c.worn.jewelry1 = JEWEL("A");
+  s2.c.worn.jewelry2 = JEWEL("B");
 
   assert.equal(diffState(combatComparable(s1), combatComparable(s2)), null);
 });

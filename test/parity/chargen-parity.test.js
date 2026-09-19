@@ -19,7 +19,7 @@ import url from "node:url";
 import { newRun } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { chargenDivergenceFor, stripDeclaredFields, stripReauthoredEveryField, stripCloakArmorTxt } from "./harness/comparables.js";
+import { chargenDivergenceFor, stripDeclaredFields, stripReauthoredEveryField, stripCloakArmorTxt, dropEmptyWorn } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -79,6 +79,13 @@ const CHARACTER_FIELDS = [
   // splitTableAbilities) with NO prototype-side equivalent at all — stripped
   // again below before diffState, same treatment as bag/darkFor/flight above.
   "abilities",
+  // Phase 45 (HEDGE-01): a brand-new, engine-only worn-slot map (see
+  // engine/derived.js#reconcileWorn), lazily created on EVERY fresh roll —
+  // `{}` for a Fighter/Magic User, a Thief's starting cloak worn. An empty
+  // map is dropped before diffState (dropEmptyWorn, the engine's spelling
+  // of the prototype's "no worn model"); a populated one is declared per
+  // seed in `divergences` (seeds 2/3/4) with `items`/`worn` before/after.
+  "worn",
 ];
 
 test("engine chargen matches the frozen prototype for every fixture seed", () => {
@@ -141,6 +148,12 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
     protoCForDiff = stripCloakArmorTxt(protoCForDiff);
     engineCForDiff = stripCloakArmorTxt(engineCForDiff);
 
+    // Phase 45 (HEDGE-01/03): drop an empty c.worn map (the engine's
+    // spelling of the prototype's "no worn model") — a populated one (a
+    // Thief's starting cloak, seeds 2/3/4) reaches the diff below and must
+    // be declared on this seed's `divergences` record instead.
+    engineCForDiff = dropEmptyWorn(engineCForDiff);
+
     const record = chargenDivergenceFor(FIXTURE, seed);
     let strippedProto = protoCForDiff;
     let strippedEngine = engineCForDiff;
@@ -186,7 +199,9 @@ test("chargen fixture divergence records are narrow and well-formed (FID-06)", (
   // test/parity/FIXTURE-INVENTORY.md's Phase 40 section. Phase 38 (ABIL-02,
   // the Special Skills table reshape) contributes 7 more (seeds 1, 2, 3, 4,
   // 6, 13, 32) — see that file's Phase 38 section for the full measured
-  // before/after table.
+  // before/after table. Phase 45 (HEDGE-03) extends seeds 2/3/4 (already
+  // among the 11) with `items`/`worn` — no new record, the key count is
+  // unchanged.
   assert.ok(keys.length <= 11, `expected at most 11 divergence records, got ${keys.length}`);
   for (const key of keys) {
     assert.ok(SEEDS.includes(Number(key)), `divergence key ${key} is not in the fixture's seeds array`);

@@ -43,6 +43,7 @@ import {
   chargenShiftOf,
   stripChargenShift,
   chargenShiftDiffs,
+  dropEmptyWorn,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -156,9 +157,10 @@ function comparable(state) {
     // c.timers map too (see harness stripTimersField) — same treatment as
     // name/darkFor/flight/bag, mirrored here because this file keeps its own
     // local comparable().
-    // Phase 37 (GEAR-03/GEAR-04): strip the new engine-only lazily-created
-    // c.worn slot map too (see harness stripWornField) — mirrored here
-    // because this file keeps its own local comparable().
+    // Phase 45 (HEDGE-01/03): drop an empty c.worn map (the engine's
+    // spelling of the prototype's "no worn model"); a populated one is
+    // declared on the scenario's chargenDivergence, not stripped here —
+    // mirrored here because this file keeps its own local comparable().
     // Phase 38 (ABIL-01/02/03): strip the new engine-only c.abilities array
     // too (see harness stripAbilitiesField) — mirrored here because this
     // file keeps its own local comparable().
@@ -170,7 +172,7 @@ function comparable(state) {
     // Phase 41 (TERR-04/05): strip the new engine-only phobiaState/fearArmed
     // fields too (see harness stripPhobiaFields) — mirrored here because
     // this file keeps its own local comparable().
-    const { name, darkFor, flightLeft, flightCooldown, bag, timers, worn, abilities, haste, invis, ether, acute, phobiaState, fearArmed, ...cRest } = rest.c;
+    const { name, darkFor, flightLeft, flightCooldown, bag, timers, abilities, haste, invis, ether, acute, phobiaState, fearArmed, ...cRest } = rest.c;
     // Phase 28 (ARMOR-04): the Cloak of Armor's rewritten `txt` is a purely
     // cosmetic content divergence (see harness/comparables.js's
     // stripCloakArmorTxt) — the `flee` scenario's seed 17 rolls this cloak
@@ -180,7 +182,7 @@ function comparable(state) {
     // treasure rows' `every` value too — win/lose-plain/parley's seeds
     // (3/1119/303) each independently roll a Thief starting with a Cloak of
     // Ether; see harness/comparables.js's stripReauthoredEveryField.
-    rest.c = stripReauthoredEveryField(stripCloakArmorTxt(cRest));
+    rest.c = stripReauthoredEveryField(stripCloakArmorTxt(dropEmptyWorn(cRest)));
   }
   return rest;
 }

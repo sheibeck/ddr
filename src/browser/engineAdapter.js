@@ -325,14 +325,6 @@ async function persistGrave(state, cause) {
  * deliberately do NOT pass it (flag-off = the parity-identical store), and
  * tools/ bots call newRun(seed) directly so the mass-playtest ledgers are
  * unchanged by this phase.
- *
- * Phase 37 (GEAR-03/GEAR-04) — every run started from here ALSO carries the
- * `wornSlots` option on, following the exact same rule as `storeRoll` above:
- * the shell's new-game path is the one place that creates `c.worn` on a
- * fresh roll (wearing a Thief's starting cloak). boot()'s throwaway
- * pre-title fallback run and dispatch()'s fail-closed recovery run
- * deliberately do NOT pass it (flag-off = the legacy, byte-identical
- * chargen every fixture/bot/tools caller still gets).
  */
 export async function startNewRun(seed, options = {}) {
   if (currentState && !currentState.dev) {
@@ -345,7 +337,7 @@ export async function startNewRun(seed, options = {}) {
   // fresh roll so a new adventurer avoids reusing the last ~25 dead names.
   const exclude = await readRecentNames();
   const startDepth = Number.isInteger(options.startDepth) && options.startDepth >= 1 ? options.startDepth : 1;
-  const state = initRun(safeSeed, exclude, { startDepth, storeRoll: true, wornSlots: true });
+  const state = initRun(safeSeed, exclude, { startDepth, storeRoll: true });
   persist();
   return state;
 }
@@ -360,14 +352,12 @@ export async function startNewRun(seed, options = {}) {
  * with `freshSeed` — it never throws. Async: 02-03 routes this through
  * storage.js rather than raw localStorage.
  *
- * Phase 37 (GEAR-04) — this IS the shell's real load path, so it always
- * passes the `wornSlots` option on to both `validateSave` and `rehydrate`: any
- * legacy save (no `c.worn`) is migrated here, once, and the resulting
- * reconciliation report (`[]` when nothing was wearable, an array of
- * `{ slot, worn, bagged }` entries otherwise) is stashed on `bootWornReport`
- * for `takeBootWornReport()` to hand to Plan 04's resume path. A save that
- * already carries `worn` (or no save at all — the fresh-run fallback below)
- * leaves `bootWornReport` at its default `null`.
+ * Phase 45 (HEDGE-02) — this IS the shell's real load path; every valid
+ * save is reconciled by `validateSave` (unconditional since Phase 45) and
+ * its `wornReport` — `[]` when nothing moved, including an already-migrated
+ * save — is stashed for `takeBootWornReport()`; the rail card filters on
+ * `bagged.length`, so an empty report shows nothing. The fresh-run fallback
+ * below leaves it `null`.
  */
 export async function boot(freshSeed) {
   await storage.migrateLegacyKeys();
@@ -378,10 +368,10 @@ export async function boot(freshSeed) {
     raw = null;
   }
   if (raw) {
-    const check = validateSave(raw, { freshSeed, wornSlots: true });
+    const check = validateSave(raw, { freshSeed });
     if (check.ok) {
-      bootWornReport = check.wornReport ?? null;
-      currentState = rehydrate(check.value, { wornSlots: true });
+      bootWornReport = check.wornReport;
+      currentState = rehydrate(check.value);
       return currentState;
     }
   }
@@ -389,8 +379,7 @@ export async function boot(freshSeed) {
   // recent-names dedup the one-tap startNewRun() path uses, so a first roll
   // after a death (or a cold boot with no active save) also avoids reusing the
   // last ~25 dead names. The rehydrate path above never rolls a character, so
-  // it needs no exclusion. This throwaway pre-title run deliberately does NOT
-  // pass wornSlots (mirrors storeRoll) — it never has a save to migrate.
+  // it needs no exclusion.
   const exclude = await readRecentNames();
   return initRun(freshSeed, exclude);
 }

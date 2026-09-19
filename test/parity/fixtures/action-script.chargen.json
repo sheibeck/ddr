@@ -45,34 +45,49 @@
       "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry."
     },
     "2": {
-      "phase": 38,
-      "requirements": ["ABIL-02", "QUICK-260918-w4n"],
-      "fields": ["skills", "items"],
+      "phase": "38+45",
+      "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"],
+      "fields": ["skills", "items", "worn"],
       "before": {
         "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 },
         "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 } }]
       },
       "after": {
         "skills": { "Acute Hearing": 1, "Night Vision": 1 },
-        "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 } }]
+        "items": [],
+        "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" } }
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
     },
     "3": {
-      "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Heft": 1, "Silence": 1 } },
-      "after": { "skills": { "Heft": 1 } },
-      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills."
+      "phase": "38+45",
+      "requirements": ["ABIL-02", "HEDGE-03"],
+      "fields": ["skills", "items", "worn"],
+      "before": {
+        "skills": { "Heft": 1, "Silence": 1 },
+        "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "txt": "walk through walls, once every 100 squares" }]
+      },
+      "after": {
+        "skills": { "Heft": 1 },
+        "items": [],
+        "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+      },
+      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
     },
     "4": {
-      "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Climbing": 1, "Acute Hearing": 1, "Silence": 1 } },
-      "after": { "skills": { "Acute Hearing": 1 } },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills."
+      "phase": "38+45",
+      "requirements": ["ABIL-02", "HEDGE-03"],
+      "fields": ["skills", "items", "worn"],
+      "before": {
+        "skills": { "Climbing": 1, "Acute Hearing": 1, "Silence": 1 },
+        "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 } }]
+      },
+      "after": {
+        "skills": { "Acute Hearing": 1 },
+        "items": [],
+        "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 }, "txt": "used, a d6 hp back at once; then twenty squares of rest before it works again" } }
+      },
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
     },
     "6": {
       "phase": 38,

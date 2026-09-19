@@ -338,11 +338,10 @@ export function clampCarry(c) {
  *
  * Moving bag -> worn only ever FREES bag slots (items leave the bag, none
  * are added), so this can never overflow a bag-cap. Adds NO rng draw — pure
- * reads/reassignment. The ONLY callers are Plan 03's `newRun(seed, exclude,
- * { wornSlots: true })` option (shell-only, mirroring the `storeRoll`
- * precedent) and the option-gated save-load path (`validateSave`/
- * `rehydrate`) — nothing in THIS plan calls it, so no fixture/bot/newRun(seed)
- * caller in this plan ever creates `c.worn`.
+ * reads/reassignment. Callers — `engine/state.js#newRun` on every fresh
+ * roll and both load chains (`validateSave`/`rehydrate`), all unconditional
+ * since Phase 45 (HEDGE-01/02); returns `null` (touching nothing) when `c`
+ * already owns `worn`, which is what makes a second load a no-op.
  *
  * 260918-w4n (staff amendment): a staff is never eligible here — `slotFor`
  * already returns `null` for one, so it always stays bagged.

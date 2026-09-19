@@ -51,6 +51,7 @@ import {
   chargenShiftDiffs,
   stripReauthoredEveryField,
   stripCloakArmorTxt,
+  dropEmptyWorn,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -95,6 +96,12 @@ const CHARACTER_FIELDS = [
   // ids, no prototype-side equivalent — stripped again below before
   // diffState. See chargen-parity.test.js for the full rationale.
   "abilities",
+  // Phase 45 (HEDGE-01): engine-only worn-slot map, lazily created on every
+  // fresh roll (`{}` for a Fighter/Magic User, a Thief's starting cloak
+  // worn) — an empty map is dropped before diffState (dropEmptyWorn); a
+  // populated one is declared per seed in `divergences`. See
+  // chargen-parity.test.js for the full rationale.
+  "worn",
 ];
 
 test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/economy/encounters", async (t) => {
@@ -123,6 +130,11 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // application and harness/comparables.js's stripCloakArmorTxt.
       engineCForDiff = stripCloakArmorTxt(engineCForDiff);
       protoCForDiff = stripCloakArmorTxt(protoCForDiff);
+
+      // Phase 45 (HEDGE-01/03): drop an empty c.worn map (the engine's
+      // spelling of the prototype's "no worn model") — a populated one
+      // (seeds 2/3/4) reaches the diff below and must be declared.
+      engineCForDiff = dropEmptyWorn(engineCForDiff);
 
       // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
       // divergence (see the chargen fixture's `divergences` map) — assert the

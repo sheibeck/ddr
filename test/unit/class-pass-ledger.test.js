@@ -424,7 +424,7 @@ test("v1.5 AFTER hash equals v15-after.json and v15-after-depth20.json meta.comm
 
 // --- (16) v1.5 AFTER meta parity with the v1.5 BEFORE pair (modulo commit) ---
 
-test("v1.5 AFTER meta parity with the v1.5 BEFORE pair (modulo commit), runFlags present", () => {
+test("v1.5 AFTER meta parity with the v1.5 BEFORE pair (modulo commit), runFlags recorded (two-flag era)", () => {
   const naturalParity = metaParity(v15Before.meta, v15After.meta);
   assert.equal(naturalParity.ok, true, `v1.5 BEFORE vs v1.5 AFTER natural pair parity mismatches: ${naturalParity.mismatches.join(", ")}`);
   const deepParity = metaParity(v15BeforeDeep.meta, v15AfterDeep.meta);
@@ -434,8 +434,16 @@ test("v1.5 AFTER meta parity with the v1.5 BEFORE pair (modulo commit), runFlags
   assert.equal(v15AfterDeep.meta.bot, v15BeforeDeep.meta.bot);
   assert.notEqual(v15Before.meta.commit, v15After.meta.commit, "v1.5 BEFORE and v1.5 AFTER must be different pins — a self-diff would be a mistake");
 
-  assert.deepStrictEqual(v15After.meta.runFlags, { storeRoll: true, wornSlots: true }, "v1.5 AFTER natural must carry the shipped-game run flags");
-  assert.deepStrictEqual(v15AfterDeep.meta.runFlags, { storeRoll: true, wornSlots: true }, "v1.5 AFTER depth-20 must carry the shipped-game run flags");
+  // Phase 45 (HEDGE-01): the v1.5 AFTER readouts are frozen history — never
+  // regenerated to today's RUN_FLAGS. These assertions stay true of the
+  // stored files without spelling the retired Phase 37 run/load option
+  // identifier: both readouts still carry storeRoll: true, and both readouts
+  // agree with each other (byte-identical runFlags shape), and both still
+  // carry exactly the two run flags recorded in their era.
+  assert.equal(v15After.meta.runFlags.storeRoll, true);
+  assert.equal(v15AfterDeep.meta.runFlags.storeRoll, true);
+  assert.deepStrictEqual(v15After.meta.runFlags, v15AfterDeep.meta.runFlags);
+  assert.equal(Object.keys(v15After.meta.runFlags).length, 2, "the v1.5 AFTER readouts recorded the two run flags of their era — storeRoll plus the Phase 37 worn-slot option Phase 45 collapsed into the engine's only path; frozen history, never regenerated to today's RUN_FLAGS");
 });
 
 // --- (17) v1.5 AFTER: identical 143 cell keys vs v1.5 BEFORE, zero cannot-act / zero stuck ---

@@ -370,11 +370,11 @@ test("foldLegacyCounters: an active counter WINS over an item-fold cooldown for 
   assert.deepStrictEqual(folded.timers["item:Cloak of Ether"], { cadence: "squares", left: 15, cd: 80, phase: "effect" });
 });
 
-test("validateSave folds legacy counters through the real load chain (wornSlots option) with the tampered-charges clamp applied", () => {
+test("validateSave folds legacy counters through the real load chain with the tampered-charges clamp applied", () => {
   const run = newRun(9);
   run.c.items.push({ kind: "staff", n: "Oak Staff", use: "stone", every: 250, usedAt: 3, charges: "x" });
   run.steps = 30;
-  const check = validateSave(JSON.stringify(serializeRun(run)), { wornSlots: true });
+  const check = validateSave(JSON.stringify(serializeRun(run)));
   assert.equal(check.ok, true);
   const staffItem =
     check.value.c.worn?.staff?.n === "Oak Staff" ? check.value.c.worn.staff : check.value.c.items.find((it) => it.n === "Oak Staff");
