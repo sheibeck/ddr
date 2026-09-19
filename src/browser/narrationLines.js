@@ -1,41 +1,41 @@
-// src/browser/toasts.js
+// src/browser/narrationLines.js
 //
-// Phase 25 (Toast architecture) — the pure, testable toast table that sits
-// beside src/browser/eventNarration.js's EVENT_NARRATION (the Oracle log).
-// TOAST_FOR maps every toasting engine event type to a SHORT
-// `(e, ctx) => ({ text, tone, priority })` builder — the summary a player
-// glances at; the Oracle line (eventNarration.js) stays the full sentence
-// with the roll. 25-03 adds `toastsForAction` (aggregation/priority/cap) on
-// top of this table; 25-04 wires the shell; 25-05 adds the coverage/manifest
-// guards this file is built to satisfy.
+// The per-event narration-LINE table and fold pipeline: `LINE_FOR` maps
+// every narrated engine event type to a SHORT `(e, ctx) => ({ text, tone,
+// priority })` builder — the summary a player glances at — and
+// `linesForAction` folds a whole action's events into an ordered list of
+// those summaries. `rail.js` reads this fold out of combat (one RAIL
+// card); `fightLog.js` reads it in combat (the round's fight-log lines).
+// Beside it sits `src/browser/eventNarration.js`'s `EVENT_NARRATION` (the
+// Oracle log) — the full sentence with the roll, for the record rather
+// than the glance.
 //
 // PRESENTATION ONLY, pure module: no DOM access, no `import` from engine/,
 // and no Math.random/Date.now anywhere in this file (mirrors missLines.js's
-// purity contract; 25-05 adds a standing guard, T-25-23, that greps this
-// file for exactly those patterns — including any `from "…engine/…"` import
-// line, regardless of what it imports). Every builder defends every field
-// with `??`/`?.` so a bare `{ type }` call (the coverage guard's own
-// invocation shape, same convention as eventNarration.js) never throws
-// (T-25-08).
+// purity contract; a standing guard, T-25-23, greps this file for exactly
+// those patterns — including any `from "…engine/…"` import line, regardless
+// of what it imports). Every builder defends every field with `??`/`?.` so
+// a bare `{ type }` call (the coverage guard's own invocation shape, same
+// convention as eventNarration.js) never throws (T-25-08).
 //
 // 260918-wy1 (jewelry-merge, deviation from the plan's literal instruction):
 // the plan proposed importing `WORN_FAMILY_OF` from engine/derived.js here.
 // That import trips T-25-23's standing purity guard (it forbids ANY
 // `engine/` import line in this file, not just an impure one) — a real test
-// in test/unit/toastsCoverage.test.js, not a hypothetical. Rather than
-// weaken that guard, `slotWord` below carries its OWN small local mirror of
-// the same three-entry table; the worn-slots/worn-model unit suites pin
-// both this table and engine/derived.js#WORN_FAMILY_OF against the same
-// three literal keys, so a future change to one is caught by the other's
-// test failing, not by a silent drift.
+// in test/unit/narrationLinesCoverage.test.js, not a hypothetical. Rather
+// than weaken that guard, `slotWord` below carries its OWN small local
+// mirror of the same three-entry table; the worn-slots/worn-model unit
+// suites pin both this table and engine/derived.js#WORN_FAMILY_OF against
+// the same three literal keys, so a future change to one is caught by the
+// other's test failing, not by a silent drift.
 //
 // ORACLE_ONLY is a one-directional allowlist: every engine event type NOT in
-// that set gets a TOAST_FOR builder here. Nothing in ORACLE_ONLY ever
-// duplicates information a toast already shows more completely — the toast
-// is a summary, the Oracle is the record (T-25-10). FEATURE_EVENTS is the
-// separate manifest of every class/sub-class/race feature + refusal event
-// (25-CONTEXT.md's "Feature manifest" decision) — a strict subset of
-// TOAST_FOR's keys, disjoint from ORACLE_ONLY.
+// that set gets a LINE_FOR builder here. Nothing in ORACLE_ONLY ever
+// duplicates information a folded line already shows more completely — the
+// folded line is a summary, the Oracle is the record (T-25-10).
+// FEATURE_EVENTS is the separate manifest of every class/sub-class/race
+// feature + refusal event (25-CONTEXT.md's "Feature manifest" decision) —
+// a strict subset of LINE_FOR's keys, disjoint from ORACLE_ONLY.
 
 // Phase 38 Plan 04 (ABIL-05): ABILITY_BY_ID maps a member ability's `via`
 // key to its canon display name for allyStruck/allyMissed's optional clause
@@ -59,14 +59,11 @@ import { ABILITY_BY_ID } from "../../content/abilities.js";
 export const TONES = Object.freeze(["hit", "miss", "hurt", "dodge", "magic", "block", "beat"]);
 
 /**
- * PRIORITY — toast ordering (25-03's aggregator sorts ascending, then caps
- * at MAX_TOASTS): refusals/blocks first, then your outcome, then the enemy's
- * outcome, then feature call-outs, then everything else.
+ * PRIORITY — the fold's ordering (25-03's aggregator sorts ascending):
+ * refusals/blocks first, then your outcome, then the enemy's outcome, then
+ * feature call-outs, then everything else.
  */
 export const PRIORITY = Object.freeze({ block: 0, you: 1, them: 2, feature: 3, other: 4 });
-
-/** MAX_TOASTS — the host's visible cap (up from the prior hard-coded 3). */
-export const MAX_TOASTS = 4;
 
 /**
  * CARD_EVENTS — Phase 25.1 (DFB-01 decision 1). The ONLY move-path events
@@ -77,9 +74,10 @@ export const MAX_TOASTS = 4;
  * this set exists only to gate the generic html-to-beats fallback the
  * shell falls back to when none of those dedicated branches apply. The
  * shell checks this set BEFORE that generic fallback; a dispatch whose
- * events contain BOTH a card event and toast-only events shows the card
- * AND raises the toasts (toasts are raised inside dispatchWithToasts
- * before the card is ever built — the card never swallows a toast).
+ * events contain BOTH a card event and non-card lines shows the card AND
+ * raises the folded lines (folded lines are raised inside
+ * dispatchWithNarration before the card is ever built — the card never
+ * swallows a line).
  */
 export const CARD_EVENTS = new Set(["floorChanged", "leveled"]);
 
@@ -93,41 +91,13 @@ export const CARD_EVENTS = new Set(["floorChanged", "leveled"]);
  */
 export const NARRATIVE_ACTIONS = new Set(["move", "camp", "resolveJoiner", "dismissJoiner"]);
 
-/**
- * Toast lifetime constants (Phase 25.1, DFB-02). `toastLifetime(len,
- * visible)` = min(TOAST_CAP_MS, TOAST_BASE_MS + TOAST_PER_CHAR_MS * len) +
- * TOAST_STACK_BONUS_MS * clamp(visible, 0, MAX_TOASTS - 1). Table: len 0 ->
- * 3000, len 1 -> 3060, len 99 -> 8940, len 100 -> 9000 (cap reached), len
- * 101 -> 9000; visible 3 -> +3600 (so the worst case is 9000 + 3600 =
- * 12600 ms); visible 4 clamps to 3 (MAX_TOASTS - 1); visible -1 clamps to
- * 0. Reduced motion never touches this number — it only shortens the CSS
- * transition (mazeworld.html's `prefers-reduced-motion` rule).
- */
-export const TOAST_BASE_MS = 3000;
-export const TOAST_PER_CHAR_MS = 60;
-export const TOAST_CAP_MS = 9000;
-export const TOAST_STACK_BONUS_MS = 1200;
-
-/**
- * toastLifetime(len, visible) — integer milliseconds a toast should stay
- * on screen before auto-dismissing. Both inputs are defended (non-numeric
- * or negative collapses to 0; `visible` is additionally clamped to
- * [0, MAX_TOASTS - 1] since a toast can never see more than MAX_TOASTS - 1
- * siblings already on screen when it is raised).
- */
-export function toastLifetime(len, visible) {
-  const n = Math.max(0, Math.floor(Number(len) || 0));
-  const v = Math.max(0, Math.min(MAX_TOASTS - 1, Math.floor(Number(visible) || 0)));
-  return Math.min(TOAST_CAP_MS, TOAST_BASE_MS + TOAST_PER_CHAR_MS * n) + TOAST_STACK_BONUS_MS * v;
-}
-
 // The exact roll-span regex the shell's stripRollDetail() uses (mazeworld.html)
-// so narrativeToastText strips dice detail identically to the over-map
+// so narrativeLineText strips dice detail identically to the over-map
 // overlay's own stripping.
 const ROLL_SPAN_RE = /<span class="roll">[\s\S]*?<\/span>\s*/g;
 
 // Numeric-entity decode (&#39; / &#x27;) plus the fixed named-entity table
-// narrativeToastText needs. &amp; is decoded LAST so a literal "&lt;" in the
+// narrativeLineText needs. &amp; is decoded LAST so a literal "&lt;" in the
 // source text (i.e. the text "&lt;" itself, already escaped once) renders as
 // the two characters "&lt;", never as a re-decoded "<" tag opener.
 function decodeEntities(str) {
@@ -143,7 +113,7 @@ function decodeEntities(str) {
 }
 
 /**
- * narrativeToastText(html) — Phase 25.1 (DFB-01 decision 2). Turns one
+ * narrativeLineText(html) — Phase 25.1 (DFB-01 decision 2). Turns one
  * Oracle HTML line into the plain-text sentence a toast shows: (a) drop
  * every `<span class="roll">...</span>` block plus its trailing
  * whitespace (the SAME regex the shell's stripRollDetail uses); (b) strip
@@ -155,7 +125,7 @@ function decodeEntities(str) {
  * roll-only line, an empty/undefined input). The shell always inserts the
  * result via `textContent`, never `innerHTML` (T-25.1-01).
  */
-export function narrativeToastText(html) {
+export function narrativeLineText(html) {
   const raw = String(html ?? "");
   const noRoll = raw.replace(ROLL_SPAN_RE, "");
   const noTags = noRoll.replace(/<[^>]+>/g, "");
@@ -166,7 +136,7 @@ export function narrativeToastText(html) {
 /**
  * oracleDetailText(html) — Phase 34 (CSCR-04). The fight log's tap-reveal
  * line: the Oracle's own sentence with its dice KEPT (the opposite of
- * narrativeToastText, which strips the roll span). Needed because a
+ * narrativeLineText, which strips the roll span). Needed because a
  * `struck` line carries TWO roll spans (the to-hit roll and the damage
  * roll) — splitting out only the first span (as oracleLogViewModel does)
  * would leave a bare number with no context, so this keeps the whole
@@ -217,7 +187,7 @@ export const ORACLE_ONLY = new Set([
 /**
  * FEATURE_EVENTS — every class/sub-class/race feature event and every
  * refusal/rejection event (25-CONTEXT.md's "Feature manifest" decision).
- * 25-05 proves this is a subset of TOAST_FOR's keys, disjoint from
+ * 25-05 proves this is a subset of LINE_FOR's keys, disjoint from
  * ORACLE_ONLY, and covers every name test/unit/identity-contract.test.js
  * asserts.
  */
@@ -368,8 +338,8 @@ function equipRejectText(e) {
 // engine/derived.js#WORN_FAMILY_OF's three entries. Deliberately NOT
 // imported from engine/ (see the file-header deviation note above) —
 // duplicated here on purpose, kept honest by test/unit/worn-model.test.js
-// and test/unit/toastTable.test.js each pinning their own copy against the
-// same three literal keys.
+// and test/unit/narrationLinesTable.test.js each pinning their own copy
+// against the same three literal keys.
 const SLOT_FAMILY_WORD = Object.freeze({ jewelry1: "jewelry", jewelry2: "jewelry", cloak: "cloak" });
 
 /**
@@ -384,9 +354,9 @@ export function slotWord(slot) {
   return SLOT_FAMILY_WORD[slot] ?? slot;
 }
 
-// ─── toastsForAction pipeline (25-03) ─────────────────────────────────────
+// ─── linesForAction pipeline (25-03) ─────────────────────────────────────
 //
-// `toastsForAction(type, events, ctx = {})` is the per-action pipeline the
+// `linesForAction(type, events, ctx = {})` is the per-action pipeline the
 // shell (25-04) calls once per dispatched action, after the events have
 // already been decorated by decorateMisses (engineAdapter.js). Order:
 //   1. encounterStart  — folds encounterStarted + its same-action followers
@@ -408,18 +378,19 @@ export function slotWord(slot) {
 //      to any your-round/spell-chain toast whose target a still-unconsumed
 //      foeKilled names.
 //   7. every remaining unconsumed, non-ORACLE_ONLY event is mapped through
-//      TOAST_FOR directly.
-//   8. dedupe per event type (table-mapped toasts only; aggregated toasts
+//      LINE_FOR directly.
+//   8. dedupe per event type (table-mapped lines only; aggregated lines
 //      are never deduped against each other), stable-sort ascending by
-//      priority (ties keep engine order), then cap at MAX_TOASTS — so a
-//      priority-0 refusal is never dropped and the cap always drops the
-//      lowest-priority (highest number), latest-engine-order toasts first.
+//      priority (ties keep engine order); the default `limit` is Infinity
+//      (uncapped — the toast host that once capped this list was retired
+//      in Phase 35), so every folded line survives unless a caller passes
+//      an explicit `opts.limit`.
 //
 // `ctx.narrate` (Phase 25.1, DFB-01 decision 2) — `(e) => html string | ""`,
 // supplied by the shell ONLY for NARRATIVE_ACTIONS (move/camp/resolveJoiner).
 // In step 7 (the direct-mapped-event loop below), when `ctx.narrate` is a
 // function AND the event's type is not in CARD_EVENTS, the toast text
-// becomes `narrativeToastText(ctx.narrate(e))` — the Oracle's own sentence,
+// becomes `narrativeLineText(ctx.narrate(e))` — the Oracle's own sentence,
 // dice stripped — with the table text as the fallback when the narration
 // strips to nothing (never a blank toast). Every other action type keeps
 // the short Phase 25 table text. CARD_EVENTS types are excluded here
@@ -443,7 +414,7 @@ function sumSoaked(list) {
 /**
  * enemyRound(events, consumed) — struckByFoe/foeMissed(hero, no `member`)
  * grouped by foe name into one toast per foe (M===1 reuses the locked
- * single-swing TOAST_FOR builder verbatim; M>=2 uses the "K of M" wording);
+ * single-swing LINE_FOR builder verbatim; M>=2 uses the "K of M" wording);
  * 3+ distinct foe names collapse into ONE "${F} foes swing, ..." toast.
  * memberStruck/foeMissed(member) group by (name, member) separately, at
  * PRIORITY.feature (25-CONTEXT.md: "party-member hits ... lower priority").
@@ -503,7 +474,7 @@ function enemyRound(events, consumed) {
       const firstIdx = entries[0].idx;
       entries.forEach(({ idx }) => consumed.add(idx));
       if (M === 1) {
-        built.push({ ...TOAST_FOR[entries[0].e.type](entries[0].e), idx: firstIdx });
+        built.push({ ...LINE_FOR[entries[0].e.type](entries[0].e), idx: firstIdx });
         continue;
       }
       const hits = entries.filter((x) => x.hit);
@@ -524,7 +495,7 @@ function enemyRound(events, consumed) {
     const { name, member } = entries[0];
     entries.forEach(({ idx }) => consumed.add(idx));
     if (M === 1) {
-      built.push({ ...TOAST_FOR[entries[0].e.type](entries[0].e), idx: firstIdx });
+      built.push({ ...LINE_FOR[entries[0].e.type](entries[0].e), idx: firstIdx });
       continue;
     }
     const hits = entries.filter((x) => x.hit);
@@ -542,7 +513,7 @@ function enemyRound(events, consumed) {
  * yourRound(events, consumed) — struck/strikeMissed(non-untouchable) grouped
  * by target (M===1 reuses the locked single-swing builder; M>=2 uses the
  * "K of M" wording, carrying the first quipped miss's quip when K===0).
- * Untouchable misses are never grouped — TOAST_FOR.strikeMissed's own
+ * Untouchable misses are never grouped — LINE_FOR.strikeMissed's own
  * untouchable branch handles them individually via the generic mapping step.
  */
 function yourRound(events, consumed) {
@@ -567,7 +538,7 @@ function yourRound(events, consumed) {
     entries.forEach(({ idx }) => consumed.add(idx));
     if (M === 1) {
       const { e } = entries[0];
-      built.push({ ...TOAST_FOR[e.type](e), idx: firstIdx, ...(e.type === "struck" ? { _target: target } : {}) });
+      built.push({ ...LINE_FOR[e.type](e), idx: firstIdx, ...(e.type === "struck" ? { _target: target } : {}) });
       continue;
     }
     const hits = entries.filter((x) => x.hit);
@@ -715,7 +686,7 @@ function spellChain(events, consumed) {
       consumed.add(missedIdx);
       // spellMissed carries no `spell` field of its own (engine/magic.js) —
       // borrow it from the spellThrown that started this chain.
-      built.push({ ...TOAST_FOR.spellMissed({ ...events[missedIdx], spell: e0.spell }), idx: ti });
+      built.push({ ...LINE_FOR.spellMissed({ ...events[missedIdx], spell: e0.spell }), idx: ti });
       continue;
     }
     if (hitIdx === -1) continue;
@@ -729,7 +700,7 @@ function spellChain(events, consumed) {
     }
     // spellHit likewise carries no `spell` field (engine/magic.js) — borrow
     // it from the spellThrown that started this chain.
-    built.push({ ...TOAST_FOR.spellHit({ ...hitE, spell: e0.spell }), idx: ti, _target: target });
+    built.push({ ...LINE_FOR.spellHit({ ...hitE, spell: e0.spell }), idx: ti, _target: target });
   }
   return built;
 }
@@ -738,10 +709,10 @@ function spellChain(events, consumed) {
  * fleeChain(events, consumed) — `fleeRolled` + (`fled` | `fleeFailed`) fold
  * into ONE toast, ROLL FIRST (Phase 42, FLEE-02, ROADMAP SC-1): the roll and
  * every named modifier lead, the outcome's own text follows —
- * `${TOAST_FOR.fleeRolled(e).text}. ${outcome text}` — so the fight log
+ * `${LINE_FOR.fleeRolled(e).text}. ${outcome text}` — so the fight log
  * shows roll/modifiers/need before the outcome in one line (the 34-CONTEXT
  * "log line count = folded count" pin still holds: still ONE line per
- * attempt). Reuses TOAST_FOR.fleeRolled itself rather than restating the
+ * attempt). Reuses LINE_FOR.fleeRolled itself rather than restating the
  * format. A `fled` with no preceding `fleeRolled` (Cloaker/tracked) keeps
  * its own builder untouched.
  */
@@ -755,8 +726,8 @@ function fleeChain(events, consumed) {
       if (oe.type === "fled" || oe.type === "fleeFailed") {
         consumed.add(i);
         consumed.add(j);
-        const b = TOAST_FOR[oe.type](oe);
-        const rollText = TOAST_FOR.fleeRolled(e).text;
+        const b = LINE_FOR[oe.type](oe);
+        const rollText = LINE_FOR.fleeRolled(e).text;
         built.push({ text: `${rollText}. ${b.text}`, tone: b.tone, priority: b.priority, idx: i });
         break;
       }
@@ -783,7 +754,7 @@ function parleyChain(events, consumed) {
       if (isOutcome) {
         consumed.add(i);
         consumed.add(j);
-        const b = TOAST_FOR[oe.type](oe);
+        const b = LINE_FOR[oe.type](oe);
         built.push({ text: `${b.text} (${e.roll} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
         break;
       }
@@ -809,7 +780,7 @@ function chestChain(events, consumed) {
       if (oe.type === "chestOpened" || oe.type === "chestLocked") {
         consumed.add(i);
         consumed.add(j);
-        const b = TOAST_FOR[oe.type](oe);
+        const b = LINE_FOR[oe.type](oe);
         built.push({ text: `${b.text} (${e.roll} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
         break;
       }
@@ -831,7 +802,7 @@ function encounterStart(events, consumed) {
   const idx = events.findIndex((e, i) => !consumed.has(i) && e.type === "encounterStarted");
   if (idx === -1) return null;
   const e = events[idx];
-  const base = TOAST_FOR.encounterStarted(e);
+  const base = LINE_FOR.encounterStarted(e);
   consumed.add(idx);
   let text = base.text;
   for (let j = idx + 1; j < events.length; j++) {
@@ -911,14 +882,13 @@ function dedupeByType(list) {
 }
 
 /**
- * toastsForAction(type, events, ctx = {}, opts = {}) — the exported
+ * linesForAction(type, events, ctx = {}, opts = {}) — the exported
  * per-action pipeline. See the header comment above this section for the
- * full order. Phase 32 (CMBUI-02) adds `opts.limit` (default MAX_TOASTS,
- * the toast host's visible cap): the Round Card requests the FULL folded
- * list with `{ limit: Infinity }` because every in-combat event has
- * exactly one presentation destination (design §6.4) and a fifth folded
- * line must not vanish. The default call (no opts, or opts without
- * `limit`) is byte-for-byte unchanged from before this option existed.
+ * full order. `opts.limit` defaults to Infinity — uncapped: the capped
+ * toast host this option once served (Phase 32, CMBUI-02) was retired in
+ * Phase 35, and every production caller (fightLog.js, the rail path in
+ * mazeworld.html) already passes `{ limit: Infinity }` explicitly, so the
+ * default now matches what every real caller gets.
  * Phase 34 (CSCR-04) adds `opts.withIdx` (default false): when true, each
  * surviving folded entry keeps its `idx` (the index into `events` its
  * roll detail should be looked up from) and, for a directly-mapped event,
@@ -928,9 +898,9 @@ function dedupeByType(list) {
  * return shape stays exactly `{ text, tone, priority }`, byte-for-byte
  * unchanged from before this option existed.
  */
-export function toastsForAction(type, events, ctx = {}, opts = {}) {
+export function linesForAction(type, events, ctx = {}, opts = {}) {
   if (!Array.isArray(events) || events.length === 0) return [];
-  const { limit = MAX_TOASTS, withIdx = false } = opts || {};
+  const { limit = Infinity, withIdx = false } = opts || {};
   const consumed = new Set();
   const built = [];
 
@@ -947,14 +917,14 @@ export function toastsForAction(type, events, ctx = {}, opts = {}) {
   events.forEach((e, idx) => {
     if (consumed.has(idx)) return;
     if (ORACLE_ONLY.has(e.type)) return;
-    const builder = TOAST_FOR[e.type];
+    const builder = LINE_FOR[e.type];
     if (!builder) return;
     const { text, tone, priority } = builder(e, ctx);
     // Phase 25.1 (DFB-01 decision 2) — the ONE narrative-vs-table decision
     // point: for a narrative action's non-card event, prefer the Oracle's
     // own sentence (dice stripped); fall back to the table text when the
     // narration strips to nothing so a toast is never blank.
-    const narrative = typeof ctx.narrate === "function" && !CARD_EVENTS.has(e.type) ? narrativeToastText(ctx.narrate(e)) : "";
+    const narrative = typeof ctx.narrate === "function" && !CARD_EVENTS.has(e.type) ? narrativeLineText(ctx.narrate(e)) : "";
     built.push({ text: narrative || text, tone, priority, idx, type: e.type });
   });
 
@@ -966,7 +936,7 @@ export function toastsForAction(type, events, ctx = {}, opts = {}) {
   );
 }
 
-export const TOAST_FOR = {
+export const LINE_FOR = {
   /* ---------------- movement.js ---------------- */
 
   oneWayBlocked: (e) => ({

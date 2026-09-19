@@ -44,10 +44,10 @@ import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "..
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 // 260918-wy1 (jewelry-merge): slotWord (jewelry1/jewelry2 -> "jewelry",
 // cloak -> "cloak", everything else passes through) — imported from
-// toasts.js, the existing one-directional re-export precedent this file
-// already relies on (line ~1048 below re-exports TOAST_FOR et al. FROM
-// toasts.js), never the reverse.
-import { slotWord } from "./toasts.js";
+// narrationLines.js. The import is one-directional: this file imports from
+// narrationLines.js, never the reverse (the no-cycle rule the coverage test
+// pins).
+import { slotWord } from "./narrationLines.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -484,7 +484,7 @@ export const EVENT_NARRATION = {
       : `${e.name ?? "Your ally"} swings and misses.`,
   allyDeparted: (e) => `${e.name ?? "Your ally"} slips away, obligation met.`,
   // DFB-05 (Phase 25.1): a Magic User party member's cast — allyCast is the
-  // announcement (Oracle-only; toasts.js's ORACLE_ONLY entry), always
+  // announcement (Oracle-only; narrationLines.js's ORACLE_ONLY entry), always
   // followed in the same action by exactly one of allySpellHit/allySpellMissed.
   allyCast: (e) =>
     `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}${e.bonus ? ` (+${e.bonus})` : ""}.</span>` : ""}`,
@@ -517,7 +517,7 @@ export const EVENT_NARRATION = {
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
-  // Phase 28 (ARMOR-05): the same underMin/magic outcome flags toasts.js
+  // Phase 28 (ARMOR-05): the same underMin/magic outcome flags narrationLines.js
   // reads, so the toast and the Oracle can never disagree about which of
   // the four armorSoaked outcomes just happened.
   armorSoaked: (e) =>
@@ -1050,7 +1050,7 @@ export const EVENT_NARRATION = {
  * `type`, or a type with no EVENT_NARRATION entry (so "moved" is ""). This
  * exists because engineAdapter.js's formatEvents filters null lines — html
  * is NOT 1:1 with events — and the toast layer needs exactly one event's
- * line to pass through narrativeToastText (src/browser/toasts.js).
+ * line to pass through narrativeLineText (src/browser/narrationLines.js).
  */
 export function narrateEvent(e) {
   if (!e || typeof e.type !== "string") return "";
@@ -1058,12 +1058,3 @@ export function narrateEvent(e) {
   if (typeof builder !== "function") return "";
   return builder(e) || "";
 }
-
-// Phase 25: the toast table lives beside this table in ./toasts.js and is
-// re-exported here per the phase decision (25-CONTEXT.md's "Mapping lives in
-// a pure, testable toast table beside the narration table"); toasts.js never
-// imports this module, so this stays a one-directional re-export with no
-// import cycle. Phase 25.1 additionally re-exports CARD_EVENTS and
-// NARRATIVE_ACTIONS beside the existing toast surface (same objects, no
-// copies — the cycle/identity guard in toastsCoverage keeps passing).
-export { TOAST_FOR, ORACLE_ONLY, FEATURE_EVENTS, CARD_EVENTS, NARRATIVE_ACTIONS, toastsForAction } from "./toasts.js";

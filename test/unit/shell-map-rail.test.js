@@ -11,7 +11,7 @@
 // announce/auto-clear cycle, the joiner/find/climb decision cards, the
 // GLOBAL movement lock (railLocked()), the retired Move-on card path, and
 // the static tab bar layout. A BEHAVIOUR section proves the real
-// rail.js/toasts.js/eventNarration.js fold produces the exact cards this
+// rail.js/narrationLines.js/eventNarration.js fold produces the exact cards this
 // plan's CONTEXT sample copy describes. (o) pins the 2026-09-16 UAT ruling
 // that the rail is a map-tab element (mwActiveTab in showTab/renderRail).
 // (p) pins the 2026-09-17 UAT ruling that the idle "NOTHING IS HAPPENING"
@@ -25,7 +25,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { toastsForAction } from "../../src/browser/toasts.js";
+import { linesForAction } from "../../src/browser/narrationLines.js";
 import { railCardFor } from "../../src/browser/rail.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -168,7 +168,7 @@ test("(b) CSS: .mw-rail's own values, the five tone rules, typography, action-bu
 
 // ─── (c) toast retirement (RAW HTML, comments included) ──────────────────
 
-test("(c) toast retirement: zero occurrences of the toast builder, the host id/class, the lifetime bridge, MAX_TOASTS, toastLifetime — literals concatenated so this file never spells them verbatim", () => {
+test("(c) toast retirement: zero occurrences of the toast builder, the host id/class, the lifetime bridge, the cap constant, the lifetime function — literals concatenated so this file never spells them verbatim", () => {
   const forbidden = [
     ["window.mz", "Toast"].join(""),
     [".mw-", "toast"].join(""),
@@ -192,7 +192,7 @@ test("(d) routing: dispatchWithToasts routes on exactly one if (wasCombat || inC
   assert.match(region, /railPush\(window\.__mzRail, card\)/);
   assert.match(region, /window\.renderRail\?\.\(\)/);
   assert.match(region, /window\.__mzFightLog = null/);
-  assert.equal((CODE.match(/toastsForAction\(/g) || []).length, 1, "exactly one fold call site in the whole file");
+  assert.equal((CODE.match(/linesForAction\(/g) || []).length, 1, "exactly one fold call site in the whole file");
 });
 
 // ─── (e) bridges ──────────────────────────────────────────────────────────
@@ -359,7 +359,7 @@ test('(m) armEncounterButtons\' sweep selector includes #mw-rail [aria-disabled=
 
 test('(n) BEHAVIOUR: a failed climb folds to a bad "FELL" card whose only line has roll === null; floorChanged yields "FLOOR 4"; keydown Enter clicks cb-over-btn only', () => {
   const climbEvents = [{ type: "moved", x: 2, y: 2 }, { type: "fellClimbing", hurt: 3 }];
-  const climbFolded = toastsForAction("move", climbEvents, {}, { limit: Infinity, withIdx: true });
+  const climbFolded = linesForAction("move", climbEvents, {}, { limit: Infinity, withIdx: true });
   const climbCard = railCardFor("move", climbEvents, climbFolded, {});
   assert.ok(climbCard);
   assert.equal(climbCard.tone, "bad");
@@ -368,7 +368,7 @@ test('(n) BEHAVIOUR: a failed climb folds to a bad "FELL" card whose only line h
   assert.equal(climbCard.lines[0].roll, null);
 
   const floorEvents = [{ type: "moved", x: 3, y: 3 }, { type: "floorChanged", depth: 4 }];
-  const floorFolded = toastsForAction("move", floorEvents, {}, { limit: Infinity, withIdx: true });
+  const floorFolded = linesForAction("move", floorEvents, {}, { limit: Infinity, withIdx: true });
   const floorCard = railCardFor("move", floorEvents, floorFolded, {});
   assert.ok(floorCard);
   assert.equal(floorCard.title, "FLOOR 4");

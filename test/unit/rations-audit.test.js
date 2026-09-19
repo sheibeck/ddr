@@ -28,7 +28,7 @@ import { STORE_EFFECTS } from "../../engine/economy.js";
 import { newRun } from "../../engine/state.js";
 import { BAGS } from "../../content/index.js";
 import { EVENT_NARRATION, RATION_RULE_LINE, narrateEvent } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR, narrativeToastText } from "../../src/browser/toasts.js";
+import { LINE_FOR, narrativeLineText } from "../../src/browser/narrationLines.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -302,7 +302,7 @@ test("narration: RATION_RULE_LINE names the Troll doubling rule; both builders a
 });
 
 test("narration: rationsEaten renders the exact Oracle sentence for a single fed hero, a Troll hero, and a mixed party", () => {
-  const t = (e) => narrativeToastText(narrateEvent(e));
+  const t = (e) => narrativeLineText(narrateEvent(e));
   assert.equal(
     t({ type: "rationsEaten", eats: 1, left: 4, eaters: [{ name: "Ada", race: "Human", eats: 1, hero: true }] }),
     "Rations: you eat 1. −1 ration, 4 left.",
@@ -327,12 +327,12 @@ test("narration: rationsEaten renders the exact Oracle sentence for a single fed
 
 test("narration: a bare rationsEaten payload renders a non-empty string without throwing", () => {
   assert.doesNotThrow(() => EVENT_NARRATION.rationsEaten({ type: "rationsEaten" }));
-  const text = narrativeToastText(narrateEvent({ type: "rationsEaten" }));
+  const text = narrativeLineText(narrateEvent({ type: "rationsEaten" }));
   assert.ok(text.length > 0);
 });
 
 test("narration: wentHungry renders the exact Oracle sentence (solo, party, and the Heft clause)", () => {
-  const t = (e) => narrativeToastText(narrateEvent(e));
+  const t = (e) => narrativeLineText(narrateEvent(e));
   assert.equal(
     t({ type: "wentHungry", cost: 4, need: 1, have: 0, mouths: 1 }),
     "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
@@ -349,14 +349,14 @@ test("narration: wentHungry renders the exact Oracle sentence (solo, party, and 
 
 test("narration: a bare wentHungry payload renders without throwing and contains 'Hunger:'", () => {
   assert.doesNotThrow(() => EVENT_NARRATION.wentHungry({ type: "wentHungry" }));
-  const text = narrativeToastText(narrateEvent({ type: "wentHungry" }));
+  const text = narrativeLineText(narrateEvent({ type: "wentHungry" }));
   assert.ok(text.includes("Hunger:"));
 });
 
-test("narration: TOAST_FOR.rationsEaten/.wentHungry render the terse toast texts", () => {
-  assert.equal(TOAST_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).text, "Rations: −3 (4 left).");
-  assert.equal(TOAST_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).tone, "beat");
-  assert.equal(TOAST_FOR.wentHungry({ type: "wentHungry", cost: 4 }).text, "Hunger: no rations (−4 hp).");
+test("narration: LINE_FOR.rationsEaten/.wentHungry render the terse toast texts", () => {
+  assert.equal(LINE_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).text, "Rations: −3 (4 left).");
+  assert.equal(LINE_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).tone, "beat");
+  assert.equal(LINE_FOR.wentHungry({ type: "wentHungry", cost: 4 }).text, "Hunger: no rations (−4 hp).");
 });
 
 // ─── docs/RATIONS.md ledger pin ─────────────────────────────────────────────

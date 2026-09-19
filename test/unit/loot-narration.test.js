@@ -2,14 +2,14 @@
 //
 // Phase 29 (LOOT-01/02/06): presentation pins for the pending loot pile's
 // four new event types (lootDropped/lootTaken/lootLeft/lootForfeited) —
-// TOAST_FOR + EVENT_NARRATION entries, and confirmation none of them is
+// LINE_FOR + EVENT_NARRATION entries, and confirmation none of them is
 // ORACLE_ONLY (mirrors test/unit/lootCompare.test.js's bagFull/bagUpgraded
 // presentation section).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { TOAST_FOR, ORACLE_ONLY } from "../../src/browser/toasts.js";
+import { LINE_FOR, ORACLE_ONLY } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 
 const LOOT_EVENT_TYPES = ["lootDropped", "lootTaken", "lootLeft", "lootForfeited"];
@@ -20,41 +20,41 @@ test("none of the four new loot event types is ORACLE_ONLY", () => {
   }
 });
 
-test("TOAST_FOR.lootDropped: names the item and kind, family-friendly", () => {
-  const t = TOAST_FOR.lootDropped({ type: "lootDropped", name: "Warded leather", kind: "armor" });
+test("LINE_FOR.lootDropped: names the item and kind, family-friendly", () => {
+  const t = LINE_FOR.lootDropped({ type: "lootDropped", name: "Warded leather", kind: "armor" });
   assert.equal(t.text, "Dropped: Warded leather. It will keep.");
   assert.equal(t.tone, "beat");
-  const bare = TOAST_FOR.lootDropped({ type: "lootDropped" });
+  const bare = LINE_FOR.lootDropped({ type: "lootDropped" });
   assert.ok(bare.text.length > 0);
 });
 
-test("TOAST_FOR.lootTaken: names the item", () => {
-  const t = TOAST_FOR.lootTaken({ type: "lootTaken", item: { n: "X" } });
+test("LINE_FOR.lootTaken: names the item", () => {
+  const t = LINE_FOR.lootTaken({ type: "lootTaken", item: { n: "X" } });
   assert.equal(t.text, "Taken: X.");
   assert.equal(t.tone, "hit");
-  const bare = TOAST_FOR.lootTaken({ type: "lootTaken" });
+  const bare = LINE_FOR.lootTaken({ type: "lootTaken" });
   assert.ok(bare.text.length > 0);
 });
 
-test("TOAST_FOR.lootLeft: names the item", () => {
-  const t = TOAST_FOR.lootLeft({ type: "lootLeft", item: { n: "X" } });
+test("LINE_FOR.lootLeft: names the item", () => {
+  const t = LINE_FOR.lootLeft({ type: "lootLeft", item: { n: "X" } });
   assert.equal(t.text, "Left behind: X.");
   assert.equal(t.tone, "miss");
-  const bare = TOAST_FOR.lootLeft({ type: "lootLeft" });
+  const bare = LINE_FOR.lootLeft({ type: "lootLeft" });
   assert.ok(bare.text.length > 0);
 });
 
 // Phase 43 (CLAR-01): cause-first rewrite — "Fled: ..." / "Dead: ..." lead
 // with the cause, matching docs/CLARITY.md's cost-event inventory row.
-test("TOAST_FOR.lootForfeited: lists every item name, distinct wording for fled vs died", () => {
-  const fled = TOAST_FOR.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "fled" });
+test("LINE_FOR.lootForfeited: lists every item name, distinct wording for fled vs died", () => {
+  const fled = LINE_FOR.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "fled" });
   assert.equal(fled.text, "Fled: A, B stay behind.");
   assert.equal(fled.tone, "miss");
 
-  const died = TOAST_FOR.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "died" });
+  const died = LINE_FOR.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "died" });
   assert.equal(died.text, "Dead: A, B stay where they fell.");
 
-  const bare = TOAST_FOR.lootForfeited({ type: "lootForfeited" });
+  const bare = LINE_FOR.lootForfeited({ type: "lootForfeited" });
   assert.ok(bare.text.length > 0);
 });
 

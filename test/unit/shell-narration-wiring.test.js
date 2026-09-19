@@ -1,4 +1,4 @@
-// test/unit/shell-toast-wiring.test.js
+// test/unit/shell-narration-wiring.test.js
 //
 // Phase 25 (FEED-01..06), Plan 04 — mazeworld.html has no module surface a
 // test could import (it is not an ESM module the test runner can load), so
@@ -9,22 +9,22 @@
 // through, and the old per-action switch (plus its spell-name helper) stays
 // gone. A behavioural check proves the deleted DR18 hand-written
 // equip-rejection toast is replaced, not lost, by importing the real
-// toastsForAction and running a real equipRejected event through it.
+// linesForAction and running a real equipRejected event through it.
 //
 // Phase 32 (CMBUI-02): dispatchWithToasts routed in-combat non-refusal
 // lines to a Round Card, later (Phase 34, CSCR-04) to the whole-fight
 // window.__mzFightLog.
 //
 // Phase 35 (MAP-03/04): the toast host itself — `window.mzToast`, the
-// `.mw-toast-host`/`.mw-toast` CSS, `window.__mzToastLifetime`, `MAX_TOASTS`'
-// one consumer, `CARD_EVENTS`/`FEATURE_EVENT_TITLE`/`toastLifetime` — is
-// retired outright. Out-of-combat lines now fold through src/browser/
+// `.mw-toast-host`/`.mw-toast` CSS, the lifetime bridge, the cap constant's
+// one consumer, `CARD_EVENTS`/`FEATURE_EVENT_TITLE`/the lifetime function —
+// is retired outright. Out-of-combat lines now fold through src/browser/
 // rail.js into the persistent bottom RAIL instead of a toast queue; the
 // tests that pinned the toast host's CSS/lifetime/cap contract are gone
 // with it (test/unit/shell-map-rail.test.js owns the rail's own pins). The
 // tests kept here are the ones that still describe LIVE surface: the single
 // dispatch(...)->dispatchWithToasts(...) seam, the retired legacy switch,
-// the DR18 toast's real toastsForAction replacement, and toasts.js's own
+// the DR18 toast's real linesForAction replacement, and narrationLines.js's own
 // pure `limit` option.
 
 import test from "node:test";
@@ -33,7 +33,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { toastsForAction } from "../../src/browser/toasts.js";
+import { linesForAction } from "../../src/browser/narrationLines.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -78,14 +78,14 @@ const OLD_SPELL_NAME_HELPER = ["mz", "Spell", "Name"].join("");
 
 // ─── single dispatch seam ────────────────────────────────────────────────
 
-test("the module script imports toastsForAction from src/browser/toasts.js", () => {
-  assert.match(CODE, /import \{ toastsForAction \} from "\.\/src\/browser\/toasts\.js";/);
+test("the module script imports linesForAction from src/browser/narrationLines.js", () => {
+  assert.match(CODE, /import \{ linesForAction \} from "\.\/src\/browser\/narrationLines\.js";/);
 });
 
-test("dispatchWithToasts(action) is defined exactly once and calls toastsForAction(action.type, ...)", () => {
+test("dispatchWithToasts(action) is defined exactly once and calls linesForAction(action.type, ...)", () => {
   const defs = CODE.match(/function dispatchWithToasts\(action\)/g) || [];
   assert.equal(defs.length, 1, "dispatchWithToasts must be defined exactly once");
-  assert.match(CODE, /toastsForAction\(action\.type/);
+  assert.match(CODE, /linesForAction\(action\.type/);
 });
 
 test("every dispatch() call site is routed through dispatchWithToasts — exactly one bare dispatch( survives (inside the helper itself)", () => {
@@ -120,8 +120,8 @@ test("Phase 34: no shell-side in-combat toast survives — the full-health and n
 
 // ─── behavioural: the deleted hand-written toast is replaced, not lost ──
 
-test("an equipRejected(reason: woodsman) event yields one block toast via toastsForAction (proves the deleted DR18 toast has a real replacement)", () => {
-  const toasts = toastsForAction("equipItem", [{ type: "equipRejected", reason: "woodsman" }], {});
+test("an equipRejected(reason: woodsman) event yields one block toast via linesForAction (proves the deleted DR18 toast has a real replacement)", () => {
+  const toasts = linesForAction("equipItem", [{ type: "equipRejected", reason: "woodsman" }], {});
   assert.equal(toasts.length, 1);
   assert.equal(toasts[0].tone, "block");
   assert.match(toasts[0].text, /Woodsman/i);
@@ -129,10 +129,11 @@ test("an equipRejected(reason: woodsman) event yields one block toast via toasts
 
 // ─── Phase 35 (MAP-03/04): toast-host retirement re-pin ──────────────────
 
-test("Phase 35: the module imports NARRATIVE_ACTIONS on its own line; toastLifetime/CARD_EVENTS are imported nowhere", () => {
-  assert.match(CODE, /import \{ NARRATIVE_ACTIONS \} from "\.\/src\/browser\/toasts\.js";/);
-  assert.doesNotMatch(CODE, /import \{[^}]*toastLifetime[^}]*\} from "\.\/src\/browser\/toasts\.js";/);
-  assert.doesNotMatch(CODE, /import \{[^}]*CARD_EVENTS[^}]*\} from "\.\/src\/browser\/toasts\.js";/);
+test("Phase 35: the module imports NARRATIVE_ACTIONS on its own line and never imports CARD_EVENTS or a lifetime helper", () => {
+  assert.match(CODE, /import \{ NARRATIVE_ACTIONS \} from "\.\/src\/browser\/narrationLines\.js";/);
+  const importLines = CODE.match(/import \{[^}]*\} from "\.\/src\/browser\/narrationLines\.js";/g) || [];
+  assert.equal(importLines.length, 3, "exactly three import lines pull from narrationLines.js");
+  assert.ok(importLines.every((line) => !line.includes("CARD_EVENTS")), "no import line pulls CARD_EVENTS");
 });
 
 test("Phase 35: dispatchWithToasts passes ctx.narrate only for NARRATIVE_ACTIONS", () => {
@@ -150,13 +151,15 @@ test("Phase 35: preDeath survives — the ambush gate collapsed in Phase 31 stay
   assert.doesNotMatch(CODE, /awaitingFight/);
 });
 
-// ─── toasts.js's own pure option (kept — never retired) ──────────────────
+// ─── narrationLines.js's own pure option (kept — never retired) ──────────────────
 
-test("Phase 32: toasts.js carries the limit option once, and the old literal MAX_TOASTS slice is gone", () => {
-  const toastsSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "toasts.js"), "utf8");
-  const sigHits = toastsSrc.match(/export function toastsForAction\(type, events, ctx = \{\}, opts = \{\}\)/g) || [];
-  assert.equal(sigHits.length, 1, "toastsForAction must accept an opts argument exactly once");
-  const limitHits = toastsSrc.match(/deduped\.slice\(0, limit\)/g) || [];
+test("Phase 32: narrationLines.js carries the limit option once, and the default is uncapped (no constant-backed cap)", () => {
+  const linesSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "narrationLines.js"), "utf8");
+  const sigHits = linesSrc.match(/export function linesForAction\(type, events, ctx = \{\}, opts = \{\}\)/g) || [];
+  assert.equal(sigHits.length, 1, "linesForAction must accept an opts argument exactly once");
+  const limitHits = linesSrc.match(/deduped\.slice\(0, limit\)/g) || [];
   assert.equal(limitHits.length, 1, "the pipeline tail must slice by the new limit exactly once");
-  assert.doesNotMatch(toastsSrc, /slice\(0, MAX_TOASTS\)/, "the literal MAX_TOASTS slice must be gone from toasts.js");
+  const defaultHits = linesSrc.match(/limit = Infinity/g) || [];
+  assert.equal(defaultHits.length, 1, "the default limit must be Infinity exactly once");
+  assert.doesNotMatch(linesSrc, /limit = [A-Z_]{2,}/, "the default must not be backed by a named constant");
 });

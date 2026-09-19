@@ -17,7 +17,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { armorDisplay, bagArmorText, characterSheetViewModel } from "../../src/browser/viewModels.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { applyFoeDamageToPlayer } from "../../engine/combat.js";
 import { newRun } from "../../engine/engine.js";
@@ -117,7 +117,7 @@ test("ARMOR-02 reproduction: the armorSoaked toast's wear equals the durability 
   assert.equal(after.sub, "AR 15 · 6/45 hp");
   assert.equal(after.line, "Plate · AR 15 · 6/45 hp");
 
-  assert.match(TOAST_FOR.armorSoaked(soaked).text, /wear 39/);
+  assert.match(LINE_FOR.armorSoaked(soaked).text, /wear 39/);
   assert.match(EVENT_NARRATION.armorSoaked(soaked), /39/);
 });
 
@@ -259,12 +259,12 @@ test("characterSheetViewModel(newRun(1)): a no-armor Fridgian reads NOTHING · A
 
 // --- four-outcome toast copy ------------------------------------------------
 
-test("TOAST_FOR.armorSoaked: the four outcomes render distinct text", () => {
-  const wearText = TOAST_FOR.armorSoaked({ type: "armorSoaked", amount: 12, wear: 12 }).text;
-  const underMinText = TOAST_FOR.armorSoaked({ type: "armorSoaked", amount: 3, wear: 0, underMin: true }).text;
-  const magicText = TOAST_FOR.armorSoaked({ type: "armorSoaked", amount: 20, wear: 0, magic: true }).text;
-  const halvedText = TOAST_FOR.armorSoaked({ type: "armorSoaked", amount: 5, wear: 3, halved: true }).text;
-  const destroyedText = TOAST_FOR.armorDestroyed({ type: "armorDestroyed" }).text;
+test("LINE_FOR.armorSoaked: the four outcomes render distinct text", () => {
+  const wearText = LINE_FOR.armorSoaked({ type: "armorSoaked", amount: 12, wear: 12 }).text;
+  const underMinText = LINE_FOR.armorSoaked({ type: "armorSoaked", amount: 3, wear: 0, underMin: true }).text;
+  const magicText = LINE_FOR.armorSoaked({ type: "armorSoaked", amount: 20, wear: 0, magic: true }).text;
+  const halvedText = LINE_FOR.armorSoaked({ type: "armorSoaked", amount: 5, wear: 3, halved: true }).text;
+  const destroyedText = LINE_FOR.armorDestroyed({ type: "armorDestroyed" }).text;
 
   assert.equal(wearText, "Armour takes 12 · wear 12");
   assert.equal(underMinText, "Armour shrugs off 3 · under its min, no wear");

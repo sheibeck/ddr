@@ -4858,21 +4858,21 @@ window.__mzClassicBoot = async function classicBoot() {
   // as an unterminated block-comment opener and swallows everything up to
   // the next unrelated `*/`. Placing this import before that comment keeps
   // it outside that swallowed span for any such source-assertion test.
-  import { toastsForAction } from "./src/browser/toasts.js";
+  import { linesForAction } from "./src/browser/narrationLines.js";
   // Phase 35 (MAP-03/04): the generic html-to-beats gate and the retired
   // toast queue's lifetime formula are gone with the Phase 25.1 toast host /
   // Move-on card — NARRATIVE_ACTIONS still gates ctx.narrate in
   // dispatchWithToasts.
-  import { NARRATIVE_ACTIONS } from "./src/browser/toasts.js";
+  import { NARRATIVE_ACTIONS } from "./src/browser/narrationLines.js";
   // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as dull rail/log
-  // entries even in combat; narrativeToastText is the card's defensive text
+  // entries even in combat; narrativeLineText is the card's defensive text
   // prep. Phase 35 retires the old toast queue's one cap consumer — the
   // rail is uncapped.
-  import { PRIORITY, narrativeToastText } from "./src/browser/toasts.js";
+  import { PRIORITY, narrativeLineText } from "./src/browser/narrationLines.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
   import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement } from "./src/browser/fightLog.js";
   // Phase 35 (MAP-03/04) — the RAIL view-model: the out-of-combat twin of
-  // fightLog.js, folding the same toastsForAction output into one bottom
+  // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
   import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
@@ -5490,7 +5490,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 35 (MAP-03/04): the routing rule — while EITHER the pre-dispatch OR
   // the post-dispatch state has a combat, every folded line (narrative AND
   // dull refusals alike, uncapped) goes to the whole-fight window.__mzFightLog;
-  // out of combat, the SAME fold (toastsForAction, uncapped, {withIdx:true})
+  // out of combat, the SAME fold (linesForAction, uncapped, {withIdx:true})
   // feeds src/browser/rail.js's railCardFor into the ONE bottom RAIL card
   // instead — there is no toast anywhere any more (the Phase 25 toast host is
   // retired). Checking `wasCombat` too (not just post-dispatch `inCombat`,
@@ -5514,7 +5514,7 @@ window.__mzClassicBoot = async function classicBoot() {
     if (wasCombat || inCombat) {
       lines = fightLogLinesFor(action.type, result.events, ctx);
     } else {
-      const folded = toastsForAction(action.type, result.events, ctx, { limit: Infinity, withIdx: true });
+      const folded = linesForAction(action.type, result.events, ctx, { limit: Infinity, withIdx: true });
       const card = railCardFor(action.type, result.events, folded, ctx);
       if (card) {
         window.__mzRail = railPush(window.__mzRail, card);
@@ -6049,7 +6049,7 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzLeaveAllLoot = () => inventoryAction({ type: "leaveAllLoot" });
   // Phase 25 (FEED-02): an equip the engine REJECTS (illegal class/subclass/
   // race/Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
-  // `equipRejected` event) now toasts from the TOAST_FOR table (block tone,
+  // `equipRejected` event) now toasts from the LINE_FOR table (block tone,
   // reason-specific text) via inventoryAction's own dispatchWithToasts call —
   // the DR18 hand-written rejection toast is gone.
   // 260918-wy1 (jewelry-merge): the targeted jewelry swap — an optional

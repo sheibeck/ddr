@@ -10,7 +10,7 @@
 // test/unit/movement.test.js and test/unit/spell-mechanics.test.js's own
 // established patterns verbatim.
 //
-// Task 2 appends the narration half (EVENT_NARRATION/TOAST_FOR cause-first
+// Task 2 appends the narration half (EVENT_NARRATION/LINE_FOR cause-first
 // line assertions for the 24 Plan-01 rows) below this marker:
 // Task 2 appends the line-shape tests below
 
@@ -26,7 +26,7 @@ import { castSpell } from "../../engine/magic.js";
 import { goInsane } from "../../engine/encounters.js";
 import { SPELLS } from "../../content/index.js";
 import { EVENT_NARRATION, narrateEvent } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR, narrativeToastText, oracleDetailText } from "../../src/browser/toasts.js";
+import { LINE_FOR, narrativeLineText, oracleDetailText } from "../../src/browser/narrationLines.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -319,14 +319,14 @@ test("docs/CLARITY.md's Cost-event inventory names only real EVENT_NARRATION key
 // Task 2 appends the line-shape tests below
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// Narration-half coverage: EVENT_NARRATION/TOAST_FOR cause-first line
+// Narration-half coverage: EVENT_NARRATION/LINE_FOR cause-first line
 // assertions for the 24 Plan-01 rows (see docs/CLARITY.md's Cost-event
 // inventory table), plus a "cause-first shape" test driven off that same
 // ledger and a "no roll span carries the cost" test.
 
-const narrate = (e) => narrativeToastText(narrateEvent(e));
+const narrate = (e) => narrativeLineText(narrateEvent(e));
 
-// ─── Oracle lines (narrativeToastText(narrateEvent(e))) ────────────────────
+// ─── Oracle lines (narrativeLineText(narrateEvent(e))) ────────────────────
 
 // One test() per case (not one test looping many asserts) so each Plan-01
 // row is independently reported and counted by the test runner.
@@ -382,7 +382,7 @@ test("Oracle: joinerMurdered's picked line starts with 'Cutthroat: '", () => {
   assert.match(narrate({ type: "joinerMurdered", name: "Grunk", depth: 3 }), /^Cutthroat: /);
 });
 
-// ─── Toasts (TOAST_FOR[type](e).text) ──────────────────────────────────────
+// ─── Toasts (LINE_FOR[type](e).text) ──────────────────────────────────────
 
 // One test() per case (not one test looping many asserts) so each Plan-01
 // row is independently reported and counted by the test runner.
@@ -413,12 +413,12 @@ const TOAST_CASES = [
 
 for (const [type, e, expected] of TOAST_CASES) {
   test(`Toast: ${type} (${JSON.stringify(e)}) reads cause-first`, () => {
-    assert.equal(TOAST_FOR[type](e).text, expected);
+    assert.equal(LINE_FOR[type](e).text, expected);
   });
 }
 
 test("Toast: deathSpellTooWeak is a block-priority toast naming the fee", () => {
-  const toast = TOAST_FOR.deathSpellTooWeak({ type: "deathSpellTooWeak", fee: 25 });
+  const toast = LINE_FOR.deathSpellTooWeak({ type: "deathSpellTooWeak", fee: 25 });
   assert.equal(toast.text, "Death: 25 hp fee. You cannot pay it and live.");
 });
 
@@ -433,7 +433,7 @@ test("every rewritten builder renders without throwing on a bare { type } call",
   ];
   for (const type of types) {
     assert.doesNotThrow(() => EVENT_NARRATION[type]({ type }), `EVENT_NARRATION.${type} must not throw on a bare {type}`);
-    if (TOAST_FOR[type]) assert.doesNotThrow(() => TOAST_FOR[type]({ type }), `TOAST_FOR.${type} must not throw on a bare {type}`);
+    if (LINE_FOR[type]) assert.doesNotThrow(() => LINE_FOR[type]({ type }), `LINE_FOR.${type} must not throw on a bare {type}`);
   }
 });
 

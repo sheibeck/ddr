@@ -3,13 +3,13 @@
 // Phase 29 (LOOT-03): lootCompare/bagUsage pin — the compare-to-equipped
 // view-model that reads takeItem's OWN weaponUpgradeDelta/armorUpgradeDelta
 // (engine/items.js) rather than restating the "is this better" rule, plus
-// the bagFull/bagUpgraded presentation entries (toasts.js/eventNarration.js).
+// the bagFull/bagUpgraded presentation entries (narrationLines.js/eventNarration.js).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { lootCompare, bagUsage, bagArmorText } from "../../src/browser/viewModels.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { WEAPONS } from "../../content/index.js";
 import { takeItem, canEquipWeapon } from "../../engine/items.js";
@@ -204,19 +204,19 @@ test("bagUsage: counts gear only, reports full/text", () => {
 
 // --- presentation: bagFull / bagUpgraded -----------------------------------
 
-test("TOAST_FOR.bagFull: richer text with have/slots, sane fallback without", () => {
-  const withCounts = TOAST_FOR.bagFull({ type: "bagFull", have: 4, slots: 4 });
+test("LINE_FOR.bagFull: richer text with have/slots, sane fallback without", () => {
+  const withCounts = LINE_FOR.bagFull({ type: "bagFull", have: 4, slots: 4 });
   assert.equal(withCounts.text, "Bag full (4/4) — drop something to make room.");
   assert.equal(withCounts.tone, "block");
-  const bare = TOAST_FOR.bagFull({ type: "bagFull" });
+  const bare = LINE_FOR.bagFull({ type: "bagFull" });
   assert.equal(bare.text, "No room in the bag.");
 });
 
-test("TOAST_FOR.bagUpgraded: names the new slot count; bare call is non-empty", () => {
-  const t = TOAST_FOR.bagUpgraded({ type: "bagUpgraded", to: "medium", slots: 6 });
+test("LINE_FOR.bagUpgraded: names the new slot count; bare call is non-empty", () => {
+  const t = LINE_FOR.bagUpgraded({ type: "bagUpgraded", to: "medium", slots: 6 });
   assert.equal(t.text, "Bigger bag: 6 slots.");
   assert.equal(t.tone, "hit");
-  const bare = TOAST_FOR.bagUpgraded({ type: "bagUpgraded" });
+  const bare = LINE_FOR.bagUpgraded({ type: "bagUpgraded" });
   assert.ok(bare.text.length > 0);
 });
 

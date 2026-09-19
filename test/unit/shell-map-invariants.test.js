@@ -73,9 +73,9 @@ function sliceBetween(source, startMarker, endMarker) {
 // ─── retired literals built by concatenation (never spelled whole) ────────
 const RETIRED = {
   toastClass: "mw" + "-toast",
-  toastLifetimeBridge: "__mz" + "ToastLifetime",
+  lifetimeBridge: "__mz" + "ToastLifetime",
   maxToasts: "MAX_" + "TOASTS",
-  toastLifetime: "toast" + "Lifetime",
+  lifetimeFn: "toast" + "Lifetime",
   dpad1: "dp" + "ad",
   dpad2: "data-d" + "ir",
   dpad3: "maze" + "foot",
@@ -99,13 +99,13 @@ const RETIRED = {
 // ─── (a) SC-1: no toast anywhere ────────────────────────────────────────────
 
 test("SC-1 (no D-pad and no toast exists anywhere): RAW carries zero of the toast host/CSS/bridge literals", () => {
-  for (const key of ["toastClass", "toastLifetimeBridge", "maxToasts", "toastLifetime"]) {
+  for (const key of ["toastClass", "lifetimeBridge", "maxToasts", "lifetimeFn"]) {
     assert.equal(countOf(RAW, RETIRED[key]), 0, `expected zero "${RETIRED[key]}" in mazeworld.html`);
   }
 });
 
-test("SC-1: CODE carries exactly one toastsForAction( call (the dispatchWithToasts seam)", () => {
-  assert.equal(countOf(CODE, "toastsForAction("), 1);
+test("SC-1: CODE carries exactly one linesForAction( call (the dispatchWithToasts seam)", () => {
+  assert.equal(countOf(CODE, "linesForAction("), 1);
 });
 
 // ─── (b) SC-1: no D-pad ─────────────────────────────────────────────────────

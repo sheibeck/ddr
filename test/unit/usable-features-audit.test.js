@@ -20,7 +20,7 @@ import { useItem, TARGETED_KINDS } from "../../engine/items.js";
 import { playerStrike, flee, parley, sing } from "../../engine/combat.js";
 import { makeCamp } from "../../engine/movement.js";
 import { SPELLS, POTIONS, STAVES, CLOAKS, JEWELRY, TREASURE_ACTIVATION_OF } from "../../content/index.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { makeRng } from "../../engine/rng.js";
 import { GW, GH } from "../../engine/maze.js";
@@ -562,10 +562,10 @@ test("doc-sync: every refused {type, reason} pair produces distinct, non-empty t
     const oracleTexts = new Set();
     for (const reason of reasons) {
       const sampleEvent = { type, reason, item: { n: "Test" }, spell: "Test", action: "sing", left: 42 };
-      const toast = TOAST_FOR[type]?.(sampleEvent);
+      const toast = LINE_FOR[type]?.(sampleEvent);
       const toastText = toast && "text" in toast ? toast.text : toast?.toasts?.[0]?.text;
       const oracle = EVENT_NARRATION[type]?.(sampleEvent);
-      assert.ok(toastText, `${type}/${reason}: TOAST_FOR produced no text`);
+      assert.ok(toastText, `${type}/${reason}: LINE_FOR produced no text`);
       assert.ok(oracle, `${type}/${reason}: EVENT_NARRATION produced no text`);
       toastTexts.add(toastText);
       oracleTexts.add(oracle);

@@ -24,7 +24,7 @@ import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { cutthroatMurderCheck, descend } from "../../engine/movement.js";
 import { makeRng } from "../../engine/rng.js";
 import { narrateEvent, EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR, FEATURE_EVENTS, PRIORITY, toastsForAction } from "../../src/browser/toasts.js";
+import { LINE_FOR, FEATURE_EVENTS, PRIORITY, linesForAction } from "../../src/browser/narrationLines.js";
 import { RAIL_FAMILY, railCardFor } from "../../src/browser/rail.js";
 import { JOINER_MURDER_LINES, SUB_NOTE } from "../../content/flavor.js";
 
@@ -261,11 +261,11 @@ test("EVENT_NARRATION.joinerMurdered: names the victim, deterministic, every lin
 });
 
 /* ============================================================
- * TOAST_FOR.joinerMurdered / FEATURE_EVENTS
+ * LINE_FOR.joinerMurdered / FEATURE_EVENTS
  * ============================================================ */
 
-test("TOAST_FOR.joinerMurdered: priority feature, tone hurt, names the victim; FEATURE_EVENTS includes it", () => {
-  const toast = TOAST_FOR.joinerMurdered({ type: "joinerMurdered", name: "Ada Brook", sub: "Guard", depth: 3 });
+test("LINE_FOR.joinerMurdered: priority feature, tone hurt, names the victim; FEATURE_EVENTS includes it", () => {
+  const toast = LINE_FOR.joinerMurdered({ type: "joinerMurdered", name: "Ada Brook", sub: "Guard", depth: 3 });
   assert.equal(toast.priority, PRIORITY.feature);
   assert.equal(toast.tone, "hurt");
   assert.ok(toast.text.includes("Ada Brook"));
@@ -280,7 +280,7 @@ test("RAIL_FAMILY.joinerMurdered: COMPANY / bad; railCardFor surfaces the murder
   assert.deepEqual(RAIL_FAMILY.joinerMurdered, { icon: "◇", title: "COMPANY", tone: "bad" });
 
   const events = [{ type: "spGained", amount: 70, reason: "descend" }, { type: "floorChanged", depth: 3 }, { type: "joinerMurdered", name: "Ada Brook", sub: "Guard", depth: 3 }];
-  const folded = toastsForAction("move", events, { narrate: narrateEvent }, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("move", events, { narrate: narrateEvent }, { limit: Infinity, withIdx: true });
   const card = railCardFor("move", events, folded, { narrate: narrateEvent });
 
   assert.ok(card, "expected a rail card");
@@ -365,9 +365,9 @@ test("identity-contract Cutthroat BAD (new rule): a Cutthroat with an accepted J
   assert.equal(control.party.length, 1, "a non-Cutthroat never loses the Joiner to this check");
 });
 
-test("TOAST_FOR.joinerRefused: wilmsry text differs from the generic fallback; SUB_NOTE.Cutthroat states the odds and the new blurb", () => {
-  const wilmsryText = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry" }).text;
-  const fallbackText = TOAST_FOR.joinerRefused({ type: "joinerRefused", reason: "definitelyNotAReason" }).text;
+test("LINE_FOR.joinerRefused: wilmsry text differs from the generic fallback; SUB_NOTE.Cutthroat states the odds and the new blurb", () => {
+  const wilmsryText = LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry" }).text;
+  const fallbackText = LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "definitelyNotAReason" }).text;
   assert.notEqual(wilmsryText, fallbackText);
 
   assert.match(SUB_NOTE.Cutthroat, /one descent in twenty/i);

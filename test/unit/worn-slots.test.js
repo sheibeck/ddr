@@ -33,7 +33,7 @@ import {
   autoWearSlot,
   wearItem,
 } from "../../engine/items.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { itemEffectActive } from "../../engine/derived.js";
 
@@ -724,8 +724,8 @@ test("validateAction: a useItem action naming slot 'staff' is rejected outright 
   assert.equal(result.ok, false);
 });
 
-test("TOAST_FOR.useRefused renders the notWorn line with a block tone", () => {
-  const t = TOAST_FOR.useRefused({ type: "useRefused", item: { n: "Cloak of Speed" }, reason: "notWorn" });
+test("LINE_FOR.useRefused renders the notWorn line with a block tone", () => {
+  const t = LINE_FOR.useRefused({ type: "useRefused", item: { n: "Cloak of Speed" }, reason: "notWorn" });
   assert.equal(t.text, "Cloak of Speed is in your bag, doing what things in bags do: nothing. Wear it first.");
   assert.equal(t.tone, "block");
 });
@@ -735,10 +735,10 @@ test("EVENT_NARRATION.useRefused renders the notWorn line", () => {
   assert.ok(line.includes("Wear it first"));
 });
 
-test("TOAST_FOR.itemEquipped appends the replaced suffix only when replaced is present; byte-identical otherwise", () => {
-  const swapped = TOAST_FOR.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring", replaced: { n: "Ring of Power" } });
+test("LINE_FOR.itemEquipped appends the replaced suffix only when replaced is present; byte-identical otherwise", () => {
+  const swapped = LINE_FOR.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring", replaced: { n: "Ring of Power" } });
   assert.equal(swapped.text, "Equipped: Ring of Power (ring). Ring of Power goes back in the bag.");
-  const plain = TOAST_FOR.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring" });
+  const plain = LINE_FOR.itemEquipped({ item: { n: "Ring of Power" }, slot: "ring" });
   assert.equal(plain.text, "Equipped: Ring of Power (ring).");
 });
 

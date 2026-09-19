@@ -53,7 +53,7 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 // miss quip corpus are new player-facing authored copy — both are scanned
 // alongside EVENT_NARRATION so a new toast string or quip is voice-checked
 // automatically.
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 import { BESTIARY } from "../../content/bestiary.js";
@@ -213,17 +213,17 @@ test("EVENT_NARRATION: every voice builder renders family-friendly across all br
 });
 
 // Phase 25 (toast architecture): mirrors the EVENT_NARRATION scan above, but
-// TOAST_FOR builders return `{ text, tone, priority }` rather than a raw
+// LINE_FOR builders return `{ text, tone, priority }` rather than a raw
 // HTML string — read `.text` (skip null/falsy results, matching this file's
 // own "builder guards its own fields" try/catch convention).
-test("TOAST_FOR: every toast builder renders family-friendly across all branches and tokens", () => {
+test("LINE_FOR: every toast builder renders family-friendly across all branches and tokens", () => {
   const offenders = [];
-  for (const [type, fn] of Object.entries(TOAST_FOR)) {
-    assert.equal(typeof fn, "function", `TOAST_FOR.${type} should be a builder function`);
+  for (const [type, fn] of Object.entries(LINE_FOR)) {
+    assert.equal(typeof fn, "function", `LINE_FOR.${type} should be a builder function`);
     for (const out of renderEventVariants(type, (ev) => fn(ev, {})?.text)) {
       if (!out) continue;
       for (const { term, match } of findBannedTerms(out)) {
-        offenders.push(`TOAST_FOR.${type} → "${match}" (category term #${BANNED.indexOf(term)}) in: ${stripMarkup(out).trim()}`);
+        offenders.push(`LINE_FOR.${type} → "${match}" (category term #${BANNED.indexOf(term)}) in: ${stripMarkup(out).trim()}`);
       }
     }
   }

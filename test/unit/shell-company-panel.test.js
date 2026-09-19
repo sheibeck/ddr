@@ -37,7 +37,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { NARRATIVE_ACTIONS } from "../../src/browser/toasts.js";
+import { NARRATIVE_ACTIONS } from "../../src/browser/narrationLines.js";
 import { BANNED } from "../../content/safety-wordlist.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));

@@ -4,23 +4,25 @@
 // whole-fight fight log: log line count = folded count (refusals
 // included — they are dull entries in the log now, not filtered out).
 // Measures the worst-case fight-log round against the REAL engine
-// (applyAction) and the REAL toastsForAction/fightLogLinesFor pipeline,
+// (applyAction) and the REAL linesForAction/fightLogLinesFor pipeline,
 // combining BOTH frenzy mechanics (a Fridgian hero's player-side frenzy
 // second swing AND a foe carrying `sp.atk:2` + `frenzied:true` for a
 // 4-swing melee turn) plus three ability-kit foes (Stalka Beast/Djinni/
 // Krupke, straight off content/bestiary.js), swept over a deterministic
 // seed range. For every seed it asserts the fight log's line count EQUALS
-// the uncapped folded toast count (`toastsForAction(..., { limit: Infinity
-// })`) while the toast-host's default call still caps at MAX_TOASTS, and
-// tracks how many seeds reveal at least one line's dice via a non-null
-// `roll`. The two `fixed*` state-builder helpers are copied verbatim from
-// test/unit/foe-abilities.test.js (module-local there, not exported).
+// the uncapped folded line count (`linesForAction(..., { limit: Infinity
+// })`) and that linesForAction's own default call (no opts) returns that
+// same uncapped count too — the default is Infinity, so there is nothing
+// left to cap — and tracks how many seeds reveal at least one line's dice
+// via a non-null `roll`. The two `fixed*` state-builder helpers are copied
+// verbatim from test/unit/foe-abilities.test.js (module-local there, not
+// exported).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { applyAction } from "../../engine/engine.js";
-import { toastsForAction, MAX_TOASTS } from "../../src/browser/toasts.js";
+import { linesForAction } from "../../src/browser/narrationLines.js";
 import { fightLogLinesFor } from "../../src/browser/fightLog.js";
 
 // ─── fixed* helpers, copied verbatim from test/unit/foe-abilities.test.js ──
@@ -134,16 +136,17 @@ function runScenario(scenarioName, buildState, action) {
     const result = applyAction({ ...state, rngState: seed }, action);
     const events = result.events;
 
-    // the fight log's own uncapped request (mazeworld.html's
-    // dispatchWithToasts — 34-02) vs. the toast host's default (capped)
-    // call. Phase 34: log line count = folded count (refusals included —
-    // they are dull entries in the log now, not filtered out).
-    const folded = toastsForAction(action.type, events, {}, { limit: Infinity });
+    // the fight log's own explicit-limit request (mazeworld.html's
+    // dispatchWithToasts — 34-02) vs. linesForAction's own default call,
+    // which is uncapped too (the toast host that once capped it is
+    // retired). Phase 34: log line count = folded count (refusals
+    // included — they are dull entries in the log now, not filtered out).
+    const folded = linesForAction(action.type, events, {}, { limit: Infinity });
     const lines = fightLogLinesFor(action.type, events);
     assert.equal(
       lines.length,
       folded.length,
-      `seed ${seed}: fight-log line count must equal the uncapped folded toast count (refusals included)`,
+      `seed ${seed}: fight-log line count must equal the uncapped folded line count (refusals included)`,
     );
     for (const line of lines) {
       assert.ok(
@@ -152,10 +155,11 @@ function runScenario(scenarioName, buildState, action) {
       );
     }
 
-    const hostCapped = toastsForAction(action.type, events, {});
-    assert.ok(
-      hostCapped.length <= MAX_TOASTS,
-      `seed ${seed}: the toast host's default call must still cap at MAX_TOASTS`,
+    const defaultCall = linesForAction(action.type, events, {});
+    assert.equal(
+      defaultCall.length,
+      folded.length,
+      `seed ${seed}: the default call is uncapped too — it must return the same count as the explicit { limit: Infinity } fold`,
     );
 
     if (events.length > maxEvents.n) maxEvents = { n: events.length, seed };
@@ -179,7 +183,7 @@ function runScenario(scenarioName, buildState, action) {
   return { maxLines, maxEvents, maxChars, abilitySeeds, sawFrenzy, sawFourStalkaSwings, rollSeeds };
 }
 
-test("fight scenario: the worst-case fight log is uncapped, the toast host stays capped, ability kits fire", () => {
+test("fight scenario: the worst-case fight log and the default fold are both uncapped, ability kits fire", () => {
   const stats = runScenario(
     "fight",
     () => {
@@ -194,7 +198,7 @@ test("fight scenario: the worst-case fight log is uncapped, the toast host stays
   assert.ok(stats.rollSeeds >= 1, "at least one seed reveals dice");
 });
 
-test("attack scenario: the worst-case fight log is uncapped, the toast host stays capped, both frenzy mechanics fire", () => {
+test("attack scenario: the worst-case fight log and the default fold are both uncapped, both frenzy mechanics fire", () => {
   const stats = runScenario(
     "attack",
     () => {

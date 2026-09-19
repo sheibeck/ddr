@@ -30,7 +30,7 @@ import { SPELLS } from "../../content/index.js";
 import { serializeRun, validateSave } from "../../engine/saveState.js";
 import { stripSpellSeen, movementComparable, combatComparable, economyComparable } from "../parity/harness/comparables.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR, ORACLE_ONLY } from "../../src/browser/toasts.js";
+import { LINE_FOR, ORACLE_ONLY } from "../../src/browser/narrationLines.js";
 import { RAIL_FAMILY } from "../../src/browser/rail.js";
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
@@ -385,14 +385,14 @@ test("stripSpellSeen (harness): strips the flag from every carrying cell without
 
 // --- Task 2: narration coverage (floorMapped/revealFaded; detectMagic gone)
 
-test("floorMapped/revealFaded: both have EVENT_NARRATION + TOAST_FOR + RAIL_FAMILY entries; the retired event is gone from all three", () => {
+test("floorMapped/revealFaded: both have EVENT_NARRATION + LINE_FOR + RAIL_FAMILY entries; the retired event is gone from all three", () => {
   for (const type of ["floorMapped", "revealFaded"]) {
     assert.equal(typeof EVENT_NARRATION[type], "function", `EVENT_NARRATION.${type} must be a builder`);
-    assert.equal(typeof TOAST_FOR[type], "function", `TOAST_FOR.${type} must be a builder`);
+    assert.equal(typeof LINE_FOR[type], "function", `LINE_FOR.${type} must be a builder`);
     assert.ok(RAIL_FAMILY[type], `RAIL_FAMILY.${type} must have a card identity`);
   }
   assert.equal("detectMagic" in EVENT_NARRATION, false);
-  assert.equal("detectMagic" in TOAST_FOR, false);
+  assert.equal("detectMagic" in LINE_FOR, false);
   assert.equal("detectMagic" in ORACLE_ONLY, false);
   assert.equal("detectMagic" in RAIL_FAMILY, false);
 

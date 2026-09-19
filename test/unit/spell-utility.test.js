@@ -26,7 +26,7 @@ import { castSpell, readScroll } from "../../engine/magic.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { RAIL_FAMILY } from "../../src/browser/rail.js";
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
@@ -280,14 +280,14 @@ test("endCombat: all three live at once — narrates in order regenFaded, senses
 });
 
 // ============================================================================
-// SPELL-02: narration coverage (EVENT_NARRATION / TOAST_FOR / RAIL_FAMILY)
+// SPELL-02: narration coverage (EVENT_NARRATION / LINE_FOR / RAIL_FAMILY)
 // ============================================================================
 
 test("narration: sensesFaded / regenFaded render non-empty text in all three tables", () => {
   assert.ok(EVENT_NARRATION.sensesFaded({ type: "sensesFaded" }).length > 0);
   assert.ok(EVENT_NARRATION.regenFaded({ type: "regenFaded" }).length > 0);
-  assert.ok(TOAST_FOR.sensesFaded({ type: "sensesFaded" }).text.length > 0);
-  assert.ok(TOAST_FOR.regenFaded({ type: "regenFaded" }).text.length > 0);
+  assert.ok(LINE_FOR.sensesFaded({ type: "sensesFaded" }).text.length > 0);
+  assert.ok(LINE_FOR.regenFaded({ type: "regenFaded" }).text.length > 0);
   assert.ok(RAIL_FAMILY.sensesFaded && RAIL_FAMILY.sensesFaded.title.length > 0);
   assert.ok(RAIL_FAMILY.regenFaded && RAIL_FAMILY.regenFaded.title.length > 0);
 });
@@ -297,7 +297,7 @@ test("narration: combatJoined{senses:true} names Sense Presence's payoff; a plai
   const plain = EVENT_NARRATION.combatJoined({ type: "combatJoined", first: "you" });
   assert.ok(withSenses.includes("Nothing gets the jump on you"));
   assert.ok(!plain.includes("Nothing gets the jump on you"));
-  const toastWithSenses = TOAST_FOR.combatJoined({ type: "combatJoined", first: "you", senses: true });
+  const toastWithSenses = LINE_FOR.combatJoined({ type: "combatJoined", first: "you", senses: true });
   assert.ok(toastWithSenses.text.includes("Nothing gets the jump on you"));
 });
 

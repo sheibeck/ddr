@@ -1,10 +1,10 @@
 // test/unit/fightLog.test.js
 //
 // Phase 34 (CSCR-04), Plan 01 — direct unit coverage for
-// src/browser/toasts.js's new `withIdx`/`oracleDetailText` additions and
+// src/browser/narrationLines.js's new `withIdx`/`oracleDetailText` additions and
 // src/browser/fightLog.js's whole-fight, newest-first, tap-reveal log
 // contract. Synthetic event lists only — no engine calls needed (mirrors
-// test/unit/toastsForAction.test.js's own approach).
+// test/unit/linesForAction.test.js's own approach).
 //
 // REFUSAL_TYPES is copied verbatim from test/unit/shell-round-card.test.js
 // (lines 174-181) — that file is deleted in Plan 02, so this file becomes
@@ -17,7 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { toastsForAction, TOAST_FOR, PRIORITY, oracleDetailText } from "../../src/browser/toasts.js";
+import { linesForAction, LINE_FOR, PRIORITY, oracleDetailText } from "../../src/browser/narrationLines.js";
 import { narrateEvent } from "../../src/browser/eventNarration.js";
 import {
   FIGHT_LOG_TONES,
@@ -44,22 +44,22 @@ const REFUSAL_TYPES = [
 
 // ─── Test 1: default shape unchanged ───────────────────────────────────────
 
-test("toastsForAction: default call (no withIdx) returns exactly {text, tone, priority} — no idx, no type", () => {
-  const out = toastsForAction("attack", [{ type: "struck", name: "Giant Rat", dmg: 4 }], {});
+test("linesForAction: default call (no withIdx) returns exactly {text, tone, priority} — no idx, no type", () => {
+  const out = linesForAction("attack", [{ type: "struck", name: "Giant Rat", dmg: 4 }], {});
   assert.equal(out.length, 1);
   assert.deepEqual(Object.keys(out[0]).sort(), ["priority", "text", "tone"]);
 });
 
 // ─── Test 2: withIdx carries idx (always) and type (direct-mapped only) ───
 
-test("toastsForAction withIdx: every entry carries a non-negative integer idx", () => {
-  const out = toastsForAction("attack", [{ type: "struck", name: "Giant Rat", dmg: 4 }], {}, { limit: Infinity, withIdx: true });
+test("linesForAction withIdx: every entry carries a non-negative integer idx", () => {
+  const out = linesForAction("attack", [{ type: "struck", name: "Giant Rat", dmg: 4 }], {}, { limit: Infinity, withIdx: true });
   assert.equal(out.length, 1);
   assert.ok(Number.isInteger(out[0].idx) && out[0].idx >= 0);
 });
 
-test("toastsForAction withIdx: a direct-mapped event (not folded by any grouper) also carries type", () => {
-  const out = toastsForAction("move", [{ type: "combatJoined", first: "you" }], {}, { limit: Infinity, withIdx: true });
+test("linesForAction withIdx: a direct-mapped event (not folded by any grouper) also carries type", () => {
+  const out = linesForAction("move", [{ type: "combatJoined", first: "you" }], {}, { limit: Infinity, withIdx: true });
   assert.equal(out.length, 1);
   assert.equal(out[0].type, "combatJoined");
   assert.ok(Number.isInteger(out[0].idx) && out[0].idx >= 0);
@@ -100,10 +100,10 @@ test("fightLogLinesFor: a refusal yields a dull line with no roll; a narrate-ctx
   assert.equal(narrated[0].roll, null);
 });
 
-// ─── Test 6: the block<->dull partition (proof over the whole TOAST_FOR manifest) ─
+// ─── Test 6: the block<->dull partition (proof over the whole LINE_FOR manifest) ─
 
 test("partition: PRIORITY.block toasts fold to dull-only fight-log lines; everything else folds to narrative-only", () => {
-  for (const [type, fn] of Object.entries(TOAST_FOR)) {
+  for (const [type, fn] of Object.entries(LINE_FOR)) {
     const isBlock = fn({ type }, {}).priority === PRIORITY.block;
     const lines = fightLogLinesFor("attack", [{ type }]);
     if (lines.length === 0) continue; // events fully folded away with no output (e.g. a bare spellThrown) — not applicable here
@@ -132,7 +132,7 @@ test("count equality: fightLogLinesFor's line count equals the uncapped folded t
   const types = ["frenzy", "phobiaAfraid", "lootDropped", "combatJoined", "struck", "foeMissed"];
   const events = types.map((type) => ({ type }));
   const lines = fightLogLinesFor("attack", events);
-  const folded = toastsForAction("attack", events, {}, { limit: Infinity });
+  const folded = linesForAction("attack", events, {}, { limit: Infinity });
   assert.equal(lines.length, 6);
   assert.equal(folded.length, 6);
   assert.equal(lines.length, folded.length);
@@ -207,11 +207,11 @@ test("dullFightLogLine: builds a {text, tone:'dull', roll:null} entry", () => {
 
 // ─── Test 12: purity ────────────────────────────────────────────────────────
 
-test("fightLog.js is pure: no window/document/Date.now/localStorage/setTimeout/innerHTML, and imports only from toasts.js and eventNarration.js", () => {
+test("fightLog.js is pure: no window/document/Date.now/localStorage/setTimeout/innerHTML, and imports only from narrationLines.js and eventNarration.js", () => {
   const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "fightLog.js"), "utf8");
   for (const needle of ["window", "document", "Date.now", "localStorage", "setTimeout", "innerHTML"]) {
     assert.doesNotMatch(src, new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${needle} must not appear in fightLog.js`);
   }
   const importLines = [...src.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-  assert.deepEqual(importLines.sort(), ["./eventNarration.js", "./toasts.js"].sort());
+  assert.deepEqual(importLines.sort(), ["./eventNarration.js", "./narrationLines.js"].sort());
 });

@@ -4,7 +4,7 @@
 // log that replaces the Round Card (Phase 32's round-card global bridge).
 //
 // Decision 1 (34-01-PLAN.md objective, RESEARCH Open Question 1): the
-// fight log's lines are sourced from `toastsForAction(type, events, ctx,
+// fight log's lines are sourced from `linesForAction(type, events, ctx,
 // { limit: Infinity, withIdx: true })` — the SAME folded/deduped pipeline
 // the old Round Card used — rather than from raw `formatEvents()` output.
 // 34-CONTEXT.md pins "log line count = folded count" (the
@@ -22,7 +22,7 @@
 // (mazeworld.html) is where the caller stores this module's output; this
 // module never touches `S`/`state`.
 
-import { toastsForAction, PRIORITY, narrativeToastText, oracleDetailText } from "./toasts.js";
+import { linesForAction, PRIORITY, narrativeLineText, oracleDetailText } from "./narrationLines.js";
 import { narrateEvent } from "./eventNarration.js";
 
 /** FIGHT_LOG_TONES — the two tones a fight-log entry carries. */
@@ -30,10 +30,10 @@ export const FIGHT_LOG_TONES = Object.freeze(["narrative", "dull"]);
 
 /**
  * fightLogLinesFor(type, events, ctx = {}) — one fight-log line per folded
- * toastsForAction entry (uncapped, per the Decision 1 fold-preserving
+ * linesForAction entry (uncapped, per the Decision 1 fold-preserving
  * source). Each line is `{ text, tone, roll }`:
- *   - text: the folded toast's own text (narrativeToastText-normalized —
- *     already roll-free from TOAST_FOR/ctx.narrate, this is a defensive
+ *   - text: the folded toast's own text (narrativeLineText-normalized —
+ *     already roll-free from LINE_FOR/ctx.narrate, this is a defensive
  *     pass so the fight log never renders a stray tag).
  *   - tone: "dull" when the entry's priority is PRIORITY.block (a
  *     refusal/rejection), else "narrative".
@@ -42,9 +42,9 @@ export const FIGHT_LOG_TONES = Object.freeze(["narrative", "dull"]);
  *     null when that event has no roll span to reveal.
  */
 export function fightLogLinesFor(type, events, ctx = {}) {
-  const toasts = toastsForAction(type, events, ctx, { limit: Infinity, withIdx: true });
-  return toasts.map((t) => ({
-    text: narrativeToastText(t.text) || t.text,
+  const lines = linesForAction(type, events, ctx, { limit: Infinity, withIdx: true });
+  return lines.map((t) => ({
+    text: narrativeLineText(t.text) || t.text,
     tone: t.priority === PRIORITY.block ? "dull" : "narrative",
     roll: oracleDetailText(narrateEvent(events[t.idx])) || null,
   }));

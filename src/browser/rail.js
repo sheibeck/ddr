@@ -1,17 +1,18 @@
 // src/browser/rail.js
 //
 // Phase 35 (Map Screen Rebuild), Plan 01 — the RAIL view-model: the
-// out-of-combat twin of fightLog.js. The same `toastsForAction(...,
+// out-of-combat twin of fightLog.js. The same `linesForAction(...,
 // {limit: Infinity, withIdx: true})` fold that feeds the fight log
 // (test/unit/fightLog.test.js's sibling module) feeds this module too — one
 // dispatch, two destinations: rail (out of combat) or fight log (in combat).
-// This is the Phase 32 partition re-read as "rail or log": the toastTable/
-// toastsCoverage invariants stay proven against toasts.js unchanged; this
-// module is the ONE place the rail's icon/title/tone/hold vocabulary lives.
+// This is the Phase 32 partition re-read as "rail or log": the
+// narrationLinesTable/narrationLinesCoverage invariants stay proven against
+// narrationLines.js unchanged; this module is the ONE place the rail's
+// icon/title/tone/hold vocabulary lives.
 //
 // PRESENTATION ONLY, pure module: no DOM/window/timer/storage access
-// anywhere in this file. Its toast-table sibling supplies PRIORITY,
-// ORACLE_ONLY, TOAST_FOR, narrativeToastText and oracleDetailText; its
+// anywhere in this file. Its narration-line-table sibling supplies PRIORITY,
+// ORACLE_ONLY, LINE_FOR, narrativeLineText and oracleDetailText; its
 // narration sibling supplies narrateEvent — never from the rules tier. Every
 // export is a plain function returning plain data; the shell (Plans 02-04)
 // bridges this module's output onto window.__mzRail and renders it.
@@ -31,7 +32,7 @@
 // action row. The only real decision on a chest tile is the pre-existing
 // take-it/leave-it find prompt (Plan 02), not a new pick action.
 
-import { PRIORITY, ORACLE_ONLY, TOAST_FOR, narrativeToastText, oracleDetailText } from "./toasts.js";
+import { PRIORITY, ORACLE_ONLY, LINE_FOR, narrativeLineText, oracleDetailText } from "./narrationLines.js";
 import { narrateEvent } from "./eventNarration.js";
 // Phase 38 (ABIL-01/03) — abilityPoolCard (below) reads the catalog's own
 // name/txt for the level-1 pool-pick narration; pure content data, same
@@ -306,7 +307,7 @@ export const RAIL_FEATURE_ICON = Object.freeze({
  * RAIL_DIRECT — the ORACLE_ONLY event types the rail surfaces directly from
  * the Oracle narration (the retired Move-on card's floor arrival/level-up
  * and the find outcome). A strict subset of ORACLE_ONLY, disjoint from
- * TOAST_FOR's keys (toasts.js is never edited — this reads the SAME
+ * LINE_FOR's keys (narrationLines.js is never edited — this reads the SAME
  * ORACLE_ONLY set a second, additive way).
  */
 export const RAIL_DIRECT = new Set(["floorChanged", "dayBegan", "findTaken", "findLeft"]);
@@ -372,10 +373,10 @@ function numberFor(e) {
 
 /**
  * railCardFor(type, events, folded, ctx = {}) — folds one out-of-combat
- * dispatch's `folded` (toastsForAction's withIdx output) plus any
+ * dispatch's `folded` (linesForAction's withIdx output) plus any
  * RAIL_DIRECT events present in `events` into ONE rail card. Every folded
  * entry becomes a line, uncapped; RAIL_DIRECT events are read directly from
- * `events` (they never appear in `folded` — toasts.js's ORACLE_ONLY set
+ * `events` (they never appear in `folded` — narrationLines.js's ORACLE_ONLY set
  * excludes them from the fold). Lines stack newest-first (descending idx).
  * The head line (lowest PRIORITY, ties by lowest idx) picks the family's
  * icon/title/tone; hold is the max family hold across every line. Returns
@@ -388,7 +389,7 @@ export function railCardFor(type, events, folded, ctx = {}) {
 
   for (const t of folded || []) {
     raw.push({
-      text: narrativeToastText(t.text) || t.text,
+      text: narrativeLineText(t.text) || t.text,
       roll: t.idx != null ? rollLineFor(evts[t.idx], narrate) : null,
       idx: t.idx ?? -1,
       priority: t.priority,
@@ -399,7 +400,7 @@ export function railCardFor(type, events, folded, ctx = {}) {
 
   evts.forEach((e, idx) => {
     if (!e || !RAIL_DIRECT.has(e.type)) return;
-    const text = narrativeToastText(narrate(e));
+    const text = narrativeLineText(narrate(e));
     if (!text) return;
     raw.push({ text, roll: rollLineFor(e, narrate), idx, priority: PRIORITY.other, type: e.type, tone: undefined });
   });
@@ -553,9 +554,3 @@ export function railAnnouncement(rail, announcedSeq) {
   const text = `${card.title}. ${card.lines.map((l) => l.text).join(" ")}`;
   return { seq: card.seq, text };
 }
-
-// Re-exported for callers that only need this module's surface (the
-// coverage/subset proofs in rail.test.js import these directly from
-// toasts.js instead, so this module's own logic above never needs to read
-// TOAST_FOR/ORACLE_ONLY at runtime).
-export { TOAST_FOR, ORACLE_ONLY };

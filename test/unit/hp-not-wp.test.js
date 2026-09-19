@@ -2,7 +2,7 @@
 //
 // Phase 43 (CLAR-01 HP-not-WP sweep) — the standing guard proving no
 // player-facing string anywhere in the app says "wp"/"WP". Scans: (a) every
-// EVENT_NARRATION/TOAST_FOR builder across bare/numeric-rich/name-rich
+// EVENT_NARRATION/LINE_FOR builder across bare/numeric-rich/name-rich
 // payloads; (b) every string leaf of RAIL_COPY/ITEM_STATE_COPY/
 // ABILITY_VIEW_COPY/COMBAT_MENU_COPY/COMBAT_PANEL_COPY/MISS_LINES; (c) every
 // note/txt/txt2 of the content banks; (d) mazeworld.html's player-facing
@@ -22,7 +22,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { RAIL_COPY } from "../../src/browser/rail.js";
 import { ITEM_STATE_COPY, ABILITY_VIEW_COPY, RATIONS_COPY, USABLE_COPY, GEAR_COPY } from "../../src/browser/viewModels.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
@@ -51,7 +51,7 @@ function isAllowlisted(snippet) {
   return ALLOWLIST.some((entry) => snippet.includes(entry));
 }
 
-// ─── (a) EVENT_NARRATION / TOAST_FOR builders ──────────────────────────────
+// ─── (a) EVENT_NARRATION / LINE_FOR builders ──────────────────────────────
 
 function stripTags(html) {
   return String(html ?? "").replace(/<[^>]+>/g, " ");
@@ -90,9 +90,9 @@ test("EVENT_NARRATION: no builder output contains a standalone wp/WP token, acro
   assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in EVENT_NARRATION:\n${offenders.join("\n")}`);
 });
 
-test("TOAST_FOR: no builder .text contains a standalone wp/WP token, across bare/numeric-rich/name-rich payloads", () => {
+test("LINE_FOR: no builder .text contains a standalone wp/WP token, across bare/numeric-rich/name-rich payloads", () => {
   const offenders = [];
-  for (const [type, fn] of Object.entries(TOAST_FOR)) {
+  for (const [type, fn] of Object.entries(LINE_FOR)) {
     for (const variant of [{}, NUMERIC_RICH, NAME_RICH]) {
       let out;
       try {
@@ -102,10 +102,10 @@ test("TOAST_FOR: no builder .text contains a standalone wp/WP token, across bare
       }
       const text = stripTags(out?.text ?? "").trim();
       const m = text.match(PLAYER_WP);
-      if (m && !isAllowlisted(m[0])) offenders.push(`TOAST_FOR.${type} -> "${text}"`);
+      if (m && !isAllowlisted(m[0])) offenders.push(`LINE_FOR.${type} -> "${text}"`);
     }
   }
-  assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in TOAST_FOR:\n${offenders.join("\n")}`);
+  assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in LINE_FOR:\n${offenders.join("\n")}`);
 });
 
 // ─── (b) presentation COPY objects (recursive string-leaf walk) ────────────

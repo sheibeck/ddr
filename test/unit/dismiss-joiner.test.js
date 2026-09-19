@@ -19,7 +19,7 @@ import { swapPartyMember } from "../../engine/state.js";
 import { rollCharacter } from "../../engine/character.js";
 import { makeRng } from "../../engine/rng.js";
 import { narrateEvent, EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR, FEATURE_EVENTS, PRIORITY, toastsForAction } from "../../src/browser/toasts.js";
+import { LINE_FOR, FEATURE_EVENTS, PRIORITY, linesForAction } from "../../src/browser/narrationLines.js";
 import { RAIL_FAMILY, railCardFor } from "../../src/browser/rail.js";
 import { JOINER_PARTING_LINES } from "../../content/flavor.js";
 
@@ -177,19 +177,19 @@ test("EVENT_NARRATION.dismissRefused: three distinct non-empty strings for noPar
 });
 
 /* ============================================================
- * TOAST_FOR / NARRATIVE_ACTIONS / FEATURE_EVENTS
+ * LINE_FOR / NARRATIVE_ACTIONS / FEATURE_EVENTS
  * ============================================================ */
 
-test("TOAST_FOR.joinerDismissed: priority feature, tone beat, text contains the name", () => {
-  const t = TOAST_FOR.joinerDismissed({ name: "Ada Brook", sub: "Guard" });
+test("LINE_FOR.joinerDismissed: priority feature, tone beat, text contains the name", () => {
+  const t = LINE_FOR.joinerDismissed({ name: "Ada Brook", sub: "Guard" });
   assert.equal(t.priority, PRIORITY.feature);
   assert.equal(t.tone, "beat");
   assert.ok(t.text.includes("Ada Brook"));
 });
 
-test("TOAST_FOR.dismissRefused: priority block for every reason", () => {
+test("LINE_FOR.dismissRefused: priority block for every reason", () => {
   for (const reason of ["noParty", "inCombat", "badIndex", "somethingElse"]) {
-    const t = TOAST_FOR.dismissRefused({ reason });
+    const t = LINE_FOR.dismissRefused({ reason });
     assert.equal(t.priority, PRIORITY.block);
   }
 });
@@ -199,7 +199,7 @@ test("FEATURE_EVENTS includes dismissRefused", () => {
 });
 
 test("NARRATIVE_ACTIONS deep-equals the set of camp/dismissJoiner/move/resolveJoiner", async () => {
-  const { NARRATIVE_ACTIONS } = await import("../../src/browser/toasts.js");
+  const { NARRATIVE_ACTIONS } = await import("../../src/browser/narrationLines.js");
   assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "dismissJoiner", "move", "resolveJoiner"]);
 });
 
@@ -214,7 +214,7 @@ test("RAIL_FAMILY.joinerDismissed: COMPANY / dull; no dismissRefused key (block 
 
 test("railCardFor('dismissJoiner', ...) for a joinerDismissed event: title COMPANY, tone dull, first line is the parting sentence", () => {
   const events = [{ type: "joinerDismissed", name: "Ada Brook", sub: "Guard" }];
-  const folded = toastsForAction("dismissJoiner", events, { narrate: narrateEvent }, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("dismissJoiner", events, { narrate: narrateEvent }, { limit: Infinity, withIdx: true });
   const card = railCardFor("dismissJoiner", events, folded, { narrate: narrateEvent });
 
   assert.ok(card, "expected a rail card");
@@ -225,7 +225,7 @@ test("railCardFor('dismissJoiner', ...) for a joinerDismissed event: title COMPA
 
 test("railCardFor('dismissJoiner', ...) for a dismissRefused event: title NOTHING DOING, tone dull", () => {
   const events = [{ type: "dismissRefused", reason: "noParty" }];
-  const folded = toastsForAction("dismissJoiner", events, { narrate: narrateEvent }, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("dismissJoiner", events, { narrate: narrateEvent }, { limit: Infinity, withIdx: true });
   const card = railCardFor("dismissJoiner", events, folded, { narrate: narrateEvent });
 
   assert.ok(card, "expected a rail card");

@@ -19,11 +19,11 @@
 //      `if (wasCombat || inCombat)`, routes every folded line (refusals
 //      included) through fightLogLinesFor, and never re-checks
 //      PRIORITY.block itself (that tone lives in fightLog.js now);
-//   6. the BEHAVIOUR partition (narrative vs. dull) over the full TOAST_FOR
-//      manifest + REFUSAL_TYPES, the uncapped-log/capped-host contract, the
-//      __mzFightLogVM bridge, the .cb-log* CSS contract, the scoped DR18
-//      rule, noteCombat's `over` tags, and a voice scan of the new flee
-//      beat title.
+//   6. the BEHAVIOUR partition (narrative vs. dull) over the full LINE_FOR
+//      manifest + REFUSAL_TYPES, the uncapped-log/uncapped-default fold
+//      contract, the __mzFightLogVM bridge, the .cb-log* CSS contract, the
+//      scoped DR18 rule, noteCombat's `over` tags, and a voice scan of the
+//      new flee beat title.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -31,7 +31,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { toastsForAction, TOAST_FOR, PRIORITY, MAX_TOASTS } from "../../src/browser/toasts.js";
+import { linesForAction, LINE_FOR, PRIORITY } from "../../src/browser/narrationLines.js";
 import { fightLogLinesFor } from "../../src/browser/fightLog.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 
@@ -191,10 +191,10 @@ const REFUSAL_TYPES = [
   "castRefused", "actionRefused",
 ];
 
-test("BEHAVIOUR: fightLogLinesFor(\"attack\", [{type}]) yields ONLY dull lines iff the bare TOAST_FOR priority is PRIORITY.block, only narrative lines otherwise (some chain-intermediate types, e.g. spellThrown, legitimately fold to zero lines alone)", () => {
+test("BEHAVIOUR: fightLogLinesFor(\"attack\", [{type}]) yields ONLY dull lines iff the bare LINE_FOR priority is PRIORITY.block, only narrative lines otherwise (some chain-intermediate types, e.g. spellThrown, legitimately fold to zero lines alone)", () => {
   const narrativeSet = new Set();
   const dullSet = new Set();
-  for (const [type, fn] of Object.entries(TOAST_FOR)) {
+  for (const [type, fn] of Object.entries(LINE_FOR)) {
     const bare = fn({ type }, {});
     const lines = fightLogLinesFor("attack", [{ type }]);
     const expectTone = bare.priority === PRIORITY.block ? "dull" : "narrative";
@@ -221,18 +221,18 @@ test("BEHAVIOUR: a mixed in-combat action yields exactly one dull line among its
   assert.equal(dullCount, 1, "exactly one of the two lines is dull");
 });
 
-test("UNCAPPED log, capped host: six folded toasts all reach fightLogLinesFor, but toastsForAction's default call still caps at MAX_TOASTS", () => {
+test("UNCAPPED log, uncapped default: six folded lines all reach fightLogLinesFor, and linesForAction's own default call returns every one too", () => {
   const types = ["frenzy", "phobiaAfraid", "lootDropped", "combatJoined", "struck", "foeMissed"];
   for (const type of types) {
-    const bare = TOAST_FOR[type]({ type }, {});
+    const bare = LINE_FOR[type]({ type }, {});
     assert.notEqual(bare.priority, PRIORITY.block, `${type} must not be PRIORITY.block for this synthetic scenario`);
   }
   const sixEvents = types.map((type) => ({ type }));
   const lines = fightLogLinesFor("attack", sixEvents);
   assert.equal(lines.length, 6, "the fight log's uncapped request must return every folded line");
 
-  const cappedDefault = toastsForAction("attack", sixEvents, {});
-  assert.equal(cappedDefault.length, MAX_TOASTS, "the default (out-of-combat / toast-host) call must still cap at MAX_TOASTS");
+  const defaultCall = linesForAction("attack", sixEvents, {});
+  assert.equal(defaultCall.length, lines.length, "the default call is uncapped too — every folded line is returned");
 });
 
 // ─── the __mzFightLogVM bridge + import ────────────────────────────────────

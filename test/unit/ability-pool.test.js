@@ -32,7 +32,7 @@ import { meetJoiner } from "../../engine/encounters.js";
 import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
 import { ABILITY_POOL, ABILITY_BY_ID, THRESHOLDS } from "../../content/index.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR, PRIORITY } from "../../src/browser/toasts.js";
+import { LINE_FOR, PRIORITY } from "../../src/browser/narrationLines.js";
 import { RAIL_FAMILY, RAIL_HOLD } from "../../src/browser/rail.js";
 
 // A complete, fixed level-1 Fighter (mirrors test/unit/character.test.js's
@@ -290,12 +290,12 @@ test("abilityLearned narration: eventNarration/toasts/rail all cover it", () => 
   const line = EVENT_NARRATION.abilityLearned(e);
   assert.ok(typeof line === "string" && line.includes("Brace"));
 
-  const toast = TOAST_FOR.abilityLearned(e);
+  const toast = LINE_FOR.abilityLearned(e);
   assert.deepStrictEqual(toast, { text: "New trick: Brace — halve the next blow that lands on you", tone: "hit", priority: PRIORITY.feature });
 
   assert.deepStrictEqual(RAIL_FAMILY.abilityLearned, { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level });
 
   // Bare-payload safety (the coverage guard's own invocation shape).
   assert.doesNotThrow(() => EVENT_NARRATION.abilityLearned({ type: "abilityLearned" }));
-  assert.doesNotThrow(() => TOAST_FOR.abilityLearned({ type: "abilityLearned" }));
+  assert.doesNotThrow(() => LINE_FOR.abilityLearned({ type: "abilityLearned" }));
 });

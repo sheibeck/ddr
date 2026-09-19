@@ -29,7 +29,7 @@ import {
   nightlyEats,
 } from "../../engine/movement.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
 
@@ -1084,11 +1084,11 @@ test("campFailed narration and toast render the numbers and the member clause", 
   const solo = EVENT_NARRATION.campFailed({ type: "campFailed", need: 2, have: 1 }).replace(/<[^>]+>/g, "");
   assert.equal(solo, "You eat 2 a night. You have 1. Find rations first.");
 
-  const toast = TOAST_FOR.campFailed({ type: "campFailed", need: 2, have: 1 });
+  const toast = LINE_FOR.campFailed({ type: "campFailed", need: 2, have: 1 });
   assert.equal(toast.tone, "block");
   assert.ok(toast.text.includes("2") && toast.text.includes("1"));
 
-  const bare = TOAST_FOR.campFailed({ type: "campFailed" });
+  const bare = LINE_FOR.campFailed({ type: "campFailed" });
   assert.equal(bare.tone, "block");
   assert.ok(typeof bare.text === "string" && bare.text.length > 0);
 });

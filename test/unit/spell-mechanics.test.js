@@ -30,7 +30,7 @@ import { castSpell } from "../../engine/magic.js";
 import { playerStrike, foeTurn, flee, alliesTurn } from "../../engine/combat.js";
 import { SPELLS } from "../../content/index.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-import { TOAST_FOR } from "../../src/browser/toasts.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 
@@ -308,13 +308,13 @@ test("Summon (not Lesser Summon): allyPending never carries a `lesser` key", () 
   assert.equal("lesser" in ally, false);
 });
 
-test("Narration: iceApplied/dotTick(ice)/allySummoned(lesser) render through EVENT_NARRATION and TOAST_FOR", () => {
+test("Narration: iceApplied/dotTick(ice)/allySummoned(lesser) render through EVENT_NARRATION and LINE_FOR", () => {
   assert.match(EVENT_NARRATION.iceApplied({ target: "Ogre", rounds: 4 }), /Ice climbs Ogre/);
   assert.match(EVENT_NARRATION.dotTick({ target: "Ogre", dmg: 3, by: "ice" }), /the ice/);
   assert.match(EVENT_NARRATION.dotTick({ target: "Ogre", dmg: 3, by: "poisonedEdge" }), /the poison/);
   assert.match(EVENT_NARRATION.allySummoned({ name: "Thing", lesser: true }), /sort of/);
   assert.match(EVENT_NARRATION.allyPending({ name: "Thing", lesser: true }), /in a small way/);
-  assert.equal(typeof TOAST_FOR.iceApplied({ type: "iceApplied", target: "Ogre", rounds: 4 }).text, "string");
+  assert.equal(typeof LINE_FOR.iceApplied({ type: "iceApplied", target: "Ogre", rounds: 4 }).text, "string");
 });
 
 // ─── Task 2: Weaken's duration timer, Stupidity's fight-long skip, Shrink's half damage ───
@@ -468,11 +468,11 @@ test("Shrink: pursuitStrike halves a shrunk pursuer's parting blow", () => {
   assert.equal(struck.dmg, 8, "ceil(15/2)");
 });
 
-test("Narration: weakenFaded/foeStupefied render through EVENT_NARRATION and TOAST_FOR", () => {
+test("Narration: weakenFaded/foeStupefied render through EVENT_NARRATION and LINE_FOR", () => {
   assert.match(EVENT_NARRATION.weakenFaded({}), /remember/);
   assert.match(EVENT_NARRATION.weakened({ rounds: 3 }), /3 rounds/);
   assert.match(EVENT_NARRATION.weakened({}), /softer now\./);
   assert.match(EVENT_NARRATION.foeStupefied({ name: "Ogre" }), /thinking about nothing/);
-  assert.equal(typeof TOAST_FOR.weakenFaded({ type: "weakenFaded" }).text, "string");
-  assert.equal(typeof TOAST_FOR.foeStupefied({ type: "foeStupefied", name: "Ogre" }).text, "string");
+  assert.equal(typeof LINE_FOR.weakenFaded({ type: "weakenFaded" }).text, "string");
+  assert.equal(typeof LINE_FOR.foeStupefied({ type: "foeStupefied", name: "Ogre" }).text, "string");
 });

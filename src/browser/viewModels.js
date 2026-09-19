@@ -151,7 +151,7 @@ function classNames(letters) {
 
 /** refusalText(reason, clsLetters) — Phase 29 (LOOT-03): the loot screen's
  * "can't use (...)" fragment for a weaponRefusalReason/armorRefusalReason
- * code. Mirrors src/browser/toasts.js's EQUIP_REJECT_TEXT wording without
+ * code. Mirrors src/browser/narrationLines.js's EQUIP_REJECT_TEXT wording without
  * importing it (that table also covers notEquippable/notBetter, which never
  * reach lootCompare's illegal-gear branch). */
 function refusalText(reason, clsLetters) {

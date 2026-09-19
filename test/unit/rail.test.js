@@ -2,7 +2,7 @@
 //
 // Phase 35 (Map Screen Rebuild), Plan 01 (MAP-03/MAP-04) — direct unit
 // coverage for src/browser/rail.js: the family table (icon/title/tone/
-// hold) over every TOAST_FOR key, the RAIL_DIRECT subset/disjointness
+// hold) over every LINE_FOR key, the RAIL_DIRECT subset/disjointness
 // proof, the generic roll-line rule, one-card-per-dispatch folding/
 // stacking/head-selection, push/clear/announcement seq discipline, and a
 // BANNED voice scan of every player-facing string this module owns.
@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import url from "node:url";
 
-import { toastsForAction, TOAST_FOR, ORACLE_ONLY, PRIORITY } from "../../src/browser/toasts.js";
+import { linesForAction, LINE_FOR, ORACLE_ONLY, PRIORITY } from "../../src/browser/narrationLines.js";
 import { narrateEvent } from "../../src/browser/eventNarration.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { FEATURE_ICONS } from "../../src/browser/icons.js";
@@ -102,10 +102,10 @@ test("railFamilyFor: the block/tone fallback for an unlisted type", () => {
   assert.deepEqual(railFamilyFor("neverListed", "beat", PRIORITY.other), { icon: "·", title: "MEANWHILE", tone: "info", hold: RAIL_HOLD.default });
 });
 
-// ─── Test 4: full TOAST_FOR coverage ───────────────────────────────────────
+// ─── Test 4: full LINE_FOR coverage ───────────────────────────────────────
 
-test("coverage: every TOAST_FOR key resolves to a family with a non-empty title, a tone in RAIL_TONES and a hold in [2200, 6000]", () => {
-  for (const [type, builder] of Object.entries(TOAST_FOR)) {
+test("coverage: every LINE_FOR key resolves to a family with a non-empty title, a tone in RAIL_TONES and a hold in [2200, 6000]", () => {
+  for (const [type, builder] of Object.entries(LINE_FOR)) {
     let tone = "beat";
     let priority = PRIORITY.other;
     try {
@@ -127,11 +127,11 @@ test("coverage: every TOAST_FOR key resolves to a family with a non-empty title,
 
 // ─── Test 5: RAIL_DIRECT subset/disjointness proof ─────────────────────────
 
-test("RAIL_DIRECT is a strict subset of ORACLE_ONLY and disjoint from TOAST_FOR's keys", () => {
+test("RAIL_DIRECT is a strict subset of ORACLE_ONLY and disjoint from LINE_FOR's keys", () => {
   assert.ok(RAIL_DIRECT.size > 0);
   for (const type of RAIL_DIRECT) {
     assert.ok(ORACLE_ONLY.has(type), `${type} must be in ORACLE_ONLY`);
-    assert.ok(!(type in TOAST_FOR), `${type} must not be a TOAST_FOR key`);
+    assert.ok(!(type in LINE_FOR), `${type} must not be a LINE_FOR key`);
   }
   assert.ok(RAIL_DIRECT.size < ORACLE_ONLY.size, "strict subset, not equal");
 });
@@ -159,7 +159,7 @@ test("rollLineFor: narration roll span first, else numeric event.roll(+need)(+hu
 
 test("railCardFor: a trap + level-up move dispatch folds to one card, trap wins the head, lines stack newest-first", () => {
   const events = [{ type: "moved", x: 5, y: 5 }, { type: "trapSprung", name: "Pit", dmg: 4 }, { type: "leveled", level: 3, wpGain: 5 }];
-  const folded = toastsForAction("move", events, {}, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("move", events, {}, { limit: Infinity, withIdx: true });
   const card = railCardFor("move", events, folded, {});
   assert.ok(card, "a trap + level-up dispatch must produce a card");
   assert.equal(card.icon, "✕");
@@ -208,7 +208,7 @@ test("railCardFor: dayBegan resolves {n} from event.day; a bare moved dispatch y
 
 test("railCardFor: a camp dispatch (rested + dayBegan + wanderingMonster) folds and resolves a non-empty card", () => {
   const events = [{ type: "rested", amount: 4 }, { type: "dayBegan", day: 2 }, { type: "wanderingMonster", hours: 2 }];
-  const folded = toastsForAction("camp", events, {}, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("camp", events, {}, { limit: Infinity, withIdx: true });
   const card = railCardFor("camp", events, folded, {});
   assert.ok(card);
   assert.ok(card.lines.length >= 2, "rested + wanderingMonster fold, plus the RAIL_DIRECT dayBegan line");
@@ -222,7 +222,7 @@ test("railCardFor: a camp dispatch (rested + dayBegan + wanderingMonster) folds 
 
 test("railCardFor: a camp dispatch WITH a heal (dayBegan + rationsEaten + rested) heads CAMP MADE — rested outranks rationsEaten", () => {
   const events = [{ type: "dayBegan", day: 2 }, { type: "rationsEaten", eats: 1, left: 5, eaters: [] }, { type: "rested", amount: 4 }];
-  const folded = toastsForAction("camp", events, {}, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("camp", events, {}, { limit: Infinity, withIdx: true });
   const card = railCardFor("camp", events, folded, {});
   assert.ok(card);
   assert.equal(card.title, "CAMP MADE");
@@ -231,7 +231,7 @@ test("railCardFor: a camp dispatch WITH a heal (dayBegan + rationsEaten + rested
 
 test("railCardFor: a camp dispatch with NO heal (dayBegan + rationsEaten only) folds both lines — dayBegan's RAIL_DIRECT entry wins the head tie by idx (the SAME pre-existing pattern wentHungry vs dayBegan already had), and the FED family is reachable directly via railFamilyFor for a dispatch where rationsEaten is the higher-priority line", () => {
   const events = [{ type: "dayBegan", day: 2 }, { type: "rationsEaten", eats: 1, left: 5, eaters: [] }];
-  const folded = toastsForAction("camp", events, {}, { limit: Infinity, withIdx: true });
+  const folded = linesForAction("camp", events, {}, { limit: Infinity, withIdx: true });
   const card = railCardFor("camp", events, folded, {});
   assert.ok(card);
   assert.equal(card.lines.length, 2, "both dayBegan (RAIL_DIRECT) and rationsEaten (folded) lines appear");
