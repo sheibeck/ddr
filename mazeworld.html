@@ -3327,7 +3327,7 @@ const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt
 // class · level, then the HP track, then Weapon/Eats lines, then (outside
 // combat) a DISMISS control with the same two-tap inline confirm pattern as
 // the Gear tab's Drop. On confirm the bridge (window.mzDismissJoiner) routes
-// through the same dispatchWithToasts seam as window.mzResolveJoiner — the
+// through the same dispatchWithNarration seam as window.mzResolveJoiner — the
 // parting line surfaces on the rail only, never here, never as a toast.
 function renderPartyRoster() {
   const panel = document.getElementById("hero-party");
@@ -3668,7 +3668,7 @@ function fightLogRefuse(text) {
 // itself never narrates are caught here, shell-side, before dispatch; every
 // other row (including every OTHER disabled/unavailable row) dispatches
 // through the real bridge and lets the engine's own refusal explain via the
-// fight log (Plan 02's dispatchWithToasts routing). `row.dispatch === null`
+// fight log (Plan 02's dispatchWithNarration routing). `row.dispatch === null`
 // (the id:"none" placeholder rows) never reaches this function — cbRow()
 // disables those rows instead of wiring a tap handler.
 function pickCombatRow(row) {
@@ -3716,7 +3716,7 @@ function cbRow(row, n) {
 }
 
 // Phase 34 (CSCR-05) — opens a submenu (presentation-only state, reset on
-// every dispatch by Plan 02's dispatchWithToasts and by BACK; never a field
+// every dispatch by Plan 02's dispatchWithNarration and by BACK; never a field
 // on S.combat). A grid button with no `opens` (the disabled ABILITIES
 // fallback) is a guarded no-op — there is no engine action to refuse and the
 // sub-line already says NOTHING UP YOUR SLEEVE.
@@ -4009,7 +4009,7 @@ function renderEncounter() {
       return;
     }
     // Phase 35 (MAP-04): every other beat (floor arrival, level-up, camp) is
-    // an auto-clearing rail card now (dispatchWithToasts/renderRail, above)
+    // an auto-clearing rail card now (dispatchWithNarration/renderRail, above)
     // — a stray beat can never trap the map behind the old header "Move on"/
     // "Next" dismiss control (the Phase 25.1 Move-on card), which is retired.
     S.beats = null;
@@ -4533,7 +4533,7 @@ document.getElementById("mw-legend-close").addEventListener("click", closeMarksL
 // Phase 35 (MAP-06/08): the MAKE CAMP bottom sheet — SLEEP dispatches the
 // existing camp bridge (window.mzMakeCamp); the refusal (NOTHING TO EAT)
 // and the result (CAMP MADE / …) reach the player through the rail via
-// dispatchWithToasts's own fold — nothing is synthesized here.
+// dispatchWithNarration's own fold — nothing is synthesized here.
 function openCampSheet() {
   if (!S || hasActiveEncounter()) return;
   // Ruling 3: no dispatch past an active rail decision — pulse it instead.
@@ -4862,7 +4862,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 35 (MAP-03/04): the generic html-to-beats gate and the retired
   // toast queue's lifetime formula are gone with the Phase 25.1 toast host /
   // Move-on card — NARRATIVE_ACTIONS still gates ctx.narrate in
-  // dispatchWithToasts.
+  // dispatchWithNarration.
   import { NARRATIVE_ACTIONS } from "./src/browser/narrationLines.js";
   // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as dull rail/log
   // entries even in combat; narrativeLineText is the card's defensive text
@@ -5099,7 +5099,7 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzDropShelfItems = dropShelfItems;
   window.__mzGear = { emptySlotRows, copy: GEAR_COPY };
 
-  // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithToasts and
+  // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithNarration and
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
   // through this ONE bridge rather than importing fightLog.js a second
   // time. No rng, no DOM access inside the module itself.
@@ -5359,7 +5359,7 @@ window.__mzClassicBoot = async function classicBoot() {
 
   // Phase 35 (MAP-03/04): every feature-tile landing that does not start
   // combat/a store now reaches the player through the bottom RAIL (folded by
-  // dispatchWithToasts/rail.js below), not a synthesized over-map beat card
+  // dispatchWithNarration/rail.js below), not a synthesized over-map beat card
   // — the Phase 25.1 Move-on card and its title/tone lookup table are
   // retired. hasActiveEncounter()/renderEncounter() still own combat/store/
   // dead/won/loot; nothing else raises the over-map overlay any more.
@@ -5471,11 +5471,13 @@ window.__mzClassicBoot = async function classicBoot() {
     if (style) maybeHaptic(currentSettings, style);
   }
 
-  // Phase 25 (FEED-01/02/06): the single post-dispatch seam every action
-  // flows through — exploration (move), camp, store (buyItem/leaveStore),
-  // Joiner (resolveJoiner), inventory (takeFind/leaveFind/dropItem/equipItem/
-  // unequipSlot/sellItem/useItem), and combat/magic (engineCombatAction) all
-  // call this instead of the bare dispatch() the engineAdapter exports.
+  // The single post-dispatch seam every action flows through — exploration
+  // (move), camp, store (buyItem/leaveStore), Joiner (resolveJoiner),
+  // inventory (takeFind/leaveFind/dropItem/equipItem/unequipSlot/sellItem/
+  // useItem), and combat/magic (engineCombatAction) all call this instead of
+  // the bare dispatch() the engineAdapter exports: it dispatches one action
+  // and routes its folded narration lines to the fight log (in or leaving
+  // combat) or to one RAIL card (out of combat).
   // dispatch(action) already returns events decorated with a fledgling-miss
   // quip (missLines.js, wired in engineAdapter.dispatch) and html formatted
   // from those SAME decorated events (src/browser/eventNarration.js) — so the
@@ -5502,7 +5504,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzFightLog / window.__mzFightEnd / window.__mzCombatMenu /
   // window.__mzRail are presentation-only and never stored on state
   // (serializeRun spreads S, so an S field would be saved).
-  function dispatchWithToasts(action) {
+  function dispatchWithNarration(action) {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
     const result = dispatch(action);
@@ -5600,13 +5602,13 @@ window.__mzClassicBoot = async function classicBoot() {
 
   // stepWith(action) (Phase 39, GEAR-05, Plan 05) — the action-agnostic
   // dispatch body a plain move(dir) step AND a spent useTool share:
-  // dispatchWithToasts, noteCombat, haptics, the pending-obstacle/hazard/
+  // dispatchWithNarration, noteCombat, haptics, the pending-obstacle/hazard/
   // dark computation, the pre-death beat, narration stash, paint/draw/log,
   // and the moved-event recenter. `stepNow(dir)` (below) is the thin
   // move-shaped wrapper every existing call site keeps using.
   function stepWith(action) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
-    const { state, events, html } = dispatchWithToasts(action);
+    const { state, events, html } = dispatchWithNarration(action);
     window.__mzState.set(state);
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
@@ -5951,7 +5953,7 @@ window.__mzClassicBoot = async function classicBoot() {
       const ok = window.confirm(`Abandon ${S.c.name}? They go in the graveyard for good — there is no undo.`);
       if (!ok) return;
     }
-    const { state, html } = dispatchWithToasts({ type: "abandon" });
+    const { state, html } = dispatchWithNarration({ type: "abandon" });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     showTitleScreen();
@@ -5969,14 +5971,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // effectParams}, never a `buy` closure) — buyItem/leaveStore already know
   // how to read that shape; no plain-data/closure mismatch is possible here.
   window.mzBuyItem = function buyItemFromShop(idx) {
-    const { state, html } = dispatchWithToasts({ type: "buyItem", idx });
+    const { state, html } = dispatchWithNarration({ type: "buyItem", idx });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
     window.renderEncounter();
   };
   window.mzLeaveStore = function closeStore() {
-    const { state, html } = dispatchWithToasts({ type: "leaveStore" });
+    const { state, html } = dispatchWithNarration({ type: "leaveStore" });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
@@ -5996,7 +5998,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // on accept) and renderEncounter() (the overlay dismisses itself now that pendingJoiner
   // is cleared), mirroring the buy/leave bridges' render tail exactly.
   window.mzResolveJoiner = function resolveJoinerBridge(accept) {
-    const { state, html } = dispatchWithToasts({ type: "resolveJoiner", accept: !!accept });
+    const { state, html } = dispatchWithNarration({ type: "resolveJoiner", accept: !!accept });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
@@ -6006,11 +6008,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 36 (JOIN-01) — the Company panel's DISMISS confirm routes through
   // the SAME dispatch()->applyAction() seam as mzResolveJoiner above: the
   // engine owns the roster splice and the named refusals (dismissJoiner
-  // draws zero rng); dispatchWithToasts already turns the joinerDismissed
+  // draws zero rng); dispatchWithNarration already turns the joinerDismissed
   // line into the rail's COMPANY card (dull) out of combat; paint()
   // re-runs renderPartyRoster() so the panel empties.
   window.mzDismissJoiner = function dismissJoinerBridge(i) {
-    const { state, html } = dispatchWithToasts({ type: "dismissJoiner", i: Number.isInteger(i) && i >= 0 ? i : 0 });
+    const { state, html } = dispatchWithNarration({ type: "dismissJoiner", i: Number.isInteger(i) && i >= 0 ? i : 0 });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
@@ -6028,7 +6030,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // the keep/drop chooser after a Drop frees a slot). Mirrors the buy/leave
   // bridges' render tail exactly.
   function inventoryAction(action) {
-    const result = dispatchWithToasts(action);
+    const result = dispatchWithNarration(action);
     const { state, html } = result;
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
@@ -6050,7 +6052,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 25 (FEED-02): an equip the engine REJECTS (illegal class/subclass/
   // race/Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
   // `equipRejected` event) now toasts from the LINE_FOR table (block tone,
-  // reason-specific text) via inventoryAction's own dispatchWithToasts call —
+  // reason-specific text) via inventoryAction's own dispatchWithNarration call —
   // the DR18 hand-written rejection toast is gone.
   // 260918-wy1 (jewelry-merge): the targeted jewelry swap — an optional
   // second arg names the concrete worn key to swap into; omitted, the
@@ -6099,7 +6101,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // narrate, then re-render — mirroring window.mzBuyItem/mzLeaveStore above.
   function engineCombatAction(type, extra) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
-    const { state, events, html } = dispatchWithToasts({ type, ...extra });
+    const { state, events, html } = dispatchWithNarration({ type, ...extra });
     window.__mzState.set(state);
     // Phase 36 (TGT-01/02) — settle the aim on the next living foe after
     // EVERY combat dispatch (hero blow, Joiner blow, Freeze/stone/fire/gas,
@@ -6232,14 +6234,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // monster ambush) still surfaces its own overlay via the SAME beats-
   // synthesis path window.move (engineMove) uses, not a duplicate here.
   window.mzMakeCamp = () => {
-    const { state, events, html } = dispatchWithToasts({ type: "camp" });
+    const { state, events, html } = dispatchWithNarration({ type: "camp" });
     window.__mzState.set(state);
     // Phase 31 (CMB-01): a wandering-monster ambush during camp arrives from
     // the engine already `combat.pending` — no presentation flag needed here;
     // renderEncounter's own combat.pending gate shows the roster + Fight!.
     // Phase 35 (MAP-04): camp results (rested/wentHungry/campFailed/
     // afflictionCured/armorPatched/potionDuplicated/wanderingMonster) are
-    // rail cards now — dispatchWithToasts already folded them above; no
+    // rail cards now — dispatchWithNarration already folded them above; no
     // separate "Camp" card is synthesized here any more.
     for (const line of html) window.logLine(line);
     window.paint();

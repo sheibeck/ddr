@@ -15,7 +15,7 @@
 //      with cb-log-revealable, toggles in place (no renderEncounter call);
 //   4. renderEncounter calls renderFightLog(...) and carries zero remaining
 //      Round Card artifacts;
-//   5. routing exclusivity: dispatchWithToasts has exactly one
+//   5. routing exclusivity: dispatchWithNarration has exactly one
 //      `if (wasCombat || inCombat)`, routes every folded line (refusals
 //      included) through fightLogLinesFor, and never re-checks
 //      PRIORITY.block itself (that tone lives in fightLog.js now);
@@ -70,7 +70,7 @@ function renderEncounterRegion() {
 }
 
 function dispatchRegion() {
-  return sliceBetween(CODE, "function dispatchWithToasts(action)", "window.move = function engineMove");
+  return sliceBetween(CODE, "function dispatchWithNarration(action)", "window.move = function engineMove");
 }
 
 // A per-function slice from an exact signature to the NEXT "\nfunction "
@@ -157,7 +157,7 @@ test("renderEncounter region calls renderFightLog(...) and carries zero Round Ca
 
 // ─── 5. routing exclusivity (SOURCE) ──────────────────────────────────────
 
-test("SOURCE: dispatchWithToasts routes on exactly one if (wasCombat || inCombat), never re-checks PRIORITY.block itself", () => {
+test("SOURCE: dispatchWithNarration routes on exactly one if (wasCombat || inCombat), never re-checks PRIORITY.block itself", () => {
   const region = dispatchRegion();
   const ifHits = region.match(/if \(wasCombat \|\| inCombat\)/g) || [];
   assert.equal(ifHits.length, 1, "exactly one routing if");
@@ -166,7 +166,7 @@ test("SOURCE: dispatchWithToasts routes on exactly one if (wasCombat || inCombat
   // concatenation so this pin can't itself be satisfied by a stray comment.
   const toastCall = ["window.mz", "Toast?.("].join("");
   const toastHits = region.match(new RegExp(toastCall.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
-  assert.equal(toastHits.length, 0, `expected zero ${toastCall} calls inside dispatchWithToasts, found ${toastHits.length}`);
+  assert.equal(toastHits.length, 0, `expected zero ${toastCall} calls inside dispatchWithNarration, found ${toastHits.length}`);
   const foldHits = region.match(/fightLogLinesFor\(action\.type, result\.events, ctx\)/g) || [];
   assert.equal(foldHits.length, 1, "exactly one fightLogLinesFor call");
   const appendHits = region.match(/window\.__mzFightLog = appendFightLog\(/g) || [];
@@ -177,7 +177,7 @@ test("SOURCE: dispatchWithToasts routes on exactly one if (wasCombat || inCombat
   assert.equal(endHits.length, 1, "exactly one window.__mzFightEnd write");
   const menuHits = region.match(/window\.__mzCombatMenu = null;/g) || [];
   assert.equal(menuHits.length, 1, "exactly one window.__mzCombatMenu reset");
-  assert.doesNotMatch(region, /PRIORITY\.block/, "the tone decision lives in fightLog.js, not dispatchWithToasts");
+  assert.doesNotMatch(region, /PRIORITY\.block/, "the tone decision lives in fightLog.js, not dispatchWithNarration");
 });
 
 // ─── 6. BEHAVIOUR partition: every event -> exactly one of narrative/dull ─

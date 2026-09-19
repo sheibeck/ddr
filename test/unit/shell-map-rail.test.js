@@ -6,7 +6,7 @@
 // test.js's own source-assertion pattern — this file reads the real shipped
 // source with fs.readFileSync and asserts against it directly: the #mw-rail
 // markup/CSS, the total retirement of the DR13/25.1 toast host, the
-// dispatchWithToasts routing seam into rail.js, the classic renderRail()/
+// dispatchWithNarration routing seam into rail.js, the classic renderRail()/
 // railButtons()/syncRailLive()/railPulse() trio and its key-gated rise/
 // announce/auto-clear cycle, the joiner/find/climb decision cards, the
 // GLOBAL movement lock (railLocked()), the retired Move-on card path, and
@@ -80,7 +80,7 @@ function railButtonsRegion() {
   return fnRegion("function railButtons(host, buttons)");
 }
 function dispatchRegion() {
-  return sliceBetween(CODE, "function dispatchWithToasts(action)", "window.move = function engineMove");
+  return sliceBetween(CODE, "function dispatchWithNarration(action)", "window.move = function engineMove");
 }
 function engineMoveRegion() {
   return sliceBetween(CODE, "window.move = function engineMove", "function stepNow(dir)");
@@ -184,7 +184,7 @@ test("(c) toast retirement: zero occurrences of the toast builder, the host id/c
 
 // ─── (d) routing ──────────────────────────────────────────────────────────
 
-test("(d) routing: dispatchWithToasts routes on exactly one if (wasCombat || inCombat) and folds the out-of-combat branch through rail.js uncapped, withIdx", () => {
+test("(d) routing: dispatchWithNarration routes on exactly one if (wasCombat || inCombat) and folds the out-of-combat branch through rail.js uncapped, withIdx", () => {
   const region = dispatchRegion();
   assert.equal((region.match(/if \(wasCombat \|\| inCombat\) \{/g) || []).length, 1);
   assert.match(region, /\{ limit: Infinity, withIdx: true \}/);

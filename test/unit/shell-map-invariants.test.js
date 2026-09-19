@@ -104,7 +104,7 @@ test("SC-1 (no D-pad and no toast exists anywhere): RAW carries zero of the toas
   }
 });
 
-test("SC-1: CODE carries exactly one linesForAction( call (the dispatchWithToasts seam)", () => {
+test("SC-1: CODE carries exactly one linesForAction( call (the dispatchWithNarration seam)", () => {
   assert.equal(countOf(CODE, "linesForAction("), 1);
 });
 
@@ -272,7 +272,7 @@ test("no presentation state on S: every phase global exists as an initialiser ex
 
 // ─── (g) rail-or-log partition ──────────────────────────────────────────────
 
-test("rail-or-log partition: dispatchWithToasts has exactly one 'if (wasCombat || inCombat)' branch", () => {
+test("rail-or-log partition: dispatchWithNarration has exactly one 'if (wasCombat || inCombat)' branch", () => {
   assert.equal(countOf(CODE, "if (wasCombat || inCombat) {"), 1);
 });
 

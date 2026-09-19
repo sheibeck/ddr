@@ -137,7 +137,7 @@ function runScenario(scenarioName, buildState, action) {
     const events = result.events;
 
     // the fight log's own explicit-limit request (mazeworld.html's
-    // dispatchWithToasts — 34-02) vs. linesForAction's own default call,
+    // dispatchWithNarration — 34-02) vs. linesForAction's own default call,
     // which is uncapped too (the toast host that once capped it is
     // retired). Phase 34: log line count = folded count (refusals
     // included — they are dull entries in the log now, not filtered out).

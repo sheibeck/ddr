@@ -5,13 +5,13 @@
 // — mirroring test/unit/foe-effect-chip.test.js / parley-button-mirror.test.js's
 // own source-assertion pattern — this file reads the real shipped source
 // with fs.readFileSync and asserts against it directly: the single
-// dispatchWithToasts(action) routing seam every dispatch call site funnels
+// dispatchWithNarration(action) routing seam every dispatch call site funnels
 // through, and the old per-action switch (plus its spell-name helper) stays
 // gone. A behavioural check proves the deleted DR18 hand-written
 // equip-rejection toast is replaced, not lost, by importing the real
 // linesForAction and running a real equipRejected event through it.
 //
-// Phase 32 (CMBUI-02): dispatchWithToasts routed in-combat non-refusal
+// Phase 32 (CMBUI-02): dispatchWithNarration routed in-combat non-refusal
 // lines to a Round Card, later (Phase 34, CSCR-04) to the whole-fight
 // window.__mzFightLog.
 //
@@ -23,7 +23,7 @@
 // tests that pinned the toast host's CSS/lifetime/cap contract are gone
 // with it (test/unit/shell-map-rail.test.js owns the rail's own pins). The
 // tests kept here are the ones that still describe LIVE surface: the single
-// dispatch(...)->dispatchWithToasts(...) seam, the retired legacy switch,
+// dispatch(...)->dispatchWithNarration(...) seam, the retired legacy switch,
 // the DR18 toast's real linesForAction replacement, and narrationLines.js's own
 // pure `limit` option.
 
@@ -82,17 +82,17 @@ test("the module script imports linesForAction from src/browser/narrationLines.j
   assert.match(CODE, /import \{ linesForAction \} from "\.\/src\/browser\/narrationLines\.js";/);
 });
 
-test("dispatchWithToasts(action) is defined exactly once and calls linesForAction(action.type, ...)", () => {
-  const defs = CODE.match(/function dispatchWithToasts\(action\)/g) || [];
-  assert.equal(defs.length, 1, "dispatchWithToasts must be defined exactly once");
+test("dispatchWithNarration(action) is defined exactly once and calls linesForAction(action.type, ...)", () => {
+  const defs = CODE.match(/function dispatchWithNarration\(action\)/g) || [];
+  assert.equal(defs.length, 1, "dispatchWithNarration must be defined exactly once");
   assert.match(CODE, /linesForAction\(action\.type/);
 });
 
-test("every dispatch() call site is routed through dispatchWithToasts — exactly one bare dispatch( survives (inside the helper itself)", () => {
+test("every dispatch() call site is routed through dispatchWithNarration — exactly one bare dispatch( survives (inside the helper itself)", () => {
   const bare = CODE.match(/(?<![A-Za-z_$.])dispatch\(/g) || [];
   assert.equal(bare.length, 1, `expected exactly one bare dispatch( call, found ${bare.length}`);
-  const routed = CODE.match(/dispatchWithToasts\(/g) || [];
-  assert.ok(routed.length >= 9, `expected >= 9 dispatchWithToasts( occurrences (definition + 8 call sites), found ${routed.length}`);
+  const routed = CODE.match(/dispatchWithNarration\(/g) || [];
+  assert.ok(routed.length >= 9, `expected >= 9 dispatchWithNarration( occurrences (definition + 8 call sites), found ${routed.length}`);
 });
 
 test("the old per-action switch and its spell-name helper are gone", () => {
@@ -136,7 +136,7 @@ test("Phase 35: the module imports NARRATIVE_ACTIONS on its own line and never i
   assert.ok(importLines.every((line) => !line.includes("CARD_EVENTS")), "no import line pulls CARD_EVENTS");
 });
 
-test("Phase 35: dispatchWithToasts passes ctx.narrate only for NARRATIVE_ACTIONS", () => {
+test("Phase 35: dispatchWithNarration passes ctx.narrate only for NARRATIVE_ACTIONS", () => {
   assert.match(CODE, /NARRATIVE_ACTIONS\.has\(action\.type\) \? \{ narrate: narrateEvent \} : \{\}/);
 });
 

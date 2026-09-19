@@ -193,11 +193,11 @@ test("Rail-only: the region never renders the parting line itself, and no toast 
 
 // ─── 9. Bridge shape ────────────────────────────────────────────────────────
 
-test("Bridge: window.mzDismissJoiner mirrors window.mzResolveJoiner's dispatchWithToasts shape; dismissJoiner is a NARRATIVE_ACTIONS member", () => {
+test("Bridge: window.mzDismissJoiner mirrors window.mzResolveJoiner's dispatchWithNarration shape; dismissJoiner is a NARRATIVE_ACTIONS member", () => {
   assert.equal((CODE.match(/window\.mzDismissJoiner = function dismissJoinerBridge\(/g) || []).length, 1);
   const region = dismissJoinerBridgeRegion();
-  assert.equal((region.match(/dispatchWithToasts\(\{ type: "dismissJoiner"/g) || []).length, 1);
-  const iDispatch = region.indexOf('dispatchWithToasts({ type: "dismissJoiner"');
+  assert.equal((region.match(/dispatchWithNarration\(\{ type: "dismissJoiner"/g) || []).length, 1);
+  const iDispatch = region.indexOf('dispatchWithNarration({ type: "dismissJoiner"');
   const iSet = region.indexOf("window.__mzState.set(state);");
   const iLog = region.indexOf("window.logLine(line)");
   const iPaint = region.indexOf("window.paint();");

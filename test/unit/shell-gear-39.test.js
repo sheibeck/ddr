@@ -86,7 +86,7 @@ test("stepNow(dir) is a thin wrapper over stepWith({ type: 'move', dir }); stepW
   const stepNowRegion = sliceBetween(CODE, "function stepNow(dir) {", "\n  }");
   assert.match(stepNowRegion, /stepWith\(\{ type: "move", dir \}\);/);
   const stepWithRegion = sliceBetween(CODE, "function stepWith(action) {", "function stepNow(dir) {");
-  assert.match(stepWithRegion, /dispatchWithToasts\(action\)/);
+  assert.match(stepWithRegion, /dispatchWithNarration\(action\)/);
   assert.match(stepWithRegion, /window\.__mzHasTool\(state\.c, "torch"\)/);
 });
 
