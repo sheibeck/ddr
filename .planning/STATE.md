@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 status: planning
-last_updated: "2026-09-19T04:10:26.477Z"
+last_updated: "2026-09-19T12:00:00.000Z"
 last_activity: 2026-09-19
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19 after Phase 43 — v1.5 code-complete)
+See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code started; v1.5 code-complete, UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase null
+**Current focus:** Phase 44 — Retire the Classic Engine from the Shell (not started; blocked until quick tasks 260918-w4n / 260918-wy1 / 260919-00d land on master)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 44 of 49 (Retire the Classic Engine from the Shell) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-19 — Milestone v1.6 started
+Status: Roadmap created (Phases 44–49, 19/19 requirements mapped); ready for `/gsd-plan-phase 44` once the sequencing gate opens
+Last activity: 2026-09-19 — v1.6 roadmap created (6 phases; hedges before names because NAME-02 lists `wornSlots`; docs purge as the closing sweep after modularisation; perf last with the Pixel 7)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -35,7 +35,7 @@ Last activity: 2026-09-19 — Milestone v1.6 started
 
 **Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers. Latest upload: **1.4.0, versionCode 5 (2026-09-17)** — the v1.4 combat + map screens with every DR-round fix. **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`).
 
-**Build/env:** `npm test` (1448/1448 as of v1.2 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
+**Build/env:** `npm test` (3200/3200 as of quick task 260918-vvt; 1448 at v1.2 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
 
 **Device:** Pixel 7 wireless adb (`adb-28051FDH200H0R`, 10.0.0.175:<port rotates>; rediscover via `adb mdns services`). Deploy = `adb install -r` + `am force-stop` + `monkey` relaunch (install alone doesn't reload the WebView). A Play-installed build and a local build have different signers — uninstall one before installing the other (Preferences data is lost on uninstall). Screenshots via screencap usually hit the lock screen — the user reviews and reports.
 
@@ -47,12 +47,15 @@ Last activity: 2026-09-19 — Milestone v1.6 started
 
 **v1.2 phase order (ROADMAP.md):** 22 Class-Aware Harness & BEFORE Matrix (HARN-01..04, PLAY-01 — must land first; the BEFORE matrix is impossible to recover later without git archaeology) → 23 Casters Can Act (IDENT-01..04, FID-06 — Wizard/Summoner/Illusionist "cannot act" fixes + guaranteed attack spell) → 24 Every Sub-class and Race: One Good, One Bad (IDENT-05..10, FID-07; `--research-phase` recommended) → 25 Nothing Happens Silently / Feature Feedback (FEED-01..06) → 26 Mass Playtest & Class-Pass Ledger (PLAY-02/03) → 27 Delve-to-Death Retune (TUNE-05..07; `--research-phase` recommended; TUNE-05 target band + TUNE-07 human DR round are both `/gsd-discuss-phase` candidates before planning).
 
+**v1.6 phase order (ROADMAP.md):** 44 Retire the Classic Engine from the Shell (DEAD-01..03 — shell + tests only, zero engine bytes, −2k lines) → 45 Collapse the Phase 37 Hedges (HEDGE-01..03 — the ONLY fixture-moving phase: `wornSlots` gone, migration unconditional, moved fixtures measured + declared + regenerated) → 46 Honest Names, Dead Exports & the Tutorial Decision (NAME-01..02, DEAD-04..05 — `toasts.js` → `narrationLines.js`, `winGame`/`state.won` removed, `tutorial.js` decided; `/gsd-discuss-phase` recommended for DEAD-05) → 47 Shell Modularisation (SHELL-01..04 — `gearTab.js` / `heroTab.js` / `storeScreen.js`, shell < 5,000 lines, `__mz*` bridge registry; `/gsd-discuss-phase` recommended for module boundaries) → 48 Stale Docs, Comments & Test Names Purge (DOCS-01..03 — closing sweep over the final layout) → 49 Measure-First Perf Pass (PERF-01..02 — needs the Pixel 7; closes the milestone with the debug APK). Gates: engine behaviour identical everywhere, only Phase 45's declared fixtures move; Phases 44–48 start only after quick tasks 260918-vm3/vvt/w4n/wy1 + 260919-00d have landed (vm3 + vvt landed 2026-09-18; w4n/wy1/00d in flight with uncommitted engine edits as of roadmap creation).
+
 **Working method:** GSD phases (autonomous runs) for systems work; on-device DR rounds (small user-directed batches, each with a `DR*-SUMMARY.md`) for UX. Commit per batch — do not let the tree sit uncommitted for days. Remote: `origin` = https://github.com/sheibeck/ddr (public). Claude pushes `master` + release tags at milestone close (user authorization 2026-09-17); if the auto-mode classifier blocks it, retry once, then hand the user `! git push`.
 
 ## Accumulated Context
 
 ### Blockers/Concerns (open)
 
+- [v1.6 sequencing gate]: Phase 44 must not start until quick tasks 260918-w4n (use-activated magic items + staff-to-bag), 260918-wy1 (two jewelry slots) and 260919-00d (Cloak of Ether wall-walking) have landed on master — each has a PLAN but no SUMMARY and their `engine/` + `test/` edits sit uncommitted in the working tree (2026-09-19). A dead-code purge mid-quick-task would collide in `mazeworld.html` and `engine/`.
 - [Balance]: Phase 21 (v1.1) landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until player power moves. This retune now lands as **Phase 27 of v1.2**, after the identity pass (Phases 23–24) and mass playtest (Phase 26) give it a corrected yardstick. Ledger: `docs/DIFFICULTY-RETUNE.md`.
 - [Play launch]: target-API level, Data Safety fields, and IARC questions shift yearly — re-verify against current Play Console Help right before the production phase. Repo-side: a dependency/SDK audit proving "no data collected" is still owed.
 - [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
@@ -76,7 +79,7 @@ Last activity: 2026-09-19 — Milestone v1.6 started
 ### Pending Todos
 
 - (dropped 2026-09-17, user) Play Developer API upload — the user uploads the AAB manually in Play Console when needed.
-- 2026-09-17 — Stand up the "Shell Debt & Dead Code" cleanup milestone after v1.5 (`.planning/proposed-milestone-shell-cleanup.md`; todo `todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md`)
+- ~~2026-09-17 — Stand up the "Shell Debt & Dead Code" cleanup milestone after v1.5~~ DONE 2026-09-19: stood up as v1.6 (Phases 44–49 in ROADMAP.md; `todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md` can be moved to done)
 
 ### Roadmap Evolution
 
@@ -109,13 +112,18 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-18T04:41:25.590Z
-Stopped at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
+Last session: 2026-09-19
+Stopped at: v1.6 roadmap created (ROADMAP.md Phases 44–49, REQUIREMENTS.md traceability 19/19, STATE.md switched) — nothing planned yet
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Land quick tasks 260918-w4n, 260918-wy1 and 260919-00d (finish, SUMMARY, commit) — the v1.6 sequencing gate.
+- Then `/gsd-plan-phase 44` (no discuss needed — the deletion list is verified).
+- Before Phase 46: `/gsd-discuss-phase 46` for the `tutorial.js` decision (delete + rebuild for UX-06 vs park with a header) and the final module name.
+- Before Phase 47: `/gsd-discuss-phase 47` for the module boundaries (mount contract, what stays in `viewModels.js`, bridge registry as doc vs `bridge.js`).
+- Phase 49 needs the Pixel 7 in hand; build the milestone-close debug APK after Phase 48 and measure against it.
+- The v1.5 140-check UAT batch (`docs/UAT-v1.5.md`) runs on its own track against a post-quick-task debug APK — not a v1.6 phase.
 
 ## Performance Metrics
 

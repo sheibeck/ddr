@@ -68,35 +68,35 @@ Deferred — tracked, not in this roadmap.
 
 ## Traceability
 
-Filled during roadmap creation.
+Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges → 46 names/dead exports → 47 modularisation → 48 docs purge → 49 perf. The hedge collapse precedes the names phase because NAME-02 lists `wornSlots`, which only HEDGE-01 removes; the docs purge runs after modularisation so the grep list covers the final layout.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEAD-01 | — | Pending |
-| DEAD-02 | — | Pending |
-| DEAD-03 | — | Pending |
-| DEAD-04 | — | Pending |
-| DEAD-05 | — | Pending |
-| NAME-01 | — | Pending |
-| NAME-02 | — | Pending |
-| HEDGE-01 | — | Pending |
-| HEDGE-02 | — | Pending |
-| HEDGE-03 | — | Pending |
-| DOCS-01 | — | Pending |
-| DOCS-02 | — | Pending |
-| DOCS-03 | — | Pending |
-| SHELL-01 | — | Pending |
-| SHELL-02 | — | Pending |
-| SHELL-03 | — | Pending |
-| SHELL-04 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
+| DEAD-01 | Phase 44 | Pending |
+| DEAD-02 | Phase 44 | Pending |
+| DEAD-03 | Phase 44 | Pending |
+| DEAD-04 | Phase 46 | Pending |
+| DEAD-05 | Phase 46 | Pending |
+| NAME-01 | Phase 46 | Pending |
+| NAME-02 | Phase 46 | Pending |
+| HEDGE-01 | Phase 45 | Pending |
+| HEDGE-02 | Phase 45 | Pending |
+| HEDGE-03 | Phase 45 | Pending |
+| DOCS-01 | Phase 48 | Pending |
+| DOCS-02 | Phase 48 | Pending |
+| DOCS-03 | Phase 48 | Pending |
+| SHELL-01 | Phase 47 | Pending |
+| SHELL-02 | Phase 47 | Pending |
+| SHELL-03 | Phase 47 | Pending |
+| SHELL-04 | Phase 47 | Pending |
+| PERF-01 | Phase 49 | Pending |
+| PERF-02 | Phase 49 | Pending |
 
 **Coverage:**
 - v1.6 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19 ⚠️
+- Mapped to phases: 19
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-19*
-*Last updated: 2026-09-19 at milestone start*
+*Last updated: 2026-09-19 — traceability filled at roadmap creation (Phases 44–49)*
