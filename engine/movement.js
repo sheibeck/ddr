@@ -27,14 +27,14 @@
 
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost, inStone } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged, won } from "./events.js";
-import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS } from "../content/index.js";
+import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS, ACTIVATION_OF } from "../content/index.js";
 import { tickSquares } from "./effects.js";
 import { narrateTimerTransitions, toolIndex } from "./items.js";
 import { isDeadEnd, checkTerrainPhobias, noteHeightsAttempt, resetFloorPhobiaRegions } from "./phobias.js";
@@ -88,6 +88,33 @@ const TRAPPED_PHOBIA_PANIC = 4;
 /** maxCharges(c) — a Magic User's spell charges. Ports mazeworld.html line 914. */
 export const maxCharges = (c) => 2 * c.level + 2 + eff(c, "charges");
 
+/**
+ * resolveEtherEnd(state, rng, events, now) — 260919-00d (user ruling
+ * 2026-09-19: "if your movement ends when you are in a wall, you die"): the
+ * ONE home of the entombment rule. A no-op (returns `events` unchanged)
+ * unless the party's CURRENT cell is solid rock (`inStone(state)`) or the
+ * state is already dead; otherwise pushes an entombed event and calls
+ * the same permadeath terminator every other death cause funnels through —
+ * `die(state, "entombed", null, rng, events, now)` (mirrors starve/fall/
+ * gorge exactly: forfeits pending loot, fills `state.deathNote` from
+ * `CAUSE_TEXT.entombed`, draws the epitaph from `EPITAPHS.entombed` via the
+ * injected rng's own pick, pushes `died`).
+ *
+ * Today the ONLY caller is `move`'s per-step `c.timers` tick block below,
+ * the instant an `ether`-kind item effect transitions out of its "effect"
+ * phase — but this is deliberately its own exported function, not inlined
+ * there: any FUTURE early-end path (a dispel, the cloak destroyed, a rule
+ * that clears `c.timers` directly) must call THIS function rather than
+ * re-implementing the in-stone check, so the entombment rule never drifts
+ * out of sync across two call sites.
+ */
+export function resolveEtherEnd(state, rng, events = [], now = Date.now) {
+  if (state.dead || !inStone(state)) return events;
+  events.push({ type: "entombed" });
+  die(state, "entombed", null, rng, events, now);
+  return events;
+}
+
 /* ---------------- movement ---------------- */
 
 /**
@@ -114,7 +141,21 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   const [dx, dy] = DIRV[dir];
   const nx = f.px + dx;
   const ny = f.py + dy;
-  if (!f.g[ny] || !f.g[ny][nx] || f.g[ny][nx].wall) return events;
+  if (!f.g[ny] || !f.g[ny][nx]) return events;
+  // DELIBERATE RULES CHANGE (260919-00d, user ruling 2026-09-19 — "the
+  // Cloak of Ether should literally let you traverse through the stone
+  // walls... you are not limited to the paths and travel on any squares"):
+  // a wall destination (the 21x21 border ring included) is refused ONLY
+  // when no `ether` item effect is currently live (itemEffectActive reads
+  // ONLY a running `item:<name>` c.timers record — a bagged/worn-but-unused
+  // Cloak of Ether is never live). Every fixture (none carries a `timers`
+  // key, none ever calls `useItem`) takes the exact same byte-identical
+  // refusal as before this plan; the accepted wall step below draws
+  // nothing (zero rng), so parity/determinism are unaffected for everyone
+  // else. One-way doors (below) are unaffected either way — ether does not
+  // override a door, and a wall cell has `feat: null` so the approach check
+  // never fires there.
+  if (f.g[ny][nx].wall && !itemEffectActive(state.c, "ether")) return events;
 
   const here = f.g[f.py][f.px];
   const there = f.g[ny][nx];
@@ -426,7 +467,23 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       const cells = refogSpellSeen(f);
       events.push({ type: "revealFaded", cells });
     }
+    // 260919-00d (user ruling 2026-09-19): an `ether`-kind item effect
+    // ending on THIS step's own tick — kind-keyed (never name-keyed,
+    // mirrors narrateTimerTransitions' own ACTIVATION_OF lookup, so a
+    // future second ether-granting item is covered for free) — hands off to
+    // resolveEtherEnd, the ONE place that decides whether ending inside
+    // rock is fatal. `itemEffectFaded` has already been pushed above by
+    // narrateTimerTransitions; entombed/died (if any) are pushed after it.
+    const etherEnded = trans.some(
+      (t) => t.from === "effect" && t.id.startsWith("item:") && ACTIVATION_OF[t.id.slice("item:".length)]?.kind === "ether",
+    );
+    if (etherEnded) resolveEtherEnd(state, rng, events, now);
   }
+  // Mirrors the fall/gorge death path's own early return immediately after
+  // the hazard that could have killed — the spell-charge recovery, newDay
+  // and feature dispatch below must never run against a state die() has
+  // already finalized (state.dead, wp 0, combat cleared).
+  if (state.dead) return events;
 
   // the book recharges a Magic User every hundred squares; a solo caster
   // needs it oftener.
@@ -451,6 +508,12 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
 
   const cell = f.g[ny][nx];
   if (state.combat) return events; // a wandering monster already found you (01-08)
+  // 260919-00d: nothing is ever placed in rock — genFloor only scatters
+  // features onto carved (non-wall) cells, so a wall cell's `feat` is
+  // always null anyway; this gate STATES the rule explicitly (rather than
+  // leaving it to that scatter) since a wall cell is now reachable at all,
+  // and only while ethereal.
+  if (cell.wall) return events;
   if (cell.feat === "dot") {
     cell.feat = null;
     encounterDot(state, rng, events);
@@ -700,7 +763,12 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   const wakeOn = c.sub === "Bard" ? 2 : 1;
   let woke = 0;
   for (let h = 0; h < 8; h++) if (rng.d(20) <= wakeOn) woke++;
-  if (woke) {
+  // 260919-00d (user ruling 2026-09-19): nothing wanders through solid
+  // stone — reachable only while ethereal (a camp, or a 100th step taken,
+  // inside rock). The eight d20 draws above still happen in the same order
+  // either way (the day's own clock; rng cursor unchanged) — only the
+  // resulting forced-random encounter is skipped.
+  if (woke && !inStone(state)) {
     events.push({ type: "wanderingMonster", hours: woke, bard: c.sub === "Bard" });
     startCombat(state, true, null, rng, events);
   }

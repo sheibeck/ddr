@@ -794,6 +794,11 @@ test("newDay: a fed character heals, and a wandering-monster hit starts a forced
   // does not also need to resolve a foeTurn). ENC_TYPES/roster picks use
   // fakeRng's default pick => arr[0] ("Beasts" -> level-1 roster's first
   // entry, "Bat/Rat").
+  // 260919-00d: a wandering monster no longer finds a party standing inside
+  // rock — open the party's own cell so this pre-existing test still means
+  // "asleep in a corridor", not "asleep entombed" (the fixedState() default
+  // sits on wallGrid's unopened (5,5)).
+  open(state.floor.g, 5, 5);
   const rng = fakeRng([5, 1, 2, 3, 4, 5, 6, 7, 8, 3, 15, 10]);
   const events = newDay(state, false, rng, []);
   assert.equal(state.day, 2);

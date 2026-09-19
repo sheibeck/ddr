@@ -793,6 +793,21 @@ export function inDark(state) {
 }
 
 /**
+ * inStone(state) — 260919-00d (Cloak of Ether wall-walking): is the party's
+ * CURRENT cell solid rock (`g[py][px].wall === true`)? Mirrors `inDark`'s
+ * own pure cell read exactly. The ONE "is the party inside rock" read every
+ * consumer shares: `engine/movement.js#move`'s feature-dispatch gate and
+ * `newDay`'s wandering-monster skip, `resolveEtherEnd` (this module's own
+ * sibling in engine/movement.js), and the shell's chip-tone / hold-inspect
+ * bridge (`window.__mzEther`). False for a missing `state.floor`/cell (never
+ * throws on a tampered/incomplete state). Pure read, no rng, no mutation.
+ */
+export function inStone(state) {
+  const f = state && state.floor;
+  return !!(f && f.g[f.py] && f.g[f.py][f.px] && f.g[f.py][f.px].wall);
+}
+
+/**
  * revealRadius(state) — the fog-of-war reveal radius for the player's current
  * position: 1 on a dark tile without Night Vision, 2 otherwise, plus any
  * `sight` effect (e.g. the Amulet of Light, `eff: { sight: 1 }`). Ports

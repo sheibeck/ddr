@@ -140,6 +140,16 @@ export const EPITAPHS = {
     "No trap. No monster. No fall. Just a decision, made on floor {floor}.",
     "The Game Master would like it on record that {name} was still perfectly capable of dying properly.",
   ],
+  // 260919-00d (user ruling 2026-09-19: "if your movement ends when you are
+  // in a wall, you die"): the Cloak of Ether's wall-walk window closing
+  // while the party stands inside solid rock — a distinct, non-combat,
+  // family-friendly cause (engine/movement.js#resolveEtherEnd).
+  entombed: [
+    "Became a permanent architectural feature.",
+    "The cloak wore off. The wall did not.",
+    "Walked through walls for a living. Retired inside one, on floor {floor}.",
+    "{name} is now load-bearing. The dungeon thanks {name} for the support.",
+  ],
 };
 
 // Death-note templates (mazeworld.html's CAUSE_TEXT, formerly functions).
@@ -163,6 +173,8 @@ export const CAUSE_TEXT = {
   // Device-review Pass B1 item 3: voluntary abandonment, distinct from every
   // combat/hazard cause above — nobody and nothing killed them.
   abandon: "abandoned mid-delve by their own player",
+  // 260919-00d: the Cloak of Ether's window ending inside solid rock.
+  entombed: "became a permanent architectural feature",
 };
 
 // Per-cause list of {placeholder} token names CAUSE_TEXT[cause] requires.
@@ -181,4 +193,5 @@ export const CAUSE_TEXT_TOKENS = {
   insanity: [],
   poison: [],
   abandon: [],
+  entombed: [],
 };

@@ -45,6 +45,15 @@
 // -> 20+80. See docs/GEAR-BALANCE.md's "Item activation model (GEAR-02)"
 // section for the full numbers ledger.
 //
+// 260919-00d update (user ruling 2026-09-19, "walk through walls... limit
+// it to 10 squares of movement"): the Cloak of Ether's effect window
+// shrinks 20 -> 10 squares; `cd` stays 80 (the user's own instruction —
+// "cooldown stays 80 unless canon text says otherwise"). 10 + 80 = 90,
+// still inside the once-a-day rule (<= 100); `every: 80`/`txt` on the row
+// below are UNTOUCHED, so the exported CLOAKS row and every rolled item
+// stay byte-identical (see the row's own comment below for the parity
+// argument).
+//
 // USE-ACTIVATED ONLY (user ruling 2026-09-18, quick 260918-w4n): "Items that
 // are equipable must be equipped to be used. Items that are not equipable
 // can be used from the bag." Every JEWELRY/CLOAKS/STAVES row now carries an
@@ -197,9 +206,17 @@ const CLOAKS_ROWS = [
   {
     // Once-a-day rule: 20 effect + 100 cd -> 20 effect + 80 cd (still "once
     // every 100 squares" total cycle — txt stays true unedited).
+    // 260919-00d (user ruling 2026-09-19): the wall-walk window is now 10
+    // squares (`effect` 20 -> 10), `cd` stays 80 (act.cd falls back to this
+    // row's own `every: 80`, unchanged) — 10 + 80 = 90 <= 100. `every`,
+    // `use` and `txt` are ALL left byte-identical (the row's exported shape
+    // — the frozen economy fixture's DECLARED after.items Cloak of Ether
+    // object — never moves); `txt`'s "once every 100 squares" is now
+    // slightly generous (usable every 90) but stays true, and the chip/toast
+    // state the exact numbers.
     n: "Cloak of Ether", slot: "cloak", eff: {}, use: "ether", every: 80,
     txt: "walk through walls, once every 100 squares",
-    act: { kind: "ether", effect: 20 },
+    act: { kind: "ether", effect: 10 },
   },
 ];
 
