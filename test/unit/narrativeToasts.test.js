@@ -113,12 +113,14 @@ test("toastLifetime: the DFB-02 boundary table, integer output, clamped visible"
 
 // ─── ctx.narrate hook ─────────────────────────────────────────────────────
 
+// Phase 43 (CLAR-01): cause-first rewrite — trapSprung now leads with
+// "Trap: " and states the cost as "−N hp." (see docs/CLARITY.md).
 test("ctx.narrate: on a narrative action a direct-mapped toast carries the Oracle sentence; without it the table text is unchanged", () => {
   const withNarrate = toastsForAction("move", [{ type: "trapSprung", name: "Pit trap", dmg: 5 }], { narrate: narrateEvent });
   const withoutNarrate = toastsForAction("move", [{ type: "trapSprung", name: "Pit trap", dmg: 5 }], {});
 
-  assert.equal(withNarrate[0].text, "Pit trap finds you first.");
-  assert.equal(withoutNarrate[0].text, "Pit trap (5).");
+  assert.equal(withNarrate[0].text, "Trap: Pit trap finds you first. −5 hp.");
+  assert.equal(withoutNarrate[0].text, "Trap: Pit trap (−5 hp).");
   assert.notEqual(withNarrate[0].text, withoutNarrate[0].text);
   assert.equal(withNarrate[0].tone, withoutNarrate[0].tone);
   assert.equal(withNarrate[0].priority, withoutNarrate[0].priority);
@@ -176,7 +178,8 @@ test("adjacency: a move carrying floorChanged AND a trap yields the trap toast o
     { narrate: narrateEvent },
   );
   assert.equal(out.length, 1);
-  assert.equal(out[0].text, "Pit trap finds you first.");
+  // Phase 43 (CLAR-01): cause-first rewrite — see docs/CLARITY.md.
+  assert.equal(out[0].text, "Trap: Pit trap finds you first. −5 hp.");
   assert.equal(CARD_EVENTS.has("floorChanged"), true);
 });
 

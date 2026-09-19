@@ -167,6 +167,12 @@ const BRANCH_TOGGLES = [
   // covers the poison side), Lesser Summon's `lesser` wording, and
   // `weakened`'s fallback wording when no `rounds` payload is present.
   { by: "ice" }, { lesser: true }, { rounds: 0 },
+  // Phase 43 (CLAR-01): the nine additive cause-payload keys' own
+  // interpolated values, plus lootForfeited's `died` branch and toolUsed's
+  // two tool names — every ternary/default this plan's rewrite added.
+  { reason: "died" }, { phobia: "Being trapped" }, { penalty: 2 },
+  { cost: 25 }, { fee: 25 }, { sub: "Apprentice" },
+  { tool: "ladder" }, { tool: "rope" },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

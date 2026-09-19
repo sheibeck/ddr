@@ -44,13 +44,15 @@ test("TOAST_FOR.lootLeft: names the item", () => {
   assert.ok(bare.text.length > 0);
 });
 
+// Phase 43 (CLAR-01): cause-first rewrite — "Fled: ..." / "Dead: ..." lead
+// with the cause, matching docs/CLARITY.md's cost-event inventory row.
 test("TOAST_FOR.lootForfeited: lists every item name, distinct wording for fled vs died", () => {
   const fled = TOAST_FOR.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "fled" });
-  assert.equal(fled.text, "Left on the floor in your hurry: A, B.");
+  assert.equal(fled.text, "Fled: A, B stay behind.");
   assert.equal(fled.tone, "miss");
 
   const died = TOAST_FOR.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "died" });
-  assert.equal(died.text, "Left where they fell: A, B.");
+  assert.equal(died.text, "Dead: A, B stay where they fell.");
 
   const bare = TOAST_FOR.lootForfeited({ type: "lootForfeited" });
   assert.ok(bare.text.length > 0);
@@ -70,10 +72,12 @@ test("EVENT_NARRATION.lootTaken/lootLeft: non-empty from a bare call, name the i
   assert.match(EVENT_NARRATION.lootLeft({ type: "lootLeft", item: { n: "X" } }), /X/);
 });
 
+// Phase 43 (CLAR-01): cause-first rewrite — the fled line now leads with
+// "Fled: ..." (see docs/CLARITY.md); the died clause is unchanged.
 test("EVENT_NARRATION.lootForfeited: lists every item name; distinct clauses for fled vs died", () => {
   const fled = EVENT_NARRATION.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "fled" });
   assert.match(fled, /A, B/);
-  assert.match(fled, /not to be on the floor yourself/);
+  assert.match(fled, /^<span class="miss">Fled: /);
 
   const died = EVENT_NARRATION.lootForfeited({ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "died" });
   assert.match(died, /A, B/);

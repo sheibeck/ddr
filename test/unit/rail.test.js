@@ -135,8 +135,16 @@ test("RAIL_DIRECT is a strict subset of ORACLE_ONLY and disjoint from TOAST_FOR'
 
 // ─── Test 6: rollLineFor ────────────────────────────────────────────────────
 
+// Phase 43 (CLAR-01): trapSprung's cost now renders OUTSIDE any roll span
+// (cause-first rewrite, see docs/CLARITY.md) — it no longer carries dice, so
+// rollLineFor must yield null for it; `struck` (a genuine dice roll) takes
+// over as the roll-span example.
 test("rollLineFor: narration roll span first, else numeric event.roll(+need)(+hurt), else null — hurt alone never fabricates", () => {
-  assert.equal(rollLineFor({ type: "trapSprung", name: "Pit", dmg: 4 }, narrateEvent), "Pit finds you first. 4 hp.");
+  assert.equal(rollLineFor({ type: "trapSprung", name: "Pit", dmg: 4 }, narrateEvent), null);
+  assert.equal(
+    rollLineFor({ type: "struck", roll: 4, need: 5, target: "Rat", dmg: 3 }, narrateEvent),
+    "4 vs 5. You hit Rat for 3 hp."
+  );
   assert.equal(rollLineFor({ type: "fellClimbing", hurt: 3 }, narrateEvent), null);
   assert.equal(rollLineFor({ type: "fellClimbing", hurt: 3, roll: 7, need: 4 }, () => ""), "roll 7 · 4 to clear · −3 hp");
   assert.equal(rollLineFor({ type: "x", roll: 12 }, () => ""), "roll 12");
@@ -159,7 +167,9 @@ test("railCardFor: a trap + level-up move dispatch folds to one card, trap wins 
   assert.equal(card.lines.length, 2);
   assert.match(card.lines[0].text, /skill level/i, "leveled has the higher idx — shows first (newest-first)");
   assert.match(card.lines[1].text, /pit/i);
-  assert.ok(card.lines[1].roll, "the trap line carries its roll");
+  // Phase 43 (CLAR-01): trapSprung's cost now renders outside any roll span
+  // (cause-first rewrite) — the trap line no longer carries dice.
+  assert.equal(card.lines[1].roll, null, "the trap line no longer carries a roll span");
   assert.equal(card.lines[0].roll, null, "the leveled line has no roll span");
 });
 

@@ -941,12 +941,18 @@ export const TOAST_FOR = {
   flownOver: () => ({ text: "You simply fly over it.", tone: "hit", priority: PRIORITY.other }),
   phasedThrough: () => ({ text: "You step through it like a rumour of a wall.", tone: "hit", priority: PRIORITY.other }),
   // Phase 41 (TERR-02): entering a water cell (once per wade, not per step).
-  waded: () => ({ text: "Wading. Twice as long, and it smells worse.", tone: "beat", priority: PRIORITY.other }),
-  fellClimbing: (e) => ({ text: `You fall (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
-  fellInGorge: (e) => ({ text: `Short — the crevice introduces itself (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
-  heightsFear: () => ({ text: "Your stomach reaches the ground first.", tone: "hurt", priority: PRIORITY.other }),
-  waterFear: () => ({ text: "Something down there may be wet.", tone: "hurt", priority: PRIORITY.other }),
-  trappedPanic: (e) => ({ text: `Four walls, one used door (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  waded: (e) => ({ text: `Water: ${e?.cost ?? 2} squares a step.`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  fellClimbing: (e) => ({ text: `Fall: the wall won (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  fellInGorge: (e) => ({ text: `Fall: short of the far side (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  heightsFear: (e) => ({ text: `Heights: +${e?.penalty ?? 0} on the roll.`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  waterFear: (e) => ({ text: `Bodies of water: +${e?.penalty ?? 0} on the roll.`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  trappedPanic: (e) => ({ text: `${e?.phobia ?? "Being trapped"}: four walls, one used door (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 41 (TERR-04/05): a fresh terrain-phobia region entry — the same
   // headline sentence eventNarration.js's phobiaTriggered uses, minus the
   // trailing "It will show in the next fight." clause (too long for a toast).
@@ -1208,7 +1214,8 @@ export const TOAST_FOR = {
       ? { text: `${e?.name ?? "It"} bolts ${e.member} (${e?.dmg ?? 0})${suffix}`, tone: "hurt", priority: PRIORITY.feature }
       : { text: `${e?.name ?? "It"} bolts you (${e?.dmg ?? 0})${suffix}`, tone: "hurt", priority: PRIORITY.them };
   },
-  foeDrained: (e) => ({ text: `${e?.name ?? "It"} drains you (+${e?.stolen ?? 0} to it).`, tone: "hurt", priority: PRIORITY.them }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  foeDrained: (e) => ({ text: `${e?.name ?? "It"} drains you (−${e?.stolen ?? 0} hp).`, tone: "hurt", priority: PRIORITY.them }),
   foeDebuffed: (e) => ({ text: `${e?.name ?? "It"}: you are ${e?.kind ?? "afflicted"} (${e?.rounds ?? "?"}).`, tone: "hurt", priority: PRIORITY.them }),
   foeHealed: (e) => ({ text: `${e?.name ?? "It"} heals (+${e?.amount ?? 0}).`, tone: "dodge", priority: PRIORITY.them }),
   foeSummoned: (e) => ({
@@ -1303,13 +1310,15 @@ export const TOAST_FOR = {
     return block(map[e?.reason] ?? "Not now.");
   },
   spellBackfired: (e) => ({ text: `${e?.spell ?? "The spell"} goes wrong.`, tone: "hurt", priority: PRIORITY.you }),
-  backfireSelfDamage: (e) => ({ text: `It costs you ${e?.amount ?? 0} hp.`, tone: "hurt", priority: PRIORITY.you }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  backfireSelfDamage: (e) => ({ text: `Backfire: ${e?.spell ?? "The spell"} (−${e?.amount ?? 0} hp).`, tone: "hurt", priority: PRIORITY.you }),
   // Phase 25 (25-03): no trailing period — matches the aggregate-format
   // convention (struckByFoe/foeMissed/struck etc. carry none either) so a
   // resisted-spell toast reads consistently with the rest of the pipeline.
   spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.spell ?? "it"}`, tone: "miss", priority: PRIORITY.you }),
   resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist.`, tone: "hit", priority: PRIORITY.you }),
-  summonBackfired: (e) => ({ text: `The summoning costs you ${e?.amount ?? 0} hp.`, tone: "hurt", priority: PRIORITY.you }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  summonBackfired: (e) => ({ text: `Summoning: ${e?.spell ?? "The spell"} turned on you (−${e?.amount ?? 0} hp).`, tone: "hurt", priority: PRIORITY.you }),
   // Phase 40 (SPELL-04): `e?.lesser` (Lesser Summon) swaps the short form.
   allySummoned: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} answers the call, sort of.` : `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
   allyPending: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} is coming, in a small way.` : `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
@@ -1328,7 +1337,8 @@ export const TOAST_FOR = {
   // (Phase 38's combat.js hooks section, below) narrates every round after.
   iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"} (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   earthquake: (e) => ({ text: `The floor heaves (${e?.amount ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
-  earthquakeSelfDamage: (e) => ({ text: `The shaking costs you ${e?.amount ?? 0} hp too.`, tone: "hurt", priority: PRIORITY.you }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  earthquakeSelfDamage: (e) => ({ text: `Earthquake: −${e?.amount ?? 0} hp, yours too.`, tone: "hurt", priority: PRIORITY.you }),
   vaporRolled: (e) => ({ text: `Noxious vapor (${e?.roll ?? "?"}).`, tone: "magic", priority: PRIORITY.other }),
   volley: (e) => ({ text: `${e?.rolls ?? 0} shots, ${e?.totalDamage ?? 0} total.`, tone: "magic", priority: PRIORITY.you }),
   petrified: (e) => ({ text: `${e?.target ?? "It"} turns to stone.`, tone: "magic", priority: PRIORITY.you }),
@@ -1351,8 +1361,10 @@ export const TOAST_FOR = {
   insaneStruckAlly: (e) => ({ text: `The maddened thing turns on ${e?.target ?? "an ally"} (${e?.dmg ?? 0}).`, tone: "hurt", priority: PRIORITY.you }),
   insaneFled: (e) => ({ text: `${e?.target ?? "It"} bolts, mad with fear.`, tone: "magic", priority: PRIORITY.you }),
   healed: (e) => ({ text: `+${e?.amount ?? 0} hp${e?.spell ? ` (${e.spell})` : ""}.`, tone: "hit", priority: PRIORITY.you }),
-  deathSpellTooWeak: () => block("You are too weak yourself to cast it."),
-  deathCast: () => ({ text: "You spend 25 hp calling on Death.", tone: "hurt", priority: PRIORITY.you }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  deathSpellTooWeak: (e) => block(`Death: ${e?.fee ?? 25} hp fee. You cannot pay it and live.`),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  deathCast: (e) => ({ text: `Death: its fee (−${e?.cost ?? 25} hp).`, tone: "hurt", priority: PRIORITY.you }),
   dozed: (e) => ({ text: `${e?.target ?? "It"} dozes off (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   nothingToThrowAt: () => block("Nothing here to throw it at."),
   spellThrown: (e) => ({ text: `${e?.spell ?? "It"} at ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.you }),
@@ -1404,7 +1416,8 @@ export const TOAST_FOR = {
     return { text, tone, priority: PRIORITY.feature };
   },
   buyFailed: (e) => block(`Short ${e?.short ?? 0} wilmst.`),
-  bought: (e) => ({ text: `Bought: ${e?.item ?? "something"} (${e?.cost ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  bought: (e) => ({ text: `Bought: ${e?.item ?? "something"} (−${e?.cost ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
   rationsBought: (e) => ({ text: `Stocked up: +${e?.amount ?? 1} rations.`, tone: "hit", priority: PRIORITY.other }),
   itemSold: (e) => ({ text: `Sold: ${e?.item?.n ?? "something"} (${e?.price ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
 
@@ -1419,8 +1432,10 @@ export const TOAST_FOR = {
   trapAvoided: (e) => ({ text: `You clock it early (${e?.roll ?? "?"} vs ${e?.need ?? "?"}).`, tone: "hit", priority: PRIORITY.other }),
   trapDisarmed: () => ({ text: "Pilfer: trap disarmed.", tone: "hit", priority: PRIORITY.feature }),
   trapDoubled: () => ({ text: "Cat Burglar: the trap hits twice as hard.", tone: "hurt", priority: PRIORITY.feature }),
-  trapSprung: (e) => ({ text: `${e?.name ?? "A trap"} (${e?.dmg ?? 0}).`, tone: "hurt", priority: PRIORITY.them }),
-  trapPoisoned: () => ({ text: "The trap leaves something behind.", tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  trapSprung: (e) => ({ text: `Trap: ${e?.name ?? "A trap"} (−${e?.dmg ?? 0} hp).`, tone: "hurt", priority: PRIORITY.them }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  trapPoisoned: () => ({ text: "Trap: poisoned.", tone: "hurt", priority: PRIORITY.other }),
   chestOpened: (e) => ({
     text: e?.reason === "pilfer" ? "Pilfer: box open, no lock roll." : "The box gives up its secrets.",
     tone: "hit",
@@ -1432,7 +1447,8 @@ export const TOAST_FOR = {
   foodFound: (e) => ({ text: `${e?.name ?? "Food"} (+${e?.wp ?? 0} hp).`, tone: "hit", priority: PRIORITY.other }),
   grimoireLearned: (e) => ({ text: `New spells: ${(e?.spells ?? []).join(", ") || "nothing new"}.`, tone: "hit", priority: PRIORITY.other }),
   faerieBoon: (e) => ({ text: `+${e?.amount ?? 0} base hp.`, tone: "hit", priority: PRIORITY.other }),
-  faerieBane: (e) => ({ text: `−${e?.amount ?? 0} base hp.`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  faerieBane: (e) => ({ text: `Faerie: −${e?.amount ?? 0} base hp.`, tone: "hurt", priority: PRIORITY.other }),
   joinerJoined: (e) => ({ text: `${e?.name ?? "Someone"} falls in beside you.`, tone: "hit", priority: PRIORITY.feature }),
   // Phase 25.1 (DFB-04): fallback/coverage table text — on the resolveJoiner
   // action the narrative ctx (NARRATIVE_ACTIONS) replaces this with the
@@ -1440,7 +1456,8 @@ export const TOAST_FOR = {
   joinerLeft: (e) => ({ text: `${e?.name ?? "Your companion"} walks. ${e?.replacedBy ?? "Someone new"} is in.`, tone: "beat", priority: PRIORITY.feature }),
   // Phase 36 (CUT-02): fallback/coverage text — on the move action the
   // narrative ctx replaces it with the EVENT_NARRATION line.
-  joinerMurdered: (e) => ({ text: `${e?.name ?? "Your companion"} did not reach floor ${e?.depth ?? "?"}.`, tone: "hurt", priority: PRIORITY.feature }),
+  // Phase 43 (CLAR-01): cause first — see docs/CLARITY.md
+  joinerMurdered: (e) => ({ text: `Cutthroat: ${e?.name ?? "Your companion"} did not reach floor ${e?.depth ?? "?"}.`, tone: "hurt", priority: PRIORITY.feature }),
   // Phase 36 (JOIN-01): fallback/coverage text — on the dismissJoiner action
   // the narrative ctx (NARRATIVE_ACTIONS) replaces this with the
   // EVENT_NARRATION parting line instead.
@@ -1458,9 +1475,11 @@ export const TOAST_FOR = {
   },
   afflictionRolled: (e) => ({ text: `Something is wrong with you: ${e?.kind ?? "it has its hooks in you"}.`, tone: "hurt", priority: PRIORITY.other }),
   phobiaAcquired: (e) => ({ text: `New fear: ${e?.name ?? "something"}.`, tone: "hurt", priority: PRIORITY.other }),
-  afflictionCaught: (e) => ({ text: `${e?.kind ?? "It"} takes hold (−${e?.first ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  afflictionCaught: (e) => ({ text: `${e?.kind ?? "It"}: takes hold (−${e?.first ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   insanityRolled: (e) => ({ text: `Insanity — ${e?.result ?? "it comes apart"}.`, tone: "hurt", priority: PRIORITY.other }),
-  insanitySelfHarm: () => ({ text: "You turn on yourself.", tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  insanitySelfHarm: (e) => ({ text: `Insanity: you turn on yourself (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   insanityRage: (e) => ({ text: `Rage: +${e?.amount ?? 0} might.`, tone: "hurt", priority: PRIORITY.other }),
   darknessFell: () => ({ text: "The dark closes in.", tone: "hurt", priority: PRIORITY.other }),
   darknessLifted: () => ({ text: "The dark loosens its grip.", tone: "hit", priority: PRIORITY.other }),
@@ -1482,8 +1501,9 @@ export const TOAST_FOR = {
   // Phase 39 (GEAR-05): the hazard-tool spend — the card's other button
   // (USE LADDER/USE ROPE); hazardChoice itself is SILENT (ORACLE_ONLY
   // above) — the card IS the UI, this toasts the outcome.
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   toolUsed: (e) => ({
-    text: e?.tool === "ladder" ? "Up the ladder, over the wall. It did not need to be dramatic." : "Rope across the gap. Boring, safe, gone.",
+    text: e?.tool === "ladder" ? "Ladder: over the wall, ladder spent." : "Rope: across, rope spent.",
     tone: "hit",
     priority: PRIORITY.you,
   }),
@@ -1563,10 +1583,12 @@ export const TOAST_FOR = {
   lootDropped: (e) => ({ text: `Dropped: ${e?.name ?? "something"}. It will keep.`, tone: "beat", priority: PRIORITY.other }),
   lootTaken: (e) => ({ text: `Taken: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.you }),
   lootLeft: (e) => ({ text: `Left behind: ${e?.item?.n ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   lootForfeited: (e) => {
-    const names = (e?.items ?? []).map((i) => i?.n ?? "something").join(", ") || "the spoils";
+    const items = e?.items ?? [];
+    const names = items.map((i) => i?.n ?? "something").join(", ") || "the spoils";
     return {
-      text: e?.reason === "died" ? `Left where they fell: ${names}.` : `Left on the floor in your hurry: ${names}.`,
+      text: e?.reason === "died" ? `Dead: ${names} stay${items.length === 1 ? "s" : ""} where ${items.length === 1 ? "it" : "they"} fell.` : `Fled: ${names} stay behind.`,
       tone: "miss",
       priority: PRIORITY.you,
     };

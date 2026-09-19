@@ -117,9 +117,12 @@ export const EVENT_NARRATION = {
   phasedThrough: () => `<span class="hit">You step through it like it was a rumour of a wall.</span>`,
   // Phase 41 (TERR-02): entering a water cell (once per wade, not per
   // step) — the water-cost Key Decision's one narrated beat.
-  waded: () => `<span class="beat">Wading. Everything takes twice as long and smells worse.</span>`,
-  fellClimbing: (e) => `<span class="hurt">Gravity remembers you exist — ${e.hurt ?? 0} hp.</span>`,
-  fellInGorge: (e) => `<span class="hurt">Short. The floor of the crevice makes its introduction — ${e.hurt ?? 0} hp.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  waded: (e) => `<span class="beat">Water: ${e?.cost ?? 2} squares a step, and it smells worse.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  fellClimbing: (e) => `<span class="hurt">Fall: the wall had other plans.</span> −${e.hurt ?? 0} hp.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  fellInGorge: (e) => `<span class="hurt">Fall: short. The floor of the crevice makes its introduction.</span> −${e.hurt ?? 0} hp.`,
   // Phase 39 (GEAR-05): the hazard pre-roll decision — a rail card IS the
   // UI (ORACLE_ONLY on the toast side, like findOffered), but the Oracle
   // still gets its own line.
@@ -127,10 +130,11 @@ export const EVENT_NARRATION = {
     e.tool === "ladder"
       ? `<span class="beat">A wall. Also: a ladder. Someone thought of everything, and it was you.</span>`
       : `<span class="beat">A crevice, and you happen to have rope. The honest way across.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   toolUsed: (e) =>
     e.tool === "ladder"
-      ? `<span class="hit">Up the ladder, over the wall. It did not need to be dramatic.</span>`
-      : `<span class="hit">Rope across the gap. Boring, safe, gone.</span>`,
+      ? `<span class="hit">Ladder: up and over the wall. The ladder stays behind.</span>`
+      : `<span class="hit">Rope: across the gap, boring and safe. The rope stays behind.</span>`,
   toolRefused: (e) => {
     const map = {
       noTool: `<span class="miss">No ${e.tool ?? "tool"} on you. Wishing is not a tool.</span>`,
@@ -141,9 +145,12 @@ export const EVENT_NARRATION = {
   },
   // PHOBIA-01 (04.1-06): the three formerly-inert movement-triggered phobias
   // — deadpan, no exclamation, matching the module's established tone.
-  heightsFear: () => `<span class="beat">Your stomach reaches the ground well before your feet do.</span>`,
-  waterFear: () => `<span class="beat">Something down there may be wet. That is enough.</span>`,
-  trappedPanic: (e) => `<span class="hurt">Four walls and one door you already used. −${e.loss ?? 0} hp.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  heightsFear: (e) => `<span class="beat">Heights: your stomach reaches the ground well before your feet do.</span> +${e?.penalty ?? 0} on a roll you wanted low.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  waterFear: (e) => `<span class="beat">Bodies of water: something down there may be wet. That is enough.</span> +${e?.penalty ?? 0} on a roll you wanted low.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  trappedPanic: (e) => `<span class="hurt">${e?.phobia ?? "Being trapped"}: four walls and one door you already used.</span> −${e?.loss ?? 0} hp.`,
   // Phase 41 (TERR-04/05, user-ratified Key Decision 2026-09-18: "arm Afraid
   // for the next fight"): a fresh terrain-phobia region entry — named by
   // `e.trigger` — fires ONCE per fresh entry (engine/phobias.js's region
@@ -164,10 +171,11 @@ export const EVENT_NARRATION = {
     const line = lines[e?.trigger] ?? `<span class="hurt">Your phobia has noticed where you are.</span>`;
     return `${line} It will show in the next fight.`;
   },
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   afflictionTick: (e) =>
     (e.loss ?? 0) > 0
-      ? `<span class="hurt">${e.kind ?? "It"}: −${e.loss} hp.</span>`
-      : `<span class="hurt">${e.kind ?? "It"} has taken everything it can. You are on one hp.</span>`,
+      ? `<span class="hurt">${e.kind ?? "It"}: still in you.</span> −${e.loss} hp.`
+      : `<span class="hurt">${e.kind ?? "It"}: it has taken everything it can. You are on one hp.</span>`,
   // A1 fix #2 / P2 (04.2 Text batch): these now NAME what passed/cured — the
   // engine pushes `kind` (Poison/Disease) on both (engine/movement.js). The
   // over-map/Oracle line used to be a nameless "It passes." / "Cured.".
@@ -481,6 +489,8 @@ export const EVENT_NARRATION = {
   // `critical` (a Soldier's roll-of-2 is a crit in every way that matters to
   // the Oracle); `needMods`/`soaked` render only when present, so a plain
   // hero's line stays byte-identical to before.
+  // Dice-first fight-log convention (Phase 34) — unchanged by CLAR-01: the
+  // foe's name IS the cause and the fight log already folds this line.
   struckByFoe: (e) =>
     `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
@@ -496,11 +506,13 @@ export const EVENT_NARRATION = {
   // (ability ids are not player-facing — the telegraph uses `e.txt`, a
   // content string already scanned by the safety corpus).
   foeCast: (e) => `<span class="beat">${e.txt ?? `${e.name ?? "It"} does something unpleasant and magical.`}</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   foeBolted: (e) =>
     e.member
-      ? `${e.name ?? "It"} lands it on ${e.member} for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}. Better them than you.`
-      : `It lands. <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
-  foeDrained: (e) => `${e.name ?? "It"} looks better for it. <span class="hurt">+${e.stolen ?? 0} hp</span> — yours, formerly.`,
+      ? `<span class="hurt">${e.name ?? "It"}: it lands on ${e.member}.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}. Better them than you.`
+      : `<span class="hurt">${e.name ?? "It"}: it lands.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  foeDrained: (e) => `<span class="hurt">${e.name ?? "It"}: it drinks ${e.stolen ?? 0} hp of yours and looks better for it.</span>`,
   foeDebuffed: (e) =>
     e.kind === "dazed"
       ? `<span class="hurt">The room keeps moving after you stop. Dazed for ${e.rounds ?? "?"} rounds.</span>`
@@ -601,10 +613,14 @@ export const EVENT_NARRATION = {
     return map[e.reason] ?? `<span class="miss">Not now.</span>`;
   },
   spellBackfired: (e) => `<span class="hurt">${e.spell ?? "The spell"} goes wrong.</span>`,
-  backfireSelfDamage: (e) => `<span class="hurt">It costs you ${e.amount ?? 0} hp.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  backfireSelfDamage: (e) =>
+    `<span class="hurt">Backfire: ${e.spell ?? "The spell"} went wrong in your hands — the ${e.sub ?? "Apprentice"} tax, one time in eight.</span> −${e.amount ?? 0} hp.`,
   spellResisted: (e) => `${e.target ?? "It"} shrugs it off. <span class="roll">${e.roll ?? "?"}</span> vs intel ${e.intel ?? "?"}.`,
   resistFailed: (e) => `${e.target ?? "It"} tries to resist and fails. <span class="roll">${e.roll ?? "?"}</span>.`,
-  summonBackfired: (e) => `<span class="hurt">The summoning turns on you for ${e.amount ?? 0} hp.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  summonBackfired: (e) =>
+    `<span class="hurt">Summoning: ${e.spell ?? "The spell"} answered, then turned on you — a ${e.sub ?? "Summoner"}'s doubled creatures come with a grudge.</span> −${e.amount ?? 0} hp.`,
   // Phase 40 (SPELL-04): `e.lesser` (Lesser Summon) swaps the wording for a
   // smaller, wittier line — never a new event type.
   allySummoned: (e) =>
@@ -635,7 +651,8 @@ export const EVENT_NARRATION = {
   // branch above), and frozenSolid (below) narrates the payoff.
   iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${e.rounds ?? 0} rounds, then it stops moving.</span>`,
   earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> to everyone in the room.`,
-  earthquakeSelfDamage: (e) => `<span class="hurt">The shaking costs you ${e.amount ?? 0} hp too.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  earthquakeSelfDamage: (e) => `<span class="hurt">Earthquake: the floor does not take sides.</span> −${e.amount ?? 0} hp.`,
   vaporRolled: (e) => `Noxious vapor: <span class="roll">${e.roll ?? "?"}</span>.`,
   volley: (e) => `<span class="roll">${e.rolls ?? 0}</span> shots, <span class="roll">${e.totalDamage ?? 0}</span> total damage.`,
   petrified: (e) => `<span class="hit">${e.target ?? "It"} turns to stone.</span>`,
@@ -659,8 +676,10 @@ export const EVENT_NARRATION = {
   insaneStruckAlly: (e) => `The maddened thing turns on ${e.target ?? "an ally"} for <span class="roll">${e.dmg ?? 0}</span> hp.`,
   insaneFled: (e) => `<span class="beat">${e.target ?? "It"} bolts, mad with fear.</span>`,
   healed: (e) => `<span class="hit">+${e.amount ?? 0} hp</span>${e.spell ? ` from ${e.spell}` : ""}.`,
-  deathSpellTooWeak: () => `<span class="miss">You are too weak yourself to cast it.</span>`,
-  deathCast: () => `<span class="hurt">You spend 25 hp calling on Death itself.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  deathSpellTooWeak: (e) => `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and you would not survive paying it.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  deathCast: (e) => `<span class="hurt">Death: the spell takes its fee first.</span> −${e?.cost ?? 25} hp.`,
   dozed: (e) => `${e.target ?? "It"} dozes off for ${e.rounds ?? 0} rounds.`,
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
   spellThrown: (e) =>
@@ -697,7 +716,8 @@ export const EVENT_NARRATION = {
 
   storeOpened: (e) => `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay triple.)" : e.elfOrDwarf ? " (A discount, as always.)" : ""}`,
   buyFailed: (e) => `<span class="miss">You are short ${e.short ?? 0} wilmst.</span>`,
-  bought: (e) => `<span class="hit">Bought:</span> ${e.item ?? "something"} for ${e.cost ?? 0} wilmst.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  bought: (e) => `<span class="hit">Bought: ${e.item ?? "something"}.</span> −${e.cost ?? 0} wilmst.`,
   // RATION-01: the dedicated, visible ration purchase — surfaces the ration
   // gain explicitly, unlike the old silent food-side-effect +1.
   rationsBought: (e) => `<span class="hit">Stocked up:</span> +${plural(e.amount ?? 1, "ration")}. At least someone is planning ahead.`,
@@ -713,8 +733,10 @@ export const EVENT_NARRATION = {
   trapAvoided: (e) => `<span class="hit">You clock it a half-step early.</span> <span class="roll">${e.roll ?? "?"} vs ${e.need ?? "?"}.</span>`,
   trapDisarmed: () => `<span class="hit">A Pilfer's hands already knew where not to put themselves.</span>`,
   trapDoubled: () => `<span class="hurt">Cat Burglar's luck holds — for the trap. It hits twice as hard.</span>`,
-  trapSprung: (e) => `<span class="hurt">${e.name ?? "A trap"} finds you first.</span> <span class="roll">${e.dmg ?? 0} hp.</span>`,
-  trapPoisoned: () => `<span class="hurt">The trap leaves something behind that outlasts the bruise.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  trapSprung: (e) => `<span class="hurt">Trap: ${e.name ?? "A trap"} finds you first.</span> −${e.dmg ?? 0} hp.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  trapPoisoned: () => `<span class="hurt">Trap: it leaves something behind that outlasts the bruise.</span>`,
   chestOpened: () => `<span class="hit">The box gives up its secrets.</span>`,
   chestLockRolled: (e) => `<span class="roll">Lock: ${e.roll ?? "?"} vs ${e.need ?? "?"}.</span>`,
   chestLocked: () => `<span class="miss">Not today. The lock wins this round.</span>`,
@@ -733,7 +755,8 @@ export const EVENT_NARRATION = {
   // story. (Builder no longer reads e.gift — the field stays on the event.)
   faerieMet: () => `<span class="beat">A faerie blinks into being, takes your measure, and decides.</span>`,
   faerieBoon: (e) => `<span class="hit">+${e.amount ?? 0} base hp.</span>`,
-  faerieBane: (e) => `<span class="hurt">−${e.amount ?? 0} base hp.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  faerieBane: (e) => `<span class="hurt">Faerie: it took against you.</span> −${e.amount ?? 0} base hp.`,
   joinerMet: (e) => `<span class="hit">${e.name ?? "Someone"}</span>, a ${e.sub ?? e.race ?? "stranger"}, joins you for a while.`,
   // PARTY-01/PARTY-09 (Phase 9): the accept/decline outcome of a recruitment.
   // Deadpan, dark-but-family-friendly — the humor is at everyone's expense,
@@ -762,7 +785,8 @@ export const EVENT_NARRATION = {
     const depth = Number.isFinite(e.depth) ? e.depth : 0;
     const idx = (String(rawName).length + depth) % JOINER_MURDER_LINES.length;
     const line = JOINER_MURDER_LINES[idx].replaceAll("{name}", escapeHtml(rawName)).replaceAll("{depth}", String(depth));
-    return `<span class="hurt">${line}</span>`;
+    // Phase 43 (CLAR-01): cause first — the Cutthroat is the cause.
+    return `<span class="hurt">Cutthroat: ${line}</span>`;
   },
   // Phase 36 (JOIN-01): the Hero tab's Company-panel dismissal — a
   // deterministic pick (no rng, name length only), name escaped like
@@ -799,9 +823,11 @@ export const EVENT_NARRATION = {
   afflictionRolled: (e) =>
     `Something is wrong with you. <span class="roll">The die turns up ${e.roll ?? "?"}.</span> ${e.kind ?? "Something has its hooks in you"}.`,
   phobiaAcquired: (e) => `<span class="hurt">A new fear settles in: ${e.name ?? "something"}.</span>`,
-  afflictionCaught: (e) => `<span class="hurt">${e.kind ?? "It"} takes hold.</span> −${e.first ?? 0} hp.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  afflictionCaught: (e) => `<span class="hurt">${e.kind ?? "It"}: it takes hold.</span> −${e.first ?? 0} hp.`,
   insanityRolled: (e) => `<span class="hurt">Insanity.</span> It ${e.result ?? "comes apart at the seams"}.${e.roll != null ? ` <span class="roll">d6 → ${e.roll}.</span>` : ""}`,
-  insanitySelfHarm: () => `<span class="hurt">You turn on yourself.</span>`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  insanitySelfHarm: (e) => `<span class="hurt">Insanity: you turn on yourself.</span> −${e?.loss ?? 0} hp.`,
   insanityRage: (e) => `<span class="hurt">Rage: +${e.amount ?? 0} might.</span>`,
   darknessFell: () => `<span class="beat">The dark closes in around you.</span>`,
   // PHOBIA-01 (04.1-05): the persistent darkness counter fallDark sets
@@ -865,7 +891,8 @@ export const EVENT_NARRATION = {
   foeStoned: (e) => `<span class="hit">${(e.names ?? []).join(", ") || "It"} turn to stone.</span> Statues don't hit back.`,
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,
   itemFizzled: () => `<span class="miss">Nothing happens.</span>`,
-  itemConsumed: (e) => `${e.item?.n ?? "It"} is spent.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
+  itemConsumed: (e) => `Spent: ${e.item?.n ?? "It"}. One use, as advertised.`,
   // Phase 39 (GEAR-02): the item activation model's four new events — a use
   // starts an effect (itemEffectStarted, kind-keyed line), the tick sites
   // narrate the transitions (itemEffectFaded/itemCooled/staffRecharged).
@@ -936,11 +963,16 @@ export const EVENT_NARRATION = {
     `<span class="beat">Something falls out of the fight: ${e.name ?? "something"}.</span> It will wait. It has nowhere else to be.`,
   lootTaken: (e) => `<span class="hit">Into the bag:</span> ${e.item?.n ?? "something"}. Your back sends its regards.`,
   lootLeft: (e) => `<span class="miss">You leave ${e.item?.n ?? "it"} on the floor.</span> Someone will be thrilled. Not you.`,
+  // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   lootForfeited: (e) => {
-    const names = (e.items ?? []).map((i) => i?.n ?? "something").join(", ") || "the spoils";
-    return e.reason === "died"
-      ? `<span class="miss">${names} stay where they fell.</span> So, for that matter, do you.`
-      : `<span class="miss">You leave ${names} on the floor</span> in your hurry not to be on the floor yourself.`;
+    const items = e.items ?? [];
+    const names = items.map((i) => i?.n ?? "something").join(", ") || "the spoils";
+    if (e.reason === "died") {
+      const verb = items.length === 1 ? "stays" : "stay";
+      const pronoun = items.length === 1 ? "it fell" : "they fell";
+      return `<span class="miss">Dead: ${names} ${verb} where ${pronoun}.</span> So, for that matter, do you.`;
+    }
+    return `<span class="miss">Fled: the loot stays with them — ${names}.</span>`;
   },
 };
 

@@ -25,7 +25,8 @@ import { move } from "../../engine/movement.js";
 import { castSpell } from "../../engine/magic.js";
 import { goInsane } from "../../engine/encounters.js";
 import { SPELLS } from "../../content/index.js";
-import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { EVENT_NARRATION, narrateEvent } from "../../src/browser/eventNarration.js";
+import { TOAST_FOR, narrativeToastText, oracleDetailText } from "../../src/browser/toasts.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -312,4 +313,201 @@ test("docs/CLARITY.md's Cost-event inventory names only real EVENT_NARRATION key
     }
   }
   assert.ok(checked >= 30, `expected to check at least 30 event names, got ${checked}`);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Task 2 appends the line-shape tests below
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Narration-half coverage: EVENT_NARRATION/TOAST_FOR cause-first line
+// assertions for the 24 Plan-01 rows (see docs/CLARITY.md's Cost-event
+// inventory table), plus a "cause-first shape" test driven off that same
+// ledger and a "no roll span carries the cost" test.
+
+const narrate = (e) => narrativeToastText(narrateEvent(e));
+
+// ─── Oracle lines (narrativeToastText(narrateEvent(e))) ────────────────────
+
+// One test() per case (not one test looping many asserts) so each Plan-01
+// row is independently reported and counted by the test runner.
+const ORACLE_CASES = [
+    [{ type: "trapSprung", name: "Pit", dmg: 4 }, "Trap: Pit finds you first. −4 hp."],
+    [{ type: "trapPoisoned" }, "Trap: it leaves something behind that outlasts the bruise."],
+    [{ type: "trappedPanic", loss: 4, phobia: "Being trapped" }, "Being trapped: four walls and one door you already used. −4 hp."],
+    [{ type: "trappedPanic", loss: 4 }, "Being trapped: four walls and one door you already used. −4 hp."],
+    [{ type: "fellClimbing", hurt: 5 }, "Fall: the wall had other plans. −5 hp."],
+    [{ type: "fellInGorge", hurt: 7 }, "Fall: short. The floor of the crevice makes its introduction. −7 hp."],
+    [{ type: "afflictionCaught", kind: "Poison", first: 3 }, "Poison: it takes hold. −3 hp."],
+    [{ type: "afflictionTick", kind: "Poison", loss: 2 }, "Poison: still in you. −2 hp."],
+    [{ type: "afflictionTick", kind: "Disease", loss: 0 }, "Disease: it has taken everything it can. You are on one hp."],
+    [{ type: "heightsFear", penalty: 2 }, "Heights: your stomach reaches the ground well before your feet do. +2 on a roll you wanted low."],
+    [{ type: "waterFear", penalty: 1 }, "Bodies of water: something down there may be wet. That is enough. +1 on a roll you wanted low."],
+    [{ type: "waded", cost: 2 }, "Water: 2 squares a step, and it smells worse."],
+    [
+      { type: "summonBackfired", amount: 9, spell: "Summon", sub: "Summoner" },
+      "Summoning: Summon answered, then turned on you — a Summoner's doubled creatures come with a grudge. −9 hp.",
+    ],
+    [
+      { type: "backfireSelfDamage", amount: 4, spell: "Fireball", sub: "Apprentice" },
+      "Backfire: Fireball went wrong in your hands — the Apprentice tax, one time in eight. −4 hp.",
+    ],
+    [{ type: "earthquakeSelfDamage", amount: 6 }, "Earthquake: the floor does not take sides. −6 hp."],
+    [{ type: "deathCast", cost: 25 }, "Death: the spell takes its fee first. −25 hp."],
+    [{ type: "deathSpellTooWeak", fee: 25 }, "Death: the fee is 25 hp, and you would not survive paying it."],
+    [{ type: "foeBolted", name: "Shriek", dmg: 5 }, "Shriek: it lands. −5 hp."],
+    [{ type: "foeBolted", name: "Shriek", dmg: 5, ignoresArmor: true }, "Shriek: it lands. −5 hp, and your armor was not consulted."],
+    [{ type: "foeBolted", name: "Shriek", dmg: 5, member: "Grunk" }, "Shriek: it lands on Grunk. −5 hp. Better them than you."],
+    [{ type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith: it drinks 4 hp of yours and looks better for it."],
+    [{ type: "bought", item: "Axe", cost: 63 }, "Bought: Axe. −63 wilmst."],
+    [{ type: "toolUsed", tool: "ladder" }, "Ladder: up and over the wall. The ladder stays behind."],
+    [{ type: "toolUsed", tool: "rope" }, "Rope: across the gap, boring and safe. The rope stays behind."],
+    [{ type: "itemConsumed", item: { n: "Torch" } }, "Spent: Torch. One use, as advertised."],
+    [{ type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "escaped" }, "Fled: the loot stays with them — A, B."],
+    [{ type: "lootForfeited", items: [{ n: "A" }], reason: "died" }, "Dead: A stays where it fell. So, for that matter, do you."],
+    [
+      { type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "died" },
+      "Dead: A, B stay where they fell. So, for that matter, do you.",
+    ],
+  [{ type: "faerieBane", amount: 3 }, "Faerie: it took against you. −3 base hp."],
+  [{ type: "insanitySelfHarm", loss: 6 }, "Insanity: you turn on yourself. −6 hp."],
+];
+
+for (const [e, expected] of ORACLE_CASES) {
+  test(`Oracle: ${e.type} (${JSON.stringify(e)}) reads cause-first, cost-last`, () => {
+    assert.equal(narrate(e), expected);
+  });
+}
+
+test("Oracle: joinerMurdered's picked line starts with 'Cutthroat: '", () => {
+  assert.match(narrate({ type: "joinerMurdered", name: "Grunk", depth: 3 }), /^Cutthroat: /);
+});
+
+// ─── Toasts (TOAST_FOR[type](e).text) ──────────────────────────────────────
+
+// One test() per case (not one test looping many asserts) so each Plan-01
+// row is independently reported and counted by the test runner.
+const TOAST_CASES = [
+    ["trapSprung", { type: "trapSprung", name: "Pit", dmg: 4 }, "Trap: Pit (−4 hp)."],
+    ["trapPoisoned", { type: "trapPoisoned" }, "Trap: poisoned."],
+    ["afflictionCaught", { type: "afflictionCaught", kind: "Poison", first: 3 }, "Poison: takes hold (−3 hp)."],
+    ["fellClimbing", { type: "fellClimbing", hurt: 5 }, "Fall: the wall won (−5 hp)."],
+    ["fellInGorge", { type: "fellInGorge", hurt: 7 }, "Fall: short of the far side (−7 hp)."],
+    ["trappedPanic", { type: "trappedPanic", loss: 4 }, "Being trapped: four walls, one used door (−4 hp)."],
+    ["heightsFear", { type: "heightsFear", penalty: 2 }, "Heights: +2 on the roll."],
+    ["waterFear", { type: "waterFear", penalty: 1 }, "Bodies of water: +1 on the roll."],
+    ["waded", { type: "waded", cost: 2 }, "Water: 2 squares a step."],
+    ["summonBackfired", { type: "summonBackfired", amount: 9, spell: "Summon" }, "Summoning: Summon turned on you (−9 hp)."],
+    ["backfireSelfDamage", { type: "backfireSelfDamage", amount: 4, spell: "Fireball" }, "Backfire: Fireball (−4 hp)."],
+    ["earthquakeSelfDamage", { type: "earthquakeSelfDamage", amount: 6 }, "Earthquake: −6 hp, yours too."],
+    ["deathCast", { type: "deathCast", cost: 25 }, "Death: its fee (−25 hp)."],
+    ["foeDrained", { type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith drains you (−4 hp)."],
+    ["bought", { type: "bought", item: "Axe", cost: 63 }, "Bought: Axe (−63 wilmst)."],
+    ["toolUsed", { type: "toolUsed", tool: "ladder" }, "Ladder: over the wall, ladder spent."],
+    ["toolUsed", { type: "toolUsed", tool: "rope" }, "Rope: across, rope spent."],
+    ["lootForfeited", { type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "escaped" }, "Fled: A, B stay behind."],
+    ["lootForfeited", { type: "lootForfeited", items: [{ n: "A" }], reason: "died" }, "Dead: A stays where it fell."],
+    ["joinerMurdered", { type: "joinerMurdered", name: "Grunk", depth: 3 }, "Cutthroat: Grunk did not reach floor 3."],
+    ["faerieBane", { type: "faerieBane", amount: 3 }, "Faerie: −3 base hp."],
+    ["insanitySelfHarm", { type: "insanitySelfHarm", loss: 6 }, "Insanity: you turn on yourself (−6 hp)."],
+];
+
+for (const [type, e, expected] of TOAST_CASES) {
+  test(`Toast: ${type} (${JSON.stringify(e)}) reads cause-first`, () => {
+    assert.equal(TOAST_FOR[type](e).text, expected);
+  });
+}
+
+test("Toast: deathSpellTooWeak is a block-priority toast naming the fee", () => {
+  const toast = TOAST_FOR.deathSpellTooWeak({ type: "deathSpellTooWeak", fee: 25 });
+  assert.equal(toast.text, "Death: 25 hp fee. You cannot pay it and live.");
+});
+
+// ─── Every builder above defends a bare `{ type }` call (coverage-guard shape) ─
+
+test("every rewritten builder renders without throwing on a bare { type } call", () => {
+  const types = [
+    "trapSprung", "trapPoisoned", "afflictionCaught", "afflictionTick", "fellClimbing", "fellInGorge",
+    "trappedPanic", "heightsFear", "waterFear", "waded", "summonBackfired", "backfireSelfDamage",
+    "earthquakeSelfDamage", "deathCast", "deathSpellTooWeak", "foeBolted", "foeDrained", "bought",
+    "toolUsed", "itemConsumed", "lootForfeited", "joinerMurdered", "faerieBane", "insanitySelfHarm",
+  ];
+  for (const type of types) {
+    assert.doesNotThrow(() => EVENT_NARRATION[type]({ type }), `EVENT_NARRATION.${type} must not throw on a bare {type}`);
+    if (TOAST_FOR[type]) assert.doesNotThrow(() => TOAST_FOR[type]({ type }), `TOAST_FOR.${type} must not throw on a bare {type}`);
+  }
+});
+
+// ─── cause-first shape, driven off docs/CLARITY.md's own Plan-01 row list ──
+
+/** REPRESENTATIVE — one payload per Plan-01-owned event, enough for its
+ * builder to render a real (non-default) cause-first sentence. */
+const REPRESENTATIVE = {
+  trapSprung: { type: "trapSprung", name: "Pit", dmg: 4 },
+  trapPoisoned: { type: "trapPoisoned" },
+  afflictionCaught: { type: "afflictionCaught", kind: "Poison", first: 3 },
+  afflictionTick: { type: "afflictionTick", kind: "Poison", loss: 2 },
+  fellClimbing: { type: "fellClimbing", hurt: 5 },
+  fellInGorge: { type: "fellInGorge", hurt: 7 },
+  trappedPanic: { type: "trappedPanic", loss: 4, phobia: "Being trapped" },
+  heightsFear: { type: "heightsFear", penalty: 2 },
+  waterFear: { type: "waterFear", penalty: 1 },
+  waded: { type: "waded", cost: 2 },
+  summonBackfired: { type: "summonBackfired", amount: 9, spell: "Summon", sub: "Summoner" },
+  backfireSelfDamage: { type: "backfireSelfDamage", amount: 4, spell: "Fireball", sub: "Apprentice" },
+  earthquakeSelfDamage: { type: "earthquakeSelfDamage", amount: 6 },
+  deathCast: { type: "deathCast", cost: 25 },
+  deathSpellTooWeak: { type: "deathSpellTooWeak", fee: 25 },
+  foeBolted: { type: "foeBolted", name: "Shriek", dmg: 5 },
+  foeDrained: { type: "foeDrained", name: "Wraith", stolen: 4 },
+  bought: { type: "bought", item: "Axe", cost: 63 },
+  toolUsed: { type: "toolUsed", tool: "ladder" },
+  itemConsumed: { type: "itemConsumed", item: { n: "Torch" } },
+  lootForfeited: { type: "lootForfeited", items: [{ n: "A" }, { n: "B" }], reason: "escaped" },
+  joinerMurdered: { type: "joinerMurdered", name: "Grunk", depth: 3 },
+  faerieBane: { type: "faerieBane", amount: 3 },
+  insanitySelfHarm: { type: "insanitySelfHarm", loss: 6 },
+};
+
+/** planOneEventNames() — parses docs/CLARITY.md's Cost-event inventory
+ * table and returns the Event-cell names of every row whose Owner cell is
+ * exactly "Plan 01". */
+function planOneEventNames() {
+  const md = fs.readFileSync(path.join(REPO_ROOT, "docs", "CLARITY.md"), "utf8");
+  const start = md.indexOf("## Cost-event inventory (CLAR-01)");
+  const end = md.indexOf("## HP not WP sweep");
+  const section = md.slice(start, end);
+  const lines = section.split("\n").filter((l) => l.trim().startsWith("|"));
+  const dataLines = lines.filter((l) => !/^\|\s*Event\s*\|/.test(l) && !/^\|\s*-+\s*\|/.test(l));
+  const names = new Set();
+  for (const line of dataLines) {
+    const cells = line.split("|").map((c) => c.trim());
+    const owner = cells[cells.length - 2] ?? "";
+    if (owner !== "Plan 01") continue;
+    const eventCell = cells[1] ?? "";
+    for (const m of eventCell.matchAll(/`([A-Za-z]+)`/g)) names.add(m[1]);
+  }
+  return [...names];
+}
+
+test("cause-first shape: every Plan-01-owned event's Oracle line, tag-stripped, starts with '<Cause>: '", () => {
+  const planOneNames = planOneEventNames();
+  assert.ok(planOneNames.length >= 20, `expected at least 20 Plan-01-owned events, got ${planOneNames.length}`);
+  const SHAPE = /^[A-Z][A-Za-z ]{1,24}: /;
+  let checked = 0;
+  for (const name of planOneNames) {
+    const payload = REPRESENTATIVE[name];
+    if (!payload) continue; // struckByFoe/memberStruck/armorSoaked/etc. stay dice-first by design (unchanged rows)
+    const line = narrate(payload);
+    assert.match(line, SHAPE, `${name}'s Oracle line "${line}" must read cause-first`);
+    checked++;
+  }
+  assert.ok(checked >= 20, `expected to check at least 20 cause-first lines, got ${checked}`);
+});
+
+// ─── no roll span carries the cost ─────────────────────────────────────────
+
+test("no roll span carries the cost: trapSprung/fellClimbing/trappedPanic render no dice detail", () => {
+  assert.equal(oracleDetailText(narrateEvent({ type: "trapSprung", name: "Pit", dmg: 4 })), "");
+  assert.equal(oracleDetailText(narrateEvent({ type: "fellClimbing", hurt: 5 })), "");
+  assert.equal(oracleDetailText(narrateEvent({ type: "trappedPanic", loss: 4 })), "");
 });
