@@ -36,9 +36,11 @@ import url from "node:url";
 
 import { stripJs, stripHtml } from "../../tools/ident-sweep.mjs";
 import { BRIDGE, bridgeNames } from "../../src/browser/bridge.js";
+import { renderTable } from "../../tools/bridge-doc.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const DOC_PATH = path.join(REPO_ROOT, "docs", "SHELL-MODULES.md");
 
 const BRIDGE_NAME_RE = /__mz\w+/g;
 
@@ -193,4 +195,25 @@ test("SHELL-04: the three test-injection hooks' consumers are test paths that ex
       );
     }
   }
+});
+
+// ─── (i) doc-sync — docs/SHELL-MODULES.md's table matches the map ──────
+
+test("SHELL-04 doc-sync: docs/SHELL-MODULES.md's Module bridge table names match bridgeNames() exactly", () => {
+  const docText = fs.readFileSync(DOC_PATH, "utf8");
+  const startIdx = docText.indexOf("<!-- bridge-table:start -->");
+  const endIdx = docText.indexOf("<!-- bridge-table:end -->");
+  assert.ok(startIdx !== -1 && endIdx !== -1, "docs/SHELL-MODULES.md is missing a bridge-table marker");
+  const tableText = docText.slice(startIdx, endIdx);
+  const names = [...tableText.matchAll(/^\|\s*(__mz\w+)\s*\|/gm)].map((m) => m[1]);
+  assert.deepEqual([...names].sort(), bridgeNames());
+});
+
+// ─── (j) renderTable() has one row per BRIDGE key ──────────────────────
+
+test("SHELL-04: tools/bridge-doc.mjs#renderTable() emits exactly one row per BRIDGE key", () => {
+  const table = renderTable();
+  const names = [...table.matchAll(/^\|\s*(__mz\w+)\s*\|/gm)].map((m) => m[1]);
+  assert.deepEqual([...names].sort(), bridgeNames());
+  assert.equal(names.length, bridgeNames().length);
 });
