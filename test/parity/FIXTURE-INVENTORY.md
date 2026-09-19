@@ -1511,3 +1511,43 @@ re-measurement) — zero blanket regenerations. `npm test`: 3078/3078,
 `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged). `npm run build:www`:
 exit 0. `node --test "test/parity/**/*.test.js"`: 39/39 green.
 
+### Plan 02 — rations: audit + rationsEaten event, zero fixture moves
+
+**The rest-reaching fixture set:** of every scripted parity fixture, only
+`action-script.movement.json` (seed 256, its full 101-action scripted
+path) ever crosses the 100-square boundary and reaches `newDay` (its one
+known rest — see Phase 41 Plan 01's own live scan table, reproduced in this
+file above, which already measured this fixture's move-action count and
+confirmed every other fixture's script has zero `move` actions and
+therefore can never reach a rest). No fixture scenario calls `makeCamp`
+directly. `dayBegan` is otherwise unchanged by this plan.
+
+**`eatsFor` is a value-identical refactor, not a behavior change:**
+`nightlyEats`'s hero read and the two member reads it replaces
+(`RACES[c.race].eats || 1`, `RACES[m.race]?.eats || 1` ×2 across
+`nightlyEats`/`makeCamp`) are byte-for-byte identical in every branch —
+`test/unit/rations-audit.test.js`'s `eatsFor`/`nightlyEats` pins prove
+this directly against the live engine, not by inspection. `rationsEaten`
+is a new EVENT — parity fixtures compare `state` (`diffState` of prototype
+vs. engine), never events — so a new event type moves zero fixtures by
+construction. `wentHungry`'s new `need`/`have`/`mouths`/`heft` keys are
+additive.
+
+**Draw-count statement:** `grep -c "rng\." engine/movement.js` is
+unchanged at 22 (measured both before and after this plan's edits) — zero
+rng draws added or removed by `eatsFor`, the `rationsEaten` push, or the
+`wentHungry` key additions.
+
+**Missing prototype rules:** none. `docs/RATIONS.md`'s audit (12 rows)
+found every prototype ration/upkeep rule already has a live engine
+counterpart; the remaining rows are engine-only additions or DECLARED
+DIVERGENCES already ratified in an earlier phase (Phase 11 PARTY-10 /
+Phase 25.1 DFB-06 / audit-batch1 A3) — none newly declared by this plan.
+
+**Conclusion:** `git status --porcelain test/parity/fixtures` is empty
+(zero fixture files touched by this plan — Plan 01's one declared economy
+record is the only file `git status` shows across the whole phase to
+date). `npm test`: green, `# fail 0`. `git hash-object
+test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0`
+(unchanged). `npm run build:www`: exit 0.
+

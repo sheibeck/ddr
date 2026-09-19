@@ -547,6 +547,18 @@ export function useTool(state, tool, dir, rng, events = [], now = Date.now) {
 /* ---------------- day cycle / camp ---------------- */
 
 /**
+ * eatsFor(sheet) — Phase 43 (CLAR-03/05): THE appetite read — value-identical
+ * to the three inline `RACES[...].eats || 1` reads it replaces (the hero's
+ * plain read in nightlyEats and the two optional-chained member reads in
+ * nightlyEats/makeCamp). Read by nightlyEats/newDay/makeCamp and, read-only,
+ * by src/browser/viewModels.js#rationsViewModel and the shell's Joiner/
+ * Company surfaces (Plan 04) — one read, every consumer agrees.
+ */
+export function eatsFor(sheet) {
+  return (sheet && RACES[sheet.race] && RACES[sheet.race].eats) || 1;
+}
+
+/**
  * nightlyEats(state) — Phase 25.1 (DFB-06): the ONE definition of "how much
  * this party eats per night", read by newDay AND makeCamp (and, read-only,
  * by the shell's camp button through window.__mzNightlyEats), so the camp
@@ -555,9 +567,9 @@ export function useTool(state, tool, dir, rng, events = [], now = Date.now) {
  */
 export function nightlyEats(state) {
   const c = state.c;
-  let eats = RACES[c.race].eats || 1;
+  let eats = eatsFor(c);
   if (state.party?.length) {
-    for (const m of state.party) eats += RACES[m.race]?.eats || 1;
+    for (const m of state.party) eats += eatsFor(m);
   }
   return eats;
 }
@@ -613,6 +625,15 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
 
   if (c.rations >= eats) {
     c.rations -= eats;
+    // Phase 43 (CLAR-01/03/05, additive): rations eaten is a narrated cost —
+    // one event per fed night naming every eater; fixtures compare state,
+    // so this moves none. `eaters` is built right here so it always agrees
+    // with the `eats` charge just made above.
+    const eaters = [
+      { name: c.name, race: c.race, eats: eatsFor(c), hero: true },
+      ...(state.party ?? []).map((m) => ({ name: m.name, race: m.race, eats: eatsFor(m) })),
+    ];
+    events.push({ type: "rationsEaten", eats, left: c.rations, eaters });
     let heal = rng.d(10) + 2 * c.level;
     // Phase 25 (FEED-01, additive payload): who doubled the heal, if anyone
     // — a Soldier's label wins for a Wilmsry Soldier (matches `heal *= 2`'s
@@ -690,7 +711,9 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     }
   } else {
     c.wp -= cost;
-    events.push({ type: "wentHungry", cost });
+    // Phase 43 (CLAR-01/03/05, additive): hunger names need/have/mouths and
+    // the Heft halving; fixtures compare state, so this moves none.
+    events.push({ type: "wentHungry", cost, need: eats, have: c.rations, mouths: 1 + (state.party?.length ?? 0), ...(skill(c, "Heft") ? { heft: true } : {}) });
     if (c.wp <= 0) {
       die(state, "starve", null, rng, events, now);
       return events;
@@ -730,7 +753,7 @@ export function makeCamp(state, rng, events = [], now = Date.now) {
   const need = nightlyEats(state);
   const have = state.c.rations;
   if (have < need) {
-    const members = (state.party ?? []).map((m) => ({ name: m.name, eats: RACES[m.race]?.eats || 1 }));
+    const members = (state.party ?? []).map((m) => ({ name: m.name, eats: eatsFor(m) }));
     events.push({ type: "campFailed", reason: "noRations", need, have, ...(members.length ? { members } : {}) });
     return events;
   }

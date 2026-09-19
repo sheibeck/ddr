@@ -57,10 +57,10 @@ them — those rows are marked "unchanged" below, not rewritten.
 | `insanitySelfHarm` | hp | ADDED `loss` | "You turn on yourself." | `Insanity: you turn on yourself. −6 hp.` | Plan 01 |
 | `itemDropped` | item | player choice | "You drop it. Lighter, poorer, wiser — pick two." | unchanged (ORACLE_ONLY) | unchanged |
 | spell charge spent | none (no dedicated event; the cast line names the spell, the Grimoire/HUD shows the count — the `spellChargeRecovered` ORACLE_ONLY precedent) | none | n/a | unchanged | unchanged |
-| `dayBegan` | none | none | n/a | (Plan 02) | Plan 02 |
-| `rationsEaten` | rations | NEW EVENT | n/a (event does not exist yet) | (Plan 02) | Plan 02 |
-| `wentHungry` | hp | ADDED `need`,`have`,`heft` | existing hunger line | (Plan 02) | Plan 02 |
-| `rested` | (gain; names the doubling rule) | present | existing rest line | (Plan 02 verifies) | Plan 02 |
+| `dayBegan` | none | none | n/a | unchanged (`<span class="banner">Day N.</span>`) | Plan 02 |
+| `rationsEaten` | rations | NEW EVENT `eats`,`left`,`eaters` | n/a (event did not exist before this plan) | `Rations: you eat 1; Grunk (Troll) eats 2. Trolls eat for two. −3 rations, 4 left.` | Plan 02 |
+| `wentHungry` | hp | ADDED `need`,`have`,`mouths`,`heft` | "No rations. Cost of living takes N hp straight out of you." | `Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.` (Heft: `… −2 hp (Heft: half, as promised).`) | Plan 02 |
+| `rested` | (gain; names the doubling rule) | present (`amount`,`doubled`) | existing rest line | unchanged — verified it already names the doubling race/sub-class via `doubled` | Plan 02 |
 | `campFailed` | refusal | present (`need`,`have`,`members`) | "You eat N a night, you have M." | unchanged (pinned exactly by movement.test.js:984) | unchanged |
 
 ## HP not WP sweep
@@ -86,6 +86,15 @@ them — those rows are marked "unchanged" below, not rewritten.
 **The economy `after` re-measurement:** `test/parity/fixtures/action-script.economy.json`'s declared divergence record's `after.items[1].txt` (a bought Healing potion) changed from `"+d10+2 wp"` to `"+d10+2 hp"` — the `before` value (the prototype's own text) is untouched at `"+d10+2 wp"`. This is the ONLY fixture file touched by this plan (`git status --porcelain test/parity/fixtures` shows only this file before the commit).
 
 **The standing guard:** `test/unit/hp-not-wp.test.js` (7 tests) is the permanent tripwire — any future content/narration/shell edit that reintroduces "wp" as player-facing text fails this suite immediately.
+
+## Plan 02 addendum (day-cycle rows)
+
+Plan 02 landed the day-cycle half of CLAR-01 plus the CLAR-03/05 ration
+audit: the new `rationsEaten` event names every eater and, via
+`RATION_RULE_LINE`, the "Trolls eat for two." rule; `wentHungry` names
+need/have/mouths and the Heft halving. See `docs/RATIONS.md` for the full
+audited ledger (12 rules, prototype line + rulebook page + engine site)
+and the `rationsViewModel(state)` invariant `total === nightlyEats(state)`.
 
 ## Requirements map
 
