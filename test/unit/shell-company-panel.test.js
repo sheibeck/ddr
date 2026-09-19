@@ -6,9 +6,10 @@
 // camp.test.js / shell-gear-toolbar.test.js's own source-assertion pattern —
 // this file reads the real shipped source with fs.readFileSync and asserts
 // against it directly:
-//   1. the classic script's SUB_NOTE.Cutthroat row is byte-identical to
-//      content/flavor.js's SUB_NOTE.Cutthroat (the prototype-era murder
-//      sentence is gone);
+//   1. (Phase 44-03, DEAD-02) the classic SUB_NOTE table is gone — the
+//      dossier's byte-equality against content/flavor.js is now the stronger,
+//      all-24-row test/unit/shell-no-content-copies.test.js pin, not this
+//      file's former single-row Cutthroat check;
 //   2. the DISMISS_CONFIRM_MS/dismissConfirmRevert/revertDismissConfirm()
 //      trio sits above renderPartyRoster(), mirroring the Gear tab's Drop
 //      trio exactly (DROP_CONFIRM_MS untouched);
@@ -36,7 +37,6 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { SUB_NOTE } from "../../content/flavor.js";
 import { NARRATIVE_ACTIONS } from "../../src/browser/toasts.js";
 import { BANNED } from "../../content/safety-wordlist.js";
 
@@ -68,14 +68,6 @@ function sliceBetween(source, startMarker, endMarker) {
   return source.slice(start, end);
 }
 
-// The classic table's own region (raw HTML — no comments to strip inside it).
-// Phase 44-02 (DEAD-01, layer 3): NAMES/nameFor are deleted along with the
-// rest of the orphaned classic tables — SUB_NOTE is now directly followed
-// by the "rendering" section banner, which is the new end anchor.
-function subNoteRegion() {
-  return sliceBetween(HTML, "const SUB_NOTE = {", "/* ---------------- rendering ---------------- */");
-}
-
 // mirrors test/unit/shell-party-camp.test.js's own renderPartyRoster region
 // technique: CODE.indexOf("function renderPartyRoster() {") -> next "\n}\n".
 function partyRosterRegion() {
@@ -89,19 +81,12 @@ function dismissJoinerBridgeRegion() {
   return sliceBetween(CODE, "window.mzDismissJoiner = function dismissJoinerBridge(", "\n  };");
 }
 
-// ─── 1. SUB_NOTE sync ──────────────────────────────────────────────────────
-
-test("SUB_NOTE: the classic Cutthroat row is byte-identical to content/flavor.js and states the odds in plain words", () => {
-  const region = subNoteRegion();
-  const m = region.match(/"Cutthroat":\s*"([^"]*)"/);
-  assert.ok(m, "classic SUB_NOTE.Cutthroat row found");
-  assert.equal(m[1], SUB_NOTE.Cutthroat, "classic table's Cutthroat row must match content/flavor.js byte-for-byte");
-  assert.match(m[1], /one descent in twenty/i);
-  // Built by concatenation so this test file never spells the prototype-era
-  // sentence whole (mirrors shell-toast-wiring.test.js's dead-name technique).
-  const oldSentence = "one member of every party dies" + " by your hand";
-  assert.equal(HTML.includes(oldSentence), false, "the prototype-era murder sentence must be gone from the raw file");
-});
+// ─── 1. SUB_NOTE sync — deleted (Phase 44-03, DEAD-02): the classic SUB_NOTE
+// table this case pinned no longer exists (window.__mzTables.SUB_NOTE reads
+// content/flavor.js directly). test/unit/shell-no-content-copies.test.js's
+// byte-equality pin now covers all 24 SUB_NOTE rows (this case covered only
+// Cutthroat), plus the RACE_NOTE (6) and CLASS_NOTE (3) tables this file
+// never pinned at all — a strictly stronger replacement.
 
 // ─── 2. module-level trio ──────────────────────────────────────────────────
 

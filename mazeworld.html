@@ -1793,83 +1793,8 @@ const SAVE_KEY = "ddr.delve.v1";
 const D = n => 1 + Math.floor(Math.random() * n);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-/* ---------------- rules tables ---------------- */
-
-const THRESHOLDS  = [0, 201, 501, 901, 1501];
-const ROMAN       = ["I", "II", "III", "IV", "V"];
-
-const WEAPONS = {
-  // Cutting
-  "Axe":          {d:()=>D(6),        lab:"d6",     cost:50,  cls:"FTM"},
-  "Bastard Sword":{d:()=>D(6)+D(6),   lab:"2d6",    cost:675, cls:"F"},
-  "Battle Axe":   {d:()=>D(6)+1,      lab:"d6+1",   cost:250, cls:"F"},
-  "Broadsword":   {d:()=>D(10)+2,     lab:"d10+2",  cost:500, cls:"F"},
-  "Claymore":     {d:()=>D(12),       lab:"d12",    cost:800, cls:"F"},
-  "Dagger":       {d:()=>Math.ceil(D(6)/2), lab:"d6/2", cost:75, cls:"FTM"},
-  "Katana":       {d:()=>D(10),       lab:"d10",    cost:525, cls:"FT"},
-  "Kopesh Sword": {d:()=>D(10),       lab:"d10",    cost:525, cls:"F"},
-  "Long Sword":   {d:()=>D(8),        lab:"d8",     cost:500, cls:"FT"},
-  "Ninja-to":     {d:()=>D(8)+1,      lab:"d8+1",   cost:450, cls:"FT"},
-  "Rapier":       {d:()=>D(6),        lab:"d6",     cost:200, cls:"FTM"},
-  "Short Sword":  {d:()=>D(6)+1,      lab:"d6+1",   cost:250, cls:"FTM"},
-  "Wakazashi":    {d:()=>D(6)+1,      lab:"d6+1",   cost:300, cls:"FT"},
-  // Bludgeoning
-  "Club":         {d:()=>D(6),        lab:"d6",     cost:25,  cls:"FTM"},
-  "Flail":        {d:()=>D(8)+2,      lab:"d8+2",   cost:175, cls:"FT"},
-  "Mace":         {d:()=>D(6)+2,      lab:"d6+2",   cost:125, cls:"FT"},
-  "Morning Star": {d:()=>D(8)+1,      lab:"d8+1",   cost:150, cls:"FT"},
-  "Quarter Staff":{d:()=>D(6),        lab:"d6",     cost:25,  cls:"FTM"},
-  "Spiked Staff": {d:()=>D(8),        lab:"d8",     cost:150, cls:"FTM"},
-  "Whip":         {d:()=>Math.ceil(D(6)/2), lab:"d6/2", cost:35, cls:"FT"},
-  // Pole arms
-  "Awl Pike":     {d:()=>D(8)+2,      lab:"d8+2",   cost:400, cls:"FT"},
-  "Bardiche":     {d:()=>D(8)+D(8),   lab:"2d8",    cost:900, cls:"F"},
-  "Naganita":     {d:()=>D(6)+D(6)+1, lab:"2d6+1",  cost:600, cls:"F"},
-  "Spear":        {d:()=>D(8),        lab:"d8",     cost:150, cls:"FTM"}
-};
-/* Special skills, bought at creation: Fighters get 8 value points, Thieves 12,
-   Magic Users none — they have spells instead. */
-const FIGHTER_SKILLS = {
-  "Kata":         {cost:4, txt:"+level damage and 1–6 accuracy with your first weapon"},
-  "Stealth":      {cost:3, txt:"critical on a 2 when you open a fight; never in plate"},
-  "Death-touch":  {cost:4, txt:"a 1 doubles, and kills outright under 15 hp"},
-  "Agility":      {cost:5, txt:"every enemy needs one better to land on you"},
-  "Hardiness":    {cost:6, txt:"−3 to all damage taken; phobias halved"},
-  "Ambidextrous": {cost:4, txt:"a second weapon at the end of every round"},
-  "Cooking":      {cost:3, txt:"eat any beast for a quarter of its hp"},
-  "Language":     {cost:1, txt:"parley with anything that talks"},
-  "Runes/Signs":  {cost:2, txt:"read scrolls; without it they are waste paper"},
-  "Tracking":     {cost:4, txt:"1–5 on d20 to read an encounter, and walk away from it"},
-  "Climbing":     {cost:2, txt:"+4 to climbing rolls"},
-  "Leaping":      {cost:2, txt:"+2 to leaping rolls"}
-};
-const THIEF_SKILLS = {
-  "Kata":          {cost:5, txt:"strike as a fighter, +level damage"},
-  "Locks":         {cost:2, up:1, txt:"1–5 on d10 to open a lock", txt2:"1–7 on d10 to open a lock"},
-  "Sewing":        {cost:4, up:2, txt:"patch any armour, d6 back, 4 times", txt2:"patch any armour, d6+3 back, 6 times"},
-  "Night Vision":  {cost:3, txt:"darkness costs you nothing"},
-  "Heft":          {cost:5, txt:"+2 damage, mail armour, half upkeep"},
-  "Acute Hearing": {cost:5, txt:"never surprised; 3 to hit the unseen"},
-  "Climbing":      {cost:3, txt:"+4 to climbing, and half of any fall"},
-  "Leaping":       {cost:4, txt:"+2 to leaping rolls"},
-  "Silence":       {cost:6, txt:"sneak attacks are automatic criticals"}
-};
-function skillTable(cls) { return cls === "Fighter" ? FIGHTER_SKILLS : cls === "Thief" ? THIEF_SKILLS : null; }
+function skillTable(cls) { return cls === "Fighter" ? window.__mzTables.FIGHTER_SKILLS : cls === "Thief" ? window.__mzTables.THIEF_SKILLS : null; }
 const skill = n => !!(S.c.skills && S.c.skills[n]);
-
-const RACES = {
-  "Human":   {size:"Human", upkeep:4,  note:"No advantages, no penalties. The dungeon's default."},
-  "Elven":   {size:"Small", upkeep:4,  wpMul:0.6, strikeStep:1, foeToHit:-1, toHit:5,
-              note:"Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit."},
-  "Dwarven": {size:"Small", upkeep:1,  dmg:2, foeStrikeStep:1,
-              note:"+2 damage and 1 hp/day upkeep; foes strike at a better die."},
-  "Wilmsry": {size:"Human", upkeep:4,  heal2x:true, spMul:0.5,
-              note:"Heals twice as fast, learns half as quickly. Magic Users despise them."},
-  "Fridgian":{size:"Human", upkeep:4,  noArmor:true, frenzy:true, slow:true,
-              note:"Never wears armor, strikes last, frenzies into a second wild swing."},
-  "Troll":   {size:"Large", upkeep:15, flatWP:75, dmg:6, wpnBonus:3, eats:2,
-              note:"75 hp regardless of class and +9 damage, but eats two rations a night."}
-};
 
 const maxCharges = () => 2 * S.c.level + 2 + eff("charges");
 
@@ -1886,49 +1811,6 @@ const cv = document.getElementById("maze");
 const ctx = cv.getContext("2d");
 const GW = 21, GH = 21;
 
-
-/* ---------------- the Maze Master's opinion of you ---------------- */
-const RACE_NOTE = {
-  "Human":   "No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.",
-  "Elven":   "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
-  "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising. Built low, built cheap, built to be hit. Dwarves call this a fair trade. Dwarves are rarely asked.",
-  "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, which most Wilmsry take as proof they are doing something right.",
-  "Fridgian":"You will not wear armour. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest, occasionally something already dead. The Game Master has notes about you.",
-  "Troll":   "Seventy-five Hit Points, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple."
-};
-const CLASS_NOTE = {
-  "Fighter":    "The best Hit Points in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
-  "Thief":      "Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
-  "Magic User": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough."
-};
-const SUB_NOTE = {
-  "Knight":        "Nothing under 5 hp will come near you and everything over 20 comes straight at you. You have been made important by the only creatures whose vote counts: the large ones.",
-  "Guard":         "No critical strike, ever, and three damage off the top until level four. You are a professional. The profession is standing there.",
-  "Woodsman":      "No mail, no plate, no shield, and a quarter staff you are genuinely superb with. You speak to every animal in here except dragons — a pity, as it is mostly dragons that want a word.",
-  "Soldier":       "You take criticals on a 2 and deal them never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
-  "Barbarian":     "Two attacks a round and half the experience points, on the sound principle that a man swinging twice is learning nothing either time.",
-  "Master of Arms":"Plus two with every weapon ever forged, plus three with anything you have repaired yourself. You attack creatures without question. The book files this under abilities.",
-  "Samurai":       "A magical katana, armour like plate, and enough clatter that you never win the first roll of anything. You never run. The book uses the word suicidal and does not soften it.",
-  "Bard":          "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Creatures too stupid to know better come for you first — which, down here, is most of them.",
-
-  "Pickpocket":    "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught. You have never been thanked either.",
-  "Pilfer":        "Traps disarm themselves in your presence and no sealed room has ever held you. You cannot use a single magic item that doesn't heal, which the dungeon finds hilarious and stocks accordingly.",
-  "Cat Burglar":   "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
-  "Cutthroat":     "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in twenty, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
-  "Cloaker":       "You can always vanish, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
-  "Ninja":         "You never speak. Your opening strike lands for maximum damage and after that a 1 or a 2 opens something up. The silence isn't a vow, it's a tactic.",
-  "Con Artist":    "You talk first, and anything with wit of 6 or under simply declines to fight you. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
-  "Acrobat":       "Everything needs a 3 to lay a hand on you and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
-
-  "Wizard":        "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand until the last spell is spent. Two wizards in a party fight each other; there is only one of you, which helps.",
-  "Warlock":       "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
-  "Sorcerer":      "Two dozen spells to start and two more each level, nearly all of it fire, with a one-in-eight chance per level of simply forgetting the ones that aren't. Your arm caps out at 9 damage. Nobody hired the arm.",
-  "Court Mage":    "You talk. Through encounters, through corridors, through other people's turns. One creature in twelve dies of boredom before the fighting starts, and the book counts that as a kill.",
-  "Illusionist":   "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions and a d20 to strike until level three — so pick the corridor, not the fight.",
-  "Cleric":        "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
-  "Summoner":      "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
-  "Apprentice":    "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there."
-};
 
 /* ---------------- rendering ---------------- */
 let CELL = 28;
@@ -2249,7 +2131,7 @@ window.mzCombatReport = function (d) {
   if (d.hpDelta < 0) lines.push(`<span class="hurt">Took ${-d.hpDelta} hp.</span>`);
   else if (d.hpDelta > 0) lines.push(`<span class="hit">Recovered ${d.hpDelta} hp.</span>`);
   if (d.goldGained > 0) lines.push(`<span class="roll">+${d.goldGained} wilmst.</span>`);
-  if (d.leveled > 0) lines.push(`<span class="hit">Now skill level ${ROMAN[Math.max(0, d.level - 1)] || d.level}.</span>`);
+  if (d.leveled > 0) lines.push(`<span class="hit">Now skill level ${window.__mzTables.ROMAN[Math.max(0, d.level - 1)] || d.level}.</span>`);
   // Phase 38 (ABIL-01/03): a level-up's new trick(s), named in the report.
   for (const n of d.learned || []) lines.push(`<span class="hit">New trick: ${n}.</span>`);
   lines.push(`Left standing on <b>${Math.max(0, d.hpNow)}/${d.hpMax} hp</b>.`);
@@ -2257,7 +2139,7 @@ window.mzCombatReport = function (d) {
 };
 
 /* ---------------- derived character numbers ---------------- */
-const R_ = () => RACES[S.c.race];
+const R_ = () => window.__mzTables.RACES[S.c.race];
 function upkeep() { return Math.max(1, Math.round(R_().upkeep * (skill("Heft") ? 0.5 : 1)) + eff("upkeep")); }
 
 /* ---------------- UI paint ---------------- */
@@ -2591,7 +2473,7 @@ function paint() {
     campBtn.setAttribute("aria-label", short ? `Make camp — you eat ${need} a night, you have ${c.rations}` : "Make camp");
   }
 
-  document.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
+  document.getElementById("s-level").textContent = "Lvl " + window.__mzTables.ROMAN[c.level - 1];
   document.getElementById("s-name").textContent = c.name;
   document.getElementById("s-tag").textContent = `${c.race} ${c.sub} · ${c.cls}`;
   // DR16 fix: when the character is dead they're already buried, so the
@@ -2642,7 +2524,7 @@ function paint() {
   // cleanup milestone.
   document.getElementById("s-die").textContent = "d" + window.__mzStrikeDie(S.c);
   document.getElementById("s-hit").textContent = "1–" + window.__mzToHit(S);
-  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
+  const w = window.__mzTables.WEAPONS[c.weapon] || window.__mzTables.WEAPONS["Club"];
   const bonus = c.prof + c.magicWpn + (R_().dmg || 0) + (R_().wpnBonus || 0) + eff("dmg");
   document.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
   // Phase 28 (ARMOR-02): durability + the cloak's effective plate come from
@@ -2652,7 +2534,7 @@ function paint() {
   document.getElementById("s-arm").textContent = armorD.line;
   document.getElementById("s-int").textContent = c.intel;
   document.getElementById("s-sp").textContent = Math.round(c.sp);
-  document.getElementById("s-next").textContent = c.level >= 5 ? "—" : THRESHOLDS[c.level];
+  document.getElementById("s-next").textContent = c.level >= 5 ? "—" : window.__mzTables.THRESHOLDS[c.level];
   document.getElementById("s-cost").textContent = upkeep() + " hp/day";
 
   // Phase 43 (CLAR-03/05) — the Hero RATIONS panel; the SAME read
@@ -2820,7 +2702,7 @@ function paint() {
     onyou.appendChild(li);
   };
   headRow(gearCopy.wielded);
-  wornRow(c.weapon, `${w.lab}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`, "weapon", c.weapon && c.weapon !== "Fists" && WEAPONS[c.weapon]);
+  wornRow(c.weapon, `${w.lab}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`, "weapon", c.weapon && c.weapon !== "Fists" && window.__mzTables.WEAPONS[c.weapon]);
   // Phase 28 (ARMOR-02/04): the worn-armor row now reads the shared
   // formatter — with the cloak the headline is the cloak (effective armor)
   // and Unequip still stows the piece underneath; a destroyed piece needs no
@@ -2886,9 +2768,9 @@ function paint() {
   const doss = document.getElementById("doss");
   doss.innerHTML = "";
   for (const [label, who, text] of [
-    ["Race", c.race, RACE_NOTE[c.race]],
-    ["Class", c.cls, CLASS_NOTE[c.cls]],
-    ["Subclass", c.sub, SUB_NOTE[c.sub]]
+    ["Race", c.race, window.__mzTables.RACE_NOTE[c.race]],
+    ["Class", c.cls, window.__mzTables.CLASS_NOTE[c.cls]],
+    ["Subclass", c.sub, window.__mzTables.SUB_NOTE[c.sub]]
   ]) {
     const sec = document.createElement("section");
     sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
@@ -3303,7 +3185,7 @@ function renderGraves() {
     el.className = "stone" + (g.cause === "won" ? " won" : "");
     el.innerHTML = `
       <p class="stone-name">${g.name}</p>
-      <p class="stone-sub">${g.race} ${g.sub} · lvl ${ROMAN[(g.level || 1) - 1]}</p>
+      <p class="stone-sub">${g.race} ${g.sub} · lvl ${window.__mzTables.ROMAN[(g.level || 1) - 1]}</p>
       <p class="stone-note">${g.cause === "won" ? "Walked out" : g.note.replace(/^\w/, c => c.toUpperCase())}</p>
       <p class="stone-ep">${g.epitaph || ""}</p>
       <dl class="stone-stats">
@@ -3533,7 +3415,7 @@ function renderPartyRoster() {
          <span class="mw-party-name">${escText(m.name || "Companion")}</span>
          <span class="mw-party-sub">${escText(m.sub || "")}${m.sub && m.race ? " / " : ""}${escText(m.race || "")}</span>
        </div>
-       <div class="mw-party-line">${escText(m.cls || "—")} · ${ROMAN[lvl - 1] || lvl}</div>
+       <div class="mw-party-line">${escText(m.cls || "—")} · ${window.__mzTables.ROMAN[lvl - 1] || lvl}</div>
        <div class="mw-party-hp-lab">HP <b>${wp}</b>/<b>${maxWP}</b></div>
        <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
        ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}
@@ -4163,7 +4045,7 @@ function renderEncounter() {
   if (S.won) {
     body.innerHTML = `<div class="deathcard" style="border-color:var(--ditto)">
       <h3 style="color:var(--ditto)">Through the Gate</h3>
-      <p>${S.c.name} walked ${S.steps} squares in ${S.day} days and came out the other side at skill level ${ROMAN[S.c.level-1]}.</p>
+      <p>${S.c.name} walked ${S.steps} squares in ${S.day} days and came out the other side at skill level ${window.__mzTables.ROMAN[S.c.level-1]}.</p>
       <p class="epitaph">${S.epitaph || ""}</p>
       <button class="primary" id="btn-again">Roll another delver</button></div>`;
     // 04-DR3: opens the roller directly (unlike the death card's CONFIRM,
@@ -4432,7 +4314,7 @@ function renderRail() {
     key = "joiner:" + (j.name || "") + ":" + (walker ? walker.name : "");
     tone = "info"; icon = "◇"; title = copy.joiner.title;
     lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
-    lines.push({ text: headLine, roll: `${ident ? ident + " · " : ""}skill level ${ROMAN[lvl - 1] || lvl} · ${window.__mzRations.eatsLine(j)}` });
+    lines.push({ text: headLine, roll: `${ident ? ident + " · " : ""}skill level ${window.__mzTables.ROMAN[lvl - 1] || lvl} · ${window.__mzRations.eatsLine(j)}` });
     buttons = [
       { id: "a-join-yes", label: copy.joiner.yes, onTap: () => window.mzResolveJoiner?.(true) },
       { id: "a-join-no", label: copy.joiner.no, cls: "secondary", onTap: () => window.mzResolveJoiner?.(false) },
@@ -5069,7 +4951,7 @@ window.__mzClassicBoot = async function classicBoot() {
   if (restored) {
     S = restored;
     say(`<span class="banner">Delve resumed.</span>`);
-    say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the dungeon.`);
+    say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${window.__mzTables.ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the dungeon.`);
     reveal();
   } else {
     classicNewGame();
@@ -5176,6 +5058,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
   import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems, emptySlotRows, GEAR_COPY } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
+  // Phase 44 (DEAD-02) — a SEPARATE import line so the pinned line above
+  // stays byte-identical for every existing bridge test.
+  import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
   // 260919-00d (Cloak of Ether wall-walking) — a SEPARATE import line (same
@@ -5204,6 +5089,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzState / window.__mzSettings above). Pure display data — never fed
   // into anything rng-touching; the ENGINE alone enforces the real cap.
   window.__mzBags = BAGS;
+
+  // Phase 44 (DEAD-02): the read-only display tables the classic renderers
+  // cannot `import` (RACE_NOTE/CLASS_NOTE/SUB_NOTE for the Hero-tab dossier;
+  // ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES for the
+  // surviving classic readers) — same bridge pattern as window.__mzBags
+  // above. The ENGINE reads content/ directly; content/ is the single
+  // source for all nine tables now — the classic copies are gone.
+  window.__mzTables = Object.freeze({ RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES });
 
   // Phase 25.1 (DFB-04/DFB-06): read-only helpers for the classic script's
   // offer card and camp button — the ENGINE alone enforces the swap and the
