@@ -25,6 +25,10 @@ import assert from "node:assert/strict";
 import { JEWELRY, CLOAKS, STAVES, SLOT_OF, ACTIVATION_OF } from "../../content/index.js";
 import {
   WORN_SLOTS,
+  SLOT_FAMILIES,
+  WORN_KEYS_OF,
+  WORN_FAMILY_OF,
+  freeWornKey,
   slotFor,
   carriedItems,
   reconcileWorn,
@@ -59,15 +63,21 @@ test("SLOT_OF has exactly 15 own keys (8 JEWELRY + 7 CLOAKS; a staff has no slot
   for (const row of STAVES) assert.equal(SLOT_OF[row.n], undefined, `${row.n} must not have a slot`);
 });
 
-test("SLOT_OF matches the locked taxonomy for every JEWELRY name", () => {
-  assert.equal(SLOT_OF["Ring of Power"], "ring");
-  assert.equal(SLOT_OF["Bracelet of Flight"], "bracelet");
-  assert.equal(SLOT_OF["Anklet of Invisibility"], "bracelet");
-  assert.equal(SLOT_OF["Amulet of Light"], "amulet");
-  assert.equal(SLOT_OF["Amulet of Stone"], "amulet");
-  assert.equal(SLOT_OF["Pendant of Fortitude"], "amulet");
-  assert.equal(SLOT_OF["Helm of Knowledge"], "helm");
-  assert.equal(SLOT_OF["Gauntlet of the Giant"], "helm");
+test("SLOT_OF matches the locked taxonomy for every JEWELRY name — 260918-wy1: all 8 map to the single family jewelry", () => {
+  assert.equal(SLOT_OF["Ring of Power"], "jewelry");
+  assert.equal(SLOT_OF["Bracelet of Flight"], "jewelry");
+  assert.equal(SLOT_OF["Anklet of Invisibility"], "jewelry");
+  assert.equal(SLOT_OF["Amulet of Light"], "jewelry");
+  assert.equal(SLOT_OF["Amulet of Stone"], "jewelry");
+  assert.equal(SLOT_OF["Pendant of Fortitude"], "jewelry");
+  assert.equal(SLOT_OF["Helm of Knowledge"], "jewelry");
+  assert.equal(SLOT_OF["Gauntlet of the Giant"], "jewelry");
+  for (const row of JEWELRY) assert.equal(SLOT_OF[row.n], "jewelry", `${row.n} must map to jewelry`);
+});
+
+test("SLOT_OF's value set is exactly {jewelry, cloak} across all 15 entries", () => {
+  assert.equal(Object.keys(SLOT_OF).length, 15);
+  assert.deepStrictEqual([...new Set(Object.values(SLOT_OF))].sort(), ["cloak", "jewelry"]);
 });
 
 test("SLOT_OF maps every CLOAKS row to cloak; STAVES rows are absent (260918-w4n staff amendment)", () => {
@@ -120,36 +130,70 @@ test("rollJewel/rollCloak/rollStaff and a Thief's starting cloak never carry a s
  * engine/derived.js: WORN_SLOTS / slotFor / carriedItems
  * ============================================================ */
 
-test("WORN_SLOTS is the frozen five-slot order (260918-w4n: staff removed)", () => {
-  assert.deepStrictEqual(WORN_SLOTS, ["ring", "bracelet", "amulet", "helm", "cloak"]);
+test("WORN_SLOTS is the frozen three-key order (260918-wy1: jewelry1, jewelry2, cloak) and equals the flatMap of WORN_KEYS_OF over SLOT_FAMILIES", () => {
+  assert.deepStrictEqual(WORN_SLOTS, ["jewelry1", "jewelry2", "cloak"]);
   assert.ok(Object.isFrozen(WORN_SLOTS));
+  assert.deepStrictEqual(WORN_SLOTS, SLOT_FAMILIES.flatMap((f) => WORN_KEYS_OF[f]));
 });
 
-test("slotFor derives from it.slot first, else SLOT_OF, else kind fallback for cloak only, else null; a staff is ALWAYS null", () => {
-  assert.equal(slotFor({ kind: "jewel", n: "Ring of Power" }), "ring");
+test("SLOT_FAMILIES / WORN_KEYS_OF / WORN_FAMILY_OF are the frozen family tables", () => {
+  assert.deepStrictEqual(SLOT_FAMILIES, ["jewelry", "cloak"]);
+  assert.ok(Object.isFrozen(SLOT_FAMILIES));
+  assert.deepStrictEqual(WORN_KEYS_OF, { jewelry: ["jewelry1", "jewelry2"], cloak: ["cloak"] });
+  assert.ok(Object.isFrozen(WORN_KEYS_OF));
+  assert.ok(Object.isFrozen(WORN_KEYS_OF.jewelry));
+  assert.ok(Object.isFrozen(WORN_KEYS_OF.cloak));
+  assert.deepStrictEqual(WORN_FAMILY_OF, { jewelry1: "jewelry", jewelry2: "jewelry", cloak: "cloak" });
+  assert.ok(Object.isFrozen(WORN_FAMILY_OF));
+  assert.equal(WORN_FAMILY_OF.jewelry2, "jewelry");
+});
+
+test("freeWornKey is the one first-free-key rule: jewelry1 on empty, jewelry2 once jewelry1 is worn, null when both are; cloak / null; never creates c.worn", () => {
+  assert.equal(freeWornKey({}, "jewelry"), "jewelry1");
+  assert.equal(freeWornKey({ worn: {} }, "jewelry"), "jewelry1");
+  assert.equal(freeWornKey({ worn: { jewelry1: { n: "Ring of Power" } } }, "jewelry"), "jewelry2");
+  assert.equal(
+    freeWornKey({ worn: { jewelry1: { n: "a" }, jewelry2: { n: "b" } } }, "jewelry"),
+    null,
+    "both jewelry keys occupied",
+  );
+  assert.equal(freeWornKey({}, "cloak"), "cloak");
+  assert.equal(freeWornKey({ worn: { cloak: { n: "Cloak of Speed" } } }, "cloak"), null);
+  assert.equal(freeWornKey({}, "unknown-family"), null);
+  const c = {};
+  assert.equal(freeWornKey(c, "jewelry"), "jewelry1");
+  assert.equal("worn" in c, false, "freeWornKey is a pure read — never creates c.worn");
+});
+
+test("slotFor returns the FAMILY: it.slot first, else SLOT_OF, else jewel/cloak kind fallback, else null; a staff is ALWAYS null", () => {
+  assert.equal(slotFor({ kind: "jewel", n: "Ring of Power" }), "jewelry");
   assert.equal(slotFor({ kind: "cloak", n: "Cloak of Speed" }), "cloak");
   assert.equal(slotFor({ kind: "cloak", n: "Unknown Cloak" }), "cloak");
+  assert.equal(slotFor({ kind: "jewel", n: "Unknown Trinket" }), "jewelry", "260918-wy1: jewel kind fallback, mirrors the cloak fallback");
   assert.equal(slotFor({ kind: "staff", n: "Oak Staff" }), null, "260918-w4n: a staff has no slot anywhere");
   assert.equal(slotFor({ kind: "staff", n: "Unknown Staff" }), null);
-  assert.equal(slotFor({ kind: "jewel", n: "Unknown Trinket" }), null);
   assert.equal(slotFor({ kind: "potion", n: "Healing potion" }), null);
   assert.equal(slotFor({ kind: "weapon", n: "Axe" }), null);
-  assert.equal(slotFor({ kind: "jewel", n: "Ring of Power", slot: "amulet" }), "amulet");
+  assert.equal(slotFor({ kind: "jewel", n: "Ring of Power", slot: "cloak" }), "cloak", "it.slot forward-compat wins first");
   assert.equal(slotFor(null), null);
   assert.equal(slotFor({}), null);
+  for (const row of JEWELRY) assert.equal(slotFor({ kind: "jewel", n: row.n }), "jewelry", `${row.n} must resolve to jewelry`);
+  for (const row of CLOAKS) assert.equal(slotFor({ kind: "cloak", n: row.n }), "cloak", `${row.n} must resolve to cloak`);
 });
 
-test("carriedItems returns bag items followed by truthy worn entries, defensively, without mutating", () => {
+test("carriedItems returns bag items followed by truthy worn entries, defensively, without mutating — shape-agnostic across jewelry1/jewelry2/cloak", () => {
   const a = { n: "a" };
   const b = { n: "b" };
   const r = { n: "Ring of Power" };
   assert.deepStrictEqual(carriedItems({ items: [a, b] }), [a, b]);
-  const c2 = { items: [a], worn: { ring: r, cloak: null } };
+  const c2 = { items: [a], worn: { jewelry1: r, jewelry2: null, cloak: null } };
   const before = JSON.stringify(c2);
   assert.deepStrictEqual(carriedItems(c2), [a, r]);
   assert.equal(JSON.stringify(c2), before, "carriedItems must never mutate its input");
   assert.deepStrictEqual(carriedItems({}), []);
-  assert.deepStrictEqual(carriedItems({ worn: { ring: r } }), [r]);
+  assert.deepStrictEqual(carriedItems({ worn: { jewelry1: r } }), [r]);
+  const anklet = { n: "Anklet of Invisibility" };
+  assert.deepStrictEqual(carriedItems({ worn: { jewelry1: r, jewelry2: anklet } }).sort((x, y) => x.n.localeCompare(y.n)), [anklet, r]);
 });
 
 /* ============================================================
@@ -242,28 +286,44 @@ test("itemEffectActive/isFlying/conditionsOf key off a LIVE record's own act.kin
  * reconcileWorn
  * ============================================================ */
 
-test("reconcileWorn moves the first item of each slot type into c.worn, in WORN_SLOTS order, leaving later duplicates bagged", () => {
+test("reconcileWorn moves up to TWO jewelry items and one cloak into c.worn, in SLOT_FAMILIES order, leaving later duplicates bagged (per-family report, worn as an array)", () => {
   const ring1 = { n: "Ring of Power", kind: "jewel" };
-  const ring2 = { n: "Ring of Power", kind: "jewel" };
+  const anklet = { n: "Anklet of Invisibility", kind: "jewel" };
+  const helm = { n: "Helm of Knowledge", kind: "jewel" };
   const cloakA = { n: "Cloak of Speed", kind: "cloak" };
   const cloakB = { n: "Cloak of Strength", kind: "cloak" };
   const potion = { n: "Healing potion", kind: "potion" };
   const picks = { n: "Lockpicks", kind: "picks" };
-  const c = { cls: "Fighter", items: [ring1, ring2, cloakA, potion, picks, cloakB] };
+  const c = { cls: "Fighter", items: [ring1, anklet, helm, cloakA, potion, picks, cloakB] };
 
   const report = reconcileWorn(c);
   assert.deepStrictEqual(report, [
-    { slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] },
-    { slot: "cloak", worn: "Cloak of Speed", bagged: ["Cloak of Strength"] },
+    { slot: "jewelry", worn: ["Ring of Power", "Anklet of Invisibility"], bagged: ["Helm of Knowledge"] },
+    { slot: "cloak", worn: ["Cloak of Speed"], bagged: ["Cloak of Strength"] },
   ]);
-  assert.deepStrictEqual(c.worn, { ring: ring1, cloak: cloakA });
-  assert.equal(c.worn.ring, ring1, "same object identity");
+  assert.deepStrictEqual(c.worn, { jewelry1: ring1, jewelry2: anklet, cloak: cloakA });
+  assert.equal(c.worn.jewelry1, ring1, "same object identity");
+  assert.equal(c.worn.jewelry2, anklet, "same object identity");
   assert.equal(c.worn.cloak, cloakA, "same object identity");
-  assert.deepStrictEqual(c.items, [ring2, potion, picks, cloakB]);
+  assert.deepStrictEqual(c.items, [helm, potion, picks, cloakB]);
 
   const secondReport = reconcileWorn(c);
   assert.equal(secondReport, null, "never re-migrates a present worn key");
-  assert.deepStrictEqual(c.worn, { ring: ring1, cloak: cloakA }, "unchanged by the second call");
+  assert.deepStrictEqual(c.worn, { jewelry1: ring1, jewelry2: anklet, cloak: cloakA }, "unchanged by the second call");
+});
+
+test("reconcileWorn: the five-item bag from the plan's own behavior list wears Ring+Anklet into jewelry1/jewelry2, Cloak of Speed into cloak, bags Helm+Amulet", () => {
+  const ring = { n: "Ring of Power", kind: "jewel" };
+  const anklet = { n: "Anklet of Invisibility", kind: "jewel" };
+  const helm = { n: "Helm of Knowledge", kind: "jewel" };
+  const cloakOfSpeed = { n: "Cloak of Speed", kind: "cloak" };
+  const amulet = { n: "Amulet of Light", kind: "jewel" };
+  const c = { cls: "Fighter", items: [ring, anklet, helm, cloakOfSpeed, amulet] };
+  const report = reconcileWorn(c);
+  assert.deepStrictEqual(report, [
+    { slot: "jewelry", worn: ["Ring of Power", "Anklet of Invisibility"], bagged: ["Helm of Knowledge", "Amulet of Light"] },
+    { slot: "cloak", worn: ["Cloak of Speed"], bagged: [] },
+  ]);
 });
 
 test("reconcileWorn on an empty Thief returns [] and sets c.worn to {}", () => {
@@ -345,7 +405,7 @@ test("companion invariant: no populated c.worn[slot] item is ever also present i
   const gauntlet = { n: "Gauntlet of the Giant", kind: "jewel", eff: { size: 1 } };
 
   // (a) a hand-built worn state with a live Ring of Power record.
-  const stateA = { items: [ring2], worn: { ring: ring1 }, timers: { "item:Ring of Power": liveRecord(50, 50) } };
+  const stateA = { items: [ring2], worn: { jewelry1: ring1 }, timers: { "item:Ring of Power": liveRecord(50, 50) } };
   // (b) the reconcileWorn output for a mixed bag, with a live Gauntlet record.
   const stateB = { cls: "Fighter", items: [ring1, ring2, cloakA, cloakB, gauntlet] };
   reconcileWorn(stateB);

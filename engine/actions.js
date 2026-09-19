@@ -41,7 +41,9 @@ export const ACTION_TYPES = new Set([
   // ECON-03/04/05 (Phase 13): the player-choice inventory actions. All pure
   // (no rng). takeFind/leaveFind accept/decline the pending find stashed by a
   // find caller (encounters.js#offerFind); dropItem/equipItem carry a
-  // non-negative item index `i`; unequipSlot carries a `slot` ("weapon"/"armor").
+  // non-negative item index `i`; unequipSlot carries a `slot` ("weapon"/"armor",
+  // or one of the three worn keys). 260918-wy1: equipItem also accepts an
+  // OPTIONAL `slot` — the targeted jewelry-swap key.
   "takeFind",
   "leaveFind",
   "dropItem",
@@ -110,12 +112,13 @@ export function validateAction(action) {
       break;
     case "useItem":
       // Phase 37 (GEAR-03): the slot address form — exactly one of `i` or
-      // `slot` may be present, never both.
+      // `slot` may be present, never both. 260918-wy1: the address space is
+      // now the three worn keys (two jewelry, one cloak).
       if (action.slot !== undefined) {
         if (action.i !== undefined || !WORN_SLOTS.includes(action.slot)) {
           return {
             ok: false,
-            reason: "useItem.slot must be one of ring, bracelet, amulet, helm, cloak (and excludes i)",
+            reason: "useItem.slot must be one of jewelry1, jewelry2, cloak (and excludes i)",
           };
         }
         break;
@@ -142,7 +145,6 @@ export function validateAction(action) {
       }
       break;
     case "dropItem":
-    case "equipItem":
     case "sellItem":
       // ECON-04/05/06 (Phase 13/14): the carried-item index — same non-negative
       // integer contract as useItem.i above (c.items[i] on a bad index safely
@@ -151,15 +153,29 @@ export function validateAction(action) {
         return { ok: false, reason: `${action.type}.i must be a non-negative integer` };
       }
       break;
+    case "equipItem":
+      // ECON-04/05 (Phase 13): the carried-item index — same contract as
+      // dropItem/sellItem above.
+      if (!isInt(action.i) || action.i < 0) {
+        return { ok: false, reason: `${action.type}.i must be a non-negative integer` };
+      }
+      // 260918-wy1 (jewelry-merge): `slot` is an OPTIONAL targeted-swap key
+      // (the targeted jewelry swap, or an explicit cloak target) — when
+      // present it must be one of the three worn keys.
+      if (action.slot !== undefined && !WORN_SLOTS.includes(action.slot)) {
+        return { ok: false, reason: "equipItem.slot must be one of jewelry1, jewelry2, cloak when present" };
+      }
+      break;
     case "unequipSlot":
       // ECON-05 (Phase 13) + Phase 37 (GEAR-03) + 260918-w4n (staff
-      // amendment): the two scalar equip slots PLUS the five worn-model
-      // slots — a malformed slot string (including "staff", which has no
+      // amendment) + 260918-wy1 (jewelry-merge): the two scalar equip slots
+      // PLUS the three worn-model keys — a malformed slot string (including
+      // "staff", "ring", "bracelet", "amulet", "helm", none of which have a
       // worn slot any more) can never reach the handler.
       if (!EQUIP_SLOTS.has(action.slot) && !WORN_SLOTS.includes(action.slot)) {
         return {
           ok: false,
-          reason: "unequipSlot.slot must be 'weapon', 'armor' or one of ring, bracelet, amulet, helm, cloak",
+          reason: "unequipSlot.slot must be 'weapon', 'armor' or one of jewelry1, jewelry2, cloak",
         };
       }
       break;

@@ -150,33 +150,90 @@ export function slotItems(c) {
 }
 
 /**
- * WORN_SLOTS — 260918-w4n (staff amendment, user ruling 2026-09-18: "Staff
- * should not be an equipment slot"): the FIVE worn-slot keys, in a fixed
- * display/report order. Frozen. `c.worn = { ring?, bracelet?, amulet?,
- * helm?, cloak? }` is the one-per-slot map these keys address — a staff has
- * no slot anywhere; it lives in `c.items` (one bag slot) and is used by bag
- * index.
+ * SLOT_FAMILIES / WORN_KEYS_OF / WORN_FAMILY_OF / WORN_SLOTS — 260918-wy1
+ * (jewelry-merge ruling, user 2026-09-18: "We should not have ring/bracelet/
+ * amulet as separate equipment slots. We should have jewelry as a slot.
+ * Let's allow us to slot up to 2 pieces of jewelry: any combination of
+ * rings, bracelets, amulets, and helms."): the four former sub-slots (ring/
+ * bracelet/amulet/helm) collapse into ONE family, `jewelry`, holding up to
+ * TWO pieces at once (any combination, including two of the same former
+ * sub-kind); the cloak keeps its own single-key family, unchanged.
+ *
+ * `SLOT_FAMILIES` is the frozen ordered list of families (`slotFor` below
+ * returns one of these, or null). `WORN_KEYS_OF` is the frozen family ->
+ * concrete-worn-keys table (`jewelry` maps to TWO keys; `cloak` to one;
+ * each inner array is itself frozen). `WORN_FAMILY_OF` is its inverse
+ * (concrete key -> family), built once, below. `WORN_SLOTS` stays the
+ * flat, ordered list of concrete KEYS — the address space every action
+ * (`useItem`/`unequipSlot`/`equipItem`), the `c.worn` map itself, and every
+ * display/report order (Gear tab, combat submenu, reconcileWorn) all read —
+ * kept as the literal `["jewelry1", "jewelry2", "cloak"]` (not derived via
+ * the flatMap at the call sites) so this is the one obvious place the grep
+ * gates and the docs point at; a test pins it equal to
+ * `SLOT_FAMILIES.flatMap(f => WORN_KEYS_OF[f])` to prove the two never
+ * drift apart. `c.worn = { jewelry1?, jewelry2?, cloak? }` is the flat
+ * key -> item-object map these keys address (never an array, never a
+ * family-keyed map) — see the plan's "Worn shape" decision for why a flat
+ * two-key form was chosen over an array.
  */
-export const WORN_SLOTS = Object.freeze(["ring", "bracelet", "amulet", "helm", "cloak"]);
+export const SLOT_FAMILIES = Object.freeze(["jewelry", "cloak"]);
+
+export const WORN_KEYS_OF = Object.freeze({
+  jewelry: Object.freeze(["jewelry1", "jewelry2"]),
+  cloak: Object.freeze(["cloak"]),
+});
+
+export const WORN_FAMILY_OF = Object.freeze(
+  Object.fromEntries(
+    SLOT_FAMILIES.flatMap((family) => WORN_KEYS_OF[family].map((key) => [key, family])),
+  ),
+);
+
+export const WORN_SLOTS = Object.freeze(["jewelry1", "jewelry2", "cloak"]);
 
 /**
- * slotFor(it) — Phase 37 (GEAR-03): which worn slot item `it` belongs to, or
- * `null` if it is not a slot item at all (weapon/armor/potion/scroll/picks/
- * bag/staff/etc). Resolution order: `it.slot` when the item itself carries a
- * string `slot` (forward-compat — no current construction site spreads one,
- * see content/treasure-tables.js's header comment, but a future one might);
- * else `SLOT_OF[it.n]` (content/treasure-tables.js's name-keyed taxonomy,
- * covering every current JEWELRY/CLOAKS row); else a `kind` fallback for a
- * cloak rolled under a name SLOT_OF doesn't recognize (e.g. a save from
- * before this taxonomy existed, or test fixtures). 260918-w4n: a staff is
- * NOT a slot item — it resolves to `null` here unconditionally (no `kind ===
- * "staff"` fallback any more); it is a bag item used by index. Null-safe: a
- * non-object `it` returns null. Pure, no rng, no mutation.
+ * freeWornKey(c, family) — 260918-wy1: the ONE first-free-key rule for a
+ * worn family — the first key of `WORN_KEYS_OF[family]` with no item
+ * currently worn there, or `null` when every key of that family is
+ * occupied (or `family` is not a known family). Every reader that needs to
+ * know "which concrete key would this family item wear into next" —
+ * `engine/items.js#autoWearSlot`/`equipItem`, `reconcileWorn` below, and
+ * `engine/saveState.js#sanitizeWorn`'s legacy fold — reads THIS function,
+ * never re-derives the rule. Pure read: never creates `c.worn` (a `c` with
+ * no worn map yet is treated as if every key were free, so the first key of
+ * the family comes back) and never mutates anything. Null-safe.
+ */
+export function freeWornKey(c, family) {
+  const keys = WORN_KEYS_OF[family];
+  if (!keys) return null;
+  const worn = c && c.worn && typeof c.worn === "object" ? c.worn : {};
+  return keys.find((k) => !worn[k]) ?? null;
+}
+
+/**
+ * slotFor(it) — Phase 37 (GEAR-03), rewritten 260918-wy1 (jewelry-merge):
+ * which worn slot FAMILY item `it` belongs to, or `null` if it is not a
+ * slot item at all (weapon/armor/potion/scroll/picks/bag/staff/etc).
+ * Resolution order: `it.slot` when the item itself carries a string `slot`
+ * (forward-compat — no current construction site spreads one, see
+ * content/treasure-tables.js's header comment, but a future one might; every
+ * JEWELRY_ROWS entry now authors `slot: "jewelry"`, the family, not a
+ * concrete key); else `SLOT_OF[it.n]` (content/treasure-tables.js's
+ * name-keyed taxonomy, covering every current JEWELRY/CLOAKS row — values
+ * are only `jewelry`/`cloak`); else a `kind` fallback for an item rolled
+ * under a name SLOT_OF doesn't recognize (e.g. a save from before this
+ * taxonomy existed, or test fixtures) — `kind === "jewel"` -> `jewelry`
+ * (260918-wy1: new, mirrors the pre-existing cloak fallback so a jewel rolled
+ * under an unknown name still has a home), `kind === "cloak"` -> `cloak`.
+ * 260918-w4n: a staff is NOT a slot item — it resolves to `null` here
+ * unconditionally; it is a bag item used by index. Null-safe: a non-object
+ * `it` returns null. Pure, no rng, no mutation.
  */
 export function slotFor(it) {
   if (!it || typeof it !== "object") return null;
   if (typeof it.slot === "string") return it.slot;
   if (SLOT_OF[it.n] !== undefined) return SLOT_OF[it.n];
+  if (it.kind === "jewel") return "jewelry";
   if (it.kind === "cloak") return "cloak";
   return null;
 }
@@ -194,7 +251,10 @@ export function slotFor(it) {
  * always bagged now, but the union stays harmless). Returns a NEW array
  * (`c.items` first, in order, then the truthy `c.worn` values); never
  * mutates `c`. Defensive: a missing/non-array `c.items` and a missing/non-
- * object `c.worn` both contribute nothing rather than throwing.
+ * object `c.worn` both contribute nothing rather than throwing. 260918-wy1
+ * (jewelry-merge): shape-agnostic by construction — `Object.values(c.worn)`
+ * reads whichever concrete keys are populated (jewelry1/jewelry2/cloak)
+ * without caring which family they belong to, so this needed no change.
  */
 export function carriedItems(c) {
   const items = c && Array.isArray(c.items) ? c.items : [];
@@ -253,26 +313,28 @@ export function clampCarry(c) {
 }
 
 /**
- * reconcileWorn(c) — Phase 37 (GEAR-04): the load-time / newRun-option
- * migration that creates the worn-slot model on a character that lacks it.
- * A COMPLETE no-op — returns `null` — unless `c` is a non-null, non-array
- * object WITHOUT an own `worn` key (never re-migrates a `c` that already
- * has one, even an empty `{}`). Otherwise: sets `c.worn = {}`, then walks
- * `c.items` in bag order — for each item with a non-null `slotFor(it)`
- * whose slot is still empty in `c.worn` (and, for a staff, only when
- * `c.cls === "Magic User"` — a staff stays bagged for every other class,
- * exactly like `equipItem`'s existing staff-class gate), moves it (the SAME
- * object, not a copy) into `c.worn[slot]`; every later item of an
- * already-populated slot stays in the bag. Rebuilds `c.items` from the
+ * reconcileWorn(c) — Phase 37 (GEAR-04), rewritten 260918-wy1 (jewelry-merge):
+ * the load-time / newRun-option migration that creates the worn-slot model
+ * on a character that lacks it. A COMPLETE no-op — returns `null` — unless
+ * `c` is a non-null, non-array object WITHOUT an own `worn` key (never
+ * re-migrates a `c` that already has one, even an empty `{}`). Otherwise:
+ * sets `c.worn = {}`, then walks `c.items` in bag order — for each item with
+ * a non-null family (`slotFor(it)`), looks up `freeWornKey(c, family)`; when
+ * a key is free, moves the item (the SAME object, not a copy) into
+ * `c.worn[key]` and records its display name under that FAMILY's `worn`
+ * list; when the family is full, the item stays in the bag and its name is
+ * recorded under that family's `bagged` list. Rebuilds `c.items` from the
  * items that stayed bagged, in their original relative order (only when
  * `c.items` was itself an array).
  *
- * Returns a reconciliation report — one `{ slot, worn, bagged }` entry per
- * populated slot, in WORN_SLOTS order (`worn` = the display name now worn;
- * `bagged` = the display names of any later same-slot items left behind) —
- * or `[]` when nothing was worn. Report objects use only `slot`/`worn`/
- * `bagged` keys (never `type` — test/unit/toastsCoverage.test.js's
- * event-vocabulary scanner greps every `type:` key across engine/*.js).
+ * Returns a reconciliation report — one `{ slot, worn, bagged }` entry PER
+ * FAMILY (`slot` is the family name, `jewelry` or `cloak`; `worn` is now an
+ * ARRAY of display names — up to two for jewelry; `bagged` is an array of
+ * display names left behind), in `SLOT_FAMILIES` order, only for families
+ * that wore or bagged at least one item — or `[]` when nothing was worn.
+ * Report objects use only `slot`/`worn`/`bagged` keys (never `type` —
+ * test/unit/toastsCoverage.test.js's event-vocabulary scanner greps every
+ * `type:` key across engine/*.js).
  *
  * Moving bag -> worn only ever FREES bag slots (items leave the bag, none
  * are added), so this can never overflow a bag-cap. Adds NO rng draw — pure
@@ -283,9 +345,7 @@ export function clampCarry(c) {
  * caller in this plan ever creates `c.worn`.
  *
  * 260918-w4n (staff amendment): a staff is never eligible here — `slotFor`
- * already returns `null` for one, so it always stays bagged (`eligible` is
- * simply `!!slot`; the old Magic-User staff eligibility clause is gone along
- * with the staff slot itself).
+ * already returns `null` for one, so it always stays bagged.
  */
 export function reconcileWorn(c) {
   if (!c || typeof c !== "object" || Array.isArray(c) || "worn" in c) return null;
@@ -293,21 +353,26 @@ export function reconcileWorn(c) {
   const hadItems = Array.isArray(c.items);
   const source = hadItems ? c.items : [];
   const kept = [];
-  const reportBySlot = new Map();
+  const reportByFamily = new Map();
   for (const it of source) {
-    const slot = it && slotFor(it);
-    const eligible = !!slot;
-    if (eligible && !c.worn[slot]) {
-      c.worn[slot] = it;
-      reportBySlot.set(slot, { slot, worn: it.n, bagged: [] });
+    const family = it && slotFor(it);
+    if (!family) {
+      kept.push(it);
+      continue;
+    }
+    if (!reportByFamily.has(family)) reportByFamily.set(family, { slot: family, worn: [], bagged: [] });
+    const key = freeWornKey(c, family);
+    if (key) {
+      c.worn[key] = it;
+      reportByFamily.get(family).worn.push(it.n);
     } else {
-      if (eligible) reportBySlot.get(slot).bagged.push(it.n);
+      reportByFamily.get(family).bagged.push(it.n);
       kept.push(it);
     }
   }
   if (hadItems) c.items = kept;
   const report = [];
-  for (const slot of WORN_SLOTS) if (reportBySlot.has(slot)) report.push(reportBySlot.get(slot));
+  for (const family of SLOT_FAMILIES) if (reportByFamily.has(family)) report.push(reportByFamily.get(family));
   return report;
 }
 

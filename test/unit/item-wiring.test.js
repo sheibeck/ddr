@@ -114,7 +114,7 @@ test("Helm of Knowledge grants Language: worn AND used makes a TALKATIVE encount
   assert.equal(canParley(withoutHelm), false, "a plain Human Fighter with no Language cannot parley Humans");
 
   const wornUnused = fixedState({
-    c: { worn: { helm: HELM } },
+    c: { worn: { jewelry1: HELM } },
     combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }),
   });
   assert.equal(canParley(wornUnused), false, "a worn-but-unused Helm grants nothing");
@@ -128,10 +128,10 @@ test("Helm of Knowledge grants Language: worn AND used makes a TALKATIVE encount
   assert.deepStrictEqual(bagUseEvents, [{ type: "useRefused", item: HELM, reason: "notWorn" }]);
 
   const wornUsed = fixedState({
-    c: { worn: { helm: HELM } },
+    c: { worn: { jewelry1: HELM } },
     combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }),
   });
-  useItem(wornUsed, { slot: "helm" }, noDrawRng(), []);
+  useItem(wornUsed, { slot: "jewelry1" }, noDrawRng(), []);
   assert.equal(canParley(wornUsed), true, "worn AND used — the Helm's live tongue effect grants Language -> parley Humans");
 });
 
@@ -192,13 +192,13 @@ test("Pendant of Fortitude halves ONE incoming blow, then spends the charge", ()
 // grants nothing; the Amulet's own per-step tick is gone from movement.js.
 
 test("Amulet of Light dispels the persistent darkness counter outright on USE (worn AND used only)", () => {
-  const wornUsed = fixedState({ c: { worn: { amulet: AMULET_LIGHT }, darkFor: 30 } });
-  const events = useItem(wornUsed, { slot: "amulet" }, noDrawRng(), []); // no rng: dispel is a plain clear
+  const wornUsed = fixedState({ c: { worn: { jewelry1: AMULET_LIGHT }, darkFor: 30 } });
+  const events = useItem(wornUsed, { slot: "jewelry1" }, noDrawRng(), []); // no rng: dispel is a plain clear
   assert.equal(wornUsed.c.darkFor, 0, "worn AND used clears darkFor immediately");
   assert.ok(events.some((e) => e.type === "darknessDispelled"), "emits darknessDispelled");
   assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.kind === "glow"), "starts the 50-square glow effect");
 
-  const wornUnused = fixedState({ c: { worn: { amulet: AMULET_LIGHT }, darkFor: 30 } });
+  const wornUnused = fixedState({ c: { worn: { jewelry1: AMULET_LIGHT }, darkFor: 30 } });
   open(wornUnused.floor.g, 5, 4);
   move(wornUnused, "N", fakeRng([]), []);
   assert.equal(wornUnused.c.darkFor, 29, "worn but UNUSED — the counter merely ticks down, exactly like carrying nothing");

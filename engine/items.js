@@ -23,6 +23,8 @@ import {
   afraidDamage,
   slotFor,
   WORN_SLOTS,
+  WORN_KEYS_OF,
+  freeWornKey,
   expectedStrike,
   activationFor,
   itemTimerId,
@@ -374,22 +376,23 @@ export function armorUpgradeDelta(c, it) {
 }
 
 /**
- * autoWearSlot(state, it) — Phase 37 (GEAR-03): pure predicate — does `it`
- * auto-wear into an EMPTY slot right now? Returns the slot key when yes, or
- * `null` when no: `state.c` carries no own `worn` key (a legacy state —
- * never auto-wears), `it` is not an object, `slotFor(it)` is null (not a
- * slot item at all — 260918-w4n: a staff is ALWAYS null here, `slotFor`
- * never resolves one), or the slot is already occupied. Pure, no rng, no
- * mutation.
+ * autoWearSlot(state, it) — Phase 37 (GEAR-03), rewritten 260918-wy1
+ * (jewelry-merge): pure predicate — does `it` auto-wear into an EMPTY key
+ * right now? Returns the concrete KEY it would auto-wear into when yes
+ * (the first free key of its family, via `freeWornKey`), or `null` when no:
+ * `state.c` carries no own `worn` key (a legacy state — never auto-wears),
+ * `it` is not an object, `slotFor(it)` is null (not a slot item at all —
+ * 260918-w4n: a staff is ALWAYS null here, `slotFor` never resolves one), or
+ * every key of its family is already occupied (both jewelry keys full, or
+ * the cloak key full). Pure, no rng, no mutation.
  */
 export function autoWearSlot(state, it) {
   const c = state && state.c;
   if (!c || typeof c !== "object" || !("worn" in c) || !c.worn || typeof c.worn !== "object") return null;
   if (!it || typeof it !== "object") return null;
-  const slot = slotFor(it);
-  if (!slot) return null;
-  if (c.worn[slot]) return null;
-  return slot;
+  const family = slotFor(it);
+  if (!family) return null;
+  return freeWornKey(c, family);
 }
 
 /**
@@ -685,14 +688,14 @@ export function dropItem(state, i, events = []) {
 }
 
 /**
- * equipItem(state, i, events) — equip carried weapon/armor `i` onto the
- * character (ECON-05), REGARDLESS of whether it is better or worse than the
- * worn piece (the deliberate change vs takeItem's strictly-better gate) — but
- * REJECTING an illegal class/subclass/race combination (`equipRejected`). The
- * equip is a DIRECT SWAP: the previously-worn piece drops back into the freed
- * bag slot (no net slot change); if the character wore nothing, the item is
- * simply removed from the bag (net −1). No-op on an out-of-range index. Pure,
- * no rng.
+ * equipItem(state, i, events, target) — equip carried weapon/armor `i` onto
+ * the character (ECON-05), REGARDLESS of whether it is better or worse than
+ * the worn piece (the deliberate change vs takeItem's strictly-better gate) —
+ * but REJECTING an illegal class/subclass/race combination (`equipRejected`).
+ * The equip is a DIRECT SWAP: the previously-worn piece drops back into the
+ * freed bag slot (no net slot change); if the character wore nothing, the
+ * item is simply removed from the bag (net −1). No-op on an out-of-range
+ * index. Pure, no rng.
  *
  * Phase 28 (ARMOR-03): a piece that has been WORN carries `left`/`patches`
  * (set by wornArmorItem above) and comes back at that same durability — a
@@ -702,8 +705,13 @@ export function dropItem(state, i, events = []) {
  * destroyed, wornArmorItem returns null, so the swap simply removes the
  * newly-equipped item from the bag — the destroyed piece is gone, no bag
  * copy.
+ *
+ * 260918-wy1 (jewelry-merge): `target` is an OPTIONAL concrete worn key
+ * (`"jewelry1"|"jewelry2"|"cloak"`), used only in the cloak/jewelry branch
+ * below. It has no effect on the weapon/armor branches above (those stay a
+ * single-key direct swap, unchanged).
  */
-export function equipItem(state, i, events = []) {
+export function equipItem(state, i, events = [], target = null) {
   const c = state.c;
   const it = (c.items || [])[i];
   if (!it) return events;
@@ -747,20 +755,43 @@ export function equipItem(state, i, events = []) {
   // 260918-w4n (staff amendment): a staff is EXCLUDED here — it is not
   // equipable at all; it falls through to the notEquippable refusal below,
   // the same one a potion already gets (slotFor(it) is always null for a
-  // staff regardless, so this branch's own `!slot` guard would have refused
-  // it anyway — excluded explicitly so the intent reads plainly). Potions,
-  // picks, bags — never an equip slot either.
+  // staff regardless, so this branch's own `!family` guard would have
+  // refused it anyway — excluded explicitly so the intent reads plainly).
+  // Potions, picks, bags — never an equip slot either.
+  //
+  // 260918-wy1 (jewelry-merge): `slotFor` now returns a FAMILY, not a
+  // concrete key. Rule: an explicit `target` wins (validated against the
+  // family's own keys, else `wrongSlot`); else the first free key of the
+  // family (`freeWornKey`); else — for a single-key family (cloak) — that
+  // one key, swapping exactly like before; else (both jewelry keys full,
+  // untargeted) the family is full, refuse `jewelryFull` (nothing moves,
+  // neither `c.worn` nor `c.items` changes).
   if ((it.kind === "cloak" || it.kind === "jewel") && c.worn && typeof c.worn === "object") {
-    const slot = slotFor(it);
-    if (!slot) {
+    const family = slotFor(it);
+    if (!family) {
       events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
       return events;
     }
-    const worn = c.worn[slot] || null;
-    c.worn[slot] = it;
+    const keys = WORN_KEYS_OF[family] || [];
+    let key;
+    if (target !== null && target !== undefined) {
+      if (!keys.includes(target)) {
+        events.push({ type: "equipRejected", item: it, reason: "wrongSlot" });
+        return events;
+      }
+      key = target;
+    } else {
+      key = freeWornKey(c, family) ?? (keys.length === 1 ? keys[0] : null);
+    }
+    if (!key) {
+      events.push({ type: "equipRejected", item: it, reason: "jewelryFull" });
+      return events;
+    }
+    const worn = c.worn[key] || null;
+    c.worn[key] = it;
     if (worn) c.items[i] = worn;
     else c.items.splice(i, 1);
-    const evt = { type: "itemEquipped", item: it, slot };
+    const evt = { type: "itemEquipped", item: it, slot: key };
     if (worn) evt.replaced = worn;
     events.push(evt);
     return events;
@@ -828,8 +859,9 @@ export function unequipSlot(state, slot, events = []) {
     c.armorWP = 0;
     c.patches = 0;
   } else {
-    // Phase 37 (GEAR-03): one of the six new worn slots — delete, not null,
-    // so `slot in c.worn` reports empty exactly like a never-worn slot.
+    // Phase 37 (GEAR-03), 260918-wy1: one of the three worn keys (two
+    // jewelry, one cloak) — delete, not null, so `slot in c.worn` reports
+    // empty exactly like a never-worn slot.
     delete c.worn[slot];
   }
   events.push({ type: "itemUnequipped", item: worn, slot });

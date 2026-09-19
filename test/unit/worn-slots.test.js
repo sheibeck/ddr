@@ -78,6 +78,12 @@ function RING() {
 function GAUNTLET() {
   return { kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: "one size larger" };
 }
+function BRACELET() {
+  return { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: "twenty squares of flight" };
+}
+function ANKLET() {
+  return { kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: "foes need two better to land" };
+}
 function CLOAK_SPEED() {
   return { kind: "cloak", n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "double attacks, once every 50 squares" };
 }
@@ -114,33 +120,85 @@ function fakeRng(seq) {
  * Task 1: equipItem — the slot branch (swap on an occupied slot)
  * ============================================================ */
 
-test("equipItem (new model): equipping an unworn ring moves it to c.worn.ring and frees the bag slot", () => {
+test("equipItem (new model): equipping an unworn ring moves it to jewelry1 and frees the bag slot", () => {
   const ring = RING();
   const state = hero({ c: { items: [ring] } });
   const events = equipItem(state, 0, []);
-  assert.equal(state.c.worn.ring, ring);
+  assert.equal(state.c.worn.jewelry1, ring);
   assert.deepStrictEqual(state.c.items, []);
-  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: ring, slot: "ring" }]);
+  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: ring, slot: "jewelry1" }]);
   assert.equal("replaced" in events[0], false, "no replaced key when nothing was worn");
 });
 
-test("equipItem (new model): equipping into an occupied slot is a direct swap — the old item lands at the freed bag index with a replaced payload", () => {
-  const ringA = RING();
-  const ringB = RING();
-  const potion = POTION();
-  const state = hero({ c: { worn: { ring: ringA }, items: [potion, ringB] } });
-  const events = equipItem(state, 1, []);
-  assert.equal(state.c.worn.ring, ringB);
-  assert.deepStrictEqual(state.c.items, [potion, ringA]);
-  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: ringB, slot: "ring", replaced: ringA }]);
+test("equipItem (new model): with jewelry1 taken, equipping another jewel wears jewelry2 — NO swap, both survive worn", () => {
+  const ring = RING();
+  const anklet = ANKLET();
+  const state = hero({ c: { worn: { jewelry1: ring }, items: [anklet] } });
+  const events = equipItem(state, 0, []);
+  assert.equal(state.c.worn.jewelry1, ring, "jewelry1 untouched");
+  assert.equal(state.c.worn.jewelry2, anklet);
+  assert.deepStrictEqual(state.c.items, []);
+  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: anklet, slot: "jewelry2" }]);
+  assert.equal("replaced" in events[0], false, "no swap — jewelry2 was free");
 });
 
-test("equipItem (new model): a ring and a cloak occupy different slots — equipping one never displaces the other", () => {
+test("equipItem (new model): both jewelry keys occupied, untargeted equip refuses jewelryFull — nothing moves", () => {
+  const ring = RING();
+  const anklet = ANKLET();
+  const gauntlet = GAUNTLET();
+  const state = hero({ c: { worn: { jewelry1: ring, jewelry2: anklet }, items: [gauntlet] } });
+  const before = JSON.stringify(state.c);
+  const events = equipItem(state, 0, []);
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: gauntlet, reason: "jewelryFull" }]);
+  assert.equal(JSON.stringify(state.c), before, "neither c.worn nor c.items changes");
+});
+
+test("equipItem (new model): targeted equip on jewelry2 with both full swaps exactly that key — jewelry1 untouched, displaced piece lands in the bag", () => {
+  const ring = RING();
+  const anklet = ANKLET();
+  const gauntlet = GAUNTLET();
+  const state = hero({ c: { worn: { jewelry1: ring, jewelry2: anklet }, items: [gauntlet] } });
+  const events = equipItem(state, 0, [], "jewelry2");
+  assert.equal(state.c.worn.jewelry1, ring, "jewelry1 untouched");
+  assert.equal(state.c.worn.jewelry2, gauntlet);
+  assert.deepStrictEqual(state.c.items, [anklet]);
+  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: gauntlet, slot: "jewelry2", replaced: anklet }]);
+});
+
+test("equipItem (new model): a targeted cloak key on a jewel is refused wrongSlot — nothing moves", () => {
+  const ring = RING();
+  const state = hero({ c: { worn: {}, items: [ring] } });
+  const before = JSON.stringify(state.c);
+  const events = equipItem(state, 0, [], "cloak");
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: ring, reason: "wrongSlot" }]);
+  assert.equal(JSON.stringify(state.c), before);
+});
+
+test("equipItem (new model): a targeted jewelry1 key on a cloak is refused wrongSlot — nothing moves", () => {
+  const cloak = CLOAK_SPEED();
+  const state = hero({ c: { worn: {}, items: [cloak] } });
+  const before = JSON.stringify(state.c);
+  const events = equipItem(state, 0, [], "jewelry1");
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: cloak, reason: "wrongSlot" }]);
+  assert.equal(JSON.stringify(state.c), before);
+});
+
+test("equipItem (new model): a cloak on an occupied cloak key is still a direct swap, untargeted (unchanged single-key-family behavior)", () => {
+  const cloakA = CLOAK_SPEED();
+  const cloakB = { kind: "cloak", n: "Cloak of Strength", eff: { noCrit: 1 }, txt: "no critical damage lands on you" };
+  const state = hero({ c: { worn: { cloak: cloakA }, items: [cloakB] } });
+  const events = equipItem(state, 0, []);
+  assert.equal(state.c.worn.cloak, cloakB);
+  assert.deepStrictEqual(state.c.items, [cloakA]);
+  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: cloakB, slot: "cloak", replaced: cloakA }]);
+});
+
+test("equipItem (new model): a ring and a cloak occupy different families — equipping one never displaces the other", () => {
   const ring = RING();
   const cloak = CLOAK_SPEED();
-  const state = hero({ c: { worn: { ring }, items: [cloak] } });
+  const state = hero({ c: { worn: { jewelry1: ring }, items: [cloak] } });
   const events = equipItem(state, 0, []);
-  assert.deepStrictEqual(state.c.worn, { ring, cloak });
+  assert.deepStrictEqual(state.c.worn, { jewelry1: ring, cloak });
   assert.deepStrictEqual(state.c.items, []);
   assert.deepStrictEqual(events, [{ type: "itemEquipped", item: cloak, slot: "cloak" }]);
 });
@@ -188,35 +246,37 @@ test("equipItem legacy identity: without c.worn, a ring/cloak/staff still gets n
  * Task 1: unequipSlot — extends to the six new slots
  * ============================================================ */
 
-test("unequipSlot: a free ring slot stows via stowItem and pushes itemUnequipped (delete, not null)", () => {
+test("unequipSlot: jewelry1 stows exactly that piece via stowItem and pushes itemUnequipped (delete, not null), leaving jewelry2 worn", () => {
   const ring = RING();
-  const state = hero({ c: { worn: { ring }, items: [] } });
-  const events = unequipSlot(state, "ring", []);
-  assert.equal("ring" in state.c.worn, false, "delete, not null");
+  const anklet = ANKLET();
+  const state = hero({ c: { worn: { jewelry1: ring, jewelry2: anklet }, items: [] } });
+  const events = unequipSlot(state, "jewelry1", []);
+  assert.equal("jewelry1" in state.c.worn, false, "delete, not null");
+  assert.equal(state.c.worn.jewelry2, anklet, "jewelry2 stays worn");
   assert.deepStrictEqual(state.c.items, [ring]);
-  assert.deepStrictEqual(events, [{ type: "itemUnequipped", item: ring, slot: "ring" }]);
+  assert.deepStrictEqual(events, [{ type: "itemUnequipped", item: ring, slot: "jewelry1" }]);
 });
 
-test("unequipSlot: a full bag pushes bagFull and leaves the ring worn", () => {
+test("unequipSlot: a full bag pushes bagFull and leaves jewelry1 worn", () => {
   const ring = RING();
-  const state = hero({ c: { worn: { ring }, items: filler(6) } });
-  const events = unequipSlot(state, "ring", []);
+  const state = hero({ c: { worn: { jewelry1: ring }, items: filler(6) } });
+  const events = unequipSlot(state, "jewelry1", []);
   assert.equal(events.length, 1);
   assert.equal(events[0].type, "bagFull");
-  assert.equal(state.c.worn.ring, ring, "the ring stays worn");
+  assert.equal(state.c.worn.jewelry1, ring, "the ring stays worn");
   assert.equal(state.c.items.length, 6);
 });
 
 test("unequipSlot: an empty slot is a silent no-op", () => {
   const state = hero({ c: { worn: {} } });
-  const events = unequipSlot(state, "helm", []);
+  const events = unequipSlot(state, "jewelry2", []);
   assert.deepStrictEqual(events, []);
   assert.deepStrictEqual(state.c.worn, {});
 });
 
-test("unequipSlot on a legacy state (no worn) for ring is a no-op", () => {
+test("unequipSlot on a legacy state (no worn) for jewelry1 is a no-op", () => {
   const state = legacyHero();
-  const events = unequipSlot(state, "ring", []);
+  const events = unequipSlot(state, "jewelry1", []);
   assert.deepStrictEqual(events, []);
   assert.equal("worn" in state.c, false);
 });
@@ -225,10 +285,15 @@ test("unequipSlot on a legacy state (no worn) for ring is a no-op", () => {
  * Task 1: autoWearSlot / wearItem
  * ============================================================ */
 
-test("autoWearSlot: returns the slot key for an unworn slot item, null when occupied/legacy/non-slot/a staff (every class)", () => {
+test("autoWearSlot: returns the first free jewelry key for an unworn jewel (jewelry1 empty, jewelry2 once jewelry1 is taken), null when both are/legacy/non-slot/a staff (every class)", () => {
   const ring = RING();
-  assert.equal(autoWearSlot(hero({ c: { worn: {} } }), ring), "ring");
-  assert.equal(autoWearSlot(hero({ c: { worn: { ring: RING() } } }), ring), null, "occupied slot");
+  assert.equal(autoWearSlot(hero({ c: { worn: {} } }), ring), "jewelry1");
+  assert.equal(autoWearSlot(hero({ c: { worn: { jewelry1: RING() } } }), ring), "jewelry2", "jewelry1 taken -> jewelry2");
+  assert.equal(
+    autoWearSlot(hero({ c: { worn: { jewelry1: RING(), jewelry2: ANKLET() } } }), ring),
+    null,
+    "both jewelry keys occupied",
+  );
   assert.equal(autoWearSlot(legacyHero(), ring), null, "legacy state (no worn key)");
   assert.equal(autoWearSlot(hero({ c: { worn: {} } }), POTION()), null, "not a slot item");
   // 260918-w4n: a staff never auto-wears, for ANY class — slotFor(staff) is
@@ -241,9 +306,9 @@ test("autoWearSlot: returns the slot key for an unworn slot item, null when occu
 test("wearItem: assigns the item into c.worn[slot] (same object) and pushes itemEquipped", () => {
   const ring = RING();
   const state = hero({ c: { worn: {} } });
-  const events = wearItem(state, ring, "ring", []);
-  assert.equal(state.c.worn.ring, ring);
-  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: ring, slot: "ring" }]);
+  const events = wearItem(state, ring, "jewelry1", []);
+  assert.equal(state.c.worn.jewelry1, ring);
+  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: ring, slot: "jewelry1" }]);
 });
 
 /* ============================================================
@@ -256,32 +321,48 @@ test("takeFind (new model): an empty slot auto-wears, consumes no bag slot, take
   const events = takeFind(state, []);
   assert.equal(state.pendingFind, null);
   assert.deepStrictEqual(state.c.items, []);
-  assert.equal(state.c.worn.ring, ring);
+  assert.equal(state.c.worn.jewelry1, ring);
   assert.deepStrictEqual(events, [
     { type: "findTaken", item: ring },
-    { type: "itemEquipped", item: ring, slot: "ring" },
+    { type: "itemEquipped", item: ring, slot: "jewelry1" },
   ]);
 });
 
-test("takeFind (new model): an occupied slot bags the item exactly as today", () => {
+test("takeFind (new model): an occupied jewelry1 wears jewelry2 (two of a kind — a second Ring of Power wears alongside the first)", () => {
   const ringA = RING();
   const ringB = RING();
-  const state = hero({ c: { worn: { ring: ringA }, items: [] }, pendingFind: ringB });
+  const state = hero({ c: { worn: { jewelry1: ringA }, items: [] }, pendingFind: ringB });
   const events = takeFind(state, []);
-  assert.deepStrictEqual(state.c.items, [ringB]);
-  assert.equal(state.c.worn.ring, ringA);
-  assert.deepStrictEqual(events, [{ type: "findTaken", item: ringB }]);
+  assert.deepStrictEqual(state.c.items, []);
+  assert.equal(state.c.worn.jewelry1, ringA);
+  assert.equal(state.c.worn.jewelry2, ringB);
+  assert.deepStrictEqual(events, [
+    { type: "findTaken", item: ringB },
+    { type: "itemEquipped", item: ringB, slot: "jewelry2" },
+  ]);
 });
 
-test("takeFind (new model): a FULL bag with an empty slot still wears — wearing needs no slot, no bagFull", () => {
+test("takeFind (new model): both jewelry keys occupied bags the third piece exactly as today", () => {
+  const ringA = RING();
+  const anklet = ANKLET();
+  const gauntlet = GAUNTLET();
+  const state = hero({ c: { worn: { jewelry1: ringA, jewelry2: anklet }, items: [] }, pendingFind: gauntlet });
+  const events = takeFind(state, []);
+  assert.deepStrictEqual(state.c.items, [gauntlet]);
+  assert.equal(state.c.worn.jewelry1, ringA);
+  assert.equal(state.c.worn.jewelry2, anklet);
+  assert.deepStrictEqual(events, [{ type: "findTaken", item: gauntlet }]);
+});
+
+test("takeFind (new model): a FULL bag with an empty jewelry key still wears — wearing needs no slot, no bagFull", () => {
   const ring = RING();
   const state = hero({ c: { worn: {}, items: filler(6) }, pendingFind: ring });
   const events = takeFind(state, []);
-  assert.equal(state.c.worn.ring, ring);
+  assert.equal(state.c.worn.jewelry1, ring);
   assert.equal(state.c.items.length, 6);
   assert.deepStrictEqual(events, [
     { type: "findTaken", item: ring },
-    { type: "itemEquipped", item: ring, slot: "ring" },
+    { type: "itemEquipped", item: ring, slot: "jewelry1" },
   ]);
 });
 
@@ -295,23 +376,37 @@ test("takeFind legacy identity: without c.worn, today's bag-only behaviour is by
   assert.equal("worn" in state.c, false);
 });
 
-test("takeLoot non-equip (new model): mirrors takeFind — empty slot wears, occupied slot bags", () => {
+test("takeLoot non-equip (new model): mirrors takeFind — empty jewelry key wears, both-full bags", () => {
   const ring = RING();
   const state = hero({ c: { worn: {} }, pendingLoot: [ring] });
   const events = takeLoot(state, 0, false, []);
-  assert.equal(state.c.worn.ring, ring);
+  assert.equal(state.c.worn.jewelry1, ring);
   assert.deepStrictEqual(state.pendingLoot, []);
   assert.deepStrictEqual(events, [
     { type: "lootTaken", item: ring },
-    { type: "itemEquipped", item: ring, slot: "ring" },
+    { type: "itemEquipped", item: ring, slot: "jewelry1" },
   ]);
 
   const ringA = RING();
-  const ringB = RING();
-  const state2 = hero({ c: { worn: { ring: ringA }, items: [] }, pendingLoot: [ringB] });
+  const anklet = ANKLET();
+  const gauntlet = GAUNTLET();
+  const state2 = hero({ c: { worn: { jewelry1: ringA, jewelry2: anklet }, items: [] }, pendingLoot: [gauntlet] });
   const events2 = takeLoot(state2, 0, false, []);
-  assert.deepStrictEqual(state2.c.items, [ringB]);
-  assert.deepStrictEqual(events2, [{ type: "lootTaken", item: ringB }]);
+  assert.deepStrictEqual(state2.c.items, [gauntlet]);
+  assert.deepStrictEqual(events2, [{ type: "lootTaken", item: gauntlet }]);
+});
+
+test("takeLoot non-equip (new model): a second Ring of Power wears into jewelry2 alongside the first (two of a kind)", () => {
+  const ringA = RING();
+  const ringB = RING();
+  const state = hero({ c: { worn: { jewelry1: ringA }, items: [] }, pendingLoot: [ringB] });
+  const events = takeLoot(state, 0, false, []);
+  assert.equal(state.c.worn.jewelry1, ringA);
+  assert.equal(state.c.worn.jewelry2, ringB);
+  assert.deepStrictEqual(events, [
+    { type: "lootTaken", item: ringB },
+    { type: "itemEquipped", item: ringB, slot: "jewelry2" },
+  ]);
 });
 
 test("takeLoot equip:true on a slot item stays notEquippable (deliberately unchanged)", () => {
@@ -322,34 +417,52 @@ test("takeLoot equip:true on a slot item stays notEquippable (deliberately uncha
   assert.deepStrictEqual(state.pendingLoot, [ring], "pile untouched");
 });
 
-test("takeAllLoot (new model): auto-wears the first slot item per empty slot, bags the rest, in pile order", () => {
+test("takeAllLoot (new model): auto-wears up to TWO jewelry items (jewelry1, jewelry2), bags the rest, in pile order", () => {
   const ringA = RING();
   const ringB = RING();
+  const gauntlet = GAUNTLET();
   const potion = POTION();
-  const state = hero({ c: { worn: {} }, pendingLoot: [ringA, ringB, potion] });
+  const state = hero({ c: { worn: {} }, pendingLoot: [ringA, ringB, gauntlet, potion] });
   const events = takeAllLoot(state, []);
-  assert.equal(state.c.worn.ring, ringA);
-  assert.deepStrictEqual(state.c.items, [ringB, potion]);
+  assert.equal(state.c.worn.jewelry1, ringA);
+  assert.equal(state.c.worn.jewelry2, ringB);
+  assert.deepStrictEqual(state.c.items, [gauntlet, potion]);
   assert.deepStrictEqual(state.pendingLoot, []);
   assert.deepStrictEqual(events, [
     { type: "lootTaken", item: ringA },
-    { type: "itemEquipped", item: ringA, slot: "ring" },
+    { type: "itemEquipped", item: ringA, slot: "jewelry1" },
     { type: "lootTaken", item: ringB },
+    { type: "itemEquipped", item: ringB, slot: "jewelry2" },
+    { type: "lootTaken", item: gauntlet },
     { type: "lootTaken", item: potion },
   ]);
 });
 
-test("takeAllLoot (new model): a full bag with an empty ring slot still wears ringA, one bagFull for ringB", () => {
+test("takeAllLoot (new model): a full bag with both jewelry keys free wears ringA into jewelry1 and ringB into jewelry2 — bag-full never blocks a wear", () => {
   const ringA = RING();
   const ringB = RING();
   const state = hero({ c: { worn: {}, items: filler(6) }, pendingLoot: [ringA, ringB] });
   const events = takeAllLoot(state, []);
-  assert.equal(state.c.worn.ring, ringA);
-  assert.deepStrictEqual(state.pendingLoot, [ringB]);
+  assert.equal(state.c.worn.jewelry1, ringA);
+  assert.equal(state.c.worn.jewelry2, ringB);
+  assert.deepStrictEqual(state.pendingLoot, []);
+  assert.deepStrictEqual(events, [
+    { type: "lootTaken", item: ringA },
+    { type: "itemEquipped", item: ringA, slot: "jewelry1" },
+    { type: "lootTaken", item: ringB },
+    { type: "itemEquipped", item: ringB, slot: "jewelry2" },
+  ]);
+});
+
+test("takeAllLoot (new model): a full bag with BOTH jewelry keys occupied pushes one bagFull for the third piece", () => {
+  const ringA = RING();
+  const anklet = ANKLET();
+  const gauntlet = GAUNTLET();
+  const state = hero({ c: { worn: { jewelry1: ringA, jewelry2: anklet }, items: filler(6) }, pendingLoot: [gauntlet] });
+  const events = takeAllLoot(state, []);
+  assert.deepStrictEqual(state.pendingLoot, [gauntlet]);
   const bagFulls = events.filter((e) => e.type === "bagFull");
   assert.equal(bagFulls.length, 1);
-  assert.deepStrictEqual(events[0], { type: "lootTaken", item: ringA });
-  assert.deepStrictEqual(events[1], { type: "itemEquipped", item: ringA, slot: "ring" });
 });
 
 test("takeItem (new model): a Magic User taking a staff STOWS it in the bag (no auto-wear, no slot exists); a Fighter taking a ring auto-wears it", () => {
@@ -363,11 +476,65 @@ test("takeItem (new model): a Magic User taking a staff STOWS it in the bag (no 
   const ring = RING();
   const fighter = hero({ c: { cls: "Fighter", worn: {} } });
   const events2 = takeItem(fighter, ring, []);
-  assert.equal(fighter.c.worn.ring, ring);
+  assert.equal(fighter.c.worn.jewelry1, ring);
   assert.deepStrictEqual(events2, [
     { type: "itemGiven", item: ring },
-    { type: "itemEquipped", item: ring, slot: "ring" },
+    { type: "itemEquipped", item: ring, slot: "jewelry1" },
   ]);
+});
+
+test("takeItem (new model): two of a kind via the real take sites — takeItem(Bracelet) then takeItem(Anklet) wear jewelry1 then jewelry2 (same objects), a third jewel (Ring) stows", () => {
+  const bracelet = BRACELET();
+  const anklet = ANKLET();
+  const ring = RING();
+  const fighter = hero({ c: { cls: "Fighter", worn: {} } });
+  const e1 = takeItem(fighter, bracelet, []);
+  assert.equal(fighter.c.worn.jewelry1, bracelet, "same object");
+  assert.deepStrictEqual(e1, [
+    { type: "itemGiven", item: bracelet },
+    { type: "itemEquipped", item: bracelet, slot: "jewelry1" },
+  ]);
+  const e2 = takeItem(fighter, anklet, []);
+  assert.equal(fighter.c.worn.jewelry2, anklet, "same object");
+  assert.deepStrictEqual(e2, [
+    { type: "itemGiven", item: anklet },
+    { type: "itemEquipped", item: anklet, slot: "jewelry2" },
+  ]);
+  const e3 = takeItem(fighter, ring, []);
+  assert.deepStrictEqual(fighter.c.items, [ring], "the third jewel is stowed, not equipped");
+  assert.deepStrictEqual(e3, [{ type: "itemGiven", item: ring }]);
+});
+
+test("takeFind (new model): two of a kind via takeFind — Bracelet then Anklet wear jewelry1/jewelry2; a third jewel (Ring) stows", () => {
+  const bracelet = BRACELET();
+  const anklet = ANKLET();
+  const ring = RING();
+  const state = hero({ c: { worn: {} }, pendingFind: bracelet });
+  takeFind(state, []);
+  assert.equal(state.c.worn.jewelry1, bracelet);
+  state.pendingFind = anklet;
+  takeFind(state, []);
+  assert.equal(state.c.worn.jewelry2, anklet);
+  state.pendingFind = ring;
+  const events = takeFind(state, []);
+  assert.deepStrictEqual(state.c.items, [ring]);
+  assert.deepStrictEqual(events, [{ type: "findTaken", item: ring }]);
+});
+
+test("takeLoot(i, false) (new model): two of a kind via takeLoot — Bracelet then Anklet wear jewelry1/jewelry2; a third jewel (Ring) stows", () => {
+  const bracelet = BRACELET();
+  const anklet = ANKLET();
+  const ring = RING();
+  const state = hero({ c: { worn: {} }, pendingLoot: [bracelet] });
+  takeLoot(state, 0, false, []);
+  assert.equal(state.c.worn.jewelry1, bracelet);
+  state.pendingLoot = [anklet];
+  takeLoot(state, 0, false, []);
+  assert.equal(state.c.worn.jewelry2, anklet);
+  state.pendingLoot = [ring];
+  const events = takeLoot(state, 0, false, []);
+  assert.deepStrictEqual(state.c.items, [ring]);
+  assert.deepStrictEqual(events, [{ type: "lootTaken", item: ring }]);
 });
 
 test("takeItem: a Fighter taking a staff is still refused wrongClass before any wear check", () => {
@@ -397,17 +564,47 @@ test("wearing/swapping/unequipping a slot item never touches maxWP/wp (Plan 01's
   assert.equal(state.c.wp, 40);
 });
 
-test("validateAction: unequipSlot accepts weapon/armor and the five worn slots; rejects staff/unknown strings/non-strings", () => {
-  for (const slot of ["ring", "bracelet", "amulet", "helm", "cloak", "weapon", "armor"]) {
+test("validateAction: unequipSlot accepts weapon/armor and the three worn keys; rejects the four old jewelry names/staff/unknown strings/non-strings", () => {
+  for (const slot of ["jewelry1", "jewelry2", "cloak", "weapon", "armor"]) {
     assert.equal(validateAction({ type: "unequipSlot", slot }).ok, true, slot);
   }
   // 260918-w4n: a staff has no worn slot any more — rejected like any
-  // unknown string.
-  assert.equal(validateAction({ type: "unequipSlot", slot: "staff" }).ok, false);
+  // unknown string. 260918-wy1: the four legacy jewelry sub-slot names are
+  // rejected the same way.
+  for (const slot of ["staff", "ring", "bracelet", "amulet", "helm"]) {
+    assert.equal(validateAction({ type: "unequipSlot", slot }).ok, false, slot);
+  }
   const bad = validateAction({ type: "unequipSlot", slot: "hat" });
   assert.equal(bad.ok, false);
-  assert.match(bad.reason, /ring|bracelet|amulet|helm|cloak|WORN_SLOTS/);
+  assert.match(bad.reason, /jewelry1|jewelry2|cloak|WORN_SLOTS/);
   assert.equal(validateAction({ type: "unequipSlot", slot: 3 }).ok, false);
+});
+
+test("validateAction: useItem rejects the four old jewelry slot names on both useItem and unequipSlot", () => {
+  for (const slot of ["ring", "bracelet", "amulet", "helm"]) {
+    assert.equal(validateAction({ type: "useItem", slot }).ok, false, `useItem ${slot}`);
+    assert.equal(validateAction({ type: "unequipSlot", slot }).ok, false, `unequipSlot ${slot}`);
+  }
+});
+
+test("validateAction: equipItem.slot is optional; when present it must be one of jewelry1, jewelry2, cloak", () => {
+  assert.equal(validateAction({ type: "equipItem", i: 0 }).ok, true);
+  assert.equal(validateAction({ type: "equipItem", i: 0, slot: "jewelry2" }).ok, true);
+  assert.equal(validateAction({ type: "equipItem", i: 0, slot: "cloak" }).ok, true);
+  assert.equal(validateAction({ type: "equipItem", i: 0, slot: "ring" }).ok, false);
+  assert.equal(validateAction({ type: "equipItem", i: 0, slot: "amulet" }).ok, false);
+});
+
+test("applyAction: { type: equipItem, i, slot: jewelry2 } performs the targeted swap through the full engine dispatch", () => {
+  const ring = RING();
+  const anklet = ANKLET();
+  const gauntlet = GAUNTLET();
+  const state = hero({ c: { worn: { jewelry1: ring, jewelry2: anklet }, items: [gauntlet] } });
+  const result = applyAction(state, { type: "equipItem", i: 0, slot: "jewelry2" });
+  assert.deepStrictEqual(result.state.c.worn.jewelry1, ring);
+  assert.deepStrictEqual(result.state.c.worn.jewelry2, gauntlet);
+  assert.deepStrictEqual(result.state.c.items, [anklet]);
+  assert.ok(result.events.some((e) => e.type === "itemEquipped" && e.slot === "jewelry2" && e.replaced));
 });
 
 /* ============================================================
@@ -481,13 +678,28 @@ test("useItem legacy identity: a bagged Cloak of Speed without c.worn still hast
   assert.equal("worn" in state.c, false);
 });
 
-test("useItem consume path: a worn uses:1 item deletes the worn slot (not the bag) and pushes itemConsumed", () => {
+test("useItem consume path: a worn uses:1 item deletes the worn slot (not the bag) and pushes itemConsumed — from jewelry2 as well as jewelry1", () => {
   const trinket = { uses: 1, use: "heal", kind: "jewel", n: "Ring of Power", eff: {} };
-  const state = hero({ c: { worn: { ring: trinket }, wp: 20, maxWP: 55 } });
-  const events = useItem(state, { slot: "ring" }, fakeRng([5]), [], () => 1);
-  assert.equal("ring" in state.c.worn, false);
+  const state = hero({ c: { worn: { jewelry1: trinket }, wp: 20, maxWP: 55 } });
+  const events = useItem(state, { slot: "jewelry1" }, fakeRng([5]), [], () => 1);
+  assert.equal("jewelry1" in state.c.worn, false);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("itemConsumed"));
+
+  const trinket2 = { uses: 1, use: "heal", kind: "jewel", n: "Anklet of Invisibility", eff: {} };
+  const state2 = hero({ c: { worn: { jewelry2: trinket2 }, wp: 20, maxWP: 55 } });
+  const events2 = useItem(state2, { slot: "jewelry2" }, fakeRng([5]), [], () => 1);
+  assert.equal("jewelry2" in state2.c.worn, false);
+  assert.ok(events2.map((e) => e.type).includes("itemConsumed"));
+});
+
+test("useItem from jewelry2: a worn ready Amulet of Light glows and clears darkFor (260918-w4n behaviour) from either key", () => {
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 } };
+  const state = hero({ c: { worn: { jewelry2: amulet }, darkFor: 5, wp: 40, maxWP: 55 } });
+  const events = useItem(state, { slot: "jewelry2" }, fakeRng([]), [], () => 1);
+  const types = events.map((e) => e.type);
+  assert.ok(types.includes("itemUsed"));
+  assert.equal(state.c.darkFor, 0);
 });
 
 test("validateAction: useItem accepts { i } or { slot } but not both, and rejects an unknown slot", () => {

@@ -71,6 +71,15 @@
 // no worn slot anywhere; `SLOT_OF` is built from JEWELRY_ROWS + CLOAKS_ROWS
 // only (15 entries). A staff lives in `c.items` (one bag slot) and is used
 // by bag index; its charges+recharge model is unchanged.
+//
+// The jewelry-merge ruling (user, 2026-09-18, quick 260918-wy1): "We should
+// not have ring/bracelet/amulet as separate equipment slots. We should have
+// jewelry as a slot. Let's allow us to slot up to 2 pieces of jewelry: any
+// combination of rings, bracelets, amulets, and helms." Every JEWELRY_ROWS
+// entry's authored `slot` is now the single family value `jewelry` (not a
+// concrete worn key — `engine/derived.js#WORN_KEYS_OF` maps the family to
+// its two concrete keys, `jewelry1`/`jewelry2`). The cloak keeps its own
+// single-key family, unchanged.
 
 export const BLADE_NAMES = [
   "Whisper", "Grave Mark", "The Long Argument", "Tithe", "Old Patience",
@@ -81,54 +90,54 @@ const JEWELRY_ROWS = [
   {
     // Use-activated (260918-w4n): worn + used, +1 damage for 50 squares, 50
     // squares to catch its breath.
-    n: "Ring of Power", slot: "ring", eff: { dmg: 1 },
+    n: "Ring of Power", slot: "jewelry", eff: { dmg: 1 },
     txt: "used, it adds +1 damage to every attack for fifty squares; then fifty squares of quiet",
     act: { kind: "power", effect: 50, cd: 50 },
   },
   {
     // Use-activated (260918-w4n): worn + used, one size larger for 50
     // squares, 50 to recover.
-    n: "Gauntlet of the Giant", slot: "helm", eff: { size: 1 },
+    n: "Gauntlet of the Giant", slot: "jewelry", eff: { size: 1 },
     txt: "used, you are one size larger for fifty squares; mind the ceilings, then fifty squares of shrinking back",
     act: { kind: "giant", effect: 50, cd: 50 },
   },
   {
     // Use-activated (260918-w4n): worn + used, light + sight for 50 squares,
     // dispels darkness the instant it is used.
-    n: "Amulet of Light", slot: "amulet", eff: { sight: 1, light: 1 },
+    n: "Amulet of Light", slot: "jewelry", eff: { sight: 1, light: 1 },
     txt: "used, it lights fifty squares and tells the dark to leave at once; then it sulks for fifty",
     act: { kind: "glow", effect: 50, cd: 50 },
   },
   {
-    n: "Pendant of Fortitude", slot: "amulet", eff: {}, use: "half", every: 100,
+    n: "Pendant of Fortitude", slot: "jewelry", eff: {}, use: "half", every: 100,
     txt: "half damage from one attack, once every 100 squares",
     act: { kind: "half", effect: 0 },
   },
   {
     // Use-activated (260918-w4n): worn + used, foes need two better to land
     // for 50 squares, 50 to fade back into view.
-    n: "Anklet of Invisibility", slot: "bracelet", eff: { foeToHit: -2 },
+    n: "Anklet of Invisibility", slot: "jewelry", eff: { foeToHit: -2 },
     txt: "used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight",
     act: { kind: "unseen", effect: 50, cd: 50 },
   },
   {
     // Use-activated (260918-w4n): worn + used, perfect fluency for 50
     // squares, 50 to forget it again.
-    n: "Helm of Knowledge", slot: "helm", eff: { tongue: 1 },
+    n: "Helm of Knowledge", slot: "jewelry", eff: { tongue: 1 },
     txt: "used, you understand them perfectly for fifty squares; then fifty squares of forgetting again",
     act: { kind: "tongue", effect: 50, cd: 50 },
   },
   {
     // Use-activated (260918-w4n): worn + used, mirrors the Cloak of Flying —
     // twenty squares of flight, fifty to catch its breath.
-    n: "Bracelet of Flight", slot: "bracelet", eff: { fly: 1 },
+    n: "Bracelet of Flight", slot: "jewelry", eff: { fly: 1 },
     txt: "used, twenty squares of flight when you ask; fifty to catch its breath",
     act: { kind: "fly", effect: 20, cd: 50 },
   },
   {
     // Once-a-day rule: every 200 -> 100 (the AoE stone effect itself is
     // instant, so effect+cd is just the cd).
-    n: "Amulet of Stone", slot: "amulet", eff: {}, use: "stone", every: 100, aoe: 4,
+    n: "Amulet of Stone", slot: "jewelry", eff: {}, use: "stone", every: 100, aoe: 4,
     txt: "turns up to 4 squares of opponents to stone, once every 100 squares",
     act: { kind: "stone", effect: 0 },
   },
@@ -244,12 +253,16 @@ export const JEWELRY = JEWELRY_ROWS.map(dropAuthored);
 export const CLOAKS = CLOAKS_ROWS.map(dropAuthored);
 export const STAVES = STAVES_ROWS.map(dropAuthored);
 
-/** SLOT_OF — display name (`.n`) -> worn slot, derived from JEWELRY_ROWS +
- * CLOAKS_ROWS ONLY (260918-w4n, staff amendment: a staff has no slot — it is
- * a bag item used by index, so STAVES_ROWS is deliberately excluded); the
- * name-keyed runtime lookup engine/derived.js#slotFor falls back on when an
- * item carries no own `slot` key. Frozen; exactly 15 entries (8 JEWELRY + 7
- * CLOAKS, per the locked taxonomy). */
+/** SLOT_OF — display name (`.n`) -> slot FAMILY (jewelry | cloak), derived
+ * from JEWELRY_ROWS + CLOAKS_ROWS ONLY (260918-w4n, staff amendment: a staff
+ * has no slot — it is a bag item used by index, so STAVES_ROWS is
+ * deliberately excluded); the name-keyed runtime lookup
+ * engine/derived.js#slotFor falls back on when an item carries no own `slot`
+ * key. A FAMILY, not a concrete worn key — engine/derived.js#WORN_KEYS_OF
+ * maps a family to its concrete worn keys (jewelry holds two: jewelry1,
+ * jewelry2; cloak holds one). Frozen; exactly 15 entries whose values are
+ * only jewelry/cloak (260918-wy1, jewelry-merge ruling — the former
+ * ring/bracelet/amulet/helm sub-slots are gone). */
 export const SLOT_OF = Object.freeze(
   Object.fromEntries([...JEWELRY_ROWS, ...CLOAKS_ROWS].map((row) => [row.n, row.slot])),
 );

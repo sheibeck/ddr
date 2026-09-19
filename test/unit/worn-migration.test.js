@@ -39,7 +39,7 @@ test("newRun(2, [], { wornSlots: true }) creates c.worn wearing the Thief's star
   const a = newRun(2, [], { wornSlots: true });
   const b = newRun(2);
   assert.ok("worn" in a.c, "the option creates an own worn key");
-  assert.equal(a.c.worn.cloak.n, b.c.items[0].n);
+  assert.equal(a.c.worn.cloak.n, b.c.items[0].n, "260918-wy1: cloak is still the single-key family, unchanged");
   assert.deepStrictEqual(a.c.items, []);
   assert.equal(a.rngState, b.rngState, "no rng draw added");
   assert.deepStrictEqual(a.floor, b.floor, "no rng draw added");
@@ -82,17 +82,17 @@ function illegalOldSave() {
   return { s, ringA, ringB, cloakA, cloakB, potion };
 }
 
-test("Pitfall 8: validateSave(json, { wornSlots: true }) reconciles two rings + two cloaks into worn/bagged with a matching report", () => {
+test("Pitfall 8: validateSave(json, { wornSlots: true }) reconciles two rings (both wear — 260918-wy1: two jewelry keys) + two cloaks into worn/bagged with a matching per-family report", () => {
   const { s, ringA, ringB, cloakA, cloakB, potion } = illegalOldSave();
   const json = JSON.stringify(serializeRun(s));
 
   const check = validateSave(json, { wornSlots: true });
   assert.equal(check.ok, true);
-  assert.deepStrictEqual(check.value.c.worn, { ring: ringA, cloak: cloakA });
-  assert.deepStrictEqual(check.value.c.items, [ringB, potion, cloakB]);
+  assert.deepStrictEqual(check.value.c.worn, { jewelry1: ringA, jewelry2: ringB, cloak: cloakA });
+  assert.deepStrictEqual(check.value.c.items, [potion, cloakB]);
   assert.deepStrictEqual(check.wornReport, [
-    { slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] },
-    { slot: "cloak", worn: "Cloak of Speed", bagged: ["Cloak of Healing"] },
+    { slot: "jewelry", worn: ["Ring of Power", "Ring of Power"], bagged: [] },
+    { slot: "cloak", worn: ["Cloak of Speed"], bagged: ["Cloak of Healing"] },
   ]);
 });
 
@@ -114,7 +114,7 @@ test("Pitfall 8: rehydrate(parsed, { wornSlots: true }) ALONE (bypassing validat
   assert.deepStrictEqual(directRehydrated.c.items, check.value.c.items);
 });
 
-test("cap proof: a small bag AT cap with two rings never overflows — migration only frees a slot", () => {
+test("cap proof: a small bag AT cap with two rings never overflows — migration wears BOTH (260918-wy1: two jewelry keys), freeing two slots", () => {
   const s = newRun(1);
   s.c.bag = "small";
   const ringA = ringOfPower();
@@ -123,8 +123,8 @@ test("cap proof: a small bag AT cap with two rings never overflows — migration
   s.c.items = [ringA, ringB, { kind: "weapon", n: "Dagger", base: "Dagger", bonus: 0, txt: "a dagger" }, { kind: "armor", n: "Leather", txt: "leather" }];
   const json = JSON.stringify(serializeRun(s));
   const check = validateSave(json, { wornSlots: true });
-  assert.equal(slotItems(check.value.c).length, BAGS.small.slots - 1, "one slot freed by the migration");
-  assert.equal(canStow(check.value.c), true, "the bag never overflows — a slot was freed, not consumed");
+  assert.equal(slotItems(check.value.c).length, BAGS.small.slots - 2, "two slots freed by the migration — both rings wear");
+  assert.equal(canStow(check.value.c), true, "the bag never overflows — slots were freed, not consumed");
 });
 
 test("a save WITH worn already is never re-migrated — a bagged extra cloak stays bagged, no wornReport key", () => {
@@ -227,6 +227,88 @@ test("staff gate (260918-w4n): a staff ALWAYS stays bagged with no report entry 
   assert.deepStrictEqual(wizardCheck.value.c.worn, {}, "260918-w4n: a staff never wears, even for a Magic User");
   assert.deepStrictEqual(wizardCheck.value.c.items, [migratedRowanStaff]);
   assert.deepStrictEqual(wizardCheck.wornReport, []);
+});
+
+// ─── Task 1g: 260918-wy1 legacy jewelry key fold (sanitizeWorn) ────────────
+//
+// Runs on EVERY load (validateSave AND rehydrate), WITH and WITHOUT the
+// wornSlots option — this is sanitizeWorn's own tolerant-load fold, not the
+// option-gated reconcileWorn bag-scan above.
+
+const gauntletOfGiant = () => ({ kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: "one size larger" });
+const helmOfKnowledge = () => ({ kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 }, txt: "perfect fluency" });
+const ankletOfInvis = () => ({ kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: "foes need two better to land" });
+
+test("260918-wy1: a v1.5-shape save with c.worn under ring/bracelet/amulet/helm folds ring->jewelry1, bracelet->jewelry2, amulet+helm appended to the bag (in that order)", () => {
+  const ring = ringOfPower();
+  const bracelet = { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: "twenty squares of flight" };
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "light and sight" };
+  const helm = helmOfKnowledge();
+  const s = newRun(1); // Fighter, no starting items
+  s.c.worn = { ring, bracelet, amulet, helm };
+  s.c.items = [];
+  const json = JSON.stringify(serializeRun(s));
+
+  const check = validateSave(json);
+  assert.deepStrictEqual(check.value.c.worn, { jewelry1: ring, jewelry2: bracelet });
+  assert.deepStrictEqual(check.value.c.items, [amulet, helm]);
+  for (const legacyKey of ["ring", "bracelet", "amulet", "helm"]) {
+    assert.equal(legacyKey in check.value.c.worn, false, `${legacyKey} must not survive on c.worn`);
+  }
+
+  const rehydrated = rehydrate(serializeRun(s));
+  assert.deepStrictEqual(rehydrated.c.worn, { jewelry1: ring, jewelry2: bracelet });
+  assert.deepStrictEqual(rehydrated.c.items, [amulet, helm]);
+});
+
+test("260918-wy1: a save already carrying jewelry1/jewelry2 plus a legacy amulet key bags the amulet (both jewelry keys already occupied)", () => {
+  const jewelryA = ringOfPower();
+  const jewelryB = ankletOfInvis();
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "light and sight" };
+  const s = newRun(1);
+  s.c.worn = { jewelry1: jewelryA, jewelry2: jewelryB, amulet };
+  s.c.items = [];
+  const json = JSON.stringify(serializeRun(s));
+  const check = validateSave(json);
+  assert.deepStrictEqual(check.value.c.worn, { jewelry1: jewelryA, jewelry2: jewelryB });
+  assert.deepStrictEqual(check.value.c.items, [amulet]);
+});
+
+test("260918-wy1: the w4n-interim five-key shape (worn staff already folded, legacy jewelry keys present) migrates the same way", () => {
+  const ring = ringOfPower();
+  const helm = helmOfKnowledge();
+  const cloak = cloakOfSpeed();
+  const s = newRun(1);
+  s.c.worn = { ring, helm, cloak };
+  s.c.items = [];
+  const json = JSON.stringify(serializeRun(s));
+  const check = validateSave(json);
+  assert.deepStrictEqual(check.value.c.worn, { jewelry1: ring, jewelry2: helm, cloak });
+  assert.deepStrictEqual(check.value.c.items, []);
+});
+
+test("260918-wy1: a full bag drops the appended legacy jewelry overflow via clampCarry, not the earlier-folded pieces", () => {
+  const ring = ringOfPower();
+  const bracelet = { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: "twenty squares of flight" };
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "light and sight" };
+  const s = newRun(1);
+  s.c.bag = "small"; // cap 4
+  s.c.worn = { ring, bracelet, amulet };
+  s.c.items = Array.from({ length: 4 }, (_, i) => ({ kind: "picks", n: `Filler ${i}`, txt: "" }));
+  const json = JSON.stringify(serializeRun(s));
+  const check = validateSave(json);
+  assert.deepStrictEqual(check.value.c.worn, { jewelry1: ring, jewelry2: bracelet });
+  assert.equal(check.value.c.items.length, 4, "the bag stays at cap");
+  assert.equal(check.value.c.items.some((it) => it.n === "Amulet of Light"), false, "the overflow amulet never survives the clamp");
+});
+
+test("260918-wy1: a tampered legacy value (non-object) is dropped, not migrated", () => {
+  const s = newRun(1);
+  s.c.worn = { ring: "not an object", cloak: cloakOfSpeed() };
+  const json = JSON.stringify(serializeRun(s));
+  const check = validateSave(json);
+  assert.deepStrictEqual(check.value.c.worn, { cloak: cloakOfSpeed() });
+  assert.equal("jewelry1" in check.value.c.worn, false);
 });
 
 test("260918-w4n tolerant load: a save that already carries c.worn.staff (a v1.5 save) folds it into the bag on load", () => {

@@ -15,7 +15,16 @@
 import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
 import { clearRoundTimers, startEffect, startCooldown } from "./effects.js";
-import { reconcileWorn, activationFor, activationKeyFor, itemTimerId, carriedItems, WORN_SLOTS, clampCarry } from "./derived.js";
+import {
+  reconcileWorn,
+  activationFor,
+  activationKeyFor,
+  itemTimerId,
+  carriedItems,
+  WORN_SLOTS,
+  clampCarry,
+  freeWornKey,
+} from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { ACTIVATION_OF } from "../content/index.js";
 
@@ -231,6 +240,14 @@ function clearStaleTimers(c) {
   return c;
 }
 
+// 260918-wy1 (jewelry-merge, tolerant load): the four pre-wy1 jewelry
+// worn-slot keys, in fold order — ring, then bracelet, then amulet, then
+// helm. This is the ONE place in engine/ those four strings may still
+// appear as `c.worn` keys; every other engine/content/shell/bot file speaks
+// only the three current worn keys (two jewelry, one cloak) or the
+// `jewelry`/`cloak` families.
+const LEGACY_JEWELRY_KEYS = Object.freeze(["ring", "bracelet", "amulet", "helm"]);
+
 /**
  * sanitizeWorn(c) — Phase 37 (GEAR-04, T-37-07) load-tolerance for
  * `c.worn`, mirroring clearStaleTimers/clearFoeEffect immediately above:
@@ -252,14 +269,28 @@ function clearStaleTimers(c) {
  * per-slot object check above (which would otherwise leave a legacy staff
  * object sitting harmlessly in `c.worn.staff`), a SURVIVING `c.worn.staff`
  * object is appended to `c.items` (creating the array if needed) and deleted
- * from `c.worn`; any OTHER key on `c.worn` outside `WORN_SLOTS` is also
- * dropped (defensive — no current content authors one, but the same
- * discipline as the five-key model). `clampCarry(c)` runs immediately after
- * the fold so an over-cap bag drops the appended staff exactly like any
- * other overflow item — a no-op without `c.bag`. No dual path: every load
- * runs this, whether or not the save ever had `c.worn` (the whole block is
- * itself gated on `"worn" in c`, so a save with no `c.worn` at all is
- * untouched, exactly as before).
+ * from `c.worn`.
+ *
+ * 260918-wy1 (jewelry-merge, tolerant load, T-wy1-01): immediately after the
+ * staff fold and BEFORE the generic strip of any key outside `WORN_SLOTS` —
+ * ORDER IS LOAD-BEARING, or a legacy piece would be deleted by the strip
+ * instead of migrated — each `LEGACY_JEWELRY_KEYS` key (ring, bracelet,
+ * amulet, helm, in that order) holding a surviving non-null, non-array
+ * object is folded: `freeWornKey(c, "jewelry")` gives the first free
+ * jewelry key; when one exists, the piece moves there; when both jewelry
+ * keys are already occupied, the piece is instead APPENDED to `c.items`
+ * (creating the array if needed) — the same spillover-to-bag shape as the
+ * staff fold, so `clampCarry` below is the only thing that can discard it
+ * on an over-cap bag. The legacy key is deleted from `c.worn` either way. A
+ * save carrying the w4n-interim five-key shape (worn staff already folded)
+ * migrates exactly the same way. Any OTHER key on `c.worn` outside
+ * `WORN_SLOTS` is also dropped by the generic strip below (defensive — no
+ * current content authors one, but the same discipline as before).
+ * `clampCarry(c)` runs immediately after the fold so an over-cap bag drops
+ * the appended overflow pieces exactly like any other overflow item — a
+ * no-op without `c.bag`. No dual path: every load runs this, whether or not
+ * the save ever had `c.worn` (the whole block is itself gated on `"worn" in
+ * c`, so a save with no `c.worn` at all is untouched, exactly as before).
  */
 function sanitizeWorn(c) {
   if (c && typeof c === "object" && !Array.isArray(c) && "worn" in c) {
@@ -274,6 +305,19 @@ function sanitizeWorn(c) {
         c.items = Array.isArray(c.items) ? c.items : [];
         c.items.push(c.worn.staff);
         delete c.worn.staff;
+      }
+      for (const legacyKey of LEGACY_JEWELRY_KEYS) {
+        const it = c.worn[legacyKey];
+        if (it && typeof it === "object" && !Array.isArray(it)) {
+          const to = freeWornKey(c, "jewelry");
+          if (to) {
+            c.worn[to] = it;
+          } else {
+            c.items = Array.isArray(c.items) ? c.items : [];
+            c.items.push(it);
+          }
+        }
+        delete c.worn[legacyKey];
       }
       for (const slot of Object.keys(c.worn)) {
         if (!WORN_SLOTS.includes(slot)) delete c.worn[slot];

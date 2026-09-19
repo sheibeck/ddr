@@ -145,8 +145,9 @@ export function applyAction(state, action) {
       break;
     case "equipItem":
       // ECON-05 (Phase 13): equip carried weapon/armor `i` (direct swap; illegal
-      // combos rejected). Pure (no rng).
-      equipItem(next, action.i, events);
+      // combos rejected). Pure (no rng). 260918-wy1: forwards the optional
+      // targeted jewelry-swap key.
+      equipItem(next, action.i, events, action.slot ?? null);
       break;
     case "unequipSlot":
       // ECON-05 (Phase 13): return the equipped weapon/armor to the bag. Pure (no rng).
