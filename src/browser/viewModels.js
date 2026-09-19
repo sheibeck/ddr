@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, ARMORS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId, WORN_SLOTS } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -309,6 +309,74 @@ export function bagUsage(c) {
   const cap = bagCap(c);
   const slots = cap === Infinity ? null : cap;
   return { have, slots, full: !canStow(c), text: slots ? `${have} / ${slots}` : have ? `${have}` : "" };
+}
+
+/**
+ * GEAR_COPY — Phase 43 (CLAR-04): every player-facing string the Gear tab's
+ * ON YOU panel (`emptySlotRows` below) and Plan 04's shell wiring build
+ * from — a frozen object like ITEM_STATE_COPY/RATIONS_COPY elsewhere in this
+ * module, so the voice scan and the hp-not-wp guard can both walk it as a
+ * single leaf group. `empty` is nested and frozen too. The worn-slot empty
+ * states read as SLOTS, in voice (CONTEXT §CLAR-04: "ring — nothing"), never
+ * a bare dash.
+ */
+export const GEAR_COPY = Object.freeze({
+  onYou: "ON YOU",
+  wielded: "WIELDED",
+  worn: "WORN",
+  alsoOnYou: "ALSO ON YOU",
+  bag: "BAG",
+  empty: Object.freeze({
+    armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
+    ring: "ring — nothing. Ten fingers, zero commitments.",
+    bracelet: "bracelet — nothing. A bare wrist, ready for bad decisions.",
+    amulet: "amulet — nothing. Your neck has never been less interesting.",
+    helm: "helm — nothing. Hair, technically, counts for zero.",
+    cloak: "cloak — nothing. Cold and unmagical, in that order.",
+    staff: "staff — nothing. Wave your hands and see how far that gets you.",
+    staffNotYou: "staff — nothing, and nothing you could hold. Magic Users only.",
+  }),
+});
+
+/**
+ * dropShelfItems(c) — Phase 43 (CLAR-04): the bag-full drop prompt's ONE
+ * source list — slot-consuming BAG items only (the same potion exemption as
+ * `engine/derived.js#slotItems`, kept in lock-step by test), with the true
+ * `c.items` index so `dropItem(i)` addresses the right entry. Never a worn
+ * slot item, never the wielded weapon or worn armor (those are not in
+ * `c.items` at all). Returns the SAME item references as `c.items` (no
+ * clone); never mutates `c`. Defensive against a missing/non-array
+ * `c.items` (returns `[]`). Pure, no rng.
+ */
+export function dropShelfItems(c) {
+  return (c && Array.isArray(c.items) ? c.items : [])
+    .map((it, i) => ({ it, i }))
+    .filter(({ it }) => it && it.kind !== "potion");
+}
+
+/**
+ * emptySlotRows(c) — Phase 43 (CLAR-04): one in-voice row per EMPTY worn
+ * slot — armor (via `armorDisplay(c)`, only when neither worn nor the Cloak
+ * of Armor's magic plate) followed by the six `WORN_SLOTS`, in that fixed
+ * order — so Plan 04's ON YOU panel can render these between the existing
+ * wornRow/wornSlotRow rows. A legacy `c` with no `worn` map yields all six
+ * slot rows (every `c.worn?.[slot]` read is falsy). The staff row alone
+ * carries a class-aware text: `GEAR_COPY.empty.staffNotYou` for anyone but a
+ * Magic User (mirrors `engine/items.js#autoWearSlot`'s staff gate — a
+ * non-caster could never wear one anyway), else `GEAR_COPY.empty.staff`.
+ * Pure, no rng, no mutation.
+ */
+export function emptySlotRows(c) {
+  if (!c || typeof c !== "object") return [];
+  const rows = [];
+  const armor = armorDisplay(c);
+  if (!armor.worn && !armor.magic) rows.push({ slot: "armor", text: GEAR_COPY.empty.armor });
+  for (const slot of WORN_SLOTS) {
+    if (c.worn && c.worn[slot]) continue;
+    const text = slot === "staff" ? (c.cls === "Magic User" ? GEAR_COPY.empty.staff : GEAR_COPY.empty.staffNotYou) : GEAR_COPY.empty[slot];
+    rows.push({ slot, text });
+  }
+  return rows;
 }
 
 /**
