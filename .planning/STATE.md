@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code started; v1.5 code-complete, UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 44 — Retire the Classic Engine from the Shell (not started; blocked until quick tasks 260918-w4n / 260918-wy1 / 260919-00d land on master)
+**Current focus:** Phase 44 — Retire the Classic Engine from the Shell (not started; sequencing gate now open — all of 260918-w4n / 260918-wy1 / 260919-00d have landed on master)
 
 ## Current Position
 
 Phase: 44 of 49 (Retire the Classic Engine from the Shell) — not started
 Plan: —
-Status: Roadmap created (Phases 44–49, 19/19 requirements mapped); ready for `/gsd-plan-phase 44` once the sequencing gate opens
-Last activity: 2026-09-19 — v1.6 roadmap created (6 phases; hedges before names because NAME-02 lists `wornSlots`; docs purge as the closing sweep after modularisation; perf last with the Pixel 7)
+Status: Roadmap created (Phases 44–49, 19/19 requirements mapped); v1.6 sequencing gate now OPEN (all three quick tasks landed) — ready for `/gsd-plan-phase 44`
+Last activity: 2026-09-19 — 260919-00d (Cloak of Ether wall-walking) landed, closing the v1.6 sequencing gate; `d9ef4e8`
 
 ## Ground Truth (durable facts every session needs)
 
@@ -47,7 +47,7 @@ Last activity: 2026-09-19 — v1.6 roadmap created (6 phases; hedges before name
 
 **v1.2 phase order (ROADMAP.md):** 22 Class-Aware Harness & BEFORE Matrix (HARN-01..04, PLAY-01 — must land first; the BEFORE matrix is impossible to recover later without git archaeology) → 23 Casters Can Act (IDENT-01..04, FID-06 — Wizard/Summoner/Illusionist "cannot act" fixes + guaranteed attack spell) → 24 Every Sub-class and Race: One Good, One Bad (IDENT-05..10, FID-07; `--research-phase` recommended) → 25 Nothing Happens Silently / Feature Feedback (FEED-01..06) → 26 Mass Playtest & Class-Pass Ledger (PLAY-02/03) → 27 Delve-to-Death Retune (TUNE-05..07; `--research-phase` recommended; TUNE-05 target band + TUNE-07 human DR round are both `/gsd-discuss-phase` candidates before planning).
 
-**v1.6 phase order (ROADMAP.md):** 44 Retire the Classic Engine from the Shell (DEAD-01..03 — shell + tests only, zero engine bytes, −2k lines) → 45 Collapse the Phase 37 Hedges (HEDGE-01..03 — the ONLY fixture-moving phase: `wornSlots` gone, migration unconditional, moved fixtures measured + declared + regenerated) → 46 Honest Names, Dead Exports & the Tutorial Decision (NAME-01..02, DEAD-04..05 — `toasts.js` → `narrationLines.js`, `winGame`/`state.won` removed, `tutorial.js` decided; `/gsd-discuss-phase` recommended for DEAD-05) → 47 Shell Modularisation (SHELL-01..04 — `gearTab.js` / `heroTab.js` / `storeScreen.js`, shell < 5,000 lines, `__mz*` bridge registry; `/gsd-discuss-phase` recommended for module boundaries) → 48 Stale Docs, Comments & Test Names Purge (DOCS-01..03 — closing sweep over the final layout) → 49 Measure-First Perf Pass (PERF-01..02 — needs the Pixel 7; closes the milestone with the debug APK). Gates: engine behaviour identical everywhere, only Phase 45's declared fixtures move; Phases 44–48 start only after quick tasks 260918-vm3/vvt/w4n/wy1 + 260919-00d have landed (vm3 + vvt landed 2026-09-18; w4n/wy1/00d in flight with uncommitted engine edits as of roadmap creation).
+**v1.6 phase order (ROADMAP.md):** 44 Retire the Classic Engine from the Shell (DEAD-01..03 — shell + tests only, zero engine bytes, −2k lines) → 45 Collapse the Phase 37 Hedges (HEDGE-01..03 — the ONLY fixture-moving phase: `wornSlots` gone, migration unconditional, moved fixtures measured + declared + regenerated) → 46 Honest Names, Dead Exports & the Tutorial Decision (NAME-01..02, DEAD-04..05 — `toasts.js` → `narrationLines.js`, `winGame`/`state.won` removed, `tutorial.js` decided; `/gsd-discuss-phase` recommended for DEAD-05) → 47 Shell Modularisation (SHELL-01..04 — `gearTab.js` / `heroTab.js` / `storeScreen.js`, shell < 5,000 lines, `__mz*` bridge registry; `/gsd-discuss-phase` recommended for module boundaries) → 48 Stale Docs, Comments & Test Names Purge (DOCS-01..03 — closing sweep over the final layout) → 49 Measure-First Perf Pass (PERF-01..02 — needs the Pixel 7; closes the milestone with the debug APK). Gates: engine behaviour identical everywhere, only Phase 45's declared fixtures move; Phases 44–48 start only after quick tasks 260918-vm3/vvt/w4n/wy1 + 260919-00d have landed — ALL FIVE landed as of 2026-09-19 (vm3 + vvt on 2026-09-18; w4n `6e3c672`, wy1 `c49dd34`, 00d `d9ef4e8` on 2026-09-19), gate open.
 
 **Working method:** GSD phases (autonomous runs) for systems work; on-device DR rounds (small user-directed batches, each with a `DR*-SUMMARY.md`) for UX. Commit per batch — do not let the tree sit uncommitted for days. Remote: `origin` = https://github.com/sheibeck/ddr (public). Claude pushes `master` + release tags at milestone close (user authorization 2026-09-17); if the auto-mode classifier blocks it, retry once, then hand the user `! git push`.
 
@@ -55,7 +55,7 @@ Last activity: 2026-09-19 — v1.6 roadmap created (6 phases; hedges before name
 
 ### Blockers/Concerns (open)
 
-- [v1.6 sequencing gate]: Phase 44 must not start until quick tasks 260918-w4n (use-activated magic items + staff-to-bag), 260918-wy1 (two jewelry slots) and 260919-00d (Cloak of Ether wall-walking) have landed on master — each has a PLAN but no SUMMARY and their `engine/` + `test/` edits sit uncommitted in the working tree (2026-09-19). A dead-code purge mid-quick-task would collide in `mazeworld.html` and `engine/`.
+- [v1.6 sequencing gate]: RESOLVED 2026-09-19 — all three quick tasks (260918-w4n, 260918-wy1, 260919-00d) have landed on master with SUMMARYs and green gates. Phase 44 can now start.
 - [Balance]: Phase 21 (v1.1) landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until player power moves. This retune now lands as **Phase 27 of v1.2**, after the identity pass (Phases 23–24) and mass playtest (Phase 26) give it a corrected yardstick. Ledger: `docs/DIFFICULTY-RETUNE.md`.
 - [Play launch]: target-API level, Data Safety fields, and IARC questions shift yearly — re-verify against current Play Console Help right before the production phase. Repo-side: a dependency/SDK audit proving "no data collected" is still owed.
 - [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
@@ -78,6 +78,7 @@ Last activity: 2026-09-19 — v1.6 roadmap created (6 phases; hedges before name
 | fast | FIGHT IT OUT sometimes not gold — the generic `button:hover` rule now applies only under `@media (hover: hover)` (Android sticky hover repainted freshly rendered buttons) | 2026-09-18 | 2bf3234 | inline |
 | 260918-w4n | Magic items are use-activated only (equipables worn to use, non-equipables from the bag): 9 passive rows converted to `act` records, `eff()` a pure timer sum, no auto-start flight, staff leaves the worn taxonomy (bag item), Cloak of Healing removed (CLOAKS d7, 4 declared fixture moves), bot uses worn items | 2026-09-19 | 6e3c672 | [260918-w4n-magic-items-are-use-activated-only-no-pa](./quick/260918-w4n-magic-items-are-use-activated-only-no-pa/) |
 | 260918-wy1 | Two JEWELRY slots (`c.worn.jewelry1/jewelry2` + cloak) replace ring/bracelet/amulet/helm — any mix of the 8 pieces, third piece refused with a two-button swap, legacy keys fold into the first free jewelry key on load; zero fixture drift | 2026-09-19 | c49dd34 | [260918-wy1-jewelry-two-jewelry-slots-replace-ring-b](./quick/260918-wy1-jewelry-two-jewelry-slots-replace-ring-b/) |
+| 260919-00d | Cloak of Ether walks through stone for 10 squares (act.effect 20 -> 10, cd stays 80, zero fixture drift): `move` accepts any in-bounds cell while live, `resolveEtherEnd` kills via `die("entombed")` when the window closes inside rock, `newDay` skips the wandering-monster fight in stone (draws unchanged), tap-to-move + hold-inspect + chip warn-tone route through rock in the shell | 2026-09-19 | d9ef4e8 | [260919-00d-cloak-of-ether-walks-through-stone-for-1](./quick/260919-00d-cloak-of-ether-walks-through-stone-for-1/) |
 
 ### Pending Todos
 
@@ -116,13 +117,12 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-19
-Stopped at: v1.6 roadmap created (ROADMAP.md Phases 44–49, REQUIREMENTS.md traceability 19/19, STATE.md switched) — nothing planned yet
+Stopped at: Completed 260919-00d-PLAN.md — Cloak of Ether wall-walking landed (`54ba5bd`, `d9ef4e8`); the v1.6 sequencing gate is now open
 Resume file: None
 
 ## Operator Next Steps
 
-- Land quick tasks 260918-w4n, 260918-wy1 and 260919-00d (finish, SUMMARY, commit) — the v1.6 sequencing gate.
-- Then `/gsd-plan-phase 44` (no discuss needed — the deletion list is verified).
+- `/gsd-plan-phase 44` (no discuss needed — the deletion list is verified; the sequencing gate is open now that all three quick tasks landed).
 - Before Phase 46: `/gsd-discuss-phase 46` for the `tutorial.js` decision (delete + rebuild for UX-06 vs park with a header) and the final module name.
 - Before Phase 47: `/gsd-discuss-phase 47` for the module boundaries (mount contract, what stays in `viewModels.js`, bridge registry as doc vs `bridge.js`).
 - Phase 49 needs the Pixel 7 in hand; build the milestone-close debug APK after Phase 48 and measure against it.
