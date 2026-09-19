@@ -158,7 +158,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 44-04-PLAN.md — Retire classic `save`/`load`/`SAVE_KEY`/`newGame`/fallbacks, slim `__mzClassicBoot`, resume lines re-homed in the module boot, dual-write test graves-only; fixed-point orphan sweep; closing gates = ROADMAP success criteria 1–5 with the consolidated deleted-symbol and test-reason lists
+- [x] 44-04-PLAN.md — Retire classic `save`/`load`/`SAVE_KEY`/`newGame`/fallbacks, slim `__mzClassicBoot`, resume lines re-homed in the module boot, dual-write test graves-only; fixed-point orphan sweep; closing gates = ROADMAP success criteria 1–5 with the consolidated deleted-symbol and test-reason lists
 
 ### Phase 45: Collapse the Phase 37 Hedges
 
@@ -304,7 +304,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 44. Retire the Classic Engine from the Shell | v1.6 | 3/4 | In Progress|  |
+| 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | In Progress|  |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 0/TBD | Not started | - |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |

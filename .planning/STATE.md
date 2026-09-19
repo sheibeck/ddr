@@ -4,17 +4,17 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 44
 current_phase_name: Retire the Classic Engine from the Shell
-status: executing
-stopped_at: Completed 44-03-PLAN.md — window.__mzTables bridge + DEAD-02 source pin landed (20b818a, 8da2ce3); mazeworld.html 6600 -> 6493 lines
-last_updated: "2026-09-19T16:03:20.221Z"
+status: verifying
+stopped_at: "Completed 44-04-PLAN.md — Phase 44 (Retire the Classic Engine from the Shell) closed: all five ROADMAP success criteria verified, mazeworld.html 8710 -> 6356 lines (0347df2, 79d22bc, 18e1bb2)"
+last_updated: "2026-09-19T16:25:58.356Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 0
+  completed_plans: 4
+  percent: 17
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code st
 
 Phase: 44 (Retire the Classic Engine from the Shell) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-19 — Phase 44 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -121,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T16:03:20.192Z
-Stopped at: Completed 44-03-PLAN.md — window.__mzTables bridge + DEAD-02 source pin landed (20b818a, 8da2ce3); mazeworld.html 6600 -> 6493 lines
+Last session: 2026-09-19T16:25:58.328Z
+Stopped at: Completed 44-04-PLAN.md — Phase 44 (Retire the Classic Engine from the Shell) closed: all five ROADMAP success criteria verified, mazeworld.html 8710 -> 6356 lines (0347df2, 79d22bc, 18e1bb2)
 Resume file: None
 
 ## Operator Next Steps
@@ -232,6 +232,7 @@ Resume file: None
 | Phase 44 P01 | 35min | 3 tasks | 10 files |
 | Phase 44 P02 | 55min | 2 tasks | 11 files |
 | Phase 44 P03 | ~40min | 2 tasks | 3 files |
+| Phase 44 P04 | 90min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -434,6 +435,9 @@ Resume file: None
 - [Phase ?]: 44-02: A-3 resolved — newBeat/CAPTURE kept (still called from act()/say(), independent of deleted beginEvent/evt)
 - [Phase ?]: 44-02: shell-sweep.mjs gained isForeignMemberAccess() — obj.NAME member-access reads (obj != window/globalThis) excluded from refs/orphans matching
 - [Phase ?]: window.__mzTables bridges content/'s nine display tables (RACE_NOTE/CLASS_NOTE/SUB_NOTE/ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES) to the classic shell renderers; content/index.js measured 79 exports (not the planner's 85 estimate) — source-pin test derives its name set live, never hand-maintained
+- [Phase ?]: 44-04: module boot resume banner uses the module's own bare ROMAN import (not window.__mzTables.ROMAN) since the module can read its own import binding directly
+- [Phase ?]: 44-04: reveal()/act(fn)/newBeat() became genuinely dead as a side effect of Task 1's persistence/boot slimming; deleted in Task 2's fixed-point orphan sweep along with D and say
+- [Phase ?]: 44-04: CAPTURE kept (live read in logLine) even though its only two writers (act/newBeat) are now both deleted — permanently null but not a zero-reference declaration
 
 ### Blockers
 
