@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-status: planning
-last_updated: "2026-09-19T12:00:00.000Z"
+status: executing
+last_updated: "2026-09-19T14:45:00.000Z"
 last_activity: 2026-09-19
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
+  total_plans: 4
   completed_plans: 0
   percent: 0
 ---
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code st
 
 ## Current Position
 
-Phase: 44 of 49 (Retire the Classic Engine from the Shell) — not started
-Plan: —
-Status: Roadmap created (Phases 44–49, 19/19 requirements mapped); v1.6 sequencing gate now OPEN (all three quick tasks landed) — ready for `/gsd-plan-phase 44`
-Last activity: 2026-09-19 — 260919-00d (Cloak of Ether wall-walking) landed, closing the v1.6 sequencing gate; `d9ef4e8`
+Phase: 44 of 49 (Retire the Classic Engine from the Shell) — planned, executing
+Plan: 44-01 → 44-02 → 44-03 → 44-04 (4 plans, 4 sequential waves — every plan edits mazeworld.html)
+Status: Ready to execute — `/gsd-autonomous` run (research skipped for v1.6 per user, 2026-09-19; verification agents off; UAT deferred to milestone close)
+Last activity: 2026-09-19 — Phase 44 planned (`8844bae`); smart-discuss context `51ec3bd`; rail overlay todo captured `db44efd`
 
 ## Ground Truth (durable facts every session needs)
 
