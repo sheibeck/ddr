@@ -205,7 +205,24 @@ Plans:
   5. `npm test` fail 0 with no test deleted except `tutorial.test.js` (if the module is deleted); `engine/` diff limited to the `winGame`/`won` removal; zero fixture moves; master hash unchanged; `build:www` green.
 
 **Discuss**: Worth one short round — DEAD-05 is the user's call (delete and rebuild for UX-06 vs park with a header), and the user may want a say on the final module name (`narrationLines.js` is the proposal's; `narration.js` collides with `eventNarration.js`). Nothing else in the phase needs a decision.
-**Plans**: TBD
+**Plans**: 4 plans (sequential waves 1–4 — one rename per commit; every commit gated by `npm test` over the shared tree, so no wave runs in parallel; phase-start baseline 2026-09-19 at `39c5a0f`: 3,242 tests, `TOAST_FOR` 250 keys / `ORACLE_ONLY` 21, 35 `toasts.js` importers, master hash `a1f4d0dc`)
+
+Plans:
+**Wave 1**
+
+- [ ] 46-01-PLAN.md — `git mv src/browser/toasts.js → narrationLines.js` with `TOAST_FOR → LINE_FOR`, `toastsForAction → linesForAction`, `narrativeToastText → narrativeLineText`, the six dead lifetime exports and the two consumer-less re-exports deleted, all 35 importers moved, five `*toast*.test.js` files `git mv`'d (commit 1); the shell's `dispatchWithToasts → dispatchWithNarration` (commit 2); before/after fold dump byte-identical (NAME-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 46-02-PLAN.md — `winGame`/`won` removal in two layered commits: the shell (won card, `.stone.won` + `.deathcard` CSS, resume/title/rail/stair/snapshot reads → `dead` alone) then engine (six `won` files: movement/engine/saveState/state/events/death) + narration entries + tools + tests, with a stale `won: true` save pinned tolerant; the harness gains ONE prototype-side retired-field strip (`won` destructured out in the six comparables — no carve-out existed to remove; recorded as a premise correction), zero fixture moves, STOP rule if parity needs more (DEAD-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 46-03-PLAN.md — `controlScheme` setting deleted (four-field settings model; old blobs drop the key on read, pinned with fragment-built literals) (commit 5); `src/browser/tutorial.js` deleted, `tutorial.test.js` `git mv`'d to `icons.test.js` keeping its 15 icons.js pins (10 tutorial tests removed), decision recorded in PROJECT.md Key Decisions + onboarding row and the REQUIREMENTS.md UX-06 row (commit 6) (NAME-02 D-pad row, DEAD-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 46-04-PLAN.md — Close: `tools/ident-sweep.mjs` (comment-stripped identifier grep over src/engine/content/tools/shell with `--self-test`) and the recorded NAME-02 run (only survivors: the five `foldLegacyCounters` tolerant-load reads), ROADMAP criteria 1–5 verified verbatim, consolidated test ledger (3,242 → 3,231, every delta explained), closing SUMMARY with the deferred Pixel 7 batch (NAME-02 close)
 
 ### Phase 47: Shell Modularisation
 
