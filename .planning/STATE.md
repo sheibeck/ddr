@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-current_phase: 43
-status: completed
-stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-19T02:13:29.402Z"
+status: Awaiting next milestone
+stopped_at: "Milestone v1.5 code-complete and archived (Phases 36–43, 37 plans); 140-check Pixel 7 UAT batch pending against one debug APK; next: cleanup milestone from the pending todo"
+last_updated: "2026-09-19T02:16:10.986Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase 43 complete
+last_activity_desc: Milestone v1.5 completed and archived
 progress:
   total_phases: 8
   completed_phases: 8
   total_plans: 37
   completed_plans: 37
   percent: 100
+current_phase: 43
 current_phase_name: Clarity Pass
 ---
 
@@ -21,17 +21,17 @@ current_phase_name: Clarity Pass
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
+See: .planning/PROJECT.md (updated 2026-09-19 after Phase 43 — v1.5 code-complete)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
 **Current focus:** Phase null
 
 ## Current Position
 
-Phase: 43
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-18 — Phase 43 complete
+Phase: Milestone v1.5 complete
+Plan: —
+Status: Awaiting next milestone — v1.5 device UAT batch (140 checks, one debug APK) runs first; then stand up the Shell Debt & Dead Code cleanup milestone from `.planning/todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md`
+Last activity: 2026-09-19 — Milestone v1.5 completed and archived (`.planning/milestones/v1.5-*`)
 
 ## Ground Truth (durable facts every session needs)
 
