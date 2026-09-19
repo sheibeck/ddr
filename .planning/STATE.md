@@ -84,6 +84,7 @@ Last activity: 2026-09-19 — 260919-00d (Cloak of Ether wall-walking) landed, c
 
 - (dropped 2026-09-17, user) Play Developer API upload — the user uploads the AAB manually in Play Console when needed.
 - ~~2026-09-17 — Stand up the "Shell Debt & Dead Code" cleanup milestone after v1.5~~ DONE 2026-09-19: stood up as v1.6 (Phases 44–49 in ROADMAP.md; `todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md` can be moved to done)
+- 2026-09-19 — **Rail overlays the map without reflow, tap-to-dismiss, longer hold** (user, on-device): the rail must slide up OVER the map (it is a flex sibling today and resizes the viewport), a body tap dismisses a no-decision card (never a decision card), and `RAIL_HOLD` roughly doubles. Quick task after Phase 47 / between phases, never mid-wave — `todos/pending/2026-09-19-rail-overlays-the-map-without-reflow-tap-to-dismiss-longer-h.md`
 
 ### Roadmap Evolution
 
