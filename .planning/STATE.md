@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 44; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 45 — Collapse the Phase 37 Hedges
+**Current focus:** Phase 46 — Honest Names, Dead Exports & the Tutorial Decision (autonomous run; Phases 44–45 complete 2026-09-19; 13 Pixel 7 items deferred to the milestone-close batch)
 
 ## Current Position
 
