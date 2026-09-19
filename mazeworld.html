@@ -4430,11 +4430,12 @@ window.renderRail = renderRail;
 window.mzRailPulse = railPulse;
 
 // Phase 44 (DEAD-01/DEAD-03): the classic run-save persistence (save()/
-// load()/SAVE_KEY) and the classic cold-boot character roll (newGame()/
-// classicNewGame) are gone — src/browser/engineAdapter.js's persist()/boot()
-// is the ONE run-save path (the graves sentinel block above is untouched and
-// still the live graveyard persistence). window.__mzClassicBoot below no
-// longer has a no-saved-run fallback to call.
+// load()/SAVE_KEY) and the classic cold-boot character roll (the classic
+// newGame() and its captured-at-parse-time reference) are gone —
+// src/browser/engineAdapter.js's persist()/boot() is the ONE run-save path
+// (the graves sentinel block above is untouched and still the live
+// graveyard persistence). window.__mzClassicBoot below no longer has a
+// no-saved-run fallback to call.
 
 // Device-review Pass B1 item 2: "Save & quit" no longer rerolls immediately
 // — it returns to the title screen (confirm first), where the single ENTER
