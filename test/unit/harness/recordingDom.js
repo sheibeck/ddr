@@ -192,6 +192,26 @@ export function createRecordingDocument() {
         content.kind = "html";
         content.value = String(v ?? "");
         el.children = [];
+        // recordingDom never parses `content.value` into real child elements
+        // (per this file's own head comment — ids are recorded roots, not
+        // nested-by-parse), so an id the shell writes INSIDE a template
+        // string (e.g. mazeworld.html's renderEncounter store branch:
+        // `body.innerHTML += "...<div id='shelf'>...";` immediately followed
+        // by `document.getElementById("shelf")`) must still behave like a
+        // real DOM's re-parse: the id-bearing markup being written here
+        // describes a BRAND NEW element, not whatever getElementById
+        // previously memoised for that id. Without this invalidation, a
+        // second renderEncounter() call on the same document would find the
+        // STALE #shelf/#sell-list root (never re-created, never cleared) and
+        // keep appending onto it forever — the exact SHELL-03 idempotency
+        // bug this line exists to prevent. A plain regex id scan is enough:
+        // every id attribute in the shell's own markup is a literal
+        // double-quoted string, never interpolated from item data.
+        const idPattern = /\sid="([^"]+)"/g;
+        let m;
+        while ((m = idPattern.exec(content.value))) {
+          elementsById.delete(m[1]);
+        }
       },
       enumerable: true,
     });

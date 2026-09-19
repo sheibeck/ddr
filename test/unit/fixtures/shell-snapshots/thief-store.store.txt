@@ -1,0 +1,85 @@
+## #enc-panel
+<div id="enc-panel" data-mode="legacy">
+## #enc-body
+<div id="enc-body">
+  html="<p class=\"enc-head\" style=\"color:var(--moss)\">A store</p>\n      <p class=\"enc-sub\">50 wilmst in your purse</p>\n      <p class=\"enc-sub mw-store-roll\">Stock rolled fresh for this floor. Deeper down, pricier regrets.</p>\n      <div class=\"shelf\" id=\"shelf\"></div>\n      <p class=\"enc-sub\" style=\"color:var(--rust)\">Bag full (4/4) — sell or drop something to make room. Potions and scrolls still ride free.</p>\n      <p class=\"enc-sub\" id=\"sell-head\" style=\"margin-top:12px\">Your gear</p>\n      <ul class=\"skills\" id=\"sell-list\"></ul>\n      <div class=\"actions\"><button class=\"primary\" id=\"a-leave\">Leave</button></div>"
+## #shelf
+<div id="shelf">
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Chicken (+12 hp)</span>\n        <span class=\"g-c\">14 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Bread (+5 hp)</span>\n        <span class=\"g-c\">11 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Meat (+15 hp)</span>\n        <span class=\"g-c\">18 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Healing potion<i>+d10+2 hp</i></span>\n        <span class=\"g-c\">105 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Strength potion<i>+8 damage, 25 squares</i></span>\n        <span class=\"g-c\">70 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Enlarge potion<i>one size up, +4 damage, 50 squares</i></span>\n        <span class=\"g-c\">53 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Cure Poison potion<i>cures poison</i></span>\n        <span class=\"g-c\">70 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Set of lockpicks<i>opens boxes on 1–5</i></span>\n        <span class=\"g-c\">315 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Flail<i>d10+2 (usable by Fighters, Thieves)</i></span>\n        <span class=\"g-c\">175 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Spear<i>d8</i></span>\n        <span class=\"g-c\">105 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Warded leather<i>AR 7, 25 hp · enchanted (usable by Fighters, Thieves)</i></span>\n        <span class=\"g-c\">700 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">21 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares</i></span>\n        <span class=\"g-c\">18 wm</span>"
+## #sell-head
+<div id="sell-head">
+## #sell-list
+<div id="sell-list">
+  html=""
+  <li>
+    <b>
+      text="Wakazashi"
+    <i>
+      text="d6+1"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Sell · 175 wm"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Drop"
+  <li>
+    <b>
+      text="Warded studded"
+    <i>
+      text="AR 11 · 28/28 hp"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Sell · 750 wm"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Drop"
+  <li>
+    <b>
+      text="Anklet of Invisibility · READY"
+    <i>
+      text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Sell · 750 wm"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Drop"
+  <li>
+    <b>
+      text="Rope"
+    <i>
+      text="the honest way across a crevice. Once."
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Sell · 30 wm"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Drop"
+  <li>
+    <b>
+      text="Healing potion"
+    <i>
+      text="+d10+2 hp"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Sell · 75 wm"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Drop"
+## #a-leave
+<div id="a-leave" onclick>

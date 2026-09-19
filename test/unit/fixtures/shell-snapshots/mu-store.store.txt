@@ -1,0 +1,43 @@
+## #enc-panel
+<div id="enc-panel" data-mode="legacy">
+## #enc-body
+<div id="enc-body">
+  html="<p class=\"enc-head\" style=\"color:var(--moss)\">A store</p>\n      <p class=\"enc-sub\">50 wilmst in your purse</p>\n      \n      <div class=\"shelf\" id=\"shelf\"></div>\n      \n      <p class=\"enc-sub\" id=\"sell-head\" style=\"margin-top:12px\">Your gear</p>\n      <ul class=\"skills\" id=\"sell-list\"></ul>\n      <div class=\"actions\"><button class=\"primary\" id=\"a-leave\">Leave</button></div>"
+## #shelf
+<div id="shelf">
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Chicken (+12 hp)</span>\n        <span class=\"g-c\">20 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Bread (+5 hp)</span>\n        <span class=\"g-c\">15 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Meat (+15 hp)</span>\n        <span class=\"g-c\">25 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Healing potion<i>+d10+2 hp</i></span>\n        <span class=\"g-c\">150 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Xtra Healing potion<i>heal to maximum</i></span>\n        <span class=\"g-c\">500 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Strength potion<i>+8 damage, 25 squares</i></span>\n        <span class=\"g-c\">100 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Speed potion<i>double attacks, 50 squares</i></span>\n        <span class=\"g-c\">500 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Set of lockpicks<i>opens boxes on 1–5</i></span>\n        <span class=\"g-c\">450 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Spear<i>d8</i></span>\n        <span class=\"g-c\">150 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Quarter Staff<i>d6</i></span>\n        <span class=\"g-c\">25 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Sealed scroll</span>\n        <span class=\"g-c\">900 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Warded plate<i>AR 17, 65 hp · enchanted (usable by Fighters — not you)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">30 wm</span>"
+  <button class="goods" onclick>
+    html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares</i></span>\n        <span class=\"g-c\">25 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Rope<i>the honest way across a crevice. Once.</i></span>\n        <span class=\"g-c\">60 wm</span>"
+## #sell-head
+<div id="sell-head" style="display:none;">
+## #sell-list
+<div id="sell-list">
+## #a-leave
+<div id="a-leave" onclick>

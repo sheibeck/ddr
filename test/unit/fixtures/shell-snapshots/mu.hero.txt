@@ -1,0 +1,141 @@
+## #s-level
+<div id="s-level">
+  text="Lvl I"
+## #s-name
+<div id="s-name">
+  text="Petra Holloway"
+## #s-tag
+<div id="s-tag">
+  text="Human Wizard · Magic User"
+## #btn-abandon-character
+<div id="btn-abandon-character" onclick>
+  text="Abandon this character"
+## #s-wp
+<div id="s-wp">
+  text="33"
+## #s-wpmax
+<div id="s-wpmax">
+  text="33"
+## #s-wpfill
+<div id="s-wpfill" style="width:100%;">
+## #s-die
+<div id="s-die">
+  text="d20"
+## #s-hit
+<div id="s-hit">
+  text="1–3"
+## #s-dmg
+<div id="s-dmg">
+  text="1² + d6"
+## #s-arm
+<div id="s-arm">
+  text="Cloth · AR 3 · 12/12 hp"
+## #s-int
+<div id="s-int">
+  text="2"
+## #s-sp
+<div id="s-sp">
+  text="0"
+## #s-next
+<div id="s-next">
+  text="201"
+## #s-cost
+<div id="s-cost">
+  text="4 hp/day"
+## #s-rations
+<div id="s-rations">
+  text="You eat 1 a rest. Grimbeld Granitejaw (Dwarven) eats 1. Party: 2 a rest · 4 carried — 2 nights, then the arguing starts."
+## #s-rations-n
+<div id="s-rations-n">
+  text="4 carried"
+## #s-trait
+<div id="s-trait">
+  html="<b>Leader</b>, driven by <b>status</b>, afraid of <b>bats and rats</b>. No advantages, no penalties. The dungeon's default."
+## #s-vp
+<div id="s-vp">
+  text="none"
+## #s-skills
+<div id="s-skills">
+  html=""
+  <li class="none">
+    text="A Magic User has spells instead."
+## #s-abilities
+<div id="s-abilities">
+  <li class="none">
+    text="Spells are the trick."
+## #s-grim-count
+<div id="s-grim-count">
+  text="3 of 4"
+## #s-grimoire
+<div id="s-grimoire">
+  html=""
+  <li class="grim-locked">
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · one foe · asleep d4 rounds</i>"
+    <span class="grim-hint">
+      text="Combat only"
+  <li>
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L1</span>Heal</b><i>healing · you · d10 hp</i>"
+    <button class="small" onclick>
+      text="Cast"
+  <li>
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L1</span>Lesser Summon</b><i>summon · one small ally · a level under yours, d4 rounds, never backfires</i>"
+    <button class="small" onclick>
+      text="Cast"
+  <li>
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L1</span>Mirror Self</b><i>defensive · you · foes need a 1 to hit, d6 rounds</i>"
+    <button class="small" onclick>
+      text="Cast"
+  <li class="grim-locked">
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L2</span>Insane</b><i>chaos · one foe · rolls on the madness table</i>"
+    <span class="grim-hint">
+      text="Combat only"
+  <li class="grim-locked">
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L2</span>Stupidity</b><i>control · one foe · does nothing at all for the rest of the fight</i>"
+    <span class="grim-hint">
+      text="Combat only"
+  <li>
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L2</span>Summon</b><i>summon · one ally · fights beside you d4+2 rounds</i>"
+    <button class="small" disabled title="Needs level 2" onclick>
+      text="Cast"
+    <span class="grim-hint">
+      text="Needs level 2"
+  <li>
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L3</span>Phantom Host</b><i>summon · one ally · a host that isn't there, d4+2 rounds</i>"
+    <button class="small" disabled title="Needs level 3" onclick>
+      text="Cast"
+    <span class="grim-hint">
+      text="Needs level 3"
+  <li class="grim-locked">
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L5</span>Mangle</b><i>burst · one foe · 2d20+15</i>"
+    <span class="grim-hint">
+      text="Combat only"
+## #doss-who
+<div id="doss-who">
+  text="Human Wizard"
+## #doss
+<div id="doss">
+  html=""
+  <section>
+    html="<h3>Race</h3><p class=\"who\">Human</p><p>No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.</p>"
+  <section>
+    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough.</p>"
+  <section>
+    html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. Two wizards in a party fight each other; there is only one of you, which helps.</p>"
+## #hero-party
+<div id="hero-party">
+## #hero-party-list
+<div id="hero-party-list">
+  html=""
+  <div class="mw-party-member">
+    html="<div class=\"mw-party-head\">\n         <span class=\"mw-party-name\">Grimbeld Granitejaw</span>\n         <span class=\"mw-party-sub\">Cat Burglar / Dwarven</span>\n       </div>\n       <div class=\"mw-party-line\">Thief · I</div>\n       <div class=\"mw-party-hp-lab\">HP <b>40</b>/<b>40</b></div>\n       <div class=\"mw-map-hptrack\"><div class=\"mw-map-hpfill\" style=\"width:100%\"></div></div>\n       \n       <div class=\"mw-party-line\">Weapon: Dagger</div>\n       <div class=\"mw-party-line\">Eats 1 a rest</div>"
+    <button class="small mw-party-dismiss" onclick>
+      text="DISMISS"

@@ -1,0 +1,65 @@
+## #s-carry
+<div id="s-carry">
+  html=""
+  <li>
+    <b>
+      text="Wakazashi"
+    <i>
+      text="d6+1"
+    <div class="mw-gear-actions">
+      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+        text="Equip"
+      <span class="mw-drop-confirm">
+        <span>
+          text="Drop it?"
+        <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:0;" onclick>
+          text="Yes"
+        <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:0;" onclick>
+          text="No"
+  <li>
+    <b>
+      text="Warded studded"
+    <i>
+      text="AR 11 · 28/28 hp"
+    <div class="mw-gear-actions">
+      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+        text="Equip"
+      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
+        text="Drop"
+  <li>
+    <b>
+      text="Anklet of Invisibility · READY"
+    <i>
+      text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+    <div class="mw-gear-actions">
+      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+        text="Use"
+      <span class="mw-swap-confirm">
+        <span>
+          text="Swap for which?"
+        <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:0;" onclick>
+          text="Bracelet of Flight"
+        <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:0;" onclick>
+          text="Amulet of Light"
+        <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:0;" onclick>
+          text="No"
+      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
+        text="Drop"
+  <li>
+    <b>
+      text="Rope"
+    <i>
+      text="the honest way across a crevice. Once."
+    <div class="mw-gear-actions">
+      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
+        text="Drop"
+  <li>
+    <b>
+      text="Healing potion"
+    <i>
+      text="+d10+2 hp"
+    <div class="mw-gear-actions">
+      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+        text="Use"
+      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
+        text="Drop"

@@ -1,0 +1,117 @@
+## #s-level
+<div id="s-level">
+  text="Lvl I"
+## #s-name
+<div id="s-name">
+  text="Corl the Patient"
+## #s-tag
+<div id="s-tag">
+  text="Wilmsry Cat Burglar · Thief"
+## #btn-abandon-character
+<div id="btn-abandon-character" onclick>
+  text="Abandon this character"
+## #s-wp
+<div id="s-wp">
+  text="40"
+## #s-wpmax
+<div id="s-wpmax">
+  text="40"
+## #s-wpfill
+<div id="s-wpfill" style="width:100%;">
+## #s-die
+<div id="s-die">
+  text="d20"
+## #s-hit
+<div id="s-hit">
+  text="1–5"
+## #s-dmg
+<div id="s-dmg">
+  text="1² + d6/2"
+## #s-arm
+<div id="s-arm">
+  text="Leather · AR 6 · 15/15 hp"
+## #s-int
+<div id="s-int">
+  text="11"
+## #s-sp
+<div id="s-sp">
+  text="0"
+## #s-next
+<div id="s-next">
+  text="201"
+## #s-cost
+<div id="s-cost">
+  text="4 hp/day"
+## #s-rations
+<div id="s-rations">
+  text="You eat 1 a rest · 5 carried — 5 nights, then the arguing starts."
+## #s-rations-n
+<div id="s-rations-n">
+  text="5 carried"
+## #s-trait
+<div id="s-trait">
+  html="<b>Leader</b>, driven by <b>knowledge</b>, afraid of <b>being trapped</b>. Heals twice as fast, learns half as quickly. Magic Users despise them."
+## #s-vp
+<div id="s-vp">
+  text="12/12 vp"
+## #s-skills
+<div id="s-skills">
+  html=""
+  <li>
+    html="<b>Acute Hearing</b><i>never surprised; 3 to hit the unseen</i>"
+  <li>
+    html="<b>Night Vision</b><i>darkness costs you nothing</i>"
+## #s-abilities
+<div id="s-abilities">
+  <li>
+    <b>
+      text="Dirty Trick"
+    <small>
+      text="special skill · active"
+    <i>
+      text="sand, thumb, elbow: the target is blinded for two rounds"
+    <span>
+      text="cd 4 rounds"
+  <li>
+    <b>
+      text="Smoke"
+    <small>
+      text="special skill · active"
+    <i>
+      text="gone: for two rounds foes need a natural 1 to find you, and a flee during it just works"
+    <span>
+      text="once a fight"
+  <li>
+    <b>
+      text="Poisoned Edge"
+    <small>
+      text="trick"
+    <i>
+      text="the blade weeps: d4 a round to the target for three rounds"
+    <span>
+      text="cd 5 rounds"
+## #s-grim-count
+<div id="s-grim-count">
+  text=""
+## #s-grimoire
+<div id="s-grimoire">
+  html=""
+  <li class="none">
+    text="This character does not cast spells."
+## #doss-who
+<div id="doss-who">
+  text="Wilmsry Cat Burglar"
+## #doss
+<div id="doss">
+  html=""
+  <section>
+    html="<h3>Race</h3><p class=\"who\">Wilmsry</p><p>You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.</p>"
+  <section>
+    html="<h3>Class</h3><p class=\"who\">Thief</p><p>Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.</p>"
+  <section>
+    html="<h3>Subclass</h3><p class=\"who\">Cat Burglar</p><p>Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.</p>"
+## #hero-party
+<div id="hero-party" hidden>
+## #hero-party-list
+<div id="hero-party-list">
+  html=""

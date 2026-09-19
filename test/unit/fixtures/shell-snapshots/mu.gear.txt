@@ -1,0 +1,49 @@
+## #m-gold
+<div id="m-gold">
+  text="50"
+## #s-kit
+<div id="s-kit">
+  html=""
+  <li class="mw-kit-head">
+    text="ALSO ON YOU"
+  <li>
+    html="Potions<span>2</span>"
+  <li>
+    html="Scrolls<span>1</span>"
+  <li>
+    html="Rations<span>4 days</span>"
+  <li>
+    html="Wilmst<span>50</span>"
+  <li>
+    html="Spell charges<span>3 / 4</span>"
+  <li>
+    html="Kills<span>0</span>"
+## #s-carry-n
+<div id="s-carry-n">
+  text="0 / 4 · potions & scrolls ride free"
+## #s-onyou
+<div id="s-onyou">
+  html=""
+  <li class="none mw-onyou-head">
+    text="WIELDED"
+  <li class="mw-worn">
+    html="<b>Quarter Staff <span class=\"mw-worn-tag\">worn</span></b><i>d6</i>"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Unequip"
+  <li class="none mw-onyou-head">
+    text="WORN"
+  <li class="mw-worn">
+    html="<b>Cloth <span class=\"mw-worn-tag\">worn</span></b><i>AR 3 · 12/12 hp</i>"
+    <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
+      text="Unequip"
+  <li class="none mw-worn-empty">
+    text="jewelry — nothing. Ten fingers, one neck, zero commitments."
+  <li class="none mw-worn-empty">
+    text="jewelry — nothing. Room for one more bad decision."
+  <li class="none mw-worn-empty">
+    text="cloak — nothing. Cold and unmagical, in that order."
+## #s-carry
+<div id="s-carry">
+  html=""
+  <li class="none mw-empty">
+    html="<b class=\"mw-empty-head\">NOTHING LEFT TO CARRY</b><i class=\"mw-empty-body\">You used it all. That was the plan, technically.</i>"
