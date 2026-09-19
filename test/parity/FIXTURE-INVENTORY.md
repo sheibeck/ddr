@@ -1619,3 +1619,131 @@ prototype is never edited). `npm run build:www`: exit 0. `node --test
 "test/parity/**/*.test.js" "test/determinism/**/*.test.js"
 "test/roundtrip/**/*.test.js" "test/persistence/**/*.test.js"`: all green.
 
+## Phase 45: worn-model collapse (HEDGE-01..03) — the Thief starting cloak is worn at chargen; measured moved set, declared per site
+
+`newRun` now always runs `reconcileWorn` after chargen — no `wornSlots`
+option, zero rng draws (`test/unit/chargen-rng-pin.test.js` stays
+byte-for-byte untouched). `validateSave`/`rehydrate` reconcile
+unconditionally on every load, one return shape (`wornReport: []` when
+nothing moved, including an already-migrated save). The Phase 37 harness
+carve-out (`stripWornField`) and the run/load option are both gone;
+`test/parity/harness/comparables.js#dropEmptyWorn` replaces it — an empty
+`c.worn` map (the engine's spelling of "no worn model") is dropped before
+comparison, a populated map reaches the diff and must be declared. Which
+fixtures move was **measured, not assumed**: `tools/worn-fixture-scan.mjs`
+(45-01) replayed all 31 parity replay sites with the engine's fresh
+character passed through `reconcileWorn` explicitly, BEFORE any engine
+edit landed, and the collapse (45-02) moved exactly that measured set —
+proven by re-running the scan after the edit and diffing it against the
+committed BEFORE readout (empty diff).
+
+### The live scan (tools/worn-fixture-scan.mjs)
+
+Run form: `node tools/worn-fixture-scan.mjs` (always exits 0, makes no
+assertions, prints a deterministic markdown table + summary lines). The
+committed readout (`tools/worn-fixture-scan-output.txt`), quoted verbatim:
+
+```
+# worn-fixture-scan — Phase 45 (HEDGE-03): c.worn created on every fresh character
+
+| Fixture | Site | Seed | Hero | worn at chargen | first mid-script wear | items @chargen (prototype) | items @chargen (engine) | worn @chargen (engine) | items @end (prototype) | items @end (engine) | worn @end (engine) | moved |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| action-script.chargen.json | action-script.chargen.json#seed-1 | 1 | Fighter Knight Fridgian | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-2 | 2 | Thief Cat Burglar Wilmsry | cloak=Cloak of Armor | never | Cloak of Regeneration | (none) | cloak=Cloak of Armor | Cloak of Regeneration | (none) | cloak=Cloak of Armor | true |
+| action-script.chargen.json | action-script.chargen.json#seed-3 | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
+| action-script.chargen.json | action-script.chargen.json#seed-4 | 4 | Thief Cat Burglar Dwarven | cloak=Cloak of Regeneration | never | Cloak of Regeneration | (none) | cloak=Cloak of Regeneration | Cloak of Regeneration | (none) | cloak=Cloak of Regeneration | true |
+| action-script.chargen.json | action-script.chargen.json#seed-6 | 6 | Fighter Knight Troll | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-7 | 7 | Magic User Wizard Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-8 | 8 | Magic User Illusionist Wilmsry | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-13 | 13 | Fighter Woodsman Elven | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-15 | 15 | Magic User Summoner Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-19 | 19 | Magic User Sorcerer Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-24 | 24 | Magic User Apprentice Wilmsry | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-29 | 29 | Magic User Warlock Wilmsry | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-32 | 32 | Fighter Samurai Wilmsry | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.chargen.json | action-script.chargen.json#seed-35 | 35 | Magic User Cleric Troll | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.movement.json | action-script.movement.json#script | 256 | Thief Cat Burglar Human | cloak=Cloak of Strength | never | Cloak of Healing | (none) | cloak=Cloak of Strength | Cloak of Healing | (none) | cloak=Cloak of Strength | true |
+| action-script.combat.json | action-script.combat.json#win | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
+| action-script.combat.json | action-script.combat.json#lose | 14 | Fighter Soldier Fridgian | (none) | never | (none) | (none) | (none) | Bracelet of Flight | (none) | (none) | false |
+| action-script.combat.json | action-script.combat.json#lose-apprentice | 127 | Magic User Apprentice Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.combat.json | action-script.combat.json#lose-plain | 1119 | Thief Cutthroat Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
+| action-script.combat.json | action-script.combat.json#flee | 17 | Thief Pilfer Fridgian | cloak=Cloak of Flying | never | Cloak of Armor | (none) | cloak=Cloak of Flying | Cloak of Armor | (none) | cloak=Cloak of Flying | true |
+| action-script.combat.json | action-script.combat.json#parley | 303 | Thief Con Artist Wilmsry | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
+| action-script.magic.json | action-script.magic.json#cast-damage | 8 | Magic User Illusionist Wilmsry | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.magic.json | action-script.magic.json#potion | 1 | Fighter Knight Fridgian | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.magic.json | action-script.magic.json#scroll | 7 | Magic User Wizard Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.economy.json | action-script.economy.json#script | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether, Healing potion, Lockpicks | Healing potion, Lockpicks, Speed potion | cloak=Cloak of Ether | true |
+| action-script.encounters.json | action-script.encounters.json#trap | 1 | Fighter Knight Fridgian | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
+| action-script.encounters.json | action-script.encounters.json#chest | 2 | Thief Cat Burglar Wilmsry | cloak=Cloak of Armor | never | Cloak of Regeneration | (none) | cloak=Cloak of Armor | Cloak of Regeneration, Cloak of Speed | (none) | cloak=Cloak of Armor | true |
+| action-script.encounters.json | action-script.encounters.json#tablefour | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
+| action-script.encounters.json | action-script.encounters.json#faerie | 38 | Thief Con Artist Elven | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
+| action-script.encounters.json | action-script.encounters.json#affliction | 160 | Thief Pilfer Human | cloak=Cloak of Armor | never | Cloak of Regeneration | (none) | cloak=Cloak of Armor | Cloak of Regeneration | (none) | cloak=Cloak of Armor | true |
+UNEXPLAINED: action-script.combat.json#lose
+
+MOVED SET (13): action-script.chargen.json#seed-2, action-script.chargen.json#seed-3, action-script.chargen.json#seed-4, action-script.movement.json#script, action-script.combat.json#win, action-script.combat.json#lose-plain, action-script.combat.json#flee, action-script.combat.json#parley, action-script.economy.json#script, action-script.encounters.json#chest, action-script.encounters.json#tablefour, action-script.encounters.json#faerie, action-script.encounters.json#affliction
+WORN EXPOSURE: 13 of 31 replay sites
+```
+
+**`UNEXPLAINED: action-script.combat.json#lose` is a pre-existing action-path
+divergence, NOT a worn move.** Investigated in full by 45-01 (see
+`45-01-SUMMARY.md`'s "Issues Encountered"): `combat/lose` (seed 14, a
+Fighter who never carries a cloak — `worn: {}` at both chargen and end)
+already carries a fully-declared, pre-existing Phase 24/31 `action-path`
+divergence record (`fromAction: 0`) that the passing test suite's own
+`skipsByteDiffAt` already excludes from per-action byte comparison. Once
+the RNG stream diverges from action 0, the prototype's undisturbed roll
+sequence happens to kill a foe and auto-take a `Bracelet of Flight`; the
+engine's diverged stream kills different foes and never rolls that drop —
+a byproduct of the already-tolerated RNG divergence, unrelated to `c.worn`
+creation. The scan is deliberately barred from reading any fixture's
+declared `divergence` record (so it cannot suppress this row), and this
+row's `moved` is correctly `false` — it is excluded from the MOVED SET and
+needs no declared record here.
+
+### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fields added | items before (prototype) | items after (engine) | worn after (engine) | Rationale |
+|---|---|---|---|---|---|---|---|---|
+| `action-script.chargen.json` | `#seed-2` (2) | Thief Cat Burglar Wilmsry | `divergences["2"]` | `items`, `worn` | `[Cloak of Regeneration]` | `[]` | `cloak=Cloak of Armor` | newRun wears the Thief's starting cloak; zero rng draws |
+| `action-script.chargen.json` | `#seed-3` (3) | Thief Pickpocket Human | `divergences["3"]` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.chargen.json` | `#seed-4` (4) | Thief Cat Burglar Dwarven | `divergences["4"]` | `items`, `worn` | `[Cloak of Regeneration]` | `[]` | `cloak=Cloak of Regeneration` | as above |
+| `action-script.movement.json` | `#script` (256) | Thief Cat Burglar Human | top-level `chargenDivergence` | `items`, `worn` | `[Cloak of Healing]` | `[]` | `cloak=Cloak of Strength` | as above |
+| `action-script.combat.json` | `#win` (3) | Thief Pickpocket Human | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.combat.json` | `#lose-plain` (1119) | Thief Cutthroat Human | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.combat.json` | `#flee` (17) | Thief Pilfer Fridgian | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Armor]` | `[]` | `cloak=Cloak of Flying` | as above |
+| `action-script.combat.json` | `#parley` (303) | Thief Con Artist Wilmsry | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.economy.json` | `#script` (3), chargen | Thief Pickpocket Human | top-level `chargenDivergence` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.economy.json` | `#script` (3), END | Thief Pickpocket Human | top-level `divergence` (action-path, end-state) | `items` | `[Cloak of Ether, Healing potion, Lockpicks]` | `[Healing potion, Lockpicks, Speed potion]` | `cloak=Cloak of Ether` | the cloak leaves `items` for `worn`; the pre-existing action-path record (fromAction 0, stockCostMul 1.25) already covered the rest of this END-state field |
+| `action-script.encounters.json` | `#chest` (2) | Thief Cat Burglar Wilmsry | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Regeneration]` | `[]` | `cloak=Cloak of Armor` | as above |
+| `action-script.encounters.json` | `#tablefour` (3) | Thief Pickpocket Human | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.encounters.json` | `#faerie` (38) | Thief Con Artist Elven | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Ether]` | `[]` | `cloak=Cloak of Ether` | as above |
+| `action-script.encounters.json` | `#affliction` (160) | Thief Pilfer Human | scenario `chargenDivergence` | `items`, `worn` | `[Cloak of Regeneration]` | `[]` | `cloak=Cloak of Armor` | as above |
+
+Every record's rationale carries the shared paragraph (45-02): *"Phase 45
+(HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at
+chargen (`c.worn.cloak`), so `c.items` loses it and `c.worn` is populated;
+zero rng draws; measured by `tools/worn-fixture-scan.mjs` (BEFORE readout
+committed in 45-01)."* `test/parity/divergence-records.test.js` is the
+standing guard proving the holders declaring `worn` are exactly this
+13-site MOVED SET (`assert.deepStrictEqual` on the two sorted id sets) —
+if a future engine change moves a different site, that test fails first.
+
+### Byte-identical elsewhere (Phase 45)
+
+Every non-Thief site carries NO record change: every Fighter/Magic User
+chargen seed not in the MOVED SET (seeds 1, 6, 7, 8, 13, 15, 19, 24, 29,
+32, 35 — no cloak, `worn: {}` throughout), `action-script.combat.json`'s
+`lose` (seed 14, Fighter — the pre-existing `UNEXPLAINED` action-path row
+above) and `lose-apprentice` (seed 127, Magic User), all four
+`action-script.magic.json` scenarios (`cast-damage`/`heal`/`potion`/
+`scroll` — Magic User/Fighter heroes, no cloak), and
+`action-script.encounters.json`'s `trap` (seed 1, Fighter). No `seed`/
+`actions`/`scenarios` array was touched in any fixture file.
+`test/parity/prototype-master.js.txt` hash is unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`). The scan re-run after the
+45-02 engine edit was byte-identical to this committed BEFORE readout
+(`node tools/worn-fixture-scan.mjs > after.txt && diff after.txt
+tools/worn-fixture-scan-output.txt` — empty) — the collapse moved exactly
+the measured set, nothing more, nothing less.
+

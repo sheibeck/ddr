@@ -40,23 +40,30 @@ need a real "what is currently worn" set to build on; retrofitting one
 after those phases land would be far more invasive than landing it first,
 alone, fully regression-tested.
 
-**Fixture impact: ZERO.** The legacy sum-all-carried path (`eff()`'s
-`for (const it of (S.c.items || [])) if (it.eff && it.eff[key]) t +=
-it.eff[key];` loop) is preserved byte-for-byte for every state without
-`c.worn` — proved by the pinned legacy-equivalence table over all 14
-chargen fixture seeds (`test/unit/worn-model.test.js`, Plan 01) and the
+**Fixture impact (revised Phase 45):** the legacy sum-all-carried path
+(`eff()`'s `for (const it of (S.c.items || [])) if (it.eff && it.eff[key])
+t += it.eff[key];` loop) is preserved byte-for-byte for every state
+without `c.worn` — proved by the pinned legacy-equivalence table over all
+14 chargen fixture seeds (`test/unit/worn-model.test.js`, Plan 01) and the
 untouched parity suite (`prototype-master.js.txt` hash unchanged across all
-four plans). Nothing in the fixture/bot/tools/test call paths ever passes
-the `wornSlots` option or calls `reconcileWorn` — the model is entirely
-opt-in.
+plans, including Phase 45). Since Phase 45 (HEDGE-01/03), every
+fixture/bot/tools/test caller of `newRun(seed)` DOES create `c.worn`
+(`reconcileWorn` runs unconditionally) — the measured moved set is exactly
+13 of 31 parity replay sites (every Thief-hero replay site: chargen seeds
+2/3/4, the movement script, combat's `win`/`lose-plain`/`flee`/`parley`,
+the economy script, and encounters' `chest`/`tablefour`/`faerie`/
+`affliction`), each declared with a before/after `items`/`worn` divergence
+record — see `test/parity/FIXTURE-INVENTORY.md`, Phase 45. Every other
+fixture (every Fighter/Magic User site) is byte-identical.
 
 **Assumption-delta record (Plan 01):** the detector fired on pluralization
 ("a second ring/cloak/staff/bracelet"). Noun = "worn slot" (`c.worn[slot]`
 — the ONE item the character benefits from per slot). Decision = **PROMOTE**:
 `c.worn` becomes the primary representation of what confers effects; the
-old "sum of every carried copy" is demoted to the legacy variant, kept only
-for states that predate the model (fixtures, bots, un-migrated saves).
-Adding a worn flag alongside the bag (rather than promoting a real worn
+old "sum of every carried copy" is demoted to the legacy variant. No legacy
+variant survives; since Phase 45 every state carries `c.worn` (see the
+"Fixture impact" revision above). Adding a worn flag alongside the bag
+(rather than promoting a real worn
 map) was rejected — it would have kept the bag as the primary
 representation and left stacking latent for the new UI to expose, not fix.
 
@@ -148,8 +155,10 @@ fixture that must never be edited).
 > jewelry2?, cloak? }` — see §8.
 
 - **Storage:** `c.worn = { ring?, bracelet?, amulet?, helm?, cloak?, staff?
-  }` — a slot-key → item map, **lazily created**. Absent on every fixture,
-  bot run and un-migrated save. A worn item is **not a bag member**: it
+  }` — a slot-key → item map, created by `newRun` for every character
+  (`{}` when no slot item was issued) and by the unconditional load
+  reconcile (Phase 45); never absent on an engine-produced state. A worn
+  item is **not a bag member**: it
   moves out of `c.items` into `c.worn[slot]`, exactly as an equipped
   weapon/armor is not a bag member — `slotItems(c)` (the bag-cap count),
   `renderCarriedList`'s sell/loot-compare/drop-shelf hosts and the store's
@@ -205,36 +214,41 @@ fixture that must never be edited).
 
 ## §5. Old-save reconciliation (GEAR-04)
 
-- **Migration runs on load**, gated on the shell-only `wornSlots` option
-  (the `storeRoll` precedent) — `engine/saveState.js`'s `validateSave(raw,
-  { wornSlots })` / `rehydrate(obj, { wornSlots })`, homed beside
-  `migrateCarry`/`clearFoeEffect`/`clearStaleTimers`, both call the same
-  `reconcileWorn(c)` (`engine/derived.js`, Plan 01). For any save whose `c`
-  lacks `worn`: create `c.worn`, and for each slot wear the **first item
-  of that slot type in bag order**; every later copy of the same slot type
-  **stays in the bag**. Moving bag → worn only ever frees bag slots, so
-  migration can never overflow the bag cap. A save that already carries
-  `c.worn` (even an empty `{}`) is **never re-migrated**.
-- **Fresh runs:** `newRun(seed, exclude, { wornSlots: true })` — an option
-  only the shell's new-game path sets — creates `c.worn` and wears the
-  Thief's starting cloak, with zero rng draw. Every fixture/bot/tools/test
-  caller of `newRun(seed)` without the option stays byte-identical.
+> **Phase 45 update (2026-09-19):** the bullets below describe the
+> ORIGINAL Phase 37 option-gated design. Since Phase 45 (HEDGE-01/02)
+> there is one path: `newRun(seed)` always creates `c.worn` (the Thief's
+> starting cloak worn, zero rng draws) and `validateSave`/`rehydrate`
+> always reconcile — `validateSave` returns `{ ok, value, wornReport }`
+> with `wornReport: []` when nothing moved. The parity fixtures this
+> moved are declared per site — see `test/parity/FIXTURE-INVENTORY.md`,
+> Phase 45.
+
+- **Migration runs on every load (unconditional since Phase 45)** —
+  `engine/saveState.js`'s `validateSave(raw, { freshSeed })` /
+  `rehydrate(obj)`, homed beside `migrateCarry`/`clearFoeEffect`/
+  `clearStaleTimers`, both call the same `reconcileWorn(c)`
+  (`engine/derived.js`, Plan 01). For any save whose `c` lacks `worn`:
+  create `c.worn`, and for each slot wear the **first item of that slot
+  type in bag order**; every later copy of the same slot type **stays in
+  the bag**. Moving bag → worn only ever frees bag slots, so migration can
+  never overflow the bag cap. A save that already carries `c.worn` (even
+  an empty `{}`) is **never re-migrated**.
+- **Fresh runs:** `newRun(seed)` — every caller (shell, bot, tools, tests,
+  fixtures) — creates `c.worn` and wears the Thief's starting cloak, zero
+  rng draws (Phase 45).
 - **`sanitizeWorn(c)`** (`engine/saveState.js`) runs on BOTH load chains,
   unconditionally, and neutralises a present-but-tampered `c.worn`
   (`"999"`, `[]`, `null`, a bare number → `{}`; a non-object entry inside a
-  genuine map is dropped) — it never injects a missing key. Creation
-  (`reconcileWorn`) is option-gated; tolerance (`sanitizeWorn`) is
-  unconditional; the two never overlap in what they touch.
+  genuine map is dropped) — it never injects a missing key. Both
+  unconditional (Phase 45); the two never overlap in what they touch.
 - **The report is a RETURN VALUE, never a serialized field:**
   `reconcileWorn(c)` returns `[{ slot, worn, bagged }]` (one entry per
   populated slot, in `WORN_SLOTS` order — `worn` the display name now
   worn, `bagged` the display names of every later same-slot copy left in
   the bag) or `[]` when nothing was wearable. `validateSave`'s result
-  carries this as `wornReport` only when the migration actually ran.
-  `src/browser/engineAdapter.js`'s `boot()` passes `wornSlots: true` on
-  every real load and stashes the report on a module-level value;
-  `takeBootWornReport()` returns it exactly once, then resets to `null` —
-  a later ENTER (or a fresh roll) is a no-op.
+  always carries this as `wornReport` (`[]` when nothing moved, including
+  an already-migrated save); `boot()` stashes it; `takeBootWornReport()`
+  returns it once.
 - **Narration:** the shell surfaces the report **once, only when at least
   one extra was bagged**, as a GEAR-family rail card plus the same line in
   the Oracle log — never a toast (`src/browser/rail.js`'s
@@ -246,30 +260,24 @@ fixture that must never be edited).
 
   (the `{count}`/`{what}`/`{bagged}`/`{verb}` template spells out counts up
   to six and falls back to the plain digit at seven or more).
-- **The option gate (surfaced assumption, Plan 03):** an UNCONDITIONAL
-  migration would inject a `worn` key into every rehydrated legacy save
-  and break six standing round-trip contracts this codebase treats as
-  non-negotiable (`save-validation.test.js`'s seed 1/42/12345
-  `deepStrictEqual`, `party-model.test.js`, `effects.test.js`'s "never
-  injected" rehydrate proof, `engineAdapter.test.js`'s boot contract,
+- **The option gate — collapsed (Phase 45):** the six round-trip contracts
+  this codebase treated as non-negotiable when the migration was gated
+  (`save-validation.test.js`'s seed 1/42/12345 `deepStrictEqual`,
+  `party-model.test.js`, `effects.test.js`'s "never injected" rehydrate
+  proof, `engineAdapter.test.js`'s boot contract,
   `dual-write-convergence.test.js`, the Phase 36 "never injects the key on
-  load" discipline). Resolution: the migration lives exactly where CONTEXT
-  locks it (`validateSave`/`rehydrate`), but is gated on the same
-  shell-only option name `newRun` uses (`{ wornSlots: true }`), which
-  `engineAdapter.boot()` passes on every real load — every player save
-  therefore migrates on load (GEAR-04 holds on device), while tests/tools
-  that call `rehydrate` directly keep today's byte-identical contract. One
-  existing assertion (`engineAdapter.test.js`'s boot-rehydrates-a-save
-  test) was deliberately updated because `boot()` IS the shell's real load
-  path and now genuinely migrates.
-- **Bot / balance:** landed (Phase 42) — `tools/lib/tuning-bot.mjs`'s
-  `RUN_FLAGS = { storeRoll: true, wornSlots: true }` is now spread into
-  every `playRun`'s `newRun` call, so the bot plays the worn-slot model
-  real players see (the v1.5 BEFORE pin `e69ff07` stays like-for-like,
-  since it predates this flag). The "wear/swap policy" this note asked for
-  is the engine's own `autoWearSlot` on take, unchanged by this phase — the
-  bot wears the first item per slot on pickup and never swaps a worn item
-  for a better one mid-run; that IS the recorded policy, not a gap. See
+  load" discipline) were all re-pinned to the single, unconditional path
+  in 45-02 — every one of them now expects `c.worn`/`wornReport` present.
+  The option is gone; `validateSave`/`rehydrate` take no worn-related
+  argument.
+- **Bot / balance:** `RUN_FLAGS = { storeRoll: true }` since Phase 45 — the
+  worn-slot model needs no flag since `newRun` always creates it. The
+  v1.5 AFTER readouts (`docs/class-pass/*.json`) recorded the two-flag era
+  in `meta.runFlags` and are frozen history (not regenerated). The
+  "wear/swap policy" this note asked for is the engine's own
+  `autoWearSlot` on take, unchanged by this phase — the bot wears the
+  first item per slot on pickup and never swaps a worn item for a better
+  one mid-run; that IS the recorded policy, not a gap. See
   `docs/CLASS-PASS.md` `### Phase 42 tactics (BAL-01 second half)`.
 
 ## §6. The `eff()` call-site inventory
@@ -313,10 +321,12 @@ Name/kind scans that can involve a slot item (routed through
 - **Phase 39** — magic-item use → effect → cooldown chips (visible
   countdown UI beyond the Gear-tab `· N sq` text this phase already
   shows), new one-shot tools (rope, ladder, torch).
-- **Phase 42** — landed: `tools/lib/tuning-bot.mjs` now plays under
-  `{ wornSlots: true }` (`RUN_FLAGS`); the wear policy is the engine's own
-  `autoWearSlot` on take (first item per slot, never swapped) — see
-  `docs/CLASS-PASS.md` `### Phase 42 tactics (BAL-01 second half)`.
+- **Phase 42** — landed: `tools/lib/tuning-bot.mjs` played under
+  `{ wornSlots: true }` (`RUN_FLAGS`) at the time (Phase 45: that flag is
+  gone — `RUN_FLAGS = { storeRoll: true }`; the bot plays the engine's
+  only path); the wear policy is the engine's own `autoWearSlot` on take
+  (first item per slot, never swapped) — see `docs/CLASS-PASS.md`
+  `### Phase 42 tactics (BAL-01 second half)`.
 - **Phase 43** — the Gear tab's ON YOU / BAG two-panel split (worn rows
   currently join the existing worn area beside the weapon/armor `wornRow`
   calls; this phase deliberately does not split the panel), and a
