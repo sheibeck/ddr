@@ -178,8 +178,16 @@ Plans:
 **Plans**: 3 plans (sequential waves 1–3 — measure, collapse-in-one-commit, close; phase-start baseline 2026-09-19 at `7447629`: `wornSlots` ×67 lines, 3,243 tests, master hash `a1f4d0dc`)
 
 Plans:
+**Wave 1**
+
 - [ ] 45-01-PLAN.md — Measure first: `tools/worn-fixture-scan.mjs` replays all 31 parity replay sites in lockstep with the prototype sandbox with the engine's fresh character passed through `reconcileWorn` (invariant across the collapse), commits `tools/worn-fixture-scan-output.txt` (the MOVED SET + per-site before/after record values); zero engine/harness bytes
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 45-02-PLAN.md — The collapse, ONE commit: `newRun` always reconciles (no option, zero draws), `validateSave`/`rehydrate` unconditional with one return shape, adapter + `RUN_FLAGS = { storeRoll: true }`; harness `dropEmptyWorn` replaces the Phase 37 carve-out, exactly the MOVED SET declared with `items`/`worn` before≠after records, new `divergence-records.test.js` (declared == measured), every option-off/legacy pin re-pinned, the HEDGE-01/HEDGE-02 no-option pins added; scan AFTER byte-identical
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 45-03-PLAN.md — Close: FIXTURE-INVENTORY.md Phase 45 section (+ regenerated roster), GEAR-SLOTS.md §2/§3/§5/§7 prose corrected, 143-cell × 3-seed smoke (0 stuck, `Bot:` line = v1.5 AFTER pin modulo `seeds=`, readout in scratch), ROADMAP criteria 1–5 verified verbatim, closing SUMMARY with the deferred Pixel 7 items
 
 ### Phase 46: Honest Names, Dead Exports & the Tutorial Decision
@@ -343,6 +351,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 **Context for planning:** sound = a `src/browser/sfx.js` event→clip table played through Web Audio (`AudioContext` + `decodeAudioData`, unlocked by the first tap), wired beside `hapticForEvents(events)` in the dispatch path — engine untouched, mute toggle by the settings gear, clips bundled in `www/` (Android WebView plays MP3 offline, no plugin). Transitions: the rail is a flex sibling that reflows the viewport today (see todo `2026-09-19-rail-overlays-the-map-without-reflow-tap-to-dismiss-longer-h.md` — overlay + slide is the fix, land together); map pan goes through `cameraPan()`/`keepInViewAxis` (`src/browser/controls.js`) with no easing; `.mw-rail-new` has a 0.18 s rise (`mazeworld.html` CSS ~L707) and combat has `mwStrikePop`/`mwRoundTick` keyframes but no inter-exchange pacing in `combatPanel.js`. Typed-text effect belongs to the rail/encounter line renderers (`renderRail`, `renderEncounter`), must respect the rail hold/dismiss rules and TalkBack (`#mw-rail-live` announcer gets the full text at once). Party marker ring: `PLAYER_MARKER_ICON`/`draw()`. Sequence AFTER v1.6 Phase 47 (shell modularisation) so the effects land in the new `src/browser/` modules, not the old `paint()` bodies; each effect gets a settings-respecting reduced-motion path.
 
 Plans:
+
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
 ### Phase 999.2: Joiner level capped by floor depth (BACKLOG)
@@ -354,4 +363,5 @@ Plans:
 **Context for planning:** today `engine/encounters.js#meetJoiner` rolls `lvl = SPELL_LEVEL_TABLE[rng.d(10) - 1]` (`content/misc-tables.js:27`, the canon d10 Level Table p.46: 1,1,2,2,3,3,4,4,5,5) with no depth term — identical to the prototype (`prototype-master.js.txt` ~L1760). The cap is a deliberate canon divergence: `lvl = Math.min(rolled, state.floor.depth)` keeps the draw count and cursor unchanged (one d10, then the two d20 wp rolls) so only fixtures that actually meet a Joiner on a floor shallower than the rolled level move — declare each with before/after per the greenfield ruling and regenerate `FIXTURE-INVENTORY.md`. `joinerMet`/`joinerRefused` event payloads carry `lvl`, so narration (`toasts.js`/`narrationLines.js` after Phase 46) and the rail card need no shape change. Check `grantLevelAbilities(joinerChar, …, lvl)` receives the capped level, and the wp formula `20 * lvl + d20` uses it too. Bot/class-pass readouts will shift slightly (weaker early Joiners) — a small `tune-classes` smoke before/after belongs in the plan. Gameplay change → outside v1.6 (cleanup-only); a quick task or the next tuning pass.
 
 Plans:
+
 - [ ] TBD (promote with /gsd-review-backlog when ready)

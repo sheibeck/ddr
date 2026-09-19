@@ -4,9 +4,9 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 45
 current_phase_name: Collapse the Phase 37 Hedges
-status: planning
+status: executing
 stopped_at: "Completed 44-04-PLAN.md — Phase 44 (Retire the Classic Engine from the Shell) closed: all five ROADMAP success criteria verified, mazeworld.html 8710 -> 6356 lines (0347df2, 79d22bc, 18e1bb2)"
-last_updated: "2026-09-19T17:17:19.506Z"
+last_updated: "2026-09-19T17:57:57.770Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 44 complete, transitioned to Phase 45
 progress:
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 44; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 45 — Collapse the Phase 37 Hedges
+Phase: 45 of 49 (Collapse the Phase 37 Hedges) — planned, executing
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-19 — Phase 44 complete, transitioned to Phase 45
 
 ## Ground Truth (durable facts every session needs)
