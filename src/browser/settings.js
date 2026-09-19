@@ -1,8 +1,10 @@
 // src/browser/settings.js
 //
-// The single source of truth for the five persisted UX settings (UX-07;
+// The single source of truth for the four persisted UX settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
-// former control-bar side option) plus the pure text-scaling (UX-08) and
+// former control-bar side option, Phase 46 NAME-02 removed the on-screen
+// movement-control-scheme field — tap-to-move has been the only movement
+// surface since v1.4/v1.5) plus the pure text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -13,9 +15,9 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All five fields are persisted as ONE JSON object under a single
+// All four fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never five separate keys racing each other.
+// per settings change, never four separate keys racing each other.
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()/getBest()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
@@ -27,21 +29,14 @@
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all five settings fields are persisted under. */
+/** Single versioned key all four settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
-/** The five UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
+/** The four UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
   haptics: true,
   textSize: "M",
-  // Device-review revision (04-CONTEXT.md "Device-review revisions
-  // (2026-09-08)" #2): the on-screen D-pad is now the sole, always-visible
-  // control (REVERSES the earlier tap-to-move-default decision). "tap"
-  // stays a valid stored value (controls.js's tap->cell code stays
-  // importable/dormant) but is no longer wired to movement in the crawl
-  // screen regardless of this setting.
-  controlScheme: "dpad",
   confirmBeforeQuit: true,
 });
 
@@ -52,7 +47,6 @@ const ALLOWED_VALUES = {
   sound: [true, false],
   haptics: [true, false],
   textSize: ["S", "M", "L"],
-  controlScheme: ["tap", "dpad"],
   confirmBeforeQuit: [true, false],
 };
 
@@ -62,7 +56,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full six-field settings object: persisted
+ * readSettings() — resolves the full four-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

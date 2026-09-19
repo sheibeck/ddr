@@ -192,7 +192,7 @@ test("UIF-05: the camp button's onclick wiring and short-state read stay singula
   assert.equal((CODE.match(/const campBtn = document\.getElementById\("btn-camp"\);/g) || []).length, 1);
 });
 
-test("UIF-05: settings.js has no trace of handedness and exposes exactly 5 fields, in order", async () => {
+test("UIF-05: settings.js has no trace of handedness and exposes exactly 4 fields, in order", async () => {
   const settingsPath = path.join(REPO_ROOT, "src", "browser", "settings.js");
   const settingsSrc = fs.readFileSync(settingsPath, "utf8");
   assert.doesNotMatch(settingsSrc, /handedness/i);
@@ -202,7 +202,6 @@ test("UIF-05: settings.js has no trace of handedness and exposes exactly 5 field
     "sound",
     "haptics",
     "textSize",
-    "controlScheme",
     "confirmBeforeQuit",
   ]);
 });

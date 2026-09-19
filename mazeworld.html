@@ -5149,11 +5149,10 @@ window.__mzClassicBoot = async function classicBoot() {
     currentSettings = settings;
     // 04-06: expose the resolved settings object so the classic script's
     // fit() (cell size) can read it without importing settings.js directly
-    // — same bridge pattern as window.__mzState. Device-review revision
-    // (04-CONTEXT.md "Device-review revisions" #2): the D-pad is now
-    // ALWAYS visible (display:grid in CSS, no settings-gated toggle here)
-    // and tap-to-move is disabled outright — see the viewport gesture
-    // handler below, which no longer reads controlScheme at all.
+    // — same bridge pattern as window.__mzState. Phase 46 (NAME-02): the
+    // on-screen movement-control-scheme setting is retired — tap-to-move
+    // has been the only movement surface since v1.4/v1.5, and the viewport
+    // gesture handler below reads nothing settings-gated for it.
     window.__mzSettings = settings;
     const appEl = document.getElementById("app");
     if (!appEl) return;

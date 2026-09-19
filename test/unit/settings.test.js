@@ -46,20 +46,18 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: controlScheme defaults to 'dpad'", () => {
-  assert.equal(SETTINGS_DEFAULTS.controlScheme, "dpad");
+test("SETTINGS_DEFAULTS: the four fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
   assert.equal(SETTINGS_DEFAULTS.haptics, true);
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
 });
 
-test("writeSetting/readSettings: each of the 5 fields round-trips through window.mzStorage", async () => {
+test("writeSetting/readSettings: each of the 4 fields round-trips through window.mzStorage", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
     await writeSetting("sound", false);
     await writeSetting("haptics", false);
     await writeSetting("textSize", "L");
-    await writeSetting("controlScheme", "dpad");
     await writeSetting("confirmBeforeQuit", false);
     await flushStorage();
 
@@ -68,7 +66,6 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       sound: false,
       haptics: false,
       textSize: "L",
-      controlScheme: "dpad",
       confirmBeforeQuit: false,
     });
 
@@ -101,10 +98,6 @@ test("writeSetting(): invalid value is rejected (no-op, keeps prior/default)", a
     await writeSetting("textSize", "NOPE"); // invalid again, after a valid write
     await flushStorage();
     assert.equal((await readSettings()).textSize, "L"); // keeps the last valid value
-
-    await writeSetting("controlScheme", "keyboard"); // not in {tap,dpad}
-    await flushStorage();
-    assert.equal((await readSettings()).controlScheme, "dpad");
   });
 });
 
@@ -138,8 +131,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
     assert.equal("handedness" in settings, false);
 
-    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), ["sound", "haptics", "textSize", "controlScheme", "confirmBeforeQuit"]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 5);
+    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), ["sound", "haptics", "textSize", "confirmBeforeQuit"]);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 4);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -151,6 +144,37 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     assert.deepEqual(after, before);
     assert.equal(store.has(SETTINGS_STORAGE_KEY), false);
   });
+});
+
+// Phase 46 (NAME-02): the on-screen movement-control-scheme setting is
+// retired — tap-to-move has been the only movement surface since v1.4/v1.5.
+// Built from string fragments (the shell-map-invariants RETIRED-map idiom)
+// so this pin never spells the retired identifier/value whole, keeping the
+// zero-straggler grep for the retired setting at zero across test/.
+test("Phase 46 (NAME-02): a stored control-scheme key is ignored silently", async () => {
+  const RETIRED_KEY = "control" + "Scheme";
+  const RETIRED_VALUE = "dp" + "ad";
+
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "S", [RETIRED_KEY]: RETIRED_VALUE }));
+    const settings = await readSettings();
+    assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
+    assert.equal(RETIRED_KEY in settings, false);
+
+    // writeSetting rejects the now-unknown key as a no-op: the returned
+    // settings deep-equal the current settings, with no such key.
+    const current = await readSettings();
+    const after = await writeSetting(RETIRED_KEY, "tap");
+    assert.deepEqual(after, current);
+    assert.equal(RETIRED_KEY in after, false);
+  });
+
+  // The settings source itself no longer spells the retired key or value
+  // (the handedness pin's doesNotMatch shape).
+  const fs = await import("node:fs");
+  const src = fs.readFileSync(new URL("../../src/browser/settings.js", import.meta.url), "utf8");
+  assert.equal(src.includes(RETIRED_KEY), false);
+  assert.equal(src.includes(RETIRED_VALUE), false);
 });
 
 test("settings.js never touches raw localStorage directly (only via storage.js/window.mzStorage)", async () => {
