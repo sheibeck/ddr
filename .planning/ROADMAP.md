@@ -242,11 +242,26 @@ Plans:
 **Plans**: 5 plans (strictly sequential — every plan after 01 edits `mazeworld.html`; 01 must land first so the BEFORE fixtures pre-date every carve)
 
 Plans:
+**Wave 1**
+
 - [ ] 47-01-PLAN.md — DOM-snapshot harness (recording document + node:vm classic-script sandbox with the bridge twin) and the seven committed BEFORE fixtures; standing 3-screen smoke with the store idempotency truth
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 47-02-PLAN.md — `src/browser/bridge.js` registry + `bridge-registry.test.js` (comment-stripped set-equality, fail-first teeth), `tools/bridge-doc.mjs`, `docs/SHELL-MODULES.md` with the generated `## Module bridge`; dead `__mzBags` deleted
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 47-03-PLAN.md — `src/browser/gearTab.js` (Gear view models, `renderCarriedList` + drop/swap confirms, `renderGearTab`); `paint()` mounts through `window.__mzTabs.gear`; `tabDeps()`; six dead bridges + classic helpers deleted; pins re-homed; `gearTab.test.js`
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 47-04-PLAN.md — `src/browser/heroTab.js` (Hero view models, sheet/skills/abilities/rations/grimoire/dossier/Company); `paint()` mounts through `window.__mzTabs.hero`; classic wrappers, five bridges, the harness seam deleted; `__mzTables` trimmed; `heroTab.test.js`
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 47-05-PLAN.md — `src/browser/storeScreen.js` (`S.store` branch, `STORE_ROLL_COPY`); `__mzTabs` final shape; widened no-duplicate pin; line budget measured with the CONTEXT fallback (shortfall recorded, never silent); criteria 1-5 verbatim; closing SUMMARY
+
 **UI hint**: yes
 (Annotation is for the keyword scan only — the phase is pixel-identical by construction and `ui_phase` is off; a UI-SPEC is not warranted.)
 

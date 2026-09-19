@@ -4,9 +4,9 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 47
 current_phase_name: Shell Modularisation
-status: planning
+status: executing
 stopped_at: Completed 46-04-PLAN.md (Phase 46 closed)
-last_updated: "2026-09-19T21:53:23.892Z"
+last_updated: "2026-09-19T22:54:38.072Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 46 complete, transitioned to Phase 47
 progress:
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 47 — Shell Modularisation
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-19 — Phase 46 complete, transitioned to Phase 47
+Phase: 47 of 49 — Shell Modularisation (planned, 5 sequential plans; executing)
+Plan: 47-01 next (snapshot harness + BEFORE fixtures)
+Status: Ready to execute
+Last activity: 2026-09-19 — Phase 47 planned (b973aa9); planner flags ROADMAP criterion 2 (<5,000 lines) likely NOT MET (~5,550 projected) — 47-05 measures and records honestly, STATE blocker if so
 
 ## Ground Truth (durable facts every session needs)
 
