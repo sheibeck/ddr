@@ -8,6 +8,7 @@
     "test": "node --test",
     "test:quick": "node --test \"test/unit/**/*.test.js\" \"test/determinism/**/*.test.js\" \"test/roundtrip/**/*.test.js\"",
     "build:www": "node tools/build-www.mjs",
+    "boot:check": "node tools/shell-boot-check.mjs",
     "cap:sync": "npm run build:www && npx cap sync android",
     "android:debug": "npm run cap:sync && node tools/pin-jdk.mjs && node tools/gradle.mjs assembleDebug",
     "version:bump": "node tools/bump-version.mjs",
