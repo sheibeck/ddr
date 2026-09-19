@@ -225,7 +225,9 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       let hurt = 0;
       if (climbing) {
         const hPenalty = heightsPenalty(state.c);
-        if (hPenalty) events.push({ type: "heightsFear" });
+        // Phase 43 (CLAR-01, additive): penalty names the cause for the
+        // narration; fixtures compare state, so this moves none.
+        if (hPenalty) events.push({ type: "heightsFear", penalty: hPenalty });
         const kind = rng.pick(["rope", "rock", "wood"]);
         const tbl = CLIMB_TABLE[kind];
         const feet = 10 * (1 + rng.d(2));
@@ -241,7 +243,9 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         }
       } else {
         const wPenalty = waterPenalty(state.c);
-        if (wPenalty) events.push({ type: "waterFear" });
+        // Phase 43 (CLAR-01, additive): penalty names the cause for the
+        // narration; fixtures compare state, so this moves none.
+        if (wPenalty) events.push({ type: "waterFear", penalty: wPenalty });
         const row = LEAP_TABLE[rng.d(4) - 1];
         const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
         // Phase 38 (ABIL-02): the retired leap bonus — no term subtracted here anymore.
@@ -325,7 +329,9 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
     const raw = skill(c, "Hardiness") ? Math.round(TRAPPED_PHOBIA_PANIC / 2) : TRAPPED_PHOBIA_PANIC;
     const loss = Math.min(raw, Math.max(0, c.wp - 1));
     c.wp -= loss;
-    events.push({ type: "trappedPanic", loss });
+    // Phase 43 (CLAR-01, additive): phobia names the cause for the
+    // narration; fixtures compare state, so this moves none.
+    events.push({ type: "trappedPanic", loss, phobia: c.phobia });
   }
 
   if (c.affliction) {

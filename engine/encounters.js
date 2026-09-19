@@ -604,8 +604,11 @@ export function goInsane(state, rng, events = []) {
   const r = rng.d(6);
   events.push({ type: "insanityRolled", roll: r, result: INSANITY[r - 1] });
   if (r === 1) {
+    const before = c.wp;
     c.wp = Math.ceil(c.wp / 2);
-    events.push({ type: "insanitySelfHarm" });
+    // Phase 43 (CLAR-01, additive): loss names the cause for the
+    // narration; fixtures compare state, so this moves none.
+    events.push({ type: "insanitySelfHarm", loss: before - c.wp });
   } else if (r === 3) {
     teleport(state, rng, events);
   } else if (r === 5) {

@@ -129,7 +129,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     if (sp.dmg && sp.kind === "thrown") {
       const self = Math.ceil(rollDice(rng, sp.dmg) / 2);
       c.wp -= self;
-      events.push({ type: "backfireSelfDamage", amount: self });
+      // Phase 43 (CLAR-01, additive): spell/sub name the cause for the
+      // narration; fixtures compare state, so this moves none.
+      events.push({ type: "backfireSelfDamage", amount: self, spell: sp.n, sub: c.sub });
       if (c.wp <= 0) {
         die(state, "backfire", null, rng, events, now);
         return events;
@@ -173,7 +175,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     if (doubled && rng.d(8) === 1) {
       const hurt = lvl * lvl + rng.d(6);
       c.wp -= hurt;
-      events.push({ type: "summonBackfired", amount: hurt });
+      // Phase 43 (CLAR-01, additive): spell/sub name the cause for the
+      // narration; fixtures compare state, so this moves none.
+      events.push({ type: "summonBackfired", amount: hurt, spell: sp.n, sub: c.sub });
       if (c.wp <= 0) {
         die(state, "summon", null, rng, events, now);
         return events;
@@ -288,7 +292,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     if (!c.ward) {
       const self = Math.ceil(d / 2);
       c.wp -= self;
-      events.push({ type: "earthquakeSelfDamage", amount: self });
+      // Phase 43 (CLAR-01, additive): spell names the cause for the
+      // narration; fixtures compare state, so this moves none.
+      events.push({ type: "earthquakeSelfDamage", amount: self, spell: sp.n });
       if (c.wp <= 0) {
         die(state, "quake", null, rng, events, now);
         return events;
@@ -440,14 +446,18 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     c.wp = Math.min(c.maxWP, c.wp + amt);
     events.push({ type: "healed", amount: amt, spell: sp.n });
   } else if (sp.kind === "death") {
-    if (c.wp <= 26) {
-      events.push({ type: "deathSpellTooWeak" });
+    // Phase 43 (CLAR-01, additive): DEATH_SPELL_FEE names the cause for the
+    // narration; fixtures compare state, so this moves none. Value-identical
+    // to the prior literal 26/25 (fee + 1 / fee).
+    const DEATH_SPELL_FEE = 25;
+    if (c.wp <= DEATH_SPELL_FEE + 1) {
+      events.push({ type: "deathSpellTooWeak", fee: DEATH_SPELL_FEE });
       c.spellsUsed--;
       return events;
     }
-    c.wp -= 25;
+    c.wp -= DEATH_SPELL_FEE;
     const t = liveFoes(state)[0];
-    events.push({ type: "deathCast" });
+    events.push({ type: "deathCast", cost: DEATH_SPELL_FEE });
     if (t) {
       t.wp = 0;
       killFoe(state, t, rng, events);
