@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 46
-current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
-status: verifying
+current_phase: 47
+current_phase_name: Shell Modularisation
+status: planning
 stopped_at: Completed 46-04-PLAN.md (Phase 46 closed)
-last_updated: "2026-09-19T21:50:55.519Z"
+last_updated: "2026-09-19T21:53:23.892Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 46 execution started
+last_activity_desc: Phase 46 complete, transitioned to Phase 47
 progress:
   total_phases: 6
   completed_phases: 3
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 46 (Honest Names, Dead Exports & the Tutorial Decision) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-19 — Phase 46 execution started
+Phase: 47 — Shell Modularisation
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-19 — Phase 46 complete, transitioned to Phase 47
 
 ## Ground Truth (durable facts every session needs)
 

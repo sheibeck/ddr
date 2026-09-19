@@ -33,7 +33,7 @@
 
 - [x] **Phase 44: Retire the Classic Engine from the Shell** - The 16 dead pre-extraction mirrors and everything only they reach are gone from `mazeworld.html`, the Hero dossier reads `content/flavor.js`, and the drift-tripwire tests guard `engine/`/`content/` instead — expect −2k lines, zero engine bytes (completed 2026-09-19)
 - [x] **Phase 45: Collapse the Phase 37 Hedges** - One worn-model path everywhere: every `newRun` creates `c.worn`, every load reconciles unconditionally, no `wornSlots` option anywhere; the fixtures that move are measured, declared and regenerated — the milestone's only fixture-moving phase (completed 2026-09-19)
-- [ ] **Phase 46: Honest Names, Dead Exports & the Tutorial Decision** - `toasts.js` becomes `narrationLines.js` with exports named for what they do, `winGame`/`state.won` and the dead toast-lifetime exports are deleted, no identifier is named after a retired mechanism, and `tutorial.js` is decided (delete or park), one rename per commit
+- [x] **Phase 46: Honest Names, Dead Exports & the Tutorial Decision** - `toasts.js` becomes `narrationLines.js` with exports named for what they do, `winGame`/`state.won` and the dead toast-lifetime exports are deleted, no identifier is named after a retired mechanism, and `tutorial.js` is decided (delete or park), one rename per commit (completed 2026-09-19)
 - [ ] **Phase 47: Shell Modularisation** - The Gear tab, Hero tab and Store screen render from `src/browser/gearTab.js` / `heroTab.js` / `storeScreen.js` with source-pin tests; `mazeworld.html` is a mount point under 5,000 lines with the `window.__mz*` bridge listed in one place
 - [ ] **Phase 48: Stale Docs, Comments & Test Names Purge** - Every comment, `docs/*.md` page, `.claude/CLAUDE.md` row and test name describes the game as it is — D-pad, toasts-as-UI, dead classic mirrors, `wornSlots`, retired counters and iOS rows are gone, proven by a recorded grep list over the final layout
 - [ ] **Phase 49: Measure-First Perf Pass** - `paint()` re-render and `draw()` per step are measured on the Pixel 7 and recorded in `docs/PERF-BASELINE.md`; only a measured ≥ 16 ms hotspot or user-confirmed jank gets code — otherwise the phase closes with the numbers and no diff
@@ -336,7 +336,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
-| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | In Progress|  |
+| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
