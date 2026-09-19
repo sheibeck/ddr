@@ -386,7 +386,25 @@ Plans:
   4. The Gear screen is two panels — ON YOU (Worn: armor, cloak, jewelry · Carried: weapon, staff, shield) and BAG — and the bag-full drop prompt lists bag items only.
   5. `toastsCoverage.test.js` and `formatEventsCoverage.test.js` stay green — no cause string bypasses the coverage guard.
 
-**Plans**: TBD
+**Plans**: 4 plans (sequential — every plan its own wave; `mazeworld.html` edits confined to Plan 04)
+
+Plans:
+**Wave 1**
+
+- [ ] 43-01-PLAN.md — CLAR-01 (non-day-cycle rows): the cost-event inventory in `docs/CLARITY.md`, nine additive cause keys (trappedPanic.phobia, heights/water penalty, backfire/summon/earthquake spell, Death fee, insanity loss), cause-first rewrites of 24 Oracle/toast lines (`Being trapped: four walls and one door you already used. −4 hp.`), the HP-not-WP sweep with a grep-pin test + the measured `REWORDED_TXT_ITEMS` cosmetic carve-out (seeds 2/4/256/160; economy `after` record re-measured)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 43-02-PLAN.md — CLAR-03/05 (+ CLAR-01 day-cycle rows): the ration/upkeep audit against the prototype + rulebook in `docs/RATIONS.md` (≥ 12 rules, rulebook-only sleep/wandering WP rules not adopted), `eatsFor` as the ONE appetite read, the `rationsEaten { eats, left, eaters }` event naming every rule ("Trolls eat for two."), `wentHungry` need/have/mouths/heft ("Hunger: nobody packed — …"), `RAIL_FAMILY.rationsEaten` (FED), pure `rationsViewModel`/`eatsLineFor`/`RATIONS_COPY`
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 43-03-PLAN.md — CLAR-02/04 pure view models: `usableBy(it, c)` ("(usable by Fighters — not you)", the Heft clause, engine legality reused), `lootCompare.usable`, `dropShelfItems(c)` (bag-only, true indices, potions excluded), `emptySlotRows(c)` + `GEAR_COPY` (in-voice empty slots, staff-not-you), CLARITY ledger display sections
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 43-04-PLAN.md — the shell (only `mazeworld.html` plan) + close: `(usable by …)` on FIND card / LOOT rows / store rows, `eats N a rest` on the Joiner card + Company panel, the Hero RATIONS panel, the Gear tab as ON YOU (WIELDED / WORN with empty slots / ALSO ON YOU) + BAG, the bag-only drop shelf; CLARITY requirements map, REQUIREMENTS CLAR-01..05 complete, whole-phase gate, aggregated Pixel 7 checklist + `## For PROJECT.md`
+
 **Research flag**: Standard wiring/display sweep — skip `--research-phase`. Verify each earlier phase actually added its cause payload at introduction rather than retrofitting all of it here.
 **UI hint**: yes
 
