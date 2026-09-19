@@ -86,7 +86,7 @@ function styleBlock() {
   return HTML.slice(start, end);
 }
 function guardHelpersRegion() {
-  return sliceBetween(CODE, "let encRenderedAt = 0;", "function vitalsStrip()");
+  return sliceBetween(CODE, "let encRenderedAt = 0;", "function wireDeathConfirm()");
 }
 function helpersAndRenderEncounterRegion() {
   return sliceBetween(CODE, "function renderFightLog(host)", "function noteCombat(");

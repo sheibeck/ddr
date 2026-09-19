@@ -64,7 +64,7 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 function guardHelpersRegion() {
-  return sliceBetween(CODE, "let encRenderedAt = 0;", "function vitalsStrip()");
+  return sliceBetween(CODE, "let encRenderedAt = 0;", "function wireDeathConfirm()");
 }
 
 // Phase 34: the render helpers that wire guarded buttons sit directly

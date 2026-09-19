@@ -89,7 +89,7 @@ function styleBlock() {
 }
 
 function guardHelpersRegion() {
-  return sliceBetween(CODE, "let encRenderedAt = 0;", "function vitalsStrip()");
+  return sliceBetween(CODE, "let encRenderedAt = 0;", "function wireDeathConfirm()");
 }
 
 // ─── a. Layout order (CSCR-01) ─────────────────────────────────────────────

@@ -307,10 +307,10 @@ test("(h) keydown: the stair block clicks the two overlay button ids; the combat
   assert.match(afterCombatOpen, /if \(!encArmed\(\)\) return;/);
 });
 
-test("(h) keydown: arrows still resolve through dirKeys into move()", () => {
+test("(h) keydown: arrows still resolve through dirKeys into window.move() (Phase 44-02: the classic move() is deleted, window.move is the module's engineMove bridge)", () => {
   const region = keydownRegion();
   assert.match(region, /const dirKeys = \{ arrowup:"N", w:"N", arrowdown:"S", s:"S", arrowleft:"W", a:"W", arrowright:"E", d:"E" \};/);
-  assert.match(region, /if \(dirKeys\[k\]\) \{ e\.preventDefault\(\); move\(dirKeys\[k\]\); return; \}/);
+  assert.match(region, /if \(dirKeys\[k\]\) \{ e\.preventDefault\(\); window\.move\(dirKeys\[k\]\); return; \}/);
 });
 
 // ─── (i) back button ────────────────────────────────────────────────────────

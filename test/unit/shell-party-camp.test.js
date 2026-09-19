@@ -137,7 +137,7 @@ test('2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel render
   const getByIdCalls = fnRegion.match(/getElementById\(/g) || [];
   assert.equal(getByIdCalls.length, 2, "renderPartyRoster reads only #hero-party and #hero-party-list");
 
-  const paintRegion = sliceBetween(CODE, "function paint() {", "\nfunction move(dir)");
+  const paintRegion = sliceBetween(CODE, "function paint() {", "\nfunction eff(key)");
   assert.equal((paintRegion.match(/renderPartyRoster\(\);/g) || []).length, 1);
 
   const initTabsRegion = sliceBetween(CODE, "(function initTabs() {", "window.__mzShowTab = showTab;");

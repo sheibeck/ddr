@@ -243,6 +243,19 @@ function isCutPointCall(lineText, matchIndex, matchLength, name) {
   return after.startsWith("(");
 }
 
+// Phase 44-02 (DEAD-01): `obj.NAME` — NAME sitting in MEMBER-ACCESS position
+// on some object that is NOT `window`/`globalThis` — is reading an unrelated
+// same-named property (e.g. `COMBAT_COPY.over.dead.bury`, a button-label
+// text key) never the top-level classic declaration NAME. `window.NAME` /
+// `globalThis.NAME` stay counted here (those alias the classic global
+// directly; isWindowAssignmentTarget/isCutPointCall already carve out the
+// non-reference shapes of THOSE two prefixes specifically).
+function isForeignMemberAccess(lineText, matchIndex) {
+  if (isWindowPrefixed(lineText, matchIndex)) return false;
+  const before = lineText.slice(0, matchIndex);
+  return /\.\s*$/.test(before);
+}
+
 function findMatches(lineText, name) {
   const re = new RegExp(`\\b${escapeRegex(name)}\\b`, "g");
   const out = [];
@@ -300,6 +313,7 @@ function cmdRefs(args) {
       for (const m of findMatches(text, name)) {
         if (isObjectKeyMatch(text, m.index, m.length)) continue;
         if (isCutPointCall(text, m.index, m.length, name)) continue;
+        if (isForeignMemberAccess(text, m.index)) continue;
         if (args.ignoreWindow && isWindowPrefixed(text, m.index)) continue;
         hits.push({ line: idx + 1, text: lines[idx] });
       }
@@ -429,6 +443,7 @@ function textReferencesName(text, name) {
     if (isObjectKeyMatch(text, m.index, m.length)) continue;
     if (isCutPointCall(text, m.index, m.length, name)) continue;
     if (isWindowAssignmentTarget(text, m.index, m.length)) continue;
+    if (isForeignMemberAccess(text, m.index)) continue;
     return true;
   }
   return false;
@@ -444,6 +459,7 @@ function textReferencesName(text, name) {
 function bodyCallsName(text, name) {
   for (const m of findMatches(text, name)) {
     if (isObjectKeyMatch(text, m.index, m.length)) continue;
+    if (isForeignMemberAccess(text, m.index)) continue;
     const after = text.slice(m.index + m.length).replace(/^\s+/, "");
     if (!after.startsWith("(")) continue;
     if (isCutPointCall(text, m.index, m.length, name)) continue;

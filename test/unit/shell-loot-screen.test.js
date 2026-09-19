@@ -83,7 +83,7 @@ test("Phase 29 (LOOT-02/03/06): the pending-pile action bridges route through in
 
 function hasActiveEncounterRegion() {
   const start = CODE.indexOf("function hasActiveEncounter()");
-  const end = CODE.indexOf("function vitalsStrip()");
+  const end = CODE.indexOf("function wireDeathConfirm()");
   assert.ok(start !== -1 && end !== -1 && end > start, "hasActiveEncounter region bounds found");
   return CODE.slice(start, end);
 }

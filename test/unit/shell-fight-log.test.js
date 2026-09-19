@@ -89,7 +89,7 @@ function helpersRegion() {
 }
 
 function guardRegion() {
-  return sliceBetween(CODE, "let encRenderedAt = 0;", "function vitalsStrip()");
+  return sliceBetween(CODE, "let encRenderedAt = 0;", "function wireDeathConfirm()");
 }
 
 function noteCombatRegion() {

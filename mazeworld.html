@@ -2214,125 +2214,6 @@ const INSANITY = [
 ];
 const maxCharges = () => 2 * S.c.level + 2 + eff("charges");
 
-/* ---------------- epitaphs ---------------- */
-const EPITAPHS = {
-  combat: [
-    "Killed by a {foe}. The {foe} has since been promoted.",
-    "Died as {name} lived: needing a 5, and getting whatever that was.",
-    "The {foe} was not the strongest thing in the room. It is now.",
-    "Fought to the last breath, which arrived punctually in round four.",
-    "A {sub} of skill level {lvl}, undone by something called a {foe}. Put it on the stone. All of it.",
-    "{name} had {gold} wilmst and no plan. The {foe} had a plan.",
-    "Last recorded thought: “it’s nearly dead.” It was nearer than {name}.",
-    "Died on floor {floor} doing what {name} loved, which was evidently standing very still.",
-    "The Game Master notes that running was, throughout, an option.",
-    "Survived {day} days and spent the final nine seconds of them badly.",
-    "Came in for {motive}. The {foe} came in for lunch.",
-    "It took {sp} experience points to get here and one honest d20 to leave.",
-    "Not the worst delver on floor {floor}. Merely the most finished.",
-    "The {foe} would like to thank the dice, the Game Master, and above all {name}.",
-    "Cause of death: a {foe}, some arithmetic, and a firm refusal to withdraw.",
-    "Went toe to toe with a {foe} and lost by roughly one toe."
-  ],
-  starve: [
-    "Packed a grimoire, three potions and a good cloak. Packed no lunch.",
-    "Cost of living: 4 hp a day. {name} fell behind on the payments.",
-    "The dungeon did not kill {name}. The dungeon simply outlasted a stomach.",
-    "Died on day {day} holding {gold} wilmst and absolutely nothing to spend it on.",
-    "There was food two corridors away. There is always food two corridors away.",
-    "Starved to death carrying a weapon worth more than most farms.",
-    "Final act: counting the rations. The count was zero. It had been for some time.",
-    "A troll’s appetite in a dungeon with no kitchen. This was always the ending.",
-    "Not eaten — merely unfed. {name} learned the difference slowly.",
-    "Death by budgeting."
-  ],
-  trap: [
-    "Stepped on the one flagstone in the corridor with an opinion.",
-    "The trap had waited four hundred years for precisely this level of confidence.",
-    "1–5 on a d20 avoids it. {name} rolled the way {name} always rolled.",
-    "A {sub} with no eye for traps, in a dungeon assembled chiefly out of traps.",
-    "Located the trap using the traditional method.",
-    "The Game Master did not even look up.",
-    "Whoever built this floor was clearly paid by the corpse.",
-    "It was well marked. In a language. Somewhere. Probably."
-  ],
-  fall: [
-    "Climbing is a 2vp skill. {name} bought Cooking.",
-    "Went up the wall beautifully. Came down it considerably faster.",
-    "Gravity remains undefeated on floor {floor}.",
-    "Needed a 6 on a d10, three separate times. Managed two.",
-    "The wall is still standing. {name} is being scraped off it.",
-    "A short climb and an even shorter career."
-  ],
-  gorge: [
-    "Cleared eleven feet of a twelve-foot gap. So very nearly.",
-    "Leaping is a d10 roll. {name} treated it as a formality.",
-    "The crevice is not deep. It is simply deeper than {name} was tall.",
-    "Jumped on day {day}. Landed shortly afterwards, and at length.",
-    "The gap did not move. This was checked. Twice."
-  ],
-  teleport: [
-    "Teleported d20 squares. Required d20 minus four.",
-    "Arrived somewhere. Arrived inside it.",
-    "The dungeon does not check its destinations, and neither did {name}."
-  ],
-  maze: [
-    "Table four giveth. Table four overwhelmingly taketh.",
-    "No monster, no trap, no fall. A red dot and a bad attitude.",
-    "The dungeon deducted {name} the way a bank deducts a service charge.",
-    "Killed by a d8, a d10, and an indifferent universe.",
-    "Some floors have creatures. This one had paperwork.",
-    "{name} walked onto a dot, and the dot walked back."
-  ],
-  quake: [
-    "Cast an earthquake indoors. Reader, the ceiling was also indoors.",
-    "3d10+8 does not stop to ask whose side anyone is on.",
-    "The rules say cast it from behind a shield. The rules are right there.",
-    "Brought the house down, and then the house returned the favour."
-  ],
-  potion: [
-    "The colour was listed as “??”. {name} was thirsty.",
-    "Fifty wilmst — the cheapest item on the table and the priciest decision on it.",
-    "One bottle in ten is Death. {name} tested this thoroughly. Once.",
-    "Drank an unlabelled potion on floor {floor}. The reviews are in."
-  ],
-  insanity: [
-    "Rolled a 1 on the madness table and won the argument with themselves.",
-    "The corridor whispered something. {name} took it entirely on board.",
-    "Nothing attacked {name}. Nothing needed to.",
-    "Cause of death: one d6, honestly interpreted."
-  ],
-  poison: [
-    "Poison is patient. {name} was merely available.",
-    "There was a cure. It cost 100 wilmst. {name} had {gold} and no store in sight.",
-    "Died on an instalment plan, two hp per square.",
-    "Not a dramatic death — but a beautifully documented one."
-  ],
-  backfire: [
-    "One spell in eight goes wrong for an Apprentice. This was the eighth.",
-    "Held the incantation slightly wrong, and then very briefly.",
-    "The grimoire is fine. The grimoire is always fine.",
-    "Killed by their own homework."
-  ],
-  summon: [
-    "Called something up. It arrived. It had questions.",
-    "One time in eight the summoning turns around. {name} beat the odds in the wrong direction.",
-    "Read the opening paragraph of the ritual with tremendous conviction.",
-    "The Summoner’s own notes cover this outcome. On the following page."
-  ],
-  won: [
-    "Walked out through the Gate on day {day}. The Game Master has requested a recount.",
-    "Reached the Gate with {sp} experience points and a limp, and retired to lie about both.",
-    "Went in for {motive}. Came out with {motive} and a permanent flinch.",
-    "Survived all five floors and will now be insufferable at parties for life.",
-    "Escaped. Statistically speaking, this did not occur."
-  ]
-};
-function epitaphFor(cause, ctx) {
-  const bank = EPITAPHS[cause] || EPITAPHS.maze;
-  return pick(bank).replace(/\{(\w+)\}/g, (_, k) => ctx[k] !== undefined ? ctx[k] : "");
-}
-
 /* ---------------- state ---------------- */
 let S = null;                 // full game state
 // 01-07 movement-slice engine adapter hook: a `type="module"` script (added
@@ -2524,6 +2405,12 @@ function positionPartyPulse(rect) {
   ring.style.top = (rect.height / 2 + p.y - CELL / 2) + "px";
 }
 
+// Phase 44 (DEAD-01, A-1 kept-with-live-reference): this plan's layer-2
+// deletion list named `reveal` as dead, but `window.__mzClassicBoot`'s
+// resume branch (restored-save path) still calls it directly — a live
+// reference the sweep gate correctly caught. Restored per A-1's escape
+// hatch rather than force-deleted; removing this call site is Plan 44-04's
+// boot/persistence-slimming layer, not this plan's scope.
 function reveal() {
   const { g, px, py } = S.floor;
   // DR16 Fix 1: mirror engine/derived.js revealRadius()/inDark() — the fog
@@ -2677,8 +2564,6 @@ function newBeat(title, tone) {
   S.beats.groups.push({ title: title || "", tone: tone || "", lines: [] });
   CAPTURE = S.beats.groups[S.beats.groups.length - 1].lines;
 }
-function beginEvent(title, tone) { newBeat(title, tone); }
-function evt(html) { say(html); }
 /* Out of combat, an action is reported as a beat card. In a fight nothing is
    gated — the panel keeps its creatures and its buttons, and the blow-by-blow
    goes to the Oracle. */
@@ -3445,239 +3330,6 @@ function paint() {
   draw();
 }
 
-/* ---------------- movement ---------------- */
-const DIRV = { N:[0,-1], S:[0,1], E:[1,0], W:[-1,0] };
-const OPP  = { N:"S", S:"N", E:"W", W:"E" };
-
-function move(dir) {
-  if (!S || S.combat || S.store || S.dead || S.won) return;
-  const f = S.floor, [dx, dy] = DIRV[dir];
-  const nx = f.px + dx, ny = f.py + dy;
-  if (!f.g[ny] || !f.g[ny][nx] || f.g[ny][nx].wall) return;
-
-  const here = f.g[f.py][f.px], there = f.g[ny][nx];
-  if (there.feat === "one" && there.dir !== dir) {
-    beginEvent("A one-way door", "moss");
-    evt(`The arrow points the other way. <span class="miss">It will not open from this side.</span>`);
-    CAPTURE = null; paint(); return;
-  }
-  if (here.feat === "one" && here.dir !== dir) {
-    beginEvent("A one-way door", "moss");
-    evt(`<span class="miss">You came through it. There is no coming back.</span>`);
-    CAPTURE = null; paint(); return;
-  }
-
-  // p.49: climbing is a d10 per ten feet by wall type; leaping is a d10 by distance and class
-  if (there.feat === "climb" || there.feat === "gorge") {
-    const climbing = there.feat === "climb";
-    beginEvent(climbing ? "A wall" : "A crevice", "ink");
-    let ok = true, hurt = 0;
-    if (climbing) {
-      const kind = pick(["rope", "rock", "wood"]);
-      const tbl = CLIMB_TABLE[kind];
-      const feet = 10 * (1 + D(2));
-      evt(`${feet} feet of ${kind}. A d10 for every ten feet, ${tbl.success} or under.`);
-      for (let ft = 0; ft < feet && ok; ft += 10) {
-        const r = D(10) - climbBonus();
-        if (r <= tbl.success) continue;
-        ok = false;
-        for (let g = 0; g <= ft; g += 10) if (D(20) > 2) hurt += tbl.fall();
-        if (skill("Climbing")) hurt = Math.ceil(hurt / 2);
-        evt(`d10 → <span class="roll">${r}</span> at ${ft + 10} feet. <span class="hurt">You come off — ${hurt} hp.</span>`);
-      }
-    } else {
-      const row = LEAP_TABLE[D(4) - 1];
-      const need = S.c.cls === "Fighter" ? row.F : S.c.cls === "Thief" ? row.T : row.M;
-      const r = D(10) - leapBonus();
-      evt(`${row.ft} across. A ${S.c.cls} clears that on ${need} or under: d10 → <span class="roll">${r}</span>.`);
-      if (r > need) {
-        ok = false;
-        hurt = D(6) + D(6);
-        if (skill("Climbing")) hurt = Math.ceil(hurt / 2);
-        evt(`<span class="hurt">Short. ${hurt} hp on the way down.</span>`);
-      }
-    }
-    if (!ok) {
-      S.c.wp -= hurt;
-      paint(); save();
-      if (S.c.wp <= 0) die(climbing ? "fall" : "gorge");
-      return;
-    }
-    evt(`<span class="hit">Over.</span>`);
-    there.feat = null;
-  }
-
-  S.beats = null;
-  f.px = nx; f.py = ny;
-  S.steps++;
-  reveal();
-
-  if (S.c.affliction) {
-    const af = S.c.affliction;
-    if (S.steps % af.per === 0) {
-      const l = Math.min(af.loss(), Math.max(0, S.c.wp - 1));
-      S.c.wp -= l;
-      if (l > 0) say(`<span class="hurt">${af.kind}: −${l} hp.</span>`);
-      else say(`<span class="hurt">${af.kind} has taken everything it can. You are on one hp.</span>`);
-      if (--af.left <= 0) { S.c.affliction = null; say(`<span class="hit">It passes.</span>`); }
-    }
-  }
-  if (S.c.haste > 0) S.c.haste--;
-  if (S.c.invis > 0) S.c.invis--;
-  if (S.c.ether > 0) S.c.ether--;
-
-  // the book recharges a Magic User every hundred squares; a solo caster needs it oftener
-  if (S.c.cls === "Magic User" && S.steps % 20 === 0 && S.c.spellsUsed > 0) {
-    S.c.spellsUsed--;
-    say(`<span class="beat">Twenty quiet squares. A charge comes back (${maxCharges() - S.c.spellsUsed} of ${maxCharges()}).</span>`);
-  }
-
-  if (S.steps % 100 === 0) newDay();
-  if (S.dead) { paint(); return; }
-
-  const cell = f.g[ny][nx];
-  if (S.combat) { paint(); save(); return; }     // a wandering monster already found you
-  if (cell.feat === "dot")  { cell.feat = null; beginEvent("Encounter dot", "stamp"); encounterDot(); }
-  else if (cell.feat === "trap")  { cell.feat = null; springTrap(); }
-  else if (cell.feat === "chest") { cell.feat = null; openChest(); }
-  else if (cell.feat === "tele") { cell.feat = null; teleport(); }
-  else if (cell.feat === "exit") { descend(); }
-  else if (cell.feat === "gate") { winGame(); }
-
-  CAPTURE = null;
-  paint(); save();
-}
-
-function newDay(camped) {
-  beginEvent(camped ? "You make camp" : `Day ${S.day + 1}`, "moss");
-  S.day++;
-  S.c.spellsUsed = 0;
-  S.c.might = 0;
-  if (S.c.strengthBoost) { S.c.maxWP -= S.c.strengthBoost; S.c.wp = Math.min(S.c.wp, S.c.maxWP); S.c.strengthBoost = 0; }
-  const cost = upkeep(), eats = R_().eats || 1;
-  evt(`<span class="banner">Day ${S.day}.</span>`);
-  if (S.c.rations >= eats) {
-    S.c.rations -= eats;
-    evt(`${camped ? "You make camp" : "A hundred squares walked"}. You eat, sleep eight hours, and pay <span class="roll">${cost} hp</span> of upkeep from your rations.`);
-    // eight hours' rest mends you
-    let heal = D(10) + 2 * S.c.level;
-    if (R_().heal2x || S.c.sub === "Soldier") heal *= 2;
-    const before = S.c.wp;
-    S.c.wp = Math.min(S.c.maxWP, S.c.wp + heal);
-    if (S.c.wp > before) evt(`Rest restores <span class="hit">+${S.c.wp - before} hp</span>.`);
-
-    if (S.c.affliction) { S.c.affliction = null; evt(`You sweat the ${S.c.affliction ? "" : ""}sickness out overnight. <span class="hit">Cured.</span>`); }
-    // patching armour by the fire: Sewing for thieves, Master of Arms for fighters
-    if (S.c.armorWP < S.c.armorMax && S.c.dr > 0) {
-      const tier = skillTier("Sewing");
-      const maxPatch = tier === 2 ? 6 : 4;
-      if (tier && S.c.patches < maxPatch) {
-        const amt = tier === 2 ? D(6) + 3 : D(6);
-        S.c.armorWP = Math.min(S.c.armorMax, S.c.armorWP + amt);
-        S.c.patches++;
-        evt(`Sewing: <span class="hit">+${amt}</span> back into your ${S.c.armor.toLowerCase()} (${maxPatch - S.c.patches} repairs left in it).`);
-      } else if (S.c.sub === "Master of Arms") {
-        const amt = D(6) + 3;
-        S.c.armorWP = Math.min(S.c.armorMax, S.c.armorWP + amt);
-        evt(`A Master of Arms works on his own kit: <span class="hit">+${amt}</span> to the ${S.c.armor.toLowerCase()}.`);
-      } else {
-        const amt = D(4);
-        S.c.armorWP = Math.min(S.c.armorMax, S.c.armorWP + amt);
-        evt(`You knock the worst of the dents out: <span class="hit">+${amt}</span> armour.`);
-      }
-    }
-    // a Warlock can copy a potion once a week
-    if (S.c.sub === "Warlock" && S.day - (S.c.dupAt || 0) >= 7 && S.c.potions > 0) {
-      S.c.dupAt = S.day; S.c.potions++;
-      evt(`The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`);
-    }
-  } else {
-    S.c.wp -= cost;
-    evt(`<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${cost} hp</span> straight out of you, and you wake no better than you lay down.`);
-    if (S.c.wp <= 0) return die("starve");
-  }
-  // wandering monsters: d20 per hour slept, a 1 wakes you
-  let woke = 0;
-  for (let h = 0; h < 8; h++) if (D(20) === 1) woke++;
-  if (woke) {
-    evt(`Wandering monster check: <span class="roll">${woke}</span> of 8 hours disturbed.`);
-    startCombat(true);
-  }
-}
-
-
-function teleport() {
-  beginEvent("Teleport square", "ditto");
-  // p.49: roll 2d8, reading each separately, for the direction; then a d20 for distance
-  const illusionist = S.c.sub === "Illusionist";
-  let dir, note, other = null;
-  if (illusionist) { dir = bestTeleportDir(); note = `An Illusionist chooses: ${dir}.`; }
-  else {
-    const a = DIRECTION_TABLE[D(8) - 1], b = DIRECTION_TABLE[D(8) - 1];
-    dir = a; other = b;
-    note = a === b ? `2d8 for direction: ${a} twice.` : `2d8 for direction: ${a} and ${b} — contradictory, so the first roll carries it: ${a}.`;
-  }
-  const dist = illusionist ? 12 : D(20);
-  evt(`${note} Distance d20 → <span class="roll">${dist}</span>.`);
-  const [dx, dy] = DIRV[dir];
-  const f = S.floor;
-  // a teleport passes straight through stone. Take the full distance if the
-  // square is on the map and open; otherwise fall back the nearest open one.
-  let x = f.px, y = f.py, travelled = 0, used = dir;
-  const tryDir = (dd) => {
-    const [ax, ay] = DIRV[dd];
-    for (let d = dist; d >= 1; d--) {
-      const nx = f.px + ax * d, ny = f.py + ay * d;
-      if (nx < 1 || ny < 1 || nx > GW - 2 || ny > GH - 2) continue;   // never off the map
-      if (f.g[ny][nx].wall) continue;                                 // land on floor, not in stone
-      return [nx, ny, d];
-    }
-    return null;
-  };
-  // the rolled direction first, then the second roll, then whatever the maze allows —
-  // a teleport square always moves you somewhere.
-  const order = [dir, other, "N", "S", "E", "W"].filter((d, i, a) => d && a.indexOf(d) === i);
-  let hit = null;
-  for (const d of order) { hit = tryDir(d); if (hit) { used = d; break; } }
-  if (hit) { x = hit[0]; y = hit[1]; travelled = hit[2]; }
-  f.px = x; f.py = y; reveal();
-
-  const swapped = used !== dir ? ` ${dir} ran straight off the map, so it threw you ${used} instead.` : "";
-  evt(travelled === 0
-    ? `<span class="miss">The square fizzles. There is nowhere on this floor it can put you.</span>`
-    : travelled === dist
-      ? `You pass through ${travelled} squares of solid rock and come out somewhere else entirely.${swapped}`
-      : `The full ${dist} would put you outside the dungeon, so it sets you down at <span class="roll">${travelled}</span> — still straight through the wall.${swapped}`);
-  const cell = f.g[y][x];
-  if (cell.feat === "dot")   { cell.feat = null; encounterDot(); }
-  if (cell.feat === "trap")  { cell.feat = null; springTrap(); }
-}
-
-function bestTeleportDir() {   // the longest clear run from where you stand
-  const f = S.floor;
-  let best = "N", bestRun = -1;
-  for (const d of ["N","S","E","W"]) {
-    const [dx, dy] = DIRV[d];
-    let x = f.px, y = f.py, run = 0;
-    while (run < 12) { const nx = x + dx, ny = y + dy; if (!f.g[ny] || !f.g[ny][nx] || f.g[ny][nx].wall) break; x = nx; y = ny; run++; }
-    if (run > bestRun) { bestRun = run; best = d; }
-  }
-  return best;
-}
-
-
-function winGame() {
-  S.won = true;
-  S.deathAt = Date.now();
-  S.deathNote = "walked out";
-  S.epitaph = epitaphFor("won", epitaphCtx());
-  bury("won");
-  say(`<span class="banner">The Gate.</span>`);
-  say(`${S.c.name} steps through on day ${S.day}, after ${S.steps} squares, at skill level ${ROMAN[S.c.level - 1]}.`);
-  say(`<span class="beat">${S.epitaph}</span>`);
-  renderEncounter();
-}
-
 /* ---------------- encounters ---------------- */
 /* ---------------- carried treasure ---------------- */
 function eff(key) {
@@ -3695,58 +3347,6 @@ function eff(key) {
   for (const it of (S.c.items || [])) if (it.eff && it.eff[key]) t += it.eff[key];
   return t;
 }
-function giveItem(it, quiet) {
-  S.c.items = S.c.items || [];
-  S.c.items.push(it);
-  if (it.eff && it.eff.wp) { S.c.maxWP += it.eff.wp; S.c.wp += it.eff.wp; }
-  if (!quiet) evt(`<span class="hit">${it.n}</span> — ${it.txt}.`);
-}
-/* The book's prices are modest (a long sword 500, leather 500, a healing potion
-   150) and its starting purses match them. The loot numbers were mine and ran ten
-   times too rich, so found coin is divided by ten. Amounts the book states
-   outright — table four's +3000 WM, a faerie's d10x100 — are left alone. */
-const LOOT_DIVISOR = 10;
-function gainWilmst(n, why) {
-  let amt = Math.round(n * (1 + 0.5 * eff("greed")));
-  if (S.c.sub === "Pickpocket") {
-    const extra = Math.round((D(10) + D(10)) * 10 * S.floor.depth / LOOT_DIVISOR) + D(4);
-    amt += extra;
-    evt(`A Pickpocket's hands find the seams: <span class="hit">+${extra.toLocaleString()} extra</span>.`);
-  }
-  S.c.gold += amt;
-  evt(`<span class="hit">+${amt.toLocaleString()} wilmst</span>${why ? " " + why : ""}.`);
-  return amt;
-}
-function hasPicks() { return (S.c.items || []).some(i => i.kind === "picks"); }
-
-function rollJewel()    { return Object.assign({ kind:"jewel" }, JEWELRY[D(8) - 1]); }
-function rollCloak()    { return Object.assign({ kind:"cloak" }, CLOAKS[D(CLOAKS.length) - 1]); }
-function rollStaff()    { return Object.assign({ kind:"staff", every:250 }, STAVES[D(8) - 1]); }
-
-/* Magical Weapons, p.48: the weapon table, then d6 on the bonus table. */
-function rollBlade(depth, magical) {
-  const base = pick(Object.keys(WEAPONS));
-  if (!magical) return { kind:"weapon", n:base, base, bonus:0, txt:WEAPONS[base].lab };
-  const b = WEAPON_BONUS_TABLE[D(6) - 1]();
-  return { kind:"weapon", n:`${pick(BLADE_NAMES)}, a ${base.toLowerCase()}`, base, bonus:b, txt:`${WEAPONS[base].lab} +${b}` };
-}
-/* Magic Armor, p.48: the armour table, then d6 for the AR and WP bonus. */
-function rollMailPiece() {
-  const a = pick(ARMORS);
-  const m = MAGIC_ARMOR_TABLE[D(6) - 1];
-  return { kind:"armor", n:`Warded ${a.name.toLowerCase()}`, armor:a.name,
-           ar:a.ar + m.ar, wp:a.wp + m.wp, min:a.min, cls:a.cls, txt:`AR ${a.ar + m.ar}, ${a.wp + m.wp} hp` };
-}
-function rollTreasureItem(depth) {
-  if (!hasPicks() && D(12) === 1) return { kind:"picks", n:"Lockpicks", txt:"1–5 on d10 against any lock" };
-  const r = D(10);
-  if (r <= 3) return rollBlade(depth, true);
-  if (r <= 5) return rollMailPiece();
-  if (r <= 7) return rollJewel();
-  if (r <= 9) return rollCloak();
-  return rollStaff();
-}
-
 
 // Phase 33 (UIF-01, CONTEXT Area 1) — the GEAR tab's inline two-tap Drop
 // confirm. DOM-local presentation state, never on S (serializeRun spreads
@@ -3993,192 +3593,6 @@ function renderDropShelf(shelf, entries) {
 }
 
 
-/* ---------------- traps, p.48 ---------------- */
-function springTrap() {
-  beginEvent("A trap", "stamp");
-  const nimble = 5 + (skill("Agility") ? 2 : 0) + (skill("Leaping") ? 1 : 0) + (S.c.sub === "Acrobat" ? 3 : 0);
-  const dodge = D(20);
-  if (dodge <= nimble) { evt(`Something clicks. d20 → <span class="roll">${dodge}</span>: 1–${nimble} avoids it, and you are already moving.`); return; }
-  if (S.c.sub === "Pilfer") { evt(`A trap — and a Pilfer disarms it without breaking stride.`); return; }
-  const r = D(8), tr = TRAPS[r - 1];
-  let dmg = tr.dmg();
-  if (S.c.sub === "Cat Burglar") { dmg *= 2; evt(`A Cat Burglar goes through first and takes the whole of it.`); }
-  if (skill("Hardiness")) dmg = Math.max(1, dmg - 3);
-  S.c.wp -= dmg;
-  evt(`d8 → <span class="roll">${r}</span>: ${tr.n}. <span class="hurt">−${dmg} hp.</span>`);
-  if (tr.poison) { S.c.affliction = { kind:"Poison", loss:()=>2*D(6), per:1, left:10 }; evt(`<span class="hurt">And the arrow was poisoned.</span>`); }
-  if (S.c.wp <= 0) return die("trap");
-}
-
-/* ---------------- locked boxes ---------------- */
-function openChest() {
-  beginEvent("A locked box", "moss");
-  const tier = skillTier("Locks") + (hasPicks() ? 1 : 0);
-  let opened = false;
-  if (S.c.sub === "Pilfer") { evt(`A Pilfer does not really believe in locks. <span class="hit">Open.</span>`); opened = true; }
-  else if (tier) {
-    const need = [0, 5, 7, 8][Math.min(tier, 3)];
-    const roll = D(10);
-    evt(`Locks${hasPicks() ? " with picks" : ""}: d10 → <span class="roll">${roll}</span>, need ${need} or under.`);
-    opened = roll <= need;
-    if (!opened) evt(`<span class="miss">The wards are better than you are.</span>`);
-  } else {
-    const roll = D(20);
-    evt(`No lockpicking to speak of. You work at it: d20 → <span class="roll">${roll}</span>, need 8 or under.`);
-    opened = roll <= 8;
-    if (!opened) evt(`<span class="miss">It will not give.</span>`);
-  }
-  if (!opened) {
-    S.beats.action = { label: "Smash it open", fn: () => {
-      beginEvent("A smashed box", "stamp");
-      evt(`The hinges give. Whatever was in there besides coin is now in pieces on the floor.`);
-      gainWilmst(Math.round((D(10) + 6) * 100 * S.floor.depth / 2 / LOOT_DIVISOR));
-      paint(); save();
-    }};
-    return;
-  }
-  evt(`Inside the box:`);
-  gainWilmst(Math.round((D(10) + 6) * 100 * S.floor.depth / LOOT_DIVISOR));
-  if (D(6) >= 3) { S.c.scrolls = (S.c.scrolls || 0) + 1; evt(`And a sealed scroll. <span class="hit">+1 scroll.</span>`); }
-  takeItem(rollTreasureItem(S.floor.depth));
-}
-
-function encounterDot() {
-  const t = D(8), r = D(10);
-  const result = ENCOUNTER_TABLES[t - 1][r - 1];
-  say(`<span class="roll">Encounter dot.</span> Table d8 → <span class="roll">${t}</span>, then d10 → <span class="roll">${r}</span>: ${result}.`);
-
-  if (ENC_ALIAS[result]) return startCombat(false, ENC_ALIAS[result]);
-
-  switch (result) {
-    case "Store":     return openStore();
-    case "Teleport":  return teleport();
-    case "Joiner":    return meetJoiner();
-    case "Faerie":    return meetFaerie();
-    case "Food":      return findFood();
-    case "Disease":   return catchAffliction();
-    case "Insanity":  return goInsane();
-    case "Phobia":    return newPhobia();
-    case "Darkness":  return fallDark();
-    case "Grimoire":  return findGrimoire();
-    case "Weapon":       return findGear("weapon");
-    case "Magic Weapon": return findGear("magicweapon");
-    case "Magic Armor":  return findGear("magicarmor");
-    case "Misc Magic":   return findMisc();
-    default:          return tableFour(result);
-  }
-}
-
-/* Table 4 on p.45 is a straight list of things that happen to you. */
-function tableFour(result) {
-  beginEvent("The dungeon takes an interest", "ditto");
-  const apply = {
-    "+10 HP":  () => { S.c.wp = Math.min(S.c.maxWP, S.c.wp + 10); evt(`<span class="hit">+10 hp.</span>`); },
-    "-10 HP":  () => { S.c.wp -= 10; evt(`<span class="hurt">−10 hp.</span> No reason given.`); },
-    "+10 XP":  () => { S.c.sp += 10; evt(`<span class="hit">+10 experience points.</span>`); checkLevel(); },
-    "+25 HP":  () => { S.c.maxWP += 25; S.c.wp += 25; evt(`<span class="hit">+25 to your base Hit Points.</span>`); },
-    "+25 XP":  () => { S.c.sp += 25; evt(`<span class="hit">+25 experience points.</span>`); checkLevel(); },
-    "-15 HP":  () => { S.c.wp -= 15; evt(`<span class="hurt">−15 hp.</span>`); },
-    "+3000 WM":() => { evt(`Just lying there:`); gainWilmst(3000); },
-    "-All armour": () => { S.c.armor = "Nothing"; S.c.ar = 0; S.c.armorWP = 0; S.c.armorMax = 0; evt(`<span class="hurt">Every piece of armour you own is gone.</span>`); }
-  }[result];
-  if (apply) apply(); else evt(`Nothing you can put a name to.`);
-  if (S.c.wp <= 0) die("maze");
-}
-
-function findFood() {
-  beginEvent("Food", "moss");
-  const f = FOODS[D(6) - 1];
-  S.c.wp = Math.min(S.c.maxWP, S.c.wp + f.wp);
-  S.c.rations++;
-  evt(`${f.n}. <span class="hit">+${f.wp} hp</span> and a day's food.`);
-}
-
-function findGrimoire() {
-  beginEvent("A grimoire", "ditto");
-  if (S.c.cls !== "Magic User") { evt(`A spell book. <span class="miss">The marks mean nothing to you</span>, but it will sell.`); gainWilmst(150); return; }
-  const learnable = SPELLS.filter(sp => canLearn(S.c.sub, sp) && !S.c.grimoire.includes(sp.n));
-  shuffle(learnable);
-  const got = learnable.slice(0, Math.max(1, D(4))).map(sp => sp.n);
-  S.c.grimoire.push(...got);
-  evt(got.length ? `Somebody else's book. You copy out <span class="hit">${got.join(", ")}</span>.` : `A grimoire with nothing in it you don't already know.`);
-}
-
-function findGear(kind) {
-  beginEvent(kind === "weapon" ? "A weapon" : kind === "magicweapon" ? "A magical weapon" : "Magical armour", "moss");
-  if (kind === "weapon") { takeItem(rollBlade(S.floor.depth, false)); return; }
-  if (kind === "magicweapon") { takeItem(rollBlade(S.floor.depth, true)); return; }
-  takeItem(rollMailPiece(S.floor.depth));
-}
-
-function findMisc() {
-  beginEvent("Miscellaneous magic", "ditto");
-  const what = MISC_MAGIC[D(10) - 1];
-  evt(`d10 on the miscellaneous table: <span class="roll">${what}</span>.`);
-  if (what === "Potion") { const p = POTIONS[D(10) - 1]; giveItem({kind:"potion", n:`${p.n} potion (${p.col.toLowerCase()})`, txt:p.txt, eff2:p.eff, uses:1}); }
-  else if (what === "Scroll") { S.c.scrolls = (S.c.scrolls||0)+1; evt(`<span class="hit">+1 scroll.</span>`); }
-  else if (what === "Grimoire") findGrimoire();
-  else if (what === "Cloak") takeItem(Object.assign({kind:"cloak"}, CLOAKS[D(CLOAKS.length)-1]));
-  else if (what === "Staff") takeItem(Object.assign({kind:"staff", every:250}, STAVES[D(8)-1]));
-  else if (what === "Jewelry") takeItem(Object.assign({kind:"jewel"}, JEWELRY[D(8)-1]));
-}
-
-function meetFaerie() {
-  beginEvent("A faerie", "ditto");
-  const r = D(8), gift = FAERIE[r - 1];
-  evt(`A winged thing, and a wish. d8 → <span class="roll">${r}</span>: ${gift}.`);
-  if (gift === "+1 Level" || gift === "+2 Level") {
-    const n = gift === "+2 Level" ? 2 : 1;
-    S.c.sp = Math.max(S.c.sp, THRESHOLDS[Math.min(4, S.c.level - 1 + n)]);
-    checkLevel();
-  } else if (gift === "+d20 Base HP") { const a = D(20); S.c.maxWP += a; S.c.wp += a; evt(`<span class="hit">+${a} to your base.</span>`); }
-  else if (gift === "-d10 Base HP")   { const a = D(10); S.c.maxWP = Math.max(5, S.c.maxWP - a); S.c.wp = Math.min(S.c.wp, S.c.maxWP); evt(`<span class="hurt">−${a} from your base.</span> Faeries are not all nice.`); }
-  else if (gift === "Magic Weapon")   takeItem(rollBlade(S.floor.depth, true));
-  else if (gift === "Magic Armor")    takeItem(rollMailPiece(S.floor.depth));
-  else if (gift === "Miscellaneous Magic") findMisc();
-  else if (gift === "d10 x 100 WM")   gainWilmst(D(10) * 100);
-}
-
-
-function catchAffliction() {
-  beginEvent("Disease and poison", "stamp");
-  const r = D(8), a = AFFLICTIONS[r - 1];
-  evt(`d8 → <span class="roll">${r}</span>: ${a.kind.toLowerCase()}, ${a.dur}.`);
-  if (a.phobia) { const ph = PHOBIAS[D(10) - 1]; S.c.phobia = ph.n; S.c.phobiaType = ph.t; evt(`It leaves you with a permanent fear of <span class="hurt">${ph.n.toLowerCase()}</span>.`); return; }
-  S.c.affliction = { kind: a.kind, loss: a.loss, per: a.per, left: D(20) };
-  const first = Math.min(a.loss(), Math.max(0, S.c.wp - 1));
-  S.c.wp -= first;
-  evt(`<span class="hurt">−${first} hp</span>, and it keeps taking more until it is cured or slept off.`);
-}
-
-function goInsane() {
-  beginEvent("Insanity", "stamp");
-  const r = D(6);
-  evt(`Something in the corridor gets into your head. d6 → <span class="roll">${r}</span>: you ${INSANITY[r - 1]}.`);
-  if (r === 1) { S.c.wp = Math.ceil(S.c.wp / 2); evt(`<span class="hurt">You turn the blade on yourself. Half your Hit Points.</span>`); }
-  else if (r === 3) { teleport(); }
-  else if (r === 5) { S.c.might = D(10); evt(`<span class="hit">A frothing rage: +${S.c.might} damage until you sleep.</span>`); }
-  if (S.c.wp <= 0) die("insanity");
-}
-
-function newPhobia() {
-  beginEvent("A phobia", "stamp");
-  const ph = PHOBIAS[D(10) - 1];
-  S.c.phobia = ph.n; S.c.phobiaType = ph.t;
-  evt(`Whatever was down that corridor, you are now afraid of <span class="hurt">${ph.n.toLowerCase()}</span>.`);
-}
-
-function fallDark() {
-  beginEvent("Darkness", "ink");
-  const f = S.floor, r = 4;
-  for (let y = f.py - r; y <= f.py + r; y++) for (let x = f.px - r; x <= f.px + r; x++)
-    if (f.g[y] && f.g[y][x] && !f.g[y][x].wall) f.g[y][x].dark = true;
-  evt(skill("Night Vision")
-    ? `The lights go out for four squares in every direction. <span class="hit">You have night vision; it changes nothing.</span>`
-    : `The lights go out for four squares in every direction. <span class="hurt">2 to hit, and no criticals.</span>`);
-}
-
-
 
 
 
@@ -4198,46 +3612,6 @@ function canRead() {
 
 
 
-
-const CAUSE_TEXT = {
-  combat:   f => `cut down by a ${f}`,
-  starve:   () => "starved in the dark",
-  trap:     () => "undone by a trap",
-  teleport: () => "materialised inside a wall",
-  fall:     () => "fell off a wall",
-  gorge:    () => "came up short on a leap",
-  backfire: () => "killed by their own spell",
-  summon:   () => "eaten by their own summoning",
-  maze:     () => "spent by the dungeon itself",
-  quake:    () => "buried by their own earthquake",
-  potion:   () => "poisoned by an unlabelled bottle",
-  insanity: () => "dead by their own hand",
-  poison:   () => "carried off by poison"
-};
-
-function die(cause, detail) {
-  S.dead = true;
-  S.combat = null; S.c.wp = 0; S.c.ward = null; S.c.regen = false; S.c.mirror = 0;
-  S.deathAt = Date.now();
-  S.deathNote = CAUSE_TEXT[cause] ? CAUSE_TEXT[cause](detail) : "killed by something the dungeon did not name";
-  S.epitaph = epitaphFor(cause, epitaphCtx(detail));
-  S.lastWords = (S.beats && S.beats.groups && S.beats.groups.length)
-    ? S.beats.groups[S.beats.groups.length - 1].lines.slice(-4)
-    : [];
-  bury(cause, detail);
-  say(`<span class="banner">${S.c.name} is dead — ${S.deathNote}.</span>`);
-  say(`<span class="beat">${S.epitaph}</span>`);
-  paint(); save();
-}
-
-function epitaphCtx(detail) {
-  return {
-    name: S.c.name, foe: detail || "creature", sub: S.c.sub, race: S.c.race,
-    floor: S.floor.depth, day: S.day, sp: Math.round(S.c.sp),
-    gold: S.c.gold.toLocaleString(), motive: S.c.motive.toLowerCase(),
-    lvl: ROMAN[S.c.level - 1]
-  };
-}
 
 /* ---------------- the graveyard ---------------- */
 /* @gsd:dual-write-convergence-extract:graves:start */
@@ -4317,18 +3691,6 @@ window.__mzGravesCount = () => Math.max(gravesTotal || 0, (graves && graves.leng
 function renderGravesLoading() {
   document.getElementById("yard").innerHTML =
     `<p class="yard-loading">Consulting the ledger…</p>`;
-}
-function bury(cause, detail) {
-  graves.unshift({
-    name: S.c.name, race: S.c.race, sub: S.c.sub, cls: S.c.cls,
-    level: S.c.level, sp: Math.round(S.c.sp), floor: S.floor.depth,
-    day: S.day, steps: S.steps, gold: S.c.gold, kills: S.c.kills || 0,
-    cause, note: S.deathNote || (cause === "won" ? "walked out" : "died"),
-    epitaph: S.epitaph, when: Date.now()
-  });
-  graves = graves.slice(0, 60);
-  saveGraves();
-  renderGraves();
 }
 
 function renderGraves() {
@@ -4488,16 +3850,6 @@ function syncFightLogLive(log) {
   if (!a.text) return;
   fightLogAnnouncedSeq = a.seq;
   live.textContent = a.text;
-}
-
-function vitalsStrip() {
-  const c = S.c;
-  // DR13: the WP/health bar is removed from the encounter panel — current WP
-  // now lives permanently in the MAP header's WP readout, so repeating a
-  // full bar here only ate panel real estate. Keep just the at-a-glance combat
-  // resources (potions / ward) the map header does NOT show.
-  const side = `${c.potions} pot${c.ward ? ` · ${c.ward.pool} ward` : ""}`;
-  return `<div class="vitals"><div class="v-side">${side}</div></div>`;
 }
 
 // DR4 group 3: the death card's primary action is a single armed CONFIRM (no
@@ -5840,7 +5192,7 @@ function openCampSheet() {
   armEncounterButtons();
   guardTap(document.getElementById("mw-camp-sleep"), () => {
     closeCampSheet();
-    if (window.mzMakeCamp) window.mzMakeCamp(); else makeCamp();
+    window.mzMakeCamp();
   });
   guardTap(document.getElementById("mw-camp-walk"), closeCampSheet);
 }
@@ -5926,9 +5278,10 @@ function tapStep(clientX, clientY) {
   const copy = window.__mzRailVM.copy;
   if (res.kind === "here") { window.mzRailLine?.(copy.here.title, copy.here.line, "dull", 2200); return; }
   if (res.kind === "blocked") { window.mzRailLine?.(copy.noWay.title, copy.noWay.line, "dull", 2400); return; }
-  // `move` resolves to window.move (engineMove), exactly as the keyboard
-  // path does — the engine's own wall/one-way/bounds checks still run.
-  move(res.dir);
+  // window.move IS the module's engineMove bridge — the classic move()
+  // no longer exists, same as the keyboard path below; the engine's own
+  // wall/one-way/bounds checks still run.
+  window.move(res.dir);
 }
 function inspectAt(clientX, clientY) {
   if (!S) return;
@@ -6115,7 +5468,7 @@ addEventListener("keydown", e => {
     if (k === "enter" || k === " ") { e.preventDefault(); const n = document.getElementById("cb-over-btn"); if (n) n.click(); }
     return;
   }
-  if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
+  if (dirKeys[k]) { e.preventDefault(); window.move(dirKeys[k]); return; }
 });
 addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });
 
