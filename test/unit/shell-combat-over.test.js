@@ -65,7 +65,7 @@ function overRegion() {
   return fnRegion("function renderCombatOver(host, kind, opts = {})");
 }
 function deathBranch() {
-  return sliceBetween(CODE, "if (S.dead) {", "if (S.won) {");
+  return sliceBetween(CODE, "if (S.dead) {", "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
 }
 function wireDeathConfirmRegion() {
   return sliceBetween(CODE, "function wireDeathConfirm", "function foeStatusBadges(");
@@ -371,10 +371,9 @@ test('Phase 34 (whole-phase voice scan): the flee beat title "You got out" is cl
 
 // ─── k. Legacy untouched ─────────────────────────────────────────────────────
 
-test("Phase 34: the S.won card and the store region are untouched by this plan", () => {
-  const wonBranch = sliceBetween(CODE, "if (S.won) {", "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
-  assert.match(wonBranch, /class="deathcard"/);
-  assert.match(wonBranch, /id="btn-again"/);
+test("Phase 46: the retired won card is gone and the store region is untouched", () => {
+  assert.doesNotMatch(CODE, /Through the Gate/);
+  assert.equal((CODE.match(/if \(S\.dead\) \{/g) || []).length, 1);
   const storeRegion = sliceBetween(CODE, "if (S.store) {", "const C = S.combat;");
   assert.doesNotMatch(storeRegion, /guardTap\(/);
   assert.doesNotMatch(storeRegion, /dataset\.mode/);

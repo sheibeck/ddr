@@ -812,11 +812,9 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   display:flex;flex-direction:column;gap:6px;
   box-shadow:var(--shadow);
 }
-.stone.won{border-top-color:var(--ditto);background:#EDE7DA}
 .stone-name{font-family:var(--disp);font-size:17px;line-height:1.15;margin:0;text-align:center;color:var(--ink)}
 .stone-sub{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ditto);margin:0;text-align:center}
 .stone-note{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--stamp);margin:2px 0 0;text-align:center}
-.stone.won .stone-note{color:var(--ditto)}
 .stone-ep{font-family:var(--body);font-style:italic;font-size:14.5px;line-height:1.4;color:var(--ink-soft);margin:4px 0 2px;text-align:center;text-wrap:balance}
 .stone-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 4px;margin:auto 0 0;padding-top:10px;border-top:1px dotted var(--rule)}
 .stone-stats div{text-align:center}
@@ -838,10 +836,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .notecols code{font-family:var(--mono);font-size:12.5px;background:var(--paper-3);padding:1px 4px}
 .credit{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.04em}
 .credit a{color:var(--ditto)}
-
-.deathcard{border:2px solid var(--stamp);background:var(--paper);padding:16px;text-align:center}
-.deathcard h3{font-family:var(--disp);font-size:26px;color:var(--stamp);margin:0 0 6px}
-.deathcard p{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0 0 14px;line-height:1.6}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -1067,7 +1061,7 @@ html,body{height:100%}
 
 /* ---------- character-roll screen (04-DR3, "THE TABLES DECIDE") ----------
    A full-screen gate shown OVER #app between a new-run trigger (title
-   ENTER, the death card's "Roll the next victim", the won card's reroll)
+   ENTER, the death card's "Roll the next victim")
    and the game itself — matches design/Mazeworld Mobile.dc.html's
    `isRolling` block: 3 reels (RACE/CLASS/SUBCLASS) that flicker (mwflick)
    while unsettled then lock gold in sequence, a name+quirk reveal that
@@ -1230,7 +1224,7 @@ html,body{height:100%}
 
 <!-- ============ CHARACTER-ROLL SCREEN (04-DR3, "THE TABLES DECIDE") ============
      Full-screen gate shown OVER #app between a new-run trigger (title
-     ENTER, the death card's "Roll the next victim", the won card's reroll)
+     ENTER, the death card's "Roll the next victim")
      and the game itself — see the .mw-roller-screen CSS comment above and
      the trailing module script's window.mzStartRoll()/#mw-roller-cta wiring
      for the reel-flicker + real-engine-roll behavior. -->
@@ -3121,11 +3115,11 @@ function renderGraves() {
   // than the last 5 stones regardless of what the array holds.
   for (const g of graves.slice(0, 5)) {
     const el = document.createElement("article");
-    el.className = "stone" + (g.cause === "won" ? " won" : "");
+    el.className = "stone";
     el.innerHTML = `
       <p class="stone-name">${g.name}</p>
       <p class="stone-sub">${g.race} ${g.sub} · lvl ${window.__mzTables.ROMAN[(g.level || 1) - 1]}</p>
-      <p class="stone-note">${g.cause === "won" ? "Walked out" : g.note.replace(/^\w/, c => c.toUpperCase())}</p>
+      <p class="stone-note">${g.note.replace(/^\w/, c => c.toUpperCase())}</p>
       <p class="stone-ep">${g.epitaph || ""}</p>
       <dl class="stone-stats">
         <div><dt>Floor</dt><dd>${g.floor}</dd></div>
@@ -3159,7 +3153,7 @@ function hasActiveEncounter() {
   // Phase 35 (MAP-05): the stair-down overlay (window.__mzStair, presentation
   // only, never S/state) blocks the map exactly like every other over-map
   // overlay above.
-  return !!(S && (S.dead || S.won || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length))) || !!window.__mzStair;
+  return !!(S && (S.dead || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length))) || !!window.__mzStair;
 }
 
 // railLocked() (orchestrator decision 2, ruling 3): a pending rail decision
@@ -3938,13 +3932,13 @@ function renderEncounter() {
 
   // Phase 35 (MAP-05, decision 5): THE STAIR DOWN — a pre-dispatch shell
   // interception (window.__mzStair, set by engineMove before stepNow ever
-  // runs), shown BEFORE the death/won/beats branches below so a step that
+  // runs), shown BEFORE the death/beats branches below so a step that
   // both reaches the stair AND would end the run never races them (in
-  // practice window.__mzStair is only set on a live, undead, unwon step).
+  // practice window.__mzStair is only set on a live, undead step).
   // NOT YET's re-render flips hasActiveEncounter() true->false, so the
   // dismissal transition further down stamps the settle window and
   // recenters — no extra code needed here.
-  if (window.__mzStair && !S.combat && !S.dead && !S.won) {
+  if (window.__mzStair && !S.combat && !S.dead) {
     panel.dataset.mode = "dark";
     const s = window.__mzStair;
     renderMajorOverlay(body, {
@@ -3979,18 +3973,6 @@ function renderEncounter() {
       ],
     });
     wireDeathConfirm();
-    return;
-  }
-  if (S.won) {
-    body.innerHTML = `<div class="deathcard" style="border-color:var(--ditto)">
-      <h3 style="color:var(--ditto)">Through the Gate</h3>
-      <p>${S.c.name} walked ${S.steps} squares in ${S.day} days and came out the other side at skill level ${window.__mzTables.ROMAN[S.c.level-1]}.</p>
-      <p class="epitaph">${S.epitaph || ""}</p>
-      <button class="primary" id="btn-again">Roll another delver</button></div>`;
-    // 04-DR3: opens the roller directly (unlike the death card's CONFIRM,
-    // which now returns to the title screen instead — DR4 group 3 scoped
-    // that change to the death card only, so the won path is unchanged).
-    document.getElementById("btn-again").onclick = () => window.mzStartRoll();
     return;
   }
   // whatever just happened comes first — one moment at a time on a phone
@@ -4352,8 +4334,8 @@ function renderRail() {
   // every tab and shows ONLY when it has something to report — a real
   // event/decision/refusal card. Idle hides it everywhere (no NOTHING IS
   // HAPPENING card; this also keeps THEY ARE DOWN's loot list at full
-  // height). Combat/death/win still own their screens.
-  railEl.hidden = !!(S.combat || S.dead || S.won) || idle;
+  // height). Combat/death still own their screens.
+  railEl.hidden = !!(S.combat || S.dead) || idle;
 
   railEl.dataset.tone = tone;
   railEl.dataset.idle = idle ? "1" : "0";
@@ -5326,7 +5308,7 @@ window.__mzClassicBoot = async function classicBoot() {
     const raw = await window.mzStorage.getItem(TITLE_SAVE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      hadSaveAtLaunch = !!(parsed && !parsed.dead && !parsed.won);
+      hadSaveAtLaunch = !!(parsed && !parsed.dead);
     }
   } catch { hadSaveAtLaunch = false; }
 
@@ -5410,8 +5392,8 @@ window.__mzClassicBoot = async function classicBoot() {
     } else if (wasCombat && has) {
       if (combatSnap) combatSnap.lastRound = after.combat.round || combatSnap.lastRound;
     } else if (wasCombat && !has) {
-      // combat ended: death/win have their own cards; fleeing just toasts.
-      if (!after || after.dead || after.won) { combatSnap = null; return; }
+      // combat ended: death has its own card; fleeing just toasts.
+      if (!after || after.dead) { combatSnap = null; return; }
       if (events.some((e) => e.type === "fled")) {
         // Phase 34 (CSCR-07): the flee ending needs a surface too — the
         // beats-branch (renderEncounter) renders any beats.over as the
@@ -5892,9 +5874,9 @@ window.__mzClassicBoot = async function classicBoot() {
     const screen = document.getElementById("mw-title-screen");
     if (screen) screen.hidden = true;
   }
-  // A run counts as "active"/resumable only while it is neither dead nor won.
+  // A run counts as "active"/resumable only while it is not dead.
   function hasActiveDelveSave() {
-    return !!(S && S.c && !S.dead && !S.won);
+    return !!(S && S.c && !S.dead);
   }
   let resumeIntent = false;
   // DR18 (DR15-C): show the title screen's "View the Dead" entry ONLY when the
@@ -6326,7 +6308,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
         hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden,
-        hasLiveRun: !!(S && S.c && !S.dead && !S.won),
+        hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
           window.__mzStair = null;

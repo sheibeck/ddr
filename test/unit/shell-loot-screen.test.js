@@ -174,7 +174,7 @@ test("Phase 29 (LOOT-04)/Phase 35: the find card (rail decision, a full bag) cal
 
 const LOOT_GUARD = 'if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {';
 const JOINER_GUARD = 'if (S.pendingJoiner && !S.combat && !S.store)';
-const WON_GUARD = 'if (S.won) {';
+const BEATS_GUARD = 'if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {';
 const STORE_GUARD = 'if (S.store) {';
 
 function lootRegion() {
@@ -218,12 +218,12 @@ test("Phase 29 (LOOT-02/03/04/06)/2026-09-17 UAT: no inline bag-full line, the s
   assert.match(region, /panel\.dataset\.mode = "dark"/);
 });
 
-test("Phase 29 (LOOT-02)/Phase 35: the loot branch sits after won/beats and before the store branch (the joiner/find branches moved into renderRail)", () => {
+test("Phase 29 (LOOT-02)/Phase 35: the loot branch sits after the beats branch and before the store branch (the joiner/find branches moved into renderRail)", () => {
   const lootIdx = CODE.indexOf(LOOT_GUARD);
   const storeIdx = CODE.indexOf(STORE_GUARD);
-  const wonIdx = CODE.indexOf(WON_GUARD);
-  assert.ok(lootIdx !== -1 && storeIdx !== -1 && wonIdx !== -1);
-  assert.ok(lootIdx > wonIdx, "loot branch comes after the won branch");
+  const beatsIdx = CODE.indexOf(BEATS_GUARD);
+  assert.ok(lootIdx !== -1 && storeIdx !== -1 && beatsIdx !== -1);
+  assert.ok(lootIdx > beatsIdx, "loot branch comes after the beats branch");
   assert.ok(lootIdx < storeIdx, "loot branch comes before the store branch");
 });
 

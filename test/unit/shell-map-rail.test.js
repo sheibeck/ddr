@@ -94,7 +94,7 @@ function stepWithRegion() {
   return sliceBetween(CODE, "function stepWith(action)", "function stepNow(dir)");
 }
 function deathBranch() {
-  return sliceBetween(CODE, "if (S.dead) {", "if (S.won) {");
+  return sliceBetween(CODE, "if (S.dead) {", "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
 }
 function beatsBranch() {
   return sliceBetween(
@@ -399,9 +399,9 @@ test("(o) 2026-09-17 UAT ruling (reverses the 2026-09-16 map-tab-only rule): sho
   // "Rail should only show up if there is something to report": idle hides
   // it everywhere (no NOTHING IS HAPPENING card, and THEY ARE DOWN keeps its
   // full height); a real card (event, decision, bagFull/equip refusal) shows
-  // on any tab; combat/death/win still own their screens.
+  // on any tab; combat/death still own their screens.
   const region = railRegion();
-  assert.match(region, /railEl\.hidden = !!\(S\.combat \|\| S\.dead \|\| S\.won\) \|\| idle;/);
+  assert.match(region, /railEl\.hidden = !!\(S\.combat \|\| S\.dead\) \|\| idle;/);
   assert.doesNotMatch(region, /mwActiveTab !== "maze"/);
   assert.doesNotMatch(region, /panelUp/);
 });

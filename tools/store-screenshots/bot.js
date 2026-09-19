@@ -7,7 +7,7 @@ const startRun = async (page) => {
 const snapshot = (page) => page.evaluate(() => {
   const S = window.__mzState.get();
   const btns=[...document.querySelectorAll('button')].filter(b=>b.offsetParent!==null && !b.disabled).map(b=>(b.id||b.className.split(' ')[0])+':'+b.innerText.trim().replace(/\s+/g,' ').slice(0,28));
-  const blocked = !!(S.dead||S.won||S.combat||S.store||(S.pendingLoot&&S.pendingLoot.length)||(S.beats&&S.beats.groups&&S.beats.groups.length)||window.__mzStair);
+  const blocked = !!(S.dead||S.combat||S.store||(S.pendingLoot&&S.pendingLoot.length)||(S.beats&&S.beats.groups&&S.beats.groups.length)||window.__mzStair);
   const rail = !!(window.__mzRail && window.__mzRail.card);
   return { floor:S.floor.depth, pos:[S.floor.px,S.floor.py], steps:S.steps, hp:S.c.wp+'/'+S.c.maxWP, dead:S.dead, combat:!!S.combat, store:!!S.store, loot:!!(S.pendingLoot&&S.pendingLoot.length), beats:!!(S.beats&&S.beats.groups&&S.beats.groups.length), stair:!!window.__mzStair, find:!!S.pendingFind, joiner:!!S.pendingJoiner, railPending:!!(window.__mzRail&&window.__mzRail.pending), rail, blocked, btns };
 });

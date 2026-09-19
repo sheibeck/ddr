@@ -271,7 +271,7 @@ test("(g) hasActiveEncounter() includes the stair flag", () => {
 
 test("(g) renderEncounter: the stair branch is the first branch, before the death branch, and renders the MAP_COPY.stair spec through renderMajorOverlay", () => {
   const region = renderEncounterRegion();
-  const stairIdx = region.indexOf("if (window.__mzStair && !S.combat && !S.dead && !S.won) {");
+  const stairIdx = region.indexOf("if (window.__mzStair && !S.combat && !S.dead) {");
   const deadIdx = region.indexOf("if (S.dead) {");
   assert.ok(stairIdx !== -1, "stair branch not found");
   assert.ok(deadIdx !== -1, "death branch not found");
