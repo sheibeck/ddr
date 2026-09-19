@@ -603,6 +603,16 @@ test("useItem torch: while inDark (c.darkFor>0), lights, clears darkFor, starts 
   assert.deepStrictEqual(state.c.timers["item:Torch"], { cadence: "squares", left: 40, phase: "effect" });
 });
 
+test("useItem torch: a Pilfer lights a torch too — a tool is mundane kit, not a magic item, so the pilfer refusal never fires", () => {
+  const state = fixedState({ c: { cls: "Thief", sub: "Pilfer", items: [toolItem("torch")], darkFor: 12 } });
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.ok(!events.some((e) => e.type === "useRefused"), "no useRefused of any reason");
+  assert.ok(events.some((e) => e.type === "torchLit" && e.left === 40));
+  assert.ok(events.some((e) => e.type === "itemConsumed"));
+  assert.equal(state.c.darkFor, 0);
+  assert.equal(state.c.items.length, 0, "the torch is gone");
+});
+
 test("useItem torch: on a lit tile with darkFor 0, inDark still reads true off the tile's own .dark flag — same lit result", () => {
   const state = fixedState({ c: { items: [toolItem("torch")], darkFor: 0 }, floor: { g: wallGrid(), px: 5, py: 5, depth: 1 } });
   state.floor.g[5][5] = { wall: false, seen: false, feat: null, dark: true };

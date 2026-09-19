@@ -1158,7 +1158,10 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // use leaves the timers/inventory/rng completely untouched. drinkPotion (the
   // separate generic healing-draught action) and canRead (engine/magic.js)
   // already gate a Pilfer independently and are untouched by this change.
-  if (c.sub === "Pilfer" && kind !== "heal" && kind !== "full") {
+  // Quick 260918 (user bug report): a `kind:"tool"` consumable (the Torch,
+  // content/tools.js) is mundane kit, not a magic item — the Pilfer's bad
+  // never touches it, so a Pilfer lights a torch like anyone else.
+  if (c.sub === "Pilfer" && it.kind !== "tool" && kind !== "heal" && kind !== "full") {
     events.push({ type: "useRefused", item: it, reason: "pilfer" });
     return events;
   }
