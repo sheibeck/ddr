@@ -138,7 +138,7 @@ test("(d) tapStep(): the guard/lookup/resolve/branch order, in that order, match
     "hasActiveEncounter()",
     "railLocked()",
     "railPulse();",
-    "window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, pan, CELL, CANVAS_PAD)",
+    "window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, cameraPan(), CELL, CANVAS_PAD)",
     "resolveStep({ x: px, y: py }, cell, isOpen)",
     "copy.here.title",
     "copy.noWay.title",
@@ -164,7 +164,7 @@ test("(d) tapStep(): never mutates S.floor.px/py, never dispatches directly", ()
 
 test("(e) inspectAt(): looks up the cell, builds the hold-inspect card, reports it, never dispatches", () => {
   const region = inspectAtRegion();
-  assert.match(region, /window\.__mzControls\.screenToCell\(clientX, clientY, rect, \{ x: px, y: py \}, pan, CELL, CANVAS_PAD\)/);
+  assert.match(region, /window\.__mzControls\.screenToCell\(clientX, clientY, rect, \{ x: px, y: py \}, cameraPan\(\), CELL, CANVAS_PAD\)/);
   assert.match(region, /inspectCell\(c, \(feat\) => M\.legendFor\(feat\)\)/);
   assert.match(
     region,
@@ -209,7 +209,7 @@ test("(f) viewport region: the four Phase 33 pan/pinch literals are byte-intact"
   assert.match(region, /vp\.addEventListener\("pointerup", release\)/);
   assert.match(region, /const wasPinch = !!pinch;/);
   assert.match(region, /if \(wasPinch && pts\.size < 2\) window\.mzCenterMap\?\.\(\);/);
-  assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); positionCanvas\(\);/);
+  assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); anchorCamOnParty\(pinch\.pan\); positionCanvas\(\);/);
 });
 
 test("(f) pointermove sub-region never recenters (no per-tick reset)", () => {

@@ -19,8 +19,8 @@
 //   5. UIF-02 pinch: release() captures wasPinch and recenters once on
 //      pinch-end; the pointermove handler never recenters (no per-tick
 //      reset) while its zoom-scaling math stays intact.
-//   6. the centerMap bridge itself is untouched (pan/positionCanvas only,
-//      never S.floor).
+//   6. the centerMap bridge itself is untouched (anchorCamOnParty/
+//      positionCanvas only, never S.floor).
 //   7. STORE-01: the store header's gated roll line — STORE_ROLL_COPY shown
 //      only when S.storeRoll === true, else the empty string; storeRoll is
 //      read nowhere else in the shell.
@@ -159,17 +159,19 @@ test("UIF-02 pinch: the pointermove handler never recenters, and its zoom-scale 
   const region = pointermoveRegion();
   assert.ok(!/mzCenterMap/.test(region), "pointermove must never call window.mzCenterMap");
   assert.ok(!/centerMap\(/.test(region), "pointermove must never call centerMap() directly either");
-  assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); positionCanvas\(\);/);
+  assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); anchorCamOnParty\(pinch\.pan\); positionCanvas\(\);/);
 });
 
 // ─── 6. the centerMap bridge is untouched ─────────────────────────────────
 
-test("the centerMap bridge itself is untouched: pan/positionCanvas only, never S.floor", () => {
+test("the centerMap bridge itself is untouched: anchorCamOnParty/positionCanvas only, never S.floor", () => {
   assert.equal((CODE.match(/function centerMap\(\) \{/g) || []).length, 1);
   assert.equal((CODE.match(/window\.mzCenterMap = centerMap;/g) || []).length, 1);
   const body = sliceBetween(CODE, "function centerMap() {", 'document.getElementById("mw-chip-centre")');
-  assert.match(body, /pan = \{ x: 0, y: 0 \};/);
+  assert.match(body, /anchorCamOnParty\(\{ x: 0, y: 0 \}\);/);
   assert.match(body, /positionCanvas\(\);/);
+  // centerMap's own body reads S.floor only through partyCentre() — no
+  // direct S.floor reference in this function's own body.
   assert.ok(!/S\.floor/.test(body), "centerMap must never touch S.floor");
 });
 

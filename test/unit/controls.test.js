@@ -20,6 +20,8 @@ import {
   classifyPointerGesture,
   TAP_MOVE_THRESHOLD_PX,
   TAP_MAX_DURATION_MS,
+  keepInViewAxis,
+  EDGE_TRIGGER_CELLS,
 } from "../../src/browser/controls.js";
 
 // A minimal real-shaped floor grid: 5x5, all seen except one cell, matching
@@ -177,4 +179,63 @@ test("classifyPointerGesture: over-duration with low travel classifies as drag (
   const upEvt = { timeStamp: 1000 + TAP_MAX_DURATION_MS + 1 };
   const result = classifyPointerGesture(downEvt, upEvt, 1);
   assert.equal(result, "drag");
+});
+
+// ─── keepInViewAxis (quick 260918-vm3): the one-axis stationary-camera rule ──
+//
+// EDGE_TRIGGER_CELLS === 2: the party's cell-centre distance from a visible
+// edge, in cells, below which the camera nudges. The camera coordinate is
+// the grid point (cell units, fractional) pinned under the viewport centre
+// on that axis; the caller runs this once per axis.
+
+test("keepInViewAxis: exports EDGE_TRIGGER_CELLS === 2", () => {
+  assert.equal(EDGE_TRIGGER_CELLS, 2);
+});
+
+test("keepInViewAxis: identity — party comfortably inside, nothing moves", () => {
+  assert.equal(keepInViewAxis(6, 6.5, 12), 6);
+});
+
+test("keepInViewAxis: low edge — party within the trigger nudges the minimum to rest the margin", () => {
+  const result = keepInViewAxis(6, 1.5, 12);
+  assert.equal(result, 3.5);
+  // party sits exactly rest=4 cells in from the low edge (result - half)
+  assert.equal(1.5 - (result - 6), 4);
+  assert.notEqual(result, 1.5, "never centred on the party");
+});
+
+test("keepInViewAxis: high edge — party within the trigger nudges the minimum to rest the margin", () => {
+  const result = keepInViewAxis(6, 10.5, 12);
+  assert.equal(result, 8.5);
+  assert.equal(result + 6 - 10.5, 4);
+});
+
+test("keepInViewAxis: off-screen recovery — a party already past the high edge (e.g. after a drag) is brought back to the margin", () => {
+  const result = keepInViewAxis(6, 14.5, 12);
+  assert.equal(result, 12.5);
+  assert.equal(result + 6 - 14.5, 4);
+});
+
+test("keepInViewAxis: a viewport too small to hold the margin on both sides centres that axis", () => {
+  // span 5: rest = max(3, 5/3) = 3; 2*rest = 6 >= 5, so this axis always centres.
+  assert.equal(keepInViewAxis(6, 999, 5), 999);
+  assert.equal(keepInViewAxis(-40, -3.2, 5), -3.2);
+});
+
+test("keepInViewAxis: post-nudge stability — the camera only moves toward the party, one margin at a time", () => {
+  // Starting camera at 6 (span 12), a party at 1.5 nudges the camera to 3.5
+  // (Test 2 above) — the visible low edge is now cam - half = 3.5 - 6 = -2.5.
+  const cam = 3.5;
+  // Stepping back toward the centre stays put — well clear of the margin.
+  assert.equal(keepInViewAxis(cam, 2.5, 12), 3.5);
+  // Still 3 cells inside the new edge (0.5 - (-2.5) === 3) — stays put.
+  assert.equal(keepInViewAxis(cam, 0.5, 12), 3.5);
+  // Exactly EDGE_TRIGGER_CELLS (2) from the new edge is still outside the
+  // strict "<" trigger — one more step is needed to actually cross it.
+  assert.equal(keepInViewAxis(cam, -0.5, 12), 3.5);
+  // Crossing inside the trigger (distance 1.5 < 2) nudges again, to the
+  // point that rests the party exactly `rest` (4) cells from the new edge.
+  const result = keepInViewAxis(cam, -1, 12);
+  assert.equal(result, 1);
+  assert.equal(-1 - (result - 6), 4);
 });

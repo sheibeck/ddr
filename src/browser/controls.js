@@ -100,3 +100,43 @@ export function classifyPointerGesture(downEvt, upEvt, totalDeltaPx) {
   if (totalDeltaPx <= TAP_MOVE_THRESHOLD_PX && duration <= TAP_MAX_DURATION_MS) return "tap";
   return "drag";
 }
+
+/**
+ * The distance, in cells, from the party's cell centre to a visible edge of
+ * the viewport, below which the camera scrolls to keep the party in view
+ * ("within ~1-2 tiles" — quick task 260918-vm3, stationary-camera rule).
+ */
+export const EDGE_TRIGGER_CELLS = 2;
+
+/**
+ * keepInViewAxis(camAxis, partyAxis, spanCells)
+ *
+ * The one-axis stationary-camera rule: the camera only moves the MINIMUM
+ * needed to keep the party inside a margin near a visible edge — it never
+ * snaps to centre. `camAxis`/`partyAxis` are grid-point coordinates (cell
+ * units, fractional) — the camera coordinate is the grid point pinned under
+ * the viewport centre on this axis. The caller runs this once per axis (x
+ * and y independently), zero DOM, zero randomness.
+ *
+ * rest = the margin (in cells) the party rests at from an edge once nudged —
+ * at least EDGE_TRIGGER_CELLS + 1 so the party doesn't immediately re-trigger
+ * the edge check, and at least a third of the visible span so the margin
+ * scales with a larger viewport.
+ *
+ * If the viewport is too small to hold that margin on both sides (spanCells
+ * <= 2 * rest), this axis always centres on the party instead — there's no
+ * room for a stationary margin.
+ *
+ * @param {number} camAxis - current camera coordinate on this axis (cell units)
+ * @param {number} partyAxis - the party's cell-centre coordinate on this axis
+ * @param {number} spanCells - the visible viewport span on this axis, in cells
+ * @returns {number} the camera coordinate to use on this axis
+ */
+export function keepInViewAxis(camAxis, partyAxis, spanCells) {
+  const rest = Math.max(EDGE_TRIGGER_CELLS + 1, spanCells / 3);
+  if (spanCells <= 2 * rest) return partyAxis;
+  const half = spanCells / 2;
+  if (partyAxis - (camAxis - half) < EDGE_TRIGGER_CELLS) return partyAxis - rest + half;
+  if (camAxis + half - partyAxis < EDGE_TRIGGER_CELLS) return partyAxis + rest - half;
+  return camAxis;
+}

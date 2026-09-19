@@ -2571,12 +2571,42 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 
 /* ---------------- rendering ---------------- */
 let CELL = 28;
-// 04-06: camera-only pan offset (CSS px) — CENTRE snaps this to {0,0};
-// panning NEVER changes floor.px/py (S.floor is never touched here). Shared
-// by positionCanvas() (forward transform) and the tap handler below (which
-// feeds the SAME pan/CELL/CANVAS_PAD into controls.js's screenToCell — one
-// shared transform, per 04-RESEARCH.md's Anti-Pattern warning).
-let pan = { x: 0, y: 0 };
+// Quick task 260918-vm3 (MAP-02/MAP-07, "stationary camera"): `cam` is the
+// maze-grid point (cell units, fractional) that sits under the viewport
+// centre — camera-only, never written to S, never persisted. It replaces
+// the earlier player-relative CSS-px pan offset (04-06): that model pinned
+// the party AT the viewport centre and shifted the whole map under it on
+// every step; this model pins a GRID POINT under the centre instead, so a
+// step only moves the party's own screen position (via cameraPan(), below)
+// until keepPartyInView() decides the party is nearing a visible edge.
+// CENTRE (and the other allowed centring triggers — stairs/teleport/new
+// run/boot) snap `cam` onto the party via anchorCamOnParty({x:0,y:0}).
+// positionCanvas() (forward transform) and the tap handler below (which
+// feeds cameraPan() into controls.js's screenToCell — one shared transform,
+// per 04-RESEARCH.md's Anti-Pattern warning) both read this same state.
+let cam = { x: 0, y: 0 };
+
+// partyCentre(): the party's own cell-centre grid point. Read-only — never
+// writes S.floor.px/py.
+function partyCentre() {
+  return { x: S.floor.px + 0.5, y: S.floor.py + 0.5 };
+}
+// cameraPan(): the party's screen offset from the viewport centre, in CSS
+// px — exactly the `pan` argument src/browser/controls.js#screenToCell's
+// forward transform expects (tx = vw/2 - (px+0.5)*cs - pad + pan.x collapses
+// to vw/2 - cam.x*cs - pad once pan.x = (partyCentre().x - cam.x) * CELL).
+function cameraPan() {
+  const p = partyCentre();
+  return { x: (p.x - cam.x) * CELL, y: (p.y - cam.y) * CELL };
+}
+// anchorCamOnParty(offsetPx): sets `cam` so the party sits at the viewport
+// centre plus the given CSS-px offset — used by centerMap() (offset {0,0})
+// and by pinch-zoom (offset = the party's on-screen point at pinch start,
+// so the zoom origin stays on the party).
+function anchorCamOnParty(offsetPx) {
+  const p = partyCentre();
+  cam = { x: p.x - offsetPx.x / CELL, y: p.y - offsetPx.y / CELL };
+}
 // DR13: pinch-to-zoom map scale. `zoom` multiplies the text-scale-derived base
 // cell size in fit(); clamped so the maze never zooms uselessly tiny or huge.
 // Phase 33 (UIF-03) + device feedback 2026-09-16: the default sits ZOOMED
@@ -2624,9 +2654,8 @@ function positionCanvas() {
   const vp = document.getElementById("mw-maze-viewport");
   if (!vp) return;
   const rect = vp.getBoundingClientRect();
-  const { px, py } = S.floor;
-  const tx = rect.width / 2 - (px + 0.5) * CELL - CANVAS_PAD + pan.x;
-  const ty = rect.height / 2 - (py + 0.5) * CELL - CANVAS_PAD + pan.y;
+  const tx = rect.width / 2 - cam.x * CELL - CANVAS_PAD;
+  const ty = rect.height / 2 - cam.y * CELL - CANVAS_PAD;
   cv.style.left = tx + "px";
   cv.style.top = ty + "px";
   positionPartyPulse(rect);
@@ -2634,15 +2663,15 @@ function positionCanvas() {
 
 // Phase 35 (MAP-07): the pulsing party ring (#mw-party-pulse) is a DOM
 // element, not a canvas rAF loop — this keeps it centered over the party's
-// cell using the SAME viewport-center transform positionCanvas() just
-// applied to the canvas (the party sits at the viewport center + pan by
-// that transform's own definition, so no separate cell lookup is needed).
+// cell using cameraPan(), the SAME party-screen-offset positionCanvas()'s
+// forward transform implies (quick task 260918-vm3).
 function positionPartyPulse(rect) {
   const ring = document.getElementById("mw-party-pulse");
   if (!ring) return;
+  const p = cameraPan();
   ring.style.width = ring.style.height = CELL + "px";
-  ring.style.left = (rect.width / 2 + pan.x - CELL / 2) + "px";
-  ring.style.top = (rect.height / 2 + pan.y - CELL / 2) + "px";
+  ring.style.left = (rect.width / 2 + p.x - CELL / 2) + "px";
+  ring.style.top = (rect.height / 2 + p.y - CELL / 2) + "px";
 }
 
 function reveal() {
@@ -6766,19 +6795,50 @@ document.getElementById("mw-camp-scrim").addEventListener("click", closeCampShee
 document.getElementById("btn-camp").onclick = openCampSheet;
 
 function centerMap() {
-  pan = { x: 0, y: 0 };
+  anchorCamOnParty({ x: 0, y: 0 });
   positionCanvas();
 }
 document.getElementById("mw-chip-centre").addEventListener("click", centerMap);
 // Device-review Pass B1 item 4: bridged onto window (same pattern as
 // window.move/window.newGame/window.__mzState) so the trailing module
 // script can auto-recenter the viewport on the party without duplicating
-// pan/positionCanvas — both classic-script closures not otherwise reachable
-// from a module scope. `pan`/`positionCanvas` are declared with let/function
+// cam/positionCanvas — both classic-script closures not otherwise reachable
+// from a module scope. `cam`/`positionCanvas` are declared with let/function
 // in this SAME non-module <script>, so centerMap() (a plain function
 // declaration) is already an implicit `window.centerMap` global too, but
 // naming the bridge explicitly keeps the pattern consistent and greppable.
 window.mzCenterMap = centerMap;
+
+// Quick task 260918-vm3 (MAP-02/MAP-07, "stationary camera"): keepPartyInView()
+// is the ONE non-centring camera nudge — it moves `cam` the minimum needed to
+// keep the party inside a margin near a visible edge (src/browser/controls.js
+// #keepInViewAxis), never snapping to centre. Called after a genuine step, a
+// tab return, an overlay dismiss, a pinch-end, a Settings close, a textSize
+// change or a resize (wired at each of those call sites, below). The four
+// centring triggers — the CENTRE chip, a floorChanged/teleported event, a new
+// run (including the dev start-at-depth run) and the boot first paint — call
+// window.mzCenterMap instead; nothing else calls it.
+function keepPartyInView() {
+  if (!S) return;
+  const vp = document.getElementById("mw-maze-viewport");
+  if (!vp) return;
+  const rect = vp.getBoundingClientRect();
+  // Read the controls bridge at CALL time, never captured at parse time
+  // (2026-09-16 UAT lesson) — guarded on a 0x0 rect while the map tab is
+  // hidden (getBoundingClientRect() returns all-zero for a hidden ancestor).
+  const C = window.__mzControls;
+  if (rect.width > 0 && rect.height > 0 && C && C.keepInViewAxis) {
+    const p = partyCentre();
+    cam = {
+      x: C.keepInViewAxis(cam.x, p.x, rect.width / CELL),
+      y: C.keepInViewAxis(cam.y, p.y, rect.height / CELL),
+    };
+  }
+  // ALWAYS finish with positionCanvas() — the previous positionCanvas may
+  // have run against a 0x0 rect while the map tab was hidden.
+  positionCanvas();
+}
+window.mzKeepPartyInView = keepPartyInView;
 
 // Phase 35 (MAP-02, MAP-05): the viewport's pointer model — tap = one square
 // toward the tap; hold = inspect; drag = pan; pinch = zoom. Every step still
@@ -6794,7 +6854,7 @@ function tapStep(clientX, clientY) {
   const vp = document.getElementById("mw-maze-viewport");
   const rect = vp.getBoundingClientRect();
   const { px, py, g } = S.floor;
-  const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, pan, CELL, CANVAS_PAD);
+  const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, cameraPan(), CELL, CANVAS_PAD);
   const isOpen = (x, y) => !!(g[y] && g[y][x] && !g[y][x].wall);
   const res = window.__mzTapStep.resolveStep({ x: px, y: py }, cell, isOpen);
   const copy = window.__mzRailVM.copy;
@@ -6809,7 +6869,7 @@ function inspectAt(clientX, clientY) {
   const vp = document.getElementById("mw-maze-viewport");
   const rect = vp.getBoundingClientRect();
   const { px, py, g } = S.floor;
-  const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, pan, CELL, CANVAS_PAD);
+  const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, cameraPan(), CELL, CANVAS_PAD);
   const c = g[cell.y] && g[cell.y][cell.x] ? g[cell.y][cell.x] : null;
   const M = window.__mzMapMarks;
   const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat));
@@ -6819,7 +6879,7 @@ function inspectAt(clientX, clientY) {
 }
 
 // 04-06: one pointerdown/move/up gesture pipeline on the viewport — a drag
-// only updates `pan` (camera-only, never touches S.floor.px/py); a tap steps
+// only updates `cam` (camera-only, never touches S.floor.px/py); a tap steps
 // (tapStep, above); a hold (no travel, HOLD_MS) inspects (inspectAt, above).
 // hasActiveEncounter() also gates pan-start: while the encounter/feature
 // overlay is up (over-map, see renderEncounter()), a drag on the viewport
@@ -6839,11 +6899,11 @@ function inspectAt(clientX, clientY) {
   const T = () => window.__mzTapStep || { HOLD_MS: 450, TAP_MAX_TRAVEL_PX: 10 };
   // DR13: one pipeline handles BOTH a one-finger pan and a two-finger
   // pinch-to-zoom. `pts` tracks every active pointer; a single pointer drags
-  // `pan`, a second pointer switches to pinch (distance ratio -> `zoom`), and
+  // `cam`, a second pointer switches to pinch (distance ratio -> `zoom`), and
   // lifting back to one finger resumes panning from where it is.
   const pts = new Map();          // pointerId -> {x, y}
   let pointerStart = null;        // active single-finger pan
-  let pinch = null;               // { dist, zoom } captured at pinch start
+  let pinch = null;               // { dist, zoom, pan } captured at pinch start
   // Phase 35 (MAP-02): the single-finger tap/hold gesture tracker, alongside
   // the pre-existing pan/pinch state above -- { id, x0, y0, travel, multi,
   // holdFired, holdTimer }, armed on pointerdown, cleared on release.
@@ -6852,13 +6912,13 @@ function inspectAt(clientX, clientY) {
     const [a, b] = [...pts.values()];
     return Math.hypot(a.x - b.x, a.y - b.y);
   };
-  const startPan = (id, x, y) => { pointerStart = { x, y, panStart: { x: pan.x, y: pan.y }, id }; };
+  const startPan = (id, x, y) => { pointerStart = { x, y, camStart: { x: cam.x, y: cam.y }, id }; };
   vp.addEventListener("pointerdown", e => {
     if (!S || hasActiveEncounter()) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { vp.setPointerCapture(e.pointerId); } catch (err) { /* off-element capture is non-fatal */ }
     if (pts.size >= 2) {
-      pointerStart = null; pinch = { dist: spread(), zoom };
+      pointerStart = null; pinch = { dist: spread(), zoom, pan: cameraPan() };
       // A second finger down turns any in-flight single-finger gesture into
       // a pinch -- never a tap or a hold.
       if (gesture) { gesture.multi = true; clearTimeout(gesture.holdTimer); }
@@ -6878,11 +6938,11 @@ function inspectAt(clientX, clientY) {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch && pts.size >= 2) {
       const d = spread();
-      if (pinch.dist > 0) { zoom = clampZoom(pinch.zoom * (d / pinch.dist)); fit(); positionCanvas(); }
+      if (pinch.dist > 0) { zoom = clampZoom(pinch.zoom * (d / pinch.dist)); fit(); anchorCamOnParty(pinch.pan); positionCanvas(); }
       return;
     }
     if (pointerStart && e.pointerId === pointerStart.id) {
-      pan = { x: pointerStart.panStart.x + (e.clientX - pointerStart.x), y: pointerStart.panStart.y + (e.clientY - pointerStart.y) };
+      cam = { x: pointerStart.camStart.x - (e.clientX - pointerStart.x) / CELL, y: pointerStart.camStart.y - (e.clientY - pointerStart.y) / CELL };
       positionCanvas();
     }
     if (gesture && e.pointerId === gesture.id) {
@@ -7089,7 +7149,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
   // on why window.move/window.__mzState use the same bridge pattern).
-  import { screenToCell, resolveTapDirection, classifyPointerGesture } from "./src/browser/controls.js";
+  import { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis } from "./src/browser/controls.js";
   // Phase 35 (MAP-02) — the tap-to-step direction resolver + hold-inspect
   // cards (Plan 01); bridged beside window.__mzControls below for the
   // classic script's tapStep()/inspectAt() to consume.
@@ -7421,7 +7481,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // decoded BEFORE window.__mzClassicBoot() below ever calls draw() the
   // first time — no first-paint pop, fail-open per icons.js's own contract
   // (a missing/broken icon just resolves without drawing).
-  window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture };
+  window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis };
   // Phase 35 (MAP-02) — tapStep()/inspectAt() (classic script) read the
   // dominant-axis step resolver and hold-inspect cards through this bridge.
   window.__mzTapStep = { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS };
