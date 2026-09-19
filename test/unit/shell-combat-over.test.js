@@ -114,7 +114,7 @@ function dismissalBlock() {
   return CODE.slice(start, end + 1);
 }
 function engineMoveRegion() {
-  return sliceBetween(CODE, "window.move = function engineMove", "window.newGame = ");
+  return sliceBetween(CODE, "window.move = function engineMove", "window.mzDevStartAtDepth = ");
 }
 function keydownRegion() {
   return sliceBetween(CODE, 'addEventListener("keydown"', 'addEventListener("resize"');

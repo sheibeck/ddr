@@ -180,9 +180,9 @@ test("the centerMap bridge itself is untouched: anchorCamOnParty/positionCanvas 
   assert.ok(!/S\.floor/.test(body), "centerMap must never touch S.floor");
 });
 
-test("mzCenterMap call-site count is 5 (boot, 3 new-run paths, stepWith's floorChanged/teleported branch); mzKeepPartyInView is 7 (quick task 260918-vm3)", () => {
+test("mzCenterMap call-site count is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch); mzKeepPartyInView is 7 (Phase 44: the callerless window.newGame/engineNewRun override and its mzCenterMap call are gone)", () => {
   const centerMatches = CODE.match(/window\.mzCenterMap\?\.\(\)/g) || [];
-  assert.equal(centerMatches.length, 5);
+  assert.equal(centerMatches.length, 4);
   const keepInViewMatches = CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || [];
   assert.equal(keepInViewMatches.length, 7);
 });

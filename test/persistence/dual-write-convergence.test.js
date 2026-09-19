@@ -2,14 +2,21 @@
 //
 // 02-RESEARCH.md "The dual-write hazard": mazeworld.html's classic
 // (non-module) <script> and src/browser/engineAdapter.js's ES module BOTH
-// currently read/write ddr.delve.v1 / ddr.graveyard.v1
-// independently via raw localStorage (a duplicated-literal, no shared
-// backend). This file proves the 02-03 fix: BOTH paths converge on the SAME
-// `window.mzStorage` instance — literally the SAME storage.js module-level
-// state (write queues, backend selection) — so there are no longer two
-// backends racing on the same key. engineAdapter.js is not yet refactored to
-// use storage.js and mazeworld.html has no extraction markers yet — this
-// file is written RED-first (Wave-0 Task 1).
+// used to read/write ddr.delve.v1 / ddr.graveyard.v1 independently via raw
+// localStorage (a duplicated-literal, no shared backend). This file proves
+// the 02-03 fix: BOTH paths converge on the SAME `window.mzStorage` instance
+// — literally the SAME storage.js module-level state (write queues, backend
+// selection) — so there are no longer two backends racing on the same key.
+//
+// Phase 44 (DEAD-01/DEAD-03): the classic script's OWN run-save save()/
+// load() are gone (retired along with classic newGame() — the last live
+// foothold of the dead engine); engineAdapter.js's persist()/boot() is the
+// ONE run-save path now, already covered by the first two cases below and
+// by test/unit/engineAdapter.test.js. This file keeps only: (a) the
+// engineAdapter-vs-direct-storage.getItem convergence proof, and (b) the
+// classic script's OWN extracted saveGraves()/loadGraves() (the graves key,
+// which is still live persistence) routing through the same
+// window.mzStorage instance.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -75,50 +82,6 @@ test("engineAdapter and a direct storage.getItem() read see the IDENTICAL value 
     assert.ok(viaAbstraction, "a value was written");
     const viaWindow = await window.mzStorage.getItem(SAVE_KEY);
     assert.equal(viaAbstraction, viaWindow, "storage.getItem and window.mzStorage.getItem resolve the identical value");
-  });
-});
-
-test("mazeworld.html's OWN extracted save()/load() functions (not a reimplementation) read/write through window.mzStorage", async () => {
-  await withConvergedStorage(async (store) => {
-    const classic = loadClassicPersistenceSandbox({ mzStorage: window.mzStorage });
-    classic.S = { c: { name: "Classic" }, floor: { depth: 3 }, day: 2, steps: 5, dead: false, won: false, deathNote: "", epitaph: "" };
-    await classic.save();
-
-    const raw = store.get(SAVE_KEY);
-    assert.ok(raw, "the classic script's own save() wrote through window.mzStorage into the shared backend");
-    assert.equal(JSON.parse(raw).c.name, "Classic");
-
-    const loaded = await classic.load();
-    assert.equal(loaded.c.name, "Classic", "the classic script's own load() reads back through window.mzStorage");
-    assert.equal(loaded.floor.depth, 3);
-  });
-});
-
-test("dual-write convergence: engineAdapter's write and the classic script's write land in the SAME backend/key — no two independent stores (the core hazard this file exists to close)", async () => {
-  await withConvergedStorage(async (store) => {
-    // 1. Write through engineAdapter first.
-    await boot(99);
-    dispatch({ type: "move", dir: "N" });
-    await storage.flush();
-    const afterEngine = store.get(SAVE_KEY);
-    assert.ok(afterEngine, "engineAdapter wrote a save");
-
-    // 2. Now write through the classic script's OWN extracted save(). If it
-    // used a second, independent backend, this write would land somewhere
-    // else entirely and the shared `store` Map (representing the ONE real
-    // backend) would still show engineAdapter's stale value.
-    const classic = loadClassicPersistenceSandbox({ mzStorage: window.mzStorage });
-    classic.S = { c: { name: "OverwroteViaClassic" }, floor: { depth: 9 }, day: 1, steps: 0, dead: false, won: false, deathNote: "", epitaph: "" };
-    await classic.save();
-    const afterClassic = store.get(SAVE_KEY);
-    assert.notEqual(afterClassic, afterEngine, "the classic script's write actually changed the ONE shared backend's value");
-    assert.equal(JSON.parse(afterClassic).c.name, "OverwroteViaClassic");
-
-    // 3. Reading back through the abstraction (as engineAdapter's own boot()
-    // would on the next launch) sees the classic script's write, not a stale
-    // engine-only copy — there is exactly one backend both paths converge on.
-    const viaAbstraction = await storage.getItem(SAVE_KEY);
-    assert.equal(viaAbstraction, afterClassic, "reading via the abstraction sees the classic script's write — one shared backend");
   });
 });
 

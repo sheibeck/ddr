@@ -86,7 +86,7 @@ function engineMoveRegion() {
   return sliceBetween(CODE, "window.move = function engineMove", "function stepNow(dir)");
 }
 function stepNowRegion() {
-  return sliceBetween(CODE, "function stepNow(dir)", "window.newGame = ");
+  return sliceBetween(CODE, "function stepNow(dir)", "window.mzDevStartAtDepth = ");
 }
 // Phase 39 (GEAR-05), Plan 05: the dispatch body moved into stepWith(action)
 // — stepNow(dir) above is now a thin { type: "move", dir } wrapper over it.

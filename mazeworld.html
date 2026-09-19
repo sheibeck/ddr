@@ -1789,7 +1789,6 @@ let mwActiveTab = "maze";
   window.__mzShowTab = showTab;
 })();
 
-const SAVE_KEY = "ddr.delve.v1";
 const D = n => 1 + Math.floor(Math.random() * n);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -3326,7 +3325,7 @@ function wireDeathConfirm() {
   // Phase 32 (CMBUI-04): Confirm stays "armed" in the DR4 sense (no
   // read-it-first lock) — only the 250 ms re-render arm window is added.
   guardTap(btn, () => {
-    (window.mzReturnToTitle ? window.mzReturnToTitle() : (window.mzStartRoll ? window.mzStartRoll() : newGame()));
+    window.mzReturnToTitle();
   });
 }
 
@@ -4051,7 +4050,7 @@ function renderEncounter() {
     // 04-DR3: opens the roller directly (unlike the death card's CONFIRM,
     // which now returns to the title screen instead — DR4 group 3 scoped
     // that change to the death card only, so the won path is unchanged).
-    document.getElementById("btn-again").onclick = () => (window.mzStartRoll ? window.mzStartRoll() : newGame());
+    document.getElementById("btn-again").onclick = () => window.mzStartRoll();
     return;
   }
   // whatever just happened comes first — one moment at a time on a phone
@@ -4490,69 +4489,27 @@ function railPulse() {
 window.renderRail = renderRail;
 window.mzRailPulse = railPulse;
 
-/* ---------------- save / load ---------------- */
-/* @gsd:dual-write-convergence-extract:save:start */
-// 02-03: save()/load() route through window.mzStorage instead of raw
-// localStorage — see loadGraves()/saveGraves()'s doc comment above for the
-// full dual-write-hazard rationale (identical fix, applied to the run-save
-// key). Every fire-and-forget `save();` call site elsewhere in this script
-// (there are many — after every move/act/camp/store transaction) is
-// unchanged: save() being async now just means those calls enqueue a write
-// via storage.js's per-key queue rather than writing synchronously; nothing
-// downstream awaits them, matching this abstraction's fire-and-enqueue
-// posture (SAV-01 — storage.js's queue still orders/never-drops them).
-async function save() {
-  try { await window.mzStorage.setItem(SAVE_KEY, JSON.stringify({ c: S.c, floor: S.floor, day: S.day, steps: S.steps, dead: S.dead, won: S.won, deathNote: S.deathNote, epitaph: S.epitaph })); }
-  // note: store stock holds closures and is deliberately not saved
-  catch (e) { /* private window, blocked storage — the delve just won't persist */ }
-}
-async function load() {
-  try {
-    const raw = await window.mzStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const o = JSON.parse(raw);
-    if (!o || !o.c || !o.floor) return null;
-    o.c.items = o.c.items || [];
-    return { c: o.c, floor: o.floor, day: o.day || 1, steps: o.steps || 0, combat: null, store: null, beats: null, dead: !!o.dead, won: !!o.won, deathNote: o.deathNote || "", epitaph: o.epitaph || "" };
-  } catch (e) { return null; }
-}
-/* @gsd:dual-write-convergence-extract:save:end */
-
-/* ---------------- boot ---------------- */
-function newGame() {
-  logEl.innerHTML = "";
-  S = { c: null, floor: null, day: 1, steps: 0, combat: null, store: null, beats: null, dead: false, won: false, deathNote: "", epitaph: "" };
-  S.c = rollCharacter(true);
-  S.floor = genFloor(1);
-  reveal();
-  say(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
-  paint(); save();
-}
-// Captured immediately (classic-script parse time, before the trailing
-// module can overwrite the bare `newGame` global with its own
-// engineNewRun/startNewRun-backed version — see that module's own doc
-// comment). window.__mzClassicBoot below MUST call the CLASSIC newGame() on
-// its no-saved-run fallback path — it is the only thing that initializes the
-// classic script's own `S` (combat/store/graveyard rendering all read `S`);
-// calling the engine-routed override there instead would leave `S` null.
-const classicNewGame = newGame;
+// Phase 44 (DEAD-01/DEAD-03): the classic run-save persistence (save()/
+// load()/SAVE_KEY) and the classic cold-boot character roll (newGame()/
+// classicNewGame) are gone — src/browser/engineAdapter.js's persist()/boot()
+// is the ONE run-save path (the graves sentinel block above is untouched and
+// still the live graveyard persistence). window.__mzClassicBoot below no
+// longer has a no-saved-run fallback to call.
 
 // Device-review Pass B1 item 2: "Save & quit" no longer rerolls immediately
 // — it returns to the title screen (confirm first), where the single ENTER
 // button resumes this exact run. The module script below defines
-// window.mzAbandonRun (same bridge pattern as window.move/window.newGame
-// above it); the `|| newGame()` fallback only matters if that module somehow
-// failed to load/run, in which case the old immediate-reroll behavior is a
-// safer default than a dead button.
+// window.mzAbandonRun (same bridge pattern as window.move above it); it is
+// the only path now — a missing bridge is a boot bug to surface, not a
+// reason to keep a classic fallback alive.
 document.getElementById("btn-save-quit").onclick = () => {
-  if (window.mzAbandonRun) window.mzAbandonRun(); else newGame();
+  window.mzAbandonRun();
 };
 // Device-review Pass B1 item 3: "Abandon this character" (formerly "Clear
 // save", which wrongly rerolled a new character immediately) is the
 // DESTRUCTIVE option — it buries the CURRENT character in the graveyard via
 // the engine's own "abandon" action (window.mzAbandonCharacter, module
-// script below) and leaves no active run. The `|| newGame()` fallback only
-// matters if that module somehow failed to load/run.
+// script below) and leaves no active run.
 document.getElementById("btn-abandon-character").onclick = () => {
   // DR16 fix: once the character is DEAD they are already buried in the
   // graveyard (die()->persistGrave), so "Abandon this character" is meaningless
@@ -4561,11 +4518,9 @@ document.getElementById("btn-abandon-character").onclick = () => {
   // Confirm change removed. While ALIVE it is still the destructive abandon.
   const st = window.__mzState && window.__mzState.get();
   if (st && st.dead) {
-    if (window.mzStartRoll) window.mzStartRoll(); else newGame();
-  } else if (window.mzAbandonCharacter) {
-    window.mzAbandonCharacter();
+    window.mzStartRoll();
   } else {
-    newGame();
+    window.mzAbandonCharacter();
   }
 };
 // Phase 35 (MAP-06): the camp chip now opens the MAKE CAMP bottom sheet
@@ -4931,31 +4886,24 @@ addEventListener("keydown", e => {
 });
 addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });
 
-// 02-03: the classic script's boot sequence (loadGraves/renderGraves/load/
-// newGame/fit/paint) used to run synchronously right here, at classic-script
-// parse time. But window.mzStorage — the abstraction loadGraves()/load() now
-// call — is assigned by the trailing <script type="module"> block below,
-// which parses AFTER this classic script (module scripts are always
-// deferred). Exposing this boot sequence as window.__mzClassicBoot mirrors
-// the existing window.__mzState/window.move/window.newGame bridge pattern
-// (see the trailing module's own doc comment) and lets that module await
-// window.mzStorage's assignment + one-time migration BEFORE any save/load
-// call in this sequence runs, closing the parse-order half of the dual-write
-// hazard (02-RESEARCH.md "The dual-write hazard").
+// 02-03: the classic script's boot sequence (loadGraves/renderGraves/fit/
+// paint) used to run synchronously right here, at classic-script parse time.
+// But window.mzStorage — the abstraction loadGraves() calls — is assigned by
+// the trailing <script type="module"> block below, which parses AFTER this
+// classic script (module scripts are always deferred). Exposing this boot
+// sequence as window.__mzClassicBoot mirrors the existing window.__mzState/
+// window.move bridge pattern (see the trailing module's own doc comment) and
+// lets that module await window.mzStorage's assignment + one-time migration
+// BEFORE the graves load in this sequence runs, closing the parse-order half
+// of the dual-write hazard (02-RESEARCH.md "The dual-write hazard").
+// Phase 44 (DEAD-01): this is now ONLY the graveyard load + first fit/paint
+// — the classic run-save load/resume/no-save-roll branch is gone. The
+// module boot (below, after window.__mzState.set(engineState)) is the ONE
+// place a resumed run's resume banner Oracle lines are emitted now.
 window.__mzClassicBoot = async function classicBoot() {
   renderGravesLoading();
   await loadGraves();
   renderGraves();
-
-  const restored = await load();
-  if (restored) {
-    S = restored;
-    say(`<span class="banner">Delve resumed.</span>`);
-    say(`${S.c.name}, ${S.c.race} ${S.c.sub}, skill level ${window.__mzTables.ROMAN[S.c.level - 1]}, on floor ${S.floor.depth} of the dungeon.`);
-    reveal();
-  } else {
-    classicNewGame();
-  }
   fit();
   paint();
 };
@@ -5448,6 +5396,18 @@ window.__mzClassicBoot = async function classicBoot() {
   const freshSeed = Date.now();
   const engineState = await boot(freshSeed);
   window.__mzState.set(engineState);
+  // Phase 44 (DEAD-01): the two resume-banner Oracle lines moved here from
+  // the classic window.__mzClassicBoot's now-deleted load()/resume branch —
+  // player-facing text, unchanged. Emitted only when hadSaveAtLaunch is true
+  // (a live, not dead/won, save) — the one deliberate behaviour difference
+  // from the classic load(): a dead/won save has nothing to resume into, so
+  // ENTER opens the roller instead of a resume banner.
+  if (hadSaveAtLaunch) {
+    window.logLine(`<span class="banner">Delve resumed.</span>`);
+    window.logLine(
+      `${engineState.c.name}, ${engineState.c.race} ${engineState.c.sub}, skill level ${ROMAN[engineState.c.level - 1]}, on floor ${engineState.floor.depth} of the dungeon.`,
+    );
+  }
   window.paint();
   window.draw();
   // Device-review Pass B1 item 4: center the viewport on the party for the
@@ -5785,43 +5745,6 @@ window.__mzClassicBoot = async function classicBoot() {
     stepWith({ type: "move", dir });
   }
 
-  // RUN-05 one-tap new-run wiring: `function newGame(){...}` in the classic
-  // script above created a mutable global `window.newGame` property;
-  // overwriting it here reroutes it through the engine adapter's
-  // startNewRun(), exactly like window.move above reroutes the tap-to-step/
-  // keydown handlers. Device-review Pass B1 items 2/3: "Save & quit"/"Abandon this
-  // character" only fall back to the bare `newGame()` identifier if their
-  // own module functions (window.mzAbandonRun/window.mzAbandonCharacter,
-  // below) somehow failed to load. 04-DR3: the won-path btn-again and the
-  // title screen's ENTER don't call this directly — they call
-  // window.mzStartRoll() below, which opens the roll screen and calls
-  // startNewRun() itself before committing (the death card's CONFIRM, DR4
-  // group 3, instead returns to the title screen via
-  // window.mzReturnToTitle() — see wireDeathConfirm() above). startNewRun()
-  // is async as of 02-03 (it awaits recording the ending run's best depth
-  // through storage.js before starting the new one), so this handler is too.
-  window.newGame = async function engineNewRun() {
-    const state = await startNewRun();
-    window.__mzState.set(state);
-    // audit-bugs (2026-09-09, E6): a fresh character's Oracle log must start
-    // empty, not carry over the previous run's entries — logLine() only ever
-    // appends to #log (classicNewGame's own `logEl.innerHTML = ""`, classic
-    // script above, already did this for the pre-engine-routing path); this
-    // is the engine-routed equivalent, cleared right before the new run's
-    // own first "Floor 1" line. Queried fresh via getElementById rather than
-    // the classic script's `logEl` binding — this module script's own
-    // top-level scope cannot see a classic <script>'s block-scoped
-    // const/let (the same reason every other cross-script reference here
-    // goes through a window.mz*/window.__mzState bridge instead of a bare
-    // identifier). Presentation-only DOM state, not GameState — never
-    // round-tripped through a save.
-    document.getElementById("log").innerHTML = "";
-    window.mzCenterMap?.(); // Pass B1 item 4: center on the party for the new run
-    window.logLine(`<span class="banner">Floor 1.</span> The entrance seals behind you, as entrances do.`);
-    window.paint();
-    window.draw();
-  };
-
   // Phase 21 (TUNE-04, D-13) — the ONE entry point for a dev start-at-depth
   // run, reached solely from the hidden Settings row's Start button
   // (mw-dev-start-btn's click handler above). Mirrors window.newGame's
@@ -5999,11 +5922,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // 02-03: only NOW — after window.mzStorage is assigned + migrated above —
   // invoke the classic script's own deferred boot sequence
   // (window.__mzClassicBoot, defined at the bottom of the classic <script>).
-  // Its no-saved-run fallback calls a CAPTURED reference to the classic
-  // newGame() (`classicNewGame`, captured before this module could ever
-  // overwrite the bare `newGame` global above), so it is unaffected by the
-  // window.newGame override just above and still correctly initializes the
-  // classic script's own `S` state.
+  // Phase 44 (DEAD-01): the slimmed boot is now just the graveyard load +
+  // first fit/paint — there is no classic run-save load/resume/no-save-roll
+  // branch left to worry about; the engine's own `boot()` above already set
+  // `S` (via window.__mzState) and emitted the resume banner if applicable.
   await window.__mzClassicBoot();
 
   // DR2 "Add a start/title screen" (04-CONTEXT.md DR2 Group 3), revised by
