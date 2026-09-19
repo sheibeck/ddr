@@ -163,7 +163,10 @@ test("Phase 29 (LOOT-04)/Phase 35: the find card (rail decision, a full bag) cal
   const end = CODE.indexOf("function syncRailLive(text)");
   assert.ok(start !== -1 && end !== -1 && end > start, "renderRail region bounds found");
   const region = CODE.slice(start, end);
-  assert.match(region, /shelfItems = c\.items \|\| \[\];/);
+  // Phase 43 (CLAR-04): the find card's drop shelf now reads the ONE
+  // bag-only source list (window.__mzDropShelfItems) instead of raw
+  // c.items — never a worn/wielded piece, never a potion.
+  assert.match(region, /shelfItems = window\.__mzDropShelfItems\(c\);/);
   assert.match(region, /renderDropShelf\(document\.getElementById\("find-drop-shelf"\), shelfItems\)/);
 });
 

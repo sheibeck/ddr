@@ -131,7 +131,10 @@ test("Sheet order: name/sub/race, class/level, HP track, Weapon, Eats, DISMISS a
   const iHp = idx("HP <b>");
   const iTrack = idx("mw-map-hptrack");
   const iWeapon = idx("Weapon: ");
-  const iEats = idx(" a rest");
+  // Phase 43 (CLAR-05): the Eats row is no longer a literal template string
+  // (it reads window.__mzRations.eatsLine(m)) — the needle now anchors the
+  // one place that computed line is interpolated into the template.
+  const iEats = idx("escText(eatsText)");
   const iDismiss = idx('"DISMISS"');
   assert.ok(
     iName < iSub && iSub < iLine && iLine < iHp && iHp < iTrack && iTrack < iWeapon && iWeapon < iEats && iEats < iDismiss,
@@ -149,13 +152,16 @@ test("HP wording: the region reads HP, never the standalone two-letter WP token"
 
 // ─── 5. Sheet fields read through escText() ────────────────────────────────
 
-test("Sheet fields: cls/race/sub/weapon are escText()-escaped, Eats reads RACES[m.race]?.eats || 1, level reads ROMAN[lvl - 1]", () => {
+test("Sheet fields: cls/race/sub/weapon are escText()-escaped, Eats reads window.__mzRations.eatsLine(m), level reads ROMAN[lvl - 1]", () => {
   const region = partyRosterRegion();
   assert.match(region, /escText\(m\.cls/);
   assert.match(region, /escText\(m\.race/);
   assert.match(region, /escText\(m\.sub/);
   assert.match(region, /escText\(m\.weapon/);
-  assert.match(region, /RACES\[m\.race\]\?\.eats \|\| 1/);
+  // Phase 43 (CLAR-05): the SAME appetite read as the camp gate and the
+  // Hero RATIONS panel — the old inline RACES[m.race]?.eats read is gone.
+  assert.match(region, /window\.__mzRations\.eatsLine\(m\)/);
+  assert.doesNotMatch(region, /RACES\[m\.race\]/);
   assert.match(region, /ROMAN\[lvl - 1\]/);
 });
 

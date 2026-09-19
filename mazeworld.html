@@ -1470,6 +1470,15 @@ html,body{height:100%}
         <p class="trait" id="s-trait">—</p>
       </section>
 
+      <!-- Phase 43 (CLAR-03/05) — hero by race, each Joiner, the party
+           total and what is carried, from window.__mzRations.view ->
+           engine/movement.js#nightlyEats/eatsFor, so this can never
+           disagree with the Make Camp refusal. -->
+      <section class="panel" id="rations-panel">
+        <h2>Rations <span id="s-rations-n"></span></h2>
+        <p class="trait" id="s-rations">—</p>
+      </section>
+
       <!-- 2026-09-17 UAT (user ruling, verbatim):
            "Joiner should only show when fighting, and probably on the hero screen."
            addendum: "Joiner section on top of the combat window should go, too. We already have our joiner in the Your Lot section."
@@ -3257,6 +3266,12 @@ function paint() {
   document.getElementById("s-sp").textContent = Math.round(c.sp);
   document.getElementById("s-next").textContent = c.level >= 5 ? "—" : THRESHOLDS[c.level];
   document.getElementById("s-cost").textContent = upkeep() + " hp/day";
+
+  // Phase 43 (CLAR-03/05) — the Hero RATIONS panel; the SAME read
+  // engine/movement.js#nightlyEats/eatsFor and the Make Camp gate use.
+  const rv = window.__mzRations.view(S);
+  document.getElementById("s-rations").textContent = rv.line;
+  document.getElementById("s-rations-n").textContent = rv.carriedText;
 
   document.getElementById("s-trait").innerHTML =
     `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>. ${R_().note}`;
@@ -5456,6 +5471,10 @@ function renderPartyRoster() {
     const downed = m.status === "downed" || wp <= 0;
     const card = document.createElement("div");
     card.className = "mw-party-member" + (downed ? " downed" : "");
+    // Phase 43 (CLAR-05) — the SAME appetite read as the camp gate and the
+    // Hero RATIONS panel; the old inline RACES read is gone.
+    const eatsLine = window.__mzRations.eatsLine(m);
+    const eatsText = eatsLine.charAt(0).toUpperCase() + eatsLine.slice(1);
     card.innerHTML =
       `<div class="mw-party-head">
          <span class="mw-party-name">${escText(m.name || "Companion")}</span>
@@ -5466,7 +5485,7 @@ function renderPartyRoster() {
        <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
        ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}
        <div class="mw-party-line">Weapon: ${escText(m.weapon || "—")}</div>
-       <div class="mw-party-line">Eats ${RACES[m.race]?.eats || 1} a rest</div>`;
+       <div class="mw-party-line">${escText(eatsText)}</div>`;
     if (!S.combat) {
       const dismiss = document.createElement("button");
       dismiss.className = "small mw-party-dismiss";
@@ -6161,11 +6180,11 @@ function renderEncounter() {
           guard: true,
           subFor: (it) => {
             const cmp = window.__mzLootCompare(c, it);
-            return cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line;
+            return (cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line) + (cmp.usable ? ` ${cmp.usable}` : "");
           },
         });
         const dropShelf = wrap.querySelector("#loot-drop-shelf");
-        if (dropShelf) renderDropShelf(dropShelf, c.items || []);
+        if (dropShelf) renderDropShelf(dropShelf, window.__mzDropShelfItems(c));
       },
       buttons: [
         { id: "a-loot-take-all", label: COMBAT_COPY.takeAll, cls: "", onTap: () => window.mzTakeAllLoot?.() },
@@ -6207,7 +6226,10 @@ function renderEncounter() {
       row.className = "goods" + (item.sold ? " sold" : "");
       row.disabled = !!item.sold || S.c.gold < item.cost;
       const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${S.c.armorMax - S.c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
-      row.innerHTML = `<span class="g-n">${item.n}${sub ? `<i>${sub}</i>` : ""}</span>
+      // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
+      // names only, never user/item text) — safe inside innerHTML.
+      const usable = item.effectParams && item.effectParams.item ? window.__mzUsableBy(item.effectParams.item, S.c) : "";
+      row.innerHTML = `<span class="g-n">${item.n}${sub || usable ? `<i>${sub || ""}${sub && usable ? " " : ""}${usable}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
       row.onclick = () => window.mzBuyItem?.(i);
       shelf.appendChild(row);
@@ -6355,7 +6377,7 @@ function renderRail() {
     key = "joiner:" + (j.name || "") + ":" + (walker ? walker.name : "");
     tone = "info"; icon = "◇"; title = copy.joiner.title;
     lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
-    lines.push({ text: headLine, roll: `${ident ? ident + " · " : ""}skill level ${ROMAN[lvl - 1] || lvl}` });
+    lines.push({ text: headLine, roll: `${ident ? ident + " · " : ""}skill level ${ROMAN[lvl - 1] || lvl} · ${window.__mzRations.eatsLine(j)}` });
     buttons = [
       { id: "a-join-yes", label: copy.joiner.yes, onTap: () => window.mzResolveJoiner?.(true) },
       { id: "a-join-no", label: copy.joiner.no, cls: "secondary", onTap: () => window.mzResolveJoiner?.(false) },
@@ -6370,13 +6392,15 @@ function renderRail() {
     const usage = window.__mzBagUsage(c);
     const full = usage.full;
     const findSub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : it.txt;
+    // Phase 43 (CLAR-02/04)
+    const usable = window.__mzUsableBy(it, c);
     key = "find:" + (it.n || "") + ":" + (full ? "full" : "room");
     tone = "good"; icon = "▪"; title = copy.find.title;
     lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
-    lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}`, roll: null });
+    lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}${usable ? ` ${usable}` : ""}`, roll: null });
     if (full) {
       lines.push({ text: copy.find.full.replace("{have}", usage.have).replace("{slots}", usage.slots), roll: null });
-      shelfItems = c.items || [];
+      shelfItems = window.__mzDropShelfItems(c);
     }
     buttons = [
       { id: "a-find-take", label: full ? copy.find.takeNow : copy.find.take, onTap: () => window.mzTakeFind?.() },
@@ -7044,6 +7068,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
   import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState } from "./src/browser/viewModels.js";
+  // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
+  // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
+  import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems, emptySlotRows, GEAR_COPY } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
@@ -7156,6 +7183,18 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzToHit = toHit;
   window.__mzStrikeDie = strikeDie;
   window.__mzItemRowState = itemRowState;
+
+  // Phase 43 — read-only bridges (no rng, no mutation; the engine alone
+  // enforces the class gate, the appetite, the bag cap): __mzUsableBy (FIND
+  // card / LOOT rows / store rows), __mzRations (view for the Hero RATIONS
+  // panel, eatsLine for the Joiner card + Company panel — both read
+  // engine/movement.js#eatsFor, the same read __mzNightlyEats's camp gate
+  // uses), __mzDropShelfItems (the bag-full drop shelf's ONE source list —
+  // bag items only), __mzGear (Task 2's ON YOU empty-slot rows + copy).
+  window.__mzUsableBy = usableBy;
+  window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
+  window.__mzDropShelfItems = dropShelfItems;
+  window.__mzGear = { emptySlotRows, copy: GEAR_COPY };
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithToasts and
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
