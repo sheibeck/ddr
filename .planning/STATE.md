@@ -75,6 +75,8 @@ Last activity: 2026-09-19 — v1.6 roadmap created (6 phases; hedges before name
 | 260918-vm3 | Stationary map camera: the party sprite moves, the map only shifts on drag / a keep-in-view nudge within 2 cells of an edge / CENTRE chip / stairs / teleport / new run (`keepInViewAxis` in src/browser/controls.js) | 2026-09-18 | 21d5dfd | [260918-vm3-map-camera-follows-player-only-on-drag-o](./quick/260918-vm3-map-camera-follows-player-only-on-drag-o/) |
 | fast | Pilfer can light a torch — `kind:"tool"` exempt from the Pilfer non-healing magic-item gate in engine/items.js#useItem | 2026-09-18 | a1777f8 | inline |
 | 260918-vvt | Potions and scrolls never count against bag space: one `takesBagSlot`/`BAG_FREE_KINDS` predicate behind every capacity check; fixed the find-card "bag full" leak for a potion/scroll on a full bag; "potions & scrolls ride free" in the BAG header + store note | 2026-09-18 | dbe7dea | [260918-vvt-potions-do-not-count-against-bag-space](./quick/260918-vvt-potions-do-not-count-against-bag-space/) |
+| fast | FIGHT IT OUT sometimes not gold — the generic `button:hover` rule now applies only under `@media (hover: hover)` (Android sticky hover repainted freshly rendered buttons) | 2026-09-18 | 2bf3234 | inline |
+| 260918-w4n | Magic items are use-activated only (equipables worn to use, non-equipables from the bag): 9 passive rows converted to `act` records, `eff()` a pure timer sum, no auto-start flight, staff leaves the worn taxonomy (bag item), Cloak of Healing removed (CLOAKS d7, 4 declared fixture moves), bot uses worn items | 2026-09-19 | 6e3c672 | [260918-w4n-magic-items-are-use-activated-only-no-pa](./quick/260918-w4n-magic-items-are-use-activated-only-no-pa/) |
 
 ### Pending Todos
 
