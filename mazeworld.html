@@ -242,6 +242,14 @@ ul.skills li span{font-family:var(--mono);font-size:11px;color:var(--moss)}
    the revert is a setTimeout, so there is deliberately no transition here. */
 .mw-swap-confirm{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft)}
 .mw-swap-confirm button.small{margin:0}
+/* Phase 43 (CLAR-04) — the Gear tab's ON YOU panel: a small-caps head row
+   above WIELDED/WORN, an in-voice dimmed row for an empty worn slot, and
+   the ALSO ON YOU head row atop the kit list. No transition/animation
+   token and no disabled-state ARIA selector — same convention as every
+   other shell-*.test.js rule. */
+.mw-onyou-head{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);border-left-color:var(--rule);padding-top:6px}
+.mw-worn-empty{color:var(--ink-soft);font-style:italic}
+.mw-kit-head{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px dotted var(--rule)}
 
 /* 04-DR10: the Grimoire row layout — a spell row reuses ul.skills' left
    accent-bar treatment but lays out as a row (name+effect on the left, a
@@ -1548,16 +1556,21 @@ html,body{height:100%}
       </section>
     </section>
 
-    <!-- GEAR (shell; 04-UI-SPEC.md Screen 3 — Kit rows + CARRIED section) -->
+    <!-- GEAR (shell; 04-UI-SPEC.md Screen 3 — Phase 43 (CLAR-04): two panels
+         — ON YOU (WIELDED / WORN with empty-slot rows / ALSO ON YOU) and
+         BAG; the roadmap's "Carried: weapon, staff, shield" grouping is
+         superseded — staff is a worn slot (Phase 37) and there are no
+         shields; see docs/CLARITY.md. -->
     <section class="mw-screen" id="screen-gear" data-screen="gear" hidden>
-      <section class="panel">
-        <h2>Gear</h2>
+      <section class="panel" id="onyou-panel">
+        <h2>On you</h2>
         <div class="mw-wilmst">Wilmst <b id="m-gold">0</b></div>
+        <ul class="skills" id="s-onyou"></ul>
         <ul class="kit" id="s-kit"></ul>
       </section>
 
-      <section class="panel" id="carry-panel">
-        <h2>Carried <span id="s-carry-n"></span></h2>
+      <section class="panel" id="bag-panel">
+        <h2>Bag <span id="s-carry-n"></span></h2>
         <ul class="skills" id="s-carry"></ul>
       </section>
     </section>
@@ -3278,12 +3291,9 @@ function paint() {
 
   const kit = document.getElementById("s-kit");
   kit.innerHTML = "";
+  // Phase 43 (CLAR-04): the weapon/armor rows now live in the ON YOU
+  // panel's WIELDED/WORN rows (below, in #s-onyou) — no duplicates here.
   const rows = [
-    [c.weapon, `${w.lab}${c.prof ? ` +${c.prof}` : ""}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`],
-    // Phase 28 (ARMOR-02/04): the kit row's armor label/sub now come from the
-    // same shared armorD the HUD line uses — the cloak's effective armor and
-    // the piece underneath (if any) both surface here.
-    [armorD.label, armorD.under ? `${armorD.sub} · ${armorD.under}` : armorD.sub],
     ["Potions", c.potions],
     ...(c.scrolls ? [["Scrolls", `${c.scrolls}${canRead() ? "" : " (unreadable)"}`]] : []),
     ["Rations", `${c.rations} days`],
@@ -3304,6 +3314,13 @@ function paint() {
   const rev = c.timers && c.timers["spell:reveal"];
   if (rev && rev.phase === "effect" && rev.left > 0) rows.push(["Map the Floor", `${rev.left} sq`]);
   rows.push(["Kills", c.kills || 0]);
+  // Phase 43 (CLAR-04): the ALSO ON YOU head row — potions/scrolls/rations/
+  // wilmst/spell charges/running effects/kills need no bag slot at all.
+  const gearCopy = window.__mzGear.copy;
+  const li = document.createElement("li");
+  li.className = "mw-kit-head";
+  li.textContent = gearCopy.alsoOnYou;
+  kit.appendChild(li);
   for (const [a, b] of rows) {
     const li = document.createElement("li");
     li.innerHTML = `${a}<span>${b}</span>`;
@@ -3369,6 +3386,8 @@ function paint() {
 
   // carried treasure (Phase 13, ECON-04/05: the keep/drop/equip UI)
   const carry = document.getElementById("s-carry");
+  // Phase 43 (CLAR-04): ON YOU rows land in #s-onyou; #s-carry is the BAG.
+  const onyou = document.getElementById("s-onyou");
   const items = c.items || [];
   // Phase 29 (LOOT-04): the readout and the full-bag gate read the ONE
   // view-model (window.__mzBagUsage — potions exempt from the count), never
@@ -3377,6 +3396,24 @@ function paint() {
   document.getElementById("s-carry-n").textContent = usage.text;
   const bagFull = usage.full;
   carry.innerHTML = "";
+  onyou.innerHTML = "";
+  // Phase 43 (CLAR-04): the empty-slot rows (armor + the six WORN_SLOTS,
+  // in-voice) come from the ONE emptySlotRows(c) read — never a restated
+  // slot list.
+  const empties = window.__mzGear.emptySlotRows(c);
+  const emptyFor = (slot) => empties.find((r) => r.slot === slot);
+  const headRow = (text) => {
+    const li = document.createElement("li");
+    li.className = "none mw-onyou-head";
+    li.textContent = text;
+    onyou.appendChild(li);
+  };
+  const emptyRow = (text) => {
+    const li = document.createElement("li");
+    li.className = "none mw-worn-empty";
+    li.textContent = text;
+    onyou.appendChild(li);
+  };
 
   // ≥48dp helper: build a small action button dispatching an engine inventory
   // bridge (never wrapped in the classic act() — the bridge owns its own
@@ -3400,22 +3437,24 @@ function paint() {
     li.className = "mw-worn";
     li.innerHTML = `<b>${label} <span class="mw-worn-tag">worn</span></b><i>${sub}</i>`;
     if (canUnequip) li.appendChild(gearBtn(bagFull && !noSlotNeeded ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull && !noSlotNeeded));
-    carry.appendChild(li);
+    onyou.appendChild(li);
   };
+  headRow(gearCopy.wielded);
   wornRow(c.weapon, `${w.lab}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`, "weapon", c.weapon && c.weapon !== "Fists" && WEAPONS[c.weapon]);
   // Phase 28 (ARMOR-02/04): the worn-armor row now reads the shared
   // formatter — with the cloak the headline is the cloak (effective armor)
   // and Unequip still stows the piece underneath; a destroyed piece needs no
   // slot, so a full bag never blocks discarding it.
+  headRow(gearCopy.worn);
   if (armorD.worn || armorD.magic)
     wornRow(armorD.label, armorD.under ? `${armorD.sub} · ${armorD.under}` : armorD.sub, "armor", armorD.worn, armorD.destroyed);
+  else { const r = emptyFor("armor"); if (r) emptyRow(r.text); }
 
   // Phase 37 (GEAR-03) — one row per populated c.worn[slot], in WORN_SLOTS
   // order, reads like the armor row above (name, cooldown when counting
   // down, txt, a Use button for activatables, Unequip dimmed to "Bag full"
   // exactly like weapon/armor). Does NOT touch wornRow's pinned signature —
   // a slot item is never a weapon/armor, so it gets its own small builder.
-  // The ON YOU / BAG two-panel split is Phase 43, not here.
   const wornSlotRow = (slot, it) => {
     const li = document.createElement("li");
     li.className = "mw-worn";
@@ -3437,9 +3476,9 @@ function paint() {
     li.appendChild(desc);
     if (it.use) li.appendChild(gearBtn("Use", () => window.mzUseItem?.({ slot })));
     li.appendChild(gearBtn(bagFull ? "Bag full" : "Unequip", () => window.mzUnequip?.(slot), bagFull));
-    carry.appendChild(li);
+    onyou.appendChild(li);
   };
-  for (const slot of (window.__mzWornSlots || [])) { const it = c.worn && c.worn[slot]; if (it) wornSlotRow(slot, it); }
+  for (const slot of (window.__mzWornSlots || [])) { const it = c.worn && c.worn[slot]; if (it) wornSlotRow(slot, it); else { const r = emptyFor(slot); if (r) emptyRow(r.text); } }
 
   // Phase 14 (ECON-06/07): the carried-item rows now come from the SHARED
   // renderCarriedList component (used identically by the store sell section and
@@ -4087,9 +4126,13 @@ function renderCarriedList(container, items, opts = {}) {
    reused there and by the loot screen — every carried item gets a Drop
    button (window.mzDropItem -> the engine's stow-cap gate) so a full bag
    can free a slot before Take/Take it now/Equip now retries. `shelf` is a
-   <div class="shelf">; `items` is the character's c.items array. */
-function renderDropShelf(shelf, items) {
-  (items || []).forEach((bi, i) => {
+   <div class="shelf">. Phase 43 (CLAR-04): `entries` comes from
+   window.__mzDropShelfItems(c) — slot-consuming BAG items with their true
+   c.items index; worn/wielded pieces and slot-exempt potions never appear
+   here, so this function itself never reads c.items/c.worn/c.weapon/
+   c.armor. */
+function renderDropShelf(shelf, entries) {
+  (entries || []).forEach(({ it: bi, i }) => {
     const row = document.createElement("button");
     row.className = "goods";
     // Phase 28 (ARMOR-03): the drop shelf shows remaining armor durability,

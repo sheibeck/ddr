@@ -88,6 +88,24 @@ function heroPaintRegion() {
   );
 }
 
+function gearScreenMarkup() {
+  return sliceBetween(HTML, '<section class="mw-screen" id="screen-gear"', '</section>\n\n    <!-- ORACLE');
+}
+
+function paintCarryRegion() {
+  return sliceBetween(CODE, 'const carry = document.getElementById("s-carry");', 'document.getElementById("doss-who")');
+}
+
+function kitRegion() {
+  return sliceBetween(CODE, "const rows = [", 'rows.push(["Kills"');
+}
+
+function renderDropShelfRegion() {
+  const start = CODE.indexOf("function renderDropShelf(");
+  const end = CODE.indexOf("\nfunction ", start + 1);
+  return CODE.slice(start, end);
+}
+
 // ─── (1) module bridge block ────────────────────────────────────────────
 
 test("import: the pinned viewModels import line is byte-identical and occurs exactly once", () => {
@@ -242,9 +260,94 @@ test("HP-not-WP hand-off: the old inline 'Eats {n} a rest' template literal is g
   assert.doesNotMatch(region, /Eats \$\{RACES\[m\.race\]/);
 });
 
-// ─── (10) build artefact ─────────────────────────────────────────────────
+// ─── (10) Gear tab markup: two panels, ON YOU / BAG ──────────────────────
 
-test("Build artefact: www/index.html carries __mzRations, __mzUsableBy and rations-panel (skipped if www/ absent)", () => {
+test("Markup: #screen-gear has exactly two panels, id=onyou-panel then id=bag-panel, in the pinned source-index order", () => {
+  const region = gearScreenMarkup();
+  assert.equal((region.match(/<section class="panel"/g) || []).length, 2, "exactly two panel sections inside #screen-gear");
+  const iOnyouPanel = region.indexOf('id="onyou-panel"');
+  const iSOnyou = region.indexOf('id="s-onyou"');
+  const iSKit = region.indexOf('id="s-kit"');
+  const iBagPanel = region.indexOf('id="bag-panel"');
+  const iSCarryN = region.indexOf('id="s-carry-n"');
+  const iSCarry = region.indexOf('id="s-carry"');
+  assert.ok(
+    [iOnyouPanel, iSOnyou, iSKit, iBagPanel, iSCarryN, iSCarry].every((i) => i !== -1),
+    "every anchor id found inside #screen-gear",
+  );
+  assert.ok(
+    iOnyouPanel < iSOnyou && iSOnyou < iSKit && iSKit < iBagPanel && iBagPanel < iSCarryN && iSCarryN < iSCarry,
+    "source-index order: onyou-panel < s-onyou < s-kit < bag-panel < s-carry-n < s-carry",
+  );
+});
+
+test("GEAR_COPY.onYou/bag match the two h2 headings case-insensitively", () => {
+  const region = gearScreenMarkup();
+  assert.match(region, /<h2>On you<\/h2>/i);
+  assert.match(region, /<h2>Bag <span id="s-carry-n"><\/span><\/h2>/i);
+  assert.equal(GEAR_COPY.onYou.toLowerCase(), "on you");
+  assert.equal(GEAR_COPY.bag.toLowerCase(), "bag");
+});
+
+// ─── (11) paint()'s carry region: onyou rows, head rows, empty rows ──────
+
+test("paint(): #s-onyou is declared right beside #s-carry, both cleared; wornRow/wornSlotRow/headRow/emptyRow all append to onyou", () => {
+  const region = paintCarryRegion();
+  assert.match(region, /const onyou = document\.getElementById\("s-onyou"\);/);
+  assert.match(region, /onyou\.innerHTML = "";/);
+  assert.equal((region.match(/onyou\.appendChild\(li\)/g) || []).length, 4, "wornRow + wornSlotRow + headRow + emptyRow each append to onyou");
+  assert.match(region, /window\.__mzGear\.emptySlotRows\(c\)/);
+  assert.match(region, /headRow\(gearCopy\.wielded\);/);
+  assert.match(region, /headRow\(gearCopy\.worn\);/);
+  // The pinned anchors/order from shell-worn-slots.test.js still hold.
+  const iArmorRow = region.indexOf("wornRow(armorD.label");
+  const iWornSlotRow = region.indexOf("const wornSlotRow = (slot, it) => {");
+  const iRenderCarried = region.indexOf("renderCarriedList(carry, items, {");
+  assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1);
+  assert.ok(iArmorRow < iWornSlotRow && iWornSlotRow < iRenderCarried);
+});
+
+test("paint(): the WORN_SLOTS loop and wornSlotRow's own body stay innerHTML-free, falling back to an in-voice empty row", () => {
+  const wornSlotRegion = sliceBetween(CODE, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, items, {");
+  assert.doesNotMatch(wornSlotRegion, /innerHTML/);
+  assert.equal((CODE.match(/for \(const slot of \(window\.__mzWornSlots \|\| \[\]\)\)/g) || []).length, 1);
+  assert.match(wornSlotRegion, /const r = emptyFor\(slot\); if \(r\) emptyRow\(r\.text\);/);
+});
+
+// ─── (12) the kit list: no weapon/armor duplicate, ALSO ON YOU head row ──
+
+test("Kit: the rows array no longer duplicates the weapon/armor rows; ALSO ON YOU heads the list", () => {
+  const region = kitRegion();
+  assert.doesNotMatch(region, /armorD\.label, armorD\.under/);
+  assert.match(region, /const rows = \[\s*\["Potions", c\.potions\],/);
+  assert.match(CODE, /li\.textContent = gearCopy\.alsoOnYou;/);
+});
+
+// ─── (13) renderDropShelf: bag-only entries, both call sites ─────────────
+
+test("renderDropShelf(shelf, entries) destructures { it, i }; both call sites read window.__mzDropShelfItems(c)", () => {
+  assert.equal((CODE.match(/function renderDropShelf\(shelf, entries\)/g) || []).length, 1);
+  const region = renderDropShelfRegion();
+  assert.match(region, /forEach\(\(\{ it: bi, i \}\) =>/);
+  assert.doesNotMatch(region, /c\.items|c\.worn|c\.weapon|c\.armor/);
+  assert.equal((CODE.match(/window\.__mzDropShelfItems\(c\)/g) || []).length, 2);
+});
+
+// ─── (14) CSS ─────────────────────────────────────────────────────────────
+
+test("CSS: .mw-onyou-head/.mw-worn-empty/.mw-kit-head exist once each, carrying no transition/animation/aria-disabled token", () => {
+  for (const cls of [".mw-onyou-head", ".mw-worn-empty", ".mw-kit-head"]) {
+    const ruleMatch = HTML.match(new RegExp("^" + cls.replace(".", "\\.") + "\\{[^}]*\\}", "m"));
+    assert.ok(ruleMatch, `${cls} rule found`);
+    assert.doesNotMatch(ruleMatch[0], /transition/i);
+    assert.doesNotMatch(ruleMatch[0], /animation/i);
+    assert.doesNotMatch(ruleMatch[0], /aria-disabled/i);
+  }
+});
+
+// ─── (15) build artefact ─────────────────────────────────────────────────
+
+test("Build artefact: www/index.html carries __mzRations, __mzUsableBy, rations-panel, onyou-panel and mw-kit-head (skipped if www/ absent)", () => {
   const wwwPath = path.join(REPO_ROOT, "www", "index.html");
   if (!fs.existsSync(wwwPath)) {
     return; // build:www not run in this environment — not a failure
@@ -253,4 +356,6 @@ test("Build artefact: www/index.html carries __mzRations, __mzUsableBy and ratio
   assert.match(built, /__mzRations/);
   assert.match(built, /__mzUsableBy/);
   assert.match(built, /rations-panel/);
+  assert.match(built, /onyou-panel/);
+  assert.match(built, /mw-kit-head/);
 });
