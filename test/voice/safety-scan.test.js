@@ -173,6 +173,11 @@ const BRANCH_TOGGLES = [
   { reason: "died" }, { phobia: "Being trapped" }, { penalty: 2 },
   { cost: 25 }, { fee: 25 }, { sub: "Apprentice" },
   { tool: "ladder" }, { tool: "rope" },
+  // Phase 43 (CLAR-01/03/05, Plan 02): rationsEaten's/wentHungry's own new
+  // branches — the Heft clause, a multi-mouth party, and both shapes of
+  // the eaters array (a named Troll member, and an empty array default).
+  { heft: true }, { mouths: 3 },
+  { eaters: [{ name: "Grunk", race: "Troll", eats: 2 }] }, { eaters: [] },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

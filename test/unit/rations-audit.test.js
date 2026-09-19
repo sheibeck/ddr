@@ -27,6 +27,8 @@ import { killFoe } from "../../engine/combat.js";
 import { STORE_EFFECTS } from "../../engine/economy.js";
 import { newRun } from "../../engine/state.js";
 import { BAGS } from "../../content/index.js";
+import { EVENT_NARRATION, RATION_RULE_LINE, narrateEvent } from "../../src/browser/eventNarration.js";
+import { TOAST_FOR, narrativeToastText } from "../../src/browser/toasts.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -282,6 +284,72 @@ test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged 
   const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "movement.js"), "utf8");
   const lineCount = src.split("\n").filter((l) => l.includes("rng.")).length;
   assert.equal(lineCount, 22, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
+});
+
+// ─── narration (Task 2): exact Oracle strings, toast texts, RATION_RULE_LINE ─
+
+test("narration: RATION_RULE_LINE names the Troll doubling rule; both builders are functions", () => {
+  assert.deepEqual(RATION_RULE_LINE, { Troll: "Trolls eat for two." });
+  assert.equal(typeof EVENT_NARRATION.rationsEaten, "function");
+  assert.equal(typeof EVENT_NARRATION.wentHungry, "function");
+});
+
+test("narration: rationsEaten renders the exact Oracle sentence for a single fed hero, a Troll hero, and a mixed party", () => {
+  const t = (e) => narrativeToastText(narrateEvent(e));
+  assert.equal(
+    t({ type: "rationsEaten", eats: 1, left: 4, eaters: [{ name: "Ada", race: "Human", eats: 1, hero: true }] }),
+    "Rations: you eat 1. −1 ration, 4 left.",
+  );
+  assert.equal(
+    t({ type: "rationsEaten", eats: 2, left: 3, eaters: [{ name: "Grunk", race: "Troll", eats: 2, hero: true }] }),
+    "Rations: you eat 2. Trolls eat for two. −2 rations, 3 left.",
+  );
+  assert.equal(
+    t({
+      type: "rationsEaten",
+      eats: 3,
+      left: 4,
+      eaters: [
+        { name: "Ada", race: "Human", eats: 1, hero: true },
+        { name: "Grunk", race: "Troll", eats: 2 },
+      ],
+    }),
+    "Rations: you eat 1; Grunk (Troll) eats 2. Trolls eat for two. −3 rations, 4 left.",
+  );
+});
+
+test("narration: a bare rationsEaten payload renders a non-empty string without throwing", () => {
+  assert.doesNotThrow(() => EVENT_NARRATION.rationsEaten({ type: "rationsEaten" }));
+  const text = narrativeToastText(narrateEvent({ type: "rationsEaten" }));
+  assert.ok(text.length > 0);
+});
+
+test("narration: wentHungry renders the exact Oracle sentence (solo, party, and the Heft clause)", () => {
+  const t = (e) => narrativeToastText(narrateEvent(e));
+  assert.equal(
+    t({ type: "wentHungry", cost: 4, need: 1, have: 0, mouths: 1 }),
+    "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
+  );
+  assert.equal(
+    t({ type: "wentHungry", cost: 6, need: 3, have: 1, mouths: 2 }),
+    "Hunger: nobody packed — the party eats 3 a night, and you had 1. Cost of living −6 hp.",
+  );
+  assert.equal(
+    t({ type: "wentHungry", cost: 2, need: 1, have: 0, mouths: 1, heft: true }),
+    "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −2 hp (Heft: half, as promised).",
+  );
+});
+
+test("narration: a bare wentHungry payload renders without throwing and contains 'Hunger:'", () => {
+  assert.doesNotThrow(() => EVENT_NARRATION.wentHungry({ type: "wentHungry" }));
+  const text = narrativeToastText(narrateEvent({ type: "wentHungry" }));
+  assert.ok(text.includes("Hunger:"));
+});
+
+test("narration: TOAST_FOR.rationsEaten/.wentHungry render the terse toast texts", () => {
+  assert.equal(TOAST_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).text, "Rations: −3 (4 left).");
+  assert.equal(TOAST_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).tone, "beat");
+  assert.equal(TOAST_FOR.wentHungry({ type: "wentHungry", cost: 4 }).text, "Hunger: no rations (−4 hp).");
 });
 
 // ─── docs/RATIONS.md ledger pin ─────────────────────────────────────────────

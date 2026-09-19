@@ -90,6 +90,15 @@ export const PHOBIA_TRIGGER_PHRASE = Object.freeze({
   nearDeath: "your own pulse",
 });
 
+// Phase 43 (CLAR-05): the rule sentence the rest narration appends once per
+// distinct race among the eaters that has one — see docs/RATIONS.md. Mirrors
+// PHOBIA_TRIGGER_PHRASE's own precedent: a small, exported, frozen race ->
+// phrase map so other modules never re-derive the same vocabulary by hand.
+// src/browser/viewModels.js#RATIONS_COPY.why is the Hero-sheet clause form
+// of this SAME map (the same race key drives both surfaces, so they can
+// never disagree about which races carry a named rule).
+export const RATION_RULE_LINE = Object.freeze({ Troll: "Trolls eat for two." });
+
 export const EVENT_NARRATION = {
   /* ---------------- movement.js (migrated verbatim from the prior formatEvent switch) ---------------- */
 
@@ -201,8 +210,36 @@ export const EVENT_NARRATION = {
   cloakRegenerated: (e) => `<span class="hit">Flesh knits itself back over twenty quiet squares — +${e.amount ?? 0} hp.</span>`,
   armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
   potionDuplicated: () => `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`,
-  wentHungry: (e) =>
-    `<span class="hurt">No rations.</span> Cost of living takes <span class="hurt">${e.cost ?? 0} hp</span> straight out of you.`,
+  // Phase 43 (CLAR-01/03/05): a fed night's ration cost, cause first — every
+  // eater named (the hero as "you eat N", every member as "Name (race) eats
+  // N"), then the RATION_RULE_LINE sentence for every distinct race among
+  // them that carries one (e.g. "Trolls eat for two."), then the cost.
+  rationsEaten: (e) => {
+    const eats = e?.eats ?? 1;
+    const left = e?.left ?? 0;
+    const eaters = e?.eaters ?? [];
+    const clauses = eaters.length
+      ? eaters
+          .map((m) => (m?.hero ? `you eat ${m?.eats ?? 1}` : `${m?.name ?? "Someone"} (${m?.race ?? "?"}) eats ${m?.eats ?? 1}`))
+          .join("; ")
+      : `you eat ${eats}`;
+    const races = [];
+    for (const m of eaters) {
+      if (m?.race && RATION_RULE_LINE[m.race] && !races.includes(m.race)) races.push(m.race);
+    }
+    const ruleSentence = races.map((r) => RATION_RULE_LINE[r]).join(" ");
+    return `<span class="beat">Rations: ${clauses}.</span>${ruleSentence ? ` ${ruleSentence}` : ""} −${plural(eats, "ration")}, ${left} left.`;
+  },
+  // Phase 43 (CLAR-01/03/05): hunger names need/have/mouths and the Heft
+  // halving — rewritten from the old "No rations." to cause-first, cost-last.
+  wentHungry: (e) => {
+    const need = e?.need ?? 1;
+    const have = e?.have ?? 0;
+    const mouths = e?.mouths ?? 1;
+    const cost = e?.cost ?? 0;
+    const eatClause = mouths > 1 ? "the party eats" : "you eat";
+    return `<span class="hurt">Hunger: nobody packed — ${eatClause} ${need} a night, and you had ${have}.</span> Cost of living −${cost} hp${e?.heft ? " (Heft: half, as promised)" : ""}.`;
+  },
   // A1 sibling + P3 (04.2 Text batch): same stripRollDetail defect as
   // afflictionRolled — the old "check: <roll>N</roll> of 8 hours disturbed."
   // left the dangling "of 8 hours disturbed." fragment on the overlay. Dice

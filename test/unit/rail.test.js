@@ -85,6 +85,9 @@ test("railFamilyFor: explicit RAIL_FAMILY entries carry the exact icon/title/ton
   // Phase 42 (FLEE-02): a family entry for completeness — the fight log is
   // the real destination for this combat-only event.
   assert.deepEqual(RAIL_FAMILY.fleeRolled, { icon: "·", title: "FLEE", tone: "info" });
+  // Phase 43 (CLAR-01/05): the fed-night ration cost — FED, not CAMP MADE
+  // (rested owns that title by priority when a heal also happened).
+  assert.deepEqual(railFamilyFor("rationsEaten", "beat", PRIORITY.other), { icon: "☾", title: "FED", tone: "good", hold: RAIL_HOLD.camp });
 });
 
 // ─── Test 3: railFamilyFor — the block/tone fallback ───────────────────────
@@ -210,6 +213,31 @@ test("railCardFor: a camp dispatch (rested + dayBegan + wanderingMonster) folds 
   assert.ok(card);
   assert.ok(card.lines.length >= 2, "rested + wanderingMonster fold, plus the RAIL_DIRECT dayBegan line");
   assert.equal(card.iconKey, null);
+});
+
+// Phase 43 (CLAR-01/05): rationsEaten joins the camp dispatch — a healing
+// camp still heads with CAMP MADE (rested is PRIORITY.feature, lower than
+// rationsEaten's PRIORITY.other), but a full-hp camp with no heal heads
+// with FED instead.
+
+test("railCardFor: a camp dispatch WITH a heal (dayBegan + rationsEaten + rested) heads CAMP MADE — rested outranks rationsEaten", () => {
+  const events = [{ type: "dayBegan", day: 2 }, { type: "rationsEaten", eats: 1, left: 5, eaters: [] }, { type: "rested", amount: 4 }];
+  const folded = toastsForAction("camp", events, {}, { limit: Infinity, withIdx: true });
+  const card = railCardFor("camp", events, folded, {});
+  assert.ok(card);
+  assert.equal(card.title, "CAMP MADE");
+  assert.equal(card.tone, "good");
+});
+
+test("railCardFor: a camp dispatch with NO heal (dayBegan + rationsEaten only) folds both lines — dayBegan's RAIL_DIRECT entry wins the head tie by idx (the SAME pre-existing pattern wentHungry vs dayBegan already had), and the FED family is reachable directly via railFamilyFor for a dispatch where rationsEaten is the higher-priority line", () => {
+  const events = [{ type: "dayBegan", day: 2 }, { type: "rationsEaten", eats: 1, left: 5, eaters: [] }];
+  const folded = toastsForAction("camp", events, {}, { limit: Infinity, withIdx: true });
+  const card = railCardFor("camp", events, folded, {});
+  assert.ok(card);
+  assert.equal(card.lines.length, 2, "both dayBegan (RAIL_DIRECT) and rationsEaten (folded) lines appear");
+  assert.ok(card.lines.some((l) => /rations/i.test(l.text)));
+  // Direct family lookup (no dayBegan competing) confirms FED is reachable.
+  assert.deepEqual(railFamilyFor("rationsEaten", "beat", PRIORITY.other), { icon: "☾", title: "FED", tone: "good", hold: RAIL_HOLD.camp });
 });
 
 // ─── Test 11: railLineCard ──────────────────────────────────────────────────

@@ -981,7 +981,10 @@ export const TOAST_FOR = {
   cloakRegenerated: (e) => ({ text: `Flesh knits +${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.other }),
   armorPatched: (e) => ({ text: `${e?.by ?? "Mending"}: +${e?.amount ?? 0} armour.`, tone: "hit", priority: PRIORITY.feature }),
   potionDuplicated: () => ({ text: "Warlock: +1 potion.", tone: "magic", priority: PRIORITY.feature }),
-  wentHungry: (e) => ({ text: `No rations (−${e?.cost ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
+  // toasted (never ORACLE_ONLY), not just bookkeeping.
+  rationsEaten: (e) => ({ text: `Rations: −${e?.eats ?? 0} (${e?.left ?? 0} left).`, tone: "beat", priority: PRIORITY.other }),
+  wentHungry: (e) => ({ text: `Hunger: no rations (−${e?.cost ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   wanderingMonster: (e) => ({
     text: `Camp disturbed.${e?.bard ? " · Bard: the singing carried" : ""}`,
     tone: "hurt",

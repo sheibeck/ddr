@@ -193,6 +193,10 @@ export const RAIL_FAMILY = Object.freeze({
   abilityLearned: { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level },
   dayBegan: { icon: "☾", title: "DAY {n}", tone: "dull", hold: RAIL_HOLD.day },
   rested: { icon: "☾", title: "CAMP MADE", tone: "good", hold: RAIL_HOLD.camp },
+  // Phase 43 (CLAR-01/05): the fed-night ration cost. `rested` is
+  // PRIORITY.feature so a healing camp's head stays CAMP MADE by priority;
+  // a full-hp camp (no `rested`) gets this FED title instead.
+  rationsEaten: { icon: "☾", title: "FED", tone: "good", hold: RAIL_HOLD.camp },
   wentHungry: { icon: "☾", title: "NOTHING TO EAT", tone: "bad" },
   campFailed: { icon: "☾", title: "NOTHING TO EAT", tone: "bad" },
   wanderingMonster: { icon: "●", title: "SOMETHING WANDERED IN", tone: "bad" },

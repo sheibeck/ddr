@@ -8,7 +8,7 @@
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId } from "../../engine/derived.js";
-import { maxCharges } from "../../engine/movement.js";
+import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady, remaining } from "../../engine/effects.js";
@@ -413,6 +413,71 @@ export function characterSheetViewModel(state) {
     skills,
     abilities,
   };
+}
+
+/**
+ * RATIONS_COPY — Phase 43 (CLAR-03/05): every player-facing string
+ * `rationsViewModel`/`eatsLineFor` (below) build from — a frozen object
+ * like ITEM_STATE_COPY/ABILITY_VIEW_COPY elsewhere in this module, so the
+ * voice scan and the standing hp-not-wp guard can both walk it as a single
+ * leaf group. `why` is the Hero-sheet clause form of
+ * `src/browser/eventNarration.js#RATION_RULE_LINE` — the SAME race key
+ * drives both, so the Oracle's `rationsEaten` line and this sheet's reason
+ * clause can never say something different about the same race.
+ */
+export const RATIONS_COPY = Object.freeze({
+  you: "You eat {n} a rest{why}",
+  member: "{name} ({race}) eats {n}{why}",
+  party: "Party: {n} a rest",
+  carried: "{n} carried",
+  nights0: " — nothing for tonight. Camp is a rumour.",
+  nights1: " — one night, then the arguing starts.",
+  nightsN: " — {n} nights, then the arguing starts.",
+  eats: "eats {n} a rest",
+  why: Object.freeze({ Troll: " (Troll: eats for two)" }),
+});
+
+/**
+ * eatsLineFor(sheet) — "eats N a rest" for a Joiner offer card / Company
+ * panel row. Pure, no rng, no mutation; reads the SAME `eatsFor` the engine
+ * charges (`engine/movement.js`).
+ */
+export function eatsLineFor(sheet) {
+  return RATIONS_COPY.eats.replace("{n}", eatsFor(sheet));
+}
+
+/**
+ * rationsViewModel(state) — Phase 43 (CLAR-03/05): the ONE ration readout
+ * the Hero RATIONS panel, Joiner offer card and Company panel (Plan 04) all
+ * read. `total` IS `nightlyEats(state)` itself, never a re-sum, so the Hero
+ * sheet, the camp refusal (`makeCamp`) and the fed-night charge (`newDay`)
+ * can never disagree about how much this party eats tonight. `carried` IS
+ * `state.c.rations` itself, for the same reason. A solo hero (no members)
+ * gets no "Party: N a rest" clause — a party of one is not a party. Pure,
+ * no rng, no DOM.
+ */
+export function rationsViewModel(state) {
+  const c = state.c;
+  const hero = { name: c.name, race: c.race, eats: eatsFor(c), why: RATIONS_COPY.why[c.race] ?? "" };
+  const members = (state.party ?? []).map((m) => ({
+    name: m.name,
+    race: m.race,
+    eats: eatsFor(m),
+    why: RATIONS_COPY.why[m.race] ?? "",
+  }));
+  const total = nightlyEats(state);
+  const carried = c.rations ?? 0;
+  const nights = total > 0 ? Math.floor(carried / total) : 0;
+  const carriedText = RATIONS_COPY.carried.replace("{n}", carried);
+  const tail =
+    nights === 0 ? RATIONS_COPY.nights0 : nights === 1 ? RATIONS_COPY.nights1 : RATIONS_COPY.nightsN.replace("{n}", nights);
+  const youClause = RATIONS_COPY.you.replace("{n}", hero.eats).replace("{why}", hero.why);
+  const line = members.length
+    ? `${youClause}. ${members
+        .map((m) => RATIONS_COPY.member.replace("{name}", m.name).replace("{race}", m.race).replace("{n}", m.eats).replace("{why}", m.why))
+        .join(". ")}. ${RATIONS_COPY.party.replace("{n}", total)} · ${carriedText}${tail}`
+    : `${youClause} · ${carriedText}${tail}`;
+  return { hero, members, total, carried, nights, carriedText, line };
 }
 
 /**
