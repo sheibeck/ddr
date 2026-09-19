@@ -69,8 +69,11 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 // The classic table's own region (raw HTML — no comments to strip inside it).
+// Phase 44-02 (DEAD-01, layer 3): NAMES/nameFor are deleted along with the
+// rest of the orphaned classic tables — SUB_NOTE is now directly followed
+// by the "rendering" section banner, which is the new end anchor.
 function subNoteRegion() {
-  return sliceBetween(HTML, "const SUB_NOTE = {", "const NAMES = {");
+  return sliceBetween(HTML, "const SUB_NOTE = {", "/* ---------------- rendering ---------------- */");
 }
 
 // mirrors test/unit/shell-party-camp.test.js's own renderPartyRoster region

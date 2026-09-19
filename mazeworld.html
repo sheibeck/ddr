@@ -1791,32 +1791,12 @@ let mwActiveTab = "maze";
 
 const SAVE_KEY = "ddr.delve.v1";
 const D = n => 1 + Math.floor(Math.random() * n);
-const pick = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 /* ---------------- rules tables ---------------- */
 
-const STRIKE_DICE = [20, 12, 10, 8, 6];              // skill level I..V
 const THRESHOLDS  = [0, 201, 501, 901, 1501];
 const ROMAN       = ["I", "II", "III", "IV", "V"];
-
-const CLASSES = {
-  "Magic User": {
-    toHit: 3, baseWP: () => 25 + D(10), armorCap: 0,
-    subs: ["Wizard","Warlock","Sorcerer","Summoner","Cleric","Illusionist","Court Mage","Apprentice"],
-    gain: [null, () => D(8), () => D(8), () => D(8)+2, () => D(8)+3]
-  },
-  "Fighter": {
-    toHit: 5, baseWP: () => 50 + D(8), armorCap: 2,
-    subs: ["Knight","Guard","Woodsman","Soldier","Barbarian","Master of Arms","Samurai","Bard"],
-    gain: [null, () => D(8), () => D(6), () => D(6), () => D(6)]
-  },
-  "Thief": {
-    toHit: 4, baseWP: () => 40, armorCap: 1,
-    subs: ["Pickpocket","Pilfer","Cat Burglar","Cutthroat","Cloaker","Ninja","Con Artist","Acrobat"],
-    gain: [null, () => D(8), () => D(6), () => D(6), () => D(6)+2]
-  }
-};
 
 const WEAPONS = {
   // Cutting
@@ -1847,43 +1827,6 @@ const WEAPONS = {
   "Naganita":     {d:()=>D(6)+D(6)+1, lab:"2d6+1",  cost:600, cls:"F"},
   "Spear":        {d:()=>D(8),        lab:"d8",     cost:150, cls:"FTM"}
 };
-const WEAPON_MAX = {
-  "Axe":6,"Bastard Sword":12,"Battle Axe":7,"Broadsword":12,"Claymore":12,"Dagger":3,
-  "Katana":10,"Kopesh Sword":10,"Long Sword":8,"Ninja-to":9,"Rapier":6,"Short Sword":7,
-  "Wakazashi":7,"Club":6,"Flail":10,"Mace":8,"Morning Star":9,"Quarter Staff":6,
-  "Spiked Staff":8,"Whip":3,"Awl Pike":10,"Bardiche":16,"Naganita":13,"Spear":8
-};
-const WEAPON_TYPE_TABLE = ["Pole Arm","Bludgeoning","Cutting","Cutting","Thrown","Explosive"];
-const WEAPON_BONUS_TABLE = [()=>D(6), ()=>2, ()=>1, ()=>1, ()=>4, ()=>D(10)];   // d6 on the bonus table
-
-const ARMORS = [
-  {name:"Cloth",   cost:300,  wp:12, ar:3,  cls:"FTM", min:1},
-  {name:"Leather", cost:500,  wp:15, ar:6,  cls:"FT",  min:1},
-  {name:"Studded", cost:750,  wp:18, ar:10, cls:"FT",  min:2},
-  {name:"Mail",    cost:1000, wp:30, ar:12, cls:"F",   min:3},
-  {name:"Plate",   cost:2000, wp:45, ar:15, cls:"F",   min:4}
-];
-const MAGIC_ARMOR_TABLE = [{ar:4,wp:30},{ar:2,wp:20},{ar:1,wp:10},{ar:1,wp:10},{ar:2,wp:15},{ar:1,wp:5}];
-// "Costs are triple for trolls, and half for elves or dwarves."
-function priceFor(base, race) {
-  if (race === "Troll") return base * 3;
-  if (race === "Elven" || race === "Dwarven") return Math.round(base / 2);
-  return base;
-}
-
-// subclass -> starting weapon + proficiency bonus
-const KIT = {
-  "Knight":["Awl Pike",2], "Guard":["Spear",2], "Woodsman":["Quarter Staff",3],
-  "Soldier":["Long Sword",1], "Barbarian":["Battle Axe",2], "Master of Arms":["Broadsword",2],
-  "Samurai":["Katana",3], "Bard":["Short Sword",1],
-  "Pickpocket":["Dagger",0],"Pilfer":["Dagger",0],"Cat Burglar":["Dagger",0],
-  "Cutthroat":["Short Sword",0],"Cloaker":["Dagger",0],"Ninja":["Wakazashi",1],
-  "Con Artist":["Dagger",0],"Acrobat":["Dagger",1],
-  "Wizard":["Quarter Staff",0],"Warlock":["Quarter Staff",0],"Sorcerer":["Quarter Staff",0],
-  "Summoner":["Quarter Staff",0],"Cleric":["Club",1],"Illusionist":["Quarter Staff",0],
-  "Court Mage":["Quarter Staff",0],"Apprentice":["Quarter Staff",0]
-};
-
 /* Special skills, bought at creation: Fighters get 8 value points, Thieves 12,
    Magic Users none — they have spells instead. */
 const FIGHTER_SKILLS = {
@@ -1911,120 +1854,8 @@ const THIEF_SKILLS = {
   "Leaping":       {cost:4, txt:"+2 to leaping rolls"},
   "Silence":       {cost:6, txt:"sneak attacks are automatic criticals"}
 };
-const FREE_SKILL = { "Cat Burglar":"Climbing", "Acrobat":"Leaping", "Ninja":"Silence" };
-
 function skillTable(cls) { return cls === "Fighter" ? FIGHTER_SKILLS : cls === "Thief" ? THIEF_SKILLS : null; }
-function rollSkills(c) {
-  c.skills = {};
-  const table = skillTable(c.cls);
-  if (FREE_SKILL[c.sub] && table && table[FREE_SKILL[c.sub]]) c.skills[FREE_SKILL[c.sub]] = 1;
-  if (!table) { c.vp = 0; return; }
-  let vp = c.cls === "Fighter" ? 8 : 12;
-  const pool = Object.keys(table).filter(k => !c.skills[k]);
-  shuffle(pool);
-  for (const n of pool) if (table[n].cost <= vp) { c.skills[n] = 1; vp -= table[n].cost; }
-  for (const n of Object.keys(c.skills)) {
-    const sk = table[n];
-    if (sk && sk.up && sk.up <= vp && c.skills[n] === 1) { c.skills[n] = 2; vp -= sk.up; }
-  }
-  c.vp = vp;
-}
 const skill = n => !!(S.c.skills && S.c.skills[n]);
-const skillTier = n => (S.c.skills && S.c.skills[n]) || 0;
-
-/* ------------------------------------------------------------------
-   The book's charts and tables, pp. 44-49, transcribed.
-   ------------------------------------------------------------------ */
-const BLADE_NAMES = ["Whisper","Grave Mark","The Long Argument","Tithe","Old Patience",
-                     "Nine Teeth","Casket","Hush","Wilmst-Bite","Second Thoughts","Last Tuesday"];
-const JEWELRY = [   // Jewelry Table, d8, p.47
-  {n:"Ring of Power",        eff:{dmg:1},       txt:"+1 damage to all attacks"},
-  {n:"Gauntlet of the Giant",eff:{size:1},      txt:"one size larger"},
-  {n:"Amulet of Light",      eff:{sight:1, light:1}, txt:"a standing light spell; dispels darkness"},
-  {n:"Pendant of Fortitude", eff:{},  use:"half", every:100, txt:"half damage from one attack, once every 100 squares"},
-  {n:"Anklet of Invisibility",eff:{foeToHit:-2},txt:"unseen; foes need two better to land"},
-  {n:"Helm of Knowledge",    eff:{tongue:1},    txt:"perfect fluency in one language"},
-  {n:"Bracelet of Flight",   eff:{fly:1},       txt:"flight — walls and crevices are nothing"},
-  {n:"Amulet of Stone",      eff:{}, use:"stone", every:200, txt:"turns up to 4 squares of opponents to stone, once every 200 squares"}
-];
-const CLOAKS = [    // Magic Cloaks Table, d7, p.46 — every thief begins with one
-  // 260918-w4n: the Cloak of Healing was removed from the game outright
-  // (user ruling, 2026-09-18) — this classic (dead, DR8) duplicate table
-  // must not be able to roll a ghost item, so the row is deleted here too.
-  {n:"Cloak of Strength",    eff:{noCrit:1},     txt:"no critical damage ever lands on you"},
-  {n:"Cloak of Invisibility",eff:{},  use:"invis", every:100, txt:"invisible, once every 100 squares"},
-  {n:"Cloak of Speed",       eff:{},  use:"haste", every:50,  txt:"double attacks, once every 50 squares"},
-  {n:"Cloak of Regeneration",eff:{cloakRegen:1}, txt:"d6 hp back every 20 squares"},
-  {n:"Cloak of Armor",       eff:{cloakArmor:1}, txt:"used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"},
-  {n:"Cloak of Flying",      eff:{fly:1},        txt:"flight for 20 squares, once every 50"},
-  {n:"Cloak of Ether",       eff:{},  use:"ether", every:100, txt:"walk through walls, once every 100 squares"}
-];
-const STAVES = [    // Magic Staves Table, d8, p.46 — one use every 250 squares
-  {n:"Rowan Staff",  use:"dome",   txt:"a protective dome of 100 hp"},
-  {n:"Birch Staff",  use:"freeze", txt:"freezes up to 2 squares of opponents indefinitely"},
-  {n:"Walnut Staff", use:"weaken", txt:"all hits on the weakened do double damage"},
-  {n:"Oak Staff",    use:"stone",  txt:"turns 2 squares of opponents to stone"},
-  {n:"Crystal Staff",use:"invis",  txt:"party invisible d10+5 squares; enemies need a 1"},
-  {n:"Poplar Staff", use:"heal",   txt:"1d20+10 hp to up to 6"},
-  {n:"Pine Staff",   use:"fire",   txt:"d6 fireballs, automatic hits, 1d10+4 each"},
-  {n:"Cedar Staff",  use:"gas",    txt:"knocks out 3 squares of enemies for a day"}
-];
-const POTIONS = [   // Potions Table, d10, p.47
-  {n:"Healing",     col:"Blue",   uses:()=>D(8), price:150, eff:"heal",    txt:"+d10+2 hp"},
-  {n:"Cure Poison", col:"Green",  uses:()=>D(6), price:100, eff:"poison",  txt:"cures poison"},
-  {n:"Speed",       col:"Yellow", uses:()=>D(6), price:500, eff:"speed",   txt:"double attacks, 50 squares"},
-  {n:"Xtra Healing",col:"Blue",   uses:()=>D(2), price:500, eff:"full",    txt:"heal to maximum"},
-  {n:"Strength",    col:"Red",    uses:()=>D(4), price:100, eff:"strength",txt:"+8 damage, 25 squares"},
-  {n:"Cure Disease",col:"Aqua",   uses:()=>D(6), price:100, eff:"disease", txt:"cures disease"},
-  {n:"Enlarge",     col:"Brown",  uses:()=>D(6), price:75,  eff:"enlarge", txt:"one size up, +4 damage, 50 squares"},
-  {n:"Acuteness",   col:"White",  uses:()=>D(4), price:800, eff:"acute",   txt:"strike on a d6 for d8 rounds"},
-  {n:"Death",       col:"??",     uses:()=>D(4), price:50,  eff:"death",   txt:"your dead!"},
-  {n:"Invisible",   col:"Clear",  uses:()=>D(4), price:250, eff:"invis",   txt:"invisible for a day"}
-];
-const FOODS = [     // Food Table, d6, p.48
-  {n:"Chicken", cost:20, wp:12}, {n:"Bread", cost:15, wp:5},
-  {n:"Water",   cost:5,  wp:2},  {n:"Water", cost:5, wp:2},
-  {n:"Ale",     cost:10, wp:8},  {n:"Meat",  cost:25, wp:15}
-];
-const TRAPS = [     // Traps, d8, p.48 — avoided on 1-5 with a d20
-  {n:"Poison Arrow", dmg:()=>D(8),        poison:true},
-  {n:"Falling Rocks",dmg:()=>D(20)},
-  {n:"Darts",        dmg:()=>D(6)},
-  {n:"Darts",        dmg:()=>D(6)},
-  {n:"Arrows",       dmg:()=>D(10)},
-  {n:"Arrows",       dmg:()=>D(10)},
-  {n:"Pit",          dmg:()=>D(20)},
-  {n:"Spike",        dmg:()=>D(10)*5}
-];
-const AFFLICTIONS = [  // Poison/Disease Table, d8, p.48
-  {dur:"d20 squares", loss:()=>2*D(6), per:1,  kind:"Poison"},
-  {dur:"100 squares", loss:()=>D(6),   per:10, kind:"Disease"},
-  {dur:"d20 squares", loss:()=>D(6),   per:2,  kind:"Poison"},
-  {dur:"d20 squares", loss:()=>D(6),   per:2,  kind:"Poison"},
-  {dur:"permanent",   loss:null,       phobia:true, kind:"Disease"},
-  {dur:"permanent",   loss:null,       phobia:true, kind:"Disease"},
-  {dur:"80 squares",  loss:()=>D(10),  per:20, kind:"Poison"},
-  {dur:"1 day",       loss:()=>2*D(20),per:10, kind:"Disease"}
-];
-const FAERIE = [    // Faerie Table, d8, p.48
-  "+1 Level", "+d20 Base HP", "Magic Weapon", "-d10 Base HP",
-  "Miscellaneous Magic", "d10 x 100 WM", "Magic Armor", "+2 Level"
-];
-const MISC_MAGIC = ["Cloak","Potion","Scroll","Grimoire","Potion","Staff","Cloak","Jewelry","Potion","Scroll"];
-const SPELL_LEVEL_TABLE = [1,1,2,2,3,3,4,4,5,5];   // Level Table, d10, p.46
-const CLIMB_TABLE = {                               // Climbing, p.49, per 10 feet on a d10
-  "rope": {success:7, fall:()=>D(6)},
-  "rock": {success:6, fall:()=>D(8)},
-  "wood": {success:7, fall:()=>D(6)}
-};
-const LEAP_TABLE = [   // Leaps, p.49 — success on a d10 by distance and class
-  {ft:"3-4 feet",   F:10, T:10, M:9},
-  {ft:"5-8 feet",   F:8,  T:7,  M:6},
-  {ft:"8-12 feet",  F:6,  T:5,  M:4},
-  {ft:"12-15 feet", F:4,  T:3,  M:1}
-];
-const DIRECTION_TABLE = ["N","N","E","E","S","S","W","W"];   // Random Directions, 2d8, p.49
-
 
 const RACES = {
   "Human":   {size:"Human", upkeep:4,  note:"No advantages, no penalties. The dungeon's default."},
@@ -2039,179 +1870,7 @@ const RACES = {
   "Troll":   {size:"Large", upkeep:15, flatWP:75, dmg:6, wpnBonus:3, eats:2,
               note:"75 hp regardless of class and +9 damage, but eats two rations a night."}
 };
-const RACE_D8 = ["Elven","Dwarven","Wilmsry","Human","Fridgian","Troll","Human","Human"];
 
-const TEMPERAMENTS = ["Lazy","Patient","Joyous","Angry","Wary","Leader","Edgy","Zealous","Greedy","Thoughtful","Reckless","Sensitive"];
-const MOTIVES = ["Adventure","Status","Love","Blood","Power","Money","Fame","A grudge","Experience","Skill","Knowledge","Adventure"];
-const PHOBIAS = [
-  {n:"Darkness", t:null}, {n:"Death", t:null}, {n:"Being trapped", t:null},
-  {n:"Bodies of water", t:null}, {n:"Bats and rats", t:"Beasts"},
-  {n:"Vampires and the undead", t:"Walking Dead"}, {n:"Heights", t:null},
-  {n:"Fire", t:"Demons"}, {n:"Sorcery", t:"Magical"}, {n:"Crowds", t:"Humans"}
-];
-
-/* Creatures Described, pp.36-43. Size, Int and WP are the book's;
-   `sp` carries the special rules that matter in a fight. */
-const BESTIARY = {
-  "Beasts": [
-    [{n:"Bat/Rat", sz:"T", i:1, wp:1,  sp:{atk:2, dmg:()=>1, note:"two attacks, 1 hp each"}},
-     {n:"Shriek",  sz:"T", i:1, wp:3,  sp:{shriek:true, note:"a scream deafens; half damage after"}},
-     {n:"Viper",   sz:"S", i:1, wp:3,  sp:{poison:true, note:"venom: 2 hp a round for d10 rounds"}}],
-    [{n:"Cave Bear", sz:"L", i:4, wp:25, sp:{dmg:()=>D(8), disease:true, note:"rabid — d8, and the bite carries it"}},
-     {n:"Zit",       sz:"T", i:6, wp:4,  sp:{acid:true, toHit:4, note:"acid; hittable only on a 4"}}],
-    [{n:"Drat",     sz:"L", i:10, wp:26, sp:{ar:12, toHit:5, breaks:true, note:"natural mail; may break your weapon"}},
-     {n:"Flube",    sz:"S", i:3,  wp:7,  sp:{noArmor:true, blind:true, note:"armour-piercing, and poison that blinds"}},
-     {n:"Rast",     sz:"H", i:6,  wp:12, sp:{dmg:()=>D(8)+4, note:"+4 with any weapon it has picked up"}},
-     {n:"Sterling", sz:"H", i:2,  wp:35, sp:{halfDmg:true, dmg:()=>D(12), note:"two hearts: takes half damage from everything"}},
-     {n:"Wolf",     sz:"S", i:4,  wp:6,  sp:{dmg:()=>D(6)+2, note:"+2 damage"}}],
-    [{n:"Drake",    sz:"B", i:15, wp:135, sp:{dmg:()=>2*D(10)+4, every:4, note:"breathes fire every four rounds"}},
-     {n:"Stink Bug",sz:"S", i:1,  wp:4,   sp:{toHit:2, phobia:true, note:"small: strike as one level lower, 2 to hit"}}],
-    [{n:"Dread Lock",  sz:"XL", i:4,  wp:40},
-     {n:"Stalka Beast",sz:"XL", i:15, wp:125, sp:{atk:2, note:"sees the invisible, hears the silenced"}}]
-  ],
-  "Demons": [
-    [{n:"Gremlin", sz:"S", i:6, wp:8, sp:{dmg:()=>D(6)+3, note:"+3 damage and quick with it"}}],
-    [{n:"Poltergeist", sz:"S", i:4, wp:10, sp:{atk:2, noArmor:true, note:"armour is no use against it"}}],
-    [{n:"Rinkle", sz:"L", i:1, wp:16, sp:{age:true, note:"its toxin convinces you that you are old"}}],
-    [{n:"Djinni",  sz:"G", i:16, wp:86, sp:{caster:true, note:"casts every spell of levels 1 to 4"}},
-     {n:"Ghost",   sz:"H", i:3,  wp:28, sp:{magicOnly:true, noArmor:true, phobia:true, note:"only magic touches it"}},
-     {n:"Spectre", sz:"H", i:5,  wp:32, sp:{magicOnly:true, noArmor:true, pursues:true, note:"only magic touches it, and it follows"}}],
-    [{n:"Djinni",  sz:"G", i:16, wp:86, sp:{caster:true, note:"casts every spell of levels 1 to 4"}}]
-  ],
-  "Humans": [
-    [{n:"Dante", sz:"H", i:12, wp:20, sp:{atk:3, note:"twins, four arms: three strikes a round"}}],
-    [{n:"China Wolf", sz:"H", i:5, wp:16, sp:{atk:2, dmg:()=>D(6), note:"hunts in pairs, two attacks"}},
-     {n:"Krupke",     sz:"H", i:8, wp:23, sp:{caster:true, ar:12, dmg:()=>D(8)+2, note:"a sorcerer in mail with a long sword"}}],
-    [{n:"Frank", sz:"H", i:10, wp:20, sp:{steals:true, dmg:()=>D(8)+6, note:"a con-man; may take everything and vanish"}},
-     {n:"Primp", sz:"H", i:7,  wp:18, sp:{enthrall:true, dmg:()=>D(8)+2, note:"beautiful, and counting on it"}}],
-    [{n:"Craig",  sz:"H", i:6, wp:24, sp:{dmg:()=>D(12), ar:15, note:"two-handed sword, chitin plate, home ground"}},
-     {n:"Herman", sz:"H", i:9, wp:36, sp:{invis:true, ar:15, dmg:()=>25, note:"turns invisible; strikes as a level five"}}],
-    [{n:"Herman", sz:"H", i:9, wp:36, sp:{invis:true, ar:15, dmg:()=>25, note:"turns invisible; strikes as a level five"}}]
-  ],
-  "Lair Beasts": [
-    [{n:"Dog Face", sz:"S", i:8, wp:6, sp:{dmg:()=>D(6), note:"packs; the leader carries a d8 sword"}},
-     {n:"Goblin",   sz:"S", i:5, wp:4, sp:{note:"never retreats, and carries wilmst"}},
-     {n:"Hobgoblin",sz:"S", i:7, wp:5, sp:{dmg:()=>D(6)+1, loot:true, note:"always has something magical in its lair"}},
-     {n:"M&M",      sz:"S", i:6, wp:3, sp:{critOn:1, note:"deaf; criticals on a 1"}},
-     {n:"Pogo",     sz:"S", i:1, wp:4, sp:{dmg:()=>D(6)+4, fast:true, note:"+4 damage, and fast — strike one higher"}}],
-    [{n:"Hair",    sz:"H", i:2, wp:12, sp:{dmg:()=>D(6), note:"clubs, and a great deal of hair"}},
-     {n:"Trachea", sz:"S", i:5, wp:8,  sp:{poison:true, dmg:()=>D(10), note:"+4 on its first hit; fighters do double to it"}}],
-    [{n:"Blumble", sz:"S", i:4, wp:16, sp:{quills:true, dmg:()=>D(12), note:"quills; cutting it only makes more of them"}}],
-    [{n:"Drarl",   sz:"L", i:9, wp:19, sp:{acid:true, noArmor:true, note:"acid: mail and plate make it worse"}}],
-    [{n:"Drarl",   sz:"L", i:9, wp:19, sp:{acid:true, noArmor:true, note:"acid: mail and plate make it worse"}}]
-  ],
-  "Magical": [
-    [{n:"Drekk", sz:"T", i:4, wp:7, sp:{song:true, note:"sings; you may simply fall asleep"}}],
-    [{n:"Shadow", sz:"S", i:2, wp:4, sp:{daggerOnly:true, dark:true, note:"only a dagger or magic touches it"}}],
-    [{n:"Werebeast", sz:"L", i:6, wp:32, sp:{atk:2, dmg:()=>D(10)+5, note:"two attacks at d10+5"}}],
-    [{n:"Drudge", sz:"H", i:5, wp:12, sp:{caster:true, never_melee:true, note:"casts every offensive spell, 1 to 4, without limit"}}],
-    [{n:"Drudge", sz:"H", i:5, wp:12, sp:{caster:true, never_melee:true, note:"casts every offensive spell, 1 to 4, without limit"}}]
-  ],
-  "Walking Dead": [
-    [{n:"Philly", sz:"H", i:3, wp:5, sp:{twice:true, slow:true, dmg:()=>D(4)+2, note:"you have to kill it twice"}}],
-    [{n:"Google",  sz:"H", i:2, wp:19, sp:{ar:15, dmg:()=>D(8), note:"rusted plate and a long sword"}},
-     {n:"Skeleton",sz:"H", i:2, wp:6,  sp:{twice:true, toHit:4, critOn:1, note:"kill it twice; a 1 shatters it"}}],
-    [{n:"Ghoul",  sz:"H", i:2, wp:15, sp:{raise:true, dmg:()=>D(6), note:"raises the ghouls you have already killed"}},
-     {n:"Zombie", sz:"H", i:3, wp:12, sp:{grapple:true, disease:true, note:"grapples, and carries leprosy"}}],
-    [{n:"Bones",  sz:"S", i:2, wp:14, sp:{pack:true, note:"a pack: they all pick one of you"}},
-     {n:"Floater",sz:"H", i:3, wp:8,  sp:{entangle:true, note:"lifts you off the floor and suffocates you"}},
-     {n:"Undead", sz:"H", i:3, wp:18, sp:{possess:true, note:"its spirit may take you over when it dies"}}],
-    [{n:"Vampire",sz:"H", i:12, wp:95, sp:{atk:2, awe:true, caster:true, seesInvis:true, noTurn:true, note:"awe on a d12; two attacks; master of every offensive spell"}}]
-  ]
-};
-const ENC_TYPES = ["Beasts","Demons","Humans","Lair Beasts","Magical","Walking Dead"];
-
-/* Encounters, p.45: roll a d8 for the table, then a d10 on that table. */
-const ENCOUNTER_TABLES = [
-  ["Lair Beast","Magical","Beasts","Food","Humans","Magical","Walking Dead","Beasts","Lair Beast","Demons"],
-  ["Lair Beast","Misc Magic","Beasts","Walking Dead","Joiner","Demons","Store","Humans","Magical","Weapon"],
-  ["Demons","Walking Dead","Lair Beast","Misc Magic","Beasts","Teleport","Disease","Magical","Humans","Magic Armor"],
-  ["+10 HP","-10 HP","Teleport","+10 XP","+25 HP","+25 XP","-15 HP","Teleport","+3000 WM","-All armour"],
-  ["Magic Weapon","Lair Beast","Misc Magic","Humans","Food","Misc Magic","Demons","Walking Dead","Beasts","Magic Armor"],
-  ["Beasts","Grimoire","Lair Beast","Humans","Demons","Disease","Store","Misc Magic","Magical","Joiner"],
-  ["Humans","Faerie","Demons","Beasts","Insanity","Phobia","Lair Beast","Darkness","Walking Dead","Magical"],
-  ["Misc Magic","Beasts","Faerie","Magic Armor","Walking Dead","Lair Beast","Demons","Humans","Magical","Food"]
-];
-const ENC_ALIAS = {"Lair Beast":"Lair Beasts","Beasts":"Beasts","Demons":"Demons","Humans":"Humans","Magical":"Magical","Walking Dead":"Walking Dead"};
-
-const SPELLS = [
-  {n:"Heal",        lvl:1, s:"healing",    kind:"heal",   dmg:()=>D(10),             txt:"d10 hp"},
-  {n:"Shield",      lvl:1, s:"protection", kind:"ward",   pool:50,  rounds:5,        txt:"soaks 50 hp, 5 rounds"},
-  {n:"Strength",    lvl:1, s:"offense",    kind:"might",  dmg:()=>D(10),             txt:"+d10 damage till tomorrow"},
-  {n:"Doze",        lvl:1, s:"offense",    kind:"status", txt:"sleep d4 rounds"},
-  {n:"Freeze",      lvl:1, s:"offense",    kind:"thrown", dmg:()=>D(6),              txt:"d6, thrown"},
-  {n:"Detect Magic",lvl:1, s:"divination", kind:"reveal", txt:"the floor lays itself out"},
-  {n:"Mirror Self", lvl:1, s:"illusion",   kind:"mirror", txt:"foes need a 1 for d6 rounds"},
-  {n:"Stun",        lvl:1, s:"offense",    kind:"stun",   txt:"d6 creatures stunned d4 rounds"},
-  {n:"Weaken",      lvl:1, s:"offense",    kind:"weaken", txt:"they hit on a 3 and do half"},
-  {n:"Acid",        lvl:2, s:"offense",    kind:"acid",   dmg:()=>2*D(6)+2,          txt:"2d6+2 a round for d6 rounds"},
-  {n:"Stupidity",   lvl:2, s:"offense",    kind:"stupid", txt:"intelligence to 1; it can do nothing"},
-  {n:"Blind",       lvl:3, s:"offense",    kind:"blind",  txt:"blind for life, thrown"},
-  {n:"Shrink",      lvl:3, s:"offense",    kind:"shrink", txt:"two sizes down, half hp and damage"},
-  {n:"Ice",         lvl:3, s:"offense",    kind:"thrown", dmg:()=>D(6),              txt:"d6 a round, then frozen"},
-  {n:"Earthquake",  lvl:4, s:"offense",    kind:"quake",  dmg:()=>3*D(10)+8,         txt:"3d10+8 to everything, you included"},
-  {n:"Noxious Vapor",lvl:4,s:"offense",    kind:"vapor",  txt:"a d6 of very bad outcomes"},
-  {n:"Fireballs",   lvl:4, s:"offense",    kind:"volley", dmg:()=>D(10)+2,           txt:"d8 balls at d10+2 each"},
-  {n:"Petrify",     lvl:5, s:"offense",    kind:"petrify",txt:"encased in stone for five days"},
-  {n:"Insane",      lvl:2, s:"offense",    kind:"insane", txt:"one foe rolls on the madness table"},
-  {n:"Summon",      lvl:2, s:"special",    kind:"summon", txt:"something fights beside you"},
-  {n:"Fireball",    lvl:3, s:"offense",    kind:"thrown", dmg:()=>D(10)+D(10)+4,     txt:"2d10+4"},
-  {n:"Major Heal",  lvl:3, s:"healing",    kind:"heal",   dmg:()=>D(10)+D(10)+D(10), txt:"3d10 hp"},
-  {n:"Bubble",      lvl:3, s:"protection", kind:"ward",   pool:100, rounds:12, reflect:true, txt:"soaks 100 hp and reflects"},
-  {n:"Sense Danger",lvl:3, s:"divination", kind:"foresee",txt:"read the next encounter"},
-  {n:"Turn Walking Dead",lvl:2,s:"protection",kind:"turn",txt:"the dead of your level or lower are sent back"},
-  {n:"Plane Gate",  lvl:3, s:"protection", kind:"gate",   txt:"d6 demons or dead vanquished to The Planes"},
-  {n:"Sense Presence",lvl:2,s:"protection",kind:"senses", txt:"see in the dark; never surprised"},
-  {n:"Phantom Host",lvl:3, s:"illusion",   kind:"summon", txt:"a host that isn't there"},
-  {n:"Lightning",   lvl:4, s:"offense",    kind:"thrown", dmg:()=>D(10)+6,           txt:"d10+6, every foe"},
-  {n:"Regeneration",lvl:4, s:"healing",    kind:"regen",  txt:"d8 hp a round this fight"},
-  {n:"Mangle",      lvl:5, s:"offense",    kind:"thrown", dmg:()=>2*D(20)+15,        txt:"2d20+15"},
-  {n:"Death",       lvl:5, s:"offense",    kind:"death",  txt:"one foe dies, costs 25 hp"}
-];
-
-/* The Magic User bonus table, p.18. A number is the bonus to thrown spells of
-   that school; 3 and 4 mean the school cannot be learned until that skill level;
-   null means the subclass may never have it at all. */
-const MU_CHART = {
-  "Wizard":     {offense:3, protection:0, healing:0, divination:0, special:0,    illusion:0},
-  "Warlock":    {offense:4, protection:0, healing:0, divination:2, special:null, illusion:null, gate:{protection:4, healing:3}},
-  "Sorcerer":   {offense:4, protection:1, healing:0, divination:3, special:1,    illusion:null, gate:{healing:4}},
-  "Court Mage": {offense:2, protection:2, healing:1, divination:0, special:null, illusion:null, gate:{divination:4}},
-  "Illusionist":{offense:0, protection:0, healing:null, divination:1, special:4, illusion:0,    gate:{protection:3}},
-  "Cleric":     {offense:0, protection:3, healing:4, divination:0, special:null, illusion:null, gate:{divination:3}},
-  "Summoner":   {offense:0, protection:2, healing:0, divination:4, special:1,    illusion:null, gate:{offense:3}},
-  "Apprentice": {offense:0, protection:0, healing:0, divination:0, special:0,    illusion:0,    gate:{divination:3}}
-};
-function schoolAllowed(sub, school) { const c = MU_CHART[sub]; return !!c && c[school] !== null && c[school] !== undefined; }
-function schoolGate(sub, school)    { const c = MU_CHART[sub]; return (c && c.gate && c.gate[school]) || 1; }
-function schoolBonus(sub, school)   { const c = MU_CHART[sub]; return (c && typeof c[school] === "number") ? c[school] : 0; }
-function canLearn(sub, sp)          { return schoolAllowed(sub, sp.s); }
-
-/* d10 spells, minimum 4, chosen from what the subclass may ever learn. */
-function rollGrimoire(sub) {
-  const pool = SPELLS.filter(sp => canLearn(sub, sp));
-  const low = pool.filter(sp => sp.lvl <= 2), high = pool.filter(sp => sp.lvl > 2);
-  shuffle(low); shuffle(high);
-  const n = Math.max(4, D(10));
-  const book = [];
-  for (const sp of low)  { if (book.length < Math.min(n, 6)) book.push(sp.n); }
-  for (const sp of high) { if (book.length < n) book.push(sp.n); }
-  if (sub === "Cleric")      for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
-  if (sub === "Illusionist") for (const n2 of ["Mirror Self", "Phantom Host"]) if (!book.includes(n2)) book.push(n2);
-  if (sub === "Summoner" && !book.includes("Summon")) book.push("Summon");
-  if (sub === "Sorcerer")    for (const n2 of ["Freeze", "Fireball"]) if (!book.includes(n2)) book.push(n2);
-  // you must be able to actually do something on your first day
-  const usableNow = sp => sp.lvl === 1 && schoolGate(sub, sp.s) <= 1;
-  const ready = () => book.filter(n2 => usableNow(SPELLS.find(sp => sp.n === n2))).length;
-  const spare = pool.filter(usableNow);
-  shuffle(spare);
-  for (const sp of spare) { if (ready() >= 2) break; if (!book.includes(sp.n)) book.push(sp.n); }
-  return book;
-}
-const INSANITY = [
-  "turns the blade on itself", "strikes the nearest of its own",
-  "bolts into the dark", "stands perfectly still", "froths and swings twice", "kneels and surrenders"
-];
 const maxCharges = () => 2 * S.c.level + 2 + eff("charges");
 
 /* ---------------- state ---------------- */
@@ -2270,35 +1929,6 @@ const SUB_NOTE = {
   "Summoner":      "Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
   "Apprentice":    "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there."
 };
-
-const NAMES = {
-  Human:["Aldric Vane","Sera Coll","Bertram Hask","Ivy Corrin","Owen Trask"],
-  Elven:["Faelin Shear","Ysolde Nim","Aeryth Vale"],
-  Dwarven:["Borin Stonecut","Hilda Ferrow","Durn Blackkettle"],
-  Wilmsry:["Pell of Ninth Row","Marta Quen","Osk the Patient"],
-  Fridgian:["Skalgrim","Hrafn the Loud","Vott Icebound"],
-  Troll:["Grommash Nine-Teeth","Ulba the Wide","Skeg"]
-};
-const nameFor = r => pick(NAMES[r] || NAMES.Human);
-
-/* ---------------- maze generation ---------------- */
-
-function bfs(g, sx, sy) {
-  const d = g.map(r => r.map(() => -1));
-  d[sy][sx] = 0;
-  const q = [[sx, sy]];
-  while (q.length) {
-    const [x, y] = q.shift();
-    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
-      if (g[ny][nx].wall || d[ny][nx] !== -1) continue;
-      d[ny][nx] = d[y][x] + 1; q.push([nx, ny]);
-    }
-  }
-  return d;
-}
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
 
 /* ---------------- rendering ---------------- */
 let CELL = 28;
@@ -2628,60 +2258,7 @@ window.mzCombatReport = function (d) {
 
 /* ---------------- derived character numbers ---------------- */
 const R_ = () => RACES[S.c.race];
-function strikeDie() {
-  let idx = S.c.level - 1;
-  if (R_().strikeStep) idx = Math.min(4, idx + R_().strikeStep);
-  if (S.c.sub === "Illusionist" && S.c.level < 3) idx = 0;   // d20 until level three
-  if (S.c.acute > 0) idx = 4;                                // Potion of Acuteness: strike on a d6
-  return STRIKE_DICE[idx];
-}
-function toHit() {
-  let h = CLASSES[S.c.cls].toHit;
-  if (R_().toHit) h = Math.max(h, R_().toHit);  // Elves strike at 5 whatever their class
-  if (S.c.sub === "Acrobat") h = 5;             // strikes as a fighter with the dagger
-  if (S.c.sub === "Cleric") h = Math.max(h, 4); // Clerics roll 4, not 3
-  if (skill("Kata")) h = Math.max(h, S.c.cls === "Fighter" ? 6 : 5);
-  if (S.combat && S.combat.inspired) h += S.combat.inspired;
-  h += eff("toHit");
-  if (inDark() && !skill("Night Vision") && !S.c.senses) h = Math.min(h, 2);
-  return h;
-}
-function inDark() {
-  const f = S.floor;
-  return !!(f && f.g[f.py] && f.g[f.py][f.px] && f.g[f.py][f.px].dark);
-}
-function climbBonus() { return skill("Climbing") ? 4 : 0; }
-function leapBonus()  { return skill("Leaping") ? 2 : 0; }
-function foeDie(f) {   // p.24: never lower than a d8, whatever the level
-  const step = R_().foeStrikeStep || 0;
-  return Math.max(8, STRIKE_DICE[clamp(f.lvl - 1 + step, 0, 4)]);
-}
-function foeToHitVs() {                          // what a creature needs to land on you
-  let h = 5;
-  if (R_().foeToHit) h += R_().foeToHit;
-  if (S.c.sub === "Acrobat") h = 3;
-  if (skill("Agility")) h -= 1;                  // 1–4 instead of 1–5, or 1–3 instead of 1–4
-  h += eff("foeToHit");
-  if (inDark() && skill("Silence")) h = 1;       // in the dark a silent thief is barely there
-  if (S.c.mirror > 0) h = 1;                     // Mirror Self
-  if (S.c.invis > 0) h = 1;                      // invisible
-  return Math.max(1, h);
-}
-function weaponDamage() {
-  const w = WEAPONS[S.c.weapon] || WEAPONS["Club"];
-  let d = S.c.level * S.c.level + w.d() + S.c.prof + S.c.magicWpn;
-  if (R_().dmg) d += R_().dmg;
-  if (R_().wpnBonus) d += R_().wpnBonus;
-  if (S.c.might) d += S.c.might;
-  if (skill("Kata")) d += S.c.level;
-  if (skill("Heft")) d += 2;
-  d += eff("dmg");
-  if (S.c.sub === "Guard" && S.c.level < 4) d -= (4 - S.c.level);
-  if (S.c.sub === "Sorcerer") d = Math.min(d, 9);   // a Sorcerer's arm is not the point
-  return Math.max(1, d);
-}
 function upkeep() { return Math.max(1, Math.round(R_().upkeep * (skill("Heft") ? 0.5 : 1)) + eff("upkeep")); }
-function levelFromSP(sp) { let l = 1; for (let i = 4; i >= 0; i--) if (sp >= THRESHOLDS[i]) { l = i + 1; break; } return l; }
 
 /* ---------------- UI paint ---------------- */
 // DR15-B: presentation-only copy for each condition KEY the engine's

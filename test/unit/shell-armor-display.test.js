@@ -21,17 +21,16 @@
 //   6. the pending-find card reads bagArmorText for a found armor piece, and
 //      its full-bag drop shelf lives in the shared renderDropShelf(shelf,
 //      items) function (Phase 29 Plan 03), which itself reads bagArmorText;
-//   7. the classic (dead) CLOAKS table's Cloak of Armor txt mirrors the live
-//      content/treasure-tables.js string, and the PRE-Phase-28 flavor line
-//      (still frozen in test/parity/prototype-master.js.txt) is gone from the
-//      live HTML.
+//   7. (Phase 44-02, DEAD-01: the classic CLOAKS table this section's mirror
+//      test read is deleted — content/treasure-tables.js is the single
+//      source now; hp-not-wp.test.js and the treasure unit tests already
+//      read it directly. Test case removed, not re-pointed.)
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
-import { CLOAKS } from "../../content/treasure-tables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -158,21 +157,12 @@ test("Phase 29 (LOOT-04): renderDropShelf (the shared drop shelf) reads bagArmor
   assert.match(region, /bagArmorText\(bi\)/);
 });
 
-// ─── 7. classic CLOAKS mirror + old flavor line gone ────────────────────────
-
-test("Phase 28 (ARMOR-04): the classic (dead) CLOAKS table's Cloak of Armor txt mirrors the live string", () => {
-  const cloak = CLOAKS.find((k) => k.n === "Cloak of Armor");
-  assert.ok(cloak, "sanity: CLOAKS exports a Cloak of Armor entry");
-  assert.ok(HTML.includes(cloak.txt), "the live HTML's classic CLOAKS entry carries the same txt");
-
-  // Derive the PRE-Phase-28 flavor line from the frozen parity master (never
-  // pasted by hand — keeps this test honest if the master's wording is ever
-  // consulted again) and assert it no longer appears in the live HTML.
-  const MASTER = fs.readFileSync(path.join(REPO_ROOT, "test", "parity", "prototype-master.js.txt"), "utf8");
-  const match = /\{n:"Cloak of Armor",\s*eff:\{cloakArmor:1\},\s*txt:"([^"]+)"\}/.exec(MASTER);
-  assert.ok(match, "sanity: the frozen master still carries a Cloak of Armor entry");
-  const OLD_TXT = match[1];
-  assert.ok(OLD_TXT.length > 0);
-  assert.notEqual(OLD_TXT, cloak.txt);
-  assert.equal(HTML.includes(OLD_TXT), false, "the pre-Phase-28 flavor line must be gone from the live HTML");
-});
+// ─── 7. classic CLOAKS mirror (Phase 44-02, DEAD-01) ────────────────────────
+// The ARMOR-04 case that once compared the classic (dead) CLOAKS table's
+// Cloak of Armor description against the live string is deleted, not
+// re-pointed: the classic CLOAKS table it read no longer exists in
+// mazeworld.html (this plan's layer-3 deletion). content/treasure-tables.js
+// is the single source of truth for CLOAKS; its Cloak of Armor entry is
+// already covered by hp-not-wp.test.js and the treasure/economy unit tests
+// that import content/treasure-tables.js directly, so no replacement pin
+// is needed here.
