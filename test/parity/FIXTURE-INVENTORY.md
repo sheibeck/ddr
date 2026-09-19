@@ -1621,8 +1621,8 @@ prototype is never edited). `npm run build:www`: exit 0. `node --test
 
 ## Phase 45: worn-model collapse (HEDGE-01..03) — the Thief starting cloak is worn at chargen; measured moved set, declared per site
 
-`newRun` now always runs `reconcileWorn` after chargen — no `wornSlots`
-option, zero rng draws (`test/unit/chargen-rng-pin.test.js` stays
+`newRun` now always runs `reconcileWorn` after chargen — no option
+argument, zero rng draws (`test/unit/chargen-rng-pin.test.js` stays
 byte-for-byte untouched). `validateSave`/`rehydrate` reconcile
 unconditionally on every load, one return shape (`wornReport: []` when
 nothing moved, including an already-migrated save). The Phase 37 harness
