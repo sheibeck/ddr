@@ -201,3 +201,11 @@ Per site, expected (GEAR-SLOTS §2 checklist + phase_facts' Thief-hero predictio
 ---
 *Phase: 45-collapse-the-phase-37-hedges*
 *Completed: 2026-09-19*
+
+## Self-Check: PASSED
+
+- FOUND: tools/worn-fixture-scan.mjs
+- FOUND: tools/worn-fixture-scan-output.txt
+- FOUND: .planning/phases/45-collapse-the-phase-37-hedges/45-01-SUMMARY.md
+- FOUND: commit 726d384 (feat: worn-fixture-scan + BEFORE readout)
+- FOUND: commit 35c1879 (docs: SUMMARY)
