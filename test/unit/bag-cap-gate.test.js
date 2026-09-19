@@ -8,7 +8,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { slotItems, clampCarry } from "../../engine/derived.js";
+import { slotItems, clampCarry, takesBagSlot, BAG_FREE_KINDS } from "../../engine/derived.js";
 import { BAGS, BAG_ORDER, BAG_FLOORS, BAG_DROP_UNDER, BAG_ITEMS } from "../../content/bags.js";
 import {
   bagCap,
@@ -23,6 +23,7 @@ import {
   takeItem,
 } from "../../engine/items.js";
 import { buyFrom } from "../../engine/economy.js";
+import { findMisc } from "../../engine/encounters.js";
 import { newRun } from "../../engine/engine.js";
 import { CLASSES } from "../../content/index.js";
 
@@ -55,6 +56,32 @@ function fixedState(overrides = {}) {
 
 const GEAR = (n) => ({ kind: "gear", n });
 const POTION = (n) => ({ kind: "potion", n, txt: n, eff2: "heal", uses: 1 });
+const SCROLL = (n) => ({ kind: "scroll", n });
+
+// --- takesBagSlot / BAG_FREE_KINDS (quick 260918-vvt) -----------------------
+
+test("BAG_FREE_KINDS: sorted contents are exactly [bag, potion, scroll]", () => {
+  assert.deepStrictEqual([...BAG_FREE_KINDS].sort(), ["bag", "potion", "scroll"]);
+});
+
+test("takesBagSlot: potion/scroll/bag are bag-free; non-objects are false; gear-ish kinds are true", () => {
+  assert.equal(takesBagSlot({ kind: "potion" }), false);
+  assert.equal(takesBagSlot({ kind: "scroll" }), false);
+  assert.equal(takesBagSlot({ kind: "bag" }), false);
+  assert.equal(takesBagSlot(null), false);
+  assert.equal(takesBagSlot(undefined), false);
+  assert.equal(takesBagSlot("potion"), false);
+  assert.equal(takesBagSlot(42), false);
+  assert.equal(takesBagSlot({ kind: "gear" }), true);
+  assert.equal(takesBagSlot({ kind: "weapon" }), true);
+  assert.equal(takesBagSlot({ kind: "armor" }), true);
+  assert.equal(takesBagSlot({ kind: "jewel" }), true);
+  assert.equal(takesBagSlot({ kind: "cloak" }), true);
+  assert.equal(takesBagSlot({ kind: "staff" }), true);
+  assert.equal(takesBagSlot({ kind: "tool" }), true);
+  assert.equal(takesBagSlot({ kind: "picks" }), true);
+  assert.equal(takesBagSlot({ n: "x" }), true, "kind-less object still takes a slot");
+});
 
 // --- slotItems ---------------------------------------------------------
 
@@ -63,6 +90,14 @@ test("slotItems: counts gear/treasure, excludes kind:potion", () => {
   const potion = POTION("p");
   const gearB = GEAR("b");
   assert.deepStrictEqual(slotItems({ items: [gearA, potion, gearB] }), [gearA, gearB]);
+});
+
+test("slotItems: excludes kind:scroll too (defensive — scrolls are a scalar today)", () => {
+  const gearA = GEAR("a");
+  const scroll = SCROLL("s");
+  const potion = POTION("p");
+  const gearB = GEAR("b");
+  assert.deepStrictEqual(slotItems({ items: [gearA, scroll, potion, gearB] }), [gearA, gearB]);
 });
 
 test("slotItems: empty/missing items array returns []", () => {
@@ -174,6 +209,17 @@ test("stowItem: potions are exempt — stow succeeds even at a full bag", () => 
   const ok = stowItem(state, potion, events);
   assert.equal(ok, true);
   assert.deepStrictEqual(state.c.items[state.c.items.length - 1], potion);
+});
+
+test("stowItem: a kind:scroll item stows onto a full bag — defensive, no bagFull (quick 260918-vvt)", () => {
+  const scroll = SCROLL("Sealed scroll");
+  const items = [GEAR("a"), GEAR("b"), GEAR("c"), GEAR("d")];
+  const state = fixedState({ c: { items: [...items] } });
+  const events = [];
+  const ok = stowItem(state, scroll, events);
+  assert.equal(ok, true);
+  assert.deepStrictEqual(state.c.items[state.c.items.length - 1], scroll);
+  assert.ok(!events.some((e) => e.type === "bagFull"));
 });
 
 test("stowItem: applies eff.wp on stow exactly like giveItem", () => {
@@ -301,6 +347,7 @@ function fixedStoreState(overrides = {}) {
   const stock = [
     { n: "Set of lockpicks", sub: null, cost: 450, effectId: "giveLockpicks", effectParams: { item: lockpicksItem }, sold: false },
     { n: "Acuteness potion", sub: null, cost: 200, effectId: "givePotion", effectParams: { item: potionItem }, sold: false },
+    { n: "Sealed scroll", sub: null, cost: 900, effectId: "buyScroll", effectParams: null, sold: false },
   ];
   return fixedState({
     c: { gold: 1000, ...overrides.c },
@@ -340,6 +387,49 @@ test("buyFrom: a potion buy succeeds even with a full bag (potions are exempt)",
   assert.equal(state.store.stock[1].sold, true);
   assert.equal(events[0].type, "bought");
   assert.ok(state.c.items.some((it) => it.kind === "potion"));
+});
+
+test("buyFrom: a Sealed scroll buy succeeds with a full bag (scrolls are a scalar, exempt) — quick 260918-vvt", () => {
+  const items = [GEAR("a"), GEAR("b"), GEAR("c"), GEAR("d")];
+  const state = fixedStoreState({ c: { items: [...items], scrolls: 0, gold: 1000 } });
+  const before = JSON.parse(JSON.stringify(state.c.items));
+  const events = buyFrom(state, 2, []);
+  assert.equal(state.c.gold, 100);
+  assert.equal(state.store.stock[2].sold, true);
+  assert.equal(state.c.scrolls, 1);
+  assert.deepStrictEqual(state.c.items, before);
+  assert.ok(events.some((e) => e.type === "bought"));
+  assert.ok(!events.some((e) => e.type === "bagFull"));
+});
+
+// --- find paths: scroll + potion on a full bag (quick 260918-vvt) ----------
+
+test("findMisc: a Scroll find on a full bag increments c.scrolls, no bagFull (quick 260918-vvt)", () => {
+  const items = [GEAR("a"), GEAR("b"), GEAR("c"), GEAR("d")];
+  const state = fixedState({ c: { bag: "small", items: [...items], scrolls: 0, grimoire: [] } });
+  const rng = { d: () => 3 };
+  const events = findMisc(state, rng, []);
+  assert.equal(state.c.scrolls, 1);
+  assert.ok(events.some((e) => e.type === "scrollFound"));
+  assert.equal(state.pendingFind ?? null, null);
+  assert.deepStrictEqual(state.c.items, items);
+  assert.ok(!events.some((e) => e.type === "bagFull"));
+});
+
+test("findMisc: a Potion find then takeFind on a full bag succeeds, no bagFull (quick 260918-vvt)", () => {
+  const items = [GEAR("a"), GEAR("b"), GEAR("c"), GEAR("d")];
+  const state = fixedState({ c: { bag: "small", items: [...items], scrolls: 0, grimoire: [] } });
+  const rng = { d: () => 2 };
+  const findEvents = findMisc(state, rng, []);
+  assert.equal(state.pendingFind.kind, "potion");
+  const offeredPotion = state.pendingFind;
+  assert.ok(!findEvents.some((e) => e.type === "bagFull"));
+  const takeEvents = takeFind(state, []);
+  assert.equal(state.pendingFind, null);
+  assert.ok(takeEvents.some((e) => e.type === "findTaken"));
+  assert.deepStrictEqual(state.c.items[state.c.items.length - 1], offeredPotion);
+  assert.equal(slotItems(state.c).length, 4);
+  assert.ok(!takeEvents.some((e) => e.type === "bagFull"));
 });
 
 // --- chargen kit never exceeds bagCap ---------------------------------------

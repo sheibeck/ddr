@@ -107,16 +107,41 @@ export function eff(c, key) {
 }
 
 /**
+ * BAG_FREE_KINDS — the closed list of item `kind`s that never consume a bag
+ * slot: `"potion"` (LOOT-04 user rule, 2026-09-15 — special potions live in
+ * `c.items` but are exempt), `"scroll"` (quick 260918-vvt, 2026-09-18 scope
+ * amendment — scrolls are the `c.scrolls` scalar today and never enter
+ * `c.items`; listed defensively so a future scroll ITEM is exempt by
+ * construction), and `"bag"` (a `kind:"bag"` upgrade is applied in place by
+ * `engine/items.js#stowItem` and never itself stowed). THE bag-free
+ * predicate lives here as `takesBagSlot` below — `slotItems`,
+ * `engine/items.js#stowItem`, `src/browser/viewModels.js#dropShelfItems` and
+ * mazeworld.html's find card / loot `needsSlot` all read it and nothing else
+ * may re-derive the rule from `it.kind`.
+ */
+export const BAG_FREE_KINDS = new Set(["potion", "scroll", "bag"]);
+
+/**
+ * takesBagSlot(it) — true if `it` would consume a bag slot (anything except
+ * a `BAG_FREE_KINDS` kind); false for a bag-free kind AND for any non-object
+ * (null/undefined/string/number). Pure, no rng, no mutation.
+ */
+export function takesBagSlot(it) {
+  return !!it && typeof it === "object" && !BAG_FREE_KINDS.has(it.kind);
+}
+
+/**
  * slotItems(c) — LOOT-04 user rule (2026-09-15): only gear and treasure
  * consume bag slots. Healing potions (`c.potions`) and scrolls (`c.scrolls`)
  * are already scalars; SPECIAL potions (`kind:"potion"`, e.g. Acuteness) live
- * in `c.items` but are exempt from the slot count. This is THE capacity count
- * every engine and shell site must read instead of a raw `c.items.length`.
- * Defensive against null/undefined entries and a missing/non-array `c.items`
- * (returns `[]`); never mutates.
+ * in `c.items` but are exempt from the slot count, per `takesBagSlot`
+ * (potions, scrolls, bags). This is THE capacity count every engine and
+ * shell site must read instead of a raw `c.items.length`. Defensive against
+ * null/undefined entries and a missing/non-array `c.items` (returns `[]`);
+ * never mutates.
  */
 export function slotItems(c) {
-  return (c && Array.isArray(c.items) ? c.items : []).filter((it) => it && it.kind !== "potion");
+  return (c && Array.isArray(c.items) ? c.items : []).filter(takesBagSlot);
 }
 
 /**

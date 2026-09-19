@@ -19,6 +19,7 @@ import {
   eff,
   skill,
   slotItems,
+  takesBagSlot,
   afraidDamage,
   slotFor,
   WORN_SLOTS,
@@ -545,10 +546,10 @@ export function stowItem(state, it, events = [], quiet = true) {
     }
     return true;
   }
-  // A potion is slot-exempt (LOOT-04): it never counts toward capacity AND
-  // is never itself refused by the gate, even when the bag's gear/treasure
-  // count already sits at cap.
-  if (it.kind !== "potion" && !canStow(c)) {
+  // A bag-free item (potion or scroll, per takesBagSlot) is slot-exempt: it
+  // never counts toward capacity AND is never itself refused by the gate,
+  // even when the bag's gear/treasure count already sits at cap.
+  if (takesBagSlot(it) && !canStow(c)) {
     events.push({ type: "bagFull", item: it, have: slotItems(c).length, slots: bagCap(c) });
     return false;
   }
