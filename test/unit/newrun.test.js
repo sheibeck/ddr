@@ -35,7 +35,7 @@ test("newRun(seed) starts on a fresh floor 1", () => {
   const state = newRun(12345);
   assert.equal(state.floor.depth, 1, "a fresh run starts on floor 1");
   assert.equal(state.dead, false);
-  assert.equal(state.won, false);
+  assert.ok(!("won" in state), "the run carries no won flag");
 });
 
 test("newRun(seed) reveals the spawn cell and its neighbors", () => {

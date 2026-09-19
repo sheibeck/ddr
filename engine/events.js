@@ -14,7 +14,6 @@ export const EVENT_TYPES = {
   FLOOR_CHANGED: "floorChanged",
   DIED: "died",
   LEVELED: "leveled",
-  WON: "won",
 };
 
 /** moved(to) — the player stepped to grid cell `to` ({x, y}). */
@@ -31,6 +30,3 @@ export const died = (cause) => ({ type: EVENT_TYPES.DIED, cause });
 
 /** leveled(level, wpGain) — the character reached a new skill level. */
 export const leveled = (level, wpGain) => ({ type: EVENT_TYPES.LEVELED, level, wpGain });
-
-/** won(level, day, steps) — the run reached the Gate and won. */
-export const won = (level, day, steps) => ({ type: EVENT_TYPES.WON, level, day, steps });

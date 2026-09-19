@@ -20,7 +20,7 @@
 //      as inline object literals).
 //   3. Union in the handful of types engine/events.js defines via factory
 //      functions that reference `EVENT_TYPES.X` indirection rather than a
-//      literal string at the push site (`died`, `won`, `leveled`,
+//      literal string at the push site (`died`, `leveled`,
 //      `floorChanged` — `struck`/`moved`/`spGained`/`teleported` are also
 //      touched by EVENT_TYPES but already appear as literals elsewhere, or
 //      (moved only) are a deliberate silent no-narration event by design —
@@ -52,7 +52,7 @@ const ENGINE_DIR = path.join(REPO_ROOT, "engine");
 // (never a literal `type: "..."` string at the actual push site) that must
 // still be unioned into the canonical set. "moved" is deliberately NOT
 // listed here — see the module header's exclusion note.
-const KNOWN_INDIRECT_TYPES = ["died", "won", "leveled", "spGained", "floorChanged", "teleported"];
+const KNOWN_INDIRECT_TYPES = ["died", "leveled", "spGained", "floorChanged", "teleported"];
 
 /**
  * stripComments(source) — strips /* *\/ block comments and // line comments,

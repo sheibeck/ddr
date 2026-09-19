@@ -377,7 +377,7 @@ test("no-record invariant: 25 legal moves + a startCombat/fight/attack sequence 
   const rng = makeRng(9);
   let state = newRun(9);
   for (let i = 0; i < 25; i++) {
-    if (state.combat || state.dead || state.won) break;
+    if (state.combat || state.dead) break;
     const dir = findOpenDir(state);
     if (!dir) break;
     state = applyAction(state, { type: "move", dir }).state;
@@ -432,7 +432,7 @@ test("draw-count invariance: a planted squares timer changes zero rng draws or e
     let s = newRun(seed);
     const dirs = [];
     for (let i = 0; i < 30; i++) {
-      if (s.combat || s.dead || s.won) break;
+      if (s.combat || s.dead) break;
       const dir = findOpenDir(s);
       if (!dir) break;
       dirs.push(dir);

@@ -28,11 +28,12 @@
 // the exact sub-state the prototype itself flagged as unsaveable, now plain
 // data) and the encounters fixture (test/parity/fixtures/
 // action-script.encounters.json — a trap-set affliction, a chest, a
-// faerie). It also originally added the win fixture (a full run through
-// won/deathNote/epitaph) — that fixture and its round-trip test were
-// DELIBERATELY RETIRED in 03-02 (endless descent, RUN-02/RUN-04): winGame()
-// is no longer a reachable run terminator (genFloor never emits "gate"
-// anymore, and move() routes any legacy "gate" tile to descend() instead).
+// faerie). It also originally added the win fixture (a full run through the
+// then-existing win-path state) — that fixture and its round-trip test were
+// DELIBERATELY RETIRED in 03-02 (endless descent, RUN-02/RUN-04): the win
+// path is no longer a reachable run terminator (genFloor never emits "gate"
+// anymore, and move() routes any legacy "gate" tile to descend() instead;
+// Phase 46, DEAD-04, later deleted the win path entirely).
 // ENG-04 round-trip coverage remains complete via the movement/combat/magic/
 // economy/encounters fixtures above; `descend` stays imported below — it is
 // still exercised via ECONOMY_INTERNAL_FNS in the economy/encounters
@@ -261,6 +262,7 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
 }
 
 // "win fixture round-trip" test DELIBERATELY RETIRED in 03-02 (endless
-// descent): winGame() is no longer a reachable run terminator, so there is
-// no won/deathNote/epitaph win-path state left to prove round-trips. See the
-// file header comment for the full rationale.
+// descent): the win path is no longer a reachable run terminator, so there
+// is no win-path state left to prove round-trips (Phase 46, DEAD-04, later
+// deleted the win path entirely). See the file header comment for the full
+// rationale.

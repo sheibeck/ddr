@@ -1318,9 +1318,9 @@ export function forceParty(state) {
  * right after `newRun`, before any action runs) — not the raw requested number.
  *
  * Result gains four new fields beyond the pre-Phase-22 shape:
- *   `stuck` — true iff the run hit `maxActions` without dying or winning (its
+ *   `stuck` — true iff the run hit `maxActions` without dying (its
  *     own outcome bucket, excluded from every depth-stat readout below);
- *   `outcome` — one of "dead" | "won" | "stuck" | "unknown" (`cause` is
+ *   `outcome` — one of "dead" | "stuck" | "unknown" (`cause` is
  *     UNCHANGED — stuck runs keep `cause: "maxActionsHit"` for any older
  *     consumer reading that field);
  *   `floorsGained` — `state.floor.depth - startDepth` (a deep-start run's own
@@ -1351,7 +1351,7 @@ export function playRun(seed, opts, onStep) {
   const tallies = makeTallies();
   let actions = 0;
   let diedInCombat = false;
-  while (!state.dead && !state.won && actions < ctx.opts.maxActions) {
+  while (!state.dead && actions < ctx.opts.maxActions) {
     const action = decideAction(state, policyRng, ctx);
     const inCombat = !!state.combat;
     const before = state; // Phase 42 (BAL-02): pre-action state — applyAction returns a NEW object, so this reference stays valid after the reassignment below
@@ -1369,8 +1369,8 @@ export function playRun(seed, opts, onStep) {
     if (onStep) onStep(events, state);
     actions++;
   }
-  const stuck = !state.dead && !state.won && actions >= ctx.opts.maxActions;
-  const outcome = state.dead ? "dead" : state.won ? "won" : stuck ? "stuck" : "unknown";
+  const stuck = !state.dead && actions >= ctx.opts.maxActions;
+  const outcome = state.dead ? "dead" : stuck ? "stuck" : "unknown";
   return {
     seed,
     state,
@@ -1378,13 +1378,12 @@ export function playRun(seed, opts, onStep) {
     tallies,
     deathDepth: state.floor.depth,
     dead: state.dead,
-    won: state.won,
     stuck,
     outcome,
     startDepth,
     floorsGained: state.floor.depth - startDepth,
     encountersSurvived: tallies.encounters - (diedInCombat ? 1 : 0),
-    cause: state.deathNote || (state.won ? "walked out" : actions >= ctx.opts.maxActions ? "maxActionsHit" : "unknown"),
+    cause: state.deathNote || (actions >= ctx.opts.maxActions ? "maxActionsHit" : "unknown"),
     actionsPerFloor: actions / Math.max(1, state.floor.depth),
     memberAtStart,
     memberAtEnd: state.party.length,

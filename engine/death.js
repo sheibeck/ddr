@@ -74,7 +74,7 @@ function buildRunSummary(state, cause, when) {
     gold: c.gold,
     kills: c.kills || 0,
     cause,
-    note: state.deathNote || (cause === "won" ? "walked out" : "died"),
+    note: state.deathNote || "died",
     epitaph: state.epitaph,
     when,
   };
@@ -135,8 +135,8 @@ export function die(state, cause, detail, rng, events = [], now = Date.now) {
 
 /**
  * bury(state, cause, detail, graves, now) — builds this run's RunSummary
- * (from state.deathNote/state.epitaph, already set by die() or a winGame
- * path) and returns a NEW graves array with it unshifted and capped at 60.
+ * (from state.deathNote/state.epitaph, already set by die()) and returns a
+ * NEW graves array with it unshifted and capped at 60.
  * The graveyard array itself is owned by the persistence layer — this
  * function never touches localStorage (ports mazeworld.html bury(), lines
  * 2950-2961, sans storage and DOM re-render).

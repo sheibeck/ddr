@@ -641,11 +641,13 @@ export function validateSave(raw, options = {}) {
     // unlike pendingFind (transient, nulled by rehydrate below).
     pendingLoot: sanitizeLoot(obj.pendingLoot),
     dead: !!obj.dead,
-    won: !!obj.won,
-    // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
+    // Phase 46 (DEAD-04): the retired run-terminator flag is deliberately
+    // absent from this whitelist now — a stale save carrying it (any value)
+    // loads tolerantly; the key is simply never copied, never rejected.
+    // Phase 21 (D-14/D-23): boolean-coerced like dead; absent on a
     // pre-Phase-21 save → false.
     dev: !!obj.dev,
-    // Phase 33 (STORE-01): boolean-coerced like dev/dead/won; absent on a
+    // Phase 33 (STORE-01): boolean-coerced like dev/dead; absent on a
     // pre-Phase-33 save → false, so an old save keeps today's fixed store
     // stock and never gains the new draws mid-run.
     storeRoll: !!obj.storeRoll,
@@ -658,7 +660,7 @@ export function validateSave(raw, options = {}) {
     epitaph: obj.epitaph || "",
   };
   // MD-01: pass deathAt/lastWords through the validated value too, so a
-  // terminal (dead/won) run's real save/load path — validateSave then
+  // terminal (dead) run's real save/load path — validateSave then
   // rehydrate() — doesn't lose them even though rehydrate() alone now
   // preserves them when present on its input.
   if (obj.deathAt !== undefined) value.deathAt = obj.deathAt;
@@ -737,7 +739,7 @@ export function rehydrate(obj) {
     // pendingFind just above) — the player must still get their loot screen
     // back on resume, so it is carried through here, never reset.
     pendingLoot: sanitizeLoot(obj.pendingLoot),
-    // PARTY-02 (Phase 7): whitelist the persistent roster, mirroring dead/won
+    // PARTY-02 (Phase 7): whitelist the persistent roster, mirroring dead
     // above. sanitizeParty fail-opens a missing party (pre-Phase-7 save) to []
     // and drops malformed members, so old saves load with `party: []` and zero
     // other data loss. serializeRun's state spread already persists it; this is
@@ -746,20 +748,22 @@ export function rehydrate(obj) {
     // Phase 38 (ABIL-05): ensurePartyAbilities mirrors validateSave's own call.
     party: ensurePartyAbilities(sanitizeParty(obj.party)),
     dead: !!obj.dead,
-    won: !!obj.won,
-    // Phase 21 (D-14/D-23): boolean-coerced like dead/won; absent on a
+    // Phase 46 (DEAD-04): the retired run-terminator flag is deliberately
+    // absent from this whitelist now — a stale save carrying it (any value)
+    // loads tolerantly; the key is simply never copied, never rejected.
+    // Phase 21 (D-14/D-23): boolean-coerced like dead; absent on a
     // pre-Phase-21 save → false.
     dev: !!obj.dev,
-    // Phase 33 (STORE-01): boolean-coerced like dev/dead/won; absent on a
+    // Phase 33 (STORE-01): boolean-coerced like dev/dead; absent on a
     // pre-Phase-33 save → false, so an old save keeps today's fixed store
     // stock and never gains the new draws mid-run.
     storeRoll: !!obj.storeRoll,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
-  // MD-01: die()/winGame() also set deathAt/lastWords on a terminal run, and
+  // MD-01: die() also sets deathAt/lastWords on a terminal run, and
   // serializeRun() (which spreads the FULL state) preserves them — round-trip
-  // them here too rather than silently dropping a dead/won run's time-of-death
+  // them here too rather than silently dropping a dead run's time-of-death
   // and "last words" on reload. Only added when present so a save that never
   // reached a terminal state doesn't gain spurious `undefined` fields.
   if (obj.deathAt !== undefined) state.deathAt = obj.deathAt;

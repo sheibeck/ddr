@@ -18,13 +18,13 @@ test("die() sets state.dead to true", () => {
   assert.equal(state.dead, true);
 });
 
-test("die() is the sole terminator — a died event is pushed, no winGame/Gate path involved", () => {
+test("die() is the sole terminator — a died event is pushed, no win/Gate path involved", () => {
   const state = newRun(1);
   const rng = makeRng(state.rngState);
   const events = [];
   die(state, "starve", null, rng, events, () => 0);
   assert.ok(events.some((e) => e.type === "died"), "die() pushes a died event");
-  assert.equal(state.won, false, "death is never routed through the win path");
+  assert.ok(!("won" in state), "death is never routed through a win path — the run carries no won flag");
 });
 
 test("death is permanent: move() is a no-op once state.dead is true (no revive/undo/continue)", () => {

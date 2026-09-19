@@ -74,7 +74,7 @@ function collectJsFiles(dir) {
 // a literal `type: "..."` string at the actual push site). Copied verbatim
 // from test/unit/formatEventsCoverage.test.js — "moved" is deliberately NOT
 // listed (a plain step is intentionally silent by design).
-const KNOWN_INDIRECT_TYPES = ["died", "won", "leveled", "spGained", "floorChanged", "teleported"];
+const KNOWN_INDIRECT_TYPES = ["died", "leveled", "spGained", "floorChanged", "teleported"];
 
 /**
  * deriveCanonicalEventTypes() — the authoritative event-type vocabulary,

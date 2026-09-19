@@ -87,8 +87,11 @@ function comparable(state) {
   // since this file defines its own local comparable(); always false on a fixture; a plain strip (no reconcile — `store` is transient).
   // Phase 39 (GEAR-05): strip `state.pendingHazard` too — a seventh analog,
   // mirroring harness combatComparable; always null on a fixture.
+  // Phase 46 (DEAD-04): strip the prototype-side win flag too — see
+  // harness/comparables.js's Phase 46 rationale (a retired-field carve-out,
+  // stripRetiredCounterFields precedent).
   state = reconcilePendingFight(state);
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...rest } = state;
+  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...rest } = state;
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);

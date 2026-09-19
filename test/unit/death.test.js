@@ -189,10 +189,10 @@ test("bury produces a RunSummary with the prototype's fields and caps the gravey
   }
 });
 
-test("bury falls back to a cause-based note when state.deathNote is empty (e.g. a win)", () => {
-  const state = fixedState({ deathNote: "", epitaph: "Walked out.", won: true });
-  const graves = bury(state, "won", null, [], () => 1);
-  assert.equal(graves[0].note, "walked out");
+test("bury falls back to a plain died note when deathNote is empty", () => {
+  const state = fixedState({ deathNote: "", epitaph: "Rest in pieces." });
+  const graves = bury(state, "trap", null, [], () => 1);
+  assert.equal(graves[0].note, "died");
 });
 
 test("graves stay a plain array — JSON round-trips losslessly", () => {

@@ -509,7 +509,14 @@ export function movementComparable(state) {
   // prototype-side equivalent. A plain strip (no reconcile needed — it is
   // always null here, unlike pendingFind/pendingLoot which can be genuinely
   // populated mid-fixture).
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
+  // Phase 46 (DEAD-04, retired-field carve-out — the stripRetiredCounterFields
+  // precedent): the frozen prototype still initialises its top-level win flag
+  // to false at every fixture replay, and no fixture ever reaches a win, so
+  // the field is a permanent no-op difference either way (false vs absent).
+  // The engine no longer carries the field at all (Phase 46 deleted it
+  // entirely) — the prototype-side literal is stripped here, a retired-field
+  // carve-out, not a reconcile or a special case.
+  const { beats, seed, rngState, version, won, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
   // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST (drops happen
@@ -597,7 +604,10 @@ export function combatComparable(state) {
   // Phase 39 (GEAR-05): strip `state.pendingHazard` too — see
   // movementComparable's rationale (seventh analog of party/pendingJoiner/
   // pendingFind/pendingLoot/dev/storeRoll).
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
+  // Phase 46 (DEAD-04): strip the prototype-side win flag too — see
+  // movementComparable's Phase 46 rationale above (a retired-field carve-out,
+  // stripRetiredCounterFields precedent).
+  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find (no-op when none pending).
   // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST — see
   // movementComparable's rationale above (drops happen in the fight, a find
@@ -1121,7 +1131,10 @@ export function economyComparable(state) {
   // Phase 39 (GEAR-05): strip `state.pendingHazard` too — see
   // movementComparable's rationale (seventh analog of party/pendingJoiner/
   // pendingFind/pendingLoot/dev/storeRoll).
-  const { beats, seed, rngState, version, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
+  // Phase 46 (DEAD-04): strip the prototype-side win flag too — see
+  // movementComparable's Phase 46 rationale above (a retired-field carve-out,
+  // stripRetiredCounterFields precedent).
+  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing — the `chest` (seed 2) and `faerie` (seed 38)
   // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.

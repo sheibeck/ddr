@@ -168,7 +168,6 @@ export const ORACLE_ONLY = new Set([
   "spGained", // pure XP bookkeeping; foeKilled/parleyRolled toast the outcome that earned it
   "combatEnded", // the combat screen closing IS the signal
   "died", // dedicated death/epitaph screen
-  "won", // dedicated victory banner
   "storeLeft", // the store screen closing IS the signal
   "encounterRolled", // internal table-roll bookkeeping; tableFour/tableFourNoop narrate the outcome
   "findOffered", // the dedicated Take it/Leave it prompt IS the UI

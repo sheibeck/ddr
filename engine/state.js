@@ -219,9 +219,8 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // via reconcilePendingLoot (Task 3, mirrors reconcilePendingFind).
     pendingLoot: [],
     dead: false,
-    won: false,
     // Phase 21 (TUNE-04, D-13/D-14): dev — true only for a start-at-depth run;
-    // a plain boolean present on EVERY fresh state exactly like dead/won
+    // a plain boolean present on EVERY fresh state exactly like dead
     // above (so serializeRun/validateSave/rehydrate round-trip it and the
     // fresh-run round-trip test stays deepStrictEqual). The parity harness
     // strips it in all three comparables. A dev run is never written to the

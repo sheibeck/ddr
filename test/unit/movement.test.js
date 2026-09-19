@@ -24,7 +24,6 @@ import {
   teleport,
   bestTeleportDir,
   descend,
-  winGame,
   maxCharges,
   nightlyEats,
 } from "../../engine/movement.js";
@@ -91,7 +90,7 @@ function fixedState(overrides = {}) {
     c: fixedFighter(cOverrides),
     floor: { g: wallGrid(), px: 5, py: 5, depth: 1, ...floorOverrides },
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    dead: false, won: false, deathNote: "", epitaph: "",
+    dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }
@@ -107,8 +106,8 @@ test("move: a wall/out-of-bounds move is a no-op (no state change, no events)", 
   assert.equal(state.steps, 0);
 });
 
-test("move: combat/store/dead/won all short-circuit as a no-op", () => {
-  for (const overrides of [{ combat: {} }, { store: {} }, { dead: true }, { won: true }]) {
+test("move: combat/store/dead all short-circuit as a no-op", () => {
+  for (const overrides of [{ combat: {} }, { store: {} }, { dead: true }]) {
     const state = fixedState(overrides);
     open(state.floor.g, 5, 4);
     const events = move(state, "N", fakeRng([]), []);
@@ -706,13 +705,13 @@ test("move: a legacy 'gate' tile routes to descend (endless-mode compat), never 
   // legacy-save compatibility path: an in-flight save from before endless
   // descent may still hold a "gate" tile on its current floor. Stepping onto
   // it must continue deeper, exactly mirroring the exit-descend test above,
-  // and must never set state.won.
+  // and never marks the run as won.
   const state = fixedState({ floor: { depth: 5 } });
   open(state.floor.g, 5, 4, { feat: "gate" });
   const rng = makeRng(42); // genFloor draws an unpredictable number of times
   const events = move(state, "N", rng, []);
   assert.equal(state.floor.depth, 6);
-  assert.equal(state.won, false);
+  assert.ok(!("won" in state), "the run carries no won flag");
   assert.equal(state.dead, false);
   assert.ok(events.some((e) => e.type === "floorChanged" && e.depth === 6));
 });
@@ -736,17 +735,6 @@ test("WR-01: descend() guards the SP-bonus formula against a tampered negative/n
     assert.ok(events.some((e) => e.type === "spGained" && e.amount === gained));
     assert.ok(Number.isInteger(state.floor.depth) && state.floor.depth >= 1, "the new floor's own depth is also sanitized");
   }
-});
-
-test("winGame: still sets state.won when called directly (RETIRED as a run terminator — no longer wired by move(), but the function itself is unchanged/dormant)", () => {
-  const state = fixedState();
-  const rng = makeRng(1);
-  const events = winGame(state, rng, [], () => 12345);
-  assert.equal(state.won, true);
-  assert.equal(state.dead, false, "winning is not dying");
-  assert.equal(state.deathNote, "walked out");
-  assert.ok(state.epitaph.length > 0);
-  assert.ok(events.some((e) => e.type === "won" && e.level === state.c.level && e.day === state.day));
 });
 
 test("move: dot/trap/chest feature tiles are consumed and dispatch to the real encounter/trap/chest handlers (01-10)", () => {

@@ -108,7 +108,7 @@ function parleySummary(results) {
 }
 
 function printReport(results, opts) {
-  // HARN-02: a `stuck` run (hit maxActions without dying or winning) is its
+  // HARN-02: a `stuck` run (hit maxActions without dying) is its
   // own outcome bucket — excluded from every depth stat below so a 5% stuck
   // rate never silently corrupts the death-depth/cause readout.
   const completed = results.filter((r) => !r.stuck);
@@ -116,7 +116,6 @@ function printReport(results, opts) {
   const depths = distribution(completed.map((r) => r.deathDepth));
   const actions = distribution(results.map((r) => r.actions)); // action-count is not a depth stat — stays over ALL runs
   const causes = causeBreakdown(completed);
-  const wonCount = results.filter((r) => r.won).length;
   const deadCount = results.filter((r) => r.dead).length;
 
   console.log(`\ntune-difficulty: ${results.length} seeded auto-play run(s), start depth ${opts.startDepth}`);
@@ -147,7 +146,7 @@ function printReport(results, opts) {
 
   printSharedReadout(results, opts);
 
-  console.log(`\nOutcome: ${deadCount} dead, ${wonCount} won, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
+  console.log(`\nOutcome: ${deadCount} dead, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
   console.log("");
 }
 
@@ -200,7 +199,6 @@ function main() {
           deathDepth: distribution(completedResults.map((r) => r.deathDepth)),
           actions: distribution(results.map((r) => r.actions)),
           causes: causeBreakdown(completedResults),
-          won: results.filter((r) => r.won).length,
           dead: results.filter((r) => r.dead).length,
           parley: parleySummary(results),
           ...sharedJson(results, opts),

@@ -1,5 +1,5 @@
 // ENG-05 movement parity: the extracted engine's move/newDay/teleport/
-// descend/winGame match the frozen prototype's, action for action, for the
+// descend match the frozen prototype's, action for action, for the
 // same seed and the same ordered script. Both sides consume the SAME
 // mulberry32 stream (the sandbox seeds Math.random with it; the engine reads
 // it via makeRng), so a faithful port produces byte-identical state after
@@ -65,8 +65,11 @@ function comparable(state) {
   // Phase 39 (GEAR-05): strip `state.pendingHazard` too — a seventh analog,
   // mirroring harness movementComparable; always null on this fixture (no
   // fixture hero carries a rope/ladder, so the pre-check never fires).
+  // Phase 46 (DEAD-04): strip the prototype-side win flag too — see
+  // harness/comparables.js's Phase 46 rationale (a retired-field carve-out,
+  // stripRetiredCounterFields precedent).
   state = reconcilePendingFight(state);
-  const { beats, seed, rngState, version, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...rest } = state;
+  const { beats, seed, rngState, version, won, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...rest } = state;
   // Phase 40 (SPELL-05, Plan 04): strip the new engine-only spellSeen
   // provenance flag too (see harness stripSpellSeen) — mirrored here
   // because this file keeps its own local comparable(). No movement

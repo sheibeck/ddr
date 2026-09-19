@@ -119,7 +119,7 @@ test("applyAction({type:'abandon'}) kills the run with a distinct 'abandon' caus
   assert.notDeepStrictEqual(next.rngState, before.rngState, "the RNG cursor advanced through the normal seam (epitaphFor draws)");
 });
 
-test("applyAction({type:'abandon'}) is a no-op if the run is already dead/won", () => {
+test("applyAction({type:'abandon'}) is a no-op if the run is already dead", () => {
   const state = newRun(322);
   state.dead = true;
   const { state: next, events } = applyAction(state, { type: "abandon" });
@@ -150,11 +150,11 @@ test("newRun produces a JSON round-trippable GameState", () => {
   const roundTripped = JSON.parse(JSON.stringify(state));
   assert.deepStrictEqual(roundTripped, state);
   // Sanity on the required shape.
-  for (const key of ["version", "seed", "rngState", "c", "floor", "day", "steps", "combat", "store", "beats", "dead", "won"]) {
+  for (const key of ["version", "seed", "rngState", "c", "floor", "day", "steps", "combat", "store", "beats", "dead"]) {
     assert.ok(key in state, `GameState missing field: ${key}`);
   }
   assert.equal(state.combat, null);
   assert.equal(state.store, null);
   assert.equal(state.dead, false);
-  assert.equal(state.won, false);
+  assert.ok(!("won" in state), "the run carries no won flag");
 });

@@ -283,7 +283,6 @@ export const EVENT_NARRATION = {
   // Phase 38 (ABIL-01/03): a level-pool ability roll, folded as the SKILL
   // LEVEL N card's second line (see rail.js's matching family entry).
   abilityLearned: (e) => `<span class="hit">New trick: ${e.name ?? "something"}</span> — ${e.txt ?? ""}`,
-  won: (e) => `<span class="banner">The Gate.</span> Walked out on day ${e.day ?? "?"}, after ${e.steps ?? 0} squares.`,
   died: () => `<span class="hurt">You have died.</span>`,
 
   /* ---------------- combat.js ---------------- */

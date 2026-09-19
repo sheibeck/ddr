@@ -8,7 +8,7 @@
 // contract with zero regressions."
 //
 // The win path (a full run to the floor-5 Gate, diffState-compared against
-// the frozen prototype including the `winGame` event/state itself) was
+// the frozen prototype including its win event/state itself) was
 // closed here in 01-10 and DELIBERATELY RETIRED in 03-02 (endless descent,
 // RUN-02/RUN-04): the frozen prototype still wins at the floor-5 Gate, but
 // the endless engine now descends past it (genFloor never emits "gate"

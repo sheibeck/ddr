@@ -115,8 +115,8 @@ export function applyAction(state, action) {
       // terminator every other death in the game calls) so it goes through
       // this ONE rngState-persisting seam rather than presentation code
       // rolling its own epitaph off-band. A no-op if the run is already
-      // over (dead/won) — nothing left to abandon.
-      if (!next.dead && !next.won) die(next, "abandon", null, rng, events);
+      // over (dead) — nothing left to abandon.
+      if (!next.dead) die(next, "abandon", null, rng, events);
       break;
     case "resolveJoiner":
       // PARTY-01 (Phase 9): accept/decline the pending Joiner meetJoiner stashed.

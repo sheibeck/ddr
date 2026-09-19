@@ -2,8 +2,8 @@
 //
 // The movement domain (ENG-01, ENG-05) — the first rule domain routed
 // through applyAction, and the walking skeleton's proof slice. Ports
-// mazeworld.html's move/newDay/makeCamp/teleport/bestTeleportDir/descend/
-// winGame (lines 1614-1868), replacing every D()/pick()-backed Math.random()
+// mazeworld.html's move/newDay/makeCamp/teleport/bestTeleportDir/descend
+// (lines 1614-1868), replacing every D()/pick()-backed Math.random()
 // draw with the injected engine rng (in the prototype's exact consumption
 // order), and every say()/evt()/beginEvent() narration call with a pushed
 // `{type, ...}` event. No DOM, no localStorage, no Math.random, no global S
@@ -19,8 +19,9 @@
 // anymore, so "exit" is the only descent tile a freshly-generated floor can
 // have; the "gate" branch survives ONLY as legacy-save compatibility — an
 // in-flight save from before this change may still hold a "gate" tile, and
-// stepping onto it now routes to descend() (never winGame()), so permadeath
-// is the sole run terminator. Circular import with engine/encounters.js
+// stepping onto it now routes to descend(), so permadeath is the sole run
+// terminator (Phase 46, DEAD-04: the unreachable win path is gone entirely).
+// Circular import with engine/encounters.js
 // (encounterDot/springTrap/openChest call back into teleport() here;
 // move()/teleport() call them) is safe — see engine/encounters.js's header
 // comment for why.
@@ -29,11 +30,11 @@ import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost, inStone } from "./derived.js";
 import { rollDice } from "./dice.js";
-import { die, epitaphFor, epitaphCtx } from "./death.js";
+import { die } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
-import { moved, floorChanged, won } from "./events.js";
+import { moved, floorChanged } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS, ACTIVATION_OF } from "../content/index.js";
 import { tickSquares } from "./effects.js";
 import { narrateTimerTransitions, toolIndex } from "./items.js";
@@ -135,7 +136,7 @@ export function resolveEtherEnd(state, rng, events = [], now = Date.now) {
  * runs for them — byte-identical to before this plan.
  */
 export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
-  if (state.combat || state.store || state.dead || state.won) return events;
+  if (state.combat || state.store || state.dead) return events;
 
   const f = state.floor;
   const [dx, dy] = DIRV[dir];
@@ -546,7 +547,7 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
  * tile with no roll and no fall damage. The torch is NOT reachable here — it
  * is a `useItem` activatable (engine/items.js), not a movement-tile tool.
  * The full refusal ladder, every step BEFORE any mutation: combat/store/
- * dead/won (silent no-op, mirrors `move`'s own guard) -> `unknown` (`tool`
+ * dead (silent no-op, mirrors `move`'s own guard) -> `unknown` (`tool`
  * is not a recognized hazard tool — `validateAction` already rejects
  * anything but "ladder"/"rope", so this only ever fires for a `TOOLS[tool]`
  * lookup miss on a tampered/malformed call) -> `noTool` (not carried) ->
@@ -556,7 +557,7 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
  * there, per that block's own header comment).
  */
 export function useTool(state, tool, dir, rng, events = [], now = Date.now) {
-  if (state.combat || state.store || state.dead || state.won) return events;
+  if (state.combat || state.store || state.dead) return events;
   const feat = TOOLS[tool]?.feat;
   if (!feat) {
     events.push({ type: "toolRefused", tool, reason: "unknown" });
@@ -781,7 +782,7 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
  * runs a `camped` newDay.
  */
 export function makeCamp(state, rng, events = [], now = Date.now) {
-  if (state.combat || state.store || state.dead || state.won) return events;
+  if (state.combat || state.store || state.dead) return events;
   // DELIBERATE RULES CHANGE, Phase 25.1, 2026-09-15 (DFB-06): the gate now
   // counts every live member's appetite exactly as newDay does (the old
   // gate counted the hero only, so a hero with a member could pass the gate
@@ -973,30 +974,5 @@ export function descend(state, rng, events = []) {
   // after floorChanged, so the murder is narrated on the new floor and the
   // new floor is identical with or without the draw.
   cutthroatMurderCheck(state, rng, events);
-  return events;
-}
-
-/**
- * winGame(state, rng, events, now) — ports mazeworld.html winGame() (lines
- * 1858-1868), minus paint()/renderEncounter() (presentation) and bury()
- * (owned by the persistence layer, matching engine/death.js's pattern: the
- * caller supplies the current graveyard array and calls `bury` itself once
- * it has one to persist). Sets `state.won`, NOT `state.dead` — a winner
- * keeps walking, they just already won.
- *
- * RETIRED as a run terminator (RUN-04, Plan 02): genFloor no longer ever
- * emits a "gate" tile and move() no longer dispatches to this function (its
- * old "gate" branch now calls descend() for legacy-save compatibility
- * instead) — winGame() is unreachable via normal play. Permadeath (die,
- * engine/death.js) is the sole run terminator. Retained, still exported, and
- * still directly callable (movement.test.js documents this explicitly) only
- * until Phase 4's win-screen UI cleanup removes state.won entirely.
- */
-export function winGame(state, rng, events = [], now = Date.now) {
-  state.won = true;
-  state.deathAt = now();
-  state.deathNote = "walked out";
-  state.epitaph = epitaphFor("won", epitaphCtx(state), rng);
-  events.push(won(state.c.level, state.day, state.steps));
   return events;
 }

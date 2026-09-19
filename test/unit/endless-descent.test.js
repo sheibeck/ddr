@@ -26,7 +26,7 @@ test("descend: driven in a loop from newRun, depth increases by exactly 1 each c
     const events = descend(state, rng, []);
     depth++;
     assert.equal(state.floor.depth, depth, `after descend #${i + 1}, depth should be ${depth}`);
-    assert.equal(state.won, false, `state.won must stay false at depth ${depth}`);
+    assert.ok(!("won" in state), `state carries no won key at depth ${depth}`);
     assert.equal(state.dead, false, `state.dead must stay false at depth ${depth} (no lethal event injected here)`);
     assert.ok(events.some((e) => e.type === "floorChanged" && e.depth === depth));
 
@@ -46,11 +46,11 @@ test("die: permadeath, not a Gate, is the run's actual terminator", () => {
   descend(state, rng, []);
   descend(state, rng, []);
   assert.equal(state.dead, false);
-  assert.equal(state.won, false);
+  assert.ok(!("won" in state), "the run carries no won flag");
 
   const events = [];
   die(state, "combat", "a nameless horror", rng, events, () => 12345);
   assert.equal(state.dead, true, "die() is the terminator");
-  assert.equal(state.won, false, "dying is not winning");
+  assert.ok(!("won" in state), "the run carries no won flag");
   assert.ok(events.some((e) => e.type === "died" && e.cause === "combat"));
 });

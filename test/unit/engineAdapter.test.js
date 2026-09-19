@@ -223,14 +223,12 @@ test("formatEvents maps known event types to HTML and drops unknown ones silentl
     { type: "floorChanged", depth: 3 },
     { type: "leveled", level: 2, wpGain: 5 },
     { type: "died", cause: "starve" },
-    { type: "won", level: 3, day: 10, steps: 400 },
     { type: "somethingBrandNewFromALaterSlice" },
   ]);
-  assert.equal(html.length, 4, "the unknown-type event and the silent 'moved' both drop out");
+  assert.equal(html.length, 3, "the unknown-type event and the silent 'moved' both drop out");
   assert.ok(html[0].includes("Floor 3"));
   assert.ok(html[1].includes("2"));
   assert.ok(html[2].includes("died") || html[2].toLowerCase().includes("died"));
-  assert.ok(html[3].includes("Gate"));
 });
 
 // 04.2 Text batch (E10/P2): goldGained must never leak the engine's internal

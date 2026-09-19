@@ -150,7 +150,7 @@ test("an old-shape save (no seed/rngState) rehydrates with safe defaults", () =>
   assert.deepStrictEqual(state.c, { ...oldSave.c, bag: "medium", abilities: ["brace", "lastStand"], worn: {} });
 });
 
-// MD-01 regression: die()/winGame() set state.deathAt/lastWords on a
+// MD-01 regression: die() sets state.deathAt/lastWords on a
 // terminal run, and serializeRun() preserves them (it spreads the full
 // state) — but the save/load round-trip (validateSave -> rehydrate) used to
 // silently drop both. A reload of a dead run's save must keep its
@@ -176,6 +176,23 @@ test("MD-01: a fresh (non-terminal) run's rehydrated state carries no spurious d
   const rehydrated = rehydrate(check.value);
   assert.ok(!("deathAt" in rehydrated), "a fresh run must not gain a deathAt key");
   assert.ok(!("lastWords" in rehydrated), "a fresh run must not gain a lastWords key");
+});
+
+test("DEAD-04: a stale save carrying won: true loads tolerantly — ok, and the rehydrated state has no won key", () => {
+  const oldSave = {
+    c: { name: "Old Save Delver", cls: "Fighter", wp: 12, maxWP: 20, level: 2, skills: {} },
+    floor: { depth: 2, g: [[{ wall: false }]], px: 1, py: 1 },
+    day: 4,
+    steps: 88,
+    dead: false,
+    won: true,
+    deathNote: "",
+    epitaph: "",
+  };
+  const check = validateSave(JSON.stringify(oldSave), { freshSeed: 777 });
+  assert.equal(check.ok, true, "a stale won: true save still loads (tolerant, never rejected)");
+  assert.ok(!("won" in check.value), "the validated value drops the retired won key");
+  assert.ok(!("won" in rehydrate(check.value)), "the rehydrated state carries no won key either");
 });
 
 // MD-02 regression: validateSave never inspected obj.version, so a save

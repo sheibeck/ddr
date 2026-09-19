@@ -204,7 +204,6 @@ export function rowFromRun(run) {
     actions: run.actions,
     stuck: run.stuck,
     cause: run.cause,
-    won: run.won,
     encounters: run.tallies.encounters,
     encountersSurvived: run.encountersSurvived,
     usage: run.tallies.usage,
