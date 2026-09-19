@@ -210,7 +210,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 46-01-PLAN.md — `git mv src/browser/toasts.js → narrationLines.js` with `TOAST_FOR → LINE_FOR`, `toastsForAction → linesForAction`, `narrativeToastText → narrativeLineText`, the six dead lifetime exports and the two consumer-less re-exports deleted, all 35 importers moved, five `*toast*.test.js` files `git mv`'d (commit 1); the shell's `dispatchWithToasts → dispatchWithNarration` (commit 2); before/after fold dump byte-identical (NAME-01)
+- [x] 46-01-PLAN.md — `git mv src/browser/toasts.js → narrationLines.js` with `TOAST_FOR → LINE_FOR`, `toastsForAction → linesForAction`, `narrativeToastText → narrativeLineText`, the six dead lifetime exports and the two consumer-less re-exports deleted, all 35 importers moved, five `*toast*.test.js` files `git mv`'d (commit 1); the shell's `dispatchWithToasts → dispatchWithNarration` (commit 2); before/after fold dump byte-identical (NAME-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -336,7 +336,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
-| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
+| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 1/4 | In Progress|  |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |

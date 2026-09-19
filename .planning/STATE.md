@@ -5,15 +5,15 @@ milestone_name: Shell Debt & Dead Code
 current_phase: 46
 current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
 status: executing
-stopped_at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
-last_updated: "2026-09-19T20:29:03.557Z"
+stopped_at: Completed 46-01-PLAN.md — narrationLines rename, both commits green, npm test 3240/0
+last_updated: "2026-09-19T20:53:13.712Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
   percent: 33
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Deb
 ## Current Position
 
 Phase: 46 (Honest Names, Dead Exports & the Tutorial Decision) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 46
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-09-19 — Phase 46 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -121,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T19:42:22.561Z
-Stopped at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
+Last session: 2026-09-19T20:53:13.682Z
+Stopped at: Completed 46-01-PLAN.md — narrationLines rename, both commits green, npm test 3240/0
 Resume file: None
 
 ## Operator Next Steps
@@ -236,6 +236,7 @@ Resume file: None
 | Phase 45 P01 | 45min | 2 tasks | 2 files |
 | Phase 45 P02 | ~3h | 3 tasks | 27 files |
 | Phase 45 P03 | ~2h | 3 tasks | 2 files |
+| Phase 46 P01 | ~2h | 3 tasks | 44 files |
 
 ## Decisions
 
@@ -446,6 +447,8 @@ Resume file: None
 - [Phase ?]: 45-02: divergence-records.test.js exempts kind:action-path records from the per-field notDeepStrictEqual check — pre-existing combat.json action-path records legitimately declare end-state fields that coincide with the prototype despite a diverged action path
 - [Phase ?]: Phase 45 closed: FIXTURE-INVENTORY.md carries the Phase 45 section (measured moved set + scan quoted verbatim), GEAR-SLOTS.md corrected to the single unconditional worn path, 143x3-seed bot smoke confirms RUN_FLAGS = { storeRoll: true } with 0 stuck; ROADMAP success criteria 1-5 verified verbatim
 - [Phase ?]: docs/class-pass/*.json and docs/CLASS-PASS.md's Phase 42 RUN_FLAGS transcription are frozen history and must NOT be regenerated to the new one-flag shape (Phase 48 decides wording, not this phase)
+- [Phase ?]: 46-01: proactively renamed the one src/-side dispatchWithToasts comment mention in Task 1, ahead of Task 2's own sed (which deliberately scopes only mazeworld.html/test/), so Task 2's src/-inclusive acceptance grep would still pass
+- [Phase ?]: 46-01: linesForAction's opts.limit default changed from MAX_TOASTS (4) to Infinity — every production caller (fightLog.js, mazeworld.html's rail path) already passed limit: Infinity explicitly, so the default now matches every real caller
 
 ### Blockers
 
