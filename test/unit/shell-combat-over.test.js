@@ -276,7 +276,7 @@ test("Phase 35 (MAP-04): joiner and find are rail decision cards — the four ac
 test("CSCR-08: the dismissal transition clears window.__mzFightEnd/__mzCombatMenu before its first close brace", () => {
   const block = dismissalBlock();
   assert.match(block, /lastDismissAt = Date\.now\(\);/);
-  assert.match(block, /window\.mzCenterMap\?\.\(\);/);
+  assert.match(block, /window\.mzKeepPartyInView\?\.\(\);/);
   assert.match(block, /window\.__mzFightEnd = null;/);
   assert.match(block, /window\.__mzCombatMenu = null;/);
 });

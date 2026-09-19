@@ -1750,11 +1750,13 @@ let mwActiveTab = "maze";
     if (window.__mzState) window.renderRail?.();
     // DFB-03: every open of the Oracle lands on the most recent line.
     if (name === "oracle") window.__mzOracleToNewest?.();
-    // Phase 33 (UIF-02, site 2): returning to the map from Hero/Gear/Oracle/
-    // Dead recenters on the party; optional-chained because the initial
-    // showTab("maze") at tab-init runs before the classic script assigns the
-    // bridge (a harmless no-op then).
-    if (name === "maze") window.mzCenterMap?.();
+    // Phase 33 (UIF-02, site 2), retargeted quick task 260918-vm3: returning
+    // to the map from Hero/Gear/Oracle/Dead keeps the party in view (never
+    // recentres — the stationary-camera rule); optional-chained because the
+    // initial showTab("maze") at tab-init runs before the classic script
+    // assigns the bridge (a harmless no-op then). The viewport rect is
+    // non-zero here because the screen was un-hidden two statements earlier.
+    if (name === "maze") window.mzKeepPartyInView?.();
     // E9 (04.2 Bugs B): re-fetch the graveyard from storage every time the Dead
     // tab is opened. The Dead screen renders from the classic in-memory `graves`
     // array, which is only synced from storage at BOOT (loadGraves() inside
@@ -6084,13 +6086,15 @@ function renderEncounter() {
   // true -> false transition (the overlay just closed under the thumb) —
   // window.move's settle clause refuses a step for DISMISS_SETTLE_MS after
   // this moment so a dismiss tap/step can never double as the first move.
-  // Phase 33 (UIF-02, RESEARCH Pattern 3 site 1): the same true->false
-  // transition is the one moment every over-map overlay (store, beats,
-  // death, joiner, find, loot) has just closed, so recenter the viewport on
-  // the party here; centerMap only touches pan/positionCanvas, never S.floor.
+  // Phase 33 (UIF-02, RESEARCH Pattern 3 site 1), retargeted quick task
+  // 260918-vm3: the same true->false transition is the one moment every
+  // over-map overlay (store, beats, death, joiner, find, loot) has just
+  // closed, so keep the party in view here (never recentre — the
+  // stationary-camera rule); keepPartyInView only touches cam/positionCanvas,
+  // never S.floor.
   if (encWasActive && !active) {
     lastDismissAt = Date.now();
-    window.mzCenterMap?.();
+    window.mzKeepPartyInView?.();
     // Phase 34 (CSCR-07): the panel just closed — clear the ending-line
     // parcel and the submenu state so a fresh encounter never inherits a
     // previous fight's leftovers.
@@ -6951,16 +6955,18 @@ function inspectAt(clientX, clientY) {
     }
   });
   const release = e => {
-    // Phase 33 (UIF-02/03): recenter ONCE when a two-finger pinch ends (the
-    // second finger lifted), mirroring the settings textSize recenter; NEVER
-    // inside pointermove -- a per-tick reset would fight the live gesture and
-    // make pinch-to-zoom feel broken. The one-finger hand-off below then
-    // starts from the recentered pan.
+    // Phase 33 (UIF-02/03), retargeted quick task 260918-vm3: pinch-end no
+    // longer snaps to centre -- the zoom already kept the party's screen
+    // point fixed (anchorCamOnParty(pinch.pan) in the pointermove handler
+    // above), so this only scrolls if the zoom pushed the party into the
+    // edge margin. NEVER inside pointermove -- a per-tick reset would fight
+    // the live gesture and make pinch-to-zoom feel broken. The one-finger
+    // hand-off below then starts from wherever the camera landed.
     const wasPinch = !!pinch;
     pts.delete(e.pointerId);
     if (pts.size < 2) pinch = null;
     if (pointerStart && e.pointerId === pointerStart.id) pointerStart = null;
-    if (wasPinch && pts.size < 2) window.mzCenterMap?.();
+    if (wasPinch && pts.size < 2) window.mzKeepPartyInView?.();
     // one finger left after a pinch -> hand the pan off to it cleanly
     if (pts.size === 1 && !pointerStart) {
       const [id, p] = [...pts.entries()][0];
@@ -7046,7 +7052,7 @@ addEventListener("keydown", e => {
   }
   if (dirKeys[k]) { e.preventDefault(); move(dirKeys[k]); return; }
 });
-addEventListener("resize", () => { fit(); renderEncounter(); });
+addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });
 
 // 02-03: the classic script's boot sequence (loadGraves/renderGraves/load/
 // newGame/fit/paint) used to run synchronously right here, at classic-script
@@ -7401,10 +7407,11 @@ window.__mzClassicBoot = async function classicBoot() {
   function closeSettingsSheet() {
     const sheet = document.getElementById("mw-settings-sheet");
     if (sheet) sheet.hidden = true;
-    // Phase 33 (UIF-02, site 3): the Settings sheet is reachable from any
-    // tab and outside the tab/overlay systems, so it needs its own recenter;
-    // both callers (scrim, Close) funnel through here.
-    window.mzCenterMap?.();
+    // Phase 33 (UIF-02, site 3), retargeted quick task 260918-vm3: the
+    // Settings sheet is reachable from any tab and outside the tab/overlay
+    // systems, so it needs its own keep-in-view (never recentre); both
+    // callers (scrim, Close) funnel through here.
+    window.mzKeepPartyInView?.();
   }
   document.getElementById("mw-gear-btn")?.addEventListener("click", openSettingsSheet);
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
@@ -7441,12 +7448,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // settings.js's writeSetting() (which validates against its own
   // ALLOWED_VALUES — an unrecognized value here is simply a no-op, matching
   // writeSetting()'s own contract), then re-applies + re-renders. textSize
-  // additionally recomputes the maze cell size live (window.fit()) and
-  // recenters the viewport (window.mzCenterMap()) — both are plain global
-  // functions the classic script declares (see this module's own header
-  // comment on the window.move/window.__mzState bridge pattern), safe to
-  // call here even before a run exists (fit()/draw()/positionCanvas() all
-  // guard on `!S`).
+  // additionally recomputes the maze cell size live (window.fit()) and,
+  // retargeted quick task 260918-vm3, keeps the party in view (never
+  // recentre — a resized cell can push the party toward an edge) — both are
+  // plain global functions the classic script declares (see this module's
+  // own header comment on the window.move/window.__mzState bridge pattern),
+  // safe to call here even before a run exists (fit()/draw()/positionCanvas()
+  // all guard on `!S`).
   document.getElementById("mw-settings-rows")?.addEventListener("click", async (e) => {
     const btn = e.target.closest(".mw-settings-opt");
     if (!btn) return;
@@ -7462,7 +7470,7 @@ window.__mzClassicBoot = async function classicBoot() {
     renderSettingsSheet();
     if (key === "textSize") {
       window.fit?.();
-      window.mzCenterMap?.();
+      window.mzKeepPartyInView?.();
     }
   });
 
@@ -7855,16 +7863,17 @@ window.__mzClassicBoot = async function classicBoot() {
     window.paint();
     window.draw();
     for (const line of html) window.logLine(line);
-    // Device-review Pass DR8: recenter the viewport on the party after EVERY
-    // successful step, not just a floor change — engine/movement.js#move
-    // pushes exactly one `moved` event per genuine step (never for a
-    // blocked/no-op attempt: a wall, an out-of-bounds edge, or the wrong side
-    // of a one-way door all `return` before that push), so this fires only
-    // when the party actually moved. Superseding Pass B1 item 4's
-    // floorChanged-only check below it (a floor transition always also
-    // pushes `moved` first, so this check alone already covers both cases)
-    // — the player was reporting drifting off-center while just walking.
-    if (events.some((e) => e.type === "moved")) window.mzCenterMap?.();
+    // Device-review Pass DR8, retargeted quick task 260918-vm3 (stationary
+    // camera, user request 2026-09-18): a genuine step keeps the party in
+    // view rather than recentring — the map holds still, the party moves.
+    // Only a floor change (stairs) or a teleport landing centres, because
+    // those are the two events that jump the party somewhere the player was
+    // not looking; engine/movement.js#move is the sole producer of all three
+    // event types (moved/floorChanged/teleported), so this remains the
+    // single shell hook.
+    const jumped = events.some((e) => e.type === "floorChanged" || e.type === "teleported");
+    if (jumped) window.mzCenterMap?.();
+    else if (events.some((e) => e.type === "moved")) window.mzKeepPartyInView?.();
   }
 
   function stepNow(dir) {

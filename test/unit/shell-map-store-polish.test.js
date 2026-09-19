@@ -9,16 +9,18 @@
 //   1. UIF-03: `let zoom = 0.8;` is the default — zoomed OUT (more map than the old 1.0),
 //      ZOOM_MIN..ZOOM_MAX, and zoom is never persisted (no writeSetting/S/
 //      state reference) — session-only.
-//   2. UIF-02 site 1: renderEncounter's encWasActive && !active dismissal
-//      transition is a braced block carrying both lastDismissAt = Date.now()
-//      and window.mzCenterMap?.() (the Phase 32 shell-input-guards pins
+//   2. UIF-02 site 1 (retargeted quick task 260918-vm3): renderEncounter's
+//      encWasActive && !active dismissal transition is a braced block
+//      carrying both lastDismissAt = Date.now() and
+//      window.mzKeepPartyInView?.() (the Phase 32 shell-input-guards pins
 //      still match the braced form).
-//   3. UIF-02 site 2: showTab's maze branch recenters.
-//   4. UIF-02 site 3: closeSettingsSheet recenters; both its scrim/Close
-//      callers still route through it.
-//   5. UIF-02 pinch: release() captures wasPinch and recenters once on
-//      pinch-end; the pointermove handler never recenters (no per-tick
-//      reset) while its zoom-scaling math stays intact.
+//   3. UIF-02 site 2 (retargeted): showTab's maze branch keeps in view.
+//   4. UIF-02 site 3 (retargeted): closeSettingsSheet keeps in view; both
+//      its scrim/Close callers still route through it.
+//   5. UIF-02 pinch (retargeted): release() captures wasPinch and keeps the
+//      party in view once on pinch-end; the pointermove handler never
+//      recenters or keeps in view (no per-tick reset) while its
+//      zoom-scaling math stays intact.
 //   6. the centerMap bridge itself is untouched (anchorCamOnParty/
 //      positionCanvas only, never S.floor).
 //   7. STORE-01: the store header's gated roll line — STORE_ROLL_COPY shown
@@ -119,45 +121,48 @@ test("UIF-03: zoom is never persisted — no writeSetting/S.zoom/state.zoom expr
 
 // ─── 2. UIF-02 site 1: renderEncounter dismissal transition ──────────────
 
-test("UIF-02 site 1: the encWasActive && !active transition is a braced block with the stamp and the recenter", () => {
+test("UIF-02 site 1: the encWasActive && !active transition is a braced block with the stamp and the keep-in-view call", () => {
   const region = renderEncounterRegion();
   assert.equal((region.match(/if \(encWasActive && !active\) \{/g) || []).length, 1);
   const blockStart = region.indexOf("if (encWasActive && !active) {");
   const blockEnd = region.indexOf("}", blockStart);
   const block = region.slice(blockStart, blockEnd + 1);
   assert.match(block, /lastDismissAt = Date\.now\(\);/);
-  assert.match(block, /window\.mzCenterMap\?\.\(\);/);
+  assert.match(block, /window\.mzKeepPartyInView\?\.\(\);/);
+  assert.doesNotMatch(block, /window\.mzCenterMap/);
 });
 
 // ─── 3. UIF-02 site 2: showTab ────────────────────────────────────────────
 
-test('UIF-02 site 2: showTab recenters exactly once when name === "maze"', () => {
+test('UIF-02 site 2: showTab keeps the party in view exactly once when name === "maze"', () => {
   const region = showTabRegion();
-  const matches = region.match(/if \(name === "maze"\) window\.mzCenterMap\?\.\(\);/g) || [];
+  const matches = region.match(/if \(name === "maze"\) window\.mzKeepPartyInView\?\.\(\);/g) || [];
   assert.equal(matches.length, 1);
 });
 
 // ─── 4. UIF-02 site 3: closeSettingsSheet ─────────────────────────────────
 
-test("UIF-02 site 3: closeSettingsSheet recenters exactly once; both callers still route through it", () => {
+test("UIF-02 site 3: closeSettingsSheet keeps the party in view exactly once, never recenters; both callers still route through it", () => {
   const region = closeSettingsSheetRegion();
-  const matches = region.match(/window\.mzCenterMap\?\.\(\);/g) || [];
+  const matches = region.match(/window\.mzKeepPartyInView\?\.\(\);/g) || [];
   assert.equal(matches.length, 1);
+  assert.equal((region.match(/window\.mzCenterMap/g) || []).length, 0);
   assert.match(CODE, /document\.getElementById\("mw-settings-scrim"\)\?\.addEventListener\("click", closeSettingsSheet\);/);
   assert.match(CODE, /document\.getElementById\("mw-settings-close"\)\?\.addEventListener\("click", closeSettingsSheet\);/);
 });
 
-// ─── 5. UIF-02 pinch: release() recenters once; pointermove never does ───
+// ─── 5. UIF-02 pinch: release() keeps in view once; pointermove never does ─
 
-test("UIF-02 pinch: release() captures wasPinch and recenters once on pinch-end", () => {
+test("UIF-02 pinch: release() captures wasPinch and keeps the party in view once on pinch-end", () => {
   const region = releaseRegion();
   assert.match(region, /const wasPinch = !!pinch;/);
-  assert.match(region, /if \(wasPinch && pts\.size < 2\) window\.mzCenterMap\?\.\(\);/);
+  assert.match(region, /if \(wasPinch && pts\.size < 2\) window\.mzKeepPartyInView\?\.\(\);/);
 });
 
-test("UIF-02 pinch: the pointermove handler never recenters, and its zoom-scale math is intact", () => {
+test("UIF-02 pinch: the pointermove handler never recenters or keeps in view, and its zoom-scale math is intact", () => {
   const region = pointermoveRegion();
   assert.ok(!/mzCenterMap/.test(region), "pointermove must never call window.mzCenterMap");
+  assert.ok(!/mzKeepPartyInView/.test(region), "pointermove must never call window.mzKeepPartyInView");
   assert.ok(!/centerMap\(/.test(region), "pointermove must never call centerMap() directly either");
   assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); anchorCamOnParty\(pinch\.pan\); positionCanvas\(\);/);
 });
@@ -175,9 +180,11 @@ test("the centerMap bridge itself is untouched: anchorCamOnParty/positionCanvas 
   assert.ok(!/S\.floor/.test(body), "centerMap must never touch S.floor");
 });
 
-test("mzCenterMap total call-site count is 10 (6 pre-existing + the 4 new Phase 33 sites)", () => {
-  const matches = CODE.match(/window\.mzCenterMap\?\.\(\)/g) || [];
-  assert.equal(matches.length, 10);
+test("mzCenterMap call-site count is 5 (boot, 3 new-run paths, stepWith's floorChanged/teleported branch); mzKeepPartyInView is 7 (quick task 260918-vm3)", () => {
+  const centerMatches = CODE.match(/window\.mzCenterMap\?\.\(\)/g) || [];
+  assert.equal(centerMatches.length, 5);
+  const keepInViewMatches = CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || [];
+  assert.equal(keepInViewMatches.length, 7);
 });
 
 // ─── 7. STORE-01: the gated header line ───────────────────────────────────

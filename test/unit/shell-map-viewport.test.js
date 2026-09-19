@@ -208,17 +208,19 @@ test("(f) viewport region: the four Phase 33 pan/pinch literals are byte-intact"
   assert.match(region, /const release = e => \{/);
   assert.match(region, /vp\.addEventListener\("pointerup", release\)/);
   assert.match(region, /const wasPinch = !!pinch;/);
-  assert.match(region, /if \(wasPinch && pts\.size < 2\) window\.mzCenterMap\?\.\(\);/);
+  assert.match(region, /if \(wasPinch && pts\.size < 2\) window\.mzKeepPartyInView\?\.\(\);/);
   assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); anchorCamOnParty\(pinch\.pan\); positionCanvas\(\);/);
 });
 
-test("(f) pointermove sub-region never recenters (no per-tick reset)", () => {
+test("(f) pointermove sub-region never recenters or keeps in view (no per-tick reset)", () => {
   const region = pointermoveRegion();
   assert.doesNotMatch(region, /mzCenterMap/);
+  assert.doesNotMatch(region, /mzKeepPartyInView/);
 });
 
-test("(f) mzCenterMap call-site count stays at 10 (no new recenter site — a step already recentered via the moved event)", () => {
-  assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 10);
+test("(f) camera call sites: mzCenterMap stays at 5 (boot, 3 new-run paths, stepWith's floorChanged/teleported branch) and mzKeepPartyInView at 7", () => {
+  assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 5);
+  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 7);
 });
 
 // ─── (g) the stair-down gate ─────────────────────────────────────────────────
