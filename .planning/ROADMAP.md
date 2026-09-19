@@ -188,7 +188,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 45-03-PLAN.md — Close: FIXTURE-INVENTORY.md Phase 45 section (+ regenerated roster), GEAR-SLOTS.md §2/§3/§5/§7 prose corrected, 143-cell × 3-seed smoke (0 stuck, `Bot:` line = v1.5 AFTER pin modulo `seeds=`, readout in scratch), ROADMAP criteria 1–5 verified verbatim, closing SUMMARY with the deferred Pixel 7 items
+- [x] 45-03-PLAN.md — Close: FIXTURE-INVENTORY.md Phase 45 section (+ regenerated roster), GEAR-SLOTS.md §2/§3/§5/§7 prose corrected, 143-cell × 3-seed smoke (0 stuck, `Bot:` line = v1.5 AFTER pin modulo `seeds=`, readout in scratch), ROADMAP criteria 1–5 verified verbatim, closing SUMMARY with the deferred Pixel 7 items
 
 ### Phase 46: Honest Names, Dead Exports & the Tutorial Decision
 
@@ -318,7 +318,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
-| 45. Collapse the Phase 37 Hedges | v1.6 | 2/3 | In Progress|  |
+| 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | In Progress|  |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |

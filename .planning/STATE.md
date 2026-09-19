@@ -4,17 +4,17 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 45
 current_phase_name: Collapse the Phase 37 Hedges
-status: executing
-stopped_at: Completed 45-02-PLAN.md — Phase 37 hedges collapsed, one commit (9d8d9a7), npm test 3242/3242
-last_updated: "2026-09-19T18:41:55.738Z"
+status: verifying
+stopped_at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
+last_updated: "2026-09-19T19:42:22.591Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 45 execution started
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 17
+  completed_plans: 7
+  percent: 33
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 44; v1.6 Shell Deb
 
 Phase: 45 (Collapse the Phase 37 Hedges) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-19 — Phase 45 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -121,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T18:41:55.709Z
-Stopped at: Completed 45-02-PLAN.md — Phase 37 hedges collapsed, one commit (9d8d9a7), npm test 3242/3242
+Last session: 2026-09-19T19:42:22.561Z
+Stopped at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
 Resume file: None
 
 ## Operator Next Steps
@@ -235,6 +235,7 @@ Resume file: None
 | Phase 44 P04 | 90min | 3 tasks | 9 files |
 | Phase 45 P01 | 45min | 2 tasks | 2 files |
 | Phase 45 P02 | ~3h | 3 tasks | 27 files |
+| Phase 45 P03 | ~2h | 3 tasks | 2 files |
 
 ## Decisions
 
@@ -443,6 +444,8 @@ Resume file: None
 - [Phase ?]: 45-01: worn-fixture-scan.mjs measured the Phase 45 MOVED SET live (13 sites) — matches GEAR-SLOTS §2's prediction exactly, no surprises; reconcilePendingLoot added to avoid a false items mismatch on combat/lose (seed 14); one pre-existing, unrelated action-path RNG divergence (Phase 24/31) documented as an investigated UNEXPLAINED row
 - [Phase ?]: 45-02: newRun always creates c.worn (HEDGE-01), validateSave/rehydrate always reconcile with one return shape (HEDGE-02), dropEmptyWorn replaces the Phase 37 stripWornField carve-out (HEDGE-03) — 13 MOVED SET fixtures declared, no wornSlots option/branch survives anywhere
 - [Phase ?]: 45-02: divergence-records.test.js exempts kind:action-path records from the per-field notDeepStrictEqual check — pre-existing combat.json action-path records legitimately declare end-state fields that coincide with the prototype despite a diverged action path
+- [Phase ?]: Phase 45 closed: FIXTURE-INVENTORY.md carries the Phase 45 section (measured moved set + scan quoted verbatim), GEAR-SLOTS.md corrected to the single unconditional worn path, 143x3-seed bot smoke confirms RUN_FLAGS = { storeRoll: true } with 0 stuck; ROADMAP success criteria 1-5 verified verbatim
+- [Phase ?]: docs/class-pass/*.json and docs/CLASS-PASS.md's Phase 42 RUN_FLAGS transcription are frozen history and must NOT be regenerated to the new one-flag shape (Phase 48 decides wording, not this phase)
 
 ### Blockers
 
