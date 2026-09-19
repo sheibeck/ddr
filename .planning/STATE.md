@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Meaningful Choices — Spells, Gear & Abilities
-current_phase: 43
-current_phase_name: Clarity Pass
 status: executing
 stopped_at: Completed 38-05-PLAN.md (combat submenu, Hero-tab list, first-paint pool card, phase close — Phase 38 fully complete)
-last_updated: "2026-09-19T00:19:40.193Z"
+last_updated: "2026-09-19T00:19:41.343Z"
 last_activity: 2026-09-18
-last_activity_desc: Phase 42 complete, transitioned to Phase 43
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 33
+  total_plans: 37
   completed_plans: 33
   percent: 88
+current_phase: 43
+current_phase_name: Clarity Pass
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-17 after Phase 37)
 
 ## Current Position
 
-Phase: 43 — Clarity Pass
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-18 — Phase 42 complete, transitioned to Phase 43
+Phase: null — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase null
+Last activity: 2026-09-18 — Phase null execution started
 
 ## Ground Truth (durable facts every session needs)
 
