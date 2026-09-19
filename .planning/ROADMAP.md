@@ -150,7 +150,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 44-02-PLAN.md — Deletion layer 2 (classic movement/encounter engine, `die`/epitaphs, explicit `window.move` calls, no `else makeCamp()`) and layer 3 (orphaned classic tables + combat-math/chargen helpers); 7 test anchors re-pointed, CLOAKS txt-mirror pin deleted
+- [x] 44-02-PLAN.md — Deletion layer 2 (classic movement/encounter engine, `die`/epitaphs, explicit `window.move` calls, no `else makeCamp()`) and layer 3 (orphaned classic tables + combat-math/chargen helpers); 7 test anchors re-pointed, CLOAKS txt-mirror pin deleted
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -304,7 +304,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 44. Retire the Classic Engine from the Shell | v1.6 | 1/4 | In Progress|  |
+| 44. Retire the Classic Engine from the Shell | v1.6 | 2/4 | In Progress|  |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 0/TBD | Not started | - |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
