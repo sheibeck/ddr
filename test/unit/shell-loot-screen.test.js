@@ -285,3 +285,90 @@ test("Phase 29 (LOOT-04): no raw capacity count survives in mazeworld.html (the 
   assert.equal(CODE.includes("${items.length} / ${bagSlots}"), false, "paint()'s old raw-length readout template must be gone");
   assert.equal(CODE.includes("(c.items || []).length}/${slots}"), false, "the find card's old raw-length rust-line template must be gone");
 });
+
+// ─── 8. quick 260918-vvt: potions & scrolls never count against bag space ──
+
+test("quick 260918-vvt (a): a SEPARATE import { takesBagSlot } line exists; the pinned derived.js import is untouched", () => {
+  assert.equal(
+    (CODE.match(/^\s*import \{ takesBagSlot \} from "\.\/engine\/derived\.js";\s*$/gm) || []).length,
+    1,
+  );
+  assert.match(
+    CODE,
+    /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
+  );
+});
+
+test("quick 260918-vvt (b): window.__mzTakesBagSlot = takesBagSlot; appears exactly once, on the line after window.__mzBagUsage = bagUsage;", () => {
+  const matches = CODE.match(/^\s*window\.__mzTakesBagSlot = takesBagSlot;\s*$/gm) || [];
+  assert.equal(matches.length, 1);
+  const lines = CODE.split("\n").map((l) => l.trim());
+  const bagUsageIdx = lines.indexOf("window.__mzBagUsage = bagUsage;");
+  assert.ok(bagUsageIdx !== -1, "window.__mzBagUsage = bagUsage; line found");
+  // The bridge line lands somewhere shortly after __mzBagUsage (comment lines
+  // may separate them) — walk forward to the next non-comment statement.
+  let i = bagUsageIdx + 1;
+  while (i < lines.length && (lines[i] === "" || lines[i].startsWith("//"))) i++;
+  assert.equal(lines[i], "window.__mzTakesBagSlot = takesBagSlot;");
+});
+
+test("quick 260918-vvt (c): the find card's full flag is gated per item; the copy.find.full expression and takeNow label survive", () => {
+  const region = pendingFindRegion();
+  assert.match(region, /const full = usage\.full && window\.__mzTakesBagSlot\(it\);/);
+  assert.match(region, /copy\.find\.full\.replace\("\{have\}", usage\.have\)\.replace\("\{slots\}", usage\.slots\)/);
+  assert.match(region, /label: full \? copy\.find\.takeNow : copy\.find\.take/);
+});
+
+test("quick 260918-vvt (d): the loot screen's needsSlot routes through window.__mzTakesBagSlot; usage.full && needsSlot survives", () => {
+  const region = lootRegion();
+  assert.match(region, /const needsSlot = S\.pendingLoot\.some\(\(it\) => window\.__mzTakesBagSlot\(it\)\);/);
+  assert.match(region, /usage\.full && needsSlot/);
+});
+
+test("quick 260918-vvt (e): paint()'s carried-treasure header appends gearCopy.freeRide only for a capped bag", () => {
+  const region = paintCarryRegion();
+  assert.match(region, /gearCopy\.freeRide/);
+  assert.match(region, /usage\.slots !== null/);
+});
+
+test("quick 260918-vvt (f): the store's bag-full line ends with the free-ride clause", () => {
+  const region = storeRegion();
+  assert.match(region, /Potions and scrolls still ride free\./);
+});
+
+test("quick 260918-vvt (g): NEGATIVE SWEEP — the four bag-CAPACITY inline kind inequalities are gone (the Set replaces the literal in derived.js too)", () => {
+  // Scoped to the four specific bag-CAPACITY call sites this quick task
+  // rewrote (slotItems/stowItem/dropShelfItems/needsSlot) — NOT a blanket
+  // sweep for every `kind !== "potion"` in the codebase. A separate,
+  // unrelated "is this item activatable" readiness check (itemReady/
+  // itemRowState in engine/items.js, src/browser/viewModels.js and the
+  // classic mazeworld.html mirror) legitimately keeps its own independent
+  // `kind !== "potion"` rule — that is a different mechanism (out of this
+  // task's scope) and matching it here would be a false positive.
+  const itemsSrc = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", "items.js"), "utf8").replace(/\r\n/g, "\n"));
+  const vmSrc = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "viewModels.js"), "utf8").replace(/\r\n/g, "\n"));
+  const derivedSrc = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", "derived.js"), "utf8").replace(/\r\n/g, "\n"));
+
+  // The old slotItems filter body (derived.js) — gone.
+  assert.doesNotMatch(derivedSrc, /\(it\) => it && it\.kind !== "potion"/);
+  // The old stowItem capacity gate (items.js) — gone.
+  assert.doesNotMatch(itemsSrc, /it\.kind !== "potion" && !canStow\(c\)/);
+  // The old dropShelfItems filter (viewModels.js) — gone.
+  assert.doesNotMatch(vmSrc, /\(\{ it \}\) => it && it\.kind !== "potion"/);
+  // The old loot-screen needsSlot check (mazeworld.html) — gone.
+  assert.doesNotMatch(CODE, /it\.kind !== "potion" && it\.kind !== "bag"/);
+
+  // BAG_FREE_KINDS is the one home of the bag-CAPACITY rule. (derived.js
+  // also legitimately keeps two OTHER, unrelated `kind === "potion"` checks
+  // out of this task's scope: clampCarry's own exempt-from-trim predicate,
+  // which the plan explicitly leaves untouched, and activationKeyFor's
+  // potion-vs-treasure activation-key lookup — neither is a bag-capacity
+  // gate.)
+  assert.match(derivedSrc, /BAG_FREE_KINDS = new Set\(\["potion", "scroll", "bag"\]\)/);
+});
+
+test("quick 260918-vvt (h): takesBagSlot ties the shell pins and the engine predicate together in one file", async () => {
+  const { takesBagSlot } = await import("../../engine/derived.js");
+  assert.equal([{ kind: "potion" }, { kind: "scroll" }, { kind: "bag" }].some(takesBagSlot), false);
+  assert.equal(takesBagSlot({ kind: "gear" }), true);
+});

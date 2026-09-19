@@ -3424,7 +3424,11 @@ function paint() {
   // view-model (window.__mzBagUsage — potions exempt from the count), never
   // a local count. The engine (stowItem/canStow) alone enforces the cap.
   const usage = window.__mzBagUsage(c);
-  document.getElementById("s-carry-n").textContent = usage.text;
+  // quick 260918-vvt: GEAR_COPY.freeRide is the one home of this note's
+  // copy — shown only for a capped bag; a bag-less dev/test character keeps
+  // the bare count.
+  document.getElementById("s-carry-n").textContent =
+    usage.slots !== null ? `${usage.text} · ${gearCopy.freeRide}` : usage.text;
   const bagFull = usage.full;
   carry.innerHTML = "";
   onyou.innerHTML = "";
@@ -6235,7 +6239,7 @@ function renderEncounter() {
     const rep = window.__mzLootReport;
     panel.dataset.mode = "dark";
     const kind = rep && rep.over === "soothed" ? "soothed" : "won";
-    const needsSlot = S.pendingLoot.some((it) => it.kind !== "potion" && it.kind !== "bag");
+    const needsSlot = S.pendingLoot.some((it) => window.__mzTakesBagSlot(it));
     renderCombatOver(body, kind, {
       lines: rep && rep.lines ? rep.lines : [],
       fillMid: (mid) => {
@@ -6287,7 +6291,7 @@ function renderEncounter() {
       <p class="enc-sub">${S.c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
       ${S.storeRoll === true ? `<p class="enc-sub mw-store-roll">${STORE_ROLL_COPY}</p>` : ""}
       <div class="shelf" id="shelf"></div>
-      ${usage.full ? `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}) — sell or drop something to make room.</p>` : ""}
+      ${usage.full ? `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}) — sell or drop something to make room. Potions and scrolls still ride free.</p>` : ""}
       <p class="enc-sub" id="sell-head" style="margin-top:12px">Your gear</p>
       <ul class="skills" id="sell-list"></ul>
       <div class="actions"><button class="primary" id="a-leave">Leave</button></div>`;
@@ -6466,7 +6470,11 @@ function renderRail() {
     const it = S.pendingFind;
     const c = S.c;
     const usage = window.__mzBagUsage(c);
-    const full = usage.full;
+    // quick 260918-vvt: the bag-full line / drop shelf / TAKE IT NOW render
+    // only when THIS item needs a slot — a potion or scroll found on a full
+    // bag gets the plain card and takeFind accepts it (engine stowItem never
+    // refuses a bag-free item).
+    const full = usage.full && window.__mzTakesBagSlot(it);
     const findSub = it.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(it) : it.txt;
     // Phase 43 (CLAR-02/04)
     const usable = window.__mzUsableBy(it, c);
@@ -7183,6 +7191,9 @@ window.__mzClassicBoot = async function classicBoot() {
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
+  // quick 260918-vvt — a SEPARATE import line (same module) so the pinned
+  // line above stays byte-identical; bridged below as __mzTakesBagSlot.
+  import { takesBagSlot } from "./engine/derived.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -7277,6 +7288,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // find card and the store all agree with the engine — read-only, no rng,
   // safe every paint. The engine alone enforces the actual cap (stowItem).
   window.__mzBagUsage = bagUsage;
+  // quick 260918-vvt: the ONE bag-free predicate (potions, scrolls, bags),
+  // bridged so the find card / loot screen can gate their bag-full prompts
+  // per item instead of on the aggregate usage.full alone.
+  window.__mzTakesBagSlot = takesBagSlot;
   window.__mzLootCompare = lootCompare;
 
   // Phase 39 (GEAR-02/GEAR-05), Plan 05 — read-only bridges for the hazard/
