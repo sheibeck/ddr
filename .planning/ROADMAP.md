@@ -239,7 +239,14 @@ Plans:
   5. Pixel-identical: the Gear tab (ON YOU / BAG, equip/use/drop/swap confirms), Hero tab (sheet, dossier, Company, Grimoire, RATIONS, abilities) and Store (buy/sell/repair rows, usable-by) render the same DOM before and after the phase — pinned by the moved tests plus one 3-screen smoke added to the milestone-close Pixel 7 batch; `engine/`, `content/`, parity fixtures and the master hash untouched.
 
 **Discuss**: Worth a round before planning — the module boundaries are the one real design question of the milestone: what stays in `viewModels.js` vs moves into each tab module; whether the mount contract is `renderX(host, state)` like `combatPanel.js` or a `mountX(host)` that reads `window.__mzState`; whether the bridge registry is a doc section or a `bridge.js` map (SHELL-04 accepts either); whether the store's repair rows and the drop shelf ride with `storeScreen.js`/`gearTab.js` or stay shared.
-**Plans**: TBD
+**Plans**: 5 plans (strictly sequential — every plan after 01 edits `mazeworld.html`; 01 must land first so the BEFORE fixtures pre-date every carve)
+
+Plans:
+- [ ] 47-01-PLAN.md — DOM-snapshot harness (recording document + node:vm classic-script sandbox with the bridge twin) and the seven committed BEFORE fixtures; standing 3-screen smoke with the store idempotency truth
+- [ ] 47-02-PLAN.md — `src/browser/bridge.js` registry + `bridge-registry.test.js` (comment-stripped set-equality, fail-first teeth), `tools/bridge-doc.mjs`, `docs/SHELL-MODULES.md` with the generated `## Module bridge`; dead `__mzBags` deleted
+- [ ] 47-03-PLAN.md — `src/browser/gearTab.js` (Gear view models, `renderCarriedList` + drop/swap confirms, `renderGearTab`); `paint()` mounts through `window.__mzTabs.gear`; `tabDeps()`; six dead bridges + classic helpers deleted; pins re-homed; `gearTab.test.js`
+- [ ] 47-04-PLAN.md — `src/browser/heroTab.js` (Hero view models, sheet/skills/abilities/rations/grimoire/dossier/Company); `paint()` mounts through `window.__mzTabs.hero`; classic wrappers, five bridges, the harness seam deleted; `__mzTables` trimmed; `heroTab.test.js`
+- [ ] 47-05-PLAN.md — `src/browser/storeScreen.js` (`S.store` branch, `STORE_ROLL_COPY`); `__mzTabs` final shape; widened no-duplicate pin; line budget measured with the CONTEXT fallback (shortfall recorded, never silent); criteria 1-5 verbatim; closing SUMMARY
 **UI hint**: yes
 (Annotation is for the keyword scan only — the phase is pixel-identical by construction and `ui_phase` is off; a UI-SPEC is not warranted.)
 
