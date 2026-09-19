@@ -2,14 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
+current_phase: 44
+current_phase_name: Retire the Classic Engine from the Shell
 status: executing
-last_updated: "2026-09-19T14:45:00.000Z"
+stopped_at: Completed 44-01-PLAN.md — gates + tripwires + layer-1 deletion landed (7e299de, 4989333, 1f4ef1f)
+last_updated: "2026-09-19T15:22:06.677Z"
 last_activity: 2026-09-19
+last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code started; v1.5 code-complete, UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 44 — Retire the Classic Engine from the Shell (not started; sequencing gate now open — all of 260918-w4n / 260918-wy1 / 260919-00d have landed on master)
+**Current focus:** Phase 44 — Retire the Classic Engine from the Shell
 
 ## Current Position
 
-Phase: 44 of 49 (Retire the Classic Engine from the Shell) — planned, executing
-Plan: 44-01 → 44-02 → 44-03 → 44-04 (4 plans, 4 sequential waves — every plan edits mazeworld.html)
-Status: Ready to execute — `/gsd-autonomous` run (research skipped for v1.6 per user, 2026-09-19; verification agents off; UAT deferred to milestone close)
-Last activity: 2026-09-19 — Phase 44 planned (`8844bae`); smart-discuss context `51ec3bd`; rail overlay todo captured `db44efd`
+Phase: 44 (Retire the Classic Engine from the Shell) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-09-19 — Phase 44 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -117,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19
-Stopped at: Completed 260919-00d-PLAN.md — Cloak of Ether wall-walking landed (`54ba5bd`, `d9ef4e8`); the v1.6 sequencing gate is now open
+Last session: 2026-09-19T15:21:46.908Z
+Stopped at: Completed 44-01-PLAN.md — gates + tripwires + layer-1 deletion landed (7e299de, 4989333, 1f4ef1f)
 Resume file: None
 
 ## Operator Next Steps
@@ -225,6 +229,7 @@ Resume file: None
 | Phase 38 P03 | 40min | 3 tasks | 11 files |
 | Phase 38 P04 | 100min | 3 tasks | 8 files |
 | Phase 38 P05 | 30min | 3 tasks | 11 files |
+| Phase 44 P01 | 35min | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -420,6 +425,9 @@ Resume file: None
 - [Phase ?]: 38-05: abilityRows(c) cost rule (READY/ONCE A FIGHT · USED/N ROUNDS) reused independently by combatMenu.js submenu and viewModels.js Hero-tab list, each computing from isReady/abilityRoundsLeft without importing each other
 - [Phase ?]: 38-05: abilityPoolCard(c) narrates the FIRST source:pool id in c.abilities on first paint (commitRolledState + dev start-at-depth) — chargen's roll order guarantees this is always the level-1 guarantee
 - [Phase ?]: 38-05: Phase 38 closed — all five ABIL requirements complete; docs/ABILITIES.md carries the full catalog/level-pool/dispatcher/Joiner-policy/UI ledger
+- [Phase ?]: 44-01: shell-sweep.mjs refs is reachability-aware (shares orphans' call-graph BFS) so a match inside already-dead not-yet-deleted classic code never blocks deleting the name it calls
+- [Phase ?]: 44-01: object-literal keys (e.g. COMBAT_DISPATCH's castSpell:) and window.NAME= override assignments never count as references in shell-sweep.mjs refs/orphans
+- [Phase ?]: 44-01: declaration extents in shell-sweep.mjs use bracket-depth tracking, not until-next-declaration gap heuristic (the gap heuristic mis-attributed a top-level IIFE's body to an unrelated preceding const)
 
 ### Blockers
 

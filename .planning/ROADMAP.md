@@ -146,7 +146,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 Plans:
 **Wave 1**
 
-- [ ] 44-01-PLAN.md — Gates first (headless `boot:check` + `shell-sweep` refs/orphans tools, fail-first proven); retire the two `new Function` tripwires (parley matrix folded into `parley.test.js` as 504 engine-vs-oracle cases, spell-menu mirror deleted); deletion layer 1 — the 16 mirrors + combat cluster + the dead `__mzCanCast` bridge, 5 shell pins re-pointed
+- [x] 44-01-PLAN.md — Gates first (headless `boot:check` + `shell-sweep` refs/orphans tools, fail-first proven); retire the two `new Function` tripwires (parley matrix folded into `parley.test.js` as 504 engine-vs-oracle cases, spell-menu mirror deleted); deletion layer 1 — the 16 mirrors + combat cluster + the dead `__mzCanCast` bridge, 5 shell pins re-pointed
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -304,7 +304,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 44. Retire the Classic Engine from the Shell | v1.6 | 0/TBD | Not started (blocked on quick tasks w4n/wy1/00d landing) | - |
+| 44. Retire the Classic Engine from the Shell | v1.6 | 1/4 | In Progress|  |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 0/TBD | Not started | - |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
