@@ -137,7 +137,13 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
   4. Zero tests extract a classic helper from the shell via `new Function` (`grep -rl "new Function" test/` empty); each former tripwire is re-pointed at the `engine/`/`content/` implementation it guarded or deleted with its reason recorded in the summary; `shell-map-invariants.test.js` and the full suite stay at fail 0.
   5. Engine gate: `git diff --stat <phase-start> -- engine/ content/ test/parity/fixtures/ test/parity/prototype-master.js.txt` is empty; the debug build plays the same game (any Pixel 7 check batched to milestone close).
 **Discuss**: Not worth a round — the deletion list was verified by direct code read (2026-09-17, re-verified 2026-09-19); the plan is the list plus the tripwire re-pointing.
-**Plans**: TBD
+**Plans**: 4 plans (sequential waves 1–4 — every plan edits `mazeworld.html`; phase-start baseline re-measured 2026-09-19 at `ba45dfd`: 8,710 lines → target ≤ 6,710)
+
+Plans:
+- [ ] 44-01-PLAN.md — Gates first (headless `boot:check` + `shell-sweep` refs/orphans tools, fail-first proven); retire the two `new Function` tripwires (parley matrix folded into `parley.test.js` as 504 engine-vs-oracle cases, spell-menu mirror deleted); deletion layer 1 — the 16 mirrors + combat cluster + the dead `__mzCanCast` bridge, 5 shell pins re-pointed
+- [ ] 44-02-PLAN.md — Deletion layer 2 (classic movement/encounter engine, `die`/epitaphs, explicit `window.move` calls, no `else makeCamp()`) and layer 3 (orphaned classic tables + combat-math/chargen helpers); 7 test anchors re-pointed, CLOAKS txt-mirror pin deleted
+- [ ] 44-03-PLAN.md — DEAD-02: `window.__mzTables` bridge from `content/index.js` for the 9 surviving table copies (RACE_NOTE/CLASS_NOTE/SUB_NOTE + ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES, six of them drifted); classic copies deleted; `shell-no-content-copies.test.js` source pin (85-name set, 24/6/3 byte-equality, fail-first proven)
+- [ ] 44-04-PLAN.md — Retire classic `save`/`load`/`SAVE_KEY`/`newGame`/fallbacks, slim `__mzClassicBoot`, resume lines re-homed in the module boot, dual-write test graves-only; fixed-point orphan sweep; closing gates = ROADMAP success criteria 1–5 with the consolidated deleted-symbol and test-reason lists
 
 ### Phase 45: Collapse the Phase 37 Hedges
 **Goal**: One worn-model code path everywhere — every fresh run creates `c.worn` (the Thief's starting cloak worn), every load reconciles unconditionally, and no `wornSlots` option or option-keyed branch exists in the engine, the shell, the bot or the tests — with exactly the fixtures that move declared and regenerated under the greenfield ruling.
