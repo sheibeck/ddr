@@ -12,6 +12,7 @@
 // Usage:
 //   node tools/ident-sweep.mjs [-i] <regex> [<regex> ...]
 //   node tools/ident-sweep.mjs --self-test
+//   importable: `import { stripJs, stripHtml } from "../../tools/ident-sweep.mjs"` (test/unit/bridge-registry.test.js)
 //
 // Regex arguments are JavaScript regex SOURCES (no delimiters), matched
 // case-sensitively unless -i is given (applies to every regex in the run).
@@ -360,4 +361,18 @@ function main() {
   process.exit(sweep(regexSources, ignoreCase));
 }
 
-main();
+// ---------------------------------------------------------------------
+// Exports — Phase 47 (SHELL-04): the strippers are reusable by
+// test/unit/bridge-registry.test.js's own comment-stripped __mz* scan, so
+// that scan shares this file's exact battle-tested stripping semantics
+// rather than a second, divergent implementation.
+// ---------------------------------------------------------------------
+export { stripJs, stripHtml };
+
+// Direct-invocation guard — only run the CLI when this file is executed
+// directly (`node tools/ident-sweep.mjs ...`), never when imported as a
+// module (e.g. by bridge-registry.test.js). Byte-identical CLI behaviour
+// when invoked directly; `import`ing this file runs nothing.
+if (path.resolve(process.argv[1] || "") === url.fileURLToPath(import.meta.url)) {
+  main();
+}

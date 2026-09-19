@@ -4928,7 +4928,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
   import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems, emptySlotRows, GEAR_COPY } from "./src/browser/viewModels.js";
-  import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
+  import { RACES, CLASSES, ABILITY_BY_ID } from "./content/index.js";
   // Phase 44 (DEAD-02) — a SEPARATE import line so the pinned line above
   // stays byte-identical for every existing bridge test.
   import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS } from "./content/index.js";
@@ -4953,13 +4953,6 @@ window.__mzClassicBoot = async function classicBoot() {
   // USE TORCH button uses to dispatch window.mzUseItem at tap time (never a
   // stashed index — the engine re-validates on its own).
   import { toolIndex } from "./engine/items.js";
-
-  // Phase 13 (ECON-04): expose the read-only BAGS capacity table so the classic
-  // script's GEAR tab + find keep/drop prompt can show the "used / slots"
-  // readout and gate Take-it without importing content (same bridge pattern as
-  // window.__mzState / window.__mzSettings above). Pure display data — never fed
-  // into anything rng-touching; the ENGINE alone enforces the real cap.
-  window.__mzBags = BAGS;
 
   // Phase 44 (DEAD-02): the read-only display tables the classic renderers
   // cannot `import` (RACE_NOTE/CLASS_NOTE/SUB_NOTE for the Hero-tab dossier;
@@ -5248,8 +5241,6 @@ window.__mzClassicBoot = async function classicBoot() {
       window.mzKeepPartyInView?.();
     }
   });
-
-  window.__mzHaptics = { maybeHaptic };
 
   try {
     applySettings(await readSettings());

@@ -1,0 +1,348 @@
+// src/browser/bridge.js
+//
+// Phase 47 (SHELL-04) — the SOURCE OF TRUTH for every `window.__mz*` name
+// that crosses the seam between `mazeworld.html`'s classic `<script>` (not a
+// module — cannot `import`) and its trailing `<script type="module">`
+// (which can). BRIDGE lists every live name with its owner (the file/script
+// that assigns it) and its consumers (the readers). Adding or removing a
+// `window.__mz*` name ANYWHERE (the shell or a src/browser/ module)
+// requires editing this map in the SAME commit — test/unit/bridge-registry
+// .test.js fails the build otherwise (an unlisted new name, or a stale
+// listed name nothing defines any more).
+//
+// `node tools/bridge-doc.mjs --write` regenerates docs/SHELL-MODULES.md's
+// `## Module bridge` table from this map — the map is the source, the doc
+// is generated.
+//
+// Three names (`__mzAppImportOverride`, `__mzHapticsImportOverride`,
+// `__mzPreferencesOverride`) are test-only injection hooks: a src/browser/
+// module checks `globalThis.<name>` so a test can swap its native import for
+// a fake, WITHOUT any shipped code path ever setting the global itself — the
+// hook is reachable only when a test sets it.
+//
+// Five names (`__mzCombatMenu`, `__mzFightEnd`, `__mzFightLog`, `__mzRail`,
+// `__mzStair`) are presentation-only state written by BOTH scripts: the
+// module script defines the bridge object/API and its resting value, the
+// classic script also writes a fresh value at specific UI moments (dismiss,
+// refuse, tap). Never a field on `S`/state — `serializeRun` spreads `S`
+// wholesale, so these would leak into a save if they were.
+
+export const BRIDGE = Object.freeze({
+  __mzAbilities: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — Hero-tab ability rows)"]),
+    purpose: "Bridges the ability catalog, cooldown/readiness helpers and characterSheetViewModel so the Hero tab's ability rows never re-derive the state-suffix rule.",
+  }),
+  __mzAppImportOverride: Object.freeze({
+    owner: "src/browser/nativeChrome.js",
+    consumers: Object.freeze(["test/persistence/lifecycle.test.js", "test/unit/haptics.test.js"]),
+    purpose: "Test-only injection hook so a test can replace the native @capacitor/app import with a fake, without any shipped code path setting it.",
+  }),
+  __mzArmorDisplay: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: paint — sheet armor line)",
+      "mazeworld.html (classic: renderCarriedList — bag armor swap-compare text)",
+      "mazeworld.html (classic: renderDropShelf — bag armor text)",
+      "mazeworld.html (classic: renderEncounter — loot/find armor text)",
+    ]),
+    purpose: "Bridges the pure armorDisplay/bagArmorText formatters so every armor string on screen renders from one engine-derived source.",
+  }),
+  __mzBagUsage: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: paint — bag usage readout)",
+      "mazeworld.html (classic: renderEncounter — loot/find bag-full gate)",
+    ]),
+    purpose: "Bridges the pure bag-capacity readout (used/slots, full) so the Gear tab and every loot/find/store surface agree with the engine's real cap.",
+  }),
+  __mzCanvasSizing: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: fit — canvas backing size + cell size for text scale)"]),
+    purpose: "Bridges the pure canvas-backing/cell-size math so the map canvas resizes identically to the engine's own text-scale settings model.",
+  }),
+  __mzClassicBoot: Object.freeze({
+    owner: "mazeworld.html (classic)",
+    consumers: Object.freeze(["mazeworld.html (module: initRollerScreen — awaits the classic boot before first paint)"]),
+    purpose: "Exposes the classic script's async boot routine so the module script can await it before running the roller screen's own init.",
+  }),
+  __mzCombatMenu: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: openCombatMenu / renderActionArea / fightLogRefuse — reads and also writes)",
+      "mazeworld.html (module: dispatchWithNarration — closes the menu after every dispatched action)",
+    ]),
+    purpose: "Presentation-only open/closed state for the combat action submenu; never a field on state (serializeRun spreads state wholesale).",
+  }),
+  __mzCombatVM: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderActionArea / renderEncounter — combat header/foe-card/YOUR LOT/overlay content)"]),
+    purpose: "Bridges the pure combat header/foe-list/your-lot/overlay/menu view-model builders for renderEncounter's combat branch.",
+  }),
+  __mzConditionsOf: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — top-of-screen condition tracker)"]),
+    purpose: "Bridges the pure condition enumerator so paint()'s condition chips map data-only descriptors to labels through one shared source.",
+  }),
+  __mzControls: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: keepPartyInView / map pointer handlers — screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis)"]),
+    purpose: "Bridges the pure pointer-to-cell and camera-keep-in-view math so map taps and the stationary camera use one shared calculation.",
+  }),
+  __mzDescend: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: the stair-down overlay's primary action)"]),
+    purpose: "Exposes the module's descend action so the classic stair overlay's GO button can dispatch it without importing the module a second time.",
+  }),
+  __mzDropShelfItems: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — LOOT and FIND drop-shelf cards)"]),
+    purpose: "Bridges the pure bag-items-only list the shared drop shelf renders when a pickup would overflow the bag.",
+  }),
+  __mzEff: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — eff(key) effect-timer reader)"]),
+    purpose: "Bridges the pure two-path worn-item effect reader so the classic script's own eff(key) duplicate reads the same worn-model source as the engine.",
+  }),
+  __mzEther: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: condition-chip tone for the ether condition)",
+      "mazeworld.html (classic: map pointer handlers — tap-to-move isOpen predicate, hold-inspect ethereal flag)",
+    ]),
+    purpose: "Bridges the pure Cloak of Ether predicates (itemEffectActive, inStone) so tap-to-move, hold-inspect and the condition chip agree on wall-walking state.",
+  }),
+  __mzFightEnd: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderCombatOver — reads and also resets to null)",
+      "mazeworld.html (module: the post-dispatch combat-end tracker — sets the ending-line parcel)",
+    ]),
+    purpose: "Presentation-only parcel of a just-ended fight's closing lines; never a field on state.",
+  }),
+  __mzFightLog: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderFightLog / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)",
+      "mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines)",
+    ]),
+    purpose: "Presentation-only whole-fight log entries (rows, seq); never a field on state.",
+  }),
+  __mzFightLogVM: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull)"]),
+    purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time.",
+  }),
+  __mzGear: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — ON YOU empty-slot rows and Gear copy)"]),
+    purpose: "Bridges the pure empty-slot-row builder and GEAR_COPY so the Gear tab's ON YOU section renders from the shared view-model.",
+  }),
+  __mzGravesCount: Object.freeze({
+    owner: "mazeworld.html (classic)",
+    consumers: Object.freeze(["mazeworld.html (module: refreshTitleDead — the roller screen's death counter)"]),
+    purpose: "Exposes the classic script's graveyard-count accessor so the module's title-screen death counter reads the same total.",
+  }),
+  __mzHapticsImportOverride: Object.freeze({
+    owner: "src/browser/haptics.js",
+    consumers: Object.freeze(["test/unit/haptics.test.js"]),
+    purpose: "Test-only injection hook so a test can replace the native @capacitor/haptics import with a fake, without any shipped code path setting it.",
+  }),
+  __mzHasTool: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating)"]),
+    purpose: "Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool.",
+  }),
+  __mzIconMap: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: draw — the preloaded map icon atlas)"]),
+    purpose: "Bridges the preloaded PNG icon atlas so the map canvas's draw() can paint feature icons without re-fetching them.",
+  }),
+  __mzIconsApi: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: draw — featureKeyForCell/drawFeatureIcon/PLAYER_MARKER_ICON)"]),
+    purpose: "Bridges the pure icon-selection helpers so the map canvas's draw() resolves and paints the same icon set as the rest of the shell.",
+  }),
+  __mzInputGuards: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — encArmed/encounterSettled/armEncounterButtons)"]),
+    purpose: "Bridges the pure arm-delay/dismiss-settle predicates so the encounter overlay's double-tap and stale-dismiss guards read one shared clock rule.",
+  }),
+  __mzItemRowState: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: wornSlotRow / renderCarriedList — item-row state rule)"]),
+    purpose: "Bridges the pure worn/bag item-row state rule so every gear row (worn or bag) agrees on which action buttons to show.",
+  }),
+  __mzLootCompare: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter loot branch / renderCarriedList — equip-now compare verdict)"]),
+    purpose: "Bridges the pure compare-to-equipped verdict so the loot screen's Equip Now button and the Gear tab agree with the engine.",
+  }),
+  __mzLootReport: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter loot branch — folds the victory report into the loot card)"]),
+    purpose: "Presentation-only transient carrying a just-won fight's report into the loot card when drops are pending; never a field on state.",
+  }),
+  __mzMapMarks: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: draw / renderMarksLegend / inspectAt — palette, glyphs, legend, markForCell)"]),
+    purpose: "Bridges the pure map-mark palette/glyph/legend tables so the canvas, the legend sheet and hold-inspect all agree on one mark vocabulary.",
+  }),
+  __mzMapView: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: draw — the render-window radius/visibility predicate)"]),
+    purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window; missing bridge falls back to showing everything.",
+  }),
+  __mzNightlyEats: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — camp button's food-need readout)"]),
+    purpose: "Bridges the pure nightly-food-need calculation so the camp button's readout matches the engine's own camp gate.",
+  }),
+  __mzOracleToNewest: Object.freeze({
+    owner: "mazeworld.html (classic)",
+    consumers: Object.freeze(["mazeworld.html (classic: showTab — scrolls the Oracle log to newest on tab entry)"]),
+    purpose: "Forward-declared scroll-to-newest callback for the Oracle log, called by showTab whenever the Oracle tab is opened.",
+  }),
+  __mzPartyCap: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — Joiner offer party-size cap)"]),
+    purpose: "Bridges the engine's PARTY_CAP constant so the Joiner offer card's cap check never drifts from the engine's own limit.",
+  }),
+  __mzPendingNarration: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — the narrated() helper building loot/find/store narration lines)"]),
+    purpose: "Presentation-only queue of narration HTML lines a dispatch produced, read once by the encounter card that follows; never a field on state.",
+  }),
+  __mzPreferencesOverride: Object.freeze({
+    owner: "src/browser/storage.js",
+    consumers: Object.freeze(["test/persistence/harness/fakePreferences.js"]),
+    purpose: "Test-only injection hook so a test can replace the native @capacitor/preferences import with a fake, without any shipped code path setting it.",
+  }),
+  __mzRail: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderRail / railLocked — reads and also clears pending on dismiss)",
+      "mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine — pushes new cards)",
+    ]),
+    purpose: "Presentation-only rail state (seq/card/pending) — what is currently on screen at the bottom of the map; never a field on state.",
+  }),
+  __mzRailVM: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)"]),
+    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time.",
+  }),
+  __mzRations: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: paint — Hero-tab RATIONS panel)",
+      "mazeworld.html (classic: renderPartyRoster — Company panel eats line)",
+      "mazeworld.html (classic: renderEncounter — Joiner card eats line)",
+    ]),
+    purpose: "Bridges the pure rations view-model and eats-line formatter so every eats readout (sheet, roster, joiner card) reads engine/movement.js#eatsFor once.",
+  }),
+  __mzRenderGrimoire: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: the Grimoire tab's re-render trigger)"]),
+    purpose: "Exposes the module's renderGrimoire so the classic script can trigger a Grimoire re-paint after a spell-cast dispatch.",
+  }),
+  __mzSellPrice: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderCarriedList — bag row Sell button label)"]),
+    purpose: "Bridges the pure, read-only price probe so the store's Sell button can label its price without touching the actual sale action.",
+  }),
+  __mzSettings: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings)"]),
+    purpose: "Exposes the module's currently-applied settings object so the classic canvas-fit routine can read the live text-scale setting.",
+  }),
+  __mzShowTab: Object.freeze({
+    owner: "mazeworld.html (classic)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: the death card's Oracle button)",
+      "mazeworld.html (module: initRollerScreen / the death-screen router — switches tabs after boot or death)",
+    ]),
+    purpose: "Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click.",
+  }),
+  __mzSlotFor: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderCarriedList — EQUIP swap branch resolves the item's worn family)"]),
+    purpose: "Bridges the pure item-to-worn-family resolver so the bag's EQUIP action finds the same family (jewelry/cloak/etc.) the engine uses.",
+  }),
+  __mzStair: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: the stair-down overlay's STAY button — reads and also clears to null)",
+      "mazeworld.html (module: the tap-to-move step handler / getGameContext / closeModal — sets and clears the overlay flag)",
+    ]),
+    purpose: "Presentation-only stair-down gate flag ({ dir } while the overlay is up, else null); never a field on state.",
+  }),
+  __mzState: Object.freeze({
+    owner: "mazeworld.html (classic)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: paint/renderRail/railPulse — reads the live GameState)",
+      "mazeworld.html (module: dispatchWithNarration and every engine-action bridge — get()/set() the live GameState)",
+      "tools/store-screenshots/bot.js",
+      "tools/store-screenshots/capture.js",
+    ]),
+    purpose: "The one get()/set() accessor onto the classic script's `S` variable, letting the module script read and replace the live GameState.",
+  }),
+  __mzStrikeDie: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — Hero-tab strike-die readout)"]),
+    purpose: "Bridges the engine's own strikeDie function so the character sheet's die readout can never disagree with a real swing.",
+  }),
+  __mzTables: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: skillTable — Fighter/Thief skill tables)",
+      "mazeworld.html (classic: paint — level roman numerals, weapon/threshold lookups, dossier race/class/subclass notes)",
+      "mazeworld.html (classic: renderPartyRoster / renderEncounter — level roman numerals in Company/Joiner rows)",
+    ]),
+    purpose: "Bridges the read-only content tables (RACE_NOTE/CLASS_NOTE/SUB_NOTE/ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES) the classic script cannot import.",
+  }),
+  __mzTakesBagSlot: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find per-item bag-full gate)"]),
+    purpose: "Bridges the one bag-free predicate (potions/scrolls/bags ride free) so the loot and find cards gate bag-full per item, not on the aggregate alone.",
+  }),
+  __mzTapStep: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: map pointer handlers — resolveStep/inspectCell/HOLD_MS/TAP_MAX_TRAVEL_PX)"]),
+    purpose: "Bridges the pure tap-to-move step resolver and hold-inspect builder so map taps and holds share one gesture-to-action rule.",
+  }),
+  __mzToHit: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — Hero-tab to-hit readout)"]),
+    purpose: "Bridges the engine's own toHit function so the character sheet's to-hit readout can never disagree with a real swing.",
+  }),
+  __mzToolIndex: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: the dark rail card's USE TORCH button)"]),
+    purpose: "Bridges the engine's tool-slot resolver so the dark card's USE TORCH tap dispatches the correct, freshly-resolved bag index.",
+  }),
+  __mzUsableBy: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find/store usable-by suffix)"]),
+    purpose: "Bridges the pure usable-by-class predicate so every item row's usable-by suffix (loot, find, store) reads one shared rule.",
+  }),
+  __mzWornKeysOf: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderCarriedList — EQUIP swap branch's family-to-concrete-keys lookup)"]),
+    purpose: "Bridges the family-to-worn-keys table so a jewelry/cloak swap confirm can enumerate the concrete slot keys for its family.",
+  }),
+  __mzWornSlots: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — ON YOU worn-row loop)"]),
+    purpose: "Bridges the frozen WORN_SLOTS order so the Gear tab's ON YOU section renders worn rows in the engine's own canonical slot order.",
+  }),
+});
+
+/**
+ * bridgeNames() — the sorted list of every key in BRIDGE. The registry
+ * test asserts this equals both the alphabetical order of Object.keys(BRIDGE)
+ * itself and the live `__mz\w+` scan's sorted result, so grep order and file
+ * declaration order never matter.
+ */
+export function bridgeNames() {
+  return Object.keys(BRIDGE).sort();
+}

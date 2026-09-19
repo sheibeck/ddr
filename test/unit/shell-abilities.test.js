@@ -103,7 +103,7 @@ test("window.__mzAbilities bridges byId/roundsLeft/isReady/sheet from content/ab
   );
   assert.match(CODE, /import \{ abilityRoundsLeft \} from "\.\/engine\/abilities\.js";/);
   assert.match(CODE, /import \{ isReady \} from "\.\/engine\/effects\.js";/);
-  assert.match(CODE, /import \{ RACES, CLASSES, BAGS, ABILITY_BY_ID \} from "\.\/content\/index\.js";/);
+  assert.match(CODE, /import \{ RACES, CLASSES, ABILITY_BY_ID \} from "\.\/content\/index\.js";/);
 });
 
 // ─── 5. surfaceAbilityPool ───────────────────────────────────────────────────
