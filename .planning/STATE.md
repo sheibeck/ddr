@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 45
-current_phase_name: Collapse the Phase 37 Hedges
-status: verifying
+current_phase: 46
+current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
+status: planning
 stopped_at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
-last_updated: "2026-09-19T19:42:22.591Z"
+last_updated: "2026-09-19T19:44:49.136Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 45 execution started
+last_activity_desc: Phase 45 complete, transitioned to Phase 46
 progress:
   total_phases: 6
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 44; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 45 (Collapse the Phase 37 Hedges) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-09-19 — Phase 45 execution started
+Phase: 46 — Honest Names, Dead Exports & the Tutorial Decision
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-19 — Phase 45 complete, transitioned to Phase 46
 
 ## Ground Truth (durable facts every session needs)
 
