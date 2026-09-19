@@ -574,21 +574,34 @@ export const GOLD_RESERVE = 50;
 export const RUN_FLAGS = Object.freeze({ storeRoll: true, wornSlots: true });
 
 /**
- * readyWorn(state, ctx, slot, kinds) — 260918-w4n (use-activated-only): the
- * ONE "does this hero have a worn, ready, not-yet-blocked activatable of one
- * of these kinds in this slot" read every item tactic below shares. Returns
- * the worn item when `c.worn[slot]` exists, `activationFor(it).kind` is a
- * member of `kinds`, `itemReady(state, it)` is true, and `it` is not already
- * in `ctx.itemBlocked` (by its own label) — else `null`. Pure.
+ * readyWornOfKind(state, ctx, kinds, opts) — 260918-w4n (use-activated-only),
+ * rewritten 260918-wy1 (jewelry-merge): the ONE "does this hero have a
+ * worn, ready, not-yet-blocked activatable of one of these kinds, in ANY
+ * worn key" read every item tactic below shares — family-agnostic: a glow/
+ * tongue/fly/knit item is found whether it sits in jewelry1, jewelry2, or
+ * the cloak key, never by a hard-coded slot name. Scans `WORN_SLOTS` in
+ * order and returns `{ slot, it }` for the FIRST key whose worn item's
+ * `activationFor(it).kind` is a member of `kinds`, `itemReady(state, it)` is
+ * true, and `it` is not already in `ctx.itemBlocked` (by its own label) —
+ * else `null`. `opts.skipIfActive` (default false) additionally skips a
+ * candidate whose kind is already live (`itemEffectActive`) — the round-1
+ * buff tier's own "don't re-trigger an already-active buff" rule, which
+ * must keep scanning the REMAINING worn keys rather than stopping at the
+ * first (possibly-already-live) match. Pure.
  */
-function readyWorn(state, ctx, slot, kinds) {
+function readyWornOfKind(state, ctx, kinds, opts = {}) {
   const c = state.c;
-  const it = c.worn && c.worn[slot];
-  if (!it) return null;
-  const act = activationFor(it);
-  if (!act || !kinds.includes(act.kind)) return null;
-  if (ctx.itemBlocked.has(itemLabel(it))) return null;
-  return itemReady(state, it) ? it : null;
+  if (!c.worn) return null;
+  for (const slot of WORN_SLOTS) {
+    const it = c.worn[slot];
+    if (!it) continue;
+    const act = activationFor(it);
+    if (!act || !kinds.includes(act.kind)) continue;
+    if (opts.skipIfActive && itemEffectActive(c, act.kind)) continue;
+    if (ctx.itemBlocked.has(itemLabel(it))) continue;
+    if (itemReady(state, it)) return { slot, it };
+  }
+  return null;
 }
 
 /**
@@ -758,15 +771,14 @@ export function chooseCombatItem(state, ctx) {
     // among the kinds a round-1 buff should ever fire for — haste (Cloak of
     // Speed), brace (Cloak of Strength), plate (Cloak of Armor), unseen
     // (Anklet of Invisibility), power (Ring of Power), giant (Gauntlet of
-    // the Giant) — skipped when that kind is already live.
+    // the Giant) — skipped when that kind is already live. 260918-wy1:
+    // readyWornOfKind itself now scans WORN_SLOTS (jewelry1/jewelry2/cloak)
+    // and (via skipIfActive) keeps scanning past an already-live match, so
+    // this collapses to a single call — the first ready, not-yet-live buff
+    // in EITHER jewelry key or the cloak.
     const buffKinds = ["haste", "brace", "plate", "unseen", "power", "giant"];
-    for (const slot of WORN_SLOTS) {
-      const it = readyWorn(state, ctx, slot, buffKinds);
-      if (!it) continue;
-      const act = activationFor(it);
-      if (itemEffectActive(c, act.kind)) continue;
-      return { action: { type: "useItem", slot }, reason: "buff" };
-    }
+    const buffFound = readyWornOfKind(state, ctx, buffKinds, { skipIfActive: true });
+    if (buffFound) return { action: { type: "useItem", slot: buffFound.slot }, reason: "buff" };
   }
 
   // (3) a Magic User's ready BAGGED staff (260918-w4n: a staff has no worn
@@ -812,20 +824,25 @@ export function chooseFieldItem(state, ctx) {
       const it = c.items[i];
       if (!ctx.itemBlocked.has(itemLabel(it)) && itemReady(state, it)) return { type: "useItem", i };
     }
-    if (readyWorn(state, ctx, "amulet", ["glow"])) return { type: "useItem", slot: "amulet" };
+    // 260918-wy1: a ready glow item (Amulet of Light) is found in EITHER
+    // jewelry key — readyWornOfKind is family-agnostic.
+    const glow = readyWornOfKind(state, ctx, ["glow"]);
+    if (glow) return { type: "useItem", slot: glow.slot };
   }
   const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
-  if (ratio < ctx.opts.potionThreshold && readyWorn(state, ctx, "cloak", ["knit"])) {
-    return { type: "useItem", slot: "cloak" };
+  const knit = readyWornOfKind(state, ctx, ["knit"]);
+  if (ratio < ctx.opts.potionThreshold && knit) {
+    return { type: "useItem", slot: knit.slot };
   }
   return null;
 }
 
 /**
- * preHazardFlight(state, dir) — 260918-w4n (use-activated-only): when the
- * chosen movement direction `dir` targets a climb/gorge tile, no `fly`-kind
- * effect is currently live, and a ready worn Cloak of Flying (slot cloak) or
- * Bracelet of Flight (slot bracelet) exists, returns `{ type: "useItem",
+ * preHazardFlight(state, dir) — 260918-w4n (use-activated-only), rewritten
+ * 260918-wy1 (jewelry-merge): when the chosen movement direction `dir`
+ * targets a climb/gorge tile, no `fly`-kind effect is currently live, and a
+ * ready worn fly-kind item exists (a Bracelet of Flight in either jewelry
+ * key, or a Cloak of Flying in the cloak key), returns `{ type: "useItem",
  * slot }` instead of the move — the NEXT decideAction call re-derives the
  * same `dir` and flies over for free. Returns `null` when none of that
  * applies (the caller then dispatches the plain `move`). Pure, no rng.
@@ -837,9 +854,8 @@ function preHazardFlight(state, ctx, dir) {
   const [dx, dy] = DIRS[dir];
   const there = f.g[f.py + dy] && f.g[f.py + dy][f.px + dx];
   if (!there || (there.feat !== "climb" && there.feat !== "gorge")) return null;
-  for (const slot of ["cloak", "bracelet"]) {
-    if (readyWorn(state, ctx, slot, ["fly"])) return { type: "useItem", slot };
-  }
+  const fly = readyWornOfKind(state, ctx, ["fly"]);
+  if (fly) return { type: "useItem", slot: fly.slot };
   return null;
 }
 
@@ -939,13 +955,14 @@ export function decideAction(state, policyRng, ctx) {
     if (ratio < fleeAt) {
       if (!ctx.parleyBlocked && canParley(state)) return { type: "parley" };
       // 260918-w4n: wants to parley but can't (fluency 0) and a ready worn
-      // Helm of Knowledge is available — use it first; the next
-      // decideAction then parleys with fluency 1.
-      if (
-        !ctx.parleyBlocked && !canParley(state) && !itemEffectActive(c, "tongue") &&
-        readyWorn(state, ctx, "helm", ["tongue"])
-      ) {
-        return { type: "useItem", slot: "helm" };
+      // tongue-kind item (Helm of Knowledge) is available in either jewelry
+      // key — use it first; the next decideAction then parleys with
+      // fluency 1. 260918-wy1: readyWornOfKind is family-agnostic.
+      const tongueBeforeFlee = !ctx.parleyBlocked && !canParley(state) && !itemEffectActive(c, "tongue")
+        ? readyWornOfKind(state, ctx, ["tongue"])
+        : null;
+      if (tongueBeforeFlee) {
+        return { type: "useItem", slot: tongueBeforeFlee.slot };
       }
       if (!(c.sub === "Samurai" || ctx.fleeBlocked)) return { type: "flee" };
       // Samurai never runs (canon); a flee refused this encounter is not
@@ -962,9 +979,11 @@ export function decideAction(state, policyRng, ctx) {
     // (c) HARN-02 talk-first
     if (C.round === 1 && isTalkFirst(state) && !ctx.parleyBlocked) {
       if (canParley(state)) return { type: "parley" };
-      // 260918-w4n: same helm assist as branch (a) above.
-      if (!itemEffectActive(c, "tongue") && readyWorn(state, ctx, "helm", ["tongue"])) {
-        return { type: "useItem", slot: "helm" };
+      // 260918-w4n: same tongue-item assist as branch (a) above.
+      // 260918-wy1: readyWornOfKind is family-agnostic.
+      if (!itemEffectActive(c, "tongue")) {
+        const tongue = readyWornOfKind(state, ctx, ["tongue"]);
+        if (tongue) return { type: "useItem", slot: tongue.slot };
       }
     }
 

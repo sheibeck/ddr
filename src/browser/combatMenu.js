@@ -257,9 +257,11 @@ export function combatMenuViewModel(state) {
   // Phase 37 (GEAR-03) + 260918-w4n: worn activatables must be worn to work
   // in the worn-slot model, so a worn cloak/jewel must be reachable from the
   // fight's ITEMS submenu — the shell's COMBAT_DISPATCH forwards `slot`
-  // (Plan 04). With WORN_SLOTS now five keys a staff can never appear here
-  // (it has no worn slot). A legacy c (no c.worn key) contributes zero rows
-  // here, byte-identical to before this phase.
+  // (Plan 04). 260918-wy1: WORN_SLOTS is now the three keys jewelry1,
+  // jewelry2, cloak — both worn jewelry pieces get their own row
+  // (worn-jewelry1 / worn-jewelry2) alongside the cloak row; a staff can
+  // never appear here (it has no worn slot). A legacy c (no c.worn key)
+  // contributes zero rows here, byte-identical to before this phase.
   const wornRows = WORN_SLOTS.filter((slot) => c.worn && activationFor(c.worn[slot])).map((slot) => {
     const it = c.worn[slot];
     return {

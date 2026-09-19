@@ -30,6 +30,7 @@ import {
 import { DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
 import { SPELLS } from "../../content/index.js";
 import { maxCharges } from "../../engine/movement.js";
+import { takeFind } from "../../engine/items.js";
 
 /** idx(name) — the SPELLS index for a spell by exact display name. */
 function idx(name) {
@@ -482,26 +483,40 @@ test("chooseCombatItem: a ready worn Cloak of Speed is used at round 1 of a hard
   assert.deepStrictEqual(chooseCombatItem(state, ctx), { action: { type: "useItem", slot: "cloak" }, reason: "buff" });
 });
 
-// 260918-w4n: the round-1 worn-buff tier walks WORN_SLOTS order (ring,
-// bracelet, amulet, helm, cloak) — the first ready buff wins, regardless of
-// which kind it is; a live (already-active) buff of that same kind is
-// skipped even when a different slot could still fire.
+// 260918-w4n: the round-1 worn-buff tier walks WORN_SLOTS order. 260918-wy1
+// (jewelry-merge): WORN_SLOTS is now jewelry1, jewelry2, cloak — the first
+// ready buff wins, regardless of which kind it is; a live (already-active)
+// buff of that same kind is skipped even when a different key could still
+// fire.
 test("chooseCombatItem: round-1 worn buff tier walks WORN_SLOTS order and skips an already-live kind", () => {
   const ctx = makeBotContext();
   const hard = fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, lvl: 3, wp: 20, maxWP: 20 }] });
   const ring = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 } }; // kind: power
   const cloak = { kind: "cloak", n: "Cloak of Strength", eff: { noCrit: 1 } }; // kind: brace
 
-  // ring (earlier in WORN_SLOTS order) wins over cloak when both are ready.
-  const both = mkState({ combat: hard, c: fighter({ worn: { ring, cloak } }) });
-  assert.deepStrictEqual(chooseCombatItem(both, ctx), { action: { type: "useItem", slot: "ring" }, reason: "buff" });
+  // jewelry1 (earlier in WORN_SLOTS order) wins over cloak when both are ready.
+  const both = mkState({ combat: hard, c: fighter({ worn: { jewelry1: ring, cloak } }) });
+  assert.deepStrictEqual(chooseCombatItem(both, ctx), { action: { type: "useItem", slot: "jewelry1" }, reason: "buff" });
 
   // the ring's kind (power) is already live -> falls through to the cloak.
   const ringLive = mkState({
     combat: hard,
-    c: fighter({ worn: { ring, cloak }, timers: { "item:Ring of Power": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } }),
+    c: fighter({ worn: { jewelry1: ring, cloak }, timers: { "item:Ring of Power": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } }),
   });
   assert.deepStrictEqual(chooseCombatItem(ringLive, ctx), { action: { type: "useItem", slot: "cloak" }, reason: "buff" });
+
+  // 260918-wy1: two jewelry pieces — the ring live in jewelry1, a ready
+  // Anklet of Invisibility (kind unseen) in jewelry2 — falls through to
+  // jewelry2 rather than stopping at the live jewelry1 match.
+  const anklet = { kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 } }; // kind: unseen
+  const jewelry2Fires = mkState({
+    combat: hard,
+    c: fighter({
+      worn: { jewelry1: ring, jewelry2: anklet },
+      timers: { "item:Ring of Power": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+    }),
+  });
+  assert.deepStrictEqual(chooseCombatItem(jewelry2Fires, ctx), { action: { type: "useItem", slot: "jewelry2" }, reason: "buff" });
 });
 
 // --- chooseCombatItem: a Magic User's BAGGED staff (260918-w4n: a staff
@@ -628,23 +643,27 @@ test("decideAction: the torch step sits out of combat", () => {
 // --- chooseFieldItem: 260918-w4n additions (Amulet of Light, Cloak of
 // Regeneration, and field-item priority over drinkPotion/camp) -------------
 
-test("chooseFieldItem: in the dark with no torch, a ready worn Amulet of Light is used (kind glow)", () => {
+test("chooseFieldItem: in the dark with no torch, a ready worn Amulet of Light is used (kind glow) from either jewelry key", () => {
   const ctx = makeBotContext();
   const darkFloor = { g: [[{ wall: false, seen: true, feat: null, dark: true }]], px: 0, py: 0, depth: 1 };
   const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 } };
 
-  const ready = mkState({ floor: darkFloor, c: fighter({ worn: { amulet } }) });
-  assert.deepStrictEqual(chooseFieldItem(ready, ctx), { type: "useItem", slot: "amulet" });
+  const ready = mkState({ floor: darkFloor, c: fighter({ worn: { jewelry1: amulet } }) });
+  assert.deepStrictEqual(chooseFieldItem(ready, ctx), { type: "useItem", slot: "jewelry1" });
+
+  // 260918-wy1: found in jewelry2 alike (family-agnostic scan).
+  const readyJewelry2 = mkState({ floor: darkFloor, c: fighter({ worn: { jewelry2: amulet } }) });
+  assert.deepStrictEqual(chooseFieldItem(readyJewelry2, ctx), { type: "useItem", slot: "jewelry2" });
 
   // a carried torch still wins over the amulet
   const torch = { kind: "tool", tool: "torch", n: "Torch", use: "light" };
-  const withTorch = mkState({ floor: darkFloor, c: fighter({ items: [torch], worn: { amulet } }) });
+  const withTorch = mkState({ floor: darkFloor, c: fighter({ items: [torch], worn: { jewelry1: amulet } }) });
   assert.deepStrictEqual(chooseFieldItem(withTorch, ctx), { type: "useItem", i: 0 });
 
   // a LIVE glow effect (already used) needs no torch/amulet
   const alreadyGlowing = mkState({
     floor: darkFloor,
-    c: fighter({ worn: { amulet }, timers: { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } }),
+    c: fighter({ worn: { jewelry1: amulet }, timers: { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } }),
   });
   assert.strictEqual(chooseFieldItem(alreadyGlowing, ctx), null);
 });
@@ -710,13 +729,17 @@ test("decideAction: a LIVE fly effect never re-triggers preHazardFlight (the pla
 
 // --- helm-before-parley assist ---------------------------------------------
 
-test("decideAction: below the flee threshold, wants to parley but can't (fluency 0) — a ready worn Helm of Knowledge is used first", () => {
+test("decideAction: below the flee threshold, wants to parley but can't (fluency 0) — a ready worn Helm of Knowledge is used first (either jewelry key)", () => {
   const ctx = makeBotContext();
   const helm = { kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 } };
   const combat = fight("Humans", 1, 1);
-  const state = mkState({ combat, c: fighter({ sub: "Soldier", wp: 4, maxWP: 40, worn: { helm } }) });
+  const state = mkState({ combat, c: fighter({ sub: "Soldier", wp: 4, maxWP: 40, worn: { jewelry1: helm } }) });
   const action = decideAction(state, fixedPolicyRng, ctx);
-  assert.deepStrictEqual(action, { type: "useItem", slot: "helm" });
+  assert.deepStrictEqual(action, { type: "useItem", slot: "jewelry1" });
+
+  // 260918-wy1: found in jewelry2 alike.
+  const state2 = mkState({ combat, c: fighter({ sub: "Soldier", wp: 4, maxWP: 40, worn: { jewelry2: helm } }) });
+  assert.deepStrictEqual(decideAction(state2, fixedPolicyRng, ctx), { type: "useItem", slot: "jewelry2" });
 });
 
 // --- the victory loot pile ---------------------------------------------
@@ -776,6 +799,28 @@ test("RUN_FLAGS is { storeRoll: true, wornSlots: true }; playRun's state carries
     if (r2.state.c.worn && r2.state.c.worn.cloak) sawWornCloak = true;
   }
   assert.ok(sawWornCloak, "at least one of seeds 1-10 must start a forced Thief with a worn cloak");
+});
+
+// 260918-wy1 (jewelry-merge): a bot hero already wearing two jewelry pieces
+// takes a third find — it stows (itemGiven, no itemEquipped), exactly like
+// any other bag-goes-full case. The bot never calls equipItem itself; it
+// acquires via takeFind/takeLoot/buy, all of which route through
+// autoWearSlot -> freeWornKey, so it wears up to two pieces and stows the
+// third automatically.
+test("a bot hero with two worn jewels (playRun's wornSlots:true shape) taking a third find stows it — findTaken only, no itemEquipped", () => {
+  const state = playRun(1, { ...BOT_DEFAULTS, maxActions: 1 }).state;
+  const ring1 = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
+  const ring2 = { kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: "foes need two better to land" };
+  const ring3 = { kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: "one size larger" };
+  state.c.worn.jewelry1 = ring1;
+  state.c.worn.jewelry2 = ring2;
+  state.pendingFind = ring3;
+  const events = takeFind(state, []);
+  assert.deepStrictEqual(events, [{ type: "findTaken", item: ring3 }]);
+  assert.ok(!events.some((e) => e.type === "itemEquipped"), "the third jewel never equips");
+  assert.ok(state.c.items.includes(ring3), "the third jewel stows in the bag");
+  assert.equal(state.c.worn.jewelry1, ring1, "jewelry1 untouched");
+  assert.equal(state.c.worn.jewelry2, ring2, "jewelry2 untouched");
 });
 
 // --- no-stall proof: Thief/MU/Fighter x seeds 1-3, items in use ------------

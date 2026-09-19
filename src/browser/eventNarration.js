@@ -42,6 +42,12 @@ import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "..
 // — pure content data, no engine/ import, same discipline as the flavor.js
 // import above.
 import { ABILITY_BY_ID } from "../../content/abilities.js";
+// 260918-wy1 (jewelry-merge): slotWord (jewelry1/jewelry2 -> "jewelry",
+// cloak -> "cloak", everything else passes through) — imported from
+// toasts.js, the existing one-directional re-export precedent this file
+// already relies on (line ~1048 below re-exports TOAST_FOR et al. FROM
+// toasts.js), never the reverse.
+import { slotWord } from "./toasts.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -980,25 +986,34 @@ export const EVENT_NARRATION = {
     `<span class="hit">A bigger bag.</span> ${e.item?.n ?? "It"} holds ${e.slots ?? "more"} slots — more room to make worse decisions in.`,
   itemDropped: (e) => `<span class="beat">You drop ${e.item?.n ?? "it"}.</span> Lighter, poorer, wiser — pick two.`,
   // Phase 37 (GEAR-03): an additive `replaced` payload names the swapped-out
-  // worn item; the no-replaced line stays byte-identical.
+  // worn item; the no-replaced line stays byte-identical. 260918-wy1
+  // (jewelry-merge): the slot renders through slotWord — jewelry1/jewelry2
+  // both read "jewelry", never a raw key.
   itemEquipped: (e) =>
-    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${e.slot})` : ""}. Whether that was wise is between you and the maze.${e.replaced?.n ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.` : ""}`,
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${slotWord(e.slot)})` : ""}. Whether that was wise is between you and the maze.${e.replaced?.n ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.` : ""}`,
   // Phase 28 (ARMOR-03): a destroyed piece never re-enters the bag — narrate
-  // that honestly instead of the usual stow-and-improvise line.
+  // that honestly instead of the usual stow-and-improvise line. 260918-wy1:
+  // the slot renders through slotWord here too.
   itemUnequipped: (e) =>
     e.destroyed
       ? `<span class="beat">You peel off what is left of your ${e.item?.n ?? "armor"}</span> and leave it where it falls. The bag declines the honor.`
-      : `<span class="beat">You stow your ${e.slot ?? "gear"}</span> — ${e.item?.n ?? "it"} back in the bag, and you back to improvising.`,
+      : `<span class="beat">You stow your ${e.slot ? slotWord(e.slot) : "gear"}</span> — ${e.item?.n ?? "it"} back in the bag, and you back to improvising.`,
   // Tried to wear/wield something your class, subclass, or race cannot.
   // Phase 24 (IDENT-07): a Woodsman gets its own clause; every other reason
   // (noArmor/wrongClass/notEquippable) stays byte-identical.
   // Phase 25 (FEED-02): an Acrobat's dagger-only rule gets its own clause.
+  // 260918-wy1 (jewelry-merge): jewelryFull/wrongSlot each get their own
+  // clause ahead of the generic fallback.
   equipRejected: (e) =>
     e.reason === "woodsman"
       ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
       : e.reason === "acrobat"
         ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
-        : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+        : e.reason === "jewelryFull"
+          ? `<span class="miss">Two pieces of jewelry. That is the limit.</span> ${e.item?.n ?? "It"} waits in the bag until something comes off.`
+          : e.reason === "wrongSlot"
+            ? `<span class="miss">${e.item?.n ?? "That"} does not go there.</span> Try the slot it was made for.`
+            : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
 
   /* ---------------- pending loot pile (LOOT-01/02/06, Phase 29) ----------------
      A foe drop lands on a pile, not in your hands — the loot screen's own

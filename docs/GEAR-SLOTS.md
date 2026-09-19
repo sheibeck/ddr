@@ -25,6 +25,12 @@ cloaks/jewelry/staves (potions and staves with a `use`) must be **worn** to
 work; the same item in the bag does nothing (`useRefused { reason:
 "notWorn" }`).
 
+> **260918-wy1 update (2026-09-19):** the six-slot-type sentence above is
+> superseded. The current model (after both the staff amendment (260918-w4n)
+> and the jewelry merge (260918-wy1)) is **three worn KEYS** —
+> `jewelry1`/`jewelry2`/`cloak` — see the dated §8 section below for the
+> full ruling and model.
+
 **Rationale:** the prototype's carried-copy summation is a latent stacking
 bug, not a deliberate design choice — nothing in the rulebook or the
 prototype's own flavor text describes wearing two rings on one finger as
@@ -60,6 +66,12 @@ Every JEWELRY, CLOAKS and STAVES row (`content/treasure-tables.js`) is
 authored with a `slot` field on its module-private `*_ROWS` array (never
 spread onto the exported row or any rolled item — see §3). 24 rows total.
 
+> **260918-wy1 update (2026-09-19):** the table below is superseded for the
+> 8 JEWELRY rows — every one now authors `slot: "jewelry"` (a FAMILY, not a
+> concrete key). The table intro is now **15 rows** whose `Slot` column
+> values are only `jewelry`/`cloak` (staves carry none — see the 260918-w4n
+> note above). See §8 for the full model.
+
 | Item | Kind | Slot |
 |---|---|---|
 | Ring of Power | jewel | ring |
@@ -87,9 +99,17 @@ spread onto the exported row or any rolled item — see §3). 24 rows total.
 | Cedar Staff | staff | staff |
 
 `content/treasure-tables.js` exports `SLOT_OF` (frozen, name → slot, 24
-entries) as the runtime lookup — `engine/derived.js#slotFor(it)` consults
-`it.slot` first, then `SLOT_OF[it.n]`, then a `kind` fallback (`cloak` →
-`cloak`, `staff` → `staff`) for a name not in the table, else `null`.
+entries in the original taxonomy) as the runtime lookup — `engine/
+derived.js#slotFor(it)` consults `it.slot` first, then `SLOT_OF[it.n]`, then
+a `kind` fallback for a name not in the table, else `null`.
+
+> **260918-wy1 update (2026-09-19):** `SLOT_OF` is now 15 entries (8
+> JEWELRY + 7 CLOAKS, per the 260918-w4n staff amendment below) whose
+> values are only the FAMILY strings `jewelry`/`cloak` — `slotFor(it)`
+> returns the family, with kind fallbacks `jewel` -> `jewelry` and `cloak`
+> -> `cloak` (the jewel fallback is new: it mirrors the pre-existing cloak
+> fallback so a jewel rolled under an unknown name still has a home). See
+> §8 for the family/key split.
 
 > **260918-w4n update (2026-09-18):** the taxonomy above is now **five
 > slots**, not six. The user dropped the Cloak of Healing from the game
@@ -121,6 +141,11 @@ chargen seeds 2/3/4 (Thief starting cloaks, `test/parity/chargen-parity
 fixture that must never be edited).
 
 ## §3. The model
+
+> **260918-wy1 update (2026-09-19):** the `Storage` bullet immediately below
+> describes the ORIGINAL six-key Phase 37 shape. The current shape (after
+> the staff amendment and the jewelry merge) is `c.worn = { jewelry1?,
+> jewelry2?, cloak? }` — see §8.
 
 - **Storage:** `c.worn = { ring?, bracelet?, amulet?, helm?, cloak?, staff?
   }` — a slot-key → item map, **lazily created**. Absent on every fixture,
@@ -296,3 +321,95 @@ Name/kind scans that can involve a slot item (routed through
   currently join the existing worn area beside the weapon/armor `wornRow`
   calls; this phase deliberately does not split the panel), and a
   bag-only drop prompt.
+
+## §8. Jewelry family — two pieces (user ruling 2026-09-18, quick 260918-wy1)
+
+**User ruling, verbatim (2026-09-18):**
+
+> "We should not have ring/bracelet/amulet as separate equipment slots. We
+> should have jewelry as a slot. Let's allow us to slot up to 2 pieces of
+> jewelry: any combination of rings, bracelets, amulets, and helms."
+
+This replaces the four jewelry worn slots the 260918-w4n staff amendment
+left in place (`ring`/`bracelet`/`amulet`/`helm`) with ONE slot family,
+`jewelry`, holding up to TWO pieces at once — any combination of the 8
+JEWELRY rows, including two of the same former sub-kind (two bracelets, two
+amulets, etc.). The cloak keeps its single slot, unchanged.
+
+**The worn map — two flat keys, not an array.** `c.worn = { jewelry1?,
+jewelry2?, cloak? }`. `WORN_SLOTS = ["jewelry1", "jewelry2", "cloak"]` stays
+the ordered list of concrete KEYS — the address space for every action
+(`useItem`/`unequipSlot`/`equipItem`), the worn map itself, and display/
+report order. The "jewelry" FAMILY exists only in `slotFor` (which now
+returns a family, not a key), a frozen key table `WORN_KEYS_OF = { jewelry:
+["jewelry1", "jewelry2"], cloak: ["cloak"] }`, its inverse
+`WORN_FAMILY_OF`, `SLOT_FAMILIES = ["jewelry", "cloak"]`, and one helper
+`freeWornKey(c, family)` — the first key of the family with no `c.worn[key]`
+yet, or `null` when every key is occupied. This is the ONE first-free-key
+rule `autoWearSlot`, `equipItem`, `reconcileWorn` and the save-load fold all
+read.
+
+Why a flat two-key form over a two-element array: (1) every existing reader
+(`c.worn[slot]` in `useItem`/`unequipSlot`/`wearItem`/`autoWearSlot`/
+`sanitizeWorn`/`emptySlotRows`/`wornSlotRow`/`combatMenu`/`readyWornOfKind`/
+`carriedItems` via `Object.values`) keeps working with zero shape branching;
+(2) the action address stays the flat `{ slot }` string every validator, the
+shell bridges, the combat submenu dispatch and the bot already emit — no new
+`idx` field, no `{ slot, idx }` arity through `engine/actions.js`; (3)
+serialization stays "key -> item object": `sanitizeWorn`'s invariant that
+every worn value is a non-null non-array object survives, `delete
+c.worn[slot]` stays the one empty-slot convention; (4) the legacy migration
+is a simple key rename into the first free jewelry key.
+
+**A third piece is never worn silently.** Untargeted `equipItem(state, i)`
+with both jewelry keys occupied pushes `equipRejected { item, reason:
+"jewelryFull" }` — the EXISTING event type with a new reason, no vocabulary
+change needed. Targeted `equipItem(state, i, events, target)` — the action
+gains an OPTIONAL `slot` field (`{ type: "equipItem", i, slot }`, validated
+against `WORN_SLOTS`) — swaps with exactly that key: the displaced piece
+drops into the bag at index `i`, same mechanics as the existing cloak swap
+(no bag-cap check, net zero slots). A target that is not one of the item's
+family keys refuses `equipRejected { reason: "wrongSlot" }`. The rule inside
+`equipItem` for a slot item: explicit target wins; else `freeWornKey`; else
+a single-key family (cloak) swaps with its one key (today's behaviour,
+byte-identical); else refuse `jewelryFull`. The Gear BAG row shows Equip
+while a jewelry key is free; when both are occupied it shows a two-choice
+swap confirm — one button per worn piece (labelled with that piece's name)
+plus No — each dispatching the targeted `mzEquipItem(i, key)`.
+
+**Old saves — tolerant load only, no gating.** `sanitizeWorn` gains a
+`LEGACY_JEWELRY_KEYS` fold (`["ring", "bracelet", "amulet", "helm"]`, in
+that order) — each legacy key holding an object moves to `freeWornKey(c,
+"jewelry")`, or, when both jewelry keys are already taken, is APPENDED to
+`c.items` (mirrors the 260918-w4n staff fold, so the existing `clampCarry`
+overflow drop is the only thing that can discard it); the legacy key is
+deleted either way. ORDER IS LOAD-BEARING: this fold runs AFTER the staff
+fold but BEFORE the generic "delete any key not in WORN_SLOTS" strip — if
+the fold ran after the strip, the legacy pieces would vanish instead of
+migrating. A save with no `c.worn` at all still goes through
+`reconcileWorn`, which now wears by `freeWornKey` and reports PER FAMILY:
+`{ slot: "jewelry", worn: [names], bagged: [names] }` — `worn` is now an
+ARRAY (one or two names), so the rail card's count is
+`worn.length + bagged.length` ("You were wearing four pieces of jewelry" is
+right when two are worn and two bagged).
+
+**Content.** All 8 JEWELRY_ROWS author `slot: "jewelry"`; `SLOT_OF` has 15
+entries whose values are only `jewelry`/`cloak`; the four sub-slot names
+(`ring`/`bracelet`/`amulet`/`helm`) leave `SLOT_OF`, `WORN_SLOTS`, the
+validators, `GEAR_COPY.empty`, `RAIL_COPY.wornReconciled.what`, the bot and
+this doc — surviving only inside `engine/saveState.js`'s
+`LEGACY_JEWELRY_KEYS` (the one place those four strings may still appear as
+`c.worn` keys) and as item display names (e.g. "Ring of Power" — a name, not
+a slot key). Exported JEWELRY rows stay byte-identical (`dropAuthored` still
+strips `slot`/`act`), so no rolled item shape moved and the parity fixtures
+never drifted.
+
+**Bot.** `tools/lib/tuning-bot.mjs#readyWornOfKind(state, ctx, kinds)`
+replaced the old slot-addressed `readyWorn(state, ctx, slot, kinds)` —
+family-agnostic: scans `WORN_SLOTS` and returns `{ slot, it }` for the
+first ready, unblocked worn item whose activation kind is in `kinds`, so a
+glow/tongue/fly/knit item is found in jewelry1, jewelry2 or the cloak key
+alike, never by a hard-coded slot name. The bot never calls `equipItem`; it
+acquires via `takeFind`/`takeLoot`/buy, all of which route through
+`autoWearSlot` -> first free jewelry key, so it wears up to two pieces and
+stows the third.

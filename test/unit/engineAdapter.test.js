@@ -117,7 +117,7 @@ test("boot(freshSeed) fails closed to a fresh run on a corrupt save", async () =
 
 // --- Phase 37 (GEAR-04): boot()'s legacy-save migration + takeBootWornReport() ---
 
-test("GEAR-04: boot() migrates a legacy save carrying two Rings of Power — wears the first, bags the second, reports once", async () => {
+test("GEAR-04 + 260918-wy1: boot() migrates a legacy save carrying two Rings of Power — BOTH wear (two jewelry keys), nothing bagged, no report", async () => {
   await withFakeLocalStorage(async (store) => {
     const original = newRun(1); // Fighter, no starting items
     const ringA = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" };
@@ -126,11 +126,32 @@ test("GEAR-04: boot() migrates a legacy save carrying two Rings of Power — wea
     store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
 
     const state = await boot(1);
-    assert.equal(state.c.worn.ring.n, "Ring of Power");
-    assert.equal(state.c.items.length, 1, "the second ring stays bagged");
+    assert.equal(state.c.worn.jewelry1.n, "Ring of Power");
+    assert.equal(state.c.worn.jewelry2.n, "Ring of Power");
+    assert.equal(state.c.items.length, 0, "260918-wy1: both rings wear — nothing left bagged");
+
+    assert.deepStrictEqual(
+      takeBootWornReport(),
+      [{ slot: "jewelry", worn: ["Ring of Power", "Ring of Power"], bagged: [] }],
+      "the raw report is returned even with nothing bagged — the caller (rail card) filters on bagged.length",
+    );
+  });
+});
+
+test("GEAR-04 + 260918-wy1: boot() migrates a legacy save carrying THREE Rings of Power — two wear, the third bags, reports once", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const original = newRun(1); // Fighter, no starting items
+    const ring = () => ({ kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" });
+    original.c.items = [ring(), ring(), ring()];
+    store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
+
+    const state = await boot(1);
+    assert.equal(state.c.worn.jewelry1.n, "Ring of Power");
+    assert.equal(state.c.worn.jewelry2.n, "Ring of Power");
+    assert.equal(state.c.items.length, 1, "the third ring stays bagged");
     assert.equal(state.c.items[0].n, "Ring of Power");
 
-    assert.deepStrictEqual(takeBootWornReport(), [{ slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] }]);
+    assert.deepStrictEqual(takeBootWornReport(), [{ slot: "jewelry", worn: ["Ring of Power", "Ring of Power"], bagged: ["Ring of Power"] }]);
     assert.equal(takeBootWornReport(), null, "consumed on read — a second call returns null");
   });
 });

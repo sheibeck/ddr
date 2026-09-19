@@ -432,6 +432,13 @@ given draw lands on can change. A save carrying the dropped cloak loads it
 as an inert cloak: `slotFor` still resolves it by kind, but `activationFor`
 is null (no Use button, no effect, no throw).
 
+> **260918-wy1 update (2026-09-19):** the eight JEWELRY rows' worn SLOT
+> collapsed from four sub-slots (ring/bracelet/amulet/helm) into one family,
+> `jewelry`, holding up to two pieces at once. This activation-model section
+> (act.kind/effect/cd) is unaffected — the jewelry merge only changes WHERE
+> an item wears, never how its activation works. See `docs/GEAR-SLOTS.md`
+> §8 for the full ruling and model.
+
 ### The three tables
 
 **Duration + cooldown** (every JEWELRY/CLOAKS row — all are act-only now) —

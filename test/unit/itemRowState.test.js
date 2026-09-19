@@ -59,6 +59,20 @@ test("a cd item mid-effect reads '{n} SQ'; singular '1 SQ' at exactly 1 remainin
   assert.deepEqual(itemRowState(oneLeft, cloak), { text: "1 SQ", kind: "effect", remaining: 1 });
 });
 
+// 260918-wy1 (jewelry-merge): itemRowState reads only the ITEM and
+// state.c.timers — never a worn KEY — so a live record started from a
+// jewelry2 piece reads exactly like one started from jewelry1. One pin is
+// enough (the function is shape-agnostic by construction; no code change
+// was needed for the jewelry merge).
+test("a worn jewelry2 piece reads the same row state as jewelry1 (itemRowState never addresses by worn key)", () => {
+  const ring = { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 } };
+  const live = state({ "item:Ring of Power": { cadence: "squares", left: 50, cd: 50, phase: "effect" } });
+  const fromJewelry1 = itemRowState({ c: { worn: { jewelry1: ring }, timers: live.c.timers } }, ring);
+  const fromJewelry2 = itemRowState({ c: { worn: { jewelry2: ring }, timers: live.c.timers } }, ring);
+  assert.deepEqual(fromJewelry1, fromJewelry2);
+  assert.deepEqual(fromJewelry1, { text: "50 SQ", kind: "effect", remaining: 50 });
+});
+
 test("a cd item cooling reads 'cd {n} SQ'", () => {
   const cloak = { n: "Cloak of Speed", kind: "cloak", use: "haste" };
   const cooling = state({ "item:Cloak of Speed": { cadence: "squares", left: 41, phase: "cooldown" } });

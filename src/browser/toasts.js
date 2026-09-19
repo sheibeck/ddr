@@ -11,10 +11,23 @@
 //
 // PRESENTATION ONLY, pure module: no DOM access, no `import` from engine/,
 // and no Math.random/Date.now anywhere in this file (mirrors missLines.js's
-// purity contract; 25-05 adds a standing guard). Every builder defends every
-// field with `??`/`?.` so a bare `{ type }` call (the coverage guard's own
+// purity contract; 25-05 adds a standing guard, T-25-23, that greps this
+// file for exactly those patterns — including any `from "…engine/…"` import
+// line, regardless of what it imports). Every builder defends every field
+// with `??`/`?.` so a bare `{ type }` call (the coverage guard's own
 // invocation shape, same convention as eventNarration.js) never throws
 // (T-25-08).
+//
+// 260918-wy1 (jewelry-merge, deviation from the plan's literal instruction):
+// the plan proposed importing `WORN_FAMILY_OF` from engine/derived.js here.
+// That import trips T-25-23's standing purity guard (it forbids ANY
+// `engine/` import line in this file, not just an impure one) — a real test
+// in test/unit/toastsCoverage.test.js, not a hypothetical. Rather than
+// weaken that guard, `slotWord` below carries its OWN small local mirror of
+// the same three-entry table; the worn-slots/worn-model unit suites pin
+// both this table and engine/derived.js#WORN_FAMILY_OF against the same
+// three literal keys, so a future change to one is caught by the other's
+// test failing, not by a silent drift.
 //
 // ORACLE_ONLY is a one-directional allowlist: every engine event type NOT in
 // that set gets a TOAST_FOR builder here. Nothing in ORACLE_ONLY ever
@@ -338,12 +351,37 @@ const EQUIP_REJECT_TEXT = {
   tooHeavy: "Too heavy to carry.",
   acrobat: "An Acrobat carries a dagger. Only a dagger.",
   notEquippable: "That does not equip.",
+  // 260918-wy1 (jewelry-merge): the two new equipItem refusals — an
+  // untargeted equip with both jewelry keys full, and a targeted swap key
+  // outside the item's own family.
+  jewelryFull: "Two pieces of jewelry is the limit. Swap one out, or admit you have a problem.",
+  wrongSlot: "That does not go there.",
 };
 function equipRejectText(e) {
   // Phase 39 (GEAR-05): a tool never duplicates — the item's own name is
   // dynamic, so this one reason is special-cased ahead of the static map.
   if (e?.reason === "haveOne") return `You already carry one ${e?.item?.n ?? "of those"}. One is the limit; two is a hobby.`;
   return EQUIP_REJECT_TEXT[e?.reason] ?? "Not for the likes of you.";
+}
+
+// SLOT_FAMILY_WORD — 260918-wy1 (jewelry-merge): a small LOCAL mirror of
+// engine/derived.js#WORN_FAMILY_OF's three entries. Deliberately NOT
+// imported from engine/ (see the file-header deviation note above) —
+// duplicated here on purpose, kept honest by test/unit/worn-model.test.js
+// and test/unit/toastTable.test.js each pinning their own copy against the
+// same three literal keys.
+const SLOT_FAMILY_WORD = Object.freeze({ jewelry1: "jewelry", jewelry2: "jewelry", cloak: "cloak" });
+
+/**
+ * slotWord(slot) — 260918-wy1 (jewelry-merge): the player-facing FAMILY word
+ * for a worn KEY — `jewelry1`/`jewelry2` both read "jewelry", `cloak` reads
+ * "cloak"; any other slot word (`weapon`, `armor`, or an unrecognized
+ * string) passes through unchanged. Exported so eventNarration.js's Oracle
+ * lines can share the exact same word (never a raw key like "jewelry2" in
+ * prose).
+ */
+export function slotWord(slot) {
+  return SLOT_FAMILY_WORD[slot] ?? slot;
 }
 
 // ─── toastsForAction pipeline (25-03) ─────────────────────────────────────
@@ -1581,8 +1619,11 @@ export const TOAST_FOR = {
   bagFull: (e) => block(e?.have != null && e?.slots != null ? `Bag full (${e.have}/${e.slots}) — drop something to make room.` : "No room in the bag."),
   // Phase 37 (GEAR-03): an additive `replaced` payload (the swapped-out
   // worn item) appends one clause; the no-replaced text stays byte-identical.
+  // 260918-wy1 (jewelry-merge): the slot renders through `slotWord` — a
+  // jewelry1/jewelry2 key reads "(jewelry)", never the raw key; weapon/armor
+  // are unaffected (slotWord passes them through unchanged).
   itemEquipped: (e) => ({
-    text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${e.slot})` : ""}.${e?.replaced?.n ? ` ${e.replaced.n} goes back in the bag.` : ""}`,
+    text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${slotWord(e.slot)})` : ""}.${e?.replaced?.n ? ` ${e.replaced.n} goes back in the bag.` : ""}`,
     tone: "hit",
     priority: PRIORITY.other,
   }),

@@ -318,9 +318,12 @@ export function bagUsage(c) {
  * module, so the voice scan and the hp-not-wp guard can both walk it as a
  * single leaf group. `empty` is nested and frozen too. The worn-slot empty
  * states read as SLOTS, in voice (CONTEXT §CLAR-04: "ring — nothing"), never
- * a bare dash. 260918-w4n (staff amendment): the five worn slots are the
- * complete set — a staff is a bag item now, so it carries no empty-slot row
- * at all (the two staff leaves this object used to carry are gone).
+ * a bare dash. 260918-w4n (staff amendment): a staff is a bag item now, so
+ * it carries no empty-slot row at all. 260918-wy1 (jewelry-merge): the four
+ * former sub-slot leaves (ring/bracelet/amulet/helm) are replaced by TWO
+ * key-named leaves, `jewelry1`/`jewelry2` — `WORN_SLOTS` is now the three
+ * keys jewelry1/jewelry2/cloak, so `empty` has exactly the leaves armor,
+ * jewelry1, jewelry2, cloak.
  */
 export const GEAR_COPY = Object.freeze({
   onYou: "ON YOU",
@@ -331,10 +334,8 @@ export const GEAR_COPY = Object.freeze({
   freeRide: "potions & scrolls ride free",
   empty: Object.freeze({
     armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
-    ring: "ring — nothing. Ten fingers, zero commitments.",
-    bracelet: "bracelet — nothing. A bare wrist, ready for bad decisions.",
-    amulet: "amulet — nothing. Your neck has never been less interesting.",
-    helm: "helm — nothing. Hair, technically, counts for zero.",
+    jewelry1: "jewelry — nothing. Ten fingers, one neck, zero commitments.",
+    jewelry2: "jewelry — nothing. Room for one more bad decision.",
     cloak: "cloak — nothing. Cold and unmagical, in that order.",
   }),
 });
@@ -357,15 +358,18 @@ export function dropShelfItems(c) {
 }
 
 /**
- * emptySlotRows(c) — Phase 43 (CLAR-04) + 260918-w4n (staff amendment): one
- * in-voice row per EMPTY worn slot — armor (via `armorDisplay(c)`, only when
- * neither worn nor the Cloak of Armor's magic plate) followed by the five
- * `WORN_SLOTS`, in that fixed order — so Plan 04's ON YOU panel can render
- * these between the existing wornRow/wornSlotRow rows. A legacy `c` with no
- * `worn` map yields all five slot rows (every `c.worn?.[slot]` read is
- * falsy). A staff is a bag item now — it has no worn slot and therefore no
- * empty-slot row at all; `WORN_SLOTS` no longer contains "staff", so this
- * loop never needs a class-aware branch. Pure, no rng, no mutation.
+ * emptySlotRows(c) — Phase 43 (CLAR-04) + 260918-w4n (staff amendment) +
+ * 260918-wy1 (jewelry-merge): one in-voice row per EMPTY worn KEY — armor
+ * (via `armorDisplay(c)`, only when neither worn nor the Cloak of Armor's
+ * magic plate) followed by the three `WORN_SLOTS` keys (jewelry1, jewelry2,
+ * cloak), in that fixed order — so Plan 04's ON YOU panel can render these
+ * between the existing wornRow/wornSlotRow rows. A bare hero shows three
+ * rows (two jewelry, one cloak). A legacy `c` with no `worn` map yields all
+ * three key rows (every `c.worn?.[slot]` read is falsy). A staff is a bag
+ * item — it has no worn slot and therefore no empty-slot row at all. No
+ * code change needed for the jewelry merge — this loop already reads
+ * `WORN_SLOTS` (now three keys) and `GEAR_COPY.empty[slot]` (now keyed by
+ * jewelry1/jewelry2/cloak) generically. Pure, no rng, no mutation.
  */
 export function emptySlotRows(c) {
   if (!c || typeof c !== "object") return [];

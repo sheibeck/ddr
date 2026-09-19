@@ -106,7 +106,9 @@ test("the old per-action switch and its spell-name helper are gone", () => {
 
 test("the DR18 hand-written equip-rejection toast is deleted", () => {
   assert.equal((HTML.match(/You cannot use that\./g) || []).length, 0);
-  assert.match(CODE, /window\.mzEquipItem = \(i\) => inventoryAction\(\{ type: "equipItem", i \}\);/);
+  // 260918-wy1 (jewelry-merge): mzEquipItem gained an optional targeted
+  // swap key.
+  assert.match(CODE, /window\.mzEquipItem = \(i, slot\) => inventoryAction\(slot === undefined \? \{ type: "equipItem", i \} : \{ type: "equipItem", i, slot \}\);/);
 });
 
 test("Phase 34: no shell-side in-combat toast survives — the full-health and no-potion refusals are dull fight-log entries", () => {

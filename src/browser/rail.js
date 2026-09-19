@@ -109,20 +109,18 @@ export const RAIL_COPY = Object.freeze({
   },
   dark: { torch: "USE TORCH" },
   quit: { title: "BACK AGAIN TO QUIT", line: "Press back once more and this delve is abandoned. Nobody will write it down." },
-  // Phase 37 (GEAR-04): the one-shot worn-reconciliation copy —
-  // wornReconcileCard (below) builds the actual card; `title` is reused
-  // verbatim, `line` is a template `wornReconcileCard` fills in per slot,
-  // `what` maps a WORN_SLOTS key to its plural noun-phrase.
+  // Phase 37 (GEAR-04), rewritten 260918-wy1 (jewelry-merge): the one-shot
+  // worn-reconciliation copy — wornReconcileCard (below) builds the actual
+  // card; `title` is reused verbatim, `line` is a template
+  // `wornReconcileCard` fills in per FAMILY, `what` maps a reconcileWorn
+  // report's `slot` (a FAMILY — jewelry or cloak, per engine/derived.js#
+  // SLOT_FAMILIES) to its plural noun-phrase.
   wornReconciled: {
     title: "GEAR",
     line: "You were wearing {count} {what}. Physics has filed a complaint — {bagged} {verb} in your bag now.",
     what: {
-      ring: "rings on one finger",
-      bracelet: "bracelets on one wrist",
-      amulet: "amulets on one neck",
-      helm: "helms on one head",
+      jewelry: "pieces of jewelry",
       cloak: "cloaks on one back",
-      staff: "staves in one hand",
     },
   },
   // Phase 38 (ABIL-01/03) — the first-paint narration of a fresh run's
@@ -449,16 +447,21 @@ export function railLineCard(title, line, tone, hold, icon = "·", iconKey = nul
 const COUNT_WORDS = ["", "one", "two", "three", "four", "five", "six"];
 
 /**
- * wornReconcileCard(report) — Phase 37 (GEAR-04): builds the one-shot rail
- * card for `engine/saveState.js#validateSave`'s `wornReport` (surfaced once
- * via `engineAdapter#takeBootWornReport`, Plan 04's resume path). `null` for
- * a missing/empty report, or a report whose every entry bagged nothing
- * (worn cleanly, nothing to narrate). Otherwise builds one sentence pair per
+ * wornReconcileCard(report) — Phase 37 (GEAR-04), rewritten 260918-wy1
+ * (jewelry-merge): builds the one-shot rail card for
+ * `engine/saveState.js#validateSave`'s `wornReport` (surfaced once via
+ * `engineAdapter#takeBootWornReport`, Plan 04's resume path). `null` for a
+ * missing/empty report, or a report whose every entry bagged nothing (worn
+ * cleanly, nothing to narrate). Otherwise builds one sentence pair per
  * populated (non-empty `bagged`) entry from `RAIL_COPY.wornReconciled`'s
  * template (`{count}` a spelled-out small number or a digit at 7+, `{what}`
- * the slot's plural noun-phrase, `{bagged}` the bagged item names joined
- * with ", ", `{verb}` "is"/"are") and joins them with a single space. Pure:
- * never mutates `report`, no Date/Math.random/DOM. Not folded through
+ * the family's plural noun-phrase, `{bagged}` the bagged item names joined
+ * with ", ", `{verb}` "is"/"are") and joins them with a single space.
+ * `reconcileWorn`'s report now carries `worn` as an ARRAY (one or two names
+ * for the jewelry family) — the count is `worn.length + bagged.length`
+ * (defensively `1 + bagged.length` for a hand-built report whose `worn` is
+ * still a bare string, so a legacy caller never throws). Pure: never
+ * mutates `report`, no Date/Math.random/DOM. Not folded through
  * `railCardFor` — this is a standalone, directly-built card (mirrors
  * `railLineCard`'s posture), since the migration is a load-time event, not
  * an `applyAction` dispatch this module's fold pipeline ever sees.
@@ -470,7 +473,8 @@ export function wornReconcileCard(report) {
 
   const { title, line, what } = RAIL_COPY.wornReconciled;
   const sentences = entries.map((r) => {
-    const count = r.bagged.length + 1;
+    const wornCount = Array.isArray(r.worn) ? r.worn.length : 1;
+    const count = wornCount + r.bagged.length;
     const countWord = COUNT_WORDS[count] || String(count);
     const noun = what[r.slot] || "of those";
     const bagged = r.bagged.join(", ");

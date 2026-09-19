@@ -3467,7 +3467,8 @@ function paint() {
   const bagFull = usage.full;
   carry.innerHTML = "";
   onyou.innerHTML = "";
-  // Phase 43 (CLAR-04): the empty-slot rows (armor + the six WORN_SLOTS,
+  // Phase 43 (CLAR-04), 260918-wy1 (jewelry-merge): the empty-slot rows
+  // (armor + the three WORN_SLOTS keys — jewelry1, jewelry2, cloak —
   // in-voice) come from the ONE emptySlotRows(c) read — never a restated
   // slot list.
   const empties = window.__mzGear.emptySlotRows(c);
@@ -3527,7 +3528,9 @@ function paint() {
   // is act-only now — st.kind is never "none" for a worn-slot item, so every
   // worn row gets a Use button (the old `it.use` gate is gone). Does NOT
   // touch wornRow's pinned signature — a slot item is never a weapon/armor,
-  // so it gets its own small builder.
+  // so it gets its own small builder. 260918-wy1 (jewelry-merge): WORN_SLOTS
+  // is now the three keys jewelry1, jewelry2, cloak — this loop needed no
+  // code change, it already reads WORN_SLOTS generically.
   const wornSlotRow = (slot, it) => {
     const li = document.createElement("li");
     li.className = "mw-worn";
@@ -4098,17 +4101,30 @@ function renderCarriedList(container, items, opts = {}) {
   // Phase 37 (GEAR-03) — the EQUIP-on-occupied-slot two-tap swap confirm;
   // mirrors mkDropConfirm exactly except the swapped copy/class/state names
   // and the Yes action (equipItem — a genuine direct swap, not dropItem).
-  const mkSwapConfirm = (i, wornName) => {
+  // 260918-wy1 (jewelry-merge): generalized from a single wornName string to
+  // `choices` — an array of `{ slot, name }`, one per occupied key of the
+  // item's family. A single-key family (cloak) still gets the familiar
+  // "Swap for {name}?" / one "Yes" button; a full two-key jewelry family
+  // gets "Swap for which?" and ONE button per worn piece (labelled with that
+  // piece's own name), each targeting its own key via mzEquipItem(i, slot),
+  // plus the same No button.
+  const mkSwapConfirm = (i, choices) => {
     const arm = () => {
       revertSwapConfirm();
       const wrap = document.createElement("span");
       wrap.className = "mw-swap-confirm";
       const label = document.createElement("span");
-      label.textContent = `Swap for ${wornName}?`;
-      const yes = mkBtn("Yes", () => { revertSwapConfirm(); window.mzEquipItem?.(i); });
+      label.textContent = choices.length === 1 ? `Swap for ${choices[0].name}?` : "Swap for which?";
+      wrap.appendChild(label);
+      for (const choice of choices) {
+        const btnLabel = choices.length === 1 ? "Yes" : choice.name;
+        const btn = mkBtn(btnLabel, () => { revertSwapConfirm(); window.mzEquipItem?.(i, choice.slot); });
+        btn.style.marginTop = "0";
+        wrap.appendChild(btn);
+      }
       const no = mkBtn("No", () => revertSwapConfirm());
-      yes.style.marginTop = "0"; no.style.marginTop = "0";
-      wrap.appendChild(label); wrap.appendChild(yes); wrap.appendChild(no);
+      no.style.marginTop = "0";
+      wrap.appendChild(no);
       equip.replaceWith(wrap);
       const timer = setTimeout(revertSwapConfirm, SWAP_CONFIRM_MS);
       const onSwapTap = (e) => { if (!wrap.contains(e.target)) revertSwapConfirm(); };
@@ -4158,13 +4174,20 @@ function renderCarriedList(container, items, opts = {}) {
         if (st.kind !== "none") li.appendChild(mkBtn("Use", () => window.mzUseItem?.(i)));
       } else if (a === "equip") {
         if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => window.mzEquipItem?.(i)));
-        // Phase 37 (GEAR-03) — a bag cloak/jewel in the worn model gets
-        // Equip (empty slot) or the two-tap swap confirm (occupied slot);
-        // legacy states (no c.worn) keep today's bag-only behaviour.
-        // 260918-w4n: `window.__mzSlotFor` is always null for a staff now,
-        // so this branch never fires for one — the Equip affordance for a
-        // staff disappears by itself, with no staff-specific check needed.
-        else if (S.c.worn && window.__mzSlotFor?.(it)) { const wornNow = S.c.worn[window.__mzSlotFor(it)]; li.appendChild(wornNow ? mkSwapConfirm(i, wornNow.n) : mkBtn("Equip", () => window.mzEquipItem?.(i))); }
+        // Phase 37 (GEAR-03), rewritten 260918-wy1 (jewelry-merge) — a bag
+        // cloak/jewel in the worn model gets Equip (a key of its family is
+        // free) or the swap confirm (every key of its family is occupied —
+        // one choice for the single-key cloak family, two for a full
+        // jewelry family); legacy states (no c.worn) keep today's bag-only
+        // behaviour. `window.__mzSlotFor` is always null for a staff, so
+        // this branch never fires for one.
+        else if (S.c.worn && window.__mzSlotFor?.(it)) {
+          const family = window.__mzSlotFor(it);
+          const keys = window.__mzWornKeysOf[family] || [];
+          const free = keys.find((k) => !S.c.worn[k]);
+          if (free) li.appendChild(mkBtn("Equip", () => window.mzEquipItem?.(i)));
+          else li.appendChild(mkSwapConfirm(i, keys.map((k) => ({ slot: k, name: S.c.worn[k].n }))));
+        }
       } else if (a === "drop") {
         if (opts.gearRow) li.appendChild(mkDropConfirm(i));
         else li.appendChild(mkBtn("Drop", () => window.mzDropItem?.(i)));
@@ -7235,7 +7258,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems, emptySlotRows, GEAR_COPY } from "./src/browser/viewModels.js";
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
-  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
+  import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
   // quick 260918-vvt — a SEPARATE import line (same module) so the pinned
   // line above stays byte-identical; bridged below as __mzTakesBagSlot.
   import { takesBagSlot } from "./engine/derived.js";
@@ -7302,9 +7325,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // duplicate (above) and the Gear-tab worn rows / EQUIP swap branch (below)
   // read the SAME worn-model source of truth as the engine. Read-only, no
   // rng, no mutation — same bridge pattern as __mzConditionsOf/__mzCanCast.
+  // 260918-wy1 (jewelry-merge): slotFor now returns a FAMILY (jewelry|cloak);
+  // __mzWornKeysOf bridges the family -> concrete-keys table so the EQUIP
+  // branch below can find the item's family's free key or build the
+  // multi-choice swap confirm.
   window.__mzEff = eff;
   window.__mzSlotFor = slotFor;
   window.__mzWornSlots = WORN_SLOTS;
+  window.__mzWornKeysOf = WORN_KEYS_OF;
 
   // Phase 31 (CMB-02): bridge the PURE, spellLevelFor-aware canCast(state, sp)
   // predicate so the classic in-combat SPELLS menu filter (canCast(sp) above)
@@ -8344,7 +8372,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // `equipRejected` event) now toasts from the TOAST_FOR table (block tone,
   // reason-specific text) via inventoryAction's own dispatchWithToasts call —
   // the DR18 hand-written rejection toast is gone.
-  window.mzEquipItem = (i) => inventoryAction({ type: "equipItem", i });
+  // 260918-wy1 (jewelry-merge): the targeted jewelry swap — an optional
+  // second arg names the concrete worn key to swap into; omitted, the
+  // engine wears the item into the first free key of its family (or, for a
+  // single-key family, swaps that one key — unchanged).
+  window.mzEquipItem = (i, slot) => inventoryAction(slot === undefined ? { type: "equipItem", i } : { type: "equipItem", i, slot });
   window.mzUnequip = (slot) => inventoryAction({ type: "unequipSlot", slot });
   // Phase 14 (ECON-06/07): USE a carried item (potions/staves/… — the already-
   // wired useItem action, engine/engine.js) and SELL a carried item at a store

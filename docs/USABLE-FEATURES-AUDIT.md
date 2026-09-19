@@ -164,10 +164,16 @@ anywhere in JEWELRY either. Pendant of Fortitude (`use:"half"`, every 100,
 in combat, stones up to 4 foes (§6, CMB-06).
 
 **Staff amendment (260918-w4n):** a staff is not equipable at all — it has
-no worn slot anywhere (`WORN_SLOTS` is five keys: ring/bracelet/amulet/
-helm/cloak). A staff lives in `c.items` (one bag slot) and is used from the
-bag by index — never "worn"; the eight staves above are unaffected
-otherwise (charges/recharge unchanged, `wrongClass` for a non-Magic-User).
+no worn slot anywhere. A staff lives in `c.items` (one bag slot) and is
+used from the bag by index — never "worn"; the eight staves above are
+unaffected otherwise (charges/recharge unchanged, `wrongClass` for a
+non-Magic-User).
+
+**Jewelry merge (260918-wy1):** the former four jewelry sub-slots
+(ring/bracelet/amulet/helm) are gone — `WORN_SLOTS` is now three keys:
+`jewelry1`/`jewelry2`/`cloak`. A character can wear worn (jewelry) — up to
+two pieces, any combination of the 8 JEWELRY rows — plus one cloak; see
+`docs/GEAR-SLOTS.md` §8 for the full model.
 
 **Scrolls:** `readScroll` — no scrolls → `scrollRefused noScrolls`; a Pilfer
 → `scrollRefused pilfer`; no Magic-User class and no Runes/Signs skill →

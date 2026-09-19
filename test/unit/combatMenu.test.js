@@ -266,12 +266,12 @@ test("ITEMS: nothing usable at all collapses to one disabled NOTHING TO USE row"
 // always a BAGGED item, addressed by index, alongside potions/scrolls. The
 // Ring of Power is use-activated now (the governing rule), so a WORN one
 // appears too — no more "passive worn item is never listed".
-test("ITEMS: a bagged activatable staff recharging appears after the potion row; a worn (use-activated) Ring of Power ALSO appears", () => {
+test("ITEMS: a bagged activatable staff recharging appears after the potion row; a worn (use-activated) Ring of Power ALSO appears (worn-jewelry1)", () => {
   const c = {
     potions: 0, scrolls: 0, wp: 40,
     items: [fixedWornStaff({ charges: 1 })],
     worn: {
-      ring: { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
+      jewelry1: { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
     },
     timers: { "charges:Poplar Staff": { cadence: "squares", left: 17, phase: "cooldown" } },
   };
@@ -282,8 +282,24 @@ test("ITEMS: a bagged activatable staff recharging appears after the potion row;
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
     { id: "item-0", label: "POPLAR STAFF", cost: "1/3 · 17 SQ", desc: "1d20+10 wp to up to 6", enabled: true, dispatch: { type: "useItem", i: 0 } },
-    { id: "worn-ring", label: "RING OF POWER", cost: "READY", desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "ring" } },
+    { id: "worn-jewelry1", label: "RING OF POWER", cost: "READY", desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "jewelry1" } },
   ]);
+});
+
+test("ITEMS: both worn jewelry keys appear as their own rows (worn-jewelry1 and worn-jewelry2) alongside the cloak row", () => {
+  const c = {
+    potions: 0, scrolls: 0, wp: 40,
+    items: [],
+    worn: {
+      jewelry1: { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
+      jewelry2: { n: "Anklet of Invisibility", kind: "jewel", eff: { foeToHit: -2 }, txt: "foes need two better to land" },
+      cloak: { n: "Cloak of Invisibility", kind: "cloak", use: "invis", txt: "invisible" },
+    },
+  };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.deepEqual(vm.submenus.items.rows.map((r) => r.id), ["potion", "worn-jewelry1", "worn-jewelry2", "worn-cloak"]);
+  assert.ok(!vm.submenus.items.rows.some((r) => /worn-(ring|bracelet|amulet|helm)$/.test(r.id)));
 });
 
 test("ITEMS: a bagged activatable staff at full charges (no recharge record) reads READY", () => {

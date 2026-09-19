@@ -326,61 +326,70 @@ test("railAnnouncement: seq-gated, joins title + line text; null/stale card anno
 
 // ─── Phase 37 (GEAR-04): reconciliation copy ───────────────────────────────
 
-test("RAIL_COPY.wornReconciled: title, and the six WORN_SLOTS keys with the exact plural noun-phrases", () => {
+test("RAIL_COPY.wornReconciled: title, and exactly the two SLOT_FAMILIES keys with the exact plural noun-phrases (260918-wy1)", () => {
   assert.equal(RAIL_COPY.wornReconciled.title, "GEAR");
   assert.deepEqual(RAIL_COPY.wornReconciled.what, {
-    ring: "rings on one finger",
-    bracelet: "bracelets on one wrist",
-    amulet: "amulets on one neck",
-    helm: "helms on one head",
+    jewelry: "pieces of jewelry",
     cloak: "cloaks on one back",
-    staff: "staves in one hand",
   });
 });
 
 test("wornReconcileCard: null/empty/no-bagged reports all yield null", () => {
   assert.equal(wornReconcileCard(null), null);
   assert.equal(wornReconcileCard([]), null);
-  assert.equal(wornReconcileCard([{ slot: "ring", worn: "Ring of Power", bagged: [] }]), null, "nothing bagged — nothing to say");
+  assert.equal(wornReconcileCard([{ slot: "jewelry", worn: ["Ring of Power"], bagged: [] }]), null, "nothing bagged — nothing to say");
 });
 
-test("wornReconcileCard: one bagged extra builds the exact locked-copy card", () => {
-  const card = wornReconcileCard([{ slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] }]);
+test("wornReconcileCard: one worn + one bagged builds the exact locked-copy card ('two pieces of jewelry')", () => {
+  const card = wornReconcileCard([{ slot: "jewelry", worn: ["Ring of Power"], bagged: ["Ring of Power"] }]);
   assert.deepStrictEqual(card, {
     title: "GEAR",
-    line: "You were wearing two rings on one finger. Physics has filed a complaint — Ring of Power is in your bag now.",
+    line: "You were wearing two pieces of jewelry. Physics has filed a complaint — Ring of Power is in your bag now.",
     tone: "dull",
     hold: WORN_RECONCILE_HOLD,
     icon: "▪",
   });
 });
 
-test("wornReconcileCard: two bagged extras count as three and join both names", () => {
-  const card = wornReconcileCard([{ slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power", "Ring of Power"] }]);
-  assert.equal(card.line, "You were wearing three rings on one finger. Physics has filed a complaint — Ring of Power, Ring of Power are in your bag now.");
-});
-
-test("wornReconcileCard: multiple slots join with a single space, in report order; an empty-bagged slot in the middle is skipped", () => {
+test("wornReconcileCard: TWO worn + two bagged says 'four pieces of jewelry' and lists both bagged names", () => {
   const card = wornReconcileCard([
-    { slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] },
-    { slot: "cloak", worn: "Cloak of Speed", bagged: [] },
-    { slot: "staff", worn: "Rowan Staff", bagged: ["Rowan Staff"] },
+    { slot: "jewelry", worn: ["Ring of Power", "Anklet of Invisibility"], bagged: ["Helm of Knowledge", "Amulet of Light"] },
   ]);
   assert.equal(
     card.line,
-    "You were wearing two rings on one finger. Physics has filed a complaint — Ring of Power is in your bag now. " +
-      "You were wearing two staves in one hand. Physics has filed a complaint — Rowan Staff is in your bag now.",
+    "You were wearing four pieces of jewelry. Physics has filed a complaint — Helm of Knowledge, Amulet of Light are in your bag now.",
+  );
+});
+
+test("wornReconcileCard: one worn + two bagged counts as three and joins both bagged names", () => {
+  const card = wornReconcileCard([{ slot: "jewelry", worn: ["Ring of Power"], bagged: ["Ring of Power", "Ring of Power"] }]);
+  assert.equal(card.line, "You were wearing three pieces of jewelry. Physics has filed a complaint — Ring of Power, Ring of Power are in your bag now.");
+});
+
+test("wornReconcileCard: multiple families join with a single space, in report order; an empty-bagged family in the middle is skipped", () => {
+  const card = wornReconcileCard([
+    { slot: "jewelry", worn: ["Ring of Power"], bagged: ["Ring of Power"] },
+    { slot: "cloak", worn: ["Cloak of Speed"], bagged: [] },
+  ]);
+  assert.equal(
+    card.line,
+    "You were wearing two pieces of jewelry. Physics has filed a complaint — Ring of Power is in your bag now.",
   );
 });
 
 test("wornReconcileCard: seven or more extras fall back to the plain digit", () => {
-  const bagged = Array(7).fill("Ring of Power");
-  const card = wornReconcileCard([{ slot: "ring", worn: "Ring of Power", bagged }]);
-  assert.match(card.line, /^You were wearing 8 rings on one finger\./);
+  const bagged = Array(6).fill("Ring of Power");
+  const card = wornReconcileCard([{ slot: "jewelry", worn: ["Ring of Power", "Anklet of Invisibility"], bagged }]);
+  assert.match(card.line, /^You were wearing 8 pieces of jewelry\./);
+});
+
+test("wornReconcileCard: a hand-built report whose worn is still a bare string (legacy caller) falls back to a count of 1, never throws", () => {
+  const card = wornReconcileCard([{ slot: "jewelry", worn: "Ring of Power", bagged: ["Ring of Power"] }]);
+  assert.equal(card.line, "You were wearing two pieces of jewelry. Physics has filed a complaint — Ring of Power is in your bag now.");
 });
 
 test("wornReconcileCard never mutates its report argument", () => {
-  const report = [{ slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] }];
+  const report = [{ slot: "jewelry", worn: ["Ring of Power"], bagged: ["Ring of Power"] }];
   const before = JSON.parse(JSON.stringify(report));
   wornReconcileCard(report);
   assert.deepStrictEqual(report, before);

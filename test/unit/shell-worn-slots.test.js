@@ -103,18 +103,22 @@ test("Trio: SWAP_CONFIRM_MS/swapConfirmRevert/revertSwapConfirm() are declared o
 
 // ─── 2. Confirm mechanics ───────────────────────────────────────────────────
 
-test("Confirm mechanics: swap arm/Yes/No/timeout/outside-tap revert inside renderCarriedList; the Phase 33 Drop pins are untouched in the same region", () => {
+test("Confirm mechanics: swap arm/choices/No/timeout/outside-tap revert inside renderCarriedList; the Phase 33 Drop pins are untouched in the same region (260918-wy1: generalized to a choices array)", () => {
   const region = renderCarriedListRegion();
-  assert.match(region, /const mkSwapConfirm = \(i, wornName\) => \{/);
-  assert.match(region, /`Swap for \$\{wornName\}\?`/);
+  assert.match(region, /const mkSwapConfirm = \(i, choices\) => \{/);
+  assert.match(region, /choices\.length === 1 \? `Swap for \$\{choices\[0\]\.name\}\?` : "Swap for which\?"/);
   assert.equal((region.match(/className = "mw-swap-confirm"/g) || []).length, 1);
-  assert.ok((region.match(/mkBtn\("Yes"/g) || []).length >= 2, "at least two Yes buttons (Drop + Swap confirms)");
+  assert.match(region, /for \(const choice of choices\) \{/);
+  assert.match(region, /revertSwapConfirm\(\); window\.mzEquipItem\?\.\(i, choice\.slot\); \}/);
+  // Drop confirm's own literal "Yes" survives (unchanged); the swap confirm's
+  // button label is now dynamic (choices.length === 1 ? "Yes" : choice.name),
+  // so no literal "Yes" string appears at its call site any more.
+  assert.equal((region.match(/mkBtn\("Yes"/g) || []).length, 1, "exactly one literal Yes button (Drop confirm only)");
   assert.ok((region.match(/mkBtn\("No"/g) || []).length >= 2, "at least two No buttons (Drop + Swap confirms)");
   assert.equal((region.match(/setTimeout\(revertSwapConfirm, SWAP_CONFIRM_MS\)/g) || []).length, 1);
   assert.equal((region.match(/document\.addEventListener\("pointerdown", onSwapTap, true\)/g) || []).length, 1);
   assert.equal((region.match(/document\.removeEventListener\("pointerdown", onSwapTap, true\)/g) || []).length, 1);
   assert.match(region, /wrap\.replaceWith\(equip\)/);
-  assert.equal((region.match(/revertSwapConfirm\(\); window\.mzEquipItem\?\.\(i\);/g) || []).length, 1);
   // the Phase 33 Drop confirm's own pins, re-asserted in the same region
   assert.equal((region.match(/className = "mw-drop-confirm"/g) || []).length, 1);
   assert.equal((region.match(/document\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
@@ -124,11 +128,12 @@ test("Confirm mechanics: swap arm/Yes/No/timeout/outside-tap revert inside rende
 
 // ─── 3. Equip branch ─────────────────────────────────────────────────────────
 
-test("Equip branch: the weapon/armor Equip line is byte-identical; the slot branch reads S.c.worn/__mzSlotFor and calls mkSwapConfirm", () => {
+test("Equip branch: the weapon/armor Equip line is byte-identical; the family branch reads S.c.worn/__mzSlotFor/__mzWornKeysOf and calls mkSwapConfirm(i, keys.map(", () => {
   const region = renderCarriedListRegion();
   assert.match(region, /if \(it\.kind === "weapon" \|\| it\.kind === "armor"\) li\.appendChild\(mkBtn\("Equip", \(\) => window\.mzEquipItem\?\.\(i\)\)\);/);
   assert.match(region, /S\.c\.worn && window\.__mzSlotFor\?\.\(it\)/);
-  assert.match(region, /mkSwapConfirm\(i, wornNow\.n\)/);
+  assert.match(region, /window\.__mzWornKeysOf\[family\] \|\| \[\]/);
+  assert.match(region, /mkSwapConfirm\(i, keys\.map\(\(k\) => \(\{ slot: k, name: S\.c\.worn\[k\]\.n \}\)\)\)/);
 });
 
 // ─── 4. Worn rows in the paint carry region ─────────────────────────────────
@@ -173,20 +178,29 @@ test("eff(key) routes through window.__mzEff, keeping the legacy sum-over-c.item
 
 // ─── 6. Module bridges ───────────────────────────────────────────────────────
 
-test("Bridges: derived.js import carries eff/slotFor/WORN_SLOTS; window.__mzEff/__mzSlotFor/__mzWornSlots assigned once each, after __mzConditionsOf", () => {
+test("Bridges: derived.js import carries eff/slotFor/WORN_SLOTS/WORN_KEYS_OF; window.__mzEff/__mzSlotFor/__mzWornSlots/__mzWornKeysOf assigned once each, after __mzConditionsOf", () => {
   // Phase 39 (GEAR-01/GEAR-02/GEAR-05), Plan 05: the shared derived.js
   // import line gained hasTool/toHit/strikeDie as sibling named imports.
   // Phase 41 (TERR-03), Plan 04: mapViewRadius/inViewWindow joined the same
-  // import line.
-  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
+  // import line. 260918-wy1 (jewelry-merge): WORN_KEYS_OF joined too.
+  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 1);
+  assert.equal((CODE.match(/window\.__mzWornKeysOf = WORN_KEYS_OF;/g) || []).length, 1);
   const iConditionsOf = CODE.indexOf("window.__mzConditionsOf = conditionsOf;");
   const iEff = CODE.indexOf("window.__mzEff = eff;");
   const iSlotFor = CODE.indexOf("window.__mzSlotFor = slotFor;");
   const iWornSlots = CODE.indexOf("window.__mzWornSlots = WORN_SLOTS;");
-  assert.ok(iConditionsOf !== -1 && iEff > iConditionsOf && iSlotFor > iConditionsOf && iWornSlots > iConditionsOf, "the three new bridges land after __mzConditionsOf");
+  const iWornKeysOf = CODE.indexOf("window.__mzWornKeysOf = WORN_KEYS_OF;");
+  assert.ok(
+    iConditionsOf !== -1 && iEff > iConditionsOf && iSlotFor > iConditionsOf && iWornSlots > iConditionsOf && iWornKeysOf > iConditionsOf,
+    "the four new bridges land after __mzConditionsOf",
+  );
+});
+
+test("Bridge: window.mzEquipItem forwards an optional targeted swap key (260918-wy1)", () => {
+  assert.match(CODE, /window\.mzEquipItem = \(i, slot\) => inventoryAction\(slot === undefined \? \{ type: "equipItem", i \} : \{ type: "equipItem", i, slot \}\);/);
 });
 
 // ─── 7. mzUseItem slot form ──────────────────────────────────────────────────

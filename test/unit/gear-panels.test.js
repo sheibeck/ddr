@@ -34,7 +34,7 @@ function fixedChar(overrides = {}) {
 
 // ─── GEAR_COPY — frozen shape pin ───────────────────────────────────────────
 
-test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff leaves — a staff is a bag item)", () => {
+test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff leaves; 260918-wy1: ring/bracelet/amulet/helm merged into jewelry1/jewelry2)", () => {
   assert.deepEqual(GEAR_COPY, {
     onYou: "ON YOU",
     wielded: "WIELDED",
@@ -44,15 +44,14 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
     freeRide: "potions & scrolls ride free",
     empty: {
       armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
-      ring: "ring — nothing. Ten fingers, zero commitments.",
-      bracelet: "bracelet — nothing. A bare wrist, ready for bad decisions.",
-      amulet: "amulet — nothing. Your neck has never been less interesting.",
-      helm: "helm — nothing. Hair, technically, counts for zero.",
+      jewelry1: "jewelry — nothing. Ten fingers, one neck, zero commitments.",
+      jewelry2: "jewelry — nothing. Room for one more bad decision.",
       cloak: "cloak — nothing. Cold and unmagical, in that order.",
     },
   });
   assert.ok(Object.isFrozen(GEAR_COPY));
   assert.ok(Object.isFrozen(GEAR_COPY.empty));
+  assert.deepStrictEqual(Object.keys(GEAR_COPY.empty).sort(), ["armor", "cloak", "jewelry1", "jewelry2"]);
 });
 
 test("GEAR_COPY: every string leaf clears the family-friendly safety wordlist", () => {
@@ -116,30 +115,30 @@ test("dropShelfItems(c).length === slotItems(c).length across several shapes", (
 
 // ─── emptySlotRows ───────────────────────────────────────────────────────────
 
-test("emptySlotRows: a fresh Fighter with nothing worn and no armor gets all six rows (260918-w4n: no staff row)", () => {
+test("emptySlotRows: a fresh Fighter with nothing worn and no armor gets all four rows (armor + jewelry1 + jewelry2 + cloak — 260918-wy1)", () => {
   const c = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0 });
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(
     rows.map((r) => r.slot),
-    ["armor", "ring", "bracelet", "amulet", "helm", "cloak"],
+    ["armor", "jewelry1", "jewelry2", "cloak"],
   );
   assert.equal(rows[0].text, GEAR_COPY.empty.armor);
   assert.equal(rows[rows.length - 1].text, GEAR_COPY.empty.cloak);
 });
 
-test("emptySlotRows: worn armor removes the armor row; worn slots are skipped in order (no staff row)", () => {
-  const c = fixedChar({ worn: { ring: { kind: "jewel", n: "Ring" } } });
+test("emptySlotRows: worn armor removes the armor row; a worn jewelry1 leaves jewelry2 + cloak (260918-wy1)", () => {
+  const c = fixedChar({ worn: { jewelry1: { kind: "jewel", n: "Ring" } } });
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(
     rows.map((r) => r.slot),
-    ["bracelet", "amulet", "helm", "cloak"],
+    ["jewelry2", "cloak"],
   );
-  assert.equal(rows[0].slot, "bracelet");
+  assert.equal(rows[0].slot, "jewelry2");
   assert.equal(rows[rows.length - 1].slot, "cloak");
 });
 
-test("emptySlotRows: a fully-slotted Magic User (all five worn) yields no worn-slot rows — a staff is never one of them", () => {
-  const c = fixedChar({ cls: "Magic User", worn: { ring: {}, bracelet: {}, amulet: {}, helm: {}, cloak: {} } });
+test("emptySlotRows: a fully-slotted Magic User (both jewelry keys + cloak worn) yields no worn-slot rows — a staff is never one of them", () => {
+  const c = fixedChar({ cls: "Magic User", worn: { jewelry1: {}, jewelry2: {}, cloak: {} } });
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(rows, []);
 });
@@ -154,32 +153,30 @@ test("emptySlotRows: the Cloak of Armor's magic plate counts as worn (no armor r
   assert.ok(!rows.some((r) => r.slot === "armor"));
 });
 
-test("emptySlotRows: a legacy c with no worn map yields all five worn-slot rows (plus armor if unworn)", () => {
+test("emptySlotRows: a legacy c with no worn map yields all three worn-key rows (plus armor if unworn)", () => {
   const c = { cls: "Fighter", weapon: "Axe", armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, items: [] };
   const rows = emptySlotRows(c);
   assert.deepStrictEqual(
     rows.map((r) => r.slot),
-    ["armor", "ring", "bracelet", "amulet", "helm", "cloak"],
+    ["armor", "jewelry1", "jewelry2", "cloak"],
   );
 });
 
-test("emptySlotRows: a fully-equipped Magic User (armor worn, six slots filled) returns []", () => {
+test("emptySlotRows: a fully-equipped Magic User (armor worn, both jewelry keys + cloak filled, staff bagged) returns []", () => {
   const c = fixedChar({
     cls: "Magic User",
     worn: {
-      ring: { kind: "jewel", n: "Ring" },
-      bracelet: { kind: "jewel", n: "Bracelet" },
-      amulet: { kind: "jewel", n: "Amulet" },
-      helm: { kind: "jewel", n: "Helm" },
+      jewelry1: { kind: "jewel", n: "Ring" },
+      jewelry2: { kind: "jewel", n: "Bracelet" },
       cloak: { kind: "cloak", n: "Cloak" },
-      staff: { kind: "staff", n: "Staff" },
     },
+    items: [{ kind: "staff", n: "Staff" }],
   });
   assert.deepStrictEqual(emptySlotRows(c), []);
 });
 
 test("emptySlotRows: pure — never mutates c, never throws on a sparse c", () => {
-  const c = fixedChar({ worn: { ring: {} } });
+  const c = fixedChar({ worn: { jewelry1: {} } });
   const before = JSON.stringify(c);
   assert.doesNotThrow(() => emptySlotRows(c));
   assert.equal(JSON.stringify(c), before);

@@ -10,7 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { TONES, PRIORITY, MAX_TOASTS, ORACLE_ONLY, FEATURE_EVENTS, TOAST_FOR } from "../../src/browser/toasts.js";
+import { TONES, PRIORITY, MAX_TOASTS, ORACLE_ONLY, FEATURE_EVENTS, TOAST_FOR, slotWord } from "../../src/browser/toasts.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -71,6 +71,15 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   const acrobat = TOAST_FOR.equipRejected({ type: "equipRejected", reason: "acrobat" }).text;
   assert.notEqual(acrobat, equipFallback);
 
+  // 260918-wy1 (jewelry-merge): jewelryFull and wrongSlot each get their own
+  // block-tone text, distinct from the generic fallback.
+  const jewelryFull = TOAST_FOR.equipRejected({ type: "equipRejected", reason: "jewelryFull" }).text;
+  assert.notEqual(jewelryFull, equipFallback);
+  assert.equal(TOAST_FOR.equipRejected({ type: "equipRejected", reason: "jewelryFull" }).tone, "block");
+  const wrongSlot = TOAST_FOR.equipRejected({ type: "equipRejected", reason: "wrongSlot" }).text;
+  assert.notEqual(wrongSlot, equipFallback);
+  assert.equal(TOAST_FOR.equipRejected({ type: "equipRejected", reason: "wrongSlot" }).tone, "block");
+
   const useFallback = TOAST_FOR.useRefused({ type: "useRefused", reason: "definitelyNotAReason" }).text;
   const pilferUse = TOAST_FOR.useRefused({ type: "useRefused", reason: "pilfer", item: { n: "Bomb" } }).text;
   assert.notEqual(pilferUse, useFallback);
@@ -79,6 +88,24 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   const castFallback = TOAST_FOR.castRefused({ type: "castRefused", reason: "definitelyNotAReason" }).text;
   const castNotFought = TOAST_FOR.castRefused({ type: "castRefused", reason: "notFought", spell: "Heal" }).text;
   assert.notEqual(castNotFought, castFallback);
+
+  // 260918-wy1: slotWord turns a worn KEY into its player-facing FAMILY word.
+  assert.equal(slotWord("jewelry1"), "jewelry");
+  assert.equal(slotWord("jewelry2"), "jewelry");
+  assert.equal(slotWord("cloak"), "cloak");
+  assert.equal(slotWord("weapon"), "weapon", "an unrecognized slot word passes through unchanged");
+  assert.equal(slotWord("armor"), "armor");
+
+  // itemEquipped renders "(jewelry)" for either jewelry key, never the raw
+  // key; weapon/armor stay byte-identical.
+  assert.equal(
+    TOAST_FOR.itemEquipped({ item: { n: "Anklet of Invisibility" }, slot: "jewelry2" }).text,
+    "Equipped: Anklet of Invisibility (jewelry).",
+  );
+  assert.equal(
+    TOAST_FOR.itemEquipped({ item: { n: "Dagger" }, slot: "weapon" }).text,
+    "Equipped: Dagger (weapon).",
+  );
 
   // Phase 31 (CMB-02): a useRefused cooldown reason vs the generic fallback.
   const useCooldown = TOAST_FOR.useRefused({ type: "useRefused", reason: "cooldown", item: { n: "Cloak" }, left: 12 }).text;
