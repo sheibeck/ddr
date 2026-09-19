@@ -431,7 +431,15 @@ button{
    flash/hold this near-white background. Repointed to the dark theme's own
    panel tone so a stuck hover reads as a subtle highlight, never a white
    flash. */
-button:hover:not(:disabled){background:var(--paper-3)}
+/* Quick fix 2026-09-18 (user: "FIGHT IT OUT sometimes isn't yellow"): the
+   generic hover (0,2,1) outranks every single-class button skin (.mw-major-btn,
+   .cb-btn, .mw-map-chip, .mw-camp-btn ... at 0,1,0), so a STUCK hover on a
+   freshly rendered button under the last touch point repainted it in the
+   panel tone. Hover is a pointer affordance — apply it only where a pointer
+   can hover; a touch-only WebView reports (hover: none) and never gets it. */
+@media (hover: hover){
+  button:hover:not(:disabled){background:var(--paper-3)}
+}
 button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--mw-btn-shadow)}
 button:focus-visible{outline:2px solid var(--ditto);outline-offset:2px}
 button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
