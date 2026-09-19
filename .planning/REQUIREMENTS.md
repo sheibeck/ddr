@@ -25,8 +25,8 @@
 
 ### Dual-path hedges (HEDGE)
 
-- [ ] **HEDGE-01**: `newRun` always creates `c.worn` (the Thief's starting cloak worn) — the shell-only `{ wornSlots }` run option and every branch keyed on it are gone from `engine/`, the shell, the tuning bot and the tests
-- [ ] **HEDGE-02**: The worn-model save migration in `engine/saveState.js` runs unconditionally on load (no option gate); a v1.4-era save still loads with its items reconciled
+- [x] **HEDGE-01**: `newRun` always creates `c.worn` (the Thief's starting cloak worn) — the shell-only `{ wornSlots }` run option and every branch keyed on it are gone from `engine/`, the shell, the tuning bot and the tests
+- [x] **HEDGE-02**: The worn-model save migration in `engine/saveState.js` runs unconditionally on load (no option gate); a v1.4-era save still loads with its items reconciled
 - [x] **HEDGE-03**: The fixtures the collapse moves (the chargen/economy seeds `docs/GEAR-SLOTS.md` lists) are declared with a before/after divergence record and regenerated; every other fixture is byte-identical and `test/parity/FIXTURE-INVENTORY.md` is regenerated
 
 ### Stale docs & comments (DOCS)
@@ -79,8 +79,8 @@ Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges
 | DEAD-05 | Phase 46 | Pending |
 | NAME-01 | Phase 46 | Pending |
 | NAME-02 | Phase 46 | Pending |
-| HEDGE-01 | Phase 45 | Pending |
-| HEDGE-02 | Phase 45 | Pending |
+| HEDGE-01 | Phase 45 | Complete |
+| HEDGE-02 | Phase 45 | Complete |
 | HEDGE-03 | Phase 45 | Complete |
 | DOCS-01 | Phase 48 | Pending |
 | DOCS-02 | Phase 48 | Pending |

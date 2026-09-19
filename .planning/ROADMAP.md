@@ -184,7 +184,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 45-02-PLAN.md — The collapse, ONE commit: `newRun` always reconciles (no option, zero draws), `validateSave`/`rehydrate` unconditional with one return shape, adapter + `RUN_FLAGS = { storeRoll: true }`; harness `dropEmptyWorn` replaces the Phase 37 carve-out, exactly the MOVED SET declared with `items`/`worn` before≠after records, new `divergence-records.test.js` (declared == measured), every option-off/legacy pin re-pinned, the HEDGE-01/HEDGE-02 no-option pins added; scan AFTER byte-identical
+- [x] 45-02-PLAN.md — The collapse, ONE commit: `newRun` always reconciles (no option, zero draws), `validateSave`/`rehydrate` unconditional with one return shape, adapter + `RUN_FLAGS = { storeRoll: true }`; harness `dropEmptyWorn` replaces the Phase 37 carve-out, exactly the MOVED SET declared with `items`/`worn` before≠after records, new `divergence-records.test.js` (declared == measured), every option-off/legacy pin re-pinned, the HEDGE-01/HEDGE-02 no-option pins added; scan AFTER byte-identical
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -318,7 +318,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
-| 45. Collapse the Phase 37 Hedges | v1.6 | 1/3 | In Progress|  |
+| 45. Collapse the Phase 37 Hedges | v1.6 | 2/3 | In Progress|  |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
@@ -375,4 +375,5 @@ Plans:
 **Context for planning:** rendering-only, engine untouched — the placement must be deterministic per floor (derive from `makeRng(hash(seed, "dressing", depth))` in the SHELL/`src/browser/` layer, never a draw off the engine's main stream, so no fixture moves and the engine stays pure), keyed off the generated grid (`engine/maze.js` cells `{ wall, seen, feat }`; walls are the majority of the 21×21 grid) and revealed with `c.seen`. Draw in `draw()` (`mazeworld.html` ~L1931; feature icons at ~L1998-2002 via `iconsApi.drawFeatureIcon(ctx, img, x, y, CELL, dir, 0.75)`) BEFORE the feature/party layer: wall items at full or near-full alpha on wall cells; path items at low alpha (≈0.3-0.4) so `featureKeyForCell` encounter icons stay unmistakable; never on a cell that has a `feat`, the stairs, or the party. Density is a tunable (a handful per floor, rarer on deep floors?). `preloadIcons("./icons/optimized")` already loads the directory — check `icons.js`'s manifest approach so 54 extra images don't slow the first paint (lazy or a sprite). Respect the 260918-vm3 stationary camera and Phase 35 map palette; a settings toggle ("set dressing off") is cheap. Land after v1.6 Phase 47 (draw code may move into a module) and alongside 999.1's party-marker frames. The raw `icons/*.png` sheets the user added (`dungeon_dressing.png`, `encounters.png`, …) are sources — only `icons/optimized/` ships in `www/`.
 
 Plans:
+
 - [ ] TBD (promote with /gsd-review-backlog when ready)
