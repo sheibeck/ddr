@@ -80,22 +80,37 @@ export function resolveStep(pos, target, isOpen) {
 }
 
 /**
- * inspectCell(cell, legendFor) — the four hold-inspect cards: a null/
+ * inspectCell(cell, legendFor, opts) — the hold-inspect cards: a null/
  * undefined cell or a seen wall is SOLID ROCK; an unseen cell is UNWALKED
- * (checked BEFORE the wall test so fog never reveals rock); a seen,
- * non-wall cell with a `feat` that resolves through `legendFor` shows that
- * mark's legend name/description (tone odd, RAIL_HOLD.mark); everything
+ * (checked BEFORE the wall test so fog never reveals rock — 260919-00d: an
+ * unseen wall stays UNWALKED even with `opts.ethereal` true, since being
+ * ethereal changes what a wall means, not whether it has been seen); a
+ * seen, non-wall cell with a `feat` that resolves through `legendFor` shows
+ * that mark's legend name/description (tone odd, RAIL_HOLD.mark); everything
  * else (a walked, featureless — or unrecognized-feat — cell) is EMPTY
  * CORRIDOR.
  *
+ * 260919-00d (Cloak of Ether wall-walking): `opts.ethereal === true` swaps a
+ * seen wall's card for `RAIL_COPY.rockEther` (tone "odd", `RAIL_HOLD.mark` —
+ * a negotiable wall is a mark-grade fact while the cloak holds) instead of
+ * the plain `rock` card; every other branch (including a non-wall cell) is
+ * unaffected by the flag. The module stays pure — `opts` is a plain
+ * argument, never read from any ambient state.
+ *
  * @param {{seen?:boolean, wall?:boolean, feat?:string|null}|null|undefined} cell
  * @param {(feat: unknown) => {name:string, desc:string}|null} legendFor
+ * @param {{ethereal?: boolean}} [opts]
  * @returns {{title:string, line:string, tone:"dull"|"odd", hold:number}}
  */
-export function inspectCell(cell, legendFor) {
+export function inspectCell(cell, legendFor, opts = {}) {
   if (!cell) return { title: RAIL_COPY.rock.title, line: RAIL_COPY.rock.line, tone: "dull", hold: RAIL_HOLD.dull };
   if (!cell.seen) return { title: RAIL_COPY.unwalked.title, line: RAIL_COPY.unwalked.line, tone: "dull", hold: RAIL_HOLD.dull };
-  if (cell.wall) return { title: RAIL_COPY.rock.title, line: RAIL_COPY.rock.line, tone: "dull", hold: RAIL_HOLD.dull };
+  if (cell.wall) {
+    if (opts && opts.ethereal === true) {
+      return { title: RAIL_COPY.rockEther.title, line: RAIL_COPY.rockEther.line, tone: "odd", hold: RAIL_HOLD.mark };
+    }
+    return { title: RAIL_COPY.rock.title, line: RAIL_COPY.rock.line, tone: "dull", hold: RAIL_HOLD.dull };
+  }
   if (cell.feat) {
     const row = typeof legendFor === "function" ? legendFor(cell.feat) : null;
     if (row) return { title: row.name, line: row.desc, tone: "odd", hold: RAIL_HOLD.mark };

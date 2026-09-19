@@ -149,7 +149,7 @@ are `TARGETED_KINDS`); on cooldown, `useRefused cooldown {left}`:
 - Cloak of Armor (`plate`, effect 50 / cd 50 — soaks as Plate while live)
 - Cloak of Flying (`fly`, effect 20 / cd 50 — the old climb/gorge
   auto-activation is REMOVED; only `useItem` on the worn cloak starts flight)
-- Cloak of Ether (`ether`, every 100)
+- Cloak of Ether (`ether`, 10 squares through solid stone, cd 80; fatal if it ends inside a wall — 260919-00d)
 
 **Jewelry (8):** 260918-w4n: Ring of Power (`power`, effect 50 / cd 50),
 Gauntlet of the Giant (`giant`, effect 50 / cd 50), Amulet of Light

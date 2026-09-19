@@ -239,7 +239,12 @@ test("(e) voice scan: every MAP_COPY string leaf is non-empty and clear of BANNE
 test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE with the polarity fallback, guardTap + mzRailLine wiring, the key gate, the foeEffect/affliction label chain untouched", () => {
   const region = paintConditionsRegion();
   assert.match(region, /document\.createElement\("button"\)/);
-  assert.match(region, /btn\.dataset\.tone = CONDITION_TONE\[cn\.key\] \|\| \(cn\.polarity === "bad" \? "bad" : "good"\)/);
+  // 260919-00d (Cloak of Ether wall-walking): the tone assignment gained a
+  // leading in-stone warn-tone special case for the ether chip; the
+  // original CONDITION_TONE-with-polarity-fallback expression survives
+  // verbatim as the ternary's else branch.
+  assert.match(region, /btn\.dataset\.tone = cn\.key === "ether" && window\.__mzEther\?\.inStone\(S\)/);
+  assert.match(region, /CONDITION_TONE\[cn\.key\] \|\| \(cn\.polarity === "bad" \? "bad" : "good"\)/);
   assert.match(region, /guardTap\(btn, \(\) => window\.mzRailLine\?\.\(/);
   // Phase 39 (GEAR-02/GEAR-05), Plan 05: the tap explanation now routes
   // through explainCondition(cn, label) — the item-sourced-chip-aware

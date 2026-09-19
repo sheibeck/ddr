@@ -156,6 +156,12 @@ Area 1, 2026-09-18):
 | A LIVE `ether` item effect (a started Cloak of Ether window) | 1 |
 | A READY-but-unstarted Cloak of Flying / Bracelet of Flight (no live record) | 2 — **not spent on a puddle.** 260918-w4n (use-activated-only, user ruling 2026-09-18): the old auto-activation (`flyOver()` starting a fresh Cloak-of-Flying window the instant a Cloak-only character reached a wall/crevice) and the Bracelet's old unconditional-flight special case are BOTH retired — only `useItem` on a WORN flight item ever starts a record. A water step never calls `startEffect` either way; the item's charge is a wall/crevice resource, not a puddle one. |
 
+> **260919-00d update (2026-09-19):** a LIVE `ether` item effect also makes
+> EVERY in-bounds cell walkable at cost 1 (not just water) — the Cloak of
+> Ether now lets the party step onto stone itself, for up to 10 squares, and
+> ending the window inside a wall is fatal. See `docs/GEAR-BALANCE.md`'s
+> "Cloak of Ether — through the stone" subsection for the full rule.
+
 ### Per-square systems this cost widens (one dispatch)
 
 | System | Site |

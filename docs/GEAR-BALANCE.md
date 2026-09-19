@@ -451,7 +451,7 @@ where noted above:
 | Amulet of Stone | stone | 0 (instant, AoE 4 kill) | 100 | once-a-day rule, was 200 |
 | Cloak of Invisibility | invis | 50 | 50 | once-a-day rule, was 100/100 |
 | Cloak of Speed | haste | 50 | 50 | canon `every: 50`, unchanged |
-| Cloak of Ether | ether | 20 | 80 | once-a-day rule, cd was 100 |
+| Cloak of Ether | ether | 10 | 80 | 260919-00d: 10-square wall-walk window; cd unchanged (10 + 80 <= 100) |
 | Cloak of Flying | fly | 20 | 50 | canon "once every 50" — the row has no `every` field, so `act.cd: 50` is the explicit override; 260918-w4n removes the auto-activation on a climb/gorge tile — a ready-but-unstarted Cloak of Flying is not flying, only `useItem` on the worn cloak starts the record |
 | Ring of Power (260918-w4n) | power | 50 | 50 | `{ dmg: 1 }` while live — outside the orchestrator's originally-proposed list, but inside the rule as the user stated it ("ring... amulet, etc") |
 | Gauntlet of the Giant (260918-w4n) | giant | 50 | 50 | `{ size: 1 }` while live |
@@ -594,6 +594,91 @@ starting cloak's `txt` in their compared `c.items`/`c.worn` shape, so
 editing it would move fixtures this plan explicitly declares untouched. The
 Gear tab's row state (Plan 05) renders the LIVE numbers (remaining/cooldown/
 charges) instead of relying on the static flavor text to stay accurate.
+
+### Cloak of Ether — through the stone (user ruling 2026-09-19, quick 260919-00d)
+
+> "The Cloak of Ether should literally let you traverse through the stone
+> walls. It makes it so you are not limited to the paths and travel on any
+> squares. Limit it to 10 squares of movement. If your movement ends when
+> you are in a wall, you die." — user, 2026-09-19
+>
+> Correction (same day): "there is no d-pad, we are fully tap to move now."
+
+**The rule.** While the Cloak of Ether's own `item:Cloak of Ether` effect
+record is live (`engine/derived.js#itemEffectActive(c, "ether")`),
+`engine/movement.js#move` accepts a step onto ANY in-bounds cell — wall or
+not, the 21x21 border ring included. Feature tiles (climb/gorge) still
+phase exactly as before this change (mirrors `isFlying`). With no live
+ether record, a wall step is the unchanged silent no-op (no mutation, no
+event, no rng draw) — every parity fixture takes this exact path. The
+window shrank from 20 to 10 squares (`act.effect` in
+`content/treasure-tables.js`); the cooldown stays 80 (the user's own
+instruction) — 10 + 80 = 90, inside the once-a-day rule (<= 100). The row's
+exported shape (`every`/`use`/`txt`) is byte-identical, so the frozen
+economy fixture's declared Cloak of Ether object never moves.
+
+**The tick-end death.** The ONLY path that ends a squares-cadence item
+effect is `engine/effects.js#tickSquares`, called from exactly one site —
+`move`'s per-step `c.timers` block. The instant the ether record transitions
+out of its "effect" phase there, `engine/movement.js#resolveEtherEnd(state,
+rng, events, now)` runs: a no-op unless the party's CURRENT cell is solid
+rock (`engine/derived.js#inStone`), in which case it pushes `entombed` and
+calls the same permadeath terminator every other cause uses —
+`die(state, "entombed", ...)`. New content: `CAUSE_TEXT.entombed` ("became a
+permanent architectural feature") and a four-line `EPITAPHS.entombed` bank
+(headline: "Became a permanent architectural feature."). `resolveEtherEnd`
+is deliberately its own exported function — the ONE home of the rule — so
+any future early-end path (a dispel, a destroyed cloak) must call it rather
+than re-implementing the in-stone check.
+
+**Nothing in the rock.** `move`'s feature dispatch gains an explicit
+`!cell.wall` gate (genFloor never scatters a feature onto a wall cell
+anyway, but the rule is now stated, not merely implied); `newDay`'s
+wandering-monster roll still draws its eight per-hour d20s in the same
+order (the rng cursor is unchanged) but skips starting the fight while
+`inStone(state)` is true.
+
+**Tap-to-move (the only movement surface).** There is no D-pad and no
+multi-step route builder — every tap is ONE adjacent step toward the tapped
+cell (`src/browser/tapStep.js#resolveStep`). The shell's `isOpen` predicate
+(`mazeworld.html#tapStep`) accepts any in-bounds cell while
+`window.__mzEther.itemEffectActive(S.c, "ether")` is true; a tap on a wall
+cell — adjacent or ten squares away — resolves one step toward it, same as
+any other tap. Because there is no route preview and no multi-square walk,
+there is nothing to cap: a route that would "outlast the remaining squares"
+cannot exist. Hold-inspect (`inspectCell`) shows the plain SOLID ROCK card
+normally, and `RAIL_COPY.rockEther` ("Passable, for the moment. Do not be
+inside it when the moment ends.") while ethereal — an unseen wall stays
+UNWALKED either way (fog never reveals rock). The Ethereal chip's `N sq`
+countdown turns warn-toned while the party is currently standing in rock
+(`mazeworld.html#paintConditions`); the activation toast and the Oracle line
+both restate the fatal-end warning in voice.
+
+**Accepted edge behaviours.** A Being-trapped-phobic hero stepping into
+solid rock (0 open neighbours) takes the existing deterministic
+`trappedPanic` hit and arms Afraid, exactly as any other dead-end entry
+would — thematically apt, no new field. Camping inside rock is not refused:
+the ether record is squares-cadence (a camp doesn't advance it) and the
+in-stone wandering-monster skip covers the camped `newDay` too — solid rock
+is the safest bed in the dungeon for as long as the cloak holds. One-way
+doors are unaffected either way (ether does not override a door; a wall
+cell has `feat: null` anyway).
+
+**The bot.** `tools/lib/tuning-bot.mjs#canStep` refuses any wall destination
+unconditionally — it reads only the floor, never `c.timers` — and no bot
+policy ever activates an ether-kind item. The bot can never be entombed;
+pinned by `test/unit/ether-wallwalk.test.js`.
+
+**Old saves.** Tolerant load only: `engine/saveState.js#foldLegacyCounters`
+already rehydrates a pre-Phase-39 `c.ether` counter into an
+`item:Cloak of Ether` effect record; that record (whatever `left` it
+carries) simply obeys the new rule going forward. No dual path.
+
+**Parity.** Zero fixture drift: no parity fixture ever carries a `c.timers`
+key or calls `useItem`, so every fixture takes the byte-identical wall
+refusal this plan left untouched for the no-live-effect case. Proof:
+`grep -l useItem test/parity/fixtures/*.json` and
+`grep -l '"timers"' test/parity/fixtures/*.json` are both empty.
 
 ## One-shot tools (GEAR-05) — Plan 04
 

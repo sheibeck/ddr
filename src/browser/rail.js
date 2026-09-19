@@ -79,6 +79,11 @@ export const RAIL_COPY = Object.freeze({
   here: { title: "YOU ARE HERE", line: "For the moment, and with no particular claim to it." },
   unwalked: { title: "UNWALKED", line: "The lantern does not reach. Walk it and find out." },
   rock: { title: "SOLID ROCK", line: "A square of it, same as the corridor. No way through." },
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): the
+  // hold-inspect card for a wall while the cloak's window is live — the
+  // rock is a real destination for the moment, and the fatal-end warning is
+  // restated in voice on every hold.
+  rockEther: { title: "SOLID ROCK", line: "Passable, for the moment. Do not be inside it when the moment ends." },
   // Phase 41 (TERR-01/02), Plan 04 — the water hold-inspect: names the tile
   // and its cost (waded's own rail line, RAIL_FAMILY.waded above, narrates
   // the moment of entry; this is what a HOLD on a water tile answers).

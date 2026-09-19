@@ -985,6 +985,11 @@ export const TOAST_FOR = {
   fellClimbing: (e) => ({ text: `Fall: the wall won (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   fellInGorge: (e) => ({ text: `Fall: short of the far side (−${e?.hurt ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): the
+  // fatal outcome — the ether window ended while the party stood in rock.
+  // An outcome, never ORACLE_ONLY (mirrors fellClimbing/fellInGorge above);
+  // the dedicated death/epitaph screen still owns the `died` event itself.
+  entombed: () => ({ text: "The cloak gives out. The stone does not.", tone: "hurt", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   heightsFear: (e) => ({ text: `Heights: +${e?.penalty ?? 0} on the roll.`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -1593,7 +1598,10 @@ export const TOAST_FOR = {
     const map = {
       haste: `Double attacks for ${n} squares.`,
       invis: `Unseen for ${n} squares.`,
-      ether: `${n} squares of walking through stone.`,
+      // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19):
+      // states the count and, in voice, that ending inside stone is fatal —
+      // the same warning eventNarration.js's Oracle line carries.
+      ether: `${n} squares of walking through stone. Be in a corridor when it ends — the stone will not make room.`,
       acute: `You strike on a d6 for ${n} rounds.`,
       might: `+${e?.might ?? "?"} damage for ${n} squares.`,
       fly: `Twenty squares of not touching the floor.`,

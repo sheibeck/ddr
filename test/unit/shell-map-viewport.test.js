@@ -116,6 +116,12 @@ test("(b) ZOOM_MIN = 0.6, ZOOM_MAX = 2.0; the 0.8 default is unchanged", () => {
   assert.equal((CODE.match(/let zoom = 0\.8;/g) || []).length, 1);
 });
 
+// 260919-00d (Cloak of Ether wall-walking): the read-only __mzEther bridge
+// is assigned exactly once.
+test("(c) window.__mzEther is assigned exactly once", () => {
+  assert.equal((CODE.match(/window\.__mzEther = /g) || []).length, 1);
+});
+
 // ─── (c) bridges ───────────────────────────────────────────────────────────
 
 test("(c) tapStep.js is imported once and bridged onto window.__mzTapStep with its full pure surface", () => {
@@ -160,12 +166,22 @@ test("(d) tapStep(): never mutates S.floor.px/py, never dispatches directly", ()
   assert.doesNotMatch(region, /dispatch\(/);
 });
 
+// 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): while
+// ethereal, tapStep()'s isOpen predicate accepts any in-bounds cell.
+test("(d) tapStep(): reads the __mzEther bridge to decide isOpen while ethereal", () => {
+  const region = tapStepRegion();
+  assert.match(region, /window\.__mzEther\?\.itemEffectActive\(S\.c, "ether"\)/);
+  assert.match(region, /resolveStep\(\{ x: px, y: py \}, cell, isOpen\)/);
+});
+
 // ─── (e) inspectAt() ────────────────────────────────────────────────────────
 
 test("(e) inspectAt(): looks up the cell, builds the hold-inspect card, reports it, never dispatches", () => {
   const region = inspectAtRegion();
   assert.match(region, /window\.__mzControls\.screenToCell\(clientX, clientY, rect, \{ x: px, y: py \}, cameraPan\(\), CELL, CANVAS_PAD\)/);
-  assert.match(region, /inspectCell\(c, \(feat\) => M\.legendFor\(feat\)\)/);
+  // 260919-00d: extended with an ethereal option (kept the legend closure
+  // literal intact) rather than rewritten.
+  assert.match(region, /inspectCell\(c, \(feat\) => M\.legendFor\(feat\), \{ ethereal: !!window\.__mzEther\?\.itemEffectActive\(S\.c, "ether"\) \}\)/);
   assert.match(
     region,
     /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, mark \? mark\.glyph : "[^"]*", mark \? mark\.key : null\);/,

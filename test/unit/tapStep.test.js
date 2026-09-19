@@ -117,6 +117,33 @@ test("inspectCell: a seen wall is SOLID ROCK", () => {
   });
 });
 
+// ─── inspectCell: ethereal rock (260919-00d, Cloak of Ether wall-walking) ──
+
+test("inspectCell: a seen wall with { ethereal: true } shows the rockEther card (tone odd, RAIL_HOLD.mark)", () => {
+  assert.deepEqual(inspectCell({ seen: true, wall: true }, legendFor, { ethereal: true }), {
+    title: RAIL_COPY.rockEther.title,
+    line: RAIL_COPY.rockEther.line,
+    tone: "odd",
+    hold: RAIL_HOLD.mark,
+  });
+});
+
+test("inspectCell: an UNSEEN wall stays UNWALKED with { ethereal: true } — fog never reveals rock", () => {
+  assert.deepEqual(inspectCell({ seen: false, wall: true }, legendFor, { ethereal: true }), {
+    title: RAIL_COPY.unwalked.title,
+    line: RAIL_COPY.unwalked.line,
+    tone: "dull",
+    hold: RAIL_HOLD.dull,
+  });
+});
+
+test("inspectCell: a non-wall cell ignores { ethereal: true } entirely", () => {
+  assert.deepEqual(
+    inspectCell({ seen: true, wall: false, feat: null }, legendFor, { ethereal: true }),
+    inspectCell({ seen: true, wall: false, feat: null }, legendFor),
+  );
+});
+
 test("inspectCell: a seen, non-wall cell with a legend-mapped feat shows the mark's legend row (tone odd, RAIL_HOLD.mark)", () => {
   assert.deepEqual(inspectCell({ seen: true, wall: false, feat: "trap" }, legendFor), {
     title: "TRAP",

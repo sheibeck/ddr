@@ -138,6 +138,10 @@ export const EVENT_NARRATION = {
   fellClimbing: (e) => `<span class="hurt">Fall: the wall had other plans.</span> −${e.hurt ?? 0} hp.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   fellInGorge: (e) => `<span class="hurt">Fall: short. The floor of the crevice makes its introduction.</span> −${e.hurt ?? 0} hp.`,
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): the
+  // fatal outcome — mirrors fellClimbing/fellInGorge's own hurt-tone
+  // placement; the "You have died." line that follows is `died`'s own.
+  entombed: () => `<span class="hurt">The cloak gives out. The stone does not.</span>`,
   // Phase 39 (GEAR-05): the hazard pre-roll decision — a rail card IS the
   // UI (ORACLE_ONLY on the toast side, like findOffered), but the Oracle
   // still gets its own line.
@@ -945,7 +949,9 @@ export const EVENT_NARRATION = {
     const map = {
       haste: `<span class="hit">Double attacks for ${n} squares.</span>`,
       invis: `<span class="hit">Unseen for ${n} squares. They swing at where you were.</span>`,
-      ether: `<span class="hit">${n} squares of walking through stone.</span>`,
+      // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19):
+      // states the count and, in voice, that ending inside stone is fatal.
+      ether: `<span class="hit">${n} squares of walking through stone. Be in a corridor when it ends — the stone will not make room.</span>`,
       acute: `<span class="hit">You strike on a d6 for ${n} rounds.</span>`,
       might: `<span class="hit">+${e.might ?? "?"} damage for ${n} squares. Hit things.</span>`,
       fly: `<span class="hit">Twenty squares of not touching the floor.</span>`,

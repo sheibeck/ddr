@@ -3107,7 +3107,11 @@ const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
   invis: "They swing at where you were. Enjoy it; it wears off.",
   acute: "You strike first on a d6. The maze is briefly unfair in your favour.",
-  ether: "Walls are a suggestion and crevices are a rumour. Count the squares.",
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): walls
+  // are now a REAL destination, not merely a phased-through feature tile —
+  // the chip's own warn tone (paintConditions below) already flags "you are
+  // standing in one right now"; this sentence states the stakes.
+  ether: "Walls are a suggestion for the count shown. When it reaches zero, be standing in a corridor. The rock will not be.",
   might: "Extra damage until the day ends. Hit things.",
   flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
   darkness: "You see your own square and not much else. Walk carefully, or walk into something.",
@@ -3226,7 +3230,13 @@ function paintConditions(c) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mw-cond";
-    btn.dataset.tone = CONDITION_TONE[cn.key] || (cn.polarity === "bad" ? "bad" : "good");
+    // 260919-00d (Cloak of Ether wall-walking): the chip goes warn-toned
+    // while the party is currently standing inside rock — the "N sq"
+    // countdown detail still renders through the generic `remaining` branch
+    // below unchanged; this only swaps the tone class.
+    btn.dataset.tone = cn.key === "ether" && window.__mzEther?.inStone(S)
+      ? "warn"
+      : CONDITION_TONE[cn.key] || (cn.polarity === "bad" ? "bad" : "good");
     btn.dataset.key = cn.key;
     btn.textContent = label;
     if (detail) {
@@ -6935,7 +6945,15 @@ function tapStep(clientX, clientY) {
   const rect = vp.getBoundingClientRect();
   const { px, py, g } = S.floor;
   const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, cameraPan(), CELL, CANVAS_PAD);
-  const isOpen = (x, y) => !!(g[y] && g[y][x] && !g[y][x].wall);
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): tap-
+  // to-move is the ONLY movement surface — there is no D-pad. While ethereal
+  // any in-bounds cell is a destination; a tap on rock resolves ONE step
+  // toward it (still one square per tap, never a route preview). The
+  // engine's own move() guard is the real authority — it accepts the wall
+  // step only while the effect is genuinely live — this predicate is a
+  // presentation hint only (see the threat model's T-00d-03).
+  const ethereal = !!window.__mzEther?.itemEffectActive(S.c, "ether");
+  const isOpen = (x, y) => !!(g[y] && g[y][x] && (ethereal || !g[y][x].wall));
   const res = window.__mzTapStep.resolveStep({ x: px, y: py }, cell, isOpen);
   const copy = window.__mzRailVM.copy;
   if (res.kind === "here") { window.mzRailLine?.(copy.here.title, copy.here.line, "dull", 2200); return; }
@@ -6952,7 +6970,10 @@ function inspectAt(clientX, clientY) {
   const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, cameraPan(), CELL, CANVAS_PAD);
   const c = g[cell.y] && g[cell.y][cell.x] ? g[cell.y][cell.x] : null;
   const M = window.__mzMapMarks;
-  const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat));
+  // 260919-00d: while ethereal, a seen wall's hold-inspect card names the
+  // fatal-end warning (RAIL_COPY.rockEther) instead of the plain SOLID ROCK
+  // line — see tapStep.js#inspectCell's own doc comment for the full rule.
+  const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat), { ethereal: !!window.__mzEther?.itemEffectActive(S.c, "ether") });
   const mark = c && c.seen && c.feat ? M.markForCell(c) : null;
   // No dispatch, no S mutation — a hold only reports, never moves.
   window.mzRailLine?.(card.title, card.line, card.tone, card.hold, mark ? mark.glyph : "·", mark ? mark.key : null);
@@ -7259,6 +7280,11 @@ window.__mzClassicBoot = async function classicBoot() {
   import { RACES, CLASSES, BAGS, ABILITY_BY_ID } from "./content/index.js";
   import { sellPriceFor } from "./engine/economy.js";
   import { conditionsOf, canCast, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
+  // 260919-00d (Cloak of Ether wall-walking) — a SEPARATE import line (same
+  // module, mirrors the takesBagSlot precedent below) so the pinned
+  // derived.js import line above stays byte-identical for every existing
+  // bridge test.
+  import { itemEffectActive, inStone } from "./engine/derived.js";
   // quick 260918-vvt — a SEPARATE import line (same module) so the pinned
   // line above stays byte-identical; bridged below as __mzTakesBagSlot.
   import { takesBagSlot } from "./engine/derived.js";
@@ -7303,6 +7329,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
   // mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): a
+  // read-only bridge (same pattern as __mzConditionsOf above) so the shell's
+  // tap-to-move isOpen predicate, hold-inspect, and the condition-chip tone
+  // can all ask "is an ether effect live" / "is the party standing in rock"
+  // without duplicating either read. No rng, no mutation — safe to call at
+  // any time.
+  window.__mzEther = { itemEffectActive, inStone };
 
   // Phase 41 (TERR-03) — bridge the PURE render-window read draw() consults
   // every paint (no stored flag — a missing bridge falls back to "show
