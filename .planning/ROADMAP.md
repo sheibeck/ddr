@@ -218,7 +218,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 46-03-PLAN.md — `controlScheme` setting deleted (four-field settings model; old blobs drop the key on read, pinned with fragment-built literals) (commit 5); `src/browser/tutorial.js` deleted, `tutorial.test.js` `git mv`'d to `icons.test.js` keeping its 15 icons.js pins (10 tutorial tests removed), decision recorded in PROJECT.md Key Decisions + onboarding row and the REQUIREMENTS.md UX-06 row (commit 6) (NAME-02 D-pad row, DEAD-05)
+- [x] 46-03-PLAN.md — `controlScheme` setting deleted (four-field settings model; old blobs drop the key on read, pinned with fragment-built literals) (commit 5); `src/browser/tutorial.js` deleted, `tutorial.test.js` `git mv`'d to `icons.test.js` keeping its 15 icons.js pins (10 tutorial tests removed), decision recorded in PROJECT.md Key Decisions + onboarding row and the REQUIREMENTS.md UX-06 row (commit 6) (NAME-02 D-pad row, DEAD-05)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -336,7 +336,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
-| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 2/4 | In Progress|  |
+| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 3/4 | In Progress|  |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |

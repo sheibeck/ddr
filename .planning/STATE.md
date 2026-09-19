@@ -5,15 +5,15 @@ milestone_name: Shell Debt & Dead Code
 current_phase: 46
 current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
 status: executing
-stopped_at: Completed 46-02-PLAN.md
-last_updated: "2026-09-19T21:19:24.422Z"
+stopped_at: Completed 46-03-PLAN.md
+last_updated: "2026-09-19T21:36:27.504Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Deb
 ## Current Position
 
 Phase: 46 (Honest Names, Dead Exports & the Tutorial Decision) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 46 execution started
 
@@ -121,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:19:18.005Z
-Stopped at: Completed 46-02-PLAN.md
+Last session: 2026-09-19T21:36:27.474Z
+Stopped at: Completed 46-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -238,6 +238,7 @@ Resume file: None
 | Phase 45 P03 | ~2h | 3 tasks | 2 files |
 | Phase 46 P01 | ~2h | 3 tasks | 44 files |
 | Phase 46 P02 | ~40min | 3 tasks | 34 files |
+| Phase 46 P03 | 35min | 3 tasks | 8 files |
 
 ## Decisions
 
@@ -452,6 +453,8 @@ Resume file: None
 - [Phase ?]: 46-01: linesForAction's opts.limit default changed from MAX_TOASTS (4) to Infinity — every production caller (fightLog.js, mazeworld.html's rail path) already passed limit: Infinity explicitly, so the default now matches every real caller
 - [Phase ?]: 46-02: DEAD-04 premise correction — no pre-existing harness carve-out stripped won; removing the engine field required ADDING a prototype-side strip (stripRetiredCounterFields precedent) across the six comparables
 - [Phase ?]: 46-02: extended the zero-straggler grep sweep to three files outside the plan's files_modified list (test/parity/full-suite.test.js, test/roundtrip/serialize-rehydrate.test.js, test/unit/newrun.test.js) — required for the plan's own gate to pass
+- [Phase ?]: controlScheme setting deleted (four-field settings model); old blobs drop the retired key on read (tolerant load by omission, NAME-02 D-pad row)
+- [Phase ?]: src/browser/tutorial.js (04-era coach-mark sequencer) deleted with its ten tests; the fifteen icons.js pins it also held moved to test/unit/icons.test.js via git mv; UX-06 recorded as rebuilt from scratch on the Phase 47 modular shell (DEAD-05)
 
 ### Blockers
 
