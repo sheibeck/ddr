@@ -180,7 +180,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 45-01-PLAN.md — Measure first: `tools/worn-fixture-scan.mjs` replays all 31 parity replay sites in lockstep with the prototype sandbox with the engine's fresh character passed through `reconcileWorn` (invariant across the collapse), commits `tools/worn-fixture-scan-output.txt` (the MOVED SET + per-site before/after record values); zero engine/harness bytes
+- [x] 45-01-PLAN.md — Measure first: `tools/worn-fixture-scan.mjs` replays all 31 parity replay sites in lockstep with the prototype sandbox with the engine's fresh character passed through `reconcileWorn` (invariant across the collapse), commits `tools/worn-fixture-scan-output.txt` (the MOVED SET + per-site before/after record values); zero engine/harness bytes
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -318,7 +318,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
-| 45. Collapse the Phase 37 Hedges | v1.6 | 0/TBD | Not started | - |
+| 45. Collapse the Phase 37 Hedges | v1.6 | 1/3 | In Progress|  |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
