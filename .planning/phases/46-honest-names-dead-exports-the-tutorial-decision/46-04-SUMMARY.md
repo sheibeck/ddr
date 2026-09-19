@@ -413,3 +413,10 @@ Consolidated for the milestone-close Pixel 7 UAT round — no device pauses were
 ---
 *Phase: 46-honest-names-dead-exports-the-tutorial-decision*
 *Completed: 2026-09-19*
+
+## Self-Check: PASSED
+
+- FOUND: tools/ident-sweep.mjs
+- FOUND: .planning/phases/46-honest-names-dead-exports-the-tutorial-decision/46-04-SUMMARY.md
+- FOUND: commit 84508dd (Task 1 — tools/ident-sweep.mjs)
+- FOUND: commit 857bb10 (Task 2 — this SUMMARY)

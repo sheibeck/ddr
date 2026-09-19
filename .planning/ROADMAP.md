@@ -222,7 +222,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 46-04-PLAN.md — Close: `tools/ident-sweep.mjs` (comment-stripped identifier grep over src/engine/content/tools/shell with `--self-test`) and the recorded NAME-02 run (only survivors: the five `foldLegacyCounters` tolerant-load reads), ROADMAP criteria 1–5 verified verbatim, consolidated test ledger (3,242 → 3,231, every delta explained), closing SUMMARY with the deferred Pixel 7 batch (NAME-02 close)
+- [x] 46-04-PLAN.md — Close: `tools/ident-sweep.mjs` (comment-stripped identifier grep over src/engine/content/tools/shell with `--self-test`) and the recorded NAME-02 run (only survivors: the five `foldLegacyCounters` tolerant-load reads), ROADMAP criteria 1–5 verified verbatim, consolidated test ledger (3,242 → 3,231, every delta explained), closing SUMMARY with the deferred Pixel 7 batch (NAME-02 close)
 
 ### Phase 47: Shell Modularisation
 
@@ -336,7 +336,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
-| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 3/4 | In Progress|  |
+| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | In Progress|  |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |

@@ -21,7 +21,7 @@
 ### Names & exports (NAME)
 
 - [x] **NAME-01**: `src/browser/toasts.js` is renamed to `narrationLines.js` and its exports to what they are (`TOAST_FOR` → `LINE_FOR`, `toastsForAction` → `linesForAction`, `dispatchWithToasts` → `dispatchWithNarration`); every import site, bridge and test pin follows; the dead lifetime exports (`MAX_TOASTS`, `TOAST_*_MS`, `toastLifetime()`) are deleted
-- [ ] **NAME-02**: No surviving identifier in `src/`, `engine/` or the shell is named after a retired mechanism (toasts as UI, D-pad, `flightLeft`/`flightCooldown`, `c.ether`, `wornSlots`) — each rename is its own commit with the grep that proves zero stragglers
+- [x] **NAME-02**: No surviving identifier in `src/`, `engine/` or the shell is named after a retired mechanism (toasts as UI, D-pad, `flightLeft`/`flightCooldown`, `c.ether`, `wornSlots`) — each rename is its own commit with the grep that proves zero stragglers
 
 ### Dual-path hedges (HEDGE)
 
@@ -78,7 +78,7 @@ Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges
 | DEAD-04 | Phase 46 | Complete |
 | DEAD-05 | Phase 46 | Complete |
 | NAME-01 | Phase 46 | Complete |
-| NAME-02 | Phase 46 | Pending |
+| NAME-02 | Phase 46 | Complete |
 | HEDGE-01 | Phase 45 | Complete |
 | HEDGE-02 | Phase 45 | Complete |
 | HEDGE-03 | Phase 45 | Complete |

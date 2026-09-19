@@ -4,17 +4,17 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 46
 current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
-status: executing
-stopped_at: Completed 46-03-PLAN.md
-last_updated: "2026-09-19T21:36:27.504Z"
+status: verifying
+stopped_at: Completed 46-04-PLAN.md (Phase 46 closed)
+last_updated: "2026-09-19T21:50:55.519Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
-  percent: 33
+  completed_plans: 11
+  percent: 50
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Deb
 
 Phase: 46 (Honest Names, Dead Exports & the Tutorial Decision) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-19 — Phase 46 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -121,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:36:27.474Z
-Stopped at: Completed 46-03-PLAN.md
+Last session: 2026-09-19T21:50:55.490Z
+Stopped at: Completed 46-04-PLAN.md (Phase 46 closed)
 Resume file: None
 
 ## Operator Next Steps
@@ -239,6 +239,7 @@ Resume file: None
 | Phase 46 P01 | ~2h | 3 tasks | 44 files |
 | Phase 46 P02 | ~40min | 3 tasks | 34 files |
 | Phase 46 P03 | 35min | 3 tasks | 8 files |
+| Phase 46 P04 | ~50min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -455,6 +456,7 @@ Resume file: None
 - [Phase ?]: 46-02: extended the zero-straggler grep sweep to three files outside the plan's files_modified list (test/parity/full-suite.test.js, test/roundtrip/serialize-rehydrate.test.js, test/unit/newrun.test.js) — required for the plan's own gate to pass
 - [Phase ?]: controlScheme setting deleted (four-field settings model); old blobs drop the retired key on read (tolerant load by omission, NAME-02 D-pad row)
 - [Phase ?]: src/browser/tutorial.js (04-era coach-mark sequencer) deleted with its ten tests; the fifteen icons.js pins it also held moved to test/unit/icons.test.js via git mv; UX-06 recorded as rebuilt from scratch on the Phase 47 modular shell (DEAD-05)
+- [Phase ?]: 46-04: two-pass comment stripper (line comments then block comments) redesigned as a single code|line|block|squote|dquote|backtick state machine — a two-pass design let a JSDoc block comment's quoted example text (e.g. "Thief +5") desync a file-wide string tracker, producing 13 false-positive NAME-02 hits; caught and fixed before the tool's first commit
 
 ### Blockers
 
