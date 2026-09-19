@@ -214,7 +214,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 46-02-PLAN.md — `winGame`/`won` removal in two layered commits: the shell (won card, `.stone.won` + `.deathcard` CSS, resume/title/rail/stair/snapshot reads → `dead` alone) then engine (six `won` files: movement/engine/saveState/state/events/death) + narration entries + tools + tests, with a stale `won: true` save pinned tolerant; the harness gains ONE prototype-side retired-field strip (`won` destructured out in the six comparables — no carve-out existed to remove; recorded as a premise correction), zero fixture moves, STOP rule if parity needs more (DEAD-04)
+- [x] 46-02-PLAN.md — `winGame`/`won` removal in two layered commits: the shell (won card, `.stone.won` + `.deathcard` CSS, resume/title/rail/stair/snapshot reads → `dead` alone) then engine (six `won` files: movement/engine/saveState/state/events/death) + narration entries + tools + tests, with a stale `won: true` save pinned tolerant; the harness gains ONE prototype-side retired-field strip (`won` destructured out in the six comparables — no carve-out existed to remove; recorded as a premise correction), zero fixture moves, STOP rule if parity needs more (DEAD-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -336,7 +336,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
-| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 1/4 | In Progress|  |
+| 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 2/4 | In Progress|  |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
