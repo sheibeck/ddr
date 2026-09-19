@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 46 — Honest Names, Dead Exports & the Tutorial Decision
+**Current focus:** Phase 47 — Shell Modularisation (autonomous run; Phases 44–46 complete 2026-09-19; 19 Pixel 7 items deferred to the milestone-close batch)
 
 ## Current Position
 
@@ -62,7 +62,7 @@ Last activity: 2026-09-19 — Phase 46 complete, transitioned to Phase 47
 - [v1.6 sequencing gate]: RESOLVED 2026-09-19 — all three quick tasks (260918-w4n, 260918-wy1, 260919-00d) have landed on master with SUMMARYs and green gates. Phase 44 can now start.
 - [Balance]: Phase 21 (v1.1) landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until player power moves. This retune now lands as **Phase 27 of v1.2**, after the identity pass (Phases 23–24) and mass playtest (Phase 26) give it a corrected yardstick. Ledger: `docs/DIFFICULTY-RETUNE.md`.
 - [Play launch]: target-API level, Data Safety fields, and IARC questions shift yearly — re-verify against current Play Console Help right before the production phase. Repo-side: a dependency/SDK audit proving "no data collected" is still owed.
-- [Tutorial]: `04-10-PLAN.md` (archived) predates the DR-era UI — re-plan, don't execute as-is.
+- [Tutorial]: RESOLVED 2026-09-19 (Phase 46, DEAD-05) — the 04-era `tutorial.js` sequencer is deleted; UX-06 is rebuilt from scratch on the Phase 47 modular shell after v1.6 (the archived `04-10-PLAN.md` is history, not a plan).
 - [Play testers]: internal testers are on the pre-DR18 build until the versionCode-2 AAB is uploaded.
 - [Baseline caveat]: the 400-seed pre-milestone bot baseline (`docs/CLASS-PASS.md` once written) casts only thrown spells, so caster sub-classes were under-measured before Phase 22's harness fix — treat pre-Phase-22 numbers as a floor, not a true reading.
 
