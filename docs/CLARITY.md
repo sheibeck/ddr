@@ -96,6 +96,35 @@ need/have/mouths and the Heft halving. See `docs/RATIONS.md` for the full
 audited ledger (12 rules, prototype line + rulebook page + engine site)
 and the `rationsViewModel(state)` invariant `total === nightlyEats(state)`.
 
+## Loot legibility (CLAR-02)
+
+**The rule:** one pure helper, `src/browser/viewModels.js#usableBy(it, c = null)`, is the ONLY place a "(usable by …)" suffix is built. An item is "restricted" when its `cls` string (weapons: `content/weapons.js`; armor: `content/armors.js`, `it.cls`) is anything other than `"FTM"`, or when it is a staff (`kind: "staff"` — Magic Users only, mirroring `engine/items.js#autoWearSlot`'s own staff gate). An unrestricted item (any `"FTM"` weapon/armor, or a cloak/jewel/potion/tool/bag) always reads `""` — no suffix, ever, even when the current hero cannot use it for some OTHER reason (a sub-class gate like Acrobat-dagger-only never surfaces here; that's the loot screen's separate `can't use (…)` line, built by the pre-existing `lootCompare` `line` field).
+
+**The three text forms** (`USABLE_COPY`, frozen):
+- No hero given, or the hero legally can use it: `(usable by Fighters)` / `(usable by Fighters, Thieves)` / `(usable by Magic Users)`.
+- The hero cannot legally use it: `(usable by Fighters — not you)`.
+- The hero legally CAN use it but is not one of the named letters — the one case this happens is a Thief with the Heft skill legally wearing Fighter-only armor (`ar <= 12`): `(usable by Fighters — and a Thief with Heft)`.
+
+**Legality is never restated** — `usableBy` calls the engine's own `weaponRefusalReason(c, it)`/`armorRefusalReason(c, it)` (`engine/items.js`) for weapons/armor, and `c.cls === "Magic User"` for a staff (the same check `autoWearSlot` makes). Only the display text — which letters map to which class-name plural, and the three sentence shapes — lives in `viewModels.js`.
+
+**Where it shows:** the FIND card, the victory LOOT screen (via the additive `lootCompare(c, it).usable` field — never a second class-gate derivation in the shell), and store rows (Plan 04 wiring). The Company/Joiner offer card carries no item at all today, so CONTEXT's "Company/Joiner offer where an item is involved" resolves to **none** — there is nothing to suffix there.
+
+**Tests:** `test/unit/usableBy.test.js` (25 tests: the full truth table, the `USABLE_COPY` shape pin, the safety-wordlist walk, purity); `test/unit/lootCompare.test.js` (every existing case extended with a `cmp.usable` assertion).
+
+## Gear screen (CLAR-04)
+
+**The two panels, resolved against Phase 37's worn model** (`docs/GEAR-SLOTS.md` — one item per slot, no shields exist; the roadmap's "Carried: weapon, staff, shield" is superseded):
+
+- **ON YOU** = **WIELDED** (the weapon row) + **WORN** (armor, plus the six `WORN_SLOTS` — ring/bracelet/amulet/helm/cloak/staff). Every EMPTY worn slot gets an in-voice row from the new `emptySlotRows(c)` (`GEAR_COPY.empty`), inserted between the existing `wornRow`/`wornSlotRow` calls Plan 04 keeps: `"ring — nothing. Ten fingers, zero commitments."` and the rest, in fixed armor-then-`WORN_SLOTS` order. The staff row alone is class-aware: a non-Magic-User reads `"staff — nothing, and nothing you could hold. Magic Users only."` (`staffNotYou`) rather than the plain empty line, since a non-caster could never wear one anyway (mirrors `autoWearSlot`'s own gate).
+- **ALSO ON YOU** = the existing kit-summary rows (potions, scrolls, rations, wilmst, spell charges, running effects, kills) minus the weapon/armor duplicates — they need no bag slot and are literally on the character's person, so they stay OUT of the BAG count.
+- **BAG** = the slot-consuming `c.items` entries, with the existing `n / slots` readout (`bagUsage`).
+
+**The drop prompt is bag-only:** `dropShelfItems(c)` is the ONE source list for the bag-full drop shelf — slot-consuming BAG items with their TRUE `c.items` index (`[{ it, i }]`), the same potion exemption `engine/derived.js#slotItems` already uses (kept in lock-step by a length-equality test), never a worn slot item, never the wielded weapon or worn armor (neither lives in `c.items`). The prior `renderDropShelf` iterated `c.items` directly (`mazeworld.html:4076-4088`), which would have dispatched a drop for a potion row that frees no bag slot at all — Plan 04 re-points that call at `dropShelfItems` instead of fixing the index math in the shell.
+
+**Tests:** `test/unit/gear-panels.test.js` (14 tests: `dropShelfItems`'s true-index/potion-exemption/lock-step-with-`slotItems` behavior, `emptySlotRows`'s order/staff-not-you/legacy-no-`worn`/fully-equipped-empty cases, the `GEAR_COPY` shape pin, the safety-wordlist walk, purity).
+
+See `docs/GEAR-SLOTS.md` for the full worn-slot taxonomy and play rules this section builds on.
+
 ## Requirements map
 
 (filled by Plan 04)
