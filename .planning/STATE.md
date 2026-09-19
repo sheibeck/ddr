@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 44
-current_phase_name: Retire the Classic Engine from the Shell
-status: verifying
+current_phase: 45
+current_phase_name: Collapse the Phase 37 Hedges
+status: planning
 stopped_at: "Completed 44-04-PLAN.md — Phase 44 (Retire the Classic Engine from the Shell) closed: all five ROADMAP success criteria verified, mazeworld.html 8710 -> 6356 lines (0347df2, 79d22bc, 18e1bb2)"
-last_updated: "2026-09-19T16:25:58.356Z"
+last_updated: "2026-09-19T17:17:19.506Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 44 execution started
+last_activity_desc: Phase 44 complete, transitioned to Phase 45
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code st
 
 ## Current Position
 
-Phase: 44 (Retire the Classic Engine from the Shell) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-19 — Phase 44 execution started
+Phase: 45 — Collapse the Phase 37 Hedges
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-19 — Phase 44 complete, transitioned to Phase 45
 
 ## Ground Truth (durable facts every session needs)
 
