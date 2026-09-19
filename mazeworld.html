@@ -1789,7 +1789,6 @@ let mwActiveTab = "maze";
   window.__mzShowTab = showTab;
 })();
 
-const D = n => 1 + Math.floor(Math.random() * n);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 function skillTable(cls) { return cls === "Fighter" ? window.__mzTables.FIGHTER_SKILLS : cls === "Thief" ? window.__mzTables.THIEF_SKILLS : null; }
@@ -1916,34 +1915,6 @@ function positionPartyPulse(rect) {
   ring.style.top = (rect.height / 2 + p.y - CELL / 2) + "px";
 }
 
-// Phase 44 (DEAD-01, A-1 kept-with-live-reference): this plan's layer-2
-// deletion list named `reveal` as dead, but `window.__mzClassicBoot`'s
-// resume branch (restored-save path) still calls it directly — a live
-// reference the sweep gate correctly caught. Restored per A-1's escape
-// hatch rather than force-deleted; removing this call site is Plan 44-04's
-// boot/persistence-slimming layer, not this plan's scope.
-function reveal() {
-  const { g, px, py } = S.floor;
-  // DR16 Fix 1: mirror engine/derived.js revealRadius()/inDark() — the fog
-  // reveal radius must shrink not only on a physically dark TILE but also
-  // while the engine's persistent Darkness countdown (S.c.darkFor, set by the
-  // Darkness phobia/encounter) is running. Previously this only checked the
-  // tile's own .dark, so triggering Darkness had no visible effect on the map.
-  // Night Vision still negates the contraction; eff("sight") still widens it.
-  // DR17 item 2: TRUE darkness (in the dark, no Night Vision) now reveals ONLY
-  // the square you stand on — radius 0, and NOT widened by eff("sight") (in real
-  // dark, a keener eye still sees nothing beyond your own cell). Night Vision
-  // negates it to the full 2 + eff("sight"); a lit tile is unchanged. The
-  // Amulet of Light already dispels darkFor, so a light-bearer is never "in the
-  // dark" here and keeps the full radius.
-  const inDk = (g[py][px].dark || (S.c && S.c.darkFor > 0));
-  const trueDark = inDk && !skill("Night Vision");
-  const r = trueDark ? 0 : (2 + eff("sight"));
-  for (let y = py - r; y <= py + r; y++)
-    for (let x = px - r; x <= px + r; x++)
-      if (g[y] && g[y][x]) g[y][x].seen = true;
-}
-
 // Phase 35 (decision 3), reversed 2026-09-16 UAT: the canvas chrome
 // palette (fog / bevelled walls / floor inset / border) still comes from
 // src/browser/mapMarks.js via the window.__mzMapMarks bridge; the marks
@@ -2068,36 +2039,6 @@ function draw() {
    The Oracle keeps the whole running log either way. */
 let CAPTURE = null;
 
-/* A beat is one moment — a whole combat exchange, or one thing the maze did.
-   Its lines are shown together; Next moves to the next moment. */
-function newBeat(title, tone) {
-  if (!S.beats) S.beats = { groups: [], i: 0, action: null };
-  S.beats.groups.push({ title: title || "", tone: tone || "", lines: [] });
-  CAPTURE = S.beats.groups[S.beats.groups.length - 1].lines;
-}
-/* Out of combat, an action is reported as a beat card. In a fight nothing is
-   gated — the panel keeps its creatures and its buttons, and the blow-by-blow
-   goes to the Oracle. */
-function act(fn) {
-  if (S.combat) {
-    const lines = [];
-    CAPTURE = lines;
-    try { fn(); } finally { CAPTURE = null; }
-    if (!S.combat && !S.dead && !S.won && !S.store && lines.length) {
-      // parleyed, fled, or killed the last of them — say so, don't just go quiet
-      S.beats = { groups: [{ title: "", tone: "", lines }], i: 0, action: null };
-    }
-    renderEncounter();
-    return;
-  }
-  S.beats = null;
-  newBeat("", "");
-  try { fn(); } finally { CAPTURE = null; }
-  if (S.beats) S.beats.groups = S.beats.groups.filter(g => g.lines.length);
-  if (!S.beats || !S.beats.groups.length) S.beats = null;
-  renderEncounter();
-}
-
 const logEl = document.getElementById("log");
 function logLine(html) {
   if (CAPTURE) CAPTURE.push(html);
@@ -2107,7 +2048,6 @@ function logLine(html) {
   while (logEl.children.length > 160) logEl.removeChild(logEl.lastChild);
   document.getElementById("log-count").textContent = S && S.floor ? `floor ${S.floor.depth}` : "";
 }
-const say = logLine;
 
 window.mzSpellCharges = () => (S && S.c && S.c.cls === "Magic User")
   ? { left: Math.max(0, maxCharges() - S.c.spellsUsed), max: maxCharges() } : null;
