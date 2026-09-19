@@ -162,15 +162,25 @@ function mk(cOverrides, type, combatOverrides = {}) {
  * 2. `t === "Magical"` is therefore structurally unreachable (kept as
  * `flu === 2` for fidelity to the still-live engine gate, which is simply
  * never satisfied by any character anymore).
+ *
+ * Phase 44 (DEAD-03): extended with the two Phase 24 identity rules — a
+ * Ninja/Master of Arms never parleys (IDENT-05, checked right after the
+ * `tried` gate and before Walking Dead), and a Court Mage always parleys
+ * Humans even at fluency 0 (IDENT-06, checked right after the Bard rule).
+ * This oracle and the widened 504-case matrix below now absorb the retired
+ * `test/unit/parley-button-mirror.test.js`'s classic-vs-engine replay
+ * (Phase 44, DEAD-03) — the comparison runs engine-vs-prose-oracle instead.
  */
 function expectedCanParley(c, t, tried) {
   if (tried) return false;
+  if (c.sub === "Ninja" || c.sub === "Master of Arms") return false;
   if (t === "Walking Dead") return false;
   const flu = (c.items || []).some((it) => it.eff && it.eff.tongue > 0) ? 1 : 0;
   if (t === "Magical") return flu === 2;
   if (c.sub === "Con Artist") return true;
   if (c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
   if (c.sub === "Bard" && t === "Humans") return true;
+  if (c.sub === "Court Mage" && t === "Humans") return true;
   if (flu >= 1 && TALKATIVE.includes(t)) return true;
   if (c.race === "Wilmsry") return true; // Magical already handled above
   if (c.race === "Elven" && t === "Humans") return true;
@@ -181,14 +191,17 @@ function expectedCanParley(c, t, tried) {
 
 // Phase 38 (ABIL-02): the Language skill is dropped outright — the matrix's
 // `lang` dimension is gone (a planted Language skill is now a pure no-op,
-// asserted separately below), leaving 6 races × 4 subs × Helm × 6 types.
-test("LANG-02 / D-11: availability matrix — 6 races × 4 subs × Helm × 6 types (288 cases) match the rule oracle", () => {
+// asserted separately below).
+// Phase 44 (DEAD-03): widened from 4 subs to the retired
+// parley-button-mirror.test.js's full 7-sub set, in the mirror's own loop
+// order (race -> sub -> helm -> type) — 6 races x 7 subs x Helm x 6 types.
+test("LANG-02 / D-11 + IDENT-05/06 (Phase 44 DEAD-03): availability matrix — 6 races × 7 subs × Helm × 6 types (504 cases) match the rule oracle", () => {
   let cases = 0;
   let magicalTrue = 0;
   let walkingDeadTrue = 0;
   let plainHumanSoldierTrue = 0;
   for (const race of Object.keys(RACES)) {
-    for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier"]) {
+    for (const sub of ["Con Artist", "Woodsman", "Bard", "Soldier", "Ninja", "Master of Arms", "Court Mage"]) {
       for (const helm of [false, true]) {
         for (const t of ENC_TYPES) {
           cases++;
@@ -203,7 +216,7 @@ test("LANG-02 / D-11: availability matrix — 6 races × 4 subs × Helm × 6 typ
       }
     }
   }
-  assert.equal(cases, 288);
+  assert.equal(cases, 504);
   assert.equal(magicalTrue, 0, "Magical is available to nobody now — fluency 2 is structurally unreachable");
   assert.equal(walkingDeadTrue, 0, "Walking Dead never parleys, for anyone");
   assert.equal(plainHumanSoldierTrue, 0, "a plain Human Soldier at fluency 0 can never parley, for any type");
