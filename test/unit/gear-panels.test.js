@@ -41,6 +41,7 @@ test("GEAR_COPY carries the exact frozen literal shape", () => {
     worn: "WORN",
     alsoOnYou: "ALSO ON YOU",
     bag: "BAG",
+    freeRide: "potions & scrolls ride free",
     empty: {
       armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
       ring: "ring — nothing. Ten fingers, zero commitments.",
@@ -78,6 +79,15 @@ test("dropShelfItems: true c.items indices, potions skipped, worn/wielded never 
   assert.equal(rows[1].it, b);
 });
 
+test("dropShelfItems: scrolls are also excluded (quick 260918-vvt)", () => {
+  const a = { kind: "jewel", n: "a" };
+  const s = { kind: "scroll", n: "s" };
+  const b = { kind: "tool", n: "b" };
+  const c = { items: [a, s, b] };
+  const rows = dropShelfItems(c);
+  assert.deepStrictEqual(rows, [{ it: a, i: 0 }, { it: b, i: 2 }]);
+});
+
 test("dropShelfItems: an empty/absent bag returns []", () => {
   assert.deepStrictEqual(dropShelfItems({ items: [], worn: { ring: {} }, weapon: "Axe", armor: "Mail" }), []);
   assert.deepStrictEqual(dropShelfItems({}), []);
@@ -97,6 +107,7 @@ test("dropShelfItems(c).length === slotItems(c).length across several shapes", (
     { items: [{ kind: "jewel", n: "a" }, { kind: "potion", n: "p" }, { kind: "tool", n: "b" }] },
     { items: [] },
     { items: [{ kind: "potion", n: "p1" }, { kind: "potion", n: "p2" }] },
+    { items: [{ kind: "jewel", n: "a" }, { kind: "scroll", n: "s" }, { kind: "tool", n: "b" }] },
     {},
     null,
   ];

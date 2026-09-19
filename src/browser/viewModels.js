@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { RACES, WEAPONS, ARMORS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId, WORN_SLOTS } from "../../engine/derived.js";
+import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId, WORN_SLOTS, takesBagSlot } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -326,6 +326,7 @@ export const GEAR_COPY = Object.freeze({
   worn: "WORN",
   alsoOnYou: "ALSO ON YOU",
   bag: "BAG",
+  freeRide: "potions & scrolls ride free",
   empty: Object.freeze({
     armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
     ring: "ring — nothing. Ten fingers, zero commitments.",
@@ -340,18 +341,19 @@ export const GEAR_COPY = Object.freeze({
 
 /**
  * dropShelfItems(c) — Phase 43 (CLAR-04): the bag-full drop prompt's ONE
- * source list — slot-consuming BAG items only (the same potion exemption as
- * `engine/derived.js#slotItems`, kept in lock-step by test), with the true
- * `c.items` index so `dropItem(i)` addresses the right entry. Never a worn
- * slot item, never the wielded weapon or worn armor (those are not in
- * `c.items` at all). Returns the SAME item references as `c.items` (no
- * clone); never mutates `c`. Defensive against a missing/non-array
- * `c.items` (returns `[]`). Pure, no rng.
+ * source list — slot-consuming BAG items only (the same bag-free rule as
+ * `engine/derived.js#takesBagSlot` — potions, scrolls, bags — kept in
+ * lock-step with `slotItems` by test), with the true `c.items` index so
+ * `dropItem(i)` addresses the right entry. Never a worn slot item, never the
+ * wielded weapon or worn armor (those are not in `c.items` at all). Returns
+ * the SAME item references as `c.items` (no clone); never mutates `c`.
+ * Defensive against a missing/non-array `c.items` (returns `[]`). Pure, no
+ * rng.
  */
 export function dropShelfItems(c) {
   return (c && Array.isArray(c.items) ? c.items : [])
     .map((it, i) => ({ it, i }))
-    .filter(({ it }) => it && it.kind !== "potion");
+    .filter(({ it }) => takesBagSlot(it));
 }
 
 /**
