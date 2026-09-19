@@ -339,3 +339,14 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.2: Joiner level capped by floor depth (BACKLOG)
+
+**Goal:** [Captured 2026-09-19 for future planning — user's words] A Joiner's level should never be higher than the level of the floor you are on — a level V Joiner can never show up unless you are at least on floor 5.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Context for planning:** today `engine/encounters.js#meetJoiner` rolls `lvl = SPELL_LEVEL_TABLE[rng.d(10) - 1]` (`content/misc-tables.js:27`, the canon d10 Level Table p.46: 1,1,2,2,3,3,4,4,5,5) with no depth term — identical to the prototype (`prototype-master.js.txt` ~L1760). The cap is a deliberate canon divergence: `lvl = Math.min(rolled, state.floor.depth)` keeps the draw count and cursor unchanged (one d10, then the two d20 wp rolls) so only fixtures that actually meet a Joiner on a floor shallower than the rolled level move — declare each with before/after per the greenfield ruling and regenerate `FIXTURE-INVENTORY.md`. `joinerMet`/`joinerRefused` event payloads carry `lvl`, so narration (`toasts.js`/`narrationLines.js` after Phase 46) and the rail card need no shape change. Check `grantLevelAbilities(joinerChar, …, lvl)` receives the capped level, and the wp formula `20 * lvl + d20` uses it too. Bot/class-pass readouts will shift slightly (weaker early Joiners) — a small `tune-classes` smoke before/after belongs in the plan. Gameplay change → outside v1.6 (cleanup-only); a quick task or the next tuning pass.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
