@@ -6,13 +6,13 @@ current_phase: 46
 current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
 status: executing
 stopped_at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
-last_updated: "2026-09-19T20:28:20.779Z"
+last_updated: "2026-09-19T20:29:03.557Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 45 complete, transitioned to Phase 46
+last_activity_desc: Phase 46 execution started
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 7
+  total_plans: 11
   completed_plans: 7
   percent: 33
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 46 — Honest Names, Dead Exports & the Tutorial Decision (autonomous run; Phases 44–45 complete 2026-09-19; 13 Pixel 7 items deferred to the milestone-close batch)
+**Current focus:** Phase 46 — Honest Names, Dead Exports & the Tutorial Decision
 
 ## Current Position
 
-Phase: 46 of 49 (Honest Names, Dead Exports & the Tutorial Decision) — planned, executing (decision-coverage gate override 2026-09-19: parser false positive on the DEAD-04/DEAD-05 IDs; the two user decisions are covered by 46-01 and 46-03)
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-19 — Phase 45 complete, transitioned to Phase 46
+Phase: 46 (Honest Names, Dead Exports & the Tutorial Decision) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 46
+Last activity: 2026-09-19 — Phase 46 execution started
 
 ## Ground Truth (durable facts every session needs)
 
