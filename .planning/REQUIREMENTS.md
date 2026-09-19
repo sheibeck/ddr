@@ -60,11 +60,11 @@
 
 ### Clarity (CLAR)
 
-- [ ] **CLAR-01**: Every Oracle and rail line that costs the player something names its cause from the event payload (e.g. "Being trapped: four walls and one door you already used. −4 hp"), routed through EVENT_NARRATION with the coverage guards green
-- [ ] **CLAR-02**: Every loot offer — encounter-dot finds, victory loot, store rows — shows the "(usable by …)" class gating when the item is class-restricted
-- [ ] **CLAR-03**: The Hero sheet states how many rations the party eats per rest (hero by race/class + each Joiner, and the total) and how many are carried, matching the Make Camp refusal arithmetic
-- [ ] **CLAR-05**: The race/class ration rules are audited against the prototype and rulebook (today: 1 a night, Troll 2, Heft halves wp upkeep only) and recorded in a ledger; every rule is implemented and named in the rest narration, and each Joiner shows "eats N a rest" on the offer card and the Company panel
-- [ ] **CLAR-04**: The Gear tab is two panels — ON YOU (Worn: armor, cloak, jewelry · Carried: weapon, staff, shield) and BAG — and the bag-full drop prompt lists bag items only
+- [x] **CLAR-01**: Every Oracle and rail line that costs the player something names its cause from the event payload (e.g. "Being trapped: four walls and one door you already used. −4 hp"), routed through EVENT_NARRATION with the coverage guards green
+- [x] **CLAR-02**: Every loot offer — encounter-dot finds, victory loot, store rows — shows the "(usable by …)" class gating when the item is class-restricted
+- [x] **CLAR-03**: The Hero sheet states how many rations the party eats per rest (hero by race/class + each Joiner, and the total) and how many are carried, matching the Make Camp refusal arithmetic
+- [x] **CLAR-05**: The race/class ration rules are audited against the prototype and rulebook (today: 1 a night, Troll 2, Heft halves wp upkeep only) and recorded in a ledger; every rule is implemented and named in the rest narration, and each Joiner shows "eats N a rest" on the offer card and the Company panel
+- [x] **CLAR-04**: The Gear tab is two panels — ON YOU (Worn: armor, cloak, jewelry · Carried: weapon, staff, shield) and BAG — and the bag-full drop prompt lists bag items only
 
 ### Balance (BAL)
 
@@ -128,11 +128,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FLEE-01 | Phase 42 | Complete |
 | FLEE-02 | Phase 42 | Complete |
 | BAL-02 | Phase 42 | Complete |
-| CLAR-01 | Phase 43 | Pending |
-| CLAR-02 | Phase 43 | Pending |
-| CLAR-03 | Phase 43 | Pending |
-| CLAR-04 | Phase 43 | Pending |
-| CLAR-05 | Phase 43 | Pending |
+| CLAR-01 | Phase 43 | Complete |
+| CLAR-02 | Phase 43 | Complete |
+| CLAR-03 | Phase 43 | Complete |
+| CLAR-04 | Phase 43 | Complete |
+| CLAR-05 | Phase 43 | Complete |
 
 **Coverage:**
 

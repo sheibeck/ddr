@@ -127,4 +127,19 @@ See `docs/GEAR-SLOTS.md` for the full worn-slot taxonomy and play rules this sec
 
 ## Requirements map
 
-(filled by Plan 04)
+| Requirement | Proof |
+|---|---|
+| CLAR-01 (every Oracle/rail line that costs the player something names its cause from the event payload) | The Cost-event inventory table above (38 rows); `engine/movement.js`/`engine/magic.js`/`engine/encounters.js`'s additive cause keys (Plan 01) and `rationsEaten`/`wentHungry`'s day-cycle keys (Plan 02); `src/browser/eventNarration.js`/`src/browser/toasts.js`'s cause-first rewrites; `test/unit/clarity-cause-lines.test.js` (69 tests); `test/unit/rations-audit.test.js`'s narration block; `test/unit/toastsCoverage.test.js`/`test/unit/formatEventsCoverage.test.js` (the coverage guards, green) |
+| CLAR-02 ("(usable by …)" on every loot offer — FIND card, victory LOOT rows, store rows) | `src/browser/viewModels.js#usableBy`/`USABLE_COPY`/`lootCompare.usable` (Plan 03); the FIND branch, the LOOT screen's `subFor`, and the store row `<i>` sub (Plan 04, `mazeworld.html`'s `window.__mzUsableBy` bridge); `test/unit/usableBy.test.js` (25 tests); `test/unit/lootCompare.test.js`; `test/unit/shell-clarity-43.test.js`'s FIND/LOOT/store pins |
+| CLAR-03 (the Hero sheet states rations eaten per rest — hero + each Joiner + total — and rations carried, matching the Make Camp refusal arithmetic) | `engine/movement.js#eatsFor`/`nightlyEats` (Plan 02, the ONE appetite read `makeCamp`/`newDay`/the view model all share); `src/browser/viewModels.js#rationsViewModel`/`RATIONS_COPY` (Plan 02); the Hero tab's `#rations-panel`/`#s-rations`/`#s-rations-n` reading `window.__mzRations.view(S)` (Plan 04); `test/unit/rationsViewModel.test.js` (9 tests, the `total === nightlyEats(state)` invariant); `test/unit/shell-clarity-43.test.js`'s RATIONS panel pins |
+| CLAR-04 (the Gear tab is two panels — ON YOU and BAG — and the bag-full drop prompt lists bag items only) | `docs/GEAR-SLOTS.md` (the worn-slot taxonomy this section builds on); `src/browser/viewModels.js#dropShelfItems`/`emptySlotRows`/`GEAR_COPY` (Plan 03); the `#onyou-panel`/`#bag-panel` markup, paint()'s `#s-onyou` wiring, and `renderDropShelf(shelf, entries)` reading `window.__mzDropShelfItems(c)` (Plan 04); `test/unit/gear-panels.test.js` (14 tests); `test/unit/shell-clarity-43.test.js`'s Gear-tab pins (markup order, empty-slot rows, drop-shelf shape, CSS) |
+| CLAR-05 (the ration rules audited against the prototype/rulebook and ledgered; every rule implemented and named in the rest narration; each Joiner shows "eats N a rest" on the offer card and the Company panel) | `docs/RATIONS.md` (12 audited rules, zero missing prototype rules found); `src/browser/eventNarration.js#RATION_RULE_LINE` ("Trolls eat for two."); the Joiner offer card's roll line and the Company panel's eats line both reading `window.__mzRations.eatsLine` (Plan 04); `test/unit/rations-audit.test.js` (23 tests, the ledger-parsing test); `test/unit/shell-clarity-43.test.js`'s Joiner/Company-panel pins |
+
+(REQUIREMENTS.md itself is flipped to complete by this plan at phase close.)
+
+## Out of scope / next
+
+- **Tutorial hooks on the new clarity surfaces** (the "(usable by …)" suffix, the RATIONS panel, the ON YOU/BAG split) → UX-06, the first-run tutorial, built after v1.5's UI settles.
+- **Shell modularisation of the Gear/Hero tabs** — `mazeworld.html`'s classic-script paint()/renderPartyRoster/renderDropShelf functions stay as-is this phase; splitting them into ES modules is deferred to the cleanup milestone (per `43-CONTEXT.md`'s Deferred Ideas).
+- **The spell-charge-spent line** — no dedicated event exists (the cast line already names the spell, the Grimoire/HUD shows the count); this sweep records it as `unchanged` in the cost-event inventory rather than retrofitting a new event for a cost that is already visible elsewhere.
+- **The climb dice payload** (`roll`/`need` on the four climb events) — a pre-existing v1.4 quick-task item, out of scope for this phase and carried over on the backlog (`.planning/REQUIREMENTS.md`'s Future Requirements section).
