@@ -168,15 +168,25 @@ test("HI-01: move onto a dark tile WITH Night Vision reveals full radius 2 (5x5)
   assertSeenSquare(state.floor.g, 5, 4, 2);
 });
 
-test("HI-01: the Amulet of Light's sight:1 effect widens a lit tile's reveal to radius 3 (7x7)", () => {
-  const state = fixedState({ c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }] } });
+// 260918-w4n (use-activated-only): the Amulet's sight/light payload applies
+// only while its own item:Amulet of Light record is LIVE.
+function liveAmuletOfLight() {
+  return { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } };
+}
+
+test("HI-01: the Amulet of Light's LIVE sight:1 effect widens a lit tile's reveal to radius 3 (7x7)", () => {
+  const state = fixedState({
+    c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }], timers: liveAmuletOfLight() },
+  });
   open(state.floor.g, 5, 4); // not dark
   move(state, "N", fakeRng([]), []);
   assertSeenSquare(state.floor.g, 5, 4, 3);
 });
 
-test("HI-01: sight:1 on a dark tile without Night Vision still only widens the dark 1 to a 2 (5x5)", () => {
-  const state = fixedState({ c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }] } });
+test("HI-01: LIVE sight:1 on a dark tile without Night Vision still only widens the dark 1 to a 2 (5x5)", () => {
+  const state = fixedState({
+    c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }], timers: liveAmuletOfLight() },
+  });
   open(state.floor.g, 5, 4, { dark: true });
   move(state, "N", fakeRng([]), []);
   assertSeenSquare(state.floor.g, 5, 4, 2);
@@ -317,8 +327,37 @@ test("move: a successful gorge leap clears the feature", () => {
 // passes proves the roll (and its fall-damage math) was skipped entirely,
 // not just that it happened to pass.
 
-test("move: Bracelet of Flight skips the climb roll/fall damage entirely (no rng draw) and never starts a c.timers record", () => {
+// 260918-w4n (use-activated-only): a ready-but-unused flight item (worn or
+// bagged, no LIVE record) is NOT flying any more — the climb/gorge roll
+// runs normally, no record is auto-started.
+test("move: a ready-but-unused Bracelet of Flight does NOT skip the climb roll — it rolls normally and starts nothing", () => {
   const state = fixedState({ c: { items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  // Same sequence as the plain successful-climb test: pick -> "rope";
+  // feet=10*(1+d(2)=1)=20; two 10ft rungs, each d(10)=5 <= rope.success(7).
+  const events = move(state, "N", fakeRng([1, 5, 5]), []);
+  assert.ok(events.some((e) => e.type === "climbedOver"), "rolls the climb — the Bracelet is not flying while unused");
+  assert.ok(!events.some((e) => e.type === "flownOver"));
+  assert.equal(state.c.timers, undefined, "a ready-but-unused item starts no record");
+});
+
+test("move: a ready-but-unused Bracelet of Flight does NOT skip a gorge leap either", () => {
+  const state = fixedState({ c: { items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  open(state.floor.g, 5, 4, { feat: "gorge" });
+  // Same sequence as the plain successful-leap test: LEAP_TABLE[0], Fighter
+  // needs <=10; d(10)=6 <= 10 -> clear.
+  const events = move(state, "N", fakeRng([1, 6]), []);
+  assert.ok(events.some((e) => e.type === "leaptOver"));
+  assert.ok(!events.some((e) => e.type === "flownOver"));
+});
+
+test("move: a worn+used (LIVE) Bracelet of Flight flies over a climb with zero rng draws; the per-step tick burns it down by one", () => {
+  const state = fixedState({
+    c: {
+      worn: { bracelet: { n: "Bracelet of Flight", eff: { fly: 1 } } },
+      timers: { "item:Bracelet of Flight": { cadence: "squares", left: 20, cd: 50, phase: "effect" } },
+    },
+  });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const events = move(state, "N", fakeRng([]), []);
   assert.equal(state.c.wp, 55, "no fall damage — the roll never ran");
@@ -326,28 +365,17 @@ test("move: Bracelet of Flight skips the climb roll/fall damage entirely (no rng
   assert.equal(state.floor.py, 4);
   assert.ok(events.some((e) => e.type === "flownOver"));
   assert.ok(!events.some((e) => e.type === "climbedOver"));
-  assert.equal(state.c.timers, undefined, "the Bracelet never starts an item record");
+  assert.deepStrictEqual(state.c.timers["item:Bracelet of Flight"], { cadence: "squares", left: 19, cd: 50, phase: "effect" });
 });
 
-test("move: Bracelet of Flight also skips a gorge leap (no rng draw)", () => {
-  const state = fixedState({ c: { items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
-  open(state.floor.g, 5, 4, { feat: "gorge" });
-  const events = move(state, "N", fakeRng([]), []);
-  assert.equal(state.c.wp, 55);
-  assert.equal(state.floor.g[4][5].feat, null);
-  assert.ok(events.some((e) => e.type === "flownOver"));
-});
-
-test("move: a ready Cloak of Flying (no record) flies over a climb, starting a fresh 20-square effect that the per-step tick immediately starts burning down", () => {
+test("move: a ready Cloak of Flying with NO live record rolls the climb — the old auto-activation is removed", () => {
   const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }] } });
   open(state.floor.g, 5, 4, { feat: "climb" });
-  const events = move(state, "N", fakeRng([]), []);
-  assert.ok(events.some((e) => e.type === "flownOver"));
-  assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.item === "Cloak of Flying" && e.kind === "fly"));
-  assert.equal(state.floor.g[4][5].feat, null);
-  // activation starts an effect record of 20, then this same move's per-step
-  // squares tick burns 1 off it.
-  assert.deepStrictEqual(state.c.timers["item:Cloak of Flying"], { cadence: "squares", left: 19, cd: 50, phase: "effect" });
+  const events = move(state, "N", fakeRng([1, 5, 5]), []);
+  assert.ok(events.some((e) => e.type === "climbedOver"));
+  assert.ok(!events.some((e) => e.type === "flownOver"));
+  assert.ok(!events.some((e) => e.type === "itemEffectStarted"));
+  assert.equal(state.c.timers, undefined, "nothing auto-starts any more — useItem is the only way to start it");
 });
 
 test("move: while a Cloak of Flying effect is still active, a SECOND climb in the same window flies over again without re-starting the effect", () => {
@@ -394,19 +422,20 @@ test("move: while a Cloak of Flying is on cooldown, climb/gorge rolls resume nor
   assert.equal(state.c.timers["item:Cloak of Flying"].left, 4, "the cooldown still ticks down on an ordinary step");
 });
 
-test("move: carrying BOTH items, the Bracelet flies unconditionally and the Cloak's own record is left untouched", () => {
+test("move: carrying BOTH items, only the one with a LIVE record flies — the other's record is left untouched", () => {
   const state = fixedState({
     c: {
       items: [
         { n: "Bracelet of Flight", eff: { fly: 1 } },
         { n: "Cloak of Flying", eff: { fly: 1 } },
       ],
+      timers: { "item:Bracelet of Flight": { cadence: "squares", left: 20, cd: 50, phase: "effect" } },
     },
   });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const events = move(state, "N", fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "flownOver"));
-  assert.equal(state.c.timers, undefined, "the Bracelet's flight never starts a Cloak record");
+  assert.equal(state.c.timers["item:Cloak of Flying"], undefined, "the Bracelet's live flight never touches the Cloak's own record");
 });
 
 // --- PHOBIA-01: Heights/Bodies-of-water climb/leap penalties (04.1-06) ----

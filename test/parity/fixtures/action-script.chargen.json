@@ -46,11 +46,17 @@
     },
     "2": {
       "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 } },
-      "after": { "skills": { "Acute Hearing": 1, "Night Vision": 1 } },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills."
+      "requirements": ["ABIL-02", "QUICK-260918-w4n"],
+      "fields": ["skills", "items"],
+      "before": {
+        "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 },
+        "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 } }]
+      },
+      "after": {
+        "skills": { "Acute Hearing": 1, "Night Vision": 1 },
+        "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 } }]
+      },
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves."
     },
     "3": {
       "phase": 38,

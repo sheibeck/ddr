@@ -205,7 +205,15 @@ test("heights: the hazardChoice pause (a carried rope) does NOT fire noteHeights
 });
 
 test("heights: the flyOver (Bracelet of Flight) branch never calls noteHeightsAttempt", () => {
-  const flying = fixedState({ c: { phobia: "Heights", phobiaType: null, items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  // 260918-w4n (use-activated-only): flyOver only runs while a fly-kind
+  // record is LIVE — a bagged/ready Bracelet no longer flies unconditionally.
+  const flying = fixedState({
+    c: {
+      phobia: "Heights", phobiaType: null,
+      items: [{ n: "Bracelet of Flight", eff: { fly: 1 } }],
+      timers: { "item:Bracelet of Flight": { cadence: "squares", left: 20, cd: 50, phase: "effect" } },
+    },
+  });
   open(flying.floor.g, 5, 4, { feat: "climb" });
   const e1 = move(flying, "N", fakeRng([]), []);
   assert.ok(e1.some((ev) => ev.type === "flownOver"));

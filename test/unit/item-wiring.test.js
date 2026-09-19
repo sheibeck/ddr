@@ -90,29 +90,55 @@ const HELM = { kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 }, txt: "
 const CLOAK_STRENGTH = { kind: "cloak", n: "Cloak of Strength", eff: { noCrit: 1 }, txt: "" };
 const PENDANT = { kind: "jewel", n: "Pendant of Fortitude", eff: {}, use: "half", txt: "" };
 const AMULET_LIGHT = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "" };
-const CLOAK_HEALING = { kind: "cloak", n: "Cloak of Healing", eff: { cloakHeal: 1 }, txt: "" };
 const CLOAK_REGEN = { kind: "cloak", n: "Cloak of Regeneration", eff: { cloakRegen: 1 }, txt: "" };
 const GAUNTLET = { kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: "" };
 const AMULET_STONE = { kind: "jewel", n: "Amulet of Stone", eff: {}, use: "stone", every: 200, aoe: 4, txt: "" };
 // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
 const OAK_STAFF = { kind: "staff", n: "Oak Staff", use: "stone", charges: 1, txt: "" };
 
-// --- 1. Helm of Knowledge tongue -> canParley (DR15-A) --------------------
+/** onlyRng() — a fakeRng-shaped stand-in that throws on ANY `.d()` call,
+ * matching the plan's `() => 1` convenience shorthand for a numeric-only
+ * (no-dice) `applyActivation` path — used for every worn+used case below
+ * whose activation has a plain numeric `effect` (power/giant/glow/unseen/
+ * tongue/brace/plate/fly all resolve with zero draws). */
+function noDrawRng() {
+  return { d: () => { throw new Error("noDrawRng: no rng draw expected"); }, pick: (a) => a[0], shuffle: (a) => a };
+}
 
-test("Helm of Knowledge grants Language: carrying it makes a TALKATIVE encounter parleyable", () => {
+// --- 1. Helm of Knowledge tongue -> canParley (DR15-A) --------------------
+// 260918-w4n (use-activated-only): the Helm must be WORN AND USED — a
+// worn-but-unused Helm, or one merely carried in the bag, grants nothing.
+
+test("Helm of Knowledge grants Language: worn AND used makes a TALKATIVE encounter parleyable; worn-but-unused and bagged do not", () => {
   const withoutHelm = fixedState({ combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }) });
   assert.equal(canParley(withoutHelm), false, "a plain Human Fighter with no Language cannot parley Humans");
 
-  const withHelm = fixedState({
-    c: { items: [HELM] },
+  const wornUnused = fixedState({
+    c: { worn: { helm: HELM } },
     combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }),
   });
-  assert.equal(canParley(withHelm), true, "the Helm's tongue effect grants Language -> parley Humans");
+  assert.equal(canParley(wornUnused), false, "a worn-but-unused Helm grants nothing");
+
+  const bagged = fixedState({
+    c: { items: [HELM], worn: {} },
+    combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }),
+  });
+  assert.equal(canParley(bagged), false, "a bagged Helm grants nothing");
+  const bagUseEvents = useItem(bagged, 0, noDrawRng(), []);
+  assert.deepStrictEqual(bagUseEvents, [{ type: "useRefused", item: HELM, reason: "notWorn" }]);
+
+  const wornUsed = fixedState({
+    c: { worn: { helm: HELM } },
+    combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }),
+  });
+  useItem(wornUsed, { slot: "helm" }, noDrawRng(), []);
+  assert.equal(canParley(wornUsed), true, "worn AND used — the Helm's live tongue effect grants Language -> parley Humans");
 });
 
 // --- 2. Cloak of Strength noCrit ------------------------------------------
+// 260918-w4n: worn AND used suppresses the crit; worn-but-unused does not.
 
-test("Cloak of Strength suppresses the player's own critical (a natural 1 no longer doubles damage)", () => {
+test("Cloak of Strength suppresses the player's own critical (a natural 1 no longer doubles damage) only worn AND used", () => {
   // Shared rng sequence: strike roll = 1 (crit), weapon d6 = 5, foe miss roll,
   // then a fresh initiative (mine>=theirs -> "you", no bonus foeTurn).
   const seq = () => [1, 5, 10, 20, 1];
@@ -130,10 +156,17 @@ test("Cloak of Strength suppresses the player's own critical (a natural 1 no lon
   assert.equal(cStruck.critical, true, "without the cloak, a natural 1 crits");
   assert.equal(cStruck.dmg, 12, "crit doubles (1 + d6=5) => 6*2 = 12");
 
-  const cloaked = fixedState({ c: { items: [CLOAK_STRENGTH] }, combat: fixedCombat([fixedFoe(foeOverrides)]) });
-  const wEvents = playerStrike(cloaked, fakeRng(seq()), []);
+  const wornUnused = fixedState({ c: { worn: { cloak: CLOAK_STRENGTH } }, combat: fixedCombat([fixedFoe(foeOverrides)]) });
+  const uEvents = playerStrike(wornUnused, fakeRng(seq()), []);
+  const uStruck = uEvents.find((e) => e.type === "struck");
+  assert.equal(uStruck.critical, true, "worn but UNUSED — still crits, grants nothing");
+
+  const wornUsed = fixedState({ c: { worn: { cloak: CLOAK_STRENGTH } } });
+  useItem(wornUsed, { slot: "cloak" }, noDrawRng(), []);
+  wornUsed.combat = fixedCombat([fixedFoe(foeOverrides)]);
+  const wEvents = playerStrike(wornUsed, fakeRng(seq()), []);
   const wStruck = wEvents.find((e) => e.type === "struck");
-  assert.equal(wStruck.critical, false, "the Cloak of Strength suppresses the crit");
+  assert.equal(wStruck.critical, false, "worn AND used — the Cloak of Strength suppresses the crit");
   assert.equal(wStruck.dmg, 6, "no crit => 1 + d6=5 = 6 (undoubled)");
 });
 
@@ -154,13 +187,21 @@ test("Pendant of Fortitude halves ONE incoming blow, then spends the charge", ()
 });
 
 // --- 4. Amulet of Light light -> dispels persistent darkness --------------
+// 260918-w4n: the dispel now fires on USE (engine/items.js#useItem's "glow"
+// case), not as a movement per-step tick — a bagged/worn-but-unused Amulet
+// grants nothing; the Amulet's own per-step tick is gone from movement.js.
 
-test("Amulet of Light dispels the persistent darkness counter outright on the next step", () => {
-  const lit = fixedState({ c: { items: [AMULET_LIGHT], darkFor: 30 } });
-  open(lit.floor.g, 5, 4);
-  const events = move(lit, "N", fakeRng([]), []); // no rng: dispel is a plain clear
-  assert.equal(lit.c.darkFor, 0, "carrying the Amulet clears darkFor immediately");
+test("Amulet of Light dispels the persistent darkness counter outright on USE (worn AND used only)", () => {
+  const wornUsed = fixedState({ c: { worn: { amulet: AMULET_LIGHT }, darkFor: 30 } });
+  const events = useItem(wornUsed, { slot: "amulet" }, noDrawRng(), []); // no rng: dispel is a plain clear
+  assert.equal(wornUsed.c.darkFor, 0, "worn AND used clears darkFor immediately");
   assert.ok(events.some((e) => e.type === "darknessDispelled"), "emits darknessDispelled");
+  assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.kind === "glow"), "starts the 50-square glow effect");
+
+  const wornUnused = fixedState({ c: { worn: { amulet: AMULET_LIGHT }, darkFor: 30 } });
+  open(wornUnused.floor.g, 5, 4);
+  move(wornUnused, "N", fakeRng([]), []);
+  assert.equal(wornUnused.c.darkFor, 29, "worn but UNUSED — the counter merely ticks down, exactly like carrying nothing");
 
   const dark = fixedState({ c: { darkFor: 30 } });
   open(dark.floor.g, 5, 4);
@@ -168,51 +209,44 @@ test("Amulet of Light dispels the persistent darkness counter outright on the ne
   assert.equal(dark.c.darkFor, 29, "without the Amulet the counter merely ticks down");
 });
 
-// --- 5. Cloak of Healing (flat, no rng) -----------------------------------
+// --- 6. Cloak of Regeneration (use-activated; the ONE rng draw is on USE) -
+// 260918-w4n: the dropped healing cloak leaves the game entirely (no more
+// Cloak of Healing tests); the Cloak of Regeneration's d6 now fires on USE,
+// not on a per-step tick — a worn-but-unused cloak heals nothing while
+// walking.
 
-test("Cloak of Healing restores a flat amount every 20 squares with NO rng draw", () => {
-  const st = fixedState({ c: { items: [CLOAK_HEALING], wp: 10, maxWP: 55 }, steps: 19 });
-  open(st.floor.g, 5, 4);
-  const events = move(st, "N", fakeRng([]), []); // fakeRng([]) throws if ANY rng is drawn
-  assert.equal(st.steps, 20);
-  assert.equal(st.c.wp, 20, "flat +10 heal at the 20-square tick");
-  assert.ok(events.some((e) => e.type === "cloakHealed"), "emits cloakHealed");
+test("Cloak of Regeneration rolls a d6 on USE (worn AND used), then a 20-square cooldown; worn-but-unused heals nothing while walking", () => {
+  const st = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 } });
+  const rng = fakeRng([6]); // exactly one d6 draw expected
+  const events = useItem(st, { slot: "cloak" }, rng, []);
+  assert.equal(st.c.wp, 16, "d6=6 regen on use");
+  assert.ok(events.some((e) => e.type === "cloakRegenerated" && e.amount === 6), "emits cloakRegenerated");
+  assert.deepStrictEqual(st.c.timers["item:Cloak of Regeneration"], { cadence: "squares", left: 20, phase: "cooldown" });
+  assert.equal(events.some((e) => e.type === "itemEffectStarted"), false, "an instant effect starts a bare cooldown, no itemEffectStarted");
+
+  const again = useItem(st, { slot: "cloak" }, fakeRng([]), []);
+  assert.deepStrictEqual(again, [{ type: "useRefused", item: CLOAK_REGEN, reason: "cooldown", left: 20, phase: "cooldown" }]);
 });
 
-test("Cloak of Healing never overheals past maxWP", () => {
-  const st = fixedState({ c: { items: [CLOAK_HEALING], wp: 52, maxWP: 55 }, steps: 19 });
-  open(st.floor.g, 5, 4);
-  move(st, "N", fakeRng([]), []);
-  assert.equal(st.c.wp, 55, "capped at maxWP");
+test("Cloak of Regeneration d6 is GATED: worn-but-unused draws NO rng and heals nothing while walking 20+ squares", () => {
+  const wornUnused = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 }, steps: 19 });
+  open(wornUnused.floor.g, 5, 4);
+  assert.doesNotThrow(() => move(wornUnused, "N", fakeRng([]), []));
+  assert.equal(wornUnused.c.wp, 10, "worn but unused — no movement tick heals it any more");
+
+  const noCloak = fixedState({ c: { wp: 10, maxWP: 55 }, steps: 19 });
+  open(noCloak.floor.g, 5, 4);
+  assert.doesNotThrow(() => move(noCloak, "N", fakeRng([]), []));
+  assert.equal(noCloak.c.wp, 10, "a non-carrier is not healed");
 });
 
-// --- 6. Cloak of Regeneration (the ONE new rng draw, GATED) ---------------
-
-test("Cloak of Regeneration rolls a d6 every 20 squares when carried", () => {
-  const st = fixedState({ c: { items: [CLOAK_REGEN], wp: 10, maxWP: 55 }, steps: 19 });
-  open(st.floor.g, 5, 4);
-  const events = move(st, "N", fakeRng([6]), []); // exactly one d6 draw expected
-  assert.equal(st.steps, 20);
-  assert.equal(st.c.wp, 16, "d6=6 regen at the 20-square tick");
-  assert.ok(events.some((e) => e.type === "cloakRegenerated"), "emits cloakRegenerated");
-});
-
-test("Cloak of Regeneration d6 is GATED: a NON-carrier draws NO rng on the same step", () => {
-  const st = fixedState({ c: { wp: 10, maxWP: 55 }, steps: 19 });
-  open(st.floor.g, 5, 4);
-  // fakeRng([]) throws on ANY draw — a non-carrier reaching step 20 must draw
-  // nothing (byte-identical to the frozen prototype's rng cursor).
-  assert.doesNotThrow(() => move(st, "N", fakeRng([]), []));
-  assert.equal(st.c.wp, 10, "a non-carrier is not healed");
-});
-
-test("Cloak of Regeneration d6 is GATED: a real seeded rng cursor is untouched for a non-carrier", () => {
-  const st = fixedState({ c: { wp: 10, maxWP: 55 }, steps: 19 });
+test("Cloak of Regeneration d6 is GATED: a real seeded rng cursor is untouched by movement, worn or not", () => {
+  const st = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 }, steps: 19 });
   open(st.floor.g, 5, 4);
   const rng = makeRng(12345);
   const before = rng.getState();
   move(st, "N", rng, []);
-  assert.deepEqual(rng.getState(), before, "no rng consumed by a non-carrier's step");
+  assert.deepEqual(rng.getState(), before, "no rng consumed by movement — the cloak's d6 only fires on useItem now");
 });
 
 // --- 7. Amulet of Stone (DR16-G) — per-item AoE count ---------------------
@@ -244,11 +278,16 @@ test("Cloak of Ether: while ethereal you phase through a wall/crevice with no ro
   assert.ok(events.some((e) => e.type === "phasedThrough"), "emits phasedThrough");
 });
 
-test("Gauntlet of the Giant adds a flat size damage bonus to weaponDamage", () => {
+test("Gauntlet of the Giant adds a flat size damage bonus to weaponDamage only when worn AND used", () => {
   const plain = fixedFighter();
-  const giant = fixedFighter({ items: [GAUNTLET] });
+  const wornUnused = fixedFighter({ worn: { helm: GAUNTLET } });
+  const wornUsed = fixedFighter({
+    worn: { helm: GAUNTLET },
+    timers: { "item:Gauntlet of the Giant": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+  });
   assert.equal(weaponDamage(plain, fakeRng([4])), 5, "1 + d6=4 = 5");
-  assert.equal(weaponDamage(giant, fakeRng([4])), 7, "1 + d6=4 + size(2) = 7");
+  assert.equal(weaponDamage(wornUnused, fakeRng([4])), 5, "worn but UNUSED grants nothing");
+  assert.equal(weaponDamage(wornUsed, fakeRng([4])), 7, "worn AND used — 1 + d6=4 + size(2) = 7");
 });
 
 // --- 9. Phase 18: fire item routed through damageFoe (CANON-01 A3) --------

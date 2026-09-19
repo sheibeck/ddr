@@ -548,11 +548,14 @@ test("foeTurn: armor soaks a blow that lands under the character's AR", () => {
 // PLATE (ar:15), take-the-better of the cloak's plate and the worn armour, and
 // the magical plate never wears out.
 test("foeTurn: a Leather-wearer holding the Cloak of Armor soaks as Plate — AR 15, not Leather's 6 (E8)", () => {
+  // 260918-w4n (use-activated-only): the cloak's plate applies only while
+  // its own item:Cloak of Armor record is LIVE.
   const state = fixedState({
     c: {
       wp: 55, maxWP: 55,
       armor: "Leather", ar: 6, armorWP: 15, armorMax: 15, armorMin: 1,
       items: [{ n: "Cloak of Armor", eff: { cloakArmor: 1 } }],
+      timers: { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
     },
   });
   const foe = fixedFoe({ wp: 10, maxWP: 10 });

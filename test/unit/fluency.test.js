@@ -83,13 +83,24 @@ function fixedCombat(foes, overrides = {}) {
 // Phase 38 (ABIL-02): the Language skill is dropped outright — fluency now
 // comes ENTIRELY from a tongue-effect item, so the ceiling drops from 2 to 1.
 // A planted (retired) Language skill is a no-op at every tier.
+// 260918-w4n (use-activated-only): the Helm's tongue payload now applies
+// ONLY while its own item:Helm of Knowledge record is LIVE (worn AND used)
+// — `liveHelm()` builds that record ({ kind: "tongue", effect: 50, cd: 50 }).
+function liveHelm() {
+  return { "item:Helm of Knowledge": { cadence: "squares", left: 50, cd: 50, phase: "effect" } };
+}
+
 test("D-09 (Phase 38): fluency is 0 / 0 / 1 / 1 for neither / retired-Language / Helm / Helm+retired-Language", () => {
   assert.equal(fluency({ skills: {}, items: [] }), 0, "neither");
   assert.equal(fluency({ skills: { Language: 1 } }), 0, "a retired Language skill no longer counts");
   assert.equal(fluency({ skills: { Language: 2 } }), 0, "skill tier is irrelevant — still a no-op");
-  assert.equal(fluency({ items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }), 1, "Helm alone — the max");
   assert.equal(
-    fluency({ skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }),
+    fluency({ items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }], timers: liveHelm() }),
+    1,
+    "Helm alone — the max",
+  );
+  assert.equal(
+    fluency({ skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }], timers: liveHelm() }),
     1,
     "Helm + a retired Language skill is still just 1 — the ceiling is 1, not 2",
   );
@@ -99,10 +110,15 @@ test("D-09 boundaries: undefined skills/items, a zero tongue effect, and an unre
   assert.equal(fluency({}), 0, "no skills/items keys at all");
   assert.equal(fluency({ items: [{ n: "x", eff: { tongue: 0 } }] }), 0, "a zero tongue effect does not count");
   assert.equal(fluency({ skills: { Tracking: 1 } }), 0, "an unrelated (also retired) skill does not count");
+  assert.equal(
+    fluency({ items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] }),
+    0,
+    "a WORN-BUT-UNUSED (no live record) Helm grants nothing (260918-w4n)",
+  );
 });
 
 test("D-09 purity: fluency neither draws nor mutates", () => {
-  const c = { skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }] };
+  const c = { skills: { Language: 1 }, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }], timers: liveHelm() };
   const before = structuredClone(c);
   fluency(c);
   assert.deepStrictEqual(c, before, "fluency must not mutate its argument");

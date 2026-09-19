@@ -1,16 +1,17 @@
 // test/unit/worn-model.test.js
 //
-// Phase 37 Plan 01 (GEAR-03/GEAR-04) — the worn-slot data model and the
-// two-path eff() refactor. Proves:
-//   - the slot taxonomy (content/treasure-tables.js SLOT_OF, 24 entries)
-//     and that no exported JEWELRY/CLOAKS/STAVES row (or any rolled item)
-//     ever carries a `slot` key;
-//   - engine/derived.js's WORN_SLOTS/slotFor/carriedItems/reconcileWorn;
-//   - eff(c, key) is two-path: worn-only when c.worn is present, the
-//     byte-identical legacy sum over c.items otherwise;
-//   - hasItemNamed (and therefore isFlying/conditionsOf) reads bag ∪ worn;
-//   - a pinned, MEASURED legacy-equivalence table over every chargen
-//     fixture seed;
+// Phase 37 Plan 01 (GEAR-03/GEAR-04) — the worn-slot data model. Proves:
+//   - the slot taxonomy (content/treasure-tables.js SLOT_OF, 15 entries —
+//     260918-w4n: 8 JEWELRY + 7 CLOAKS; a staff has NO slot) and that no
+//     exported JEWELRY/CLOAKS/STAVES row (or any rolled item) ever carries a
+//     `slot` key;
+//   - engine/derived.js's WORN_SLOTS (five keys)/slotFor/carriedItems/
+//     reconcileWorn;
+//   - eff(c, key) is timer-only (260918-w4n, use-activated-only): an effect
+//     exists only while its own item:<name> c.timers record is live — a bag
+//     copy or a worn-but-unused item never counts;
+//   - a live item effect (therefore isFlying/conditionsOf) reads through
+//     itemEffectActive, keyed by the record's own name, not a bag∪worn scan;
 //   - the companion invariant (no worn item is ever double-counted from the
 //     bag) and rng/parity proofs (Task 3).
 //
@@ -21,14 +22,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { JEWELRY, CLOAKS, STAVES, SLOT_OF } from "../../content/treasure-tables.js";
+import { JEWELRY, CLOAKS, STAVES, SLOT_OF, ACTIVATION_OF } from "../../content/index.js";
 import {
   WORN_SLOTS,
   slotFor,
   carriedItems,
   reconcileWorn,
   eff,
-  hasItemNamed,
+  itemEffectActive,
   isFlying,
   conditionsOf,
 } from "../../engine/derived.js";
@@ -38,22 +39,24 @@ import { rollJewel, rollCloak, rollStaff } from "../../engine/items.js";
 import { makeRng } from "../../engine/rng.js";
 
 const CHARGEN_SEEDS = [1, 2, 3, 4, 6, 7, 8, 13, 15, 19, 24, 29, 32, 35];
-const EFF_KEYS = ["dmg", "size", "sight", "light", "foeToHit", "tongue", "fly", "cloakHeal", "noCrit", "cloakRegen", "cloakArmor"];
+const EFF_KEYS = ["dmg", "size", "sight", "light", "foeToHit", "tongue", "fly", "noCrit", "cloakRegen", "cloakArmor"];
 
-// MEASURED against the pre-refactor engine (see the plan's Task 1 action
-// note) — not hand-computed. Sparse: only non-zero (seed, key) pairs.
-const LEGACY_EFF_PINS = {
-  2: { cloakRegen: 1 },
-  4: { cloakRegen: 1 },
-};
+/** liveRecord(cadence, left, cd) — a plain c.timers "effect"-phase record,
+ * matching what buildActivation/applyActivation actually produce. */
+function liveRecord(left, cd) {
+  const r = { cadence: "squares", left, phase: "effect" };
+  if (cd !== undefined) r.cd = cd;
+  return r;
+}
 
 /* ============================================================
  * Slot taxonomy (content/treasure-tables.js)
  * ============================================================ */
 
-test("SLOT_OF has exactly 24 own keys and is frozen", () => {
-  assert.equal(Object.keys(SLOT_OF).length, 24);
+test("SLOT_OF has exactly 15 own keys (8 JEWELRY + 7 CLOAKS; a staff has no slot) and is frozen", () => {
+  assert.equal(Object.keys(SLOT_OF).length, 15);
   assert.ok(Object.isFrozen(SLOT_OF));
+  for (const row of STAVES) assert.equal(SLOT_OF[row.n], undefined, `${row.n} must not have a slot`);
 });
 
 test("SLOT_OF matches the locked taxonomy for every JEWELRY name", () => {
@@ -67,36 +70,38 @@ test("SLOT_OF matches the locked taxonomy for every JEWELRY name", () => {
   assert.equal(SLOT_OF["Gauntlet of the Giant"], "helm");
 });
 
-test("SLOT_OF maps every CLOAKS row to cloak and every STAVES row to staff", () => {
+test("SLOT_OF maps every CLOAKS row to cloak; STAVES rows are absent (260918-w4n staff amendment)", () => {
   for (const row of CLOAKS) assert.equal(SLOT_OF[row.n], "cloak", `${row.n} must map to cloak`);
-  for (const row of STAVES) assert.equal(SLOT_OF[row.n], "staff", `${row.n} must map to staff`);
+  for (const row of STAVES) assert.equal(row.n in SLOT_OF, false, `${row.n} must not be in SLOT_OF`);
 });
 
-test("JEWELRY/CLOAKS/STAVES have 8 rows each, no row carries an own slot key, and eff.wp is never present", () => {
+test("JEWELRY (8)/CLOAKS (7, the dropped healing cloak removed)/STAVES (8) rows carry no own slot/act key, and eff.wp is never present", () => {
+  assert.equal(JEWELRY.length, 8);
+  assert.equal(CLOAKS.length, 7);
+  assert.equal(STAVES.length, 8);
   for (const table of [JEWELRY, CLOAKS, STAVES]) {
-    assert.equal(table.length, 8);
     for (const row of table) {
       assert.equal("slot" in row, false, `${row.n} must not carry a slot key`);
+      assert.equal("act" in row, false, `${row.n} must not carry an act key`);
       if (row.eff) assert.equal("wp" in row.eff, false, `${row.n}.eff must never carry wp`);
     }
   }
+  assert.equal(CLOAKS.some((r) => r.n === "Cloak of Healing"), false, "the dropped healing cloak no longer exists");
 });
 
-test("JEWELRY row shapes are byte-identical to the pre-Phase-37 literals", () => {
-  const pins = {
-    "Ring of Power": { eff: { dmg: 1 }, txt: "+1 damage to all attacks" },
-    "Gauntlet of the Giant": { eff: { size: 1 }, txt: "one size larger" },
-    "Amulet of Light": { eff: { sight: 1, light: 1 }, txt: "a standing light spell; dispels darkness" },
-    "Pendant of Fortitude": { eff: {}, use: "half", every: 100, txt: "half damage from one attack, once every 100 squares" },
-    "Anklet of Invisibility": { eff: { foeToHit: -2 }, txt: "unseen; foes need two better to land" },
-    "Helm of Knowledge": { eff: { tongue: 1 }, txt: "perfect fluency in one language" },
-    "Bracelet of Flight": { eff: { fly: 1 }, txt: "flight — walls and crevices are nothing" },
-    // Phase 39 (GEAR-02, once-a-day rule): every 200 -> 100.
-    "Amulet of Stone": { eff: {}, use: "stone", every: 100, aoe: 4, txt: "turns up to 4 squares of opponents to stone, once every 100 squares" },
+test("JEWELRY row eff payloads are byte-identical to the pre-260918-w4n literals (only txt/act changed)", () => {
+  const effPins = {
+    "Ring of Power": { dmg: 1 },
+    "Gauntlet of the Giant": { size: 1 },
+    "Amulet of Light": { sight: 1, light: 1 },
+    "Pendant of Fortitude": {},
+    "Anklet of Invisibility": { foeToHit: -2 },
+    "Helm of Knowledge": { tongue: 1 },
+    "Bracelet of Flight": { fly: 1 },
+    "Amulet of Stone": {},
   };
   for (const row of JEWELRY) {
-    const { n, ...rest } = row;
-    assert.deepStrictEqual(rest, pins[n], `${n} row drifted from its pre-Phase-37 literal`);
+    assert.deepStrictEqual(row.eff, effPins[row.n], `${row.n}.eff drifted`);
   }
 });
 
@@ -115,17 +120,17 @@ test("rollJewel/rollCloak/rollStaff and a Thief's starting cloak never carry a s
  * engine/derived.js: WORN_SLOTS / slotFor / carriedItems
  * ============================================================ */
 
-test("WORN_SLOTS is the frozen six-slot order", () => {
-  assert.deepStrictEqual(WORN_SLOTS, ["ring", "bracelet", "amulet", "helm", "cloak", "staff"]);
+test("WORN_SLOTS is the frozen five-slot order (260918-w4n: staff removed)", () => {
+  assert.deepStrictEqual(WORN_SLOTS, ["ring", "bracelet", "amulet", "helm", "cloak"]);
   assert.ok(Object.isFrozen(WORN_SLOTS));
 });
 
-test("slotFor derives from it.slot first, else SLOT_OF, else kind fallback for cloak/staff, else null", () => {
+test("slotFor derives from it.slot first, else SLOT_OF, else kind fallback for cloak only, else null; a staff is ALWAYS null", () => {
   assert.equal(slotFor({ kind: "jewel", n: "Ring of Power" }), "ring");
   assert.equal(slotFor({ kind: "cloak", n: "Cloak of Speed" }), "cloak");
-  assert.equal(slotFor({ kind: "staff", n: "Oak Staff" }), "staff");
   assert.equal(slotFor({ kind: "cloak", n: "Unknown Cloak" }), "cloak");
-  assert.equal(slotFor({ kind: "staff", n: "Unknown Staff" }), "staff");
+  assert.equal(slotFor({ kind: "staff", n: "Oak Staff" }), null, "260918-w4n: a staff has no slot anywhere");
+  assert.equal(slotFor({ kind: "staff", n: "Unknown Staff" }), null);
   assert.equal(slotFor({ kind: "jewel", n: "Unknown Trinket" }), null);
   assert.equal(slotFor({ kind: "potion", n: "Healing potion" }), null);
   assert.equal(slotFor({ kind: "weapon", n: "Axe" }), null);
@@ -148,62 +153,89 @@ test("carriedItems returns bag items followed by truthy worn entries, defensivel
 });
 
 /* ============================================================
- * eff(c, key) — two-path
+ * eff(c, key) — timer-only (260918-w4n, use-activated-only)
  * ============================================================ */
 
-test("eff legacy path (no worn key): sums over c.items exactly like before", () => {
+test("eff sums a key ONLY across LIVE item:<name> records — a bagged copy contributes nothing, worn or not", () => {
   const ring = { n: "Ring of Power", eff: { dmg: 1 } };
-  assert.equal(eff({ items: [ring, ring, ring] }, "dmg"), 3);
+  // Bagged, no c.worn, no live record — a plain item in c.items never
+  // contributes any more (the retired two-path bag-sum rule).
+  assert.equal(eff({ items: [ring, ring, ring] }, "dmg"), 0);
   for (const key of EFF_KEYS) assert.equal(eff({ items: [] }, key), 0);
   for (const key of EFF_KEYS) assert.equal(eff({}, key), 0);
+
+  // Worn but with no live timers record — still nothing (worn-but-unused
+  // grants nothing).
+  assert.equal(eff({ items: [], worn: { ring } }, "dmg"), 0);
+
+  // A LIVE item:Ring of Power record — now it contributes, regardless of
+  // whether the item object itself is bagged, worn, or absent from c
+  // entirely (eff() reads the record's OWN act.eff via ACTIVATION_OF, not
+  // the item object at all).
+  const live = { timers: { "item:Ring of Power": liveRecord(50, 50) } };
+  assert.equal(eff(live, "dmg"), 1);
+  const liveAndWorn = { items: [], worn: { ring }, timers: { "item:Ring of Power": liveRecord(50, 50) } };
+  assert.equal(eff(liveAndWorn, "dmg"), 1);
+
+  // Two DIFFERENT live records both contribute (summed, insertion order).
+  const gauntletLive = {
+    timers: {
+      "item:Ring of Power": liveRecord(50, 50),
+      "item:Gauntlet of the Giant": liveRecord(50, 50),
+    },
+  };
+  assert.equal(eff(gauntletLive, "dmg"), 1);
+  assert.equal(eff(gauntletLive, "size"), 1);
 });
 
-test("eff new-model path (worn key present): sums over c.worn only, never c.items", () => {
-  const ring = { n: "Ring of Power", eff: { dmg: 1 } };
-  const gauntlet = { n: "Gauntlet of the Giant", eff: { size: 1 } };
-  assert.equal(eff({ items: [ring, ring, ring], worn: { ring } }, "dmg"), 1);
-  assert.equal(eff({ items: [ring], worn: {} }, "dmg"), 0);
-  const c3 = { items: [], worn: { ring, helm: gauntlet } };
-  assert.equal(eff(c3, "dmg"), 1);
-  assert.equal(eff(c3, "size"), 1);
-});
-
-test("eff skips null/undefined worn entries", () => {
-  const c = { worn: { ring: null, cloak: undefined } };
+test("eff skips a cooling (not effect-phase) record, an unresolvable key, and a non-numeric eff entry", () => {
+  const c = {
+    timers: {
+      "item:Ring of Power": { cadence: "squares", left: 50, cd: 50, phase: "cooldown" }, // cooling, not live
+      "item:Bogus Item": liveRecord(50), // unresolvable ACTIVATION_OF key
+    },
+  };
   for (const key of EFF_KEYS) assert.equal(eff(c, key), 0);
 });
 
-test("a c with worn survives a JSON round-trip with identical eff results", () => {
-  const ring = { n: "Ring of Power", eff: { dmg: 1 } };
-  const c = { items: [], worn: { ring } };
+test("a c with a live timers record survives a JSON round-trip with identical eff results", () => {
+  const c = { timers: { "item:Ring of Power": liveRecord(50, 50) } };
   const round = JSON.parse(JSON.stringify(c));
   for (const key of EFF_KEYS) assert.equal(eff(round, key), eff(c, key));
 });
 
 /* ============================================================
- * hasItemNamed / isFlying / conditionsOf via carriedItems
+ * itemEffectActive / isFlying / conditionsOf — timer-only reads
  * ============================================================ */
 
-test("hasItemNamed/isFlying/conditionsOf see a worn item exactly as they saw it in the bag", () => {
+test("itemEffectActive/isFlying/conditionsOf key off a LIVE record's own act.kind, not a bag∪worn name scan", () => {
   const bracelet = { n: "Bracelet of Flight", kind: "jewel", eff: { fly: 1 } };
-  const wornState = { c: { items: [], worn: { bracelet } } };
-  assert.equal(hasItemNamed(wornState.c, "Bracelet of Flight"), true);
-  assert.equal(isFlying(wornState), true);
-  const conds = conditionsOf(wornState);
-  assert.ok(conds.some((x) => x.key === "flight" && x.flight === "always"));
+  // Worn but with no live record — NOT flying, no flight chip at all
+  // (260918-w4n retires the old "worn Bracelet is unconditionally flying"
+  // rule).
+  const wornUnused = { c: { items: [], worn: { bracelet } } };
+  assert.equal(isFlying(wornUnused), false);
+  assert.deepStrictEqual(conditionsOf(wornUnused), []);
 
-  // Phase 39 (GEAR-02): the retired flightLeft/flightCooldown counters — a
-  // live "fly" effect now reads through c.timers.
-  const cloakFlying = { n: "Cloak of Flying", kind: "cloak", eff: { fly: 1 } };
+  // Worn AND with a live fly record — flying, with a flight chip.
+  const wornLive = {
+    c: { items: [], worn: { bracelet }, timers: { "item:Bracelet of Flight": liveRecord(20, 50) } },
+  };
+  assert.equal(isFlying(wornLive), true);
+  const conds = conditionsOf(wornLive);
+  assert.ok(conds.some((x) => x.key === "flight" && x.flight === "charged" && x.remaining === 20));
+
   const cloakState = {
-    c: { items: [], worn: { cloak: cloakFlying }, timers: { "item:Cloak of Flying": { cadence: "squares", left: 5, cd: 50, phase: "effect" } } },
+    c: { items: [], timers: { "item:Cloak of Flying": { cadence: "squares", left: 5, cd: 50, phase: "effect" } } },
   };
   const condsCloak = conditionsOf(cloakState);
   assert.ok(condsCloak.some((x) => x.key === "flight" && x.flight === "charged" && x.remaining === 5));
+  assert.equal(itemEffectActive(cloakState.c, "fly"), true);
 
+  // A legacy state (no c.worn at all) with a bagged item but NO live
+  // record — still not flying; the record is what matters, not the bag.
   const legacyState = { c: { items: [bracelet] } };
-  assert.equal(hasItemNamed(legacyState.c, "Bracelet of Flight"), true);
-  assert.equal(isFlying(legacyState), true);
+  assert.equal(isFlying(legacyState), false);
 });
 
 /* ============================================================
@@ -214,7 +246,7 @@ test("reconcileWorn moves the first item of each slot type into c.worn, in WORN_
   const ring1 = { n: "Ring of Power", kind: "jewel" };
   const ring2 = { n: "Ring of Power", kind: "jewel" };
   const cloakA = { n: "Cloak of Speed", kind: "cloak" };
-  const cloakB = { n: "Cloak of Healing", kind: "cloak" };
+  const cloakB = { n: "Cloak of Strength", kind: "cloak" };
   const potion = { n: "Healing potion", kind: "potion" };
   const picks = { n: "Lockpicks", kind: "picks" };
   const c = { cls: "Fighter", items: [ring1, ring2, cloakA, potion, picks, cloakB] };
@@ -222,7 +254,7 @@ test("reconcileWorn moves the first item of each slot type into c.worn, in WORN_
   const report = reconcileWorn(c);
   assert.deepStrictEqual(report, [
     { slot: "ring", worn: "Ring of Power", bagged: ["Ring of Power"] },
-    { slot: "cloak", worn: "Cloak of Speed", bagged: ["Cloak of Healing"] },
+    { slot: "cloak", worn: "Cloak of Speed", bagged: ["Cloak of Strength"] },
   ]);
   assert.deepStrictEqual(c.worn, { ring: ring1, cloak: cloakA });
   assert.equal(c.worn.ring, ring1, "same object identity");
@@ -241,7 +273,7 @@ test("reconcileWorn on an empty Thief returns [] and sets c.worn to {}", () => {
   assert.deepStrictEqual(c.worn, {});
 });
 
-test("reconcileWorn: a staff stays bagged for a non-Magic-User and is worn for a Magic User", () => {
+test("reconcileWorn: 260918-w4n — a staff ALWAYS stays bagged, for a non-Magic-User AND a Magic User (it has no slot)", () => {
   const staff = { n: "Oak Staff", kind: "staff" };
   const fighter = { cls: "Fighter", items: [staff] };
   const reportF = reconcileWorn(fighter);
@@ -252,9 +284,9 @@ test("reconcileWorn: a staff stays bagged for a non-Magic-User and is worn for a
   const staff2 = { n: "Oak Staff", kind: "staff" };
   const mu = { cls: "Magic User", items: [staff2] };
   const reportM = reconcileWorn(mu);
-  assert.deepStrictEqual(reportM, [{ slot: "staff", worn: "Oak Staff", bagged: [] }]);
-  assert.deepStrictEqual(mu.worn, { staff: staff2 });
-  assert.deepStrictEqual(mu.items, []);
+  assert.deepStrictEqual(reportM, [], "a staff never wears, even for a Magic User");
+  assert.deepStrictEqual(mu.worn, {});
+  assert.deepStrictEqual(mu.items, [staff2], "the staff stays bagged with no report entry");
 });
 
 test("reconcileWorn(null) / reconcileWorn([]) return null without throwing", () => {
@@ -270,43 +302,54 @@ test("reconcileWorn report objects carry exactly the keys slot, worn, bagged", (
 });
 
 /* ============================================================
- * legacy-equivalence pinned table
+ * chargen: no fresh character ever starts with a live item effect
  * ============================================================ */
 
-test("legacy-equivalence: every chargen fixture seed has no worn key and eff matches the pinned pre-refactor table", () => {
+// 260918-w4n (use-activated-only): eff() is now timer-only — there is no
+// more "legacy path" to pin against a bag-sum table. What DOES still hold
+// for every fresh chargen seed is that NOTHING starts pre-activated: a
+// brand-new character carries no c.timers key at all, so every eff() read
+// is 0 regardless of what a Thief's starting cloak roll happens to be.
+test("chargen: every fixture seed starts with no c.timers key, so every eff() read is 0", () => {
   for (const seed of CHARGEN_SEEDS) {
     const c = newRun(seed).c;
     assert.equal("worn" in c, false, `seed ${seed}: newRun must not create c.worn`);
-    for (const key of EFF_KEYS) {
-      const expected = (LEGACY_EFF_PINS[seed] && LEGACY_EFF_PINS[seed][key]) || 0;
-      assert.equal(eff(c, key), expected, `seed ${seed} key ${key}`);
-    }
+    assert.equal("timers" in c, false, `seed ${seed}: newRun must not create c.timers`);
+    for (const key of EFF_KEYS) assert.equal(eff(c, key), 0, `seed ${seed} key ${key}`);
   }
 });
 
 // --- Plan 01 Task 3: invariant + parity proofs ---
 
-/** wornOnlySum(c, key) — a local oracle summing ONLY over Object.values(c.worn
- * || {}), independent of eff()'s own implementation, so the invariant test
- * below is a genuine cross-check rather than eff() grading its own homework. */
-function wornOnlySum(c, key) {
+/** liveOnlySum(c, key) — a local oracle summing ONLY over live item:<name>
+ * c.timers records whose act carries the numeric key, walking ACTIVATION_OF
+ * independently of eff()'s own implementation, so the invariant test below
+ * is a genuine cross-check rather than eff() grading its own homework. */
+function liveOnlySum(c, key) {
   let t = 0;
-  for (const it of Object.values(c.worn || {})) if (it && it.eff && it.eff[key]) t += it.eff[key];
+  for (const id of Object.keys(c.timers || {})) {
+    if (!id.startsWith("item:")) continue;
+    const rec = c.timers[id];
+    if (!rec || rec.phase !== "effect" || !(rec.left > 0)) continue;
+    const act = ACTIVATION_OF[id.slice("item:".length)];
+    if (act && act.eff && typeof act.eff[key] === "number") t += act.eff[key];
+  }
   return t;
 }
 
-test("companion invariant: no populated c.worn[slot] item is ever also present in c.items, and eff matches wornOnlySum", () => {
+test("companion invariant: no populated c.worn[slot] item is ever also present in c.items, and eff matches liveOnlySum", () => {
   const ring1 = { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 } };
   const ring2 = { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 } };
   const cloakA = { n: "Cloak of Speed", kind: "cloak", eff: {} };
-  const cloakB = { n: "Cloak of Healing", kind: "cloak", eff: { cloakHeal: 1 } };
+  const cloakB = { n: "Cloak of Strength", kind: "cloak", eff: { noCrit: 1 } };
   const gauntlet = { n: "Gauntlet of the Giant", kind: "jewel", eff: { size: 1 } };
 
-  // (a) a hand-built worn state
-  const stateA = { items: [ring2], worn: { ring: ring1 } };
-  // (b) the reconcileWorn output for a mixed bag
+  // (a) a hand-built worn state with a live Ring of Power record.
+  const stateA = { items: [ring2], worn: { ring: ring1 }, timers: { "item:Ring of Power": liveRecord(50, 50) } };
+  // (b) the reconcileWorn output for a mixed bag, with a live Gauntlet record.
   const stateB = { cls: "Fighter", items: [ring1, ring2, cloakA, cloakB, gauntlet] };
   reconcileWorn(stateB);
+  stateB.timers = { "item:Gauntlet of the Giant": liveRecord(50, 50) };
   // (c) a state built by planting c.worn = {} on newRun(2).c then calling
   // reconcileWorn — proves the "never re-migrate a present worn key" refusal
   // path (Task 1) leaves the invariant trivially (vacuously) true: an empty
@@ -323,7 +366,7 @@ test("companion invariant: no populated c.worn[slot] item is ever also present i
       assert.equal(c.items.includes(it), false, `${it.n} must not also be present in c.items`);
     }
     for (const key of EFF_KEYS) {
-      assert.equal(eff(c, key), wornOnlySum(c, key), `state key ${key} must equal wornOnlySum`);
+      assert.equal(eff(c, key), liveOnlySum(c, key), `state key ${key} must equal liveOnlySum`);
     }
   }
 });

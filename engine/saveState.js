@@ -15,7 +15,7 @@
 import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
 import { clearRoundTimers, startEffect, startCooldown } from "./effects.js";
-import { reconcileWorn, activationFor, activationKeyFor, itemTimerId, carriedItems } from "./derived.js";
+import { reconcileWorn, activationFor, activationKeyFor, itemTimerId, carriedItems, WORN_SLOTS, clampCarry } from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { ACTIVATION_OF } from "../content/index.js";
 
@@ -245,8 +245,21 @@ function clearStaleTimers(c) {
  * that creates it). Runs on BOTH load chains (validateSave/rehydrate)
  * BEFORE any rule reads `c.worn` — `combat` is always reset to null on load,
  * but `c.worn` is persistent run state, so a tampered value must be
- * neutralised, not merely combat-scoped like `foeEffect`. Mutates and
- * returns the passed `c`.
+ * neutralised, not merely combat-scoped like `foeEffect`.
+ *
+ * 260918-w4n (staff amendment, tolerant load): a v1.5 save's `c.worn.staff`
+ * is folded back into the bag — a staff has no worn slot any more. After the
+ * per-slot object check above (which would otherwise leave a legacy staff
+ * object sitting harmlessly in `c.worn.staff`), a SURVIVING `c.worn.staff`
+ * object is appended to `c.items` (creating the array if needed) and deleted
+ * from `c.worn`; any OTHER key on `c.worn` outside `WORN_SLOTS` is also
+ * dropped (defensive — no current content authors one, but the same
+ * discipline as the five-key model). `clampCarry(c)` runs immediately after
+ * the fold so an over-cap bag drops the appended staff exactly like any
+ * other overflow item — a no-op without `c.bag`. No dual path: every load
+ * runs this, whether or not the save ever had `c.worn` (the whole block is
+ * itself gated on `"worn" in c`, so a save with no `c.worn` at all is
+ * untouched, exactly as before).
  */
 function sanitizeWorn(c) {
   if (c && typeof c === "object" && !Array.isArray(c) && "worn" in c) {
@@ -257,6 +270,15 @@ function sanitizeWorn(c) {
         const it = c.worn[slot];
         if (!it || typeof it !== "object" || Array.isArray(it)) delete c.worn[slot];
       }
+      if (c.worn.staff) {
+        c.items = Array.isArray(c.items) ? c.items : [];
+        c.items.push(c.worn.staff);
+        delete c.worn.staff;
+      }
+      for (const slot of Object.keys(c.worn)) {
+        if (!WORN_SLOTS.includes(slot)) delete c.worn[slot];
+      }
+      clampCarry(c);
     }
   }
   return c;

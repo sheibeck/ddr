@@ -374,20 +374,40 @@ function stripBagArmorFields(c) {
 /** REWORDED_TXT_ITEMS — Phase 28 (ARMOR-04) started this set with just
  * "Cloak of Armor" (its `txt` was rewritten from the frozen prototype's
  * original flavor line to state the soak-as-plate/never-wears/any-class
- * rule plainly). Phase 43 (CLAR-01 HP-not-WP sweep) generalizes it to the
- * four MORE treasure rows whose `txt` unit word was reworded wp -> hp
- * (content/treasure-tables.js): "Cloak of Healing", "Cloak of Regeneration",
- * "Rowan Staff", "Poplar Staff". Every reworded row is a purely COSMETIC
- * content change — `txt` is display-only flavor text, never read by any
- * engine mechanic (confirmed by direct code read) — measured exposure:
- * chargen seeds 2 and 4 roll a Cloak of Regeneration into the starting kit;
- * movement seed 256 rolls a Cloak of Healing; encounters seed 160 rolls a
- * Cloak of Regeneration; no fixture seed rolls a Rowan/Poplar Staff into the
- * starting kit. Same cosmetic-carve-out rationale as Phase 28; the function
- * name (`stripCloakArmorTxt`) is kept so the three comparable chains below
- * are untouched. */
+ * rule plainly). Phase 43 (CLAR-01 HP-not-WP sweep) added "Cloak of
+ * Healing", "Cloak of Regeneration", "Rowan Staff", "Poplar Staff" (the unit
+ * word reworded wp -> hp). Quick 260918-w4n (use-activated-only, user ruling
+ * 2026-09-18) re-shapes the set again: "Cloak of Healing" is REMOVED — the
+ * row no longer exists, there is nothing left to strip — and every row whose
+ * `txt` was reworded to state its NEW use-activated behaviour plainly joins
+ * the set: "Ring of Power", "Gauntlet of the Giant", "Amulet of Light",
+ * "Anklet of Invisibility", "Helm of Knowledge", "Bracelet of Flight",
+ * "Cloak of Strength" ("Cloak of Regeneration"/"Cloak of Armor" were already
+ * present from Phase 43/28). Every reworded row is a purely COSMETIC content
+ * change — `txt` is display-only flavor text, never read by any engine
+ * mechanic (confirmed by direct code read) — measured exposure: chargen
+ * seeds 2 and 4 roll a Cloak of Regeneration into the starting kit; movement
+ * seed 256's cloak roll now lands elsewhere on the 7-row table (declared as
+ * a chargenDivergence, see FIXTURE-INVENTORY.md); encounters seed 160 rolls
+ * a Cloak of Regeneration; no fixture seed rolls a Rowan/Poplar Staff or any
+ * of the 7 newly-reworded jewelry/cloak rows into a starting kit. Same
+ * cosmetic-carve-out rationale as Phase 28; the function name
+ * (`stripCloakArmorTxt`) is kept so the three comparable chains below are
+ * untouched. */
 export const REWORDED_TXT_ITEMS = Object.freeze(
-  new Set(["Cloak of Armor", "Cloak of Healing", "Cloak of Regeneration", "Rowan Staff", "Poplar Staff"])
+  new Set([
+    "Cloak of Armor",
+    "Cloak of Regeneration",
+    "Rowan Staff",
+    "Poplar Staff",
+    "Ring of Power",
+    "Gauntlet of the Giant",
+    "Amulet of Light",
+    "Anklet of Invisibility",
+    "Helm of Knowledge",
+    "Bracelet of Flight",
+    "Cloak of Strength",
+  ])
 );
 
 /** stripCloakArmorTxt(c) — strips `txt` from any `c.items[]` entry whose `n`

@@ -131,7 +131,11 @@ export function rollJewel(rng) {
 }
 
 export function rollCloak(rng) {
-  return Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1]);
+  // 260918-w4n: the dropped healing cloak leaves CLOAKS at 7 rows — this
+  // draws rng.d(CLOAKS.length) (still ONE gen.next() draw, rng cursor
+  // unchanged) instead of the old literal d8. rollJewel/rollStaff are left at
+  // their literal 8 — their own tables are still 8 rows.
+  return Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1]);
 }
 
 export function rollStaff(rng) {
@@ -374,9 +378,9 @@ export function armorUpgradeDelta(c, it) {
  * auto-wear into an EMPTY slot right now? Returns the slot key when yes, or
  * `null` when no: `state.c` carries no own `worn` key (a legacy state —
  * never auto-wears), `it` is not an object, `slotFor(it)` is null (not a
- * slot item at all), the slot is already occupied, or (staff only) `c.cls`
- * is not "Magic User" (mirrors equipItem/takeItem's own staff class gate).
- * Pure, no rng, no mutation.
+ * slot item at all — 260918-w4n: a staff is ALWAYS null here, `slotFor`
+ * never resolves one), or the slot is already occupied. Pure, no rng, no
+ * mutation.
  */
 export function autoWearSlot(state, it) {
   const c = state && state.c;
@@ -385,7 +389,6 @@ export function autoWearSlot(state, it) {
   const slot = slotFor(it);
   if (!slot) return null;
   if (c.worn[slot]) return null;
-  if (it.kind === "staff" && c.cls !== "Magic User") return null;
   return slot;
 }
 
@@ -740,13 +743,14 @@ export function equipItem(state, i, events = []) {
     return events;
   }
 
-  // staves, cloaks, jewelry — worn slots in the new model (Phase 37,
-  // GEAR-03); potions, picks, bags — never an equip slot.
-  if ((it.kind === "cloak" || it.kind === "jewel" || it.kind === "staff") && c.worn && typeof c.worn === "object") {
-    if (it.kind === "staff" && c.cls !== "Magic User") {
-      events.push({ type: "equipRejected", item: it, reason: "wrongClass" });
-      return events;
-    }
+  // cloaks, jewelry — worn slots in the new model (Phase 37, GEAR-03).
+  // 260918-w4n (staff amendment): a staff is EXCLUDED here — it is not
+  // equipable at all; it falls through to the notEquippable refusal below,
+  // the same one a potion already gets (slotFor(it) is always null for a
+  // staff regardless, so this branch's own `!slot` guard would have refused
+  // it anyway — excluded explicitly so the intent reads plainly). Potions,
+  // picks, bags — never an equip slot either.
+  if ((it.kind === "cloak" || it.kind === "jewel") && c.worn && typeof c.worn === "object") {
     const slot = slotFor(it);
     if (!slot) {
       events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
@@ -994,21 +998,21 @@ export function leaveAllLoot(state, events = []) {
  * itemReady(state, it) — is an item off cooldown? Ports mazeworld.html
  * itemReady() (lines 1958-1962), rewritten (Phase 39, GEAR-02) onto the ONE
  * `c.timers`-backed activation model — the retired counter-field-based
- * cooldown is gone. A non-use, non-potion item is never usable at all. A
+ * cooldown is gone. 260918-w4n: readiness is now keyed on `activationFor(it)`
+ * rather than a raw `it.use` string, since every JEWELRY/CLOAKS row is
+ * act-only now (no `use` key at all) — an item with NO activation at all
+ * (`activationFor` returns null — a weapon/rope/ladder) is never usable. A
  * potion is always ready (consumption, not a cooldown, gates re-drinking —
  * an active effect record from an earlier dose of the SAME potion must never
- * refuse a second one). An item with no activation at all (`activationFor`
- * returns null — a passive-only jewel, or Plan 04's tools before they gain
- * one) is always ready, matching the pre-Phase-39 "no `every`" behavior. A
- * staff is ready iff it currently holds an integer charge > 0. Everything
- * else (duration+cooldown jewelry/cloaks) is ready iff its OWN `item:<key>`
- * timer record does not exist (neither an effect nor a cooldown phase).
+ * refuse a second one). A staff is ready iff it currently holds an integer
+ * charge > 0. Everything else (duration+cooldown jewelry/cloaks, the torch)
+ * is ready iff its OWN `item:<key>` timer record does not exist (neither an
+ * effect nor a cooldown phase).
  */
 export function itemReady(state, it) {
-  if (!it.use && it.kind !== "potion") return false;
   if (it.kind === "potion") return true;
   const act = activationFor(it);
-  if (!act) return true;
+  if (!act) return false;
   if (act.charges !== undefined) return Number.isInteger(it.charges) && it.charges > 0;
   return isReady(state.c, itemTimerId(it));
 }
@@ -1115,11 +1119,21 @@ export function narrateTimerTransitions(state, transitions, events = []) {
  * step BEFORE `itemUsed` fires (so a refused use never burns a
  * cooldown/charge, never consumes the item, never draws): pending fight ->
  * wrongClass (a staff used by a non-caster) -> notWorn (a bagged cloak/
- * jewelry/staff activatable in the new worn-slot model — "activatables must
- * be worn to work") -> pilfer -> combatOnly (a targeted kind outside
- * combat) -> cooldown (itemReady). Every reason its own event, never a
- * silent no-op (Phase 25.1 DFB-06). A legacy state (no `c.worn`) never sees
- * `notWorn` — bag-use of a cloak/jewelry/staff stays exactly as today.
+ * jewelry activatable in the worn-slot model — "activatables must be worn to
+ * work"; 260918-w4n: a staff is NOT a slot item, `slotFor` returns null for
+ * one, so this gate never fires for a staff — it is addressed by bag index
+ * and passes straight through) -> pilfer -> combatOnly (a targeted kind
+ * outside combat) -> cooldown (itemReady). Every reason its own event, never
+ * a silent no-op (Phase 25.1 DFB-06). A legacy state (no `c.worn`) never sees
+ * `notWorn` — bag-use of a cloak/jewelry stays exactly as today.
+ *
+ * 260918-w4n (use-activated-only, user ruling 2026-09-18): `kind` resolves
+ * as `it.eff2` for a potion, else `it.use ?? activationFor(it)?.kind` — every
+ * act-only JEWELRY/CLOAKS row (no `use` key any more) resolves through its
+ * activation record; the torch and the five legacy `use` rows (Pendant/
+ * Amulet of Stone/Cloak of Invisibility/Speed/Ether) keep their switch case
+ * via `use`, which always equals the activation kind except the torch's
+ * light/lit pair (its `use` is "light", its activation `kind` is "lit").
  */
 export function useItem(state, ref, rng, events = [], now = Date.now) {
   const c = state.c;
@@ -1131,7 +1145,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // refusal below.
   if (refuseIfPending(state, events, "useRefused", { item: it })) return events;
 
-  const kind = it.kind === "potion" ? it.eff2 : it.use;
+  const kind = it.kind === "potion" ? it.eff2 : (it.use ?? activationFor(it)?.kind);
 
   // CMB-02 (Phase 31): a staff used by a non-caster — stowItem/takeItem
   // already refuse a staff at ACQUIRE time (itemRejected wrongClass), but a
@@ -1142,10 +1156,16 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     return events;
   }
 
-  // Phase 37 (GEAR-03): "activatables must be worn to work" — in the new
-  // worn-slot model a cloak/jewelry/staff addressed by its BAG index (not
-  // `{ slot }`) does nothing; a legacy state (no `c.worn`) keeps today's
-  // bag-use behaviour untouched.
+  // Phase 37 (GEAR-03) + 260918-w4n (governing rule, user 2026-09-18:
+  // "Items that are equipable must be equipped to be used"): "activatables
+  // must be worn to work" — in the worn-slot model a cloak/jewelry addressed
+  // by its BAG index (not `{ slot }`) does nothing; a legacy state (no
+  // `c.worn`) keeps today's bag-use behaviour untouched. A staff is NOT
+  // equipable (`slotFor` always returns null for one), so this gate never
+  // fires for it — a bagged staff passes straight through to the
+  // wrongClass/pilfer/combatOnly/itemReady ladder below, exactly like a
+  // potion/torch/scroll ("Items that are not equipable can be used from the
+  // bag").
   if (slot === null && c.worn && typeof c.worn === "object" && slotFor(it)) {
     events.push({ type: "useRefused", item: it, reason: "notWorn" });
     return events;
@@ -1248,17 +1268,52 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     // never expiring, c.haste/c.acute/c.invis/c.ether) — applyActivation
     // (below, after this switch) starts the item's own c.timers record
     // instead; no direct character-field write happens here anymore.
+    // 260918-w4n: the 7 newly use-activated JEWELRY/CLOAKS kinds join this
+    // plain-break list — power (Ring of Power), giant (Gauntlet of the
+    // Giant), unseen (Anklet of Invisibility), tongue (Helm of Knowledge),
+    // brace (Cloak of Strength), plate (Cloak of Armor), fly (Cloak of
+    // Flying / Bracelet of Flight) — each is pure eff-payload data
+    // (content/treasure-tables.js), so applyActivation starting the record
+    // is the item's entire effect; nothing else fires here.
     case "strength":
     case "enlarge":
     case "speed":
     case "haste":
     case "acute":
     case "invis":
-    case "ether": {
+    case "ether":
+    case "power":
+    case "giant":
+    case "unseen":
+    case "tongue":
+    case "brace":
+    case "plate":
+    case "fly": {
       break;
     }
     case "half": {
       c.halfNext = true;
+      break;
+    }
+    case "knit": {
+      // 260918-w4n: Cloak of Regeneration, use-activated — a flat one d6
+      // hp back INSTANTLY (no rng gate — a use at full hp still spends the
+      // cooldown, like a wasted potion), then applyActivation starts the
+      // bare 20-square cooldown (act.effect is 0, act.cd is 20).
+      const amount = Math.min(c.maxWP - c.wp, rng.d(6));
+      c.wp = Math.min(c.maxWP, c.wp + amount);
+      events.push({ type: "cloakRegenerated", amount });
+      break;
+    }
+    case "glow": {
+      // 260918-w4n: Amulet of Light, use-activated — dispels the persistent
+      // darkness counter AT ONCE (mirrors movement.js's old per-step light
+      // dispel), then applyActivation starts the 50-square glow effect (the
+      // sight/light eff payload lives on the record, read via eff()).
+      if (c.darkFor > 0) {
+        c.darkFor = 0;
+        events.push({ type: "darknessDispelled" });
+      }
       break;
     }
     case "light": {

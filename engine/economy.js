@@ -82,8 +82,7 @@ const TREASURE_BASE_VALUES = {
   "Helm of Knowledge": 900,
   "Bracelet of Flight": 2500,
   "Amulet of Stone": 2000,
-  // CLOAKS
-  "Cloak of Healing": 1200,
+  // CLOAKS (260918-w4n: the dropped healing cloak's base value is removed)
   "Cloak of Strength": 1500,
   "Cloak of Invisibility": 1400,
   "Cloak of Speed": 1600,

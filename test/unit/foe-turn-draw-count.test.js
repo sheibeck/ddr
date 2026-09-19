@@ -286,7 +286,17 @@ const FULL_FIGHTS = [
   // under half the attacks. Re-measured live via this file's own
   // runFullFight, never hand-computed — an intentional, escalated,
   // rationale-bearing divergence, not a regression.
-  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 49, attacks: 4, outcome: "won" },
+  //
+  // 260918-w4n (use-activated-only, user ruling 2026-09-18): this Pilfer
+  // carries a Cloak of Armor in the BAG (the same item the combat/flee
+  // parity fixture declares a divergence for). Under the OLD two-path
+  // eff() a bagged item on a legacy (no c.worn) character summed exactly
+  // like a worn one — every hit soaked as magical Plate (AR 15) for free.
+  // That auto-benefit is retired: the cloak now grants nothing unless worn
+  // AND used, so this Pilfer fights un-armoured and the encounter runs far
+  // longer (4 -> 10 attacks, 49 -> 89 draws) before the same two foes still
+  // fall. Re-measured live via this file's own runFullFight.
+  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 89, attacks: 10, outcome: "won" },
   // Phase 31 (2026-09-16, CMB-01): was 66/10/won (Phase 27's Ned re-measure).
   // Not a phobia trigger — this Con Artist's own level-1-foe escape roll
   // (rng.d(6), still inside the encounter step) now lands BEFORE the two
@@ -621,7 +631,7 @@ for (const row of GATED_DRAWS) {
 // Phase 39 (GEAR-05, 2026-09-18): seed 8's total moved 32 -> 27 (the Shriek's
 // kill now drops a Torch via the new derived tool-loot roll instead of the
 // pre-plan multi-draw table pick — see the FULL_FIGHTS row's own comment).
-test("FID-02 restated post-Phase-39-GEAR-05: the seven FULL_FIGHTS totals (12/36/49/52/27/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
+test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/89/52/27/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);

@@ -9,7 +9,10 @@
 
 import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD } from "../content/index.js";
 import { rollDice } from "./dice.js";
-import { remaining, isReady } from "./effects.js";
+// 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
+// conditionsOf's flight chip now read purely through itemEffectActive/
+// liveItemEffects (this module's own timer-only model); item readiness
+// itself is engine/items.js#itemReady's concern.
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -81,28 +84,30 @@ export function partyEffectActive(state, key) {
 }
 
 /**
- * eff(c, key) — sum of the named effect across the character's items.
+ * eff(c, key) — sum of the named effect across the character's currently
+ * LIVE item timer records.
  *
- * Phase 37 (GEAR-03/eff-refactor): TWO-PATH. When `c` carries an own `worn`
- * key (the new one-per-slot model, `c.worn = { ring?, bracelet?, amulet?,
- * helm?, cloak?, staff? }`, lazily created by reconcileWorn/newRun's
- * `wornSlots` option), only the populated `c.worn` entries are summed — a
- * bag copy of a worn item's type is NEVER counted (this is the whole point
- * of the model: one-per-slot, not sum-of-every-carried-copy). When `c`
- * carries NO `worn` key (every existing fixture, bot run, and un-migrated
- * save — the legacy path), this is the BYTE-IDENTICAL prototype rule:
- * sum over every item in `c.items`, exactly as before this phase. Pure, no
- * rng, no mutation.
+ * 260918-w4n (use-activated-only, user ruling 2026-09-18: "Nothing works
+ * without using it, which triggers its cooldown"): rewritten as a SINGLE
+ * timer-only path — an effect exists ONLY while its own `item:<name>`
+ * c.timers record is live (`liveItemEffects`, defined below), started by
+ * `useItem` on a WORN item. This function no longer reads `c.items`, `c.worn`,
+ * or any item object's own `eff` map at all: a bagged or worn-but-unused
+ * magic item (Cloak of Armor, Ring of Power, an unused Amulet of Light, …)
+ * contributes nothing, whether carried in the bag or sitting worn and idle.
+ * The `eff` map now lives only as data on `content/treasure-tables.js`'s
+ * authored rows, copied onto the item's own `item:<name>` timer record as
+ * `act.eff` (content/treasure-tables.js#buildActivation) — this function
+ * sums THAT payload across every currently-live record.
+ *
+ * Pure, no rng, no mutation. (`liveItemEffects` is declared further down this
+ * module; hoisting makes it available here.)
  */
 export function eff(c, key) {
-  if ("worn" in c) {
-    let t = 0;
-    const worn = c.worn && typeof c.worn === "object" ? c.worn : {};
-    for (const it of Object.values(worn)) if (it && it.eff && it.eff[key]) t += it.eff[key];
-    return t;
-  }
   let t = 0;
-  for (const it of c.items || []) if (it.eff && it.eff[key]) t += it.eff[key];
+  for (const { act } of liveItemEffects(c)) {
+    if (act.eff && typeof act.eff === "object" && typeof act.eff[key] === "number") t += act.eff[key];
+  }
   return t;
 }
 
@@ -145,22 +150,27 @@ export function slotItems(c) {
 }
 
 /**
- * WORN_SLOTS — Phase 37 (GEAR-03): the six worn-slot keys, in a fixed
+ * WORN_SLOTS — 260918-w4n (staff amendment, user ruling 2026-09-18: "Staff
+ * should not be an equipment slot"): the FIVE worn-slot keys, in a fixed
  * display/report order. Frozen. `c.worn = { ring?, bracelet?, amulet?,
- * helm?, cloak?, staff? }` is the one-per-slot map these keys address.
+ * helm?, cloak? }` is the one-per-slot map these keys address — a staff has
+ * no slot anywhere; it lives in `c.items` (one bag slot) and is used by bag
+ * index.
  */
-export const WORN_SLOTS = Object.freeze(["ring", "bracelet", "amulet", "helm", "cloak", "staff"]);
+export const WORN_SLOTS = Object.freeze(["ring", "bracelet", "amulet", "helm", "cloak"]);
 
 /**
  * slotFor(it) — Phase 37 (GEAR-03): which worn slot item `it` belongs to, or
  * `null` if it is not a slot item at all (weapon/armor/potion/scroll/picks/
- * bag/etc). Resolution order: `it.slot` when the item itself carries a
+ * bag/staff/etc). Resolution order: `it.slot` when the item itself carries a
  * string `slot` (forward-compat — no current construction site spreads one,
  * see content/treasure-tables.js's header comment, but a future one might);
  * else `SLOT_OF[it.n]` (content/treasure-tables.js's name-keyed taxonomy,
- * covering every current JEWELRY/CLOAKS/STAVES row); else a `kind` fallback
- * for a cloak/staff rolled under a name SLOT_OF doesn't recognize (e.g. a
- * save from before this taxonomy existed, or test fixtures). Null-safe: a
+ * covering every current JEWELRY/CLOAKS row); else a `kind` fallback for a
+ * cloak rolled under a name SLOT_OF doesn't recognize (e.g. a save from
+ * before this taxonomy existed, or test fixtures). 260918-w4n: a staff is
+ * NOT a slot item — it resolves to `null` here unconditionally (no `kind ===
+ * "staff"` fallback any more); it is a bag item used by index. Null-safe: a
  * non-object `it` returns null. Pure, no rng, no mutation.
  */
 export function slotFor(it) {
@@ -168,20 +178,23 @@ export function slotFor(it) {
   if (typeof it.slot === "string") return it.slot;
   if (SLOT_OF[it.n] !== undefined) return SLOT_OF[it.n];
   if (it.kind === "cloak") return "cloak";
-  if (it.kind === "staff") return "staff";
   return null;
 }
 
 /**
  * carriedItems(c) — Phase 37 (GEAR-03): bag ∪ worn — every item the
  * character has on their person, whether in `c.items` or a populated
- * `c.worn` slot. This is what `hasItemNamed` (and therefore `isFlying`,
- * `conditionsOf`'s item-backed chips, and engine/movement.js's climb block)
- * routes through, so a worn Bracelet of Flight / Cloak of Flying / Helm of
- * Knowledge is seen exactly as it was when it lived in the bag. Returns a
- * NEW array (`c.items` first, in order, then the truthy `c.worn` values);
- * never mutates `c`. Defensive: a missing/non-array `c.items` and a
- * missing/non-object `c.worn` both contribute nothing rather than throwing.
+ * `c.worn` slot. 260918-w4n: `hasItemNamed` (the old name-identity check
+ * `isFlying`/`conditionsOf` used to tell the Bracelet of Flight and the
+ * Cloak of Flying apart) is retired — both items' flight is now read purely
+ * through their own LIVE `item:<name>` timer record (`itemEffectActive`),
+ * which already carries its own identity via the record's key, so no
+ * separate name lookup is needed. `carriedItems` itself is still needed by
+ * the staffCharges condition chip and `narrateTimerTransitions` (a staff is
+ * always bagged now, but the union stays harmless). Returns a NEW array
+ * (`c.items` first, in order, then the truthy `c.worn` values); never
+ * mutates `c`. Defensive: a missing/non-array `c.items` and a missing/non-
+ * object `c.worn` both contribute nothing rather than throwing.
  */
 export function carriedItems(c) {
   const items = c && Array.isArray(c.items) ? c.items : [];
@@ -268,6 +281,11 @@ export function clampCarry(c) {
  * precedent) and the option-gated save-load path (`validateSave`/
  * `rehydrate`) — nothing in THIS plan calls it, so no fixture/bot/newRun(seed)
  * caller in this plan ever creates `c.worn`.
+ *
+ * 260918-w4n (staff amendment): a staff is never eligible here — `slotFor`
+ * already returns `null` for one, so it always stays bagged (`eligible` is
+ * simply `!!slot`; the old Magic-User staff eligibility clause is gone along
+ * with the staff slot itself).
  */
 export function reconcileWorn(c) {
   if (!c || typeof c !== "object" || Array.isArray(c) || "worn" in c) return null;
@@ -278,7 +296,7 @@ export function reconcileWorn(c) {
   const reportBySlot = new Map();
   for (const it of source) {
     const slot = it && slotFor(it);
-    const eligible = !!slot && (slot !== "staff" || c.cls === "Magic User");
+    const eligible = !!slot;
     if (eligible && !c.worn[slot]) {
       c.worn[slot] = it;
       reportBySlot.set(slot, { slot, worn: it.n, bagged: [] });
@@ -291,22 +309,6 @@ export function reconcileWorn(c) {
   const report = [];
   for (const slot of WORN_SLOTS) if (reportBySlot.has(slot)) report.push(reportBySlot.get(slot));
   return report;
-}
-
-/** hasItemNamed(c, name) — does the character currently carry (bag ∪ worn)
- * an item whose exact display name (`.n`) is `name`? Used below to tell the
- * Bracelet of Flight and the Cloak of Flying apart even though both set the
- * identical `eff:{fly:1}` flag (content/treasure-tables.js) — `eff()` alone
- * can only sum that flag, not identify its source. Exported so
- * engine/movement.js's climb/gorge block can reuse the identical name check
- * to decide whether ACTIVATING flight should touch the Cloak's charge
- * counters (never the Bracelet's — it has none).
- *
- * Phase 37 (GEAR-03): routed through `carriedItems(c)` (bag ∪ worn) instead
- * of a raw `c.items` scan, so a Bracelet/Cloak/Helm moved into `c.worn` by
- * the new one-per-slot model is seen exactly as it was in the bag. */
-export function hasItemNamed(c, name) {
-  return carriedItems(c).some((it) => it && it.n === name);
 }
 
 /**
@@ -433,52 +435,38 @@ export const WATER_MOVE_COST = 2;
  * cost of a single step onto `cell` — `1` for a normal (or missing/null)
  * cell, `WATER_MOVE_COST` (2) for a genuine water cell. Flight and Ether are
  * exempt from the surcharge ("walls and crevices are nothing" — water too):
- * the Bracelet of Flight (unconditional), a LIVE `fly` item effect (a
- * started Cloak of Flying window), or a LIVE `ether` item effect all pay 1
- * on water. A READY-but-unstarted Cloak of Flying is deliberately NOT
- * flying here (unlike `isFlying`, which treats "ready" as flying so the
- * climb block can start a fresh window) — a puddle does not spend the
- * cloak's charge the way a wall/crevice does; the water step simply costs 2
- * and no effect record is started. Pure, zero rng: reads only `state.c` and
- * the passed cell.
+ * a LIVE `fly` item effect (a started Cloak of Flying / Bracelet of Flight
+ * window) or a LIVE `ether` item effect both pay 1 on water. 260918-w4n
+ * (use-activated-only): BOTH flight items are real resources now — there is
+ * no more "the Bracelet is always flying" special case. A READY-but-
+ * unstarted flight item is deliberately NOT flying here (the old auto-
+ * activation on a climb/gorge tile is gone too) — a puddle does not spend
+ * the item's cooldown the way a wall/crevice does; the water step simply
+ * costs 2 and no effect record is started. Pure, zero rng: reads only
+ * `state.c` and the passed cell.
  */
 export function moveCost(state, cell) {
   if (!cell || cell.water !== true) return 1;
   const c = state.c;
-  if (hasItemNamed(c, "Bracelet of Flight")) return 1;
   if (itemEffectActive(c, "fly")) return 1;
   if (itemEffectActive(c, "ether")) return 1;
   return WATER_MOVE_COST;
 }
 
 /**
- * isFlying(state) — DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2):
- * `eff(c,"fly")` (set by the Bracelet of Flight and the Cloak of Flying,
- * content/treasure-tables.js:20,31) was read NOWHERE in the engine — flight
- * was flavor text only. Wired here as the single capacity check
- * engine/movement.js's climb/gorge block consults to skip the roll/fall-
- * damage entirely:
- *   - Bracelet of Flight ("walls and crevices are nothing") = unconditional,
- *     always-on flight — no charge, no cooldown, ever.
- *   - Cloak of Flying ("flight for 20 squares, once every 50") = a real
- *     resource. Phase 39 (GEAR-02): the retired `c.flightLeft`/
- *     `c.flightCooldown` counters are gone — flying while a live `item:
- *     Cloak of Flying` effect record is running (`itemEffectActive`), or the
- *     instant no record exists at all (`isReady` — ready to start a fresh
- *     window) — movement.js's climb/gorge block is what actually starts that
- *     fresh effect record the moment this returns true for a Cloak-only
- *     character.
- * If a character somehow carries BOTH items, the Bracelet takes precedence
- * unconditionally and the Cloak's own record is left untouched (per the
- * audit's explicit decision) — this is a pure read of already-computed
- * state; no rng, no mutation, so determinism/parity are unaffected for every
- * character without either item.
+ * isFlying(state) — 260918-w4n (use-activated-only, user ruling 2026-09-18:
+ * "Nothing works without using it"): a character is flying iff a `fly`-kind
+ * item effect is CURRENTLY LIVE (`itemEffectActive`) — either the Cloak of
+ * Flying or the Bracelet of Flight, whichever was actually used. A
+ * READY-but-unstarted flight item (worn or bagged) is NOT flying — the old
+ * "ready counts as flying" rule (which let engine/movement.js's climb block
+ * self-start a fresh window the instant this returned true) and the old
+ * Bracelet-always-flies special case are both retired: only a live record,
+ * started by `useItem` on a WORN item, ever grants flight. Pure read of
+ * already-computed state; no rng, no mutation.
  */
 export function isFlying(state) {
-  const c = state.c;
-  if (hasItemNamed(c, "Bracelet of Flight")) return true;
-  if (!hasItemNamed(c, "Cloak of Flying")) return false;
-  return itemEffectActive(c, "fly") || isReady(c, "item:Cloak of Flying");
+  return itemEffectActive(state.c, "fly");
 }
 
 /**
@@ -511,7 +499,7 @@ export function isFlying(state) {
  *   - regen  {polarity:"good"}                              — Phase 40 (SPELL-02): Regeneration — a flat boolean (no count, the d8/round tick has no duration field), cleared at endCombat
  *   - foresight {polarity:"good"}                           — Phase 40 (SPELL-02): an ARMED Sense Danger, waiting for the next fight (consumed by rollInitiative, which always sets it back to false)
  *   - reveal {polarity:"good", remaining:<sq left>, cadence:"squares"}     — Phase 40 (SPELL-05): Map the Floor's window — the `spell:reveal` c.timers record, while its phase is "effect"
- *   - flight {polarity:"good", flight:"always"|"charged"|"cooldown"|"ready", remaining?:<sq>}
+ *   - flight {polarity:"good", flight:"charged", remaining:<sq>, cadence:"squares", source:<item display name>} — 260918-w4n: reported by the SAME generic live-item-effect loop as haste/invis/etc, only while a `fly`-kind record (Cloak of Flying OR Bracelet of Flight) is live; a ready-but-unused flight item yields NO flight chip, and a cooling one reports through the generic itemCooldown chip below like every other item
  *   - itemCooldown (Phase 39, GEAR-02, one per COOLING duration+cooldown item): {polarity:"good", item:<display name>, remaining:<sq left>}
  *   - staffCharges (Phase 39, GEAR-02, one per RECHARGING staff): {polarity:"good", item:<display name>, charges:<current>, max:<pool>, remaining:<sq left>}
  *   - affliction {polarity:"bad", kind:"Poison"|"Disease"|…}
@@ -520,10 +508,10 @@ export function isFlying(state) {
  *   - afraid     {polarity:"bad", remaining:<rounds>, phobia:<fear name>} — Phase 31 (user ruling 2026-09-16): the Afraid penalty from a triggered phobia in the CURRENT combat, only while combat.afraid > 0 (a Hardiness shrug-off shows nothing)
  *
  * Only currently-active conditions are included; a character with none set
- * yields an empty array. The flight `flight` sub-state mirrors isFlying's
- * Bracelet/Cloak logic so the chip can read "Flying" vs "recharging"; the
- * Cloak of Flying's OWN `item:`/`charges:` records are excluded from the
- * generic item-effect/cooldown loops below so it is never double-reported.
+ * yields an empty array. 260918-w4n: there is no more dedicated flight
+ * block — a live `fly` record (Cloak of Flying or Bracelet of Flight) is
+ * reported by the generic live-item-effect loop, and a cooling one by the
+ * generic itemCooldown loop, exactly like every other item.
  */
 export function conditionsOf(state) {
   const c = (state && state.c) || {};
@@ -532,11 +520,18 @@ export function conditionsOf(state) {
   // --- GOOD conditions (in a fixed order for deterministic rendering) -------
 
   // Phase 39 (GEAR-02): one chip per LIVE c.timers item effect (haste/invis/
-  // acute/ether/might via the timed activation model) — the Cloak of
-  // Flying's own "fly" effect is reported by the dedicated flight block
-  // below instead, so it is skipped here to avoid a duplicate chip.
+  // acute/ether/might/power/giant/glow/unseen/tongue/brace/plate via the
+  // timed activation model). 260918-w4n: a live `fly` effect (Cloak of
+  // Flying OR Bracelet of Flight) is reported HERE too, as a `flight` chip —
+  // there is no more dedicated flight block below; a flight item with NO
+  // live record yields no flight chip at all (a ready-but-unused item is not
+  // flying), and a COOLING flight item is reported by the generic
+  // itemCooldown loop below like every other item.
   for (const { key, act, rec } of liveItemEffects(c)) {
-    if (act.kind === "fly") continue;
+    if (act.kind === "fly") {
+      out.push({ key: "flight", polarity: "good", flight: "charged", remaining: rec.left, cadence: rec.cadence, source: key });
+      continue;
+    }
     const chip = { key: act.kind, polarity: "good", remaining: rec.left, cadence: rec.cadence, source: key };
     if (act.kind === "might" && typeof act.might === "number") chip.might = act.might;
     out.push(chip);
@@ -577,35 +572,16 @@ export function conditionsOf(state) {
     out.push({ key: "reveal", polarity: "good", remaining: rev.left, cadence: "squares" });
   }
 
-  // Flight mirrors isFlying's item logic: the Bracelet is unconditional; the
-  // Cloak of Flying is a real effect/cooldown resource (Phase 39, GEAR-02:
-  // read from its own `item:Cloak of Flying` c.timers record). Surface all
-  // knowable sub-states so the chip can read "Flying" vs "recharging".
-  if (hasItemNamed(c, "Bracelet of Flight")) {
-    out.push({ key: "flight", polarity: "good", flight: "always" });
-  } else if (hasItemNamed(c, "Cloak of Flying")) {
-    if (itemEffectActive(c, "fly")) {
-      out.push({ key: "flight", polarity: "good", flight: "charged", remaining: remaining(c, "item:Cloak of Flying") });
-    } else {
-      const rec = c.timers && c.timers["item:Cloak of Flying"];
-      if (rec && rec.phase === "cooldown") {
-        out.push({ key: "flight", polarity: "good", flight: "cooldown", remaining: rec.left });
-      } else {
-        out.push({ key: "flight", polarity: "good", flight: "ready" });
-      }
-    }
-  }
-
   // Phase 39 (GEAR-02): one `itemCooldown` chip per duration+cooldown item
   // CURRENTLY cooling (an `item:<key>` record in `phase: "cooldown"`),
-  // insertion order, excluding the Cloak of Flying's own record (already
-  // reported above).
+  // insertion order. 260918-w4n: the Cloak of Flying / Bracelet of Flight
+  // exclusion is removed — a cooling flight item is reported here exactly
+  // like every other cooling item (no more dedicated flight cooldown chip).
   for (const id of Object.keys(c.timers || {})) {
     if (!id.startsWith("item:")) continue;
     const rec = c.timers[id];
     if (!rec || rec.phase !== "cooldown") continue;
     const key = id.slice("item:".length);
-    if (key === "Cloak of Flying") continue;
     out.push({ key: "itemCooldown", polarity: "good", item: key, remaining: rec.left });
   }
 
@@ -684,15 +660,16 @@ export function conditionsOf(state) {
  * the combat soak block (engine/combat.js) consults for the player's EFFECTIVE
  * armour instead of reading c.ar/c.armorWP/c.armorMin/c.armorMax directly.
  *
- * When the character carries the Cloak of Armor (`eff(c,"cloakArmor") > 0`),
- * effective armour operates as PLATE (content/armors.js Plate ar:15/wp:45):
- * take-the-better of the cloak's plate and the worn armour for both the d20
- * soak rating (`ar`) and the durability pool. Because the cloak is a weightless
- * MAGICAL suit, its plate does not wear out — `magic:true` tells the soak site
- * to consume NO worn-armour durability (and never emit armorDestroyed) when the
- * cloak is present. Without the cloak this returns the worn armour verbatim
- * (`magic:false`), so behaviour is byte-identical for every character that
- * lacks the item.
+ * While the Cloak of Armor's OWN record is live (`eff(c,"cloakArmor") > 0` —
+ * 260918-w4n: worn AND used, not merely carried), effective armour operates
+ * as PLATE (content/armors.js Plate ar:15/wp:45): take-the-better of the
+ * cloak's plate and the worn armour for both the d20 soak rating (`ar`) and
+ * the durability pool. Because the cloak's plate is weightless while its
+ * record is live, it does not wear out — `magic:true` tells the soak site to
+ * consume NO worn-armour durability (and never emit armorDestroyed) while
+ * the record holds. Once the record fades this returns the worn armour
+ * verbatim (`magic:false`), so behaviour is byte-identical for every
+ * character not currently benefiting from the item.
  *
  * Pure read of `c` (uses only eff() + the static Plate constants); no rng, no
  * mutation of `c`, so determinism/parity are unaffected.

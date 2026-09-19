@@ -559,7 +559,14 @@ test("useTool: no-op in combat/store/dead/won", () => {
 });
 
 test("useTool: isFlying wins — the tool is NOT consumed and flownOver fires instead", () => {
-  const state = fixedState({ c: { items: [toolItem("ladder"), { n: "Bracelet of Flight", eff: { fly: 1 } }] } });
+  // 260918-w4n (use-activated-only): isFlying now requires a LIVE fly-kind
+  // record — a bagged/ready Bracelet no longer flies unconditionally.
+  const state = fixedState({
+    c: {
+      items: [toolItem("ladder"), { n: "Bracelet of Flight", eff: { fly: 1 } }],
+      timers: { "item:Bracelet of Flight": { cadence: "squares", left: 20, cd: 50, phase: "effect" } },
+    },
+  });
   open(state.floor.g, 6, 5, { feat: "climb" });
   const events = useTool(state, "ladder", "E", fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "flownOver"));

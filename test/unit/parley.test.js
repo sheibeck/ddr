@@ -69,7 +69,19 @@ function countingRng(inner) {
   };
 }
 
+// 260918-w4n (use-activated-only, deviation — this file is not in the
+// plan's file list, but its extensive HELM-as-fluency-marker convention
+// broke when eff()/fluency() became timer-only): every test in this file
+// uses `items: [HELM]` to mean "this character has fluency" — none of them
+// exercise the worn/bagged distinction itself (that is
+// test/unit/item-wiring.test.js's job) — so `fixedFighter` auto-attaches a
+// LIVE `item:Helm of Knowledge` timer record whenever a HELM-named item is
+// present in `overrides.items` and the caller did not already supply its
+// own `timers`, preserving every existing test's "has fluency" intent.
 function fixedFighter(overrides = {}) {
+  const hasHelm = Array.isArray(overrides.items) && overrides.items.some((it) => it && it.n === "Helm of Knowledge");
+  const timers =
+    overrides.timers ?? (hasHelm ? { "item:Helm of Knowledge": { cadence: "squares", left: 50, cd: 50, phase: "effect" } } : undefined);
   return {
     cls: "Fighter", sub: "Soldier", race: "Human", level: 1, sp: 0,
     maxWP: 55, wp: 55, skills: {}, vp: 0,
@@ -81,6 +93,7 @@ function fixedFighter(overrides = {}) {
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Delver",
     darkFor: 0, flightLeft: 0, flightCooldown: 0,
+    ...(timers ? { timers } : {}),
     ...overrides,
   };
 }

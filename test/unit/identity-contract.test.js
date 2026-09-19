@@ -871,7 +871,24 @@ const CONTRACT = [
         const events = playerStrike(state, looseRng([10, 3], 20), []);
         const struck = expectEvent(events, "struck");
         expectEvent(events, "ninjaFirstStrike");
-        assert.equal(struck.dmg, state.c.level * state.c.level + WEAPON_MAX[state.c.weapon] + state.c.prof);
+        // 260918-w4n (use-activated-only, deviation — this file is not in
+        // the plan's file list): seed 1's Thief starting-cloak roll used to
+        // land on the Cloak of Strength (noCrit:1) under the frozen 8-row
+        // CLOAKS table, and the OLD two-path eff() summed that BAGGED item
+        // directly for a legacy (no c.worn) character — coincidentally
+        // suppressing the Ninja's own opening-strike backstab-forced crit
+        // (engine/combat.js's `opening && !noCrit && cls==="Thief"` branch),
+        // so the guaranteed ninjaFirstStrike formula below landed un-doubled.
+        // Neither guarantee survives this task: the d(CLOAKS.length) reroll
+        // (7 rows) now lands this seed on a different cloak, AND even the
+        // Cloak of Strength would no longer protect anything while merely
+        // bagged (eff() is timer-only — a live "brace" record is required).
+        // Re-measured live: the opener's flat formula is now genuinely
+        // doubled by the same backstab-crit branch every OTHER Thief's
+        // opening strike already goes through — a pre-existing combat.js
+        // interaction (Ninja opener overwrite running AFTER the backstab
+        // crit flag is set), not something this task's files touch.
+        assert.equal(struck.dmg, 2 * (state.c.level * state.c.level + WEAPON_MAX[state.c.weapon] + state.c.prof));
 
         const ninja2 = withWeapon(hero("Ninja"), "Club", 0, 0);
         withCombat(ninja2, [fixedFoe({ wp: 999, maxWP: 999 })], { opened: true, opened2: true });

@@ -81,19 +81,30 @@ test("conditionsOf: ward surfaces pool AND rounds outside combat (combat: null) 
 // --- Phase 40 (SPELL-02): mirror/senses/regen/foresight, after ward, before flight ---
 // --- Phase 40 (SPELL-05), Plan 04: reveal, after foresight, before flight ---
 
-test("conditionsOf: mirror/senses/regen/foresight/reveal surface in fixed order after ward, before flight", () => {
+// 260918-w4n (use-activated-only): a `flight` chip now comes from the SAME
+// generic live-item-effect loop as haste/invis/acute/ether (c.timers
+// insertion order) — it is no longer a dedicated block positioned after
+// reveal. A ready-but-unused flight item (no live record) yields NO chip at
+// all, so the fixed-order proof below places a LIVE "item:Bracelet of
+// Flight" record FIRST in the timers map to prove it surfaces there.
+test("conditionsOf: mirror/senses/regen/foresight/reveal surface in fixed order after ward, before a live flight record", () => {
   const conds = conditionsOf({
     c: cleanChar({
+      timers: {
+        "item:Bracelet of Flight": rec("squares", 14, 50),
+        "spell:reveal": { cadence: "squares", left: 17, phase: "effect" },
+      },
       ward: { pool: 34, rounds: 3, name: "Shield" },
       mirror: 4,
       senses: 1,
       regen: true,
       foresight: true,
-      timers: { "spell:reveal": { cadence: "squares", left: 17, phase: "effect" } },
-      items: [{ n: "Bracelet of Flight" }],
     }),
   });
-  assert.deepStrictEqual(keys(conds), ["ward", "mirror", "senses", "regen", "foresight", "reveal", "flight"]);
+  assert.deepStrictEqual(keys(conds), ["flight", "ward", "mirror", "senses", "regen", "foresight", "reveal"]);
+  assert.deepStrictEqual(byKey(conds, "flight"), {
+    key: "flight", polarity: "good", flight: "charged", remaining: 14, cadence: "squares", source: "Bracelet of Flight",
+  });
   assert.deepStrictEqual(byKey(conds, "mirror"), { key: "mirror", polarity: "good", remaining: 4 });
   assert.deepStrictEqual(byKey(conds, "senses"), { key: "senses", polarity: "good" });
   assert.deepStrictEqual(byKey(conds, "regen"), { key: "regen", polarity: "good" });
@@ -119,17 +130,17 @@ test("conditionsOf: ward null is absent", () => {
   assert.deepEqual(conditionsOf({ c: cleanChar({ ward: null }) }), []);
 });
 
-test("conditionsOf: ward + might + flight order in a fully-loaded character", () => {
+test("conditionsOf: a live flight record, then ward, then might order in a fully-loaded character", () => {
   const c = cleanChar({
     might: 8,
     ward: { pool: 50, rounds: 5, name: "Shield" },
-    items: [{ n: "Bracelet of Flight" }],
+    timers: { "item:Bracelet of Flight": rec("squares", 14, 50) },
   });
   const conds = conditionsOf({ c });
-  assert.deepStrictEqual(keys(conds), ["might", "ward", "flight"]);
+  assert.deepStrictEqual(keys(conds), ["flight", "might", "ward"]);
 });
 
-test("conditionsOf: ward + might + mirror/senses/regen/foresight/reveal + flight order in a fully-loaded character", () => {
+test("conditionsOf: a live flight record, then ward, might, mirror/senses/regen/foresight/reveal order in a fully-loaded character", () => {
   const c = cleanChar({
     might: 8,
     ward: { pool: 50, rounds: 5, name: "Shield" },
@@ -137,11 +148,13 @@ test("conditionsOf: ward + might + mirror/senses/regen/foresight/reveal + flight
     senses: 1,
     regen: true,
     foresight: true,
-    timers: { "spell:reveal": { cadence: "squares", left: 9, phase: "effect" } },
-    items: [{ n: "Bracelet of Flight" }],
+    timers: {
+      "item:Bracelet of Flight": rec("squares", 14, 50),
+      "spell:reveal": { cadence: "squares", left: 9, phase: "effect" },
+    },
   });
   const conds = conditionsOf({ c });
-  assert.deepStrictEqual(keys(conds), ["might", "ward", "mirror", "senses", "regen", "foresight", "reveal", "flight"]);
+  assert.deepStrictEqual(keys(conds), ["flight", "might", "ward", "mirror", "senses", "regen", "foresight", "reveal"]);
 });
 
 test("conditionsOf: BAD affliction names its kind", () => {
@@ -161,27 +174,35 @@ test("conditionsOf: darkness (active-phobia surface) shows only while darkFor > 
   assert.deepEqual(conditionsOf({ c: cleanChar({ phobia: "Darkness", darkFor: 0 }) }), []);
 });
 
-test("conditionsOf: flight — Bracelet is always-on, no charge count", () => {
+// 260918-w4n (use-activated-only): a ready-but-unused Bracelet/Cloak of
+// Flying (worn or bagged, no live record) is NOT flying and yields NO
+// flight chip at all — there is no more "always-on" special case.
+test("conditionsOf: flight — a ready-but-unused Bracelet of Flight yields no chip", () => {
   const conds = conditionsOf({ c: cleanChar({ items: [{ n: "Bracelet of Flight" }] }) });
-  assert.deepEqual(conds, [{ key: "flight", polarity: "good", flight: "always" }]);
+  assert.deepEqual(conds, []);
 });
 
-test("conditionsOf: flight — Cloak of Flying charged / recharging / ready sub-states", () => {
+test("conditionsOf: flight — Cloak of Flying charged (live) / cooling (generic itemCooldown) / ready (no chip) sub-states", () => {
   const charged = conditionsOf({
     c: cleanChar({ items: [{ n: "Cloak of Flying" }], timers: { "item:Cloak of Flying": rec("squares", 14, 50) } }),
   });
-  assert.deepEqual(charged, [{ key: "flight", polarity: "good", flight: "charged", remaining: 14 }]);
+  assert.deepEqual(charged, [
+    { key: "flight", polarity: "good", flight: "charged", remaining: 14, cadence: "squares", source: "Cloak of Flying" },
+  ]);
 
+  // A cooling flight item is reported by the GENERIC itemCooldown loop now,
+  // exactly like every other cooling item — no dedicated flight-cooldown
+  // sub-state any more.
   const cooling = conditionsOf({
     c: cleanChar({
       items: [{ n: "Cloak of Flying" }],
       timers: { "item:Cloak of Flying": { cadence: "squares", left: 30, phase: "cooldown" } },
     }),
   });
-  assert.deepEqual(cooling, [{ key: "flight", polarity: "good", flight: "cooldown", remaining: 30 }]);
+  assert.deepEqual(cooling, [{ key: "itemCooldown", polarity: "good", item: "Cloak of Flying", remaining: 30 }]);
 
   const ready = conditionsOf({ c: cleanChar({ items: [{ n: "Cloak of Flying" }] }) });
-  assert.deepEqual(ready, [{ key: "flight", polarity: "good", flight: "ready" }]);
+  assert.deepEqual(ready, [], "a ready-but-unused Cloak of Flying is not flying and yields no chip");
 });
 
 test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable order", () => {
@@ -191,6 +212,10 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
       "item:Invisible": rec("squares", 100),
       "item:Acuteness": rec("rounds", 5),
       "item:Cloak of Ether": rec("squares", 20, 80),
+      // 260918-w4n: a live flight record is just another entry in this SAME
+      // c.timers insertion-order loop now — placed last among the item
+      // effects, before the spell-reveal record.
+      "item:Bracelet of Flight": rec("squares", 14, 50),
       "spell:reveal": rec("squares", 22),
     },
     might: 8,
@@ -198,7 +223,6 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
     senses: 1,
     regen: true,
     foresight: true,
-    items: [{ n: "Bracelet of Flight" }],
     affliction: { kind: "Poison", left: 10 },
     darkFor: 12,
     // Phase 41 (TERR-05): fearArmed slots between darkness and afraid.
@@ -206,7 +230,7 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
   });
   const conds = conditionsOf({ c });
   assert.deepEqual(keys(conds), [
-    "haste", "invis", "acute", "ether", "might", "mirror", "senses", "regen", "foresight", "reveal", "flight", "affliction", "darkness", "fearArmed",
+    "haste", "invis", "acute", "ether", "flight", "might", "mirror", "senses", "regen", "foresight", "reveal", "affliction", "darkness", "fearArmed",
   ]);
   assert.equal(byKey(conds, "reveal").remaining, 22);
   // Good conditions all precede bad ones.

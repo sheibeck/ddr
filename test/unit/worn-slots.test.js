@@ -145,21 +145,25 @@ test("equipItem (new model): a ring and a cloak occupy different slots — equip
   assert.deepStrictEqual(events, [{ type: "itemEquipped", item: cloak, slot: "cloak" }]);
 });
 
-test("equipItem (new model): a non-Magic-User equipping a staff is refused wrongClass; nothing moves", () => {
+// 260918-w4n (staff amendment, user ruling 2026-09-18): a staff is not
+// equipable at all any more — equipItem refuses it notEquippable for EVERY
+// class (the same refusal a potion already gets), never wrongClass.
+test("equipItem (new model): a staff is refused notEquippable for a non-Magic-User; nothing moves", () => {
   const staff = OAK_STAFF();
   const state = hero({ c: { cls: "Fighter", items: [staff] } });
   const events = equipItem(state, 0, []);
-  assert.deepStrictEqual(events, [{ type: "equipRejected", item: staff, reason: "wrongClass" }]);
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: staff, reason: "notEquippable" }]);
   assert.deepStrictEqual(state.c.items, [staff]);
   assert.deepStrictEqual(state.c.worn, {});
 });
 
-test("equipItem (new model): a Magic User equipping a staff wears it", () => {
+test("equipItem (new model): a staff is refused notEquippable for a Magic User too — nothing moves", () => {
   const staff = OAK_STAFF();
   const state = hero({ c: { cls: "Magic User", items: [staff] } });
   const events = equipItem(state, 0, []);
-  assert.equal(state.c.worn.staff, staff);
-  assert.deepStrictEqual(events, [{ type: "itemEquipped", item: staff, slot: "staff" }]);
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: staff, reason: "notEquippable" }]);
+  assert.deepStrictEqual(state.c.items, [staff]);
+  assert.deepStrictEqual(state.c.worn, {});
 });
 
 test("equipItem (new model): potions/picks are still not equippable", () => {
@@ -221,15 +225,17 @@ test("unequipSlot on a legacy state (no worn) for ring is a no-op", () => {
  * Task 1: autoWearSlot / wearItem
  * ============================================================ */
 
-test("autoWearSlot: returns the slot key for an unworn slot item, null when occupied/legacy/non-slot/wrong-class staff", () => {
+test("autoWearSlot: returns the slot key for an unworn slot item, null when occupied/legacy/non-slot/a staff (every class)", () => {
   const ring = RING();
   assert.equal(autoWearSlot(hero({ c: { worn: {} } }), ring), "ring");
   assert.equal(autoWearSlot(hero({ c: { worn: { ring: RING() } } }), ring), null, "occupied slot");
   assert.equal(autoWearSlot(legacyHero(), ring), null, "legacy state (no worn key)");
   assert.equal(autoWearSlot(hero({ c: { worn: {} } }), POTION()), null, "not a slot item");
+  // 260918-w4n: a staff never auto-wears, for ANY class — slotFor(staff) is
+  // always null now.
   const staff = OAK_STAFF();
   assert.equal(autoWearSlot(hero({ c: { cls: "Fighter", worn: {} } }), staff), null, "staff on a Fighter");
-  assert.equal(autoWearSlot(hero({ c: { cls: "Magic User", worn: {} } }), staff), "staff", "staff on a Magic User");
+  assert.equal(autoWearSlot(hero({ c: { cls: "Magic User", worn: {} } }), staff), null, "staff on a Magic User too");
 });
 
 test("wearItem: assigns the item into c.worn[slot] (same object) and pushes itemEquipped", () => {
@@ -346,15 +352,13 @@ test("takeAllLoot (new model): a full bag with an empty ring slot still wears ri
   assert.deepStrictEqual(events[1], { type: "itemEquipped", item: ringA, slot: "ring" });
 });
 
-test("takeItem (new model): a Magic User taking a staff auto-wears it; a Fighter taking a ring auto-wears it", () => {
+test("takeItem (new model): a Magic User taking a staff STOWS it in the bag (no auto-wear, no slot exists); a Fighter taking a ring auto-wears it", () => {
   const staff = OAK_STAFF();
   const mu = hero({ c: { cls: "Magic User", worn: {} } });
   const events = takeItem(mu, staff, []);
-  assert.equal(mu.c.worn.staff, staff);
-  assert.deepStrictEqual(events, [
-    { type: "itemGiven", item: staff },
-    { type: "itemEquipped", item: staff, slot: "staff" },
-  ]);
+  assert.deepStrictEqual(mu.c.worn, {}, "260918-w4n: a staff never wears — it always stows");
+  assert.deepStrictEqual(mu.c.items, [staff]);
+  assert.deepStrictEqual(events, [{ type: "itemGiven", item: staff }]);
 
   const ring = RING();
   const fighter = hero({ c: { cls: "Fighter", worn: {} } });
@@ -393,13 +397,16 @@ test("wearing/swapping/unequipping a slot item never touches maxWP/wp (Plan 01's
   assert.equal(state.c.wp, 40);
 });
 
-test("validateAction: unequipSlot accepts weapon/armor and the six worn slots; rejects unknown strings/non-strings", () => {
-  for (const slot of ["ring", "bracelet", "amulet", "helm", "cloak", "staff", "weapon", "armor"]) {
+test("validateAction: unequipSlot accepts weapon/armor and the five worn slots; rejects staff/unknown strings/non-strings", () => {
+  for (const slot of ["ring", "bracelet", "amulet", "helm", "cloak", "weapon", "armor"]) {
     assert.equal(validateAction({ type: "unequipSlot", slot }).ok, true, slot);
   }
+  // 260918-w4n: a staff has no worn slot any more — rejected like any
+  // unknown string.
+  assert.equal(validateAction({ type: "unequipSlot", slot: "staff" }).ok, false);
   const bad = validateAction({ type: "unequipSlot", slot: "hat" });
   assert.equal(bad.ok, false);
-  assert.match(bad.reason, /ring|bracelet|amulet|helm|cloak|staff|WORN_SLOTS/);
+  assert.match(bad.reason, /ring|bracelet|amulet|helm|cloak|WORN_SLOTS/);
   assert.equal(validateAction({ type: "unequipSlot", slot: 3 }).ok, false);
 });
 
@@ -493,11 +500,16 @@ test("validateAction: useItem accepts { i } or { slot } but not both, and reject
   assert.equal(validateAction({ type: "useItem", i: 0, slot: "cloak" }).ok, false);
 });
 
-test("applyAction reaches a worn staff through engine.js's slot dispatch", () => {
+test("applyAction reaches a BAGGED staff through engine.js's bag-index dispatch (260918-w4n: no worn slot exists for a staff)", () => {
   const staff = POPLAR_STAFF();
-  const state = hero({ c: { cls: "Magic User", worn: { staff }, wp: 20, maxWP: 55 } });
-  const result = applyAction(state, { type: "useItem", slot: "staff" });
+  const state = hero({ c: { cls: "Magic User", worn: {}, items: [staff], wp: 20, maxWP: 55 } });
+  const result = applyAction(state, { type: "useItem", i: 0 });
   assert.ok(result.events.some((e) => e.type === "itemUsed"));
+});
+
+test("validateAction: a useItem action naming slot 'staff' is rejected outright — a staff has no worn slot", () => {
+  const result = validateAction({ type: "useItem", slot: "staff" });
+  assert.equal(result.ok, false);
 });
 
 test("TOAST_FOR.useRefused renders the notWorn line with a block tone", () => {

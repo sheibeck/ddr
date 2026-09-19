@@ -545,7 +545,10 @@ export function rollCharacter(rng, exclude = [], force = null) {
     // Phase 39 (GEAR-02): haste/invis/ether/acute retired — every item
     // effect (potion/cloak/staff) now lives on c.timers instead.
     affliction: null, joiner: null,
-    items: cls === "Thief" ? [Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1])] : [],
+    // 260918-w4n: the dropped healing cloak leaves CLOAKS at 7 rows — this
+    // draws rng.d(CLOAKS.length) (still ONE gen.next() draw, rng cursor
+    // unchanged) instead of the old literal d8.
+    items: cls === "Thief" ? [Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1])] : [],
     grimoire: cls === "Magic User" ? rollGrimoire(rng, sub) : [],
     spellsUsed: 0, kills: 0, might: 0, ward: null, regen: false, mirror: 0, foresight: false,
     // DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): a brand-new

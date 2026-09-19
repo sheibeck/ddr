@@ -417,7 +417,15 @@ test("applyFoeDamageToPlayer: armorSoaked wear is NOT halved for a Human", () =>
 });
 
 test("applyFoeDamageToPlayer: magic plate (Cloak of Armor) never wears — wear: 0", () => {
-  const state = fixedState({ c: { race: "Human", items: [{ eff: { cloakArmor: 1 } }] } });
+  // 260918-w4n (use-activated-only): the cloak's plate applies only while
+  // its own item:Cloak of Armor record is live.
+  const state = fixedState({
+    c: {
+      race: "Human",
+      items: [{ n: "Cloak of Armor", eff: { cloakArmor: 1 } }],
+      timers: { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+    },
+  });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];

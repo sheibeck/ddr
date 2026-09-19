@@ -207,7 +207,7 @@ test("idempotence: validateSave does not mutate a JSON-string input's parsed twi
 
 // ─── Task 1e: staff class gate ─────────────────────────────────────────────
 
-test("staff gate: a staff in an old Fighter save stays bagged with no report entry; on a Magic User it is worn", () => {
+test("staff gate (260918-w4n): a staff ALWAYS stays bagged with no report entry — for a Fighter AND a Magic User (it has no slot)", () => {
   // Phase 39 (GEAR-02): validateSave's foldLegacyCounters strips the legacy
   // `every`/`usedAt` staff fields and gives a missing `charges` a full pool
   // (Rowan Staff's real pool is 2) — the migrated item is no longer
@@ -224,9 +224,29 @@ test("staff gate: a staff in an old Fighter save stays bagged with no report ent
   const wizardSave = newRun(7); // Magic User
   wizardSave.c.items = [rowanStaff()];
   const wizardCheck = validateSave(JSON.stringify(serializeRun(wizardSave)), { wornSlots: true });
-  assert.equal(wizardCheck.value.c.worn.staff.n, "Rowan Staff");
-  assert.deepStrictEqual(wizardCheck.value.c.worn.staff, migratedRowanStaff);
-  assert.deepStrictEqual(wizardCheck.value.c.items, []);
+  assert.deepStrictEqual(wizardCheck.value.c.worn, {}, "260918-w4n: a staff never wears, even for a Magic User");
+  assert.deepStrictEqual(wizardCheck.value.c.items, [migratedRowanStaff]);
+  assert.deepStrictEqual(wizardCheck.wornReport, []);
+});
+
+test("260918-w4n tolerant load: a save that already carries c.worn.staff (a v1.5 save) folds it into the bag on load", () => {
+  const staffState = newRun(7); // Magic User
+  staffState.c.worn = { staff: rowanStaff() };
+  const check = validateSave(JSON.stringify(serializeRun(staffState)), { wornSlots: true });
+  assert.equal(check.value.c.worn.staff, undefined, "the legacy worn staff key is gone");
+  assert.ok(check.value.c.items.some((it) => it.n === "Rowan Staff"), "the staff comes home to the bag");
+});
+
+test("260918-w4n tolerant load: a full bag drops the folded-in legacy worn staff via clampCarry (overflow)", () => {
+  const staffState = newRun(7); // Magic User
+  staffState.c.bag = "small";
+  const cap = 4; // BAGS.small.slots (content/bags.js)
+  staffState.c.items = Array.from({ length: cap }, (_, i) => ({ kind: "picks", n: `Filler ${i}`, txt: "" }));
+  staffState.c.worn = { staff: rowanStaff() };
+  const check = validateSave(JSON.stringify(serializeRun(staffState)), { wornSlots: true });
+  assert.equal(check.value.c.worn.staff, undefined);
+  assert.equal(check.value.c.items.length, cap, "the bag stays at cap — the appended staff is the one dropped");
+  assert.equal(check.value.c.items.some((it) => it.n === "Rowan Staff"), false, "the overflow staff never survives the clamp");
 });
 
 // ─── Task 1f: report shape ──────────────────────────────────────────────────

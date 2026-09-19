@@ -148,11 +148,22 @@ test("armorDisplay(c): a destroyed worn piece", () => {
   assert.equal(d.line, "Plate · AR 15 · destroyed");
 });
 
+// 260918-w4n (use-activated-only, deviation — the plan did not list this
+// file, but its Cloak of Armor fixtures asserted the RETIRED
+// "carried == magic" rule): the cloak's plate now applies ONLY while its
+// own item:Cloak of Armor record is LIVE (worn AND used) — a bagged/idle
+// copy of the SAME item shape grants nothing. `liveCloakArmor()` builds the
+// c.timers record buildActivation authors for it ({ kind: "plate", effect:
+// 50, cd: 50 }).
+function liveCloakArmor() {
+  return { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } };
+}
+
 test("armorDisplay(c): the Cloak of Armor carried over damaged Leather", () => {
   const cloak = { n: "Cloak of Armor", eff: { cloakArmor: 1 } };
   const c = fixedFighter({
     armor: "Leather", ar: 6, armorMin: 1, armorWP: 9, armorMax: 15,
-    items: [cloak],
+    items: [cloak], timers: liveCloakArmor(),
   });
   const d = armorDisplay(c);
   assert.equal(d.label, "Cloak of Armor");
@@ -169,13 +180,14 @@ test("armorDisplay(c): the Cloak of Armor carried over damaged Leather", () => {
   const c2 = fixedFighter({
     armor: "Leather", ar: 6, armorMin: 1, armorWP: 9, armorMax: 15,
     items: [{ kind: "weapon", n: "Dagger", base: "Dagger", bonus: 0 }, cloak],
+    timers: liveCloakArmor(),
   });
   assert.deepEqual(armorDisplay(c2), d);
 });
 
 test("armorDisplay(c): the Cloak of Armor carried over a BETTER worn piece", () => {
   const cloak = { n: "Cloak of Armor", eff: { cloakArmor: 1 } };
-  const c = fixedFighter({ armor: "Plate", ar: 17, armorWP: 50, armorMax: 50, items: [cloak] });
+  const c = fixedFighter({ armor: "Plate", ar: 17, armorWP: 50, armorMax: 50, items: [cloak], timers: liveCloakArmor() });
   const d = armorDisplay(c);
   assert.equal(d.ar, 17);
   assert.equal(d.sub, "AR 17 · magic plate, never wears");
@@ -184,7 +196,7 @@ test("armorDisplay(c): the Cloak of Armor carried over a BETTER worn piece", () 
 
 test("armorDisplay(c): the Cloak of Armor carried over nothing", () => {
   const cloak = { n: "Cloak of Armor", eff: { cloakArmor: 1 } };
-  const c = fixedFighter({ items: [cloak] });
+  const c = fixedFighter({ items: [cloak], timers: liveCloakArmor() });
   const d = armorDisplay(c);
   assert.equal(d.magic, true);
   assert.equal(d.worn, false);
@@ -195,7 +207,7 @@ test("armorDisplay(c): the Cloak of Armor carried over nothing", () => {
 
 test("armorDisplay(c): the Cloak of Armor carried over a destroyed worn piece", () => {
   const cloak = { n: "Cloak of Armor", eff: { cloakArmor: 1 } };
-  const c = fixedFighter({ armor: "Plate", ar: 15, armorWP: 0, armorMax: 45, items: [cloak] });
+  const c = fixedFighter({ armor: "Plate", ar: 15, armorWP: 0, armorMax: 45, items: [cloak], timers: liveCloakArmor() });
   const d = armorDisplay(c);
   assert.equal(d.under, "under the cloak: Plate, destroyed");
   assert.equal(d.destroyed, true);
@@ -218,9 +230,9 @@ test("no formatter string ever contains the old two-letter durability unit token
     armorDisplay(fixedFighter()),
     armorDisplay(fixedFighter({ armor: "Plate", ar: 15, armorWP: 6, armorMax: 45 })),
     armorDisplay(fixedFighter({ armor: "Plate", ar: 15, armorWP: 0, armorMax: 45 })),
-    armorDisplay(fixedFighter({ armor: "Leather", ar: 6, armorMin: 1, armorWP: 9, armorMax: 15, items: [cloak] })),
-    armorDisplay(fixedFighter({ items: [cloak] })),
-    armorDisplay(fixedFighter({ armor: "Plate", ar: 15, armorWP: 0, armorMax: 45, items: [cloak] })),
+    armorDisplay(fixedFighter({ armor: "Leather", ar: 6, armorMin: 1, armorWP: 9, armorMax: 15, items: [cloak], timers: liveCloakArmor() })),
+    armorDisplay(fixedFighter({ items: [cloak], timers: liveCloakArmor() })),
+    armorDisplay(fixedFighter({ armor: "Plate", ar: 15, armorWP: 0, armorMax: 45, items: [cloak], timers: liveCloakArmor() })),
   ];
   for (const d of samples) {
     for (const key of ["label", "sub", "wornSub", "under", "line"]) {
@@ -299,5 +311,8 @@ test("EVENT_NARRATION.itemUnequipped: a destroyed piece is narrated honestly", (
 test("CLOAKS: the Cloak of Armor's txt states the rule plainly", () => {
   const cloak = CLOAKS.find((k) => k.n === "Cloak of Armor");
   assert.ok(cloak, "expected a Cloak of Armor entry");
-  assert.equal(cloak.txt, "soaks as plate (AR 15) over whatever you wear — any class, never wears out, light as a rumor");
+  // 260918-w4n: use-activated — the txt now states the activation duration
+  // and cooldown, not a passive "always soaks" claim.
+  assert.match(cloak.txt, /plate \(AR 15\)/);
+  assert.match(cloak.txt, /fifty squares/);
 });

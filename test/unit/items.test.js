@@ -188,10 +188,25 @@ test("gainWilmst adds greed-scaled gold and only Pickpockets get the extra take"
   assert.equal(pickpocketState.c.gold, amt2);
 });
 
-test("gainWilmst applies greed item effects to the base amount", () => {
+// 260918-w4n (use-activated-only, deviation — this file is not in the
+// plan's file list): eff() is now timer-only — it sums a key ONLY across
+// LIVE records whose id resolves to a real content/activations.js
+// ACTIVATION_OF entry (engine/derived.js#liveItemEffects). No JEWELRY/
+// CLOAKS/STAVES/potion/tool row in this codebase has ever authored a
+// `greed` key (confirmed by grep across content/) — the "greed" multiplier
+// gainWilmst reads was already unreachable through any real item before
+// this task; the OLD two-path eff() coincidentally still summed an
+// arbitrary synthetic bag item's `eff` map with no name/ACTIVATION_OF check
+// at all, which is exactly the "sum any bag item's eff map" rule the user's
+// 2026-09-18 ruling retires. A bagged item with no resolvable activation
+// (this test's synthetic `{ kind: "jewel", eff: { greed: 1 } }`, which
+// carries no `n` at all) now correctly contributes nothing — gainWilmst's
+// own arithmetic (`n * (1 + 0.5 * eff(c, "greed"))`) is unchanged and still
+// exercised at the always-zero baseline.
+test("gainWilmst reads eff(c, \"greed\") — always 0 today since no content item authors that key (260918-w4n: timer-only eff)", () => {
   const state = fixedState({ c: { sub: "Soldier", gold: 0, items: [{ kind: "jewel", eff: { greed: 1 } }] } });
   const amt = gainWilmst(state, 100, null, makeRng(1));
-  assert.equal(amt, 150); // 100 * (1 + 0.5*1)
+  assert.equal(amt, 100, "no live registered item can carry a greed payload — the base amount passes through unmultiplied");
 });
 
 test("hasPicks reflects whether the character already carries lockpicks", () => {

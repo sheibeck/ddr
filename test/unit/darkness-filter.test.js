@@ -76,8 +76,15 @@ test("mapViewRadius: Infinity on a dark tile with Night Vision", () => {
 
 // ─── mapViewRadius: Amulet of Light waiver ─────────────────────────────────
 
-test("mapViewRadius: Infinity on a dark tile carrying the Amulet of Light (eff(c, \"light\") > 0)", () => {
-  const state = fixedState({ c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }] } });
+test("mapViewRadius: Infinity on a dark tile with a LIVE Amulet of Light effect (eff(c, \"light\") > 0)", () => {
+  // 260918-w4n (use-activated-only): the Amulet's sight/light payload
+  // applies only while its own item:Amulet of Light record is live.
+  const state = fixedState({
+    c: {
+      items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }],
+      timers: { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+    },
+  });
   state.floor.g[5][5].dark = true;
   assert.equal(mapViewRadius(state), Infinity);
 });

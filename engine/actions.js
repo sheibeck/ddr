@@ -115,7 +115,7 @@ export function validateAction(action) {
         if (action.i !== undefined || !WORN_SLOTS.includes(action.slot)) {
           return {
             ok: false,
-            reason: "useItem.slot must be one of ring, bracelet, amulet, helm, cloak, staff (and excludes i)",
+            reason: "useItem.slot must be one of ring, bracelet, amulet, helm, cloak (and excludes i)",
           };
         }
         break;
@@ -152,13 +152,14 @@ export function validateAction(action) {
       }
       break;
     case "unequipSlot":
-      // ECON-05 (Phase 13) + Phase 37 (GEAR-03): the two scalar equip slots
-      // PLUS the six worn-model slots — a malformed slot string can never
-      // reach the handler.
+      // ECON-05 (Phase 13) + Phase 37 (GEAR-03) + 260918-w4n (staff
+      // amendment): the two scalar equip slots PLUS the five worn-model
+      // slots — a malformed slot string (including "staff", which has no
+      // worn slot any more) can never reach the handler.
       if (!EQUIP_SLOTS.has(action.slot) && !WORN_SLOTS.includes(action.slot)) {
         return {
           ok: false,
-          reason: "unequipSlot.slot must be 'weapon', 'armor' or one of ring, bracelet, amulet, helm, cloak, staff",
+          reason: "unequipSlot.slot must be 'weapon', 'armor' or one of ring, bracelet, amulet, helm, cloak",
         };
       }
       break;

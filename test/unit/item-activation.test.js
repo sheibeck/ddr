@@ -66,15 +66,17 @@ function fixedState(overrides = {}) {
 
 // --- content/activations.js#ACTIVATION_OF -----------------------------
 
-test("ACTIVATION_OF: 20 entries (6 treasure cd rows + 8 staves + 5 potions + 1 tool), frozen, keyed correctly", () => {
-  // Phase 39 (GEAR-05, Plan 04): the torch (content/tools.js#TOOL_ACTIVATION_OF)
-  // is spread in as the 20th entry — a consumable-with-duration, exactly
-  // like a potion, keyed by its display name like a treasure row.
-  assert.equal(Object.keys(ACTIVATION_OF).length, 20);
+test("ACTIVATION_OF: 29 entries (9 new use-activated rows + 6 existing treasure cd rows + 8 staves + 5 potions + 1 tool), frozen, keyed correctly", () => {
+  // 260918-w4n (use-activated-only): every JEWELRY/CLOAKS row now carries an
+  // act block (9 previously-passive rows converted; the Cloak of Healing
+  // removed), so ACTIVATION_OF grows from 20 to 29 entries.
+  assert.equal(Object.keys(ACTIVATION_OF).length, 29);
   assert.ok(Object.isFrozen(ACTIVATION_OF));
   assert.deepStrictEqual(ACTIVATION_OF["Cloak of Speed"], { kind: "haste", effect: 50, cd: 50 });
   assert.deepStrictEqual(ACTIVATION_OF["Pendant of Fortitude"], { kind: "half", effect: 0, cd: 100 });
-  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Flying"], { kind: "fly", effect: 20, cd: 50 });
+  // 260918-w4n: Cloak of Flying now carries its eff payload (fly:1) on the
+  // record itself — the auto-activation is gone, useItem starts this record.
+  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Flying"], { kind: "fly", effect: 20, cd: 50, eff: { fly: 1 } });
   assert.deepStrictEqual(ACTIVATION_OF["Pine Staff"], { kind: "fire", charges: 1, recharge: 100 });
   assert.deepStrictEqual(ACTIVATION_OF["Crystal Staff"], {
     kind: "invis", charges: 2, recharge: 100, effect: { n: 1, sides: 10, bonus: 5 },
@@ -83,7 +85,19 @@ test("ACTIVATION_OF: 20 entries (6 treasure cd rows + 8 staves + 5 potions + 1 t
   assert.deepStrictEqual(ACTIVATION_OF["Strength"], { kind: "might", effect: 25, might: 8 });
   assert.deepStrictEqual(ACTIVATION_OF["Acuteness"], { kind: "acute", effect: { n: 1, sides: 8, bonus: 0 }, cadence: "rounds" });
   assert.deepStrictEqual(ACTIVATION_OF["Torch"], { kind: "lit", effect: 40 });
-  assert.equal(ACTIVATION_OF["Ring of Power"], undefined);
+  // 260918-w4n: the Ring of Power (and every other formerly-passive row) now
+  // resolves to a real record instead of undefined.
+  assert.deepStrictEqual(ACTIVATION_OF["Ring of Power"], { kind: "power", effect: 50, cd: 50, eff: { dmg: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Gauntlet of the Giant"], { kind: "giant", effect: 50, cd: 50, eff: { size: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Amulet of Light"], { kind: "glow", effect: 50, cd: 50, eff: { sight: 1, light: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Anklet of Invisibility"], { kind: "unseen", effect: 50, cd: 50, eff: { foeToHit: -2 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Helm of Knowledge"], { kind: "tongue", effect: 50, cd: 50, eff: { tongue: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Bracelet of Flight"], { kind: "fly", effect: 20, cd: 50, eff: { fly: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Regeneration"], { kind: "knit", effect: 0, cd: 20, eff: { cloakRegen: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Strength"], { kind: "brace", effect: 50, cd: 50, eff: { noCrit: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Armor"], { kind: "plate", effect: 50, cd: 50, eff: { cloakArmor: 1 } });
+  // The dropped healing cloak leaves no trace in the activation table.
+  assert.equal(ACTIVATION_OF["Cloak of Healing"], undefined);
   // Once-a-day rule: effect + cd <= 100 for every cd-based row; recharge <= 100 for every staff.
   for (const [key, act] of Object.entries(ACTIVATION_OF)) {
     if (act.cd !== undefined) assert.ok((act.effect || 0) + act.cd <= 100, `${key}: effect+cd must be <= 100`);
@@ -94,6 +108,12 @@ test("ACTIVATION_OF: 20 entries (6 treasure cd rows + 8 staves + 5 potions + 1 t
 test("exported CLOAKS/JEWELRY/STAVES rows carry NO act key (dropAuthored strips it like slot)", () => {
   const speed = CLOAKS.find((c) => c.n === "Cloak of Speed");
   assert.deepStrictEqual(speed, { n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "double attacks, once every 50 squares" });
+  // 260918-w4n: a converted row (act-only, no use/every) is also byte-clean
+  // — no act/slot key survives dropAuthored.
+  const armor = CLOAKS.find((c) => c.n === "Cloak of Armor");
+  assert.equal("act" in armor, false);
+  assert.equal("slot" in armor, false);
+  assert.deepStrictEqual(Object.keys(armor).sort(), ["eff", "n", "txt"]);
 });
 
 // --- engine/derived.js activation helpers -------------------------------
@@ -112,8 +132,11 @@ test("activationFor/itemTimerId/chargesTimerId resolve through activationKeyFor"
   assert.deepStrictEqual(activationFor(cloak), { kind: "haste", effect: 50, cd: 50 });
   assert.equal(itemTimerId(cloak), "item:Cloak of Speed");
   assert.equal(chargesTimerId(cloak), "charges:Cloak of Speed");
-  assert.equal(activationFor({ kind: "jewel", n: "Ring of Power" }), null);
+  // 260918-w4n: the Ring of Power is use-activated now — it resolves a real
+  // record instead of null.
+  assert.deepStrictEqual(activationFor({ kind: "jewel", n: "Ring of Power" }), { kind: "power", effect: 50, cd: 50, eff: { dmg: 1 } });
   assert.equal(itemTimerId({ kind: "jewel", n: "Ring of Power" }), "item:Ring of Power");
+  assert.equal(activationFor({ kind: "picks", n: "Lockpicks" }), null, "a non-activatable item still resolves null");
 });
 
 test("liveItemEffects/itemEffectActive/potionMight read only phase:effect, left>0, known-key records", () => {

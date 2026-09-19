@@ -92,9 +92,12 @@ test("moveCost: a genuine water cell costs WATER_MOVE_COST (2) for a plain hero"
   assert.equal(moveCost(state, { water: true }), 2);
 });
 
-test("moveCost: a Bracelet of Flight carrier pays 1 on water", () => {
-  const state = fixedState({ c: { items: [{ n: "Bracelet of Flight" }] } });
-  assert.equal(moveCost(state, { water: true }), 1);
+test("moveCost: a Bracelet of Flight carrier pays 1 on water ONLY while its own record is live (260918-w4n)", () => {
+  const readyOnly = fixedState({ c: { items: [{ n: "Bracelet of Flight" }] } });
+  assert.equal(moveCost(readyOnly, { water: true }), 2, "ready-but-unused — no more unconditional Bracelet flight");
+  const live = fixedState();
+  startEffect(live.c, "item:Bracelet of Flight", { squares: 20, cd: 50 });
+  assert.equal(moveCost(live, { water: true }), 1);
 });
 
 test("moveCost: a LIVE Cloak-of-Flying fly effect pays 1 on water", () => {
@@ -145,8 +148,9 @@ test("move: water -> dry costs 1 with no waded", () => {
   assert.ok(!events.some((e) => e.type === "waded"));
 });
 
-test("move: a Bracelet of Flight carrier stepping onto water pays 1, no waded", () => {
-  const state = fixedState({ c: { items: [{ n: "Bracelet of Flight" }] } });
+test("move: a LIVE Bracelet of Flight effect stepping onto water pays 1, no waded", () => {
+  const state = fixedState();
+  startEffect(state.c, "item:Bracelet of Flight", { squares: 20, cd: 50 });
   open(state.floor.g, 5, 4, { water: true });
   const events = move(state, "N", fakeRng([]), []);
   assert.equal(state.steps, 1);
@@ -214,18 +218,6 @@ test("move: a Magic User's spell charge recovers exactly once across a water ste
   assert.equal(state.c.spellsUsed, 0);
   assert.equal(maxCharges(state.c), 2 * 1 + 2 + 0);
   assert.equal(events.filter((e) => e.type === "spellChargeRecovered").length, 1);
-});
-
-test("move: Cloak of Healing ticks exactly once across a water step (19 -> 21) with ZERO rng draws", () => {
-  const state = fixedState({
-    c: { items: [{ kind: "cloak", n: "Cloak of Healing", eff: { cloakHeal: 1 }, txt: "" }], wp: 10, maxWP: 55 },
-    steps: 19,
-  });
-  open(state.floor.g, 5, 4, { water: true });
-  const events = move(state, "N", fakeRng([]), []); // fakeRng([]) throws on ANY draw
-  assert.equal(state.steps, 21);
-  assert.equal(state.c.wp, 20, "flat +10 heal, one tick only");
-  assert.equal(events.filter((e) => e.type === "cloakHealed").length, 1);
 });
 
 // --- affliction cadence: crossings(af.per), stops early once cleared -------

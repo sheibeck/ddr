@@ -119,19 +119,23 @@ test("conditionsOf: foresight is a flat boolean chip when c.foresight is true (a
   assert.deepStrictEqual(conditionsOf({ c: fixedChar({ foresight: false }) }), []);
 });
 
-test("conditionsOf: fixed order — ward, mirror, senses, regen, foresight, then flight", () => {
+// 260918-w4n (use-activated-only): a live `flight` chip now comes from the
+// SAME generic live-item-effect loop as haste/invis/etc (c.timers insertion
+// order) — it surfaces BEFORE ward/mirror/senses/regen/foresight, not after;
+// a ready-but-unused Bracelet (no live record) yields no chip at all.
+test("conditionsOf: fixed order — a live flight record, then ward, mirror, senses, regen, foresight", () => {
   const c = fixedChar({
     ward: { pool: 50, rounds: 5, name: "Shield" },
     mirror: 4,
     senses: 1,
     regen: true,
     foresight: true,
-    items: [{ n: "Bracelet of Flight" }],
+    timers: { "item:Bracelet of Flight": { cadence: "squares", left: 20, cd: 50, phase: "effect" } },
   });
   const conds = conditionsOf({ c });
   assert.deepStrictEqual(
     conds.map((x) => x.key),
-    ["ward", "mirror", "senses", "regen", "foresight", "flight"],
+    ["flight", "ward", "mirror", "senses", "regen", "foresight"],
   );
 });
 

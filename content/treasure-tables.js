@@ -1,9 +1,10 @@
 // content/treasure-tables.js
 //
 // Pure-data port of mazeworld.html's treasure tables (~line 634-707):
-// BLADE_NAMES, JEWELRY (d8, p.47), CLOAKS (d8, p.46), STAVES (d8, p.46),
-// FAERIE (d8, p.48), MISC_MAGIC. No closures in the prototype — ported
-// verbatim.
+// BLADE_NAMES, JEWELRY (d8, p.47), CLOAKS (d7 — the dropped healing cloak was
+// removed by the user on 2026-09-18, quick 260918-w4n; every roll draws
+// `rng.d(CLOAKS.length)`), STAVES (d8, p.46), FAERIE (d8, p.48), MISC_MAGIC.
+// No closures in the prototype — ported verbatim.
 //
 // Phase 37 (GEAR-03): a `slot` field is authored on every JEWELRY/CLOAKS/
 // STAVES row (module-private *_ROWS arrays below) per the locked worn-slot
@@ -43,6 +44,33 @@
 // Cloak of Invisibility 100/100 -> 50 effect / 50 cd; Cloak of Ether 20+100
 // -> 20+80. See docs/GEAR-BALANCE.md's "Item activation model (GEAR-02)"
 // section for the full numbers ledger.
+//
+// USE-ACTIVATED ONLY (user ruling 2026-09-18, quick 260918-w4n): "Items that
+// are equipable must be equipped to be used. Items that are not equipable
+// can be used from the bag." Every JEWELRY/CLOAKS/STAVES row now carries an
+// `act` block — there are no passive rows left. An `eff` map is a PAYLOAD
+// applied only while the item's OWN `item:<name>` c.timers record is live
+// (engine/derived.js#eff sums it there, and nowhere else) — a bagged or
+// worn-but-unused item grants nothing. There is no auto-activation: a Cloak
+// of Flying no longer starts its own flight window on a climb/gorge tile
+// (engine/movement.js) — only `useItem` on a WORN item starts the record,
+// which then starts the cooldown.
+//
+// The dropped healing cloak amendment (user, 2026-09-18): "Drop Cloak of
+// Healing" — the item is removed from the game outright. CLOAKS is now 7
+// rows; every cloak roll (the Thief starting cloak, the Cloak find, and
+// `rollCloak`) draws `rng.d(CLOAKS.length)` instead of a literal 8 — still
+// ONE `gen.next()` draw, so the rng cursor never shifts, only the row a given
+// draw lands on can change. A save carrying the dropped cloak loads it as an
+// inert cloak: `slotFor` still resolves it by kind, but `activationFor` is
+// null (no Use button, no effect, no throw).
+//
+// The staff amendment (user, 2026-09-18): "A magic staff is a usable item,
+// but not equipable... Staff should not be an equipment slot." A staff's
+// authored `slot` key is deleted from every STAVES_ROWS entry — a staff has
+// no worn slot anywhere; `SLOT_OF` is built from JEWELRY_ROWS + CLOAKS_ROWS
+// only (15 entries). A staff lives in `c.items` (one bag slot) and is used
+// by bag index; its charges+recharge model is unchanged.
 
 export const BLADE_NAMES = [
   "Whisper", "Grave Mark", "The Long Argument", "Tithe", "Old Patience",
@@ -50,17 +78,53 @@ export const BLADE_NAMES = [
 ];
 
 const JEWELRY_ROWS = [
-  { n: "Ring of Power", slot: "ring", eff: { dmg: 1 }, txt: "+1 damage to all attacks" },
-  { n: "Gauntlet of the Giant", slot: "helm", eff: { size: 1 }, txt: "one size larger" },
-  { n: "Amulet of Light", slot: "amulet", eff: { sight: 1, light: 1 }, txt: "a standing light spell; dispels darkness" },
+  {
+    // Use-activated (260918-w4n): worn + used, +1 damage for 50 squares, 50
+    // squares to catch its breath.
+    n: "Ring of Power", slot: "ring", eff: { dmg: 1 },
+    txt: "used, it adds +1 damage to every attack for fifty squares; then fifty squares of quiet",
+    act: { kind: "power", effect: 50, cd: 50 },
+  },
+  {
+    // Use-activated (260918-w4n): worn + used, one size larger for 50
+    // squares, 50 to recover.
+    n: "Gauntlet of the Giant", slot: "helm", eff: { size: 1 },
+    txt: "used, you are one size larger for fifty squares; mind the ceilings, then fifty squares of shrinking back",
+    act: { kind: "giant", effect: 50, cd: 50 },
+  },
+  {
+    // Use-activated (260918-w4n): worn + used, light + sight for 50 squares,
+    // dispels darkness the instant it is used.
+    n: "Amulet of Light", slot: "amulet", eff: { sight: 1, light: 1 },
+    txt: "used, it lights fifty squares and tells the dark to leave at once; then it sulks for fifty",
+    act: { kind: "glow", effect: 50, cd: 50 },
+  },
   {
     n: "Pendant of Fortitude", slot: "amulet", eff: {}, use: "half", every: 100,
     txt: "half damage from one attack, once every 100 squares",
     act: { kind: "half", effect: 0 },
   },
-  { n: "Anklet of Invisibility", slot: "bracelet", eff: { foeToHit: -2 }, txt: "unseen; foes need two better to land" },
-  { n: "Helm of Knowledge", slot: "helm", eff: { tongue: 1 }, txt: "perfect fluency in one language" },
-  { n: "Bracelet of Flight", slot: "bracelet", eff: { fly: 1 }, txt: "flight — walls and crevices are nothing" },
+  {
+    // Use-activated (260918-w4n): worn + used, foes need two better to land
+    // for 50 squares, 50 to fade back into view.
+    n: "Anklet of Invisibility", slot: "bracelet", eff: { foeToHit: -2 },
+    txt: "used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight",
+    act: { kind: "unseen", effect: 50, cd: 50 },
+  },
+  {
+    // Use-activated (260918-w4n): worn + used, perfect fluency for 50
+    // squares, 50 to forget it again.
+    n: "Helm of Knowledge", slot: "helm", eff: { tongue: 1 },
+    txt: "used, you understand them perfectly for fifty squares; then fifty squares of forgetting again",
+    act: { kind: "tongue", effect: 50, cd: 50 },
+  },
+  {
+    // Use-activated (260918-w4n): worn + used, mirrors the Cloak of Flying —
+    // twenty squares of flight, fifty to catch its breath.
+    n: "Bracelet of Flight", slot: "bracelet", eff: { fly: 1 },
+    txt: "used, twenty squares of flight when you ask; fifty to catch its breath",
+    act: { kind: "fly", effect: 20, cd: 50 },
+  },
   {
     // Once-a-day rule: every 200 -> 100 (the AoE stone effect itself is
     // instant, so effect+cd is just the cd).
@@ -75,8 +139,13 @@ const JEWELRY_ROWS = [
 // harness strips the reworded txt (comparables.js#REWORDED_TXT_ITEMS,
 // generalized from the Phase 28 stripCloakArmorTxt carve-out).
 const CLOAKS_ROWS = [
-  { n: "Cloak of Healing", slot: "cloak", eff: { cloakHeal: 1 }, txt: "heals up to 10 hp every 20 squares" },
-  { n: "Cloak of Strength", slot: "cloak", eff: { noCrit: 1 }, txt: "no critical damage ever lands on you" },
+  {
+    // Use-activated (260918-w4n): worn + used, no critical lands on you for
+    // 50 squares, 50 to leave itself vulnerable again.
+    n: "Cloak of Strength", slot: "cloak", eff: { noCrit: 1 },
+    txt: "used, no critical damage lands on you for fifty squares; then fifty squares of ordinary luck",
+    act: { kind: "brace", effect: 50, cd: 50 },
+  },
   {
     // Once-a-day rule: 100 effect / 100 cd -> 50 effect / 50 cd (50+50 = one day).
     n: "Cloak of Invisibility", slot: "cloak", eff: {}, use: "invis", every: 50,
@@ -88,14 +157,31 @@ const CLOAKS_ROWS = [
     txt: "double attacks, once every 50 squares",
     act: { kind: "haste", effect: 50 },
   },
-  { n: "Cloak of Regeneration", slot: "cloak", eff: { cloakRegen: 1 }, txt: "d6 hp back every 20 squares" },
-  // Phase 28 (ARMOR-04): states the rule plainly — AR 15, never wears, any
-  // class — with a wink of the original "weighs nothing" flavor.
-  { n: "Cloak of Armor", slot: "cloak", eff: { cloakArmor: 1 }, txt: "soaks as plate (AR 15) over whatever you wear — any class, never wears out, light as a rumor" },
   {
-    // No `use`/`every` — the Cloak of Flying auto-activates on a climb/gorge
-    // tile (engine/movement.js); `act.cd` is the explicit cooldown source
-    // since there is no row `every` to fall back on.
+    // Use-activated (260918-w4n): worn + used, a flat d6 hp back at once,
+    // then twenty squares of rest — the once-per-use faithful reading of the
+    // frozen prototype's "d6 hp back every 20 squares".
+    n: "Cloak of Regeneration", slot: "cloak", eff: { cloakRegen: 1 },
+    txt: "used, a d6 hp back at once; then twenty squares of rest before it works again",
+    act: { kind: "knit", effect: 0, cd: 20 },
+  },
+  // Phase 28 (ARMOR-04): states the rule plainly — AR 15, never wears, any
+  // class — with a wink of the original "weighs nothing" flavor. Use-
+  // activated (260918-w4n): worn + used, plated for 50 squares, 50 to
+  // recover.
+  {
+    n: "Cloak of Armor", slot: "cloak", eff: { cloakArmor: 1 },
+    txt: "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth",
+    act: { kind: "plate", effect: 50, cd: 50 },
+  },
+  {
+    // Use-activated (260918-w4n): the auto-activation on a climb/gorge tile
+    // is REMOVED (engine/movement.js) — a ready-but-unstarted Cloak of
+    // Flying is not flying; only `useItem` on the worn cloak starts the
+    // effect. `act.cd` is the explicit cooldown source since there is no
+    // row `every` to fall back on. `txt` is left untouched (byte-identical
+    // to the frozen prototype) — this row is NOT one of the 9 converted
+    // rows this task rewords; it already carried an `act` before this task.
     n: "Cloak of Flying", slot: "cloak", eff: { fly: 1 }, txt: "flight for 20 squares, once every 50",
     act: { kind: "fly", effect: 20, cd: 50 },
   },
@@ -113,35 +199,35 @@ const CLOAKS_ROWS = [
 // harness strips the reworded txt (comparables.js#REWORDED_TXT_ITEMS).
 const STAVES_ROWS = [
   {
-    n: "Rowan Staff", slot: "staff", use: "dome", txt: "a protective dome of 100 hp",
+    n: "Rowan Staff", use: "dome", txt: "a protective dome of 100 hp",
     act: { kind: "dome", charges: 2, recharge: 100 },
   },
   {
-    n: "Birch Staff", slot: "staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely",
+    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely",
     act: { kind: "freeze", charges: 2, recharge: 100 },
   },
   {
-    n: "Walnut Staff", slot: "staff", use: "weaken", txt: "all hits on the weakened do double damage",
+    n: "Walnut Staff", use: "weaken", txt: "all hits on the weakened do double damage",
     act: { kind: "weaken", charges: 2, recharge: 80 },
   },
   {
-    n: "Oak Staff", slot: "staff", use: "stone", txt: "turns 2 squares of opponents to stone",
+    n: "Oak Staff", use: "stone", txt: "turns 2 squares of opponents to stone",
     act: { kind: "stone", charges: 1, recharge: 100 },
   },
   {
-    n: "Crystal Staff", slot: "staff", use: "invis", txt: "party invisible d10+5 squares; enemies need a 1",
+    n: "Crystal Staff", use: "invis", txt: "party invisible d10+5 squares; enemies need a 1",
     act: { kind: "invis", charges: 2, recharge: 100, effect: { n: 1, sides: 10, bonus: 5 } },
   },
   {
-    n: "Poplar Staff", slot: "staff", use: "heal", txt: "1d20+10 hp to up to 6",
+    n: "Poplar Staff", use: "heal", txt: "1d20+10 hp to up to 6",
     act: { kind: "heal", charges: 3, recharge: 60 },
   },
   {
-    n: "Pine Staff", slot: "staff", use: "fire", txt: "d6 fireballs, automatic hits, 1d10+4 each",
+    n: "Pine Staff", use: "fire", txt: "d6 fireballs, automatic hits, 1d10+4 each",
     act: { kind: "fire", charges: 1, recharge: 100 },
   },
   {
-    n: "Cedar Staff", slot: "staff", use: "gas", txt: "knocks out 3 squares of enemies for a day",
+    n: "Cedar Staff", use: "gas", txt: "knocks out 3 squares of enemies for a day",
     act: { kind: "gas", charges: 1, recharge: 100 },
   },
 ];
@@ -158,30 +244,40 @@ export const JEWELRY = JEWELRY_ROWS.map(dropAuthored);
 export const CLOAKS = CLOAKS_ROWS.map(dropAuthored);
 export const STAVES = STAVES_ROWS.map(dropAuthored);
 
-/** SLOT_OF — display name (`.n`) -> worn slot, derived from the *_ROWS
- * arrays above; the name-keyed runtime lookup engine/derived.js#slotFor
- * falls back on when an item carries no own `slot` key. Frozen; exactly 24
- * entries (8 JEWELRY + 8 CLOAKS + 8 STAVES, per the locked taxonomy). */
+/** SLOT_OF — display name (`.n`) -> worn slot, derived from JEWELRY_ROWS +
+ * CLOAKS_ROWS ONLY (260918-w4n, staff amendment: a staff has no slot — it is
+ * a bag item used by index, so STAVES_ROWS is deliberately excluded); the
+ * name-keyed runtime lookup engine/derived.js#slotFor falls back on when an
+ * item carries no own `slot` key. Frozen; exactly 15 entries (8 JEWELRY + 7
+ * CLOAKS, per the locked taxonomy). */
 export const SLOT_OF = Object.freeze(
-  Object.fromEntries([...JEWELRY_ROWS, ...CLOAKS_ROWS, ...STAVES_ROWS].map((row) => [row.n, row.slot])),
+  Object.fromEntries([...JEWELRY_ROWS, ...CLOAKS_ROWS].map((row) => [row.n, row.slot])),
 );
 
 /** buildActivation(row) — module-private: normalizes an authored `act` block
  * into the shape `content/activations.js#ACTIVATION_OF` exposes — a
- * duration+cooldown record `{ kind, effect, cd }` (cd defaults to the row's
- * own `every` when `act.cd` is not given) for a JEWELRY/CLOAKS row, or a
- * charges+recharge record `{ kind, charges, recharge, effect? }` for a
+ * duration+cooldown record `{ kind, effect, cd, eff? }` (cd defaults to the
+ * row's own `every` when `act.cd` is not given) for a JEWELRY/CLOAKS row, or
+ * a charges+recharge record `{ kind, charges, recharge, effect? }` for a
  * STAVES row (`effect` present only when the staff's use has its own
- * duration, e.g. the Crystal Staff's d10+5-squares invisibility). */
+ * duration, e.g. the Crystal Staff's d10+5-squares invisibility). 260918-w4n:
+ * the row's own `eff` map (its while-live payload, engine/derived.js#eff) is
+ * copied onto BOTH branches as `eff`, but ONLY when it carries at least one
+ * key — a row with `eff: {}` (Cloak of Speed, Pendant, Amulet of Stone,
+ * every staff/potion) stays byte-identical to before this task. */
 function buildActivation(row) {
   if (!row.act) return null;
   const { act } = row;
+  const hasEff = row.eff && typeof row.eff === "object" && Object.keys(row.eff).length > 0;
   if (act.charges !== undefined) {
     const entry = { kind: act.kind, charges: act.charges, recharge: act.recharge };
     if (act.effect !== undefined) entry.effect = act.effect;
+    if (hasEff) entry.eff = row.eff;
     return Object.freeze(entry);
   }
-  return Object.freeze({ kind: act.kind, effect: act.effect, cd: act.cd ?? row.every });
+  const entry = { kind: act.kind, effect: act.effect, cd: act.cd ?? row.every };
+  if (hasEff) entry.eff = row.eff;
+  return Object.freeze(entry);
 }
 
 /** TREASURE_ACTIVATION_OF — display name -> normalized activation record,

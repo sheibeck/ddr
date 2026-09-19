@@ -397,7 +397,10 @@ export function findMisc(state, rng, events = []) {
   } else if (what === "Grimoire") {
     findGrimoire(state, rng, events);
   } else if (what === "Cloak") {
-    offerFind(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(8) - 1]), events);
+    // 260918-w4n: the dropped healing cloak leaves CLOAKS at 7 rows — this
+    // draws rng.d(CLOAKS.length) (still ONE gen.next() draw, rng cursor
+    // unchanged) instead of the old literal d8.
+    offerFind(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1]), events);
   } else if (what === "Staff") {
     // Phase 39 (GEAR-02): rollStaff (engine/items.js) is the one staff
     // constructor now — same single rng.d(8) draw, charge pool instead of

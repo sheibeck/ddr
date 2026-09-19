@@ -304,10 +304,15 @@ test("applyFoeDamageToPlayer: roll edge — a soak roll equal to AR soaks, AR + 
 test("applyFoeDamageToPlayer: magic flag — the Cloak of Armor's plate soak never wears, bag-position independent", () => {
   const foe = fixedFoe();
 
+  // 260918-w4n (use-activated-only): the cloak's plate applies ONLY while
+  // its own item:Cloak of Armor record is LIVE — a bagged/idle copy grants
+  // nothing any more, so "bag-position independent" is now proven by a live
+  // c.timers record instead of the item's mere bag presence/position.
   const state = fixedState({
     c: {
       race: "Human", armor: "Leather", ar: 6, armorMin: 1, armorWP: 15, armorMax: 15, patches: 0,
       items: [{ n: "Cloak of Armor", eff: { cloakArmor: 1 } }],
+      timers: { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
     },
   });
   state.combat = fixedCombat([foe]);
@@ -324,6 +329,7 @@ test("applyFoeDamageToPlayer: magic flag — the Cloak of Armor's plate soak nev
     c: {
       race: "Human", armor: "Leather", ar: 6, armorMin: 1, armorWP: 15, armorMax: 15, patches: 0,
       items: [WEAPON("Dagger"), { n: "Cloak of Armor", eff: { cloakArmor: 1 } }],
+      timers: { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
     },
   });
   state2.combat = fixedCombat([foe]);

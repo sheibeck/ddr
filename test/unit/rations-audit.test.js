@@ -280,10 +280,17 @@ test("audit pin: clampCarry caps c.rations at BAGS[c.bag].rations", () => {
   assert.equal(c.rations, BAGS.small.rations);
 });
 
-test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged by this plan (grep -c parity, 22 — zero new draws)", () => {
+// 260918-w4n (deviation — this file is not in the plan's file list, but its
+// literal line-count pin moved when the Cloak of Healing/Regeneration
+// per-step tick block was deleted from engine/movement.js, taking its one
+// `rng.d(6)` line with it): re-measured live at 19 (22 - 3: the deleted
+// block's rng.d(6) plus two now-gone comment lines that happened to contain
+// the string "rng." — re-verify against the live file if this ever moves
+// again rather than hand-adjusting).
+test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged by rations work (grep -c parity, 19 post-260918-w4n)", () => {
   const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "movement.js"), "utf8");
   const lineCount = src.split("\n").filter((l) => l.includes("rng.")).length;
-  assert.equal(lineCount, 22, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
+  assert.equal(lineCount, 19, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
 });
 
 // ─── narration (Task 2): exact Oracle strings, toast texts, RATION_RULE_LINE ─

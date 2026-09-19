@@ -27,15 +27,15 @@
 
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
 import { difficultyCurve, scaleHazard } from "./difficulty.js";
-import { skill, skillTier, upkeep, eff, revealRadius, isFlying, hasItemNamed, armorBulk, itemEffectActive, activationFor, hasTool, moveCost } from "./derived.js";
+import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die, epitaphFor, epitaphCtx } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged, won } from "./events.js";
-import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, ACTIVATION_OF, TOOLS } from "../content/index.js";
-import { tickSquares, startEffect } from "./effects.js";
+import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS } from "../content/index.js";
+import { tickSquares } from "./effects.js";
 import { narrateTimerTransitions, toolIndex } from "./items.js";
 import { isDeadEnd, checkTerrainPhobias, noteHeightsAttempt, resetFloorPhobiaRegions } from "./phobias.js";
 
@@ -74,13 +74,11 @@ const waterPenalty = (c) =>
 // untouched). No rng draw either way.
 const TRAPPED_PHOBIA_PANIC = 4;
 
-// Phase 15 item-wiring (ECON-08): the Cloak of Healing / Cloak of Regeneration
-// per-step tick cadence + flat-heal magnitude. Named/documented here since
-// engine/movement.js's move() is the only site that ticks them. The cadence
-// (every 20 squares) honours both cloaks' flavor text verbatim; the flat
-// CLOAK_HEAL_PER_TICK ("up to 10 wp every 20 squares") stays a Phase-16 knob.
-const CLOAK_TICK_SQUARES = 20;
-const CLOAK_HEAL_PER_TICK = 10;
+// 260918-w4n: the old Cloak of Healing / Cloak of Regeneration per-step tick
+// (CLOAK_TICK_SQUARES/CLOAK_HEAL_PER_TICK) is REMOVED — the dropped healing
+// cloak no longer exists, and the Cloak of Regeneration is now use-activated
+// (a flat d6 on use, engine/items.js#useItem's "knit" case) rather than an
+// automatic per-step tick.
 // isDeadEnd(f, x, y) — does (x,y) have exactly one (or zero) non-wall
 // orthogonal neighbor? MOVED to engine/phobias.js (Phase 41, TERR-04) since
 // the new phobia region model needs it too (its own leave-check for Being
@@ -133,24 +131,17 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // distance and class.
   if (there.feat === "climb" || there.feat === "gorge") {
     const climbing = there.feat === "climb";
-    // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A2): flight
-    // (Bracelet of Flight = unconditional; Cloak of Flying = a real
-    // 20-square effect on a 50-square cooldown — see engine/derived.js's
-    // isFlying for the full rationale) skips the climb/leap roll AND all
-    // fall-damage math entirely — "walls and crevices are nothing" and
-    // "flight ... once every 50" were both inert `eff.fly` flags read
-    // nowhere in the engine before this. No rng draw either way on this
-    // branch, so determinism/parity are unaffected for every character
-    // without a flight item. Phase 39 (GEAR-02): a Cloak-only character
-    // starts a fresh `item:Cloak of Flying` effect record right here if none
-    // is already running (the per-step tick below then burns it down); the
-    // Bracelet never touches the Cloak's own record.
+    // 260918-w4n (use-activated-only, user ruling 2026-09-18): flight
+    // (a LIVE `fly`-kind item effect — the Cloak of Flying or the Bracelet
+    // of Flight, whichever was actually used) skips the climb/leap roll AND
+    // all fall-damage math entirely — "walls and crevices are nothing" and
+    // "flight ... once every 50" — but ONLY while a record is already live.
+    // The old auto-activation (a Cloak-only character starting a fresh
+    // flight record right here, the moment isFlying returned true for a
+    // merely-READY item) is REMOVED: nothing starts a record but `useItem`
+    // on a WORN item. flyOver is now pure bookkeeping for an already-live
+    // window; the per-step tick burns it down exactly as before.
     const flyOver = () => {
-      if (!hasItemNamed(state.c, "Bracelet of Flight") && !itemEffectActive(state.c, "fly")) {
-        const act = ACTIVATION_OF["Cloak of Flying"];
-        startEffect(state.c, "item:Cloak of Flying", { squares: act.effect, cd: act.cd });
-        events.push({ type: "itemEffectStarted", item: "Cloak of Flying", kind: "fly", left: act.effect, cadence: "squares" });
-      }
       events.push({ type: "flownOver" });
       there.feat = null;
     };
@@ -404,32 +395,12 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // Phase 39 (GEAR-02): the retired haste/invis/ether/acute per-step
   // decrements — every item effect ticks through the shared c.timers
   // squares-tick below instead (its expiry is mapped to events there).
-  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
-  // Healing (eff:{cloakHeal:1}, "heals up to 10 wp every 20 squares") and the
-  // Cloak of Regeneration (eff:{cloakRegen:1}, "d6 wp back every 20 squares")
-  // were inert — both keys READ NOWHERE. Wired at this per-step tick site,
-  // firing on the item's own 20-square cadence (honouring the flavor text
-  // verbatim rather than a raw per-step tick — keeps the frozen-master item
-  // `txt` truthful without editing it, and keeps the numbers sane for Phase 16
-  // to tune). Both are GATED behind CARRYING the cloak (eff(...) > 0) AND being
-  // hurt, so a non-carrier NEVER enters either branch.
-  //   - Healing is a FLAT +CLOAK_HEAL_PER_TICK: NO rng.
-  //   - Regeneration is the ONE new rng draw this phase — the rng.d(6) sits
-  //     STRICTLY INSIDE the `eff(c,"cloakRegen") > 0` gate, so a character NOT
-  //     carrying the Cloak of Regeneration draws NOTHING here and the seeded
-  //     cursor is byte-identical (verified: no parity fixture carries it —
-  //     treasure finds are not part of chargen/fixtures).
-  if (eff(c, "cloakHeal") > 0 && crossings(CLOAK_TICK_SQUARES) > 0 && c.wp < c.maxWP) {
-    const before = c.wp;
-    c.wp = Math.min(c.maxWP, c.wp + CLOAK_HEAL_PER_TICK);
-    events.push({ type: "cloakHealed", amount: c.wp - before });
-  }
-  if (eff(c, "cloakRegen") > 0 && crossings(CLOAK_TICK_SQUARES) > 0 && c.wp < c.maxWP) {
-    const r = rng.d(6);
-    const before = c.wp;
-    c.wp = Math.min(c.maxWP, c.wp + r);
-    events.push({ type: "cloakRegenerated", amount: c.wp - before });
-  }
+  // 260918-w4n: the old per-step Cloak of Healing / Cloak of Regeneration
+  // tick is REMOVED — the dropped healing cloak no longer exists, and the
+  // Cloak of Regeneration's d6 now fires once, on USE (engine/items.js
+  // #useItem's "knit" case), not automatically every 20 squares while
+  // merely carried. Walking hurt with an unused Cloak of Regeneration worn
+  // changes nothing here any more.
   // Phase 39 (GEAR-02): the retired Cloak-of-Flying flightLeft/flightCooldown
   // pair — its effect/cooldown now rides the same c.timers squares tick
   // below like every other item.

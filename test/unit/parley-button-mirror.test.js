@@ -110,8 +110,25 @@ function fixedCombat(foes, overrides = {}) {
   return { foes, type: foes[0]?.type || "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, ...overrides };
 }
 
+// 260918-w4n (use-activated-only, deviation — this file is not in the
+// plan's file list, but its HELM-as-fluency-marker convention broke when
+// engine/derived.js#fluency became timer-only): the classic script's own
+// `eff()` duplicate (extracted verbatim above, per this file's own DEAD-CODE
+// note) still reads any BAGGED item's `eff` map directly — it has no concept
+// of `c.timers` and is explicitly out of this quick task's scope (dead,
+// unreachable from the live UI, deferred to the Shell Debt cleanup
+// milestone). To keep exercising the intended "would these two scripts
+// agree" comparison rather than a comparison that is now trivially false on
+// every helm=true case, `mk` attaches a LIVE `item:Helm of Knowledge` record
+// whenever a HELM-named item is present — matching real play, where a
+// character attempting to parley on fluency would already have USED the
+// Helm (see tools/lib/tuning-bot.mjs's helm-before-parley policy).
 function mk(cOverrides, type, combatOverrides = {}) {
-  const state = fixedState({ c: cOverrides });
+  const hasHelm = Array.isArray(cOverrides?.items) && cOverrides.items.some((it) => it && it.n === "Helm of Knowledge");
+  const c = hasHelm
+    ? { timers: { "item:Helm of Knowledge": { cadence: "squares", left: 50, cd: 50, phase: "effect" } }, ...cOverrides }
+    : cOverrides;
+  const state = fixedState({ c });
   state.combat = fixedCombat([fixedFoe({ type })], { type, ...combatOverrides });
   return state;
 }

@@ -128,11 +128,17 @@
       ],
       "chargenDivergence": {
         "phase": 38,
-        "requirements": ["ABIL-02"],
-        "fields": ["skills"],
-        "before": { "skills": { "Heft": 1, "Silence": 1 } },
-        "after": { "skills": { "Heft": 1 } },
-        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here."
+        "requirements": ["ABIL-02", "QUICK-260918-w4n"],
+        "fields": ["skills", "items"],
+        "before": {
+          "skills": { "Heft": 1, "Silence": 1 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "a full suit of plate that weighs nothing" }]
+        },
+        "after": {
+          "skills": { "Heft": 1 },
+          "items": [{ "kind": "cloak", "n": "Cloak of Flying", "eff": { "fly": 1 }, "txt": "flight for 20 squares, once every 50" }]
+        },
+        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt is stripped while the engine side's is not; both sides are recorded here exactly as measured. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves -- a flee never reaches the opening strike either way."
       }
     },
     {
