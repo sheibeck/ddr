@@ -4,9 +4,9 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 46
 current_phase_name: Honest Names, Dead Exports & the Tutorial Decision
-status: planning
+status: executing
 stopped_at: Completed 45-03-PLAN.md — Phase 45 closed, criteria 1-5 verified, npm test 3242/3242
-last_updated: "2026-09-19T19:44:49.136Z"
+last_updated: "2026-09-19T20:28:20.779Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 45 complete, transitioned to Phase 46
 progress:
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 45; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 46 — Honest Names, Dead Exports & the Tutorial Decision
+Phase: 46 of 49 (Honest Names, Dead Exports & the Tutorial Decision) — planned, executing (decision-coverage gate override 2026-09-19: parser false positive on the DEAD-04/DEAD-05 IDs; the two user decisions are covered by 46-01 and 46-03)
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-19 — Phase 45 complete, transitioned to Phase 46
 
 ## Ground Truth (durable facts every session needs)
