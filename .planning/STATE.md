@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 47
-current_phase_name: Shell Modularisation
 status: executing
 stopped_at: Completed 46-04-PLAN.md (Phase 46 closed)
-last_updated: "2026-09-19T22:54:38.072Z"
+last_updated: "2026-09-19T23:04:08.211Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 46 complete, transitioned to Phase 47
+last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 11
+  total_plans: 16
   completed_plans: 11
   percent: 50
+current_phase_name: Shell Modularisation
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 47 — Shell Modularisation (autonomous run; Phases 44–46 complete 2026-09-19; 19 Pixel 7 items deferred to the milestone-close batch)
+**Current focus:** Phase 47
 
 ## Current Position
 
-Phase: 47 of 49 — Shell Modularisation (planned, 5 sequential plans; executing)
-Plan: 47-01 next (snapshot harness + BEFORE fixtures)
-Status: Ready to execute
-Last activity: 2026-09-19 — Phase 47 planned (b973aa9); planner flags ROADMAP criterion 2 (<5,000 lines) likely NOT MET (~5,550 projected) — 47-05 measures and records honestly, STATE blocker if so
+Phase: 47 — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase 47
+Last activity: 2026-09-19 — Phase 47 execution started
 
 ## Ground Truth (durable facts every session needs)
 
