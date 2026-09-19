@@ -78,7 +78,23 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v1.5 Meaningful Choices — Spells, Gear & Abilities (started 2026-09-17)
+## Current Milestone: v1.6 Shell Debt & Dead Code (started 2026-09-19)
+
+**Goal:** Delete the code the game no longer runs, give the surviving modules honest names, collapse the remaining dual-path hedges, purge every doc and comment that describes a pattern we no longer employ, and split the 8.6k-line shell into named `src/browser/` modules — with zero gameplay change and the engine/parity suite green throughout.
+
+**Target features:**
+- **Retire the classic engine from the shell** — remove the 16 dead pre-extraction mirrors (`castSpell`, `parley`, `startCombat`, `meetJoiner`, `genFloor`, `rollCharacter`, `descend`, `makeCamp`, `takeItem`, `useItem`, `playerStrike`, `foeTurn`, `killFoe`, `openStore`, `readScroll`, `drinkPotion`) and every helper only they call; replace the drifted classic `SUB_NOTE` table with a `content/flavor.js` import; move the drift-tripwire tests that `new Function`-extract classic helpers onto `engine/`/`content/` reads. Expect −2–3k lines.
+- **Names & dead exports** — `src/browser/toasts.js` → `narrationLines.js` (`TOAST_FOR` → `LINE_FOR`, `toastsForAction` → `linesForAction`, `dispatchWithToasts` → `dispatchWithNarration`), drop the dead toast-lifetime constants; remove `winGame`/`state.won` (+ carve-out); decide `tutorial.js` (park for UX-06 or delete and rebuild). One rename per plan, each its own commit.
+- **Collapse the remaining Phase 37 hedges** — drop the shell-only `newRun({ wornSlots })` option and the option-gated load migration (every run creates `c.worn`; migration unconditional); `eff()` is already single-path after quick task 260918-w4n; declare + regenerate exactly the fixtures that move; tuning bot on the same path.
+- **Stale docs & comments purge (user, 2026-09-19)** — every comment, doc, and planning note that describes a pattern the game no longer employs goes with the code it described: D-pad movement (the game is fully tap-to-move), toasts as a UI surface, the "dead classic X()" mirrors, `wornSlots`, the retired `flightLeft`/`c.ether` counters, etc. — in `mazeworld.html`, `src/`, `engine/`, `docs/`, `.claude/CLAUDE.md`'s stack notes, and test names.
+- **Shell modularisation** — carve `paint()`'s Gear, Hero and Store tabs out of `mazeworld.html` into `src/browser/` modules with source-pin tests per module, the way `combatPanel.js` / `rail.js` already are, so later phases (and the tutorial) edit small named files.
+- **Measure-first perf pass** — profile `paint()` re-render and `draw()` per step on the Pixel 7; fix only what's measured; otherwise close the phase with the numbers and no code.
+
+**Key context:** no research pass — every item was verified by direct code read (2026-09-17, re-verified 2026-09-19: shell 8,607 lines, 16 mirrors present, `wornSlots` ×19 in `engine/`, `winGame`/`won` ×16, `tutorial.js` unreferenced). Engine gate as amended: nothing here changes a rule; where the hedge collapse moves fixtures, declare and regenerate exactly those. Sequenced AFTER the five 2026-09-18/19 quick tasks land (stationary camera, potions/scrolls bag-free, use-activated magic items + staff-to-bag, two jewelry slots, Cloak of Ether wall-walking — three of them edit `mazeworld.html` and `engine/`) and BEFORE the UX-06 tutorial + production-launch tail. Phase numbering continues from 43.
+
+**Out of this milestone:** any gameplay or balance change; the store restyle; haptics; dice-mode setting; the v1.0 launch tail (UX-06 tutorial, STR production launch); TUNE-06/07; the v1.5 Pixel 7 UAT batch (runs against a post-quick-task debug APK on its own track).
+
+## Last Milestone: v1.5 Meaningful Choices — Spells, Gear & Abilities (code-complete 2026-09-18; archived 2026-09-19; device UAT batch pending)
 
 **Goal:** Every spell, item, skill, phobia and piece of gear does something you can feel and choose between — no budget picks, no dead phobias, no silent causes — with the gear/target/ration UI made honest to match.
 
@@ -189,7 +205,7 @@
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
-## Current State (2026-09-19, v1.5 code-complete — Phases 36–43)
+## Current State (2026-09-19, v1.6 Shell Debt & Dead Code started; v1.5 code-complete — Phases 36–43)
 
 **Code-complete, UAT pending:** v1.5 "Meaningful Choices" (Phases 36–43) — the BEFORE pin + effects model + Cutthroat Joiners + Company DISMISS; the worn-slot model; melee active abilities (rolled pool, ABILITIES submenu); weapon need/crit + armor bulk, one `c.timers` activation model for every magic item, rope/ladder/torch; the spell rework (33 niched spells, Ice DOT, Lesser Summon, Map the Floor with provenance re-fog); water/darkness/phobias; flee at need 14 with named modifiers, the bot taught the new power, and the ONE consolidated AFTER matrix (depth-20 target PASS); the clarity pass (cause-first cost lines, usable-by on every offer, honest rations, ON YOU / BAG). 3168 tests green; parity master untouched since v1.2; 140 Pixel 7 checks queued for the milestone-close batch against one debug APK.
 
@@ -197,7 +213,7 @@
 
 **Shipped:** v1.3 "Feel, Loot & Combat Flow" (Phases 28–33) — armor integrity, end-of-combat loot + bag cap, Fight!-gated combat with explained refusals and honest effect chips, the Afraid/Elven rules rulings, the Round Card + input guards, gear/toolbar/map polish, depth-rolled store stock. 1955 tests green; parity master untouched since v1.2. Debug build installed on the Pixel 7; the 50-check UAT batch (incl. the CMBUI-06 DR round) runs against it.
 
-**Next milestone candidates:** the v1.0 launch tail (UX-06 tutorial incl. the dropped UIF-04 toggle; Google Play production launch STR-01..04/06), the deferred tuning pass (TUNE-06/07, `storeRoll` for bots), a feel pass for the unguarded button set + haptics — plus whatever the UAT batch turns up.
+**Now:** v1.6 "Shell Debt & Dead Code" (cleanup only — see Current Milestone). **After it:** the v1.0 launch tail (UX-06 tutorial incl. the dropped UIF-04 toggle; Google Play production launch STR-01..04/06), the deferred tuning pass (TUNE-06/07, `storeRoll` for bots), a feel pass for the unguarded button set + haptics — plus whatever the v1.5 UAT batch turns up.
 
 ## Key Decisions
 
@@ -275,4 +291,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-19 after Phase 43 (v1.5 Clarity Pass — milestone code-complete)*
+*Last updated: 2026-09-19 — v1.6 Shell Debt & Dead Code started*

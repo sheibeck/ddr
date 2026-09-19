@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Meaningful Choices — Spells, Gear & Abilities
-status: Awaiting next milestone
-stopped_at: "Milestone v1.5 code-complete and archived (Phases 36–43, 37 plans); 140-check Pixel 7 UAT batch pending against one debug APK; next: cleanup milestone from the pending todo"
-last_updated: "2026-09-19T02:16:10.986Z"
-last_activity: 2026-09-18
-last_activity_desc: Milestone v1.5 completed and archived
+milestone: v1.6
+milestone_name: Shell Debt & Dead Code
+status: planning
+last_updated: "2026-09-19T04:10:26.477Z"
+last_activity: 2026-09-19
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 37
-  completed_plans: 37
-  percent: 100
-current_phase: 43
-current_phase_name: Clarity Pass
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 after Phase 43 — v1.5 code-compl
 
 ## Current Position
 
-Phase: Milestone v1.5 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone — v1.5 device UAT batch (140 checks, one debug APK) runs first; then stand up the Shell Debt & Dead Code cleanup milestone from `.planning/todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md`
-Last activity: 2026-09-18 — Completed quick tasks 260918-vm3 (stationary map camera) + 260918-vvt (potions/scrolls bag-free) + fast Pilfer-torch fix; 260918-w4n (use-activated magic items, staff to bag, Cloak of Healing removed) planned, executing next
+Status: Defining requirements
+Last activity: 2026-09-19 — Milestone v1.6 started
 
 ## Ground Truth (durable facts every session needs)
 
