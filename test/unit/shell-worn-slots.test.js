@@ -183,7 +183,7 @@ test("Bridges: derived.js import carries eff/slotFor/WORN_SLOTS/WORN_KEYS_OF; wi
   // import line gained hasTool/toHit/strikeDie as sibling named imports.
   // Phase 41 (TERR-03), Plan 04: mapViewRadius/inViewWindow joined the same
   // import line. 260918-wy1 (jewelry-merge): WORN_KEYS_OF joined too.
-  assert.match(CODE, /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
+  assert.match(CODE, /import \{ conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 1);

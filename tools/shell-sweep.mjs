@@ -277,12 +277,26 @@ function cmdRefs(args) {
     process.exit(2);
   }
 
+  // A match sitting inside a classic declaration's body counts only if
+  // that declaration is itself reachable from the live roots — a still-
+  // undeleted, already-dead caller (e.g. classic newGame() calling
+  // rollCharacter()) referencing NAME is not a reason to keep NAME (see
+  // computeReachability's doc comment / 44-CONTEXT.md A-1).
+  const debugSet = args.debug ? new Set(args.debug.split(",")) : null;
+  const { decls, reachable } = computeReachability(lines, regions, masked, debugSet);
+  const owner = new Array(lines.length).fill(null);
+  for (const d of decls) {
+    for (let idx = d.line; idx <= d.endLine; idx++) owner[idx] = d.name;
+  }
+
   let anyNonZero = false;
   for (const name of names) {
     const hits = [];
     for (let idx = 0; idx < masked.length; idx++) {
       const text = masked[idx];
       if (!text) continue;
+      const ownerName = owner[idx];
+      if (ownerName && ownerName !== name && !reachable.has(ownerName)) continue;
       for (const m of findMatches(text, name)) {
         if (isObjectKeyMatch(text, m.index, m.length)) continue;
         if (isCutPointCall(text, m.index, m.length, name)) continue;
@@ -438,12 +452,17 @@ function bodyCallsName(text, name) {
   return false;
 }
 
-function cmdOrphans(args) {
-  const raw = fs.readFileSync(args.file, "utf8");
-  const lines = raw.split("\n");
-  const regions = findRegions(lines);
-  const masked = buildMaskedLines(lines, regions);
-
+// Shared by `orphans` and `refs`: which classic top-level declarations are
+// reachable from the live roots (module script, HTML on*= attributes,
+// classic top-level non-declaration statements), propagating through CALL
+// edges only (see bodyCallsName's doc comment). `refs` uses this so a
+// textual match sitting inside an ALREADY-dead declaration's body (e.g. a
+// still-undeleted layer-2 caller like classic newGame() calling
+// rollCharacter()) does not block deleting the CALLED name — 44-CONTEXT.md's
+// A-1 flagged assumption is explicit that the sweep gate concerns
+// references "from LIVE code", not from other equally-dead code that just
+// hasn't been swept yet in an earlier layer.
+function computeReachability(lines, regions, masked, debugSet) {
   const decls = collectDeclarations(lines, regions, masked);
   const declByName = new Map();
   for (const d of decls) declByName.set(d.name, d);
@@ -480,10 +499,6 @@ function cmdOrphans(args) {
     return masked.slice(decl.line, decl.endLine + 1).join("\n");
   }
 
-  // BFS reachability over declared names. --debug NAME[,NAME...] (orphans
-  // only) traces why a name did/didn't end up reachable — useful when a
-  // future layer's orphan list looks off.
-  const debugSet = args.debug ? new Set(args.debug.split(",")) : null;
   const reachable = new Set();
   const queue = [];
   for (const d of decls) {
@@ -509,6 +524,17 @@ function cmdOrphans(args) {
     }
   }
 
+  return { decls, reachable };
+}
+
+function cmdOrphans(args) {
+  const raw = fs.readFileSync(args.file, "utf8");
+  const lines = raw.split("\n");
+  const regions = findRegions(lines);
+  const masked = buildMaskedLines(lines, regions);
+
+  const debugSet = args.debug ? new Set(args.debug.split(",")) : null;
+  const { decls, reachable } = computeReachability(lines, regions, masked, debugSet);
   const orphaned = decls.filter((d) => !reachable.has(d.name));
 
   console.log(

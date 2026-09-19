@@ -85,7 +85,11 @@ test("Phase 28 (ARMOR-03/04): the gear worn row is wired through armorD, with a 
 
 function renderCarriedListRegion() {
   const start = CODE.indexOf("function renderCarriedList(");
-  const end = CODE.indexOf("function openStore()");
+  // Phase 44 (DEAD-01): openStore() was deleted from the classic script
+  // (layer 1); canRead() is the first surviving top-level declaration after
+  // the deleted store block, so it is the new region end anchor. The
+  // region's single positive assertion (below) is unaffected.
+  const end = CODE.indexOf("function canRead()");
   assert.ok(start !== -1 && end !== -1 && end > start, "renderCarriedList region bounds found");
   return CODE.slice(start, end);
 }

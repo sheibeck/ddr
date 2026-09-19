@@ -9,9 +9,10 @@
 //     renderEncounter/keydown gates read the engine's combat.pending, the
 //     AMBUSH pre-death special case is gone, and no classic `function
 //     fight(` shadow was added.
-//   Task 2 (CMB-02/CMB-04): the CONDITION_COPY ward/afraid rows, the
-//     never-disable-silently Use/Sing/Scroll buttons, and the __mzCanCast
-//     bridge (see spell-menu-mirror.test.js for the cell-by-cell mirror).
+//   Task 2 (CMB-02/CMB-04): the CONDITION_COPY ward/afraid rows and the
+//     never-disable-silently Use/Sing/Scroll buttons. (The spell-gate
+//     bridge this task also added was deleted in Phase 44, DEAD-01/DEAD-03
+//     — see this file's closing comment.)
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -126,7 +127,8 @@ test("Phase 34/39: the ITEMS/ABILITIES rows never hide on readiness — combatMe
   assert.doesNotMatch(combatMenuSrc, /songReady\(\) \?/);
 });
 
-test("CMB-02: the spell gate bridge — window.__mzCanCast = canCast, and the classic canCast(sp) delegates to it", () => {
-  assert.equal((CODE.match(/window\.__mzCanCast = canCast;/g) || []).length, 1);
-  assert.equal((CODE.match(/__mzCanCast\(S, sp\)/g) || []).length, 1);
-});
+// Phase 44 (DEAD-01/DEAD-03): the spell-gate bridge test that used to live
+// here is gone — engine/derived.js#canCast is now unbridged to the classic
+// script (the classic canCast(sp) wrapper it fed and the classic combat
+// cluster that called it are both deleted). The engine gate is pinned by
+// spell-level-overrides.test.js and src/browser/combatMenu.test.js instead.

@@ -295,7 +295,7 @@ test("quick 260918-vvt (a): a SEPARATE import { takesBagSlot } line exists; the 
   );
   assert.match(
     CODE,
-    /import \{ conditionsOf, canCast, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
+    /import \{ conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
   );
 });
 
