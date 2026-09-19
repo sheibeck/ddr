@@ -67,7 +67,8 @@ test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their e
     "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "critical on a 2 when you open a fight; never in plate"],
     "FIGHTER_SKILLS.Hardiness": [FIGHTER_SKILLS, "Hardiness", "−3 to all damage taken; phobias halved"],
     "FIGHTER_SKILLS.Ambidextrous": [FIGHTER_SKILLS, "Ambidextrous", "a second weapon at the end of every round"],
-    "FIGHTER_SKILLS.Cooking": [FIGHTER_SKILLS, "Cooking", "eat any beast for a quarter of its wp"],
+    // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp.
+    "FIGHTER_SKILLS.Cooking": [FIGHTER_SKILLS, "Cooking", "eat any beast for a quarter of its hp"],
     "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "read scrolls; without it they are waste paper"],
     "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "1–5 on d10 to open a lock"],
     "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "patch any armour, d6 back, 4 times"],

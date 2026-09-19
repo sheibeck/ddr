@@ -70,8 +70,12 @@ const JEWELRY_ROWS = [
   },
 ];
 
+// Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp in the two
+// rows below; cosmetic, engine never reads these strings; the parity
+// harness strips the reworded txt (comparables.js#REWORDED_TXT_ITEMS,
+// generalized from the Phase 28 stripCloakArmorTxt carve-out).
 const CLOAKS_ROWS = [
-  { n: "Cloak of Healing", slot: "cloak", eff: { cloakHeal: 1 }, txt: "heals up to 10 wp every 20 squares" },
+  { n: "Cloak of Healing", slot: "cloak", eff: { cloakHeal: 1 }, txt: "heals up to 10 hp every 20 squares" },
   { n: "Cloak of Strength", slot: "cloak", eff: { noCrit: 1 }, txt: "no critical damage ever lands on you" },
   {
     // Once-a-day rule: 100 effect / 100 cd -> 50 effect / 50 cd (50+50 = one day).
@@ -84,7 +88,7 @@ const CLOAKS_ROWS = [
     txt: "double attacks, once every 50 squares",
     act: { kind: "haste", effect: 50 },
   },
-  { n: "Cloak of Regeneration", slot: "cloak", eff: { cloakRegen: 1 }, txt: "d6 wp back every 20 squares" },
+  { n: "Cloak of Regeneration", slot: "cloak", eff: { cloakRegen: 1 }, txt: "d6 hp back every 20 squares" },
   // Phase 28 (ARMOR-04): states the rule plainly — AR 15, never wears, any
   // class — with a wink of the original "weighs nothing" flavor.
   { n: "Cloak of Armor", slot: "cloak", eff: { cloakArmor: 1 }, txt: "soaks as plate (AR 15) over whatever you wear — any class, never wears out, light as a rumor" },
@@ -104,9 +108,12 @@ const CLOAKS_ROWS = [
   },
 ];
 
+// Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp in the two
+// rows below; cosmetic, engine never reads these strings; the parity
+// harness strips the reworded txt (comparables.js#REWORDED_TXT_ITEMS).
 const STAVES_ROWS = [
   {
-    n: "Rowan Staff", slot: "staff", use: "dome", txt: "a protective dome of 100 wp",
+    n: "Rowan Staff", slot: "staff", use: "dome", txt: "a protective dome of 100 hp",
     act: { kind: "dome", charges: 2, recharge: 100 },
   },
   {
@@ -126,7 +133,7 @@ const STAVES_ROWS = [
     act: { kind: "invis", charges: 2, recharge: 100, effect: { n: 1, sides: 10, bonus: 5 } },
   },
   {
-    n: "Poplar Staff", slot: "staff", use: "heal", txt: "1d20+10 wp to up to 6",
+    n: "Poplar Staff", slot: "staff", use: "heal", txt: "1d20+10 hp to up to 6",
     act: { kind: "heal", charges: 3, recharge: 60 },
   },
   {

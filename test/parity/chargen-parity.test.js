@@ -19,7 +19,7 @@ import url from "node:url";
 import { newRun } from "../../engine/engine.js";
 import { loadPrototypeSandbox } from "./harness/sandboxPrototype.js";
 import { diffState } from "./harness/diffState.js";
-import { chargenDivergenceFor, stripDeclaredFields, stripReauthoredEveryField } from "./harness/comparables.js";
+import { chargenDivergenceFor, stripDeclaredFields, stripReauthoredEveryField, stripCloakArmorTxt } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -133,6 +133,13 @@ test("engine chargen matches the frozen prototype for every fixture seed", () =>
     // stripReauthoredEveryField for the full rationale.
     protoCForDiff = stripReauthoredEveryField(protoCForDiff);
     engineCForDiff = stripReauthoredEveryField(engineCForDiff);
+
+    // Phase 43 (CLAR-01 HP-not-WP sweep): strip the REWORDED_TXT_ITEMS'
+    // reworded `txt` unit word off BOTH sides — a chargen roll landing a
+    // Cloak of Regeneration (seeds 2 and 4) is the measured, affected case;
+    // see harness/comparables.js's stripCloakArmorTxt for the full rationale.
+    protoCForDiff = stripCloakArmorTxt(protoCForDiff);
+    engineCForDiff = stripCloakArmorTxt(engineCForDiff);
 
     const record = chargenDivergenceFor(FIXTURE, seed);
     let strippedProto = protoCForDiff;

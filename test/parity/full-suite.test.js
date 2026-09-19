@@ -50,6 +50,7 @@ import {
   stripChargenShift,
   chargenShiftDiffs,
   stripReauthoredEveryField,
+  stripCloakArmorTxt,
 } from "./harness/comparables.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -114,8 +115,14 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // Phase 39 (GEAR-02, once-a-day rule): strip the three re-authored
       // treasure rows' `every` value too — seed 3's Thief starts with a
       // Cloak of Ether.
-      const engineCForDiff = stripReauthoredEveryField(engineCForDiff0);
-      const protoCForDiff = stripReauthoredEveryField(protoCForDiff0);
+      let engineCForDiff = stripReauthoredEveryField(engineCForDiff0);
+      let protoCForDiff = stripReauthoredEveryField(protoCForDiff0);
+      // Phase 43 (CLAR-01 HP-not-WP sweep): strip the REWORDED_TXT_ITEMS'
+      // reworded `txt` unit word off both sides — seeds 2 and 4 roll a
+      // Cloak of Regeneration. See chargen-parity.test.js's identical
+      // application and harness/comparables.js's stripCloakArmorTxt.
+      engineCForDiff = stripCloakArmorTxt(engineCForDiff);
+      protoCForDiff = stripCloakArmorTxt(protoCForDiff);
 
       // FID-06 (Phase 23): seeds 15 and 24 carry a declared, measured chargen
       // divergence (see the chargen fixture's `divergences` map) — assert the

@@ -1456,3 +1456,58 @@ regenerations; no `divergence` record was declared on the `flee` scenario;
 `git status --porcelain test/parity/fixtures` is empty. See `docs/FLEE.md`
 "Parity fixture reading" for the full ledger entry.
 
+## Phase 43 — clarity pass (CLAR-01..05)
+
+### Plan 01 — additive cause keys + HP-wording txt carve-out
+
+**Additive cause keys (CLAR-01, non-day-cycle rows):** nine event payload
+keys added — `trappedPanic.phobia`, `heightsFear.penalty`,
+`waterFear.penalty`, `backfireSelfDamage.{spell,sub}`,
+`summonBackfired.{spell,sub}`, `earthquakeSelfDamage.spell`,
+`deathCast.cost`, `deathSpellTooWeak.fee`, `insanitySelfHarm.loss`. Parity
+fixtures compare STATE (`diffState` of prototype vs. engine), never events,
+so an additive event key moves zero fixtures — confirmed:
+`git status --porcelain test/parity/fixtures` before this task's HP-wording
+work was empty. Draw-count statement: `grep -c "rng\."` is unchanged from
+`git show HEAD` for `engine/movement.js` (22), `engine/magic.js` (27), and
+`engine/encounters.js` (32) — zero draws added or removed.
+
+**HP-wording txt carve-out (measured live, 2026-09-18):** `REWORDED_TXT_ITEMS`
+(`test/parity/harness/comparables.js`) generalizes the Phase 28
+`stripCloakArmorTxt` cosmetic-txt carve-out from one name ("Cloak of Armor")
+to five: `Cloak of Armor`, `Cloak of Healing`, `Cloak of Regeneration`,
+`Rowan Staff`, `Poplar Staff`. The function name is unchanged, so every
+existing call site (the three exported comparable chains —
+`movementComparable`/`combatComparable`/the shared economy+encounters
+comparable, at their original line positions) picks up the wider set with
+no code change there. Three files carry their OWN local `comparable()`
+duplicate and needed the strip added explicitly:
+
+| File | Exposure found | Action |
+|---|---|---|
+| `test/parity/chargen-parity.test.js` | seeds 2, 4 roll a Cloak of Regeneration | `stripCloakArmorTxt` applied to both `protoCForDiff`/`engineCForDiff`, mirroring the existing `stripReauthoredEveryField` pair |
+| `test/parity/full-suite.test.js` (its own independent chargen loop) | same seeds 2, 4 | same strip added — this file keeps a SECOND, separate chargen comparison from `chargen-parity.test.js` and needed its own fix (found by running the full gate, not assumed) |
+| `test/parity/movement-parity.test.js` | seed 256 rolls a Cloak of Healing | `stripCloakArmorTxt` added to the local `comparable()`'s `c`-destructure tail |
+| `test/parity/combat-parity.test.js` | already had `stripCloakArmorTxt` from Phase 28 (the `flee` scenario, seed 17, Cloak of Armor) | no change needed — the wider `REWORDED_TXT_ITEMS` set applies automatically |
+| `test/parity/magic-parity.test.js` | no fixture seed here rolls any of the five names | no change needed (confirmed: green with no strip) |
+| shared economy+encounters comparable (`stockMarkup`/`economy-parity.test.js`) | encounters `affliction` seed 160 rolls a Cloak of Regeneration | already covered by the shared `stripCloakArmorTxt` import — no local duplicate in this file |
+
+Live scan of `newRun(seed).c.items` for every fixture seed (2026-09-18,
+against the finished Phase 43 Plan 01 engine): chargen seeds 2 and 4 →
+Cloak of Regeneration; movement seed 256 → Cloak of Healing; encounters
+seed 160 → Cloak of Regeneration; no fixture seed rolls a Rowan/Poplar
+Staff into a starting kit.
+
+**Economy `after` field re-measurement:** `action-script.economy.json`'s
+declared divergence record's `after.items[1].txt` (a bought Healing
+potion) changed from `"+d10+2 wp"` to `"+d10+2 hp"`; the `before` value
+(the prototype's own text) is untouched at `"+d10+2 wp"`. This is the ONLY
+fixture file this plan's commits touch.
+
+**Conclusion:** `git status --porcelain test/parity/fixtures` shows only
+`action-script.economy.json` (the one declared `after.items[1].txt`
+re-measurement) — zero blanket regenerations. `npm test`: 3078/3078,
+`# fail 0`. `git hash-object test/parity/prototype-master.js.txt`:
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged). `npm run build:www`:
+exit 0. `node --test "test/parity/**/*.test.js"`: 39/39 green.
+

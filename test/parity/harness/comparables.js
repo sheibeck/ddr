@@ -371,21 +371,34 @@ function stripBagArmorFields(c) {
   return { ...c, items };
 }
 
-/** stripCloakArmorTxt(c) — Phase 28 (ARMOR-04): the Cloak of Armor's `txt`
- * field (content/treasure-tables.js) was rewritten from the frozen
- * prototype's original flavor line to state the soak-as-plate/never-wears/
- * any-class rule plainly. This is a purely COSMETIC content change — `txt`
- * is display-only flavor text, never read by any engine mechanic (confirmed
- * by direct code read) — that a chargen roll landing this cloak in the bag
- * (e.g. the combat-parity `flee` fixture's seed 17) surfaces as a bag-item
- * diff against the frozen prototype-master.js.txt (DO NOT EDIT). Strip it
- * the same way stripNameField strips the generative name string: every
- * OTHER field on the item, and every other item's `txt`, stays byte-
- * identical — only this one item's `txt` is excluded from comparison. */
+/** REWORDED_TXT_ITEMS — Phase 28 (ARMOR-04) started this set with just
+ * "Cloak of Armor" (its `txt` was rewritten from the frozen prototype's
+ * original flavor line to state the soak-as-plate/never-wears/any-class
+ * rule plainly). Phase 43 (CLAR-01 HP-not-WP sweep) generalizes it to the
+ * four MORE treasure rows whose `txt` unit word was reworded wp -> hp
+ * (content/treasure-tables.js): "Cloak of Healing", "Cloak of Regeneration",
+ * "Rowan Staff", "Poplar Staff". Every reworded row is a purely COSMETIC
+ * content change — `txt` is display-only flavor text, never read by any
+ * engine mechanic (confirmed by direct code read) — measured exposure:
+ * chargen seeds 2 and 4 roll a Cloak of Regeneration into the starting kit;
+ * movement seed 256 rolls a Cloak of Healing; encounters seed 160 rolls a
+ * Cloak of Regeneration; no fixture seed rolls a Rowan/Poplar Staff into the
+ * starting kit. Same cosmetic-carve-out rationale as Phase 28; the function
+ * name (`stripCloakArmorTxt`) is kept so the three comparable chains below
+ * are untouched. */
+export const REWORDED_TXT_ITEMS = Object.freeze(
+  new Set(["Cloak of Armor", "Cloak of Healing", "Cloak of Regeneration", "Rowan Staff", "Poplar Staff"])
+);
+
+/** stripCloakArmorTxt(c) — strips `txt` from any `c.items[]` entry whose `n`
+ * is in REWORDED_TXT_ITEMS, the same way stripNameField strips the
+ * generative name string: every OTHER field on the item, and every other
+ * item's `txt`, stays byte-identical — only a reworded item's `txt` is
+ * excluded from comparison. */
 export function stripCloakArmorTxt(c) {
   if (!c || !Array.isArray(c.items)) return c;
   const items = c.items.map((it) =>
-    it && it.n === "Cloak of Armor" && "txt" in it ? (({ txt, ...rest }) => rest)(it) : it
+    it && REWORDED_TXT_ITEMS.has(it.n) && "txt" in it ? (({ txt, ...rest }) => rest)(it) : it
   );
   return { ...c, items };
 }

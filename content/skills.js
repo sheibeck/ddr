@@ -30,7 +30,11 @@ export const FIGHTER_SKILLS = {
   "Sidestep": { cost: 5, active: "sidestep", txt: "two rounds of not being where the blade is: every foe needs two better" },
   "Hardiness": { cost: 6, txt: "−3 to all damage taken; phobias halved" },
   "Ambidextrous": { cost: 4, txt: "a second weapon at the end of every round" },
-  "Cooking": { cost: 3, txt: "eat any beast for a quarter of its wp" },
+  // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp;
+  // cosmetic, engine never reads this string; the parity harness strips the
+  // reworded txt (comparables.js#REWORDED_TXT_ITEMS). Re-pinned in
+  // test/unit/abilities-catalog.test.js.
+  "Cooking": { cost: 3, txt: "eat any beast for a quarter of its hp" },
   "Pommel Strike": { cost: 1, active: "pommelStrike", txt: "the blunt end, to the temple: the target loses its next turn" },
   "Runes/Signs": { cost: 2, txt: "read scrolls; without it they are waste paper" },
   "Battle Roar": { cost: 4, active: "battleRoar", txt: "loud enough to matter: for two rounds every foe needs two better to hit anyone on your side" },

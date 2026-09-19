@@ -13,8 +13,12 @@
 // activation record) is merged into `content/activations.js#ACTIVATION_OF`
 // alongside `content/treasure-tables.js`'s `TREASURE_ACTIVATION_OF`.
 
+// Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp; cosmetic,
+// engine never reads these strings; the parity harness strips the reworded
+// txt (comparables.js#REWORDED_TXT_ITEMS). The economy fixture's declared
+// `after.items[1].txt` record is re-measured for this row (Task 3).
 export const POTIONS = [
-  { n: "Healing", col: "Blue", uses: { n: 1, sides: 8, bonus: 0 }, price: 150, eff: "heal", txt: "+d10+2 wp" },
+  { n: "Healing", col: "Blue", uses: { n: 1, sides: 8, bonus: 0 }, price: 150, eff: "heal", txt: "+d10+2 hp" },
   { n: "Cure Poison", col: "Green", uses: { n: 1, sides: 6, bonus: 0 }, price: 100, eff: "poison", txt: "cures poison" },
   {
     n: "Speed", col: "Yellow", uses: { n: 1, sides: 6, bonus: 0 }, price: 500, eff: "speed",
