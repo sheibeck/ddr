@@ -221,12 +221,27 @@ export function createRecordingDocument() {
     };
 
     // ── tree mutation ───────────────────────────────────────────────────
+    // A real DOM node can only ever have one parent: appendChild/
+    // insertBefore FIRST detach `child` from wherever it currently lives
+    // (mazeworld.html's renderCarriedList gearRow block relies on exactly
+    // this — it re-parents already-appended `<button>`s from `li` straight
+    // into a new `.mw-gear-actions` row div via `row.appendChild(b)`; without
+    // this detach step the button would wrongly serialize under BOTH
+    // parents).
+    const detach = (child) => {
+      if (child.parentNode && Array.isArray(child.parentNode.children)) {
+        const idx = child.parentNode.children.indexOf(child);
+        if (idx !== -1) child.parentNode.children.splice(idx, 1);
+      }
+    };
     el.appendChild = (child) => {
+      detach(child);
       child.parentNode = el;
       el.children.push(child);
       return child;
     };
     el.insertBefore = (child, ref) => {
+      detach(child);
       child.parentNode = el;
       const idx = ref ? el.children.indexOf(ref) : -1;
       if (idx === -1) el.children.push(child);
