@@ -24,7 +24,7 @@ import url from "node:url";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { TOAST_FOR } from "../../src/browser/toasts.js";
 import { RAIL_COPY } from "../../src/browser/rail.js";
-import { ITEM_STATE_COPY, ABILITY_VIEW_COPY, RATIONS_COPY } from "../../src/browser/viewModels.js";
+import { ITEM_STATE_COPY, ABILITY_VIEW_COPY, RATIONS_COPY, USABLE_COPY } from "../../src/browser/viewModels.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { COMBAT_PANEL_COPY } from "../../src/browser/combatPanel.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
@@ -126,7 +126,7 @@ function collectStringLeaves(obj, pathLabel = "") {
 
 test("Presentation COPY objects: every string leaf is free of a standalone wp/WP token", () => {
   const banks = {
-    RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY,
+    RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {

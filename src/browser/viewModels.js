@@ -6,7 +6,7 @@
 // Pitfall 1, never the design mockup's throwaway state-object field names.
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
-import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
+import { RACES, WEAPONS, ARMORS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, BAGS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { strikeDie, toHit, upkeep, skill, eff, intelBonus, armorSoak, spellLevelFor, schoolGate, potionMight, activationFor, itemTimerId, chargesTimerId } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap, canStow, slotItems } from "../../engine/items.js";
@@ -171,6 +171,80 @@ function refusalText(reason, clsLetters) {
 }
 
 /**
+ * USABLE_COPY — Phase 43 (CLAR-02): every player-facing string `usableBy`
+ * (below) builds from — a frozen object like ITEM_STATE_COPY/ABILITY_VIEW_COPY
+ * elsewhere in this module, so the voice scan and the hp-not-wp guard can
+ * both walk it as a single leaf group.
+ */
+export const USABLE_COPY = Object.freeze({
+  F: "Fighters",
+  T: "Thieves",
+  M: "Magic Users",
+  usable: "(usable by {who})",
+  notYou: "(usable by {who} — not you)",
+  heft: "(usable by {who} — and a Thief with Heft)",
+});
+
+/**
+ * restrictedClasses(it) — Phase 43 (CLAR-02): the raw F/T/M letters string a
+ * weapon/armor/staff item is restricted to, or `null` when the item carries
+ * no class restriction at all (an "FTM" weapon/armor, or any other kind —
+ * cloak/jewel/potion/tool/bag). A staff is Magic User only (mirrors
+ * engine/items.js#autoWearSlot's `it.kind === "staff" && c.cls !== "Magic
+ * User"` gate — never restated as a separate rule, only the class letter is
+ * local here). Null-safe on a sparse/legacy item (no `base`, an unknown
+ * `armor` name). Pure, no rng, no mutation.
+ */
+function restrictedClasses(it) {
+  if (!it || typeof it !== "object") return null;
+  let letters = null;
+  if (it.kind === "weapon") {
+    letters = WEAPONS[it.base]?.cls ?? null;
+  } else if (it.kind === "armor") {
+    letters = it.cls ?? ARMORS.find((a) => a.name === it.armor)?.cls ?? null;
+  } else if (it.kind === "staff") {
+    letters = "M";
+  }
+  return letters && letters !== "FTM" ? letters : null;
+}
+
+/**
+ * usableBy(it, c = null) — Phase 43 (CLAR-02): the ONE "(usable by …)" rule
+ * for the FIND card, the victory LOOT screen (via `lootCompare.usable`), and
+ * store rows (Plan 04 bridges it as `window.__mzUsableBy`). Legality is the
+ * engine's OWN `weaponRefusalReason`/`armorRefusalReason` (engine/items.js)
+ * for weapons/armor and the staff Magic-User gate for a staff — never a
+ * restated class rule; only the display text lives here. Without a hero
+ * (`c === null`) it names who CAN use the item; with one, it additionally
+ * says whether THIS hero can — "— not you" when illegal, or "— and a Thief
+ * with Heft" for the one case where a Thief with the Heft skill can legally
+ * wear armor a letter-only read would call Fighter-only. Returns `""` for an
+ * unrestricted item or any kind this rule does not gate. Pure, no rng, no
+ * DOM, never throws on a sparse item.
+ */
+export function usableBy(it, c = null) {
+  const letters = restrictedClasses(it);
+  if (!letters) return "";
+  const who = letters
+    .split("")
+    .map((l) => USABLE_COPY[l] ?? l)
+    .join(", ");
+  const usable = USABLE_COPY.usable.replace("{who}", who);
+  if (!c) return usable;
+
+  let legal;
+  if (it.kind === "weapon") legal = weaponRefusalReason(c, it) === null;
+  else if (it.kind === "armor") legal = armorRefusalReason(c, it) === null;
+  else if (it.kind === "staff") legal = c.cls === "Magic User";
+  else legal = true;
+
+  if (!legal) return USABLE_COPY.notYou.replace("{who}", who);
+  const heroLetter = c.cls === "Fighter" ? "F" : c.cls === "Thief" ? "T" : "M";
+  if (!letters.includes(heroLetter)) return USABLE_COPY.heft.replace("{who}", who);
+  return usable;
+}
+
+/**
  * lootCompare(c, it) — Phase 29 (LOOT-03): the ONE compare-to-equipped
  * verdict for a loot/find item, mirroring armorDisplay's single-source
  * pattern — the verdict is takeItem's own weaponUpgradeDelta/
@@ -192,7 +266,9 @@ export function lootCompare(c, it) {
       : upgrade
         ? `+${delta.toFixed(1)} a swing`
         : "not an upgrade";
-    return { kind: "weapon", legal, reason, delta, upgrade, equipNow, line, sub: it.txt ?? "" };
+    // Phase 43 (CLAR-02, additive field): the same "(usable by …)" suffix
+    // the FIND card and store rows show, read from the ONE usableBy rule.
+    return { kind: "weapon", legal, reason, delta, upgrade, equipNow, line, sub: it.txt ?? "", usable: usableBy(it, c) };
   }
 
   if (it.kind === "armor") {
@@ -208,16 +284,19 @@ export function lootCompare(c, it) {
     // pool (Phase 28's tolerant `left ?? wp` read for a fresh, never-worn drop).
     const left = it.left ?? it.wp;
     const sub = left > 0 ? `${left}/${it.wp} hp` : "destroyed";
-    return { kind: "armor", legal, reason, delta, upgrade, equipNow, line, sub };
+    // Phase 43 (CLAR-02, additive field)
+    return { kind: "armor", legal, reason, delta, upgrade, equipNow, line, sub, usable: usableBy(it, c) };
   }
 
   if (it.kind === "bag") {
     const line = `${BAGS[it.tier]?.slots ?? "?"} slots — you carry ${bagCap(c) === Infinity ? "no bag" : bagCap(c)}`;
     // sub is deliberately blank — it.txt would just repeat the slot count.
-    return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "" };
+    // Phase 43 (CLAR-02, additive field): a bag is never class-restricted, so usable is always "".
+    return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "", usable: usableBy(it, c) };
   }
 
-  return { kind: it.kind, legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line: it.txt ?? "", sub: "" };
+  // Phase 43 (CLAR-02, additive field): the fallthrough (jewel/cloak/potion/tool/etc) is never class-restricted.
+  return { kind: it.kind, legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line: it.txt ?? "", sub: "", usable: usableBy(it, c) };
 }
 
 /**

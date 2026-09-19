@@ -43,6 +43,7 @@ test("lootCompare: a strictly-better weapon is an upgrade, equip-now", () => {
   assert.equal(cmp.equipNow, true);
   assert.equal(cmp.line, "+0.5 a swing");
   assert.equal(cmp.sub, it.txt);
+  assert.equal(cmp.usable, "(usable by Fighters)"); // Phase 43 (CLAR-02): Broadsword is F-only
 });
 
 test("lootCompare: a not-better weapon reads 'not an upgrade', no equip-now", () => {
@@ -52,6 +53,7 @@ test("lootCompare: a not-better weapon reads 'not an upgrade', no equip-now", ()
   assert.equal(cmp.upgrade, false);
   assert.equal(cmp.equipNow, false);
   assert.equal(cmp.line, "not an upgrade");
+  assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): Dagger is FTM, unrestricted
 });
 
 test("lootCompare: class-illegal weapon reads 'can't use (Fighter only)'", () => {
@@ -63,6 +65,7 @@ test("lootCompare: class-illegal weapon reads 'can't use (Fighter only)'", () =>
   assert.equal(cmp.equipNow, false);
   assert.ok(cmp.line.startsWith("can't use ("));
   assert.equal(cmp.line, "can't use (Fighter only)");
+  assert.equal(cmp.usable, "(usable by Fighters — not you)"); // Phase 43 (CLAR-02)
 });
 
 test("lootCompare: an Acrobat offered a non-dagger reads the acrobat-specific line", () => {
@@ -71,6 +74,7 @@ test("lootCompare: an Acrobat offered a non-dagger reads the acrobat-specific li
   const cmp = lootCompare(acrobat, it);
   assert.equal(cmp.reason, "acrobat");
   assert.equal(cmp.line, "can't use (Acrobat: dagger only)");
+  assert.equal(cmp.usable, "(usable by Fighters, Thieves — not you)"); // Phase 43 (CLAR-02)
 });
 
 // --- armor compare ------------------------------------------------------
@@ -84,6 +88,7 @@ test("lootCompare: a strictly-better armor is an upgrade with a fresh-drop durab
   assert.equal(cmp.equipNow, true);
   assert.equal(cmp.line, "AR 15 vs your AR 6 · upgrade");
   assert.equal(cmp.sub, "45/45 hp");
+  assert.equal(cmp.usable, "(usable by Fighters)"); // Phase 43 (CLAR-02): Plate is F-only, worn by a Fighter
 });
 
 test("lootCompare: a worn piece's remaining durability shows in sub (30/45), destroyed at 0", () => {
@@ -100,6 +105,7 @@ test("lootCompare: equal AR armor is not an upgrade", () => {
   const cmp = lootCompare(c, it);
   assert.equal(cmp.upgrade, false);
   assert.equal(cmp.line, "AR 6 vs your AR 6 · not an upgrade");
+  assert.equal(cmp.usable, "(usable by Fighters, Thieves)"); // Phase 43 (CLAR-02)
 });
 
 test("lootCompare: a noArmor race reads 'your kind wears no armour'", () => {
@@ -108,6 +114,7 @@ test("lootCompare: a noArmor race reads 'your kind wears no armour'", () => {
   const cmp = lootCompare(fridgian, it);
   assert.equal(cmp.reason, "noArmor");
   assert.equal(cmp.line, "can't use (your kind wears no armour)");
+  assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): FTM Cloth is unrestricted, so no suffix even though illegal for this race
 });
 
 test("lootCompare: a Woodsman offered Plate reads the woodsman-specific line", () => {
@@ -116,6 +123,7 @@ test("lootCompare: a Woodsman offered Plate reads the woodsman-specific line", (
   const cmp = lootCompare(woodsman, it);
   assert.equal(cmp.reason, "woodsman");
   assert.equal(cmp.line, "can't use (no mail or plate for a Woodsman)");
+  assert.equal(cmp.usable, "(usable by Fighters — not you)"); // Phase 43 (CLAR-02)
 });
 
 test("lootCompare: a plain Thief offered Mail reads 'can't use (Fighter only)' (tooHeavy)", () => {
@@ -124,6 +132,7 @@ test("lootCompare: a plain Thief offered Mail reads 'can't use (Fighter only)' (
   const cmp = lootCompare(thief, it);
   assert.equal(cmp.reason, "tooHeavy");
   assert.equal(cmp.line, "can't use (Fighter only)");
+  assert.equal(cmp.usable, "(usable by Fighters — not you)"); // Phase 43 (CLAR-02)
 });
 
 // --- bag / misc compare ---------------------------------------------------
@@ -137,6 +146,7 @@ test("lootCompare: a bag item shows the slot delta, never equip-now", () => {
   assert.equal(cmp.legal, true);
   assert.equal(cmp.line, "6 slots — you carry 4");
   assert.equal(cmp.sub, "");
+  assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): a bag is never class-restricted
 });
 
 test("lootCompare: a plain treasure item (jewel) just shows its txt", () => {
@@ -148,6 +158,7 @@ test("lootCompare: a plain treasure item (jewel) just shows its txt", () => {
   assert.equal(cmp.legal, true);
   assert.equal(cmp.line, "x");
   assert.equal(cmp.sub, "");
+  assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): a jewel is never class-restricted
 });
 
 // --- lootCompare never disagrees with takeItem (property check) -----------
