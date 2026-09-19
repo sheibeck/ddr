@@ -51,7 +51,7 @@
 
 Deferred — tracked, not in this roadmap.
 
-- **UX-06** first-run tutorial (rebuilt on the modular shell — the reason SHELL-01..03 exist)
+- **UX-06** first-run tutorial — rebuilt from scratch on the modular shell (Phase 46 deleted the 04-era sequencer; the reason SHELL-01..03 exist)
 - **STR-01..04/06** Google Play production launch
 - **TUNE-06/07** human DR round + tier-3/5 roster decision
 - Store restyle to the dark vocabulary; dice-mode setting; haptics polish; climb dice payload

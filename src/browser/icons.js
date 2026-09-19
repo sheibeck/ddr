@@ -6,7 +6,7 @@
 // 1430) AND the design mockup's Unicode glyphs (CONTEXT.md decision).
 //
 // FEATURE_ICONS/featureKeyForCell are pure and DOM-free (unit-tested under
-// node --test, see test/unit/tutorial.test.js). preloadIcons/drawFeatureIcon
+// node --test, see test/unit/icons.test.js). preloadIcons/drawFeatureIcon
 // touch the DOM (Image/CanvasRenderingContext2D) — they are only ever
 // INVOKED from browser code, never at this module's top level, so importing
 // this module under node --test never throws (no Image() is constructed

@@ -1,34 +1,22 @@
-// Task 3 (TDD) — Coach-mark sequencer + feature-icon loader (UX-06, UX-03 icons).
+// test/unit/icons.test.js
 //
-// RED-first: this file imports src/browser/tutorial.js (does not exist yet)
-// and featureKeyForCell from src/browser/icons.js (does not exist yet), so
-// `node --test` fails to load it. Implementing both modules (GREEN) turns it
-// green.
+// Pins for src/browser/icons.js: FEATURE_ICONS / PLAYER_MARKER_ICON /
+// featureKeyForCell / drawFeatureIcon rotation + scale. featureKeyForCell
+// maps every engine feat key mazeworld.html's draw() renders (dot/tele/one/
+// trap/chest/climb/gorge/exit/gate) to the correct one of the 9 provided PNG
+// keys. icons.js's Image()/canvas parts are browser-only and deferred to
+// device-UAT — this file only exercises the pure featureKeyForCell mapping,
+// and asserts icons.js imports cleanly under node --test (no Image()
+// construction at module top level).
 //
-// Covers (04-03-PLAN.md must_haves / T-04-07): the sequencer's
-// current()/next()/dismiss()/isComplete() transitions, tutorialSeen
-// round-tripping ONLY through window.mzStorage/storage.js (never raw
-// localStorage), every COACH_MARK_STEPS copy staying within the "no wall of
-// text" length cap, and featureKeyForCell mapping every engine feat key
-// mazeworld.html's draw() renders (dot/tele/one/trap/chest/climb/gorge/
-// exit/gate) to the correct one of the 9 provided PNG keys. icons.js's
-// Image()/canvas parts are browser-only and deferred to device-UAT — this
-// file only exercises the pure featureKeyForCell mapping, and asserts icons.js
-// imports cleanly under node --test (no Image() construction at module top
-// level).
+// Moved (git mv, history follows) from the test file the 04-era coach-mark
+// sequencer shared a home with (Phase 46, DEAD-05: the sequencer module and
+// its ten sequencer/seen-flag tests were deleted — see PROJECT.md Key
+// Decisions). These fifteen icons.js pins are unchanged by the move.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  COACH_MARK_STEPS,
-  COACH_MARK_COPY_MAX_CHARS,
-  makeTutorialSequencer,
-  getTutorialSeen,
-  setTutorialSeen,
-  TUTORIAL_SEEN_KEY,
-} from "../../src/browser/tutorial.js";
-import { flush as flushStorage } from "../../src/browser/storage.js";
 import { FEATURE_ICONS, PLAYER_MARKER_ICON, featureKeyForCell, drawFeatureIcon } from "../../src/browser/icons.js";
 
 /** A minimal fake CanvasRenderingContext2D that just records call order/args. */
@@ -43,113 +31,6 @@ function makeFakeCtx() {
     drawImage: (img, x, y, w, h) => calls.push(["drawImage", x, y, w, h]),
   };
 }
-
-async function withFakeLocalStorage(fn) {
-  const store = new Map();
-  const previous = globalThis.localStorage;
-  globalThis.localStorage = {
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: (k) => store.delete(k),
-  };
-  try {
-    return await fn(globalThis.localStorage, store);
-  } finally {
-    if (previous === undefined) delete globalThis.localStorage;
-    else globalThis.localStorage = previous;
-  }
-}
-
-// --- sequencer transitions ---------------------------------------------------
-
-test("makeTutorialSequencer: current() starts at the first step", () => {
-  const seq = makeTutorialSequencer(COACH_MARK_STEPS);
-  assert.equal(seq.current(), COACH_MARK_STEPS[0]);
-  assert.equal(seq.isComplete(), false);
-});
-
-test("makeTutorialSequencer: next() advances through every fixed step in order", () => {
-  const seq = makeTutorialSequencer(COACH_MARK_STEPS);
-  for (let i = 1; i < COACH_MARK_STEPS.length; i++) {
-    const step = seq.next();
-    assert.equal(step, COACH_MARK_STEPS[i]);
-    assert.equal(seq.current(), COACH_MARK_STEPS[i]);
-  }
-});
-
-test("makeTutorialSequencer: next() past the last step completes the sequence", () => {
-  const seq = makeTutorialSequencer(COACH_MARK_STEPS);
-  for (let i = 1; i < COACH_MARK_STEPS.length; i++) seq.next();
-  assert.equal(seq.isComplete(), false); // still on the last real step
-  const past = seq.next();
-  assert.equal(past, null);
-  assert.equal(seq.isComplete(), true);
-  assert.equal(seq.current(), null);
-});
-
-test("makeTutorialSequencer: dismiss() completes the sequence immediately from any step", () => {
-  const seq = makeTutorialSequencer(COACH_MARK_STEPS);
-  seq.next();
-  seq.dismiss();
-  assert.equal(seq.isComplete(), true);
-  assert.equal(seq.current(), null);
-  assert.equal(seq.next(), null); // no-op once complete
-});
-
-test("makeTutorialSequencer: an empty step list starts already complete", () => {
-  const seq = makeTutorialSequencer([]);
-  assert.equal(seq.isComplete(), true);
-  assert.equal(seq.current(), null);
-});
-
-// --- tutorialSeen persistence (window.mzStorage / storage.js ONLY) ----------
-
-test("getTutorialSeen(): unset store defaults to false (fail-open — tutorial shows on a genuine first run)", async () => {
-  await withFakeLocalStorage(async () => {
-    assert.equal(await getTutorialSeen(), false);
-  });
-});
-
-test("setTutorialSeen()/getTutorialSeen(): round-trips through storage.js (window.mzStorage's backing abstraction)", async () => {
-  await withFakeLocalStorage(async (_ls, store) => {
-    await setTutorialSeen(true);
-    await flushStorage();
-    assert.equal(await getTutorialSeen(), true);
-    assert.equal(store.has(TUTORIAL_SEEN_KEY), true);
-
-    await setTutorialSeen(false);
-    await flushStorage();
-    assert.equal(await getTutorialSeen(), false);
-  });
-});
-
-test("tutorial.js never touches raw localStorage directly (only via storage.js/window.mzStorage)", async () => {
-  const fs = await import("node:fs");
-  const src = fs.readFileSync(new URL("../../src/browser/tutorial.js", import.meta.url), "utf8");
-  assert.equal(/\blocalStorage\b/.test(src), false);
-});
-
-// --- coach-mark copy length cap ("no wall of text") -------------------------
-
-test("COACH_MARK_STEPS: exactly the ~4 fixed onboarding steps from 04-CONTEXT.md (move / trap / descend / starving)", () => {
-  assert.equal(COACH_MARK_STEPS.length, 4);
-  for (const step of COACH_MARK_STEPS) {
-    assert.equal(typeof step.id, "string");
-    assert.equal(typeof step.target, "string");
-    assert.equal(typeof step.copy, "string");
-  }
-});
-
-test("COACH_MARK_STEPS: every step's copy stays within the 'no wall of text' length cap", () => {
-  for (const step of COACH_MARK_STEPS) {
-    assert.ok(
-      step.copy.length <= COACH_MARK_COPY_MAX_CHARS,
-      `step "${step.id}" copy is ${step.copy.length} chars, over the ${COACH_MARK_COPY_MAX_CHARS} cap: "${step.copy}"`
-    );
-    // "1-2 short lines" — no more than one internal line break.
-    assert.ok(step.copy.split("\n").length <= 2, `step "${step.id}" copy has more than 2 lines`);
-  }
-});
 
 // --- featureKeyForCell (icons.js, pure, DOM-free) ----------------------------
 
