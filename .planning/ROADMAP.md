@@ -154,7 +154,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 44-03-PLAN.md — DEAD-02: `window.__mzTables` bridge from `content/index.js` for the 9 surviving table copies (RACE_NOTE/CLASS_NOTE/SUB_NOTE + ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES, six of them drifted); classic copies deleted; `shell-no-content-copies.test.js` source pin (85-name set, 24/6/3 byte-equality, fail-first proven)
+- [x] 44-03-PLAN.md — DEAD-02: `window.__mzTables` bridge from `content/index.js` for the 9 surviving table copies (RACE_NOTE/CLASS_NOTE/SUB_NOTE + ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES, six of them drifted); classic copies deleted; `shell-no-content-copies.test.js` source pin (85-name set, 24/6/3 byte-equality, fail-first proven)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -304,7 +304,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 44. Retire the Classic Engine from the Shell | v1.6 | 2/4 | In Progress|  |
+| 44. Retire the Classic Engine from the Shell | v1.6 | 3/4 | In Progress|  |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 0/TBD | Not started | - |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 0/TBD | Not started (discuss recommended: DEAD-05) | - |
 | 47. Shell Modularisation | v1.6 | 0/TBD | Not started (discuss recommended: module boundaries) | - |

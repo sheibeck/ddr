@@ -13,7 +13,7 @@
 ### Dead code (DEAD)
 
 - [x] **DEAD-01**: `mazeworld.html` no longer defines any of the 16 pre-extraction classic-engine mirrors (`castSpell`, `parley`, `startCombat`, `meetJoiner`, `genFloor`, `rollCharacter`, `descend`, `makeCamp`, `takeItem`, `useItem`, `playerStrike`, `foeTurn`, `killFoe`, `openStore`, `readScroll`, `drinkPotion`) nor any helper, table or constant that only they referenced; the game plays identically through `engine/`
-- [ ] **DEAD-02**: The Hero-tab dossier text is read from `content/flavor.js` (single source) — the classic `SUB_NOTE` table and its 13 drifted rows are gone, and a source-pin test proves the shell has no second copy of any `content/` table
+- [x] **DEAD-02**: The Hero-tab dossier text is read from `content/flavor.js` (single source) — the classic `SUB_NOTE` table and its 13 drifted rows are gone, and a source-pin test proves the shell has no second copy of any `content/` table
 - [x] **DEAD-03**: Every test that `new Function`-extracts a classic helper from the shell as a drift tripwire (`parley-button-mirror`, the classic `eff(key)`, `canParley`/`fluency`, the classic CLOAKS/Cloak of Armor txt mirror, …) is re-pointed at the `engine/`/`content/` implementation it was guarding, or deleted with its reason recorded; `shell-map-invariants` stays green
 - [ ] **DEAD-04**: `winGame()` / `state.won` and their parity carve-out are removed (RUN-04 made them unreachable); the harness no longer strips a `won` field
 - [ ] **DEAD-05**: `src/browser/tutorial.js` is either deleted (with a note that UX-06 rebuilds on the modular shell) or parked with a header stating why it is unreferenced — decided in the phase, not left ambiguous
@@ -73,7 +73,7 @@ Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DEAD-01 | Phase 44 | Complete |
-| DEAD-02 | Phase 44 | Pending |
+| DEAD-02 | Phase 44 | Complete |
 | DEAD-03 | Phase 44 | Complete |
 | DEAD-04 | Phase 46 | Pending |
 | DEAD-05 | Phase 46 | Pending |

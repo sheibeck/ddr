@@ -5,15 +5,15 @@ milestone_name: Shell Debt & Dead Code
 current_phase: 44
 current_phase_name: Retire the Classic Engine from the Shell
 status: executing
-stopped_at: Completed 44-02-PLAN.md — deletion layers 2+3 landed (c2aaeb4, 32372e3); mazeworld.html 7670 -> 6600 lines
-last_updated: "2026-09-19T15:46:54.187Z"
+stopped_at: Completed 44-03-PLAN.md — window.__mzTables bridge + DEAD-02 source pin landed (20b818a, 8da2ce3); mazeworld.html 6600 -> 6493 lines
+last_updated: "2026-09-19T16:03:20.221Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 44 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — v1.6 Shell Debt & Dead Code st
 ## Current Position
 
 Phase: 44 (Retire the Classic Engine from the Shell) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 44 execution started
 
@@ -121,8 +121,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T15:46:54.160Z
-Stopped at: Completed 44-02-PLAN.md — deletion layers 2+3 landed (c2aaeb4, 32372e3); mazeworld.html 7670 -> 6600 lines
+Last session: 2026-09-19T16:03:20.192Z
+Stopped at: Completed 44-03-PLAN.md — window.__mzTables bridge + DEAD-02 source pin landed (20b818a, 8da2ce3); mazeworld.html 6600 -> 6493 lines
 Resume file: None
 
 ## Operator Next Steps
@@ -231,6 +231,7 @@ Resume file: None
 | Phase 38 P05 | 30min | 3 tasks | 11 files |
 | Phase 44 P01 | 35min | 3 tasks | 10 files |
 | Phase 44 P02 | 55min | 2 tasks | 11 files |
+| Phase 44 P03 | ~40min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -432,6 +433,7 @@ Resume file: None
 - [Phase ?]: 44-02: reveal() restored per A-1 (window.__mzClassicBoot resume branch still calls it live; Plan 44-04 removes the call site)
 - [Phase ?]: 44-02: A-3 resolved — newBeat/CAPTURE kept (still called from act()/say(), independent of deleted beginEvent/evt)
 - [Phase ?]: 44-02: shell-sweep.mjs gained isForeignMemberAccess() — obj.NAME member-access reads (obj != window/globalThis) excluded from refs/orphans matching
+- [Phase ?]: window.__mzTables bridges content/'s nine display tables (RACE_NOTE/CLASS_NOTE/SUB_NOTE/ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES) to the classic shell renderers; content/index.js measured 79 exports (not the planner's 85 estimate) — source-pin test derives its name set live, never hand-maintained
 
 ### Blockers
 
