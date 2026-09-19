@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 after Phase 43 — v1.5 code-compl
 Phase: Milestone v1.5 complete
 Plan: —
 Status: Awaiting next milestone — v1.5 device UAT batch (140 checks, one debug APK) runs first; then stand up the Shell Debt & Dead Code cleanup milestone from `.planning/todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md`
-Last activity: 2026-09-19 — Milestone v1.5 completed and archived (`.planning/milestones/v1.5-*`)
+Last activity: 2026-09-18 — Completed quick task 260918-vm3 (stationary map camera) + fast Pilfer-torch fix; 260918-vvt (potions/scrolls bag-free) executing; 260918-w4n (use-activated magic items, staff to bag) planning
 
 ## Ground Truth (durable facts every session needs)
 
@@ -73,6 +73,8 @@ Last activity: 2026-09-19 — Milestone v1.5 completed and archived (`.planning/
 | 4 | fast: player-facing WP -> HP (HUD readout + rules note) \| 2026-09-17 \| 67192d5 \| inline (/gsd-fast) | 2026-09-17 | 67192d5 | — |
 | 5 | 260917-bbs \| v1.4 UAT fixes round 2: composited party pulse + paused under the encounter panel, idle rail hidden while a panel is up, joiner strip off map/combat → Hero-tab Company panel, no inline bag-full line on the loot screen, PNG icons on feature rail cards / hold-inspect / encounter+stair overlays \| 2026-09-17 \| f3cc7e2 \| [260917-bbs-v1-4-uat-fixes-round-2](./quick/260917-bbs-v1-4-uat-fixes-round-2/) | 2026-09-17 | f3cc7e2 | — |
 | 6 | fast: rail global — visible on any tab only when it has a card; idle hides everywhere (reverses map-tab-only) \| 2026-09-17 \| a0d7747 \| inline (/gsd-fast) | 2026-09-17 | a0d7747 | — |
+| 260918-vm3 | Stationary map camera: the party sprite moves, the map only shifts on drag / a keep-in-view nudge within 2 cells of an edge / CENTRE chip / stairs / teleport / new run (`keepInViewAxis` in src/browser/controls.js) | 2026-09-18 | 21d5dfd | [260918-vm3-map-camera-follows-player-only-on-drag-o](./quick/260918-vm3-map-camera-follows-player-only-on-drag-o/) |
+| fast | Pilfer can light a torch — `kind:"tool"` exempt from the Pilfer non-healing magic-item gate in engine/items.js#useItem | 2026-09-18 | a1777f8 | inline |
 
 ### Pending Todos
 
