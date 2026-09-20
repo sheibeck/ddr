@@ -47,18 +47,22 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList and the GEAR
+// tab's carried/on-you rendering moved into src/browser/gearTab.js.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 // ─── 1. module bridges ──────────────────────────────────────────────────
 
 test("Phase 29 (LOOT-03/04): the module bridges lootCompare/bagUsage", () => {
-  // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
-  // gearTab.js — the shared viewModels.js import line no longer carries
-  // them; bagUsage's own import now reads from gearTab.js.
+  // Phase 47 (SHELL-01), Plan 03: bagUsage/itemRowState/emptySlotRows/
+  // GEAR_COPY moved to gearTab.js — the shared viewModels.js import line no
+  // longer carries them; the classic module script's gearTab.js import line
+  // carries bagUsage plus the Task 2 mount function + shared list.
   assert.match(
     CODE,
     /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
-  assert.match(CODE, /import \{ bagUsage, itemRowState, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/gearTab\.js";/);
+  assert.match(CODE, /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.match(CODE, /window\.__mzBagUsage = bagUsage;/);
   assert.match(CODE, /window\.__mzLootCompare = lootCompare;/);
 });
@@ -114,10 +118,10 @@ test("Phase 29 (LOOT-02, RESEARCH Pitfall 4): noteCombat hands the report to win
 // ─── 4. renderCarriedList knows subFor + the three loot actions ──────────
 
 function renderCarriedListRegion() {
-  const start = CODE.indexOf("function renderCarriedList(");
-  const end = CODE.indexOf("function renderDropShelf(");
+  const start = GEAR_SRC.indexOf("export function renderCarriedList(");
+  const end = GEAR_SRC.indexOf("export function renderGearTab(");
   assert.ok(start !== -1 && end !== -1 && end > start, "renderCarriedList region bounds found");
-  return CODE.slice(start, end);
+  return GEAR_SRC.slice(start, end);
 }
 
 test("Phase 29 (LOOT-03): renderCarriedList supports opts.subFor and the loot row actions", () => {
@@ -194,7 +198,8 @@ test("Phase 29 (LOOT-02/03/04/06)/2026-09-17 UAT: no inline bag-full line, the s
   assert.match(region, /window\.__mzBagUsage\(c\)/);
   assert.match(region, /window\.__mzLootReport/);
   assert.match(region, /id="loot-list"/);
-  assert.match(region, /renderCarriedList\(/);
+  // Phase 47 (SHELL-01), Plan 03: renderCarriedList( -> window.__mzCarriedList(
+  assert.match(region, /window\.__mzCarriedList\(/);
   assert.match(region, /actions: \["lootEquip", "lootTake", "lootLeave"\]/);
   assert.match(region, /subFor/);
   assert.match(region, /window\.__mzLootCompare\(c, it\)/);
@@ -244,15 +249,15 @@ test("Phase 29 (LOOT-02): the joiner region is untouched (no pendingLoot leaked 
 // ─── 7. LOOT-04: every readout routes through bagUsage — no raw count survives ──
 
 function paintCarryRegion() {
-  const start = CODE.indexOf('const carry = document.getElementById("s-carry");');
-  const end = CODE.indexOf("renderCarriedList(carry,");
-  assert.ok(start !== -1 && end !== -1 && end > start, "paint() carried-treasure region bounds found");
-  return CODE.slice(start, end);
+  const start = GEAR_SRC.indexOf('const carry = doc.getElementById("s-carry");');
+  const end = GEAR_SRC.indexOf("renderCarriedList(carry, state, items, {");
+  assert.ok(start !== -1 && end !== -1 && end > start, "renderGearTab's carried-treasure region bounds found");
+  return GEAR_SRC.slice(start, end);
 }
 
-test("Phase 29 (LOOT-04): paint()'s carried-treasure readout and full-bag gate read window.__mzBagUsage", () => {
+test("renderGearTab (gearTab.js): its carried-treasure readout and full-bag gate read bagUsage(c)", () => {
   const region = paintCarryRegion();
-  assert.match(region, /window\.__mzBagUsage\(c\)/);
+  assert.match(region, /bagUsage\(c\)/);
   assert.match(region, /usage\.text/);
   assert.match(region, /usage\.full/);
 });
@@ -295,9 +300,11 @@ test("quick 260918-vvt (a): a SEPARATE import { takesBagSlot } line exists; the 
     (CODE.match(/^\s*import \{ takesBagSlot \} from "\.\/engine\/derived\.js";\s*$/gm) || []).length,
     1,
   );
+  // Phase 47 (SHELL-01), Plan 03: slotFor/WORN_SLOTS/WORN_KEYS_OF dropped
+  // off this line — gearTab.js imports them from engine/derived.js directly.
   assert.match(
     CODE,
-    /import \{ conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
+    /import \{ conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
   );
 });
 
@@ -327,9 +334,9 @@ test("quick 260918-vvt (d): the loot screen's needsSlot routes through window.__
   assert.match(region, /usage\.full && needsSlot/);
 });
 
-test("quick 260918-vvt (e): paint()'s carried-treasure header appends gearCopy.freeRide only for a capped bag", () => {
+test("quick 260918-vvt (e): renderGearTab's carried-treasure header appends GEAR_COPY.freeRide only for a capped bag", () => {
   const region = paintCarryRegion();
-  assert.match(region, /gearCopy\.freeRide/);
+  assert.match(region, /GEAR_COPY\.freeRide/);
   assert.match(region, /usage\.slots !== null/);
 });
 

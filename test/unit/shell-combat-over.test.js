@@ -187,14 +187,15 @@ test("CSCR-07: the loot branch renders won/soothed through renderCombatOver with
   // inside the wrap it just built — never by document id on a detached node.
   const over = overRegion();
   assert.ok(over.indexOf("host.appendChild(mid);") !== -1 && over.indexOf("host.appendChild(mid);") < over.indexOf("opts.fillMid(mid)"), "mid attached before fillMid");
-  assert.match(region, /renderCarriedList\(wrap\.querySelector\("#loot-list"\)/);
+  // Phase 47 (SHELL-01), Plan 03: renderCarriedList( -> window.__mzCarriedList(
+  assert.match(region, /window\.__mzCarriedList\(wrap\.querySelector\("#loot-list"\)/);
   assert.match(region, /wrap\.querySelector\("#loot-drop-shelf"\)/);
   assert.doesNotMatch(region, /document\.getElementById\("loot-list"\)/);
   const literals = [
     "window.__mzBagUsage(c)",
     "window.__mzLootReport",
     'id="loot-list"',
-    "renderCarriedList(",
+    "window.__mzCarriedList(",
     'actions: ["lootEquip", "lootTake", "lootLeave"]',
     "guard: true",
     "subFor",

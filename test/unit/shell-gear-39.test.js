@@ -44,6 +44,9 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: wornSlotRow/renderCarriedList moved
+// into src/browser/gearTab.js.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -57,8 +60,10 @@ function sliceBetween(source, startMarker, endMarker) {
 
 test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridged read-only, once each", () => {
   // Phase 41 (TERR-03), Plan 04: the shared derived.js import line gained
-  // mapViewRadius/inViewWindow as sibling named imports.
-  assert.match(CODE, /import \{ conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
+  // mapViewRadius/inViewWindow as sibling named imports. Phase 47 (SHELL-01),
+  // Plan 03, Task 2: slotFor/WORN_SLOTS/WORN_KEYS_OF dropped from this line —
+  // their only reader (gearTab.js) imports them from engine/derived.js directly.
+  assert.match(CODE, /import \{ conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.match(CODE, /import \{ toolIndex \} from "\.\/engine\/items\.js";/);
   // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
   // gearTab.js — the shared viewModels.js import line no longer carries them.
@@ -66,12 +71,15 @@ test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridg
     CODE,
     /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
-  assert.match(CODE, /import \{ bagUsage, itemRowState, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/gearTab\.js";/);
+  assert.match(CODE, /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.equal((CODE.match(/window\.__mzHasTool = hasTool;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzToolIndex = toolIndex;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzToHit = toHit;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzStrikeDie = strikeDie;/g) || []).length, 1);
-  assert.equal((CODE.match(/window\.__mzItemRowState = itemRowState;/g) || []).length, 1);
+  // Phase 47 (SHELL-01), Plan 03, Task 2: __mzItemRowState is gone — its
+  // readers (gearTab.js, combatMenu.js) import itemRowState directly now.
+  assert.equal((CODE.match(/window\.__mzItemRowState = itemRowState;/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/^export function itemRowState\(/m) || []).length, 1);
 });
 
 // ─── 2. window.mzUseTool + stepWith(action) refactor ──────────────────────
@@ -121,16 +129,18 @@ test("renderRail: the climb retry card offers the matching tool when carried; th
 
 // ─── 4. Gear-tab row builders on itemRowState ─────────────────────────────
 
-test("Gear tab: wornSlotRow and renderCarriedList's row builder both read window.__mzItemRowState(S, it); neither carries the retired it.every cooldown expression", () => {
-  const wornSlotRegion = sliceBetween(CODE, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, items, {");
-  assert.match(wornSlotRegion, /window\.__mzItemRowState\(S, it\)/);
+test("Gear tab: wornSlotRow and renderCarriedList's row builder both read itemRowState(state, it); neither carries the retired it.every cooldown expression", () => {
+  // Phase 47 (SHELL-01), Plan 03, Task 2: both builders moved into
+  // src/browser/gearTab.js, and the bridge call is now a direct import call.
+  const wornSlotRegion = sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
+  assert.match(wornSlotRegion, /itemRowState\(state, it\)/);
   assert.doesNotMatch(wornSlotRegion, /it\.every \?/);
 
-  const rowsRegion = sliceBetween(CODE, "rows.forEach(({ it, i }) => {", "for (const a of (opts.actions");
-  assert.match(rowsRegion, /window\.__mzItemRowState\(S, it\)/);
+  const rowsRegion = sliceBetween(GEAR_SRC, "rows.forEach(({ it, i }) => {", "for (const a of (opts.actions");
+  assert.match(rowsRegion, /itemRowState\(state, it\)/);
   assert.doesNotMatch(rowsRegion, /it\.every \?/);
 
-  assert.equal((CODE.match(/__mzItemRowState\(S, it\)/g) || []).length >= 2, true);
+  assert.equal((GEAR_SRC.match(/itemRowState\(state, it\)/g) || []).length >= 2, true);
 });
 
 // ─── 5. Chip copy tables + explainCondition ───────────────────────────────

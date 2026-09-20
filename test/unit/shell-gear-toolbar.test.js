@@ -45,6 +45,9 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList (and the GEAR
+// tab's carried/on-you rendering) moved into src/browser/gearTab.js.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -55,11 +58,11 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 function renderCarriedListRegion() {
-  return sliceBetween(CODE, "function renderCarriedList(", "function renderDropShelf(");
+  return sliceBetween(GEAR_SRC, "export function renderCarriedList(", "export function renderGearTab(");
 }
 
-function paintCarryRegion() {
-  return sliceBetween(CODE, 'const carry = document.getElementById("s-carry");', 'document.getElementById("doss-who")');
+function gearTabBodyRegion() {
+  return GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
 }
 
 function storeRegion() {
@@ -77,12 +80,13 @@ function chipsMarkup() {
 
 // ─── UIF-01: the GEAR action row + inline two-tap Drop confirm ───────────
 
-test("UIF-01: DROP_CONFIRM_MS is declared once, directly above renderCarriedList", () => {
-  assert.equal((CODE.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 1);
-  const idx = CODE.indexOf("const DROP_CONFIRM_MS = 3000;");
-  const fnIdx = CODE.indexOf("function renderCarriedList(");
+test("UIF-01: DROP_CONFIRM_MS is declared once, directly above renderCarriedList (src/browser/gearTab.js)", () => {
+  assert.equal((CODE.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 1);
+  const idx = GEAR_SRC.indexOf("const DROP_CONFIRM_MS = 3000;");
+  const fnIdx = GEAR_SRC.indexOf("export function renderCarriedList(");
   assert.ok(idx !== -1 && fnIdx !== -1 && idx < fnIdx, "DROP_CONFIRM_MS is declared above renderCarriedList");
-  assert.equal((CODE.match(/function revertDropConfirm\(\)/g) || []).length, 1);
+  assert.equal((GEAR_SRC.match(/function revertDropConfirm\(\)/g) || []).length, 1);
 });
 
 test("UIF-01: the setTimeout revert lives inside the renderCarriedList region, once", () => {
@@ -97,26 +101,29 @@ test("UIF-01: the gear action row + drop-confirm building blocks are all present
   assert.match(region, /"Drop it\?"/);
   assert.match(region, /mkBtn\("Yes"/);
   assert.match(region, /mkBtn\("No"/);
-  assert.equal((region.match(/document\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
-  assert.equal((region.match(/document\.removeEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
+  // Phase 47 (SHELL-01), Plan 03: document. -> doc. (container.ownerDocument).
+  assert.equal((region.match(/doc\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
+  assert.equal((region.match(/doc\.removeEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
   assert.match(region, /wrap\.isConnected/);
   assert.ok((region.match(/opts\.gearRow/g) || []).length >= 2, "opts.gearRow checked at least twice (drop branch + wrap block)");
 });
 
 test("UIF-01: non-gear Drop and the Phase 32 guard ternary are untouched inside the region", () => {
   const region = renderCarriedListRegion();
-  assert.match(region, /li\.appendChild\(mkBtn\("Drop", \(\) => window\.mzDropItem\?\.\(i\)\)\)/);
-  assert.match(region, /opts\.guard \? guardTap\(bt, onClick\) : \(bt\.onclick = onClick\)/);
+  // Phase 47 (SHELL-01), Plan 03: window.mzDropItem?./guardTap -> deps.dropItem?./deps.guardTap.
+  assert.match(region, /li\.appendChild\(mkBtn\("Drop", \(\) => deps\.dropItem\?\.\(i\)\)\)/);
+  assert.match(region, /opts\.guard \? deps\.guardTap\(bt, onClick\) : \(bt\.onclick = onClick\)/);
 });
 
-test("UIF-01: Yes dispatches through the existing mzDropItem bridge (no new engine action)", () => {
+test("UIF-01: Yes dispatches through the existing dropItem dep (no new engine action)", () => {
   const region = renderCarriedListRegion();
-  assert.ok((region.match(/window\.mzDropItem\?\.\(i\)/g) || []).length >= 2, "gear Yes + the non-gear Drop button both call mzDropItem");
+  assert.ok((region.match(/deps\.dropItem\?\.\(i\)/g) || []).length >= 2, "gear Yes + the non-gear Drop button both call deps.dropItem");
 });
 
 test("UIF-01: gearRow:true is passed at exactly the GEAR call site", () => {
-  assert.equal((CODE.match(/gearRow: true/g) || []).length, 1);
-  const carryRegion = paintCarryRegion();
+  assert.equal((CODE.match(/gearRow: true/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 1);
+  const carryRegion = gearTabBodyRegion();
   assert.match(carryRegion, /gearRow: true/);
   const store = storeRegion();
   assert.doesNotMatch(store, /gearRow/);
@@ -128,8 +135,10 @@ test("Phase 34: guard:true occurs exactly once (Phase 34 folded the combat use-l
 
 test("UIF-01: the Use-button pin (every activatable item) is untouched", () => {
   // 260918-w4n (use-activated-only): the gate moved from a raw `it.use`
-  // string to the ONE row-state rule (st.kind !== "none").
-  assert.equal((CODE.match(/st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 1);
+  // string to the ONE row-state rule (st.kind !== "none"). Phase 47
+  // (SHELL-01), Plan 03: this now lives in src/browser/gearTab.js.
+  assert.equal((CODE.match(/st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 1);
 });
 
 test("UIF-01: .mw-gear-actions carries display:flex, width:100% and touch-action:manipulation; no transition/animation token anywhere in the two new CSS rules", () => {

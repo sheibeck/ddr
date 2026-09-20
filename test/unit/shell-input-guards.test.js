@@ -79,9 +79,9 @@ function wireDeathConfirmRegion() {
   return sliceBetween(CODE, "function wireDeathConfirm", "function foeStatusBadges(");
 }
 
-function renderCarriedListRegion() {
-  return sliceBetween(CODE, "function renderCarriedList(", "function renderDropShelf(");
-}
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList moved into
+// src/browser/gearTab.js — its own source is the region now, not mazeworld.html.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function storeRegion() {
   return sliceBetween(CODE, "if (S.store) {", 'document.getElementById("a-leave").onclick');
@@ -221,9 +221,8 @@ test("wireDeathConfirm region: Confirm is wired through guardTap", () => {
   assert.doesNotMatch(region, /btn\.onclick =/);
 });
 
-test("renderCarriedList region: mkBtn routes through guardTap when opts.guard is set", () => {
-  const region = renderCarriedListRegion();
-  assert.match(region, /opts\.guard \? guardTap\(bt, onClick\)/);
+test("renderCarriedList (gearTab.js): mkBtn routes through deps.guardTap when opts.guard is set", () => {
+  assert.match(GEAR_SRC, /opts\.guard \? deps\.guardTap\(bt, onClick\)/);
 });
 
 test("guard: true appears exactly once — the loot card (Phase 34 folded the combat use-list into the ITEMS submenu)", () => {

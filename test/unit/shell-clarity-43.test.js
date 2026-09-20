@@ -43,6 +43,9 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: the ON YOU/ALSO ON YOU/BAG paint
+// body (the carry region + the kit rows) moved into src/browser/gearTab.js.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -93,11 +96,13 @@ function gearScreenMarkup() {
 }
 
 function paintCarryRegion() {
-  return sliceBetween(CODE, 'const carry = document.getElementById("s-carry");', 'document.getElementById("doss-who")');
+  const start = GEAR_SRC.indexOf('const carry = doc.getElementById("s-carry");');
+  assert.ok(start !== -1, 'start marker not found: const carry = doc.getElementById("s-carry");');
+  return GEAR_SRC.slice(start);
 }
 
 function kitRegion() {
-  return sliceBetween(CODE, "const rows = [", 'rows.push(["Kills"');
+  return sliceBetween(GEAR_SRC, "const rows = [", 'rows.push(["Kills"');
 }
 
 function renderDropShelfRegion() {
@@ -127,30 +132,34 @@ test("import: a NEW, separate viewModels import line carries the four Phase 43 e
 });
 
 // Phase 47 (SHELL-01), Plan 03, Task 1 — bagUsage/itemRowState/emptySlotRows/
-// GEAR_COPY moved from viewModels.js to gearTab.js; the classic module script
-// imports all four from the new module in one line.
-test("import: the gearTab.js import line carries bagUsage/itemRowState/emptySlotRows/GEAR_COPY, exactly once", () => {
+// GEAR_COPY moved from viewModels.js to gearTab.js. Task 2 — the classic
+// module script's import line was extended to renderGearTab/renderCarriedList
+// (the mount function + shared list) and itemRowState/emptySlotRows/GEAR_COPY
+// dropped off it (gearTab.js is their only remaining classic-script-adjacent
+// reader, and it reaches them as plain in-module bindings, not an import).
+test("import: the gearTab.js import line carries bagUsage/renderGearTab/renderCarriedList, exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ bagUsage, itemRowState, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/gearTab\.js";/g,
+      /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/g,
     ) || []).length,
     1,
   );
 });
 
-test("bridges: the four Phase 43 read-only bridges each occur exactly once, after window.__mzItemRowState", () => {
-  const iItemRowState = CODE.indexOf("window.__mzItemRowState = itemRowState;");
-  assert.notEqual(iItemRowState, -1);
+test("bridges: __mzUsableBy/__mzRations/__mzDropShelfItems occur exactly once each, after __mzConditionsOf; __mzGear/__mzItemRowState are retired", () => {
+  const iConditionsOf = CODE.indexOf("window.__mzConditionsOf = conditionsOf;");
+  assert.notEqual(iConditionsOf, -1);
   for (const bridge of [
     "window.__mzUsableBy = usableBy;",
     "window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };",
     "window.__mzDropShelfItems = dropShelfItems;",
-    "window.__mzGear = { emptySlotRows, copy: GEAR_COPY };",
   ]) {
     const matches = CODE.match(new RegExp(bridge.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
     assert.equal(matches.length, 1, `expected exactly one occurrence of: ${bridge}`);
-    assert.ok(CODE.indexOf(bridge) > iItemRowState, `${bridge} must come after window.__mzItemRowState`);
+    assert.ok(CODE.indexOf(bridge) > iConditionsOf, `${bridge} must come after __mzConditionsOf`);
   }
+  assert.equal((CODE.match(/window\.__mzGear = /g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzItemRowState = /g) || []).length, 0);
 });
 
 test("bridges: window.__mzNightlyEats stays byte-identical (the camp button's own source, untouched)", () => {
@@ -303,36 +312,40 @@ test("GEAR_COPY.onYou/bag match the two h2 headings case-insensitively", () => {
 
 // ─── (11) paint()'s carry region: onyou rows, head rows, empty rows ──────
 
-test("paint(): #s-onyou is declared right beside #s-carry, both cleared; wornRow/wornSlotRow/headRow/emptyRow all append to onyou", () => {
+test("renderGearTab (gearTab.js): #s-onyou is declared right beside #s-carry, both cleared; wornRow/wornSlotRow/headRow/emptyRow all append to onyou", () => {
   const region = paintCarryRegion();
-  assert.match(region, /const onyou = document\.getElementById\("s-onyou"\);/);
+  assert.match(region, /const onyou = doc\.getElementById\("s-onyou"\);/);
   assert.match(region, /onyou\.innerHTML = "";/);
   assert.equal((region.match(/onyou\.appendChild\(li\)/g) || []).length, 4, "wornRow + wornSlotRow + headRow + emptyRow each append to onyou");
-  assert.match(region, /window\.__mzGear\.emptySlotRows\(c\)/);
-  assert.match(region, /headRow\(gearCopy\.wielded\);/);
-  assert.match(region, /headRow\(gearCopy\.worn\);/);
+  assert.match(region, /emptySlotRows\(c\)/);
+  assert.match(region, /headRow\(GEAR_COPY\.wielded\);/);
+  assert.match(region, /headRow\(GEAR_COPY\.worn\);/);
   // The pinned anchors/order from shell-worn-slots.test.js still hold.
   const iArmorRow = region.indexOf("wornRow(armorD.label");
   const iWornSlotRow = region.indexOf("const wornSlotRow = (slot, it) => {");
-  const iRenderCarried = region.indexOf("renderCarriedList(carry, items, {");
+  const iRenderCarried = region.indexOf("renderCarriedList(carry, state, items, {");
   assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1);
   assert.ok(iArmorRow < iWornSlotRow && iWornSlotRow < iRenderCarried);
 });
 
-test("paint(): the WORN_SLOTS loop and wornSlotRow's own body stay innerHTML-free, falling back to an in-voice empty row", () => {
-  const wornSlotRegion = sliceBetween(CODE, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, items, {");
+test("renderGearTab (gearTab.js): the WORN_SLOTS loop and wornSlotRow's own body stay innerHTML-free, falling back to an in-voice empty row", () => {
+  const wornSlotRegion = sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
   assert.doesNotMatch(wornSlotRegion, /innerHTML/);
-  assert.equal((CODE.match(/for \(const slot of \(window\.__mzWornSlots \|\| \[\]\)\)/g) || []).length, 1);
+  // Phase 47 (SHELL-01), Plan 03: window.__mzWornSlots -> the direct
+  // WORN_SLOTS import (always an array — no `|| []` fallback needed). Two
+  // occurrences now: emptySlotRows' own loop (Task 1, unchanged) and
+  // renderGearTab's wornSlotRow loop (Task 2, this test's real subject).
+  assert.equal((GEAR_SRC.match(/for \(const slot of WORN_SLOTS\)/g) || []).length, 2);
   assert.match(wornSlotRegion, /const r = emptyFor\(slot\); if \(r\) emptyRow\(r\.text\);/);
 });
 
 // ─── (12) the kit list: no weapon/armor duplicate, ALSO ON YOU head row ──
 
-test("Kit: the rows array no longer duplicates the weapon/armor rows; ALSO ON YOU heads the list", () => {
+test("Kit (gearTab.js): the rows array no longer duplicates the weapon/armor rows; ALSO ON YOU heads the list", () => {
   const region = kitRegion();
   assert.doesNotMatch(region, /armorD\.label, armorD\.under/);
   assert.match(region, /const rows = \[\s*\["Potions", c\.potions\],/);
-  assert.match(CODE, /li\.textContent = gearCopy\.alsoOnYou;/);
+  assert.match(GEAR_SRC, /li\.textContent = GEAR_COPY\.alsoOnYou;/);
 });
 
 // ─── (13) renderDropShelf: bag-only entries, both call sites ─────────────

@@ -58,6 +58,10 @@ function stripComments(source) {
   return noLineComments.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
 }
 
+// Phase 47 (SHELL-01), Plan 03, Task 2: DROP_CONFIRM_MS moved into
+// src/browser/gearTab.js along with renderCarriedList.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+
 const CODE = stripComments(HTML);
 
 function sliceBetween(source, startMarker, endMarker) {
@@ -100,8 +104,10 @@ test("Trio: DISMISS_CONFIRM_MS/dismissConfirmRevert/revertDismissConfirm() are d
   const revertFnIdx = CODE.indexOf("function revertDismissConfirm()");
   assert.ok(fnIdx !== -1 && constIdx !== -1 && letIdx !== -1 && revertFnIdx !== -1, "all four anchors found");
   assert.ok(constIdx < fnIdx && letIdx < fnIdx && revertFnIdx < fnIdx, "the trio sits above renderPartyRoster()");
-  // The Gear tab's own trio must still be intact and untouched by this plan.
-  assert.equal((CODE.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 1);
+  // The Gear tab's own trio must still be intact and untouched by this plan
+  // — Phase 47 (SHELL-01), Plan 03 moved it into src/browser/gearTab.js.
+  assert.equal((CODE.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 1);
 });
 
 // ─── 3. Company sheet field order ──────────────────────────────────────────

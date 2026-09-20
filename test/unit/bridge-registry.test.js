@@ -142,7 +142,10 @@ test("SHELL-04: Object.keys(BRIDGE) is alphabetically sorted", () => {
 
 test("SHELL-04 teeth: diffing the real live set against an EMPTY registry reports every live name unlisted", () => {
   const live = liveBridgeNames(defaultSources());
-  assert.ok(live.length >= 50, `expected at least 50 live __mz* names, measured ${live.length}`);
+  // Phase 47 (SHELL-01), Plan 03: 53 -> 49 (net -6 +2: __mzGear/
+  // __mzItemRowState/__mzWornSlots/__mzWornKeysOf/__mzSlotFor/__mzSellPrice
+  // retired, __mzTabs/__mzCarriedList added).
+  assert.ok(live.length >= 45, `expected at least 45 live __mz* names, measured ${live.length}`);
   const { unlisted, stale } = diffNames(live, []);
   assert.equal(unlisted.length, live.length);
   assert.equal(stale.length, 0);

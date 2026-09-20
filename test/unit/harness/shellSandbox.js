@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES, ABILITY_BY_ID, TOOLS } from "../../../content/index.js";
 import { nightlyEats } from "../../../engine/movement.js";
 import { PARTY_CAP, newRun, addPartyMember } from "../../../engine/state.js";
-import { sellPriceFor, openStore } from "../../../engine/economy.js";
+import { openStore } from "../../../engine/economy.js";
 import {
   conditionsOf,
   itemEffectActive,
@@ -33,9 +33,6 @@ import {
   mapViewRadius,
   inViewWindow,
   eff,
-  slotFor,
-  WORN_SLOTS,
-  WORN_KEYS_OF,
   hasTool,
   toHit,
   strikeDie,
@@ -58,7 +55,7 @@ import {
   eatsLineFor,
   dropShelfItems,
 } from "../../../src/browser/viewModels.js";
-import { bagUsage, itemRowState, emptySlotRows, GEAR_COPY } from "../../../src/browser/gearTab.js";
+import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser/gearTab.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -120,25 +117,22 @@ function wireLegacyGrimoire(context, mod) {
  * __mzIconMap, __mzMapMarks, __mzCanvasSizing, __mzTapStep, __mzControls,
  * __mzIconsApi, __mzHaptics, __mzSettings) are deliberately NOT wired —
  * renderRail()/draw() are stubbed no-ops (see loadShellSandbox step 5), so
- * paint() never reaches for them.
+ * paint() never reaches for them. Phase 47 (SHELL-01), Plan 03, Task 2:
+ * __mzGear/__mzItemRowState/__mzWornSlots/__mzWornKeysOf/__mzSlotFor/
+ * __mzSellPrice are retired (gearTab.js reaches them directly now);
+ * __mzTabs/__mzCarriedList are the twin of the module script's new mount
+ * bridges.
  */
 function wireBridges(context) {
   const w = context.window;
   w.__mzTables = Object.freeze({ RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES });
   w.__mzNightlyEats = nightlyEats;
   w.__mzPartyCap = PARTY_CAP;
-  w.__mzSellPrice = (item) => {
-    const st = w.__mzState?.get?.() || {};
-    return sellPriceFor(item, st?.c?.race, st?.c?.sub);
-  };
   w.__mzConditionsOf = conditionsOf;
   w.__mzEther = { itemEffectActive, inStone };
   w.__mzMapView = { mapViewRadius, inViewWindow };
   w.__mzAbilities = { byId: ABILITY_BY_ID, roundsLeft: abilityRoundsLeft, isReady, sheet: characterSheetViewModel };
   w.__mzEff = eff;
-  w.__mzSlotFor = slotFor;
-  w.__mzWornSlots = WORN_SLOTS;
-  w.__mzWornKeysOf = WORN_KEYS_OF;
   w.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };
   w.__mzArmorDisplay = { armorDisplay, bagArmorText };
   w.__mzBagUsage = bagUsage;
@@ -148,11 +142,11 @@ function wireBridges(context) {
   w.__mzToolIndex = toolIndex;
   w.__mzToHit = toHit;
   w.__mzStrikeDie = strikeDie;
-  w.__mzItemRowState = itemRowState;
   w.__mzUsableBy = usableBy;
   w.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
   w.__mzDropShelfItems = dropShelfItems;
-  w.__mzGear = { emptySlotRows, copy: GEAR_COPY };
+  w.__mzTabs = Object.freeze({ gear: renderGearTab });
+  w.__mzCarriedList = renderCarriedList;
 }
 
 /**

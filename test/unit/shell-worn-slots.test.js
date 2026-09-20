@@ -51,6 +51,10 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList, the confirm
+// trios, wornSlotRow and the ON YOU/BAG paint body all moved into
+// src/browser/gearTab.js.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -61,18 +65,18 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 function renderCarriedListRegion() {
-  return sliceBetween(CODE, "function renderCarriedList(", "function renderDropShelf(");
+  return sliceBetween(GEAR_SRC, "export function renderCarriedList(", "export function renderGearTab(");
 }
 
-function paintCarryRegion() {
-  return sliceBetween(CODE, 'const carry = document.getElementById("s-carry");', 'document.getElementById("doss-who")');
+function gearTabBodyRegion() {
+  return GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
 }
 
-// The new worn-row block only — narrower than paintCarryRegion so the
+// The new worn-row block only — narrower than gearTabBodyRegion so the
 // "once" pins below aren't confused by wornRow's own (pre-existing, byte-
-// identical) window.mzUnequip?.(slot) call earlier in the same carry block.
+// identical) deps.unequip?.(slot) call earlier in the same carry block.
 function wornSlotRowRegion() {
-  return sliceBetween(CODE, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, items, {");
+  return sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
 }
 
 function effRegion() {
@@ -85,87 +89,96 @@ function effRegion() {
 
 // ─── 1. SWAP trio ───────────────────────────────────────────────────────────
 
-test("Trio: SWAP_CONFIRM_MS/swapConfirmRevert/revertSwapConfirm() are declared once each, after revertDropConfirm() and before renderCarriedList; DROP_CONFIRM_MS untouched", () => {
-  assert.equal((CODE.match(/const SWAP_CONFIRM_MS = 3000;/g) || []).length, 1);
-  assert.equal((CODE.match(/let swapConfirmRevert = null;/g) || []).length, 1);
-  assert.equal((CODE.match(/function revertSwapConfirm\(\)/g) || []).length, 1);
-  const dropFnIdx = CODE.indexOf("function revertDropConfirm()");
-  const carriedFnIdx = CODE.indexOf("function renderCarriedList(");
-  const constIdx = CODE.indexOf("const SWAP_CONFIRM_MS = 3000;");
-  const letIdx = CODE.indexOf("let swapConfirmRevert = null;");
-  const revertFnIdx = CODE.indexOf("function revertSwapConfirm()");
+test("Trio: SWAP_CONFIRM_MS/swapConfirmRevert/revertSwapConfirm() are declared once each, after revertDropConfirm() and before renderCarriedList (src/browser/gearTab.js); DROP_CONFIRM_MS untouched", () => {
+  assert.equal((GEAR_SRC.match(/const SWAP_CONFIRM_MS = 3000;/g) || []).length, 1);
+  assert.equal((GEAR_SRC.match(/let swapConfirmRevert = null;/g) || []).length, 1);
+  assert.equal((GEAR_SRC.match(/function revertSwapConfirm\(\)/g) || []).length, 1);
+  const dropFnIdx = GEAR_SRC.indexOf("function revertDropConfirm()");
+  const carriedFnIdx = GEAR_SRC.indexOf("export function renderCarriedList(");
+  const constIdx = GEAR_SRC.indexOf("const SWAP_CONFIRM_MS = 3000;");
+  const letIdx = GEAR_SRC.indexOf("let swapConfirmRevert = null;");
+  const revertFnIdx = GEAR_SRC.indexOf("function revertSwapConfirm()");
   assert.ok(dropFnIdx !== -1 && carriedFnIdx !== -1, "anchors found");
   assert.ok(dropFnIdx < constIdx && constIdx < carriedFnIdx, "SWAP_CONFIRM_MS sits between revertDropConfirm() and renderCarriedList(");
   assert.ok(dropFnIdx < letIdx && letIdx < carriedFnIdx, "swapConfirmRevert sits between revertDropConfirm() and renderCarriedList(");
   assert.ok(dropFnIdx < revertFnIdx && revertFnIdx < carriedFnIdx, "revertSwapConfirm() sits between revertDropConfirm() and renderCarriedList(");
-  assert.equal((CODE.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 1);
+  assert.equal((GEAR_SRC.match(/const DROP_CONFIRM_MS = 3000;/g) || []).length, 1);
 });
 
 // ─── 2. Confirm mechanics ───────────────────────────────────────────────────
 
-test("Confirm mechanics: swap arm/choices/No/timeout/outside-tap revert inside renderCarriedList; the Phase 33 Drop pins are untouched in the same region (260918-wy1: generalized to a choices array)", () => {
+test("Confirm mechanics: swap arm/choices/No/timeout/outside-tap revert inside renderCarriedList (src/browser/gearTab.js); the Phase 33 Drop pins are untouched in the same region (260918-wy1: generalized to a choices array)", () => {
   const region = renderCarriedListRegion();
   assert.match(region, /const mkSwapConfirm = \(i, choices\) => \{/);
   assert.match(region, /choices\.length === 1 \? `Swap for \$\{choices\[0\]\.name\}\?` : "Swap for which\?"/);
   assert.equal((region.match(/className = "mw-swap-confirm"/g) || []).length, 1);
   assert.match(region, /for \(const choice of choices\) \{/);
-  assert.match(region, /revertSwapConfirm\(\); window\.mzEquipItem\?\.\(i, choice\.slot\); \}/);
+  // Phase 47 (SHELL-01), Plan 03: window.mzEquipItem?. -> deps.equipItem?.
+  assert.match(region, /revertSwapConfirm\(\); deps\.equipItem\?\.\(i, choice\.slot\); \}/);
   // Drop confirm's own literal "Yes" survives (unchanged); the swap confirm's
   // button label is now dynamic (choices.length === 1 ? "Yes" : choice.name),
   // so no literal "Yes" string appears at its call site any more.
   assert.equal((region.match(/mkBtn\("Yes"/g) || []).length, 1, "exactly one literal Yes button (Drop confirm only)");
   assert.ok((region.match(/mkBtn\("No"/g) || []).length >= 2, "at least two No buttons (Drop + Swap confirms)");
   assert.equal((region.match(/setTimeout\(revertSwapConfirm, SWAP_CONFIRM_MS\)/g) || []).length, 1);
-  assert.equal((region.match(/document\.addEventListener\("pointerdown", onSwapTap, true\)/g) || []).length, 1);
-  assert.equal((region.match(/document\.removeEventListener\("pointerdown", onSwapTap, true\)/g) || []).length, 1);
+  // Phase 47 (SHELL-01), Plan 03: document.addEventListener -> doc.addEventListener.
+  assert.equal((region.match(/doc\.addEventListener\("pointerdown", onSwapTap, true\)/g) || []).length, 1);
+  assert.equal((region.match(/doc\.removeEventListener\("pointerdown", onSwapTap, true\)/g) || []).length, 1);
   assert.match(region, /wrap\.replaceWith\(equip\)/);
   // the Phase 33 Drop confirm's own pins, re-asserted in the same region
   assert.equal((region.match(/className = "mw-drop-confirm"/g) || []).length, 1);
-  assert.equal((region.match(/document\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
-  assert.equal((region.match(/document\.removeEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
+  assert.equal((region.match(/doc\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
+  assert.equal((region.match(/doc\.removeEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
   assert.equal((region.match(/setTimeout\(revertDropConfirm, DROP_CONFIRM_MS\)/g) || []).length, 1);
 });
 
 // ─── 3. Equip branch ─────────────────────────────────────────────────────────
 
-test("Equip branch: the weapon/armor Equip line is byte-identical; the family branch reads S.c.worn/__mzSlotFor/__mzWornKeysOf and calls mkSwapConfirm(i, keys.map(", () => {
+test("Equip branch: the weapon/armor Equip line is byte-identical; the family branch reads state.c.worn/slotFor/WORN_KEYS_OF and calls mkSwapConfirm(i, keys.map(", () => {
   const region = renderCarriedListRegion();
-  assert.match(region, /if \(it\.kind === "weapon" \|\| it\.kind === "armor"\) li\.appendChild\(mkBtn\("Equip", \(\) => window\.mzEquipItem\?\.\(i\)\)\);/);
-  assert.match(region, /S\.c\.worn && window\.__mzSlotFor\?\.\(it\)/);
-  assert.match(region, /window\.__mzWornKeysOf\[family\] \|\| \[\]/);
-  assert.match(region, /mkSwapConfirm\(i, keys\.map\(\(k\) => \(\{ slot: k, name: S\.c\.worn\[k\]\.n \}\)\)\)/);
+  assert.match(region, /if \(it\.kind === "weapon" \|\| it\.kind === "armor"\) li\.appendChild\(mkBtn\("Equip", \(\) => deps\.equipItem\?\.\(i\)\)\);/);
+  // Phase 47 (SHELL-01), Plan 03: S.c/window.__mzSlotFor/window.__mzWornKeysOf
+  // -> state.c/slotFor/WORN_KEYS_OF (direct engine/derived.js imports).
+  assert.match(region, /state\.c\.worn && slotFor\(it\)/);
+  assert.match(region, /WORN_KEYS_OF\[family\] \|\| \[\]/);
+  assert.match(region, /mkSwapConfirm\(i, keys\.map\(\(k\) => \(\{ slot: k, name: state\.c\.worn\[k\]\.n \}\)\)\)/);
 });
 
 // ─── 4. Worn rows in the paint carry region ─────────────────────────────────
 
-test("Worn rows: wornSlotRow sits between the armor wornRow call and renderCarriedList; wornRow's pinned signature is untouched", () => {
-  assert.equal((CODE.match(/const wornSlotRow = \(slot, it\) => \{/g) || []).length, 1);
-  assert.match(CODE, /const wornRow = \(label, sub, slot, canUnequip, noSlotNeeded\) =>/);
-  const carryRegion = paintCarryRegion();
+test("Worn rows: wornSlotRow sits between the armor wornRow call and renderCarriedList (src/browser/gearTab.js); wornRow's pinned signature is untouched", () => {
+  assert.equal((CODE.match(/const wornSlotRow = \(slot, it\) => \{/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/const wornSlotRow = \(slot, it\) => \{/g) || []).length, 1);
+  assert.match(GEAR_SRC, /const wornRow = \(label, sub, slot, canUnequip, noSlotNeeded\) =>/);
+  const carryRegion = gearTabBodyRegion();
   const iArmorRow = carryRegion.indexOf("wornRow(armorD.label");
   const iWornSlotRow = carryRegion.indexOf("const wornSlotRow = (slot, it) => {");
-  const iRenderCarried = carryRegion.indexOf("renderCarriedList(carry, items, {");
-  assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1, "all three anchors found in the paint carry region");
+  const iRenderCarried = carryRegion.indexOf("renderCarriedList(carry, state, items, {");
+  assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1, "all three anchors found in the renderGearTab body region");
   assert.ok(iArmorRow < iWornSlotRow && iWornSlotRow < iRenderCarried, "wornSlotRow sits after the armor wornRow call and before renderCarriedList");
   assert.ok((carryRegion.match(/<span class="mw-worn-tag">worn<\/span>/g) || []).length >= 1, "wornRow's innerHTML template still carries the worn tag");
   // Phase 39 (GEAR-02/GEAR-05), Plan 05 (T-38-11): wornSlotRow's OWN worn
   // tag moved off the innerHTML template onto createElement/textContent —
   // no innerHTML carries an item name in this region anymore.
-  const wornSlotRegion = sliceBetween(CODE, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, items, {");
+  const wornSlotRegion = sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
   assert.doesNotMatch(wornSlotRegion, /innerHTML/);
   assert.match(wornSlotRegion, /tag\.className = "mw-worn-tag";/);
   assert.match(wornSlotRegion, /tag\.textContent = "worn";/);
-  assert.equal((CODE.match(/gearRow: true/g) || []).length, 1, "gearRow:true is still passed at exactly the GEAR call site");
+  assert.equal((CODE.match(/gearRow: true/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 1, "gearRow:true is still passed at exactly the GEAR call site");
 });
 
 test("Worn rows: the new wornSlotRow block dispatches Use({slot})/Unequip(slot) and loops WORN_SLOTS exactly once each", () => {
   const region = wornSlotRowRegion();
-  assert.equal((region.match(/window\.mzUseItem\?\.\(\{ slot \}\)/g) || []).length, 1);
-  assert.equal((region.match(/window\.mzUnequip\?\.\(slot\)/g) || []).length, 1);
-  assert.equal((region.match(/for \(const slot of \(window\.__mzWornSlots \|\| \[\]\)\)/g) || []).length, 1);
+  // Phase 47 (SHELL-01), Plan 03: window.mzUseItem?./window.mzUnequip?. ->
+  // deps.useItem?./deps.unequip?.; window.__mzWornSlots -> the direct
+  // WORN_SLOTS import (always an array — no `|| []` fallback needed).
+  assert.equal((region.match(/deps\.useItem\?\.\(\{ slot \}\)/g) || []).length, 1);
+  assert.equal((region.match(/deps\.unequip\?\.\(slot\)/g) || []).length, 1);
+  assert.equal((region.match(/for \(const slot of WORN_SLOTS\)/g) || []).length, 1);
   // Phase 39 (GEAR-02/GEAR-05), Plan 05: the row-state rule moved off
-  // it.every/usedAt onto window.__mzItemRowState(S, it).
-  assert.match(region, /window\.__mzItemRowState\(S, it\)/);
+  // it.every/usedAt onto itemRowState(state, it).
+  assert.match(region, /itemRowState\(state, it\)/);
 });
 
 // ─── 5. Classic eff routing ─────────────────────────────────────────────────
@@ -178,25 +191,21 @@ test("eff(key) routes through window.__mzEff, keeping the legacy sum-over-c.item
 
 // ─── 6. Module bridges ───────────────────────────────────────────────────────
 
-test("Bridges: derived.js import carries eff/slotFor/WORN_SLOTS/WORN_KEYS_OF; window.__mzEff/__mzSlotFor/__mzWornSlots/__mzWornKeysOf assigned once each, after __mzConditionsOf", () => {
+test("Bridges: derived.js import carries eff; window.__mzEff assigned once, after __mzConditionsOf. Phase 47 (SHELL-01), Plan 03: __mzSlotFor/__mzWornSlots/__mzWornKeysOf are retired — gearTab.js imports slotFor/WORN_SLOTS/WORN_KEYS_OF from engine/derived.js directly", () => {
   // Phase 39 (GEAR-01/GEAR-02/GEAR-05), Plan 05: the shared derived.js
   // import line gained hasTool/toHit/strikeDie as sibling named imports.
   // Phase 41 (TERR-03), Plan 04: mapViewRadius/inViewWindow joined the same
-  // import line. 260918-wy1 (jewelry-merge): WORN_KEYS_OF joined too.
-  assert.match(CODE, /import \{ conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
+  // import line.
+  assert.match(CODE, /import \{ conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 1);
-  assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 1);
-  assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 1);
-  assert.equal((CODE.match(/window\.__mzWornKeysOf = WORN_KEYS_OF;/g) || []).length, 1);
+  assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzWornKeysOf = WORN_KEYS_OF;/g) || []).length, 0);
   const iConditionsOf = CODE.indexOf("window.__mzConditionsOf = conditionsOf;");
   const iEff = CODE.indexOf("window.__mzEff = eff;");
-  const iSlotFor = CODE.indexOf("window.__mzSlotFor = slotFor;");
-  const iWornSlots = CODE.indexOf("window.__mzWornSlots = WORN_SLOTS;");
-  const iWornKeysOf = CODE.indexOf("window.__mzWornKeysOf = WORN_KEYS_OF;");
-  assert.ok(
-    iConditionsOf !== -1 && iEff > iConditionsOf && iSlotFor > iConditionsOf && iWornSlots > iConditionsOf && iWornKeysOf > iConditionsOf,
-    "the four new bridges land after __mzConditionsOf",
-  );
+  assert.ok(iConditionsOf !== -1 && iEff > iConditionsOf, "__mzEff lands after __mzConditionsOf");
+  // gearTab.js's own direct imports of slotFor/WORN_SLOTS/WORN_KEYS_OF.
+  assert.match(GEAR_SRC, /import \{ WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor \} from "\.\.\/\.\.\/engine\/derived\.js";/);
 });
 
 test("Bridge: window.mzEquipItem forwards an optional targeted swap key (260918-wy1)", () => {

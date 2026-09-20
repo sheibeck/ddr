@@ -44,6 +44,9 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: the Hero-tab kit rows (#s-kit,
+// "ALSO ON YOU") moved into src/browser/gearTab.js#renderGearTab.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -93,16 +96,16 @@ test("CONDITION_COPY/TONE/EXPLAIN: each new key appears exactly once in mazeworl
 // ─── (b) Hero-tab ward row: pool AND rounds ────────────────────────────────
 
 test("Hero-tab kit: the Shield row reads pool AND rounds (SPELL-06)", () => {
-  assert.match(CODE, /rows\.push\(\[c\.ward\.name, `\$\{c\.ward\.pool\} hp left · \$\{c\.ward\.rounds\} rds`\]\);/);
+  assert.match(GEAR_SRC, /rows\.push\(\[c\.ward\.name, `\$\{c\.ward\.pool\} hp left · \$\{c\.ward\.rounds\} rds`\]\);/);
 });
 
 // ─── (c) Hero-tab kit: the four new utility rows ───────────────────────────
 
 test("Hero-tab kit: Mirror Self / Sense Presence / Sense Danger (armed) / Map the Floor rows", () => {
-  assert.match(CODE, /if \(c\.mirror > 0\) rows\.push\(\["Mirror Self", `\$\{c\.mirror\} rds`\]\);/);
-  assert.match(CODE, /if \(c\.senses\) rows\.push\(\["Sense Presence", "till the fight ends"\]\);/);
-  assert.match(CODE, /if \(c\.foresight\) rows\.push\(\["Sense Danger", "armed"\]\);/);
-  const region = sliceBetween(CODE, 'if (c.foresight) rows.push(["Sense Danger"', 'rows.push(["Kills"');
+  assert.match(GEAR_SRC, /if \(c\.mirror > 0\) rows\.push\(\["Mirror Self", `\$\{c\.mirror\} rds`\]\);/);
+  assert.match(GEAR_SRC, /if \(c\.senses\) rows\.push\(\["Sense Presence", "till the fight ends"\]\);/);
+  assert.match(GEAR_SRC, /if \(c\.foresight\) rows\.push\(\["Sense Danger", "armed"\]\);/);
+  const region = sliceBetween(GEAR_SRC, 'if (c.foresight) rows.push(["Sense Danger"', 'rows.push(["Kills"');
   assert.match(region, /c\.timers && c\.timers\["spell:reveal"\]/);
   assert.match(region, /rows\.push\(\["Map the Floor", `\$\{rev\.left\} sq`\]\);/);
 });

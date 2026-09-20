@@ -61,6 +61,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: fit — canvas backing size + cell size for text scale)"]),
     purpose: "Bridges the pure canvas-backing/cell-size math so the map canvas resizes identically to the engine's own text-scale settings model.",
   }),
+  __mzCarriedList: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: the loot card / store sell list — the shared carried-item list)"]),
+    purpose: "Bridges src/browser/gearTab.js's renderCarriedList so the loot card and the store sell list reach the ONE shared carried-item list renderer, never a second copy.",
+  }),
   __mzClassicBoot: Object.freeze({
     owner: "mazeworld.html (classic)",
     consumers: Object.freeze(["mazeworld.html (module: initRollerScreen — awaits the classic boot before first paint)"]),
@@ -133,11 +138,6 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull)"]),
     purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time.",
   }),
-  __mzGear: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — ON YOU empty-slot rows and Gear copy)"]),
-    purpose: "Bridges the pure empty-slot-row builder and GEAR_COPY so the Gear tab's ON YOU section renders from the shared view-model.",
-  }),
   __mzGravesCount: Object.freeze({
     owner: "mazeworld.html (classic)",
     consumers: Object.freeze(["mazeworld.html (module: refreshTitleDead — the roller screen's death counter)"]),
@@ -168,14 +168,9 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — encArmed/encounterSettled/armEncounterButtons)"]),
     purpose: "Bridges the pure arm-delay/dismiss-settle predicates so the encounter overlay's double-tap and stale-dismiss guards read one shared clock rule.",
   }),
-  __mzItemRowState: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: wornSlotRow / renderCarriedList — item-row state rule)"]),
-    purpose: "Bridges the pure worn/bag item-row state rule so every gear row (worn or bag) agrees on which action buttons to show.",
-  }),
   __mzLootCompare: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter loot branch / renderCarriedList — equip-now compare verdict)"]),
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter loot branch — equip-now compare verdict)"]),
     purpose: "Bridges the pure compare-to-equipped verdict so the loot screen's Equip Now button and the Gear tab agree with the engine.",
   }),
   __mzLootReport: Object.freeze({
@@ -245,11 +240,6 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: the Grimoire tab's re-render trigger)"]),
     purpose: "Exposes the module's renderGrimoire so the classic script can trigger a Grimoire re-paint after a spell-cast dispatch.",
   }),
-  __mzSellPrice: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderCarriedList — bag row Sell button label)"]),
-    purpose: "Bridges the pure, read-only price probe so the store's Sell button can label its price without touching the actual sale action.",
-  }),
   __mzSettings: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings)"]),
@@ -262,11 +252,6 @@ export const BRIDGE = Object.freeze({
       "mazeworld.html (module: initRollerScreen / the death-screen router — switches tabs after boot or death)",
     ]),
     purpose: "Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click.",
-  }),
-  __mzSlotFor: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderCarriedList — EQUIP swap branch resolves the item's worn family)"]),
-    purpose: "Bridges the pure item-to-worn-family resolver so the bag's EQUIP action finds the same family (jewelry/cloak/etc.) the engine uses.",
   }),
   __mzStair: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -300,6 +285,11 @@ export const BRIDGE = Object.freeze({
     ]),
     purpose: "Bridges the read-only content tables (RACE_NOTE/CLASS_NOTE/SUB_NOTE/ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES) the classic script cannot import.",
   }),
+  __mzTabs: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint() — one call per tab surface; renderEncounter() — the store branch)"]),
+    purpose: "The tab modules' render functions, one frozen object (gear today; Plans 04/05 add hero/store) — the __mzControls/__mzTables precedent for a module-assigned, classic-read bridge.",
+  }),
   __mzTakesBagSlot: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find per-item bag-full gate)"]),
@@ -324,16 +314,6 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find/store usable-by suffix)"]),
     purpose: "Bridges the pure usable-by-class predicate so every item row's usable-by suffix (loot, find, store) reads one shared rule.",
-  }),
-  __mzWornKeysOf: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderCarriedList — EQUIP swap branch's family-to-concrete-keys lookup)"]),
-    purpose: "Bridges the family-to-worn-keys table so a jewelry/cloak swap confirm can enumerate the concrete slot keys for its family.",
-  }),
-  __mzWornSlots: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — ON YOU worn-row loop)"]),
-    purpose: "Bridges the frozen WORN_SLOTS order so the Gear tab's ON YOU section renders worn rows in the engine's own canonical slot order.",
   }),
 });
 

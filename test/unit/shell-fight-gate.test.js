@@ -41,6 +41,9 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList moved into
+// src/browser/gearTab.js — its "Use" gate pin now reads gearTab.js's source.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function region(startMarker, endMarker) {
   const start = CODE.indexOf(startMarker);
@@ -108,10 +111,12 @@ test("CMB-04: the cn.key === \"ward\" branch renders both hp and rds on one chip
 
 test("CMB-02: renderCarriedList's use branch no longer gates the Use button on itemReady", () => {
   assert.doesNotMatch(CODE, /itemReady\(it\)\) li\.appendChild/);
+  assert.doesNotMatch(GEAR_SRC, /itemReady\(it\)\) li\.appendChild/);
   // 260918-w4n (use-activated-only): the gate moved from a raw `it.use`
   // string to the ONE row-state rule (st.kind !== "none") — see
-  // src/browser/viewModels.js#itemRowState.
-  assert.match(CODE, /st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/);
+  // src/browser/gearTab.js#itemRowState. Phase 47 (SHELL-01), Plan 03:
+  // renderCarriedList itself lives in gearTab.js now.
+  assert.match(GEAR_SRC, /st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/);
 });
 
 test("Phase 34/39: the ITEMS/ABILITIES rows never hide on readiness — combatMenu.js lists the Sing row and carried usables with enabled flags, never filters them", () => {

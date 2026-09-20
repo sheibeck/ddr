@@ -52,6 +52,9 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderGearTab/renderCarriedList
+// (wornRow, the gear worn row wiring) moved into src/browser/gearTab.js.
+const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 // ─── 1. module bridge ──────────────────────────────────────────────────────
 
@@ -76,26 +79,16 @@ test("Phase 28 (ARMOR-02): paint() computes armorD once and writes #s-arm from a
 // ─── 3. gear worn row: noSlotNeeded + armorD.label ──────────────────────────
 
 test("Phase 28 (ARMOR-03/04): the gear worn row is wired through armorD, with a noSlotNeeded param", () => {
-  assert.match(CODE, /wornRow\(armorD\.label, /);
-  assert.match(CODE, /const wornRow = \(label, sub, slot, canUnequip, noSlotNeeded\) =>/);
+  assert.match(GEAR_SRC, /wornRow\(armorD\.label, /);
+  assert.match(GEAR_SRC, /const wornRow = \(label, sub, slot, canUnequip, noSlotNeeded\) =>/);
 });
 
 // ─── 4. renderCarriedList armor row ─────────────────────────────────────────
-
-function renderCarriedListRegion() {
-  const start = CODE.indexOf("function renderCarriedList(");
-  // Phase 44 (DEAD-01): openStore() was deleted from the classic script
-  // (layer 1); canRead() is the first surviving top-level declaration after
-  // the deleted store block, so it is the new region end anchor. The
-  // region's single positive assertion (below) is unaffected.
-  const end = CODE.indexOf("function canRead()");
-  assert.ok(start !== -1 && end !== -1 && end > start, "renderCarriedList region bounds found");
-  return CODE.slice(start, end);
-}
+// Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList lives entirely in
+// src/browser/gearTab.js now — no region-slicing needed, GEAR_SRC IS the region.
 
 test("Phase 28 (ARMOR-03): renderCarriedList reads bagArmorText for a kind:\"armor\" item", () => {
-  const region = renderCarriedListRegion();
-  assert.match(region, /it\.kind === "armor" \? window\.__mzArmorDisplay\.bagArmorText\(it\)/);
+  assert.match(GEAR_SRC, /it\.kind === "armor" \? bagArmorText\(it\)/);
 });
 
 // ─── 5. store repair row relabelled in the shell only ───────────────────────
