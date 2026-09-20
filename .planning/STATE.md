@@ -21,7 +21,7 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phase 50 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
+See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–51 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
 **Current focus:** Phase 51 — Initiative Once Per Combat
@@ -140,9 +140,9 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T23:16:18.401Z
-Stopped at: Completed 51-03-PLAN.md
-Resume file: None
+Last session: 2026-09-20 (autonomous v1.7 run)
+Stopped at: Phase 51 complete (VERIFICATION passed, 5 device checks deferred to Phase 55), ready to discuss/plan Phase 52
+Resume file: None — `/gsd-autonomous` resumes at Phase 52 smart discuss
 
 ## Operator Next Steps
 
