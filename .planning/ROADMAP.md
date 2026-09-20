@@ -289,7 +289,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 48-02-PLAN.md — `mazeworld.html` (~35 sites: D-pad, toast host, Round Card, deleted classic mirrors, retired `__mz*` bridge archaeology) + `src/browser/*` (12 files; `narrationLines.js`'s 45 "toast" comments become the line vocabulary); shell gate (build:www, boot:check, DOM snapshot 10/10) at both commits
+- [x] 48-02-PLAN.md — `mazeworld.html` (~35 sites: D-pad, toast host, Round Card, deleted classic mirrors, retired `__mz*` bridge archaeology) + `src/browser/*` (12 files; `narrationLines.js`'s 45 "toast" comments become the line vocabulary); shell gate (build:www, boot:check, DOM snapshot 10/10) at both commits
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -381,7 +381,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
-| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 1/5 | In Progress|  |
+| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 2/5 | In Progress|  |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |

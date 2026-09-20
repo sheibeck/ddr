@@ -4,15 +4,15 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 48
 status: executing
-stopped_at: Completed 48-01-PLAN.md (stale-terms tripwire + comment-only-diff proof + engine/content sweep)
-last_updated: "2026-09-20T03:39:31.322Z"
+stopped_at: Completed 48-02-PLAN.md (mazeworld.html + src/browser comment sweep)
+last_updated: "2026-09-20T04:03:49.229Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 48 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 21
-  completed_plans: 17
+  completed_plans: 18
   percent: 67
 current_phase_name: Stale Docs, Comments & Test Names Purge
 ---
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Deb
 ## Current Position
 
 Phase: 48 — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 48 execution started
-Progress: [████████░░] 81%
+Progress: [█████████░] 86%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -124,8 +124,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T03:39:31.290Z
-Stopped at: Completed 48-01-PLAN.md (stale-terms tripwire + comment-only-diff proof + engine/content sweep)
+Last session: 2026-09-20T04:03:49.131Z
+Stopped at: Completed 48-02-PLAN.md (mazeworld.html + src/browser comment sweep)
 Resume file: None
 
 ## Operator Next Steps
@@ -249,6 +249,7 @@ Resume file: None
 | Phase 47 P04 | 55min | 2 tasks | 24 files |
 | Phase 47 P05 | ~2h | 2 tasks | 17 files |
 | Phase 48 P01 | 35min | 2 tasks | 11 files |
+| Phase 48 P02 | ~90min | 2 tasks | 14 files |
 
 ## Decisions
 
@@ -480,6 +481,8 @@ Resume file: None
 - [Phase ?]: storeScreen.js completes the Store carve; window.__mzTabs takes its final gear+hero+store shape; criterion 3 (no-duplicate export pin) widened and holds
 - [Phase ?]: Line budget measured honestly: mazeworld.html lands at 5621 lines, NOT MET (target < 5000); the CONTEXT's own fallback (shell-sweep orphans) was applied and found nothing in scope (every orphan belongs to Map/Combat/Rail/Graves/Oracle, out of this phase's bounds) — recorded as a STATE.md blocker for a Phase 48 user ruling, not chased by widening scope
 - [Phase ?]: engine/effects.js survivor list (darkFor/ward/afraid/foeEffect) re-derived by grepping live usage rather than trusting the stale comment's field list — haste/invis/ether/acute/flightLeft/flightCooldown/it.usedAt confirmed retired (moved to c.timers in Phase 39)
+- [Phase ?]: 48-02: heroTab.js's five retired-window.__mz* bridge archaeology comments rewritten even though not named in the plan's per-file action list — required by the plan's own --paths src unlisted-0 acceptance criterion
+- [Phase ?]: 48-02: class-B ALLOWED match regexes must target the raw per-line text the scanner splits on (\r?\n) — a multi-line comment's keyword phrase can straddle two lines
 
 ### Blockers
 
