@@ -82,9 +82,13 @@ function wireDeathConfirmRegion() {
 // Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList moved into
 // src/browser/gearTab.js — its own source is the region now, not mazeworld.html.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-03), Plan 05, Task 2: the whole S.store branch moved into
+// src/browser/storeScreen.js — its own source is the region now, not
+// mazeworld.html.
+const STORE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function storeRegion() {
-  return sliceBetween(CODE, "if (S.store) {", 'document.getElementById("a-leave").onclick');
+  return STORE_SRC;
 }
 
 function engineMoveRegion() {

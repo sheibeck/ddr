@@ -48,6 +48,9 @@ const CODE = stripComments(HTML);
 // Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList (and the GEAR
 // tab's carried/on-you rendering) moved into src/browser/gearTab.js.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-03), Plan 05, Task 2: the whole S.store branch moved into
+// src/browser/storeScreen.js.
+const STORE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -65,8 +68,11 @@ function gearTabBodyRegion() {
   return GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
 }
 
+// Phase 47 (SHELL-03), Plan 05: the store's whole render body is
+// storeScreen.js#renderStoreScreen — no region-slicing needed, STORE_SRC IS
+// the region.
 function storeRegion() {
-  return sliceBetween(CODE, "if (S.store) {", 'document.getElementById("a-leave").onclick');
+  return STORE_SRC;
 }
 
 function chipsMarkup() {

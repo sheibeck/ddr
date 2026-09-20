@@ -50,6 +50,9 @@ const CODE = stripComments(HTML);
 // Phase 47 (SHELL-01), Plan 03, Task 2: renderCarriedList and the GEAR
 // tab's carried/on-you rendering moved into src/browser/gearTab.js.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-03), Plan 05, Task 2: the whole S.store branch moved into
+// src/browser/storeScreen.js.
+const STORE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n"));
 
 // ─── 1. module bridges ──────────────────────────────────────────────────
 
@@ -273,16 +276,16 @@ test("Phase 29 (LOOT-04)/Phase 35: the find card's capacity readout and full-bag
   assert.match(region, /copy\.find\.full\.replace\("\{have\}", usage\.have\)\.replace\("\{slots\}", usage\.slots\)/);
 });
 
+// Phase 47 (SHELL-03), Plan 05: the store's whole render body is
+// storeScreen.js#renderStoreScreen — no region-slicing needed, STORE_SRC IS
+// the region.
 function storeRegion() {
-  const start = CODE.indexOf("if (S.store) {");
-  const end = CODE.indexOf("const C = S.combat;", start);
-  assert.ok(start !== -1 && end !== -1 && end > start, "store region bounds found");
-  return CODE.slice(start, end);
+  return STORE_SRC;
 }
 
-test("Phase 29 (LOOT-04): the store reads window.__mzBagUsage and offers Drop when full", () => {
+test("Phase 29 (LOOT-04): the store reads bagUsage(c) and offers Drop when full", () => {
   const region = storeRegion();
-  assert.match(region, /window\.__mzBagUsage\(S\.c\)/);
+  assert.match(region, /bagUsage\(c\)/);
   assert.match(region, /\["sell", "drop"\]/);
 });
 

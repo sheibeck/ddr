@@ -276,6 +276,18 @@ test("src/browser/heroTab.js: no string literal contains a standalone wp/WP toke
   assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/heroTab.js:\n${offenders.join("\n")}`);
 });
 
+// ─── (h) src/browser/storeScreen.js — Phase 47 Plan 05 carve ───────────────
+
+test("src/browser/storeScreen.js: no string literal contains a standalone wp/WP token", () => {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n");
+  const offenders = [];
+  for (const lit of stringLiteralsOf(stripComments(src))) {
+    const m = lit.match(PLAYER_WP);
+    if (m && !isAllowlisted(lit)) offenders.push(`storeScreen.js script literal -> ${lit}`);
+  }
+  assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/storeScreen.js:\n${offenders.join("\n")}`);
+});
+
 // ─── standing-guard self-check: the regex itself must not drift ───────────
 
 test("PLAYER_WP self-check: excludes code identifiers, matches real player copy", () => {

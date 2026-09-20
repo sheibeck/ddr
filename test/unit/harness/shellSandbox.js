@@ -52,6 +52,7 @@ import {
   eatsLineFor,
   renderHeroTab,
 } from "../../../src/browser/heroTab.js";
+import { renderStoreScreen } from "../../../src/browser/storeScreen.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -100,6 +101,8 @@ function extractScriptRegions(raw) {
  * __mzTables shrinks to ROMAN only; __mzTabs gains `hero`. The BEFORE-only
  * legacy-grimoire wiring seam this harness used to carry is deleted in this
  * same commit — renderHeroTab (wired below) now renders the Grimoire itself.
+ * Phase 47 (SHELL-03), Plan 05: __mzTabs gains `store` (storeScreen.js's own
+ * renderStoreScreen) — the phase's final, locked __mzTabs shape.
  */
 function wireBridges(context) {
   const w = context.window;
@@ -119,7 +122,7 @@ function wireBridges(context) {
   w.__mzUsableBy = usableBy;
   w.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
   w.__mzDropShelfItems = dropShelfItems;
-  w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });
+  w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   w.__mzCarriedList = renderCarriedList;
 }
 

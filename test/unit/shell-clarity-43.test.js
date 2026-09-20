@@ -49,6 +49,9 @@ const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "brow
 // Phase 47 (SHELL-02), Plan 04, Task 2: the Hero RATIONS panel + the Company
 // panel (renderPartyRoster) moved into src/browser/heroTab.js.
 const HERO_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-03), Plan 05, Task 2: the whole S.store branch (including
+// the usable-by store rows) moved into src/browser/storeScreen.js.
+const STORE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -70,8 +73,11 @@ function lootRegion() {
   return sliceBetween(CODE, "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {", "if (S.store) {");
 }
 
+// Phase 47 (SHELL-03), Plan 05: the store's whole render body is
+// storeScreen.js#renderStoreScreen — no region-slicing needed, STORE_SRC IS
+// the region.
 function storeRegion() {
-  return sliceBetween(CODE, "if (S.store) {", 'document.getElementById("a-leave").onclick');
+  return STORE_SRC;
 }
 
 function joinerRegion() {
@@ -221,7 +227,7 @@ test("Store rows: usable is computed guarded on effectParams.item and appended i
   const region = storeRegion();
   assert.match(
     region,
-    /const usable = item\.effectParams && item\.effectParams\.item \? window\.__mzUsableBy\(item\.effectParams\.item, S\.c\) : "";/,
+    /const usable = item\.effectParams && item\.effectParams\.item \? usableBy\(item\.effectParams\.item, c\) : "";/,
   );
   assert.match(region, /\$\{sub \|\| usable \? `<i>\$\{sub \|\| ""\}\$\{sub && usable \? " " : ""\}\$\{usable\}<\/i>` : ""\}/);
 });

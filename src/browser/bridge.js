@@ -58,8 +58,8 @@ export const BRIDGE = Object.freeze({
   }),
   __mzCarriedList: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: the loot card / store sell list — the shared carried-item list)"]),
-    purpose: "Bridges src/browser/gearTab.js's renderCarriedList so the loot card and the store sell list reach the ONE shared carried-item list renderer, never a second copy.",
+    consumers: Object.freeze(["mazeworld.html (classic: the loot card — the shared carried-item list; the store sell list reaches it directly now, via src/browser/storeScreen.js's own gearTab.js import)"]),
+    purpose: "Bridges src/browser/gearTab.js's renderCarriedList so the loot card reaches the ONE shared carried-item list renderer, never a second copy.",
   }),
   __mzClassicBoot: Object.freeze({
     owner: "mazeworld.html (classic)",
@@ -263,7 +263,7 @@ export const BRIDGE = Object.freeze({
   __mzTabs: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: paint() — one call per tab surface; renderEncounter() — the store branch)"]),
-    purpose: "The tab modules' render functions, one frozen object (gear + hero today; Plan 05 adds store) — the __mzControls/__mzTables precedent for a module-assigned, classic-read bridge.",
+    purpose: "The tab modules' render functions, one frozen object — gear + hero + store, the phase's final shape — the __mzControls/__mzTables precedent for a module-assigned, classic-read bridge.",
   }),
   __mzTakesBagSlot: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -282,8 +282,8 @@ export const BRIDGE = Object.freeze({
   }),
   __mzUsableBy: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find/store usable-by suffix)"]),
-    purpose: "Bridges the pure usable-by-class predicate so every item row's usable-by suffix (loot, find, store) reads one shared rule.",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find usable-by suffix; the store reaches it directly now, via src/browser/storeScreen.js's own viewModels.js import)"]),
+    purpose: "Bridges the pure usable-by-class predicate so every item row's usable-by suffix (loot, find, and — indirectly, via storeScreen.js's own import — the store) reads one shared rule.",
   }),
 });
 

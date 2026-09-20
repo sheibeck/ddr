@@ -155,11 +155,13 @@ test("paint() contains exactly one window.__mzTabs.hero(...) mount call, before 
   );
 });
 
-// ─── (6) the module script assigns window.__mzTabs (gear + hero) before
-// the first boot() ──────────────────────────────────────────────────────
+// ─── (6) the module script assigns window.__mzTabs (gear + hero + store,
+// the phase's final shape) before the first boot() ───────────────────────
 
-test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab }); before await boot(", () => {
-  const bridgeIdx = MOD.indexOf("window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });");
+// Phase 47 (SHELL-03), Plan 05: __mzTabs gained the `store` key the same
+// commit storeScreen.js landed — re-pointed to the final three-key literal.
+test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen }); before await boot(", () => {
+  const bridgeIdx = MOD.indexOf("window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });");
   const bootIdx = MOD.indexOf("await boot(");
   assert.ok(bridgeIdx !== -1, "window.__mzTabs assignment not found");
   assert.ok(bootIdx !== -1, "await boot( call not found");

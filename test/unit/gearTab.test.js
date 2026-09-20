@@ -149,24 +149,29 @@ test("the classic script declares no function renderCarriedList(", () => {
   assert.equal((CLASSIC.match(/function renderCarriedList\(/g) || []).length, 0);
 });
 
-// ─── (7) the classic loot card and store sell list reach the shared list
-// through window.__mzCarriedList( ─────────────────────────────────────────
+// ─── (7) the classic loot card reaches the shared list through
+// window.__mzCarriedList( ─────────────────────────────────────────────────
 
-test('window.__mzCarriedList( appears in the classic script at least once (the loot card; Plan 05 moves the store call and tightens this to 1)', () => {
-  assert.ok((CLASSIC.match(/window\.__mzCarriedList\(/g) || []).length >= 1);
+// Phase 47 (SHELL-03), Plan 05: the store's sell list now reaches
+// renderCarriedList through storeScreen.js's own direct gearTab.js import —
+// the classic script's only remaining reader is the loot card, so this
+// tightens from >= 1 to exactly 1.
+test("window.__mzCarriedList( appears in the classic script exactly once (the loot card only — the store sell list reaches it directly via storeScreen.js now)", () => {
+  assert.equal((CLASSIC.match(/window\.__mzCarriedList\(/g) || []).length, 1);
 });
 
 // ─── (8) the module script assigns window.__mzTabs before the first boot() ──
 
-// Phase 47 (SHELL-02), Plan 04: __mzTabs gained the `hero` key the same
-// commit heroTab.js landed — re-pointed to the two-key object literal.
-test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab }); before await boot(", () => {
-  const bridgeIdx = MOD.indexOf("window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });");
+// Phase 47 (SHELL-03), Plan 05: __mzTabs gained the `store` key the same
+// commit storeScreen.js landed — re-pointed to the phase's final, locked
+// three-key object literal.
+test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen }); before await boot(", () => {
+  const bridgeIdx = MOD.indexOf("window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });");
   const bootIdx = MOD.indexOf("await boot(");
   assert.ok(bridgeIdx !== -1, "window.__mzTabs assignment not found");
   assert.ok(bootIdx !== -1, "await boot( call not found");
   assert.ok(bridgeIdx < bootIdx, "window.__mzTabs must be assigned before the first await boot(");
-  assert.equal((MOD.match(/window\.__mzTabs = Object\.freeze\(\{ gear: renderGearTab, hero: renderHeroTab \}\);/g) || []).length, 1);
+  assert.equal((MOD.match(/window\.__mzTabs = Object\.freeze\(\{ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen \}\);/g) || []).length, 1);
   assert.equal((MOD.match(/window\.__mzCarriedList = renderCarriedList;/g) || []).length, 1);
 });
 

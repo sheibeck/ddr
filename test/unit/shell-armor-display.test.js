@@ -58,6 +58,9 @@ const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "brow
 // Phase 47 (SHELL-02), Plan 04, Task 2: the sheet's #s-arm write (armorD)
 // moved into src/browser/heroTab.js.
 const HERO_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-03), Plan 05, Task 2: the store's repair row moved into
+// src/browser/storeScreen.js.
+const STORE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n"));
 
 // ─── 1. module bridge ──────────────────────────────────────────────────────
 
@@ -104,18 +107,13 @@ test("Phase 28 (ARMOR-03): renderCarriedList reads bagArmorText for a kind:\"arm
 
 // ─── 5. store repair row relabelled in the shell only ───────────────────────
 
-function storeRegion() {
-  const start = CODE.indexOf("if (S.store) {");
-  const end = CODE.indexOf('document.getElementById("a-leave").onclick');
-  assert.ok(start !== -1 && end !== -1 && end > start, "store region bounds found");
-  return CODE.slice(start, end);
-}
-
-test("Phase 28 (ARMOR-02): the store repair row reads armorDisplay(S.c).wornSub + hp to mend, engine text untouched", () => {
-  const region = storeRegion();
-  assert.match(region, /item\.effectId === "repairArmor"/);
-  assert.match(region, /ad\.wornSub/);
-  assert.match(region, /hp to mend/);
+// Phase 47 (SHELL-03), Plan 05: the store's whole render body is
+// storeScreen.js#renderStoreScreen — no region-slicing needed, STORE_SRC IS
+// the region.
+test("Phase 28 (ARMOR-02): the store repair row reads armorDisplay(c).wornSub + hp to mend, engine text untouched", () => {
+  assert.match(STORE_SRC, /item\.effectId === "repairArmor"/);
+  assert.match(STORE_SRC, /ad\.wornSub/);
+  assert.match(STORE_SRC, /hp to mend/);
 });
 
 // ─── 6. pending-find card + full-bag drop shelf ─────────────────────────────

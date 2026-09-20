@@ -2182,14 +2182,6 @@ const MAP_COPY = {
 // has no per-round header, just newest-first entries — so this constant is
 // deleted along with every renderEncounter/announcer site that read it.
 
-// Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
-// nod to the depth roll; shown ONLY on a run whose S.storeRoll is true
-// (engine/state.js — a run this build started), so an old save's header is
-// byte-identical to today; no toast, no Oracle line (the store is a screen,
-// not an event). Player-facing: kept clear of content/safety-wordlist.js
-// (scanned by test/unit/shell-map-store-polish.test.js).
-const STORE_ROLL_COPY = "Stock rolled fresh for this floor. Deeper down, pricier regrets.";
-
 // Phase 19, FOE-08 / D-21: a foe debuff chip names its KIND, not its key — in
 // voice, family-friendly; keys mirror content/foe-abilities.js debuff `effect`
 // values and test/unit/foe-effect-chip.test.js cross-checks the two sets.
@@ -3467,56 +3459,13 @@ function renderEncounter() {
   // it/Leave it prompt are RAIL decision cards now (renderRail, above) —
   // this over-map overlay no longer renders them at all.
 
+  // Phase 47 (SHELL-03), Plan 05: the whole S.store branch (header, stock
+  // shelf, "Your gear" sell list, Leave) moved verbatim into
+  // src/browser/storeScreen.js#renderStoreScreen — this is now the ONE
+  // mount call for the Store surface (the __mzControls/__mzTables/__mzTabs
+  // precedent: module-assigned, classic-read).
   if (S.store) {
-    const st = S.store;
-    // Phase 29 (LOOT-04): the store's drop-to-make-room option; a refused
-    // lockpick buy costs nothing (engine gate, Plan 01) and its bagFull
-    // toast names have/slots.
-    const usage = window.__mzBagUsage(S.c);
-    // Phase 33 (STORE-01) — the roll line is gated on the run flag, never on
-    // stock contents, so an old save (flag off, fixed stock) shows exactly
-    // the pre-Phase-33 header.
-    body.innerHTML += `<p class="enc-head" style="color:var(--moss)">A store</p>
-      <p class="enc-sub">${S.c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
-      ${S.storeRoll === true ? `<p class="enc-sub mw-store-roll">${STORE_ROLL_COPY}</p>` : ""}
-      <div class="shelf" id="shelf"></div>
-      ${usage.full ? `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}) — sell or drop something to make room. Potions and scrolls still ride free.</p>` : ""}
-      <p class="enc-sub" id="sell-head" style="margin-top:12px">Your gear</p>
-      <ul class="skills" id="sell-list"></ul>
-      <div class="actions"><button class="primary" id="a-leave">Leave</button></div>`;
-    const shelf = document.getElementById("shelf");
-    // Phase 28 (ARMOR-02): the repair line is relabelled in the SHELL only —
-    // engine/economy.js's stock `sub` string is compared by the economy
-    // parity harness and stays untouched. Repairs key off the worn piece
-    // even under a cloak (wornSub, not sub).
-    const ad = window.__mzArmorDisplay.armorDisplay(S.c);
-    st.stock.forEach((item, i) => {
-      const row = document.createElement("button");
-      row.className = "goods" + (item.sold ? " sold" : "");
-      row.disabled = !!item.sold || S.c.gold < item.cost;
-      const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${S.c.armorMax - S.c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
-      // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
-      // names only, never user/item text) — safe inside innerHTML.
-      const usable = item.effectParams && item.effectParams.item ? window.__mzUsableBy(item.effectParams.item, S.c) : "";
-      row.innerHTML = `<span class="g-n">${item.n}${sub || usable ? `<i>${sub || ""}${sub && usable ? " " : ""}${usable}</i>` : ""}</span>
-        <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
-      row.onclick = () => window.mzBuyItem?.(i);
-      shelf.appendChild(row);
-    });
-    // Phase 14 (ECON-06): the "Your gear" SELL section — every carried item with
-    // a Sell button (window.mzSellItem → {type:"sellItem", i}), rendered by the
-    // SAME shared component the GEAR tab and the combat use-list use. Selling
-    // frees a slot and credits gold; the bridge re-renders the store after.
-    // Phase 29 (LOOT-04): when the bag is full, each row also gets a Drop
-    // button so the player can make room without selling.
-    const sellHead = document.getElementById("sell-head");
-    if ((S.c.items || []).length) {
-      window.__mzCarriedList(document.getElementById("sell-list"), S, S.c.items, { actions: usage.full ? ["sell", "drop"] : ["sell"] }, tabDeps());
-    } else {
-      // Nothing to sell — drop the heading so the empty <ul> isn't a bare label.
-      if (sellHead) sellHead.style.display = "none";
-    }
-    document.getElementById("a-leave").onclick = () => window.mzLeaveStore?.();
+    window.__mzTabs.store(body, S, tabDeps());
     return;
   }
   // No further branch needed here for "nothing happening" — hasActiveEncounter()
@@ -4350,6 +4299,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // only classic-script readers (the retired __mzItemRowState/__mzGear
   // bridges) moved into gearTab.js itself.
   import { bagUsage, renderGearTab, renderCarriedList } from "./src/browser/gearTab.js";
+  // Phase 47 (SHELL-03), Plan 05 — the Store's own mount function, the
+  // classic-script carve's whole S.store branch (Task 2).
+  import { renderStoreScreen } from "./src/browser/storeScreen.js";
   import { RACES, CLASSES } from "./content/index.js";
   // Phase 44 (DEAD-02) — a SEPARATE import line so the pinned line above
   // stays byte-identical for every existing bridge test. Phase 47
@@ -4472,12 +4424,12 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
   window.__mzDropShelfItems = dropShelfItems;
 
-  // Phase 47 (SHELL-01/02), Plans 03/04 — the tab modules' render functions,
-  // one frozen object (the __mzControls/__mzTables precedent: module-
-  // assigned, classic-read, assigned before the first paint()). Plan 05 adds
-  // `store` to the SAME object. The classic loot card and store sell list
-  // reach the shared carried-item list through window.__mzCarriedList.
-  window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });
+  // Phase 47 (SHELL-01/02/03), Plans 03/04/05 — the tab modules' render
+  // functions, one frozen object (the __mzControls/__mzTables precedent:
+  // module-assigned, classic-read, assigned before the first paint()). The
+  // classic loot card reaches the shared carried-item list through
+  // window.__mzCarriedList.
+  window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   window.__mzCarriedList = renderCarriedList;
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithNarration and

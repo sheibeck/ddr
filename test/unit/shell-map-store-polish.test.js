@@ -57,6 +57,10 @@ function stripComments(source) {
 }
 
 const CODE = stripComments(HTML);
+// Phase 47 (SHELL-03), Plan 05, Task 1: the whole S.store branch (including
+// STORE_ROLL_COPY and its gated header line) moved into
+// src/browser/storeScreen.js#renderStoreScreen.
+const STORE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "storeScreen.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -86,8 +90,12 @@ function releaseRegion() {
   return sliceBetween(CODE, "const release = e => {", 'vp.addEventListener("pointerup", release)');
 }
 
+// Phase 47 (SHELL-03), Plan 05: the store's whole render body is
+// storeScreen.js#renderStoreScreen — no region-slicing needed, STORE_SRC IS
+// the region (mirroring gearTab.js/heroTab.js's own GEAR_SRC/HERO_SRC
+// sibling pattern).
 function storeRegion() {
-  return sliceBetween(CODE, "if (S.store) {", 'document.getElementById("a-leave").onclick');
+  return STORE_SRC;
 }
 
 // ─── 1. UIF-03: zoom default + session-only persistence ──────────────────
@@ -189,26 +197,29 @@ test("mzCenterMap call-site count is 4 (boot, 2 new-run paths, stepWith's floorC
 
 // ─── 7. STORE-01: the gated header line ───────────────────────────────────
 
-test("STORE-01: STORE_ROLL_COPY constant exists exactly once, non-empty, no angle brackets", () => {
-  const m = CODE.match(/const STORE_ROLL_COPY = "([^"]*)";/);
-  assert.ok(m, "const STORE_ROLL_COPY = \"...\"; must be found in mazeworld.html");
+// Phase 47 (SHELL-03), Plan 05: STORE_ROLL_COPY moved verbatim (with its
+// comment) into src/browser/storeScreen.js, exported instead of a bare
+// classic const — the shell (mazeworld.html) now carries zero copies.
+test("STORE-01: STORE_ROLL_COPY constant exists exactly once (in storeScreen.js), non-empty, no angle brackets; the shell carries zero copies", () => {
+  const m = STORE_SRC.match(/export const STORE_ROLL_COPY = "([^"]*)";/);
+  assert.ok(m, "export const STORE_ROLL_COPY = \"...\"; must be found in src/browser/storeScreen.js");
   const copy = m[1];
   assert.ok(copy.length > 0, "STORE_ROLL_COPY must be non-empty");
   assert.ok(!/[<>]/.test(copy), "STORE_ROLL_COPY must carry no angle brackets (it is interpolated into a template)");
-  assert.equal((CODE.match(/const STORE_ROLL_COPY = "/g) || []).length, 1);
+  assert.equal((STORE_SRC.match(/export const STORE_ROLL_COPY = "/g) || []).length, 1);
+  assert.equal((CODE.match(/const STORE_ROLL_COPY = /g) || []).length, 0, "mazeworld.html must declare no STORE_ROLL_COPY of its own");
 });
 
-test("STORE-01: the store header line is gated on S.storeRoll === true with an empty-string else", () => {
+test("STORE-01: the store header line is gated on state.storeRoll === true with an empty-string else", () => {
   const region = storeRegion();
-  assert.equal((region.match(/S\.storeRoll === true/g) || []).length, 1);
-  assert.equal((region.match(/STORE_ROLL_COPY/g) || []).length, 1);
-  assert.match(region, /S\.storeRoll === true \? `<p class="enc-sub mw-store-roll">\$\{STORE_ROLL_COPY\}<\/p>` : ""/);
+  assert.equal((region.match(/state\.storeRoll === true/g) || []).length, 1);
+  assert.equal((region.match(/STORE_ROLL_COPY/g) || []).length, 2, "one export declaration + one template read");
+  assert.match(region, /state\.storeRoll === true \? `<p class="enc-sub mw-store-roll">\$\{STORE_ROLL_COPY\}<\/p>` : ""/);
 });
 
-test("STORE-01: storeRoll is read by the shell only inside the store header region", () => {
-  const wholeCount = (CODE.match(/storeRoll/g) || []).length;
-  const regionCount = (storeRegion().match(/storeRoll/g) || []).length;
-  assert.equal(wholeCount, regionCount, "storeRoll must appear nowhere in the shell outside the store header region");
+test("STORE-01: storeRoll is read only by storeScreen.js — the shell carries zero occurrences", () => {
+  assert.equal((CODE.match(/storeRoll/g) || []).length, 0, "storeRoll must appear nowhere in mazeworld.html (moved into storeScreen.js)");
+  assert.ok((STORE_SRC.match(/storeRoll/g) || []).length >= 1, "expected storeRoll to be read inside storeScreen.js");
 });
 
 // ─── 8. voice safety of STORE_ROLL_COPY ───────────────────────────────────
@@ -226,8 +237,8 @@ function findBannedTerms(text) {
 }
 
 test("STORE_ROLL_COPY is clear of content/safety-wordlist.js BANNED terms", () => {
-  const m = CODE.match(/const STORE_ROLL_COPY = "([^"]*)";/);
-  assert.ok(m, "const STORE_ROLL_COPY = \"...\"; must be found in mazeworld.html");
+  const m = STORE_SRC.match(/export const STORE_ROLL_COPY = "([^"]*)";/);
+  assert.ok(m, "export const STORE_ROLL_COPY = \"...\"; must be found in src/browser/storeScreen.js");
   const copy = m[1];
   const offenders = findBannedTerms(copy);
   assert.deepStrictEqual(offenders, [], `Banned copy in STORE_ROLL_COPY: ${JSON.stringify(offenders)} (text: "${copy}")`);
