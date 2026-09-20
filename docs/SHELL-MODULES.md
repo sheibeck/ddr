@@ -123,4 +123,31 @@ never to make a carve pass. A diff means the carve moved rendered DOM.
 
 ## Line budget
 
-Filled by Plan 05: final `wc -l mazeworld.html` and the per-carve deltas.
+**Criterion 2 (ROADMAP Phase 47, `wc -l mazeworld.html` < 5000): NOT MET — 5621 lines at the phase's final commit.**
+
+| Milestone | Commit | `wc -l mazeworld.html` (comma) | lines (plain) | Delta |
+| --- | --- | --- | --- | --- |
+| Phase start (smart-discuss context) | `0129ca3` | 6,339 | 6339 | — |
+| Post Plan 01 (DOM-snapshot harness) / Plan 02 (bridge registry) | `bbb6503` | 6,330 | 6330 | -9 |
+| Post Plan 03 (Gear tab carve) | `4cd35ea` | 5,980 | 5980 | -350 |
+| Post Plan 04 (Hero tab carve) | `6d1a999` | 5,669 | 5669 | -311 |
+| Post Plan 05 Task 1 (Store carve) | `df78e66` | 5,621 | 5621 | -48 |
+| **Final (Plan 05 Task 2)** | (this commit) | **5,621** | **5621** | **-718 total** |
+
+**The CONTEXT's own fallback (move the tabs' remaining private helpers) was applied and found nothing in scope.** `node tools/shell-sweep.mjs orphans` at the final commit reports 27 orphaned classic top-level declarations — every one of them belongs to the Map/camera/tap-control cluster, the combat/rail/HUD renderers, or the graves/Oracle log (`cv`, `ctx`, `GW`, `ZOOM_MIN`, `CANVAS_PAD`, `CAPTURE`, `logEl`, `CONDITION_COPY`, `MAP_COPY`, `FOE_EFFECT_LABEL`, `CONDITION_TONE`, `CONDITION_EXPLAIN`, `lastCondKeyShown`, `GRAVE_KEY`, `GRAVE_TOTAL_KEY`, `gravesLoadError`, `saveGraves`, `encRenderedAt`, `armTimer`, `lastDismissAt`, `encWasActive`, `lastLogSeqShown`, `fightLogAnnouncedSeq`, `FEATURE_ICON_PATH`, `COMBAT_DISPATCH`, `lastRailKeyShown`, `railTimer`). None trace to the Gear, Hero or Store bodies this phase carved — the phase ground rules explicitly forbid moving Map/Oracle/rail/combat code, so this lever has nothing left to pull for SHELL-01..04's own scope.
+
+**Classified breakdown of the remaining 5,621 lines** (measured at the final commit):
+
+| Category | Lines | Detail |
+| --- | --- | --- |
+| Markup + CSS (`<head>`/`<style>`, before `<body>`) | 1,196 | lines 1–1,196 |
+| Body markup between the classic and module `<script>` tags | 491 | lines 1,197–1,687 |
+| Classic `<script>` (total) | 2,507 | lines 1,687–4,193 |
+| — of which comment-only lines | 885 | `//`, `/* … */`, `*` continuation lines |
+| Module `<script type="module">` (total) | 1,424 | lines 4,195–5,618 |
+| — of which comment-only lines | 757 | `//`, `/* … */`, `*` continuation lines |
+| Trailing lines (`</html>` etc.) | 4 | after the module script closes |
+
+Comment-only lines alone total **1,642** across both scripts — the single largest lever left, and it is explicitly **out of scope for this phase** (Phase 48's DOCS-01..03 comment purge per the phase ground rules: "comment purges outside moved lines are Phase 48"). The largest remaining classic function bodies by line count are all Map/Combat/Rail/Graves/Oracle surfaces this phase never touched: `inspectAt` (map tap/hold-inspect), `renderEncounter` (261 lines — now almost entirely combat, the Store/Gear/Hero branches having moved out), `logLine`/`CAPTURE`/`logEl` (Oracle log), `renderRail`/`railPulse`/`railLocked` (the rail), `draw` (map canvas), `renderDropShelf` (shared, deliberately NOT moved into a tab module per this phase's own CONTEXT ruling), `paint` (the tab-mount skeleton + HUD writes, deliberately NOT moved into the module script per this phase's own CONTEXT ruling: "Moving `paint()` itself into the module script is out of scope"), `paintConditions` (HUD condition strip), `renderFoeCards`/`renderCombatOver`/`renderYourLot`/`renderActionArea`/`cbRow`/`foeStatusBadges`/`renderMajorOverlay`/`renderFightLog`/`syncFightLogLive` (combat renderers), `renderGraves` (the graveyard).
+
+**Candidate levers for a user ruling** (recorded, not acted on — out of this plan's scope): Phase 48's comment purge (DOCS-01..03, ~1,642 lines); moving `renderDropShelf` into a shared module (currently deliberately shell-owned, serving both the LOOT and FIND cards); moving `paint()`'s own tab-mount skeleton into the module script (currently deliberately shell-owned per this phase's CONTEXT); a future phase naming the Map/Combat/Rail/Oracle surfaces as additional named modules (out of SHELL-01..04's stated scope, which names only Gear/Hero/Store).

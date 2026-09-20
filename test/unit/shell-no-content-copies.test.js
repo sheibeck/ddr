@@ -191,3 +191,67 @@ test("DEAD-02: all 24 SUB_NOTE, 6 RACE_NOTE and 3 CLASS_NOTE dossier strings are
   }
   assert.deepEqual(leaked, [], `these dossier strings must not appear verbatim in mazeworld.html: ${leaked.join(", ")}`);
 });
+
+// ─── 6. criterion 3 widened: no classic/module copy of any src/browser/
+// export (Phase 47, SHELL-04 closing gate) ──────────────────────────────────
+//
+// mazeworld.html must not re-declare, under its OWN name, anything any
+// src/browser/*.js module already exports — the module carve's whole point
+// (gearTab.js, heroTab.js, storeScreen.js and every other src/browser/
+// module) is that the shell reads these through an import/bridge, never a
+// second copy. The export-name set is derived from every module's own
+// `export` statements at test time, never a hand-written list, so a future
+// src/browser/ export is automatically covered without touching this file.
+
+const SRC_BROWSER_DIR = path.join(REPO_ROOT, "src", "browser");
+
+/**
+ * exportNamesOf(source) — every top-level export binding name a module
+ * declares: `export (async )?(const|let|var|function|class) NAME` and
+ * `export { a, b as c }` lists (the re-exported/aliased NAME, `c` above, is
+ * the one that matters — that is the name a classic-script declaration
+ * would collide with).
+ */
+function exportNamesOf(source) {
+  const names = new Set();
+  const declRe = /^export\s+(?:default\s+)?(?:async\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][A-Za-z0-9_$]*)/gm;
+  let m;
+  while ((m = declRe.exec(source))) names.add(m[1]);
+  const listRe = /^export\s*\{([^}]*)\}/gm;
+  while ((m = listRe.exec(source))) {
+    for (const rawPart of m[1].split(",")) {
+      const piece = rawPart.trim();
+      if (!piece) continue;
+      const asMatch = piece.match(/^([A-Za-z_$][A-Za-z0-9_$]*)\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*)$/);
+      names.add(asMatch ? asMatch[2] : piece);
+    }
+  }
+  return names;
+}
+
+function allSrcBrowserExportNames() {
+  const files = fs.readdirSync(SRC_BROWSER_DIR).filter((f) => f.endsWith(".js"));
+  const byModule = new Map();
+  for (const file of files) {
+    const src = fs.readFileSync(path.join(SRC_BROWSER_DIR, file), "utf8").replace(/\r\n/g, "\n");
+    byModule.set(file, exportNamesOf(src));
+  }
+  return byModule;
+}
+
+test("criterion 3: mazeworld.html declares no duplicate of any src/browser export (gearTab.js, heroTab.js, storeScreen.js, viewModels.js, bridge.js, ... every module)", () => {
+  const byModule = allSrcBrowserExportNames();
+  const allNames = new Set();
+  for (const names of byModule.values()) for (const n of names) allNames.add(n);
+  assert.ok(allNames.size >= 100, `expected at least 100 src/browser export names across every module, found ${allNames.size}`);
+
+  const offenders = [];
+  for (const [moduleFile, names] of byModule) {
+    for (const name of names) {
+      const re = new RegExp(`^\\s*(?:const|let|var|function|async function)\\s+${escapeRegExp(name)}\\b`, "m");
+      if (re.test(CLASSIC)) offenders.push(`${name} (src/browser/${moduleFile} export, re-declared in the classic script)`);
+      if (re.test(MOD)) offenders.push(`${name} (src/browser/${moduleFile} export, re-declared in the module script)`);
+    }
+  }
+  assert.deepEqual(offenders, [], `mazeworld.html must not re-declare any src/browser export:\n${offenders.join("\n")}`);
+});
