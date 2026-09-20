@@ -10,7 +10,9 @@ requires:
     provides: "49-01's dev-gated performance.now() rings + the user's Pixel 7 device report"
 provides:
   - "docs/PERF-BASELINE.md Device/Protocol/BEFORE/Jank report/Decision sections filled from the Pixel 7 report"
-  - "one presentation-only fix commit (9fe9bb5) citing the step row — paint() skips the hidden Hero/Gear tab mount on the step path, re-renders on tab switch"
+  - "fix 1 (9fe9bb5): paint() skips the hidden Hero/Gear tab mount on the step path, re-renders on tab switch — cites the step row"
+  - "AFTER (fix 1) table + user ruling to land a second fix rather than revert (step p95 19.3 still >= 16 ms after fix 1 alone)"
+  - "fix 2 (cfce555): removes the redundant second canvas draw() per step (49-01's finding) — the draw timing row re-bracketed inside paint() via a new window.__mzPerfMarks bridge"
 affects: []
 
 # Tech tracking
@@ -18,46 +20,60 @@ tech-stack:
   added: []
   patterns:
     - "conditional tab-mount rendering gated by a module-scope flag set only around the specific hot-path caller, never a function-signature change, when source-pin tests anchor on the function's literal declaration/call text"
+    - "when relocating a dev-gated performance.now() bracket across the classic/module script boundary, bridge the SAME module instance (never a second one) so the timing ring stays continuous, and use the identical `perf`/`tDraw` local-variable naming the existing source-pin tests already check for, to minimize collateral pin-test churn"
 
 key-files:
   created: []
   modified:
     - mazeworld.html
     - docs/PERF-BASELINE.md
+    - src/browser/bridge.js
+    - docs/SHELL-MODULES.md
+    - test/unit/perfMarks.test.js
+    - test/unit/shell-map-rail.test.js
 
 key-decisions:
   - "step (median 14.2 / p95 28.9 ms) is the only qualifying row; no sub-row (dispatch/paint/draw) independently crosses 16 ms"
   - "Even though this is mechanically the plan's 'step-only' case, the arithmetic (dispatch+paint+draw sums to within ~0.1 ms median / ~2.0 ms p95 of step's own reported number) shows the Oracle logLine append / camera nudge are NOT where the cost is — paint (the largest single component) is the real target, cited via the step row per the fix rule"
-  - "Fix implemented as a module-scope classic-script flag (mwPaintSkipHiddenTabs) rather than a paint(opts) parameter, because gearTab.test.js/heroTab.test.js/shell-party-camp.test.js/perfMarks.test.js all anchor on the literal strings `function paint() {` and `window.paint();` — changing either would have broken multiple source-pin tests for no behavioral benefit"
-  - "The redundant second canvas draw() per step (49-01's own documented finding) was considered but NOT included in this fix — removing it would require restructuring the pinned 7-line performance.now() instrumentation shape, and the arithmetic shows draw's own cost (median 1.6 ms) alone would not bring step under 16 ms"
+  - "Fix 1 implemented as a module-scope classic-script flag (mwPaintSkipHiddenTabs) rather than a paint(opts) parameter, because gearTab.test.js/heroTab.test.js/shell-party-camp.test.js/perfMarks.test.js all anchor on the literal strings `function paint() {` and `window.paint();` — changing either would have broken multiple source-pin tests for no behavioral benefit"
+  - "Fix 1 alone reduced step's median (14.2 -> 11.3) and p95 (28.9 -> 19.3) but p95 stayed >= 16 ms — the user's binding ruling (2026-09-20) was to land a second fix citing the same step row rather than revert fix 1, and to keep both fixes regardless of the AFTER 2 outcome (deviation from the plan's own 'ONE fix / revert if not < 16 ms' clauses)"
+  - "Fix 2: removed stepWith's redundant external draw() call (paint() already draws once internally); verified safe by reading draw()/positionCanvas()/centerMap()/keepPartyInView() — draw()'s pixel content depends only on S (via inViewWindow reading state.floor.px/py), never on cam, so moving the sole remaining draw() earlier in stepWith changes nothing about final on-screen correctness"
+  - "Fix 2 re-bracketed the draw timing row inside paint() itself (a new window.__mzPerfMarks bridge to the SAME perfMarks instance stepWith already imports) rather than deleting the row — the coordinator's directive required the draw readout never go to 0"
 
 patterns-established: []
 
 requirements-completed: []
-# PERF-01/PERF-02 are NOT marked complete here — Task 3 (after the AFTER
-# report) closes both requirements together, per this plan's own task shape.
+# PERF-01/PERF-02 are NOT marked complete here — Task 3 (after AFTER 2)
+# closes both requirements together, per this plan's own task shape.
 
 # Metrics
-duration: in progress — checkpoint reached after Task 1
+duration: in progress — checkpoint reached after Task 2 (fix 2 landed, awaiting AFTER 2)
 completed: null
-status: awaiting-after-report
+status: awaiting-after-report-2
 ---
 
-# Phase 49 Plan 02: Measure-First Perf Pass — BEFORE + Fix Summary (Task 2 checkpoint)
+# Phase 49 Plan 02: Measure-First Perf Pass — Two Fixes + AFTER 1 Summary (Task 2 checkpoint, round 2)
 
-**Skip the Hero/Gear tab's full DOM rebuild inside paint() while it is hidden behind the map tab during a step, re-rendering it the instant the player switches tabs — cites docs/PERF-BASELINE.md BEFORE row `step` (median 14.2 / p95 28.9 ms).**
+**Two presentation-only fixes citing the `step` row: (1) paint() skips the Hero/Gear tab's full DOM rebuild while hidden behind the map tab during a step, re-rendering on tab switch; (2) the redundant second canvas draw() per step is removed. AFTER 1 (fix 1 alone) moved step from 14.2/28.9/33.4 to 11.3/19.3/24.9 ms — p95 still >= 16 ms, so the user ruled: land fix 2, re-measure, keep both regardless of the outcome.**
 
-**This is NOT the phase-closing SUMMARY.** Task 1 (doc + decision + fix) is
-complete; Task 2 is the blocking device checkpoint below — the executor
-stops here per the plan. Task 3 (AFTER table, ROADMAP criteria 1-4, closing
-gates, PERF-01/02 marked complete) runs once the orchestrator supplies the
-AFTER device report.
+**This is NOT the phase-closing SUMMARY.** Task 1 (doc + decision + fix 1)
+and the fix-2 round (landed after the AFTER 1 device report, per a binding
+user ruling — see `## Fix 2` below) are both complete; Task 2's checkpoint
+is reached a second time, below. The executor stops here per the plan.
+Task 3 (the AFTER 2 table, ROADMAP criteria 1-4, closing gates, PERF-01/02
+marked complete) runs once the orchestrator supplies the AFTER 2 device
+report.
 
 ## Performance
 
-- **Duration (Task 1 only):** this session
-- **Tasks:** 1 of 3 completed (Task 2 is the checkpoint below; Task 3 pending)
-- **Files modified:** 2 (`mazeworld.html`, `docs/PERF-BASELINE.md`)
+- **Duration:** this session, across two device round-trips
+- **Tasks:** 1 of 3 fully completed (Task 1); Task 2's checkpoint reached
+  twice (once for fix 1's AFTER report, now again for fix 2's); Task 3
+  pending
+- **Files modified:** `mazeworld.html`, `docs/PERF-BASELINE.md`,
+  `src/browser/bridge.js`, `docs/SHELL-MODULES.md`,
+  `test/unit/perfMarks.test.js`, `test/unit/shell-map-rail.test.js`,
+  `.planning/phases/49-measure-first-perf-pass/49-02-SUMMARY.md`
 
 ## Accomplishments
 
@@ -88,6 +104,14 @@ AFTER device report.
    BEFORE table, jank report, decision
 3. **Task 1 (doc, fix-landed note):** `b8c9293` (docs) — decision: fix
    9fe9bb5 landed, AFTER run pending
+4. **AFTER 1 report + user ruling (doc):** `d9be880`, `a6888cd` (docs,
+   orchestrator-authored) — AFTER 1 numbers appended, user ruling to land a
+   second fix recorded
+5. **Fix 2:** `cfce555` (perf) — removes the redundant second canvas draw()
+   per step — cites step p95 19.3 ms (AFTER 1) / 28.9 ms (BEFORE)
+6. **Fix 2 doc (AFTER fix 1 table + AFTER fix 2 reserved):** `70e199f`
+   (docs) — PERF-BASELINE.md AFTER section filled with the fix-1 table and
+   the user's ruling; AFTER (fix 2) subsection reserved
 
 _Note: the fix commit (9fe9bb5) landed before the doc commits in wall-clock
 order — the code was diagnosed and implemented first, then the doc was
@@ -222,3 +246,128 @@ step 11.3 / 19.3 / 24.9 · dispatch 4.1 / 8.0 / 15.4 · paint 4.8 / 7.4 / 9.8 ·
 ### Orchestrator ruling (user, 2026-09-20)
 
 `step` p95 19.3 ≥ 16 ms — criterion 3's "< 16 ms" is met on median (11.3) and NOT MET on p95 after fix 1. The user chose **a second presentation-only fix citing the same `step` row**: remove the redundant second `draw()` per step in `stepWith` (classic `paint()` already ends with `draw()`; see 49-01's finding), then APK #3 and one more re-measure. Rationale: dispatch + paint + draw p95 (19.0) ≈ step p95 (19.3), so the remaining step cost is the sum of its parts and the duplicate draw is the one known redundant part (~1.9 ms median / ~3.6 ms p95). If p95 still lands ≥ 16 after fix 2, the user's standing ruling is: record the numbers honestly, keep both fixes (every row improved or held; draw +0.3 ms is within noise), do not revert. Recorded as a deviation from the plan's "ONE fix commit" and "revert if not < 16" clauses.
+
+## Fix 2
+
+**Commit:** `cfce555` — `perf(49-02): remove the redundant second canvas draw() per step — cites step p95 19.3 ms (AFTER 1) / 28.9 ms (BEFORE) (PERF-02)`
+
+**What changed:** `stepWith` called `window.draw()` a second time after
+`window.paint()` — but classic `paint()` already ends with `renderEncounter();
+renderRail(); draw();` internally (49-01's own documented finding). Removed
+`stepWith`'s standalone `window.draw()` call (and its own `tDraw`/
+`perf.record("draw", ...)` bracket) entirely. The single remaining `draw()`
+call — inside `paint()` — is now the ONLY canvas draw per step.
+
+**Safety verified before removing (read, not re-measured):** `draw()`'s
+pixel content depends only on `S` (already set earlier in `stepWith`, via
+`inViewWindow(state, x, y)` reading `state.floor.px/py`), never on `cam`
+(the camera/viewport variable). `centerMap()`/`keepPartyInView()` (the
+camera nudge `stepWith` calls after this point) only mutate `cam` and
+reposition the already-drawn canvas element via `positionCanvas()`'s CSS
+`left`/`top` — they never redraw pixels. The Oracle `logLine` loop has no
+`draw()` dependency either. So moving the one remaining `draw()` earlier
+(now inside `paint()`, before the `logLine` loop and the camera nudge)
+changes nothing about final on-screen correctness.
+
+**Keeping the `draw` row meaningful:** re-bracketed the dev-gated
+`performance.now()` pair inside `paint()` itself, around its own `draw()`
+call, via a new `window.__mzPerfMarks` bridge (the SAME `perfMarks` module
+instance `stepWith` already imports directly — `paint()` is the classic
+`<script>` and cannot `import`). Registered in `src/browser/bridge.js`
+(alphabetically between `__mzPendingNarration` and
+`__mzPreferencesOverride`) and `docs/SHELL-MODULES.md` regenerated via
+`node tools/bridge-doc.mjs --write`. The `draw` row now measures the one
+real draw from inside `paint()` rather than a second, now-removed `draw()`
+call from `stepWith`.
+
+**Test-pin maintenance** (`test/unit/perfMarks.test.js`,
+`test/unit/shell-map-rail.test.js`): several source-pin tests asserted the
+OLD shape (draw bracketed inside `stepWith`; zero `performance.now`/
+`perfMarks` tokens anywhere in the classic script; `renderRail()`
+immediately followed by `draw()` with zero gap). Updated to assert the NEW,
+intentional shape: draw's dev-gated bracket now lives inside `paint()`'s
+own tail (a new `PAINT_DRAW_REGION` pin mirrors the `stepWith` region pins
+exactly — same ordering check, same record-count check, same dev-gate-
+phrasing check); the classic-script "carries no perf token" invariant is
+narrowed to "carries no perf token OUTSIDE paint()'s own draw() bracket"
+(still zero everywhere else, pinned at exactly 2 tokens inside the
+bracket); the `renderRail()`/`draw()` adjacency check now tolerates the new
+bracket's non-brace content between them instead of requiring a zero-length
+gap.
+
+**Ship-proof grep re-recorded** (a `performance.now()` pair moved, per the
+ground rules — "if you moved a performance.now line, re-record the grep"):
+
+```
+$ grep -rn "performance.now" www/
+www/index.html:2503:  const tDraw = perf ? performance.now() : 0;
+www/index.html:2505:  if (perf) perf.record("draw", performance.now() - tDraw);
+www/index.html:4999:    const tStep = perf ? performance.now() : 0;
+www/index.html:5001:    if (perf) perf.record("dispatch", performance.now() - tStep);
+www/index.html:5061:    const tPaint = perf ? performance.now() : 0;
+www/index.html:5072:    if (perf) perf.record("paint", performance.now() - tPaint);
+www/index.html:5098:    if (perf) { perf.record("step", performance.now() - tStep); perfReadout(perf); }
+```
+
+Still exactly 7 guarded lines (0 unguarded), only in `www/index.html` — 2
+now inside classic `paint()` (lines 2503, 2505), 5 still inside module
+`stepWith` (lines 4999–5098).
+
+### Gate results (recorded verbatim, at commit `cfce555`)
+
+- `npm test 2>&1 | grep -E "^# (pass|fail)"` — `# pass 3315` / `# fail 0` (+2 net over fix 1's 3,313 — the two new `PAINT_DRAW_REGION` pins)
+- `node --test test/unit/shell-tab-snapshots.test.js 2>&1 | grep -E "^# (pass|fail)"` — `# pass 10` / `# fail 0`; `git diff --stat -- test/unit/fixtures/` — empty
+- `npm run build:www` — exit 0, `www/index.html` stamped
+- `npm run boot:check` — `PASS no-uncaught`, `PASS painted`, `PASS graves`, `PASS title` (4/4)
+- `node --test test/unit/bridge-registry.test.js` — `# pass 10` / `# fail 0`; `node tools/bridge-doc.mjs --check` — exit 0
+- `node tools/stale-terms.mjs` — exit 0
+- `grep -rn "performance.now" www/` — 7 lines, re-recorded above; `grep -rn "performance.now" www/ | grep -vc "perf ? \|if (perf)"` — 0; `grep -rl "performance.now" www/` — exactly `www/index.html`
+- `git status --porcelain engine/ content/ test/parity/` — empty; `git hash-object test/parity/prototype-master.js.txt` — `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged; `git diff --stat 9c9a755..HEAD -- engine/ content/ test/parity/` — empty
+
+### Deviations from Plan (Fix 2)
+
+**2. [User ruling — plan deviation] Second fix landed instead of reverting fix 1**
+- **Found during:** Task 2's checkpoint resume (AFTER 1 report)
+- **Issue:** The plan's own rule (Task 3, step 1) says: if the cited row is still ≥ 16 ms (median or p95) after the AFTER run, `git revert` the fix and close as "no fix". AFTER 1 showed `step` p95 19.3 ms — still ≥ 16 ms.
+- **Ruling:** The user, reviewing the AFTER 1 numbers directly (every row improved or held, no jank, no regression), overrode the revert-on-failure clause and directed a second presentation-only fix citing the same `step` row, to be re-measured once more (AFTER 2) before any final revert decision. A standing ruling was also given: if AFTER 2's p95 is still ≥ 16 ms, keep BOTH fixes and record the numbers honestly rather than revert.
+- **Files modified:** `mazeworld.html`, `src/browser/bridge.js`, `docs/SHELL-MODULES.md`, `test/unit/perfMarks.test.js`, `test/unit/shell-map-rail.test.js`
+- **Verification:** all gates green at `cfce555` (see above)
+- **Committed in:** `cfce555` (fix), `70e199f` (doc)
+
+---
+
+**AWAITING AFTER REPORT 2**
+
+Nothing else in code or docs should be written until the AFTER 2 numbers
+exist. Task 3 (the AFTER table close, ROADMAP criteria 1-4, closing gates,
+PERF-01/PERF-02 marked complete) cannot start until then.
+
+**Orchestrator:** build a third debug APK with `npm run android:debug` at
+commit `cfce555` (or later, as long as it includes both fixes), and record
+its commit hash as APK_COMMIT_AFTER_2.
+
+**User — repeat the same checklist protocol a second time:**
+1. If a Play-installed build is on the phone, uninstall it first (different signer).
+2. `adb devices` (or `adb mdns services` if the port rotated — Pixel 7 is `adb-28051FDH200H0R`).
+3. `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`
+4. `adb shell am force-stop com.darktierstudios.delvedierepeat` then `adb shell monkey -p com.darktierstudios.delvedierepeat 1` (install alone doesn't reload the WebView).
+5. Title → ENTER → take any roll → on the map open Settings (gear chip right of MAKE CAMP) and long-press "Version …" for about 1.2 s until "Start at depth (dev)" appears.
+6. Enter 5 in the depth field and tap Start.
+7. Walk at least 50 tapped steps, mixed the way you normally play: through a water pool, into a dark region and back out, at least one encounter card, and at least one tab switch (Gear or Hero, then back to the map). Don't steer around things to make the numbers look good.
+8. Open Settings again and read the line under the Start button (or `adb logcat -s chromium | grep mzperf`).
+9. Report back, copying the numbers exactly as shown (do not round):
+   1. step median / p95 / max, n
+   2. dispatch median / p95 / max
+   3. paint median / p95 / max
+   4. draw median / p95 / max
+   5. device build number (Settings → About phone → Build number)
+   6. APK commit (APK_COMMIT_AFTER_2)
+   7. jank — anything seen and where, or "none"
+
+**Expected outcome:** `step`'s p95 now below 16 ms (with the redundant
+draw removed, dispatch + paint + draw's own p95 sum was already ≈ 19.0 ms
+in AFTER 1 — removing draw's ~3.6 ms p95 contribution from the total should
+land step's p95 close to 15-16 ms, though this is a projection, not a
+promise — the actual device number is what counts). Per the user's standing
+ruling: if p95 is still ≥ 16 ms, Task 3 records the numbers honestly and
+KEEPS both fixes rather than reverting either.
