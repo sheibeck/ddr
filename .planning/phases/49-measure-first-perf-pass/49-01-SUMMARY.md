@@ -163,7 +163,23 @@ Build: debug APK at android/app/build/outputs/apk/debug/app-debug.apk from commi
 
 ## Device report
 
-(appended by the orchestrator after the Pixel 7 session — Plan 49-02 stops if this section has no numbers)
+Reported by the user in chat, 2026-09-20, after the checklist protocol (Start at depth 5, ≥ 50 mixed steps). Numbers quoted exactly as pasted:
+
+```
+step 14.2 / 28.9 / 33.4 · dispatch 3.9 / 8.3 / 15.1 · paint 8.6 / 15.3 / 17.9 · draw 1.6 / 3.3 / 4.2 ms (med / p95 / max, n=62)
+```
+
+| Row | Median | p95 | Max | n |
+| --- | --- | --- | --- | --- |
+| step | 14.2 | 28.9 | 33.4 | 62 |
+| dispatch | 3.9 | 8.3 | 15.1 | 62 |
+| paint | 8.6 | 15.3 | 17.9 | 62 |
+| draw | 1.6 | 3.3 | 4.2 | 62 |
+
+- **Device build number:** CP2A.260705.006 (read via `adb shell getprop ro.build.display.id`)
+- **APK commit:** 742c916 (debug, `npm run android:debug`, installed with `adb install -r` over the sideloaded 1.4.0 build — on-device save preserved; force-stop + relaunch done)
+- **Jank report (user's word):** "None"
+- **Rule applied by the orchestrator (for 49-02 to confirm):** `step` p95 28.9 ≥ 16 ms → qualifies; no other row qualifies (paint p95 15.3, max 17.9 — the largest component); no confirmed jank.
 
 ## Judgment calls for the user
 
