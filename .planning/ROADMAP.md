@@ -144,7 +144,12 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
   2. Re-entry is guarded: a resolved `startNewRun()` from a superseded roll (double-tap on the roll trigger, Play-again from a death mid-reveal) is ignored, pinned by a test that fires two rolls and asserts only the second's state ever reaches the Hero tab.
   3. A manual repro pass (roll → note the three locked reels + name → DESCEND → compare the Hero tab; repeated with a double-tap and with Play-again from a death) shows zero mismatches, recorded in the phase summary.
   4. `engine/`, `content/`, parity fixtures and the master hash are untouched — the fix is shell-only (`mazeworld.html`, `src/browser/viewModels.js`, `src/browser/heroTab.js`, `src/browser/engineAdapter.js`).
-**Plans**: TBD
+**Plans**: 3 plans (waves 1 → 2 → 3, sequential — `mazeworld.html` is touched only in wave 3)
+
+Plans:
+- [ ] 50-01-PLAN.md — `src/browser/roller.js` (`createRoller`: monotonic roll token + serialized `startNewRun()` chain + reels/CTA reading the one pending state) and `test/unit/roller.test.js` (SC1 identity, SC2 supersede races, serialization, CTA gating, module pins); shell untouched
+- [ ] 50-02-PLAN.md — `tools/roller-repro.mjs` (dependency-free headless-Chrome CDP driver: normal / double-tap / Play-again-from-death / mid-reveal) and the BEFORE table against the unfixed shell
+- [ ] 50-03-PLAN.md — the `mazeworld.html` mount swap (`window.mzStartRoll = roller.start`, `commitRolledState` as `onCommit`, inline roller deleted), pin re-homes + mount pins, bridge strings + `docs/SHELL-MODULES.md`, the AFTER repro table, gates (build:www → npm test → boot:check), fence, SUMMARY with the deferred Pixel 7 checks
 
 ### Phase 51: Initiative Once Per Combat
 
