@@ -174,7 +174,12 @@ Plans:
   4. Samurai / slow / foresight / Acute Hearing overrides still apply to the single roll, proven by their existing tests re-targeted at the new call site.
   5. The p.24 divergence is declared in `test/parity/FIXTURE-INVENTORY.md` with before/after; only the measured fixtures are regenerated; the prototype master hash is unchanged.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 51-01-PLAN.md — Measure first: BEFORE bot readout on the phase-start commit + `tools/initiative-fixture-scan.mjs` (MOVED SET measured, output committed) — zero engine bytes
+- [ ] 51-02-PLAN.md — Engine cut (initiative once in `fight()`, `resolveInitiative`, `combatJoined.mine/theirs/why/foe`, afterPlayerAction re-roll + second foe turn deleted) + every draw pin re-pinned + SC1/SC2 pins + the three moved fixtures declared/regenerated + FIXTURE-INVENTORY Phase 51 + AFTER bot readout
+- [ ] 51-03-PLAN.md — INIT-02: the once-per-fight initiative line in the Oracle and fight log (dice in .roll spans, in-voice verdict per override) + SC3 once-per-fight pin
 
 ### Phase 52: Foe Cadence & Damage Curve
 
