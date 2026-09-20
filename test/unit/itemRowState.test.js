@@ -14,7 +14,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { itemRowState, ITEM_STATE_COPY } from "../../src/browser/viewModels.js";
+import { itemRowState, ITEM_STATE_COPY } from "../../src/browser/gearTab.js";
 
 function state(timers = {}) {
   return { c: { timers } };

@@ -24,7 +24,8 @@ import url from "node:url";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { RAIL_COPY } from "../../src/browser/rail.js";
-import { ITEM_STATE_COPY, ABILITY_VIEW_COPY, RATIONS_COPY, USABLE_COPY, GEAR_COPY } from "../../src/browser/viewModels.js";
+import { ABILITY_VIEW_COPY, RATIONS_COPY, USABLE_COPY } from "../../src/browser/viewModels.js";
+import { ITEM_STATE_COPY, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { COMBAT_PANEL_COPY } from "../../src/browser/combatPanel.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
@@ -247,6 +248,19 @@ test("www/index.html (build artifact): same scan, skipped when www/ is absent", 
   const html = fs.readFileSync(wwwPath, "utf8").replace(/\r\n/g, "\n");
   const offenders = scanHtmlFile("www/index.html", html);
   assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in www/index.html:\n${offenders.join("\n")}`);
+});
+
+// ─── (f) src/browser/gearTab.js — Phase 47 Plan 03 carve; Plans 04/05 append
+// their own modules to this same list ───────────────────────────────────────
+
+test("src/browser/gearTab.js: no string literal contains a standalone wp/WP token", () => {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n");
+  const offenders = [];
+  for (const lit of stringLiteralsOf(stripComments(src))) {
+    const m = lit.match(PLAYER_WP);
+    if (m && !isAllowlisted(lit)) offenders.push(`gearTab.js script literal -> ${lit}`);
+  }
+  assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/gearTab.js:\n${offenders.join("\n")}`);
 });
 
 // ─── standing-guard self-check: the regex itself must not drift ───────────

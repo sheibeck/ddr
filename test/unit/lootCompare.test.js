@@ -8,7 +8,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { lootCompare, bagUsage, bagArmorText } from "../../src/browser/viewModels.js";
+import { lootCompare, bagArmorText } from "../../src/browser/viewModels.js";
+import { bagUsage } from "../../src/browser/gearTab.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { WEAPONS } from "../../content/index.js";

@@ -50,13 +50,15 @@ const CODE = stripComments(HTML);
 
 // ─── 1. module bridges ──────────────────────────────────────────────────
 
-test("Phase 29 (LOOT-03/04): the module bridges lootCompare/bagUsage from viewModels.js", () => {
-  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the shared viewModels.js import
-  // line gained itemRowState as a sibling named import.
+test("Phase 29 (LOOT-03/04): the module bridges lootCompare/bagUsage", () => {
+  // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
+  // gearTab.js — the shared viewModels.js import line no longer carries
+  // them; bagUsage's own import now reads from gearTab.js.
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
+  assert.match(CODE, /import \{ bagUsage, itemRowState, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.match(CODE, /window\.__mzBagUsage = bagUsage;/);
   assert.match(CODE, /window\.__mzLootCompare = lootCompare;/);
 });

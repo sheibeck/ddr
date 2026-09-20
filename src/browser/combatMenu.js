@@ -13,7 +13,8 @@
 // storage, no rng draws, no mutation of `state` anywhere in this file.
 
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
-import { characterSheetViewModel, itemRowState } from "./viewModels.js";
+import { characterSheetViewModel } from "./viewModels.js";
+import { itemRowState } from "./gearTab.js";
 import { canCast, WORN_SLOTS, fleeBreakdown, activationFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";

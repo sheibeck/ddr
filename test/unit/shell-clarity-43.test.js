@@ -18,7 +18,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
-import { GEAR_COPY } from "../../src/browser/viewModels.js";
+import { GEAR_COPY } from "../../src/browser/gearTab.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -111,16 +111,28 @@ function renderDropShelfRegion() {
 test("import: the pinned viewModels import line is byte-identical and occurs exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState \} from "\.\/src\/browser\/viewModels\.js";/g,
+      /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/g,
     ) || []).length,
     1,
   );
 });
 
-test("import: a NEW, separate viewModels import line carries the six Phase 43 exports, exactly once", () => {
+test("import: a NEW, separate viewModels import line carries the four Phase 43 exports, exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ usableBy, rationsViewModel, eatsLineFor, dropShelfItems, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/viewModels\.js";/g,
+      /import \{ usableBy, rationsViewModel, eatsLineFor, dropShelfItems \} from "\.\/src\/browser\/viewModels\.js";/g,
+    ) || []).length,
+    1,
+  );
+});
+
+// Phase 47 (SHELL-01), Plan 03, Task 1 — bagUsage/itemRowState/emptySlotRows/
+// GEAR_COPY moved from viewModels.js to gearTab.js; the classic module script
+// imports all four from the new module in one line.
+test("import: the gearTab.js import line carries bagUsage/itemRowState/emptySlotRows/GEAR_COPY, exactly once", () => {
+  assert.equal(
+    (CODE.match(
+      /import \{ bagUsage, itemRowState, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/gearTab\.js";/g,
     ) || []).length,
     1,
   );

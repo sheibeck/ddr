@@ -8,7 +8,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { dropShelfItems, emptySlotRows, GEAR_COPY } from "../../src/browser/viewModels.js";
+import { dropShelfItems } from "../../src/browser/viewModels.js";
+import { emptySlotRows, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { slotItems } from "../../engine/derived.js";
 import { BANNED } from "../../content/safety-wordlist.js";
 

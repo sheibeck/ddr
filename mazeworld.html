@@ -4924,10 +4924,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // content tables (content/index.js) used ONLY to build the reel-flicker's
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
-  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState } from "./src/browser/viewModels.js";
+  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare } from "./src/browser/viewModels.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
-  import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems, emptySlotRows, GEAR_COPY } from "./src/browser/viewModels.js";
+  import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems } from "./src/browser/viewModels.js";
+  // Phase 47 (SHELL-01), Plan 03, Task 1 — the five Gear-only view models
+  // moved out of viewModels.js into gearTab.js (a pure move; Task 2 lands
+  // renderGearTab/renderCarriedList and the classic-script carve).
+  import { bagUsage, itemRowState, emptySlotRows, GEAR_COPY } from "./src/browser/gearTab.js";
   import { RACES, CLASSES, ABILITY_BY_ID } from "./content/index.js";
   // Phase 44 (DEAD-02) — a SEPARATE import line so the pinned line above
   // stays byte-identical for every existing bridge test.

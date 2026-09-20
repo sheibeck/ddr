@@ -60,10 +60,13 @@ test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridg
   // mapViewRadius/inViewWindow as sibling named imports.
   assert.match(CODE, /import \{ conditionsOf, eff, slotFor, WORN_SLOTS, WORN_KEYS_OF, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.match(CODE, /import \{ toolIndex \} from "\.\/engine\/items\.js";/);
+  // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
+  // gearTab.js — the shared viewModels.js import line no longer carries them.
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare, bagUsage, itemRowState \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
+  assert.match(CODE, /import \{ bagUsage, itemRowState, emptySlotRows, GEAR_COPY \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.equal((CODE.match(/window\.__mzHasTool = hasTool;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzToolIndex = toolIndex;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzToHit = toHit;/g) || []).length, 1);

@@ -53,15 +53,12 @@ import {
   armorDisplay,
   bagArmorText,
   lootCompare,
-  bagUsage,
-  itemRowState,
   usableBy,
   rationsViewModel,
   eatsLineFor,
   dropShelfItems,
-  emptySlotRows,
-  GEAR_COPY,
 } from "../../../src/browser/viewModels.js";
+import { bagUsage, itemRowState, emptySlotRows, GEAR_COPY } from "../../../src/browser/gearTab.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
