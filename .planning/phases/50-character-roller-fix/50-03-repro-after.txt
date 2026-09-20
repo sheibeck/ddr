@@ -1,0 +1,7 @@
+| Scenario | Reels shown (race / class / sub · name) | Hero tab shown (#s-tag · #s-name) | state.c (race / cls / sub · name) | Match? | Notes |
+| --- | --- | --- | --- | --- | --- |
+| normal | Human / Thief / Pickpocket · Owen Fenn | Human Pickpocket · Thief · Owen Fenn | Human / Thief / Pickpocket · Owen Fenn | yes |  |
+| double-tap | Human / Thief / Cutthroat · Rosa Marsh | Human Cutthroat · Thief · Rosa Marsh | Human / Thief / Cutthroat · Rosa Marsh | yes | reels changed after reveal: no |
+| play-again | Human / Thief / Con Artist · Mira Vane | Human Con Artist · Thief · Mira Vane | Human / Thief / Con Artist · Mira Vane | yes |  |
+| play-again-mid-reveal | Fridgian / Magic User / Apprentice · Yrsa the Loud | Fridgian Apprentice · Magic User · Yrsa the Loud | Fridgian / Magic User / Apprentice · Yrsa the Loud | yes | reels changed after reveal: yes |
+roller-repro: 4/4 matched
