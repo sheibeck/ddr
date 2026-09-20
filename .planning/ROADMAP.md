@@ -177,8 +177,16 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 51-01-PLAN.md — Measure first: BEFORE bot readout on the phase-start commit + `tools/initiative-fixture-scan.mjs` (MOVED SET measured, output committed) — zero engine bytes
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 51-02-PLAN.md — Engine cut (initiative once in `fight()`, `resolveInitiative`, `combatJoined.mine/theirs/why/foe`, afterPlayerAction re-roll + second foe turn deleted) + every draw pin re-pinned + SC1/SC2 pins + the three moved fixtures declared/regenerated + FIXTURE-INVENTORY Phase 51 + AFTER bot readout
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 51-03-PLAN.md — INIT-02: the once-per-fight initiative line in the Oracle and fight log (dice in .roll spans, in-voice verdict per override) + SC3 once-per-fight pin
 
 ### Phase 52: Foe Cadence & Damage Curve
