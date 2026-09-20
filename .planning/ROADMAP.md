@@ -280,7 +280,28 @@ Plans:
   4. `npm test` fail 0 with the pass count equal to the phase-start count (renames only — no test deleted without its reason in the summary); `engine/`, `content/`, fixtures and the master hash unchanged except for comment lines (the diff contains no non-comment code change — proven by a stripped-comments diff recorded in the summary).
 
 **Discuss**: Not worth a round — the sweep is mechanical; the one judgment (which `docs/*.md` only documented dead code) is recorded in the summary for the user to reverse.
-**Plans**: TBD
+**Plans**: 5 plans (strictly sequential — every plan appends survivors to `tools/stale-terms.mjs`'s allow-list, and Plans 03-04 re-touch files Plan 02's vocabulary decisions govern; each plan closes with `npm test` 3,288/0 until Plan 05 adds the tripwire's own tests)
+
+Plans:
+**Wave 1**
+
+- [ ] 48-01-PLAN.md — `tools/stale-terms.mjs` (criterion 1 as a reproducible table with an allow-list that rots loudly, `--paths`/`--json`/`--self-test`) + `tools/comment-only-diff.mjs` (criterion 4's stripped-diff proof); the engine/content/tools comment sweep (15 sites, comment-only proven)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 48-02-PLAN.md — `mazeworld.html` (~35 sites: D-pad, toast host, Round Card, deleted classic mirrors, retired `__mz*` bridge archaeology) + `src/browser/*` (12 files; `narrationLines.js`'s 45 "toast" comments become the line vocabulary); shell gate (build:www, boot:check, DOM snapshot 10/10) at both commits
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 48-03-PLAN.md — test group A (narration-pipeline + engine-facing suites, 26 files): titles, comments, local `toast*` identifiers and assertion messages renamed to the line vocabulary; `round-card-worst-case.test.js` → `fight-log-worst-case.test.js` via `git mv`; counts pinned to 649de2b
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 48-04-PLAN.md — test group B (shell-* source-pin suites, harness twin, bridge-registry, inputGuards, parity comparables): the Phase 35 invariant suite and every absence pin recorded as class-A survivors, retired-bridge archaeology removed; then the fixture-hygiene commit (inert `flightLeft/flightCooldown` + `won: false` keys out of ~56 hand-built test states — the 46-02 handoff — revert-not-fix, one revertable commit)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 48-05-PLAN.md — `.claude/CLAUDE.md` Android-only (rows deleted; tap-to-move + RAIL); `docs/` bucketed (one deletion: `COMBAT-NARRATIVE-DESIGN.md`; status notes + sweeps in nine ledgers; ledger tests green); `test/unit/stale-terms.test.js` (5 tests → 3,293); criteria 1-4 verbatim; closing SUMMARY with every survivor and every judgment call for the user to reverse
 
 ### Phase 49: Measure-First Perf Pass
 
