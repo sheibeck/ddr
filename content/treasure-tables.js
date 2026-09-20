@@ -212,8 +212,8 @@ const CLOAKS_ROWS = [
     // `use` and `txt` are ALL left byte-identical (the row's exported shape
     // — the frozen economy fixture's DECLARED after.items Cloak of Ether
     // object — never moves); `txt`'s "once every 100 squares" is now
-    // slightly generous (usable every 90) but stays true, and the chip/toast
-    // state the exact numbers.
+    // slightly generous (usable every 90) but stays true, and the chip and
+    // the rail line state the exact numbers.
     n: "Cloak of Ether", slot: "cloak", eff: {}, use: "ether", every: 80,
     txt: "walk through walls, once every 100 squares",
     act: { kind: "ether", effect: 10 },

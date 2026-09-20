@@ -208,11 +208,10 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       flyOver();
     } else if (itemEffectActive(state.c, "ether")) {
       // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08 §8 design call):
-      // the Cloak of Ether (content/treasure-tables.js, use:"ether", "walk
-      // through walls") set `c.ether=20` (items.js:"ether") but the field was
-      // only ever set + ticked down (per-step below), READ NOWHERE. Wired here
-      // by MIRRORING isFlying: while ethereal you phase through the wall/crevice
-      // with no climb/leap roll and no fall damage. Deliberately NOT touching
+      // while the Cloak of Ether's "item:Cloak of Ether" effect is live
+      // (itemEffectActive(state.c, "ether"), a c.timers record since Phase
+      // 39), you phase through the wall/crevice with no climb/leap roll and
+      // no fall damage — mirroring isFlying. Deliberately NOT touching
       // the Cloak-of-Flying effect record (ether is its own item:Cloak of
       // Ether window). No rng draw either way on this branch, so
       // determinism/parity are unaffected for every character with no live
@@ -342,7 +341,7 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // Phase 41 (TERR-02): narrate entering water ONCE per wade, not once per
   // step — `here` (captured before the position update, still the same cell
   // object) is the departure cell, so a water -> water re-step stays silent
-  // (an 8-cell pool never stacks eight toasts) and only the entry step
+  // (an 8-cell pool never stacks eight rail lines) and only the entry step
   // narrates. The HUD counter still carries the per-step cost regardless.
   if (cost > 1 && !here.water) events.push({ type: "waded", cost });
 
@@ -443,9 +442,8 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // #useItem's "knit" case), not automatically every 20 squares while
   // merely carried. Walking hurt with an unused Cloak of Regeneration worn
   // changes nothing here any more.
-  // Phase 39 (GEAR-02): the retired Cloak-of-Flying flightLeft/flightCooldown
-  // pair — its effect/cooldown now rides the same c.timers squares tick
-  // below like every other item.
+  // The Cloak of Flying's effect/cooldown rides the same c.timers squares
+  // tick below like every other item.
 
   // Phase 36 (BAL foundation) — the squares tick for engine/effects.js
   // records; GUARDED on the lazily-created c.timers so every fixture, bot

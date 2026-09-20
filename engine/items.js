@@ -1101,7 +1101,7 @@ function applyActivation(state, it, rng, events) {
  * narrateTimerTransitions(state, transitions, events) — Phase 39 (GEAR-02):
  * maps a list of engine/effects.js `{ id, from, to }` transitions (as
  * returned by `tickSquares`/`tickRounds`) onto the item-domain events the
- * Oracle/toasts/rail narrate — the ONE place a tick's return value becomes
+ * Oracle/rail/fight log narrate — the ONE place a tick's return value becomes
  * player-visible feedback. `ability:` ids are ignored (Phase 38's abilities
  * narrate nothing on expiry). Pure bookkeeping, zero rng: the ONE exception
  * is a staff's charge refill (a `charges:` id, always a cooldown -> null
@@ -1296,10 +1296,8 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       events.push({ type: "cured", kind });
       break;
     }
-    // Phase 39 (GEAR-02): the retired scattered counters (c.might += 8/4
-    // never expiring, c.haste/c.acute/c.invis/c.ether) — applyActivation
-    // (below, after this switch) starts the item's own c.timers record
-    // instead; no direct character-field write happens here anymore.
+    // applyActivation (below, after this switch) starts the item's own
+    // c.timers record; this switch writes no character field directly.
     // 260918-w4n: the 7 newly use-activated JEWELRY/CLOAKS kinds join this
     // plain-break list — power (Ring of Power), giant (Gauntlet of the
     // Giant), unseen (Anklet of Invisibility), tongue (Helm of Knowledge),

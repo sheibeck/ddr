@@ -559,16 +559,15 @@ export function rollCharacter(rng, exclude = [], force = null) {
     // NO chargen rng draw and does not shift the rng-consumption order the
     // chargen-parity/determinism suites depend on.
     darkFor: 0,
-    // Phase 39 (GEAR-02): the retired Cloak-of-Flying flightLeft/
-    // flightCooldown pair — its effect/cooldown now rides a c.timers
-    // "item:Cloak of Flying" record instead, started by
-    // engine/movement.js's climb/gorge block (no chargen field needed at all).
+    // The Cloak of Flying's effect/cooldown rides a c.timers "item:Cloak of
+    // Flying" record, started by engine/movement.js's climb/gorge block —
+    // no chargen field needed at all.
     // ECON-01 (Phase 12, Economy A): the carry-capacity bag tier, a plain
     // string key into content/bags.js's BAGS. Assigned by class per rulebook
     // p.10 — Magic User = "small", Fighter = "medium", Thief = "small". This
     // is a PLAIN ASSIGNMENT off the already-rolled `cls` (NO rng draw),
-    // placed alongside the darkFor/flightLeft/flightCooldown plain scalars
-    // above and deliberately NOT interleaved with any rng.d()/rng.pick()
+    // placed alongside the `darkFor` plain scalar above and deliberately
+    // NOT interleaved with any rng.d()/rng.pick()
     // call, so the chargen rng-consumption order the chargen-parity/
     // determinism suites pin is completely untouched. Carried out of the
     // parity comparators (stripBagField) the same way name/darkFor/flight are.

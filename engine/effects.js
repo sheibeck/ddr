@@ -3,10 +3,12 @@
 // Phase 36 (BAL foundation, ROADMAP SC-6) — the ONE timer shape every v1.5
 // timer will share instead of inventing three bespoke ones: ability
 // cooldowns (Phase 38), item use-then-effect-then-cooldown (Phase 39), and
-// timed map reveal (Phase 40). Do NOT retrofit the existing bespoke fields
-// (darkFor/haste/invis/ether/acute/flightLeft/flightCooldown/ward/afraid/
-// foeEffect/it.usedAt) onto this shape — those stay exactly as they are
-// (ARCHITECTURE §1's recommendation); this module only serves NEW timers.
+// timed map reveal (Phase 40). Item effects/cooldowns (haste/invis/ether/
+// acute/the Cloak-of-Flying pair/staff usedAt) all moved onto this shape in
+// Phase 39. Do NOT retrofit the few fields that still keep their own
+// bespoke shape (darkFor/ward/afraid/foeEffect) onto this shape — those
+// stay exactly as they are (ARCHITECTURE §1's recommendation); this module
+// only serves NEW timers.
 //
 // This is a cycle-free leaf module (mirrors engine/derived.js): ZERO
 // imports, zero rng, zero mutation of anything but the `timers` map passed

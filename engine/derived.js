@@ -333,7 +333,7 @@ export function clampCarry(c) {
  * display names left behind), in `SLOT_FAMILIES` order, only for families
  * that wore or bagged at least one item — or `[]` when nothing was worn.
  * Report objects use only `slot`/`worn`/`bagged` keys (never `type` —
- * test/unit/toastsCoverage.test.js's event-vocabulary scanner greps every
+ * test/unit/narrationLinesCoverage.test.js's event-vocabulary scanner greps every
  * `type:` key across engine/*.js).
  *
  * Moving bag -> worn only ever FREES bag slots (items leave the bag, none
@@ -930,7 +930,7 @@ export function armorBulk(c) {
 /**
  * fleeBreakdown(c) — Phase 42 (FLEE-01/FLEE-02): the ONE flee-need rule,
  * mirroring foeToHitBreakdown's `{ name, delta }` shape so every surface
- * (the fight log, toasts, the rail, the combat submenu) narrates the SAME
+ * (the fight log, the rail, the combat submenu) narrates the SAME
  * modifier list without re-deriving the formula. Builds `mods` in this
  * fixed order, pushing an entry ONLY when it is non-zero: Thief (+5, "the
  * whole trade") -> class (content/flee.js#FLEE_CLASS_MOD) -> race

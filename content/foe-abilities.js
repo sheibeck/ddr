@@ -20,7 +20,7 @@
 //   - uses: N — a per-encounter cast cap; the engine (19-03) owns the
 //     remaining-uses counter (f.uses), never this content.
 //   - txt: the Oracle telegraph line the `foeCast` event carries (D-06/D-16);
-//     a complete, toast-length, family-friendly deadpan sentence naming the
+//     a complete one-line, family-friendly deadpan sentence naming the
 //     creature; scanned in full by test/voice/safety-scan.test.js Corpus 3.
 //
 // Dice budget (D-03): every single ability's expected damage is capped at

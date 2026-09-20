@@ -277,7 +277,7 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     // stable starting maxWP), but a foe's starting hp is exactly the kind of
     // value a narration/summary consumer would reasonably expect this event
     // to carry, and dropping it silently is a footgun for any future
-    // consumer (e.g. a combat-start toast/report) that reads this event
+    // consumer (e.g. a combat-start rail card or report) that reads this event
     // instead of live state. Safe/additive: no existing event-shape
     // assertion pins this array to exactly {name, lvl, wp}.
     foes: foes.map((f) => ({ name: f.name, lvl: f.lvl, wp: f.wp, maxWP: f.maxWP })),
@@ -972,7 +972,7 @@ export function flee(state, rng, events = []) {
     return events;
   }
   // Phase 42 (FLEE-01/FLEE-02): fleeBreakdown(c) is the ONE source of the
-  // flee need/modifiers — every surface (this event, the fight log, toasts,
+  // flee need/modifiers — every surface (this event, the fight log,
   // the rail, the combat submenu) reads the SAME `mods` list rather than
   // re-deriving the formula.
   const { need, mods, bonus } = fleeBreakdown(c);
@@ -1026,9 +1026,8 @@ export function flee(state, rng, events = []) {
  * after the Bard-vs-Humans line: a Court Mage can always parley Humans
  * ("courtly manners"), even at fluency 0.
  *
- * IMPORTANT — mazeworld.html's classic (non-module) `canParley()` duplicate
- * (D-17, ~line 4200) and test/unit/parley-button-mirror.test.js (20-03) MUST
- * mirror this exact decision order line for line: change one, change both.
+ * This function is the ONLY canParley — the shell reaches it through the
+ * engine bridge; there is no duplicate to keep in step.
  *
  * Phase 38 (ABIL-02): the Language skill is dropped outright — `fluency(c)`
  * (engine/derived.js) now comes ENTIRELY from a tongue-effect item (the Helm
