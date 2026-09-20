@@ -1,0 +1,71 @@
+# initiative-fixture-scan — Phase 51 (INIT-01): where the per-round initiative re-roll fires
+
+## Part A — the predictor (invariant across the Plan 02 engine edit)
+
+| Fixture | Site | Seed | Hero | actions | first live-fight round advance | moved | firstDivergentAction | maxRound | divergence.phase |
+|---|---|---|---|---|---|---|---|---|---|
+| action-script.chargen.json | action-script.chargen.json#seed-1 | 1 | Fighter Knight Fridgian | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-2 | 2 | Thief Cat Burglar Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-3 | 3 | Thief Pickpocket Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-4 | 4 | Thief Cat Burglar Dwarven | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-6 | 6 | Fighter Knight Troll | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-7 | 7 | Magic User Wizard Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-8 | 8 | Magic User Illusionist Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-13 | 13 | Fighter Woodsman Elven | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-15 | 15 | Magic User Summoner Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-19 | 19 | Magic User Sorcerer Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-24 | 24 | Magic User Apprentice Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-29 | 29 | Magic User Warlock Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-32 | 32 | Fighter Samurai Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-35 | 35 | Magic User Cleric Troll | 0 | never | false | n/a | n/a | none |
+| action-script.movement.json | action-script.movement.json#script | 256 | Thief Cat Burglar Human | 101 | never | false | n/a | n/a | none |
+| action-script.combat.json | action-script.combat.json#win | 3 | Thief Pickpocket Human | 2 | never | false | never | 1 | none |
+| action-script.combat.json | action-script.combat.json#lose | 14 | Fighter Soldier Fridgian | 11 | 1 | true | 0 | 3 | 24+31 |
+| action-script.combat.json | action-script.combat.json#lose-apprentice | 127 | Magic User Apprentice Human | 15 | 1 | true | 0 | 14 | 31 |
+| action-script.combat.json | action-script.combat.json#lose-plain | 1119 | Thief Cutthroat Human | 8 | 1 | true | never | 7 | none |
+| action-script.combat.json | action-script.combat.json#flee | 17 | Thief Pilfer Fridgian | 2 | never | false | never | 1 | none |
+| action-script.combat.json | action-script.combat.json#parley | 303 | Thief Con Artist Wilmsry | 2 | never | false | 0 | 1 | 27+31 |
+| action-script.magic.json | action-script.magic.json#cast-damage | 8 | Magic User Illusionist Wilmsry | 2 | never | false | 0 | 1 | 23+31 |
+| action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
+| action-script.magic.json | action-script.magic.json#potion | 1 | Fighter Knight Fridgian | 1 | never | false | never | n/a | none |
+| action-script.magic.json | action-script.magic.json#scroll | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
+| action-script.economy.json | action-script.economy.json#script | 3 | Thief Pickpocket Human | 10 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#trap | 1 | Fighter Knight Fridgian | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#chest | 2 | Thief Cat Burglar Wilmsry | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#tablefour | 3 | Thief Pickpocket Human | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#faerie | 38 | Thief Con Artist Elven | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#affliction | 160 | Thief Pilfer Human | 1 | never | false | n/a | n/a | none |
+
+MOVED SET (3): action-script.combat.json#lose, action-script.combat.json#lose-apprentice, action-script.combat.json#lose-plain
+INITIATIVE EXPOSURE: 3 of 31 replay sites
+
+## Part B — the lockstep measurement (per combat/magic site; fills Plan 02's divergence records)
+
+## Record values (JSON, per moved site)
+
+### action-script.combat.json#lose
+fields.before (prototype @end): {"wp":0,"sp":5,"gold":51,"kills":1,"rations":7}
+fields.after (engine @end): {"wp":51,"sp":45,"gold":52,"kills":2,"rations":8}
+state.before (prototype @end): {"dead":true}
+state.after (engine @end): {"dead":false}
+firstDivergentAction: 0
+maxRound: 3
+divergence.phase: 24+31
+
+### action-script.combat.json#lose-apprentice
+fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":4}
+fields.after (engine @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":4}
+state.before (prototype @end): {"dead":true}
+state.after (engine @end): {"dead":true}
+firstDivergentAction: 0
+maxRound: 14
+divergence.phase: 31
+
+### action-script.combat.json#lose-plain
+fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":5}
+fields.after (engine @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":5}
+state.before (prototype @end): {"dead":true}
+state.after (engine @end): {"dead":true}
+firstDivergentAction: never
+maxRound: 7
+divergence.phase: none
