@@ -69,7 +69,7 @@
 - ✓ **Map screen rebuilt to the Claude Design mock** — v1.4 Phase 35 (MAP-01..09): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with the condition-chip strip beneath (tap → rail explanation); tap-to-step viewport (dominant axis → fallback, hold to inspect, drag to pan, pinch to zoom) — the D-pad is gone, keyboard arrows stay; the bottom RAIL (`src/browser/rail.js`) replaces every toast in the app and carries every decision (joiner, find, CLIMB IT) with movement locked globally until it is answered; FLOOR N / SKILL LEVEL N are auto-clearing rail cards; the MAJOR OVERLAY now also gates the stair down (GO DOWN / NOT YET, shell pre-dispatch interception of the same engine `move`) and hosts out-of-combat death; MARKS / CENTRE / MAKE CAMP chips with glyph legend + camp sheets; canvas on the mock palette with coloured glyph marks and a pulsing party marker; 2170/2170 tests, engine/content/parity untouched; MAP-10 = 27 Pixel 7 checks deferred to the end-of-run UAT batch (climb dice payload deferred as a post-UAT quick task)
 - ✓ **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
-- [ ] **Next tuning pass** (deferred, not v1.3) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone — now also: initiative once per combat; one attack per foe per round unless `sp.atk`, ability turns replace swings; initiative line in the Oracle; damage-curve audit (Herman's flat 25 × multiplier); the four-band shape (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7; bot today median 3, p90 5) — todos in `.planning/todos/pending/`
+- [ ] **Next tuning pass** — IN PROGRESS as v1.7 (started 2026-09-20) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone — now also: initiative once per combat; one attack per foe per round unless `sp.atk`, ability turns replace swings; initiative line in the Oracle; damage-curve audit (Herman's flat 25 × multiplier); the four-band shape (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7; bot today median 3, p90 5) — todos in `.planning/todos/pending/`
 - [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.6.md` (26 checks) + `docs/UAT-v1.5.md` (140 checks) on APK `c0cdbae`; findings → quick tasks / a UAT gap plan
 
 ### Out of Scope
@@ -80,6 +80,23 @@
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (started 2026-09-20)
+
+**Goal:** Make floors 1–7 die for legible reasons — initiative fixed for the whole fight, honest foe attack cadence, a smooth single-hit damage curve, depth-capped Joiners — then reshape `engine/difficulty.js` toward the four-band curve (average run ends floor 5–7; depth 20 stays the unicorn), close the TUNE-06 tier-3/5 roster decision, and end on the twice-deferred TUNE-07 human DR round.
+
+**Target features (in sequence — each step moves floors 1–7, so the retune is measured last):**
+- **Initiative once per combat** — roll in `startCombat` only, delete the per-round re-roll (`engine/combat.js:1341`, canon p.24 divergence); the foe never acts twice in a row; one "Initiative — you N, them M" line in the Oracle / fight log, in voice
+- **Foe attack cadence** — one ordinary swing per foe per round unless its `sp.atk` says otherwise; a firing ability REPLACES that turn's swings, never stacks on them (the Stalka Beast two-hits-plus-frost log); frenzy still doubles
+- **Damage-curve audit** — bot readout of max single-hit damage by depth for every foe; flag any hit ≥ 60 % of a level-N character's max HP at its depth; fix the flat-damage × multiplier cliffs (Herman's 25 → 80 on floor 5) so the curve is smooth
+- **Joiner level capped by floor depth** (backlog 999.2) — `lvl = min(rolled, state.floor.depth)` in `meetJoiner`, draw count and cursor unchanged; `grantLevelAbilities` and the wp formula take the capped level
+- **Four-band retune** — Filter 1–4 (high variance) / Wall 5–8 (where the average run dies) / Breakaway 9–15 / Endgame 16–20 recorded as measurable targets in `docs/DIFFICULTY-RETUNE.md` (median death depth 5–7, p90 ≈ 10–13, reach-16 a few %, reach-20 ≪ 1 %); `difficultyCurve` reshaped — identity-ish through 4, a step at 5–8, slope eases 9–15, steepens 16–20; breather floors stay; bot today median 3 / p90 5
+- **TUNE-06 roster decision** — the two open band rows (forced-20 floors gained p50 0 / mean 0.84; reach ≥ 20 0.1 %) are canon tier-3/5 combat (Herman, Drarl, Vampire, Djinni); decide the tier-3/5 rosters (and record the untaken rungs) so the Endgame band is a deliberate shape, not residue
+- **TUNE-07 human DR round** — the four-run Pixel 7 checklist (forced 20/35/50 + natural) in `docs/DIFFICULTY-RETUNE.md`, run once at milestone close per the deferred-UAT protocol; the verdict closes the milestone
+
+**Key context:** every rule change is a deliberate canon divergence under the greenfield ruling (2026-09-17) — measure the moved parity fixtures first (`tools/worn-fixture-scan.mjs` style), declare each with before/after in `test/parity/FIXTURE-INVENTORY.md`, regenerate only those, master never edited; re-pin `foe-turn-draw-count.test.js` / `combat.test.js`; bot readout (`tune-difficulty --seeds=200` solo + `--party`, `tune-classes` matrix) before and after every step so the retune tunes once, on the corrected cadence. No research pass — the four todos (`.planning/todos/pending/2026-09-19-initiative-*`, `2026-09-20-enemy-attack-cadence-*`, `2026-09-20-average-run-ends-floor-5-7-*`) and backlog 999.2 carry file-level context and the fix design. Phase numbering continues from 49.
+
+**Out of this milestone:** 999.1 Transitions & Sounds and 999.3 Dungeon set dressing (feel/polish, later); the rail-overlay todo (UI quick task); `storeRoll` for the bots; the two structural v1.5 AFTER patterns (Magic Users and the class-gated ability system; Wilmsry's racial edge); the UX-06 tutorial and STR production launch; the v1.5/v1.6 Pixel 7 UAT batches (own track — may share the TUNE-07 device session); SEED-001 leaderboards (dormant).
 
 ## Last Milestone: v1.6 Shell Debt & Dead Code (code-complete 2026-09-20; archived 2026-09-20; device UAT batch pending)
 
@@ -303,4 +320,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-20 — after the v1.6 milestone (Shell Debt & Dead Code archived; UAT batches pending)*
+*Last updated: 2026-09-20 — v1.7 Tuning Pass started (initiative once, foe cadence, damage curve, Joiner cap, four-band retune, TUNE-06/07)*

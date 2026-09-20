@@ -1,37 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Shell Debt & Dead Code
-status: Awaiting next milestone
-stopped_at: Completed 49-02-PLAN.md (Phase 49 closed — PERF-01/PERF-02 complete, both fixes kept per user ruling)
-last_updated: "2026-09-20T16:42:45.920Z"
+milestone: v1.7
+milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
+status: planning
+last_updated: "2026-09-20T17:14:42.661Z"
 last_activity: 2026-09-20
-last_activity_desc: Milestone v1.6 completed and archived
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 23
-  completed_plans: 23
-  percent: 100
-current_phase: 999.1
-current_phase_name: Transitions & Sounds (BACKLOG
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20 — v1.6 Shell Debt & Dead Code complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
+See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Tuning Pass started; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.6 complete — Pixel 7 UAT batches (26 + 140) on APK c0cdbae, then the next milestone (/gsd-new-milestone: v1.0 launch tail or the tuning pass)
+**Current focus:** v1.7 Tuning Pass — initiative once → foe cadence + damage curve → Joiner cap → four-band retune + TUNE-06 roster → TUNE-07 DR round (defining requirements)
 
 ## Current Position
 
-Phase: Milestone v1.6 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-20 — Milestone v1.6 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-20 — Milestone v1.7 started
 
 ## Ground Truth (durable facts every session needs)
 
