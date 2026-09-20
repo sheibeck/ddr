@@ -36,7 +36,7 @@
 - [x] **Phase 46: Honest Names, Dead Exports & the Tutorial Decision** - `toasts.js` becomes `narrationLines.js` with exports named for what they do, `winGame`/`state.won` and the dead toast-lifetime exports are deleted, no identifier is named after a retired mechanism, and `tutorial.js` is decided (delete or park), one rename per commit (completed 2026-09-19)
 - [x] **Phase 47: Shell Modularisation** - The Gear tab, Hero tab and Store screen render from `src/browser/gearTab.js` / `heroTab.js` / `storeScreen.js` with source-pin tests; `mazeworld.html` is a mount point (5,621 lines, re-baselined from the < 5,000 target by user ruling) with the `window.__mz*` bridge listed in one place (completed 2026-09-19)
 - [x] **Phase 48: Stale Docs, Comments & Test Names Purge** - Every comment, `docs/*.md` page, `.claude/CLAUDE.md` row and test name describes the game as it is — D-pad, toasts-as-UI, dead classic mirrors, `wornSlots`, retired counters and iOS rows are gone, proven by a recorded grep list over the final layout (completed 2026-09-20)
-- [ ] **Phase 49: Measure-First Perf Pass** - `paint()` re-render and `draw()` per step are measured on the Pixel 7 and recorded in `docs/PERF-BASELINE.md`; only a measured ≥ 16 ms hotspot or user-confirmed jank gets code — otherwise the phase closes with the numbers and no diff
+- [x] **Phase 49: Measure-First Perf Pass** - `paint()` re-render and `draw()` per step are measured on the Pixel 7 and recorded in `docs/PERF-BASELINE.md`; only a measured ≥ 16 ms hotspot or user-confirmed jank gets code — otherwise the phase closes with the numbers and no diff (completed 2026-09-20)
 
 <details>
 <summary>✅ v1.5 Meaningful Choices — Spells, Gear & Abilities (Phases 36–43) — CODE-COMPLETE 2026-09-18, archived 2026-09-19 (Pixel 7 UAT batch pending: 140 checks)</summary>
@@ -391,7 +391,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 5/5 | Complete    | 2026-09-20 |
-| 49. Measure-First Perf Pass | v1.6 | 2/2 | In Progress|  |
+| 49. Measure-First Perf Pass | v1.6 | 2/2 | Complete    | 2026-09-20 |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
 | 38. Melee Active Abilities | v1.5 | 5/5 | Complete    | 2026-09-18 |

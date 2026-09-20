@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 49
-current_phase_name: Measure-First Perf Pass
-status: executing
+current_phase: 999.1
+current_phase_name: Transitions & Sounds (BACKLOG
+status: planning
 stopped_at: Completed 49-02-PLAN.md (Phase 49 closed — PERF-01/PERF-02 complete, both fixes kept per user ruling)
-last_updated: "2026-09-20T14:07:31.529Z"
+last_updated: "2026-09-20T14:11:37.618Z"
 last_activity: 2026-09-20
-last_activity_desc: 49-02 landed (fix 1 + fix 2 both kept per user ruling; PERF-01/PERF-02 complete; Phase 49 — and v1.6's phase list — closed)
+last_activity_desc: Phase 49 complete, transitioned to Phase 999.1
 progress:
   total_phases: 6
   completed_phases: 6
@@ -21,17 +21,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 48; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 49; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
 **Current focus:** Phase 49
 
 ## Current Position
 
-Phase: 49 of 49 — Measure-First Perf Pass (2 plans; both complete)
-Plan: 49-01 complete (dev-gated perfMarks instrumentation + readout + checklist, commits cab78ec/bb83eed/c289aca); 49-02 complete (BEFORE/AFTER×2 device rounds, fix 1 9fe9bb5 + fix 2 cfce555 both kept per user ruling, PERF-01/PERF-02 marked complete — commits through 86ae022)
-Status: Phase 49 closed — all six v1.6 phases (44-49) now have landed SUMMARYs; milestone completion ceremony (/gsd-complete-milestone) not yet run
-Last activity: 2026-09-20 — 49-02 landed (fix 1 + fix 2 both kept per user ruling; PERF-01/PERF-02 complete)
+Phase: 49 of 49 — Measure-First Perf Pass (COMPLETE); all six v1.6 phases executed
+Plan: none — milestone audit → complete → cleanup next; Pixel 7 UAT batch (docs/UAT-v1.6.md, 26 items, APK c0cdbae on the phone) still to run
+Status: v1.6 execution complete — closing the milestone
+Last activity: 2026-09-20 — Phase 49 complete, transitioned to Phase 999.1
 Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
