@@ -77,10 +77,11 @@
   --moss:#8fae6a;
   --rule:#3a3226;
 
-  /* Phase 25 (FEED-03): toast-tone family colors beyond hit/hurt/magic —
-     muted siblings so YOU (green family: hit/miss) and THEM (red family:
-     hurt/dodge) stay distinct even when muted, plus one amber for refusals.
-     See the DR13 toast CSS block below for how these map to data-tone. */
+  /* Tone-family colors beyond hit/hurt/magic — muted siblings so YOU (green
+     family: hit/miss) and THEM (red family: hurt/dodge) stay distinct even
+     when muted, plus one amber for refusals. The RAIL card ([data-tone] on
+     .mw-rail below) and the fight log's .cb-log-<tone> classes map onto
+     these families. */
   --moss-soft:#6f8556;
   --stamp-soft:#a8695e;
   --amber:#d99a2b;
@@ -401,7 +402,7 @@ button{
   padding:14px 16px;cursor:pointer;min-height:48px;
   box-shadow:0 4px 0 var(--mw-btn-shadow);
   transition:transform .06s ease, box-shadow .06s ease, background .12s ease;
-  /* DR5: every button (D-pad, chips, camp, combat, nav tabs) is an
+  /* DR5: every button (chips, camp, combat, nav tabs) is an
      interactive control, not selectable text — pairs with the app-wide
      tap-highlight reset above so a press never shows a text-selection
      handle/flash on Android either. */
@@ -462,7 +463,7 @@ button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-tra
    (.mw-map-chips/.mw-map-chip.camp above), which already styles its
    pressed state — no scoped hover/active pair needed here. */
 /* Phase 25.1 (DFB-06): short-on-food state — visibly dimmed, never disabled,
-   so a tap can still surface the campFailed toast's refusal numbers. */
+   so a tap can still surface the campFailed rail line's refusal numbers. */
 #btn-camp[data-short="1"]{opacity:.55;border-style:dashed}
 /* 04-DR3: "Abandon your run" — the mock's CUT LOSSES destructive chrome
    (border/background/color literally matching design/Mazeworld
@@ -756,8 +757,8 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    data change. A single static gate replaces 04-DR9's 3-mode `diceMode`
    setting (removed), its on-tap reveal, and the .mw-oracle-hint: the dice
    are ALWAYS shown in the Oracle (#log's inline .roll, styled above) and
-   NEVER shown in the encounter panel #enc-body/the Round Card, so the
-   round card reads as clean HIT/MISS prose while the Oracle keeps the math.
+   NEVER shown in the encounter panel #enc-body / the fight log, so the
+   fight log reads as clean HIT/MISS prose while the Oracle keeps the math.
    Phase 34 (CSCR-04) scopes this rule to the legacy .evt narration blocks
    (beats/joiner/find) — the new fight log shows its dice on tap via its
    own .cb-log-roll element, never a p .roll span, so this selector must
@@ -986,10 +987,9 @@ html,body{height:100%}
    A full-screen gate shown OVER the already-booting #app (see the trailing
    module script's initTitleScreen()) — the splash art + GAME_NAME + a
    SINGLE context-aware ENTER button, dark torch-lit style matching
-   design/Mazeworld Mobile.dc.html. Boot itself (auto-resume-or-new-run,
-   both the classic and engine-routed sequences) is completely unchanged
-   underneath — this only controls whether it is immediately visible before
-   the player taps through. There is no separate RESUME button: ENTER
+   design/Mazeworld Mobile.dc.html. The boot sequence (auto-resume-or-new-run)
+   is completely unchanged underneath — this only controls whether it is
+   immediately visible before the player taps through. There is no separate RESUME button: ENTER
    itself resumes the live delve underneath (just dismisses this screen) when
    one exists, or opens #mw-roller-screen (the "THE TABLES DECIDE" roll
    screen, the only place a new character is ever rolled) when it doesn't —
@@ -2177,11 +2177,6 @@ const MAP_COPY = {
   },
 };
 
-// Phase 32 (CMBUI-02) archival note: the Round Card's header copy lived
-// here. Phase 34 (CSCR-04) retires the Round Card entirely — the fight log
-// has no per-round header, just newest-first entries — so this constant is
-// deleted along with every renderEncounter/announcer site that read it.
-
 // Phase 19, FOE-08 / D-21: a foe debuff chip names its KIND, not its key — in
 // voice, family-friendly; keys mirror content/foe-abilities.js debuff `effect`
 // values and test/unit/foe-effect-chip.test.js cross-checks the two sets.
@@ -2395,11 +2390,11 @@ function paint() {
   // gearTab.js#renderGearTab (window.__mzTabs.gear(...) below owns it now).
   // Phase 25.1 (DFB-06, Claude's discretion): the button is NOT disabled —
   // the shell has never disabled it and a disabled button could never show
-  // the refusal toast the user asked for — instead it carries a visible
+  // the refusal rail line the user asked for — instead it carries a visible
   // short-on-food state computed by the SAME exported helper the engine's
   // makeCamp uses (window.__mzNightlyEats), so the dimmed state and the
   // engine's refusal can never disagree; tapping still dispatches "camp"
-  // and the engine's campFailed toast states the numbers.
+  // and the engine's campFailed rail line states the numbers.
   const campBtn = document.getElementById("btn-camp");
   if (campBtn) {
     const need = window.__mzNightlyEats ? window.__mzNightlyEats(S) : 0;
@@ -2652,7 +2647,7 @@ function hasActiveEncounter() {
 // railLocked() (orchestrator decision 2, ruling 3): a pending rail decision
 // (joiner/find) or a pending obstacle (a failed climb/leap, stashed on
 // window.__mzRail.pending by stepNow below) locks EVERY movement entry path
-// — tap-to-step, keyboard arrows, the D-pad — GLOBALLY, not just the
+// — tap-to-move, keyboard arrows — GLOBALLY, not just the
 // direction that produced it. The mock's "walking away declines" is
 // rejected: there is no decline-by-ignoring here, only answer or pulse.
 function railLocked() {
@@ -2702,9 +2697,10 @@ function armEncounterButtons() {
   }, delay);
 }
 
-// guardTap(btn, fn): the ONE wrapper for every §6.3 decision-button handler.
-// A tap (or a key that clicks the same handler) that lands inside the arm
-// window is swallowed silently — no toast, no visible disabled styling (the
+// guardTap(btn, fn): the ONE wrapper for every decision-button handler (the
+// Phase 32 arm-delay guard, src/browser/inputGuards.js). A tap (or a key
+// that clicks the same handler) that lands inside the arm window is
+// swallowed silently — no rail line, no visible disabled styling (the
 // button keeps its normal look; aria-disabled is an accessibility-only
 // attribute and is never referenced by CSS, so there is no 250 ms flicker).
 // Tolerates a null btn so optional action-bar buttons keep their existing
@@ -3053,7 +3049,7 @@ const COMBAT_DISPATCH = {
 // Phase 34 (CSCR-04/05) — a shell-owned refusal the engine cannot narrate
 // (drinkPotion is silent at 0 potions and at full health) lands in the ›
 // fight log as a dull entry, exactly like an engine-refused dispatch would —
-// never a toast. Also closes the submenu (a refusal is a terminal outcome
+// never a rail line. Also closes the submenu (a refusal is a terminal outcome
 // for this tap) and re-renders.
 function fightLogRefuse(text) {
   window.__mzFightLog = window.__mzFightLogVM.append(window.__mzFightLog, [window.__mzFightLogVM.dull(text)], S.combat ? S.combat.round : null);
@@ -3411,7 +3407,7 @@ function renderEncounter() {
   // buttons route through window.mzTakeLoot/mzLeaveLoot -> the engine; the
   // card dismisses itself once the pile empties (hasActiveEncounter() then
   // returns false). Tap safety mirrors the find card exactly: the overlay
-  // covers the D-pad, hasActiveEncounter() gates window.move, buttons
+  // covers the map, hasActiveEncounter() gates window.move, buttons
   // inherit the base ≥48dp min-height and the .actions gap (Phase 32 owns
   // the systematic guard redesign).
   if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {
@@ -4201,15 +4197,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // the next unrelated `*/`. Placing this import before that comment keeps
   // it outside that swallowed span for any such source-assertion test.
   import { linesForAction } from "./src/browser/narrationLines.js";
-  // Phase 35 (MAP-03/04): the generic html-to-beats gate and the retired
-  // toast queue's lifetime formula are gone with the Phase 25.1 toast host /
-  // Move-on card — NARRATIVE_ACTIONS still gates ctx.narrate in
-  // dispatchWithNarration.
+  // NARRATIVE_ACTIONS gates ctx.narrate in dispatchWithNarration (move/camp/
+  // joiner lines carry the Oracle's own sentence).
   import { NARRATIVE_ACTIONS } from "./src/browser/narrationLines.js";
   // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as dull rail/log
   // entries even in combat; narrativeLineText is the card's defensive text
-  // prep. Phase 35 retires the old toast queue's one cap consumer — the
-  // rail is uncapped.
+  // prep.
   import { PRIORITY, narrativeLineText } from "./src/browser/narrationLines.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
   import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement } from "./src/browser/fightLog.js";
@@ -4292,12 +4285,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // viewModels.js into heroTab.js (Task 1); renderHeroTab is the classic-
   // script carve's mount function (Task 2).
   import { characterSheetViewModel, rationsViewModel, eatsLineFor, renderHeroTab } from "./src/browser/heroTab.js";
-  // Phase 47 (SHELL-01), Plan 03 — the Gear-only view models moved out of
-  // viewModels.js into gearTab.js (Task 1); renderGearTab/renderCarriedList
-  // are the classic-script carve's mount function and shared list (Task 2).
-  // itemRowState/emptySlotRows/GEAR_COPY are gearTab.js-internal now — their
-  // only classic-script readers (the retired __mzItemRowState/__mzGear
-  // bridges) moved into gearTab.js itself.
+  // Gear tab view models and the shared carried-item list live in
+  // gearTab.js; renderGearTab is the tab's mount function.
   import { bagUsage, renderGearTab, renderCarriedList } from "./src/browser/gearTab.js";
   // Phase 47 (SHELL-03), Plan 05 — the Store's own mount function, the
   // classic-script carve's whole S.store branch (Task 2).
@@ -4310,9 +4299,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // imports them directly) — only ROMAN survives (the classic combat report,
   // graves stone, and rail joiner-card level readouts still need it).
   import { ROMAN } from "./content/index.js";
-  // Phase 47 (SHELL-01), Plan 03: sellPriceFor's own import moved into
-  // gearTab.js (its only reader, the retired __mzSellPrice bridge, moved
-  // there too — renderCarriedList's Sell row calls it directly now).
+  // sellPriceFor lives in gearTab.js — renderCarriedList's Sell row calls it
+  // directly.
   import { conditionsOf, hasTool, mapViewRadius, inViewWindow } from "./engine/derived.js";
   // 260919-00d (Cloak of Ether wall-walking) — a SEPARATE import line (same
   // module, mirrors the takesBagSlot precedent below) so the pinned
@@ -4330,13 +4318,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // stashed index — the engine re-validates on its own).
   import { toolIndex } from "./engine/items.js";
 
-  // Phase 44 (DEAD-02): the read-only display table the classic renderers
-  // cannot `import` — same bridge pattern as window.__mzBags above. Phase 47
-  // (SHELL-02), Plan 04: RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/
-  // FIGHTER_SKILLS/THIEF_SKILLS/RACES lost their last classic reader
-  // (heroTab.js/gearTab.js import content/ directly) — only ROMAN survives
-  // (the classic combat report, graves stone, and rail joiner-card level
-  // readouts still need it).
+  // The read-only display table the classic renderers cannot `import` —
+  // same bridge pattern as window.__mzConditionsOf below. Only ROMAN
+  // survives here (the classic combat report, graves stone, and rail
+  // joiner-card level readouts still need it).
   window.__mzTables = Object.freeze({ ROMAN });
 
   // Phase 25.1 (DFB-04/DFB-06): read-only helpers for the classic script's
@@ -4347,9 +4332,9 @@ window.__mzClassicBoot = async function classicBoot() {
 
   // DR15-B (2026-09-10): bridge the PURE conditionsOf(state) derived enumerator
   // so the classic paint()'s top-of-screen condition tracker maps its DATA-only
-  // descriptors → labels/chips through ONE shared engine source of truth (same
-  // read-only-helper bridge pattern as __mzSellPrice/__mzBags). No rng, no
-  // mutation — safe to call every paint().
+  // descriptors → labels/chips through ONE shared engine source of truth (the
+  // same read-only-helper bridge pattern every window.__mz* read-only helper
+  // below uses). No rng, no mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
 
   // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): a
@@ -4366,13 +4351,6 @@ window.__mzClassicBoot = async function classicBoot() {
   // never goes blank if this module somehow failed to load). Read-only, no
   // rng, no mutation — same bridge pattern as __mzConditionsOf.
   window.__mzMapView = { mapViewRadius, inViewWindow };
-
-  // Phase 47 (SHELL-02), Plan 04: __mzAbilities and __mzEff are gone — their
-  // only readers (the classic paint()'s renderAbilityRows(c) and the classic
-  // eff(key) duplicate) moved into src/browser/heroTab.js, which imports
-  // characterSheetViewModel (declared in the same module) and eff (from
-  // engine/derived.js) directly. __mzSlotFor/__mzWornSlots/__mzWornKeysOf are
-  // gone the same way (Plan 03) — their readers moved into gearTab.js.
 
   // Phase 32 (CMBUI-04/05): the classic renderEncounter()/keydown/
   // window.move guards (32-03) read the arm-delay and dismiss-settle
@@ -4402,13 +4380,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 39 (GEAR-02/GEAR-05), Plan 05 — read-only bridges for the hazard/
   // dark rail cards: hasTool gates whether a carried tool offers itself at a
   // decision point; toolIndex resolves a tool's bag slot at TAP time (never
-  // stashed). Phase 47 (SHELL-01), Plan 03: __mzItemRowState is gone — its
-  // readers (the Gear-tab worn/carried rows, combatMenu.js) import
-  // itemRowState from gearTab.js directly now. Phase 47 (SHELL-02), Plan 04:
-  // __mzToHit/__mzStrikeDie are gone too — their only reader (the classic
-  // paint()'s Hero sheet) moved into heroTab.js, which imports toHit/
-  // strikeDie from engine/derived.js directly. No rng, no mutation — safe
-  // every paint.
+  // stashed). No rng, no mutation — safe every paint.
   window.__mzHasTool = hasTool;
   window.__mzToolIndex = toolIndex;
 
@@ -4418,8 +4390,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // panel, eatsLine for the Joiner card + Company panel — both read
   // engine/movement.js#eatsFor, the same read __mzNightlyEats's camp gate
   // uses), __mzDropShelfItems (the bag-full drop shelf's ONE source list —
-  // bag items only). Phase 47 (SHELL-01), Plan 03: __mzGear is gone — its
-  // reader (the ALSO ON YOU panel) moved into gearTab.js#renderGearTab.
+  // bag items only).
   window.__mzUsableBy = usableBy;
   window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
   window.__mzDropShelfItems = dropShelfItems;
@@ -4545,8 +4516,9 @@ window.__mzClassicBoot = async function classicBoot() {
 
   // Phase 21 (TUNE-04, D-13/D-22): a small, LOCAL long-press handler for the
   // hidden dev row — deliberately NOT the maze viewport's own tap-vs-drag
-  // gesture classifier (src/browser/controls.js), which is scoped to D-pad
-  // movement thresholds and explicitly leaves long-press unbound anyway. A
+  // gesture classifier (src/browser/controls.js), which is scoped to
+  // tap-vs-drag movement thresholds and explicitly leaves long-press unbound
+  // anyway. A
   // ~1.2 s pointer hold on the version label reveals #mw-dev-row; releasing/
   // cancelling early clears the timer so a normal tap does nothing.
   const DEV_LONG_PRESS_MS = 1200;
@@ -4740,7 +4712,7 @@ window.__mzClassicBoot = async function classicBoot() {
     } else if (wasCombat && has) {
       if (combatSnap) combatSnap.lastRound = after.combat.round || combatSnap.lastRound;
     } else if (wasCombat && !has) {
-      // combat ended: death has its own card; fleeing just toasts.
+      // combat ended: death has its own card; fleeing just narrates (rail card).
       if (!after || after.dead) { combatSnap = null; return; }
       if (events.some((e) => e.type === "fled")) {
         // Phase 34 (CSCR-07): the flee ending needs a surface too — the
@@ -4811,12 +4783,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // dispatch(action) already returns events decorated with a fledgling-miss
   // quip (missLines.js, wired in engineAdapter.dispatch) and html formatted
   // from those SAME decorated events (src/browser/eventNarration.js) — so the
-  // Oracle line and the toasts this raises always agree on wording. Returns
-  // the dispatch result unchanged; callers keep their existing render tail
-  // (state set, logLine, paint, renderEncounter, noteCombat, hapticForEvents,
-  // beats synthesis) byte-identical.
+  // Oracle line and the narration lines this raises always agree on wording.
+  // Returns the dispatch result unchanged; callers keep their existing
+  // render tail (state set, logLine, paint, renderEncounter, noteCombat,
+  // hapticForEvents, beats synthesis) byte-identical.
   // Phase 25.1 (DFB-01 decision 2): for NARRATIVE_ACTIONS (move/camp/
-  // resolveJoiner) each direct-mapped toast carries the Oracle sentence via
+  // resolveJoiner) each direct-mapped line carries the Oracle sentence via
   // narrateEvent (dice stripped); every other action keeps Phase 25's short
   // table text unchanged.
   // Phase 35 (MAP-03/04): the routing rule — while EITHER the pre-dispatch OR
@@ -4824,8 +4796,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // dull refusals alike, uncapped) goes to the whole-fight window.__mzFightLog;
   // out of combat, the SAME fold (linesForAction, uncapped, {withIdx:true})
   // feeds src/browser/rail.js's railCardFor into the ONE bottom RAIL card
-  // instead — there is no toast anywhere any more (the Phase 25 toast host is
-  // retired). Checking `wasCombat` too (not just post-dispatch `inCombat`,
+  // instead — there is no toast surface any more; the rail and the fight
+  // log own feedback. Checking `wasCombat` too (not just post-dispatch `inCombat`,
   // Phase 32's rule) is what lets the action that ENDS combat (a kill, a
   // flee, a death) still have its own lines captured, even though
   // `result.state.combat` is gone by the time this runs: those lines are
@@ -5381,9 +5353,8 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzLeaveAllLoot = () => inventoryAction({ type: "leaveAllLoot" });
   // Phase 25 (FEED-02): an equip the engine REJECTS (illegal class/subclass/
   // race/Heft/noArmor/non-equippable — engine/items.js equipItem() pushes an
-  // `equipRejected` event) now toasts from the LINE_FOR table (block tone,
-  // reason-specific text) via inventoryAction's own dispatchWithNarration call —
-  // the DR18 hand-written rejection toast is gone.
+  // `equipRejected` event) now narrates from the LINE_FOR table (block tone,
+  // reason-specific text) via inventoryAction's own dispatchWithNarration call.
   // 260918-wy1 (jewelry-merge): the targeted jewelry swap — an optional
   // second arg names the concrete worn key to swap into; omitted, the
   // engine wears the item into the first free key of its family (or, for a
@@ -5397,7 +5368,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // store). mzUseItem serves BOTH the GEAR tab and the combat-bar use-list: IN
   // COMBAT it routes through engineCombatAction (below) so an item that ends the
   // fight (a Death potion, a stone/fire/gas that clears the room) gets the full
-  // combat-end handling — victory report beats, death card, haptics, toast —
+  // combat-end handling — victory report beats, death card, haptics, rail card —
   // exactly like Strike/Potion/Spell; OUT of combat (the GEAR tab) it takes the
   // plain inventoryAction repaint. engineCombatAction is a hoisted function
   // declaration in this same scope, so it is callable from here.
@@ -5413,18 +5384,11 @@ window.__mzClassicBoot = async function classicBoot() {
   };
   window.mzSellItem = (i) => inventoryAction({ type: "sellItem", i });
 
-  // Device-review Pass DR8 (the deferred 04-07 engine-routing item,
-  // completed here): combat/magic/camp actions now route through the SAME
-  // dispatch()->applyAction() seam as buyItem/leaveStore above. Every one of
-  // these already has a complete engine port (engine/combat.js's
-  // playerStrike/flee/parley/sing, engine/magic.js's castSpell/drinkPotion/
-  // readScroll, engine/movement.js's makeCamp) — the classic mazeworld.html
-  // functions of the same name (see startCombat()'s own doc comment, classic
-  // script above) duplicated this logic against Math.random()-backed D()
-  // rather than the persisted GameState's seeded rngState, so a classic
-  // mutation's effect could be silently lost (or the persisted RNG cursor
-  // could diverge) the moment any OTHER engine-routed action ran — this is
-  // the root cause behind the on-device report "Greater Heal didn't heal."
+  // Device-review Pass DR8: every combat/magic/camp action routes through
+  // the SAME dispatch()->applyAction() seam as buyItem/leaveStore above, to
+  // its engine port (engine/combat.js's playerStrike/flee/parley/sing,
+  // engine/magic.js's castSpell/drinkPotion/readScroll, engine/movement.js's
+  // makeCamp).
   //
   // engineCombatAction() is the one choke point every combat/magic/camp
   // button call funnels through: dispatch, swap in the returned state,
@@ -5443,15 +5407,11 @@ window.__mzClassicBoot = async function classicBoot() {
     // fixtures (engine-only) never see a different combat.target; still no
     // engine action for aiming (Phase 34 Decision 3).
     if (state.combat) normalizeTarget(state.combat);
-    // DR2's HIT/MISS strike badge (renderEncounter()'s `C.lastStrike`) was a
-    // field the classic playerStrike() populated directly; engine/combat.js
-    // deliberately carries no such presentation-only field on state.combat
-    // (its own header: no DOM/render concerns inside the engine). Synthesize
-    // it here from the SAME `struck`/`strikeMissed` events the engine
-    // already emits — populated only for "attack", cleared (null) for every
-    // other action, exactly matching the classic behavior these bridges
-    // replace (playerStrike() populated it fresh every call; drinkPotion()/
-    // flee() explicitly nulled a stale one out).
+    // `C.lastStrike` (renderEncounter()'s HIT/MISS strike badge) is a
+    // presentation-only field the engine never sets (engine/combat.js's own
+    // header: no render concerns inside the engine). Synthesize it here from
+    // the SAME `struck`/`strikeMissed` events the engine already emits —
+    // populated only for "attack", cleared (null) for every other action.
     if (state.combat) {
       state.combat.lastStrike =
         type === "attack"
@@ -5486,10 +5446,9 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzDrinkPotion = () => engineCombatAction("drinkPotion");
   window.mzReadScroll = () => engineCombatAction("readScroll");
 
-  // Phase 47 (SHELL-02), Plan 04: the HERO tab's Grimoire (renderGrimoire)
-  // moved into src/browser/heroTab.js — renderHeroTab(...) calls it directly
-  // (no more window.__mzRenderGrimoire bridge; paint() mounts the whole Hero
-  // tab through window.__mzTabs.hero(...) instead).
+  // The HERO tab's Grimoire (renderGrimoire) lives in src/browser/heroTab.js
+  // — renderHeroTab(...) calls it directly; paint() mounts the whole Hero
+  // tab through window.__mzTabs.hero(...).
   // MAKE CAMP has no combat overlay to re-render into (camp only runs
   // outside combat, engine/movement.js#makeCamp's own guard) — paint() alone
   // covers the HUD/vitals refresh; renderEncounter() is still called so a

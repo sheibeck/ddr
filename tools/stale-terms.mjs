@@ -144,6 +144,30 @@ export const ALLOWED = Object.freeze(
       match: "flightLeft: 0, flightCooldown: 0",
       reason: "D — inert legacy keys in hand-built test-state literals (33 files at 649de2b); test bodies are out of DOCS-03's scope — counted, not edited",
     },
+    {
+      term: "round-card",
+      file: "mazeworld.html",
+      match: "Round Card \\(Phase 32\\) entirely",
+      reason: "B — fight-log CSS: names what it replaced",
+    },
+    {
+      term: "dpad",
+      file: "mazeworld.html",
+      match: "there is no D-pad",
+      reason: "B — the Cloak-of-Ether tap rule states the retirement of the D-pad; the one place a reader asks",
+    },
+    {
+      term: "toast",
+      file: "mazeworld.html",
+      match: "there is no toast surface any more",
+      reason: "B — dispatchWithNarration's routing rule states the retirement where the routing is decided",
+    },
+    {
+      term: "toast",
+      file: "mazeworld.html",
+      match: "never a toast — the v1.4 rail-is-the-one-feedback",
+      reason: "B — the boot worn-report states the v1.4 ruling",
+    },
   ].map((a) => Object.freeze(a)),
 );
 
