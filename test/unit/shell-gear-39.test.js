@@ -4,13 +4,14 @@
 // test can import directly, so — mirroring test/unit/shell-abilities.test.js's
 // own fs.readFileSync pattern — this file reads the real shipped source and
 // asserts against it directly:
-//   1. the five new read-only bridges (__mzHasTool/__mzToolIndex/__mzToHit/
-//      __mzStrikeDie/__mzItemRowState) + their imports;
+//   1. the two surviving read-only bridges (__mzHasTool/__mzToolIndex) +
+//      their imports; the three Phase 39 bridges Phase 47 retired
+//      (__mzToHit/__mzStrikeDie/__mzItemRowState) are pinned absent;
 //   2. window.mzUseTool + the stepNow -> stepWith(action) refactor;
 //   3. the hazard pre-roll decision card (S.pendingHazard branch) in
 //      renderRail, and the retry/dark cards' tool offers;
-//   4. the Gear-tab row builders route through window.__mzItemRowState(S, it)
-//      and no longer carry the retired it.every cooldown expression;
+//   4. the Gear-tab row builders in gearTab.js call itemRowState(state, it)
+//      directly and no longer carry the retired it.every cooldown expression;
 //   5. the chip copy tables (CONDITION_TONE/CONDITION_EXPLAIN) + the new
 //      explainCondition(cn, label) helper;
 //   6. the Hero tab's engine-routed to-hit/strike-die;
@@ -81,12 +82,12 @@ test("Bridges: hasTool/toolIndex imported and bridged read-only; toHit/strikeDie
   assert.match(CODE, /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.equal((CODE.match(/window\.__mzHasTool = hasTool;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzToolIndex = toolIndex;/g) || []).length, 1);
-  // Phase 47 (SHELL-01), Plan 03, Task 2: __mzItemRowState is gone — its
-  // readers (gearTab.js, combatMenu.js) import itemRowState directly now.
+  // __mzItemRowState is pinned absent; gearTab.js/combatMenu.js import
+  // itemRowState directly.
   assert.equal((CODE.match(/window\.__mzItemRowState = itemRowState;/g) || []).length, 0);
   assert.equal((GEAR_SRC.match(/^export function itemRowState\(/m) || []).length, 1);
-  // Phase 47 (SHELL-02), Plan 04, Task 2: __mzToHit/__mzStrikeDie are gone —
-  // heroTab.js's own strikeDie(c)/toHit(state) reads replace them.
+  // __mzToHit/__mzStrikeDie are pinned absent; heroTab.js's own
+  // strikeDie(c)/toHit(state) reads replace them.
   assert.equal((CODE.match(/window\.__mzToHit = toHit;/g) || []).length, 0);
   assert.equal((CODE.match(/window\.__mzStrikeDie = strikeDie;/g) || []).length, 0);
 });
@@ -173,9 +174,9 @@ test("CONDITION_TONE/CONDITION_EXPLAIN carry the three new item-driven chip keys
 
 // ─── 6. Hero tab: engine-routed to-hit/strike-die ─────────────────────────
 
-// Phase 47 (SHELL-02), Plan 04, Task 2: the sheet's "s-die"/"s-hit" writes
-// moved into heroTab.js, which imports strikeDie/toHit directly (no more
-// window.__mzStrikeDie/__mzToHit bridge, and no classic-script duplicate).
+// The sheet's "s-die"/"s-hit" writes live in heroTab.js, which imports
+// strikeDie/toHit directly — the bridge and the classic-script duplicate
+// are both pinned absent below.
 test('Hero tab: "s-die"/"s-hit" read strikeDie(c)/toHit(state) directly in heroTab.js, not the classic duplicates', () => {
   assert.match(HERO_SRC, /"s-die"\)\.textContent = "d" \+ strikeDie\(c\);/);
   assert.match(HERO_SRC, /"s-hit"\)\.textContent = "1–" \+ toHit\(state\);/);

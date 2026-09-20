@@ -86,23 +86,16 @@ function extractScriptRegions(raw) {
  * wireBridges(context) — assigns onto context.window exactly the bridge
  * objects the module script assigns, importing the SAME names from the SAME
  * files (twin of the module script's bridge block — when a carve moves an
- * export, re-point the import here in the same commit). Bridges the three
- * snapshot surfaces never reach (__mzRailVM, __mzFightLogVM, __mzCombatVM,
- * __mzIconMap, __mzMapMarks, __mzCanvasSizing, __mzTapStep, __mzControls,
- * __mzIconsApi, __mzHaptics, __mzSettings) are deliberately NOT wired —
- * renderRail()/draw() are stubbed no-ops (see loadShellSandbox step 5), so
- * paint() never reaches for them. Phase 47 (SHELL-01), Plan 03, Task 2:
- * __mzGear/__mzItemRowState/__mzWornSlots/__mzWornKeysOf/__mzSlotFor/
- * __mzSellPrice are retired (gearTab.js reaches them directly now);
- * __mzTabs/__mzCarriedList are the twin of the module script's new mount
- * bridges. Phase 47 (SHELL-02), Plan 04, Task 2: __mzAbilities/__mzEff/
- * __mzStrikeDie/__mzToHit/__mzRenderGrimoire are retired the same way
- * (heroTab.js reaches strikeDie/toHit/eff/characterSheetViewModel directly);
- * __mzTables shrinks to ROMAN only; __mzTabs gains `hero`. The BEFORE-only
- * legacy-grimoire wiring seam this harness used to carry is deleted in this
- * same commit — renderHeroTab (wired below) now renders the Grimoire itself.
- * Phase 47 (SHELL-03), Plan 05: __mzTabs gains `store` (storeScreen.js's own
- * renderStoreScreen) — the phase's final, locked __mzTabs shape.
+ * export, re-point the import here in the same commit; src/browser/bridge.js
+ * is the source of truth for every live `window.__mz*` name). Bridges the
+ * three snapshot surfaces never reach (__mzRailVM, __mzFightLogVM,
+ * __mzCombatVM, __mzIconMap, __mzMapMarks, __mzCanvasSizing, __mzTapStep,
+ * __mzControls, __mzIconsApi, __mzHaptics, __mzSettings) are deliberately
+ * NOT wired — renderRail()/draw() are stubbed no-ops (see loadShellSandbox
+ * step 5), so paint() never reaches for them. __mzTabs is the module
+ * script's mount bridge (gear/hero/store); __mzCarriedList is its sibling.
+ * renderHeroTab (wired below) renders the Grimoire itself — this harness
+ * carries no separate grimoire-rendering seam.
  */
 function wireBridges(context) {
   const w = context.window;

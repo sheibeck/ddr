@@ -303,6 +303,57 @@ export const ALLOWED = Object.freeze(
       match: "retired outright",
       reason: "B — states the .mazefoot/D-pad markup is retired",
     },
+
+    // --- Plan 04, Task 2: retired-bridge archaeology + inputGuards + terrain title + parity comparables ---
+    {
+      term: "retired-bridges",
+      file: "test/unit/",
+      match: "assert\\.",
+      reason: "A — an assertion that names a retired bridge can only be asserting its absence (the name no longer exists in the shell; the suite is green)",
+    },
+    {
+      term: "wornSlots",
+      file: "test/unit/",
+      match: "assert\\.",
+      reason: "A — an assertion that names the retired __mzWornSlots bridge can only be asserting its absence (the name no longer exists in the shell; the suite is green)",
+    },
+    {
+      term: "retired-bridges",
+      file: "test/unit/shell-worn-slots.test.js",
+      match:
+        "__mzSlotFor/__mzWornSlots/__mzWornKeysOf are retired|window\\.__mzSlotFor/window\\.__mzWornKeysOf|__mzWornSlots -> the direct|__mzEff bridge\\) are gone",
+      reason: "A/B — the title states the trio is retired; the migration comments name the old bridge before the arrow to its direct-import replacement",
+    },
+    {
+      term: "wornSlots",
+      file: "test/unit/shell-worn-slots.test.js",
+      match: "__mzWornSlots",
+      reason: "A/B — the title states the bridge is retired; the migration comment names it before the arrow to the direct WORN_SLOTS import",
+    },
+    {
+      term: "retired-bridges",
+      file: "test/unit/shell-gear-39.test.js",
+      match: "pinned absent",
+      reason: "A — the header and comments name the three Phase 39 bridges Phase 47 retired, each pinned absent by the assertion directly below",
+    },
+    {
+      term: "retired-bridges",
+      file: "test/unit/shell-abilities.test.js",
+      match: "__mzAbilities is retired|__mzAbilities is pinned absent",
+      reason: "A — the header, section banner, title and comment all state window.__mzAbilities is retired/pinned absent",
+    },
+    {
+      term: "retired-bridges",
+      file: "test/unit/shell-clarity-43.test.js",
+      match: "__mzGear/__mzItemRowState are retired|__mzWornSlots -> the direct",
+      reason: "A/B — the title states the trio is retired; the migration comment names the old bridge before the arrow to the direct WORN_SLOTS import",
+    },
+    {
+      term: "wornSlots",
+      file: "test/unit/shell-clarity-43.test.js",
+      match: "__mzWornSlots -> the direct",
+      reason: "B — the migration comment names the old bridge before the arrow to the direct WORN_SLOTS import",
+    },
   ].map((a) => Object.freeze(a)),
 );
 

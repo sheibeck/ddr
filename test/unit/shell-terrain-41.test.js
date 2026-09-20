@@ -129,12 +129,12 @@ test("CONDITION_COPY/TONE/EXPLAIN: each carries a fearArmed entry — label Ratt
   }
 });
 
-// ─── (7) the classic legacy move()/reveal() dead code was never touched ───
+// ─── (7) no classic move()/reveal() body survives ──────────────────────────
 
-test("legacy classic move()/reveal() function bodies carry neither mapViewRadius nor moveCost (dead code, untouched by this plan)", () => {
+test("no classic move()/reveal() body survives to carry mapViewRadius or moveCost (Phase 44 deleted both; the check skips when a marker is absent)", () => {
   for (const startMarker of ["\nfunction move(", "\nfunction reveal("]) {
     const start = CODE.indexOf(startMarker);
-    if (start === -1) continue; // the classic function may already be gone/renamed — not this plan's concern
+    if (start === -1) continue; // the classic functions are deleted (Phase 44) — the check is vacuous by design
     // Slice to the next top-level "\nfunction " after the opening body,
     // approximating "the function's own body" without a full brace parser.
     const nextFn = CODE.indexOf("\nfunction ", start + startMarker.length);

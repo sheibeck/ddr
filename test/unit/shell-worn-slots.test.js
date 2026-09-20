@@ -11,13 +11,14 @@
 //   2. the swap-confirm mechanics (arm/Yes/No/timeout/outside-tap revert)
 //      inside renderCarriedList, alongside the still-intact Drop-confirm pins;
 //   3. the equip branch: the weapon/armor Equip line is byte-identical, the
-//      new slot branch reads S.c.worn/__mzSlotFor and calls mkSwapConfirm;
+//      new slot branch reads state.c.worn/slotFor(it) and calls mkSwapConfirm;
 //   4. the Gear tab's worn rows (wornSlotRow, the WORN_SLOTS loop) sit
 //      between the armor wornRow call and renderCarriedList, without
 //      touching wornRow's pinned signature;
-//   5. the classic eff(key) duplicate routes through window.__mzEff and
-//      keeps its legacy loop as the fallback;
-//   6. the derived.js import/bridge trio (__mzEff/__mzSlotFor/__mzWornSlots);
+//   5. the classic eff(key) duplicate is retired — heroTab.js imports eff
+//      directly (section 5 pins the absence);
+//   6. the derived.js import line carries conditionsOf/hasTool/
+//      mapViewRadius/inViewWindow only;
 //   7. window.mzUseItem's ref (bag index | { slot }) form;
 //   8. the resume-time surfaceWornReconcile() call site and its imports;
 //   9. the new CSS rule, and that .mw-drop-confirm's own rule is untouched;

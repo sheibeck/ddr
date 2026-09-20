@@ -10,7 +10,7 @@
 //   3. renderAbilityRows(c): createElement/textContent only (T-38-11 — no
 //      innerHTML in the region), the Magic User "Spells are the trick." none
 //      row, the source->tag mapping, called exactly once from paint();
-//   4. window.__mzAbilities (byId/roundsLeft/isReady/sheet) + its imports;
+//   4. window.__mzAbilities is retired (heroTab.js-local view models);
 //   5. surfaceAbilityPool(state) — its body, and that it is the LAST
 //      statement of commitRolledState and is also called from
 //      window.mzDevStartAtDepth;
@@ -89,9 +89,8 @@ test("#s-abilities markup sits directly after #s-skills in the Hero tab", () => 
 
 // ─── 3. renderAbilityRows ────────────────────────────────────────────────────
 
-// Phase 47 (SHELL-02), Plan 04: renderAbilityRows(doc, state) moved verbatim
-// into src/browser/heroTab.js — reads characterSheetViewModel(state)
-// directly now (the retired window.__mzAbilities bridge's only reader).
+// renderAbilityRows(doc, state) lives in src/browser/heroTab.js and reads
+// characterSheetViewModel(state) directly (window.__mzAbilities is retired).
 test("renderAbilityRows: createElement/textContent only (no innerHTML in the region), Magic User none row, source-tag mapping, called exactly once from renderHeroTab; zero copies remain in the classic script", () => {
   assert.equal((HERO_SRC.match(/function renderAbilityRows\(doc, state\) \{/g) || []).length, 1);
   assert.equal((CODE.match(/function renderAbilityRows\(/g) || []).length, 0);
@@ -106,10 +105,9 @@ test("renderAbilityRows: createElement/textContent only (no innerHTML in the reg
 
 // ─── 4. window.__mzAbilities is retired ─────────────────────────────────────
 
-// Phase 47 (SHELL-02), Plan 04, Task 2: __mzAbilities is gone — its only
-// reader (renderAbilityRows) moved into heroTab.js, which declares
-// characterSheetViewModel in the SAME module (no bridge needed for a
-// module reading its own export).
+// __mzAbilities is pinned absent below; its only reader (renderAbilityRows)
+// lives in heroTab.js, which declares characterSheetViewModel in the SAME
+// module (no bridge needed for a module reading its own export).
 test("window.__mzAbilities is retired; characterSheetViewModel/ABILITY_BY_ID/abilityRoundsLeft/isReady are heroTab.js-local, not classic-script bridges", () => {
   assert.equal((CODE.match(/window\.__mzAbilities/g) || []).length, 0);
   assert.equal((CODE.match(/import \{ abilityRoundsLeft \}/g) || []).length, 0);

@@ -1,8 +1,8 @@
 // test/unit/inputGuards.test.js
 //
 // Phase 32 Plan 01 (CMBUI-04/05) — pins the pure tap-safety timing guards
-// module (src/browser/inputGuards.js) that the Round Card's decision
-// buttons (32-03) and window.move's dismiss-settle check will run on. This
+// module (src/browser/inputGuards.js) that a decision button's tap-safety
+// (32-03) and window.move's dismiss-settle check will run on. This
 // file proves the module BEFORE any button is wired against it:
 //   1. the two constants (ARM_DELAY_MS / DISMISS_SETTLE_MS = 250)
 //   2. isArmed/isSettled boundary-exact behavior (armed/settled AT the
@@ -10,17 +10,17 @@
 //   3. fail-open on a missing/non-finite stamp (undefined/NaN -> treated as
 //      stamp 0, so a fresh page or a never-rendered button is never locked)
 //   4. purity: the module never reads a clock itself, touches the DOM, or
-//      even mentions a transition/animation event name (docs/COMBAT-
-//      NARRATIVE-DESIGN.md 6.3: the blanket prefers-reduced-motion rule at
-//      mazeworld.html ~L773 zeroes every CSS transition/animation, so
-//      these guards MUST be plain millisecond comparisons, never CSS)
+//      even mentions a transition/animation event name (the blanket
+//      prefers-reduced-motion rule at mazeworld.html ~L773 zeroes every CSS
+//      transition/animation, so these guards MUST be plain millisecond
+//      comparisons, never CSS)
 //   5. the mazeworld.html bridge line (Task 2, appended below)
 //
 // Mirrors test/unit/controls.test.js's "exports pure constants" shape and
-// test/unit/toastsCoverage.test.js's purity-scan style (comment-stripped
-// source, forbidden-pattern list) without adding this module to that
-// file's own PURE_MODULE_FILES list (this file is the standing guard for
-// inputGuards.js specifically).
+// test/unit/narrationLinesCoverage.test.js's purity-scan style (comment-
+// stripped source, forbidden-pattern list) without adding this module to
+// that file's own PURE_MODULE_FILES list (this file is the standing guard
+// for inputGuards.js specifically).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -34,8 +34,8 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // ─── comment stripping (same order-sensitive approach as
-// shell-loot-screen.test.js/shell-toast-wiring.test.js — line comments are
-// stripped BEFORE block comments) ─────────────────────────────────────────
+// shell-loot-screen.test.js/shell-narration-wiring.test.js — line comments
+// are stripped BEFORE block comments) ─────────────────────────────────────
 function stripComments(source) {
   const noLineComments = source
     .split("\n")
@@ -92,7 +92,7 @@ test("isArmed/isSettled: a missing or non-finite first argument coerces to stamp
 // ─── 5. purity tripwire ─────────────────────────────────────────────────
 //
 // Forbidden patterns include the global clock-read call. Build that pattern
-// from fragments (mirroring shell-toast-wiring.test.js's OLD_SWITCH_NAME
+// from fragments (mirroring shell-narration-wiring.test.js's OLD_SWITCH_NAME
 // trick) so this test file itself never carries the literal string, which
 // would otherwise defeat the purpose of scanning the module for it.
 const CLOCK_READ = ["Date", ".", "now"].join("");
