@@ -31,9 +31,9 @@
 
 ### Stale docs & comments (DOCS)
 
-- [ ] **DOCS-01**: No comment in `mazeworld.html`, `src/`, `engine/`, `content/` or `test/` describes a pattern the game no longer employs — D-pad movement, toasts as a UI surface, the "dead classic X()" mirrors, `wornSlots`, the retired per-step item counters, the pre-Phase-35 recentre-on-every-step camera — verified by a grep list recorded in the phase summary
-- [ ] **DOCS-02**: `docs/*.md` and `.claude/CLAUDE.md` describe the game as it is: the stack notes' D-pad / toast references are rewritten to tap-to-move + rail, the iOS/Xcode rows are deleted outright (not just marked out of scope), and any doc that only documented dead code is deleted
-- [ ] **DOCS-03**: Test names and describe-strings no longer reference retired mechanisms (a test called "toast …" that pins a rail line is renamed to say so)
+- [x] **DOCS-01**: No comment in `mazeworld.html`, `src/`, `engine/`, `content/` or `test/` describes a pattern the game no longer employs — D-pad movement, toasts as a UI surface, the "dead classic X()" mirrors, `wornSlots`, the retired per-step item counters, the pre-Phase-35 recentre-on-every-step camera — verified by a grep list recorded in the phase summary
+- [x] **DOCS-02**: `docs/*.md` and `.claude/CLAUDE.md` describe the game as it is: the stack notes' D-pad / toast references are rewritten to tap-to-move + rail, the iOS/Xcode rows are deleted outright (not just marked out of scope), and any doc that only documented dead code is deleted
+- [x] **DOCS-03**: Test names and describe-strings no longer reference retired mechanisms (a test called "toast …" that pins a rail line is renamed to say so)
 
 ### Shell modularisation (SHELL)
 
@@ -82,9 +82,9 @@ Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges
 | HEDGE-01 | Phase 45 | Complete |
 | HEDGE-02 | Phase 45 | Complete |
 | HEDGE-03 | Phase 45 | Complete |
-| DOCS-01 | Phase 48 | Pending |
-| DOCS-02 | Phase 48 | Pending |
-| DOCS-03 | Phase 48 | Pending |
+| DOCS-01 | Phase 48 | Complete |
+| DOCS-02 | Phase 48 | Complete |
+| DOCS-03 | Phase 48 | Complete |
 | SHELL-01 | Phase 47 | Complete |
 | SHELL-02 | Phase 47 | Complete |
 | SHELL-03 | Phase 47 | Complete |
