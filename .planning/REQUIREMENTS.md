@@ -44,8 +44,8 @@
 
 ### Performance (PERF)
 
-- [ ] **PERF-01**: `paint()` re-render and `draw()` per step are measured on the Pixel 7 (Chrome remote profiling or in-app `performance.now()` marks) with the numbers recorded in `docs/PERF-BASELINE.md`
-- [ ] **PERF-02**: Only a measured hotspot (≥ 16 ms per step, or a visible jank the user confirms on device) gets a code change; if nothing qualifies the phase closes with the baseline and no code
+- [x] **PERF-01**: `paint()` re-render and `draw()` per step are measured on the Pixel 7 (Chrome remote profiling or in-app `performance.now()` marks) with the numbers recorded in `docs/PERF-BASELINE.md`
+- [x] **PERF-02**: Only a measured hotspot (≥ 16 ms per step, or a visible jank the user confirms on device) gets a code change; if nothing qualifies the phase closes with the baseline and no code (step p95 19.8 after two fixes — kept by user ruling)
 
 ## Future Requirements
 
@@ -89,8 +89,8 @@ Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges
 | SHELL-02 | Phase 47 | Complete |
 | SHELL-03 | Phase 47 | Complete |
 | SHELL-04 | Phase 47 | Complete |
-| PERF-01 | Phase 49 | Pending |
-| PERF-02 | Phase 49 | Pending |
+| PERF-01 | Phase 49 | Complete |
+| PERF-02 | Phase 49 | Complete |
 
 **Coverage:**
 

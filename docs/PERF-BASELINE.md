@@ -213,6 +213,27 @@ Fix landed: 9fe9bb5 — `paint()` now skips the hidden Hero/Gear tab mount on
 with `showTab()` re-rendering the mount the instant that tab becomes active,
 so the DOM the player next sees is never stale. AFTER run pending (Task 2).
 
+Fix 2 landed: cfce555 — removes `stepWith`'s redundant second canvas
+`draw()` call per step (classic `paint()` already draws once internally;
+49-01's own finding); the `draw` timing row was re-bracketed inside
+`paint()` itself via a new `window.__mzPerfMarks` bridge so it keeps
+measuring a real, non-zero draw. Landed after AFTER 1 showed `step` p95
+19.3 ms still ≥ 16 ms, per the user's binding ruling to land a second fix
+citing the same `step` row rather than revert fix 1.
+
+**Final outcome (AFTER 2, `c0cdbae`, n=61 — the user continued the same run
+and re-read the line once the ring held ≥ 50 samples, superseding an
+initial n=47 read): `step` p95 19.8 ms ≥ 16 ms → criterion 3's "< 16 ms" is
+NOT MET on p95 (median 11.5 ms IS met). Both fixes are KEPT — neither
+`9fe9bb5` nor `cfce555` is reverted**, per the user's standing ruling
+recorded after AFTER 1: record the AFTER 2 numbers honestly and keep both
+fixes regardless of outcome, since every row improved or held from BEFORE
+across both rounds (step median 14.2 → 11.5 ms, p95 28.9 → 19.8 ms; no jank
+at any point) and the remaining gap is attributed to route/between-walk
+variance (the dark-region draw cost), not a regression from either fix.
+See `## AFTER`'s "AFTER (fix 2)" subsection for the full reading and the
+next-lever note for a future pass.
+
 ## AFTER
 
 ### AFTER (fix 1) — `9fe9bb5`, APK `b8c9293`
@@ -256,11 +277,60 @@ improved or held within noise), do NOT revert either. This is a deviation
 from the plan's original "ONE fix, revert if not < 16 ms" clauses — see the
 SUMMARY's `## Fix 2` section for the fix itself.
 
-### AFTER (fix 2) — `cfce555`, APK pending
+### AFTER (fix 2) — `cfce555`, APK `c0cdbae`
 
-Filled once the orchestrator has built the third debug APK and the user has
-repeated the protocol a second time (AWAITING AFTER REPORT 2 — see
-`49-02-SUMMARY.md`'s `## Fix 2` section for the exact re-measure protocol).
+Reported by the user in chat, 2026-09-20, same protocol (depth 5), same dev
+run, in two reads: an initial read at n=47 (three under the protocol's
+≥ 50), then the user continued walking on the SAME run and re-read the line
+once the ring held n=61 — the ≥ 50 protocol threshold is met at n=61. The
+n=61 read **supersedes** the n=47 read as the AFTER-2 record (kept below
+only as a superseded note, per the orchestrator's instruction — not
+averaged, not discarded).
+
+**Superseded (n=47, recorded then superseded, not padded or re-requested):**
+
+```
+step 11.8 / 19.9 / 31.2 · dispatch 4.9 / 8.6 / 15.4 · paint 5.4 / 13.6 / 14.1 · draw 3.6 / 11.2 / 12.3 ms (med / p95 / max, n=47)
+```
+
+**Authoritative AFTER-2 record (n=61, same run continued):**
+
+```
+step 11.5 / 19.8 / 31.2 · dispatch 4.7 / 8.1 / 15.4 · paint 5.4 / 10.0 / 14.1 · draw 3.6 / 11.2 / 12.3 ms (med / p95 / max, n=61)
+```
+
+| Row | Median | p95 | Max | n |
+| --- | --- | --- | --- | --- |
+| step | 11.5 | 19.8 | 31.2 | 61 |
+| dispatch | 4.7 | 8.1 | 15.4 | 61 |
+| paint | 5.4 | 10.0 | 14.1 | 61 |
+| draw | 3.6 | 11.2 | 12.3 | 61 |
+
+- **Device build number:** CP2A.260705.006 (unchanged)
+- **APK commit (AFTER 2):** c0cdbae (includes fix 1 `9fe9bb5` and fix 2 `cfce555`)
+- **Jank report (user's words):** "No jank"
+
+**Check:** cited row `step`: median 11.5 ms (below 16 — yes), p95 19.8 ms
+(below 16 — **NOT MET**). `draw`'s own bracket was re-scoped by fix 2 (it
+now measures the one remaining draw call, inside `paint()`, rather than
+stepWith's removed second call) — its p95 held at 11.2 ms (vs. 3.6 ms on
+AFTER 1); `paint`'s own p95 settled to 10.0 ms with the larger n=61 sample
+(down from the n=47 read's 13.6 ms), consistent with route variance (the
+dark-region render filter is a plausible per-step cost driver) rather than
+a new regression — the extra 14 samples narrowed the estimate without
+changing the verdict.
+
+**Outcome (recorded honestly, per the standing user ruling): `step` p95
+19.8 ms ≥ 16 ms → criterion 3's "< 16 ms" is NOT MET on p95 (median 11.5 ms
+IS met). Both fixes are KEPT — NEITHER `9fe9bb5` NOR `cfce555` is reverted.**
+This is the standing ruling given after AFTER 1 (see above): if AFTER 2's
+p95 landed ≥ 16 ms, record the numbers honestly and keep both fixes rather
+than revert either, since every row improved or held from BEFORE across
+both rounds and no jank was ever reported. Next lever for a future perf
+pass (not this phase): the dark-region draw cost specifically — measure a
+dark-only walk against a lit-only walk before touching anything, since this
+round's variance is consistent with that being the remaining driver rather
+than a new regression.
 
 ## How to re-measure
 
