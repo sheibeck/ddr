@@ -47,7 +47,7 @@ import { ABILITY_BY_ID } from "../../content/abilities.js";
 // narrationLines.js. The import is one-directional: this file imports from
 // narrationLines.js, never the reverse (the no-cycle rule the coverage test
 // pins).
-import { slotWord } from "./narrationLines.js";
+import { slotWord, initiativeVerdictText } from "./narrationLines.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -302,12 +302,28 @@ export const EVENT_NARRATION = {
   // Phase 40 (SPELL-02): Sense Presence's own line when it is the reason no
   // one got the jump on you — a plain "you" win (no senses, or senses that
   // didn't ride along) keeps the pre-Phase-40 wording.
-  combatJoined: (e) =>
-    e.first === "you"
-      ? e.senses
-        ? `<span class="beat">You move first. Nothing gets the jump on you.</span>`
-        : `<span class="beat">You move first.</span>`
-      : `<span class="hurt">They move first.</span>`,
+  // Phase 51 (INIT-02, DELIBERATE RULES CHANGE, 2026-09-20): the prototype's
+  // per-round `C.initNote` ("Initiative — you N, them M") ported as the
+  // Oracle's own ONCE-PER-FIGHT line — `combatJoined` already fires exactly
+  // once per fight (from `fight()`, Plan 02's single roll site), so "once,
+  // not per round" falls out structurally with no extra guard needed here.
+  // The dice sit in TWO `.roll` spans so `oracleDetailText`'s existing fold
+  // reveals them in the fight log; the foe's name (`e.foe`) is used when the
+  // fight opened against exactly one live foe, else "them" for a group.
+  // `initiativeVerdictText` (src/browser/narrationLines.js) supplies the
+  // verdict clause — the bare "You/They go first." on a plain dice win, or
+  // the override's own voice (Samurai/slow/foresight/Acute Hearing/senses/
+  // Knight/Court Mage) when `e.why` (or the legacy `e.senses` flag) named
+  // one — shared with `LINE_FOR.combatJoined` so the Oracle and the
+  // roll-free rail/fight-log text can never disagree about the verdict.
+  combatJoined: (e) => {
+    const mine = e?.mine ?? "?";
+    const theirs = e?.theirs ?? "?";
+    const foeName = e?.foe ?? "them";
+    const verdictClass = e?.first === "you" ? "beat" : "hurt";
+    const verdict = initiativeVerdictText(e);
+    return `Initiative — you <span class="roll">${mine}</span>, ${foeName} <span class="roll">${theirs}</span>. <span class="${verdictClass}">${verdict}</span>`;
+  },
   trackable: () => `<span class="beat">They have not noticed you yet.</span>`,
   allyJoined: (e) => `<span class="hit">${e.name ?? "An ally"} falls in beside you.</span>`,
   warlockBoost: (e) => `The Warlock's presence stiffens the dead. <span class="hurt">+${e.amount ?? 0} hp to every corpse in the room.</span>`,

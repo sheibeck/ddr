@@ -882,6 +882,41 @@ function dedupeByType(list) {
 }
 
 /**
+ * initiativeVerdictText(e) — Phase 51 (INIT-02): the ONE verdict sentence
+ * for `combatJoined`'s "Initiative — …" line, shared by this module's own
+ * `LINE_FOR.combatJoined` (roll-free) AND src/browser/eventNarration.js's
+ * Oracle html (which prepends the two `.roll` dice spans) — imported once
+ * from here (eventNarration.js already imports `slotWord` from this module,
+ * so this adds no new cross-module dependency) rather than duplicated in
+ * two tables that could drift out of voice. Keyed on `e.why` first, then
+ * the legacy `e.senses` flag (Phase 40's Sense Presence short form), then
+ * the plain `e.first`. Every branch is family-friendly sarcasm, pinned
+ * clear of content/safety-wordlist.js's BANNED scan by
+ * test/unit/initiative-line.test.js.
+ */
+export function initiativeVerdictText(e) {
+  const why = e?.why ?? (e?.senses ? "senses" : null);
+  switch (why) {
+    case "samurai":
+      return "Samurai honour — they go first.";
+    case "slow":
+      return "Too slow off the mark — they go first.";
+    case "foreseen":
+      return "Foresight — you go first.";
+    case "acuteHearing":
+      return "Acute Hearing — you go first.";
+    case "senses":
+      return "You go first. Nothing gets the jump on you.";
+    case "knight":
+      return "A Knight's welcome — it comes straight at you.";
+    case "courtMage":
+      return "Court Mage — you talk first, they swing first.";
+    default:
+      return e?.first === "you" ? "You go first." : "They go first.";
+  }
+}
+
+/**
  * linesForAction(type, events, ctx = {}, opts = {}) — the exported
  * per-action pipeline. See the header comment above this section for the
  * full order. `opts.limit` is kept for callers that want a shorter fold;
@@ -1044,8 +1079,15 @@ export const LINE_FOR = {
   // encounter step no longer knows who moves first.
   // Phase 40 (SPELL-02): Sense Presence's own short form when it decided the
   // roll.
+  // Phase 51 (INIT-02, DELIBERATE RULES CHANGE, 2026-09-20): the roll-free
+  // rail/fight-log text — the prototype's C.initNote, minus the dice (the
+  // Oracle keeps those). `initiativeVerdictText` names an override (Samurai/
+  // slow/foreseen/Acute Hearing/senses/Knight/Court Mage) in voice when one
+  // decided the roll; otherwise it's the bare "You/They go first." — same
+  // table src/browser/eventNarration.js's Oracle html reads, so the two
+  // surfaces can never disagree about the verdict.
   combatJoined: (e) => ({
-    text: e?.first === "you" ? (e?.senses ? "You move first. Nothing gets the jump on you." : "You move first.") : "They move first.",
+    text: `Initiative — ${initiativeVerdictText(e)}`,
     tone: e?.first === "you" ? "hit" : "hurt",
     priority: PRIORITY.feature,
   }),
