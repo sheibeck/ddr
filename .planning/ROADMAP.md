@@ -183,7 +183,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 51-02-PLAN.md — Engine cut (initiative once in `fight()`, `resolveInitiative`, `combatJoined.mine/theirs/why/foe`, afterPlayerAction re-roll + second foe turn deleted) + every draw pin re-pinned + SC1/SC2 pins + the three moved fixtures declared/regenerated + FIXTURE-INVENTORY Phase 51 + AFTER bot readout
+- [x] 51-02-PLAN.md — Engine cut (initiative once in `fight()`, `resolveInitiative`, `combatJoined.mine/theirs/why/foe`, afterPlayerAction re-roll + second foe turn deleted) + every draw pin re-pinned + SC1/SC2 pins + the three moved fixtures declared/regenerated + FIXTURE-INVENTORY Phase 51 + AFTER bot readout
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -314,7 +314,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 51. Initiative Once Per Combat | v1.7 | 1/3 | In Progress|  |
+| 51. Initiative Once Per Combat | v1.7 | 2/3 | In Progress|  |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |

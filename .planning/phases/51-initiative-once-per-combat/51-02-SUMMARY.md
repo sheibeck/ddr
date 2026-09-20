@@ -199,3 +199,16 @@ Owed to the Phase 55 end-of-run Pixel 7 UAT batch (per the deferred-UAT protocol
 1. Across a 3+ round fight, no two foe turns ever occur back to back in the fight log — every round reads as a steady you/them or them/you exchange.
 2. A Samurai (or Fridgian) fight opens with the foe's turn immediately after tapping Fight!, then strictly alternates for the rest of the fight.
 3. The combat panel's "YOU/THEY MOVE FIRST" reading stays sane across rounds of the same fight (it should never appear to flip mid-fight, since initiative now holds for the whole encounter).
+
+## Self-Check: PASSED
+
+- FOUND: engine/combat.js
+- FOUND: test/unit/foe-turn-draw-count.test.js
+- FOUND: test/unit/combat.test.js
+- FOUND: test/parity/fixtures/action-script.combat.json
+- FOUND: test/parity/FIXTURE-INVENTORY.md
+- FOUND: docs/DIFFICULTY-RETUNE.md
+- FOUND: docs/class-pass/v17-p51-after-smoke.json
+- FOUND: .planning/phases/51-initiative-once-per-combat/51-02-SUMMARY.md
+- FOUND commit: 608a0e5 (Task 1+2)
+- FOUND commit: 5b44dac (Task 3 + summary)

@@ -5,15 +5,15 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 51
 current_phase_name: Initiative Once Per Combat
 status: executing
-stopped_at: Completed 51-01-PLAN.md
-last_updated: "2026-09-20T22:07:09.857Z"
+stopped_at: Completed 51-02-PLAN.md
+last_updated: "2026-09-20T23:07:03.180Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 51 execution started
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 17
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phase 50 complete; v1.5 +
 ## Current Position
 
 Phase: 51 (Initiative Once Per Combat) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-20 — Phase 51 execution started
 
@@ -140,8 +140,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T22:07:09.827Z
-Stopped at: Completed 51-01-PLAN.md
+Last session: 2026-09-20T23:07:03.145Z
+Stopped at: Completed 51-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -271,6 +271,7 @@ Resume file: None
 | Phase 50 P02 | ~55min | 2 tasks | 3 files |
 | Phase 50 P03 | ~50min | 2 tasks | 5 files |
 | Phase 51 P01 | ~35min | 3 tasks | 4 files |
+| Phase 51 P02 | ~3h | 3 tasks | 24 files |
 
 ## Decisions
 
@@ -521,6 +522,7 @@ Resume file: None
 - [Phase ?]: 50-02: process cleanup matches on --user-data-dir profile-dir substring (WMI CommandLine LIKE + terminate) instead of PID, because chrome.exe re-execs itself and the spawned PID never matches the real browser; profile dirs use forward slashes to avoid WQL's backslash-escape pitfall in the LIKE query
 - [Phase ?]: Phase 50 Plan 03: roller mount landed byte-for-byte per plan; boot:check is environment-blocked on this dev machine (pre-existing, verified via --self-test and pre-fix-commit reproduction), logged to deferred-items.md rather than patched
 - [Phase ?]: 51-01: BEFORE bot readout captured on phase-start commit d5d8c10; MOVED SET (3) measured (combat.json lose/lose-apprentice/lose-plain) via tools/initiative-fixture-scan.mjs — Plan 02 declares/regenerates exactly these three, nothing more
+- [Phase ?]: 51-02: initiative once per fight — resolveInitiative/rollInitiative split; MOVED SET (lose/lose-apprentice/lose-plain) declared+regenerated, two flip died->won (measured, not assumed); Part A predictor byte-identical, Part B legitimately changes for the moved rows only
 
 ### Blockers
 
