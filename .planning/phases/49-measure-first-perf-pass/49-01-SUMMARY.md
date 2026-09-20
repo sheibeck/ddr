@@ -185,3 +185,14 @@ None — no external service configuration required. The Pixel 7 device session 
 ---
 *Phase: 49-measure-first-perf-pass*
 *Completed: 2026-09-20*
+
+## Self-Check: PASSED
+
+- `src/browser/perfMarks.js` — FOUND
+- `test/unit/perfMarks.test.js` — FOUND
+- `docs/PERF-BASELINE.md` — FOUND
+- `.planning/phases/49-measure-first-perf-pass/49-01-SUMMARY.md` — FOUND
+- Commit `cab78ec` (Task 1) — FOUND in `git log --oneline --all`
+- Commit `bb83eed` (Task 2) — FOUND in `git log --oneline --all`
+- Commit `c289aca` (Task 3: doc + SUMMARY) — FOUND in `git log --oneline --all`
+- Commit `c1451c8` (final metadata: STATE.md + ROADMAP.md) — FOUND in `git log --oneline --all`
