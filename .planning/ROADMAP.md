@@ -140,15 +140,25 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 **Requirements**: ROLL-01
 **Note**: from todo `.planning/todos/pending/2026-09-20-roller-reels-do-not-match-the-hero-tab-character.md` (tag `resolves_phase: 50` once this roadmap is approved — not edited by the roadmapper).
 **Success Criteria** (what must be TRUE):
+
   1. A source-pin/unit test proves the committed state's `characterSheetViewModel` labels (race/class/sub-class/name/quirk) equal the reel labels shown at reveal — the reel lock and the CTA commit read the same object (`rollerPendingState`), not a captured `sheet`.
   2. Re-entry is guarded: a resolved `startNewRun()` from a superseded roll (double-tap on the roll trigger, Play-again from a death mid-reveal) is ignored, pinned by a test that fires two rolls and asserts only the second's state ever reaches the Hero tab.
   3. A manual repro pass (roll → note the three locked reels + name → DESCEND → compare the Hero tab; repeated with a double-tap and with Play-again from a death) shows zero mismatches, recorded in the phase summary.
   4. `engine/`, `content/`, parity fixtures and the master hash are untouched — the fix is shell-only (`mazeworld.html`, `src/browser/viewModels.js`, `src/browser/heroTab.js`, `src/browser/engineAdapter.js`).
+
 **Plans**: 3 plans (waves 1 → 2 → 3, sequential — `mazeworld.html` is touched only in wave 3)
 
 Plans:
+**Wave 1**
+
 - [ ] 50-01-PLAN.md — `src/browser/roller.js` (`createRoller`: monotonic roll token + serialized `startNewRun()` chain + reels/CTA reading the one pending state) and `test/unit/roller.test.js` (SC1 identity, SC2 supersede races, serialization, CTA gating, module pins); shell untouched
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 50-02-PLAN.md — `tools/roller-repro.mjs` (dependency-free headless-Chrome CDP driver: normal / double-tap / Play-again-from-death / mid-reveal) and the BEFORE table against the unfixed shell
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 50-03-PLAN.md — the `mazeworld.html` mount swap (`window.mzStartRoll = roller.start`, `commitRolledState` as `onCommit`, inline roller deleted), pin re-homes + mount pins, bridge strings + `docs/SHELL-MODULES.md`, the AFTER repro table, gates (build:www → npm test → boot:check), fence, SUMMARY with the deferred Pixel 7 checks
 
 ### Phase 51: Initiative Once Per Combat
@@ -157,11 +167,13 @@ Plans:
 **Depends on**: Phase 50 in sequence only (no causal dependency). Sequencing gate: lands before every other rule-changing phase (INIT → CAD/DMG → JOIN → BAND/TUNE).
 **Requirements**: INIT-01, INIT-02
 **Success Criteria** (what must be TRUE):
+
   1. `rollInitiative` fires exactly once per combat (from `startCombat`/the `fight` action); the per-round re-roll at `engine/combat.js:1341` is gone, pinned by a zero-draw assertion in `foe-turn-draw-count.test.js`.
   2. A scenario where the foe would have won a fresh second-round roll now alternates player/foe turns for the whole fight — no back-to-back foe turns — proven by a determinism/unit test.
   3. One narrated line ("Initiative — you N, them M. You go first.") appears exactly once per fight in the Oracle and the fight log, pinned by a test that fails on a second appearance.
   4. Samurai / slow / foresight / Acute Hearing overrides still apply to the single roll, proven by their existing tests re-targeted at the new call site.
   5. The p.24 divergence is declared in `test/parity/FIXTURE-INVENTORY.md` with before/after; only the measured fixtures are regenerated; the prototype master hash is unchanged.
+
 **Plans**: TBD
 
 ### Phase 52: Foe Cadence & Damage Curve
@@ -170,11 +182,13 @@ Plans:
 **Depends on**: Phase 51 (cadence is measured on the corrected initiative, so no foe turn is inflated by a phantom double-turn).
 **Requirements**: CAD-01, CAD-02, CAD-03, DMG-01, DMG-02
 **Success Criteria** (what must be TRUE):
+
   1. A plain foe swings once per round, an `sp.atk: 2` foe swings twice, and a frenzied foe doubles its own swing count — each pinned by a dedicated unit test.
   2. When a foe ability fires (bolt/drain/debuff/heal/summon/frost…), a resolver test proves that turn contains the ability and zero ordinary swings — the Stalka Beast two-hits-plus-frost log is provably impossible.
   3. A bot readout records attacks-per-player-action for the Bat/Rat and China Wolf floor-5 fights at ≤ the foe's `sp.atk` (≤2× if frenzied), committed in `docs/DIFFICULTY-RETUNE.md`.
   4. A committed script reports max single-hit damage by depth for every bestiary foe and flags any hit ≥ 60% of a level-appropriate character's max HP; every flagged row (Herman's floor-5 crit among them) is fixed and re-measured clean.
   5. Every damage-curve fix carries a before/after row in `content/BESTIARY-REBALANCE.md`; any moved parity fixtures are measured, declared and regenerated per the engine gate.
+
 **Plans**: TBD
 
 ### Phase 53: Joiner Level Cap
@@ -184,11 +198,13 @@ Plans:
 **Requirements**: JOIN-02, JOIN-03
 **Note**: promoted from backlog 999.2 (formerly `.planning/phases/999.2-joiner-level-capped-by-floor-depth/`, now retired — superseded by this phase).
 **Success Criteria** (what must be TRUE):
+
   1. `meetJoiner`'s rolled level is clamped `lvl = min(rolled, state.floor.depth)` with the same one-d10-then-two-d20 draw sequence, pinned by a test showing a level-5-rolled Joiner met on floor 2 arrives as level 2 with an unchanged draw count.
   2. `grantLevelAbilities` and the `20 * lvl + d20` wp formula both receive the capped level — a floor-2 level-capped Joiner's abilities and wp match a natively-rolled level-2 Joiner, pinned by test.
   3. `joinerMet`/`joinerRefused` narration and the rail card render unchanged (the capped `lvl` rides the existing payload shape) — no copy/shape diff, pinned by a snapshot test.
   4. Only the fixtures that meet a Joiner on a floor shallower than its rolled level move; each is declared with before/after in `FIXTURE-INVENTORY.md` and regenerated; every other fixture and the master hash are untouched.
   5. A `tune-classes` smoke before/after records the early-Joiner power shift in `docs/DIFFICULTY-RETUNE.md`.
+
 **Plans**: TBD
 
 ### Phase 54: Four-Band Retune & Roster Decision
@@ -197,11 +213,13 @@ Plans:
 **Depends on**: Phases 51–53 (every earlier rule phase moves floors 1–7 on its own; the curve is tuned once, on the fully corrected cadence/damage/Joiner baseline).
 **Requirements**: BAND-01, BAND-02, BAND-03, TUNE-08
 **Success Criteria** (what must be TRUE):
+
   1. `docs/DIFFICULTY-RETUNE.md` records the four bands verbatim (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20) as numeric targets: median death depth 5–7, p90 ≈10–13, reach-16 a few percent, reach-20 well under 1%.
   2. `difficultyCurve` is reshaped — identity-ish through floor 4, a step at 5–8, an eased slope through 9–15, steepened 16–20, breather floors kept, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — with every dial change cited against a bot readout that moved toward the bands.
   3. The AFTER bot readout (`tune-difficulty --seeds=200` solo + `--party`, plus the class matrix) lands inside the BAND-01 numbers, or each miss is recorded with its untaken rung and reason; the ledger's change table has one row per constant with before/after.
   4. The tier-3/5 roster decision (Herman, Drarl, Vampire, Djinni) is recorded per creature — stays, moves tier, or is retuned — with the forced-20 untaken rungs (floors gained p50 0 / mean 0.84, reach ≥ 20 0.1%) named as a deliberate shape, not residue; any parity divergence is declared.
   5. No flat-damage nerf is used to chase the median; `npm test` and `npm run build:www` stay green throughout.
+
 **Plans**: TBD
 
 ### Phase 55: Human DR Round
@@ -210,10 +228,12 @@ Plans:
 **Depends on**: Phase 54 (the retune must be on master before the device round measures it).
 **Requirements**: TUNE-09
 **Success Criteria** (what must be TRUE):
+
   1. A debug APK is built from the post-Phase-54 commit (the milestone's last wave), per the deferred-UAT protocol — one build, one batched session.
   2. The four-run Pixel 7 checklist (start-at-depth 20/35/50 plus one natural run) in `docs/DIFFICULTY-RETUNE.md` is completed in that session.
   3. Any pending UAT-batch items scheduled to ride along are run in the same sitting, per the standing deferred-UAT protocol (one batched device session at milestone close).
   4. The verdict is recorded verbatim, and the milestone closes only on a recorded "tuned" result or an explicit user-recorded deferral.
+
 **Plans**: TBD
 
 <details>
