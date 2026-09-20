@@ -19,7 +19,7 @@
 ### Initiative (INIT)
 
 - [x] **INIT-01**: Initiative is rolled once per combat (in `startCombat` / the `fight` action) and `C.first` holds for the whole fight — the per-round re-roll in `afterPlayerAction` (`engine/combat.js:1341`) is deleted, so a foe never takes two turns back to back; Samurai / slow / foresight / Acute Hearing overrides apply to that single roll; the p.24 divergence is declared with its moved fixtures
-- [ ] **INIT-02**: The player can see the initiative result — one line per fight in the Oracle and the fight log ("Initiative — you 14, Stalka Beast 9. You go first." in voice, with the dice revealable like other log entries); `C.initNote` is emitted once, not per round
+- [x] **INIT-02**: The player can see the initiative result — one line per fight in the Oracle and the fight log ("Initiative — you 14, Stalka Beast 9. You go first." in voice, with the dice revealable like other log entries); `C.initNote` is emitted once, not per round
 
 ### Foe attack cadence (CAD)
 
@@ -80,7 +80,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | ROLL-01 | Phase 50 | Complete |
 | INIT-01 | Phase 51 | Complete |
-| INIT-02 | Phase 51 | Pending |
+| INIT-02 | Phase 51 | Complete |
 | CAD-01 | Phase 52 | Pending |
 | CAD-02 | Phase 52 | Pending |
 | CAD-03 | Phase 52 | Pending |

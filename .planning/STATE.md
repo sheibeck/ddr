@@ -4,17 +4,17 @@ milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 51
 current_phase_name: Initiative Once Per Combat
-status: executing
-stopped_at: Completed 51-02-PLAN.md
-last_updated: "2026-09-20T23:07:03.180Z"
+status: verifying
+stopped_at: Completed 51-03-PLAN.md
+last_updated: "2026-09-20T23:16:18.430Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 51 execution started
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 17
+  completed_plans: 6
+  percent: 33
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phase 50 complete; v1.5 +
 
 Phase: 51 (Initiative Once Per Combat) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-20 — Phase 51 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -140,8 +140,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T23:07:03.145Z
-Stopped at: Completed 51-02-PLAN.md
+Last session: 2026-09-20T23:16:18.401Z
+Stopped at: Completed 51-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -272,6 +272,7 @@ Resume file: None
 | Phase 50 P03 | ~50min | 2 tasks | 5 files |
 | Phase 51 P01 | ~35min | 3 tasks | 4 files |
 | Phase 51 P02 | ~3h | 3 tasks | 24 files |
+| Phase 51 P03 | ~40min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -523,6 +524,8 @@ Resume file: None
 - [Phase ?]: Phase 50 Plan 03: roller mount landed byte-for-byte per plan; boot:check is environment-blocked on this dev machine (pre-existing, verified via --self-test and pre-fix-commit reproduction), logged to deferred-items.md rather than patched
 - [Phase ?]: 51-01: BEFORE bot readout captured on phase-start commit d5d8c10; MOVED SET (3) measured (combat.json lose/lose-apprentice/lose-plain) via tools/initiative-fixture-scan.mjs — Plan 02 declares/regenerates exactly these three, nothing more
 - [Phase ?]: 51-02: initiative once per fight — resolveInitiative/rollInitiative split; MOVED SET (lose/lose-apprentice/lose-plain) declared+regenerated, two flip died->won (measured, not assumed); Part A predictor byte-identical, Part B legitimately changes for the moved rows only
+- [Phase ?]: 51-03: initiativeVerdictText shared between eventNarration.js and narrationLines.js (eventNarration.js already imports slotWord from narrationLines.js, so this adds no new cross-module dependency) — Oracle and fight-log verdicts can never drift apart
+- [Phase ?]: 51-03: verdict copy locked — samurai 'Samurai honour — they go first.'; slow 'Too slow off the mark — they go first.'; foreseen 'Foresight — you go first.'; acuteHearing 'Acute Hearing — you go first.'; senses 'You go first. Nothing gets the jump on you.'; knight 'A Knight's welcome — it comes straight at you.'; courtMage 'Court Mage — you talk first, they swing first.'; no-why 'You go first.'/'They go first.'
 
 ### Blockers
 

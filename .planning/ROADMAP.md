@@ -187,7 +187,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 51-03-PLAN.md — INIT-02: the once-per-fight initiative line in the Oracle and fight log (dice in .roll spans, in-voice verdict per override) + SC3 once-per-fight pin
+- [x] 51-03-PLAN.md — INIT-02: the once-per-fight initiative line in the Oracle and fight log (dice in .roll spans, in-voice verdict per override) + SC3 once-per-fight pin
 
 ### Phase 52: Foe Cadence & Damage Curve
 
@@ -314,7 +314,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 51. Initiative Once Per Combat | v1.7 | 2/3 | In Progress|  |
+| 51. Initiative Once Per Combat | v1.7 | 3/3 | In Progress|  |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
