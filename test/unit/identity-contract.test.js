@@ -419,9 +419,13 @@ const CONTRACT = [
         withCombat(state, [fixedFoe()], { round: 1 });
         assert.equal(rollInitiative(state, fakeRng([20, 1])), "foe");
 
+        // Phase 51 (INIT-01): `fight()` is the only real call site and it
+        // only ever sees round 1 — this "round 2+" branch is unreachable via
+        // the game flow now, but `rollInitiative`'s own contract (checks
+        // `C.round === 1` exactly, for any direct caller) is unchanged.
         const round2 = hero("Court Mage");
         withCombat(round2, [fixedFoe()], { round: 2 });
-        assert.equal(rollInitiative(round2, fakeRng([20, 1])), "you", "round 2+ rolls normally");
+        assert.equal(rollInitiative(round2, fakeRng([20, 1])), "you", "round 2+ rolls normally — unreachable from fight() post-Phase-51");
       },
     },
   },
@@ -1163,7 +1167,8 @@ const CONTRACT = [
           [fixedFoe({ name: "Corpse", wp: 0, alive: false }), fixedFoe({ name: "Target", wp: 999, maxWP: 999 })],
           { target: 1 },
         );
-        const seq = [5, 20, 20, 20, 15, 10, 20];
+        // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+        const seq = [5, 20, 20, 20];
         const rng = countingRng(fakeRng(seq));
         const events = playerStrike(state, rng, []);
         expectEvent(events, "frenzy");

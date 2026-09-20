@@ -196,7 +196,8 @@ test("playerStrike: a Fridgian's frenzy second swing always targets a live foe â
     fixedFoe({ name: "Corpse", wp: 0, alive: false }),
     fixedFoe({ name: "Target", wp: 999, maxWP: 999 }),
   ], { target: 1 });
-  const seq = [5, 20, 20, 20, 15, 10, 20];
+  // Phase 51 (INIT-01): no round-advance draws â€” initiative is rolled once.
+  const seq = [5, 20, 20, 20];
   const rng = countingRng(fakeRng(seq));
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "frenzy"));

@@ -133,19 +133,19 @@ test("castSpell: frozenSolid narrates before the kill is awarded (event order)",
 test("castSpell: a missed Freeze throw pays nothing (no frozenSolid, no foeKilled, no kill/sp)", () => {
   // asleep:1 keeps the still-living foe from swinging back in the trailing
   // afterPlayerAction round (a miss does not clear the encounter, so the
-  // normal post-action round-continuation machinery — foeTurn, then a fresh
-  // rollInitiative for the next round — still runs; that machinery is
-  // unrelated to Freeze and would run identically for any other missed
-  // thrown spell, so it is not part of what this test is proving).
+  // normal post-action round-continuation machinery — foeTurn, then the
+  // round advance — still runs; that machinery is unrelated to Freeze and
+  // would run identically for any other missed thrown spell, so it is not
+  // part of what this test is proving).
   const foe = fixedFoe({ wp: 3, maxWP: 3, lvl: 1, intel: 1, lives: 1, asleep: 1 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Freeze"], level: 1 },
     combat: fixedCombat([foe]),
   });
   // d10=10 (miss: 10 - bonus 3 = 7 > 6); foeTurn's asleep check skips the
-  // foe's own attack (0 draws); rollInitiative draws mine=20, theirs=1
-  // (hero wins initiative, so no second foeTurn fires this call).
-  const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([10, 20, 1]), []);
+  // foe's own attack (0 draws); the round advance itself draws zero rng —
+  // initiative is rolled once, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([10]), []);
 
   assert.ok(events.some((e) => e.type === "spellMissed"));
   assert.ok(!events.some((e) => e.type === "frozenSolid"));
@@ -167,9 +167,9 @@ test("castSpell: a lives-2 (kill-twice) foe is revived by killFoe's lives rule i
   // d10=1 (hit); d6=3 (dmg) -- killFoe sees lives>1 and returns BEFORE any of
   // its own draws (no sp/coin/treasure/cooking rolls). The foe is still
   // alive afterward, so the trailing afterPlayerAction round proceeds: the
-  // sleeping foe skips its attack (0 draws), then rollInitiative draws
-  // mine=20, theirs=1 (hero first, no second foeTurn).
-  const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([1, 3, 20, 1]), []);
+  // sleeping foe skips its attack (0 draws); the round advance itself draws
+  // zero rng — initiative is rolled once, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([1, 3]), []);
 
   const frozenIdx = events.findIndex((e) => e.type === "frozenSolid");
   const revivedIdx = events.findIndex((e) => e.type === "foeRevived");

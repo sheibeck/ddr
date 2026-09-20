@@ -116,8 +116,10 @@ function fixedCombat(foes, overrides = {}) {
 }
 
 // A generous tail of harmless filler draws: every per-foe foeTurn swing
-// misses (need is always well under 20) and rollInitiative's two d20s tie
-// (mine >= theirs -> "you" goes first next round, skipping a second foeTurn).
+// misses (need is always well under 20). Phase 51 (INIT-01): the
+// round-advance itself draws zero rng now (initiative is rolled once, at
+// fight()'s Fight! gate, never re-rolled by afterPlayerAction), so this
+// filler is simply extra unused supply — harmless either way.
 const FILL = new Array(40).fill(20);
 
 // ---------------------------------------------------------------------------
@@ -641,7 +643,8 @@ test("Task 2: riposte counters a hero-branch foe miss during its own effect roun
   const state = fixedState({ c: fixedFighter({ abilities: ["riposte"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
   // sequence: the foe's own to-hit roll (20 -> miss vs need 5), then
-  // riposte's weaponDamage die (Club, 6), then rollInitiative's tied 20s.
+  // riposte's weaponDamage die (Club, 6); the round advance itself draws
+  // zero rng (Phase 51, INIT-01) — FILL is just harmless spare supply.
   const events = useAbility(state, "riposte", fakeRng([20, 6, 20, 20, ...FILL]), []);
   const riposted = events.find((e) => e.type === "riposted");
   assert.ok(riposted, "the foe's miss triggered a counter");

@@ -111,33 +111,36 @@ export function normalizeTarget(combat) {
 /**
  * knightFacesBigFoe(state) — true when a Knight is up against something with
  * real heft this encounter: any still-live foe with maxWP >= 20. Exported so
- * rollInitiative and startCombat's encounterStarted flag share one
+ * resolveInitiative and startCombat's encounterStarted flag share one
  * definition instead of two copies of the same read.
  *
  * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): backs the
  * Knight's "everything over 20 comes straight at you" bad — see
- * rollInitiative below. Pure read of already-rolled foe data; 0 draws.
+ * resolveInitiative below. Pure read of already-rolled foe data; 0 draws.
+ *
+ * DELIBERATE RULES CHANGE (Phase 51, INIT-01, 2026-09-20): read once, at the
+ * single Fight!-time roll — not re-evaluated round to round (there is no
+ * "round to round" anymore; initiative holds for the whole fight).
  */
 export function knightFacesBigFoe(state) {
   return state.c.sub === "Knight" && !!state.combat && state.combat.foes.some((f) => f.alive && f.maxWP >= 20);
 }
 
 /**
- * rollInitiative(state, rng) — a fresh d20 each side; a Samurai/Fridgian is
+ * resolveInitiative(state, rng) — a fresh d20 each side; a Samurai/Fridgian is
  * last unless foreseen; foresight/Acute Hearing move first. Ports
  * mazeworld.html rollInitiative() (lines 2317-2327), minus its narration
- * string (a presentation concern — see the module header).
+ * string (a presentation concern — see the module header). Returns the full
+ * detail form `{ first, mine, theirs, why }` so `fight()` can carry the dice
+ * and the verdict on `combatJoined` for Plan 03's narration.
  *
  * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): extends the
  * never-first clause with two more zero-draw cases, both still overridden
  * AFTER the two d20s above are drawn (never skipped, never re-rolled):
- * a Knight facing any live foe with maxWP >= 20 (`knightFacesBigFoe`,
- * re-evaluated every round — it switches off once every such foe is
- * dead/fled) and a Court Mage in round 1 only ("you talk first" — foes act
- * first at encounter start; afterPlayerAction increments `C.round` BEFORE
- * re-rolling initiative each subsequent round, so `C.round === 1` is true
- * only for the encounter-start call). A foreseen character still always
- * goes first, exactly as the Samurai/Fridgian case already does.
+ * a Knight facing any live foe with maxWP >= 20 (`knightFacesBigFoe`) and a
+ * Court Mage in round 1 ("you talk first" — foes act first at encounter
+ * start). A foreseen character still always goes first, exactly as the
+ * Samurai/Fridgian case already does.
  *
  * DELIBERATE RULES CHANGE (Phase 40, SPELL-02, 2026-09-18): Sense Presence's
  * canon "never surprised" (`c.senses`) had no engine read before this phase
@@ -150,8 +153,26 @@ export function knightFacesBigFoe(state) {
  * changes which branch the ternary takes, never the draw count. A foreseen
  * character still always goes first regardless of senses (the `foreseen`
  * check is unchanged and evaluated after).
+ *
+ * DELIBERATE RULES CHANGE (Phase 51, INIT-01, 2026-09-20): this used to be
+ * called once per round from `afterPlayerAction` (canon p.24's "a fresh d20
+ * each round"), which meant the foe could act at the end of one round and
+ * again at the start of the next with no chance to respond in between. It is
+ * now called EXACTLY ONCE per fight — from `fight()` only, at the Fight! gate
+ * — and `C.first` holds for the whole encounter. Knight-vs-big-foe therefore
+ * narrows to the opener (a Knight who kills every maxWP>=20 foe still opens
+ * against them if they were live at Fight! time; the check is not
+ * re-evaluated mid-fight) and Court Mage's `C.round === 1` guard is now
+ * trivially true at the only call site (kept as-is — harmless, and it
+ * documents the original "you talk first" intent). `why` is derived from the
+ * same branch order the ternary already uses below: the first true of
+ * samurai/slow/knightBig/courtMage when the forced-foe branch is taken, else
+ * foreseen/Acute Hearing, else senses (only when senses is what flipped a
+ * would-be-forced-foe roll to "you" — the same condition the existing
+ * `senses: true` event spread already checks), else `undefined` (the dice
+ * decided, and Plan 03's narration bare-words it).
  */
-export function rollInitiative(state, rng) {
+export function resolveInitiative(state, rng) {
   const C = state.combat;
   if (!C) return undefined;
   const c = state.c;
@@ -163,16 +184,32 @@ export function rollInitiative(state, rng) {
   const knightBig = knightFacesBigFoe(state);
   const courtMage = c.sub === "Court Mage" && C.round === 1;
   const foreseen = c.foresight;
+  const acuteHearing = skill(c, "Acute Hearing");
+  const forcedFoe = (samurai || slow || knightBig || courtMage) && !foreseen && !c.senses;
   c.foresight = false;
-  C.first =
-    (samurai || slow || knightBig || courtMage) && !foreseen && !c.senses
-      ? "foe"
-      : foreseen || skill(c, "Acute Hearing")
-        ? "you"
-        : mine >= theirs
-          ? "you"
-          : "foe";
-  return C.first;
+  C.first = forcedFoe ? "foe" : foreseen || acuteHearing ? "you" : mine >= theirs ? "you" : "foe";
+  let why;
+  if (forcedFoe) {
+    why = samurai ? "samurai" : slow ? "slow" : knightBig ? "knight" : "courtMage";
+  } else if (foreseen) {
+    why = "foreseen";
+  } else if (acuteHearing) {
+    why = "acuteHearing";
+  } else if (c.senses && C.first === "you") {
+    why = "senses";
+  }
+  return { first: C.first, mine, theirs, why };
+}
+
+/**
+ * rollInitiative(state, rng) — thin wrapper over `resolveInitiative` kept for
+ * every direct-call test/site that only wants the winner string (identity-
+ * combat, identity-contract, spell-utility, combat.test.js's non-fight()
+ * direct calls). See resolveInitiative's JSDoc for the Phase 51 rules
+ * change; this wrapper's contract (a string return) is unchanged.
+ */
+export function rollInitiative(state, rng) {
+  return resolveInitiative(state, rng)?.first;
 }
 
 /**
@@ -366,11 +403,11 @@ export function startCombat(state, wandering, forced, rng, events = []) {
 /**
  * fight(state, rng, events) — CMB-01 (Phase 31, user ruling 2026-09-16): the
  * FIGHT step split from startCombat at the roster/`pending` cut line —
- * resolves everything from `rollInitiative` onward, in the EXACT prototype
- * draw order: the two initiative d20s (`rollInitiative`, which also
- * consumes `c.foresight` — spent at Fight! time now, not at the moment the
- * encounter was glimpsed; a zero-draw, fixture-invisible timing shift), the
- * phobia trigger's conditional Hardiness `rng.d(2)` (same site, same
+ * resolves everything from `resolveInitiative` onward, in the EXACT
+ * prototype draw order: the two initiative d20s (`resolveInitiative`, which
+ * also consumes `c.foresight` — spent at Fight! time now, not at the moment
+ * the encounter was glimpsed; a zero-draw, fixture-invisible timing shift),
+ * the phobia trigger's conditional Hardiness `rng.d(2)` (same site, same
  * condition — now applies the Afraid PENALTY, see below, never a lost
  * action), `combatInDark` (0 draws), and the pre-emptive `foeTurn` only when
  * the foes win initiative (`foeTurn`'s own draws, unchanged internally).
@@ -379,19 +416,40 @@ export function startCombat(state, wandering, forced, rng, events = []) {
  * foes-first opener that triggers Afraid ticks it 2 -> 1 inside this same
  * call (the foeTurn tail runs before this call returns), exactly like a
  * pre-cast ward.
+ *
+ * DELIBERATE RULES CHANGE (Phase 51, INIT-01/INIT-02, 2026-09-20): this is
+ * now the ONLY place initiative is ever resolved for a fight (see
+ * resolveInitiative's own JSDoc) — `afterPlayerAction` no longer re-rolls.
+ * `combatJoined` is extended with the dice (`mine`/`theirs`) and, when an
+ * override decided the roll, `why`; and, for a single-foe encounter, `foe`
+ * (the live foe's name) so Plan 03's narration can say "Stalka Beast" instead
+ * of the generic "them". All three are additive — a plain win with no
+ * override and a foe group both omit the field entirely, so this event's
+ * shape for those cases (parity fixtures included) is unchanged apart from
+ * the always-present `mine`/`theirs`. `combatJoined` still fires exactly
+ * once per fight (structural: `fight()` runs once per encounter, gated by
+ * `C.pending`), so "the dice are shown once, not per round" falls out for
+ * free — no new pin is needed to prove it beyond the existing once-per-fight
+ * shape.
  */
 export function fight(state, rng, events = []) {
   const C = state.combat;
   if (!C || !C.pending) return events;
   const c = state.c;
   const type = C.type;
-  const first = rollInitiative(state, rng);
+  const { first, mine, theirs, why } = resolveInitiative(state, rng);
   delete C.pending; // the joined combat object's key set stays byte-identical to the prototype's — deleted, never set false
+  const live = liveFoes(state);
   // Phase 40 (SPELL-02): `senses` is additive — spread only when Sense
   // Presence is up AND it actually decided the roll (first === "you") — so a
   // plain combatJoined event (no senses, or senses that merely rode along
   // with a normal win) stays byte-identical to the pre-Phase-40 shape.
-  events.push({ type: "combatJoined", first, ...(c.senses && first === "you" ? { senses: true } : {}) });
+  events.push({
+    type: "combatJoined", first, mine, theirs,
+    ...(why ? { why } : {}),
+    ...(live.length === 1 ? { foe: live[0].name } : {}),
+    ...(c.senses && first === "you" ? { senses: true } : {}),
+  });
 
   // DELIBERATE RULES CHANGE (04.1-05/04.1-06, 2026-09-09, PHOBIA-01): the
   // phobia trigger fires on THREE mutually-exclusive conditions per
@@ -944,6 +1002,10 @@ export function flee(state, rng, events = []) {
     return events;
   }
   if (c.sub === "Cloaker") events.push({ type: "vanishDenied", reason: "seen" });
+  // Phase 51 (INIT-01): C.round now only ever advances in afterPlayerAction's
+  // trailing `round++` or flee's own `round++` below — initiative no longer
+  // re-rolls per round, so "round 1" still means exactly what it always did:
+  // before the first full cycle completes.
   if (C.tracked && C.round === 1) {
     // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): "you attack
     // creatures without question" — a Master of Arms gets no clean
@@ -1301,9 +1363,25 @@ export function endCombat(state, events = []) {
 /**
  * afterPlayerAction(state, rng, events) — the post-action turn sequence:
  * check for a cleared encounter, run the ally's turn, run the foe's turn,
- * then (if nobody died) advance the round and roll fresh initiative — with a
- * second foe turn if the foes win that reroll. Ports mazeworld.html
- * afterPlayerAction() (lines 2806-2822), minus paint()/save().
+ * then (if nobody died) advance the round — initiative holds for the whole
+ * fight (Phase 51). Ports mazeworld.html afterPlayerAction() (lines
+ * 2806-2822), minus paint()/save().
+ *
+ * DELIBERATE RULES CHANGE (Phase 51, INIT-01, 2026-09-20): this function
+ * used to re-roll initiative every round (canon p.24's "a fresh d20 each
+ * round") and, when the foes won that reroll, run a SECOND foe turn in the
+ * same cycle — meaning a foe could act at the end of one round and again at
+ * the start of the next with no player action in between. Both the re-roll
+ * and the pre-emptive foeTurn are gone: `C.first` is set once, in `fight()`,
+ * and holds for the whole encounter. A round is one full cycle (every
+ * entity acts once); the foe's turn already run above (line ~1327) is the
+ * ONLY foe turn this cycle, and `round++` below is the only round advance —
+ * it draws zero rng. The old "ROUND-COUNT FIX" comment that explained why
+ * the pre-emptive turn must not double-advance the counter is moot: there is
+ * no pre-emptive turn anymore. `C.round === 1` reads elsewhere (Court Mage's
+ * `courtMage` guard in resolveInitiative, `C.tracked && C.round === 1` at the
+ * flee site) are unaffected — they still see the single roll / round 1
+ * exactly as before.
  */
 export function afterPlayerAction(state, rng, events = []) {
   const C = state.combat;
@@ -1337,22 +1415,6 @@ export function afterPlayerAction(state, rng, events = []) {
   }
   if (!state.dead && state.combat) {
     state.combat.round++;
-    rollInitiative(state, rng); // p.24: a fresh d20 each round
-    if (state.combat.first === "foe") {
-      foeTurn(state, rng, events);
-      if (state.combat && !liveFoes(state).length) {
-        events.push({ type: "encounterCleared" });
-        endCombat(state, events);
-        return events;
-      }
-      // ROUND-COUNT FIX (user directive 2026-09-09): a round is ONE full cycle
-      // (every entity acts once), not per-attack. The foes winning this fresh
-      // initiative act FIRST in the round already begun by the `round++` above;
-      // that pre-emptive turn must NOT advance the counter a second time (it
-      // made the displayed round jump 1→3→5). The player's next action completes
-      // this round and the round++ at the top of the next afterPlayerAction
-      // advances it. round===1 mechanics are unaffected (697 only fired ≥ round 2).
-    }
   }
   return events;
 }

@@ -265,77 +265,40 @@ function runFullFight(seed, forced) {
 
 const FULL_FIGHTS = [
   { seed: 3, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 12, attacks: 1, outcome: "won" },
-  // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
-  // lost action"): was 87/8/won — this Fridgian Soldier's Beasts phobia now
-  // triggers Afraid (combat.afraid = 2) instead of freezing him for a lost
-  // first action; every `playerStrike` call is now a REAL (if weakened)
-  // swing, so the fight resolves in far fewer attacks than the old
-  // freeze-then-shake-off sequence needed. Re-measured live via runFullFight
-  // against the finished Phase 31 engine (never hand-computed).
-  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 36, attacks: 3, outcome: "won" },
-  // Phase 24 (2026-09-14, race pass): was 111/11/won — same cause (a
-  // Fridgian Pilfer): the corpse-whiff draw is gone and hide -2 shortens the
-  // fight by two rounds. Re-measured live. Unaffected by Phase 31 (this
-  // Pilfer has no Beasts phobia).
-  //
-  // Phase 39 (GEAR-01, 2026-09-18): this Fridgian Pilfer wields a Dagger,
-  // which now carries `crit: 2` (crits on a roll of 1 OR 2, not just 1) —
-  // the whole point of the precise-blade axis. A Thief's backstab/Stealth
-  // openers already forced crits on the opening swings, but every LATER
-  // swing now crits roughly twice as often too, so this fight resolves in
-  // under half the attacks. Re-measured live via this file's own
-  // runFullFight, never hand-computed — an intentional, escalated,
-  // rationale-bearing divergence, not a regression.
-  //
-  // 260918-w4n (use-activated-only, user ruling 2026-09-18): this Pilfer
-  // carries a Cloak of Armor in the BAG (the same item the combat/flee
-  // parity fixture declares a divergence for). Under the OLD two-path
-  // eff() a bagged item on a legacy (no c.worn) character summed exactly
-  // like a worn one — every hit soaked as magical Plate (AR 15) for free.
-  // That auto-benefit is retired: the cloak now grants nothing unless worn
-  // AND used, so this Pilfer fights un-armoured and the encounter runs far
-  // longer (4 -> 10 attacks, 49 -> 89 draws) before the same two foes still
-  // fall. Re-measured live via this file's own runFullFight.
-  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 89, attacks: 10, outcome: "won" },
-  // Phase 31 (2026-09-16, CMB-01): was 66/10/won (Phase 27's Ned re-measure).
-  // Not a phobia trigger — this Con Artist's own level-1-foe escape roll
-  // (rng.d(6), still inside the encounter step) now lands BEFORE the two
-  // initiative d20s instead of after, because `fight` (which now owns
-  // rollInitiative) runs strictly AFTER the Knight/Con Artist/Court Mage
-  // foe-removal loop completes — the same structural rng-order change
-  // FIXTURE-INVENTORY.md's Phase 31 section documents for the `parley`
-  // parity scenario (same seed, same character). Re-measured live.
-  { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 52, attacks: 8, outcome: "won" },
-  // Phase 31 (2026-09-16, CMB-01): this Wilmsry Illusionist's Beasts phobia
-  // ALSO triggers Afraid (same trigger as seed 14) — re-measured live and
-  // found, by coincidence, byte-identical to the pre-Phase-31 total (32/4).
-  //
-  // Phase 39 (GEAR-05, 2026-09-18): the Shriek's kill drops treasure via
-  // killFoe -> rollTreasureItem, which now runs the derived tool-loot roll
-  // (engine/items.js) BEFORE the normal d(10) table — it fires for this
-  // exact rng cursor and drops a Torch instead of the pre-plan roll's
-  // multi-draw table pick, so the fight resolves in fewer total main-rng
-  // draws (32 -> 27); the roster/attack count/outcome are all unaffected
-  // (still Shriek/4/won — the derived stream never touches combat draws,
-  // only the one treasure roll at kill time). Re-measured live via this
-  // file's own runFullFight, never hand-computed.
-  { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 27, attacks: 4, outcome: "won" },
-  // Phase 24 (2026-09-14, race pass): new row. A plain Human Apprentice
-  // (unaffected by the race pass — no Fridgian/Dwarven mechanic in play),
-  // added to restore death-path FID-02 coverage now that seed 14's Fridgian
-  // no longer dies; pairs with the parity fixture's original lose-apprentice
-  // scenario (same seed, same roster, same reason) — that fixture coverage
-  // has since moved to `lose-plain` (seed 1119, Phase 31, see below) because
-  // this Apprentice ALSO fears Beasts and is now a declared parity
-  // divergence. Phase 31 (2026-09-16, CMB-01): re-measured live — was
-  // 119/14/died; the hero still dies (attacks unchanged at 14), only the
-  // draw total shifts (119 -> 121) from action 1 onward.
-  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 121, attacks: 14, outcome: "died" },
-  // Phase 31 (2026-09-16, CMB-01): restores the byte-identical death-path
-  // FULL_FIGHTS row the Afraid ruling took from seed 127 (a plain Human
-  // Cutthroat, no Beasts phobia — pairs with the parity fixture's new
-  // `lose-plain` scenario, same seed, same roster, same reason).
-  { seed: 1119, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 51, attacks: 7, outcome: "died" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live via runFullFight against
+  // the finished engine (never hand-computed) — total draws happens to stay
+  // 36 (the removed re-roll's draws and the shifted-onward strike/soak rolls
+  // net out at this exact cursor), but the attack count moves 3 -> 4: the foe
+  // no longer gets a same-cycle second turn, which reshuffles every
+  // downstream d20 in the shared rng stream.
+  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 36, attacks: 4, outcome: "won" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live — 89/10 -> 88/14. Losing
+  // the per-round re-roll (and the pre-emptive second foeTurn it could
+  // trigger) reshuffles every downstream draw in the shared rng stream, so
+  // both the draw total and the attack count needed to clear the same two
+  // foes move together; the roster is unaffected.
+  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 88, attacks: 14, outcome: "won" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live — 52/8 -> 29/5, same
+  // rng-stream-reshuffle cause as every other row here.
+  { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 29, attacks: 5, outcome: "won" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live — 27/4 -> 21/6.
+  { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 21, attacks: 6, outcome: "won" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live — this fight FLIPS from
+  // died (121/14) to won (45/7). The foe no longer gets a same-cycle second
+  // turn (the removed pre-emptive foeTurn in afterPlayerAction), so this
+  // Fridgian Pilfer's cumulative incoming damage drops enough to survive —
+  // exactly the outcome INIT-01 is meant to produce (no more "two foe turns
+  // back to back"). Not a regression; a measured consequence of the rules
+  // change, recorded here per the plan's "measured, never hand-typed" rule.
+  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 45, attacks: 7, outcome: "won" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live — this fight ALSO flips
+  // died (51/7) -> won (38/11), same cause as seed 127 above. This seed is
+  // one of the MOVED SET's `lose-plain` parity fixture holders (a fixed,
+  // short action-path replay, not this full-natural-resolution loop) — see
+  // test/parity/FIXTURE-INVENTORY.md's Phase 51 section for that fixture's
+  // own declared divergence; this row is a SEPARATE measurement (play to
+  // natural resolution, not a bounded script) and both are expected to move.
+  { seed: 1119, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 38, attacks: 11, outcome: "won" },
 ];
 
 // --- Section 3: Phase 18 seam + slow — gated draws (D-13) ------------------
@@ -367,12 +330,15 @@ test("CANON-01: the same strike on an sp.ar foe whose soak roll fails draws exac
   assert.equal(events.some((e) => e.type === "foeArmorSoaked"), false);
 });
 
-test("CANON-01: a soaked strike costs one d20 and the fight continues — 6 draws for the whole action", () => {
+test("CANON-01: a soaked strike costs one d20 and the fight continues — 4 draws for the whole action", () => {
   const foe = fixedFoe({ wp: 10, maxWP: 10, sp: { ar: 12 } });
   const state = fixedState({ combat: fixedCombat([foe]) });
-  const rng = countingRng(fakeRng([3, 4, 5, 7, 15, 10]));
+  // Phase 51 (INIT-01, 2026-09-20): no round-advance draws — initiative is
+  // rolled once, at fight()'s Fight! gate, never per round; the dead
+  // trailing `15, 10` pair (afterPlayerAction's old re-roll) is gone.
+  const rng = countingRng(fakeRng([3, 4, 5, 7]));
   const events = playerStrike(state, rng, []);
-  assert.equal(rng.draws, 6, "strike, damage, soak, foe miss, initiative x2");
+  assert.equal(rng.draws, 4, "strike, damage, soak, foe miss");
   assert.deepEqual(events.map((e) => e.type), ["foeArmorSoaked", "foeMissed"]);
   assert.equal(foe.wp, 10);
 });
@@ -402,40 +368,46 @@ test("CANON-05: a slow foe adds exactly one strike die — lethal 7 vs baseline 
   assert.equal(struck.roll, 2);
 });
 
-test("CANON-05: a slow all-miss action draws 5 vs the non-slow 4", () => {
+test("CANON-05: a slow all-miss action draws 3 vs the non-slow 2", () => {
+  // Phase 51 (INIT-01, 2026-09-20): no round-advance draws — initiative is
+  // rolled once, at fight()'s Fight! gate, never per round; the dead
+  // trailing `15, 10` pair (afterPlayerAction's old re-roll) is gone.
   const slowFoe = fixedFoe({ wp: 10, maxWP: 10, sp: { slow: true } });
   const slowState = fixedState({ combat: fixedCombat([slowFoe]) });
-  const slowRng = countingRng(fakeRng([7, 9, 7, 15, 10]));
+  const slowRng = countingRng(fakeRng([7, 9, 7]));
   playerStrike(slowState, slowRng, []);
-  assert.equal(slowRng.draws, 5);
+  assert.equal(slowRng.draws, 3);
 
   const plainFoe = fixedFoe({ wp: 10, maxWP: 10 });
   const plainState = fixedState({ combat: fixedCombat([plainFoe]) });
-  const plainRng = countingRng(fakeRng([7, 7, 15, 10]));
+  const plainRng = countingRng(fakeRng([7, 7]));
   playerStrike(plainState, plainRng, []);
-  assert.equal(plainRng.draws, 4);
+  assert.equal(plainRng.draws, 2);
 });
 
-test("CANON-03/04 are pure arithmetic: halfDmg and the Trachea row add zero draws (5 each, same as a plain non-lethal hit)", () => {
+test("CANON-03/04 are pure arithmetic: halfDmg and the Trachea row add zero draws (3 each, same as a plain non-lethal hit)", () => {
+  // Phase 51 (INIT-01, 2026-09-20): no round-advance draws — initiative is
+  // rolled once, at fight()'s Fight! gate, never per round; the dead
+  // trailing `15, 10` pair (afterPlayerAction's old re-roll) is gone.
   const halfDmgFoe = fixedFoe({ wp: 20, maxWP: 20, sp: { halfDmg: true } });
   const halfDmgState = fixedState({ combat: fixedCombat([halfDmgFoe]) });
-  const halfDmgRng = countingRng(fakeRng([3, 4, 7, 15, 10]));
+  const halfDmgRng = countingRng(fakeRng([3, 4, 7]));
   const halfDmgEvents = playerStrike(halfDmgState, halfDmgRng, []);
-  assert.equal(halfDmgRng.draws, 5);
+  assert.equal(halfDmgRng.draws, 3);
   assert.ok(halfDmgEvents.some((e) => e.type === "struck" && e.dmg === 3));
 
   const tracheaFoe = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
   const tracheaState = fixedState({ combat: fixedCombat([tracheaFoe]) });
-  const tracheaRng = countingRng(fakeRng([3, 4, 7, 15, 10]));
+  const tracheaRng = countingRng(fakeRng([3, 4, 7]));
   const tracheaEvents = playerStrike(tracheaState, tracheaRng, []);
-  assert.equal(tracheaRng.draws, 5);
+  assert.equal(tracheaRng.draws, 3);
   assert.ok(tracheaEvents.some((e) => e.type === "struck" && e.dmg === 10));
 
   const plainFoe = fixedFoe({ wp: 20, maxWP: 20 });
   const plainState = fixedState({ combat: fixedCombat([plainFoe]) });
-  const plainRng = countingRng(fakeRng([3, 4, 7, 15, 10]));
+  const plainRng = countingRng(fakeRng([3, 4, 7]));
   const plainEvents = playerStrike(plainState, plainRng, []);
-  assert.equal(plainRng.draws, 5);
+  assert.equal(plainRng.draws, 3);
   assert.ok(plainEvents.some((e) => e.type === "struck" && e.dmg === 5));
 });
 
@@ -631,7 +603,12 @@ for (const row of GATED_DRAWS) {
 // Phase 39 (GEAR-05, 2026-09-18): seed 8's total moved 32 -> 27 (the Shriek's
 // kill now drops a Torch via the new derived tool-loot roll instead of the
 // pre-plan multi-draw table pick — see the FULL_FIGHTS row's own comment).
-test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/89/52/27/121/51) are measured-current and no fixture-roster creature carries a kit", () => {
+//
+// Phase 51 (INIT-01, 2026-09-20): initiative once per fight reshuffles the
+// shared rng stream for every multi-round row — re-measured live, totals
+// 12/36/89/52/27/121/51 -> 12/36/88/29/21/45/38 (seeds 127 and 1119 also flip
+// from died to won — see the FULL_FIGHTS array's own per-row comments).
+test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/88/29/21/45/38) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);
@@ -704,3 +681,29 @@ for (const row of OPENER_DRAWS) {
     assert.equal(rng.draws, row.draws, `seed ${row.seed}/${row.forced} opener draw total`);
   });
 }
+
+// --- Section 6: Phase 51 (INIT-01) — initiative once per fight -------------
+//
+// SC1: `resolveInitiative`/`rollInitiative` fires exactly once per combat
+// (from `fight()` only); the per-round re-roll that used to live at the top
+// of `afterPlayerAction` (and its pre-emptive second foeTurn) is gone. This
+// micro pin proves the round advance itself draws ZERO rng: a missed hero
+// strike followed by one foe miss is exactly 2 draws for the whole
+// `playerStrike` call (strike to-hit + foe to-hit — no third/fourth draw for
+// a re-roll that no longer exists), `state.combat.round` goes 1 -> 2, and a
+// third `d()` on the same fakeRng throws (the sequence is exhausted, proving
+// nothing else drew).
+
+test("INIT-01 (SC1): afterPlayerAction's round advance draws ZERO rng — a missed strike + one foe miss is exactly 2 draws total, round goes 1 -> 2", () => {
+  const foe = fixedFoe({ wp: 10, maxWP: 10 });
+  const state = fixedState({ combat: fixedCombat([foe]) });
+  const rng = countingRng(fakeRng([20, 20])); // hero strike misses (20), foe swing misses (20)
+  const events = playerStrike(state, rng, []);
+  assert.equal(rng.draws, 2, "strike miss + foe miss — no round-advance draws");
+  assert.deepEqual(
+    events.map((e) => e.type),
+    ["strikeMissed", "foeMissed"],
+  );
+  assert.equal(state.combat.round, 2, "afterPlayerAction's round++ still runs");
+  assert.throws(() => rng.d(1), /sequence exhausted/, "a third draw must never happen — initiative is rolled once, not per round");
+});

@@ -157,6 +157,12 @@ test("knightFacesBigFoe: true only for a Knight with a live maxWP >= 20 foe", ()
 
 // --- Court Mage: foes act first in round one only ---------------------------
 
+// Phase 51 (INIT-01): `fight()` is now the only call site, and it only ever
+// sees `C.round === 1` (initiative is rolled once, never re-rolled at a
+// later round) — the "round 2+" branch below is therefore unreachable via
+// the real game flow. `rollInitiative`'s own function-level contract (it
+// still checks `C.round === 1` exactly, for any caller) is unchanged and
+// still worth pinning directly, so this direct-call test is kept as-is.
 test("rollInitiative: a Court Mage's foes act first in round one only, unless foreseen", () => {
   const state = fixedState({ c: { sub: "Court Mage" } });
   state.combat = fixedCombat([fixedFoe()], { round: 1 });
@@ -164,7 +170,7 @@ test("rollInitiative: a Court Mage's foes act first in round one only, unless fo
 
   const state2 = fixedState({ c: { sub: "Court Mage" } });
   state2.combat = fixedCombat([fixedFoe()], { round: 2 });
-  assert.equal(rollInitiative(state2, fakeRng([20, 1])), "you", "round 2+ rolls normally");
+  assert.equal(rollInitiative(state2, fakeRng([20, 1])), "you", "round 2+ rolls normally — unreachable from fight() post-Phase-51, but the function contract still holds for any direct caller");
 
   const state3 = fixedState({ c: { sub: "Court Mage", foresight: true } });
   state3.combat = fixedCombat([fixedFoe()], { round: 1 });

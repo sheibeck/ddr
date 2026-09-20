@@ -26,6 +26,7 @@ const ECONOMY_FIXTURE = readFixture("action-script.economy.json");
 const ENCOUNTERS_FIXTURE = readFixture("action-script.encounters.json");
 
 const SCAN_OUTPUT_PATH = path.resolve(__dirname, "..", "..", "tools", "worn-fixture-scan-output.txt");
+const INITIATIVE_SCAN_OUTPUT_PATH = path.resolve(__dirname, "..", "..", "tools", "initiative-fixture-scan-output.txt");
 
 /**
  * collectRecords() — walks every fixture file and returns a flat array of
@@ -140,5 +141,31 @@ test("HEDGE-03: the holders declaring worn are exactly the scan's MOVED SET", ()
   const declared = new Set(RECORDS.filter(({ record }) => Array.isArray(record.fields) && record.fields.includes("worn")).map(({ holderId }) => holderId));
 
   assert.ok(declared.size > 0, "expected at least one holder to declare worn");
+  assert.deepStrictEqual([...declared].sort(), [...moved].sort());
+});
+
+test("INIT-01: the holders declaring Phase 51 are exactly the initiative scan's MOVED SET", () => {
+  const scanOutput = fs.readFileSync(INITIATIVE_SCAN_OUTPUT_PATH, "utf8");
+  const movedSetLine = scanOutput.split("\n").find((line) => /^MOVED SET \(\d+\): /.test(line));
+  assert.ok(movedSetLine, "tools/initiative-fixture-scan-output.txt must carry a MOVED SET line");
+
+  const match = movedSetLine.match(/^MOVED SET \((\d+)\): (.*)$/);
+  assert.ok(match, "MOVED SET line did not match the expected format");
+  const [, countStr, idList] = match;
+  const moved = new Set(
+    idList
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  assert.equal(moved.size, Number(countStr), "MOVED SET line's declared count does not match its own id list length");
+
+  const declared = new Set(
+    RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("51")).map(
+      ({ holderId }) => holderId,
+    ),
+  );
+
+  assert.ok(declared.size > 0, "expected at least one holder to declare Phase 51");
   assert.deepStrictEqual([...declared].sort(), [...moved].sort());
 });

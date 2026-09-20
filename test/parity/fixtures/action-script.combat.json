@@ -41,17 +41,17 @@
         { "type": "attack" }
       ],
       "divergence": {
-        "phase": "24+31",
-        "requirements": ["FID-07", "IDENT-08", "CMB-01"],
+        "phase": "24+31+51",
+        "requirements": ["FID-07", "IDENT-08", "CMB-01", "INIT-01"],
         "kind": "action-path",
         "fromAction": 0,
         "fields": ["wp", "sp", "kills", "rations"],
         "before": { "wp": 0, "sp": 5, "kills": 1, "rations": 7 },
-        "after": { "wp": 51, "sp": 45, "kills": 2, "rations": 8 },
+        "after": { "wp": 50, "sp": 45, "kills": 2, "rations": 8 },
         "stateFields": ["dead"],
         "stateBefore": { "dead": true },
         "stateAfter": { "dead": false },
-        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward (Phase 24) and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): this Fridgian Soldier's Beasts phobia triggers at Fight!. The prototype froze him and spent action 1 shaking it off (no strike die drawn); the engine sets combat.afraid = 2 instead and action 1 is a real strike at need - 3 and half damage, so the rng draw sequence diverges from action 1 onward -- on top of the Phase 24 frenzy/hide divergence above. fromAction moves from 1 to 0 because the fight-step combat object already differs (afraid counter vs freeze flag) the instant Fight! resolves. After re-measured live on 2026-09-16 (wp 22->51, sp 30->45; the hero still survives)."
+        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward (Phase 24) and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): this Fridgian Soldier's Beasts phobia triggers at Fight!. The prototype froze him and spent action 1 shaking it off (no strike die drawn); the engine sets combat.afraid = 2 instead and action 1 is a real strike at need - 3 and half damage, so the rng draw sequence diverges from action 1 onward -- on top of the Phase 24 frenzy/hide divergence above. fromAction moves from 1 to 0 because the fight-step combat object already differs (afraid counter vs freeze flag) the instant Fight! resolves. After re-measured live on 2026-09-16 (wp 22->51, sp 30->45; the hero still survives). Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from the first live-fight round advance (action 1) onward the engine draws two fewer d20 per round and never gives the foe two turns back to back. Knight-vs-big-foe narrows to the opener (evaluated once at the single roll). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value (wp 51->50; the hero still survives, one hp lower)."
       },
       "chargenDivergence": {
         "phase": 38,
@@ -83,17 +83,17 @@
         { "type": "attack" }
       ],
       "divergence": {
-        "phase": "31",
-        "requirements": ["CMB-01"],
+        "phase": "31+51",
+        "requirements": ["CMB-01", "INIT-01"],
         "kind": "action-path",
         "fromAction": 0,
         "fields": ["wp", "sp", "gold", "kills", "rations"],
         "before": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 4 },
-        "after": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 4 },
+        "after": { "wp": 23, "sp": 40, "gold": 52, "kills": 2, "rations": 6 },
         "stateFields": ["dead"],
         "stateBefore": { "dead": true },
-        "stateAfter": { "dead": true },
-        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the new lose-plain scenario (seed 1119, below). Re-measured live on 2026-09-16: the hero still dies (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differs."
+        "stateAfter": { "dead": false },
+        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the lose-plain scenario (seed 1119, below), which is itself a declared divergence again as of Phase 51 (see its own record). Phase 31 alone (re-measured 2026-09-16): the hero still died (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differed. Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 0 onward the engine draws two fewer d20 per round and never gives the foe two turns back to back -- with roughly a third less incoming damage per exchange, this Apprentice now SURVIVES the same 15-action script and clears the encounter (wp 0->23, sp 0->40, gold 50->52, kills 0->2, rations 4->6, dead true->false). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value."
       },
       "chargenDivergence": {
         "phase": 40,
@@ -117,6 +117,19 @@
         { "type": "attack" },
         { "type": "attack" }
       ],
+      "divergence": {
+        "phase": "51",
+        "requirements": ["INIT-01"],
+        "kind": "action-path",
+        "fromAction": 2,
+        "fields": ["wp", "sp", "gold", "kills", "rations"],
+        "before": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 5 },
+        "after": { "wp": 34, "sp": 0, "gold": 50, "kills": 0, "rations": 5 },
+        "stateFields": ["dead"],
+        "stateBefore": { "dead": true },
+        "stateAfter": { "dead": false },
+        "rationale": "This scenario was added in Phase 24/31 (a plain Human Cutthroat, no Beasts phobia) to restore byte-identical death-path parity coverage after the Afraid ruling took it from lose-apprentice -- it carried NO divergence record from Phase 31 through Phase 50. Phase 51 (INIT-01, 2026-09-20) takes that byte-identical coverage too: initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 2 onward (the first action where the two sides' combatComparable diverges, measured -- not action 1, since this scenario's action-1 exchange happens not to shift the rng cursor) the engine draws two fewer d20 per round and never gives the foe two turns back to back. With roughly a third less incoming damage per exchange, this Cutthroat now SURVIVES the same 8-action script and clears the encounter (wp 0->34, dead true->false; sp/gold/kills/rations are unaffected -- the fight ends on the kill's own payout draw, not a further action). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. No other scenario in this fixture was previously byte-identical and is now moved by Phase 51 -- this is the one new holder the MOVED SET names beyond lose/lose-apprentice."
+      },
       "chargenDivergence": {
         "phase": "38+45",
         "requirements": ["ABIL-02", "HEDGE-03"],
@@ -130,7 +143,7 @@
           "items": [],
           "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
         },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The action path stays byte-identical (this scenario carries NO divergence record — the lose-plain pin actionPathDivergenceOf === null still holds). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. Phase 51 (INIT-01, 2026-09-20) gave this scenario its own action-path divergence (see above) -- this chargen-time record is unaffected. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
       }
     },
     {

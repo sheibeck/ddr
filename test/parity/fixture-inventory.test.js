@@ -70,8 +70,11 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
     // Phase 31 (2026-09-16, CMB-01): added because the Afraid ruling (phobia
     // is a penalty, not a lost action) turned `lose-apprentice` into a
     // declared action-path divergence — this row (a plain Human Cutthroat
-    // with no Beasts phobia, seed 1119) restores byte-identical death-path
-    // coverage (see FIXTURE-INVENTORY.md's Phase 31 section).
+    // with no Beasts phobia, seed 1119) restored byte-identical death-path
+    // coverage through Phase 50 (see FIXTURE-INVENTORY.md's Phase 31
+    // section). Phase 51 (INIT-01, 2026-09-20): declared from Phase 51 on —
+    // initiative once per fight moves every multi-round fixture, this one
+    // included; the roster below is unchanged.
     {
       fixture: "action-script.combat.json",
       scenario: "lose-plain",

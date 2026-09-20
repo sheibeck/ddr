@@ -324,10 +324,9 @@ test("castSpell: an intel-12 foe resists Weaken on a d20 of 11 — spellResisted
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // 11 -> resistRoll resists (11 < 12); tail 7/15/10 = foe miss + two
-  // initiative draws inside afterPlayerAction (traced against this exact
-  // fixture — exactly 4 draws total, no more).
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([11, 7, 15, 10]), []);
+  // 11 -> resistRoll resists (11 < 12); tail 7 = foe miss — no round-advance
+  // draws, initiative is rolled once, Phase 51 (exactly 2 draws total).
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([11, 7]), []);
   assert.ok(
     events.some((e) => e.type === "spellResisted" && e.target === "Target" && e.spell === "Weaken" && e.roll === 11 && e.intel === 12),
   );
@@ -344,8 +343,8 @@ test("castSpell: a d20 of 12 fails to resist — resistFailed { target, roll: 12
   });
   // 12 -> resistRoll fails to resist (12 is NOT < 12); Phase 40 (SPELL-01)
   // adds ONE d4 draw for the new spell:weaken duration (2 -> rounds 3)
-  // between the resist roll and the same 7/15/10 tail.
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 2, 7, 15, 10]), []);
+  // between the resist roll and the same foe-miss tail (7) — no round-advance draws, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 2, 7]), []);
   assert.ok(events.some((e) => e.type === "resistFailed" && e.target === "Target" && e.roll === 12));
   const weakened = events.find((e) => e.type === "weakened");
   assert.ok(weakened);
@@ -362,8 +361,8 @@ test("castSpell: an intel-1 foe never triggers a resist roll (the cast-damage fi
   // No leading d20 in the sequence at all — a resist draw here would throw
   // (fakeRng underflow), proving zero draws for an intel-below-12 target.
   // Phase 40 (SPELL-01) adds the ONE d4 duration draw (3 -> rounds 4) ahead
-  // of the same 7/15/10 tail.
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([3, 7, 15, 10]), []);
+  // of the same foe-miss tail (7) — no round-advance draws, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([3, 7]), []);
   assert.ok(!events.some((e) => e.type === "spellResisted"));
   assert.ok(!events.some((e) => e.type === "resistFailed"));
   const weakened = events.find((e) => e.type === "weakened");
@@ -468,9 +467,9 @@ test("castSpell: a Cleric's Fireball deals double to a Demons foe (CANON-04, D-1
     combat: fixedCombat([foe]),
   });
   // toHit d8=1 (Cleric offense bonus 0, 1-0<=4 hits); dmg 2d10+4 = 5+5+4=14,
-  // doubled to 28 vs Demons; then one foe-turn miss (7) and fresh initiative
-  // (15 vs 10 -> "you") — 6 draws total, no armor-soak draw for a spell.
-  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  // doubled to 28 vs Demons; then one foe-turn miss (7) — no round-advance
+  // draws, Phase 51 — 4 draws total, no armor-soak draw for a spell.
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
   assert.equal(hit.dmg, 28, "Cleric spell damage doubles vs Demons");
   assert.equal(foe.wp, 12);
@@ -485,7 +484,7 @@ test("castSpell: a Wizard's Fireball does NOT double against Demons (Cleric-only
   });
   // toHit d8=1 (Wizard offense bonus 3, 1-3<=4 hits); same 14 raw damage,
   // undoubled (Wizard is not a Cleric).
-  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
   assert.equal(hit.dmg, 14, "no Cleric-only doubling for a Wizard");
   assert.equal(foe.wp, 26);
@@ -497,7 +496,7 @@ test("castSpell: any caster's Fireball doubles against Walking Dead (magic x2, D
     c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
   });
-  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
   assert.equal(hit.dmg, 28, "any spell doubles vs Walking Dead, not just Cleric-cast");
   assert.equal(foe.wp, 12);
@@ -511,7 +510,7 @@ test("castSpell: a spell never draws the armor soak (D-06) — Fireball vs sp.ar
   });
   // The same 6-draw sequence as above — a 7th draw (the armor-soak d20)
   // would throw fakeRng's underflow error if the spell ever reached it.
-  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7, 15, 10]), []);
+  const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
   assert.equal(hit.dmg, 14, "spells bypass foe armor entirely");
   assert.equal(foe.wp, 26);
@@ -527,8 +526,8 @@ test("castSpell: Earthquake is applied per foe — Walking Dead takes 2x, Humans
   });
   // dmg 3d10+8: 10+10+10+8=38 (mult = max(1,4-4)=1); Walking Dead doubles to
   // 76 (wp 24), Humans stays at 38 (wp 62); then two foe-turn misses (7, 7)
-  // and fresh initiative (15 vs 10 -> "you").
-  const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 7, 7, 15, 10]), []);
+  // — no round-advance draws, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 7, 7]), []);
   assert.equal(wd.wp, 24, "Walking Dead took the doubled 76");
   assert.equal(humans.wp, 62, "Humans took the unmultiplied 38");
   assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 38), "the event reports the single rolled base");
@@ -544,8 +543,8 @@ test("castSpell: Fireballs (volley) totals APPLIED damage — each ball on a hal
   });
   // n=d8=2 balls; ball 1 d10=5 -> 5+2=7 -> ceil(7/2)=4; ball 2 d10=3 -> 3+2=5
   // -> ceil(5/2)=3; total APPLIED = 7 (not the 12 raw); then one foe-turn
-  // miss (7) and fresh initiative (15 vs 10 -> "you").
-  const events = castSpell(state, SPELL_IDX.Fireballs, fakeRng([2, 5, 3, 7, 15, 10]), []);
+  // miss (7) — no round-advance draws, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Fireballs, fakeRng([2, 5, 3, 7]), []);
   const volley = events.find((e) => e.type === "volley");
   assert.deepStrictEqual(volley, { type: "volley", rolls: 2, totalDamage: 7 });
   assert.equal(foe.wp, 43);
@@ -560,8 +559,8 @@ test("castSpell: Insanity r=2 — the foe-on-foe blow is physical and can be soa
   });
   // d6=2 (r=2, the foe-on-foe blow); d = 1*1 + d6=4 = 5; armor-soak d20=5,
   // 5<=12 soaks entirely -> no insaneStruckAlly, B.wp untouched; then two
-  // foe-turn misses (7, 7) and fresh initiative (15 vs 10 -> "you").
-  const events = castSpell(state, SPELL_IDX.Insane, fakeRng([2, 4, 5, 7, 7, 15, 10]), []);
+  // foe-turn misses (7, 7) — no round-advance draws, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Insane, fakeRng([2, 4, 5, 7, 7]), []);
   assert.ok(events.some((e) => e.type === "foeArmorSoaked" && e.name === "B" && e.amount === 5));
   assert.ok(!events.some((e) => e.type === "insaneStruckAlly"), "a fully-soaked blow reports no insaneStruckAlly");
   assert.equal(b.wp, 10, "the soaked blow left B untouched");
@@ -572,7 +571,7 @@ test("castSpell: Insanity r=2 — the foe-on-foe blow is physical and can be soa
     c: { sub: "Wizard", grimoire: ["Insane"], level: 2 },
     combat: fixedCombat([a2, b2], { target: 0 }),
   });
-  const controlEvents = castSpell(control, SPELL_IDX.Insane, fakeRng([2, 4, 7, 7, 15, 10]), []);
+  const controlEvents = castSpell(control, SPELL_IDX.Insane, fakeRng([2, 4, 7, 7]), []);
   assert.ok(controlEvents.some((e) => e.type === "insaneStruckAlly" && e.target === "B" && e.dmg === 5));
   assert.equal(b2.wp, 5, "the unsoaked blow applied the full 5");
 });

@@ -247,9 +247,14 @@ const FULL_FIGHT_PINS = {
   // attack sooner) but its outcome is unchanged — an intentional,
   // escalated, rationale-bearing divergence per this file's own header
   // rule, not a regression.
+  // Phase 51 (INIT-01, 2026-09-20): initiative once per fight reshuffles the
+  // shared rng stream for every multi-round fight — re-measured live via
+  // this file's own runFullFight, never hand-computed. humans-t2 (a
+  // one-attack fight) and walking-dead-t5 (a one-attack fight) are
+  // unaffected, confirmed by re-measuring both.
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
-  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 45, attacks: 4, outcome: "won" },
-  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 51, attacks: 3, outcome: "won" },
+  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 4, outcome: "won" },
+  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 41, attacks: 3, outcome: "won" },
   "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 23, attacks: 1, outcome: "died" },
   // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
   // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
@@ -267,7 +272,10 @@ const FULL_FIGHT_PINS = {
   // "won" too — the Afraid penalty still halves the hero's damage, but even
   // halved, the heavier 2d6+2 base now outpaces the Stalka Beast's own
   // damage. Re-measured live, not assumed.
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 67, attacks: 4, outcome: "won" },
+  // Phase 51 (INIT-01, 2026-09-20): re-measured live — 67/4 -> 73/6. The foe
+  // no longer gets a same-cycle second turn, reshuffling every downstream
+  // draw in the shared rng stream; still resolves "won", one attack later.
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 73, attacks: 6, outcome: "won" },
 };
 
 const PER_VISIT_PINS = {

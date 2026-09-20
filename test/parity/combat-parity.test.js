@@ -288,6 +288,16 @@ for (const scenario of FIXTURE.scenarios) {
     // FID-07: when an action-path record is declared, both sides' end state
     // must equal the record's own before/after — machine-checked, not merely
     // stripped. No-op (both `ctx`/`engineState` untouched) when pathDiv is null.
+    //
+    // Phase 51 (INIT-01, 2026-09-20): declared a NEW action-path record on
+    // `lose-plain` — every multi-round fight now diverges from the first
+    // live-fight round advance by construction (initiative is rolled once,
+    // never re-rolled per round), so no multi-round death-path fixture stays
+    // byte-identical. Measured, not assumed: this Cutthroat's outcome itself
+    // flips (fewer consecutive foe turns -> it now clears the encounter
+    // instead of dying) — the record's `stateAfter.dead: false` through
+    // `declaredEndDiffs` is what actually pins the outcome now, machine-
+    // checked exactly like `lose`/`lose-apprentice` above.
     if (pathDiv) {
       const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
       assert.equal(ends.before, null, `scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
@@ -306,13 +316,6 @@ for (const scenario of FIXTURE.scenarios) {
       } else if (scenario.name === "lose") {
         assert.equal(engineState.dead, true);
         assert.ok(allEventTypes.includes("died"));
-      } else if (scenario.name === "lose-plain") {
-        // Phase 31 (CMB-01): restores byte-identical death-path parity
-        // coverage the Afraid ruling took from lose-apprentice — never
-        // declare a divergence record on this scenario.
-        assert.equal(engineState.dead, true);
-        assert.ok(allEventTypes.includes("died"));
-        assert.equal(actionPathDivergenceOf(scenario), null, "lose-plain must stay byte-identical — never declare a record on it");
       } else if (scenario.name === "flee") {
         assert.equal(engineState.combat, null, "fleeing ends combat");
         assert.ok(allEventTypes.includes("fled"));

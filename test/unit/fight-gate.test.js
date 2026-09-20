@@ -123,7 +123,7 @@ test("(b) fight draws exactly two (initiative), pushes combatJoined, clears pend
   assert.throws(() => rng.d(1), /sequence exhausted/, "fight drew exactly two — a third draw throws");
   assert.deepStrictEqual(
     events.find((e) => e.type === "combatJoined"),
-    { type: "combatJoined", first: "you" },
+    { type: "combatJoined", first: "you", mine: 15, theirs: 5, why: "foreseen", foe: "Bat/Rat" },
   );
   assert.equal("pending" in state.combat, false, "pending is deleted, never set false");
   assert.equal(state.c.foresight, false, "foresight is consumed at Fight! time");

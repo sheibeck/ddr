@@ -139,15 +139,15 @@ test("Helm of Knowledge grants Language: worn AND used makes a TALKATIVE encount
 // 260918-w4n: worn AND used suppresses the crit; worn-but-unused does not.
 
 test("Cloak of Strength suppresses the player's own critical (a natural 1 no longer doubles damage) only worn AND used", () => {
-  // Shared rng sequence: strike roll = 1 (crit), weapon d6 = 5, foe miss roll,
-  // then a fresh initiative (mine>=theirs -> "you", no bonus foeTurn).
-  const seq = () => [1, 5, 10, 20, 1];
+  // Shared rng sequence: strike roll = 1 (crit), weapon d6 = 5, foe miss roll
+  // — no round-advance draws, initiative is rolled once, Phase 51.
+  const seq = () => [1, 5, 10];
   // Phase 24 (IDENT-05) collision-avoidance: this file's fixedFighter
-  // defaults to sub: "Knight" and fixedFoe defaults to maxWP: 100 — with
-  // both new Knight-big-foe rule in play, a live maxWP >= 20 foe would force
-  // "fresh initiative" above to always land on "foe" instead of "you",
-  // triggering an extra foeTurn this rng sequence doesn't budget for.
-  // maxWP: 19 keeps the crit/soak math this test actually proves untouched.
+  // defaults to sub: "Knight" and fixedFoe defaults to maxWP: 100 — the
+  // Knight-big-foe rule would otherwise force a live maxWP >= 20 foe to win
+  // the (now once-per-fight) initiative roll, and this test never calls
+  // fight() to consume that roll's own draws. maxWP: 19 keeps the crit/soak
+  // math this test actually proves untouched.
   const foeOverrides = { wp: 19, maxWP: 19 };
 
   const control = fixedState({ combat: fixedCombat([fixedFoe(foeOverrides)]) });

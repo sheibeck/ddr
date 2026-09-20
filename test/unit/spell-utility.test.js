@@ -206,7 +206,15 @@ test("fight: combatJoined carries senses:true only when c.senses is up AND first
   state.combat = fixedCombat([fixedFoe({ type: "Beasts" })], { pending: true });
   const events = fight(state, fakeRng([15, 10]), []); // mine(15) >= theirs(10) -> "you"
   const joined = events.find((e) => e.type === "combatJoined");
-  assert.deepStrictEqual(joined, { type: "combatJoined", first: "you", senses: true });
+  assert.deepStrictEqual(joined, {
+    type: "combatJoined",
+    first: "you",
+    mine: 15,
+    theirs: 10,
+    why: "senses",
+    foe: "Target",
+    senses: true,
+  });
 });
 
 test("fight: combatJoined stays the plain byte-identical shape when c.senses is 0", () => {
@@ -214,7 +222,7 @@ test("fight: combatJoined stays the plain byte-identical shape when c.senses is 
   state.combat = fixedCombat([fixedFoe({ type: "Beasts" })], { pending: true });
   const events = fight(state, fakeRng([15, 10]), []);
   const joined = events.find((e) => e.type === "combatJoined");
-  assert.deepStrictEqual(joined, { type: "combatJoined", first: "you" });
+  assert.deepStrictEqual(joined, { type: "combatJoined", first: "you", mine: 15, theirs: 10, foe: "Target" });
   assert.ok(!("senses" in joined));
 });
 
@@ -224,7 +232,7 @@ test("fight: combatJoined carries no senses key when senses is up but the foe st
   // mine(1) < theirs(10) -> "foe"; foeTurn then runs (one swing at need>=1 miss, roll=20).
   const events = fight(state, fakeRng([1, 10, 20]), []);
   const joined = events.find((e) => e.type === "combatJoined");
-  assert.deepStrictEqual(joined, { type: "combatJoined", first: "foe" });
+  assert.deepStrictEqual(joined, { type: "combatJoined", first: "foe", mine: 1, theirs: 10, foe: "Target" });
 });
 
 // ============================================================================

@@ -131,8 +131,8 @@ test("castSpell retargets off a dead C.target onto the first live foe, mirroring
   state.combat = fixedCombat([dead, alive], { target: 0 }); // target points at the corpse
   // Acid: rounds d6=3; the SAME foeTurn tail ticks the freshly-applied acid
   // (2d6+2=4 dmg, well short of Survivor's 20 wp) before its own swing
-  // misses (roll 20 vs need 5), then the round-advance initiative (15/10).
-  const events = castSpell(state, SPELL_IDX.Acid, fakeRng([3, 1, 1, 20, 15, 10]), []);
+  // misses (roll 20 vs need 5); no round-advance draws, Phase 51.
+  const events = castSpell(state, SPELL_IDX.Acid, fakeRng([3, 1, 1, 20]), []);
   assert.equal(state.combat.target, 1, "C.target retargeted to the live foe's index");
   assert.ok(events.some((e) => e.type === "acidApplied" && e.target === "Survivor"));
   assert.equal(events.some((e) => e.type === "nothingToThrowAt"), false);
@@ -206,16 +206,18 @@ test("negative pin: with combat.afraid = 2, castSpell (thrown) and readScroll bo
 
   const castState = fixedState({ c: { sub: "Illusionist", level: 3, grimoire: ["Fireball"] } });
   castState.combat = fixedCombat([foe], { afraid: 2 });
-  // roll d8=4 (need shrinks to 1, misses); tail: foe miss(7), initiative 15/10.
-  const castEvents = castSpell(castState, SPELL_IDX.Fireball, fakeRng([4, 7, 15, 10]), []);
+  // roll d8=4 (need shrinks to 1, misses); tail: foe miss(7) — no
+  // round-advance draws, initiative is rolled once, Phase 51.
+  const castEvents = castSpell(castState, SPELL_IDX.Fireball, fakeRng([4, 7]), []);
   assert.ok(castEvents.some((e) => e.type === "spellThrown"));
   assert.equal(castEvents.some((e) => e.type === "castRefused"), false);
 
   const scrollFoe = fixedFoe({ wp: 999, maxWP: 999 });
   const scrollState = fixedState({ c: { cls: "Fighter", sub: "Soldier", skills: { "Runes/Signs": 1 }, scrolls: 1, grimoire: [] } });
   scrollState.combat = fixedCombat([scrollFoe], { afraid: 2 });
-  // rng.pick returns Heal (lvl1); heal die d10=8; tail: foe miss(7), initiative 15/10.
-  const scrollEvents = readScroll(scrollState, fakeRng([8, 7, 15, 10]), []);
+  // rng.pick returns Heal (lvl1); heal die d10=8; tail: foe miss(7) — no
+  // round-advance draws, initiative is rolled once, Phase 51.
+  const scrollEvents = readScroll(scrollState, fakeRng([8, 7]), []);
   assert.equal(scrollEvents.some((e) => e.type === "scrollRefused"), false);
   assert.ok(scrollEvents.some((e) => e.type === "healed"));
 });

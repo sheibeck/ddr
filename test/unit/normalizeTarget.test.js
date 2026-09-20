@@ -229,7 +229,9 @@ test("playerStrike: alive target -> draw count and resulting state identical whe
 
   // Measured-not-hand-computed: this count was observed by running the test
   // once and is pinned here as the expected value going forward.
-  assert.equal(rng1.draws, 6);
+  // Phase 51 (INIT-01): 6 -> 4 — no round-advance draws (afterPlayerAction no
+  // longer re-rolls initiative; initiative is rolled once, at fight()).
+  assert.equal(rng1.draws, 4);
   assert.equal(rng1.draws, rng2.draws);
   assert.deepStrictEqual(state1, state2);
   assert.deepStrictEqual(events1, events2);

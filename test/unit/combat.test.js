@@ -305,29 +305,163 @@ test("liveFoes: filters to only alive foes; empty outside combat", () => {
   assert.deepStrictEqual(liveFoes(state).map((f) => f.name), ["A"]);
 });
 
-test("rollInitiative: a Samurai never wins the first roll unless foreseen", () => {
-  const state = fixedState({ c: { sub: "Samurai" } });
-  state.combat = fixedCombat([]);
-  assert.equal(rollInitiative(state, fakeRng([10, 1])), "foe");
+// Phase 51 (INIT-01, INIT-02): re-targeted at `fight()` — the single call
+// site now that `afterPlayerAction` never re-rolls. Every override branch is
+// asserted via `combatJoined.why` (and, when the foes win the roll, a
+// pre-emptive foeTurn runs inside this same `fight()` call, so the fakeRng
+// sequence budgets for it too — the trailing value(s) are that foeTurn's own
+// draws, not a second initiative roll).
 
-  const state2 = fixedState({ c: { sub: "Samurai", foresight: true } });
-  state2.combat = fixedCombat([]);
-  assert.equal(rollInitiative(state2, fakeRng([1, 10])), "you");
-  assert.equal(state2.c.foresight, false, "foresight is consumed by the roll");
+test("fight: initiative — a Samurai is forced foe unless foreseen; combatJoined names why + the single foe", () => {
+  const state = fixedState({ c: { sub: "Samurai" } });
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([10, 1, 20]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "foe");
+  assert.equal(joined.why, "samurai");
+  assert.equal(joined.mine, 10);
+  assert.equal(joined.theirs, 1);
+  assert.equal(joined.foe, "Target", "a single live foe is named");
+});
+
+test("fight: initiative — foresight overrides a Samurai's forced foe; why is 'foreseen', foresight consumed", () => {
+  const state = fixedState({ c: { sub: "Samurai", foresight: true } });
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([1, 10]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "you");
+  assert.equal(joined.why, "foreseen");
+  assert.equal(state.c.foresight, false, "foresight is consumed by the roll");
 });
 
 // Phase 40 (SPELL-02, DELIBERATE RULES CHANGE): Sense Presence (`c.senses`)
-// now ALSO waives every forced foe-first rule — a Samurai with c.senses up
-// rolls a fair d20 pair like anyone else; with c.senses at 0 the existing
-// forced-foe pin above is untouched.
-test("rollInitiative: a Samurai with c.senses up is no longer forced foe — the two d20s decide it fairly", () => {
+// also waives every forced foe-first rule — a Samurai with c.senses up rolls
+// a fair d20 pair like anyone else; with c.senses at 0 the forced-foe pin is
+// untouched.
+test("fight: initiative — Sense Presence waives a Samurai's forced foe; why is 'senses', senses:true rides along", () => {
   const state = fixedState({ c: { sub: "Samurai", senses: 1 } });
-  state.combat = fixedCombat([]);
-  assert.equal(rollInitiative(state, fakeRng([10, 1])), "you", "mine(10) >= theirs(1) — senses waived the forced clause");
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([10, 1]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "you", "mine(10) >= theirs(1) — senses waived the forced clause");
+  assert.equal(joined.why, "senses");
+  assert.equal(joined.senses, true);
+});
 
-  const state2 = fixedState({ c: { sub: "Samurai", senses: 0 } });
-  state2.combat = fixedCombat([]);
-  assert.equal(rollInitiative(state2, fakeRng([19, 1])), "foe", "senses at 0 — the forced clause still applies, byte-identical to before");
+test("fight: initiative — senses at 0 leaves a Samurai's forced foe untouched; why stays 'samurai'", () => {
+  const state = fixedState({ c: { sub: "Samurai", senses: 0 } });
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([19, 1, 20]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "foe", "senses at 0 — the forced clause still applies, byte-identical to before");
+  assert.equal(joined.why, "samurai");
+});
+
+test("fight: initiative — a Fridgian's slow race forces foe; why is 'slow'", () => {
+  const state = fixedState({ c: { race: "Fridgian" } });
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([12, 5, 20]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "foe");
+  assert.equal(joined.why, "slow");
+});
+
+test("fight: initiative — Acute Hearing wins even on losing dice; why is 'acuteHearing'", () => {
+  const state = fixedState({ c: { skills: { "Acute Hearing": 1 } } });
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([1, 10]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "you");
+  assert.equal(joined.why, "acuteHearing");
+});
+
+test("fight: initiative — a Knight facing a live maxWP>=20 foe is forced foe; why is 'knight'", () => {
+  const state = fixedState({ c: { sub: "Knight" } });
+  state.combat = fixedCombat([fixedFoe({ maxWP: 20, wp: 20 })], { pending: true });
+  const events = fight(state, fakeRng([5, 12, 20]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "foe");
+  assert.equal(joined.why, "knight");
+});
+
+test("fight: initiative — a Court Mage talks first at round 1; why is 'courtMage'", () => {
+  const state = fixedState({ c: { sub: "Court Mage" } });
+  state.combat = fixedCombat([fixedFoe()], { pending: true }); // round: 1 by fixedCombat's default
+  const events = fight(state, fakeRng([5, 12, 20]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "foe");
+  assert.equal(joined.why, "courtMage");
+});
+
+test("fight: initiative — a plain hero has no override; combatJoined carries no why key, names the single foe", () => {
+  const state = fixedState();
+  state.combat = fixedCombat([fixedFoe()], { pending: true });
+  const events = fight(state, fakeRng([14, 9]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "you");
+  assert.equal(Object.hasOwn(joined, "why"), false, "no override fired — why is omitted, not a null/false key");
+  assert.equal(joined.foe, "Target");
+});
+
+test("fight: initiative — combatJoined omits foe for a multi-foe roster", () => {
+  const state = fixedState();
+  state.combat = fixedCombat([fixedFoe({ name: "A" }), fixedFoe({ name: "B" })], { pending: true });
+  const events = fight(state, fakeRng([14, 9]), []);
+  const joined = events.find((e) => e.type === "combatJoined");
+  assert.equal(joined.first, "you");
+  assert.equal(Object.hasOwn(joined, "foe"), false, "a foe group never names a single target");
+});
+
+// INIT-01 (SC2): the whole point of the rule — a forced-foe character (a
+// Samurai here) opens the fight with the foe's turn, then STRICTLY
+// alternates for the rest of the fight; the foe never gets two turns back to
+// back, proven by walking the concatenated event stream across the opener
+// and three subsequent player actions, all sharing ONE fakeRng.
+test("fight: initiative — INIT-01 (SC2): a Samurai's forced-foe fight alternates strictly — foe turns = player actions + 1, never two in a row", () => {
+  const state = fixedState({ c: { sub: "Samurai" } });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { pending: true });
+  // init x2 (10, 1 — forced foe regardless), opener foe miss (20), then three
+  // rounds of (hero miss 20, foe miss 20) — 9 draws total, one shared rng.
+  const rng = fakeRng([10, 1, 20, 20, 20, 20, 20, 20, 20]);
+  const events = fight(state, rng, []);
+  for (let i = 0; i < 3; i++) playerStrike(state, rng, events);
+
+  const foeTurnCount = events.filter((e) => e.type === "foeMissed" || e.type === "struckByFoe").length;
+  const heroTurnCount = events.filter((e) => e.type === "strikeMissed" || e.type === "struck").length;
+  assert.equal(foeTurnCount, 4, "3 player actions + 1 foe-first opener = 4 foe turns");
+  assert.equal(heroTurnCount, 3);
+
+  let lastWasFoe = false;
+  for (const e of events) {
+    const isFoeTurn = e.type === "foeMissed" || e.type === "struckByFoe";
+    const isHeroTurn = e.type === "strikeMissed" || e.type === "struck";
+    if (isFoeTurn) {
+      assert.equal(lastWasFoe, false, "two foe turns back to back — the removed pre-emptive re-roll is back");
+      lastWasFoe = true;
+    } else if (isHeroTurn) {
+      lastWasFoe = false;
+    }
+  }
+  assert.throws(() => rng.d(1), /sequence exhausted/, "the rng is fully consumed after the third strike");
+  assert.equal(state.combat.round, 4);
+});
+
+// INIT-01 (once pin): `combatJoined` already fires exactly once per fight
+// (fight() runs once per encounter) — this proves it holds across a real
+// multi-round exchange, and that no OTHER event ever smuggles the dice.
+test("fight: initiative — INIT-01: a 3-round fight emits exactly one combatJoined and no other event carries mine/theirs", () => {
+  const state = fixedState({ c: { sub: "Samurai" } });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { pending: true });
+  const rng = fakeRng([10, 1, 20, 20, 20, 20, 20, 20, 20]);
+  const events = fight(state, rng, []);
+  for (let i = 0; i < 3; i++) playerStrike(state, rng, events);
+
+  const joinedEvents = events.filter((e) => e.type === "combatJoined");
+  assert.equal(joinedEvents.length, 1, "combatJoined fires once, never per round");
+  assert.ok(
+    events.every((e) => e.type === "combatJoined" || (!("mine" in e) && !("theirs" in e))),
+    "no other event ever carries mine/theirs",
+  );
 });
 
 // --- weaponDamage: Master of Arms "+2 with every weapon" (RULE-02) --------
@@ -371,11 +505,11 @@ test("playerStrike: a non-lethal hit lowers wp but leaves maxWP (starting hp) un
   const state = fixedState();
   state.combat = fixedCombat([fixedFoe({ wp: 20, maxWP: 20 })]);
   // strike d20=1 vs need=5 -> hit; club d6=6 -> dmg = level^2(1) + 6 = 7, non-lethal
-  // (20-7=13). afterPlayerAction then runs foeTurn (d20=20 vs need=5 -> miss) and
-  // advances the round via a fresh rollInitiative (mine=15 >= theirs=10 -> "you"
-  // stays first, so no second foeTurn this call) — same pattern as the
-  // Barbarian/Ambidextrous/haste test above.
-  const rng = fakeRng([1, 6, 20, 15, 10]);
+  // (20-7=13). afterPlayerAction then runs foeTurn (d20=20 vs need=5 -> miss)
+  // and advances the round — no round-advance draws, initiative is rolled
+  // once, Phase 51 — same pattern as the Barbarian/Ambidextrous/haste test
+  // above.
+  const rng = fakeRng([1, 6, 20]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "struck" && e.dmg === 7));
   const foe = state.combat.foes[0];
@@ -395,9 +529,9 @@ test("playerStrike: Barbarian, Ambidextrous, and haste each grant two attacks", 
     const state = fixedState({ c: cOverrides });
     state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
     // both strikes miss (roll 20 vs need 5); the still-alive foe's own swing
-    // then also misses (foeDie roll 20 vs need 5); initiative mine(15) >=
-    // theirs(10) keeps the foes from getting a second turn this call.
-    const rng = fakeRng([20, 20, 20, 15, 10]);
+    // then also misses (foeDie roll 20 vs need 5); no round-advance draws —
+    // initiative is rolled once, Phase 51.
+    const rng = fakeRng([20, 20, 20]);
     const events = playerStrike(state, rng, []);
     const misses = events.filter((e) => e.type === "strikeMissed").length;
     assert.equal(misses, 2, `${JSON.stringify(cOverrides)} should grant 2 attacks`);
@@ -416,12 +550,12 @@ test("playerStrike: Fridgian frenzy grants a second wild swing that always targe
   // frenzy roll d8=5 (<=5, triggers); both swings target the live Target and
   // miss (need 5 for the first swing, need 3 for the frenzy swing — 20 beats
   // both); the still-alive Target swings back and misses (foeDie 20 vs need
-  // 5); a Fridgian's `slow` race flag forces rollInitiative to ALWAYS
-  // resolve "foe" regardless of the mine(15)/theirs(10) roll values (both
-  // still drawn), so a second foeTurn miss (20) follows. Seven draws total —
-  // one fewer than the old (now-removed) whiff-branch sequence would have
-  // needed for the same number of foe turns.
-  const rng = fakeRng([5, 20, 20, 20, 15, 10, 20]);
+  // 5). Phase 51 (INIT-01): a Fridgian's `slow` race flag no longer forces a
+  // SECOND foeTurn this call — initiative is rolled once, at fight()'s Fight!
+  // gate (never called by this test, which builds combat directly), and
+  // afterPlayerAction no longer re-rolls or reads `C.first` at all. Four
+  // draws total.
+  const rng = fakeRng([5, 20, 20, 20]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "frenzy"));
   const misses = events.filter((e) => e.type === "strikeMissed");
@@ -454,9 +588,9 @@ test("playerStrike: a Con Artist's opening strike emits only conArtistOpener —
   // strike d20=3 vs Thief need=4 -> hit; club d6=4 (weaponDamage is computed
   // before the opener bail, so the draw is still consumed) but the damage is
   // discarded by the conArtistOpener `continue`. The foe survives untouched, so
-  // afterPlayerAction runs a foe swing (d?=20 vs need 5 -> miss) then a fresh
-  // rollInitiative (mine=15 >= theirs=10 -> player stays first, no 2nd foeTurn).
-  const rng = fakeRng([3, 4, 20, 15, 10]);
+  // afterPlayerAction runs a foe swing (d?=20 vs need 5 -> miss); no
+  // round-advance draws — initiative is rolled once, Phase 51.
+  const rng = fakeRng([3, 4, 20]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "conArtistOpener"), "the warning-shot beat fires");
   assert.equal(events.some((e) => e.type === "backstab"), false, "no misleading backstab crit is announced");
@@ -905,10 +1039,9 @@ test("parley: a failing roll triggers the foe's turn instead of ending combat", 
   const foe = fixedFoe({ type: "Humans", asleep: 5 });
   state.combat = fixedCombat([foe]);
   // D-07/D-08: 20 > need(13) -> fails; the failure runs afterPlayerAction,
-  // whose asleep-foe foeTurn draws nothing, but the round-advance always
-  // rolls a fresh initiative (mine=15, theirs=10 -> "you", no second foe
-  // turn).
-  const rng = fakeRng([20, 15, 10]);
+  // whose asleep-foe foeTurn draws nothing, and the round-advance draws
+  // nothing either — initiative is rolled once, Phase 51.
+  const rng = fakeRng([20]);
   const events = parley(state, rng, []);
   assert.ok(events.some((e) => e.type === "parleyFailed"));
   assert.ok(state.combat, "combat is still active after a failed parley");
@@ -923,7 +1056,7 @@ test("D-05: the second parley in the same encounter is refused with parleyExhaus
   const state = fixedState({ c: { sub: "Con Artist" } });
   const foe = fixedFoe({ type: "Humans", asleep: 5 });
   state.combat = fixedCombat([foe]);
-  parley(state, fakeRng([20, 15, 10]), []); // first attempt: fails, sets parleyTried/parleyInsulted
+  parley(state, fakeRng([20]), []); // first attempt: fails, sets parleyTried/parleyInsulted
   assert.equal(canParley(state), false, "the button hides once tried");
   const snapshot = structuredClone(state);
   const events = parley(state, fakeRng([]), []);
@@ -987,8 +1120,8 @@ test("sing: a Bard's highest available song can put foes to sleep", () => {
   // level 3 -> "Lullaby": n=d6=2 -> both foes asleep for 24 rounds. sing()
   // then runs afterPlayerAction in the SAME call, whose foeTurn immediately
   // decrements each now-asleep foe by 1 (23, not 24) without drawing a die;
-  // initiative mine(15) >= theirs(10) avoids a second foe turn.
-  const rng = fakeRng([2, 15, 10]);
+  // the round-advance draws nothing — initiative is rolled once, Phase 51.
+  const rng = fakeRng([2]);
   const events = sing(state, rng, []);
   assert.ok(events.some((e) => e.type === "sang" && e.song === "Lullaby"));
   assert.equal(foeA.asleep, 23);
@@ -1104,9 +1237,9 @@ test("playerStrike: natural armour soaks a blow (roll <= sp.ar): foeArmorSoaked,
   const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
   // strike d20=3 vs need=5 -> hit; club d6=4 -> dmg=5; armor soak d20=5 <= ar 12
-  // -> soaked, no struck; foe's own swing (foeDie 7) misses; fresh initiative
-  // (mine=15 >= theirs=10 -> player stays first).
-  const rng = fakeRng([3, 4, 5, 7, 15, 10]);
+  // -> soaked, no struck; foe's own swing (foeDie 7) misses; no round-advance
+  // draws — initiative is rolled once, Phase 51.
+  const rng = fakeRng([3, 4, 5, 7]);
   const events = playerStrike(state, rng, []);
   assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
   assert.equal(events.some((e) => e.type === "struck"), false, "a soaked blow emits no struck event");
@@ -1119,7 +1252,8 @@ test("playerStrike: a soak roll above sp.ar lets the blow land", () => {
   const state = fixedState();
   const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
-  const rng = fakeRng([3, 4, 13, 7, 15, 10]);
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  const rng = fakeRng([3, 4, 13, 7]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "struck" && e.dmg === 5));
   assert.equal(foe.wp, 5);
@@ -1137,19 +1271,21 @@ test("playerStrike: a critical ignores the soak (D-07) — no d20 drawn", () => 
   state.combat = fixedCombat([foe]);
   // strike d20=1 -> natural-1 crit (Knight is not noCrit); club d6=4 -> base
   // dmg=5, doubled to 10; the crit bypasses the armor soak entirely (no d20
-  // drawn for it); foe's own swing (foeDie 7) misses; fresh initiative.
-  const rng = fakeRng([1, 4, 7, 15, 10]);
+  // drawn for it); foe's own swing (foeDie 7) misses; no round-advance draws
+  // — initiative is rolled once, Phase 51.
+  const rng = fakeRng([1, 4, 7]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "struck" && e.critical === true && e.dmg === 10));
   assert.equal(foe.wp, 9);
-  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 5 draws total — no soak roll for a crit");
+  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 3 draws total — no soak roll for a crit, no round-advance roll");
 });
 
 test("playerStrike: slow — two dice, the lower kept: a 7 then a 2 hits with struck.roll === 2 (D-12)", () => {
   const state = fixedState();
   const foe = fixedFoe({ sp: { slow: true }, wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
-  const rng = fakeRng([7, 2, 4, 7, 15, 10]);
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  const rng = fakeRng([7, 2, 4, 7]);
   const events = playerStrike(state, rng, []);
   const struck = events.find((e) => e.type === "struck");
   assert.equal(struck.roll, 2, "the lower of the two strike dice is kept");
@@ -1161,27 +1297,29 @@ test("playerStrike: slow — both dice above need: strikeMissed with roll 7 (the
   const state = fixedState();
   const foe = fixedFoe({ sp: { slow: true }, wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
-  const rng = fakeRng([7, 9, 7, 15, 10]);
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  const rng = fakeRng([7, 9, 7]);
   const events = playerStrike(state, rng, []);
   const missed = events.find((e) => e.type === "strikeMissed");
   assert.equal(missed.roll, 7, "the lower of the two strike dice (7 vs 9) is kept");
   assert.equal(foe.wp, 20);
-  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 5 draws for a slow foe");
+  assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 3 draws for a slow foe");
 
-  // Control: a non-slow foe draws exactly one strike die and misses after 4 draws total.
+  // Control: a non-slow foe draws exactly one strike die and misses after 2 draws total.
   const state2 = fixedState();
   const foe2 = fixedFoe({ wp: 20, maxWP: 20 });
   state2.combat = fixedCombat([foe2]);
-  const rng2 = fakeRng([7, 7, 15, 10]);
+  const rng2 = fakeRng([7, 7]);
   playerStrike(state2, rng2, []);
-  assert.throws(() => rng2.d(20), /sequence exhausted/, "exactly 4 draws for a non-slow foe");
+  assert.throws(() => rng2.d(20), /sequence exhausted/, "exactly 2 draws for a non-slow foe");
 });
 
 test("playerStrike: a halfDmg foe takes ceil(5/2) = 3 (D-10)", () => {
   const state = fixedState();
   const foe = fixedFoe({ sp: { halfDmg: true }, wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
-  const rng = fakeRng([3, 4, 7, 15, 10]);
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  const rng = fakeRng([3, 4, 7]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "struck" && e.dmg === 3));
   assert.equal(foe.wp, 17);
@@ -1191,7 +1329,8 @@ test("playerStrike: a Fighter's melee doubles against Trachea (D-11); a Thief's 
   const state = fixedState();
   const foe = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
-  const rng = fakeRng([3, 4, 7, 15, 10]);
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  const rng = fakeRng([3, 4, 7]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "struck" && e.dmg === 10), "a Fighter's melee doubles vs Trachea");
   assert.equal(foe.wp, 10);
@@ -1200,7 +1339,7 @@ test("playerStrike: a Fighter's melee doubles against Trachea (D-11); a Thief's 
   const state2 = fixedState({ c: { cls: "Thief", sub: "Cutpurse" } });
   const foe2 = fixedFoe({ name: "Trachea", type: "Lair Beasts", wp: 20, maxWP: 20 });
   state2.combat = fixedCombat([foe2], { opened2: true });
-  const rng2 = fakeRng([3, 4, 7, 15, 10]);
+  const rng2 = fakeRng([3, 4, 7]);
   const events2 = playerStrike(state2, rng2, []);
   assert.ok(events2.some((e) => e.type === "struck" && e.dmg === 5), "a Thief's melee does not double vs Trachea");
   assert.equal(foe2.wp, 15);
@@ -1323,24 +1462,25 @@ test("applyFoeDamageToPlayer: a warded drain heals nothing — applied is the po
 });
 
 test("playerStrike: weakened halves the hero's damage (ceil) before the seam; a dazed foeEffect does not", () => {
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
   const state = fixedState({ c: { foeEffect: { kind: "weakened", rounds: 2 } } });
   const foe = fixedFoe({ wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
-  const events = playerStrike(state, fakeRng([3, 4, 7, 15, 10]), []);
+  const events = playerStrike(state, fakeRng([3, 4, 7]), []);
   assert.ok(events.some((e) => e.type === "struck" && e.dmg === 3));
   assert.equal(foe.wp, 17);
 
   const state2 = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
   const foe2 = fixedFoe({ wp: 20, maxWP: 20 });
   state2.combat = fixedCombat([foe2]);
-  const events2 = playerStrike(state2, fakeRng([3, 4, 7, 15, 10]), []);
+  const events2 = playerStrike(state2, fakeRng([3, 4, 7]), []);
   assert.ok(events2.some((e) => e.type === "struck" && e.dmg === 5));
   assert.equal(foe2.wp, 15);
 
   const state3 = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
   const foe3 = fixedFoe({ wp: 20, maxWP: 20 });
   state3.combat = fixedCombat([foe3]);
-  const events3 = playerStrike(state3, fakeRng([4, 7, 15, 10]), []);
+  const events3 = playerStrike(state3, fakeRng([4, 7]), []);
   assert.ok(events3.some((e) => e.type === "strikeMissed" && e.need === 3));
 });
 

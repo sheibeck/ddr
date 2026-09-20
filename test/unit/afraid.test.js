@@ -130,7 +130,8 @@ test("(i) afraidNeed shrinks the need by AFRAID_TO_HIT_PENALTY, floor 1, and nev
 test("(ii) the SAME roll that hits unafraid (need 5, roll 5) misses afraid (need 2) — one fewer die drawn (no damage roll)", () => {
   const unafraidState = fixedState();
   unafraidState.combat = fixedCombat([fixedFoe({ wp: 10, maxWP: 10 })]);
-  const unafraidRng = countingRng(fakeRng([5, 4, 20, 15, 10])); // roll, weapon d6, foe-die-miss, initiative x2
+  // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  const unafraidRng = countingRng(fakeRng([5, 4, 20])); // roll, weapon d6, foe-die-miss
   const unafraidEvents = playerStrike(unafraidState, unafraidRng, []);
   const struck = unafraidEvents.find((e) => e.type === "struck");
   assert.ok(struck, "unafraid: the roll hits");
@@ -139,7 +140,7 @@ test("(ii) the SAME roll that hits unafraid (need 5, roll 5) misses afraid (need
 
   const afraidState = fixedState();
   afraidState.combat = fixedCombat([fixedFoe({ wp: 10, maxWP: 10 })], { afraid: 2 });
-  const afraidRng = countingRng(fakeRng([5, 20, 15, 10])); // roll, foe-die-miss, initiative x2 -- NO damage die
+  const afraidRng = countingRng(fakeRng([5, 20])); // roll, foe-die-miss -- NO damage die, no round-advance draws
   const afraidEvents = playerStrike(afraidState, afraidRng, []);
   const missed = afraidEvents.find((e) => e.type === "strikeMissed");
   assert.ok(missed, "afraid: the SAME roll(5) now misses (need 2)");
@@ -370,7 +371,7 @@ test("(ix) a triggered phobia without Hardiness draws exactly the initiative pai
   withoutHardiness.floor.g[withoutHardiness.floor.py][withoutHardiness.floor.px].dark = true;
   startCombat(withoutHardiness, true, "Beasts", fakeRng([1]), []);
   const rngA = countingRng(fakeRng([15, 5])); // mine >= theirs -> "you", no pre-emptive foeTurn
-  fight(withoutHardiness, rngA, []);
+  fight(withoutHardiness, rngA, []); // Phase 51 (INIT-01): the only initiative roll for the whole fight
   assert.equal(rngA.draws, 2, "no Hardiness -> exactly the two initiative draws, no shake-off roll");
   assert.equal(withoutHardiness.combat.afraid, 2);
 
@@ -393,8 +394,9 @@ test("(x) a thrown spell's need shrinks by 3 while afraid — the same roll that
   const foeA = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateA = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Fireball"], wp: 40, maxWP: 40 } });
   stateA.combat = fixedCombat([foeA]);
-  // roll d8=4 (need 4 unafraid, hits); dmg 2d10+4 = 5+5+4=14; tail: foe miss(7), initiative 15/10.
-  const eventsA = castSpell(stateA, SPELL_IDX.Fireball, fakeRng([4, 5, 5, 7, 15, 10]), []);
+  // roll d8=4 (need 4 unafraid, hits); dmg 2d10+4 = 5+5+4=14; tail: foe miss(7)
+  // — no round-advance draws, initiative is rolled once, Phase 51.
+  const eventsA = castSpell(stateA, SPELL_IDX.Fireball, fakeRng([4, 5, 5, 7]), []);
   const thrownA = eventsA.find((e) => e.type === "spellThrown");
   assert.equal(thrownA.need, 4);
   assert.equal("needMods" in thrownA, false, "no afraid needMods when not afraid");
@@ -404,7 +406,7 @@ test("(x) a thrown spell's need shrinks by 3 while afraid — the same roll that
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Fireball"], wp: 40, maxWP: 40 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
   // the SAME roll (4) now misses (need shrinks to 1); no damage roll drawn.
-  const eventsB = castSpell(stateB, SPELL_IDX.Fireball, fakeRng([4, 7, 15, 10]), []);
+  const eventsB = castSpell(stateB, SPELL_IDX.Fireball, fakeRng([4, 7]), []);
   const thrownB = eventsB.find((e) => e.type === "spellThrown");
   assert.equal(thrownB.need, 1);
   assert.deepStrictEqual(thrownB.needMods, [{ name: "afraid", delta: -3 }]);
@@ -427,8 +429,9 @@ test("(x) Freeze's need shrinks 6 -> 3 while afraid — a d10 roll of 3 lands, a
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans", lvl: 1 });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Freeze"], wp: 40, maxWP: 40 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
-  // roll d10=4 (need 3, misses: 4>3); tail: foe miss(7), initiative 15/10.
-  const eventsB = castSpell(stateB, SPELL_IDX.Freeze, fakeRng([4, 7, 15, 10]), []);
+  // roll d10=4 (need 3, misses: 4>3); tail: foe miss(7) — no round-advance
+  // draws, initiative is rolled once, Phase 51.
+  const eventsB = castSpell(stateB, SPELL_IDX.Freeze, fakeRng([4, 7]), []);
   const thrownB = eventsB.find((e) => e.type === "spellThrown");
   assert.equal(thrownB.need, 3);
   assert.ok(eventsB.some((e) => e.type === "spellMissed"), "roll 4 > need 3 misses");
@@ -466,7 +469,8 @@ test("(xii) Earthquake halves its per-foe damage while afraid, drawing the same 
     c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Earthquake"], wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, name: "Shield" } },
   });
   stateA.combat = fixedCombat([foeA]);
-  const rngA = countingRng(fakeRng([10, 10, 10, 7, 15, 10])); // 3 quake dice, tail: foe miss + initiative
+  // 3 quake dice, tail: foe miss(7) — no round-advance draws, Phase 51.
+  const rngA = countingRng(fakeRng([10, 10, 10, 7]));
   castSpell(stateA, SPELL_IDX.Earthquake, rngA, []);
   assert.equal(foeA.wp, 999 - 38, "unafraid: the foe takes the full 3d10+8 = 38");
 
@@ -475,7 +479,7 @@ test("(xii) Earthquake halves its per-foe damage while afraid, drawing the same 
     c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Earthquake"], wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, name: "Shield" } },
   });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
-  const rngB = countingRng(fakeRng([10, 10, 10, 7, 15, 10]));
+  const rngB = countingRng(fakeRng([10, 10, 10, 7]));
   castSpell(stateB, SPELL_IDX.Earthquake, rngB, []);
   assert.equal(foeB.wp, 999 - 19, "afraid: ceil(38/2) = 19");
 
@@ -486,8 +490,9 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
   const foeA = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateA = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Fireballs"], wp: 50, maxWP: 50 } });
   stateA.combat = fixedCombat([foeA]);
-  // n = d8 = 1 ball; dmg d10=1 -> 1+2=3; tail: foe miss(7), initiative 15/10.
-  const rngA = countingRng(fakeRng([1, 1, 7, 15, 10]));
+  // n = d8 = 1 ball; dmg d10=1 -> 1+2=3; tail: foe miss(7) — no round-advance
+  // draws, initiative is rolled once, Phase 51.
+  const rngA = countingRng(fakeRng([1, 1, 7]));
   const eventsA = castSpell(stateA, SPELL_IDX.Fireballs, rngA, []);
   assert.equal(eventsA.find((e) => e.type === "volley").totalDamage, 3, "unafraid: 1+2=3");
   assert.equal(foeA.wp, 999 - 3);
@@ -495,7 +500,7 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Fireballs"], wp: 50, maxWP: 50 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
-  const rngB = countingRng(fakeRng([1, 1, 7, 15, 10]));
+  const rngB = countingRng(fakeRng([1, 1, 7]));
   const eventsB = castSpell(stateB, SPELL_IDX.Fireballs, rngB, []);
   assert.equal(eventsB.find((e) => e.type === "volley").totalDamage, 2, "afraid: ceil(3/2) = 2");
   assert.equal(foeB.wp, 999 - 2);
@@ -533,8 +538,9 @@ test("(xiv) a scroll read while afraid casts normally — no scrollRefused, ever
   // so this actually exercises castSpell's afraid-tolerant path via readScroll.
   const state = fixedState({ c: { skills: { "Runes/Signs": 1 }, scrolls: 1, grimoire: [] } });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { afraid: 2 });
-  // rng.pick defaults to options[0] (Heal, lvl1); heal die d10=8; tail: foe miss(7), initiative 15/10.
-  const events = readScroll(state, fakeRng([8, 7, 15, 10]), []);
+  // rng.pick defaults to options[0] (Heal, lvl1); heal die d10=8; tail: foe
+  // miss(7) — no round-advance draws, initiative is rolled once, Phase 51.
+  const events = readScroll(state, fakeRng([8, 7]), []);
   assert.equal(events.some((e) => e.type === "scrollRefused"), false, "never refused for fear");
   assert.ok(events.some((e) => e.type === "scrollCast" && e.spell === "Heal"));
   assert.ok(events.some((e) => e.type === "healed"), "the afraid reader's scroll cast still lands");

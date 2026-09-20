@@ -1747,3 +1747,201 @@ above) and `lose-apprentice` (seed 127, Magic User), all four
 tools/worn-fixture-scan-output.txt` — empty) — the collapse moved exactly
 the measured set, nothing more, nothing less.
 
+## Phase 51: initiative once per fight (INIT-01) — the p.24 per-round re-roll is gone; measured moved set, declared per site
+
+The prototype's canon (p.24) re-rolled a fresh d20 each side every round
+(`afterPlayerAction`'s `rollInitiative` call), and when the foes won that
+re-roll they took a SECOND turn in the same cycle — a foe could act at the
+end of one round and again at the start of the next with no player action in
+between. The user's on-device ruling (2026-09-19): rounds must read as a
+steady you/them or them/you exchange. `fight()` (the Fight! gate) is now the
+ONLY place initiative is ever resolved for a fight; `C.first` holds for the
+whole encounter, and the foe's per-round turn already run inside
+`afterPlayerAction` is the only one — never a second. Knight-vs-big-foe
+narrows to the opener (a Knight facing a live maxWP >= 20 foe at Fight! time
+gives the foe the opening turn; the check is not re-evaluated mid-fight, since
+there is no "mid-fight re-evaluation" left to speak of). Only the multi-round
+combat sites move — every one-action/one-round site (win, flee, parley,
+cast-damage, heal, potion, scroll, every chargen/movement/economy/encounters
+site) never reaches a second round advance and stays byte-identical.
+
+### The live scan (tools/initiative-fixture-scan.mjs)
+
+Run form: `node tools/initiative-fixture-scan.mjs` (always exits 0, makes no
+assertions). The committed AFTER readout (`tools/initiative-fixture-scan-output.txt`,
+overwritten by this phase — the BEFORE copy stays in git history at the
+51-01 commit `bf0f9eb`), quoted verbatim:
+
+```
+# initiative-fixture-scan — Phase 51 (INIT-01): where the per-round initiative re-roll fires
+
+## Part A — the predictor (invariant across the Plan 02 engine edit)
+
+| Fixture | Site | Seed | Hero | actions | first live-fight round advance | moved | firstDivergentAction | maxRound | divergence.phase |
+|---|---|---|---|---|---|---|---|---|---|
+| action-script.chargen.json | action-script.chargen.json#seed-1 | 1 | Fighter Knight Fridgian | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-2 | 2 | Thief Cat Burglar Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-3 | 3 | Thief Pickpocket Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-4 | 4 | Thief Cat Burglar Dwarven | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-6 | 6 | Fighter Knight Troll | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-7 | 7 | Magic User Wizard Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-8 | 8 | Magic User Illusionist Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-13 | 13 | Fighter Woodsman Elven | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-15 | 15 | Magic User Summoner Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-19 | 19 | Magic User Sorcerer Human | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-24 | 24 | Magic User Apprentice Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-29 | 29 | Magic User Warlock Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-32 | 32 | Fighter Samurai Wilmsry | 0 | never | false | n/a | n/a | none |
+| action-script.chargen.json | action-script.chargen.json#seed-35 | 35 | Magic User Cleric Troll | 0 | never | false | n/a | n/a | none |
+| action-script.movement.json | action-script.movement.json#script | 256 | Thief Cat Burglar Human | 101 | never | false | n/a | n/a | none |
+| action-script.combat.json | action-script.combat.json#win | 3 | Thief Pickpocket Human | 2 | never | false | never | 1 | none |
+| action-script.combat.json | action-script.combat.json#lose | 14 | Fighter Soldier Fridgian | 11 | 1 | true | 0 | 4 | 24+31 |
+| action-script.combat.json | action-script.combat.json#lose-apprentice | 127 | Magic User Apprentice Human | 15 | 1 | true | 0 | 7 | 31 |
+| action-script.combat.json | action-script.combat.json#lose-plain | 1119 | Thief Cutthroat Human | 8 | 1 | true | 2 | 8 | none |
+| action-script.combat.json | action-script.combat.json#flee | 17 | Thief Pilfer Fridgian | 2 | never | false | never | 1 | none |
+| action-script.combat.json | action-script.combat.json#parley | 303 | Thief Con Artist Wilmsry | 2 | never | false | 0 | 1 | 27+31 |
+| action-script.magic.json | action-script.magic.json#cast-damage | 8 | Magic User Illusionist Wilmsry | 2 | never | false | 0 | 1 | 23+31 |
+| action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
+| action-script.magic.json | action-script.magic.json#potion | 1 | Fighter Knight Fridgian | 1 | never | false | never | n/a | none |
+| action-script.magic.json | action-script.magic.json#scroll | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
+| action-script.economy.json | action-script.economy.json#script | 3 | Thief Pickpocket Human | 10 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#trap | 1 | Fighter Knight Fridgian | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#chest | 2 | Thief Cat Burglar Wilmsry | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#tablefour | 3 | Thief Pickpocket Human | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#faerie | 38 | Thief Con Artist Elven | 1 | never | false | n/a | n/a | none |
+| action-script.encounters.json | action-script.encounters.json#affliction | 160 | Thief Pilfer Human | 1 | never | false | n/a | n/a | none |
+
+MOVED SET (3): action-script.combat.json#lose, action-script.combat.json#lose-apprentice, action-script.combat.json#lose-plain
+INITIATIVE EXPOSURE: 3 of 31 replay sites
+
+## Part B — the lockstep measurement (per combat/magic site; fills Plan 02's divergence records)
+
+## Record values (JSON, per moved site)
+
+### action-script.combat.json#lose
+fields.before (prototype @end): {"wp":0,"sp":5,"gold":51,"kills":1,"rations":7}
+fields.after (engine @end): {"wp":50,"sp":45,"gold":52,"kills":2,"rations":8}
+state.before (prototype @end): {"dead":true}
+state.after (engine @end): {"dead":false}
+firstDivergentAction: 0
+maxRound: 4
+divergence.phase: 24+31
+
+### action-script.combat.json#lose-apprentice
+fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":4}
+fields.after (engine @end): {"wp":23,"sp":40,"gold":52,"kills":2,"rations":6}
+state.before (prototype @end): {"dead":true}
+state.after (engine @end): {"dead":false}
+firstDivergentAction: 0
+maxRound: 7
+divergence.phase: 31
+
+### action-script.combat.json#lose-plain
+fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":5}
+fields.after (engine @end): {"wp":34,"sp":0,"gold":50,"kills":0,"rations":5}
+state.before (prototype @end): {"dead":true}
+state.after (engine @end): {"dead":false}
+firstDivergentAction: 2
+maxRound: 8
+divergence.phase: none
+```
+
+**A note on this scan's Part A/Part B column layout:** the tool's markdown
+table shows every column in one row for compactness, but the columns are NOT
+uniformly invariant — `firstRoundAdvance`/`moved` (and the `MOVED SET`/
+`INITIATIVE EXPOSURE` summary lines) are the true Part A predictor and are
+**byte-identical** to the 51-01 BEFORE commit's copy for all 31 rows,
+confirmed by diffing just those columns and lines
+(`git show bf0f9eb:tools/initiative-fixture-scan-output.txt` vs the AFTER
+file above). `firstDivergentAction`/`maxRound` are Part B measurements
+embedded in the same row and legitimately change for the 3 MOVED rows only
+(`lose`/`lose-apprentice`/`lose-plain`) — exactly the sites the invariant
+predictor named, nothing more. No row outside the MOVED SET changed at all.
+
+### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fromAction | fields before (prototype) | fields after (engine) | dead before → after | rationale pointer |
+|---|---|---|---|---|---|---|---|---|
+| `action-script.combat.json` | `#lose` (14) | Fighter Soldier Fridgian | `divergence` (action-path, phase `24+31` → `24+31+51`) | 0 (unchanged) | `{wp:0,sp:5,kills:1,rations:7}` | `{wp:51,sp:45,kills:2,rations:8}` → `{wp:50,sp:45,kills:2,rations:8}` | true → false (unchanged by Phase 51 — already diverged in Phase 31) | scenario's own `divergence.rationale`, Phase 51 paragraph appended |
+| `action-script.combat.json` | `#lose-apprentice` (127) | Magic User Apprentice Human | `divergence` (action-path, phase `31` → `31+51`) | 0 (unchanged) | `{wp:0,sp:0,gold:50,kills:0,rations:4}` | `{wp:0,...}` (unchanged, still dying) → `{wp:23,sp:40,gold:52,kills:2,rations:6}` | true → **false** (Phase 51 flips this outcome) | scenario's own `divergence.rationale`, Phase 51 paragraph appended |
+| `action-script.combat.json` | `#lose-plain` (1119) | Thief Cutthroat Human | NEW `divergence` (action-path, phase `51`) | 2 (measured — action 0/1 happen not to shift the rng cursor at this seed) | `{wp:0,sp:0,gold:50,kills:0,rations:5}` | `{wp:34,sp:0,gold:50,kills:0,rations:5}` | true → **false** (Phase 51 flips this outcome; this scenario carried NO record from Phase 31 through Phase 50) | scenario's own new `divergence.rationale` |
+
+Every record's Phase 51 paragraph carries the shared text: *"Phase 51
+(INIT-01, 2026-09-20): initiative is rolled once per fight in `fight()`; the
+prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are
+gone from `afterPlayerAction`, so from the first live-fight round advance
+onward the engine draws two fewer d20 per round and never gives the foe two
+turns back to back. Knight-vs-big-foe narrows to the opener (evaluated once
+at the single roll). Measured by `tools/initiative-fixture-scan.mjs` — Part A
+(the round-advance predictor) byte-identical before and after the edit
+(51-01 vs 51-02 commits), Part B supplied every after/stateAfter value —
+never hand-typed."* `test/parity/divergence-records.test.js`'s new INIT-01
+test is the standing guard proving the holders declaring phase `51` are
+exactly this 3-site MOVED SET (`assert.deepStrictEqual` on the two sorted id
+sets) — if a future engine change moves a different site, that test fails
+first.
+
+**Both `lose-apprentice` and `lose-plain` flip outcome (dead: true → false)
+under Phase 51** — a measured, not assumed, consequence: with the foe never
+getting two consecutive turns, cumulative incoming damage drops enough for
+both these fights to end in a win instead of a death within the same fixed
+action script. This is exactly the shape INIT-01 is meant to produce (no
+more "two foe turns back to back"); it is recorded here, not smoothed over,
+per the plan's "measured, never hand-typed" rule. `lose` was already a
+declared divergence with `dead: false` since Phase 31 (unaffected by this
+flip — it already survived); only its numeric fields move by one hp.
+
+### Draw-count pins re-pinned (never loosened)
+
+Every pin below was re-measured live against the edited engine (never
+hand-computed) and moved because the removed per-round re-roll — and, for a
+forced-foe character, its pre-emptive second `foeTurn` — no longer runs
+inside `afterPlayerAction`:
+
+| File | Pin | Old | New |
+|---|---|---|---|
+| `test/unit/foe-turn-draw-count.test.js` | CANON-01 soaked strike | 6 draws | 4 draws |
+| `test/unit/foe-turn-draw-count.test.js` | CANON-05 slow vs non-slow all-miss | 5 vs 4 | 3 vs 2 |
+| `test/unit/foe-turn-draw-count.test.js` | CANON-03/04 halfDmg/Trachea/plain | 5 each | 3 each |
+| `test/unit/foe-turn-draw-count.test.js` | FULL_FIGHTS seed 14/Beasts | 36 draws / 3 attacks / won | 36 draws / 4 attacks / won |
+| `test/unit/foe-turn-draw-count.test.js` | FULL_FIGHTS seed 17/Beasts | 89 draws / 10 attacks / won | 88 draws / 14 attacks / won |
+| `test/unit/foe-turn-draw-count.test.js` | FULL_FIGHTS seed 303/Humans | 52 draws / 8 attacks / won | 29 draws / 5 attacks / won |
+| `test/unit/foe-turn-draw-count.test.js` | FULL_FIGHTS seed 8/Beasts | 27 draws / 4 attacks / won | 21 draws / 6 attacks / won |
+| `test/unit/foe-turn-draw-count.test.js` | FULL_FIGHTS seed 127/Beasts | 121 draws / 14 attacks / **died** | 45 draws / 7 attacks / **won** |
+| `test/unit/foe-turn-draw-count.test.js` | FULL_FIGHTS seed 1119/Beasts | 51 draws / 7 attacks / **died** | 38 draws / 11 attacks / **won** |
+| `test/unit/foe-turn-draw-count.test.js` | NEW Section 6 — INIT-01 (SC1) zero-draw pin | — | added |
+| `test/unit/combat.test.js` | the two `rollInitiative:` tests | direct `rollInitiative` calls | re-targeted at `fight()`, extended to all 7 `why` branches + NEW SC2 alternation pin + NEW once-per-fight pin |
+| `test/unit/identity-race.test.js` | Fridgian frenzy sequence | `[5,20,20,20,15,10,20]` (7 draws) | `[5,20,20,20]` (4 draws) |
+| `test/unit/identity-contract.test.js` | Fridgian GOOD frenzy sequence | same 7-draw sequence | same 4-draw sequence |
+| `test/unit/normalizeTarget.test.js` | alive-target draw-count identity | 6 draws | 4 draws |
+| `test/unit/fight-gate.test.js` | (b) combatJoined shape | `{type,first}` | `{type,first,mine,theirs,why,foe}` |
+| `test/unit/spell-utility.test.js` | 3 combatJoined shape pins (senses) | `{type,first[,senses]}` | `{type,first,mine,theirs[,why],foe[,senses]}` |
+| `test/determinism/foe-abilities.test.js` | magical-t4 | 45 draws / 4 attacks / won | 35 draws / 4 attacks / won |
+| `test/determinism/foe-abilities.test.js` | demons-t5 | 51 draws / 3 attacks / won | 41 draws / 3 attacks / won |
+| `test/determinism/foe-abilities.test.js` | beasts-t5 | 67 draws / 4 attacks / won | 73 draws / 6 attacks / won |
+| `test/determinism/foe-abilities.test.js` | humans-t2 / walking-dead-t5 | 17/1/won, 23/1/died | unchanged (one-attack fights) |
+
+Comment-only hygiene touches (still green, no assertion change): dead trailing
+`15, 10` initiative-pair sequences dropped and reworded across
+`test/unit/afraid.test.js`, `test/unit/cast-refusals.test.js`,
+`test/unit/magic.test.js`, `test/unit/item-wiring.test.js`,
+`test/unit/freeze-pays-out.test.js`, `test/unit/abilities.test.js`; the
+Court Mage "round 2+ rolls normally" branch noted as unreachable from
+`fight()` post-Phase-51 in `test/unit/identity-combat.test.js` and
+`test/unit/identity-contract.test.js` (the function-level contract is
+retained for any direct caller).
+
+### Byte-identical elsewhere (Phase 51)
+
+The remaining 28 replay sites (every chargen seed, the movement script, `win`/
+`flee`/`parley`, all four magic scenarios, the economy script, every
+encounters scenario) never advance a live-fight round a second time within
+their fixed action count, so they never reach the removed code path at all —
+confirmed by the scan's own invariant predictor (`firstRoundAdvance`/`moved`
+byte-identical, see the note above). No `seed`/`actions`/`scenarios` array was
+touched in any fixture file; `test/parity/harness/comparables.js` is
+untouched (event payload fields like `combatJoined.mine`/`theirs`/`why`/`foe`
+are never compared by the fixture harness — no carve-out needed).
+`test/parity/prototype-master.js.txt` hash is unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`).
+
