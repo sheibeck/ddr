@@ -2,36 +2,36 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 48
-status: verifying
+current_phase: 49
+current_phase_name: Measure-First Perf Pass
+status: planning
 stopped_at: Completed 48-05-PLAN.md (CLAUDE.md + docs close + stale-terms tripwire; Phase 48 complete)
-last_updated: "2026-09-20T06:31:14.665Z"
-last_activity: 2026-09-19
-last_activity_desc: Phase 48 execution started
+last_updated: "2026-09-20T06:38:33.696Z"
+last_activity: 2026-09-20
+last_activity_desc: Phase 48 complete, transitioned to Phase 49
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 21
   completed_plans: 21
   percent: 83
-current_phase_name: Stale Docs, Comments & Test Names Purge
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 48; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
 **Current focus:** Phase 48
 
 ## Current Position
 
-Phase: 48 — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-09-19 — Phase 48 execution started
+Phase: 49 — Measure-First Perf Pass
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-20 — Phase 48 complete, transitioned to Phase 49
 Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
