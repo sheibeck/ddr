@@ -326,11 +326,11 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
         // disable silently — an activatable's Use button stays visible even
         // on cooldown (the row title already shows `· N sq` above); a tap
         // dispatches as usual and the engine's own useRefused
-        // {reason:"cooldown"|"recharging"|"notWorn"} toast explains the
+        // {reason:"cooldown"|"recharging"|"notWorn"} rail line explains the
         // wait/refusal. 260918-w4n: gated on st.kind !== "none" (the ONE
         // row-state rule) instead of a raw `it.use` string — a bagged
         // cloak/jewel still shows Use (the tap yields the engine's notWorn
-        // toast); a bagged staff's Use tap simply works for a Magic User.
+        // rail line); a bagged staff's Use tap simply works for a Magic User.
         if (st.kind !== "none") li.appendChild(mkBtn("Use", () => deps.useItem?.(i)));
       } else if (a === "equip") {
         if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => deps.equipItem?.(i)));

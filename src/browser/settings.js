@@ -144,8 +144,8 @@ export function clampTextScale(osScale) {
  * effectiveTextScale(size, osScale) — multiplies the S/M/L size multiplier
  * by a clamped OS font-scale factor; the FINAL product is itself clamped to
  * [TEXT_SCALE_MIN, TEXT_SCALE_MAX] so no combination of size + an extreme OS
- * setting can push the fixed pixel-art chrome (HUD numbers, tab bar, D-pad)
- * outside the locked bound.
+ * setting can push the fixed pixel-art chrome (HUD numbers, tab bar, the
+ * MAKE CAMP and gear chips) outside the locked bound.
  */
 export function effectiveTextScale(size, osScale) {
   const base = textScaleForSize(size);

@@ -31,7 +31,7 @@ import { bury } from "../../engine/death.js";
 import { EVENT_NARRATION } from "./eventNarration.js";
 // Phase 25 (FEED-05): the fledgling-miss quip corpus + its pure decorator.
 // dispatch() below is the ONE site that stamps a quip onto a strikeMissed
-// event, so the Oracle line and (25-03) the toast share the same quip.
+// event, so the Oracle line and the narration line share the same quip.
 import { decorateMisses } from "./missLines.js";
 // 02-03: the shared async Storage abstraction (window.mzStorage) — closes
 // 02-RESEARCH.md's dual-write hazard (this adapter and mazeworld.html's
@@ -94,7 +94,7 @@ let currentState = null;
 // mirrors missSeq's posture immediately below. Cleared to null the moment
 // takeBootWornReport() reads it, so Plan 04's resume path (the rail card +
 // Oracle line) can only ever surface it once per boot, exactly like a
-// one-shot toast. null when boot() did not migrate at all (no save, a
+// one-shot rail card. null when boot() did not migrate at all (no save, a
 // corrupt save, or a save that already carried worn); [] when it migrated
 // but nothing was wearable.
 let bootWornReport = null;
@@ -115,7 +115,7 @@ export function getState() {
 /**
  * takeBootWornReport() — Phase 37 (GEAR-04): returns the boot-time worn-
  * reconciliation report exactly once, then resets it to null (consumed on
- * read, exactly like a one-shot toast) — a second call in the same boot
+ * read, exactly like a one-shot rail card) — a second call in the same boot
  * always returns null. `null` when boot() did not migrate anything this
  * boot (no save, a corrupt save that fell back to a fresh run, or a save
  * that already carried its own `worn` key); `[]` when it migrated but
@@ -443,7 +443,7 @@ export function dispatch(action) {
     if (diedEvent && !currentState.dev) track(persistGrave(currentState, diedEvent.cause));
     // Phase 25 (FEED-05): stamp the rotating fledgling-miss quip onto any
     // strikeMissed event, gated on the hero's post-action level, BEFORE
-    // formatting the Oracle html — so the Oracle line and the toast
+    // formatting the Oracle html — so the Oracle line and the narration line
     // (25-03/25-04) read the exact same quip from this one assignment site.
     const { events: decorated, seq: nextMissSeq } = decorateMisses(events, currentState.c?.level ?? 1, missSeq);
     missSeq = nextMissSeq;

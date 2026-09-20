@@ -44,8 +44,9 @@
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 
 /**
- * TONES — the tone-family vocabulary every toast (and the future host CSS,
- * 25-04) speaks. Two color families + two utilities:
+ * TONES — the tone-family vocabulary every narration line (and the
+ * rail/fight-log CSS that maps data-tone) speaks. Two color families + two
+ * utilities:
  *   - YOU:  `hit` (your good outcome) / `miss` (your action produced nothing)
  *   - THEM: `hurt` (they damaged/afflicted you or yours) / `dodge` (their
  *     turn produced no damage to you: misses, sleeps, heals, summons,
@@ -83,7 +84,7 @@ export const CARD_EVENTS = new Set(["floorChanged", "leveled"]);
 
 /**
  * NARRATIVE_ACTIONS — Phase 25.1 (DFB-01 decision 2). The action types
- * whose direct-mapped toasts carry the Oracle's own sentence (dice
+ * whose direct-mapped lines carry the Oracle's own sentence (dice
  * stripped) instead of the terse Phase 25 table text: move, camp,
  * resolveJoiner, dismissJoiner (Phase 36, JOIN-01). The shell passes a
  * `ctx.narrate` hook ONLY for these action types — every other action
@@ -114,7 +115,7 @@ function decodeEntities(str) {
 
 /**
  * narrativeLineText(html) — Phase 25.1 (DFB-01 decision 2). Turns one
- * Oracle HTML line into the plain-text sentence a toast shows: (a) drop
+ * Oracle HTML line into the plain-text sentence a line shows: (a) drop
  * every `<span class="roll">...</span>` block plus its trailing
  * whitespace (the SAME regex the shell's stripRollDetail uses); (b) strip
  * every remaining tag; (c) decode entities — tags are stripped BEFORE
@@ -155,17 +156,17 @@ export function oracleDetailText(html) {
 /**
  * ORACLE_ONLY — bookkeeping event types that already have a dedicated
  * screen, HUD field, prompt, or are pure step/roll detail whose outcome
- * sibling always follows. These get NO toast entry; the Oracle never loses
- * information a toast shows (a toast is a summary, the Oracle is the
+ * sibling always follows. These get NO LINE_FOR entry; the Oracle never
+ * loses information a line shows (a line is the glance, the Oracle is the
  * record — T-25-10). Any addition must carry a reason and obey the same
  * principle: never a feature, refusal, outcome, spell, or ability event.
  */
 export const ORACLE_ONLY = new Set([
-  "moved", // a plain step is already silent by design (engineAdapter.js) — not in the 209-type toast universe either
+  "moved", // a plain step is already silent by design (engineAdapter.js) — not a LINE_FOR type either
   "dayBegan", // the HUD's day counter already shows this
   "floorChanged", // the HUD's depth banner already shows this
   "spellChargeRecovered", // the grimoire/HUD charge display already shows this
-  "spGained", // pure XP bookkeeping; foeKilled/parleyRolled toast the outcome that earned it
+  "spGained", // pure XP bookkeeping; foeKilled/parleyRolled narrate the outcome that earned it
   "combatEnded", // the combat screen closing IS the signal
   "died", // dedicated death/epitaph screen
   "storeLeft", // the store screen closing IS the signal
@@ -177,10 +178,10 @@ export const ORACLE_ONLY = new Set([
   "itemDropped", // the inventory screen's own drop action is the UI signal
   "itemUnequipped", // the inventory screen's own unequip action is the UI signal
   "joinerMet", // the dedicated Joiner recruitment prompt IS the UI
-  "faerieMet", // the dedicated faerie encounter prompt IS the UI; faerieBoon/faerieBane toast the real outcome
+  "faerieMet", // the dedicated faerie encounter prompt IS the UI; faerieBoon/faerieBane narrate the real outcome
   "grimoireSold", // the sell-flow's own confirmation is the UI signal
-  "itemConsumed", // pure bookkeeping (a charge spent); the effect event itself already toasted
-  "allyCast", // the allySpellHit/allySpellMissed sibling that always follows in the same action toasts the outcome and names the spell (one toast per cast)
+  "itemConsumed", // pure bookkeeping (a charge spent); the effect event itself already narrated
+  "allyCast", // the allySpellHit/allySpellMissed sibling that always follows in the same action narrates the outcome and names the spell (one line per cast)
 ]);
 
 /**
@@ -297,7 +298,7 @@ function soakSuffix(soaked) {
 }
 
 /** fleeModsText(mods) — "Thief +5" / "Thief +5, Mail −1" (Phase 42, FLEE-02;
- * mirrors eventNarration.js's needModsText format so the toast/Oracle/fight-
+ * mirrors eventNarration.js's needModsText format so the line/Oracle/fight-
  * log surfaces all speak the same modifier vocabulary). */
 function fleeModsText(mods) {
   return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
@@ -360,21 +361,21 @@ export function slotWord(slot) {
 // already been decorated by decorateMisses (engineAdapter.js). Order:
 //   1. encounterStart  — folds encounterStarted + its same-action followers
 //      (trackable, allyJoined, warlockBoost, foeFled knight/conArtist,
-//      foeBored, phobiaAfraid, combatInDark) into ONE toast.
+//      foeBored, phobiaAfraid, combatInDark) into ONE line.
 //   2. enemyRound       — groups struckByFoe/foeMissed(hero) by foe name
-//      into one toast per foe (3+ distinct names collapse into one), and
+//      into one line per foe (3+ distinct names collapse into one), and
 //      memberStruck/foeMissed(member) by (name, member) into their own
-//      lower-priority toasts.
+//      lower-priority lines.
 //   3. yourRound        — groups struck/strikeMissed(non-untouchable) by
-//      target into one toast per target; untouchable misses stay separate.
+//      target into one line per target; untouchable misses stay separate.
 //   4. spellChain       — folds spellThrown->spellHit/spellMissed/
 //      frozenSolid/foeKilled per target (3+ targets collapse into one
-//      Lightning-style toast), and folds a bare resistFailed away when a
+//      Lightning-style line), and folds a bare resistFailed away when a
 //      resisted-but-failed effect event follows in the same action.
 //   5. fleeChain / parleyChain / chestChain — fold a *Rolled event into its
 //      outcome, appending the roll detail to the outcome's own text.
 //   6. killFold         — appends the felled suffix (middle-dot + "felled")
-//      to any your-round/spell-chain toast whose target a still-unconsumed
+//      to any your-round/spell-chain line whose target a still-unconsumed
 //      foeKilled names.
 //   7. every remaining unconsumed, non-ORACLE_ONLY event is mapped through
 //      LINE_FOR directly.
@@ -382,16 +383,16 @@ export function slotWord(slot) {
 //      are never deduped against each other), stable-sort ascending by
 //      priority (ties keep engine order); the default `limit` is Infinity
 //      (uncapped — the toast host that once capped this list was retired
-//      in Phase 35), so every folded line survives unless a caller passes
-//      an explicit `opts.limit`.
+//      in Phase 35; the rail and the fight log show every line), so every
+//      folded line survives unless a caller passes an explicit `opts.limit`.
 //
 // `ctx.narrate` (Phase 25.1, DFB-01 decision 2) — `(e) => html string | ""`,
 // supplied by the shell ONLY for NARRATIVE_ACTIONS (move/camp/resolveJoiner).
 // In step 7 (the direct-mapped-event loop below), when `ctx.narrate` is a
-// function AND the event's type is not in CARD_EVENTS, the toast text
+// function AND the event's type is not in CARD_EVENTS, the line text
 // becomes `narrativeLineText(ctx.narrate(e))` — the Oracle's own sentence,
 // dice stripped — with the table text as the fallback when the narration
-// strips to nothing (never a blank toast). Every other action type keeps
+// strips to nothing (never a blank line). Every other action type keeps
 // the short Phase 25 table text. CARD_EVENTS types are excluded here
 // because the "Move on" card already carries their sentence — this is the
 // ONE decision point where the narrative-vs-table choice is made.
@@ -412,9 +413,9 @@ function sumSoaked(list) {
 
 /**
  * enemyRound(events, consumed) — struckByFoe/foeMissed(hero, no `member`)
- * grouped by foe name into one toast per foe (M===1 reuses the locked
+ * grouped by foe name into one line per foe (M===1 reuses the locked
  * single-swing LINE_FOR builder verbatim; M>=2 uses the "K of M" wording);
- * 3+ distinct foe names collapse into ONE "${F} foes swing, ..." toast.
+ * 3+ distinct foe names collapse into ONE "${F} foes swing, ..." line.
  * memberStruck/foeMissed(member) group by (name, member) separately, at
  * PRIORITY.feature (25-CONTEXT.md: "party-member hits ... lower priority").
  */
@@ -563,8 +564,8 @@ function yourRound(events, consumed) {
 
 /**
  * killFold(events, consumed, built) — shared by yourRound/spellChain: any
- * still-unconsumed `foeKilled` whose `name` matches a built toast's
- * `_target` (a landed hit on that name) gets folded into that toast's felled
+ * still-unconsumed `foeKilled` whose `name` matches a built line's
+ * `_target` (a landed hit on that name) gets folded into that line's felled
  * suffix, once. A foeKilled with no matching `_target` (a ward reflect,
  * an ally's kill, an acid tick) is left unconsumed for its own builder.
  */
@@ -584,7 +585,7 @@ function killFold(events, consumed, built) {
  * RESIST_FOLD_EFFECTS — the effect event types a `resistFailed` folds away
  * behind: when one of these follows a `resistFailed` for the same target
  * (or carries no `target` field at all — the AOE effects), the bare
- * `resistFailed` toast is suppressed and only the effect's own toast shows.
+ * `resistFailed` line is suppressed and only the effect's own line shows.
  */
 const RESIST_FOLD_EFFECTS = new Set([
   "dozed",
@@ -609,11 +610,11 @@ const RESIST_FOLD_EFFECTS = new Set([
 /**
  * spellChain(events, consumed) — folds `spellThrown` -> its per-target
  * outcome (`spellHit`(+`frozenSolid`)(+`foeKilled`) | `spellMissed`) into
- * ONE toast per target; 3+ distinct targets (Lightning) collapse into one
- * "${spell}: ${T} targets, ${K} hit (${sum})" toast instead. Also consumes
+ * ONE line per target; 3+ distinct targets (Lightning) collapse into one
+ * "${spell}: ${T} targets, ${K} hit (${sum})" line instead. Also consumes
  * a bare `resistFailed` when a RESIST_FOLD_EFFECTS event follows it in this
  * action (for the same target, or an untargeted AOE effect) — the effect's
- * own toast is the only one that shows.
+ * own line is the only one that shows.
  */
 function spellChain(events, consumed) {
   const built = [];
@@ -706,7 +707,7 @@ function spellChain(events, consumed) {
 
 /**
  * fleeChain(events, consumed) — `fleeRolled` + (`fled` | `fleeFailed`) fold
- * into ONE toast, ROLL FIRST (Phase 42, FLEE-02, ROADMAP SC-1): the roll and
+ * into ONE line, ROLL FIRST (Phase 42, FLEE-02, ROADMAP SC-1): the roll and
  * every named modifier lead, the outcome's own text follows —
  * `${LINE_FOR.fleeRolled(e).text}. ${outcome text}` — so the fight log
  * shows roll/modifiers/need before the outcome in one line (the 34-CONTEXT
@@ -738,7 +739,7 @@ function fleeChain(events, consumed) {
 
 /**
  * parleyChain(events, consumed) — `parleyRolled` + (`goldGained` why
- * "parley" | `parleyFailed` | `beastsSoothed`) fold into ONE toast: the
+ * "parley" | `parleyFailed` | `beastsSoothed`) fold into ONE line: the
  * outcome's own text plus `(${roll} vs ${need})`.
  */
 function parleyChain(events, consumed) {
@@ -765,7 +766,7 @@ function parleyChain(events, consumed) {
 
 /**
  * chestChain(events, consumed) — `chestLockRolled` + (`chestOpened` |
- * `chestLocked`) fold into ONE toast: the outcome's own text plus
+ * `chestLocked`) fold into ONE line: the outcome's own text plus
  * `(${roll} vs ${need})`. A Pilfer's roll-free `chestOpened` (reason
  * "pilfer") has no preceding `chestLockRolled` and keeps its own builder.
  */
@@ -793,7 +794,7 @@ function chestChain(events, consumed) {
  * encounterStart(events, consumed) — when an `encounterStarted` is present,
  * folds it plus its same-action followers (trackable, allyJoined,
  * warlockBoost, foeFled reason knight/conArtist, foeBored, phobiaAfraid,
- * combatInDark) into ONE toast; each follower appends a short clause and is
+ * combatInDark) into ONE line; each follower appends a short clause and is
  * consumed. Without an `encounterStarted` in the action, every one of those
  * events keeps its own builder (this function simply returns null).
  */
@@ -853,10 +854,10 @@ function encounterStart(events, consumed) {
 }
 
 /**
- * dedupeByType(list) — keeps the first toast of each event `type` in engine
- * order; a later toast of the SAME type with DIFFERENT text appends
- * ` ×${N}` to the kept toast. Aggregated toasts (no `.type` tag) are never
- * deduped against each other or against table-mapped toasts.
+ * dedupeByType(list) — keeps the first line of each event `type` in engine
+ * order; a later line of the SAME type with DIFFERENT text appends
+ * ` ×${N}` to the kept line. Aggregated lines (no `.type` tag) are never
+ * deduped against each other or against table-mapped lines.
  */
 function dedupeByType(list) {
   const seen = new Map();
@@ -883,11 +884,10 @@ function dedupeByType(list) {
 /**
  * linesForAction(type, events, ctx = {}, opts = {}) — the exported
  * per-action pipeline. See the header comment above this section for the
- * full order. `opts.limit` defaults to Infinity — uncapped: the capped
- * toast host this option once served (Phase 32, CMBUI-02) was retired in
- * Phase 35, and every production caller (fightLog.js, the rail path in
- * mazeworld.html) already passes `{ limit: Infinity }` explicitly, so the
- * default now matches what every real caller gets.
+ * full order. `opts.limit` is kept for callers that want a shorter fold;
+ * the default is Infinity, and every production caller (fightLog.js, the
+ * rail path in mazeworld.html) already passes `{ limit: Infinity }`
+ * explicitly, so the default now matches what every real caller gets.
  * Phase 34 (CSCR-04) adds `opts.withIdx` (default false): when true, each
  * surviving folded entry keeps its `idx` (the index into `events` its
  * roll detail should be looked up from) and, for a directly-mapped event,
@@ -922,7 +922,7 @@ export function linesForAction(type, events, ctx = {}, opts = {}) {
     // Phase 25.1 (DFB-01 decision 2) — the ONE narrative-vs-table decision
     // point: for a narrative action's non-card event, prefer the Oracle's
     // own sentence (dice stripped); fall back to the table text when the
-    // narration strips to nothing so a toast is never blank.
+    // narration strips to nothing so a line is never blank.
     const narrative = typeof ctx.narrate === "function" && !CARD_EVENTS.has(e.type) ? narrativeLineText(ctx.narrate(e)) : "";
     built.push({ text: narrative || text, tone, priority, idx, type: e.type });
   });
@@ -967,7 +967,7 @@ export const LINE_FOR = {
   trappedPanic: (e) => ({ text: `${e?.phobia ?? "Being trapped"}: four walls, one used door (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 41 (TERR-04/05): a fresh terrain-phobia region entry — the same
   // headline sentence eventNarration.js's phobiaTriggered uses, minus the
-  // trailing "It will show in the next fight." clause (too long for a toast).
+  // trailing "It will show in the next fight." clause (too long for a line).
   phobiaTriggered: (e) => {
     const lines = {
       water: "Water. You knew this was coming.",
@@ -995,7 +995,7 @@ export const LINE_FOR = {
   armorPatched: (e) => ({ text: `${e?.by ?? "Mending"}: +${e?.amount ?? 0} armour.`, tone: "hit", priority: PRIORITY.feature }),
   potionDuplicated: () => ({ text: "Warlock: +1 potion.", tone: "magic", priority: PRIORITY.feature }),
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
-  // toasted (never ORACLE_ONLY), not just bookkeeping.
+  // narrated (never ORACLE_ONLY), not just bookkeeping.
   rationsEaten: (e) => ({ text: `Rations: −${e?.eats ?? 0} (${e?.left ?? 0} left).`, tone: "beat", priority: PRIORITY.other }),
   wentHungry: (e) => ({ text: `Hunger: no rations (−${e?.cost ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   wanderingMonster: (e) => ({
@@ -1154,7 +1154,7 @@ export const LINE_FOR = {
     priority: PRIORITY.feature,
   }),
   allyDeparted: (e) => ({ text: `${e?.name ?? "Your ally"} slips away, obligation met.`, tone: "beat", priority: PRIORITY.feature }),
-  // DFB-05 (Phase 25.1): a Magic User member's cast outcome — one toast per
+  // DFB-05 (Phase 25.1): a Magic User member's cast outcome — one line per
   // cast (allyCast itself is ORACLE_ONLY).
   allySpellHit: (e) => {
     const who = e?.name ?? "Your ally";
@@ -1264,7 +1264,7 @@ export const LINE_FOR = {
     };
     return block(map[e?.reason] ?? `${name} refuses you.`);
   },
-  // Plan 04 (ABIL-05): the fourteen ability-activation/effect toasts below
+  // Plan 04 (ABIL-05): the fourteen ability-activation/effect lines below
   // carry an ADDITIVE `${e?.member ? \`${e.member}: \` : ""}` prefix — present
   // only when a Joiner (not the hero) is the actor.
   pommelStruck: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}The pommel finds ${e?.target ?? "it"}'s temple.`, tone: "hit", priority: PRIORITY.them }),
@@ -1330,7 +1330,7 @@ export const LINE_FOR = {
   backfireSelfDamage: (e) => ({ text: `Backfire: ${e?.spell ?? "The spell"} (−${e?.amount ?? 0} hp).`, tone: "hurt", priority: PRIORITY.you }),
   // Phase 25 (25-03): no trailing period — matches the aggregate-format
   // convention (struckByFoe/foeMissed/struck etc. carry none either) so a
-  // resisted-spell toast reads consistently with the rest of the pipeline.
+  // resisted-spell line reads consistently with the rest of the pipeline.
   spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.spell ?? "it"}`, tone: "miss", priority: PRIORITY.you }),
   resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -1441,7 +1441,7 @@ export const LINE_FOR = {
 
   // Phase 25.1 (DFB-01): tableFour/tableFourNoop left ORACLE_ONLY once the
   // "Move on" card is gated to CARD_EVENTS — the over-map overlay no longer
-  // narrates these on the move path, so they need their own toast. `result`
+  // narrates these on the move path, so they need their own line. `result`
   // is already a full prose sentence (engine/encounters.js#tableFour).
   tableFour: (e) => ({ text: e?.result ?? "Something happens.", tone: "beat", priority: PRIORITY.other }),
   tableFourNoop: (e) => ({ text: e?.result ?? "Nothing much happens.", tone: "beat", priority: PRIORITY.other }),
@@ -1516,7 +1516,7 @@ export const LINE_FOR = {
   itemTaken: (e) => ({ text: `Equipped: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.other }),
   // Phase 39 (GEAR-05): the hazard-tool spend — the card's other button
   // (USE LADDER/USE ROPE); hazardChoice itself is SILENT (ORACLE_ONLY
-  // above) — the card IS the UI, this toasts the outcome.
+  // above) — the card IS the UI, this line narrates the outcome.
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   toolUsed: (e) => ({
     text: e?.tool === "ladder" ? "Ladder: over the wall, ladder spent." : "Rope: across, rope spent.",

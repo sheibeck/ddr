@@ -18,7 +18,7 @@ import { bagUsage, renderCarriedList } from "./gearTab.js";
 // Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
 // nod to the depth roll; shown ONLY on a run whose S.storeRoll is true
 // (engine/state.js — a run this build started), so an old save's header is
-// byte-identical to today; no toast, no Oracle line (the store is a screen,
+// byte-identical to today; no rail line, no Oracle line (the store is a screen,
 // not an event). Player-facing: kept clear of content/safety-wordlist.js
 // (scanned by test/unit/shell-map-store-polish.test.js).
 export const STORE_ROLL_COPY = "Stock rolled fresh for this floor. Deeper down, pricier regrets.";
@@ -41,7 +41,7 @@ export function renderStoreScreen(host, state, deps = {}) {
   const c = state.c;
   // Phase 29 (LOOT-04): the store's drop-to-make-room option; a refused
   // lockpick buy costs nothing (engine gate, Plan 01) and its bagFull
-  // toast names have/slots.
+  // rail line names have/slots.
   const usage = bagUsage(c);
   // Phase 33 (STORE-01) — the roll line is gated on the run flag, never on
   // stock contents, so an old save (flag off, fixed stock) shows exactly

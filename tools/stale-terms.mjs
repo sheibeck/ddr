@@ -168,6 +168,18 @@ export const ALLOWED = Object.freeze(
       match: "never a toast — the v1.4 rail-is-the-one-feedback",
       reason: "B — the boot worn-report states the v1.4 ruling",
     },
+    {
+      term: "toast",
+      file: "src/browser/narrationLines.js",
+      match: "toast host that once capped this list was retired",
+      reason: "B — explains why the fold is uncapped",
+    },
+    {
+      term: "round-card",
+      file: "src/browser/fightLog.js",
+      match: "replaced the Phase 32 Round Card",
+      reason: "B — the module states what it replaced",
+    },
   ].map((a) => Object.freeze(a)),
 );
 

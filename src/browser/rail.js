@@ -178,7 +178,7 @@ export const RAIL_FAMILY = Object.freeze({
   // Phase 41 (TERR-02): entering water (once per wade, not per step).
   waded: { icon: "·", title: "WADING", tone: "odd" },
   // Phase 39 (GEAR-05): the hazard pre-roll decision card (hazardChoice is
-  // ORACLE_ONLY on the toast side — the card IS the UI, mirroring findOffered
+  // ORACLE_ONLY on the line side — the card IS the UI, mirroring findOffered
   // — but still gets a family entry here for Plan 05's dedicated card) and
   // the spent-tool outcome.
   hazardChoice: { icon: "⧗", title: "A CHOICE", tone: "info" },
@@ -318,7 +318,7 @@ export const RAIL_DIRECT = new Set(["floorChanged", "dayBegan", "findTaken", "fi
  * family doesn't override it); otherwise the block/tone fallback: a
  * PRIORITY.block entry is always dull "NOTHING DOING" regardless of its
  * tone (the re-read partition invariant — a refusal never looks like an
- * outcome); every other unlisted type falls back by its toast tone.
+ * outcome); every other unlisted type falls back by its line tone.
  */
 export function railFamilyFor(type, tone, priority) {
   const fam = RAIL_FAMILY[type];

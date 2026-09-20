@@ -1,15 +1,16 @@
 // src/browser/fightLog.js
 //
 // Phase 34 (CSCR-04) — the whole-fight, newest-first, tap-to-reveal fight
-// log that replaces the Round Card (Phase 32's round-card global bridge).
+// log (it replaced the Phase 32 Round Card).
 //
 // Decision 1 (34-01-PLAN.md objective, RESEARCH Open Question 1): the
 // fight log's lines are sourced from `linesForAction(type, events, ctx,
-// { limit: Infinity, withIdx: true })` — the SAME folded/deduped pipeline
-// the old Round Card used — rather than from raw `formatEvents()` output.
-// 34-CONTEXT.md pins "log line count = folded count" (the
-// round-card-worst-case retarget), so the folding/dedup pipeline must stay
-// the ONE source; sourcing lines from raw per-event HTML would yield one
+// { limit: Infinity, withIdx: true })` — the SAME folded/deduped pipeline —
+// rather than from raw `formatEvents()` output.
+// 34-CONTEXT.md pins "log line count = folded count" (the worst-case
+// fight-log round test pins line count = folded count), so the
+// folding/dedup pipeline must stay the ONE source; sourcing lines from raw
+// per-event HTML would yield one
 // line per narrated event and break both that pin and the 400-seed fold
 // proof. A folded multi-event entry reveals the dice of its FIRST
 // constituent event (`events[idx]`, via `narrateEvent`/`oracleDetailText`)
@@ -32,7 +33,7 @@ export const FIGHT_LOG_TONES = Object.freeze(["narrative", "dull"]);
  * fightLogLinesFor(type, events, ctx = {}) — one fight-log line per folded
  * linesForAction entry (uncapped, per the Decision 1 fold-preserving
  * source). Each line is `{ text, tone, roll }`:
- *   - text: the folded toast's own text (narrativeLineText-normalized —
+ *   - text: the folded line's own text (narrativeLineText-normalized —
  *     already roll-free from LINE_FOR/ctx.narrate, this is a defensive
  *     pass so the fight log never renders a stray tag).
  *   - tone: "dull" when the entry's priority is PRIORITY.block (a
@@ -56,7 +57,7 @@ export function emptyFightLog() {
 }
 
 /**
- * dullFightLogLine(text) — a manually-built dull entry (no toast pipeline
+ * dullFightLogLine(text) — a manually-built dull entry (no fold pipeline
  * involved), for shell call sites that need to inject a single dull line
  * directly (mirrors the shape fightLogLinesFor produces).
  */

@@ -3,7 +3,7 @@
 // Phase 25 (FEED-05) — the fledgling-miss quip corpus. While a hero is still
 // green (c.level <= QUIP_MAX_LEVEL), a plain strikeMissed event earns a short,
 // deadpan, family-friendly quip appended after the Oracle's roll/miss
-// sentence AND surfaced on the matching toast (25-03/25-04) — one assignment
+// sentence AND surfaced on the matching narration line (25-03/25-04) — one assignment
 // site (engineAdapter.js#dispatch), one quip, two consumers.
 //
 // PRESENTATION ONLY, pure module: no DOM access, no `import` from engine/,

@@ -1,9 +1,9 @@
 // src/browser/inputGuards.js
 //
-// The single home of the two Phase 32 tap-safety timing guards (CMBUI-04/
-// 05, docs/COMBAT-NARRATIVE-DESIGN.md §6.3): an arm-delay for freshly
-// rendered decision buttons, and a dismiss-settle window after an encounter
-// overlay disappears. Both are plain millisecond comparisons — this module
+// The single home of the two Phase 32 tap-safety timing guards (CMBUI-04/05):
+// an arm-delay for freshly rendered decision buttons, and a dismiss-settle
+// window after an encounter overlay disappears. Both are plain millisecond
+// comparisons — this module
 // is DOM-free AND clock-free. Callers pass the current millisecond reading
 // as `now` (typically Date.now() at the call site) so the two predicates
 // below stay pure and unit-testable without a DOM or a real clock, exactly

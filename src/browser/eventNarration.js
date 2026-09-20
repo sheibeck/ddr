@@ -86,8 +86,8 @@ function needModsClause(mods, need) {
 // every `phobiaTriggered` event (and stashes on `c.fearArmed.trigger`) maps
 // to this narrated phrase — used both by `phobiaTriggered`'s own line below
 // and by `phobiaAfraid`'s "Still rattled from ..." clause once the armed
-// fear actually opens a fight. Exported so other modules (rail/toasts) never
-// need to re-derive the same vocabulary by hand.
+// fear actually opens a fight. Exported so other modules (rail/narrationLines)
+// never need to re-derive the same vocabulary by hand.
 export const PHOBIA_TRIGGER_PHRASE = Object.freeze({
   water: "the water",
   dark: "the dark",
@@ -143,7 +143,7 @@ export const EVENT_NARRATION = {
   // placement; the "You have died." line that follows is `died`'s own.
   entombed: () => `<span class="hurt">The cloak gives out. The stone does not.</span>`,
   // Phase 39 (GEAR-05): the hazard pre-roll decision — a rail card IS the
-  // UI (ORACLE_ONLY on the toast side, like findOffered), but the Oracle
+  // UI (ORACLE_ONLY on the line side, like findOffered), but the Oracle
   // still gets its own line.
   hazardChoice: (e) =>
     e.tool === "ladder"
@@ -517,7 +517,7 @@ export const EVENT_NARRATION = {
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
   // Phase 28 (ARMOR-05): the same underMin/magic outcome flags narrationLines.js
-  // reads, so the toast and the Oracle can never disagree about which of
+  // reads, so the narration line and the Oracle can never disagree about which of
   // the four armorSoaked outcomes just happened.
   armorSoaked: (e) =>
     e.magic
@@ -527,7 +527,7 @@ export const EVENT_NARRATION = {
         : `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
   // Phase 18 (CANON-01, D-08) — the FOE's natural armor ate the hero's/
   // ally's blow. `name` is the foe; `amount` is what it shrugged off (kept
-  // short for the toast).
+  // short for the line).
   foeArmorSoaked: (e) => `<span class="miss">Your blow rings off ${e.name ?? "the thing"}'s armor. It looks bored.</span>`,
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
@@ -1048,8 +1048,8 @@ export const EVENT_NARRATION = {
  * produce), or "" for a null/undefined event, an event without a string
  * `type`, or a type with no EVENT_NARRATION entry (so "moved" is ""). This
  * exists because engineAdapter.js's formatEvents filters null lines — html
- * is NOT 1:1 with events — and the toast layer needs exactly one event's
- * line to pass through narrativeLineText (src/browser/narrationLines.js).
+ * is NOT 1:1 with events — and the narration-line layer needs exactly one
+ * event's line to pass through narrativeLineText (src/browser/narrationLines.js).
  */
 export function narrateEvent(e) {
   if (!e || typeof e.type !== "string") return "";

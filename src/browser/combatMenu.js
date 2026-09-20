@@ -61,7 +61,7 @@ export const COMBAT_MENU_COPY = Object.freeze({
 
 /** fleeModsText(mods) — "Thief +5" / "Troll −1, Plate −2" (Phase 42, FLEE-02;
  * mirrors eventNarration.js's needModsText format so this row's honest cost
- * speaks the same modifier vocabulary as the fight log/toast/rail). */
+ * speaks the same modifier vocabulary as the fight log/rail). */
 function fleeModsText(mods) {
   return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
 }

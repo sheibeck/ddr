@@ -369,10 +369,9 @@ export function grimoireViewModel(state) {
 // Moved verbatim from the classic script's paint()/the module script's
 // renderGrimoire, with `host.ownerDocument` replacing `document`, `state`/
 // `state.c` replacing the classic S/c, and direct content/engine imports
-// replacing the retired window.__mzTables/__mzStrikeDie/__mzToHit/__mzEff
-// bridges. Every id this function writes lives inside the `#screen-hero`
-// markup section. No window/document globals — host, host.ownerDocument and
-// deps only.
+// (ROMAN, strikeDie, toHit, eff) in place of a presentation bridge. Every id
+// this function writes lives inside the `#screen-hero` markup section. No
+// window/document globals — host, host.ownerDocument and deps only.
 
 /**
  * skillTable(cls) — the special-skill description pool for a class, read by
@@ -391,9 +390,8 @@ function skillTable(cls) {
 // s-skills block's position immediately above (special skills stays
 // passives-only, byte-identical). createElement/textContent only — T-38-11
 // (no innerHTML in this region) — reading characterSheetViewModel(state)
-// directly (the retired window.__mzAbilities bridge's only reader) so the
-// READY/N ROUNDS/ONCE A FIGHT · USED / cd N ROUNDS/once a fight state-suffix
-// rule lives in exactly one place.
+// directly so the READY/N ROUNDS/ONCE A FIGHT · USED / cd N ROUNDS/once a
+// fight state-suffix rule lives in exactly one place.
 function renderAbilityRows(doc, state) {
   const c = state.c;
   const ul = doc.getElementById("s-abilities");
@@ -517,7 +515,7 @@ const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt
 // combat) a DISMISS control with the same two-tap inline confirm pattern as
 // the Gear tab's Drop. On confirm the deps.dismissJoiner(idx) closure routes
 // through the same dispatchWithNarration seam as the Joiner offer's resolve —
-// the parting line surfaces on the rail only, never here, never as a toast.
+// the parting line surfaces on the rail only, never here.
 function renderPartyRoster(doc, state, deps) {
   const panel = doc.getElementById("hero-party");
   const host = doc.getElementById("hero-party-list");
@@ -591,8 +589,8 @@ function renderPartyRoster(doc, state, deps) {
  * mount function for the Hero tab (`#screen-hero`) — see this section's head
  * comment for the full write list. Moved verbatim from the classic script's
  * paint() with `host.ownerDocument` replacing `document`, `state`/`state.c`
- * replacing the classic S/c, and direct content/engine imports replacing the
- * retired window.__mzTables/__mzStrikeDie/__mzToHit/__mzEff bridges. No
+ * replacing the classic S/c, and direct content/engine imports (ROMAN,
+ * strikeDie, toHit, eff) in place of a presentation bridge. No
  * window/document globals — host, host.ownerDocument and deps only.
  */
 export function renderHeroTab(host, state, deps = {}) {
@@ -617,9 +615,8 @@ export function renderHeroTab(host, state, deps = {}) {
   fill.classList.toggle("low", pct < 34);
 
   // Phase 39 (GEAR-01), Plan 05 — routed through the engine's own
-  // strikeDie(c)/toHit(state) directly (no more window.__mzStrikeDie/
-  // __mzToHit bridge) so the Hero tab shows the weapon's real need modifier
-  // and Acuteness's crit-die swap.
+  // strikeDie(c)/toHit(state) directly so the Hero tab shows the weapon's
+  // real need modifier and Acuteness's crit-die swap.
   doc.getElementById("s-die").textContent = "d" + strikeDie(c);
   doc.getElementById("s-hit").textContent = "1–" + toHit(state);
   const w = WEAPONS[c.weapon] || WEAPONS["Club"];
@@ -628,7 +625,7 @@ export function renderHeroTab(host, state, deps = {}) {
   doc.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
   // Phase 28 (ARMOR-02): durability + the cloak's effective plate come from
   // the shared formatter — this HUD line never showed durability before,
-  // which was the reported "toast says wear, panel shows no damage" bug.
+  // which was the reported "the line says wear, the panel shows no damage" bug.
   const armorD = armorDisplay(c);
   doc.getElementById("s-arm").textContent = armorD.line;
   doc.getElementById("s-int").textContent = c.intel;
