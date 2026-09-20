@@ -4,10 +4,12 @@
 // Phase 46 (NAME-02) gate — a comment-stripped identifier grep over the
 // shipped surface (src/, engine/, content/, tools/, mazeworld.html). Unlike
 // a plain `grep`, this tool strips // and /* */ comments (and HTML <!-- -->
-// comments) before matching, so retired-identifier prose left behind on
-// purpose in Phase 48's docs/comments sweep does not drown a real straggler
-// grep in false positives. String literals are KEPT (a retired option value
-// like "dpad" can still live inside a string) — only comments are removed.
+// comments) before matching, so retired-identifier prose a retirement
+// statement keeps on purpose — see tools/stale-terms.mjs for the
+// comment-side sweep — does not drown a real straggler grep in false
+// positives. String literals are KEPT (a retired option value like a
+// legacy save key can still live inside a string) — only comments are
+// removed.
 //
 // Usage:
 //   node tools/ident-sweep.mjs [-i] <regex> [<regex> ...]
