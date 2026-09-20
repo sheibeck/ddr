@@ -208,6 +208,11 @@ removing that call, and the arithmetic above shows `draw`'s own cost
 (median 1.6 ms) is not, alone, enough to bring `step` under 16 ms; it
 remains an open, undone finding for a future perf pass.
 
+Fix landed: 9fe9bb5 — `paint()` now skips the hidden Hero/Gear tab mount on
+`stepWith`'s own paint call (a module-scope flag, `mwPaintSkipHiddenTabs`),
+with `showTab()` re-rendering the mount the instant that tab becomes active,
+so the DOM the player next sees is never stale. AFTER run pending (Task 2).
+
 ## AFTER
 
 Filled by Plan 49-02 from the user's Pixel 7 report (quoted as given, never rounded or estimated).
