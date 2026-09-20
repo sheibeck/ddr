@@ -2,36 +2,36 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 47
-status: verifying
+current_phase: 48
+current_phase_name: Stale Docs, Comments & Test Names Purge
+status: planning
 stopped_at: Completed 47-05-PLAN.md (storeScreen.js carve + phase closing gates)
-last_updated: "2026-09-20T02:27:59.638Z"
+last_updated: "2026-09-20T02:34:26.025Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 47 execution started
+last_activity_desc: Phase 47 complete, transitioned to Phase 48
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 16
   completed_plans: 16
   percent: 67
-current_phase_name: Shell Modularisation
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
 **Current focus:** Phase 47
 
 ## Current Position
 
-Phase: 47 — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-09-19 — Phase 47 execution started
+Phase: 48 — Stale Docs, Comments & Test Names Purge
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-19 — Phase 47 complete, transitioned to Phase 48
 
 ## Ground Truth (durable facts every session needs)
 
