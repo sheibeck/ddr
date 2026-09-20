@@ -2,37 +2,36 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
-current_phase: 999.1
-current_phase_name: Transitions & Sounds (BACKLOG
-status: planning
+status: Awaiting next milestone
 stopped_at: Completed 49-02-PLAN.md (Phase 49 closed — PERF-01/PERF-02 complete, both fixes kept per user ruling)
-last_updated: "2026-09-20T14:11:37.618Z"
+last_updated: "2026-09-20T16:42:45.920Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 49 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v1.6 completed and archived
 progress:
   total_phases: 6
   completed_phases: 6
   total_plans: 23
   completed_plans: 23
   percent: 100
+current_phase: 999.1
+current_phase_name: Transitions & Sounds (BACKLOG
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 49; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
+See: .planning/PROJECT.md (updated 2026-09-20 — v1.6 Shell Debt & Dead Code complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 49
+**Current focus:** v1.6 complete — Pixel 7 UAT batches (26 + 140) on APK c0cdbae, then the next milestone (/gsd-new-milestone: v1.0 launch tail or the tuning pass)
 
 ## Current Position
 
-Phase: 49 of 49 — Measure-First Perf Pass (COMPLETE); all six v1.6 phases executed
-Plan: none — milestone audit → complete → cleanup next; Pixel 7 UAT batch (docs/UAT-v1.6.md, 26 items, APK c0cdbae on the phone) still to run
-Status: v1.6 execution complete — closing the milestone
-Last activity: 2026-09-20 — Phase 49 complete, transitioned to Phase 999.1
-Progress: [██████████] 100%
+Phase: Milestone v1.6 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-20 — Milestone v1.6 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -101,6 +100,19 @@ Progress: [██████████] 100%
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-09-20 (v1.6 verified closeout — all six phases `passed`, 19/19 requirements; user chose "complete, accept debt as tracked"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v1.6.md (26 checks) + docs/UAT-v1.5.md (140 checks) | pending on APK c0cdbae (installed on the Pixel 7); findings → quick tasks / a UAT gap plan, never ad-hoc edits |
+| quick_task | rules-text-audit-pass (20260909) | v1.0-era stub, re-acknowledged (shipped as Phase 04.2) |
+| quick_task | 260908-kkq-rename-product-to-delve-die-repeat-and-s | v1.0-era stub, re-acknowledged (landed in f81942f) |
+| todo | 2026-09-19 initiative once per combat | rules change — next tuning pass |
+| todo | 2026-09-19 rail overlays the map, tap-to-dismiss, longer hold | UI quick task after the UAT batch |
+| todo | 2026-09-20 enemy attack cadence, initiative in the Oracle, damage curve | rules change — next tuning pass |
+| todo | 2026-09-20 average run ends floor 5–7 (four-band shape) | tuning target — next tuning pass |
+| seed | SEED-001 leaderboards & share | dormant (post-launch) |
+
 Items acknowledged and deferred at milestone close on 2026-09-13 (v1.0 override closeout):
 
 | Category | Item | Status |
@@ -132,10 +144,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- All six v1.6 phases (44-49) have landed SUMMARYs; Phase 49 closed 2026-09-20 with PERF-01/PERF-02 marked complete (both perf fixes kept per user ruling — see `docs/PERF-BASELINE.md` and `49-02-SUMMARY.md`).
-- Milestone completion ceremony not yet run: `/gsd-complete-milestone` (or the audit-milestone skill first, if a pre-archive review is wanted) to formally close v1.6 and route to the next milestone.
-- The 26-item v1.6 UAT batch (`docs/UAT-v1.6.md`) and the v1.5 140-check UAT batch (`docs/UAT-v1.5.md`) both run against the debug APK lineage from Phase 49's device sessions — not gated on any further v1.6 phase, but their results are owed to the milestone close per 49-01's own checklist item 10.
-- Optional, user's discretion: revert 49-01's instrumentation commit (`bb83eed`) to remove the dev-gated `performance.now()` marks from the shipped build entirely (judgment call recorded in `49-01-SUMMARY.md`/`49-02-SUMMARY.md`); or a future perf pass measuring a dark-only vs. lit-only walk to isolate the dark-region draw cost that kept `step` p95 at 19.8 ms after both fixes (Phase 49's own open finding, not fixed in this milestone per PERF-02's measure-first rule).
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 

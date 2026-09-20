@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.6 Shell Debt & Dead Code (Code-complete: 2026-09-20; device UAT batch pending)
+
+**Closeout type:** verified closeout (19/19 requirements complete, 6/6 phases `passed`, audit `tech_debt` with zero blockers) — run autonomously under the deferred-UAT protocol; Phase 49's three Pixel 7 rounds were the only device pauses. The 26-item v1.6 UAT batch (`docs/UAT-v1.6.md`) and the never-run 140-item v1.5 batch are open on APK `c0cdbae`; the v1.0-era quick-task stubs, four deferred todos and one dormant seed were re-acknowledged (STATE.md Deferred Items).
+**Phases completed:** 6 phases, 23 plans, 56 tasks · **Timeline:** 2026-09-19 → 2026-09-20 (136 commits) · **Tests:** 2,924 → 3,315 green; parity master `a1f4d0dc…` untouched · **Shell:** `mazeworld.html` 8,710 → 5,682 lines (−35%); 25 modules in `src/browser/`.
+**Ratified during the run:** research skipped for all six phases; verification agents off — orchestrator-authored VERIFICATION.md per phase; SHELL-04's "< 5,000 lines" re-baselined to 5,621 (user); `classic script` kept as a live term; Phase 49 measured by in-app dev-gated marks (user), both perf fixes kept at step p95 19.8 ms (user); four rules-change todos captured for the next tuning pass (initiative once, enemy cadence + damage curve, floor 5–7 average, rail overlay).
+
+**Key accomplishments:**
+
+- Retired the classic engine from the shell (Phase 44): 16 mirrors, the classic cold-boot chargen and the `new Function` extraction tripwires gone; `npm run boot:check` (4 checks) and `tools/shell-sweep.mjs refs|orphans` are standing gates; shell 8,710 → 6,356.
+- Collapsed the Phase 37 hedges (Phase 45): one worn-model path — `newRun` always wears, load always reconciles, no `wornSlots` option anywhere; exactly 13 fixture sites moved, each declared with before/after (`tools/worn-fixture-scan.mjs`), bot readout byte-equal to the v1.5 pin.
+- Honest names and dead exports (Phase 46): `toasts.js` → `narrationLines.js` (`LINE_FOR`/`linesForAction`/`dispatchWithNarration`), `winGame`/`won` removed end to end with tolerant load, the dead `controlScheme` setting and the 04-era `tutorial.js` deleted (UX-06 rebuilds on the modular shell); `tools/ident-sweep.mjs` proves zero retired identifiers.
+- Shell modularisation (Phase 47): Gear, Hero and Store render from `src/browser/gearTab.js` / `heroTab.js` / `storeScreen.js` through `render*(host, state, deps)` and one `window.__mzTabs` mount each; 18 dead bridges + 7 classic wrappers deleted; `src/browser/bridge.js` is the one `__mz*` registry (45 names) with a set-equality test and a generated `docs/SHELL-MODULES.md`; a node `node:vm` DOM-snapshot harness proves all seven Gear/Hero/Store renders byte-equal before and after every carve.
+- Stale docs, comments and test names purged (Phase 48): `tools/stale-terms.mjs` tripwire (11 rows, classed allow-list, pinned by 5 tests) reads 0 unlisted over shell/src/engine/content/test; 8 engine/content files swept comment-only (stripped diff empty); 47 test files renamed to the line vocabulary under a bounded rule with assertion counts pinned; CLAUDE.md Android-only; `COMBAT-NARRATIVE-DESIGN.md` deleted, nine docs status-noted.
+- Measure-first perf pass (Phase 49): dev-gated `performance.now()` rings (step/dispatch/paint/draw) surfaced under the long-press dev row; three Pixel 7 rounds recorded in `docs/PERF-BASELINE.md` — step 14.2 / 28.9 ms → 11.5 / 19.8 (med / p95) after two presentation-only fixes (hidden tabs no longer rebuilt on every map step; the redundant second canvas draw removed), paint halved, no jank; zero instrumentation in a normal run (7 guarded lines in `www/`).
+
+---
+
 ## v1.5 Meaningful Choices — Spells, Gear & Abilities (Code-complete: 2026-09-18; device UAT batch pending)
 
 **Closeout type:** standard (36/36 requirements complete, 8/8 phases `passed`, audit `tech_debt` with zero blockers) — run autonomously under the `defer uat to end` protocol: no device pause anywhere; the 140-item Pixel 7 checklist (aggregated from the eight VERIFICATION frontmatters) runs against ONE debug APK built after Phase 43.
