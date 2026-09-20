@@ -24,7 +24,7 @@
 
 ### v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (Phases 50–55) — IN PROGRESS (started 2026-09-20)
 
-- [ ] **Phase 50: Character Roller Fix** - The character the roller's reels reveal is exactly the character that lands on the Hero tab — no second roll, no stale pending state, no label drift; shell-only, engine/fixtures untouched
+- [x] **Phase 50: Character Roller Fix** - The character the roller's reels reveal is exactly the character that lands on the Hero tab — no second roll, no stale pending state, no label drift; shell-only, engine/fixtures untouched (completed 2026-09-20)
 - [ ] **Phase 51: Initiative Once Per Combat** - Initiative rolls once in `startCombat`/`fight`, the per-round re-roll is deleted so a foe never takes two turns back to back, and the result is narrated once per fight in the Oracle and fight log
 - [ ] **Phase 52: Foe Cadence & Damage Curve** - A foe swings its ordinary attack count once per round (never stacked with a firing ability), the Bat/Rat and China Wolf floor-5 fights are re-measured in band, and every flat-damage cliff (Herman's 25 × multiplier) is smoothed by a bot-audited damage curve
 - [ ] **Phase 53: Joiner Level Cap** - A Joiner's level never exceeds the floor it's met on (promoted from backlog 999.2), with the level-shallower fixtures declared/regenerated and the early-Joiner power shift measured
@@ -300,7 +300,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 50. Character Roller Fix | v1.7 | 3/3 | In Progress|  |
+| 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 51. Initiative Once Per Combat | v1.7 | 0/? | Not started | - |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |

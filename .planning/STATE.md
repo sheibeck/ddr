@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
-current_phase: 50
-current_phase_name: Character Roller Fix
-status: verifying
+current_phase: 51
+current_phase_name: Initiative Once Per Combat
+status: planning
 stopped_at: Completed 50-03-PLAN.md
-last_updated: "2026-09-20T20:19:17.527Z"
+last_updated: "2026-09-20T20:22:41.744Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 50 execution started
+last_activity_desc: Phase 50 complete, transitioned to Phase 51
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Tuning Pass started; v1.5
 
 ## Current Position
 
-Phase: 50 (Character Roller Fix) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-09-20 — Phase 50 execution started
+Phase: 51 — Initiative Once Per Combat
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-20 — Phase 50 complete, transitioned to Phase 51
 
 ## Ground Truth (durable facts every session needs)
 
