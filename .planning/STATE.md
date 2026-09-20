@@ -4,9 +4,9 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 48
 current_phase_name: Stale Docs, Comments & Test Names Purge
-status: planning
+status: executing
 stopped_at: Completed 47-05-PLAN.md (storeScreen.js carve + phase closing gates)
-last_updated: "2026-09-20T02:34:26.025Z"
+last_updated: "2026-09-20T03:23:33.344Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 47 complete, transitioned to Phase 48
 progress:
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 48 — Stale Docs, Comments & Test Names Purge
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-19 — Phase 47 complete, transitioned to Phase 48
+Phase: 48 of 49 — Stale Docs, Comments & Test Names Purge (planned, 5 sequential plans; executing)
+Plan: 48-01 next (stale-terms tripwire + comment-only-diff tool + engine/content sweep)
+Status: Ready to execute
+Last activity: 2026-09-19 — Phase 48 planned (8667923); decision gate could-not-parse (DOCS-0x IDs, same as Phase 46) — coverage verified by grep, override recorded; planner departures accepted: 5 plans, bounded test-body edits (local identifiers + messages only), fixture-hygiene commit revertible alone
 
 ## Ground Truth (durable facts every session needs)
 
