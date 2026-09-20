@@ -96,6 +96,8 @@
 
 **Key context:** every rule change is a deliberate canon divergence under the greenfield ruling (2026-09-17) — measure the moved parity fixtures first (`tools/worn-fixture-scan.mjs` style), declare each with before/after in `test/parity/FIXTURE-INVENTORY.md`, regenerate only those, master never edited; re-pin `foe-turn-draw-count.test.js` / `combat.test.js`; bot readout (`tune-difficulty --seeds=200` solo + `--party`, `tune-classes` matrix) before and after every step so the retune tunes once, on the corrected cadence. No research pass — the four todos (`.planning/todos/pending/2026-09-19-initiative-*`, `2026-09-20-enemy-attack-cadence-*`, `2026-09-20-average-run-ends-floor-5-7-*`) and backlog 999.2 carry file-level context and the fix design. Phase numbering continues from 49.
 
+**Progress:** Phase 50 Character Roller Fix complete 2026-09-20 (ROLL-01 — `src/browser/roller.js` mount with a roll token + serialized `startNewRun`, reels and CTA read one `rollerPendingState`; browser repro BEFORE/AFTER 4/4 via `tools/roller-repro.mjs`; Pixel 7 confirmation rides the Phase 55 batch). Next: Phase 51 Initiative Once Per Combat.
+
 **Out of this milestone:** 999.1 Transitions & Sounds and 999.3 Dungeon set dressing (feel/polish, later); the rail-overlay todo (UI quick task); `storeRoll` for the bots; the two structural v1.5 AFTER patterns (Magic Users and the class-gated ability system; Wilmsry's racial edge); the UX-06 tutorial and STR production launch; the v1.5/v1.6 Pixel 7 UAT batches (own track — may share the TUNE-07 device session); SEED-001 leaderboards (dormant).
 
 ## Last Milestone: v1.6 Shell Debt & Dead Code (code-complete 2026-09-20; archived 2026-09-20; device UAT batch pending)
@@ -320,4 +322,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-20 — v1.7 Tuning Pass started (initiative once, foe cadence, damage curve, Joiner cap, four-band retune, TUNE-06/07)*
+*Last updated: 2026-09-20 — v1.7 Phase 50 (character roller fix) complete; Phase 51 next*
