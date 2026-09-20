@@ -371,3 +371,23 @@ land step's p95 close to 15-16 ms, though this is a projection, not a
 promise — the actual device number is what counts). Per the user's standing
 ruling: if p95 is still ≥ 16 ms, Task 3 records the numbers honestly and
 KEEPS both fixes rather than reverting either.
+
+## AFTER report 2 (fixes 1+2, `9fe9bb5` + `cfce555`; APK `c0cdbae`)
+
+Reported by the user in chat, 2026-09-20, same protocol (depth 5; the walk came in at n=47, three under the protocol's ≥ 50 — recorded as given, not padded). Numbers quoted exactly as pasted:
+
+```
+step 11.8 / 19.9 / 31.2 · dispatch 4.9 / 8.6 / 15.4 · paint 5.4 / 13.6 / 14.1 · draw 3.6 / 11.2 / 12.3 ms (med / p95 / max, n=47)
+```
+
+| Row | Median | p95 | Max | n |
+| --- | --- | --- | --- | --- |
+| step | 11.8 | 19.9 | 31.2 | 47 |
+| dispatch | 4.9 | 8.6 | 15.4 | 47 |
+| paint | 5.4 | 13.6 | 14.1 | 47 |
+| draw | 3.6 | 11.2 | 12.3 | 47 |
+
+- **Device build number:** CP2A.260705.006 (unchanged)
+- **APK commit (AFTER 2):** c0cdbae (includes `9fe9bb5` and `cfce555`)
+- **Jank report (user's words):** "No jank"
+- **Orchestrator reading (for Task 3 to confirm):** `step` p95 19.9 ≥ 16 — criterion 3's "< 16 ms" NOT MET on p95 (median 11.8 met). The `draw` row now brackets the one remaining draw inside `paint()` (fix 2 re-scoped it); its p95 11.2 vs 3.6 on AFTER 1 reflects this walk's route (more steps where the canvas is expensive — the dark-region render filter is the likely cost), and it lifts paint's p95 the same way. Between-walk variance is of the same order as the fixes. **Standing user ruling applies: keep both fixes, no revert; record honestly.** Next lever for a future pass: the dark-region draw cost (measure a dark-only vs lit-only walk before touching it).
