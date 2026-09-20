@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 47
-status: executing
-stopped_at: Completed 47-04-PLAN.md (heroTab.js carve)
-last_updated: "2026-09-20T01:57:16.716Z"
+status: verifying
+stopped_at: Completed 47-05-PLAN.md (storeScreen.js carve + phase closing gates)
+last_updated: "2026-09-20T02:27:59.638Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
-  percent: 50
+  completed_plans: 16
+  percent: 67
 current_phase_name: Shell Modularisation
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Deb
 
 Phase: 47 — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-19 — Phase 47 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -123,8 +123,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T01:57:16.685Z
-Stopped at: Completed 47-04-PLAN.md (heroTab.js carve)
+Last session: 2026-09-20T02:27:59.607Z
+Stopped at: Completed 47-05-PLAN.md (storeScreen.js carve + phase closing gates)
 Resume file: None
 
 ## Operator Next Steps
@@ -246,6 +246,7 @@ Resume file: None
 | Phase 47 P02 | ~30min | 2 tasks | 8 files |
 | Phase 47 P03 | ~2h | 2 tasks | 23 files |
 | Phase 47 P04 | 55min | 2 tasks | 24 files |
+| Phase 47 P05 | ~2h | 2 tasks | 17 files |
 
 ## Decisions
 
@@ -474,6 +475,8 @@ Resume file: None
 - [Phase ?]: 47-04: classic script's seven dead wrappers (skillTable/skill/maxCharges/R_/upkeep/eff/mzSpellCharges) deleted as a group — zero surviving callers confirmed via shell-sweep refs once paint()'s Hero writes and renderGrimoire moved
 - [Phase ?]: 47-04: __mzTables trimmed to ROMAN only (measured via live grep sweep); five bridges (__mzAbilities/__mzEff/__mzStrikeDie/__mzToHit/__mzRenderGrimoire) deleted; bridge-registry.test.js floor lowered >=45 -> >=40 (44 real bridges)
 - [Phase ?]: 47-04: tools/shell-sweep.mjs's CRLF line-splitting bug fixed in-place (Rule 1) — findRegions() now normalizes \r\n before splitting, fixing the pre-existing condition Plan 03 had worked around with a scratch-file copy
+- [Phase ?]: storeScreen.js completes the Store carve; window.__mzTabs takes its final gear+hero+store shape; criterion 3 (no-duplicate export pin) widened and holds
+- [Phase ?]: Line budget measured honestly: mazeworld.html lands at 5621 lines, NOT MET (target < 5000); the CONTEXT's own fallback (shell-sweep orphans) was applied and found nothing in scope (every orphan belongs to Map/Combat/Rail/Graves/Oracle, out of this phase's bounds) — recorded as a STATE.md blocker for a Phase 48 user ruling, not chased by widening scope
 
 ### Blockers
 

@@ -260,7 +260,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 47-05-PLAN.md — `src/browser/storeScreen.js` (`S.store` branch, `STORE_ROLL_COPY`); `__mzTabs` final shape; widened no-duplicate pin; line budget measured with the CONTEXT fallback (shortfall recorded, never silent); criteria 1-5 verbatim; closing SUMMARY
+- [x] 47-05-PLAN.md — `src/browser/storeScreen.js` (`S.store` branch, `STORE_ROLL_COPY`); `__mzTabs` final shape; widened no-duplicate pin; line budget measured with the CONTEXT fallback (shortfall recorded, never silent); criteria 1-5 verbatim; closing SUMMARY
 
 **UI hint**: yes
 (Annotation is for the keyword scan only — the phase is pixel-identical by construction and `ui_phase` is off; a UI-SPEC is not warranted.)
@@ -359,7 +359,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
-| 47. Shell Modularisation | v1.6 | 4/5 | In Progress|  |
+| 47. Shell Modularisation | v1.6 | 5/5 | In Progress|  |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
