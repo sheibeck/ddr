@@ -2,15 +2,15 @@
 //
 // Phase 25 Plan 05 — standing guard that locks the phase's two invariants:
 //
-//   1. Nothing new can slip in silently. Every engine event type is either
-//      toasted (has a LINE_FOR builder) or explicitly Oracle-only (listed in
+//   1. Nothing new can slip in silently. Every engine event type either has a
+//      LINE_FOR builder or is explicitly Oracle-only (listed in
 //      ORACLE_ONLY with a reason). The partition is exact — LINE_FOR and
 //      ORACLE_ONLY are disjoint, and neither contains a type the engine never
 //      emits (no dead/typo entries — the same "no dead entries" guard
 //      test/unit/formatEventsCoverage.test.js already enforces for
 //      EVENT_NARRATION).
 //   2. The feature manifest is honest. Every FEATURE_EVENTS entry has BOTH a
-//      toast builder and an Oracle line, and the manifest covers every event
+//      LINE_FOR builder and an Oracle line, and the manifest covers every event
 //      name test/unit/identity-contract.test.js asserts — derived from that
 //      file's source at runtime, never hand-copied.
 //
@@ -103,7 +103,7 @@ function deriveCanonicalEventTypes() {
 
 // Every named legibility event this phase set out to make legible (FEED-06's
 // spell/ability resist-and-refuse outcomes) plus every refusal/rejection type
-// (FEED-02) — asserted to be in the toast table, never the Oracle-only
+// (FEED-02) — asserted to be in the LINE_FOR table, never the Oracle-only
 // allowlist (probe FEED-06 empty; probe FEED-02 empty).
 const NAMED_LEGIBILITY_EVENTS = [
   "nothingToThrowAt",
@@ -136,7 +136,7 @@ const NAMED_LEGIBILITY_EVENTS = [
   "backstabDenied",
 ];
 
-test("every engine-emitted event type is either toasted or explicitly Oracle-only", () => {
+test("every engine-emitted event type either has a LINE_FOR builder or is explicitly Oracle-only", () => {
   const canonical = deriveCanonicalEventTypes();
   assert.ok(canonical.size > 200, `expected the derived event-type set to be large (~209); got ${canonical.size}`);
 
@@ -154,8 +154,8 @@ test("LINE_FOR and ORACLE_ONLY are disjoint and contain no dead entries", () => 
   const overlap = Object.keys(LINE_FOR).filter((t) => ORACLE_ONLY.has(t));
   assert.deepStrictEqual(overlap, [], `LINE_FOR and ORACLE_ONLY overlap on: ${overlap.join(", ")}`);
 
-  const deadToast = Object.keys(LINE_FOR).filter((t) => !canonical.has(t));
-  assert.deepStrictEqual(deadToast, [], `LINE_FOR has dead/typo entries not emitted by the engine: ${deadToast.join(", ")}`);
+  const deadLine = Object.keys(LINE_FOR).filter((t) => !canonical.has(t));
+  assert.deepStrictEqual(deadLine, [], `LINE_FOR has dead/typo entries not emitted by the engine: ${deadLine.join(", ")}`);
 
   const deadAllow = [...ORACLE_ONLY].filter((t) => !canonical.has(t) && t !== "moved");
   assert.deepStrictEqual(deadAllow, [], `ORACLE_ONLY has dead/typo entries not emitted by the engine: ${deadAllow.join(", ")}`);
@@ -166,7 +166,7 @@ test("the named legibility events live in the table, never the allowlist (probe 
   for (const t of NAMED_LEGIBILITY_EVENTS) {
     if (!(t in LINE_FOR) || ORACLE_ONLY.has(t)) wrong.push(t);
   }
-  assert.deepStrictEqual(wrong, [], `these legibility/refusal events are missing a toast builder or wrongly allowlisted: ${wrong.join(", ")}`);
+  assert.deepStrictEqual(wrong, [], `these legibility/refusal events are missing a LINE_FOR builder or wrongly allowlisted: ${wrong.join(", ")}`);
 });
 
 test("ORACLE_ONLY holds bookkeeping only", () => {
@@ -182,8 +182,8 @@ test("ORACLE_ONLY holds bookkeeping only", () => {
 test("FEATURE_EVENTS is a subset of LINE_FOR keys intersected with EVENT_NARRATION keys", () => {
   assert.strictEqual(new Set(FEATURE_EVENTS).size, FEATURE_EVENTS.length, "FEATURE_EVENTS contains duplicate entries");
 
-  const missingToast = FEATURE_EVENTS.filter((t) => typeof LINE_FOR[t] !== "function");
-  assert.deepStrictEqual(missingToast, [], `FEATURE_EVENTS entries missing a LINE_FOR builder: ${missingToast.join(", ")}`);
+  const missingLine = FEATURE_EVENTS.filter((t) => typeof LINE_FOR[t] !== "function");
+  assert.deepStrictEqual(missingLine, [], `FEATURE_EVENTS entries missing a LINE_FOR builder: ${missingLine.join(", ")}`);
 
   const missingNarration = FEATURE_EVENTS.filter((t) => typeof EVENT_NARRATION[t] !== "function");
   assert.deepStrictEqual(missingNarration, [], `FEATURE_EVENTS entries missing an EVENT_NARRATION entry: ${missingNarration.join(", ")}`);
@@ -230,7 +230,7 @@ test("linesForAction is exported from narrationLines.js and behaves as a pure fu
 const PURE_MODULE_FILES = ["src/browser/narrationLines.js", "src/browser/missLines.js"];
 const IMPURITY_PATTERNS = [/Math\.random/, /Date\.now/, /\bdocument\./, /\bwindow\./, /\bglobalThis\./, /\blocalStorage\b/, /from\s+["'][^"']*engine\//];
 
-test("presentation toast modules are pure (no Math.random/Date.now/DOM/engine import)", () => {
+test("presentation narration modules are pure (no Math.random/Date.now/DOM/engine import)", () => {
   const offenses = [];
   for (const rel of PURE_MODULE_FILES) {
     const full = path.join(REPO_ROOT, rel);

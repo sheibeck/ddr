@@ -6,7 +6,7 @@
 // needed for these (pure view-models over plain state shapes).
 //
 // fixedFighter/fixedFloor/fixedState/fixedCombat are copied verbatim from
-// test/unit/round-card-worst-case.test.js (lines 22-64). The 3-member
+// test/unit/fight-log-worst-case.test.js's fixed* helpers. The 3-member
 // party fixtures are hand-built rather than grown via addPartyMember —
 // PARTY_CAP is 1 today (engine/state.js), so a real 3-joiner run is
 // impossible; RESEARCH.md Pitfall 10 requires a synthetic state.party.
@@ -32,7 +32,7 @@ import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
-// ─── fixed* helpers, copied verbatim from test/unit/round-card-worst-case.test.js ──
+// ─── fixed* helpers, copied verbatim from test/unit/fight-log-worst-case.test.js ──
 
 function fixedFighter(overrides = {}) {
   return {

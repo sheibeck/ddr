@@ -382,11 +382,11 @@ test("Oracle: joinerMurdered's picked line starts with 'Cutthroat: '", () => {
   assert.match(narrate({ type: "joinerMurdered", name: "Grunk", depth: 3 }), /^Cutthroat: /);
 });
 
-// ─── Toasts (LINE_FOR[type](e).text) ──────────────────────────────────────
+// ─── Lines (LINE_FOR[type](e).text) ────────────────────────────────────────
 
 // One test() per case (not one test looping many asserts) so each Plan-01
 // row is independently reported and counted by the test runner.
-const TOAST_CASES = [
+const LINE_CASES = [
     ["trapSprung", { type: "trapSprung", name: "Pit", dmg: 4 }, "Trap: Pit (−4 hp)."],
     ["trapPoisoned", { type: "trapPoisoned" }, "Trap: poisoned."],
     ["afflictionCaught", { type: "afflictionCaught", kind: "Poison", first: 3 }, "Poison: takes hold (−3 hp)."],
@@ -411,15 +411,15 @@ const TOAST_CASES = [
     ["insanitySelfHarm", { type: "insanitySelfHarm", loss: 6 }, "Insanity: you turn on yourself (−6 hp)."],
 ];
 
-for (const [type, e, expected] of TOAST_CASES) {
-  test(`Toast: ${type} (${JSON.stringify(e)}) reads cause-first`, () => {
+for (const [type, e, expected] of LINE_CASES) {
+  test(`Line: ${type} (${JSON.stringify(e)}) reads cause-first`, () => {
     assert.equal(LINE_FOR[type](e).text, expected);
   });
 }
 
-test("Toast: deathSpellTooWeak is a block-priority toast naming the fee", () => {
-  const toast = LINE_FOR.deathSpellTooWeak({ type: "deathSpellTooWeak", fee: 25 });
-  assert.equal(toast.text, "Death: 25 hp fee. You cannot pay it and live.");
+test("Line: deathSpellTooWeak is a block-priority line naming the fee", () => {
+  const line = LINE_FOR.deathSpellTooWeak({ type: "deathSpellTooWeak", fee: 25 });
+  assert.equal(line.text, "Death: 25 hp fee. You cannot pay it and live.");
 });
 
 // ─── Every builder above defends a bare `{ type }` call (coverage-guard shape) ─

@@ -21,10 +21,10 @@ import { narrateEvent, EVENT_NARRATION } from "../../src/browser/eventNarration.
 
 // ─── CARD_EVENTS / NARRATIVE_ACTIONS ────────────────────────────────────
 
-test("CARD_EVENTS is exactly floorChanged + leveled, disjoint from ORACLE_ONLY, and contains no toast-only move event", () => {
+test("CARD_EVENTS is exactly floorChanged + leveled, disjoint from ORACLE_ONLY, and contains no line-only move event", () => {
   assert.deepEqual([...CARD_EVENTS].sort(), ["floorChanged", "leveled"]);
 
-  const toastOnlyMoveEvents = [
+  const lineOnlyMoveEvents = [
     "trapSprung",
     "trapAvoided",
     "climbedOver",
@@ -36,11 +36,11 @@ test("CARD_EVENTS is exactly floorChanged + leveled, disjoint from ORACLE_ONLY, 
     "afflictionCured",
     "rested",
   ];
-  for (const t of toastOnlyMoveEvents) {
+  for (const t of lineOnlyMoveEvents) {
     assert.equal(CARD_EVENTS.has(t), false, `${t} must not be in CARD_EVENTS`);
   }
 
-  // leveled keeps its table toast AND its card (they coexist); floorChanged
+  // leveled keeps its table line AND its card (they coexist); floorChanged
   // stays Oracle-only (the HUD's depth banner already shows it) even though
   // it is also a card event.
   assert.equal(typeof LINE_FOR.leveled, "function");
@@ -78,7 +78,7 @@ test("narrativeLineText: strips the roll span, nested tags, decodes entities, co
 
 // Phase 43 (CLAR-01): cause-first rewrite — trapSprung now leads with
 // "Trap: " and states the cost as "−N hp." (see docs/CLARITY.md).
-test("ctx.narrate: on a narrative action a direct-mapped toast carries the Oracle sentence; without it the table text is unchanged", () => {
+test("ctx.narrate: on a narrative action a direct-mapped line carries the Oracle sentence; without it the table text is unchanged", () => {
   const withNarrate = linesForAction("move", [{ type: "trapSprung", name: "Pit trap", dmg: 5 }], { narrate: narrateEvent });
   const withoutNarrate = linesForAction("move", [{ type: "trapSprung", name: "Pit trap", dmg: 5 }], {});
 
@@ -89,7 +89,7 @@ test("ctx.narrate: on a narrative action a direct-mapped toast carries the Oracl
   assert.equal(withNarrate[0].priority, withoutNarrate[0].priority);
 });
 
-test("ctx.narrate never replaces a CARD_EVENTS toast or an aggregated toast", () => {
+test("ctx.narrate never replaces a CARD_EVENTS line or an aggregated line", () => {
   const leveledWith = linesForAction("move", [{ type: "leveled", level: 2, wpGain: 5 }], { narrate: narrateEvent });
   const leveledWithout = linesForAction("move", [{ type: "leveled", level: 2, wpGain: 5 }], {});
   assert.deepEqual(leveledWith, leveledWithout);
@@ -103,7 +103,7 @@ test("ctx.narrate never replaces a CARD_EVENTS toast or an aggregated toast", ()
   assert.deepEqual(aggWith, aggWithout);
 });
 
-test("ctx.narrate fallback: a narration that strips to nothing falls back to the table text, never a blank toast", () => {
+test("ctx.narrate fallback: a narration that strips to nothing falls back to the table text, never a blank line", () => {
   const tableText = linesForAction("move", [{ type: "goldGained", amount: 3 }], {})[0].text;
 
   const rollOnly = linesForAction("move", [{ type: "goldGained", amount: 3 }], {
@@ -114,14 +114,14 @@ test("ctx.narrate fallback: a narration that strips to nothing falls back to the
   const empty = linesForAction("move", [{ type: "goldGained", amount: 3 }], { narrate: () => "" });
   assert.equal(empty[0].text, tableText);
 
-  for (const toast of [...rollOnly, ...empty]) {
-    assert.notEqual(toast.text, "", "a toast text must never be blank");
+  for (const line of [...rollOnly, ...empty]) {
+    assert.notEqual(line.text, "", "a line text must never be blank");
   }
 });
 
 // ─── ordering / adjacency / empty ────────────────────────────────────────
 
-test("ordering: three same-priority toast-only events keep event order and each carries its own sentence", () => {
+test("ordering: three same-priority line-only events keep event order and each carries its own sentence", () => {
   const events = [
     { type: "climbedOver" },
     { type: "foodFound", name: "Bread", wp: 3 },
@@ -134,7 +134,7 @@ test("ordering: three same-priority toast-only events keep event order and each 
   });
 });
 
-test("adjacency: a move carrying floorChanged AND a trap yields the trap toast only (the card owns the floor line)", () => {
+test("adjacency: a move carrying floorChanged AND a trap yields the trap line only (the card owns the floor line)", () => {
   const out = linesForAction(
     "move",
     [{ type: "floorChanged", depth: 2 }, { type: "trapSprung", name: "Pit trap", dmg: 5 }],
@@ -146,13 +146,13 @@ test("adjacency: a move carrying floorChanged AND a trap yields the trap toast o
   assert.equal(CARD_EVENTS.has("floorChanged"), true);
 });
 
-test("empty: no events -> no toasts under either ctx", () => {
+test("empty: no events -> no lines under either ctx", () => {
   assert.deepEqual(linesForAction("move", [], { narrate: narrateEvent }), []);
 });
 
 // ─── tableFour / tableFourNoop ────────────────────────────────────────────
 
-test("tableFour / tableFourNoop toast their prose result and are no longer Oracle-only", () => {
+test("tableFour / tableFourNoop narrate their prose result and are no longer Oracle-only", () => {
   const result = LINE_FOR.tableFour({ type: "tableFour", result: "Something unseen takes its cut — 10 hp, gone." });
   assert.equal(result.text, "Something unseen takes its cut — 10 hp, gone.");
   assert.equal(result.tone, "beat");

@@ -180,6 +180,12 @@ export const ALLOWED = Object.freeze(
       match: "replaced the Phase 32 Round Card",
       reason: "B — the module states what it replaced",
     },
+    {
+      term: "toast",
+      file: "test/unit/linesForAction.test.js",
+      match: "capped toast host is retired",
+      reason: "B — the no-default-cap assertion states why (Plan 03)",
+    },
   ].map((a) => Object.freeze(a)),
 );
 
@@ -407,8 +413,13 @@ function main() {
   let allowed = ALLOWED;
   if (paths.length > 0) {
     sources = sources.filter((s) => paths.some((p) => fileUnderPrefix(s.path, p)));
-    // Rot is judged only against entries whose file falls inside the given paths.
-    allowed = ALLOWED.filter((a) => paths.some((p) => fileUnderPrefix(a.file, p)));
+    // Rot is judged only against entries that could apply to a scanned source.
+    // Testing against the FILTERED sources (not the raw --paths list) is the
+    // correct direction: a directory-prefix ALLOWED entry (e.g. "test/unit/")
+    // must stay active when --paths names individual files inside that
+    // directory, even though the entry's own file string is never itself
+    // "under" one of those specific filenames (Rule 1 fix, 48-03).
+    allowed = ALLOWED.filter((a) => sources.some((s) => fileMatchesAllowEntry(s.path, a.file)));
   }
 
   const { rows, hits, unusedAllow } = scan(sources, { allowed });

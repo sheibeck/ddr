@@ -49,10 +49,10 @@ import assert from "node:assert/strict";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
-// Phase 25 (FEED-05/toast architecture): the toast table and the fledgling-
-// miss quip corpus are new player-facing authored copy — both are scanned
-// alongside EVENT_NARRATION so a new toast string or quip is voice-checked
-// automatically.
+// Phase 25 (FEED-05/narration-line architecture): the LINE_FOR table and the
+// fledgling-miss quip corpus are new player-facing authored copy — both are
+// scanned alongside EVENT_NARRATION so a new line string or quip is
+// voice-checked automatically.
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
@@ -140,8 +140,8 @@ const BRANCH_TOGGLES = [
   // Phase 20 (D-14): both sides of parleyRolled's fluency ternary, goldGained's
   // why ternary, and parleyRefused's wilmsryVsMagical branch.
   { fluency: 0 }, { why: null }, { reason: "wilmsryVsMagical" },
-  // Phase 25 (toast table / passive-modifier payload): every new reason/flag
-  // branch the toast builders (and their extended EVENT_NARRATION siblings)
+  // Phase 25 (LINE_FOR table / passive-modifier payload): every new reason/flag
+  // branch the LINE_FOR builders (and their extended EVENT_NARRATION siblings)
   // read, so each ternary/reason-map path renders under the scan.
   { reason: "pilfer" }, { reason: "acrobat" }, { reason: "woodsman" }, { reason: "noRunes" },
   { reason: "knight" }, { reason: "conArtist" }, { reason: "wilmsry" },
@@ -212,11 +212,11 @@ test("EVENT_NARRATION: every voice builder renders family-friendly across all br
   assert.deepStrictEqual(offenders, [], `Banned copy in event narration:\n${offenders.join("\n")}`);
 });
 
-// Phase 25 (toast architecture): mirrors the EVENT_NARRATION scan above, but
+// Phase 25 (narration-line architecture): mirrors the EVENT_NARRATION scan above, but
 // LINE_FOR builders return `{ text, tone, priority }` rather than a raw
 // HTML string — read `.text` (skip null/falsy results, matching this file's
 // own "builder guards its own fields" try/catch convention).
-test("LINE_FOR: every toast builder renders family-friendly across all branches and tokens", () => {
+test("LINE_FOR: every line builder renders family-friendly across all branches and tokens", () => {
   const offenders = [];
   for (const [type, fn] of Object.entries(LINE_FOR)) {
     assert.equal(typeof fn, "function", `LINE_FOR.${type} should be a builder function`);
@@ -227,7 +227,7 @@ test("LINE_FOR: every toast builder renders family-friendly across all branches 
       }
     }
   }
-  assert.deepStrictEqual(offenders, [], `Banned copy in toast table:\n${offenders.join("\n")}`);
+  assert.deepStrictEqual(offenders, [], `Banned copy in LINE_FOR table:\n${offenders.join("\n")}`);
 });
 
 // ─── Corpus 2: EPITAPHS + CAUSE_TEXT (every template × every token value) ────

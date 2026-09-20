@@ -542,7 +542,7 @@ test("DFB-05 newDay: member spell charges reset with the day; a sheet without th
   assert.equal("spellsUsed" in state.party[1], false);
 });
 
-// --- DFB-05: narration + toasts for the class-based ally events -------------
+// --- DFB-05: narration + lines for the class-based ally events -------------
 
 test("DFB-05 narration: legacy allyStruck/allyMissed lines are byte-identical without the new fields", () => {
   assert.equal(
@@ -554,7 +554,7 @@ test("DFB-05 narration: legacy allyStruck/allyMissed lines are byte-identical wi
   assert.equal(LINE_FOR.allyMissed({ type: "allyMissed", name: "Ada" }).text, "Ada swings and misses.");
 });
 
-test("DFB-05 narration + toast: backstab, crit and weapon render", () => {
+test("DFB-05 Oracle + line: backstab, crit and weapon render", () => {
   const backstabEvent = { type: "allyStruck", name: "Bram", target: "Dante", dmg: 14, backstab: true, crit: true, weapon: "Dagger" };
   assert.match(EVENT_NARRATION.allyStruck(backstabEvent), /backstabs Dante with a Dagger/);
   assert.equal(LINE_FOR.allyStruck(backstabEvent).text, "Bram backstabs Dante (14)");
@@ -564,8 +564,8 @@ test("DFB-05 narration + toast: backstab, crit and weapon render", () => {
   assert.ok(LINE_FOR.allyStruck(critEvent).text.endsWith(" · CRIT"));
 });
 
-test("DFB-05 toast: a cast is exactly one toast naming the spell and the outcome", () => {
-  let toasts = linesForAction(
+test("DFB-05 line: a cast is exactly one line naming the spell and the outcome", () => {
+  let lines = linesForAction(
     "attack",
     [
       { type: "allyCast", name: "Ysolde", spell: "Freeze", target: "Goblin", roll: 5, need: 6, bonus: 3 },
@@ -573,11 +573,11 @@ test("DFB-05 toast: a cast is exactly one toast naming the spell and the outcome
     ],
     {}
   );
-  assert.equal(toasts.length, 1);
-  assert.equal(toasts[0].text, "Ysolde casts Freeze — Goblin frozen solid");
-  assert.equal(toasts[0].tone, "magic");
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].text, "Ysolde casts Freeze — Goblin frozen solid");
+  assert.equal(lines[0].tone, "magic");
 
-  toasts = linesForAction(
+  lines = linesForAction(
     "attack",
     [
       { type: "allyCast", name: "Ysolde", spell: "Doze", target: "Goblin" },
@@ -585,10 +585,10 @@ test("DFB-05 toast: a cast is exactly one toast naming the spell and the outcome
     ],
     {}
   );
-  assert.equal(toasts[0].text, "Ysolde casts Doze — Goblin resists");
-  assert.equal(toasts[0].tone, "miss");
+  assert.equal(lines[0].text, "Ysolde casts Doze — Goblin resists");
+  assert.equal(lines[0].tone, "miss");
 
-  toasts = linesForAction(
+  lines = linesForAction(
     "attack",
     [
       { type: "allyCast", name: "Ysolde", spell: "Fireball", target: "Goblin" },
@@ -596,9 +596,9 @@ test("DFB-05 toast: a cast is exactly one toast naming the spell and the outcome
     ],
     {}
   );
-  assert.equal(toasts[0].text, "Ysolde casts Fireball — misses Goblin");
+  assert.equal(lines[0].text, "Ysolde casts Fireball — misses Goblin");
 
-  toasts = linesForAction(
+  lines = linesForAction(
     "attack",
     [
       { type: "allyCast", name: "Ysolde", spell: "Fireball", target: "Goblin" },
@@ -606,16 +606,16 @@ test("DFB-05 toast: a cast is exactly one toast naming the spell and the outcome
     ],
     {}
   );
-  assert.equal(toasts[0].text, "Ysolde casts Fireball — Goblin (12)");
+  assert.equal(lines[0].text, "Ysolde casts Fireball — Goblin (12)");
 });
 
-test("DFB-05 coverage: allyCast is Oracle-only, the other four ally events are FEATURE_EVENTS with narration and toast, and none throws on a bare payload", () => {
+test("DFB-05 coverage: allyCast is Oracle-only, the other four ally events are FEATURE_EVENTS with an Oracle sentence and a line, and none throws on a bare payload", () => {
   assert.ok(ORACLE_ONLY.has("allyCast"));
   assert.equal(typeof EVENT_NARRATION.allyCast, "function");
   for (const t of ["allyStruck", "allyMissed", "allySpellHit", "allySpellMissed"]) {
     assert.ok(FEATURE_EVENTS.includes(t), `${t} is a FEATURE_EVENT`);
-    const toastText = LINE_FOR[t]({ type: t }).text;
-    assert.ok(toastText && toastText.length > 0, `${t} toast text non-empty`);
+    const lineText = LINE_FOR[t]({ type: t }).text;
+    assert.ok(lineText && lineText.length > 0, `${t} line text non-empty`);
     const narr = EVENT_NARRATION[t]({ type: t });
     assert.ok(narr && narr.length > 0, `${t} narration non-empty`);
     assert.doesNotMatch(narr, /undefined/);

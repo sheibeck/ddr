@@ -1,8 +1,8 @@
-// test/unit/round-card-worst-case.test.js
+// test/unit/fight-log-worst-case.test.js
 //
-// Phase 34 (CSCR-04), Plan 02 — retargeted from the Round Card to the
-// whole-fight fight log: log line count = folded count (refusals
-// included — they are dull entries in the log now, not filtered out).
+// Phase 34 (CSCR-04), Plan 02 — this suite pins the whole-fight fight log:
+// log line count = folded count (refusals included — they are dull entries
+// in the log now, not filtered out).
 // Measures the worst-case fight-log round against the REAL engine
 // (applyAction) and the REAL linesForAction/fightLogLinesFor pipeline,
 // combining BOTH frenzy mechanics (a Fridgian hero's player-side frenzy
@@ -138,8 +138,8 @@ function runScenario(scenarioName, buildState, action) {
 
     // the fight log's own explicit-limit request (mazeworld.html's
     // dispatchWithNarration — 34-02) vs. linesForAction's own default call,
-    // which is uncapped too (the toast host that once capped it is
-    // retired). Phase 34: log line count = folded count (refusals
+    // which is uncapped too — there is no per-type cap left to hit.
+    // Phase 34: log line count = folded count (refusals
     // included — they are dull entries in the log now, not filtered out).
     const folded = linesForAction(action.type, events, {}, { limit: Infinity });
     const lines = fightLogLinesFor(action.type, events);

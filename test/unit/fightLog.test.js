@@ -102,7 +102,7 @@ test("fightLogLinesFor: a refusal yields a dull line with no roll; a narrate-ctx
 
 // ─── Test 6: the block<->dull partition (proof over the whole LINE_FOR manifest) ─
 
-test("partition: PRIORITY.block toasts fold to dull-only fight-log lines; everything else folds to narrative-only", () => {
+test("partition: PRIORITY.block lines fold to dull-only fight-log entries; everything else folds to narrative-only", () => {
   for (const [type, fn] of Object.entries(LINE_FOR)) {
     const isBlock = fn({ type }, {}).priority === PRIORITY.block;
     const lines = fightLogLinesFor("attack", [{ type }]);
@@ -128,7 +128,7 @@ test("partition: PRIORITY.block toasts fold to dull-only fight-log lines; everyt
 
 // ─── Test 7: count equality (folded count, uncapped) ───────────────────────
 
-test("count equality: fightLogLinesFor's line count equals the uncapped folded toast count", () => {
+test("count equality: fightLogLinesFor's line count equals the uncapped folded line count", () => {
   const types = ["frenzy", "phobiaAfraid", "lootDropped", "combatJoined", "struck", "foeMissed"];
   const events = types.map((type) => ({ type }));
   const lines = fightLogLinesFor("attack", events);

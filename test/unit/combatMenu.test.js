@@ -7,7 +7,7 @@
 // for (Fighter, Bard, Magic User, Thief).
 //
 // fixedFighter/fixedFloor/fixedState/fixedCombat are copied verbatim from
-// test/unit/round-card-worst-case.test.js (lines 22-64), which itself
+// test/unit/fight-log-worst-case.test.js's fixed* helpers, which themselves
 // copied them verbatim from test/unit/foe-abilities.test.js.
 
 import test from "node:test";
@@ -33,7 +33,7 @@ function fixedWornStaff(overrides = {}) {
   return { n: "Poplar Staff", kind: "staff", use: "heal", charges: 3, txt: "1d20+10 wp to up to 6", ...overrides };
 }
 
-// ─── fixed* helpers, copied verbatim from test/unit/round-card-worst-case.test.js ──
+// ─── fixed* helpers, copied verbatim from test/unit/fight-log-worst-case.test.js ──
 
 function fixedFighter(overrides = {}) {
   return {

@@ -38,7 +38,7 @@ test("linesForAction: an action of only ORACLE_ONLY events yields []", () => {
   assert.deepEqual(out, []);
 });
 
-test("probe FEED-01 empty: an event missing optional fields yields one toast and never throws", () => {
+test("probe FEED-01 empty: an event missing optional fields yields one line and never throws", () => {
   assert.doesNotThrow(() => linesForAction("move", [{ type: "goldGained" }], {}));
   const gold = linesForAction("move", [{ type: "goldGained" }], {});
   assert.equal(gold.length, 1);
@@ -101,22 +101,22 @@ const REFUSAL_TYPES = [
   "joinerRefused", "buyFailed",
 ];
 
-test("probe FEED-02 adjacency: each refusal type, alone, yields exactly one block toast", () => {
+test("probe FEED-02 adjacency: each refusal type, alone, yields exactly one block line", () => {
   for (const t of REFUSAL_TYPES) {
     const out = linesForAction("attack", [{ type: t }], {});
-    assert.equal(out.length, 1, `${t} should yield exactly one toast`);
+    assert.equal(out.length, 1, `${t} should yield exactly one line`);
     assert.equal(out[0].tone, "block", `${t} should be tone block`);
   }
 });
 
-test("probe FEED-02 adjacency: strikeRefused names the spell and produces no struck/strikeMissed toast", () => {
+test("probe FEED-02 adjacency: strikeRefused names the spell and produces no struck/strikeMissed line", () => {
   const out = linesForAction("attack", [{ type: "strikeRefused", reason: "wizard", spell: "Freeze" }], {});
   assert.equal(out.length, 1);
   assert.ok(out[0].text.includes("Freeze"));
   assert.ok(!out.some((t) => /^You (hit|miss)/.test(t.text)));
 });
 
-test("probe FEED-02 adjacency: withdrawalDenied + fleeRolled + fleeFailed order block toast before the outcome", () => {
+test("probe FEED-02 adjacency: withdrawalDenied + fleeRolled + fleeFailed order block line before the outcome", () => {
   // Phase 42 (FLEE-01): need is now 14 (was 11); the payload carries `mods`/
   // `total`, not the old `bonus` field.
   const events = [
@@ -139,12 +139,12 @@ test("probe FEED-01 adjacency: backstab + a critical struck + foeKilled both sho
     { type: "foeKilled", name: "Dante", spGained: 8 },
   ];
   const out = linesForAction("attack", events, {});
-  const backstabToast = out.find((t) => t.text.includes("Backstab"));
-  const strikeToast = out.find((t) => t.text.startsWith("You hit"));
-  assert.ok(backstabToast, "the backstab feature toast is present");
-  assert.ok(strikeToast, "the your-round toast is present");
-  assert.ok(out.indexOf(strikeToast) < out.indexOf(backstabToast), "your outcome sorts before the feature toast");
-  assert.ok(strikeToast.text.includes("· felled"));
+  const backstabLine = out.find((t) => t.text.includes("Backstab"));
+  const strikeLine = out.find((t) => t.text.startsWith("You hit"));
+  assert.ok(backstabLine, "the backstab feature line is present");
+  assert.ok(strikeLine, "the your-round line is present");
+  assert.ok(out.indexOf(strikeLine) < out.indexOf(backstabLine), "your outcome sorts before the feature line");
+  assert.ok(strikeLine.text.includes("· felled"));
 });
 
 test("probe FEED-01 adjacency: frenzy + two struck + one struckByFoe(soaked) all show distinctly", () => {
@@ -160,10 +160,10 @@ test("probe FEED-01 adjacency: frenzy + two struck + one struckByFoe(soaked) all
   assert.ok(out.some((t) => t.text === "Dante hits you (4) · hide 2 soaked"));
 });
 
-test("probe FEED-01 adjacency: two backstab events dedupe into one toast", () => {
+test("probe FEED-01 adjacency: two backstab events dedupe into one line", () => {
   const out = linesForAction("attack", [{ type: "backstab" }, { type: "backstab" }], {});
-  const backstabToasts = out.filter((t) => t.text.includes("Backstab"));
-  assert.equal(backstabToasts.length, 1, "duplicate event type of the same text collapses to one toast");
+  const backstabLines = out.filter((t) => t.text.includes("Backstab"));
+  assert.equal(backstabLines.length, 1, "duplicate event type of the same text collapses to one line");
 });
 
 // ─── Enemy boundaries (probe FEED-04 boundary, probe FEED-04 precision) ─────
@@ -216,7 +216,7 @@ test("probe FEED-04 boundary: critical and soldierCrit both append CRIT", () => 
   assert.ok(linesForAction("attack", [{ type: "struckByFoe", name: "Dante", dmg: 6, soldierCrit: true }], {})[0].text.includes("· CRIT"));
 });
 
-test("probe FEED-04 boundary: two distinct foes produce two toasts in first-seen order", () => {
+test("probe FEED-04 boundary: two distinct foes produce two lines in first-seen order", () => {
   const events = [
     { type: "struckByFoe", name: "Rat", dmg: 3 },
     { type: "struckByFoe", name: "Bat", dmg: 2 },
@@ -228,7 +228,7 @@ test("probe FEED-04 boundary: two distinct foes produce two toasts in first-seen
   assert.ok(hits[1].text.startsWith("Bat"));
 });
 
-test("probe FEED-04 boundary: three distinct foes collapse into one toast", () => {
+test("probe FEED-04 boundary: three distinct foes collapse into one line", () => {
   const events = ["A", "B", "C"].flatMap((n) => [
     { type: "struckByFoe", name: n, dmg: 4 },
     { type: "foeMissed", name: n },
@@ -335,7 +335,7 @@ test("the fledgling-miss level gate stops decorating at level 3 (same input, no 
   assert.equal(out[0].text, "You miss Dante");
 });
 
-test("your round: an untouchable miss stays its own toast, ungrouped", () => {
+test("your round: an untouchable miss stays its own line, ungrouped", () => {
   const events = [
     { type: "strikeMissed", target: "Ward", untouchable: true },
     { type: "struck", target: "Dante", dmg: 5 },
@@ -354,7 +354,7 @@ test("FEED-03: every THEM-family output tone is hurt/dodge and text starts with 
   for (const t of THEM_MATRIX_TYPES) {
     const payload = { type: t, name: "Dante", member: "Bram", target: "Dante", dmg: 6, roll: 3, need: 5, stolen: 3, amount: 5, kind: "weakened", rounds: 3 };
     const out = linesForAction("attack", [payload], {});
-    assert.equal(out.length, 1, `${t} should yield exactly one toast`);
+    assert.equal(out.length, 1, `${t} should yield exactly one line`);
     assert.ok(["hurt", "dodge"].includes(out[0].tone), `${t} expected tone hurt/dodge, got "${out[0].tone}"`);
     assert.ok(/^(Dante|\d+ foes)/.test(out[0].text), `${t} expected text starting with the foe name, got "${out[0].text}"`);
   }
@@ -364,7 +364,7 @@ test("FEED-03: every YOU-family output tone is hit/miss and text starts with 'Yo
   for (const t of YOU_MATRIX_TYPES) {
     const payload = { type: t, target: "Dante", name: "Dante", dmg: 8, roll: 3, need: 5 };
     const out = linesForAction("attack", [payload], {});
-    assert.equal(out.length, 1, `${t} should yield exactly one toast`);
+    assert.equal(out.length, 1, `${t} should yield exactly one line`);
     assert.ok(["hit", "miss"].includes(out[0].tone), `${t} expected tone hit/miss, got "${out[0].tone}"`);
     assert.ok(out[0].text.startsWith("You"), `${t} expected text starting with "You", got "${out[0].text}"`);
   }
@@ -372,7 +372,7 @@ test("FEED-03: every YOU-family output tone is hit/miss and text starts with 'Yo
 
 // ─── Spell chain (probe FEED-06 adjacency, probe FEED-06 ordering) ──────────
 
-test("probe FEED-06 adjacency: Freeze hit + frozenSolid + foeKilled fold into one combined toast", () => {
+test("probe FEED-06 adjacency: Freeze hit + frozenSolid + foeKilled fold into one combined line", () => {
   const events = [
     { type: "spellThrown", spell: "Freeze", target: "Dante", roll: 3, need: 6 },
     { type: "spellHit", target: "Dante", dmg: 9, mult: 1 },
@@ -395,7 +395,7 @@ test("probe FEED-06 adjacency: Fireball spellHit + foeKilled fold into a felled 
   assert.equal(out[0].text, "Fireball hits Dante (12) · felled");
 });
 
-test("probe FEED-06 adjacency: a resisted spell shows only the resist toast, no magic hit toast", () => {
+test("probe FEED-06 adjacency: a resisted spell shows only the resist line, no magic-hit line", () => {
   const out = linesForAction("castSpell", [{ type: "spellResisted", target: "Dante", spell: "Doze", roll: 3, intel: 4 }], {});
   assert.equal(out.length, 1);
   assert.equal(out[0].text, "Dante resists Doze");
@@ -403,7 +403,7 @@ test("probe FEED-06 adjacency: a resisted spell shows only the resist toast, no 
   assert.ok(!out.some((t) => t.tone === "magic"));
 });
 
-test("probe FEED-06 adjacency: resistFailed + dozed shows only the dozed toast", () => {
+test("probe FEED-06 adjacency: resistFailed + dozed shows only the dozed line", () => {
   const events = [
     { type: "resistFailed", target: "Dante", roll: 9 },
     { type: "dozed", target: "Dante", rounds: 4 },
@@ -413,7 +413,7 @@ test("probe FEED-06 adjacency: resistFailed + dozed shows only the dozed toast",
   assert.ok(out[0].text.includes("dozes off"));
 });
 
-test("probe FEED-06 ordering: 3+ targets (Lightning) collapse into one toast", () => {
+test("probe FEED-06 ordering: 3+ targets (Lightning) collapse into one line", () => {
   const events = [
     { type: "spellThrown", spell: "Lightning", target: "A", roll: 2, need: 4 },
     { type: "spellHit", target: "A", dmg: 10, mult: 1 },
@@ -442,7 +442,7 @@ test("probe FEED-06 ordering: your cast sorts before the foe's turn in the same 
 
 // ─── Encounter start ─────────────────────────────────────────────────────────
 
-test("encounter start: encounterStarted + trackable + allyJoined + warlockBoost fold into one toast", () => {
+test("encounter start: encounterStarted + trackable + allyJoined + warlockBoost fold into one line", () => {
   const events = [
     { type: "encounterStarted", wandering: false, foes: [{ name: "Rat" }] },
     { type: "trackable" },
@@ -451,13 +451,13 @@ test("encounter start: encounterStarted + trackable + allyJoined + warlockBoost 
   ];
   const out = linesForAction("move", events, {});
   const enc = out.find((t) => t.priority === PRIORITY.feature && t.text.includes("Rat"));
-  assert.ok(enc, "the encounter-start toast is present");
+  assert.ok(enc, "the encounter-start line is present");
   assert.ok(enc.text.includes("unnoticed"));
   assert.ok(enc.text.includes("Bram"));
   assert.ok(enc.text.includes("stiffen"));
 });
 
-test("encounter start: encounterStarted + two knight foeFled fold into one toast, no standalone flee toasts", () => {
+test("encounter start: encounterStarted + two knight foeFled fold into one line, no standalone flee lines", () => {
   const events = [
     { type: "encounterStarted", wandering: false, foes: [{ name: "Goblin" }, { name: "Goblin" }] },
     { type: "foeFled", name: "Goblin", reason: "knight" },
@@ -465,13 +465,13 @@ test("encounter start: encounterStarted + two knight foeFled fold into one toast
     { type: "encounterCleared" },
   ];
   const out = linesForAction("move", events, {});
-  const goblinToasts = out.filter((t) => /Goblin/.test(t.text));
-  assert.equal(goblinToasts.length, 1);
-  assert.ok(goblinToasts[0].text.includes("flees a Knight"));
+  const goblinLines = out.filter((t) => /Goblin/.test(t.text));
+  assert.equal(goblinLines.length, 1);
+  assert.ok(goblinLines[0].text.includes("flees a Knight"));
   assert.ok(!out.some((t) => t.text.startsWith("Goblin flees")));
 });
 
-test("encounter start: a mid-fight lowHp foeFled with NO encounterStarted keeps its own toast", () => {
+test("encounter start: a mid-fight lowHp foeFled with NO encounterStarted keeps its own line", () => {
   const out = linesForAction("move", [{ type: "foeFled", name: "Djinni", reason: "lowHp" }], {});
   assert.equal(out.length, 1);
   assert.ok(out[0].text.startsWith("Djinni runs"));
@@ -484,7 +484,7 @@ test("encounter start: knightBigFoe renders as its own clause", () => {
 
 // ─── Chains ──────────────────────────────────────────────────────────────────
 
-test("chains: fleeRolled + fled folds the roll into one hit toast, roll first (Phase 42, FLEE-02)", () => {
+test("chains: fleeRolled + fled folds the roll into one hit line, roll first (Phase 42, FLEE-02)", () => {
   const events = [
     { type: "fleeRolled", roll: 9, mods: [{ name: "Thief", delta: 5 }], total: 14, need: 14 },
     { type: "fled", reason: "escaped" },
@@ -495,7 +495,7 @@ test("chains: fleeRolled + fled folds the roll into one hit toast, roll first (P
   assert.equal(out[0].tone, "hit");
 });
 
-test("chains: fleeRolled + fleeFailed folds the roll into one miss toast, roll first (Phase 42, FLEE-02)", () => {
+test("chains: fleeRolled + fleeFailed folds the roll into one miss line, roll first (Phase 42, FLEE-02)", () => {
   const events = [
     { type: "fleeRolled", roll: 3, mods: [], total: 3, need: 14 },
     { type: "fleeFailed" },
@@ -506,7 +506,7 @@ test("chains: fleeRolled + fleeFailed folds the roll into one miss toast, roll f
   assert.equal(out[0].tone, "miss");
 });
 
-test("chains: parleyRolled + parleyFailed folds the roll into one toast", () => {
+test("chains: parleyRolled + parleyFailed folds the roll into one line", () => {
   const events = [
     { type: "parleyRolled", roll: 15, need: 9, fluency: 0 },
     { type: "parleyFailed" },
@@ -516,7 +516,7 @@ test("chains: parleyRolled + parleyFailed folds the roll into one toast", () => 
   assert.ok(out[0].text.includes("(15 vs 9)"));
 });
 
-test("chains: chestLockRolled + chestOpened folds the roll into one toast", () => {
+test("chains: chestLockRolled + chestOpened folds the roll into one line", () => {
   const events = [
     { type: "chestLockRolled", roll: 4, need: 8, dieN: 10, picks: false, opened: true },
     { type: "chestOpened" },
@@ -526,7 +526,7 @@ test("chains: chestLockRolled + chestOpened folds the roll into one toast", () =
   assert.ok(out[0].text.includes("(4 vs 8)"));
 });
 
-test("chains: a Pilfer's roll-free chestOpened keeps its own toast", () => {
+test("chains: a Pilfer's roll-free chestOpened keeps its own line", () => {
   const out = linesForAction("openChest", [{ type: "chestOpened", reason: "pilfer" }], {});
   assert.equal(out.length, 1);
   assert.ok(out[0].text.includes("Pilfer"));
