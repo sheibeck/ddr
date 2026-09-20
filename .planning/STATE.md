@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
-current_phase: 51
-current_phase_name: Initiative Once Per Combat
-status: verifying
+current_phase: 52
+current_phase_name: Foe Cadence & Damage Curve
+status: planning
 stopped_at: Completed 51-03-PLAN.md
-last_updated: "2026-09-20T23:16:18.430Z"
+last_updated: "2026-09-20T23:19:15.496Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 51 execution started
+last_activity_desc: Phase 51 complete, transitioned to Phase 52
 progress:
   total_phases: 6
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phase 50 complete; v1.5 +
 
 ## Current Position
 
-Phase: 51 (Initiative Once Per Combat) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-09-20 — Phase 51 execution started
+Phase: 52 — Foe Cadence & Damage Curve
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-20 — Phase 51 complete, transitioned to Phase 52
 
 ## Ground Truth (durable facts every session needs)
 
