@@ -4,15 +4,15 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 47
 status: executing
-stopped_at: Completed 47-01-PLAN.md (DOM-snapshot harness + BEFORE fixtures)
-last_updated: "2026-09-19T23:42:34.738Z"
+stopped_at: Completed 47-02-PLAN.md (bridge registry + doc-sync gate)
+last_updated: "2026-09-20T00:02:04.958Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 50
 current_phase_name: Shell Modularisation
 ---
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Deb
 ## Current Position
 
 Phase: 47 — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 47 execution started
 
@@ -122,8 +122,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-19T23:42:34.702Z
-Stopped at: Completed 47-01-PLAN.md (DOM-snapshot harness + BEFORE fixtures)
+Last session: 2026-09-20T00:02:04.927Z
+Stopped at: Completed 47-02-PLAN.md (bridge registry + doc-sync gate)
 Resume file: None
 
 ## Operator Next Steps
@@ -242,6 +242,7 @@ Resume file: None
 | Phase 46 P03 | 35min | 3 tasks | 8 files |
 | Phase 46 P04 | ~50min | 2 tasks | 2 files |
 | Phase 47 P01 | ~45min | 3 tasks | 9 files |
+| Phase 47 P02 | ~30min | 2 tasks | 8 files |
 
 ## Decisions
 
@@ -461,6 +462,9 @@ Resume file: None
 - [Phase ?]: 46-04: two-pass comment stripper (line comments then block comments) redesigned as a single code|line|block|squote|dquote|backtick state machine — a two-pass design let a JSDoc block comment's quoted example text (e.g. "Thief +5") desync a file-wide string tracker, producing 13 false-positive NAME-02 hits; caught and fixed before the tool's first commit
 - [Phase ?]: 47-01: jewelry equip order interleaved (stow->equip immediately->stow next) since a Thief's small 4-slot bag can't hold weapon+armor+3 jewels+tool at once
 - [Phase ?]: 47-01: extractScriptRegions slice bounds exclude the <script> tag lines (offset by marker length, not +1) since the extracted text is vm.runInContext'd as JS, unlike the sibling shell-no-content-copies.test.js which only regex-scans it
+- [Phase ?]: 47-02: Deleted also-dead window.__mzHaptics (zero readers, same class as __mzBags) alongside the plan's named __mzBags deletion; live bridge count is 53, not 54
+- [Phase ?]: 47-02: Owner attribution for the five dual-write presentation globals (__mzCombatMenu/__mzFightEnd/__mzFightLog/__mzRail/__mzStair) assigned to the module script per its own source comments; classic's writes noted as (also writes)
+- [Phase ?]: 47-02: SHELL-04 NOT marked complete in REQUIREMENTS.md yet — its <5,000-line clause closes in Plan 05
 
 ### Blockers
 
