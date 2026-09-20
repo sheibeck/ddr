@@ -209,21 +209,38 @@ async function waitForDevtoolsPage(devtoolsPort, pageUrl, timeoutMs) {
   }
 }
 
-function killProcessTree(child) {
-  if (!child) return;
+// Kill every chrome.exe process whose command line references this
+// scenario's --user-data-dir profile directory (Rule 1 fix, found while
+// recording the BEFORE table: on this machine, chrome.exe re-execs itself
+// on launch — the PID Node's child_process.spawn() returns belongs to a
+// short-lived stub process that has already exited by the time the real
+// browser (and its renderer/GPU/utility children) is up, so a PID-based
+// `taskkill /PID <child.pid> /T /F` silently fails with "process not
+// found" and leaks the whole Chrome process family on every scenario).
+// The profile directory is unique per scenario (a fresh mkdtemp each
+// time), so matching on it is unambiguous and catches the real browser
+// process plus every child regardless of what PID it actually got.
+function killByProfileDir(profileDir) {
+  if (process.platform !== "win32") return;
   try {
-    if (process.platform === "win32") {
-      spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
-    } else {
-      child.kill();
-    }
+    spawnSync(
+      "wmic",
+      ["process", "where", `CommandLine like "%${profileDir}%"`, "call", "terminate"],
+      { windowsHide: true }
+    );
   } catch {
     /* ignore */
   }
 }
 
 async function launchAndConnect({ chromePath, pageUrl, devtoolsPort, keepProfiles }) {
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "mz-roller-"));
+  // Forward slashes only, even on win32 (path.join would give backslashes):
+  // Chrome accepts forward-slash paths for --user-data-dir just fine, and
+  // killByProfileDir()'s WMI LIKE match needs an unambiguous literal
+  // substring — a backslash is WQL's own LIKE-escape character, so a raw
+  // Windows-style path silently fails to match (Rule 1 fix, found while
+  // recording the BEFORE table: the process-family kill never fired).
+  const profileDir = fs.mkdtempSync(`${os.tmpdir().replace(/\\/g, "/")}/mz-roller-`);
   const args = [
     "--headless=new",
     "--disable-gpu",
@@ -241,8 +258,15 @@ async function launchAndConnect({ chromePath, pageUrl, devtoolsPort, keepProfile
   try {
     entry = await waitForDevtoolsPage(devtoolsPort, pageUrl, 15000);
   } catch (err) {
-    killProcessTree(child);
-    if (!keepProfiles) fs.rmSync(profileDir, { recursive: true, force: true });
+    killByProfileDir(profileDir);
+    await sleep(400);
+    if (!keepProfiles) {
+      try {
+        fs.rmSync(profileDir, { recursive: true, force: true });
+      } catch {
+        /* ignore — a lingering crashpad handle is not this tool's concern */
+      }
+    }
     throw err;
   }
 
@@ -260,12 +284,13 @@ async function launchAndConnect({ chromePath, pageUrl, devtoolsPort, keepProfile
     } catch {
       /* ignore */
     }
-    killProcessTree(child);
+    killByProfileDir(profileDir);
+    await sleep(400); // let the process family fully exit before rmSync
     if (!keepProfiles) {
       try {
         fs.rmSync(profileDir, { recursive: true, force: true });
       } catch {
-        /* ignore */
+        /* ignore — a lingering crashpad handle is not this tool's concern */
       }
     }
   }
@@ -492,11 +517,20 @@ async function main() {
 
   const rows = [];
   try {
-    for (const name of scenarios) {
+    for (let i = 0; i < scenarios.length; i++) {
+      const name = scenarios[i];
+      // Each scenario gets its OWN devtools port (base + index) rather than
+      // reusing one across scenarios: killing the previous scenario's Chrome
+      // process and releasing its debugging port is not synchronous with
+      // process exit on this machine, and /json/list against a not-yet-
+      // released port can still answer with the DYING browser's page list —
+      // the next scenario then connects to a browser that is mid-teardown
+      // and every waitFor() times out. A fresh port per scenario removes the
+      // race entirely (Rule 1 fix, found while recording the BEFORE table).
       const row = await runScenario(name, {
         chromePath,
         pageUrl,
-        devtoolsPort: args.devtoolsPort,
+        devtoolsPort: args.devtoolsPort + i,
         keepProfiles: args.keepProfiles,
       });
       rows.push(row);

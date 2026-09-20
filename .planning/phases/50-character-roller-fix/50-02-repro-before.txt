@@ -1,0 +1,7 @@
+| Scenario | Reels shown (race / class / sub · name) | Hero tab shown (#s-tag · #s-name) | state.c (race / cls / sub · name) | Match? | Notes |
+| --- | --- | --- | --- | --- | --- |
+| normal | Wilmsry / Fighter / Knight · Cobb of Low Ward | Wilmsry Knight · Fighter · Cobb of Low Ward | Wilmsry / Fighter / Knight · Cobb of Low Ward | yes |  |
+| double-tap | Human / Magic User / Court Mage · Ivy Vane | Human Court Mage · Magic User · Ivy Vane | Human / Magic User / Court Mage · Ivy Vane | yes | reels changed after reveal: no |
+| play-again | Human / Fighter / Master of Arms · Owen Crane | Human Master of Arms · Fighter · Owen Crane | Human / Fighter / Master of Arms · Owen Crane | yes |  |
+| play-again-mid-reveal | Elven / Fighter / Soldier · Caelan Willowshade | Elven Soldier · Fighter · Caelan Willowshade | Elven / Fighter / Soldier · Caelan Willowshade | yes | reels changed after reveal: yes |
+roller-repro: 4/4 matched
