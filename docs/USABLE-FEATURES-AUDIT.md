@@ -3,10 +3,12 @@
 **Phase:** 31-combat-start-gating-effect-hygiene, Plan 02
 **Date:** 2026-09-16
 
+> **Status (v1.6, Phase 48):** audit record of Phase 31; the refusal vocabulary and every row are live. Refusals surface as RAIL lines / dull fight-log entries since Phase 35 (the toasts this doc cites were retired); the old toast module is `narrationLines.js` since Phase 46; §6's `c.haste`/`c.invis`/`c.ether`/`c.flightLeft`/`c.flightCooldown` rows name pre-Phase-39 counters that are `c.timers` records now (`foldLegacyCounters` folds a legacy save).
+
 > A blocked button stays visible; tapping it dispatches; the engine's refusal
-> event names the why; refusals are toasts — and stay toasts after Phase 32's
-> Round Card ships (the design doc §4.2 already routes `PRIORITY.block`
-> refusals to toasts as direct replies to a tap).
+> event names the why; refusals are `PRIORITY.block` narration lines — a dull
+> fight-log entry in combat, a RAIL line outside it — as direct replies to a
+> tap.
 
 This ledger enumerates every usable spell, item, gear piece, and class/race/
 sub-class active feature, by circumstance, with the engine's refusal reason
@@ -17,7 +19,7 @@ doc-synced test that exercises each row and keeps this document honest.
 ## §1. Refusal vocabulary
 
 One shared vocabulary across every gated action. Every reason below has its
-own toast + Oracle line (`src/browser/toasts.js` / `eventNarration.js`) —
+own narration line + Oracle line (`src/browser/narrationLines.js` / `eventNarration.js`) —
 never a generic "you can't do that."
 
 | Reason | Carried by | Meaning | Event type(s) |
@@ -291,12 +293,12 @@ phase's change (if any).
 | `c.senses` (Sense Presence) | boolean, no round count | n/a | `endCombat` (unconditional) | unchanged |
 | `combat.weakened` / `combat.foeToHitPenalty` (Weaken) | n/a — lives on `state.combat`, not `c` | n/a | implicitly, when `state.combat` is nulled | unchanged |
 | `combat.afraid` (Phobia = penalty) | rounds | per `foeTurn` round (LAST in the tail) | `endCombat` (unconditional, with the combat object) | Phase 31 NEW (see §5b) |
-| `c.haste` | squares | per exploration step | reaches 0 naturally | unchanged |
-| `c.invis` | squares | per exploration step | reaches 0 naturally | unchanged |
-| `c.ether` | squares | per exploration step | reaches 0 naturally | unchanged |
+| `c.haste` (pre-Phase-39 counter — now a `c.timers` record) | squares | per exploration step | reaches 0 naturally | unchanged |
+| `c.invis` (pre-Phase-39 counter — now a `c.timers` record) | squares | per exploration step | reaches 0 naturally | unchanged |
+| `c.ether` (pre-Phase-39 counter — now a `c.timers` record) | squares | per exploration step | reaches 0 naturally | unchanged |
 | `c.might` | "until tomorrow" | n/a | `newDay` (unconditional `c.might = 0`) | unchanged |
 | `c.halfNext` (Pendant of Fortitude) | one-shot, not round-based | n/a — consumed on the NEXT hit received | consumed by `applyFoeDamageToPlayer` | out of CMB-05's round-based scope — a one-shot flag, not a timer |
-| `c.flightLeft` / `c.flightCooldown` (Cloak of Flying) | squares | per exploration step | reaches 0 naturally | unchanged — not a combat effect at all |
+| `c.flightLeft` / `c.flightCooldown` (Cloak of Flying; pre-Phase-39 counters — now a `c.timers` record) | squares | per exploration step | reaches 0 naturally | unchanged — not a combat effect at all |
 
 ## §7. Verified — not bugs
 
@@ -339,7 +341,7 @@ phase's change (if any).
 ## §9. Shell obligations for Plan 03
 
 - Use button always visible (never omitted for a cooldown item); shows the
-  countdown; tapping it on cooldown/wrongClass/combatOnly explains via toast.
+  countdown; tapping it on cooldown/wrongClass/combatOnly explains via a rail line.
 - The in-combat SPELLS menu bridged to the engine's own `canCast`/
   `spellLevelFor` (closing the stale classic-script duplicate, RESEARCH §3.2)
   — the Grimoire's reason string split into its three distinct diagnostics

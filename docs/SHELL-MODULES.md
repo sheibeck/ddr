@@ -2,10 +2,9 @@
 
 `mazeworld.html` is a mount point. The Gear tab, the Hero tab and the Store
 screen render from named `src/browser/` modules — `gearTab.js`, `heroTab.js`
-and `storeScreen.js` (landing in Plans 03–05 of Phase 47). This doc is
-written first, before those carves, so the module contract is fixed and
-every `window.__mz*` bridge crossing the classic-script/module-script seam
-is listed in one place, with an owner, before a single line moves.
+and `storeScreen.js` (Phase 47). The contract below is what those modules
+implement, and every `window.__mz*` bridge crossing the classic-script/
+module-script seam is listed in one place, with an owner.
 
 ## Contract
 

@@ -122,10 +122,10 @@ narration surface reads the SAME list instead of re-deriving the formula:
   `Flee: rolled <span class="roll">8</span> (Thief +5, Mail −1) — 12 against
   14.` — the roll, every named modifier, and the need, all before the
   `fled`/`fleeFailed` line resolves.
-- **Fight-log fold** (`src/browser/toasts.js#fleeChain`): one line per
+- **Fight-log fold** (`src/browser/narrationLines.js#fleeChain`): one line per
   attempt, ROLL FIRST — `Flee: 9 (Thief +5) = 14 vs 14. You get clear.` — by
-  reusing `TOAST_FOR.fleeRolled`'s own text rather than restating the format.
-- **Toast** (`TOAST_FOR.fleeRolled`): `Flee: 8 (Thief +5, Mail −1) = 12 vs
+  reusing `LINE_FOR.fleeRolled`'s own text rather than restating the format.
+- **Rail line** (`LINE_FOR.fleeRolled`): `Flee: 8 (Thief +5, Mail −1) = 12 vs
   14` (no parenthetical when there are no modifiers).
 - **Rail** (`RAIL_FAMILY.fleeRolled`): `{ icon: "·", title: "FLEE", tone:
   "info" }` — a family entry for completeness; the fight log is the real
@@ -163,12 +163,12 @@ untouched** (`git status --porcelain test/parity/fixtures` is empty).
   `fleeBreakdown` rows, the exhaustive d20 enumeration (35%/60%/25%/30%/65%/
   20% anchors), the `fleeRolled` event's exact shape (no `bonus`/`bulk`),
   the failure path, sub-class flavour untouched, and (Task 2) the
-  `EVENT_NARRATION`/`TOAST_FOR`/`fightLogLinesFor` narration surfaces.
+  `EVENT_NARRATION`/`LINE_FOR`/`fightLogLinesFor` narration surfaces.
 - `test/unit/combat.test.js`, `test/unit/gear-axes.test.js`,
   `test/unit/feedback-payload.test.js` — re-pinned to need 14 where the old
   need-11 roll would now resolve differently; every other flee test
   (rolls that stay on the same side of both needs) is untouched.
-- `test/unit/toastsForAction.test.js`, `test/unit/combatMenu.test.js`,
+- `test/unit/linesForAction.test.js`, `test/unit/combatMenu.test.js`,
   `test/unit/rail.test.js` — re-pinned fold text/submenu cost and a new
   `RAIL_FAMILY.fleeRolled` shape assertion.
 - `test/unit/flee-ledger.test.js` — reads this file and asserts its numbers
@@ -179,7 +179,7 @@ untouched** (`git status --porcelain test/parity/fixtures` is empty).
 | Requirement | Proof |
 |---|---|
 | FLEE-01 (need 14, Thief +5 kept, bounded class/race table, ledgered before/after — the ONLY formula) | `content/flee.js`, `engine/derived.js#fleeBreakdown`, `engine/combat.js#flee`, this document's Canon change/Modifier table/Before-after sections, `test/unit/flee-retune.test.js`, `test/unit/flee-ledger.test.js` |
-| FLEE-02 (roll/modifiers/need shown in the fight log before the outcome; failed flee unchanged) | `src/browser/eventNarration.js`, `src/browser/toasts.js#fleeChain`, `src/browser/rail.js`, `src/browser/combatMenu.js`, this document's Event payload and narration/What did not change sections |
+| FLEE-02 (roll/modifiers/need shown in the fight log before the outcome; failed flee unchanged) | `src/browser/eventNarration.js`, `src/browser/narrationLines.js#fleeChain`, `src/browser/rail.js`, `src/browser/combatMenu.js`, this document's Event payload and narration/What did not change sections |
 
 (REQUIREMENTS.md itself is flipped to complete by Plan 04 at phase close,
 alongside BAL-02.) `docs/CLASS-PASS.md`'s v1.5 AFTER section (Plan 04) cites

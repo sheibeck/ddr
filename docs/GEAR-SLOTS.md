@@ -3,6 +3,8 @@
 **Phase:** 37-equipment-slot-model-eff-refactor
 **Date:** 2026-09-17
 
+> **Status (v1.6, Phase 48):** design record of Phase 37; the worn-slot model is live and unconditional since Phase 45 (the `wornSlots` run option and the reconciliation hedges are gone — old saves fold on load).
+
 This ledger declares Phase 37's one deliberate canon change, the worn-slot
 taxonomy, the model, the play rules that follow from it, the old-save
 reconciliation mechanics, the full `eff()` call-site inventory, and what is

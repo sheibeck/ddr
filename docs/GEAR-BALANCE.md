@@ -3,6 +3,8 @@
 **Phase:** 39-gear-magic-items-one-shot-tools
 **Date:** 2026-09-18
 
+> **Status (v1.6, Phase 48):** design record of Phase 39; the rules are live. "What stays for the cleanup milestone" is done — Phases 44/47 deleted the classic duplicates it names; the old toast module and its builder table are `narrationLines.js`/`LINE_FOR` since Phase 46, and toasts gave way to the RAIL in Phase 35.
+
 This ledger declares Phase 39's GEAR-01 before/after — the weapon `need`/
 `crit` axes, the armor `bulk` axis, the `expectedStrike` upgrade heuristic,
 the tuning bot's new buy/equip policy, and a 143-cell × 3-seed smoke run
@@ -651,7 +653,7 @@ normally, and `RAIL_COPY.rockEther` ("Passable, for the moment. Do not be
 inside it when the moment ends.") while ethereal — an unseen wall stays
 UNWALKED either way (fog never reveals rock). The Ethereal chip's `N sq`
 countdown turns warn-toned while the party is currently standing in rock
-(`mazeworld.html#paintConditions`); the activation toast and the Oracle line
+(`mazeworld.html#paintConditions`); the activation rail line and the Oracle line
 both restate the fatal-end warning in voice.
 
 **Accepted edge behaviours.** A Being-trapped-phobic hero stepping into
@@ -800,14 +802,14 @@ cooldown at all — a fresh torch must be bought/found again).
 ### Events
 
 `hazardChoice { feat, dir, tool }` — the pre-roll pause (rail decision card
-IS the UI; SILENT on the toast side, like `findOffered`). `toolUsed
+IS the UI; SILENT on the narration-line side, like `findOffered`). `toolUsed
 { tool, feat, item }` — the tool was spent, tile passed. `toolRefused
 { tool, reason }`. `torchLit { left, wasDark }` — the torch cleared a live
 darkness. `darknessResisted { by: "torch" }` — a LATER `fallDark` held off.
 All five (plus the two reason-only additions to the pre-existing
 `useRefused`/`itemRejected` types) are narrated in
-`src/browser/eventNarration.js` (Oracle), `src/browser/toasts.js`
-(TOAST_FOR/ORACLE_ONLY/FEATURE_EVENTS), and `src/browser/rail.js`
+`src/browser/eventNarration.js` (Oracle), `src/browser/narrationLines.js`
+(LINE_FOR/ORACLE_ONLY/FEATURE_EVENTS), and `src/browser/rail.js`
 (RAIL_FAMILY, plus `toolUsed`'s one `RAIL_FEATURE_ICON` exception — its
 icon depends on the raw event's own `.feat`, climb -> wall / gorge ->
 crevice, read directly at `railCardFor`'s one lookup site since the table
@@ -925,7 +927,7 @@ before this plan.
    dispatch a wrong slot.
 
 `stepNow(dir)` was refactored into `stepWith(action)` — the action-agnostic
-dispatch body (`dispatchWithToasts`, `noteCombat`, haptics, the pending-rail
+dispatch body (`dispatchWithNarration`, `noteCombat`, haptics, the pending-rail
 computation, the pre-death beat, narration stash, paint/draw/log, the
 moved-event recenter) `stepNow`/`window.mzUseTool` both call, so a spent
 tool goes through the EXACT same post-dispatch pipeline a normal step does.
@@ -943,10 +945,7 @@ swap visible on the sheet: a Fighter with a Rapier (`need: +1`) now shows
 
 ### What stays for the cleanup milestone
 
-The classic script's `strikeDie()`/`toHit()`/`useItem()` duplicates (dead
-code, unread by any live call site after this plan) are explicitly left in
-place — deleting dead code is the cleanup milestone's job (`.planning/
-proposed-milestone-shell-cleanup.md`), not this phase's.
+Done in v1.6 — Phase 44 (DEAD-01) and Phase 47 deleted the classic `strikeDie()`/`toHit()`/`useItem()` duplicates.
 
 ## Requirements map — Plan 05
 
@@ -970,6 +969,4 @@ proposed-milestone-shell-cleanup.md`), not this phase's.
   `### Phase 42 tactics (BAL-01 second half)`. Buying/carrying a tool from
   the store specifically (a `chooseStorePurchase` extension) remains
   unaddressed — a follow-up, not this phase's scope.
-- The cleanup milestone's deletion of the classic script's now-dead
-  `strikeDie()`/`toHit()`/`useItem()` duplicates (`.planning/
-  proposed-milestone-shell-cleanup.md`).
+- (done — see above)

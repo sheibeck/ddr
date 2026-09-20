@@ -3,6 +3,8 @@
 **Phase:** 40-spell-rework
 **Date:** 2026-09-18
 
+> **Status (v1.6, Phase 48):** design record of Phase 40; the spell table and mechanics are live. "What stays for the cleanup milestone" is done — Phase 44 deleted the classic `SPELLS`/`castSpell`/`rollGrimoire` duplicates.
+
 This ledger declares Phase 40's spell-table reshape: the 33-row niche
 contract (SPELL-01), Detect Magic's rename to Map the Floor (SPELL-05), the
 new Lesser Summon row and the day-one damage guarantee (SPELL-04), and the
@@ -723,12 +725,7 @@ floor, if walked) the instant the sweep clears the flag.
 
 ### What stays for the cleanup milestone
 
-The classic script's `SPELLS` table duplicate, `castSpell()`, and
-`rollGrimoire()` (dead code, unread by any live call site since the DR10/
-DR13-era migration to the real `engine/magic.js`/`engine/character.js`
-modules) are left in place — deleting dead code is the cleanup milestone's
-job (`.planning/proposed-milestone-shell-cleanup.md`), not this phase's,
-exactly as Phases 34-39 have each left their own classic duplicates.
+Done in v1.6 — Phase 44 (DEAD-01/DEAD-02) deleted the classic `SPELLS` table duplicate, `castSpell()` and `rollGrimoire()`.
 
 ## Requirements map (Plan 05)
 
@@ -760,6 +757,4 @@ exactly as Phases 34-39 have each left their own classic duplicates.
   documented in Plan 04's own "Phase 41 note" above.
 - Spell cooldowns / a mana model — not in v1.5; spells stay per-day
   slot-casts as canon (40-CONTEXT.md "Deferred Ideas").
-- The classic script's `SPELLS`/`castSpell`/`rollGrimoire` duplicates —
-  deletion is the cleanup milestone's job, not this phase's (see "What
-  stays for the cleanup milestone" above).
+- (done — see above)

@@ -1,5 +1,7 @@
 # Class Pass (v1.2, Phases 22-27) — before/after ledger
 
+> **Status (v1.6, Phase 48):** measurement record. The `wornSlots` run flag named in the v1.5 sections was retired in Phase 45 — the worn-slot model is the engine's only path and `RUN_FLAGS` is `{ storeRoll: true }`; each readout's `meta.runFlags` records the flags of its own era.
+
 This is the class-pass ledger for the v1.2 identity work: a BEFORE snapshot
 (PLAY-01, this section, Phase 22-04) captured against the commit-pinned
 pre-identity-pass engine, before Phase 23 changes a single rule; the sub-class

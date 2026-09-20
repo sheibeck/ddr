@@ -145,7 +145,7 @@ Area 1, 2026-09-18):
   the full cost).
 - `waded { cost }` — pushed ONLY on genuine entry (`cost > 1 && !here.water`,
   where `here` is the departure cell) — one line per wade, not per step, so
-  crossing an 8-cell pool never stacks eight toasts. The HUD counter still
+  crossing an 8-cell pool never stacks eight rail lines. The HUD counter still
   carries the per-step cost regardless of whether the narration fires.
 
 ### Exemption table
@@ -406,13 +406,11 @@ in-fight `afraid` chip takes over instead.
 
 ### What stays for the cleanup milestone
 
-The shell's own legacy classic `move()`/`reveal()` function bodies
-(mazeworld.html) are DEAD CODE — superseded by `engine/movement.js`'s real
-`move()`/`reveal()` long before this phase — and are explicitly NOT touched
-by this plan (`test/unit/shell-terrain-41.test.js` pins that neither body
-references `mapViewRadius` nor `moveCost`). They remain owned by the
-pending "Shell Debt & Dead Code" cleanup milestone (STATE.md Pending
-Todos), not this phase.
+Done in v1.6 — Phase 44 deleted the shell's legacy classic `move()`/
+`reveal()` function bodies (mazeworld.html) entirely; `engine/movement.js`'s
+real `move()`/`reveal()` is the only implementation left.
+`test/unit/shell-terrain-41.test.js` now pins that no classic body survives
+to carry `mapViewRadius` or `moveCost`.
 
 ## Requirements map (Plan 04)
 
