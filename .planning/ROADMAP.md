@@ -256,7 +256,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 47-04-PLAN.md — `src/browser/heroTab.js` (Hero view models, sheet/skills/abilities/rations/grimoire/dossier/Company); `paint()` mounts through `window.__mzTabs.hero`; classic wrappers, five bridges, the harness seam deleted; `__mzTables` trimmed; `heroTab.test.js`
+- [x] 47-04-PLAN.md — `src/browser/heroTab.js` (Hero view models, sheet/skills/abilities/rations/grimoire/dossier/Company); `paint()` mounts through `window.__mzTabs.hero`; classic wrappers, five bridges, the harness seam deleted; `__mzTables` trimmed; `heroTab.test.js`
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -359,7 +359,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
-| 47. Shell Modularisation | v1.6 | 3/5 | In Progress|  |
+| 47. Shell Modularisation | v1.6 | 4/5 | In Progress|  |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |

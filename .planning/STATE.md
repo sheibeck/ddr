@@ -4,15 +4,15 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 47
 status: executing
-stopped_at: Completed 47-03-PLAN.md (gearTab.js carve)
-last_updated: "2026-09-20T00:57:29.842Z"
+stopped_at: Completed 47-04-PLAN.md (heroTab.js carve)
+last_updated: "2026-09-20T01:57:16.716Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 50
 current_phase_name: Shell Modularisation
 ---
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Deb
 ## Current Position
 
 Phase: 47 — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 47 execution started
 
@@ -122,8 +122,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T00:57:29.805Z
-Stopped at: Completed 47-03-PLAN.md (gearTab.js carve)
+Last session: 2026-09-20T01:57:16.685Z
+Stopped at: Completed 47-04-PLAN.md (heroTab.js carve)
 Resume file: None
 
 ## Operator Next Steps
@@ -244,6 +244,7 @@ Resume file: None
 | Phase 47 P01 | ~45min | 3 tasks | 9 files |
 | Phase 47 P02 | ~30min | 2 tasks | 8 files |
 | Phase 47 P03 | ~2h | 2 tasks | 23 files |
+| Phase 47 P04 | 55min | 2 tasks | 24 files |
 
 ## Decisions
 
@@ -469,6 +470,9 @@ Resume file: None
 - [Phase ?]: 47-03: sellPriceFor's price != null ternary kept verbatim in gearTab.js's Sell row (byte-identical snapshot lock) even though a direct import can never return null
 - [Phase ?]: 47-03: Rule 3 fixes touched shell-armor-display.test.js/shell-gear-39.test.js (Task 1) and shell-combat-over.test.js (Task 2), outside this plan's stated file list, because this plan's own required import-line/call-site changes broke their pins
 - [Phase ?]: 47-03: bridge-registry.test.js's live-count floor lowered from >= 50 to >= 45 to reflect the post-carve count of 49 (53 - 6 retired + 2 new)
+- [Phase ?]: 47-04: classic script's seven dead wrappers (skillTable/skill/maxCharges/R_/upkeep/eff/mzSpellCharges) deleted as a group — zero surviving callers confirmed via shell-sweep refs once paint()'s Hero writes and renderGrimoire moved
+- [Phase ?]: 47-04: __mzTables trimmed to ROMAN only (measured via live grep sweep); five bridges (__mzAbilities/__mzEff/__mzStrikeDie/__mzToHit/__mzRenderGrimoire) deleted; bridge-registry.test.js floor lowered >=45 -> >=40 (44 real bridges)
+- [Phase ?]: 47-04: tools/shell-sweep.mjs's CRLF line-splitting bug fixed in-place (Rule 1) — findRegions() now normalizes \r\n before splitting, fixing the pre-existing condition Plan 03 had worked around with a scratch-file copy
 
 ### Blockers
 
