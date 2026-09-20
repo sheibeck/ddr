@@ -45,6 +45,12 @@
 - ✓ **BEFORE class matrix captured** — v1.2 Phase 22 (`docs/CLASS-PASS.md` + `docs/class-pass/before*.json`, engine pinned `5565b22`; 0 stuck in 7,150 runs)
 - ✓ **Depth scaling past floor 5** (`engine/difficulty.js`, tuning bot, dev start-at-depth) — v1.1 (human sign-off TUNE-04 came back tune-again → v1.2)
 
+- ✓ **Gear & magic-item rework** — v1.5 (weapon/armor trade-offs, use-effect-cooldown items, one item per slot type, one-shot tools)
+- ✓ **Phobias, water & darkness** — v1.5 (every phobia fires; water squares; 3×3 dark view)
+- ✓ **Flee retune, Cutthroat Joiner, dead-foe targeting** — v1.5
+- ✓ **Clarity pass** — v1.5 (causes named, loot gating shown, rations per camp, Gear split ON YOU / BAG)
+- ✓ **Shell debt & dead code retired** — v1.6 (classic engine gone from the shell; one worn-model path; honest names; Gear/Hero/Store as `src/browser/` modules behind one `__mzTabs` mount each with a 45-name bridge registry; stale-terms tripwire; perf baseline on device — `mazeworld.html` 8,710 → 5,682, tests 2,924 → 3,315, parity master untouched)
+
 ### Active
 
 - ✓ **Mass playtest AFTER matrix + findings ledger** — v1.2 Phase 26 (AFTER 143 × 40 + 143 × 10 on pin d1e3235 at BEFORE parameters; μ 3.08, bands 2.31–4.15; 0 cannot-act cells; every caster sub in band; one out-of-band row — Ninja, too strong, accepted; Wilmsry in band; revisit list empty; `tools/class-pass-diff.mjs` + `docs/class-pass/verdicts.json` + standing ledger test; the gate caught a pre-existing stranded-combat bug (foe killed by ward reflect on its opening turn) fixed as a gap closure)
@@ -61,13 +67,10 @@
 - ✓ **Store stock random and floor-appropriate** — v1.3 Phase 33 (STORE-01): depth-tiered potions/weapons/armor/premium behind the `state.storeRoll` run flag (new runs only; fixtures, bots and old saves stay on the frozen roll)
 - ✓ **Combat screen rebuilt to the Claude Design mock** — v1.4 Phase 34 (CSCR-01..09): one dark full-screen panel (ENCOUNTER · ROUND N · N STANDING header, foe cards with guarded tap-to-target, YOUR LOT strip for hero + joiners, newest-first › fight log with tap-to-reveal dice — refusals as dull entries, no in-combat toasts), the 2×2 STRIKE / SPELLS-or-ABILITIES / ITEMS / SOCIAL grid with per-class submenus and keyboard map, the Fight! gate as the map's MAJOR OVERLAY (`renderMajorOverlay`, reused by Phase 35), and the THEY ARE DOWN / YOU GOT OUT / THAT IS THAT endings folded into the same screen; presentation view-models in `src/browser/{fightLog,combatMenu,combatPanel}.js`; 2047/2047 tests, engine/content/parity untouched; CSCR-10 = 27 Pixel 7 checks deferred to the end-of-run UAT batch
 - ✓ **Map screen rebuilt to the Claude Design mock** — v1.4 Phase 35 (MAP-01..09): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with the condition-chip strip beneath (tap → rail explanation); tap-to-step viewport (dominant axis → fallback, hold to inspect, drag to pan, pinch to zoom) — the D-pad is gone, keyboard arrows stay; the bottom RAIL (`src/browser/rail.js`) replaces every toast in the app and carries every decision (joiner, find, CLIMB IT) with movement locked globally until it is answered; FLOOR N / SKILL LEVEL N are auto-clearing rail cards; the MAJOR OVERLAY now also gates the stair down (GO DOWN / NOT YET, shell pre-dispatch interception of the same engine `move`) and hosts out-of-combat death; MARKS / CENTRE / MAKE CAMP chips with glyph legend + camp sheets; canvas on the mock palette with coloured glyph marks and a pulsing party marker; 2170/2170 tests, engine/content/parity untouched; MAP-10 = 27 Pixel 7 checks deferred to the end-of-run UAT batch (climb dice payload deferred as a post-UAT quick task)
-- [ ] **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
-- [ ] **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
-- [ ] **Gear & magic-item rework** — v1.5 (weapon/armor choices, use/duration/cooldown items, one item per slot type, one-shot tools)
-- [ ] **Phobias, water & darkness** — v1.5 (every phobia fires; water squares; 3×3 dark view; dark floor triggers the Darkness phobia)
-- [ ] **Flee retune, Cutthroat Joiner, dead-foe targeting** — v1.5
-- [ ] **Clarity pass** — v1.5 (causes named in the Oracle/rail, loot gating shown, rations per camp on Hero, Gear split On You / Bag)
-- [ ] **Next tuning pass** (deferred, not v1.3) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone
+- ✓ **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
+- ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
+- [ ] **Next tuning pass** (deferred, not v1.3) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone — now also: initiative once per combat; one attack per foe per round unless `sp.atk`, ability turns replace swings; initiative line in the Oracle; damage-curve audit (Herman's flat 25 × multiplier); the four-band shape (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7; bot today median 3, p90 5) — todos in `.planning/todos/pending/`
+- [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.6.md` (26 checks) + `docs/UAT-v1.5.md` (140 checks) on APK `c0cdbae`; findings → quick tasks / a UAT gap plan
 
 ### Out of Scope
 
@@ -78,7 +81,7 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v1.6 Shell Debt & Dead Code (started 2026-09-19)
+## Last Milestone: v1.6 Shell Debt & Dead Code (code-complete 2026-09-20; archived 2026-09-20; device UAT batch pending)
 
 **Goal:** Delete the code the game no longer runs, give the surviving modules honest names, collapse the remaining dual-path hedges, purge every doc and comment that describes a pattern we no longer employ, and split the 8.6k-line shell into named `src/browser/` modules — with zero gameplay change and the engine/parity suite green throughout.
 
@@ -192,7 +195,7 @@
 - **Prototype rules that supersede the rulebook** (already decided in-prototype): solo conversion (no party/Maze Master), invented natural healing (`sleep = d10 + 2×level`), skill points ×5 for solo pacing, Magic Users start `25 + d10` WP, loot ÷10, and several book-ambiguity rulings the prototype formalized.
 - **Codebase state after v1.0 (2026-09-13):** ~15.5k lines of game source (`engine/` pure rules, `content/` pure data tables, `src/browser/` adapter/view-models/narration, `mazeworld.html` as the DOM/canvas shell with a strangler-fig'd classic script) + ~22.8k lines of tests (683 tests: unit, determinism, round-trip, parity against the frozen `test/parity/prototype-master.js.txt`, voice safety scan). Zero runtime dependencies beyond Capacitor's own plugins. Build: `tools/build-www.mjs` (no bundler) → `npx cap sync` → Gradle; release via `npm run play:release` (`docs/RELEASING.md`).
 - **Working method that emerged:** GSD phases for systems work, then rapid on-device "DR" (device-review) rounds on the user's Pixel 7 for UX — each round a small user-directed batch, built + sideloaded + reviewed live. The user's device play is the human UAT. Every engine change is parity-gated: new rng draws only behind new-feature guards, new serialized fields carved out of the parity comparators, the prototype master never edited.
-- **Known debt:** the classic (non-engine) gameplay functions in `mazeworld.html` are dead-but-present; `formatEvents`/`EVENT_NARRATION` is the single narration table (coverage-guarded); `04-10-PLAN.md` (tutorial) predates the DR-era UI and needs re-planning.
+- **Known debt (after v1.6):** the shell still holds the Map/Combat/Rail/Oracle/Graves renderers and `paint()`'s tab-mount skeleton (5,682 lines; a future combat/map carve if ever wanted — `docs/SHELL-MODULES.md#Line budget`); step p95 19.8 ms on the Pixel 7 after two fixes, the dark-region draw cost is the next perf lever (`docs/PERF-BASELINE.md`); the v1.5 (140) and v1.6 (26) Pixel 7 UAT batches are unrun; one dead `.toasts` field read in `usable-features-audit.test.js:566`.
 - **Author is new to mobile development** — de-risked: native build, signing, and Play internal testing are all working.
 - **The heavy lift is platform + presentation + endless-mode conversion**, not rebuilding game logic. Whatever tech path is chosen (e.g. wrapping the existing web game vs. porting to an engine) must keep the rules engine decoupled and state serializable to protect the multiplayer future.
 
@@ -205,7 +208,9 @@
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
-## Current State (2026-09-19, v1.6 Shell Debt & Dead Code started; v1.5 code-complete — Phases 36–43)
+## Current State (2026-09-20, v1.6 Shell Debt & Dead Code code-complete — Phases 44–49; v1.5 + v1.6 device UAT batches pending)
+
+**Code-complete, UAT pending:** v1.6 "Shell Debt & Dead Code" (Phases 44–49) — the classic engine retired from the shell; one worn-model path; `narrationLines.js` and honest exports, `winGame`/`won` and `tutorial.js` gone; Gear/Hero/Store as `src/browser/` modules with a DOM-snapshot lock and a bridge registry; stale-terms tripwire; Android-only CLAUDE.md; perf baseline + two step-path fixes measured on the Pixel 7. Zero gameplay change; parity master untouched.
 
 **Code-complete, UAT pending:** v1.5 "Meaningful Choices" (Phases 36–43) — the BEFORE pin + effects model + Cutthroat Joiners + Company DISMISS; the worn-slot model; melee active abilities (rolled pool, ABILITIES submenu); weapon need/crit + armor bulk, one `c.timers` activation model for every magic item, rope/ladder/torch; the spell rework (33 niched spells, Ice DOT, Lesser Summon, Map the Floor with provenance re-fog); water/darkness/phobias; flee at need 14 with named modifiers, the bot taught the new power, and the ONE consolidated AFTER matrix (depth-20 target PASS); the clarity pass (cause-first cost lines, usable-by on every offer, honest rations, ON YOU / BAG). 3168 tests green; parity master untouched since v1.2; 140 Pixel 7 checks queued for the milestone-close batch against one debug APK.
 
@@ -213,7 +218,7 @@
 
 **Shipped:** v1.3 "Feel, Loot & Combat Flow" (Phases 28–33) — armor integrity, end-of-combat loot + bag cap, Fight!-gated combat with explained refusals and honest effect chips, the Afraid/Elven rules rulings, the Round Card + input guards, gear/toolbar/map polish, depth-rolled store stock. 1955 tests green; parity master untouched since v1.2. Debug build installed on the Pixel 7; the 50-check UAT batch (incl. the CMBUI-06 DR round) runs against it.
 
-**Now:** v1.6 "Shell Debt & Dead Code" (cleanup only — see Current Milestone). **After it:** the v1.0 launch tail (UX-06 tutorial incl. the dropped UIF-04 toggle; Google Play production launch STR-01..04/06), the deferred tuning pass (TUNE-06/07, `storeRoll` for bots), a feel pass for the unguarded button set + haptics — plus whatever the v1.5 UAT batch turns up.
+**Now:** between milestones — run the two Pixel 7 UAT batches on APK `c0cdbae`, then `/gsd-new-milestone`: either the v1.0 launch tail (UX-06 tutorial rebuilt on the modular shell + Google Play production launch STR-01..04/06) or the next tuning pass (initiative/cadence/damage-curve todos, the floor 5–7 four-band shape, TUNE-06/07). Backlog: 999.1 Transitions & Sounds, 999.2 Joiner level cap, 999.3 Dungeon set dressing.
 
 ## Key Decisions
 
@@ -274,6 +279,11 @@
 | The Gear tab is ON YOU (WIELDED weapon · WORN armor + the six Phase 37 slots with in-voice empty rows · ALSO ON YOU slot-exempt kit) and BAG (`c.items`); the bag-full drop shelf is bag-only by construction (`dropShelfItems`); the roadmap's "Carried: weapon, staff, shield" grouping is superseded (staff is worn; there are no shields) — Phase 43 | Tells the truth about worn vs carried under the slot model the user already ratified | ✓ Landed in 43-03/04 — `usableBy` on every loot offer alongside it |
 | `src/browser/tutorial.js` (the 04-era coach-mark sequencer) deleted; UX-06 first-run tutorial rebuilt from scratch on the Phase 47 modular shell — Phase 46, 2026-09-19 (user) | The module encoded the 04-era UI (fixed steps on a D-pad map; `04-10-PLAN.md` already marked re-plan-don't-execute), had zero references, and its storage key was never written by a shipped build (the overlay was never wired) — no migration, no legacy-key reservation | ✓ Deleted with its ten sequencer/seen tests; the fifteen icons.js pins it also held moved to `test/unit/icons.test.js`; PROJECT/REQUIREMENTS UX-06 rows annotated |
 | SHELL-04 line budget re-baselined: `mazeworld.html` accepted at 5,621 lines instead of < 5,000 — Phase 47, 2026-09-19 (user) | The three surfaces and their private helpers were carved (−718); `shell-sweep orphans` showed everything left is Map/Combat/Rail/Oracle/Graves code the phase ground rules keep in the shell, 1,642 comment lines (Phase 48 purges only stale ones) and 1,687 lines of markup/CSS — the figure was a planning estimate, not skipped work | ✓ Closed at 5,621; the combat carve, a full comment purge and carrying the blocker into Phase 48 were offered and declined; ledger in `docs/SHELL-MODULES.md#Line budget` |
+| Perf measured by in-app dev-gated `performance.now()` marks, not Chrome remote profiling — Phase 49, 2026-09-20 (user) | The long-press dev row already exists; a readout the user reads off the screen costs no tooling and stays out of a normal run (7 guarded lines in `www/`, pinned) | ✓ Three device rounds in one session; instrumentation kept for the next pass |
+| Both Phase 49 fixes kept at step p95 19.8 ms (rule said < 16 or revert) — 2026-09-20 (user) | Median 14.2 → 11.5, paint halved, no jank, no rendered-DOM change; the remaining p95 is the sum of real parts (dark-region draw), not waste | ✓ Recorded as honestly partial; next lever measured before touched |
+| `classic script` kept as a live term in the Phase 48 sweep — 2026-09-20 (orchestrator judgment, user-reversible) | It names the non-module `<script>` that still holds `paint()`, the map and combat; only `classic engine`/`dead classic` were the retired mirror | — Pending: flip the tripwire row to enforced and rename the block if the user disagrees |
+| Test bodies edited only for local identifiers + assertion messages in the Phase 48 purge; inert fixture keys removed in one revertible commit (`4272f35`) — 2026-09-20 | Criterion 1/3 could not reach zero otherwise; assertion counts pinned per file so no expected value moved | ✓ 3,288 → 3,288 across the sweep; `git revert 4272f35` restores the literals |
+| `docs/COMBAT-NARRATIVE-DESIGN.md` deleted — Phase 48, 2026-09-20 | Every surface it documented (toasts, D-pad, Round Card, guarded bundled toast) is retired; its one live rule lives in `inputGuards.js`'s header | ✓ Recoverable from `5c904a6` / the Phase 30 archive |
 
 ## Evolution
 
@@ -293,4 +303,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-20 — after Phase 49 (perf baseline measured on device, two step-path fixes; all six v1.6 phases executed — milestone audit next)*
+*Last updated: 2026-09-20 — after the v1.6 milestone (Shell Debt & Dead Code archived; UAT batches pending)*
