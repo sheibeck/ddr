@@ -2,6 +2,7 @@
 created: 2026-09-20T10:20:00.000Z
 title: Average run ends on floor 5–7 — the four-band difficulty shape as the tuning target
 area: engine
+resolves_phase: 54
 files:
   - engine/difficulty.js (difficultyCurve — the per-depth dials: foe cap/power, ability threat, dark blobs, water; breather floors)
   - tools/tune-difficulty.mjs, tools/tune-classes.mjs, tools/class-pass-diff.mjs (the bot readouts — median / p90 death depth, reach-N rates)

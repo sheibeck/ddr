@@ -2,6 +2,7 @@
 created: 2026-09-20T17:30:00.000Z
 title: Character roller reels do not match the character that lands on the Hero tab
 area: ui
+resolves_phase: 50
 files:
   - mazeworld.html:5160-5249 (window.mzStartRoll — ONE startNewRun() up front, cosmetic Math.random() reel flicker, locks onto characterSheetViewModel(rolledState) at 900/1650/2400 ms, rollerPendingState set at 3050 ms)
   - mazeworld.html:5251+ (roller CTA click handler — commits rollerPendingState and lands on the MAP tab)

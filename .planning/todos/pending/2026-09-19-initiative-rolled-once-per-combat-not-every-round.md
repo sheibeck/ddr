@@ -2,6 +2,7 @@
 created: 2026-09-19T22:18:06.344Z
 title: Initiative rolled once per combat, not every round
 area: engine
+resolves_phase: 51
 files:
   - engine/combat.js:154-175 (rollInitiative — d20 vs d20, Samurai/slow/foresight/Acute Hearing overrides, sets C.first + C.initNote)
   - engine/combat.js:388 (startCombat — the opening roll)

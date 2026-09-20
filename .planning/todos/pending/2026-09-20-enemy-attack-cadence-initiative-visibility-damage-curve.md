@@ -2,6 +2,7 @@
 created: 2026-09-20T10:05:00.000Z
 title: Enemy attack cadence, initiative in the Oracle, and a smooth damage curve
 area: engine
+resolves_phase: 52
 files:
   - engine/combat.js:2311 (foeTurn — `swings = (f.frenzied ? 2 : 1) * (sp.atk || 1)`: a 2-attack foe swings 2, frenzied 4)
   - engine/combat.js:154-175 (rollInitiative — re-rolled EVERY round at L1339-1342; foe that acted last in round N and wins round N+1 acts twice in a row)
