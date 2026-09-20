@@ -215,7 +215,52 @@ so the DOM the player next sees is never stale. AFTER run pending (Task 2).
 
 ## AFTER
 
-Filled by Plan 49-02 from the user's Pixel 7 report (quoted as given, never rounded or estimated).
+### AFTER (fix 1) — `9fe9bb5`, APK `b8c9293`
+
+Reported by the user in chat, 2026-09-20, same protocol (depth 5, ≥ 50
+mixed steps). Numbers quoted exactly as pasted:
+
+```
+step 11.3 / 19.3 / 24.9 · dispatch 4.1 / 8.0 / 15.4 · paint 4.8 / 7.4 / 9.8 · draw 1.9 / 3.6 / 7.8 ms (med / p95 / max, n=70)
+```
+
+| Row | Median | p95 | Max | n |
+| --- | --- | --- | --- | --- |
+| step | 11.3 | 19.3 | 24.9 | 70 |
+| dispatch | 4.1 | 8.0 | 15.4 | 70 |
+| paint | 4.8 | 7.4 | 9.8 | 70 |
+| draw | 1.9 | 3.6 | 7.8 | 70 |
+
+- **Device build number:** CP2A.260705.006 (unchanged)
+- **APK commit (AFTER 1):** b8c9293 (includes fix 1, `9fe9bb5`)
+- **Jank report (user's words):** "Jank is none"
+
+**Check:** cited row `step`: median 11.3 ms (below 16 — yes), p95 19.3 ms
+(below 16 — **no**). Other rows vs. BEFORE: dispatch 4.1/8.0 vs. BEFORE
+3.9/8.3 (median +0.2 ms, p95 −0.3 ms — within noise, not meaningfully
+slower); paint 4.8/7.4 vs. BEFORE 8.6/15.3 (both improved substantially —
+fix 1 working as diagnosed); draw 1.9/3.6 vs. BEFORE 1.6/3.3 (+0.3/+0.3 ms —
+within noise). BEFORE jank ("None") still "Jank is none" — unchanged.
+
+**Ruling (user, 2026-09-20):** `step` p95 19.3 ≥ 16 ms — criterion 3's
+"< 16 ms" is met on median and NOT met on p95 after fix 1 alone. Per this
+plan's own rule this would normally trigger `git revert` of fix 1 and a
+close as "no fix" — the user overrode that with a binding ruling instead:
+land a SECOND presentation-only fix citing the same `step` row (dispatch +
+paint + draw p95 ≈ 19.0 ms already accounts for nearly all of step's own
+19.3 ms p95, so the redundant second canvas draw — the one remaining known,
+named redundancy from 49-01's Method section — is the next target), then
+re-measure once more (AFTER 2, below). Standing ruling if AFTER 2's p95 is
+still ≥ 16 ms: record the numbers honestly, KEEP both fixes (every row
+improved or held within noise), do NOT revert either. This is a deviation
+from the plan's original "ONE fix, revert if not < 16 ms" clauses — see the
+SUMMARY's `## Fix 2` section for the fix itself.
+
+### AFTER (fix 2) — `cfce555`, APK pending
+
+Filled once the orchestrator has built the third debug APK and the user has
+repeated the protocol a second time (AWAITING AFTER REPORT 2 — see
+`49-02-SUMMARY.md`'s `## Fix 2` section for the exact re-measure protocol).
 
 ## How to re-measure
 
