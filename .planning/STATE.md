@@ -2,14 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
-status: planning
-last_updated: "2026-09-20T17:14:42.661Z"
+current_phase: 50
+current_phase_name: Character Roller Fix
+status: executing
+stopped_at: Completed 50-01-PLAN.md
+last_updated: "2026-09-20T19:33:16.510Z"
 last_activity: 2026-09-20
+last_activity_desc: Phase 50 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Tuning Pass started; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.7 Tuning Pass — character roller fix → initiative once → foe cadence + damage curve → Joiner cap → four-band retune + roster decision → human DR round (roadmap created, ready to plan Phase 50)
+**Current focus:** Phase 50 — Character Roller Fix
 
 ## Current Position
 
-Phase: 50 - Character Roller Fix (planned — 3 plans, 3 sequential waves)
-Plan: 50-01 next
+Phase: 50 (Character Roller Fix) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-20 — ROADMAP.md created (Phases 50–55), REQUIREMENTS.md traceability filled (15/15 mapped)
+Last activity: 2026-09-20 — Phase 50 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -134,9 +138,9 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20 (autonomous v1.7 run, stopped for a machine restart)
-Stopped at: Phase 50 planned (0ee97bf/e00f177) — executing next
-Resume file: None — `/gsd-autonomous` resumes at Phase 50 execute
+Last session: 2026-09-20T19:33:16.481Z
+Stopped at: Completed 50-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -261,6 +265,7 @@ Resume file: None — `/gsd-autonomous` resumes at Phase 50 execute
 | Phase 48 P05 | ~50min | 3 tasks | 12 files |
 | Phase 49 P01 | 45min | 3 tasks | 4 files |
 | Phase 49 P02 | ~2h | 3 tasks | 9 files |
+| Phase 50 P01 | 25min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -507,6 +512,7 @@ Resume file: None — `/gsd-autonomous` resumes at Phase 50 execute
 - [Phase ?]: Fix 1 (9fe9bb5): paint() skips the hidden Hero/Gear tab mount on the step path, re-renders on tab switch — cites step row (BEFORE median 14.2 / p95 28.9 ms)
 - [Phase ?]: Fix 2 (cfce555): removes the redundant second canvas draw() per step; draw timing row re-bracketed inside paint() via a new window.__mzPerfMarks bridge — cites step row (AFTER 1 p95 19.3 ms)
 - [Phase ?]: User standing ruling 2026-09-20: after AFTER 1 showed step p95 still >= 16 ms, land a second fix rather than revert fix 1; keep both fixes regardless of AFTER 2's outcome and record the numbers honestly — AFTER 2 (n=61, superseding an initial n=47 read) confirmed step p95 19.8 ms still >= 16 ms (median 11.5 ms met); both fixes kept, PERF-01/PERF-02 marked complete
+- [Phase ?]: 50-01: createRoller's serialized startNewRun chain lives inside roller.js itself (only caller), option names/defaults locked exactly per CONTEXT; several doc-comment sentences reworded to avoid double-tripping the plan's own literal-text grep counts (exactly 1 startNewRun() call, exactly 1 Math.random) — no functional change
 
 ### Blockers
 

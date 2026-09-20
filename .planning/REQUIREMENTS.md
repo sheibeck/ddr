@@ -14,7 +14,7 @@
 
 ### Character roller (ROLL)
 
-- [ ] **ROLL-01**: The character the roller screen reveals (race / class / sub-class reels, name, quirk) is the character that lands on the Hero tab — the reels lock on and the CTA commits the SAME rolled state (no second `startNewRun()` on the path, no stale `rollerPendingState` from a superseded roll, no label drift between the reel labels and `characterSheetViewModel`), pinned by a test; shell-only, engine and fixtures untouched
+- [x] **ROLL-01**: The character the roller screen reveals (race / class / sub-class reels, name, quirk) is the character that lands on the Hero tab — the reels lock on and the CTA commits the SAME rolled state (no second `startNewRun()` on the path, no stale `rollerPendingState` from a superseded roll, no label drift between the reel labels and `characterSheetViewModel`), pinned by a test; shell-only, engine and fixtures untouched
 
 ### Initiative (INIT)
 
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROLL-01 | Phase 50 | Pending |
+| ROLL-01 | Phase 50 | Complete |
 | INIT-01 | Phase 51 | Pending |
 | INIT-02 | Phase 51 | Pending |
 | CAD-01 | Phase 52 | Pending |
@@ -95,6 +95,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TUNE-09 | Phase 55 | Pending |
 
 **Coverage:**
+
 - v1.7 requirements: 15 total
 - Mapped to phases: 15
 - Unmapped: 0

@@ -151,7 +151,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 Plans:
 **Wave 1**
 
-- [ ] 50-01-PLAN.md — `src/browser/roller.js` (`createRoller`: monotonic roll token + serialized `startNewRun()` chain + reels/CTA reading the one pending state) and `test/unit/roller.test.js` (SC1 identity, SC2 supersede races, serialization, CTA gating, module pins); shell untouched
+- [x] 50-01-PLAN.md — `src/browser/roller.js` (`createRoller`: monotonic roll token + serialized `startNewRun()` chain + reels/CTA reading the one pending state) and `test/unit/roller.test.js` (SC1 identity, SC2 supersede races, serialization, CTA gating, module pins); shell untouched
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -300,7 +300,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 50. Character Roller Fix | v1.7 | 0/? | Not started | - |
+| 50. Character Roller Fix | v1.7 | 1/3 | In Progress|  |
 | 51. Initiative Once Per Combat | v1.7 | 0/? | Not started | - |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
