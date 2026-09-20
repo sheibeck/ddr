@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 48
-status: executing
-stopped_at: Completed 48-04-PLAN.md (shell-* suites part B + fixture hygiene)
-last_updated: "2026-09-20T05:46:21.410Z"
+status: verifying
+stopped_at: Completed 48-05-PLAN.md (CLAUDE.md + docs close + stale-terms tripwire; Phase 48 complete)
+last_updated: "2026-09-20T06:31:14.665Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 48 execution started
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 21
-  completed_plans: 20
-  percent: 67
+  completed_plans: 21
+  percent: 83
 current_phase_name: Stale Docs, Comments & Test Names Purge
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Deb
 
 Phase: 48 — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-19 — Phase 48 execution started
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -124,8 +124,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T05:46:06.452Z
-Stopped at: Completed 48-04-PLAN.md (shell-* suites part B + fixture hygiene)
+Last session: 2026-09-20T06:31:14.606Z
+Stopped at: Completed 48-05-PLAN.md (CLAUDE.md + docs close + stale-terms tripwire; Phase 48 complete)
 Resume file: None
 
 ## Operator Next Steps
@@ -252,6 +252,7 @@ Resume file: None
 | Phase 48 P02 | ~90min | 2 tasks | 14 files |
 | Phase 48 P03 | 50min | 2 tasks | 26 files |
 | Phase 48 P04 | ~55min | 3 tasks | 71 files |
+| Phase 48 P05 | ~50min | 3 tasks | 12 files |
 
 ## Decisions
 
@@ -489,6 +490,8 @@ Resume file: None
 - [Phase ?]: 48-04: retired-bridges/wornSlots test/unit/ assert. prefix ALLOWED entries cover any assertion naming a retired __mz* bridge as proving its absence, replacing per-file duplicates
 - [Phase ?]: 48-04: fixture-hygiene Task 3 used one leading-space/trailing-comma substring pattern per key pair (covers whole-line, prefixed, and suffixed shapes) instead of the plan's literal two-pattern list; verified against all 55 target files with zero unhandled-shape stops, zero reverts
 - [Phase ?]: 48-04: class-matrix.test.js's mock run/row won:false fields included in fixture hygiene (rowFromRun never reads run.won since 46-02 deleted that field; file was explicitly named in the 46-02 handoff list)
+- [Phase ?]: 48-05: .claude/CLAUDE.md is Android-only (Capacitor 8 + Android Studio; Google Play submission prerequisites only; every rule and GSD-managed section byte-identical except the approved Constraints wording change); docs/COMBAT-NARRATIVE-DESIGN.md deleted (every surface it documented is retired).
+- [Phase ?]: 48-05: test/unit/stale-terms.test.js is the phase's standing tripwire — pins tools/stale-terms.mjs to zero unlisted on every enforced row and zero allow-list rot; a future stale comment or rotted survivor entry now fails npm test.
 
 ### Blockers
 

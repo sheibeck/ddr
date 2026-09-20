@@ -301,7 +301,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 48-05-PLAN.md — `.claude/CLAUDE.md` Android-only (rows deleted; tap-to-move + RAIL); `docs/` bucketed (one deletion: `COMBAT-NARRATIVE-DESIGN.md`; status notes + sweeps in nine ledgers; ledger tests green); `test/unit/stale-terms.test.js` (5 tests → 3,293); criteria 1-4 verbatim; closing SUMMARY with every survivor and every judgment call for the user to reverse
+- [x] 48-05-PLAN.md — `.claude/CLAUDE.md` Android-only (rows deleted; tap-to-move + RAIL); `docs/` bucketed (one deletion: `COMBAT-NARRATIVE-DESIGN.md`; status notes + sweeps in nine ledgers; ledger tests green); `test/unit/stale-terms.test.js` (5 tests → 3,293); criteria 1-4 verbatim; closing SUMMARY with every survivor and every judgment call for the user to reverse
 
 ### Phase 49: Measure-First Perf Pass
 
@@ -381,7 +381,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
-| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 4/5 | In Progress|  |
+| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 5/5 | In Progress|  |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
