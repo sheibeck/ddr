@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Tuning Pass started; v1.5 + v1.6 Pixel 7 UAT batches pending)
+See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phase 50 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 50 — Character Roller Fix
+**Current focus:** Phase 51 — Initiative Once Per Combat (autonomous v1.7 run; research skipped for all six phases per user ruling; verification agents off — orchestrator-authored VERIFICATION.md with device checks deferred to Phase 55)
 
 ## Current Position
 
@@ -58,6 +58,8 @@ Last activity: 2026-09-20 — Phase 50 complete, transitioned to Phase 51
 ## Accumulated Context
 
 ### Blockers/Concerns (open)
+
+- [Phase 50, tooling]: `npm run boot:check` (tools/shell-boot-check.mjs, raw `--headless=new --dump-dom`) is environment-blocked on this machine — 0-byte dump, its own `--self-test` fails, reproduces on pre-fix HTML; an interactive Chrome session appears to swallow the invocation. `tools/roller-repro.mjs`'s CDP approach works. Re-run in a clean session or migrate the tool to CDP (`.planning/phases/50-character-roller-fix/deferred-items.md`). Not a code regression.
 
 - [v1.6 sequencing gate]: RESOLVED 2026-09-19 — all three quick tasks (260918-w4n, 260918-wy1, 260919-00d) have landed on master with SUMMARYs and green gates. Phase 44 can now start.
 - [Balance]: Phase 21 (v1.1) landed the deep-floor scaling knobs (foe cap 5 / power ×1.6 / ability cadence ×2 past floor 5) and the dev start-at-depth harness, but the human DR round (2026-09-14) found depth 20 "instant death on any combat" → TUNE-04 verdict **tune-again, DEFERRED by the user** until player power moves. This retune now lands as **Phase 27 of v1.2**, after the identity pass (Phases 23–24) and mass playtest (Phase 26) give it a corrected yardstick. Ledger: `docs/DIFFICULTY-RETUNE.md`.
@@ -138,9 +140,9 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T20:19:17.494Z
-Stopped at: Completed 50-03-PLAN.md
-Resume file: None
+Last session: 2026-09-20 (autonomous v1.7 run)
+Stopped at: Phase 50 complete (VERIFICATION passed, 5 device checks deferred to Phase 55), ready to discuss/plan Phase 51
+Resume file: None — `/gsd-autonomous` resumes at Phase 51 smart discuss
 
 ## Operator Next Steps
 
