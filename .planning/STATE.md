@@ -4,15 +4,15 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 48
 status: executing
-stopped_at: Completed 48-02-PLAN.md (mazeworld.html + src/browser comment sweep)
-last_updated: "2026-09-20T04:03:49.229Z"
+stopped_at: Completed 48-03-PLAN.md (narration-pipeline + engine-facing test name/comment sweep)
+last_updated: "2026-09-20T04:50:30.161Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 48 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 67
 current_phase_name: Stale Docs, Comments & Test Names Purge
 ---
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Deb
 ## Current Position
 
 Phase: 48 — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 48 execution started
-Progress: [█████████░] 86%
+Progress: [█████████░] 90%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -124,8 +124,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T04:03:49.131Z
-Stopped at: Completed 48-02-PLAN.md (mazeworld.html + src/browser comment sweep)
+Last session: 2026-09-20T04:50:30.107Z
+Stopped at: Completed 48-03-PLAN.md (narration-pipeline + engine-facing test name/comment sweep)
 Resume file: None
 
 ## Operator Next Steps
@@ -250,6 +250,7 @@ Resume file: None
 | Phase 47 P05 | ~2h | 2 tasks | 17 files |
 | Phase 48 P01 | 35min | 2 tasks | 11 files |
 | Phase 48 P02 | ~90min | 2 tasks | 14 files |
+| Phase 48 P03 | 50min | 2 tasks | 26 files |
 
 ## Decisions
 
@@ -483,6 +484,7 @@ Resume file: None
 - [Phase ?]: engine/effects.js survivor list (darkFor/ward/afraid/foeEffect) re-derived by grepping live usage rather than trusting the stale comment's field list — haste/invis/ether/acute/flightLeft/flightCooldown/it.usedAt confirmed retired (moved to c.timers in Phase 39)
 - [Phase ?]: 48-02: heroTab.js's five retired-window.__mz* bridge archaeology comments rewritten even though not named in the plan's per-file action list — required by the plan's own --paths src unlisted-0 acceptance criterion
 - [Phase ?]: 48-02: class-B ALLOWED match regexes must target the raw per-line text the scanner splits on (\r?\n) — a multi-line comment's keyword phrase can straddle two lines
+- [Phase ?]: 48-03: fixed a tools/stale-terms.mjs --paths scoping bug (directory-prefix ALLOWED entries were dropped when scoped to individual files); flagged usable-features-audit.test.js:566's dead .toasts fallback for a future behaviour-level cleanup instead of touching a field name
 
 ### Blockers
 

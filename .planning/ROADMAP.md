@@ -293,7 +293,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 48-03-PLAN.md — test group A (narration-pipeline + engine-facing suites, 26 files): titles, comments, local `toast*` identifiers and assertion messages renamed to the line vocabulary; `round-card-worst-case.test.js` → `fight-log-worst-case.test.js` via `git mv`; counts pinned to 649de2b
+- [x] 48-03-PLAN.md — test group A (narration-pipeline + engine-facing suites, 26 files): titles, comments, local `toast*` identifiers and assertion messages renamed to the line vocabulary; `round-card-worst-case.test.js` → `fight-log-worst-case.test.js` via `git mv`; counts pinned to 649de2b
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -381,7 +381,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
-| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 2/5 | In Progress|  |
+| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 3/5 | In Progress|  |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
