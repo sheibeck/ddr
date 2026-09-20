@@ -111,7 +111,6 @@ function mkState(over = {}) {
     party: [],
     floor: defaultFloor(),
     dead: false,
-    won: false,
     ...rest,
   };
 }

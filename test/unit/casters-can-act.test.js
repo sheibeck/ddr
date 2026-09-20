@@ -57,7 +57,7 @@ function fixedCaster(overrides = {}) {
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Caster",
-    darkFor: 0, flightLeft: 0, flightCooldown: 0,
+    darkFor: 0,
     ...overrides,
   };
 }
@@ -79,7 +79,7 @@ function fixedState(overrides = {}) {
     c: fixedCaster(cOverrides),
     floor: fixedFloor(floorOverrides),
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    dead: false, won: false, deathNote: "", epitaph: "",
+    dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }

@@ -34,7 +34,6 @@ function fixedState(overrides = {}) {
     store: null,
     beats: null,
     dead: false,
-    won: false,
     deathNote: "",
     epitaph: "",
     ...rest,

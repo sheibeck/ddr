@@ -80,7 +80,7 @@ function fixedState(overrides = {}) {
     c: fixedFighter(cOverrides),
     floor: { g: wallGrid(), px: 5, py: 5, depth: 1, ...floorOverrides },
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    dead: false, won: false, deathNote: "", epitaph: "",
+    dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }

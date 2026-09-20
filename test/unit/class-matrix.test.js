@@ -95,7 +95,7 @@ test("seedList: the fixed i*7919+1 stride", () => {
 // --- (5b) rowFromRun.usage (Phase 42, BAL-02) ------------------------------
 
 test("rowFromRun: carries run.tallies.usage straight through unchanged", () => {
-  const run = { seed: 1, deathDepth: 5, floorsGained: 4, state: { c: { kills: 2, level: 2 } }, actions: 50, stuck: false, cause: "trap", won: false, tallies: { encounters: 1, usage: { abilities: { kata: 2 }, spells: {}, items: { "tool:torch": 1 } } }, encountersSurvived: 1 };
+  const run = { seed: 1, deathDepth: 5, floorsGained: 4, state: { c: { kills: 2, level: 2 } }, actions: 50, stuck: false, cause: "trap", tallies: { encounters: 1, usage: { abilities: { kata: 2 }, spells: {}, items: { "tool:torch": 1 } } }, encountersSurvived: 1 };
   const row = rowFromRun(run);
   assert.deepStrictEqual(row.usage, { abilities: { kata: 2 }, spells: {}, items: { "tool:torch": 1 } });
 });
@@ -103,7 +103,7 @@ test("rowFromRun: carries run.tallies.usage straight through unchanged", () => {
 // --- (6) summarizeRows -------------------------------------------------------
 
 test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from depth metrics; topCauses caps at 3", () => {
-  const stuckRow = { seed: 1, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 2, encounters: 1, encountersSurvived: 1, won: false };
+  const stuckRow = { seed: 1, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 2, encounters: 1, encountersSurvived: 1 };
   const allStuck = summarizeRows([stuckRow]);
   assert.equal(allStuck.meanDepth, null);
   assert.equal(allStuck.p50Depth, null);
@@ -113,7 +113,7 @@ test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from
   assert.deepStrictEqual(allStuck.topCauses, []);
 
   const completedRow = (seed, deathDepth, cause) => ({
-    seed, deathDepth, stuck: false, cause, kills: 2, level: 2, actions: 100, floorsGained: deathDepth - 1, encounters: 3, encountersSurvived: 2, won: false,
+    seed, deathDepth, stuck: false, cause, kills: 2, level: 2, actions: 100, floorsGained: deathDepth - 1, encounters: 3, encountersSurvived: 2,
   });
   const mixed = summarizeRows([
     stuckRow,
@@ -144,7 +144,7 @@ test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from
 
 test("summarizeRows: usage sums uses and counts runs over COMPLETED rows only, in sorted label order", () => {
   const row = (seed, stuck, usage) => ({
-    seed, deathDepth: 5, stuck, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false, usage,
+    seed, deathDepth: 5, stuck, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, usage,
   });
   const rows = [
     row(1, false, { abilities: { kata: 2 }, spells: {}, items: { "potion:heal": 1 } }),
@@ -152,7 +152,7 @@ test("summarizeRows: usage sums uses and counts runs over COMPLETED rows only, i
     // a stuck row's usage must never contribute, even if present
     row(3, true, { abilities: { kata: 99 }, spells: {}, items: {} }),
     // a completed row with no usage field at all contributes zero
-    { seed: 4, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false },
+    { seed: 4, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1 },
   ];
   const result = summarizeRows(rows);
   assert.deepStrictEqual(result.usage.abilities, { brace: { uses: 3, runs: 1 }, kata: { uses: 3, runs: 2 } });
@@ -165,12 +165,12 @@ test("summarizeRows: usage sums uses and counts runs over COMPLETED rows only, i
 // --- (6b) reach20 (Phase 27, TUNE-05) -------------------------------------------------------
 
 test("summarizeRows: reach20 is null when all rows are stuck, 0.0 when no completed run reaches 20, and counts a run at exactly deathDepth 20", () => {
-  const stuckRow = { seed: 1, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 2, encounters: 1, encountersSurvived: 1, won: false };
+  const stuckRow = { seed: 1, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 2, encounters: 1, encountersSurvived: 1 };
   const allStuck = summarizeRows([stuckRow]);
   assert.equal(allStuck.reach20, null);
 
   const completedRow = (seed, deathDepth, cause) => ({
-    seed, deathDepth, stuck: false, cause, kills: 2, level: 2, actions: 100, floorsGained: deathDepth - 1, encounters: 3, encountersSurvived: 2, won: false,
+    seed, deathDepth, stuck: false, cause, kills: 2, level: 2, actions: 100, floorsGained: deathDepth - 1, encounters: 3, encountersSurvived: 2,
   });
 
   const belowTwenty = summarizeRows([completedRow(1, 6, "trap"), completedRow(2, 9, "trap")]);
@@ -186,7 +186,7 @@ test("summarizeRows: reach20 is null when all rows are stuck, 0.0 when no comple
 
 test("pooledSummary: run-weighted over cells — pooled p50Depth is the median over ALL rows, not the mean of per-cell p50s; key ALL; null-not-NaN when all-stuck", () => {
   const completedRow = (seed, deathDepth) => ({
-    seed, deathDepth, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: deathDepth - 1, encounters: 1, encountersSurvived: 1, won: false,
+    seed, deathDepth, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: deathDepth - 1, encounters: 1, encountersSurvived: 1,
   });
   const cellA = { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: [completedRow(1, 9)] };
   const cellB = { cell: { cls: "Thief", sub: "Ninja", race: "Elven" }, rows: [completedRow(2, 1), completedRow(3, 1), completedRow(4, 2)] };
@@ -208,7 +208,7 @@ test("pooledSummary: run-weighted over cells — pooled p50Depth is the median o
   assert.notEqual(pooled.p50Depth, naiveMeanOfP50s);
 
   // all-stuck pair -> null, never NaN, walked recursively.
-  const stuckRow = { seed: 5, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 0, encounters: 0, encountersSurvived: 0, won: false };
+  const stuckRow = { seed: 5, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 0, encounters: 0, encountersSurvived: 0 };
   const allStuckPooled = pooledSummary([{ cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: [stuckRow] }]);
   assert.equal(allStuckPooled.p50Depth, null);
   const walk = (obj, seen = new Set()) => {
@@ -248,8 +248,8 @@ test("rankCells: meanDepth desc, p50 desc, reach5 desc, then sub asc/race asc; n
 // --- (8) rollups -------------------------------------------------------
 
 test("rollups: pools rows by class/sub/race; byClass sums n across member cells", () => {
-  const rows1 = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false }];
-  const rows2 = [{ seed: 2, deathDepth: 7, stuck: false, cause: "combat", kills: 2, level: 2, actions: 80, floorsGained: 6, encounters: 2, encountersSurvived: 1, won: false }];
+  const rows1 = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1 }];
+  const rows2 = [{ seed: 2, deathDepth: 7, stuck: false, cause: "combat", kills: 2, level: 2, actions: 80, floorsGained: 6, encounters: 2, encountersSurvived: 1 }];
   const cellRows = [
     { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: rows1 },
     { cell: { cls: "Fighter", sub: "Guard", race: "Elven" }, rows: rows2 },
@@ -267,8 +267,8 @@ test("rollups: pools rows by class/sub/race; byClass sums n across member cells"
 // --- (8b) rollups usage pass-through (Phase 42, BAL-02) --------------------
 
 test("rollups: usage flows through byClass/bySub/byRace/pooled for free, pooled over every cell's rows", () => {
-  const rows1 = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false, usage: { abilities: { kata: 2 }, spells: {}, items: {} } }];
-  const rows2 = [{ seed: 2, deathDepth: 7, stuck: false, cause: "combat", kills: 2, level: 2, actions: 80, floorsGained: 6, encounters: 2, encountersSurvived: 1, won: false, usage: { abilities: {}, spells: { Freeze: 3 }, items: { "tool:torch": 1 } } }];
+  const rows1 = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, usage: { abilities: { kata: 2 }, spells: {}, items: {} } }];
+  const rows2 = [{ seed: 2, deathDepth: 7, stuck: false, cause: "combat", kills: 2, level: 2, actions: 80, floorsGained: 6, encounters: 2, encountersSurvived: 1, usage: { abilities: {}, spells: { Freeze: 3 }, items: { "tool:torch": 1 } } }];
   const cellRows = [
     { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: rows1 },
     { cell: { cls: "Magic User", sub: "Sorcerer", race: "Elven" }, rows: rows2 },
@@ -284,8 +284,8 @@ test("rollups: usage flows through byClass/bySub/byRace/pooled for free, pooled 
 // --- (9) buildReport / formatText -------------------------------------------------------
 
 test("buildReport: correct meta.cells/excluded, no timing fields; formatText contains footnote/Stuck/Bot lines, no verdict words", () => {
-  const rowsA = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, won: false }];
-  const rowsB = [{ seed: 1, deathDepth: 20000, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 0, encounters: 0, encountersSurvived: 0, won: false }];
+  const rowsA = [{ seed: 1, deathDepth: 5, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1 }];
+  const rowsB = [{ seed: 1, deathDepth: 20000, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 0, encounters: 0, encountersSurvived: 0 }];
   const cellRows = [
     { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: rowsA },
     { cell: { cls: "Thief", sub: "Ninja", race: "Elven" }, rows: rowsB },
@@ -331,10 +331,10 @@ test("buildReport: correct meta.cells/excluded, no timing fields; formatText con
 
 test("buildReport: rollups.pooled present with key ALL; formatText's POOLED block carries a >=20% column and the deep gained/survived columns at a deep start depth", () => {
   const rowsA = [
-    { seed: 1, deathDepth: 22, stuck: false, cause: "combat", kills: 3, level: 5, actions: 400, floorsGained: 2, encounters: 4, encountersSurvived: 3, won: false },
+    { seed: 1, deathDepth: 22, stuck: false, cause: "combat", kills: 3, level: 5, actions: 400, floorsGained: 2, encounters: 4, encountersSurvived: 3 },
   ];
   const rowsB = [
-    { seed: 2, deathDepth: 20, stuck: false, cause: "trap", kills: 1, level: 5, actions: 200, floorsGained: 0, encounters: 1, encountersSurvived: 1, won: false },
+    { seed: 2, deathDepth: 20, stuck: false, cause: "trap", kills: 1, level: 5, actions: 200, floorsGained: 0, encounters: 1, encountersSurvived: 1 },
   ];
   const cellRows = [
     { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: rowsA },

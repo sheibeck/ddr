@@ -92,7 +92,6 @@ function mkState(over = {}) {
     party: [],
     floor: { g: [[{ wall: false, seen: true, feat: null }]], px: 0, py: 0, depth: 1 },
     dead: false,
-    won: false,
     ...rest,
   };
 }

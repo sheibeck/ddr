@@ -49,7 +49,7 @@ function fixedState(overrides = {}) {
     floor: { depth: 1 },
     day: 1, steps: 0, combat: null, store: null, beats: null,
     party: [], pendingJoiner: null, pendingFind: null, pendingLoot: [],
-    dead: false, won: false,
+    dead: false,
     ...rest,
   };
 }

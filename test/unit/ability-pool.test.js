@@ -48,7 +48,7 @@ function fixedFighter(overrides = {}) {
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [],
     spellsUsed: 0, kills: 0, might: 0, ward: null, regen: false, mirror: 0, foresight: false,
-    name: "Test Delver", darkFor: 0, flightLeft: 0, flightCooldown: 0, bag: "medium",
+    name: "Test Delver", darkFor: 0, bag: "medium",
     ...overrides,
   };
 }

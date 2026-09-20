@@ -139,12 +139,6 @@ export const ALLOWED = Object.freeze(
       reason: "C — the foldLegacyCounters pin: its input MUST carry the legacy keys and its assertions prove they are deleted",
     },
     {
-      term: "legacy-counters",
-      file: "test/unit/",
-      match: "flightLeft: 0, flightCooldown: 0",
-      reason: "D — inert legacy keys in hand-built test-state literals (33 files at 649de2b); test bodies are out of DOCS-03's scope — counted, not edited",
-    },
-    {
       term: "round-card",
       file: "mazeworld.html",
       match: "Round Card \\(Phase 32\\) entirely",

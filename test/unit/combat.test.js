@@ -72,7 +72,6 @@ function fixedFighter(overrides = {}) {
     // audit-batch1 (2026-09-09, A2): Cloak of Flying's charge/cooldown
     // fields — 0/0 (ready-to-activate) by default, same treatment as
     // darkFor above.
-    flightLeft: 0, flightCooldown: 0,
     ...overrides,
   };
 }
@@ -94,7 +93,7 @@ function fixedState(overrides = {}) {
     c: fixedFighter(cOverrides),
     floor: fixedFloor(floorOverrides),
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    dead: false, won: false, deathNote: "", epitaph: "",
+    dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }

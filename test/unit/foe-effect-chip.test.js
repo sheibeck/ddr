@@ -29,7 +29,6 @@ const HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
 function cleanChar(overrides = {}) {
   return {
     haste: 0, invis: 0, ether: 0, acute: 0, might: 0,
-    flightLeft: 0, flightCooldown: 0,
     affliction: null, darkFor: 0,
     items: [],
     ...overrides,

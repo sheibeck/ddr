@@ -104,7 +104,6 @@ test("an old save missing c.bag migrates to the class-derived default", () => {
     day: 1,
     steps: 0,
     dead: false,
-    won: false,
     deathNote: "",
     epitaph: "",
   };
@@ -122,7 +121,6 @@ test("an old save with an unknown class defaults to the small bag", () => {
     day: 1,
     steps: 0,
     dead: false,
-    won: false,
     deathNote: "",
     epitaph: "",
   };

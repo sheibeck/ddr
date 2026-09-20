@@ -66,7 +66,7 @@ function fixedState(overrides = {}) {
     c: fixedWizard(cOverrides),
     floor: fixedFloor(floorOverrides),
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    dead: false, won: false, deathNote: "", epitaph: "",
+    dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }

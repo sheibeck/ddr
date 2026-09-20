@@ -52,7 +52,6 @@ function fixedFighter(overrides = {}) {
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Delver",
     darkFor: 0,
-    flightLeft: 0, flightCooldown: 0,
     // Phase 28: a "small" bag (4 slots) so the full-bag destroyed-armor case
     // can be driven without a bagFull check ever gating it.
     bag: "small",
@@ -77,7 +76,7 @@ function fixedState(overrides = {}) {
     c: fixedFighter(cOverrides),
     floor: fixedFloor(floorOverrides),
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    dead: false, won: false, deathNote: "", epitaph: "",
+    dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }

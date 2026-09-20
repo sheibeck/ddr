@@ -78,7 +78,6 @@ function mkState(c, stock) {
     party: [],
     floor: null,
     dead: false,
-    won: false,
   };
 }
 

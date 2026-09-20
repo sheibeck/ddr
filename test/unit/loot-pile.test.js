@@ -48,7 +48,7 @@ function fixedState(overrides = {}) {
     floor: { depth: 1 },
     day: 1, steps: 0, combat: null, store: null, beats: null,
     party: [], pendingJoiner: null, pendingFind: null, pendingLoot: [],
-    dead: false, won: false,
+    dead: false,
     ...rest,
   };
 }
@@ -320,7 +320,7 @@ function fixedFighter(overrides = {}) {
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
     regen: false, mirror: 0, foresight: false, name: "Test Delver",
-    darkFor: 0, flightLeft: 0, flightCooldown: 0,
+    darkFor: 0,
     bag: "small",
     ...overrides,
   };
@@ -342,7 +342,7 @@ function fixedCombatState(overrides = {}) {
     c: fixedFighter(cOverrides),
     floor: fixedFloor(1, floorOverrides),
     day: 1, steps: 0, combat: null, store: null, beats: null,
-    pendingLoot: [], dead: false, won: false, deathNote: "", epitaph: "",
+    pendingLoot: [], dead: false, deathNote: "", epitaph: "",
     ...rest,
   };
 }
