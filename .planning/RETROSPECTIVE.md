@@ -105,6 +105,36 @@
 
 **Numbers:** 2 phases, 10 plans, 28 tasks, 55 commits; tests 1955 → 2170; parity master untouched; 54 Pixel 7 checks deferred to the milestone-close batch.
 
+## v1.6 Shell Debt & Dead Code (2026-09-19 → 2026-09-20)
+
+*(v1.5 "Meaningful Choices" — 2026-09-17 → 2026-09-18, 8 phases, 37 plans, tests 2,179 → 3,168 — has no entry of its own; its audit is in `.planning/milestones/v1.5-MILESTONE-AUDIT.md`.)*
+
+**What was built**
+- The classic engine retired from the shell (16 mirrors, the cold-boot chargen, the `new Function` tripwires), with `npm run boot:check` and `tools/shell-sweep.mjs refs|orphans` as standing gates; shell 8,710 → 5,682 lines over the milestone.
+- One worn-model path (the Phase 37 hedges collapsed): exactly 13 fixture sites moved, each measured by a committed scan and declared with before/after — the milestone's only fixture change.
+- Honest names and dead exports: `toasts.js` → `narrationLines.js`, `winGame`/`won` and `controlScheme` and `tutorial.js` gone, `tools/ident-sweep.mjs` proving zero retired identifiers.
+- Gear, Hero and Store as `src/browser/` modules behind one `window.__mzTabs` mount each; 18 dead bridges + 7 classic wrappers deleted; `src/browser/bridge.js` as the one `__mz*` registry (45 names, set-equality test, generated doc); a `node:vm` DOM-snapshot harness that proved every carve byte-equal.
+- Stale docs/comments/test names purged with `tools/stale-terms.mjs` (11 rows, classed allow-list, pinned) reading zero; CLAUDE.md Android-only.
+- A perf baseline measured on the Pixel 7 with dev-gated marks; two step-path fixes (hidden tabs not rebuilt per step; the duplicate canvas draw removed) — step 14.2 / 28.9 → 11.5 / 19.8 ms (med / p95), paint halved.
+
+**What worked**
+- **Measure-first everywhere, not just Phase 49.** Phase 45's fixture scan, Phase 47's BEFORE snapshots, Phase 48's stale-terms table and Phase 49's marks each captured a number *before* the change and compared after — every "did this change behaviour?" question had a mechanical answer, and three shortfalls (the line budget, the p95, the n=47 walk) were recorded as numbers rather than argued.
+- **The DOM-snapshot harness paid for itself four times:** three carves and two perf fixes landed with the seven fixtures byte-equal; two harness bugs (node re-parenting, `innerHTML` not invalidating ids) were caught by the plan's own idempotency check before the fixtures were captured.
+- **Standing tripwires instead of one-off greps:** `boot:check`, `shell-sweep`, `ident-sweep`, the bridge registry test, `stale-terms` — each phase's closing grep became a test the next phase runs for free.
+- **Honest-shortfall protocol.** 47-05 recorded "NOT MET — 5,621" with a classified breakdown instead of chasing the number; the user re-baselined in one question. Same for Phase 49's p95: the rule said revert, the numbers said keep, the user ruled, the doc says both.
+- **Sequential executors on the main tree with a stall watch keyed on commits + file mtimes** (transcript mtime proved unreliable) — 23 plans, zero merge conflicts, one restart (a session end, not a hang) with nothing lost.
+- **Device rounds only where the phase IS the device** (Phase 49): three APK installs over the sideloaded build kept the on-device save alive for the UAT batch.
+
+**What did not**
+- **Planning estimates for line counts were wrong twice** (ROADMAP's "< 5,000" and the CONTEXT's "≈ 400+ lines of Hero"); the fallback lever (move private helpers) had nothing in scope. A line budget should be measured from a scouted deletion set, not guessed.
+- **The perf rule ("< 16 ms or revert") was written before the measurement existed** and turned out to be the wrong shape: the remaining p95 is route variance plus the real cost of the dark-region draw, not waste. Rules that gate on a single threshold need a variance clause.
+- **Planners over-delivered plan counts** (5 instead of 3–4 in both 47 and 48) — accepted each time because the measured work justified it, but the CONTEXT's "recommended slicing" was never once followed.
+- **Two executor process slips:** a `git stash` round-trip in 48-05 (against the workflow rules; only line endings were touched, caught by `bridge-doc --check`) and `state.advance-plan` failing on the free-form "Plan:" line every phase (executors patched STATE by hand).
+- **The test-body boundary needed a ruling mid-plan:** "titles and comments only" could not reach zero; the bounded rule (local identifiers + messages, assertion counts pinned) was invented by the planner and accepted after the fact.
+- **Both UAT batches (v1.5's 140, v1.6's 26) are still unrun** — the deferred-UAT protocol keeps the run moving, but two milestones of device checks are now stacked on one APK.
+
+**Numbers:** 6 phases, 23 plans, 56 tasks, 136 commits, one session with two compactions and one restart; tests 2,924 → 3,315; parity master untouched; 3 Pixel 7 rounds in-phase; 26 device checks deferred.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -116,6 +146,8 @@
 | v1.2 | 1 (autonomous, compacted once) | 7 (one inserted) | Hard gates that stop the phase; planner calibration before user decisions; device-feedback phases inserted mid-milestone; DR verdict deferred by the user |
 | v1.3 | 1 (autonomous) | 6 | Research phase (30) before a UI build; override closeout with the device batch deferred |
 | v1.4 | 1 (autonomous, no compaction) | 2 | Claude Design mocks as specs; pure-module-first waves; orchestrator-authored VERIFICATION with deferred UAT; APK built once after the last edit |
+| v1.5 | 1 (autonomous) | 8 | BEFORE/AFTER class-matrix pins around every power change; greenfield ruling (no dual paths); deferred-UAT with orchestrator VERIFICATION |
+| v1.6 | 1 (autonomous, 2 compactions, 1 restart) | 6 | Cleanup-only milestone under an engine fence; measure-first gates per phase (fixture scan, DOM snapshots, stale-terms, perf marks); honest-shortfall protocol with user re-baselining; device rounds only inside the phase that is the device |
 
 ### Cumulative Quality
 
@@ -126,6 +158,8 @@
 | v1.2 | 1448 | parity 33/33 with four declared divergences (chargen 15/24, combat 14, economy 3, parley 303); class identity contract (70); toast-table partition guard; ledger guards for class pass and retune | 0 |
 | v1.3 | 1955 | parity byte-identical (storeRoll carved out); armor/loot/fight-gate suites | 0 |
 | v1.4 | 2170 | parity master untouched; 9 new shell suites incl. phase-wide invariant sweeps (no toast / no D-pad / guards / no S-resident presentation state) | 0 |
+| v1.5 | 3168 | parity byte-identical with declared divergences; BEFORE/AFTER class matrix 143 × 40; effect-timer, worn-slot, ability, spell, terrain suites | 0 |
+| v1.6 | 3315 | parity master untouched; 13 declared worn-model fixture moves; DOM-snapshot lock for 3 screens; bridge registry set-equality; stale-terms tripwire; comment-only-diff proof; 7 dev-gated perf lines pinned | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
