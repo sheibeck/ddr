@@ -42,27 +42,26 @@ key-decisions:
 
 patterns-established: []
 
-requirements-completed: []
-# PERF-01/PERF-02 are NOT marked complete here — Task 3 (after AFTER 2)
-# closes both requirements together, per this plan's own task shape.
+requirements-completed: [PERF-01, PERF-02]
 
 # Metrics
-duration: in progress — checkpoint reached after Task 2 (fix 2 landed, awaiting AFTER 2)
-completed: null
-status: awaiting-after-report-2
+duration: ~2h (includes two Pixel 7 device round-trips)
+completed: 2026-09-20
+status: complete
 ---
 
-# Phase 49 Plan 02: Measure-First Perf Pass — Two Fixes + AFTER 1 Summary (Task 2 checkpoint, round 2)
+# Phase 49 Plan 02: Measure-First Perf Pass — Two Fixes, AFTER 1 + AFTER 2, Phase Close Summary
 
-**Two presentation-only fixes citing the `step` row: (1) paint() skips the Hero/Gear tab's full DOM rebuild while hidden behind the map tab during a step, re-rendering on tab switch; (2) the redundant second canvas draw() per step is removed. AFTER 1 (fix 1 alone) moved step from 14.2/28.9/33.4 to 11.3/19.3/24.9 ms — p95 still >= 16 ms, so the user ruled: land fix 2, re-measure, keep both regardless of the outcome.**
+**Two presentation-only fixes citing the `step` row: (1) paint() skips the Hero/Gear tab's full DOM rebuild while hidden behind the map tab during a step, re-rendering on tab switch; (2) the redundant second canvas draw() per step is removed. Step moved from BEFORE 14.2/28.9/33.4 to a final AFTER (n=61) 11.5/19.8/31.2 ms — median now under 16 ms, p95 still is not, and the user's standing ruling keeps both fixes rather than revert either. PERF-01 and PERF-02 are both complete.**
 
-**This is NOT the phase-closing SUMMARY.** Task 1 (doc + decision + fix 1)
-and the fix-2 round (landed after the AFTER 1 device report, per a binding
-user ruling — see `## Fix 2` below) are both complete; Task 2's checkpoint
-is reached a second time, below. The executor stops here per the plan.
-Task 3 (the AFTER 2 table, ROADMAP criteria 1-4, closing gates, PERF-01/02
-marked complete) runs once the orchestrator supplies the AFTER 2 device
-report.
+**This IS the phase-closing SUMMARY**, written across three device
+round-trips in one continuous session: Task 1 (doc + decision + fix 1),
+a fix-2 round (landed after the AFTER 1 device report, per a binding user
+ruling), and Task 3 (this close, after the AFTER 2 device report — first
+read at n=47, then superseded by a continued-run re-read at n=61). The
+checkpoint sections below (Task 2, reached twice) are kept verbatim as the
+session's own record; the closing sections (`## ROADMAP criteria 1-4`
+onward) are appended at the end.
 
 ## Performance
 
@@ -221,7 +220,8 @@ step — the AFTER run on a second APK.
 
 ---
 *Phase: 49-measure-first-perf-pass*
-*Completed: pending — Task 2/3 remain*
+*(Task 1/2 checkpoint marker, superseded — see `## Self-Check: PASSED` at the
+end of this file for the actual phase-close record, completed 2026-09-20.)*
 
 ## AFTER report (fix 1, `9fe9bb5`; APK `b8c9293`)
 
@@ -408,3 +408,101 @@ step 11.5 / 19.8 / 31.2 · dispatch 4.7 / 8.1 / 15.4 · paint 5.4 / 10.0 / 14.1 
 | draw | 3.6 | 11.2 | 12.3 | 61 |
 
 Reading unchanged: `step` p95 19.8 ≥ 16 (NOT MET on p95; median 11.5 met); paint p95 settled to 10.0 with more samples; both fixes kept by the standing ruling.
+
+---
+
+## Task 3 — phase close
+
+## ROADMAP criteria 1-4 (verbatim, with evidence)
+
+**Criterion 1:** "`docs/PERF-BASELINE.md` exists and records `paint()` re-render and `draw()` per-step timings (median and p95 over at least 50 steps, on a floor with water and a dark region) captured on the Pixel 7 from the milestone-close debug APK, with the method (Chrome remote profiling or in-app `performance.now()` marks), the build commit and the device build number."
+
+**MET.** `docs/PERF-BASELINE.md` carries all 8 sections (Method, Device, Protocol, BEFORE, Jank report, Decision, AFTER, How to re-measure). Method: in-app dev-gated `performance.now()` marks (Chrome remote profiling declined, user ruling 2026-09-20). BEFORE table: n=62 (≥ 50), depth 5 (water + dark floor per the checklist protocol), APK commit `742c916`, device build `CP2A.260705.006`. AFTER (fix 1): n=70. AFTER (fix 2): the authoritative n=61 read (an initial n=47 read is kept as a superseded note — the user continued the same run and re-read the line once the ring held ≥ 50 samples), APK commit `c0cdbae`, device build unchanged. Every number quoted verbatim from the user's own reports, never rounded or estimated.
+
+**Criterion 2:** "Every code change in the phase cites a baseline row that measured ≥ 16 ms per step or a jank the user confirmed on device; if no row qualifies, the phase's whole diff is the doc — zero code — and the summary says so in those words."
+
+**MET.** `step` qualified (BEFORE median 14.2 / p95 28.9 ms, both ≥ 16 ms — p95 alone is sufficient). Two code commits, both citing that row in their commit message: `9fe9bb5` ("cites docs/PERF-BASELINE.md BEFORE row step (median 14.2 / p95 28.9 ms)") and `cfce555` ("cites step p95 19.3 ms (AFTER 1) / 28.9 ms (BEFORE)"). No other commit in the phase touches `mazeworld.html`/`src/browser/` outside these two. (This is the qualifying-row branch, not the "zero code" branch — the "no row qualified" sentence does not apply to this phase.)
+
+**Criterion 3:** "If a fix landed, the same doc carries an AFTER row showing the hotspot below 16 ms with no other row slower, and the fix is presentation-only (`engine/`, `content/`, fixtures, master untouched)."
+
+**HONESTLY PARTIAL, recorded per the user's standing ruling — fix landed, AFTER rows present, hotspot not below 16 ms on p95.** The doc carries AFTER rows for both fixes (fix 1 at n=70, fix 2 at n=61 authoritative). `step`'s median (11.5 ms) IS below 16 ms; `step`'s p95 (19.8 ms) is NOT. No other row is slower than its BEFORE value (dispatch, paint, draw each improved or held within noise across both AFTER rounds — see the Decision section's row-by-row arithmetic). Both fixes are strictly presentation-only: `git diff --stat 9c9a755..HEAD -- engine/ content/ test/parity/` is empty and the master parity file's hash is unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`) at every commit in the phase. The user reviewed the AFTER 1 numbers directly and ruled, in a binding decision recorded in `docs/PERF-BASELINE.md`'s Decision section, to land a second fix and — regardless of the AFTER 2 outcome — keep both fixes rather than revert, since every row improved or held and no jank was ever reported. This is a deliberate, user-authorized deviation from the plan's own "revert if not < 16 ms" clause, not a silent shortfall.
+
+**Criterion 4:** "No timing instrumentation ships: any `performance.now()` marks are behind the existing `dev` gate or removed before the phase closes, proven by a grep of `www/` after `build:www`."
+
+**MET.** The instrumentation intentionally stays (dev-gated), per 49-01's own judgment call #1 (reversible in one revert if the user wants it out). Re-recorded at HEAD (`edffe6d`) after `npm run build:www`:
+
+```
+$ grep -rn "performance.now" www/
+www/index.html:2503:  const tDraw = perf ? performance.now() : 0;
+www/index.html:2505:  if (perf) perf.record("draw", performance.now() - tDraw);
+www/index.html:4999:    const tStep = perf ? performance.now() : 0;
+www/index.html:5001:    if (perf) perf.record("dispatch", performance.now() - tStep);
+www/index.html:5061:    const tPaint = perf ? performance.now() : 0;
+www/index.html:5072:    if (perf) perf.record("paint", performance.now() - tPaint);
+www/index.html:5098:    if (perf) { perf.record("step", performance.now() - tStep); perfReadout(perf); }
+```
+
+```
+$ grep -rn "performance.now" www/ | grep -vc "perf ? \|if (perf)"
+0
+```
+
+Exactly 7 lines, all in `www/index.html`, all guarded (0 unguarded); `grep -rl "performance.now" www/` returns exactly `www/index.html`. (2 lines now sit inside classic `paint()`'s own draw() bracket — fix 2's relocation — the remaining 5 are still inside module `stepWith`.)
+
+## Gate outputs per commit
+
+| Commit | What | `npm test` | snapshots | `build:www` | `boot:check` | bridge-registry / doc-check | stale-terms | fence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `9fe9bb5` | fix 1 (skip hidden tab mounts on step) | 3313/0 | 10/10, fixtures unchanged | exit 0 | 4/4 | 10/10 / exit 0 | exit 0 | empty, hash `a1f4d0dc...` |
+| `cfce555` | fix 2 (remove redundant draw) | 3315/0 (+2 new PAINT_DRAW_REGION pins) | 10/10, fixtures unchanged | exit 0 | 4/4 | 10/10 / exit 0 | exit 0 | empty, hash unchanged |
+| `edffe6d` (HEAD, close) | AFTER (fix 2) + criteria + REQUIREMENTS | 3315/0 | 10/10, fixtures unchanged | exit 0 | 4/4 | 10/10 / exit 0 | exit 0 | empty, hash unchanged |
+
+(Every intervening docs-only commit — `52a8b00`, `b8c9293`, `70e199f` — touches only `docs/PERF-BASELINE.md`/`.planning/REQUIREMENTS.md` and inherits the same green test/build/boot state as the code commit immediately before it; re-running the full suite at each was not repeated where no source file changed.)
+
+`npm test` count progression: 3,293 at phase start (49-CONTEXT.md's baseline) → 3,303 after 49-01 Task 1 → 3,313 after 49-01 Task 2 (unchanged through 49-02's fix 1) → 3,315 after fix 2's two new `PAINT_DRAW_REGION` pins, held through phase close.
+
+## Fence
+
+`git diff --stat 9c9a755..HEAD -- engine/ content/ test/parity/` — empty, at every commit in the phase. `git hash-object test/parity/prototype-master.js.txt` — `a1f4d0dc29782218d8e5aab65bc5989c33f917f0`, unchanged since phase start. `git status --porcelain engine/ content/ test/parity/` — empty at close. `wc -l mazeworld.html` at close — 5,682 lines (5,580 at phase start per 49-CONTEXT.md's baseline; +102 lines across both plans' instrumentation + two fixes + comments, no whole-file rewrite, CRLF preserved throughout — `git ls-files --eol mazeworld.html` still reports `i/lf w/crlf`).
+
+## Judgment calls for the user
+
+Carried forward from 49-01 (unchanged):
+
+1. The instrumentation stays dev-gated rather than being removed — a full revert is one commit if the user wants it out entirely.
+2. `dispatch` is the fourth row's name because it brackets `dispatchWithNarration` — engine action + narration fold + rail-card push — not the raw engine call in isolation.
+3. The readout shows `max` as well as `med`/`p95`, so the device report needs no `adb logcat` cross-check to be complete.
+4. The `step` row brackets the whole `stepWith` body (dispatch through the trailing draw, the Oracle log append, and the camera nudge) — a superset of "dispatch to the end of paint." It can only over-report per-step cost, never under-report it.
+
+This plan's own judgment calls:
+
+5. Fix 1 was implemented as a module-scope classic-script flag (`mwPaintSkipHiddenTabs`) rather than a `paint(opts)` parameter, because four source-pin test files anchor on the literal strings `function paint() {` and `window.paint();` — preserving those literals avoided breaking pre-existing, unrelated test coverage for no behavioral benefit.
+6. Fix 2 removed `stepWith`'s external `draw()` call rather than the internal one inside `paint()` — the internal call serves ~19 OTHER `window.paint()` call sites (equip, buy, cast spell, camp, etc.) that never separately call `draw()` themselves; removing it there would have risked leaving the canvas stale after any action that reveals map tiles outside a move (e.g., a "Map the Floor" spell). Verified safe by reading `draw()`/`positionCanvas()`/`centerMap()`/`keepPartyInView()` before making the change — draw()'s pixel content depends only on `S`, never on `cam`.
+7. Fix 2 re-bracketed the `draw` timing row inside `paint()` itself (a new `window.__mzPerfMarks` bridge to the SAME `perfMarks` instance `stepWith` already imports) rather than letting the row go to 0 — registered in `src/browser/bridge.js` and `docs/SHELL-MODULES.md`, with source-pin tests updated to assert the new shape.
+8. **User ruling (binding, 2026-09-20):** after AFTER 1 showed `step` p95 19.3 ms still ≥ 16 ms, the user reviewed the numbers directly and overrode the plan's "revert if not < 16 ms" clause, directing a second fix instead. **Standing ruling:** regardless of AFTER 2's outcome, keep both fixes and record the numbers honestly rather than revert — which is what happened (AFTER 2 p95 19.8 ms, still ≥ 16 ms; both fixes kept).
+9. The AFTER 2 device report was read twice on the same dev run: an initial n=47 (three short of the ≥ 50 protocol) was superseded by a continued-run re-read at n=61, per the orchestrator's explicit instruction. The n=47 numbers are preserved in the doc and SUMMARY only as a superseded note, never discarded, never averaged with n=61.
+10. **Open finding for a future perf pass (not this phase):** the remaining `step` p95 gap (19.8 ms vs. the 16 ms target) is attributed to route/between-walk variance in the dark-region canvas draw cost — `draw`'s p95 was 3.6 ms on AFTER 1's walk and 11.2 ms on both AFTER 2 reads, and `paint`'s p95 moved the same way. The next lever, if a future pass wants to chase this further, is to measure a dark-only walk against a lit-only walk before touching any code — nothing was changed on this hypothesis in this phase (PERF-02's rule: only a measured hotspot changes code, and this specific sub-cost was not isolated by its own measurement).
+
+## Next
+
+- Milestone close: the 26-item v1.6 UAT batch (`docs/UAT-v1.6.md`) goes to the milestone audit, not this phase — it was run on the same APK lineage as this phase's device sessions per 49-01's checklist item 10.
+- The instrumentation removal (judgment call 1) is one revert of 49-01's Task 2 commit (`bb83eed`) if the user wants it out of the shipped build entirely.
+- If a future perf pass wants to chase `step` p95 further: measure a dark-only vs. lit-only walk to isolate the dark-region draw cost (judgment call 10) before writing any code — PERF-02's "measure first" rule applies to the next pass exactly as it did to this one.
+
+## Human verification
+
+In-phase, done. The three Pixel 7 device rounds (BEFORE, AFTER 1, AFTER 2) ARE the verification for this plan — there is no separate UAT step; the user's own device reports are the evidence recorded throughout this SUMMARY and `docs/PERF-BASELINE.md`.
+
+## Self-Check: PASSED
+
+- `docs/PERF-BASELINE.md` — FOUND, all 8 sections present, AFTER (fix 1) and AFTER (fix 2) both filled
+- `.planning/REQUIREMENTS.md` — FOUND, PERF-01/PERF-02 checked, traceability rows Complete
+- Commit `9fe9bb5` (fix 1) — FOUND in `git log --oneline --all`
+- Commit `cfce555` (fix 2) — FOUND in `git log --oneline --all`
+- Commit `edffe6d` (close) — FOUND in `git log --oneline --all`
+- `mazeworld.html` 5,682 lines, CRLF preserved (`git ls-files --eol` — `i/lf w/crlf`)
+- Engine-gate fence: `git diff --stat 9c9a755..HEAD -- engine/ content/ test/parity/` empty; master hash `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged
+
+---
+*Phase: 49-measure-first-perf-pass*
+*Completed: 2026-09-20*
