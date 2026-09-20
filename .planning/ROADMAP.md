@@ -159,7 +159,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 50-03-PLAN.md — the `mazeworld.html` mount swap (`window.mzStartRoll = roller.start`, `commitRolledState` as `onCommit`, inline roller deleted), pin re-homes + mount pins, bridge strings + `docs/SHELL-MODULES.md`, the AFTER repro table, gates (build:www → npm test → boot:check), fence, SUMMARY with the deferred Pixel 7 checks
+- [x] 50-03-PLAN.md — the `mazeworld.html` mount swap (`window.mzStartRoll = roller.start`, `commitRolledState` as `onCommit`, inline roller deleted), pin re-homes + mount pins, bridge strings + `docs/SHELL-MODULES.md`, the AFTER repro table, gates (build:www → npm test → boot:check), fence, SUMMARY with the deferred Pixel 7 checks
 
 ### Phase 51: Initiative Once Per Combat
 
@@ -300,7 +300,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 50. Character Roller Fix | v1.7 | 2/3 | In Progress|  |
+| 50. Character Roller Fix | v1.7 | 3/3 | In Progress|  |
 | 51. Initiative Once Per Combat | v1.7 | 0/? | Not started | - |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
