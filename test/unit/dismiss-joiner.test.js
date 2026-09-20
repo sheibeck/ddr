@@ -7,7 +7,7 @@
 // named reason (`dismissRefused { reason }`) when the party is empty, a
 // fight is in progress, or the index is out of range; plus the
 // presentation-table half — the parting line as its own event with
-// EVENT_NARRATION/toast-table/rail entries.
+// EVENT_NARRATION/LINE_FOR-table/rail entries.
 
 import test from "node:test";
 import assert from "node:assert/strict";

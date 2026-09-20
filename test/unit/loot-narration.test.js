@@ -16,7 +16,7 @@ const LOOT_EVENT_TYPES = ["lootDropped", "lootTaken", "lootLeft", "lootForfeited
 
 test("none of the four new loot event types is ORACLE_ONLY", () => {
   for (const t of LOOT_EVENT_TYPES) {
-    assert.equal(ORACLE_ONLY.has(t), false, `${t} must not be ORACLE_ONLY — it needs a toast`);
+    assert.equal(ORACLE_ONLY.has(t), false, `${t} must not be ORACLE_ONLY — it needs a LINE_FOR builder`);
   }
 });
 

@@ -49,7 +49,7 @@ test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE 
   assert.ok(statByKey(vm, "toHit").value.endsWith(`${toHit(state)}`));
   // Phase 28 (ARMOR-02/04): the ARMOR stat now reads through the shared
   // armorDisplay(c) formatter, showing durability (seed 42 wears Studded
-  // 18/18) so the sheet can never disagree with the toast/gear panel.
+  // 18/18) so the sheet can never disagree with the line/gear panel.
   assert.equal(
     statByKey(vm, "armor").value,
     `${state.c.armor.toUpperCase()} · AR ${state.c.ar} · ${state.c.armorWP}/${state.c.armorMax} hp`,

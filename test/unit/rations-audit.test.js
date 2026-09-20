@@ -293,7 +293,7 @@ test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged 
   assert.equal(lineCount, 19, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
 });
 
-// ─── narration (Task 2): exact Oracle strings, toast texts, RATION_RULE_LINE ─
+// ─── narration (Task 2): exact Oracle strings, line texts, RATION_RULE_LINE ─
 
 test("narration: RATION_RULE_LINE names the Troll doubling rule; both builders are functions", () => {
   assert.deepEqual(RATION_RULE_LINE, { Troll: "Trolls eat for two." });
@@ -353,7 +353,7 @@ test("narration: a bare wentHungry payload renders without throwing and contains
   assert.ok(text.includes("Hunger:"));
 });
 
-test("narration: LINE_FOR.rationsEaten/.wentHungry render the terse toast texts", () => {
+test("narration: LINE_FOR.rationsEaten/.wentHungry render the terse line texts", () => {
   assert.equal(LINE_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).text, "Rations: −3 (4 left).");
   assert.equal(LINE_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).tone, "beat");
   assert.equal(LINE_FOR.wentHungry({ type: "wentHungry", cost: 4 }).text, "Hunger: no rations (−4 hp).");

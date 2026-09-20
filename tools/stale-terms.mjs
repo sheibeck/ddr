@@ -186,6 +186,36 @@ export const ALLOWED = Object.freeze(
       match: "capped toast host is retired",
       reason: "B — the no-default-cap assertion states why (Plan 03)",
     },
+    {
+      term: "legacy-counters",
+      file: "test/unit/conditions.test.js",
+      match: "haste/invis/ether/acute/flightLeft/flightCooldown",
+      reason: "B — cleanChar's doc comment explains why the baseline character omits these fields and what replaced them (Plan 03)",
+    },
+    {
+      term: "legacy-counters",
+      file: "test/unit/item-wiring.test.js",
+      match: "c\\.ether is retired",
+      reason: "B — explains why the Cloak of Ether test no longer sets c.ether (Plan 03)",
+    },
+    {
+      term: "legacy-counters",
+      file: "test/unit/movement.test.js",
+      match: "c\\.haste/c\\.invis/c\\.ether are retired",
+      reason: "B — explains why the step-tick test reads c.timers instead (Plan 03)",
+    },
+    {
+      term: "legacy-counters",
+      file: "test/unit/usable-features-audit.test.js",
+      match: "const fields = \\[",
+      reason: "C — doc-sync pin: the doc's §6 expiry table still names the pre-Phase-39 field names as retirement rows (Plan 05 annotates them); the test asserts the doc names them (Plan 03)",
+    },
+    {
+      term: "toast",
+      file: "test/unit/usable-features-audit.test.js",
+      match: "line\\?\\.toasts\\?\\.\\[0\\]\\?\\.text",
+      reason: "flagged — dead defensive fallback reading a `.toasts` shape no live LINE_FOR builder ever returns; the field name is untouched per the bounded test-body rule (needs a behaviour-level edit to remove, out of scope for Plan 03 — see SUMMARY)",
+    },
   ].map((a) => Object.freeze(a)),
 );
 

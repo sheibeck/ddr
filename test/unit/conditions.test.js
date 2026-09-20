@@ -14,8 +14,8 @@ import { conditionsOf } from "../../engine/derived.js";
 
 /** A minimal character with every condition field cleared. conditionsOf reads
  * only c.*, so a bare-bones c is a valid, fully-inert baseline. Phase 39
- * (GEAR-02): the retired haste/invis/ether/acute/flightLeft/flightCooldown
- * scalar counters are gone — a live item effect/cooldown is expressed as a
+ * (GEAR-02): the haste/invis/ether/acute/flightLeft/flightCooldown scalar
+ * counters are retired — a live item effect/cooldown is expressed as a
  * c.timers record instead (see the `rec` helper below). */
 function cleanChar(overrides = {}) {
   return {

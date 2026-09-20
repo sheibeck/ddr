@@ -549,7 +549,7 @@ test("doc-sync: the Elven flip is documented", () => {
   assert.ok(AUDIT_DOC.includes("foeToHit"));
 });
 
-test("doc-sync: every refused {type, reason} pair produces distinct, non-empty toast/Oracle text across reasons of the same type", () => {
+test("doc-sync: every refused {type, reason} pair produces distinct, non-empty line/Oracle text across reasons of the same type", () => {
   const byType = new Map();
   for (const c of CASES) {
     if (!c.expect.refused) continue;
@@ -558,19 +558,19 @@ test("doc-sync: every refused {type, reason} pair produces distinct, non-empty t
     byType.get(type).add(reason);
   }
   for (const [type, reasons] of byType) {
-    const toastTexts = new Set();
+    const lineTexts = new Set();
     const oracleTexts = new Set();
     for (const reason of reasons) {
       const sampleEvent = { type, reason, item: { n: "Test" }, spell: "Test", action: "sing", left: 42 };
-      const toast = LINE_FOR[type]?.(sampleEvent);
-      const toastText = toast && "text" in toast ? toast.text : toast?.toasts?.[0]?.text;
+      const line = LINE_FOR[type]?.(sampleEvent);
+      const lineText = line && "text" in line ? line.text : line?.toasts?.[0]?.text;
       const oracle = EVENT_NARRATION[type]?.(sampleEvent);
-      assert.ok(toastText, `${type}/${reason}: LINE_FOR produced no text`);
+      assert.ok(lineText, `${type}/${reason}: LINE_FOR produced no text`);
       assert.ok(oracle, `${type}/${reason}: EVENT_NARRATION produced no text`);
-      toastTexts.add(toastText);
+      lineTexts.add(lineText);
       oracleTexts.add(oracle);
     }
-    assert.equal(toastTexts.size, reasons.size, `${type}: two reasons share the same toast text`);
+    assert.equal(lineTexts.size, reasons.size, `${type}: two reasons share the same line text`);
     assert.equal(oracleTexts.size, reasons.size, `${type}: two reasons share the same Oracle line`);
   }
 });

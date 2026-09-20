@@ -8,7 +8,7 @@
 //   5. meetJoiner's Joiner-side pool roll.
 //   6. migrateLegacySkills / ensureAbilities tolerant-load rebuild.
 //   7. validateSave / rehydrate wiring for c and party members.
-//   8. abilityLearned narration (eventNarration/toasts/rail) + coverage.
+//   8. abilityLearned narration (eventNarration/narrationLines/rail) + coverage.
 //
 // No cross-test-file imports (project convention).
 
@@ -285,13 +285,13 @@ test("rehydrate: mirrors validateSave's tolerant load for c and party", () => {
 
 // ─── 8. Narration coverage ───────────────────────────────────────────────────
 
-test("abilityLearned narration: eventNarration/toasts/rail all cover it", () => {
+test("abilityLearned narration: eventNarration/narrationLines/rail all cover it", () => {
   const e = { type: "abilityLearned", key: "brace", name: "Brace", txt: "halve the next blow that lands on you", level: 2 };
   const line = EVENT_NARRATION.abilityLearned(e);
   assert.ok(typeof line === "string" && line.includes("Brace"));
 
-  const toast = LINE_FOR.abilityLearned(e);
-  assert.deepStrictEqual(toast, { text: "New trick: Brace — halve the next blow that lands on you", tone: "hit", priority: PRIORITY.feature });
+  const feedLine = LINE_FOR.abilityLearned(e);
+  assert.deepStrictEqual(feedLine, { text: "New trick: Brace — halve the next blow that lands on you", tone: "hit", priority: PRIORITY.feature });
 
   assert.deepStrictEqual(RAIL_FAMILY.abilityLearned, { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level });
 

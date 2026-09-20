@@ -268,8 +268,8 @@ test("Amulet of Stone petrifies up to 4 foes (per-item aoe:4); a plain stone sou
 // --- 8. ether pass-through + Gauntlet of the Giant size -------------------
 
 test("Cloak of Ether: while ethereal you phase through a wall/crevice with no roll and no rng", () => {
-  // Phase 39 (GEAR-02): the retired c.ether counter — a live "ether" item
-  // effect now reads through c.timers.
+  // Phase 39 (GEAR-02): c.ether is retired — a live "ether" item effect now
+  // reads through c.timers instead.
   const st = fixedState({ c: { timers: { "item:Cloak of Ether": { cadence: "squares", left: 20, cd: 80, phase: "effect" } } } });
   open(st.floor.g, 5, 4, { feat: "climb" });
   const events = move(st, "N", fakeRng([]), []); // no climb roll drawn while phasing

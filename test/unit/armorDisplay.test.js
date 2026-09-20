@@ -1,6 +1,6 @@
 // test/unit/armorDisplay.test.js
 //
-// Phase 28 (ARMOR-02/04/05) — the toast<->panel reproduction pin, the shared
+// Phase 28 (ARMOR-02/04/05) — the line<->panel reproduction pin, the shared
 // armor formatter, and the four-outcome copy. Local helpers mirror
 // test/unit/combat.test.js (fakeRng/fixedFighter/fixedFloor/fixedState/
 // fixedFoe/fixedCombat — those are file-private there, so they are
@@ -9,8 +9,8 @@
 //
 // The FIRST test below is the ARMOR-02 acceptance evidence CONTEXT.md
 // specifies: it drives applyFoeDamageToPlayer with scripted rng and asserts
-// the armorSoaked toast's `wear` equals the durability delta the shared
-// armorDisplay(c) formatter now shows — the toast and the panel can no
+// the armorSoaked line's `wear` equals the durability delta the shared
+// armorDisplay(c) formatter now shows — the line and the panel can no
 // longer disagree because both read the same c.armorWP through one source.
 
 import test from "node:test";
@@ -96,9 +96,9 @@ function statByKey(vm, key) {
   return row;
 }
 
-// --- ARMOR-02: toast/panel agreement -----------------------------------------
+// --- ARMOR-02: line/panel agreement -----------------------------------------
 
-test("ARMOR-02 reproduction: the armorSoaked toast's wear equals the durability delta on the displayed armor", () => {
+test("ARMOR-02 reproduction: the armorSoaked line's wear equals the durability delta on the displayed armor", () => {
   const state = fixedState({ c: { armor: "Plate", ar: 15, armorMin: 2, armorWP: 45, armorMax: 45 } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
@@ -258,7 +258,7 @@ test("characterSheetViewModel(newRun(1)): a no-armor Fridgian reads NOTHING · A
   assert.equal(statByKey(vm, "armor").value, "NOTHING · AR 0");
 });
 
-// --- four-outcome toast copy ------------------------------------------------
+// --- four-outcome line copy --------------------------------------------------
 
 test("LINE_FOR.armorSoaked: the four outcomes render distinct text", () => {
   const wearText = LINE_FOR.armorSoaked({ type: "armorSoaked", amount: 12, wear: 12 }).text;

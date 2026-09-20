@@ -9,7 +9,7 @@
 //   auto-wear at the four take sites (takeItem/takeFind/takeLoot/
 //   takeAllLoot).
 // Task 2: useItem slot addressing + the notWorn refusal + engine.js
-//   dispatch + actions.js validation + toast/Oracle copy.
+//   dispatch + actions.js validation + LINE_FOR/Oracle copy.
 // Task 3: the legacy-identity sweep over a real newRun(3) state.
 //
 // No cross-test-file imports (project convention for these deterministic
@@ -609,7 +609,7 @@ test("applyAction: { type: equipItem, i, slot: jewelry2 } performs the targeted 
 
 /* ============================================================
  * Task 2: useItem slot addressing + notWorn refusal + engine.js
- * dispatch + actions validation + toast/Oracle copy
+ * dispatch + actions validation + LINE_FOR/Oracle copy
  * ============================================================ */
 
 test("useItem slot form: a worn staff heals, spends its one charge, and a second immediate use refuses recharging (Phase 39, GEAR-02)", () => {

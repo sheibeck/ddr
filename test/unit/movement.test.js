@@ -655,8 +655,8 @@ test("move: a character with darkFor at 0 gets no darkness tick/event at all", (
 });
 
 test("move: haste/invis/ether item effects (c.timers, squares cadence) all decrement by one on a step", () => {
-  // Phase 39 (GEAR-02): the retired c.haste/c.invis/c.ether counters — every
-  // item effect now lives on c.timers, squares-cadence, ticked identically.
+  // Phase 39 (GEAR-02): c.haste/c.invis/c.ether are retired — every item
+  // effect now lives on c.timers, squares-cadence, ticked identically.
   const state = fixedState({
     c: {
       timers: {
@@ -1059,7 +1059,7 @@ test("newDay DFB-06: the rations delta equals nightlyEats(state) for solo and fo
   }
 });
 
-test("campFailed narration and toast render the numbers and the member clause", () => {
+test("campFailed Oracle sentence and line render the numbers and the member clause", () => {
   const withMember = EVENT_NARRATION.campFailed({
     type: "campFailed",
     reason: "noRations",
@@ -1072,9 +1072,9 @@ test("campFailed narration and toast render the numbers and the member clause", 
   const solo = EVENT_NARRATION.campFailed({ type: "campFailed", need: 2, have: 1 }).replace(/<[^>]+>/g, "");
   assert.equal(solo, "You eat 2 a night. You have 1. Find rations first.");
 
-  const toast = LINE_FOR.campFailed({ type: "campFailed", need: 2, have: 1 });
-  assert.equal(toast.tone, "block");
-  assert.ok(toast.text.includes("2") && toast.text.includes("1"));
+  const line = LINE_FOR.campFailed({ type: "campFailed", need: 2, have: 1 });
+  assert.equal(line.tone, "block");
+  assert.ok(line.text.includes("2") && line.text.includes("1"));
 
   const bare = LINE_FOR.campFailed({ type: "campFailed" });
   assert.equal(bare.tone, "block");

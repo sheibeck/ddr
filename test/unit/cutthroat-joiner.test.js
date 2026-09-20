@@ -8,7 +8,7 @@
 // identical with or without the draw and every fixture/bot/pre-Phase-36
 // save, none of which is ever a Cutthroat with a party, draws nothing).
 //
-// Task 1 covers the murder mechanics + narration/toast/rail entries while
+// Task 1 covers the murder mechanics + narration/line/rail entries while
 // the OLD Cutthroat refusal still stands (reachable here only through a
 // planted party, since meetJoiner itself still refuses a Cutthroat at this
 // point in the plan). Task 2 extends this file with the reversed-refusal
@@ -265,10 +265,10 @@ test("EVENT_NARRATION.joinerMurdered: names the victim, deterministic, every lin
  * ============================================================ */
 
 test("LINE_FOR.joinerMurdered: priority feature, tone hurt, names the victim; FEATURE_EVENTS includes it", () => {
-  const toast = LINE_FOR.joinerMurdered({ type: "joinerMurdered", name: "Ada Brook", sub: "Guard", depth: 3 });
-  assert.equal(toast.priority, PRIORITY.feature);
-  assert.equal(toast.tone, "hurt");
-  assert.ok(toast.text.includes("Ada Brook"));
+  const line = LINE_FOR.joinerMurdered({ type: "joinerMurdered", name: "Ada Brook", sub: "Guard", depth: 3 });
+  assert.equal(line.priority, PRIORITY.feature);
+  assert.equal(line.tone, "hurt");
+  assert.ok(line.text.includes("Ada Brook"));
   assert.ok(FEATURE_EVENTS.includes("joinerMurdered"));
 });
 

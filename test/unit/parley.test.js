@@ -167,9 +167,10 @@ function mk(cOverrides, type, combatOverrides = {}) {
  * Ninja/Master of Arms never parleys (IDENT-05, checked right after the
  * `tried` gate and before Walking Dead), and a Court Mage always parleys
  * Humans even at fluency 0 (IDENT-06, checked right after the Bard rule).
- * This oracle and the widened 504-case matrix below now absorb the retired
- * `test/unit/parley-button-mirror.test.js`'s classic-vs-engine replay
- * (Phase 44, DEAD-03) — the comparison runs engine-vs-prose-oracle instead.
+ * This oracle and the widened 504-case matrix below are the sole
+ * engine-vs-prose-oracle replay for canParley — Phase 44 (DEAD-03) retired
+ * the classic-engine mirror entirely, so there is no second engine left to
+ * compare against.
  */
 function expectedCanParley(c, t, tried) {
   if (tried) return false;
@@ -192,9 +193,9 @@ function expectedCanParley(c, t, tried) {
 // Phase 38 (ABIL-02): the Language skill is dropped outright — the matrix's
 // `lang` dimension is gone (a planted Language skill is now a pure no-op,
 // asserted separately below).
-// Phase 44 (DEAD-03): widened from 4 subs to the retired
-// parley-button-mirror.test.js's full 7-sub set, in the mirror's own loop
-// order (race -> sub -> helm -> type) — 6 races x 7 subs x Helm x 6 types.
+// Phase 44 (DEAD-03): widened from 4 subs to the full 7-sub set, in the
+// same loop order (race -> sub -> helm -> type) — 6 races x 7 subs x Helm
+// x 6 types.
 test("LANG-02 / D-11 + IDENT-05/06 (Phase 44 DEAD-03): availability matrix — 6 races × 7 subs × Helm × 6 types (504 cases) match the rule oracle", () => {
   let cases = 0;
   let magicalTrue = 0;

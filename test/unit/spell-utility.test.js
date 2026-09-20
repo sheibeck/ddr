@@ -297,8 +297,8 @@ test("narration: combatJoined{senses:true} names Sense Presence's payoff; a plai
   const plain = EVENT_NARRATION.combatJoined({ type: "combatJoined", first: "you" });
   assert.ok(withSenses.includes("Nothing gets the jump on you"));
   assert.ok(!plain.includes("Nothing gets the jump on you"));
-  const toastWithSenses = LINE_FOR.combatJoined({ type: "combatJoined", first: "you", senses: true });
-  assert.ok(toastWithSenses.text.includes("Nothing gets the jump on you"));
+  const lineWithSenses = LINE_FOR.combatJoined({ type: "combatJoined", first: "you", senses: true });
+  assert.ok(lineWithSenses.text.includes("Nothing gets the jump on you"));
 });
 
 /** fakeRng(seq) — verbatim copy of test/unit/combat.test.js's helper: `.d()`
