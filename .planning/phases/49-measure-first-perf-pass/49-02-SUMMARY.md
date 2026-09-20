@@ -391,3 +391,20 @@ step 11.8 / 19.9 / 31.2 · dispatch 4.9 / 8.6 / 15.4 · paint 5.4 / 13.6 / 14.1 
 - **APK commit (AFTER 2):** c0cdbae (includes `9fe9bb5` and `cfce555`)
 - **Jank report (user's words):** "No jank"
 - **Orchestrator reading (for Task 3 to confirm):** `step` p95 19.9 ≥ 16 — criterion 3's "< 16 ms" NOT MET on p95 (median 11.8 met). The `draw` row now brackets the one remaining draw inside `paint()` (fix 2 re-scoped it); its p95 11.2 vs 3.6 on AFTER 1 reflects this walk's route (more steps where the canvas is expensive — the dark-region render filter is the likely cost), and it lifts paint's p95 the same way. Between-walk variance is of the same order as the fixes. **Standing user ruling applies: keep both fixes, no revert; record honestly.** Next lever for a future pass: the dark-region draw cost (measure a dark-only vs lit-only walk before touching it).
+
+### AFTER 2 — final readout (n=61, same run continued)
+
+The user took further steps on the same dev run and re-read the line so the ring holds ≥ 50 samples. This supersedes the n=47 line above as the AFTER-2 record; numbers quoted exactly as pasted:
+
+```
+step 11.5 / 19.8 / 31.2 · dispatch 4.7 / 8.1 / 15.4 · paint 5.4 / 10.0 / 14.1 · draw 3.6 / 11.2 / 12.3 ms (med / p95 / max, n=61)
+```
+
+| Row | Median | p95 | Max | n |
+| --- | --- | --- | --- | --- |
+| step | 11.5 | 19.8 | 31.2 | 61 |
+| dispatch | 4.7 | 8.1 | 15.4 | 61 |
+| paint | 5.4 | 10.0 | 14.1 | 61 |
+| draw | 3.6 | 11.2 | 12.3 | 61 |
+
+Reading unchanged: `step` p95 19.8 ≥ 16 (NOT MET on p95; median 11.5 met); paint p95 settled to 10.0 with more samples; both fixes kept by the standing ruling.
