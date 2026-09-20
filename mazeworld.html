@@ -1155,6 +1155,8 @@ html,body{height:100%}
 .mw-settings-version{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;opacity:.75}
 #mw-dev-start-depth{width:5.5em;font:inherit;padding:4px 6px;background:transparent;color:inherit;border:1px solid currentColor;border-radius:4px}
 .mw-dev-chip{font:700 10px/1 inherit;letter-spacing:.08em;padding:3px 6px;border-radius:4px;background:var(--ditto);color:#000;margin-left:8px}
+#mw-dev-perf{margin-top:8px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;line-height:1.5;color:#c9bda0;opacity:.85;overflow-wrap:anywhere}
+#mw-dev-perf:empty{display:none}
 
 /* ---------- MAKE CAMP bottom sheet (Phase 35, MAP-06/08) ----------
    Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
@@ -1321,9 +1323,14 @@ html,body{height:100%}
            with versionName (versionCode) from android/version.properties);
            the dev row is hidden and revealed ONLY by a ~1.2 s long-press on
            the version label — a dev run is flagged state.dev, marked by the
-           HUD DEV chip, and never buried or recorded as a best depth. -->
+           HUD DEV chip, and never buried or recorded as a best depth.
+           Phase 49 (PERF-01): #mw-dev-perf is the dev-run timing readout
+           (med / p95 / max ms per row, written by the module script's
+           readout writer after every recorded step). It stays empty — and
+           collapsed by the :empty rule — in a normal run, because the marks
+           record nothing unless state.dev is true. -->
       <div class="mw-settings-row" id="mw-settings-version-row"><span class="mw-settings-label mw-settings-version" id="mw-settings-version">Version <span id="mw-app-version">dev</span></span></div>
-      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div></div>
+      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div><div id="mw-dev-perf"></div></div>
     </div>
   </div>
 </div>
@@ -4261,6 +4268,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // cards (Plan 01); bridged beside window.__mzControls below for the
   // classic script's tapStep()/inspectAt() to consume.
   import { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS } from "./src/browser/tapStep.js";
+  // Phase 49 (PERF-01) — the dev-gated step timing rings + readout
+  // formatter; imported directly by the module script (no window.__mz*
+  // bridge — see perfReadout below, which is the only caller).
+  import { perfMarks, formatReadout, PERF_LOG_EVERY } from "./src/browser/perfMarks.js";
   // Phase 32 (CMBUI-04/05) — the pure tap-safety timing guards, bridged
   // below for renderEncounter/window.move.
   import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
@@ -4902,6 +4913,17 @@ window.__mzClassicBoot = async function classicBoot() {
     if (s) stepNow(s.dir);
   };
 
+  // Phase 49 (PERF-01): the dev-row readout + the logcat line (`adb logcat
+  // -s chromium | grep mzperf`). Reached only from stepWith's `if (perf)`
+  // tail and mzDevStartAtDepth's reset, so it never runs in a normal run;
+  // the element lives in the Settings sheet, not the HUD.
+  function perfReadout(perf) {
+    const s = perf.summary();
+    const el = document.getElementById("mw-dev-perf");
+    if (el) el.textContent = formatReadout(s);
+    if (s.step && s.step.total % PERF_LOG_EVERY === 0) console.log("[mzperf] " + JSON.stringify(s));
+  }
+
   // stepWith(action) (Phase 39, GEAR-05, Plan 05) — the action-agnostic
   // dispatch body a plain move(dir) step AND a spent useTool share:
   // dispatchWithNarration, noteCombat, haptics, the pending-obstacle/hazard/
@@ -4910,7 +4932,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // move-shaped wrapper every existing call site keeps using.
   function stepWith(action) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
+    // Phase 49 (PERF-01): dev-gated timing marks — `perf` is null unless
+    // this is a start-at-depth dev run (state.dev), so a normal run reads
+    // no clock and records nothing. Four rows, docs/PERF-BASELINE.md#Method.
+    const perf = window.__mzState.get()?.dev ? perfMarks : null;
+    const tStep = perf ? performance.now() : 0;
     const { state, events, html } = dispatchWithNarration(action);
+    if (perf) perf.record("dispatch", performance.now() - tStep);
     window.__mzState.set(state);
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
@@ -4970,8 +4998,12 @@ window.__mzClassicBoot = async function classicBoot() {
       // carry) is gone; every death-on-move title reads the same.
       state.beats = { groups: [{ title: "The maze has the last word", tone: "hurt", lines: stripRollDetail(html) }], i: 0, action: null, preDeath: true };
     }
+    const tPaint = perf ? performance.now() : 0;
     window.paint();
+    if (perf) perf.record("paint", performance.now() - tPaint);
+    const tDraw = perf ? performance.now() : 0;
     window.draw();
+    if (perf) perf.record("draw", performance.now() - tDraw);
     for (const line of html) window.logLine(line);
     // Device-review Pass DR8, retargeted quick task 260918-vm3 (stationary
     // camera, user request 2026-09-18): a genuine step keeps the party in
@@ -4984,6 +5016,7 @@ window.__mzClassicBoot = async function classicBoot() {
     const jumped = events.some((e) => e.type === "floorChanged" || e.type === "teleported");
     if (jumped) window.mzCenterMap?.();
     else if (events.some((e) => e.type === "moved")) window.mzKeepPartyInView?.();
+    if (perf) { perf.record("step", performance.now() - tStep); perfReadout(perf); }
   }
 
   function stepNow(dir) {
@@ -4998,6 +5031,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // first (closeSettingsSheet is in this same module scope).
   window.mzDevStartAtDepth = async function devStartAtDepth(depth) {
     closeSettingsSheet();
+    // Phase 49: a fresh dev run starts its timing rings at n=0.
+    perfMarks.reset();
+    perfReadout(perfMarks);
     const state = await startNewRun(undefined, { startDepth: depth });
     window.__mzState.set(state);
     document.getElementById("log").innerHTML = "";

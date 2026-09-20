@@ -127,3 +127,151 @@ test("PERF-01: purity — src/browser/perfMarks.js reads no window/document/perf
 });
 
 // ─── shell pins (Task 2) ───
+//
+// mazeworld.html has no module surface a test could import directly, so —
+// mirroring test/unit/shell-input-guards.test.js's own source-assertion
+// pattern (copied below so this file stays self-contained like every other
+// shell pin file) — these tests read the real shipped source with
+// fs.readFileSync and assert against it directly.
+
+const __shellDirname = path.dirname(url.fileURLToPath(import.meta.url));
+const SHELL_REPO_ROOT = path.resolve(__shellDirname, "..", "..");
+const RAW_HTML = fs.readFileSync(path.join(SHELL_REPO_ROOT, "mazeworld.html"), "utf8");
+const HTML = RAW_HTML.replace(/\r\n/g, "\n");
+
+function stripComments(source) {
+  const noLineComments = source
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("//");
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join("\n");
+  return noLineComments.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+}
+
+const CODE = stripComments(HTML);
+
+function sliceBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start === -1 ? 0 : start);
+  assert.ok(start !== -1, `start marker not found: ${startMarker}`);
+  assert.ok(end !== -1 && end > start, `end marker not found after start: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+const MODULE_START = HTML.indexOf('<script type="module">');
+const MODULE = HTML.slice(MODULE_START);
+const CLASSIC = HTML.slice(0, MODULE_START);
+const MODULE_CODE = stripComments(MODULE);
+const CLASSIC_CODE = stripComments(CLASSIC);
+
+const STEP_WITH_REGION = sliceBetween(CODE, "function stepWith(action) {", "function stepNow(dir) {");
+const DEV_START_REGION = sliceBetween(
+  CODE,
+  'window.mzDevStartAtDepth = async function devStartAtDepth(depth) {',
+  "\n  };",
+);
+
+test("PERF-01 (shell pin): exactly one import of perfMarks/formatReadout/PERF_LOG_EVERY from ./src/browser/perfMarks.js", () => {
+  const hits = CODE.match(/import \{ perfMarks, formatReadout, PERF_LOG_EVERY \} from "\.\/src\/browser\/perfMarks\.js";/g) || [];
+  assert.equal(hits.length, 1);
+});
+
+test("PERF-01 (shell pin): every performance.now( line is dev-gated (perf ? or if (perf)); exactly 7 such lines, stripped and raw; no comment spells the clock call", () => {
+  const strippedLines = CODE.split("\n").filter((l) => l.includes("performance.now("));
+  assert.equal(strippedLines.length, 7);
+  for (const line of strippedLines) {
+    assert.ok(line.includes("perf ? ") || line.includes("if (perf)"), `not dev-gated: ${line}`);
+  }
+  const rawLines = HTML.split("\n").filter((l) => l.includes("performance.now"));
+  assert.equal(rawLines.length, 7);
+});
+
+test("PERF-01 (shell pin): the const perf = line gates on .dev ? perfMarks : null", () => {
+  assert.match(STEP_WITH_REGION, /const perf = window\.__mzState\.get\(\)\?\.dev \? perfMarks : null;/);
+});
+
+test("PERF-01 (shell pin): stepWith records dispatch/paint/draw/step exactly once each and calls perfReadout(perf) once; file-wide perf.record( occurs exactly 4 times", () => {
+  for (const row of ["dispatch", "paint", "draw", "step"]) {
+    const hits = STEP_WITH_REGION.match(new RegExp(`perf\\.record\\("${row}",`, "g")) || [];
+    assert.equal(hits.length, 1, `expected exactly one perf.record("${row}", in stepWith`);
+  }
+  const readoutHits = STEP_WITH_REGION.match(/perfReadout\(perf\)/g) || [];
+  assert.equal(readoutHits.length, 1);
+  const fileWideRecordHits = CODE.match(/perf\.record\(/g) || [];
+  assert.equal(fileWideRecordHits.length, 4);
+});
+
+test("PERF-01 (shell pin): the marks bracket the right calls, by index order", () => {
+  const idx = (needle) => {
+    const i = STEP_WITH_REGION.indexOf(needle);
+    assert.ok(i !== -1, `not found: ${needle}`);
+    return i;
+  };
+  const tStep = idx("const tStep");
+  const dispatchCall = idx("dispatchWithNarration(action)");
+  const recordDispatch = idx('perf.record("dispatch"');
+  const stateSet = idx("window.__mzState.set(state)");
+  assert.ok(tStep < dispatchCall);
+  assert.ok(dispatchCall < recordDispatch);
+  assert.ok(recordDispatch < stateSet);
+
+  const tPaint = idx("const tPaint");
+  const paintCall = idx("window.paint();");
+  const recordPaint = idx('perf.record("paint"');
+  const tDraw = idx("const tDraw");
+  const drawCall = idx("window.draw();");
+  const recordDraw = idx('perf.record("draw"');
+  const logLine = idx("window.logLine(line)");
+  const recordStep = idx('perf.record("step"');
+  assert.ok(tPaint < paintCall);
+  assert.ok(paintCall < recordPaint);
+  assert.ok(recordPaint < tDraw);
+  assert.ok(tDraw < drawCall);
+  assert.ok(drawCall < recordDraw);
+  assert.ok(recordDraw < logLine);
+  assert.ok(logLine < recordStep);
+});
+
+test("PERF-01 (shell pin): function perfReadout(perf) is declared exactly once; its body wires the readout element, formatReadout, PERF_LOG_EVERY and the [mzperf] logcat line; file-wide perfReadout( occurs exactly 3 times (declaration + two calls)", () => {
+  const declHits = MODULE_CODE.match(/function perfReadout\(perf\) \{/g) || [];
+  assert.equal(declHits.length, 1);
+  const body = sliceBetween(MODULE_CODE, "function perfReadout(perf) {", "\n  }");
+  assert.match(body, /"mw-dev-perf"/);
+  assert.match(body, /formatReadout\(/);
+  assert.match(body, /PERF_LOG_EVERY/);
+  assert.match(body, /"\[mzperf\] "/);
+  assert.match(body, /JSON\.stringify\(/);
+  const fileWideHits = CODE.match(/perfReadout\(/g) || [];
+  assert.equal(fileWideHits.length, 3);
+});
+
+test("PERF-01 (shell pin): mzDevStartAtDepth resets perfMarks then calls perfReadout(perfMarks), and still calls surfaceAbilityPool(state)", () => {
+  const resetIdx = DEV_START_REGION.indexOf("perfMarks.reset();");
+  const readoutIdx = DEV_START_REGION.indexOf("perfReadout(perfMarks);");
+  assert.ok(resetIdx !== -1);
+  assert.ok(readoutIdx !== -1);
+  assert.ok(resetIdx < readoutIdx);
+  assert.match(DEV_START_REGION, /surfaceAbilityPool\(state\);/);
+});
+
+test("PERF-01 (shell pin): the markup has exactly one id=\"mw-dev-perf\", positioned inside the dev row, empty (no text content) in the shipped markup", () => {
+  const hits = HTML.match(/id="mw-dev-perf"/g) || [];
+  assert.equal(hits.length, 1);
+  const devRowStart = HTML.indexOf('id="mw-dev-row"');
+  const perfIdx = HTML.indexOf('id="mw-dev-perf"');
+  assert.ok(devRowStart !== -1 && perfIdx > devRowStart);
+  assert.match(HTML, /<div id="mw-dev-perf"><\/div>/);
+});
+
+test("PERF-01 (shell pin): the <style> block declares #mw-dev-perf{...} and #mw-dev-perf:empty{display:none}; getElementById(\"mw-dev-perf\") occurs exactly once file-wide (one writer, not paint())", () => {
+  assert.match(HTML, /#mw-dev-perf\{/);
+  assert.match(HTML, /#mw-dev-perf:empty\{display:none\}/);
+  const getElHits = CODE.match(/getElementById\("mw-dev-perf"\)/g) || [];
+  assert.equal(getElHits.length, 1);
+});
+
+test("PERF-01 (shell pin): the classic script (everything before <script type=\"module\">) carries no perfMarks, perfReadout or performance.now token", () => {
+  assert.equal(/perfMarks|perfReadout|performance\.now/.test(CLASSIC_CODE), false);
+});
