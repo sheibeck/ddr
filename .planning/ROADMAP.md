@@ -179,7 +179,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 51-01-PLAN.md — Measure first: BEFORE bot readout on the phase-start commit + `tools/initiative-fixture-scan.mjs` (MOVED SET measured, output committed) — zero engine bytes
+- [x] 51-01-PLAN.md — Measure first: BEFORE bot readout on the phase-start commit + `tools/initiative-fixture-scan.mjs` (MOVED SET measured, output committed) — zero engine bytes
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -314,7 +314,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 51. Initiative Once Per Combat | v1.7 | 0/? | Not started | - |
+| 51. Initiative Once Per Combat | v1.7 | 1/3 | In Progress|  |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |

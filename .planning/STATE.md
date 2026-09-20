@@ -5,15 +5,15 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 51
 current_phase_name: Initiative Once Per Combat
 status: executing
-stopped_at: Completed 50-03-PLAN.md
-last_updated: "2026-09-20T21:32:19.548Z"
+stopped_at: Completed 51-01-PLAN.md
+last_updated: "2026-09-20T22:07:09.857Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 50 complete, transitioned to Phase 51
+last_activity_desc: Phase 51 execution started
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
   percent: 17
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phase 50 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 51 — Initiative Once Per Combat (autonomous v1.7 run; research skipped for all six phases per user ruling; verification agents off — orchestrator-authored VERIFICATION.md with device checks deferred to Phase 55)
+**Current focus:** Phase 51 — Initiative Once Per Combat
 
 ## Current Position
 
-Phase: 51 — Initiative Once Per Combat
-Plan: Not started
+Phase: 51 (Initiative Once Per Combat) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-20 — Phase 50 complete, transitioned to Phase 51
+Last activity: 2026-09-20 — Phase 51 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -140,9 +140,9 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20 (autonomous v1.7 run)
-Stopped at: Phase 51 planned (16e6f34) — executing next
-Resume file: None — `/gsd-autonomous` resumes at Phase 51 execute
+Last session: 2026-09-20T22:07:09.827Z
+Stopped at: Completed 51-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -270,6 +270,7 @@ Resume file: None — `/gsd-autonomous` resumes at Phase 51 execute
 | Phase 50 P01 | 25min | 2 tasks | 2 files |
 | Phase 50 P02 | ~55min | 2 tasks | 3 files |
 | Phase 50 P03 | ~50min | 2 tasks | 5 files |
+| Phase 51 P01 | ~35min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -519,6 +520,7 @@ Resume file: None — `/gsd-autonomous` resumes at Phase 51 execute
 - [Phase ?]: 50-01: createRoller's serialized startNewRun chain lives inside roller.js itself (only caller), option names/defaults locked exactly per CONTEXT; several doc-comment sentences reworded to avoid double-tripping the plan's own literal-text grep counts (exactly 1 startNewRun() call, exactly 1 Math.random) — no functional change
 - [Phase ?]: 50-02: process cleanup matches on --user-data-dir profile-dir substring (WMI CommandLine LIKE + terminate) instead of PID, because chrome.exe re-execs itself and the spawned PID never matches the real browser; profile dirs use forward slashes to avoid WQL's backslash-escape pitfall in the LIKE query
 - [Phase ?]: Phase 50 Plan 03: roller mount landed byte-for-byte per plan; boot:check is environment-blocked on this dev machine (pre-existing, verified via --self-test and pre-fix-commit reproduction), logged to deferred-items.md rather than patched
+- [Phase ?]: 51-01: BEFORE bot readout captured on phase-start commit d5d8c10; MOVED SET (3) measured (combat.json lose/lose-apprentice/lose-plain) via tools/initiative-fixture-scan.mjs — Plan 02 declares/regenerates exactly these three, nothing more
 
 ### Blockers
 

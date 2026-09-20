@@ -137,3 +137,14 @@ None - no external service configuration required.
 ## Human verification (deferred to end of run)
 
 None owed — this plan is measurement and tooling only (a bot readout + a report tool), with zero behavior change to the shipped game. No Pixel 7 checks apply.
+
+## Self-Check: PASSED
+
+- FOUND: docs/DIFFICULTY-RETUNE.md
+- FOUND: docs/class-pass/v17-p51-before-smoke.json
+- FOUND: tools/initiative-fixture-scan.mjs
+- FOUND: tools/initiative-fixture-scan-output.txt
+- FOUND: .planning/phases/51-initiative-once-per-combat/51-01-SUMMARY.md
+- FOUND commit: 0366e4c (Task 1)
+- FOUND commit: bf0f9eb (Task 2)
+- FOUND commit: 19db6a4 (Task 3)
