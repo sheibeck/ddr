@@ -1757,6 +1757,16 @@ let mwActiveTab = "maze";
     // tab; it only re-runs renderRail (guarded on window.__mzState — see
     // the boot-fix note above) so a card that auto-cleared re-hides.
     mwActiveTab = name;
+    // Phase 49 (PERF-02): stepWith()'s paint({ skipHiddenTabs: true }) skips
+    // the Hero/Gear mount while that screen is hidden (docs/PERF-BASELINE.md
+    // BEFORE row `step`) — catch up here, the instant the tab becomes
+    // active, so the screen the player is about to see is never stale.
+    // window.__mzTabs is assigned by this same classic script before any
+    // real tab switch can fire; window.__mzState is only set after boot —
+    // both checks mirror the renderRail?.() guard just below.
+    if ((name === "hero" || name === "gear") && window.__mzTabs && window.__mzState?.get()) {
+      window.__mzTabs[name](screens[name], window.__mzState.get(), tabDeps());
+    }
     if (window.__mzState) window.renderRail?.();
     // DFB-03: every open of the Oracle lands on the most recent line.
     if (name === "oracle") window.__mzOracleToNewest?.();
@@ -2375,6 +2385,22 @@ function tabDeps() {
   };
 }
 
+// Phase 49 (PERF-02): `mwPaintSkipHiddenTabs` — cited by docs/PERF-BASELINE.md
+// BEFORE row `step` (median 14.2 / p95 28.9 ms). The Hero and Gear tab
+// mounts below fully rebuild their screens' DOM (dossier, skills, ability
+// rows, Company panel, Grimoire; bag/worn rows) even when that screen is
+// `hidden` — on the map tab (where nearly every stepWith() paint() happens)
+// that DOM is invisible, so rebuilding it is pure wasted work on the hot
+// step path. stepWith (below) sets this flag true only around its own
+// `window.paint();` call (a plain classic-script global, not a paint()
+// parameter — several source-pin tests anchor on the literal `function
+// paint() {` signature and the literal `window.paint();` call, so neither
+// may change shape); every other paint() call site runs with the flag false
+// (its default), keeping the prior unconditional-render behavior byte-for-
+// byte. showTab() (this file, the initTabs IIFE) re-renders a tab's mount
+// the moment it becomes the active tab, so a hidden tab never goes stale —
+// only unseen frames are skipped, never a frame the player looks at.
+let mwPaintSkipHiddenTabs = false;
 function paint() {
   const c = S.c;
   document.getElementById("m-floor").textContent = S.floor.depth;
@@ -2443,12 +2469,12 @@ function paint() {
   // behind ONE mount call; paint() no longer builds any of that DOM itself.
   // Placed BEFORE the gear mount so paint()'s tab-mount order reads hero,
   // gear, renderEncounter, renderRail, draw.
-  window.__mzTabs.hero(document.getElementById("screen-hero"), S, tabDeps());
+  if (!mwPaintSkipHiddenTabs || mwActiveTab === "hero") window.__mzTabs.hero(document.getElementById("screen-hero"), S, tabDeps());
 
   // Phase 47 (SHELL-01), Plan 03 — the GEAR tab (m-gold, ALSO ON YOU, ON
   // YOU, BAG) renders from src/browser/gearTab.js behind ONE mount call;
   // paint() no longer builds any of that DOM itself.
-  window.__mzTabs.gear(document.getElementById("screen-gear"), S, tabDeps());
+  if (!mwPaintSkipHiddenTabs || mwActiveTab === "gear") window.__mzTabs.gear(document.getElementById("screen-gear"), S, tabDeps());
 
   renderEncounter();
   renderRail();
@@ -4999,7 +5025,16 @@ window.__mzClassicBoot = async function classicBoot() {
       state.beats = { groups: [{ title: "The maze has the last word", tone: "hurt", lines: stripRollDetail(html) }], i: 0, action: null, preDeath: true };
     }
     const tPaint = perf ? performance.now() : 0;
+    // Phase 49 (PERF-02): skip the hidden Hero/Gear tab mounts on the hot
+    // step path (docs/PERF-BASELINE.md BEFORE row `step`) — showTab() below
+    // re-renders whichever tab becomes active, so a hidden tab is never
+    // stale, only unrendered while unseen. The flag is reset synchronously
+    // right after paint() returns so every other window.paint() call site
+    // (the PERF-01 shell pin's literal `window.paint();` unchanged here)
+    // keeps rendering every tab unconditionally.
+    mwPaintSkipHiddenTabs = true;
     window.paint();
+    mwPaintSkipHiddenTabs = false;
     if (perf) perf.record("paint", performance.now() - tPaint);
     const tDraw = perf ? performance.now() : 0;
     window.draw();
