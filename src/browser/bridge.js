@@ -63,7 +63,7 @@ export const BRIDGE = Object.freeze({
   }),
   __mzClassicBoot: Object.freeze({
     owner: "mazeworld.html (classic)",
-    consumers: Object.freeze(["mazeworld.html (module: initRollerScreen — awaits the classic boot before first paint)"]),
+    consumers: Object.freeze(["mazeworld.html (module: the boot sequence after the roller mount — awaits the classic boot before first paint)"]),
     purpose: "Exposes the classic script's async boot routine so the module script can await it before running the roller screen's own init.",
   }),
   __mzCombatMenu: Object.freeze({
@@ -235,7 +235,7 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (classic)",
     consumers: Object.freeze([
       "mazeworld.html (classic: the death card's Oracle button)",
-      "mazeworld.html (module: initRollerScreen / the death-screen router — switches tabs after boot or death)",
+      "mazeworld.html (module: the roller mount's onCommit / the death-screen router — switches tabs after commit or death)",
     ]),
     purpose: "Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click.",
   }),

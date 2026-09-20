@@ -52,6 +52,12 @@ const CODE = stripComments(HTML);
 const HERO_TAB_RAW = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
 const HERO_SRC = stripComments(HERO_TAB_RAW);
 
+// Phase 50 (ROLL-01), Plan 03: the shell's own RACES/CLASSES import moved to
+// src/browser/roller.js (the roller mount's reelWordLists()) — the pin below
+// re-points to it instead of asserting the shell still imports them.
+const ROLLER_RAW = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "roller.js"), "utf8").replace(/\r\n/g, "\n");
+const ROLLER_SRC = stripComments(ROLLER_RAW);
+
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
   const end = source.indexOf(endMarker, start === -1 ? 0 : start);
@@ -112,7 +118,10 @@ test("window.__mzAbilities is retired; characterSheetViewModel/ABILITY_BY_ID/abi
   assert.equal((CODE.match(/window\.__mzAbilities/g) || []).length, 0);
   assert.equal((CODE.match(/import \{ abilityRoundsLeft \}/g) || []).length, 0);
   assert.equal((CODE.match(/import \{ isReady \} from "\.\/engine\/effects\.js";/g) || []).length, 0);
-  assert.match(CODE, /import \{ RACES, CLASSES \} from "\.\/content\/index\.js";/);
+  // Phase 50 (ROLL-01), Plan 03: the shell no longer imports RACES/CLASSES —
+  // the roller mount (src/browser/roller.js) is their only reader now.
+  assert.equal((CODE.match(/import \{ RACES, CLASSES \} from "\.\/content\/index\.js";/g) || []).length, 0);
+  assert.match(ROLLER_SRC, /import \{ RACES, CLASSES \} from "\.\.\/\.\.\/content\/index\.js";/);
   assert.match(
     CODE,
     /import \{ characterSheetViewModel, rationsViewModel, eatsLineFor, renderHeroTab \} from "\.\/src\/browser\/heroTab\.js";/,

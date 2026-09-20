@@ -432,3 +432,112 @@ test("Voice: ROLLER_COPY clears the family-friendly safety wordlist", () => {
     }
   }
 });
+
+// ─── mount pins (Phase 50, Plan 03) ───────────────────────────────────────
+//
+// Plan 03 swaps the inline roller block this file's tests above pin against
+// for the src/browser/roller.js mount. These pins assert the mount shape
+// directly on mazeworld.html's classic/module script regions — copied from
+// test/unit/heroTab.test.js's own stripComments/extractScriptRegions/
+// sliceBetween helpers (sibling-test precedent, not exported by that file).
+
+function stripComments(source) {
+  const noLineComments = source
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("//");
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join("\n");
+  return noLineComments.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+}
+
+function extractScriptRegions(raw) {
+  const classicStart = raw.indexOf("\n<script>\n");
+  assert.ok(classicStart !== -1, "column-0 <script> tag not found");
+  const classicEnd = raw.indexOf("\n</script>\n", classicStart + 1);
+  assert.ok(classicEnd !== -1, "classic </script> tag not found");
+  const modStart = raw.indexOf('\n<script type="module">\n', classicEnd);
+  assert.ok(modStart !== -1, 'column-0 <script type="module"> tag not found');
+  const modEnd = raw.indexOf("\n</script>\n", modStart + 1);
+  assert.ok(modEnd !== -1, "module </script> tag not found");
+  return {
+    classic: raw.slice(classicStart + 1, classicEnd),
+    mod: raw.slice(modStart + 1, modEnd),
+  };
+}
+
+function sliceBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start === -1 ? 0 : start);
+  assert.ok(start !== -1, `start marker not found: ${startMarker}`);
+  assert.ok(end !== -1 && end > start, `end marker not found after start: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+const { classic: MOUNT_CLASSIC_RAW, mod: MOUNT_MOD_RAW } = extractScriptRegions(HTML_RAW);
+const MOUNT_CLASSIC = stripComments(MOUNT_CLASSIC_RAW);
+const MOUNT_MOD = stripComments(MOUNT_MOD_RAW);
+
+test("m1: the module script imports createRoller from roller.js exactly once, and imports RACES/CLASSES from content/index.js zero times", () => {
+  assert.equal((MOUNT_MOD.match(/import \{ createRoller \} from "\.\/src\/browser\/roller\.js";/g) || []).length, 1);
+  assert.equal((MOUNT_MOD.match(/import \{ RACES, CLASSES \} from "\.\/content\/index\.js";/g) || []).length, 0);
+});
+
+test("m2: exactly one createRoller( call; the mount object wires doc/startNewRun/sheetFor and the onCommit callback commits + shows the maze tab", () => {
+  assert.equal((MOUNT_MOD.match(/createRoller\(/g) || []).length, 1);
+  const region = sliceBetween(MOUNT_MOD, "const roller = createRoller({", "});");
+  assert.match(region, /doc: document,/);
+  assert.match(region, /startNewRun,/);
+  assert.match(region, /sheetFor: characterSheetViewModel,/);
+  assert.match(region, /commitRolledState\(state\);/);
+  assert.match(region, /window\.__mzShowTab\?\.\("maze"\);/);
+});
+
+test("m3: window.mzStartRoll = roller.start exactly once; the inline startRoll function is gone", () => {
+  assert.equal((MOUNT_MOD.match(/window\.mzStartRoll = roller\.start;/g) || []).length, 1);
+  assert.equal((MOUNT_MOD.match(/function startRoll\(/g) || []).length, 0);
+});
+
+test("m4: exactly one startNewRun( call expression in the module script, and it sits inside window.mzDevStartAtDepth — not on the roller path", () => {
+  const callMatches = [...MOUNT_MOD.matchAll(/\bstartNewRun\(/g)];
+  assert.equal(callMatches.length, 1);
+  const devStart = MOUNT_MOD.indexOf("window.mzDevStartAtDepth = async function devStartAtDepth(depth) {");
+  assert.ok(devStart !== -1, "window.mzDevStartAtDepth not found");
+  const devEnd = MOUNT_MOD.indexOf("\n  };", devStart);
+  assert.ok(devEnd !== -1 && devEnd > devStart, "window.mzDevStartAtDepth's closing `};` not found");
+  assert.ok(
+    callMatches[0].index > devStart && callMatches[0].index < devEnd,
+    "the one startNewRun( call expression must sit inside window.mzDevStartAtDepth",
+  );
+});
+
+test("m5: window.mzStartRoll() is called exactly twice across the classic and module scripts (title ENTER, the dead Hero tab's New Character)", () => {
+  const classicCalls = (MOUNT_CLASSIC.match(/window\.mzStartRoll\(\)/g) || []).length;
+  const modCalls = (MOUNT_MOD.match(/window\.mzStartRoll\(\)/g) || []).length;
+  assert.equal(classicCalls + modCalls, 2);
+});
+
+test("m6: every inline-roller identifier is gone from both the classic and module scripts", () => {
+  const retired = [
+    "ROLLER_LOCK_DELAYS",
+    "ROLLER_REVEAL_DELAY",
+    "ROLLER_SPIN_MS",
+    "ROLLER_RACE_NAMES",
+    "rollerPendingState",
+    "clearRollerTimers",
+    "initRollerScreen",
+    "pickDisplay(",
+    "setReel(",
+  ];
+  for (const ident of retired) {
+    const escaped = ident.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(escaped, "g");
+    assert.equal((MOUNT_CLASSIC.match(re) || []).length, 0, `expected zero ${ident} in the classic script`);
+    assert.equal((MOUNT_MOD.match(re) || []).length, 0, `expected zero ${ident} in the module script`);
+  }
+});
+
+test("m7: function commitRolledState(state) { occurs exactly once in the module script", () => {
+  assert.equal((MOUNT_MOD.match(/function commitRolledState\(state\) \{/g) || []).length, 1);
+});

@@ -2,9 +2,10 @@
 
 `mazeworld.html` is a mount point. The Gear tab, the Hero tab and the Store
 screen render from named `src/browser/` modules — `gearTab.js`, `heroTab.js`
-and `storeScreen.js` (Phase 47). The contract below is what those modules
-implement, and every `window.__mz*` bridge crossing the classic-script/
-module-script seam is listed in one place, with an owner.
+and `storeScreen.js` (Phase 47), and the character roller mounts from
+`roller.js` (Phase 50). The contract below is what those modules implement,
+and every `window.__mz*` bridge crossing the classic-script/module-script
+seam is listed in one place, with an owner.
 
 ## Contract
 
@@ -37,6 +38,55 @@ Rules:
   `gearTab.js` once it lands) is reached by the classic loot card through
   `window.__mzCarriedList`.
 
+### Screens
+
+`src/browser/roller.js` (Phase 50, ROLL-01) is a different shape from the
+three tab modules above: a stateful factory rather than a stateless render
+function, because the roll screen owns mutable presentation state (the roll
+token, the serialized roll chain, the pending rolled state, its timers)
+across its own async reveal sequence.
+
+`createRoller` is the mount factory the shell calls once, at module-script
+load time, with the shell's own `document` and seams:
+
+```js
+const roller = createRoller({ doc: document, startNewRun, sheetFor: characterSheetViewModel, onCommit });
+window.mzStartRoll = roller.start;
+```
+
+`createRoller({ doc, startNewRun, sheetFor, onCommit, timers, random, words })`
+returns `Object.freeze({ start, commit, pending, dispose })`:
+
+- `doc` — the Document the module reads/writes through — only via
+  `getElementById` on the eight `mw-roller-*` ids (`ROLLER_IDS`); never a
+  global.
+- `startNewRun` — `src/browser/engineAdapter.js`'s new-run seam, called with
+  no arguments and serialized through an internal promise chain so it is
+  never in flight twice, even under rapid re-entry.
+- `sheetFor` — the injected view-model reader; the shell wires
+  `heroTab.js`'s `characterSheetViewModel`, the SAME rng-free, DOM-free view
+  model the Hero tab itself renders from, so the reels and the Hero tab can
+  never disagree.
+- `onCommit(state)` — called once the CTA fires on a fully-revealed roll;
+  the shell's mount wires it to `commitRolledState(state)` followed by
+  `window.__mzShowTab("maze")`.
+- `timers` / `random` / `words` — test seams; default to the global timer
+  functions, `Math.random`, and `reelWordLists()` (the cosmetic `{ race,
+  cls, sub }` word lists built from `content/index.js`'s RACES/CLASSES).
+
+The mount assigns `window.mzStartRoll = roller.start` — the one bridge name
+both roll triggers (the title screen's ENTER button, and the dead Hero
+tab's "New Character" button) call. The same never-`window`/`document`
+invariant every other module in this doc follows applies here too — the
+factory reaches the page only through the injected `doc`.
+
+A monotonic roll token guards re-entry: if `start()` is called again before
+a prior roll's `startNewRun()` resolution has been read (a superseded roll —
+double-tap, or a re-tap mid-reveal), that stale resolution is dropped before
+it touches a reel or the pending state, and every reel lock plus the CTA
+always read the SAME pending object — never a `sheet` captured once and
+reused later.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
@@ -62,7 +112,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzBagUsage | mazeworld.html (module) | mazeworld.html (classic: paint — bag usage readout)<br>mazeworld.html (classic: renderEncounter — loot/find bag-full gate) | Bridges the pure bag-capacity readout (used/slots, full) so the Gear tab and every loot/find/store surface agree with the engine's real cap. |
 | __mzCanvasSizing | mazeworld.html (module) | mazeworld.html (classic: fit — canvas backing size + cell size for text scale) | Bridges the pure canvas-backing/cell-size math so the map canvas resizes identically to the engine's own text-scale settings model. |
 | __mzCarriedList | mazeworld.html (module) | mazeworld.html (classic: the loot card — the shared carried-item list; the store sell list reaches it directly now, via src/browser/storeScreen.js's own gearTab.js import) | Bridges src/browser/gearTab.js's renderCarriedList so the loot card reaches the ONE shared carried-item list renderer, never a second copy. |
-| __mzClassicBoot | mazeworld.html (classic) | mazeworld.html (module: initRollerScreen — awaits the classic boot before first paint) | Exposes the classic script's async boot routine so the module script can await it before running the roller screen's own init. |
+| __mzClassicBoot | mazeworld.html (classic) | mazeworld.html (module: the boot sequence after the roller mount — awaits the classic boot before first paint) | Exposes the classic script's async boot routine so the module script can await it before running the roller screen's own init. |
 | __mzCombatMenu | mazeworld.html (module) | mazeworld.html (classic: openCombatMenu / renderActionArea / fightLogRefuse — reads and also writes)<br>mazeworld.html (module: dispatchWithNarration — closes the menu after every dispatched action) | Presentation-only open/closed state for the combat action submenu; never a field on state (serializeRun spreads state wholesale). |
 | __mzCombatVM | mazeworld.html (module) | mazeworld.html (classic: renderActionArea / renderEncounter — combat header/foe-card/YOUR LOT/overlay content) | Bridges the pure combat header/foe-list/your-lot/overlay/menu view-model builders for renderEncounter's combat branch. |
 | __mzConditionsOf | mazeworld.html (module) | mazeworld.html (classic: paint — top-of-screen condition tracker) | Bridges the pure condition enumerator so paint()'s condition chips map data-only descriptors to labels through one shared source. |
@@ -93,7 +143,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzRailVM | mazeworld.html (module) | mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy) | Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. |
 | __mzRations | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — Joiner card eats line) | Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do. |
 | __mzSettings | mazeworld.html (module) | mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings) | Exposes the module's currently-applied settings object so the classic canvas-fit routine can read the live text-scale setting. |
-| __mzShowTab | mazeworld.html (classic) | mazeworld.html (classic: the death card's Oracle button)<br>mazeworld.html (module: initRollerScreen / the death-screen router — switches tabs after boot or death) | Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click. |
+| __mzShowTab | mazeworld.html (classic) | mazeworld.html (classic: the death card's Oracle button)<br>mazeworld.html (module: the roller mount's onCommit / the death-screen router — switches tabs after commit or death) | Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click. |
 | __mzStair | mazeworld.html (module) | mazeworld.html (classic: the stair-down overlay's STAY button — reads and also clears to null)<br>mazeworld.html (module: the tap-to-move step handler / getGameContext / closeModal — sets and clears the overlay flag) | Presentation-only stair-down gate flag ({ dir } while the overlay is up, else null); never a field on state. |
 | __mzState | mazeworld.html (classic) | mazeworld.html (classic: paint/renderRail/railPulse — reads the live GameState)<br>mazeworld.html (module: dispatchWithNarration and every engine-action bridge — get()/set() the live GameState)<br>tools/store-screenshots/bot.js<br>tools/store-screenshots/capture.js | The one get()/set() accessor onto the classic script's `S` variable, letting the module script read and replace the live GameState. |
 | __mzTables | mazeworld.html (module) | mazeworld.html (classic: mzCombatReport — level roman numerals)<br>mazeworld.html (classic: renderEncounter — level roman numerals in the graves stone / Joiner card) | Bridges the one read-only content table (ROMAN) the classic script still cannot import — RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES moved to gearTab.js/heroTab.js, which import content/ directly. |
