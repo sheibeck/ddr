@@ -90,7 +90,9 @@ decision — ask).
 
 ## Device
 
-Filled by Plan 49-02 from the user's Pixel 7 report (quoted as given, never rounded or estimated).
+Pixel 7; Android build number CP2A.260705.006; APK commit 742c916; session
+date 2026-09-20; measurement build: the 49-01 instrumentation at commit
+bb83eed.
 
 ## Protocol
 
@@ -118,17 +120,93 @@ builds and hands over the debug APK:
   seen and where (a stutter on a step, a late repaint, a tab flash) — or
   "none".
 
+**As run**: depth started: 5 (as reported — matches the checklist).
+Steps walked: 62 (the report's n; ≥ 50 achieved, ring cap of 100 not
+reached). What was mixed in (water, dark, encounter card, tab switch): not
+reported individually — the user's report states the walk followed "the
+checklist protocol (Start at depth 5, ≥ 50 mixed steps)" without breaking
+out each element, so each of the four is recorded here as "not reported"
+rather than assumed.
+
 ## BEFORE
 
-Filled by Plan 49-02 from the user's Pixel 7 report (quoted as given, never rounded or estimated).
+| Row | median (ms) | p95 (ms) | max (ms) | n |
+| --- | --- | --- | --- | --- |
+| step | 14.2 | 28.9 | 33.4 | 62 |
+| dispatch | 3.9 | 8.3 | 15.1 | 62 |
+| paint | 8.6 | 15.3 | 17.9 | 62 |
+| draw | 1.6 | 3.3 | 4.2 | 62 |
+
+Numbers are the user's report, quoted as given.
 
 ## Jank report
 
-Filled by Plan 49-02 from the user's Pixel 7 report (quoted as given, never rounded or estimated).
+> None
 
 ## Decision
 
-Filled by Plan 49-02 from the user's Pixel 7 report (quoted as given, never rounded or estimated).
+Rule applied per row (median or p95 ≥ 16 ms qualifies):
+
+- step: median 14.2 ms, p95 28.9 ms → qualifies
+- dispatch: median 3.9 ms, p95 8.3 ms → does not qualify
+- paint: median 8.6 ms, p95 15.3 ms → does not qualify
+- draw: median 1.6 ms, p95 3.3 ms → does not qualify
+- jank: none reported
+
+**Verdict — B: `step` qualifies (p95 28.9 ≥ 16 ms).** No sub-row
+individually qualifies, so this is the plan's "step-only" case — but the
+arithmetic shows why the fix still had to target `paint`, not an
+uninstrumented remainder:
+
+- median: dispatch 3.9 + paint 8.6 + draw 1.6 = 14.1 ms vs. step's reported
+  14.2 ms — remainder ≈ 0.1 ms.
+- p95: dispatch 8.3 + paint 15.3 + draw 3.3 = 26.9 ms vs. step's reported
+  28.9 ms — remainder ≈ 2.0 ms.
+- max: dispatch 15.1 + paint 17.9 + draw 4.2 = 37.2 ms vs. step's reported
+  33.4 ms — remainder is negative, expected since the three rows' maxima are
+  independent samples within the ring and do not co-occur on the same step.
+
+The three instrumented sub-rows already account for essentially all of
+`step`'s cost (median remainder 0.1 ms, p95 remainder 2.0 ms) — the
+Oracle `logLine` append and the camera nudge (the code outside
+dispatch/paint/draw inside `stepWith`) are not where the time is. `paint` is
+the largest single component (median 8.6 ms, over half of step's p95 budget
+of 28.9 ms) even though it does not independently cross 16 ms — so the row
+`step` qualifies, and `paint` is the target, cited in the fix commit via the
+`step` row per the fix rule.
+
+**Node-side evidence (read, not re-measured on device):** `paint()`
+(`mazeworld.html`) unconditionally calls both
+`window.__mzTabs.hero(document.getElementById("screen-hero"), S,
+tabDeps())` and `window.__mzTabs.gear(document.getElementById("screen-gear"),
+S, tabDeps())` on every step, regardless of which tab is visible.
+`src/browser/heroTab.js#renderHeroTab` and `src/browser/gearTab.js#renderGearTab`
+each perform dozens of `getElementById`/`textContent`/`innerHTML` writes
+(dossier, skills list, ability rows, Company panel, Grimoire for Hero; bag
+rows, ON YOU rows, kit list for Gear) — full DOM rebuilds — every time,
+even while `#screen-hero`/`#screen-gear` are `hidden` behind the active map
+tab. `showTab()` (the tab-click handler) never re-renders on switching
+tabs — it relies entirely on `paint()` having kept the hidden tabs fresh.
+During the measured walk the player was on the map tab for nearly every
+step (only "at least one tab switch" was required by the checklist), so
+this pair of full tab rebuilds ran on essentially every one of the 62
+measured steps while invisible to the player.
+
+**Fix:** skip the Hero/Gear tab mount inside `paint()` when that screen is
+not the active tab, on the `stepWith()` call path only (a module-scope flag,
+`mwPaintSkipHiddenTabs`, set true only around `stepWith`'s own
+`window.paint()` call — every other `window.paint()` call site, including
+the DOM-snapshot harness's `sandbox.paint()`, is unaffected and keeps
+rendering every tab unconditionally). `showTab()` now re-renders the
+Hero/Gear mount the instant that tab becomes active, so a hidden tab is
+never stale — only unrendered while unseen, satisfying the "byte-identical
+when next shown" rule. The redundant second canvas `draw()` per step (the
+49-01 Method section's own finding) was considered but NOT included in this
+fix — the instrumentation's 7 guarded `performance.now()` lines (a locked
+shape several source-pin tests anchor on) could not be preserved while also
+removing that call, and the arithmetic above shows `draw`'s own cost
+(median 1.6 ms) is not, alone, enough to bring `step` under 16 ms; it
+remains an open, undone finding for a future perf pass.
 
 ## AFTER
 
