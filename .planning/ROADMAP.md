@@ -285,7 +285,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 48-01-PLAN.md — `tools/stale-terms.mjs` (criterion 1 as a reproducible table with an allow-list that rots loudly, `--paths`/`--json`/`--self-test`) + `tools/comment-only-diff.mjs` (criterion 4's stripped-diff proof); the engine/content/tools comment sweep (15 sites, comment-only proven)
+- [x] 48-01-PLAN.md — `tools/stale-terms.mjs` (criterion 1 as a reproducible table with an allow-list that rots loudly, `--paths`/`--json`/`--self-test`) + `tools/comment-only-diff.mjs` (criterion 4's stripped-diff proof); the engine/content/tools comment sweep (15 sites, comment-only proven)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -381,7 +381,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
-| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 0/TBD | Not started | - |
+| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 1/5 | In Progress|  |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
