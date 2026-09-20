@@ -216,7 +216,7 @@ step 11.3 / 19.3 / 24.9 · dispatch 4.1 / 8.0 / 15.4 · paint 4.8 / 7.4 / 9.8 ·
 
 - **Device build number:** CP2A.260705.006 (unchanged)
 - **APK commit (AFTER 1):** b8c9293 (includes `9fe9bb5`)
-- **Jank report:** none reported (the user reported "None" on the BEFORE run and raised nothing on this run)
+- **Jank report (user's words):** "Jank is none"
 - **Also raised by the user on this run (not a regression):** the dev Start-at-depth run rolls a fresh character (`startNewRun(undefined, { startDepth })`, unchanged since Phase 21 `83526ae`), so the roller showed a Court Mage and the Hero tab the dev run's own Thief — by design; a possible post-milestone todo (dev start keeps the rolled character).
 
 ### Orchestrator ruling (user, 2026-09-20)
