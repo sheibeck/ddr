@@ -216,6 +216,93 @@ export const ALLOWED = Object.freeze(
       match: "line\\?\\.toasts\\?\\.\\[0\\]\\?\\.text",
       reason: "flagged — dead defensive fallback reading a `.toasts` shape no live LINE_FOR builder ever returns; the field name is untouched per the bounded test-body rule (needs a behaviour-level edit to remove, out of scope for Plan 03 — see SUMMARY)",
     },
+
+    // --- Plan 04, Task 1: the Phase 35 invariant suite + shell-* absence pins ---
+    {
+      term: "dpad",
+      file: "test/unit/shell-map-invariants.test.js",
+      match: ".",
+      reason: "A — the Phase 35 invariant suite: every mention is a concatenated retired literal or a zero-grep title asserting the D-pad/toast host is absent from the shell",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-map-invariants.test.js",
+      match: ".",
+      reason: "A — the Phase 35 invariant suite: every mention is a concatenated retired literal or a zero-grep title asserting the D-pad/toast host is absent from the shell",
+    },
+    {
+      term: "dpad",
+      file: "test/unit/shell-map-viewport.test.js",
+      match: ".",
+      reason: "A — (a) D-pad / control-bar retirement test and its header",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-map-rail.test.js",
+      match: "toast retirement|\"Toast\"|\"toast\"|ToastLifetime|_TOASTS|total retirement of the DR13/25\\.1 toast host",
+      reason: "A — the (c) toast-retirement zero-grep test and its header sentence naming the retired host",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-combat-actions.test.js",
+      match: "zero toast calls|toast host is fully retired|never toasts|mzToast|toastCall|never a toast\\)|toast-wiring\\.test\\.js",
+      reason: "A — CSCR-04/05 + MAP-03 absence pins",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-combat-over.test.js",
+      match: "mzToast|No toasts on endings",
+      reason: "A — zero-call pin",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-company-panel.test.js",
+      match: "toastToken|no toast host|toast-host token|toast-table fallback|never a toast",
+      reason: "A — absence pin + its assertion message (the message names the LINE_FOR fallback by its old name)",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-oracle-panel.test.js",
+      match: "toast host rule is gone|mw-toast|toast-wiring\\.test\\.js",
+      reason: "A — MAP-03/04 host-rule pin",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-fight-log.test.js",
+      match: "toastCall|toastHits|zero .*calls|toast host is retired|never a toast call",
+      reason: "A — zero-call pin inside dispatchWithNarration",
+    },
+    {
+      term: "round-card",
+      file: "test/unit/shell-fight-log.test.js",
+      match: "Round Card artifacts|zero remaining Round Card|__mzRoundCard|ROUND_CARD|round-card|RoundCardLive",
+      reason: "A — the Phase 34 retirement pin",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-narration-wiring.test.js",
+      match:
+        "toast is deleted|no shell-side in-combat toast survives|block-toast literal|toast host itself|toast-host retirement|toast host's CSS|instead of a toast queue|mw-toast|toast is replaced, not lost|deleted DR18 toast has a real replacement|DR18 toast's real linesForAction replacement|deleted hand-written toast is replaced",
+      reason: "A — the three retirement tests and the header sentences that state the retirement",
+    },
+    {
+      term: "round-card",
+      file: "test/unit/shell-narration-wiring.test.js",
+      match: "Round Card;",
+      reason: "B — states the Round Card was replaced by the whole-fight fight log (Phase 34)",
+    },
+    {
+      term: "toast",
+      file: "test/unit/shell-armor-display.test.js",
+      match: "reported \"toast says wear, panel shows no damage\"",
+      reason: "B — a direct quote of the historical DR bug-report title (the UI element it names was a toast at the time the bug was filed); the fix it describes is what this test pins",
+    },
+    {
+      term: "dpad",
+      file: "test/unit/shell-gear-toolbar.test.js",
+      match: "retired outright",
+      reason: "B — states the .mazefoot/D-pad markup is retired",
+    },
   ].map((a) => Object.freeze(a)),
 );
 

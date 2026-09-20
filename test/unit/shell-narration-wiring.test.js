@@ -2,8 +2,8 @@
 //
 // Phase 25 (FEED-01..06), Plan 04 — mazeworld.html has no module surface a
 // test could import (it is not an ESM module the test runner can load), so
-// — mirroring test/unit/foe-effect-chip.test.js / parley-button-mirror.test.js's
-// own source-assertion pattern — this file reads the real shipped source
+// — mirroring test/unit/foe-effect-chip.test.js's own source-assertion
+// pattern — this file reads the real shipped source
 // with fs.readFileSync and asserts against it directly: the single
 // dispatchWithNarration(action) routing seam every dispatch call site funnels
 // through, and the old per-action switch (plus its spell-name helper) stays
@@ -11,9 +11,9 @@
 // equip-rejection toast is replaced, not lost, by importing the real
 // linesForAction and running a real equipRejected event through it.
 //
-// Phase 32 (CMBUI-02): dispatchWithNarration routed in-combat non-refusal
-// lines to a Round Card, later (Phase 34, CSCR-04) to the whole-fight
-// window.__mzFightLog.
+// Phase 32 (CMBUI-02): dispatchWithNarration originally routed in-combat
+// non-refusal lines to a Round Card; Phase 34 (CSCR-04) replaced it with the
+// whole-fight window.__mzFightLog.
 //
 // Phase 35 (MAP-03/04): the toast host itself — `window.mzToast`, the
 // `.mw-toast-host`/`.mw-toast` CSS, the lifetime bridge, the cap constant's
@@ -124,11 +124,11 @@ test("Phase 34: no shell-side in-combat toast survives — the full-health and n
 
 // ─── behavioural: the deleted hand-written toast is replaced, not lost ──
 
-test("an equipRejected(reason: woodsman) event yields one block toast via linesForAction (proves the deleted DR18 toast has a real replacement)", () => {
-  const toasts = linesForAction("equipItem", [{ type: "equipRejected", reason: "woodsman" }], {});
-  assert.equal(toasts.length, 1);
-  assert.equal(toasts[0].tone, "block");
-  assert.match(toasts[0].text, /Woodsman/i);
+test("an equipRejected(reason: woodsman) event yields one block line via linesForAction (proves the deleted DR18 toast has a real replacement)", () => {
+  const lines = linesForAction("equipItem", [{ type: "equipRejected", reason: "woodsman" }], {});
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].tone, "block");
+  assert.match(lines[0].text, /Woodsman/i);
 });
 
 // ─── Phase 35 (MAP-03/04): toast-host retirement re-pin ──────────────────

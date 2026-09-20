@@ -3,8 +3,8 @@
 // Phase 34 (CSCR-04/08), Plan 02 — replaces test/unit/shell-round-card.test.js.
 // mazeworld.html has no module surface a test could import directly (it is
 // not an ESM module the test runner can load), so — mirroring
-// shell-round-card.test.js's own source-assertion pattern — this file reads
-// the real shipped source with fs.readFileSync and asserts against it
+// shell-narration-wiring.test.js's own source-assertion pattern — this file
+// reads the real shipped source with fs.readFileSync and asserts against it
 // directly:
 //   1. the persistent #enc-round-live announcer (unchanged placement);
 //   2. syncFightLogLive: no innerHTML, seq-gated via fightLogAnnouncement,

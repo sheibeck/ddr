@@ -38,8 +38,8 @@ const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8")
 const HTML = RAW_HTML.replace(/\r\n/g, "\n");
 
 // ─── comment stripping (same order-sensitive approach as
-// shell-toast-wiring.test.js/shell-party-camp.test.js — line comments are
-// stripped BEFORE block comments) ─────────────────────────────────────────
+// shell-narration-wiring.test.js/shell-party-camp.test.js — line comments
+// are stripped BEFORE block comments) ─────────────────────────────────────
 function stripComments(source) {
   const noLineComments = source
     .split("\n")

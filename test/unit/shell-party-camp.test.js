@@ -2,7 +2,7 @@
 //
 // Phase 25.1 (DFB-04/DFB-06), Plan 02 — mazeworld.html has no module surface
 // a test could import directly (it is not an ESM module the test runner can
-// load), so — mirroring test/unit/shell-toast-wiring.test.js's own
+// load), so — mirroring test/unit/shell-narration-wiring.test.js's own
 // source-assertion pattern — this file reads the real shipped source with
 // fs.readFileSync and asserts against it directly:
 //   1. the module script bridges nightlyEats (engine/movement.js) and
@@ -12,7 +12,7 @@
 //   3. paint() derives the camp button's short-on-food state from the SAME
 //      bridged helper the engine's makeCamp uses;
 //   4. the camp button is never programmatically disabled by the shell (the
-//      refusal toast must still be able to fire on a tap).
+//      refusal rail line must still be able to fire on a tap).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -26,8 +26,8 @@ const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8")
 const HTML = RAW_HTML.replace(/\r\n/g, "\n");
 
 // ─── comment stripping (same order-sensitive approach as
-// shell-toast-wiring.test.js — see that file's header for why line comments
-// are stripped BEFORE block comments) ───────────────────────────────────
+// shell-narration-wiring.test.js — see that file's header for why line
+// comments are stripped BEFORE block comments) ──────────────────────────
 function stripComments(source) {
   const noLineComments = source
     .split("\n")
@@ -94,7 +94,7 @@ test("DFB-06: the camp button is never disabled by the shell", () => {
   const region = campBtnPaintRegion();
   assert.ok(region.includes("campBtn"), "sanity: region actually contains the campBtn assignment");
   // Assembled from fragments so this test file never spells the forbidden
-  // pattern itself (mirrors shell-toast-wiring.test.js's dead-name technique).
+  // pattern itself (mirrors shell-narration-wiring.test.js's dead-name technique).
   const forbidden = "campBtn" + ".disabled";
   assert.ok(!region.includes(forbidden), "the campBtn region must never set .disabled");
 });

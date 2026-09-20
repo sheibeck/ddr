@@ -26,7 +26,7 @@ const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8")
 const HTML = RAW_HTML.replace(/\r\n/g, "\n");
 
 // ─── comment stripping (line comments first, then block comments — see
-// shell-toast-wiring.test.js's own doc comment for why the order matters:
+// shell-narration-wiring.test.js's own doc comment for why the order matters:
 // mazeworld.html has `//` comments that mention glob-style paths containing
 // a literal `/*` substring) ────────────────────────────────────────────────
 function stripComments(source) {

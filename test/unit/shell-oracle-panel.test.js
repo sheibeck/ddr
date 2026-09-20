@@ -2,14 +2,13 @@
 //
 // Phase 25.1 (Device Feedback Batch), Plan 01 (DFB-03) — mazeworld.html has
 // no module surface a test could import, so — mirroring test/unit/shell-
-// toast-wiring.test.js's own source-assertion pattern — this file reads the
-// real shipped source with fs.readFileSync and asserts against it directly:
-// the Oracle screen fills its container as a flex column, the log panel
-// grows to the available height and the list scrolls inside it, a "↑ newer"
-// pill exists and starts hidden, opening the Oracle tab scrolls to the
-// newest line, the pill toggles on scroll past a 24px threshold and taps
-// back to the top, and the fixed toast host / tab bar are untouched by the
-// layout change.
+// narration-wiring.test.js's own source-assertion pattern — this file reads
+// the real shipped source with fs.readFileSync and asserts against it
+// directly: the Oracle screen fills its container as a flex column, the log
+// panel grows to the available height and the list scrolls inside it, a
+// "↑ newer" pill exists and starts hidden, opening the Oracle tab scrolls to
+// the newest line, the pill toggles on scroll past a 24px threshold and taps
+// back to the top, and the fixed tab bar is untouched by the layout change.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,8 +21,8 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
 const HTML = RAW_HTML.replace(/\r\n/g, "\n");
 
-// ─── comment stripping (line comments first — see shell-toast-wiring.test.js
-// for why this order is safe for this file) ─────────────────────────────
+// ─── comment stripping (line comments first — see shell-narration-wiring.
+// test.js for why this order is safe for this file) ─────────────────────
 function stripComments(source) {
   const noLineComments = source
     .split("\n")
