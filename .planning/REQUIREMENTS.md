@@ -40,7 +40,7 @@
 - [x] **SHELL-01**: The Gear tab (ON YOU / BAG panels, equip/use/drop/swap confirms) renders from a `src/browser/gearTab.js` module with its own source-pin test, and `mazeworld.html` only mounts it
 - [x] **SHELL-02**: The Hero tab (sheet, dossier, Company panel, Grimoire) renders from a `src/browser/heroTab.js` module with its own source-pin test
 - [x] **SHELL-03**: The Store screen renders from a `src/browser/storeScreen.js` module with its own source-pin test
-- [ ] **SHELL-04**: `mazeworld.html` is under 5,000 lines with no classic-script duplicate of any `src/browser/` or `content/` table, and the module bridge (`window.__mz*`) surface is listed in one place with each entry's owner
+- [x] **SHELL-04**: `mazeworld.html` is a mount point for the three carved surfaces (5,621 lines at Phase 47 close, down from 6,339 — the "< 5,000" clause was re-baselined by user ruling 2026-09-19 after the measured shortfall; ledger in `docs/SHELL-MODULES.md#Line budget`) with no classic-script duplicate of any `src/browser/` or `content/` table, and the module bridge (`window.__mz*`) surface is listed in one place with each entry's owner
 
 ### Performance (PERF)
 
@@ -88,7 +88,7 @@ Filled at roadmap creation (2026-09-19). Phase order: 44 dead code → 45 hedges
 | SHELL-01 | Phase 47 | Complete |
 | SHELL-02 | Phase 47 | Complete |
 | SHELL-03 | Phase 47 | Complete |
-| SHELL-04 | Phase 47 | Pending |
+| SHELL-04 | Phase 47 | Complete |
 | PERF-01 | Phase 49 | Pending |
 | PERF-02 | Phase 49 | Pending |
 
