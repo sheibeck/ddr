@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 49
+current_phase_name: Measure-First Perf Pass
 status: executing
-stopped_at: Completed 48-05-PLAN.md (CLAUDE.md + docs close + stale-terms tripwire; Phase 48 complete)
-last_updated: "2026-09-20T09:22:07.314Z"
+stopped_at: Completed 49-01-PLAN.md (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half; PERF-01 measurement half landed, not marked complete — 49-02 closes both requirements)
+last_updated: "2026-09-20T11:43:24.611Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 49 execution started
+last_activity_desc: 49-01 landed (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half)
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 23
-  completed_plans: 21
+  completed_plans: 22
   percent: 83
-current_phase_name: Measure-First Perf Pass
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 48; v1.6 Shell Deb
 ## Current Position
 
 Phase: 49 of 49 — Measure-First Perf Pass (planned, 2 plans; executing)
-Plan: 49-01 next (dev-gated perfMarks instrumentation + readout + checklist); 49-02 waits on the Pixel 7 device report
+Plan: 49-01 complete (dev-gated perfMarks instrumentation + readout + checklist, commits cab78ec/bb83eed/c289aca); 49-02 waits on the Pixel 7 device report — orchestrator builds the debug APK and hands the SUMMARY's User checklist to the user next
 Status: Executing Phase 49
-Last activity: 2026-09-20 — Phase 49 execution started
-Progress: [██████████] 100%
+Last activity: 2026-09-20 — 49-01 landed (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half)
+Progress: [██████████] 96%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -124,8 +124,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T06:31:14.606Z
-Stopped at: Completed 48-05-PLAN.md (CLAUDE.md + docs close + stale-terms tripwire; Phase 48 complete)
+Last session: 2026-09-20T11:43:15.850Z
+Stopped at: Completed 49-01-PLAN.md (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half; PERF-01 measurement half landed, not marked complete — 49-02 closes both requirements)
 Resume file: None
 
 ## Operator Next Steps
@@ -253,6 +253,7 @@ Resume file: None
 | Phase 48 P03 | 50min | 2 tasks | 26 files |
 | Phase 48 P04 | ~55min | 3 tasks | 71 files |
 | Phase 48 P05 | ~50min | 3 tasks | 12 files |
+| Phase 49 P01 | 45min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -492,6 +493,10 @@ Resume file: None
 - [Phase ?]: 48-04: class-matrix.test.js's mock run/row won:false fields included in fixture hygiene (rowFromRun never reads run.won since 46-02 deleted that field; file was explicitly named in the 46-02 handoff list)
 - [Phase ?]: 48-05: .claude/CLAUDE.md is Android-only (Capacitor 8 + Android Studio; Google Play submission prerequisites only; every rule and GSD-managed section byte-identical except the approved Constraints wording change); docs/COMBAT-NARRATIVE-DESIGN.md deleted (every surface it documented is retired).
 - [Phase ?]: 48-05: test/unit/stale-terms.test.js is the phase's standing tripwire — pins tools/stale-terms.mjs to zero unlisted on every enforced row and zero allow-list rot; a future stale comment or rotted survivor entry now fails npm test.
+- [Phase ?]: 49-01: The instrumentation stays dev-gated in the shipped build rather than being removed — measurement method (criterion 1), not a fix (criterion 2); reversible in one revert commit
+- [Phase ?]: 49-01: dispatch row measures dispatchWithNarration (engine action + narration fold + rail-card push), not the bare engine call
+- [Phase ?]: 49-01: step row brackets the whole stepWith body (superset of dispatch..draw, including the trailing draw, Oracle log append, camera nudge) — can only over-report cost, never under-report
+- [Phase ?]: 49-01: found and recorded (not fixed) that stepWith draws the canvas twice per step (paint() itself ends with draw()) — a candidate row for 49-02's fix-rule test, not addressed in this plan
 
 ### Blockers
 

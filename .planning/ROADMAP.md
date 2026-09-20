@@ -322,7 +322,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 49-01-PLAN.md — `src/browser/perfMarks.js` (pure 100-sample rings, nearest-rank med/p95/max, `formatReadout`) + `test/unit/perfMarks.test.js`; seven `state.dev`-guarded clock lines in the module script's `stepWith` bracketing four rows (step / dispatch / paint / draw — no bridge, no classic-script edit); the `#mw-dev-perf` readout inside `#mw-dev-row` + `[mzperf]` console line every 10 steps; the `www/` grep proof (criterion 4); `docs/PERF-BASELINE.md` method + planned protocol + re-measure recipe; the 10-step user checklist and an empty Device report section in the SUMMARY (the orchestrator builds the debug APK after this plan lands)
+- [x] 49-01-PLAN.md — `src/browser/perfMarks.js` (pure 100-sample rings, nearest-rank med/p95/max, `formatReadout`) + `test/unit/perfMarks.test.js`; seven `state.dev`-guarded clock lines in the module script's `stepWith` bracketing four rows (step / dispatch / paint / draw — no bridge, no classic-script edit); the `#mw-dev-perf` readout inside `#mw-dev-row` + `[mzperf]` console line every 10 steps; the `www/` grep proof (criterion 4); `docs/PERF-BASELINE.md` method + planned protocol + re-measure recipe; the 10-step user checklist and an empty Device report section in the SUMMARY (the orchestrator builds the debug APK after this plan lands)
 
 **Wave 2** *(blocked on the user's device report)*
 
@@ -391,7 +391,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 5/5 | Complete    | 2026-09-20 |
-| 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
+| 49. Measure-First Perf Pass | v1.6 | 1/2 | In Progress|  |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
 | 38. Melee Active Abilities | v1.5 | 5/5 | Complete    | 2026-09-18 |
