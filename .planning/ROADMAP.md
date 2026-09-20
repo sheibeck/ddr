@@ -9,10 +9,27 @@
 - ✅ **v1.4 Combat & Map Screens** — Phases 34–35 (shipped 2026-09-16, device round closed 2026-09-17; see `.planning/milestones/v1.4-ROADMAP.md`)
 - ✅ **v1.5 Meaningful Choices — Spells, Gear & Abilities** — Phases 36–43 (code-complete 2026-09-18, archived 2026-09-19; 140-check Pixel 7 UAT batch pending on its own track against a post-quick-task debug APK; see `.planning/milestones/v1.5-ROADMAP.md`, `.planning/milestones/v1.5-MILESTONE-AUDIT.md`)
 - ✅ **v1.6 Shell Debt & Dead Code** — Phases 44–49 (code-complete 2026-09-20, archived 2026-09-20; 26-check Pixel 7 UAT batch + the v1.5 140-check batch pending on APK `c0cdbae`; see `.planning/milestones/v1.6-ROADMAP.md`)
+- 🚧 **v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve** — Phases 50–55 (started 2026-09-20)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
-- 📋 **Next tuning pass** — TUNE-06 roster decision + TUNE-07 human DR round; `storeRoll` for the bots; the two structural v1.5 AFTER patterns (`docs/DIFFICULTY-RETUNE.md`, `docs/CLASS-PASS.md`)
+
+## Milestone Gates for v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (apply to every phase — from `REQUIREMENTS.md`)
+
+**Engine gate (applies to every requirement):** every rule change here is a *deliberate* canon divergence under the greenfield ruling (2026-09-17) — no dual-path or run-option gating; the moved parity fixtures are **measured first** (a `tools/worn-fixture-scan.mjs`-style scan listing every replay site whose comparables move), each declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and only those regenerated; `test/parity/prototype-master.js.txt` is never edited; the draw-count pins (`test/unit/foe-turn-draw-count.test.js`, `combat.test.js`) are re-pinned with the new sequences, not loosened; `npm test` fail 0 and `npm run build:www` green at every commit; the bot plays the new rules. (Phase 50's ROLL-01 fix is shell-only and out of this gate's rng/fixture scope by construction — it changes no rule.)
+
+**Sequencing gate:** Phase 50 (the character-roller display bug) is independent of every rule change and lands first purely to stay out of the way of the engine waves. The remaining phases land in the order INIT → CAD/DMG → JOIN → BAND/TUNE, and the retune is measured only after the earlier rule phases are on master — each of them moves floors 1–7 by itself, and the curve must be tuned once, on the corrected cadence, not twice.
+
+**Measurement gate:** every phase that changes a rule records a bot readout BEFORE and AFTER under identical parameters (`tools/tune-difficulty.mjs --seeds=200` solo + `--party`; `tools/tune-classes.mjs` matrix or its smoke) in `docs/DIFFICULTY-RETUNE.md`, so the four-band phase inherits a known baseline. (Phase 50 needs no bot readout — it changes no rule.)
 
 ## Phases
+
+### v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (Phases 50–55) — IN PROGRESS (started 2026-09-20)
+
+- [ ] **Phase 50: Character Roller Fix** - The character the roller's reels reveal is exactly the character that lands on the Hero tab — no second roll, no stale pending state, no label drift; shell-only, engine/fixtures untouched
+- [ ] **Phase 51: Initiative Once Per Combat** - Initiative rolls once in `startCombat`/`fight`, the per-round re-roll is deleted so a foe never takes two turns back to back, and the result is narrated once per fight in the Oracle and fight log
+- [ ] **Phase 52: Foe Cadence & Damage Curve** - A foe swings its ordinary attack count once per round (never stacked with a firing ability), the Bat/Rat and China Wolf floor-5 fights are re-measured in band, and every flat-damage cliff (Herman's 25 × multiplier) is smoothed by a bot-audited damage curve
+- [ ] **Phase 53: Joiner Level Cap** - A Joiner's level never exceeds the floor it's met on (promoted from backlog 999.2), with the level-shallower fixtures declared/regenerated and the early-Joiner power shift measured
+- [ ] **Phase 54: Four-Band Retune & Roster Decision** - `engine/difficulty.js` is reshaped toward the four recorded bands (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7), and the tier-3/5 roster (Herman, Drarl, Vampire, Djinni) gets a recorded per-creature decision
+- [ ] **Phase 55: Human DR Round** - The twice-deferred human verdict (TUNE-07 → TUNE-09) runs once on the Pixel 7 against the post-retune debug APK, and the milestone closes on the recorded result
 
 <details>
 <summary>✅ v1.6 Shell Debt & Dead Code (Phases 44–49) — CODE-COMPLETE 2026-09-20, archived 2026-09-20 (Pixel 7 UAT batch pending: 26 checks + the v1.5 140)</summary>
@@ -116,6 +133,84 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 ## Phase Details
 
+### Phase 50: Character Roller Fix
+
+**Goal**: The character the roller screen reveals (race / class / sub-class reels, name, quirk) is exactly the character that lands on the Hero tab — no second roll, no stale pending state, no label drift.
+**Depends on**: Nothing (first phase of v1.7; independent of every rule change in the milestone — landed first only to stay clear of the engine waves).
+**Requirements**: ROLL-01
+**Note**: from todo `.planning/todos/pending/2026-09-20-roller-reels-do-not-match-the-hero-tab-character.md` (tag `resolves_phase: 50` once this roadmap is approved — not edited by the roadmapper).
+**Success Criteria** (what must be TRUE):
+  1. A source-pin/unit test proves the committed state's `characterSheetViewModel` labels (race/class/sub-class/name/quirk) equal the reel labels shown at reveal — the reel lock and the CTA commit read the same object (`rollerPendingState`), not a captured `sheet`.
+  2. Re-entry is guarded: a resolved `startNewRun()` from a superseded roll (double-tap on the roll trigger, Play-again from a death mid-reveal) is ignored, pinned by a test that fires two rolls and asserts only the second's state ever reaches the Hero tab.
+  3. A manual repro pass (roll → note the three locked reels + name → DESCEND → compare the Hero tab; repeated with a double-tap and with Play-again from a death) shows zero mismatches, recorded in the phase summary.
+  4. `engine/`, `content/`, parity fixtures and the master hash are untouched — the fix is shell-only (`mazeworld.html`, `src/browser/viewModels.js`, `src/browser/heroTab.js`, `src/browser/engineAdapter.js`).
+**Plans**: TBD
+
+### Phase 51: Initiative Once Per Combat
+
+**Goal**: Initiative is fixed for the whole fight and visible to the player — the foe can never take two turns back to back.
+**Depends on**: Phase 50 in sequence only (no causal dependency). Sequencing gate: lands before every other rule-changing phase (INIT → CAD/DMG → JOIN → BAND/TUNE).
+**Requirements**: INIT-01, INIT-02
+**Success Criteria** (what must be TRUE):
+  1. `rollInitiative` fires exactly once per combat (from `startCombat`/the `fight` action); the per-round re-roll at `engine/combat.js:1341` is gone, pinned by a zero-draw assertion in `foe-turn-draw-count.test.js`.
+  2. A scenario where the foe would have won a fresh second-round roll now alternates player/foe turns for the whole fight — no back-to-back foe turns — proven by a determinism/unit test.
+  3. One narrated line ("Initiative — you N, them M. You go first.") appears exactly once per fight in the Oracle and the fight log, pinned by a test that fails on a second appearance.
+  4. Samurai / slow / foresight / Acute Hearing overrides still apply to the single roll, proven by their existing tests re-targeted at the new call site.
+  5. The p.24 divergence is declared in `test/parity/FIXTURE-INVENTORY.md` with before/after; only the measured fixtures are regenerated; the prototype master hash is unchanged.
+**Plans**: TBD
+
+### Phase 52: Foe Cadence & Damage Curve
+
+**Goal**: Every foe attacks an honest, countable number of times per round, and no single hit can spike past a smooth depth-scaled damage curve.
+**Depends on**: Phase 51 (cadence is measured on the corrected initiative, so no foe turn is inflated by a phantom double-turn).
+**Requirements**: CAD-01, CAD-02, CAD-03, DMG-01, DMG-02
+**Success Criteria** (what must be TRUE):
+  1. A plain foe swings once per round, an `sp.atk: 2` foe swings twice, and a frenzied foe doubles its own swing count — each pinned by a dedicated unit test.
+  2. When a foe ability fires (bolt/drain/debuff/heal/summon/frost…), a resolver test proves that turn contains the ability and zero ordinary swings — the Stalka Beast two-hits-plus-frost log is provably impossible.
+  3. A bot readout records attacks-per-player-action for the Bat/Rat and China Wolf floor-5 fights at ≤ the foe's `sp.atk` (≤2× if frenzied), committed in `docs/DIFFICULTY-RETUNE.md`.
+  4. A committed script reports max single-hit damage by depth for every bestiary foe and flags any hit ≥ 60% of a level-appropriate character's max HP; every flagged row (Herman's floor-5 crit among them) is fixed and re-measured clean.
+  5. Every damage-curve fix carries a before/after row in `content/BESTIARY-REBALANCE.md`; any moved parity fixtures are measured, declared and regenerated per the engine gate.
+**Plans**: TBD
+
+### Phase 53: Joiner Level Cap
+
+**Goal**: A Joiner's level never exceeds the floor it is met on, so early floors stop handing the player a free deep-tier ally.
+**Depends on**: Phase 52 (cadence and damage are settled so the Joiner-power bot smoke measures against a stable combat baseline, not one about to move again).
+**Requirements**: JOIN-02, JOIN-03
+**Note**: promoted from backlog 999.2 (formerly `.planning/phases/999.2-joiner-level-capped-by-floor-depth/`, now retired — superseded by this phase).
+**Success Criteria** (what must be TRUE):
+  1. `meetJoiner`'s rolled level is clamped `lvl = min(rolled, state.floor.depth)` with the same one-d10-then-two-d20 draw sequence, pinned by a test showing a level-5-rolled Joiner met on floor 2 arrives as level 2 with an unchanged draw count.
+  2. `grantLevelAbilities` and the `20 * lvl + d20` wp formula both receive the capped level — a floor-2 level-capped Joiner's abilities and wp match a natively-rolled level-2 Joiner, pinned by test.
+  3. `joinerMet`/`joinerRefused` narration and the rail card render unchanged (the capped `lvl` rides the existing payload shape) — no copy/shape diff, pinned by a snapshot test.
+  4. Only the fixtures that meet a Joiner on a floor shallower than its rolled level move; each is declared with before/after in `FIXTURE-INVENTORY.md` and regenerated; every other fixture and the master hash are untouched.
+  5. A `tune-classes` smoke before/after records the early-Joiner power shift in `docs/DIFFICULTY-RETUNE.md`.
+**Plans**: TBD
+
+### Phase 54: Four-Band Retune & Roster Decision
+
+**Goal**: `engine/difficulty.js` is reshaped toward the four recorded bands so the average run ends floor 5–7, and the open tier-3/5 roster question is closed with a recorded per-creature decision.
+**Depends on**: Phases 51–53 (every earlier rule phase moves floors 1–7 on its own; the curve is tuned once, on the fully corrected cadence/damage/Joiner baseline).
+**Requirements**: BAND-01, BAND-02, BAND-03, TUNE-08
+**Success Criteria** (what must be TRUE):
+  1. `docs/DIFFICULTY-RETUNE.md` records the four bands verbatim (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20) as numeric targets: median death depth 5–7, p90 ≈10–13, reach-16 a few percent, reach-20 well under 1%.
+  2. `difficultyCurve` is reshaped — identity-ish through floor 4, a step at 5–8, an eased slope through 9–15, steepened 16–20, breather floors kept, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — with every dial change cited against a bot readout that moved toward the bands.
+  3. The AFTER bot readout (`tune-difficulty --seeds=200` solo + `--party`, plus the class matrix) lands inside the BAND-01 numbers, or each miss is recorded with its untaken rung and reason; the ledger's change table has one row per constant with before/after.
+  4. The tier-3/5 roster decision (Herman, Drarl, Vampire, Djinni) is recorded per creature — stays, moves tier, or is retuned — with the forced-20 untaken rungs (floors gained p50 0 / mean 0.84, reach ≥ 20 0.1%) named as a deliberate shape, not residue; any parity divergence is declared.
+  5. No flat-damage nerf is used to chase the median; `npm test` and `npm run build:www` stay green throughout.
+**Plans**: TBD
+
+### Phase 55: Human DR Round
+
+**Goal**: The twice-deferred human verdict on the retuned game is run once, on the Pixel 7, and the milestone closes on the recorded result.
+**Depends on**: Phase 54 (the retune must be on master before the device round measures it).
+**Requirements**: TUNE-09
+**Success Criteria** (what must be TRUE):
+  1. A debug APK is built from the post-Phase-54 commit (the milestone's last wave), per the deferred-UAT protocol — one build, one batched session.
+  2. The four-run Pixel 7 checklist (start-at-depth 20/35/50 plus one natural run) in `docs/DIFFICULTY-RETUNE.md` is completed in that session.
+  3. Any pending UAT-batch items scheduled to ride along are run in the same sitting, per the standing deferred-UAT protocol (one batched device session at milestone close).
+  4. The verdict is recorded verbatim, and the milestone closes only on a recorded "tuned" result or an explicit user-recorded deferral.
+**Plans**: TBD
+
 <details>
 <summary>v1.6 phase details (44–49) — archived, see `.planning/milestones/v1.6-ROADMAP.md`</summary>
 
@@ -169,7 +264,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 - **Pixel 7 UAT batches** — `docs/UAT-v1.6.md` (26 checks, from the 44–47 VERIFICATION lists) and `docs/UAT-v1.5.md` (140 checks, never run), both against APK `c0cdbae` (on the phone at v1.6 close); findings become quick tasks or a UAT gap plan, never ad-hoc edits.
 - **UX-06** first-run tutorial — deliberately last; rebuilt on the Phase 47 modular shell (the reason SHELL-01..03 exist). Includes the UIF-04 on/off toggle dropped from v1.3.
 - **STR-01..04/06** Google Play production launch (Data Safety audit, privacy page, listing, IARC, pricing, rollout).
-- **TUNE-06/07** human DR round of the difficulty retune and the tier-3/5 roster decision (`docs/DIFFICULTY-RETUNE.md`); `storeRoll` for the bots; the two structural v1.5 AFTER patterns (Magic Users gain nothing from the class-gated ability system; Wilmsry's racial edge).
+- **`storeRoll` for the bots** — the tuning harness still plays the frozen store roll; **the two structural v1.5 AFTER patterns** (Magic Users gain nothing from the class-gated ability system; Wilmsry's racial edge) — both carried forward past v1.7 per `REQUIREMENTS.md`'s Future Requirements (TUNE-06/07 are now in scope this milestone as TUNE-08/09, Phases 54–55).
 - Store screen restyle to the dark vocabulary (Phase 47 moves the store into `storeScreen.js` unchanged — the restyle edits that module later).
 - Dice-mode setting.
 - Haptics polish; the unguarded button set from 32-03 (store rows, drop shelf, `a-evt`, `btn-again`, spell menu).
@@ -180,6 +275,12 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
+| 50. Character Roller Fix | v1.7 | 0/? | Not started | - |
+| 51. Initiative Once Per Combat | v1.7 | 0/? | Not started | - |
+| 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
+| 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
+| 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
+| 55. Human DR Round | v1.7 | 0/? | Not started | - |
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
@@ -201,7 +302,6 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 17–21 | v1.1 | 21/21 | Shipped (override closeout: TUNE-04 retune deferred) | 2026-09-14 |
 | 1–16 (+04.1, 04.2) | v1.0 | 37/38 + 18 DR rounds | Shipped (override closeout) | 2026-09-13 |
 | Tutorial + production launch | v1.0 tail | 0/2 | Deferred by user until after v1.6 (tutorial rebuilds on the modular shell) | - |
-| Next tuning pass (TUNE-06/07) | Post-v1.3 | 0/1 | Deferred by user (2026-09-15) | - |
 
 ## Backlog
 
@@ -212,18 +312,6 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 **Plans:** 0 plans
 
 **Context for planning:** sound = a `src/browser/sfx.js` event→clip table played through Web Audio (`AudioContext` + `decodeAudioData`, unlocked by the first tap), wired beside `hapticForEvents(events)` in the dispatch path — engine untouched, mute toggle by the settings gear, clips bundled in `www/` (Android WebView plays MP3 offline, no plugin). Transitions: the rail is a flex sibling that reflows the viewport today (see todo `2026-09-19-rail-overlays-the-map-without-reflow-tap-to-dismiss-longer-h.md` — overlay + slide is the fix, land together); map pan goes through `cameraPan()`/`keepInViewAxis` (`src/browser/controls.js`) with no easing; `.mw-rail-new` has a 0.18 s rise (`mazeworld.html` CSS ~L707) and combat has `mwStrikePop`/`mwRoundTick` keyframes but no inter-exchange pacing in `combatPanel.js`. Typed-text effect belongs to the rail/encounter line renderers (`renderRail`, `renderEncounter`), must respect the rail hold/dismiss rules and TalkBack (`#mw-rail-live` announcer gets the full text at once). Party marker ring: `PLAYER_MARKER_ICON`/`draw()`. Sequence AFTER v1.6 Phase 47 (shell modularisation) so the effects land in the new `src/browser/` modules, not the old `paint()` bodies; each effect gets a settings-respecting reduced-motion path.
-
-Plans:
-
-- [ ] TBD (promote with /gsd-review-backlog when ready)
-
-### Phase 999.2: Joiner level capped by floor depth (BACKLOG)
-
-**Goal:** [Captured 2026-09-19 for future planning — user's words] A Joiner's level should never be higher than the level of the floor you are on — a level V Joiner can never show up unless you are at least on floor 5.
-**Requirements:** TBD
-**Plans:** 0 plans
-
-**Context for planning:** today `engine/encounters.js#meetJoiner` rolls `lvl = SPELL_LEVEL_TABLE[rng.d(10) - 1]` (`content/misc-tables.js:27`, the canon d10 Level Table p.46: 1,1,2,2,3,3,4,4,5,5) with no depth term — identical to the prototype (`prototype-master.js.txt` ~L1760). The cap is a deliberate canon divergence: `lvl = Math.min(rolled, state.floor.depth)` keeps the draw count and cursor unchanged (one d10, then the two d20 wp rolls) so only fixtures that actually meet a Joiner on a floor shallower than the rolled level move — declare each with before/after per the greenfield ruling and regenerate `FIXTURE-INVENTORY.md`. `joinerMet`/`joinerRefused` event payloads carry `lvl`, so narration (`toasts.js`/`narrationLines.js` after Phase 46) and the rail card need no shape change. Check `grantLevelAbilities(joinerChar, …, lvl)` receives the capped level, and the wp formula `20 * lvl + d20` uses it too. Bot/class-pass readouts will shift slightly (weaker early Joiners) — a small `tune-classes` smoke before/after belongs in the plan. Gameplay change → outside v1.6 (cleanup-only); a quick task or the next tuning pass.
 
 Plans:
 

@@ -12,6 +12,10 @@
 
 ## v1.7 Requirements
 
+### Character roller (ROLL)
+
+- [ ] **ROLL-01**: The character the roller screen reveals (race / class / sub-class reels, name, quirk) is the character that lands on the Hero tab — the reels lock on and the CTA commits the SAME rolled state (no second `startNewRun()` on the path, no stale `rollerPendingState` from a superseded roll, no label drift between the reel labels and `characterSheetViewModel`), pinned by a test; shell-only, engine and fixtures untouched
+
 ### Initiative (INIT)
 
 - [ ] **INIT-01**: Initiative is rolled once per combat (in `startCombat` / the `fight` action) and `C.first` holds for the whole fight — the per-round re-roll in `afterPlayerAction` (`engine/combat.js:1341`) is deleted, so a foe never takes two turns back to back; Samurai / slow / foresight / Acute Hearing overrides apply to that single roll; the p.24 divergence is declared with its moved fixtures
@@ -74,26 +78,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INIT-01 | — | Pending |
-| INIT-02 | — | Pending |
-| CAD-01 | — | Pending |
-| CAD-02 | — | Pending |
-| CAD-03 | — | Pending |
-| DMG-01 | — | Pending |
-| DMG-02 | — | Pending |
-| JOIN-02 | — | Pending |
-| JOIN-03 | — | Pending |
-| BAND-01 | — | Pending |
-| BAND-02 | — | Pending |
-| BAND-03 | — | Pending |
-| TUNE-08 | — | Pending |
-| TUNE-09 | — | Pending |
+| ROLL-01 | Phase 50 | Pending |
+| INIT-01 | Phase 51 | Pending |
+| INIT-02 | Phase 51 | Pending |
+| CAD-01 | Phase 52 | Pending |
+| CAD-02 | Phase 52 | Pending |
+| CAD-03 | Phase 52 | Pending |
+| DMG-01 | Phase 52 | Pending |
+| DMG-02 | Phase 52 | Pending |
+| JOIN-02 | Phase 53 | Pending |
+| JOIN-03 | Phase 53 | Pending |
+| BAND-01 | Phase 54 | Pending |
+| BAND-02 | Phase 54 | Pending |
+| BAND-03 | Phase 54 | Pending |
+| TUNE-08 | Phase 54 | Pending |
+| TUNE-09 | Phase 55 | Pending |
 
 **Coverage:**
-- v1.7 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️ (filled by the roadmap)
+- v1.7 requirements: 15 total
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-20*
-*Last updated: 2026-09-20 at milestone start*
+*Last updated: 2026-09-20 — roadmap created (Phases 50–55), ROLL-01 added mid-roadmap-creation per scope change*

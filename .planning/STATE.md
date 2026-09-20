@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-20T17:14:42.661Z"
 last_activity: 2026-09-20
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Tuning Pass started; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.7 Tuning Pass — initiative once → foe cadence + damage curve → Joiner cap → four-band retune + TUNE-06 roster → TUNE-07 DR round (defining requirements)
+**Current focus:** v1.7 Tuning Pass — character roller fix → initiative once → foe cadence + damage curve → Joiner cap → four-band retune + roster decision → human DR round (roadmap created, ready to plan Phase 50)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 50 - Character Roller Fix (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-20 — Milestone v1.7 started
+Status: Ready to plan
+Last activity: 2026-09-20 — ROADMAP.md created (Phases 50–55), REQUIREMENTS.md traceability filled (15/15 mapped)
 
 ## Ground Truth (durable facts every session needs)
 
