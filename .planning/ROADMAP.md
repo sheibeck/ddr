@@ -326,7 +326,7 @@ Plans:
 
 **Wave 2** *(blocked on the user's device report)*
 
-- [ ] 49-02-PLAN.md — reads the Device report (stops if absent); fills the doc's Device / Protocol-as-run / BEFORE / Jank / Decision sections with the numbers quoted as given; applies the ≥ 16 ms / confirmed-jank rule per row; at most one presentation-only fix commit citing the row + a blocking AFTER-run checkpoint on a second APK (skipped when nothing qualifies — "no row qualified; the phase closes with the baseline and no fix"); criteria 1-4 verbatim, closing gates, PERF-01/02 complete
+- [x] 49-02-PLAN.md — reads the Device report (stops if absent); fills the doc's Device / Protocol-as-run / BEFORE / Jank / Decision sections with the numbers quoted as given; applies the ≥ 16 ms / confirmed-jank rule per row; at most one presentation-only fix commit citing the row + a blocking AFTER-run checkpoint on a second APK (skipped when nothing qualifies — "no row qualified; the phase closes with the baseline and no fix"); criteria 1-4 verbatim, closing gates, PERF-01/02 complete
 
 <details>
 <summary>v1.5 phase details (36–43) — archived, see `.planning/milestones/v1.5-ROADMAP.md`</summary>
@@ -391,7 +391,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
 | 48. Stale Docs, Comments & Test Names Purge | v1.6 | 5/5 | Complete    | 2026-09-20 |
-| 49. Measure-First Perf Pass | v1.6 | 1/2 | In Progress|  |
+| 49. Measure-First Perf Pass | v1.6 | 2/2 | In Progress|  |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
 | 38. Melee Active Abilities | v1.5 | 5/5 | Complete    | 2026-09-18 |

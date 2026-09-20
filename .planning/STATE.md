@@ -5,16 +5,16 @@ milestone_name: Shell Debt & Dead Code
 current_phase: 49
 current_phase_name: Measure-First Perf Pass
 status: executing
-stopped_at: Completed 49-01-PLAN.md (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half; PERF-01 measurement half landed, not marked complete — 49-02 closes both requirements)
-last_updated: "2026-09-20T11:43:24.611Z"
+stopped_at: Completed 49-02-PLAN.md (Phase 49 closed — PERF-01/PERF-02 complete, both fixes kept per user ruling)
+last_updated: "2026-09-20T14:07:31.529Z"
 last_activity: 2026-09-20
-last_activity_desc: 49-01 landed (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half)
+last_activity_desc: 49-02 landed (fix 1 + fix 2 both kept per user ruling; PERF-01/PERF-02 complete; Phase 49 — and v1.6's phase list — closed)
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 23
-  completed_plans: 22
-  percent: 83
+  completed_plans: 23
+  percent: 100
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 48; v1.6 Shell Deb
 
 ## Current Position
 
-Phase: 49 of 49 — Measure-First Perf Pass (planned, 2 plans; executing)
-Plan: 49-01 complete (dev-gated perfMarks instrumentation + readout + checklist, commits cab78ec/bb83eed/c289aca); 49-02 waits on the Pixel 7 device report — orchestrator builds the debug APK and hands the SUMMARY's User checklist to the user next
-Status: Executing Phase 49
-Last activity: 2026-09-20 — 49-01 landed (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half)
-Progress: [██████████] 96%
+Phase: 49 of 49 — Measure-First Perf Pass (2 plans; both complete)
+Plan: 49-01 complete (dev-gated perfMarks instrumentation + readout + checklist, commits cab78ec/bb83eed/c289aca); 49-02 complete (BEFORE/AFTER×2 device rounds, fix 1 9fe9bb5 + fix 2 cfce555 both kept per user ruling, PERF-01/PERF-02 marked complete — commits through 86ae022)
+Status: Phase 49 closed — all six v1.6 phases (44-49) now have landed SUMMARYs; milestone completion ceremony (/gsd-complete-milestone) not yet run
+Last activity: 2026-09-20 — 49-02 landed (fix 1 + fix 2 both kept per user ruling; PERF-01/PERF-02 complete)
+Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -126,17 +126,16 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T11:43:15.850Z
-Stopped at: Completed 49-01-PLAN.md (perfMarks.js + dev-gated stepWith marks + PERF-BASELINE.md method half; PERF-01 measurement half landed, not marked complete — 49-02 closes both requirements)
+Last session: 2026-09-20T14:07:31.498Z
+Stopped at: Completed 49-02-PLAN.md (Phase 49 closed — PERF-01/PERF-02 complete, both fixes kept per user ruling)
 Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-plan-phase 44` (no discuss needed — the deletion list is verified; the sequencing gate is open now that all three quick tasks landed).
-- Before Phase 46: `/gsd-discuss-phase 46` for the `tutorial.js` decision (delete + rebuild for UX-06 vs park with a header) and the final module name.
-- Before Phase 47: `/gsd-discuss-phase 47` for the module boundaries (mount contract, what stays in `viewModels.js`, bridge registry as doc vs `bridge.js`).
-- Phase 49 needs the Pixel 7 in hand; build the milestone-close debug APK after Phase 48 and measure against it.
-- The v1.5 140-check UAT batch (`docs/UAT-v1.5.md`) runs on its own track against a post-quick-task debug APK — not a v1.6 phase.
+- All six v1.6 phases (44-49) have landed SUMMARYs; Phase 49 closed 2026-09-20 with PERF-01/PERF-02 marked complete (both perf fixes kept per user ruling — see `docs/PERF-BASELINE.md` and `49-02-SUMMARY.md`).
+- Milestone completion ceremony not yet run: `/gsd-complete-milestone` (or the audit-milestone skill first, if a pre-archive review is wanted) to formally close v1.6 and route to the next milestone.
+- The 26-item v1.6 UAT batch (`docs/UAT-v1.6.md`) and the v1.5 140-check UAT batch (`docs/UAT-v1.5.md`) both run against the debug APK lineage from Phase 49's device sessions — not gated on any further v1.6 phase, but their results are owed to the milestone close per 49-01's own checklist item 10.
+- Optional, user's discretion: revert 49-01's instrumentation commit (`bb83eed`) to remove the dev-gated `performance.now()` marks from the shipped build entirely (judgment call recorded in `49-01-SUMMARY.md`/`49-02-SUMMARY.md`); or a future perf pass measuring a dark-only vs. lit-only walk to isolate the dark-region draw cost that kept `step` p95 at 19.8 ms after both fixes (Phase 49's own open finding, not fixed in this milestone per PERF-02's measure-first rule).
 
 ## Performance Metrics
 
@@ -256,6 +255,7 @@ Resume file: None
 | Phase 48 P04 | ~55min | 3 tasks | 71 files |
 | Phase 48 P05 | ~50min | 3 tasks | 12 files |
 | Phase 49 P01 | 45min | 3 tasks | 4 files |
+| Phase 49 P02 | ~2h | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -499,6 +499,9 @@ Resume file: None
 - [Phase ?]: 49-01: dispatch row measures dispatchWithNarration (engine action + narration fold + rail-card push), not the bare engine call
 - [Phase ?]: 49-01: step row brackets the whole stepWith body (superset of dispatch..draw, including the trailing draw, Oracle log append, camera nudge) — can only over-report cost, never under-report
 - [Phase ?]: 49-01: found and recorded (not fixed) that stepWith draws the canvas twice per step (paint() itself ends with draw()) — a candidate row for 49-02's fix-rule test, not addressed in this plan
+- [Phase ?]: Fix 1 (9fe9bb5): paint() skips the hidden Hero/Gear tab mount on the step path, re-renders on tab switch — cites step row (BEFORE median 14.2 / p95 28.9 ms)
+- [Phase ?]: Fix 2 (cfce555): removes the redundant second canvas draw() per step; draw timing row re-bracketed inside paint() via a new window.__mzPerfMarks bridge — cites step row (AFTER 1 p95 19.3 ms)
+- [Phase ?]: User standing ruling 2026-09-20: after AFTER 1 showed step p95 still >= 16 ms, land a second fix rather than revert fix 1; keep both fixes regardless of AFTER 2's outcome and record the numbers honestly — AFTER 2 (n=61, superseding an initial n=47 read) confirmed step p95 19.8 ms still >= 16 ms (median 11.5 ms met); both fixes kept, PERF-01/PERF-02 marked complete
 
 ### Blockers
 
