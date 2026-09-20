@@ -22,7 +22,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES, ABILITY_BY_ID, TOOLS } from "../../../content/index.js";
+import { ROMAN, TOOLS } from "../../../content/index.js";
 import { nightlyEats } from "../../../engine/movement.js";
 import { PARTY_CAP, newRun, addPartyMember } from "../../../engine/state.js";
 import { openStore } from "../../../engine/economy.js";
@@ -32,14 +32,9 @@ import {
   inStone,
   mapViewRadius,
   inViewWindow,
-  eff,
   hasTool,
-  toHit,
-  strikeDie,
   takesBagSlot,
 } from "../../../engine/derived.js";
-import { isReady } from "../../../engine/effects.js";
-import { abilityRoundsLeft } from "../../../engine/abilities.js";
 import { toolIndex, rollJewel, rollBlade, rollMailPiece, toolItem, stowItem, equipItem } from "../../../engine/items.js";
 import { makeRng } from "../../../engine/rng.js";
 import { rollCharacter } from "../../../engine/character.js";
@@ -53,10 +48,9 @@ import {
 } from "../../../src/browser/viewModels.js";
 import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser/gearTab.js";
 import {
-  characterSheetViewModel,
-  grimoireViewModel,
   rationsViewModel,
   eatsLineFor,
+  renderHeroTab,
 } from "../../../src/browser/heroTab.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -88,29 +82,6 @@ function extractScriptRegions(raw) {
 }
 
 /**
- * wireLegacyGrimoire(context, mod) — BEFORE-only seam, Plan 04 deletes it
- * the same commit heroTab.js takes the grimoire. Locates the module
- * script's renderGrimoire() function (paint()'s window.__mzRenderGrimoire
- * bridge target) and runs it in the SAME vm context so the Hero-tab
- * fixtures include the real Grimoire markup. Its only free identifiers are
- * `document`, `window` and `grimoireViewModel` (see its own head comment in
- * mazeworld.html) — all three are already on the sandbox by the time this
- * runs. A no-op when the block is absent (post-Plan-04 mazeworld.html).
- */
-function wireLegacyGrimoire(context, mod) {
-  const startMarker = "  function renderGrimoire() {";
-  const endMarker = "  window.__mzRenderGrimoire = renderGrimoire;";
-  const start = mod.indexOf(startMarker);
-  if (start === -1) return; // Plan 04 deletes this whole block — nothing to wire
-  const endLineStart = mod.indexOf(endMarker, start);
-  if (endLineStart === -1) throw new Error("shellSandbox: found renderGrimoire() but not its window.__mzRenderGrimoire bridge line");
-  const end = endLineStart + endMarker.length;
-  const block = mod.slice(start, end);
-  context.grimoireViewModel = grimoireViewModel;
-  vm.runInContext(block, context, { filename: "mazeworld.html#module-grimoire-seam" });
-}
-
-/**
  * wireBridges(context) — assigns onto context.window exactly the bridge
  * objects the module script assigns, importing the SAME names from the SAME
  * files (twin of the module script's bridge block — when a carve moves an
@@ -123,18 +94,21 @@ function wireLegacyGrimoire(context, mod) {
  * __mzGear/__mzItemRowState/__mzWornSlots/__mzWornKeysOf/__mzSlotFor/
  * __mzSellPrice are retired (gearTab.js reaches them directly now);
  * __mzTabs/__mzCarriedList are the twin of the module script's new mount
- * bridges.
+ * bridges. Phase 47 (SHELL-02), Plan 04, Task 2: __mzAbilities/__mzEff/
+ * __mzStrikeDie/__mzToHit/__mzRenderGrimoire are retired the same way
+ * (heroTab.js reaches strikeDie/toHit/eff/characterSheetViewModel directly);
+ * __mzTables shrinks to ROMAN only; __mzTabs gains `hero`. The BEFORE-only
+ * legacy-grimoire wiring seam this harness used to carry is deleted in this
+ * same commit — renderHeroTab (wired below) now renders the Grimoire itself.
  */
 function wireBridges(context) {
   const w = context.window;
-  w.__mzTables = Object.freeze({ RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES });
+  w.__mzTables = Object.freeze({ ROMAN });
   w.__mzNightlyEats = nightlyEats;
   w.__mzPartyCap = PARTY_CAP;
   w.__mzConditionsOf = conditionsOf;
   w.__mzEther = { itemEffectActive, inStone };
   w.__mzMapView = { mapViewRadius, inViewWindow };
-  w.__mzAbilities = { byId: ABILITY_BY_ID, roundsLeft: abilityRoundsLeft, isReady, sheet: characterSheetViewModel };
-  w.__mzEff = eff;
   w.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };
   w.__mzArmorDisplay = { armorDisplay, bagArmorText };
   w.__mzBagUsage = bagUsage;
@@ -142,12 +116,10 @@ function wireBridges(context) {
   w.__mzLootCompare = lootCompare;
   w.__mzHasTool = hasTool;
   w.__mzToolIndex = toolIndex;
-  w.__mzToHit = toHit;
-  w.__mzStrikeDie = strikeDie;
   w.__mzUsableBy = usableBy;
   w.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
   w.__mzDropShelfItems = dropShelfItems;
-  w.__mzTabs = Object.freeze({ gear: renderGearTab });
+  w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });
   w.__mzCarriedList = renderCarriedList;
 }
 
@@ -162,7 +134,7 @@ function wireBridges(context) {
  */
 export function loadShellSandbox({ doc }) {
   const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
-  const { classic, mod } = extractScriptRegions(raw);
+  const { classic } = extractScriptRegions(raw);
 
   const fakeStorage = new Map();
   const sandbox = {
@@ -205,7 +177,6 @@ export function loadShellSandbox({ doc }) {
   vm.runInContext(classic, context, { filename: "mazeworld.html#classic" });
 
   wireBridges(context);
-  wireLegacyGrimoire(context, mod);
 
   // Step 5: stub the heavy classic globals AFTER the script ran (a
   // top-level `function draw(){...}`/`function renderRail(){...}`

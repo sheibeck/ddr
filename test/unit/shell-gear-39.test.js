@@ -47,6 +47,9 @@ const CODE = stripComments(HTML);
 // Phase 47 (SHELL-01), Plan 03, Task 2: wornSlotRow/renderCarriedList moved
 // into src/browser/gearTab.js.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-02), Plan 04, Task 2: the Hero tab's engine-routed
+// to-hit/strike-die readouts moved into src/browser/heroTab.js.
+const HERO_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -58,12 +61,14 @@ function sliceBetween(source, startMarker, endMarker) {
 
 // ─── 1. Bridges ──────────────────────────────────────────────────────────
 
-test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridged read-only, once each", () => {
+test("Bridges: hasTool/toolIndex imported and bridged read-only; toHit/strikeDie/itemRowState are retired classic bridges", () => {
   // Phase 41 (TERR-03), Plan 04: the shared derived.js import line gained
   // mapViewRadius/inViewWindow as sibling named imports. Phase 47 (SHELL-01),
   // Plan 03, Task 2: slotFor/WORN_SLOTS/WORN_KEYS_OF dropped from this line —
-  // their only reader (gearTab.js) imports them from engine/derived.js directly.
-  assert.match(CODE, /import \{ conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
+  // their only reader (gearTab.js) imports them from engine/derived.js
+  // directly. Phase 47 (SHELL-02), Plan 04, Task 2: eff/toHit/strikeDie
+  // dropped too — heroTab.js imports them from engine/derived.js directly.
+  assert.match(CODE, /import \{ conditionsOf, hasTool, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
   assert.match(CODE, /import \{ toolIndex \} from "\.\/engine\/items\.js";/);
   // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
   // gearTab.js — the shared viewModels.js import line no longer carries them.
@@ -76,12 +81,14 @@ test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridg
   assert.match(CODE, /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.equal((CODE.match(/window\.__mzHasTool = hasTool;/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzToolIndex = toolIndex;/g) || []).length, 1);
-  assert.equal((CODE.match(/window\.__mzToHit = toHit;/g) || []).length, 1);
-  assert.equal((CODE.match(/window\.__mzStrikeDie = strikeDie;/g) || []).length, 1);
   // Phase 47 (SHELL-01), Plan 03, Task 2: __mzItemRowState is gone — its
   // readers (gearTab.js, combatMenu.js) import itemRowState directly now.
   assert.equal((CODE.match(/window\.__mzItemRowState = itemRowState;/g) || []).length, 0);
   assert.equal((GEAR_SRC.match(/^export function itemRowState\(/m) || []).length, 1);
+  // Phase 47 (SHELL-02), Plan 04, Task 2: __mzToHit/__mzStrikeDie are gone —
+  // heroTab.js's own strikeDie(c)/toHit(state) reads replace them.
+  assert.equal((CODE.match(/window\.__mzToHit = toHit;/g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzStrikeDie = strikeDie;/g) || []).length, 0);
 });
 
 // ─── 2. window.mzUseTool + stepWith(action) refactor ──────────────────────
@@ -166,9 +173,14 @@ test("CONDITION_TONE/CONDITION_EXPLAIN carry the three new item-driven chip keys
 
 // ─── 6. Hero tab: engine-routed to-hit/strike-die ─────────────────────────
 
-test('Hero tab: "s-die"/"s-hit" read window.__mzStrikeDie(S.c)/window.__mzToHit(S), not the classic duplicates', () => {
-  assert.match(CODE, /"s-die"\)\.textContent = "d" \+ window\.__mzStrikeDie\(S\.c\);/);
-  assert.match(CODE, /"s-hit"\)\.textContent = "1–" \+ window\.__mzToHit\(S\);/);
+// Phase 47 (SHELL-02), Plan 04, Task 2: the sheet's "s-die"/"s-hit" writes
+// moved into heroTab.js, which imports strikeDie/toHit directly (no more
+// window.__mzStrikeDie/__mzToHit bridge, and no classic-script duplicate).
+test('Hero tab: "s-die"/"s-hit" read strikeDie(c)/toHit(state) directly in heroTab.js, not the classic duplicates', () => {
+  assert.match(HERO_SRC, /"s-die"\)\.textContent = "d" \+ strikeDie\(c\);/);
+  assert.match(HERO_SRC, /"s-hit"\)\.textContent = "1–" \+ toHit\(state\);/);
+  assert.equal((CODE.match(/"s-die"\)/g) || []).length, 0, "the classic script must no longer write #s-die");
+  assert.equal((CODE.match(/"s-hit"\)/g) || []).length, 0, "the classic script must no longer write #s-hit");
 });
 
 // ─── 7. Voice safety ───────────────────────────────────────────────────────

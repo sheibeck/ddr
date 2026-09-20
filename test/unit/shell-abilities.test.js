@@ -46,6 +46,12 @@ function stripComments(source) {
 
 const CODE = stripComments(HTML);
 
+// Phase 47 (SHELL-02), Plan 04: renderAbilityRows and the Hero-tab abilities
+// list moved out of the classic script's paint() into src/browser/
+// heroTab.js — this file's region reads follow.
+const HERO_TAB_RAW = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
+const HERO_SRC = stripComments(HERO_TAB_RAW);
+
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
   const end = source.indexOf(endMarker, start === -1 ? 0 : start);
@@ -55,7 +61,7 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 function abilityRowsRegion() {
-  return sliceBetween(CODE, "function renderAbilityRows(c) {", "renderAbilityRows(c);");
+  return sliceBetween(HERO_SRC, "function renderAbilityRows(doc, state) {", "\nfunction renderGrimoire(");
 }
 
 // ─── 1. COMBAT_DISPATCH.useAbility + window.mzUseAbility ───────────────────
@@ -75,43 +81,46 @@ test("#s-abilities markup sits directly after #s-skills in the Hero tab", () => 
   const iAbilities = HTML.indexOf('id="s-abilities"');
   assert.ok(iSkills !== -1 && iAbilities !== -1, "both markers found");
   assert.ok(iAbilities > iSkills, "#s-abilities sits after #s-skills");
-  // #s-skills' own passives-only render loop is untouched by this plan.
-  assert.match(CODE, /No skills bought\./);
+  // Phase 47 (SHELL-02), Plan 04: #s-skills' own passives-only render loop
+  // moved into src/browser/heroTab.js along with the rest of the Hero sheet.
+  assert.match(HERO_SRC, /No skills bought\./);
+  assert.doesNotMatch(CODE, /No skills bought\./);
 });
 
 // ─── 3. renderAbilityRows ────────────────────────────────────────────────────
 
-test("renderAbilityRows: createElement/textContent only (no innerHTML in the region), Magic User none row, source-tag mapping, called exactly once from paint()", () => {
-  assert.equal((CODE.match(/function renderAbilityRows\(c\) \{/g) || []).length, 1);
+// Phase 47 (SHELL-02), Plan 04: renderAbilityRows(doc, state) moved verbatim
+// into src/browser/heroTab.js — reads characterSheetViewModel(state)
+// directly now (the retired window.__mzAbilities bridge's only reader).
+test("renderAbilityRows: createElement/textContent only (no innerHTML in the region), Magic User none row, source-tag mapping, called exactly once from renderHeroTab; zero copies remain in the classic script", () => {
+  assert.equal((HERO_SRC.match(/function renderAbilityRows\(doc, state\) \{/g) || []).length, 1);
+  assert.equal((CODE.match(/function renderAbilityRows\(/g) || []).length, 0);
   const region = abilityRowsRegion();
   assert.doesNotMatch(region, /innerHTML/);
   assert.match(region, /ul\.replaceChildren\(\);/);
   assert.match(region, /Spells are the trick\./);
   assert.match(region, /row\.source === "pool" \? "trick" : "special skill · active"/);
-  assert.match(region, /window\.__mzAbilities/);
-  assert.match(region, /bridge\.sheet\(S\)\.abilities/);
-  assert.equal((CODE.match(/\n\s*renderAbilityRows\(c\);/g) || []).length, 1, "renderAbilityRows(c) is called exactly once");
+  assert.match(region, /characterSheetViewModel\(state\)\.abilities/);
+  assert.equal((HERO_SRC.match(/\n\s*renderAbilityRows\(doc, state\);/g) || []).length, 1, "renderAbilityRows(doc, state) is called exactly once");
 });
 
-// ─── 4. window.__mzAbilities bridge ─────────────────────────────────────────
+// ─── 4. window.__mzAbilities is retired ─────────────────────────────────────
 
-// Phase 47 (SHELL-02), Plan 04, Task 1: characterSheetViewModel moved out of
-// viewModels.js into src/browser/heroTab.js — the bridge assignment below is
-// unchanged (still sheet: characterSheetViewModel), only its import's source
-// file moved.
-test("window.__mzAbilities bridges byId/roundsLeft/isReady/sheet from content/abilities.js + engine/abilities.js + engine/effects.js + heroTab.js", () => {
-  assert.equal((CODE.match(/window\.__mzAbilities = \{/g) || []).length, 1);
+// Phase 47 (SHELL-02), Plan 04, Task 2: __mzAbilities is gone — its only
+// reader (renderAbilityRows) moved into heroTab.js, which declares
+// characterSheetViewModel in the SAME module (no bridge needed for a
+// module reading its own export).
+test("window.__mzAbilities is retired; characterSheetViewModel/ABILITY_BY_ID/abilityRoundsLeft/isReady are heroTab.js-local, not classic-script bridges", () => {
+  assert.equal((CODE.match(/window\.__mzAbilities/g) || []).length, 0);
+  assert.equal((CODE.match(/import \{ abilityRoundsLeft \}/g) || []).length, 0);
+  assert.equal((CODE.match(/import \{ isReady \} from "\.\/engine\/effects\.js";/g) || []).length, 0);
+  assert.match(CODE, /import \{ RACES, CLASSES \} from "\.\/content\/index\.js";/);
   assert.match(
     CODE,
-    /window\.__mzAbilities = \{ byId: ABILITY_BY_ID, roundsLeft: abilityRoundsLeft, isReady, sheet: characterSheetViewModel \};/,
+    /import \{ characterSheetViewModel, rationsViewModel, eatsLineFor, renderHeroTab \} from "\.\/src\/browser\/heroTab\.js";/,
   );
-  assert.match(CODE, /import \{ abilityRoundsLeft \} from "\.\/engine\/abilities\.js";/);
-  assert.match(CODE, /import \{ isReady \} from "\.\/engine\/effects\.js";/);
-  assert.match(CODE, /import \{ RACES, CLASSES, ABILITY_BY_ID \} from "\.\/content\/index\.js";/);
-  assert.match(
-    CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, rationsViewModel, eatsLineFor \} from "\.\/src\/browser\/heroTab\.js";/,
-  );
+  assert.match(HERO_SRC, /import \{ abilityRoundsLeft \} from "\.\.\/\.\.\/engine\/abilities\.js";/);
+  assert.match(HERO_SRC, /import \{ isReady \} from "\.\.\/\.\.\/engine\/effects\.js";/);
 });
 
 // ─── 5. surfaceAbilityPool ───────────────────────────────────────────────────

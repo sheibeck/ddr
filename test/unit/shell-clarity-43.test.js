@@ -46,6 +46,9 @@ const CODE = stripComments(HTML);
 // Phase 47 (SHELL-01), Plan 03, Task 2: the ON YOU/ALSO ON YOU/BAG paint
 // body (the carry region + the kit rows) moved into src/browser/gearTab.js.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-02), Plan 04, Task 2: the Hero RATIONS panel + the Company
+// panel (renderPartyRoster) moved into src/browser/heroTab.js.
+const HERO_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -80,14 +83,14 @@ function joinerRegion() {
 }
 
 function partyRosterRegion() {
-  return sliceBetween(CODE, "function renderPartyRoster() {", "function ");
+  return sliceBetween(HERO_SRC, "function renderPartyRoster(doc, state, deps) {", "\nexport function renderHeroTab(");
 }
 
 function heroPaintRegion() {
   return sliceBetween(
-    CODE,
-    'document.getElementById("s-cost").textContent = upkeep() + " hp/day";',
-    'document.getElementById("s-trait").innerHTML =',
+    HERO_SRC,
+    'doc.getElementById("s-cost").textContent = upkeep(c) + " hp/day";',
+    'doc.getElementById("s-trait").innerHTML =',
   );
 }
 
@@ -134,10 +137,13 @@ test("import: a NEW, separate viewModels import line carries the four Phase 43 e
 // Phase 47 (SHELL-02), Plan 04, Task 1 — characterSheetViewModel/
 // grimoireViewModel/rationsViewModel/eatsLineFor moved from viewModels.js to
 // heroTab.js; the classic module script gained a new import line for them.
-test("import: the heroTab.js import line carries the four moved view models, exactly once", () => {
+// Task 2: grimoireViewModel dropped off this line (renderGrimoire, its only
+// classic-module-script reader, moved into heroTab.js too) and renderHeroTab
+// was added (the mount function).
+test("import: the heroTab.js import line carries the moved view models + renderHeroTab, exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ characterSheetViewModel, grimoireViewModel, rationsViewModel, eatsLineFor \} from "\.\/src\/browser\/heroTab\.js";/g,
+      /import \{ characterSheetViewModel, rationsViewModel, eatsLineFor, renderHeroTab \} from "\.\/src\/browser\/heroTab\.js";/g,
     ) || []).length,
     1,
   );
@@ -231,9 +237,14 @@ test("Joiner branch: the roll line ends with the eatsLine bridge read, and the r
 
 // ─── (6) Company panel ───────────────────────────────────────────────────
 
-test("Company panel: eatsLine(m) is read once, capitalised locally, and rendered through escText", () => {
+// Phase 47 (SHELL-02), Plan 04, Task 2: renderPartyRoster moved into
+// heroTab.js, which declares eatsLineFor in the SAME module — a direct call,
+// no more window.__mzRations.eatsLine bridge for this reader (the bridge
+// itself stays, for the classic renderEncounter Joiner card).
+test("Company panel: eatsLineFor(m) is read once, capitalised locally, and rendered through escText", () => {
   const region = partyRosterRegion();
-  assert.equal((region.match(/window\.__mzRations\.eatsLine\(m\)/g) || []).length, 1);
+  assert.equal((region.match(/eatsLineFor\(m\)/g) || []).length, 1);
+  assert.doesNotMatch(region, /window\.__mzRations/);
   assert.match(region, /const eatsText = eatsLine\.charAt\(0\)\.toUpperCase\(\) \+ eatsLine\.slice\(1\);/);
   assert.match(region, /escText\(eatsText\)/);
   assert.doesNotMatch(region, /RACES\[m\.race\]/);
@@ -257,9 +268,13 @@ test("Markup: #rations-panel exists once, positioned after #s-trait and before #
   assert.ok(iTrait < iRations && iRations < iHeroParty);
 });
 
-test("paint(): window.__mzRations.view(S) is read once and writes #s-rations/#s-rations-n via textContent", () => {
+// Phase 47 (SHELL-02), Plan 04, Task 2: renderHeroTab reads rationsViewModel
+// directly (declared in the SAME module) — no more window.__mzRations.view
+// bridge for this reader.
+test("renderHeroTab: rationsViewModel(state) is read once and writes #s-rations/#s-rations-n via textContent", () => {
   const region = heroPaintRegion();
-  assert.equal((region.match(/window\.__mzRations\.view\(S\)/g) || []).length, 1);
+  assert.equal((region.match(/rationsViewModel\(state\)/g) || []).length, 1);
+  assert.doesNotMatch(region, /window\.__mzRations/);
   assert.match(region, /getElementById\("s-rations"\)\.textContent = rv\.line;/);
   assert.match(region, /getElementById\("s-rations-n"\)\.textContent = rv\.carriedText;/);
   assert.doesNotMatch(region, /getElementById\("s-rations"\)\.innerHTML/);

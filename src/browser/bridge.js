@@ -28,11 +28,6 @@
 // wholesale, so these would leak into a save if they were.
 
 export const BRIDGE = Object.freeze({
-  __mzAbilities: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — Hero-tab ability rows)"]),
-    purpose: "Bridges the ability catalog, cooldown/readiness helpers and characterSheetViewModel so the Hero tab's ability rows never re-derive the state-suffix rule.",
-  }),
   __mzAppImportOverride: Object.freeze({
     owner: "src/browser/nativeChrome.js",
     consumers: Object.freeze(["test/persistence/lifecycle.test.js", "test/unit/haptics.test.js"]),
@@ -103,11 +98,6 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — LOOT and FIND drop-shelf cards)"]),
     purpose: "Bridges the pure bag-items-only list the shared drop shelf renders when a pickup would overflow the bag.",
-  }),
-  __mzEff: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — eff(key) effect-timer reader)"]),
-    purpose: "Bridges the pure two-path worn-item effect reader so the classic script's own eff(key) duplicate reads the same worn-model source as the engine.",
   }),
   __mzEther: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -228,17 +218,8 @@ export const BRIDGE = Object.freeze({
   }),
   __mzRations: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze([
-      "mazeworld.html (classic: paint — Hero-tab RATIONS panel)",
-      "mazeworld.html (classic: renderPartyRoster — Company panel eats line)",
-      "mazeworld.html (classic: renderEncounter — Joiner card eats line)",
-    ]),
-    purpose: "Bridges the pure rations view-model and eats-line formatter so every eats readout (sheet, roster, joiner card) reads engine/movement.js#eatsFor once.",
-  }),
-  __mzRenderGrimoire: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: the Grimoire tab's re-render trigger)"]),
-    purpose: "Exposes the module's renderGrimoire so the classic script can trigger a Grimoire re-paint after a spell-cast dispatch.",
+    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — Joiner card eats line)"]),
+    purpose: "Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do.",
   }),
   __mzSettings: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -271,24 +252,18 @@ export const BRIDGE = Object.freeze({
     ]),
     purpose: "The one get()/set() accessor onto the classic script's `S` variable, letting the module script read and replace the live GameState.",
   }),
-  __mzStrikeDie: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — Hero-tab strike-die readout)"]),
-    purpose: "Bridges the engine's own strikeDie function so the character sheet's die readout can never disagree with a real swing.",
-  }),
   __mzTables: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
-      "mazeworld.html (classic: skillTable — Fighter/Thief skill tables)",
-      "mazeworld.html (classic: paint — level roman numerals, weapon/threshold lookups, dossier race/class/subclass notes)",
-      "mazeworld.html (classic: renderPartyRoster / renderEncounter — level roman numerals in Company/Joiner rows)",
+      "mazeworld.html (classic: mzCombatReport — level roman numerals)",
+      "mazeworld.html (classic: renderEncounter — level roman numerals in the graves stone / Joiner card)",
     ]),
-    purpose: "Bridges the read-only content tables (RACE_NOTE/CLASS_NOTE/SUB_NOTE/ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES) the classic script cannot import.",
+    purpose: "Bridges the one read-only content table (ROMAN) the classic script still cannot import — RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES moved to gearTab.js/heroTab.js, which import content/ directly.",
   }),
   __mzTabs: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: paint() — one call per tab surface; renderEncounter() — the store branch)"]),
-    purpose: "The tab modules' render functions, one frozen object (gear today; Plans 04/05 add hero/store) — the __mzControls/__mzTables precedent for a module-assigned, classic-read bridge.",
+    purpose: "The tab modules' render functions, one frozen object (gear + hero today; Plan 05 adds store) — the __mzControls/__mzTables precedent for a module-assigned, classic-read bridge.",
   }),
   __mzTakesBagSlot: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -299,11 +274,6 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: map pointer handlers — resolveStep/inspectCell/HOLD_MS/TAP_MAX_TRAVEL_PX)"]),
     purpose: "Bridges the pure tap-to-move step resolver and hold-inspect builder so map taps and holds share one gesture-to-action rule.",
-  }),
-  __mzToHit: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — Hero-tab to-hit readout)"]),
-    purpose: "Bridges the engine's own toHit function so the character sheet's to-hit readout can never disagree with a real swing.",
   }),
   __mzToolIndex: Object.freeze({
     owner: "mazeworld.html (module)",

@@ -95,13 +95,17 @@ test("every dispatch() call site is routed through dispatchWithNarration — exa
   assert.ok(routed.length >= 9, `expected >= 9 dispatchWithNarration( occurrences (definition + 8 call sites), found ${routed.length}`);
 });
 
-test("the old per-action switch and its spell-name helper are gone", () => {
+// Phase 47 (SHELL-02), Plan 04, Task 2: window.mzSpellCharges (the
+// grimoire's charges readout, a DIFFERENT helper than the two names below)
+// is ALSO retired now — the Grimoire moved into heroTab.js, which computes
+// the same { left, max } shape inline from a direct maxCharges(c) import,
+// so this test's own surgical-deletion proof re-points to that inline read.
+test("the old per-action switch and its spell-name helper are gone; the grimoire's charges readout is heroTab.js's own inline maxCharges(c) formula", () => {
   assert.equal((CODE.match(new RegExp(OLD_SWITCH_NAME, "g")) || []).length, 0);
   assert.equal((CODE.match(new RegExp(OLD_SPELL_NAME_HELPER, "g")) || []).length, 0);
-  // mzSpellCharges (a DIFFERENT, still-live helper used by the grimoire
-  // renderer) must survive — proves the deletion above was surgical, not a
-  // blanket removal of every "mzSpell*" identifier.
-  assert.match(CODE, /window\.mzSpellCharges/);
+  assert.equal((CODE.match(/mzSpellCharges/g) || []).length, 0, "window.mzSpellCharges must have zero remaining references anywhere in the shell");
+  const heroSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
+  assert.match(heroSrc, /const ch = c\.cls === "Magic User" \? \{ left: Math\.max\(0, maxCharges\(c\) - c\.spellsUsed\), max: maxCharges\(c\) \} : null;/);
 });
 
 test("the DR18 hand-written equip-rejection toast is deleted", () => {

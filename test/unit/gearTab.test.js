@@ -158,13 +158,15 @@ test('window.__mzCarriedList( appears in the classic script at least once (the l
 
 // ─── (8) the module script assigns window.__mzTabs before the first boot() ──
 
-test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGearTab }); before await boot(", () => {
-  const bridgeIdx = MOD.indexOf("window.__mzTabs = Object.freeze({ gear: renderGearTab });");
+// Phase 47 (SHELL-02), Plan 04: __mzTabs gained the `hero` key the same
+// commit heroTab.js landed — re-pointed to the two-key object literal.
+test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab }); before await boot(", () => {
+  const bridgeIdx = MOD.indexOf("window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });");
   const bootIdx = MOD.indexOf("await boot(");
   assert.ok(bridgeIdx !== -1, "window.__mzTabs assignment not found");
   assert.ok(bootIdx !== -1, "await boot( call not found");
   assert.ok(bridgeIdx < bootIdx, "window.__mzTabs must be assigned before the first await boot(");
-  assert.equal((MOD.match(/window\.__mzTabs = Object\.freeze\(\{ gear: renderGearTab \}\);/g) || []).length, 1);
+  assert.equal((MOD.match(/window\.__mzTabs = Object\.freeze\(\{ gear: renderGearTab, hero: renderHeroTab \}\);/g) || []).length, 1);
   assert.equal((MOD.match(/window\.__mzCarriedList = renderCarriedList;/g) || []).length, 1);
 });
 

@@ -1785,11 +1785,6 @@ let mwActiveTab = "maze";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-function skillTable(cls) { return cls === "Fighter" ? window.__mzTables.FIGHTER_SKILLS : cls === "Thief" ? window.__mzTables.THIEF_SKILLS : null; }
-const skill = n => !!(S.c.skills && S.c.skills[n]);
-
-const maxCharges = () => 2 * S.c.level + 2 + eff("charges");
-
 /* ---------------- state ---------------- */
 let S = null;                 // full game state
 // 01-07 movement-slice engine adapter hook: a `type="module"` script (added
@@ -2043,8 +2038,6 @@ function logLine(html) {
   document.getElementById("log-count").textContent = S && S.floor ? `floor ${S.floor.depth}` : "";
 }
 
-window.mzSpellCharges = () => (S && S.c && S.c.cls === "Magic User")
-  ? { left: Math.max(0, maxCharges() - S.c.spellsUsed), max: maxCharges() } : null;
 /* DR13: end-of-combat report — a beats group summarizing the fight (who, how
    long, felled, HP taken, loot, level-ups) shown before returning to the map.
    Fed pre-computed deltas by the module's noteCombat(); ROMAN etc. live here. */
@@ -2070,10 +2063,6 @@ window.mzCombatReport = function (d) {
   lines.push(`Left standing on <b>${Math.max(0, d.hpNow)}/${d.hpMax} hp</b>.`);
   return { title, tone, lines };
 };
-
-/* ---------------- derived character numbers ---------------- */
-const R_ = () => window.__mzTables.RACES[S.c.race];
-function upkeep() { return Math.max(1, Math.round(R_().upkeep * (skill("Heft") ? 0.5 : 1)) + eff("upkeep")); }
 
 /* ---------------- UI paint ---------------- */
 // DR15-B: presentation-only copy for each condition KEY the engine's
@@ -2427,22 +2416,7 @@ function paint() {
     campBtn.setAttribute("aria-label", short ? `Make camp — you eat ${need} a night, you have ${c.rations}` : "Make camp");
   }
 
-  document.getElementById("s-level").textContent = "Lvl " + window.__mzTables.ROMAN[c.level - 1];
-  document.getElementById("s-name").textContent = c.name;
-  document.getElementById("s-tag").textContent = `${c.race} ${c.sub} · ${c.cls}`;
-  // DR16 fix: when the character is dead they're already buried, so the
-  // "Abandon this character" control becomes the new-run entry point. Flip its
-  // label live (its onclick branches on the same dead state).
-  {
-    const abandonBtn = document.getElementById("btn-abandon-character");
-    if (abandonBtn) abandonBtn.textContent = S.dead ? "New Character" : "Abandon this character";
-  }
-  document.getElementById("s-wp").textContent = Math.max(0, c.wp);
-  document.getElementById("s-wpmax").textContent = c.maxWP;
   const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
-  const fill = document.getElementById("s-wpfill");
-  fill.style.width = pct + "%";
-  fill.classList.toggle("low", pct < 34);
 
   // Phase 35 (MAP-01, ruling 5): the x/y WP readout + threshold bar in the
   // HUD's top-right cluster, replacing the retired name/class/hp character
@@ -2470,122 +2444,18 @@ function paint() {
   // text label baked into .mw-cond-good/.mw-cond-bad.
   paintConditions(c);
 
-  // Phase 39 (GEAR-01), Plan 05 — routed through the engine's own
-  // strikeDie(c)/toHit(state) (window.__mzStrikeDie/__mzToHit) instead of
-  // the classic script's stale duplicates below, so the Hero tab shows the
-  // weapon's real need modifier and Acuteness's crit-die swap; the classic
-  // strikeDie()/toHit() functions stay in place as dead code for the
-  // cleanup milestone.
-  document.getElementById("s-die").textContent = "d" + window.__mzStrikeDie(S.c);
-  document.getElementById("s-hit").textContent = "1–" + window.__mzToHit(S);
-  const w = window.__mzTables.WEAPONS[c.weapon] || window.__mzTables.WEAPONS["Club"];
-  const bonus = c.prof + c.magicWpn + (R_().dmg || 0) + (R_().wpnBonus || 0) + eff("dmg");
-  document.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
-  // Phase 28 (ARMOR-02): durability + the cloak's effective plate come from
-  // the shared formatter — this HUD line never showed durability before,
-  // which was the reported "toast says wear, panel shows no damage" bug.
-  const armorD = window.__mzArmorDisplay.armorDisplay(c);
-  document.getElementById("s-arm").textContent = armorD.line;
-  document.getElementById("s-int").textContent = c.intel;
-  document.getElementById("s-sp").textContent = Math.round(c.sp);
-  document.getElementById("s-next").textContent = c.level >= 5 ? "—" : window.__mzTables.THRESHOLDS[c.level];
-  document.getElementById("s-cost").textContent = upkeep() + " hp/day";
-
-  // Phase 43 (CLAR-03/05) — the Hero RATIONS panel; the SAME read
-  // engine/movement.js#nightlyEats/eatsFor and the Make Camp gate use.
-  const rv = window.__mzRations.view(S);
-  document.getElementById("s-rations").textContent = rv.line;
-  document.getElementById("s-rations-n").textContent = rv.carriedText;
-
-  document.getElementById("s-trait").innerHTML =
-    `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>. ${R_().note}`;
-
-  // Phase 47 (SHELL-01), Plan 03: the #s-kit "ALSO ON YOU" block moved into
-  // gearTab.js#renderGearTab (window.__mzTabs.gear(...) below owns it now).
-  // special skills
-  const sk = document.getElementById("s-skills");
-  const table = skillTable(c.cls);
-  const owned = Object.keys(c.skills || {});
-  document.getElementById("s-vp").textContent =
-    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)}/${c.cls === "Fighter" ? 8 : 12} vp` : "none";
-  sk.innerHTML = "";
-  if (!owned.length) {
-    const li = document.createElement("li");
-    li.className = "none";
-    li.textContent = c.cls === "Magic User" ? "A Magic User has spells instead." : "No skills bought.";
-    sk.appendChild(li);
-  } else for (const n of owned) {
-    const s = table && table[n];
-    const li = document.createElement("li");
-    li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : ""}</i>`;
-    sk.appendChild(li);
-  }
-
-  // Phase 38 (ABIL-01/04) — the Hero-tab abilities list, paint-local,
-  // mirroring the s-skills block's position immediately above (special
-  // skills stays passives-only, byte-identical). createElement/textContent
-  // only — T-38-11 (no innerHTML in this function) — reading
-  // window.__mzAbilities.sheet(S) (characterSheetViewModel) so the
-  // READY/N ROUNDS/ONCE A FIGHT · USED / cd N ROUNDS/once a fight
-  // state-suffix rule lives in exactly one place.
-  function renderAbilityRows(c) {
-    const ul = document.getElementById("s-abilities");
-    if (!ul) return;
-    ul.replaceChildren();
-    if (c.cls === "Magic User") {
-      const li = document.createElement("li");
-      li.className = "none";
-      li.textContent = "Spells are the trick.";
-      ul.appendChild(li);
-      return;
-    }
-    const bridge = window.__mzAbilities;
-    const rows = bridge ? bridge.sheet(S).abilities : [];
-    for (const row of rows) {
-      const li = document.createElement("li");
-      const b = document.createElement("b");
-      b.textContent = row.name;
-      li.appendChild(b);
-      const tag = document.createElement("small");
-      tag.textContent = row.source === "pool" ? "trick" : "special skill · active";
-      li.appendChild(tag);
-      const desc = document.createElement("i");
-      desc.textContent = row.description;
-      li.appendChild(desc);
-      const state = document.createElement("span");
-      state.textContent = row.state;
-      li.appendChild(state);
-      ul.appendChild(li);
-    }
-  }
-  renderAbilityRows(c);
+  // Phase 47 (SHELL-02), Plan 04 — the HERO tab (sheet, dossier, Company
+  // panel, Grimoire, abilities, RATIONS) renders from src/browser/heroTab.js
+  // behind ONE mount call; paint() no longer builds any of that DOM itself.
+  // Placed BEFORE the gear mount so paint()'s tab-mount order reads hero,
+  // gear, renderEncounter, renderRail, draw.
+  window.__mzTabs.hero(document.getElementById("screen-hero"), S, tabDeps());
 
   // Phase 47 (SHELL-01), Plan 03 — the GEAR tab (m-gold, ALSO ON YOU, ON
   // YOU, BAG) renders from src/browser/gearTab.js behind ONE mount call;
   // paint() no longer builds any of that DOM itself.
   window.__mzTabs.gear(document.getElementById("screen-gear"), S, tabDeps());
 
-  // the Maze Master's notes on whoever is currently walking around down there
-  document.getElementById("doss-who").textContent = `${c.race} ${c.sub}`;
-  const doss = document.getElementById("doss");
-  doss.innerHTML = "";
-  for (const [label, who, text] of [
-    ["Race", c.race, window.__mzTables.RACE_NOTE[c.race]],
-    ["Class", c.cls, window.__mzTables.CLASS_NOTE[c.cls]],
-    ["Subclass", c.sub, window.__mzTables.SUB_NOTE[c.sub]]
-  ]) {
-    const sec = document.createElement("section");
-    sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
-    doss.appendChild(sec);
-  }
-
-  // 04-DR10: the HERO tab's Grimoire — bridged in by the trailing module
-  // script (window.__mzRenderGrimoire, same bridge pattern as window.move/
-  // window.__mzState above), optional-chained since paint() can run before
-  // that module script finishes its own top-level setup.
-  window.__mzRenderGrimoire?.();
-
-  renderPartyRoster();
   renderEncounter();
   renderRail();
   draw();
@@ -2593,21 +2463,6 @@ function paint() {
 
 /* ---------------- encounters ---------------- */
 /* ---------------- carried treasure ---------------- */
-function eff(key) {
-  // Phase 37 (GEAR-03) — this classic-script duplicate now delegates to the
-  // engine's two-path eff (engine/derived.js): worn-only when S.c.worn is
-  // present, the identical legacy sum-over-c.items loop below otherwise.
-  // Without this bridge a worn Amulet of Light would stop widening the map
-  // radius (and every other of eleven classic-script callers — map radius,
-  // charges, to-hit, damage, upkeep, greed, throw, spellDmg, tongue — would
-  // silently read stale data) the moment an item left the bag for c.worn.
-  // The legacy loop below is left byte-for-byte identical as the fallback
-  // for any state without a worn model.
-  const f = window.__mzEff; if (f) return f(S.c, key);
-  let t = 0;
-  for (const it of (S.c.items || [])) if (it.eff && it.eff[key]) t += it.eff[key];
-  return t;
-}
 
 // Phase 47 (SHELL-01), Plan 03: the Drop/Swap confirm trios and
 // renderCarriedList moved into src/browser/gearTab.js — the classic loot
@@ -2943,99 +2798,9 @@ function foeStatusBadges(f) {
   return out;
 }
 
-// Phase 36 (JOIN-01) — the Company panel's DISMISS confirm. DOM-local
-// presentation state, never on S (serializeRun spreads S); one row armed at
-// a time; the revert is a setTimeout of DISMISS_CONFIRM_MS, never a CSS
-// transition — mirrors the Gear tab's Drop confirm (DROP_CONFIRM_MS /
-// dropConfirmRevert / revertDropConfirm()) exactly. Not an encounter
-// button, so no guardTap here by design.
-const DISMISS_CONFIRM_MS = 3000;
-let dismissConfirmRevert = null;
-function revertDismissConfirm() { if (!dismissConfirmRevert) return; const r = dismissConfirmRevert; dismissConfirmRevert = null; r(); }
-// Member sheet strings (name/sub/race/cls/weapon) are interpolated into the
-// Company card's innerHTML — escape them the same way eventNarration.js does.
-const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-// 2026-09-17 UAT (user ruling): the party roster is a Hero-tab panel
-// (#hero-party / #hero-party-list), no longer a map-column strip. Reads the
-// engine's own persistent roster (S.party) and renders one card per member:
-// name, subclass·level, an HP bar (reusing .mw-map-hptrack/.mw-map-hpfill)
-// and a Downed chip. Data-driven: the panel is hidden when solo. Called from
-// paint() — never from tab init (S is in its TDZ there) — so member HP stays
-// live through combat.
-// Phase 36 (JOIN-01) — the card is now a real sheet: name · sub/race, then
-// class · level, then the HP track, then Weapon/Eats lines, then (outside
-// combat) a DISMISS control with the same two-tap inline confirm pattern as
-// the Gear tab's Drop. On confirm the bridge (window.mzDismissJoiner) routes
-// through the same dispatchWithNarration seam as window.mzResolveJoiner — the
-// parting line surfaces on the rail only, never here, never as a toast.
-function renderPartyRoster() {
-  const panel = document.getElementById("hero-party");
-  const host = document.getElementById("hero-party-list");
-  if (!panel || !host) return;
-  const party = (S && Array.isArray(S.party)) ? S.party : [];
-  panel.hidden = party.length === 0;
-  host.innerHTML = "";
-  if (!party.length) return;
-  party.forEach((m, idx) => {
-    const lvl = m.lvl ?? m.level ?? 1;
-    const maxWP = m.maxWP || 1;
-    const wp = Math.max(0, m.wp ?? 0);
-    const pct = clamp(wp / maxWP * 100, 0, 100);
-    const downed = m.status === "downed" || wp <= 0;
-    const card = document.createElement("div");
-    card.className = "mw-party-member" + (downed ? " downed" : "");
-    // Phase 43 (CLAR-05) — the SAME appetite read as the camp gate and the
-    // Hero RATIONS panel; the old inline RACES read is gone.
-    const eatsLine = window.__mzRations.eatsLine(m);
-    const eatsText = eatsLine.charAt(0).toUpperCase() + eatsLine.slice(1);
-    card.innerHTML =
-      `<div class="mw-party-head">
-         <span class="mw-party-name">${escText(m.name || "Companion")}</span>
-         <span class="mw-party-sub">${escText(m.sub || "")}${m.sub && m.race ? " / " : ""}${escText(m.race || "")}</span>
-       </div>
-       <div class="mw-party-line">${escText(m.cls || "—")} · ${window.__mzTables.ROMAN[lvl - 1] || lvl}</div>
-       <div class="mw-party-hp-lab">HP <b>${wp}</b>/<b>${maxWP}</b></div>
-       <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
-       ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}
-       <div class="mw-party-line">Weapon: ${escText(m.weapon || "—")}</div>
-       <div class="mw-party-line">${escText(eatsText)}</div>`;
-    if (!S.combat) {
-      const dismiss = document.createElement("button");
-      dismiss.className = "small mw-party-dismiss";
-      dismiss.textContent = "DISMISS";
-      const arm = () => {
-        revertDismissConfirm();
-        const wrap = document.createElement("span");
-        wrap.className = "mw-drop-confirm";
-        const label = document.createElement("span");
-        label.textContent = "Send them off?";
-        const mkConfirmBtn = (text, onClick) => {
-          const bt = document.createElement("button");
-          bt.className = "small";
-          bt.textContent = text;
-          bt.onclick = onClick;
-          return bt;
-        };
-        const yes = mkConfirmBtn("Yes", () => { revertDismissConfirm(); window.mzDismissJoiner?.(idx); });
-        const no = mkConfirmBtn("No", () => revertDismissConfirm());
-        wrap.appendChild(label); wrap.appendChild(yes); wrap.appendChild(no);
-        dismiss.replaceWith(wrap);
-        const timer = setTimeout(revertDismissConfirm, DISMISS_CONFIRM_MS);
-        const onAnyTap = (e) => { if (!wrap.contains(e.target)) revertDismissConfirm(); };
-        document.addEventListener("pointerdown", onAnyTap, true);
-        dismissConfirmRevert = () => {
-          clearTimeout(timer);
-          document.removeEventListener("pointerdown", onAnyTap, true);
-          if (wrap.isConnected) wrap.replaceWith(dismiss);
-        };
-      };
-      dismiss.onclick = arm;
-      card.appendChild(dismiss);
-    }
-    host.appendChild(card);
-  });
-}
+// Phase 47 (SHELL-02), Plan 04: the Company panel's DISMISS confirm trio,
+// escText, and renderPartyRoster moved into src/browser/heroTab.js —
+// renderHeroTab(...) above owns the Company panel now.
 
 // Phase 34 (CSCR-04) — combat screen render helpers (renderFightLog first;
 // Plans 03-05 add renderMajorOverlay/renderCombatHeader/renderFoeCards/
@@ -4577,7 +4342,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 47 (SHELL-02), Plan 04 — the Hero-only view models moved out of
   // viewModels.js into heroTab.js (Task 1); renderHeroTab is the classic-
   // script carve's mount function (Task 2).
-  import { characterSheetViewModel, grimoireViewModel, rationsViewModel, eatsLineFor } from "./src/browser/heroTab.js";
+  import { characterSheetViewModel, rationsViewModel, eatsLineFor, renderHeroTab } from "./src/browser/heroTab.js";
   // Phase 47 (SHELL-01), Plan 03 — the Gear-only view models moved out of
   // viewModels.js into gearTab.js (Task 1); renderGearTab/renderCarriedList
   // are the classic-script carve's mount function and shared list (Task 2).
@@ -4585,14 +4350,18 @@ window.__mzClassicBoot = async function classicBoot() {
   // only classic-script readers (the retired __mzItemRowState/__mzGear
   // bridges) moved into gearTab.js itself.
   import { bagUsage, renderGearTab, renderCarriedList } from "./src/browser/gearTab.js";
-  import { RACES, CLASSES, ABILITY_BY_ID } from "./content/index.js";
+  import { RACES, CLASSES } from "./content/index.js";
   // Phase 44 (DEAD-02) — a SEPARATE import line so the pinned line above
-  // stays byte-identical for every existing bridge test.
-  import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS } from "./content/index.js";
+  // stays byte-identical for every existing bridge test. Phase 47
+  // (SHELL-02), Plan 04: RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/
+  // FIGHTER_SKILLS/THIEF_SKILLS lost their last classic reader (heroTab.js
+  // imports them directly) — only ROMAN survives (the classic combat report,
+  // graves stone, and rail joiner-card level readouts still need it).
+  import { ROMAN } from "./content/index.js";
   // Phase 47 (SHELL-01), Plan 03: sellPriceFor's own import moved into
   // gearTab.js (its only reader, the retired __mzSellPrice bridge, moved
   // there too — renderCarriedList's Sell row calls it directly now).
-  import { conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow } from "./engine/derived.js";
+  import { conditionsOf, hasTool, mapViewRadius, inViewWindow } from "./engine/derived.js";
   // 260919-00d (Cloak of Ether wall-walking) — a SEPARATE import line (same
   // module, mirrors the takesBagSlot precedent below) so the pinned
   // derived.js import line above stays byte-identical for every existing
@@ -4604,22 +4373,19 @@ window.__mzClassicBoot = async function classicBoot() {
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
-  // Phase 38 (ABIL-01/04) — the Hero-tab abilities list + submenu cost text
-  // read the SAME cooldown source the engine's useAbility dispatch does.
-  import { abilityRoundsLeft } from "./engine/abilities.js";
-  import { isReady } from "./engine/effects.js";
   // Phase 39 (GEAR-05), Plan 05 — the ONE bag-index resolver the dark card's
   // USE TORCH button uses to dispatch window.mzUseItem at tap time (never a
   // stashed index — the engine re-validates on its own).
   import { toolIndex } from "./engine/items.js";
 
-  // Phase 44 (DEAD-02): the read-only display tables the classic renderers
-  // cannot `import` (RACE_NOTE/CLASS_NOTE/SUB_NOTE for the Hero-tab dossier;
-  // ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES for the
-  // surviving classic readers) — same bridge pattern as window.__mzBags
-  // above. The ENGINE reads content/ directly; content/ is the single
-  // source for all nine tables now — the classic copies are gone.
-  window.__mzTables = Object.freeze({ RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES });
+  // Phase 44 (DEAD-02): the read-only display table the classic renderers
+  // cannot `import` — same bridge pattern as window.__mzBags above. Phase 47
+  // (SHELL-02), Plan 04: RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/
+  // FIGHTER_SKILLS/THIEF_SKILLS/RACES lost their last classic reader
+  // (heroTab.js/gearTab.js import content/ directly) — only ROMAN survives
+  // (the classic combat report, graves stone, and rail joiner-card level
+  // readouts still need it).
+  window.__mzTables = Object.freeze({ ROMAN });
 
   // Phase 25.1 (DFB-04/DFB-06): read-only helpers for the classic script's
   // offer card and camp button — the ENGINE alone enforces the swap and the
@@ -4649,24 +4415,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // rng, no mutation — same bridge pattern as __mzConditionsOf.
   window.__mzMapView = { mapViewRadius, inViewWindow };
 
-  // Phase 38 (ABIL-01/04) — the Hero-tab abilities list + the classic
-  // paint()'s renderAbilityRows(c) read this ONE bridge: the catalog, the
-  // cooldown/readiness helpers the engine's useAbility already uses, and
-  // characterSheetViewModel itself (so the state-suffix rule — READY/N
-  // ROUNDS/ONCE A FIGHT · USED, cd N ROUNDS/once a fight — lives in exactly
-  // one place, never re-derived in the classic script). Read-only, no rng,
-  // no mutation — same bridge pattern as __mzConditionsOf/__mzEff.
-  window.__mzAbilities = { byId: ABILITY_BY_ID, roundsLeft: abilityRoundsLeft, isReady, sheet: characterSheetViewModel };
-
-  // Phase 37 (GEAR-03) — bridge the PURE two-path eff(c, key) so the classic
-  // script's eff(key) duplicate (above) reads the SAME worn-model source of
-  // truth as the engine. Read-only, no rng, no mutation — same bridge
-  // pattern as __mzConditionsOf/__mzCanCast. Phase 47 (SHELL-01), Plan 03:
-  // __mzSlotFor/__mzWornSlots/__mzWornKeysOf are gone — their only readers
-  // (the Gear-tab worn rows / EQUIP swap branch) moved into gearTab.js,
-  // which imports slotFor/WORN_SLOTS/WORN_KEYS_OF from engine/derived.js
-  // directly.
-  window.__mzEff = eff;
+  // Phase 47 (SHELL-02), Plan 04: __mzAbilities and __mzEff are gone — their
+  // only readers (the classic paint()'s renderAbilityRows(c) and the classic
+  // eff(key) duplicate) moved into src/browser/heroTab.js, which imports
+  // characterSheetViewModel (declared in the same module) and eff (from
+  // engine/derived.js) directly. __mzSlotFor/__mzWornSlots/__mzWornKeysOf are
+  // gone the same way (Plan 03) — their readers moved into gearTab.js.
 
   // Phase 32 (CMBUI-04/05): the classic renderEncounter()/keydown/
   // window.move guards (32-03) read the arm-delay and dismiss-settle
@@ -4694,18 +4448,17 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzLootCompare = lootCompare;
 
   // Phase 39 (GEAR-02/GEAR-05), Plan 05 — read-only bridges for the hazard/
-  // dark rail cards and the Hero tab's engine-routed to-hit/strike-die:
-  // hasTool gates whether a carried tool offers itself at a decision point;
-  // toolIndex resolves a tool's bag slot at TAP time (never stashed); toHit/
-  // strikeDie are the SAME functions engine/combat.js's own strike
-  // resolution reads, so the sheet can never disagree with a real swing.
-  // Phase 47 (SHELL-01), Plan 03: __mzItemRowState is gone — its readers
-  // (the Gear-tab worn/carried rows, combatMenu.js) import itemRowState from
-  // gearTab.js directly now. No rng, no mutation — safe every paint.
+  // dark rail cards: hasTool gates whether a carried tool offers itself at a
+  // decision point; toolIndex resolves a tool's bag slot at TAP time (never
+  // stashed). Phase 47 (SHELL-01), Plan 03: __mzItemRowState is gone — its
+  // readers (the Gear-tab worn/carried rows, combatMenu.js) import
+  // itemRowState from gearTab.js directly now. Phase 47 (SHELL-02), Plan 04:
+  // __mzToHit/__mzStrikeDie are gone too — their only reader (the classic
+  // paint()'s Hero sheet) moved into heroTab.js, which imports toHit/
+  // strikeDie from engine/derived.js directly. No rng, no mutation — safe
+  // every paint.
   window.__mzHasTool = hasTool;
   window.__mzToolIndex = toolIndex;
-  window.__mzToHit = toHit;
-  window.__mzStrikeDie = strikeDie;
 
   // Phase 43 — read-only bridges (no rng, no mutation; the engine alone
   // enforces the class gate, the appetite, the bag cap): __mzUsableBy (FIND
@@ -4719,13 +4472,12 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
   window.__mzDropShelfItems = dropShelfItems;
 
-  // Phase 47 (SHELL-01), Plan 03 — the tab modules' render functions, one
-  // frozen object (the __mzControls/__mzTables precedent: module-assigned,
-  // classic-read, assigned before the first paint()). Only `gear` exists
-  // yet; Plans 04/05 add `hero`/`store` to the SAME object. The classic
-  // loot card and store sell list reach the shared carried-item list
-  // through window.__mzCarriedList.
-  window.__mzTabs = Object.freeze({ gear: renderGearTab });
+  // Phase 47 (SHELL-01/02), Plans 03/04 — the tab modules' render functions,
+  // one frozen object (the __mzControls/__mzTables precedent: module-
+  // assigned, classic-read, assigned before the first paint()). Plan 05 adds
+  // `store` to the SAME object. The classic loot card and store sell list
+  // reach the shared carried-item list through window.__mzCarriedList.
+  window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab });
   window.__mzCarriedList = renderCarriedList;
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithNarration and
@@ -5782,77 +5534,10 @@ window.__mzClassicBoot = async function classicBoot() {
   window.mzDrinkPotion = () => engineCombatAction("drinkPotion");
   window.mzReadScroll = () => engineCombatAction("readScroll");
 
-  // 04-DR10: the HERO tab's Grimoire (#s-grimoire) — the character's OWN
-  // learned spells (grimoireViewModel already sorts by level then name and
-  // computes each row's castable/disabledReason verdict; see its own doc
-  // comment). A non-combat spell's Cast button reuses window.mzCastSpell(idx)
-  // ABOVE UNCHANGED — the same dispatch()->applyAction()->engine/magic.js#
-  // castSpell bridge the in-combat SPELLS menu already calls. paint()/
-  // renderEncounter() (called inside engineCombatAction) both already
-  // tolerate no active encounter (hasActiveEncounter() hides #enc-panel), so
-  // no new dispatch path was needed for the out-of-combat case — only the
-  // Grimoire's OWN gate (grimoireViewModel) deciding which spells offer a
-  // working button. Called from paint() (classic script) via the
-  // window.__mzRenderGrimoire bridge, same bridge pattern as window.move/
-  // window.__mzState above.
-  function renderGrimoire() {
-    const ul = document.getElementById("s-grimoire");
-    if (!ul) return;
-    const state = window.__mzState.get();
-    if (!state || !state.c) return;
-    const vm = grimoireViewModel(state);
-    // DR13: the Grimoire header shows how many CASTS you have left (charges),
-    // not how many spells are known — and paint()->renderGrimoire re-runs after
-    // an inventory cast, so the count drops live as you spend charges.
-    const countEl = document.getElementById("s-grim-count");
-    if (countEl) {
-      const ch = window.mzSpellCharges ? window.mzSpellCharges() : null;
-      countEl.textContent = ch ? `${ch.left} of ${ch.max}` : (vm.hasSpells ? `${vm.rows.length}` : "");
-    }
-    ul.innerHTML = "";
-    if (!vm.hasSpells) {
-      const li = document.createElement("li");
-      li.className = "none";
-      li.textContent = vm.isCaster ? "No spells learned yet." : "This character does not cast spells.";
-      ul.appendChild(li);
-      return;
-    }
-    for (const row of vm.rows) {
-      const li = document.createElement("li");
-      li.className = row.combatOnly ? "grim-locked" : "";
-      const info = document.createElement("div");
-      info.className = "grim-info";
-      // Phase 40 (SPELL-01): row.txt already begins with `row.nicheLabel +
-      // " · "` (content/spells.js's contract) — no markup change needed, the
-      // niche line is already the FIRST thing the <i> renders. innerHTML
-      // stays safe here because row.txt/row.name are content, not user data
-      // (T-40-10, unchanged since 04-DR10).
-      info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}</i>`;
-      li.appendChild(info);
-      if (row.combatOnly) {
-        const hint = document.createElement("span");
-        hint.className = "grim-hint";
-        hint.textContent = "Combat only";
-        li.appendChild(hint);
-      } else {
-        const bt = document.createElement("button");
-        bt.className = "small";
-        bt.textContent = "Cast";
-        bt.disabled = !row.castable;
-        if (!row.castable && row.disabledReason) bt.title = row.disabledReason;
-        bt.onclick = () => window.mzCastSpell?.(row.idx);
-        li.appendChild(bt);
-        if (!row.castable && row.disabledReason) {
-          const hint = document.createElement("span");
-          hint.className = "grim-hint";
-          hint.textContent = row.disabledReason;
-          li.appendChild(hint);
-        }
-      }
-      ul.appendChild(li);
-    }
-  }
-  window.__mzRenderGrimoire = renderGrimoire;
+  // Phase 47 (SHELL-02), Plan 04: the HERO tab's Grimoire (renderGrimoire)
+  // moved into src/browser/heroTab.js — renderHeroTab(...) calls it directly
+  // (no more window.__mzRenderGrimoire bridge; paint() mounts the whole Hero
+  // tab through window.__mzTabs.hero(...) instead).
   // MAKE CAMP has no combat overlay to re-render into (camp only runs
   // outside combat, engine/movement.js#makeCamp's own guard) — paint() alone
   // covers the HUD/vitals refresh; renderEncounter() is still called so a

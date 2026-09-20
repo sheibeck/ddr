@@ -144,8 +144,10 @@ test("SHELL-04 teeth: diffing the real live set against an EMPTY registry report
   const live = liveBridgeNames(defaultSources());
   // Phase 47 (SHELL-01), Plan 03: 53 -> 49 (net -6 +2: __mzGear/
   // __mzItemRowState/__mzWornSlots/__mzWornKeysOf/__mzSlotFor/__mzSellPrice
-  // retired, __mzTabs/__mzCarriedList added).
-  assert.ok(live.length >= 45, `expected at least 45 live __mz* names, measured ${live.length}`);
+  // retired, __mzTabs/__mzCarriedList added). Phase 47 (SHELL-02), Plan 04:
+  // 49 -> 44 (-5: __mzAbilities/__mzEff/__mzRenderGrimoire/__mzStrikeDie/
+  // __mzToHit retired; __mzTabs already existed, just gained the hero key).
+  assert.ok(live.length >= 40, `expected at least 40 live __mz* names, measured ${live.length}`);
   const { unlisted, stale } = diffNames(live, []);
   assert.equal(unlisted.length, live.length);
   assert.equal(stale.length, 0);

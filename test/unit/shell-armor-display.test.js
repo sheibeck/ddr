@@ -55,6 +55,9 @@ const CODE = stripComments(HTML);
 // Phase 47 (SHELL-01), Plan 03, Task 2: renderGearTab/renderCarriedList
 // (wornRow, the gear worn row wiring) moved into src/browser/gearTab.js.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-02), Plan 04, Task 2: the sheet's #s-arm write (armorD)
+// moved into src/browser/heroTab.js.
+const HERO_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 // ─── 1. module bridge ──────────────────────────────────────────────────────
 
@@ -73,9 +76,14 @@ test("Phase 28 (ARMOR-02/03/04): the module bridges armorDisplay/bagArmorText fr
 
 // ─── 2. paint(): #s-arm and no inline current/max template ─────────────────
 
-test("Phase 28 (ARMOR-02): paint() computes armorD once and writes #s-arm from armorD.line", () => {
-  assert.match(CODE, /const armorD = window\.__mzArmorDisplay\.armorDisplay\(c\);/);
-  assert.match(CODE, /getElementById\("s-arm"\)\.textContent = armorD\.line;/);
+// Phase 47 (SHELL-02), Plan 04, Task 2: the sheet's #s-arm write moved into
+// heroTab.js#renderHeroTab, which imports armorDisplay directly from
+// viewModels.js (no more window.__mzArmorDisplay bridge for this reader —
+// the bridge itself stays, for the gear tab / drop shelf / find card).
+test("Phase 28 (ARMOR-02): renderHeroTab computes armorD once (a direct armorDisplay(c) import) and writes #s-arm from armorD.line", () => {
+  assert.match(HERO_SRC, /const armorD = armorDisplay\(c\);/);
+  assert.match(HERO_SRC, /getElementById\("s-arm"\)\.textContent = armorD\.line;/);
+  assert.equal((CODE.match(/getElementById\("s-arm"\)/g) || []).length, 0, "the classic script must no longer write #s-arm");
   assert.equal((CODE.match(/\$\{c\.armorWP\}\/\$\{c\.armorMax\} hp/g) || []).length, 0);
 });
 

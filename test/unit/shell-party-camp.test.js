@@ -109,7 +109,11 @@ function sliceBetween(source, startMarker, endMarker) {
   return source.slice(start, end);
 }
 
-test('2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel rendered by renderPartyRoster() on the paint() path (never from tab init)', () => {
+// Phase 47 (SHELL-02), Plan 04, Task 2: renderPartyRoster moved verbatim
+// into src/browser/heroTab.js, called from renderHeroTab (itself mounted
+// from paint() via window.__mzTabs.hero(...)) — never from tab init. Zero
+// copies survive in the classic script.
+test('2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel rendered by renderPartyRoster() from renderHeroTab (heroTab.js), reached via paint()->window.__mzTabs.hero (never from tab init)', () => {
   assert.equal((HTML.match(/id="hero-party"/g) || []).length, 1);
   assert.equal((HTML.match(/id="hero-party-list"/g) || []).length, 1);
 
@@ -123,11 +127,14 @@ test('2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel render
 
   assert.match(HTML, /Joiner should only show when fighting, and probably on the hero screen\./);
 
-  assert.equal((CODE.match(/^function renderPartyRoster\(\) \{/gm) || []).length, 1);
-  const fnStart = CODE.indexOf("function renderPartyRoster() {");
-  const fnEnd = CODE.indexOf("\n}\n", fnStart);
+  assert.equal((CODE.match(/function renderPartyRoster\(\) \{/g) || []).length, 0, "the classic script must carry zero copies of renderPartyRoster");
+
+  const heroSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
+  assert.equal((heroSrc.match(/function renderPartyRoster\(doc, state, deps\) \{/g) || []).length, 1);
+  const fnStart = heroSrc.indexOf("function renderPartyRoster(doc, state, deps) {");
+  const fnEnd = heroSrc.indexOf("\n}\n", fnStart);
   assert.ok(fnStart !== -1 && fnEnd !== -1 && fnEnd > fnStart, "renderPartyRoster() function region found");
-  const fnRegion = CODE.slice(fnStart, fnEnd);
+  const fnRegion = heroSrc.slice(fnStart, fnEnd);
   assert.match(fnRegion, /getElementById\("hero-party"\)/);
   assert.match(fnRegion, /getElementById\("hero-party-list"\)/);
   assert.match(fnRegion, /panel\.hidden = party\.length === 0;/);
@@ -137,8 +144,11 @@ test('2026-09-17 UAT ruling: the party roster is a Hero-tab Company panel render
   const getByIdCalls = fnRegion.match(/getElementById\(/g) || [];
   assert.equal(getByIdCalls.length, 2, "renderPartyRoster reads only #hero-party and #hero-party-list");
 
-  const paintRegion = sliceBetween(CODE, "function paint() {", "\nfunction eff(key)");
-  assert.equal((paintRegion.match(/renderPartyRoster\(\);/g) || []).length, 1);
+  assert.equal((heroSrc.match(/\n\s*renderPartyRoster\(doc, state, deps\);/g) || []).length, 1, "renderHeroTab calls renderPartyRoster exactly once");
+
+  const paintRegion = sliceBetween(CODE, "function paint() {", "function renderDropShelf(shelf, entries) {");
+  assert.equal((paintRegion.match(/window\.__mzTabs\.hero\(document\.getElementById\("screen-hero"\), S, tabDeps\(\)\);/g) || []).length, 1);
+  assert.doesNotMatch(paintRegion, /renderPartyRoster/);
 
   const initTabsRegion = sliceBetween(CODE, "(function initTabs() {", "window.__mzShowTab = showTab;");
   assert.doesNotMatch(initTabsRegion, /renderPartyRoster/);

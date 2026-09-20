@@ -16,11 +16,21 @@
 // renderPartyRoster here, moved verbatim from the classic script's paint().
 
 import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
+// Phase 47 (SHELL-02), Plan 04, Task 2 — the content tables the classic
+// script used to reach through window.__mzTables (RACE_NOTE/CLASS_NOTE/
+// SUB_NOTE for the dossier; ROMAN for the level/Company-panel readouts) —
+// a SEPARATE import line so the line above stays byte-identical.
+import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
 import { strikeDie, toHit, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { armorDisplay } from "./viewModels.js";
+
+// Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
+// script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
+// used by the HUD block paint() still owns).
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 /**
  * skillTableFor(cls) — the special-skill description pool for a class
@@ -346,4 +356,332 @@ export function grimoireViewModel(state) {
     .sort((a, b) => a.lvl - b.lvl || a.name.localeCompare(b.name));
 
   return { rows, hasSpells: rows.length > 0, isCaster: c.cls === "Magic User" };
+}
+
+// ─── Task 2 — the Hero-tab render body ─────────────────────────────────────
+//
+// Phase 47 (SHELL-02), Plan 04, Task 2: renderHeroTab(host, state, deps) is
+// the ONE mount function for the Hero tab (`#screen-hero`) — the character
+// sheet (level/name/tag/abandon/hp/die/hit/damage/armor/int/sp/next/cost),
+// the RATIONS panel, the special-skills list, the abilities list
+// (renderAbilityRows), the Game Master's notes (the dossier loop), the
+// Grimoire (renderGrimoire) and the Company panel (renderPartyRoster).
+// Moved verbatim from the classic script's paint()/the module script's
+// renderGrimoire, with `host.ownerDocument` replacing `document`, `state`/
+// `state.c` replacing the classic S/c, and direct content/engine imports
+// replacing the retired window.__mzTables/__mzStrikeDie/__mzToHit/__mzEff
+// bridges. Every id this function writes lives inside the `#screen-hero`
+// markup section. No window/document globals — host, host.ownerDocument and
+// deps only.
+
+/**
+ * skillTable(cls) — the special-skill description pool for a class, read by
+ * the sheet's special-skills list. Moved verbatim from the classic script
+ * (which read it through window.__mzTables.FIGHTER_SKILLS/THIEF_SKILLS);
+ * this is a DIFFERENT (but behaviourally identical) helper than
+ * skillTableFor(cls) above — skillTableFor is characterSheetViewModel's own
+ * private helper, kept as a separate binding so neither carve had to touch
+ * the other's body.
+ */
+function skillTable(cls) {
+  return cls === "Fighter" ? FIGHTER_SKILLS : cls === "Thief" ? THIEF_SKILLS : null;
+}
+
+// Phase 38 (ABIL-01/04) — the Hero-tab abilities list, mirroring the
+// s-skills block's position immediately above (special skills stays
+// passives-only, byte-identical). createElement/textContent only — T-38-11
+// (no innerHTML in this region) — reading characterSheetViewModel(state)
+// directly (the retired window.__mzAbilities bridge's only reader) so the
+// READY/N ROUNDS/ONCE A FIGHT · USED / cd N ROUNDS/once a fight state-suffix
+// rule lives in exactly one place.
+function renderAbilityRows(doc, state) {
+  const c = state.c;
+  const ul = doc.getElementById("s-abilities");
+  if (!ul) return;
+  ul.replaceChildren();
+  if (c.cls === "Magic User") {
+    const li = doc.createElement("li");
+    li.className = "none";
+    li.textContent = "Spells are the trick.";
+    ul.appendChild(li);
+    return;
+  }
+  const rows = characterSheetViewModel(state).abilities;
+  for (const row of rows) {
+    const li = doc.createElement("li");
+    const b = doc.createElement("b");
+    b.textContent = row.name;
+    li.appendChild(b);
+    const tag = doc.createElement("small");
+    tag.textContent = row.source === "pool" ? "trick" : "special skill · active";
+    li.appendChild(tag);
+    const desc = doc.createElement("i");
+    desc.textContent = row.description;
+    li.appendChild(desc);
+    const stateEl = doc.createElement("span");
+    stateEl.textContent = row.state;
+    li.appendChild(stateEl);
+    ul.appendChild(li);
+  }
+}
+
+// 04-DR10: the HERO tab's Grimoire (#s-grimoire) — the character's OWN
+// learned spells (grimoireViewModel already sorts by level then name and
+// computes each row's castable/disabledReason verdict; see its own doc
+// comment). A non-combat spell's Cast button dispatches through
+// deps.castSpell(idx) — the same dispatch()->applyAction()->engine/magic.js#
+// castSpell path the in-combat SPELLS menu already calls, now reached
+// through the tab's own deps object instead of window.mzCastSpell directly.
+// Moved verbatim from the classic module script's renderGrimoire(), with the
+// retired window.mzSpellCharges() global replaced by the SAME formula
+// computed inline from the direct maxCharges(c) import.
+function renderGrimoire(doc, state, deps) {
+  const ul = doc.getElementById("s-grimoire");
+  if (!ul) return;
+  if (!state || !state.c) return;
+  const c = state.c;
+  const vm = grimoireViewModel(state);
+  // DR13: the Grimoire header shows how many CASTS you have left (charges),
+  // not how many spells are known — and renderHeroTab re-runs after an
+  // inventory cast, so the count drops live as you spend charges.
+  const countEl = doc.getElementById("s-grim-count");
+  if (countEl) {
+    const ch = c.cls === "Magic User" ? { left: Math.max(0, maxCharges(c) - c.spellsUsed), max: maxCharges(c) } : null;
+    countEl.textContent = ch ? `${ch.left} of ${ch.max}` : (vm.hasSpells ? `${vm.rows.length}` : "");
+  }
+  ul.innerHTML = "";
+  if (!vm.hasSpells) {
+    const li = doc.createElement("li");
+    li.className = "none";
+    li.textContent = vm.isCaster ? "No spells learned yet." : "This character does not cast spells.";
+    ul.appendChild(li);
+    return;
+  }
+  for (const row of vm.rows) {
+    const li = doc.createElement("li");
+    li.className = row.combatOnly ? "grim-locked" : "";
+    const info = doc.createElement("div");
+    info.className = "grim-info";
+    // Phase 40 (SPELL-01): row.txt already begins with `row.nicheLabel +
+    // " · "` (content/spells.js's contract) — no markup change needed, the
+    // niche line is already the FIRST thing the <i> renders. innerHTML
+    // stays safe here because row.txt/row.name are content, not user data
+    // (T-40-10, unchanged since 04-DR10).
+    info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}</i>`;
+    li.appendChild(info);
+    if (row.combatOnly) {
+      const hint = doc.createElement("span");
+      hint.className = "grim-hint";
+      hint.textContent = "Combat only";
+      li.appendChild(hint);
+    } else {
+      const bt = doc.createElement("button");
+      bt.className = "small";
+      bt.textContent = "Cast";
+      bt.disabled = !row.castable;
+      if (!row.castable && row.disabledReason) bt.title = row.disabledReason;
+      bt.onclick = () => deps.castSpell?.(row.idx);
+      li.appendChild(bt);
+      if (!row.castable && row.disabledReason) {
+        const hint = doc.createElement("span");
+        hint.className = "grim-hint";
+        hint.textContent = row.disabledReason;
+        li.appendChild(hint);
+      }
+    }
+    ul.appendChild(li);
+  }
+}
+
+// Phase 36 (JOIN-01) — the Company panel's DISMISS confirm. DOM-local
+// presentation state, never on S (serializeRun spreads S); one row armed at
+// a time; the revert is a setTimeout of DISMISS_CONFIRM_MS, never a CSS
+// transition — mirrors gearTab.js's Drop confirm (DROP_CONFIRM_MS /
+// dropConfirmRevert / revertDropConfirm()) exactly. Not an encounter
+// button, so no guardTap here by design.
+const DISMISS_CONFIRM_MS = 3000;
+let dismissConfirmRevert = null;
+function revertDismissConfirm() { if (!dismissConfirmRevert) return; const r = dismissConfirmRevert; dismissConfirmRevert = null; r(); }
+// Member sheet strings (name/sub/race/cls/weapon) are interpolated into the
+// Company card's innerHTML — escape them the same way eventNarration.js does.
+const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// 2026-09-17 UAT (user ruling): the party roster is a Hero-tab panel
+// (#hero-party / #hero-party-list), reads the engine's own persistent
+// roster (state.party) and renders one card per member: name, subclass·
+// level, an HP bar (reusing .mw-map-hptrack/.mw-map-hpfill) and a Downed
+// chip. Data-driven: the panel is hidden when solo. Called from
+// renderHeroTab so member HP stays live through combat.
+// Phase 36 (JOIN-01) — the card is a real sheet: name · sub/race, then
+// class · level, then the HP track, then Weapon/Eats lines, then (outside
+// combat) a DISMISS control with the same two-tap inline confirm pattern as
+// the Gear tab's Drop. On confirm the deps.dismissJoiner(idx) closure routes
+// through the same dispatchWithNarration seam as the Joiner offer's resolve —
+// the parting line surfaces on the rail only, never here, never as a toast.
+function renderPartyRoster(doc, state, deps) {
+  const panel = doc.getElementById("hero-party");
+  const host = doc.getElementById("hero-party-list");
+  if (!panel || !host) return;
+  const party = (state && Array.isArray(state.party)) ? state.party : [];
+  panel.hidden = party.length === 0;
+  host.innerHTML = "";
+  if (!party.length) return;
+  party.forEach((m, idx) => {
+    const lvl = m.lvl ?? m.level ?? 1;
+    const maxWP = m.maxWP || 1;
+    const wp = Math.max(0, m.wp ?? 0);
+    const pct = clamp(wp / maxWP * 100, 0, 100);
+    const downed = m.status === "downed" || wp <= 0;
+    const card = doc.createElement("div");
+    card.className = "mw-party-member" + (downed ? " downed" : "");
+    // Phase 43 (CLAR-05) — the SAME appetite read as the camp gate and the
+    // Hero RATIONS panel; the old inline RACES read is gone.
+    const eatsLine = eatsLineFor(m);
+    const eatsText = eatsLine.charAt(0).toUpperCase() + eatsLine.slice(1);
+    card.innerHTML =
+      `<div class="mw-party-head">
+         <span class="mw-party-name">${escText(m.name || "Companion")}</span>
+         <span class="mw-party-sub">${escText(m.sub || "")}${m.sub && m.race ? " / " : ""}${escText(m.race || "")}</span>
+       </div>
+       <div class="mw-party-line">${escText(m.cls || "—")} · ${ROMAN[lvl - 1] || lvl}</div>
+       <div class="mw-party-hp-lab">HP <b>${wp}</b>/<b>${maxWP}</b></div>
+       <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
+       ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}
+       <div class="mw-party-line">Weapon: ${escText(m.weapon || "—")}</div>
+       <div class="mw-party-line">${escText(eatsText)}</div>`;
+    if (!state.combat) {
+      const dismiss = doc.createElement("button");
+      dismiss.className = "small mw-party-dismiss";
+      dismiss.textContent = "DISMISS";
+      const arm = () => {
+        revertDismissConfirm();
+        const wrap = doc.createElement("span");
+        wrap.className = "mw-drop-confirm";
+        const label = doc.createElement("span");
+        label.textContent = "Send them off?";
+        const mkConfirmBtn = (text, onClick) => {
+          const bt = doc.createElement("button");
+          bt.className = "small";
+          bt.textContent = text;
+          bt.onclick = onClick;
+          return bt;
+        };
+        const yes = mkConfirmBtn("Yes", () => { revertDismissConfirm(); deps.dismissJoiner?.(idx); });
+        const no = mkConfirmBtn("No", () => revertDismissConfirm());
+        wrap.appendChild(label); wrap.appendChild(yes); wrap.appendChild(no);
+        dismiss.replaceWith(wrap);
+        const timer = setTimeout(revertDismissConfirm, DISMISS_CONFIRM_MS);
+        const onAnyTap = (e) => { if (!wrap.contains(e.target)) revertDismissConfirm(); };
+        doc.addEventListener("pointerdown", onAnyTap, true);
+        dismissConfirmRevert = () => {
+          clearTimeout(timer);
+          doc.removeEventListener("pointerdown", onAnyTap, true);
+          if (wrap.isConnected) wrap.replaceWith(dismiss);
+        };
+      };
+      dismiss.onclick = arm;
+      card.appendChild(dismiss);
+    }
+    host.appendChild(card);
+  });
+}
+
+/**
+ * renderHeroTab(host, state, deps) — Phase 47 (SHELL-02), Plan 04: the ONE
+ * mount function for the Hero tab (`#screen-hero`) — see this section's head
+ * comment for the full write list. Moved verbatim from the classic script's
+ * paint() with `host.ownerDocument` replacing `document`, `state`/`state.c`
+ * replacing the classic S/c, and direct content/engine imports replacing the
+ * retired window.__mzTables/__mzStrikeDie/__mzToHit/__mzEff bridges. No
+ * window/document globals — host, host.ownerDocument and deps only.
+ */
+export function renderHeroTab(host, state, deps = {}) {
+  const doc = host.ownerDocument;
+  const c = state.c;
+
+  doc.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
+  doc.getElementById("s-name").textContent = c.name;
+  doc.getElementById("s-tag").textContent = `${c.race} ${c.sub} · ${c.cls}`;
+  // DR16 fix: when the character is dead they're already buried, so the
+  // "Abandon this character" control becomes the new-run entry point. Flip
+  // its label live (its onclick branches on the same dead state).
+  {
+    const abandonBtn = doc.getElementById("btn-abandon-character");
+    if (abandonBtn) abandonBtn.textContent = state.dead ? "New Character" : "Abandon this character";
+  }
+  doc.getElementById("s-wp").textContent = Math.max(0, c.wp);
+  doc.getElementById("s-wpmax").textContent = c.maxWP;
+  const pct = clamp(c.wp / c.maxWP * 100, 0, 100);
+  const fill = doc.getElementById("s-wpfill");
+  fill.style.width = pct + "%";
+  fill.classList.toggle("low", pct < 34);
+
+  // Phase 39 (GEAR-01), Plan 05 — routed through the engine's own
+  // strikeDie(c)/toHit(state) directly (no more window.__mzStrikeDie/
+  // __mzToHit bridge) so the Hero tab shows the weapon's real need modifier
+  // and Acuteness's crit-die swap.
+  doc.getElementById("s-die").textContent = "d" + strikeDie(c);
+  doc.getElementById("s-hit").textContent = "1–" + toHit(state);
+  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
+  const R = RACES[c.race];
+  const bonus = c.prof + c.magicWpn + (R.dmg || 0) + (R.wpnBonus || 0) + eff(c, "dmg");
+  doc.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
+  // Phase 28 (ARMOR-02): durability + the cloak's effective plate come from
+  // the shared formatter — this HUD line never showed durability before,
+  // which was the reported "toast says wear, panel shows no damage" bug.
+  const armorD = armorDisplay(c);
+  doc.getElementById("s-arm").textContent = armorD.line;
+  doc.getElementById("s-int").textContent = c.intel;
+  doc.getElementById("s-sp").textContent = Math.round(c.sp);
+  doc.getElementById("s-next").textContent = c.level >= 5 ? "—" : THRESHOLDS[c.level];
+  doc.getElementById("s-cost").textContent = upkeep(c) + " hp/day";
+
+  // Phase 43 (CLAR-03/05) — the Hero RATIONS panel; the SAME read
+  // engine/movement.js#nightlyEats/eatsFor and the Make Camp gate use.
+  const rv = rationsViewModel(state);
+  doc.getElementById("s-rations").textContent = rv.line;
+  doc.getElementById("s-rations-n").textContent = rv.carriedText;
+
+  doc.getElementById("s-trait").innerHTML =
+    `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>. ${R.note}`;
+
+  // special skills
+  const sk = doc.getElementById("s-skills");
+  const table = skillTable(c.cls);
+  const owned = Object.keys(c.skills || {});
+  doc.getElementById("s-vp").textContent =
+    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)}/${c.cls === "Fighter" ? 8 : 12} vp` : "none";
+  sk.innerHTML = "";
+  if (!owned.length) {
+    const li = doc.createElement("li");
+    li.className = "none";
+    li.textContent = c.cls === "Magic User" ? "A Magic User has spells instead." : "No skills bought.";
+    sk.appendChild(li);
+  } else for (const n of owned) {
+    const s = table && table[n];
+    const li = doc.createElement("li");
+    li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : ""}</i>`;
+    sk.appendChild(li);
+  }
+
+  renderAbilityRows(doc, state);
+
+  // the Maze Master's notes on whoever is currently walking around down there
+  doc.getElementById("doss-who").textContent = `${c.race} ${c.sub}`;
+  const doss = doc.getElementById("doss");
+  doss.innerHTML = "";
+  for (const [label, who, text] of [
+    ["Race", c.race, RACE_NOTE[c.race]],
+    ["Class", c.cls, CLASS_NOTE[c.cls]],
+    ["Subclass", c.sub, SUB_NOTE[c.sub]]
+  ]) {
+    const sec = doc.createElement("section");
+    sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
+    doss.appendChild(sec);
+  }
+
+  // 04-DR10: the HERO tab's Grimoire.
+  renderGrimoire(doc, state, deps);
+
+  renderPartyRoster(doc, state, deps);
 }

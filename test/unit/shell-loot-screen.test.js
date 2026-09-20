@@ -305,9 +305,11 @@ test("quick 260918-vvt (a): a SEPARATE import { takesBagSlot } line exists; the 
   );
   // Phase 47 (SHELL-01), Plan 03: slotFor/WORN_SLOTS/WORN_KEYS_OF dropped
   // off this line — gearTab.js imports them from engine/derived.js directly.
+  // Phase 47 (SHELL-02), Plan 04: eff/toHit/strikeDie dropped too — heroTab.js
+  // imports them from engine/derived.js directly.
   assert.match(
     CODE,
-    /import \{ conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
+    /import \{ conditionsOf, hasTool, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/,
   );
 });
 

@@ -70,6 +70,13 @@ const { classic: CLASSIC_RAW, mod: MOD_RAW } = extractScriptRegions(RAW);
 const CLASSIC = stripComments(CLASSIC_RAW);
 const MOD = stripComments(MOD_RAW);
 
+// Phase 47 (SHELL-02), Plan 04: the Hero-tab dossier moved out of the
+// classic script's paint() into src/browser/heroTab.js, which imports
+// RACE_NOTE/CLASS_NOTE/SUB_NOTE directly (a module CAN import content/) — no
+// bridge needed for a module-owned reader.
+const HERO_TAB_PATH = path.join(REPO_ROOT, "src", "browser", "heroTab.js");
+const HERO_SRC = stripComments(fs.readFileSync(HERO_TAB_PATH, "utf8").replace(/\r\n/g, "\n"));
+
 function countOf(source, sub) {
   let c = 0;
   let i = 0;
@@ -101,22 +108,32 @@ test("DEAD-02: mazeworld.html declares no copy of any content/ export (classic o
   assert.deepEqual(offenders, [], `mazeworld.html must not re-declare any content/ export:\n${offenders.join("\n")}`);
 });
 
-// ─── 2. the Hero-tab dossier reads only through window.__mzTables ──────────
+// ─── 2. the Hero-tab dossier reads RACE_NOTE/CLASS_NOTE/SUB_NOTE directly ──
 
-test("DEAD-02: the Hero-tab dossier reads RACE_NOTE/CLASS_NOTE/SUB_NOTE only through window.__mzTables", () => {
-  assert.equal(countOf(CLASSIC, "window.__mzTables.RACE_NOTE[c.race]"), 1);
-  assert.equal(countOf(CLASSIC, "window.__mzTables.CLASS_NOTE[c.cls]"), 1);
-  assert.equal(countOf(CLASSIC, "window.__mzTables.SUB_NOTE[c.sub]"), 1);
-  const bareRe = /(^|[^.A-Za-z_])(RACE_NOTE|CLASS_NOTE|SUB_NOTE)\[/g;
-  const bareMatches = CLASSIC.match(bareRe) || [];
-  assert.equal(bareMatches.length, 0, `no bare RACE_NOTE/CLASS_NOTE/SUB_NOTE[ read may remain: ${bareMatches.join(", ")}`);
+// Phase 47 (SHELL-02), Plan 04: the dossier's own render body moved into
+// src/browser/heroTab.js, which imports RACE_NOTE/CLASS_NOTE/SUB_NOTE
+// directly from content/index.js — no bridge needed for a module-owned
+// reader. mazeworld.html (classic AND module script) must carry ZERO such
+// reads now (the __mzTables bridge for these three names is gone).
+test("DEAD-02: the Hero-tab dossier reads RACE_NOTE/CLASS_NOTE/SUB_NOTE directly in heroTab.js; mazeworld.html has zero such reads", () => {
+  assert.equal(countOf(HERO_SRC, "RACE_NOTE[c.race]"), 1);
+  assert.equal(countOf(HERO_SRC, "CLASS_NOTE[c.cls]"), 1);
+  assert.equal(countOf(HERO_SRC, "SUB_NOTE[c.sub]"), 1);
+  for (const name of ["RACE_NOTE", "CLASS_NOTE", "SUB_NOTE"]) {
+    assert.equal(countOf(CLASSIC, name), 0, `mazeworld.html classic script must not read ${name}`);
+    assert.equal(countOf(MOD, name), 0, `mazeworld.html module script must not read ${name}`);
+  }
 });
 
-// ─── 3. the module assigns window.__mzTables before boot() ─────────────────
+// ─── 3. the module assigns window.__mzTables (ROMAN only) before boot() ────
 
-test("DEAD-02: the module assigns window.__mzTables from content/index.js before boot()", () => {
-  const importLine = 'import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS } from "./content/index.js";';
-  const bridgeLine = "window.__mzTables = Object.freeze({ RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN, THRESHOLDS, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, RACES });";
+// Phase 47 (SHELL-02), Plan 04: RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/
+// WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES all lost their last classic
+// reader (moved into heroTab.js/gearTab.js, which import content/ directly)
+// — __mzTables shrinks to the one key the classic script still reads.
+test("DEAD-02: the module assigns window.__mzTables (ROMAN only) from content/index.js before boot()", () => {
+  const importLine = 'import { ROMAN } from "./content/index.js";';
+  const bridgeLine = "window.__mzTables = Object.freeze({ ROMAN });";
   assert.equal(countOf(MOD, importLine), 1, "the separate content/index.js import line must appear exactly once");
   assert.equal(countOf(MOD, bridgeLine), 1, "the window.__mzTables bridge assignment must appear exactly once");
   const bridgeIdx = MOD.indexOf(bridgeLine);
@@ -125,16 +142,21 @@ test("DEAD-02: the module assigns window.__mzTables from content/index.js before
   assert.ok(bridgeIdx < bootIdx, "window.__mzTables must be assigned before await boot(...) runs");
 });
 
-// ─── 4. every surviving classic read goes through window.__mzTables ────────
+// ─── 4. every surviving classic read goes through window.__mzTables; the ──
+// ─── seven retired keys have zero classic reads ────────────────────────────
 
-test("DEAD-02: every surviving classic read of ROMAN/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES goes through window.__mzTables", () => {
-  const survivors = ["ROMAN", "THRESHOLDS", "WEAPONS", "FIGHTER_SKILLS", "THIEF_SKILLS", "RACES"];
+test("DEAD-02: every surviving classic read of ROMAN goes through window.__mzTables; the seven retired keys have zero classic reads", () => {
+  const survivors = ["ROMAN"];
   const bareRe = new RegExp(`(^|[^.\\w])(${survivors.join("|")})\\[`, "g");
   const bareMatches = CLASSIC.match(bareRe) || [];
   assert.equal(bareMatches.length, 0, `no bare classic read of a survivor table may remain: ${bareMatches.join(", ")}`);
   for (const name of survivors) {
     const bridged = countOf(CLASSIC, `window.__mzTables.${name}`);
     assert.ok(bridged >= 1, `expected at least one window.__mzTables.${name} read in the classic script, found ${bridged}`);
+  }
+  const retired = ["THRESHOLDS", "WEAPONS", "FIGHTER_SKILLS", "THIEF_SKILLS", "RACES"];
+  for (const name of retired) {
+    assert.equal(countOf(CLASSIC, `window.__mzTables.${name}`), 0, `window.__mzTables.${name} must have zero classic readers`);
   }
 });
 

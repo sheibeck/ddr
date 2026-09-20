@@ -61,6 +61,9 @@ function stripComments(source) {
 // Phase 47 (SHELL-01), Plan 03, Task 2: DROP_CONFIRM_MS moved into
 // src/browser/gearTab.js along with renderCarriedList.
 const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n"));
+// Phase 47 (SHELL-02), Plan 04, Task 2: the DISMISS trio + renderPartyRoster
+// moved into src/browser/heroTab.js along with the rest of the Hero tab.
+const HERO_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n"));
 
 const CODE = stripComments(HTML);
 
@@ -73,12 +76,12 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 // mirrors test/unit/shell-party-camp.test.js's own renderPartyRoster region
-// technique: CODE.indexOf("function renderPartyRoster() {") -> next "\n}\n".
+// technique: HERO_SRC.indexOf("function renderPartyRoster(doc, state, deps) {") -> next "\n}\n".
 function partyRosterRegion() {
-  const fnStart = CODE.indexOf("function renderPartyRoster() {");
-  const fnEnd = CODE.indexOf("\n}\n", fnStart);
+  const fnStart = HERO_SRC.indexOf("function renderPartyRoster(doc, state, deps) {");
+  const fnEnd = HERO_SRC.indexOf("\n}\n", fnStart);
   assert.ok(fnStart !== -1 && fnEnd !== -1 && fnEnd > fnStart, "renderPartyRoster() function region found");
-  return CODE.slice(fnStart, fnEnd);
+  return HERO_SRC.slice(fnStart, fnEnd);
 }
 
 function dismissJoinerBridgeRegion() {
@@ -94,14 +97,18 @@ function dismissJoinerBridgeRegion() {
 
 // ─── 2. module-level trio ──────────────────────────────────────────────────
 
-test("Trio: DISMISS_CONFIRM_MS/dismissConfirmRevert/revertDismissConfirm() are declared once, above renderPartyRoster; DROP_CONFIRM_MS untouched", () => {
-  assert.equal((CODE.match(/const DISMISS_CONFIRM_MS = 3000;/g) || []).length, 1);
-  assert.equal((CODE.match(/function revertDismissConfirm\(\)/g) || []).length, 1);
-  assert.equal((CODE.match(/let dismissConfirmRevert = null;/g) || []).length, 1);
-  const fnIdx = CODE.indexOf("function renderPartyRoster() {");
-  const constIdx = CODE.indexOf("const DISMISS_CONFIRM_MS = 3000;");
-  const letIdx = CODE.indexOf("let dismissConfirmRevert = null;");
-  const revertFnIdx = CODE.indexOf("function revertDismissConfirm()");
+// Phase 47 (SHELL-02), Plan 04, Task 2: the DISMISS trio + renderPartyRoster
+// moved verbatim into src/browser/heroTab.js — re-pointed from CODE to
+// HERO_SRC; zero copies survive in the classic script.
+test("Trio: DISMISS_CONFIRM_MS/dismissConfirmRevert/revertDismissConfirm() are declared once, above renderPartyRoster (heroTab.js); DROP_CONFIRM_MS untouched", () => {
+  assert.equal((HERO_SRC.match(/const DISMISS_CONFIRM_MS = 3000;/g) || []).length, 1);
+  assert.equal((HERO_SRC.match(/function revertDismissConfirm\(\)/g) || []).length, 1);
+  assert.equal((HERO_SRC.match(/let dismissConfirmRevert = null;/g) || []).length, 1);
+  assert.equal((CODE.match(/DISMISS_CONFIRM_MS/g) || []).length, 0, "the classic script must carry zero copies of the trio");
+  const fnIdx = HERO_SRC.indexOf("function renderPartyRoster(doc, state, deps) {");
+  const constIdx = HERO_SRC.indexOf("const DISMISS_CONFIRM_MS = 3000;");
+  const letIdx = HERO_SRC.indexOf("let dismissConfirmRevert = null;");
+  const revertFnIdx = HERO_SRC.indexOf("function revertDismissConfirm()");
   assert.ok(fnIdx !== -1 && constIdx !== -1 && letIdx !== -1 && revertFnIdx !== -1, "all four anchors found");
   assert.ok(constIdx < fnIdx && letIdx < fnIdx && revertFnIdx < fnIdx, "the trio sits above renderPartyRoster()");
   // The Gear tab's own trio must still be intact and untouched by this plan
@@ -146,7 +153,10 @@ test("HP wording: the region reads HP, never the standalone two-letter WP token"
 
 // ─── 5. Sheet fields read through escText() ────────────────────────────────
 
-test("Sheet fields: cls/race/sub/weapon are escText()-escaped, Eats reads window.__mzRations.eatsLine(m), level reads ROMAN[lvl - 1]", () => {
+// Phase 47 (SHELL-02), Plan 04, Task 2: heroTab.js calls eatsLineFor(m)
+// directly (declared in the SAME module) — no more window.__mzRations.
+// eatsLine(m) bridge for this reader.
+test("Sheet fields: cls/race/sub/weapon are escText()-escaped, Eats reads eatsLineFor(m), level reads ROMAN[lvl - 1]", () => {
   const region = partyRosterRegion();
   assert.match(region, /escText\(m\.cls/);
   assert.match(region, /escText\(m\.race/);
@@ -154,23 +164,28 @@ test("Sheet fields: cls/race/sub/weapon are escText()-escaped, Eats reads window
   assert.match(region, /escText\(m\.weapon/);
   // Phase 43 (CLAR-05): the SAME appetite read as the camp gate and the
   // Hero RATIONS panel — the old inline RACES[m.race]?.eats read is gone.
-  assert.match(region, /window\.__mzRations\.eatsLine\(m\)/);
+  assert.match(region, /eatsLineFor\(m\)/);
+  assert.doesNotMatch(region, /window\.__mzRations/);
   assert.doesNotMatch(region, /RACES\[m\.race\]/);
   assert.match(region, /ROMAN\[lvl - 1\]/);
 });
 
 // ─── 6. Two-tap DISMISS confirm mechanics ──────────────────────────────────
 
-test("Confirm mechanics: arm/Yes/No/timeout/outside-tap revert mirror the Drop confirm's shape, gated on !S.combat", () => {
+// Phase 47 (SHELL-02), Plan 04, Task 2: `document` -> `doc.ownerDocument`
+// substitution (host.ownerDocument), `S.combat` -> `state.combat`, and
+// `window.mzDismissJoiner` -> `deps.dismissJoiner` — the standard carve
+// substitution table (Plan 03's own pattern) applied to the DISMISS confirm.
+test("Confirm mechanics: arm/Yes/No/timeout/outside-tap revert mirror the Drop confirm's shape, gated on !state.combat", () => {
   const region = partyRosterRegion();
   assert.match(region, /textContent = "DISMISS"/);
   assert.match(region, /"Send them off\?"/);
   assert.match(region, /className = "mw-drop-confirm"/);
   assert.equal((region.match(/setTimeout\(revertDismissConfirm, DISMISS_CONFIRM_MS\)/g) || []).length, 1);
-  assert.equal((region.match(/document\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
-  assert.equal((region.match(/document\.removeEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
-  assert.equal((region.match(/revertDismissConfirm\(\); window\.mzDismissJoiner\?\.\(idx\);/g) || []).length, 1);
-  assert.match(region, /!S\.combat/, "the DISMISS control is gated on !S.combat");
+  assert.equal((region.match(/doc\.addEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
+  assert.equal((region.match(/doc\.removeEventListener\("pointerdown", onAnyTap, true\)/g) || []).length, 1);
+  assert.equal((region.match(/revertDismissConfirm\(\); deps\.dismissJoiner\?\.\(idx\);/g) || []).length, 1);
+  assert.match(region, /!state\.combat/, "the DISMISS control is gated on !state.combat");
 });
 
 // ─── 7. Existing pins preserved ─────────────────────────────────────────────

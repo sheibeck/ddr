@@ -79,13 +79,6 @@ function wornSlotRowRegion() {
   return sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
 }
 
-function effRegion() {
-  const start = CODE.indexOf("function eff(key) {");
-  assert.ok(start !== -1, "function eff(key) { found");
-  const end = CODE.indexOf("\n}", start);
-  assert.ok(end !== -1 && end > start, "closing } for eff(key) found");
-  return CODE.slice(start, end);
-}
 
 // ─── 1. SWAP trio ───────────────────────────────────────────────────────────
 
@@ -181,29 +174,37 @@ test("Worn rows: the new wornSlotRow block dispatches Use({slot})/Unequip(slot) 
   assert.match(region, /itemRowState\(state, it\)/);
 });
 
-// ─── 5. Classic eff routing ─────────────────────────────────────────────────
+// ─── 5. Classic eff routing — retired ───────────────────────────────────────
 
-test("eff(key) routes through window.__mzEff, keeping the legacy sum-over-c.items loop as the fallback", () => {
-  const region = effRegion();
-  assert.match(region, /const f = window\.__mzEff; if \(f\) return f\(S\.c, key\);/);
-  assert.match(region, /for \(const it of \(S\.c\.items \|\| \[\]\)\) if \(it\.eff && it\.eff\[key\]\) t \+= it\.eff\[key\];/);
+// Phase 47 (SHELL-02), Plan 04, Task 2: the classic eff(key) duplicate (and
+// its window.__mzEff bridge) are gone — eff(key)'s only remaining callers
+// (the Hero sheet's damage-bonus/upkeep reads) moved into heroTab.js, which
+// imports eff from engine/derived.js directly (a two-argument eff(c, key)
+// call, not the classic script's own zero-arg-closure duplicate).
+test("the classic eff(key) duplicate is retired; heroTab.js imports eff(c, key) directly from engine/derived.js", () => {
+  assert.equal((CODE.match(/function eff\(key\) \{/g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzEff/g) || []).length, 0);
+  const heroSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
+  assert.match(heroSrc, /import \{ strikeDie, toHit, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight \} from "\.\.\/\.\.\/engine\/derived\.js";/);
+  assert.match(heroSrc, /eff\(c, "dmg"\)/);
 });
 
 // ─── 6. Module bridges ───────────────────────────────────────────────────────
 
-test("Bridges: derived.js import carries eff; window.__mzEff assigned once, after __mzConditionsOf. Phase 47 (SHELL-01), Plan 03: __mzSlotFor/__mzWornSlots/__mzWornKeysOf are retired — gearTab.js imports slotFor/WORN_SLOTS/WORN_KEYS_OF from engine/derived.js directly", () => {
+test("Bridges: derived.js import carries conditionsOf/hasTool/mapViewRadius/inViewWindow (eff/toHit/strikeDie retired). Phase 47 (SHELL-01), Plan 03: __mzSlotFor/__mzWornSlots/__mzWornKeysOf are retired — gearTab.js imports slotFor/WORN_SLOTS/WORN_KEYS_OF from engine/derived.js directly", () => {
   // Phase 39 (GEAR-01/GEAR-02/GEAR-05), Plan 05: the shared derived.js
   // import line gained hasTool/toHit/strikeDie as sibling named imports.
   // Phase 41 (TERR-03), Plan 04: mapViewRadius/inViewWindow joined the same
-  // import line.
-  assert.match(CODE, /import \{ conditionsOf, eff, hasTool, toHit, strikeDie, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
-  assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 1);
+  // import line. Phase 47 (SHELL-02), Plan 04: eff/toHit/strikeDie dropped
+  // off it (heroTab.js imports them from engine/derived.js directly).
+  assert.match(CODE, /import \{ conditionsOf, hasTool, mapViewRadius, inViewWindow \} from "\.\/engine\/derived\.js";/);
+  assert.equal((CODE.match(/window\.__mzEff = eff;/g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzToHit = toHit;/g) || []).length, 0);
+  assert.equal((CODE.match(/window\.__mzStrikeDie = strikeDie;/g) || []).length, 0);
   assert.equal((CODE.match(/window\.__mzSlotFor = slotFor;/g) || []).length, 0);
   assert.equal((CODE.match(/window\.__mzWornSlots = WORN_SLOTS;/g) || []).length, 0);
   assert.equal((CODE.match(/window\.__mzWornKeysOf = WORN_KEYS_OF;/g) || []).length, 0);
-  const iConditionsOf = CODE.indexOf("window.__mzConditionsOf = conditionsOf;");
-  const iEff = CODE.indexOf("window.__mzEff = eff;");
-  assert.ok(iConditionsOf !== -1 && iEff > iConditionsOf, "__mzEff lands after __mzConditionsOf");
+  assert.ok(CODE.indexOf("window.__mzConditionsOf = conditionsOf;") !== -1, "__mzConditionsOf still assigned");
   // gearTab.js's own direct imports of slotFor/WORN_SLOTS/WORN_KEYS_OF.
   assert.match(GEAR_SRC, /import \{ WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor \} from "\.\.\/\.\.\/engine\/derived\.js";/);
 });

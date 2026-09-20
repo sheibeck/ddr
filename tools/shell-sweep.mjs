@@ -271,7 +271,11 @@ function findMatches(lineText, name) {
 // refs
 // ---------------------------------------------------------------------
 function cmdRefs(args) {
-  const raw = fs.readFileSync(args.file, "utf8");
+  // Rule 1 (bug fix): a CRLF-terminated checkout leaves a trailing "\r" on
+  // every split line, so an exact `l === "<script>"` region marker match in
+  // findRegions() never fires — normalize line endings before splitting
+  // (behaviour on an LF checkout is unchanged, .replace is a no-op there).
+  const raw = fs.readFileSync(args.file, "utf8").replace(/\r\n/g, "\n");
   const lines = raw.split("\n");
   const regions = findRegions(lines);
   const masked = buildMaskedLines(lines, regions);
@@ -544,7 +548,8 @@ function computeReachability(lines, regions, masked, debugSet) {
 }
 
 function cmdOrphans(args) {
-  const raw = fs.readFileSync(args.file, "utf8");
+  // See cmdRefs' matching comment — same CRLF normalization.
+  const raw = fs.readFileSync(args.file, "utf8").replace(/\r\n/g, "\n");
   const lines = raw.split("\n");
   const regions = findRegions(lines);
   const masked = buildMaskedLines(lines, regions);
