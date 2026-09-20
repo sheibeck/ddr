@@ -155,7 +155,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 50-02-PLAN.md — `tools/roller-repro.mjs` (dependency-free headless-Chrome CDP driver: normal / double-tap / Play-again-from-death / mid-reveal) and the BEFORE table against the unfixed shell
+- [x] 50-02-PLAN.md — `tools/roller-repro.mjs` (dependency-free headless-Chrome CDP driver: normal / double-tap / Play-again-from-death / mid-reveal) and the BEFORE table against the unfixed shell
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -300,7 +300,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 50. Character Roller Fix | v1.7 | 1/3 | In Progress|  |
+| 50. Character Roller Fix | v1.7 | 2/3 | In Progress|  |
 | 51. Initiative Once Per Combat | v1.7 | 0/? | Not started | - |
 | 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
