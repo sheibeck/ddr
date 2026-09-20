@@ -11,7 +11,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { rationsViewModel, eatsLineFor, RATIONS_COPY } from "../../src/browser/viewModels.js";
+import { rationsViewModel, eatsLineFor, RATIONS_COPY } from "../../src/browser/heroTab.js";
 import { nightlyEats } from "../../engine/movement.js";
 import { BANNED } from "../../content/safety-wordlist.js";
 

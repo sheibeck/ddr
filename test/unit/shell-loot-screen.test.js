@@ -58,9 +58,12 @@ test("Phase 29 (LOOT-03/04): the module bridges lootCompare/bagUsage", () => {
   // GEAR_COPY moved to gearTab.js — the shared viewModels.js import line no
   // longer carries them; the classic module script's gearTab.js import line
   // carries bagUsage plus the Task 2 mount function + shared list.
+  // Phase 47 (SHELL-02), Plan 04: characterSheetViewModel/grimoireViewModel
+  // moved to heroTab.js — the shared viewModels.js import line no longer
+  // carries them either.
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
   assert.match(CODE, /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.match(CODE, /window\.__mzBagUsage = bagUsage;/);

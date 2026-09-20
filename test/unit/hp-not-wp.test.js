@@ -24,8 +24,9 @@ import url from "node:url";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { RAIL_COPY } from "../../src/browser/rail.js";
-import { ABILITY_VIEW_COPY, RATIONS_COPY, USABLE_COPY } from "../../src/browser/viewModels.js";
+import { USABLE_COPY } from "../../src/browser/viewModels.js";
 import { ITEM_STATE_COPY, GEAR_COPY } from "../../src/browser/gearTab.js";
+import { ABILITY_VIEW_COPY, RATIONS_COPY } from "../../src/browser/heroTab.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { COMBAT_PANEL_COPY } from "../../src/browser/combatPanel.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
@@ -261,6 +262,18 @@ test("src/browser/gearTab.js: no string literal contains a standalone wp/WP toke
     if (m && !isAllowlisted(lit)) offenders.push(`gearTab.js script literal -> ${lit}`);
   }
   assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/gearTab.js:\n${offenders.join("\n")}`);
+});
+
+// ─── (g) src/browser/heroTab.js — Phase 47 Plan 04 carve ───────────────────
+
+test("src/browser/heroTab.js: no string literal contains a standalone wp/WP token", () => {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
+  const offenders = [];
+  for (const lit of stringLiteralsOf(stripComments(src))) {
+    const m = lit.match(PLAYER_WP);
+    if (m && !isAllowlisted(lit)) offenders.push(`heroTab.js script literal -> ${lit}`);
+  }
+  assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/heroTab.js:\n${offenders.join("\n")}`);
 });
 
 // ─── standing-guard self-check: the regex itself must not drift ───────────

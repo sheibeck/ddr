@@ -95,7 +95,11 @@ test("renderAbilityRows: createElement/textContent only (no innerHTML in the reg
 
 // ─── 4. window.__mzAbilities bridge ─────────────────────────────────────────
 
-test("window.__mzAbilities bridges byId/roundsLeft/isReady/sheet from content/abilities.js + engine/abilities.js + engine/effects.js + viewModels.js", () => {
+// Phase 47 (SHELL-02), Plan 04, Task 1: characterSheetViewModel moved out of
+// viewModels.js into src/browser/heroTab.js — the bridge assignment below is
+// unchanged (still sheet: characterSheetViewModel), only its import's source
+// file moved.
+test("window.__mzAbilities bridges byId/roundsLeft/isReady/sheet from content/abilities.js + engine/abilities.js + engine/effects.js + heroTab.js", () => {
   assert.equal((CODE.match(/window\.__mzAbilities = \{/g) || []).length, 1);
   assert.match(
     CODE,
@@ -104,6 +108,10 @@ test("window.__mzAbilities bridges byId/roundsLeft/isReady/sheet from content/ab
   assert.match(CODE, /import \{ abilityRoundsLeft \} from "\.\/engine\/abilities\.js";/);
   assert.match(CODE, /import \{ isReady \} from "\.\/engine\/effects\.js";/);
   assert.match(CODE, /import \{ RACES, CLASSES, ABILITY_BY_ID \} from "\.\/content\/index\.js";/);
+  assert.match(
+    CODE,
+    /import \{ characterSheetViewModel, grimoireViewModel, rationsViewModel, eatsLineFor \} from "\.\/src\/browser\/heroTab\.js";/,
+  );
 });
 
 // ─── 5. surfaceAbilityPool ───────────────────────────────────────────────────

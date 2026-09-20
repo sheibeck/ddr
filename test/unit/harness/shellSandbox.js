@@ -45,17 +45,19 @@ import { makeRng } from "../../../engine/rng.js";
 import { rollCharacter } from "../../../engine/character.js";
 import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "../../../src/browser/inputGuards.js";
 import {
-  characterSheetViewModel,
-  grimoireViewModel,
   armorDisplay,
   bagArmorText,
   lootCompare,
   usableBy,
-  rationsViewModel,
-  eatsLineFor,
   dropShelfItems,
 } from "../../../src/browser/viewModels.js";
 import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser/gearTab.js";
+import {
+  characterSheetViewModel,
+  grimoireViewModel,
+  rationsViewModel,
+  eatsLineFor,
+} from "../../../src/browser/heroTab.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");

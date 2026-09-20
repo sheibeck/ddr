@@ -16,7 +16,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { armorDisplay, bagArmorText, characterSheetViewModel } from "../../src/browser/viewModels.js";
+import { armorDisplay, bagArmorText } from "../../src/browser/viewModels.js";
+import { characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { applyFoeDamageToPlayer } from "../../engine/combat.js";

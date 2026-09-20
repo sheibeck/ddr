@@ -116,7 +116,7 @@ function renderDropShelfRegion() {
 test("import: the pinned viewModels import line is byte-identical and occurs exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/g,
+      /import \{ armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/g,
     ) || []).length,
     1,
   );
@@ -125,7 +125,19 @@ test("import: the pinned viewModels import line is byte-identical and occurs exa
 test("import: a NEW, separate viewModels import line carries the four Phase 43 exports, exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ usableBy, rationsViewModel, eatsLineFor, dropShelfItems \} from "\.\/src\/browser\/viewModels\.js";/g,
+      /import \{ usableBy, dropShelfItems \} from "\.\/src\/browser\/viewModels\.js";/g,
+    ) || []).length,
+    1,
+  );
+});
+
+// Phase 47 (SHELL-02), Plan 04, Task 1 — characterSheetViewModel/
+// grimoireViewModel/rationsViewModel/eatsLineFor moved from viewModels.js to
+// heroTab.js; the classic module script gained a new import line for them.
+test("import: the heroTab.js import line carries the four moved view models, exactly once", () => {
+  assert.equal(
+    (CODE.match(
+      /import \{ characterSheetViewModel, grimoireViewModel, rationsViewModel, eatsLineFor \} from "\.\/src\/browser\/heroTab\.js";/g,
     ) || []).length,
     1,
   );

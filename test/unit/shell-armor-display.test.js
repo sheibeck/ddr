@@ -61,9 +61,12 @@ const GEAR_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "brow
 test("Phase 28 (ARMOR-02/03/04): the module bridges armorDisplay/bagArmorText from viewModels.js", () => {
   // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
   // gearTab.js — the shared viewModels.js import line no longer carries them.
+  // Phase 47 (SHELL-02), Plan 04, Task 1: characterSheetViewModel/
+  // grimoireViewModel moved to heroTab.js — the shared viewModels.js import
+  // line no longer carries them either.
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
   assert.match(CODE, /window\.__mzArmorDisplay = \{ armorDisplay, bagArmorText \};/);
 });

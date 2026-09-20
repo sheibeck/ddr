@@ -18,7 +18,7 @@ import { makeRng } from "../../engine/rng.js";
 import { strikeDie, toHit, upkeep, weaponDamage } from "../../engine/derived.js";
 import { THRESHOLDS, ABILITY_BY_ID } from "../../content/index.js";
 import { startCooldown } from "../../engine/effects.js";
-import { characterSheetViewModel } from "../../src/browser/viewModels.js";
+import { characterSheetViewModel } from "../../src/browser/heroTab.js";
 
 function statByKey(vm, key) {
   const row = vm.stats.find((s) => s.key === key);
@@ -196,8 +196,8 @@ test("characterSheetViewModel(state): calling the view-model with abilities pres
   assert.deepEqual(state.rngState, before);
 });
 
-test("src/browser/viewModels.js does not read the design mockup's placeholder field shape (s.ch, s.pos, s.feats, .wp as a lone field)", async () => {
+test("src/browser/heroTab.js does not read the design mockup's placeholder field shape (s.ch, s.pos, s.feats, .wp as a lone field)", async () => {
   const fs = await import("node:fs");
-  const src = fs.readFileSync(new URL("../../src/browser/viewModels.js", import.meta.url), "utf8");
+  const src = fs.readFileSync(new URL("../../src/browser/heroTab.js", import.meta.url), "utf8");
   assert.equal(/\bs\.ch\b|\bs\.pos\b|\bs\.feats\b/.test(src), false);
 });

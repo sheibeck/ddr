@@ -4570,10 +4570,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // content tables (content/index.js) used ONLY to build the reel-flicker's
   // candidate word lists (window.mzStartRoll below) — cosmetic display
   // strings, never fed into anything rng-touching.
-  import { characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare } from "./src/browser/viewModels.js";
+  import { armorDisplay, bagArmorText, lootCompare } from "./src/browser/viewModels.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
-  import { usableBy, rationsViewModel, eatsLineFor, dropShelfItems } from "./src/browser/viewModels.js";
+  import { usableBy, dropShelfItems } from "./src/browser/viewModels.js";
+  // Phase 47 (SHELL-02), Plan 04 — the Hero-only view models moved out of
+  // viewModels.js into heroTab.js (Task 1); renderHeroTab is the classic-
+  // script carve's mount function (Task 2).
+  import { characterSheetViewModel, grimoireViewModel, rationsViewModel, eatsLineFor } from "./src/browser/heroTab.js";
   // Phase 47 (SHELL-01), Plan 03 — the Gear-only view models moved out of
   // viewModels.js into gearTab.js (Task 1); renderGearTab/renderCarriedList
   // are the classic-script carve's mount function and shared list (Task 2).

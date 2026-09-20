@@ -10,7 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { grimoireViewModel } from "../../src/browser/viewModels.js";
+import { grimoireViewModel } from "../../src/browser/heroTab.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 
 function fixedState(overrides = {}) {

@@ -67,9 +67,11 @@ test("Bridges: hasTool/toolIndex/toHit/strikeDie/itemRowState imported and bridg
   assert.match(CODE, /import \{ toolIndex \} from "\.\/engine\/items\.js";/);
   // Phase 47 (SHELL-01), Plan 03, Task 1: bagUsage/itemRowState moved to
   // gearTab.js — the shared viewModels.js import line no longer carries them.
+  // Phase 47 (SHELL-02), Plan 04, Task 1: characterSheetViewModel/
+  // grimoireViewModel moved to heroTab.js.
   assert.match(
     CODE,
-    /import \{ characterSheetViewModel, grimoireViewModel, armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
+    /import \{ armorDisplay, bagArmorText, lootCompare \} from "\.\/src\/browser\/viewModels\.js";/,
   );
   assert.match(CODE, /import \{ bagUsage, renderGearTab, renderCarriedList \} from "\.\/src\/browser\/gearTab\.js";/);
   assert.equal((CODE.match(/window\.__mzHasTool = hasTool;/g) || []).length, 1);
