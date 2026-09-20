@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 48
-current_phase_name: Stale Docs, Comments & Test Names Purge
 status: executing
 stopped_at: Completed 47-05-PLAN.md (storeScreen.js carve + phase closing gates)
-last_updated: "2026-09-20T03:23:33.344Z"
+last_updated: "2026-09-20T03:24:12.812Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 47 complete, transitioned to Phase 48
+last_activity_desc: Phase 48 execution started
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 16
+  total_plans: 21
   completed_plans: 16
   percent: 67
+current_phase_name: Stale Docs, Comments & Test Names Purge
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 47
+**Current focus:** Phase 48
 
 ## Current Position
 
-Phase: 48 of 49 — Stale Docs, Comments & Test Names Purge (planned, 5 sequential plans; executing)
-Plan: 48-01 next (stale-terms tripwire + comment-only-diff tool + engine/content sweep)
-Status: Ready to execute
-Last activity: 2026-09-19 — Phase 48 planned (8667923); decision gate could-not-parse (DOCS-0x IDs, same as Phase 46) — coverage verified by grep, override recorded; planner departures accepted: 5 plans, bounded test-body edits (local identifiers + messages only), fixture-hygiene commit revertible alone
+Phase: 48 — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase 48
+Last activity: 2026-09-19 — Phase 48 execution started
 
 ## Ground Truth (durable facts every session needs)
 
