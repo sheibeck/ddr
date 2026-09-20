@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 49
-current_phase_name: Measure-First Perf Pass
-status: planning
+status: executing
 stopped_at: Completed 48-05-PLAN.md (CLAUDE.md + docs close + stale-terms tripwire; Phase 48 complete)
-last_updated: "2026-09-20T06:38:33.696Z"
+last_updated: "2026-09-20T09:22:07.314Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 48 complete, transitioned to Phase 49
+last_activity_desc: Phase 49 execution started
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 21
+  total_plans: 23
   completed_plans: 21
   percent: 83
+current_phase_name: Measure-First Perf Pass
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-20 — after Phase 48; v1.6 Shell Debt & Dead Code in progress; v1.5 UAT pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 48
+**Current focus:** Phase 49
 
 ## Current Position
 
-Phase: 49 — Measure-First Perf Pass
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-20 — Phase 48 complete, transitioned to Phase 49
+Phase: 49 of 49 — Measure-First Perf Pass (planned, 2 plans; executing)
+Plan: 49-01 next (dev-gated perfMarks instrumentation + readout + checklist); 49-02 waits on the Pixel 7 device report
+Status: Executing Phase 49
+Last activity: 2026-09-20 — Phase 49 execution started
 Progress: [██████████] 100%
 
 ## Ground Truth (durable facts every session needs)
