@@ -4,15 +4,15 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 47
 status: executing
-stopped_at: Completed 47-02-PLAN.md (bridge registry + doc-sync gate)
-last_updated: "2026-09-20T00:02:04.958Z"
+stopped_at: Completed 47-03-PLAN.md (gearTab.js carve)
+last_updated: "2026-09-20T00:57:29.842Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 47 execution started
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 50
 current_phase_name: Shell Modularisation
 ---
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 46; v1.6 Shell Deb
 ## Current Position
 
 Phase: 47 — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 47 execution started
 
@@ -122,8 +122,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T00:02:04.927Z
-Stopped at: Completed 47-02-PLAN.md (bridge registry + doc-sync gate)
+Last session: 2026-09-20T00:57:29.805Z
+Stopped at: Completed 47-03-PLAN.md (gearTab.js carve)
 Resume file: None
 
 ## Operator Next Steps
@@ -243,6 +243,7 @@ Resume file: None
 | Phase 46 P04 | ~50min | 2 tasks | 2 files |
 | Phase 47 P01 | ~45min | 3 tasks | 9 files |
 | Phase 47 P02 | ~30min | 2 tasks | 8 files |
+| Phase 47 P03 | ~2h | 2 tasks | 23 files |
 
 ## Decisions
 
@@ -465,6 +466,9 @@ Resume file: None
 - [Phase ?]: 47-02: Deleted also-dead window.__mzHaptics (zero readers, same class as __mzBags) alongside the plan's named __mzBags deletion; live bridge count is 53, not 54
 - [Phase ?]: 47-02: Owner attribution for the five dual-write presentation globals (__mzCombatMenu/__mzFightEnd/__mzFightLog/__mzRail/__mzStair) assigned to the module script per its own source comments; classic's writes noted as (also writes)
 - [Phase ?]: 47-02: SHELL-04 NOT marked complete in REQUIREMENTS.md yet — its <5,000-line clause closes in Plan 05
+- [Phase ?]: 47-03: sellPriceFor's price != null ternary kept verbatim in gearTab.js's Sell row (byte-identical snapshot lock) even though a direct import can never return null
+- [Phase ?]: 47-03: Rule 3 fixes touched shell-armor-display.test.js/shell-gear-39.test.js (Task 1) and shell-combat-over.test.js (Task 2), outside this plan's stated file list, because this plan's own required import-line/call-site changes broke their pins
+- [Phase ?]: 47-03: bridge-registry.test.js's live-count floor lowered from >= 50 to >= 45 to reflect the post-carve count of 49 (53 - 6 retired + 2 new)
 
 ### Blockers
 
