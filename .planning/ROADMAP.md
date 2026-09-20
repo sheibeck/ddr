@@ -317,7 +317,16 @@ Plans:
   4. No timing instrumentation ships: any `performance.now()` marks are behind the existing `dev` gate or removed before the phase closes, proven by a grep of `www/` after `build:www`.
 
 **Discuss**: Not worth a round — "measure first, fix only what is measured" is the whole rule; the user's input (confirming a visible jank) happens on the device during the phase, not before it.
-**Plans**: TBD
+**Plans**: 2 plans (sequential — 02 is dispatched only after the user's Pixel 7 report is appended to the 01 SUMMARY; phase-start baseline 2026-09-20 at `9c9a755`: 3,293 tests, `mazeworld.html` 5,580 lines, zero `performance.now` in the shell, master hash `a1f4d0dc`; measurement method = in-app dev-gated marks per the user's 2026-09-20 ruling; start depth D = 5 — the shallowest non-breather floor with `darkBlobs ≥ 1` (3, plus 2 water pools) from `difficultyCurve`)
+
+Plans:
+**Wave 1**
+
+- [ ] 49-01-PLAN.md — `src/browser/perfMarks.js` (pure 100-sample rings, nearest-rank med/p95/max, `formatReadout`) + `test/unit/perfMarks.test.js`; seven `state.dev`-guarded clock lines in the module script's `stepWith` bracketing four rows (step / dispatch / paint / draw — no bridge, no classic-script edit); the `#mw-dev-perf` readout inside `#mw-dev-row` + `[mzperf]` console line every 10 steps; the `www/` grep proof (criterion 4); `docs/PERF-BASELINE.md` method + planned protocol + re-measure recipe; the 10-step user checklist and an empty Device report section in the SUMMARY (the orchestrator builds the debug APK after this plan lands)
+
+**Wave 2** *(blocked on the user's device report)*
+
+- [ ] 49-02-PLAN.md — reads the Device report (stops if absent); fills the doc's Device / Protocol-as-run / BEFORE / Jank / Decision sections with the numbers quoted as given; applies the ≥ 16 ms / confirmed-jank rule per row; at most one presentation-only fix commit citing the row + a blocking AFTER-run checkpoint on a second APK (skipped when nothing qualifies — "no row qualified; the phase closes with the baseline and no fix"); criteria 1-4 verbatim, closing gates, PERF-01/02 complete
 
 <details>
 <summary>v1.5 phase details (36–43) — archived, see `.planning/milestones/v1.5-ROADMAP.md`</summary>
