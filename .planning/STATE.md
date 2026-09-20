@@ -4,15 +4,15 @@ milestone: v1.6
 milestone_name: Shell Debt & Dead Code
 current_phase: 48
 status: executing
-stopped_at: Completed 48-03-PLAN.md (narration-pipeline + engine-facing test name/comment sweep)
-last_updated: "2026-09-20T04:50:30.161Z"
+stopped_at: Completed 48-04-PLAN.md (shell-* suites part B + fixture hygiene)
+last_updated: "2026-09-20T05:46:21.410Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 48 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 21
-  completed_plans: 19
+  completed_plans: 20
   percent: 67
 current_phase_name: Stale Docs, Comments & Test Names Purge
 ---
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-19 — after Phase 47; v1.6 Shell Deb
 ## Current Position
 
 Phase: 48 — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 48 execution started
-Progress: [█████████░] 90%
+Progress: [██████████] 95%
 
 ## Ground Truth (durable facts every session needs)
 
@@ -124,8 +124,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20T04:50:30.107Z
-Stopped at: Completed 48-03-PLAN.md (narration-pipeline + engine-facing test name/comment sweep)
+Last session: 2026-09-20T05:46:06.452Z
+Stopped at: Completed 48-04-PLAN.md (shell-* suites part B + fixture hygiene)
 Resume file: None
 
 ## Operator Next Steps
@@ -251,6 +251,7 @@ Resume file: None
 | Phase 48 P01 | 35min | 2 tasks | 11 files |
 | Phase 48 P02 | ~90min | 2 tasks | 14 files |
 | Phase 48 P03 | 50min | 2 tasks | 26 files |
+| Phase 48 P04 | ~55min | 3 tasks | 71 files |
 
 ## Decisions
 
@@ -485,6 +486,9 @@ Resume file: None
 - [Phase ?]: 48-02: heroTab.js's five retired-window.__mz* bridge archaeology comments rewritten even though not named in the plan's per-file action list — required by the plan's own --paths src unlisted-0 acceptance criterion
 - [Phase ?]: 48-02: class-B ALLOWED match regexes must target the raw per-line text the scanner splits on (\r?\n) — a multi-line comment's keyword phrase can straddle two lines
 - [Phase ?]: 48-03: fixed a tools/stale-terms.mjs --paths scoping bug (directory-prefix ALLOWED entries were dropped when scoped to individual files); flagged usable-features-audit.test.js:566's dead .toasts fallback for a future behaviour-level cleanup instead of touching a field name
+- [Phase ?]: 48-04: retired-bridges/wornSlots test/unit/ assert. prefix ALLOWED entries cover any assertion naming a retired __mz* bridge as proving its absence, replacing per-file duplicates
+- [Phase ?]: 48-04: fixture-hygiene Task 3 used one leading-space/trailing-comma substring pattern per key pair (covers whole-line, prefixed, and suffixed shapes) instead of the plan's literal two-pattern list; verified against all 55 target files with zero unhandled-shape stops, zero reverts
+- [Phase ?]: 48-04: class-matrix.test.js's mock run/row won:false fields included in fixture hygiene (rowFromRun never reads run.won since 46-02 deleted that field; file was explicitly named in the 46-02 handoff list)
 
 ### Blockers
 

@@ -297,7 +297,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 48-04-PLAN.md — test group B (shell-* source-pin suites, harness twin, bridge-registry, inputGuards, parity comparables): the Phase 35 invariant suite and every absence pin recorded as class-A survivors, retired-bridge archaeology removed; then the fixture-hygiene commit (inert `flightLeft/flightCooldown` + `won: false` keys out of ~56 hand-built test states — the 46-02 handoff — revert-not-fix, one revertable commit)
+- [x] 48-04-PLAN.md — test group B (shell-* source-pin suites, harness twin, bridge-registry, inputGuards, parity comparables): the Phase 35 invariant suite and every absence pin recorded as class-A survivors, retired-bridge archaeology removed; then the fixture-hygiene commit (inert `flightLeft/flightCooldown` + `won: false` keys out of ~56 hand-built test states — the 46-02 handoff — revert-not-fix, one revertable commit)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -381,7 +381,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
 | 46. Honest Names, Dead Exports & the Tutorial Decision | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 47. Shell Modularisation | v1.6 | 5/5 | Complete    | 2026-09-19 |
-| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 3/5 | In Progress|  |
+| 48. Stale Docs, Comments & Test Names Purge | v1.6 | 4/5 | In Progress|  |
 | 49. Measure-First Perf Pass | v1.6 | 0/TBD | Not started (needs the Pixel 7) | - |
 | 36. Balance Foundation, Effect Timers & Small Independent Wins | v1.5 | 6/6 | Complete    | 2026-09-17 |
 | 37. Equipment Slot Model & eff() Refactor | v1.5 | 4/4 | Complete    | 2026-09-17 |
