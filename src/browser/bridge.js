@@ -198,6 +198,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — the narrated() helper building loot/find/store narration lines)"]),
     purpose: "Presentation-only queue of narration HTML lines a dispatch produced, read once by the encounter card that follows; never a field on state.",
   }),
+  __mzPerfMarks: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — the one canvas draw() call's dev-gated timing bracket, PERF-02 fix 2)"]),
+    purpose: "Bridges the SAME perfMarks module instance stepWith already imports directly, so classic paint()'s draw() call — now the only canvas draw per step — can record its own `draw` timing row from the classic side (which cannot `import`); read-only from paint() (record() only, never reset()/summary()).",
+  }),
   __mzPreferencesOverride: Object.freeze({
     owner: "src/browser/storage.js",
     consumers: Object.freeze(["test/persistence/harness/fakePreferences.js"]),

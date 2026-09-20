@@ -192,15 +192,34 @@ test("PERF-01 (shell pin): the const perf = line gates on .dev ? perfMarks : nul
   assert.match(STEP_WITH_REGION, /const perf = window\.__mzState\.get\(\)\?\.dev \? perfMarks : null;/);
 });
 
-test("PERF-01 (shell pin): stepWith records dispatch/paint/draw/step exactly once each and calls perfReadout(perf) once; file-wide perf.record( occurs exactly 4 times", () => {
-  for (const row of ["dispatch", "paint", "draw", "step"]) {
+test("PERF-01 (shell pin): stepWith records dispatch/paint/step exactly once each and calls perfReadout(perf) once; file-wide perf.record( occurs exactly 4 times (dispatch/paint/step in stepWith + draw in paint(), fix 2)", () => {
+  // Phase 49 (PERF-02, fix 2): `draw` moved OUT of stepWith — classic
+  // paint() now brackets the one remaining canvas draw itself (the
+  // standalone `window.draw()` stepWith used to call a second time was the
+  // redundant draw 49-01's Method section found; removed here). See the
+  // PAINT_DRAW_REGION test below for draw's own pin.
+  for (const row of ["dispatch", "paint", "step"]) {
     const hits = STEP_WITH_REGION.match(new RegExp(`perf\\.record\\("${row}",`, "g")) || [];
     assert.equal(hits.length, 1, `expected exactly one perf.record("${row}", in stepWith`);
   }
+  const drawInStepWith = STEP_WITH_REGION.match(/perf\.record\("draw",/g) || [];
+  assert.equal(drawInStepWith.length, 0, "draw is no longer recorded inside stepWith (fix 2 — see PAINT_DRAW_REGION pin)");
   const readoutHits = STEP_WITH_REGION.match(/perfReadout\(perf\)/g) || [];
   assert.equal(readoutHits.length, 1);
   const fileWideRecordHits = CODE.match(/perf\.record\(/g) || [];
   assert.equal(fileWideRecordHits.length, 4);
+});
+
+// Phase 49 (PERF-02, fix 2): the classic paint()'s own draw() bracket —
+// `renderEncounter(); renderRail();` through the closing brace of paint().
+const PAINT_DRAW_REGION = sliceBetween(CLASSIC_CODE, "renderEncounter();\n  renderRail();", "\n}");
+
+test("PERF-01 (shell pin, fix 2): paint()'s draw() bracket records exactly once, gates on window.__mzState.get()?.dev ? window.__mzPerfMarks : null, and draw() itself is called exactly once in this region", () => {
+  assert.match(PAINT_DRAW_REGION, /const perf = window\.__mzState\.get\(\)\?\.dev \? window\.__mzPerfMarks : null;/);
+  const recordHits = PAINT_DRAW_REGION.match(/perf\.record\("draw",/g) || [];
+  assert.equal(recordHits.length, 1);
+  const drawCallHits = PAINT_DRAW_REGION.match(/\bdraw\(\);/g) || [];
+  assert.equal(drawCallHits.length, 1, "expected exactly one draw() call in paint()'s tail — the ONLY canvas draw per step now");
 });
 
 test("PERF-01 (shell pin): the marks bracket the right calls, by index order", () => {
@@ -220,18 +239,27 @@ test("PERF-01 (shell pin): the marks bracket the right calls, by index order", (
   const tPaint = idx("const tPaint");
   const paintCall = idx("window.paint();");
   const recordPaint = idx('perf.record("paint"');
-  const tDraw = idx("const tDraw");
-  const drawCall = idx("window.draw();");
-  const recordDraw = idx('perf.record("draw"');
+  // Phase 49 (PERF-02, fix 2): `draw`'s own tDraw/record pair no longer
+  // lives in stepWith — see PAINT_DRAW_REGION's own ordering pin below.
   const logLine = idx("window.logLine(line)");
   const recordStep = idx('perf.record("step"');
   assert.ok(tPaint < paintCall);
   assert.ok(paintCall < recordPaint);
-  assert.ok(recordPaint < tDraw);
+  assert.ok(recordPaint < logLine);
+  assert.ok(logLine < recordStep);
+});
+
+test("PERF-01 (shell pin, fix 2): within paint()'s draw() bracket, tDraw precedes draw() precedes the record call, by index order", () => {
+  const idx = (needle) => {
+    const i = PAINT_DRAW_REGION.indexOf(needle);
+    assert.ok(i !== -1, `not found: ${needle}`);
+    return i;
+  };
+  const tDraw = idx("const tDraw");
+  const drawCall = idx("draw();");
+  const recordDraw = idx('perf.record("draw"');
   assert.ok(tDraw < drawCall);
   assert.ok(drawCall < recordDraw);
-  assert.ok(recordDraw < logLine);
-  assert.ok(logLine < recordStep);
 });
 
 test("PERF-01 (shell pin): function perfReadout(perf) is declared exactly once; its body wires the readout element, formatReadout, PERF_LOG_EVERY and the [mzperf] logcat line; file-wide perfReadout( occurs exactly 3 times (declaration + two calls)", () => {
@@ -272,6 +300,17 @@ test("PERF-01 (shell pin): the <style> block declares #mw-dev-perf{...} and #mw-
   assert.equal(getElHits.length, 1);
 });
 
-test("PERF-01 (shell pin): the classic script (everything before <script type=\"module\">) carries no perfMarks, perfReadout or performance.now token", () => {
-  assert.equal(/perfMarks|perfReadout|performance\.now/.test(CLASSIC_CODE), false);
+test("PERF-01 (shell pin): the classic script (everything before <script type=\"module\">) carries no perfMarks or perfReadout token, and no performance.now token outside paint()'s own draw() bracket (fix 2)", () => {
+  // Phase 49 (PERF-02, fix 2): the classic script still never spells the
+  // bare `perfMarks`/`perfReadout` identifiers (it can't `import` — it only
+  // ever reaches the module's perfMarks instance through the
+  // window.__mzPerfMarks bridge) — but it NOW carries exactly two
+  // `performance.now` tokens, both inside paint()'s own dev-gated draw()
+  // bracket (PAINT_DRAW_REGION), the sanctioned exception this fix
+  // introduced. Outside that one region, the invariant is unchanged: zero.
+  assert.equal(/perfMarks|perfReadout/.test(CLASSIC_CODE), false);
+  const outsideDrawBracket = CLASSIC_CODE.replace(PAINT_DRAW_REGION, "");
+  assert.equal(/performance\.now/.test(outsideDrawBracket), false);
+  const insideDrawBracketHits = PAINT_DRAW_REGION.match(/performance\.now/g) || [];
+  assert.equal(insideDrawBracketHits.length, 2, "expected exactly the tDraw read + the record() subtraction, both inside paint()'s draw() bracket");
 });

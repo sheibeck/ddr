@@ -346,7 +346,13 @@ test("(l) layout: the tab bar is a static flex child, .mw-screens is flush, and 
   assert.match(tabbarRule[1], /flex:none/);
   assert.doesNotMatch(tabbarRule[1], /position:fixed/);
   assert.match(HTML, /\.mw-screens\{[^}]*padding:0[^}]*\}/);
-  assert.match(CODE, /renderEncounter\(\);\s*renderRail\(\);\s*draw\(\);/);
+  // Phase 49 (PERF-02, fix 2): renderRail() is still the statement directly
+  // before draw() — draw() is now the ONLY canvas draw per step (stepWith's
+  // own redundant second draw() call, 49-01's finding, was removed) — but a
+  // dev-gated timing bracket (`const perf = ...; const tDraw = ...;`) now
+  // sits textually between them, so the adjacency check allows any
+  // non-brace content in between rather than requiring zero gap.
+  assert.match(CODE, /renderEncounter\(\);\s*renderRail\(\);[^{}]*draw\(\);/);
 });
 
 // ─── (m) aria-disabled sweep ──────────────────────────────────────────────

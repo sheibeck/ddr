@@ -2478,7 +2478,18 @@ function paint() {
 
   renderEncounter();
   renderRail();
+  // Phase 49 (PERF-02, fix 2): this is now the ONLY canvas draw per step —
+  // stepWith's own external `window.draw()` call (a redundant second draw
+  // per step, 49-01's finding) is removed; the `draw` timing row is
+  // re-bracketed here so it still measures exactly one real canvas draw
+  // (never 0), via the window.__mzPerfMarks bridge (the module script's own
+  // perfMarks instance — same `perf ? ... : 0` / `if (perf)` gate shape
+  // stepWith uses, same zero-cost/zero-recording guarantee in a normal,
+  // non-dev run).
+  const perf = window.__mzState.get()?.dev ? window.__mzPerfMarks : null;
+  const tDraw = perf ? performance.now() : 0;
   draw();
+  if (perf) perf.record("draw", performance.now() - tDraw);
 }
 
 /* ---------------- encounters ---------------- */
@@ -4361,6 +4372,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // joiner-card level readouts still need it).
   window.__mzTables = Object.freeze({ ROMAN });
 
+  // Phase 49 (PERF-02, fix 2) — the SAME perfMarks module instance stepWith
+  // (this module script) already imports, bridged for the classic paint()'s
+  // own dev-gated draw() timing bracket. paint() is the classic <script> and
+  // cannot `import` — same reason every other window.__mz* bridge in this
+  // block exists. Read-only from the classic side: paint() only calls
+  // record(), never reset()/summary() (stepWith and mzDevStartAtDepth own
+  // those). Assigned here so it exists before the first paint() call, same
+  // as __mzTables above.
+  window.__mzPerfMarks = perfMarks;
+
   // Phase 25.1 (DFB-04/DFB-06): read-only helpers for the classic script's
   // offer card and camp button — the ENGINE alone enforces the swap and the
   // camp gate; these bridges only let the shell DISPLAY the same numbers.
@@ -5036,9 +5057,19 @@ window.__mzClassicBoot = async function classicBoot() {
     window.paint();
     mwPaintSkipHiddenTabs = false;
     if (perf) perf.record("paint", performance.now() - tPaint);
-    const tDraw = perf ? performance.now() : 0;
-    window.draw();
-    if (perf) perf.record("draw", performance.now() - tDraw);
+    // Phase 49 (PERF-02, fix 2): the standalone `window.draw()` call that
+    // used to live here (and its own tDraw/perf.record("draw", ...)
+    // bracket) is removed — it was a redundant SECOND canvas draw per step
+    // (49-01's finding: classic paint() already ends with
+    // `renderEncounter(); renderRail(); draw();`). The `draw` row is now
+    // recorded from inside paint() itself (docs/PERF-BASELINE.md#Method),
+    // bracketing the one real draw that remains. Read-only S/`cam` state
+    // (mzCenterMap/mzKeepPartyInView below only reposition the already-
+    // drawn canvas via positionCanvas()'s CSS left/top — draw()'s own pixel
+    // content depends only on `S`, already set above, never on `cam` — so
+    // removing this call changes nothing about final on-screen correctness;
+    // verified by reading draw()/positionCanvas()/centerMap()/
+    // keepPartyInView() before making this change).
     for (const line of html) window.logLine(line);
     // Device-review Pass DR8, retargeted quick task 260918-vm3 (stationary
     // camera, user request 2026-09-18): a genuine step keeps the party in
