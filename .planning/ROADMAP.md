@@ -215,7 +215,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 52-03-PLAN.md — Apply the checkpoint ruling (fix rows or explicit per-row rulings, never silent) + AFTER bot readout under Phase 51's flags (`v17-p52-after-smoke.json`) + the `### v1.7 · Phase 52 — cadence & damage curve` ledger H3 (BEFORE by reference to 608a0e5, AFTER, Reading table, cadence quote, flagged rows) + gates
+- [x] 52-03-PLAN.md — Apply the checkpoint ruling (fix rows or explicit per-row rulings, never silent) + AFTER bot readout under Phase 51's flags (`v17-p52-after-smoke.json`) + the `### v1.7 · Phase 52 — cadence & damage curve` ledger H3 (BEFORE by reference to 608a0e5, AFTER, Reading table, cadence quote, flagged rows) + gates
 
 ### Phase 53: Joiner Level Cap
 
@@ -328,7 +328,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 52. Foe Cadence & Damage Curve | v1.7 | 2/3 | In Progress|  |
+| 52. Foe Cadence & Damage Curve | v1.7 | 3/3 | In Progress|  |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |

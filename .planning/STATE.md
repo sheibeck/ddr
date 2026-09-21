@@ -4,17 +4,17 @@ milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 52
 current_phase_name: Foe Cadence & Damage Curve
-status: executing
-stopped_at: Completed 52-02-PLAN.md
-last_updated: "2026-09-21T01:30:04.307Z"
+status: verifying
+stopped_at: Completed 52-03-PLAN.md
+last_updated: "2026-09-21T02:19:35.733Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 52 execution started
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
-  percent: 33
+  completed_plans: 9
+  percent: 50
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–51 complete; 
 
 Phase: 52 (Foe Cadence & Damage Curve) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-20 — Phase 52 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -140,8 +140,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-21T01:30:04.274Z
-Stopped at: Completed 52-02-PLAN.md
+Last session: 2026-09-21T02:19:35.702Z
+Stopped at: Completed 52-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -275,6 +275,7 @@ Resume file: None
 | Phase 51 P03 | ~40min | 2 tasks | 3 files |
 | Phase 52 P01 | ~55min | 3 tasks | 6 files |
 | Phase 52 P02 | ~2h | 3 tasks | 14 files |
+| Phase 52 P03 | ~90min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -531,6 +532,8 @@ Resume file: None
 - [Phase ?]: 52-01: band hero levels for the damage-curve audit come from the Phase 51 AFTER smoke's median meanLevel per band (Filter=2, Wall=3, Breakaway/Endgame=5 default); a row's effective level in a band is max(tier,bandLevel) capped at 5
 - [Phase ?]: 52-02: crit doubles the dice at all three foe-damage sites via shared foeLevelBase(f); Herman gets sp.strikesAs: 5 replacing the flat-25 notation; only action-script.combat.json#lose moved (wp 50->51), declared +52 with a standing guard
 - [Phase ?]: 52-02: checkpoint pre-answered hand-to-54 — no dice trims this plan; every still-flagged AFTER-audit row gets an explicit per-row ruling (deep-tier vs curve-height dial) in content/BESTIARY-REBALANCE.md
+- [Phase ?]: 52-03: Applied the user's hand-to-54 ruling verbatim as per-row Disposition text on all 65 still-flagged damage-curve cells (21 tier-5 -> deliberate deep-tier threat; 44 tier 2-4 -> curve height, a Phase 54 dial) — no bestiary trims this plan
+- [Phase ?]: 52-03: AFTER bot readout ran on the ruling-only commit 049ab50 (no engine/bestiary changes in this plan); meta-parity confirmed true against Phase 51's AFTER smoke modulo commit
 
 ### Blockers
 
