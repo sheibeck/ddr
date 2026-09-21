@@ -10,7 +10,15 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { bandReadout, formatBandReadout } from "../../tools/lib/band-readout.mjs";
+import {
+  bandReadout,
+  formatBandReadout,
+  survivalReadout,
+  survivalFromHistogram,
+  survivalVerdict,
+  formatSurvivalReadout,
+  TARGET_SURVIVAL,
+} from "../../tools/lib/band-readout.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -137,4 +145,152 @@ test("tune-difficulty.mjs source: prints the band block after printSharedReadout
       'import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";',
     ),
   );
+  const idxFormatSurvival = src.indexOf("formatSurvivalReadout(");
+  assert.ok(idxFormatSurvival > -1);
+  assert.ok(idxFormatSurvival > idxBand);
+  assert.ok(idxFormatSurvival < idxOutcome);
+  assert.ok(src.includes("survival: survivalReadout(results, opts)"));
+});
+
+// --- USER RULING C (2026-09-21): the per-floor survival block ------------
+
+// 10 dead runs at [1, 3, 5, 5, 6, 7, 9, 16, 20, 23] (trap at 3, starvation
+// at 6) + 2 stuck runs at depth 6 (reached, never deaths). Expected values
+// below were computed by this same survivalReadout implementation and
+// cross-checked by hand for the L=1 and L=6 rows quoted in the plan.
+function makeSurvivalResults() {
+  return [
+    { deathDepth: 1, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 3, dead: true, stuck: false, cause: "undone by a trap" },
+    { deathDepth: 5, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 5, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 6, dead: true, stuck: false, cause: "starved in the dark" },
+    { deathDepth: 7, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 9, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 16, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 20, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 23, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 6, dead: false, stuck: true, cause: "unknown" },
+    { deathDepth: 6, dead: false, stuck: true, cause: "unknown" },
+  ];
+}
+
+test("survivalReadout: reached/deaths/p_L/S_L on a synthetic set; a stuck run counts as reached at every floor <= its depth and never as a death", () => {
+  const r = survivalReadout(makeSurvivalResults(), {});
+  assert.equal(r.runs, 12);
+  assert.equal(r.stuck, 2);
+  const f1 = r.floors.find((f) => f.floor === 1);
+  assert.deepStrictEqual(
+    { reached: f1.reached, deaths: f1.deaths, pL: f1.pL, SL: f1.SL },
+    { reached: 12, deaths: 1, pL: 91.7, SL: 91.7 },
+  );
+  const f6 = r.floors.find((f) => f.floor === 6);
+  // reached_6: dead >= 6 (6,7,9,16,20,23 = 6) + both stuck runs (depth 6 >= 6) = 8
+  assert.deepStrictEqual(
+    { reached: f6.reached, deaths: f6.deaths, starvation: f6.starvation },
+    { reached: 8, deaths: 1, starvation: 1 },
+  );
+});
+
+test("survivalReadout: start depth 20 reports S_L relative to 20 and reach-20 = 100", () => {
+  const results = [
+    { deathDepth: 20, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 21, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 22, dead: true, stuck: false, cause: "combat" },
+  ];
+  const r = survivalReadout(results, { startDepth: 20 });
+  assert.equal(r.startDepth, 20);
+  assert.equal(r.reach20, 100);
+  const f20 = r.floors.find((f) => f.floor === 20);
+  assert.equal(f20.SL, f20.pL); // the chain starts fresh at the start depth
+});
+
+test("survivalReadout: deaths split hazard / starvation / combat by cause", () => {
+  const r = survivalReadout(makeSurvivalResults(), {});
+  const f3 = r.floors.find((f) => f.floor === 3);
+  assert.equal(f3.hazard, 1);
+  const f6 = r.floors.find((f) => f.floor === 6);
+  assert.equal(f6.starvation, 1);
+  const f1 = r.floors.find((f) => f.floor === 1);
+  assert.equal(f1.combat, 1);
+});
+
+test("TARGET_SURVIVAL: 25 rows; floor 1 p 98.8 S 98.8; floor 10 p 78.9 S 24.3; floor 20 p 84.5 with reach20Band [3, 5]; floor 25 p 88.9 S 1.5", () => {
+  assert.equal(TARGET_SURVIVAL.length, 25);
+  assert.deepStrictEqual(TARGET_SURVIVAL[0], { floor: 1, pL: 98.8, SL: 98.8, note: "High early survival" });
+  const f10 = TARGET_SURVIVAL.find((t) => t.floor === 10);
+  assert.equal(f10.pL, 78.9);
+  assert.equal(f10.SL, 24.3);
+  const f20 = TARGET_SURVIVAL.find((t) => t.floor === 20);
+  assert.equal(f20.pL, 84.5);
+  assert.deepStrictEqual(f20.reach20Band, [3, 5]);
+  const f25 = TARGET_SURVIVAL.find((t) => t.floor === 25);
+  assert.equal(f25.pL, 88.9);
+  assert.equal(f25.SL, 1.5);
+});
+
+test("survivalVerdict: floors 1-10 fail beyond 8 points, 11-19 beyond 3, floor 20 by the reach-20 band; empty missing list when all inside", () => {
+  const r = survivalReadout(makeSurvivalResults(), {});
+  const verdict = survivalVerdict(r);
+  assert.ok(verdict.missing.some((m) => m.floor === 10));
+  assert.ok(verdict.missing.some((m) => m.floor === 16));
+  assert.ok(!verdict.missing.some((m) => m.floor === 1));
+  assert.equal(verdict.reach20.pass, false); // reach20 = 16.7%, outside [3,5]
+  assert.deepStrictEqual(verdict.reach20.band, [3.0, 5.0]);
+
+  // An empty missing list when every floor 1-19 tracks the target p_L
+  // exactly: build a synthetic million-run set whose per-floor death
+  // counts are derived directly from TARGET_SURVIVAL's own p_L values.
+  const N = 1_000_000;
+  let reached = N;
+  const deathsByFloor = {};
+  for (const row of TARGET_SURVIVAL) {
+    if (row.floor > 19) break;
+    const d = Math.round(reached * (1 - row.pL / 100));
+    deathsByFloor[row.floor] = d;
+    reached -= d;
+  }
+  deathsByFloor[20] = reached; // remaining survivors all "die" at 20 — floor 20 itself isn't in `missing`
+  const onCurve = [];
+  for (const [depthStr, count] of Object.entries(deathsByFloor)) {
+    for (let i = 0; i < count; i++) {
+      onCurve.push({ deathDepth: Number(depthStr), dead: true, stuck: false, cause: "combat" });
+    }
+  }
+  const flat = survivalReadout(onCurve, {});
+  assert.deepStrictEqual(survivalVerdict(flat).missing, []);
+});
+
+test("survivalFromHistogram: matches survivalReadout on a 0-stuck set (the rung-2 histogram 1:19 2:20 3:30 4:59 5:45 6:17 7:8 8:1 9:1 gives p_1 90.5, p_4 55.0, p_5 37.5, S_4 36.0)", () => {
+  const histogram = { 1: 19, 2: 20, 3: 30, 4: 59, 5: 45, 6: 17, 7: 8, 8: 1, 9: 1 };
+  const r = survivalFromHistogram(histogram, 200, 1);
+  assert.equal(r.runs, 200);
+  assert.equal(r.stuck, 0);
+  const f1 = r.floors.find((f) => f.floor === 1);
+  const f4 = r.floors.find((f) => f.floor === 4);
+  const f5 = r.floors.find((f) => f.floor === 5);
+  assert.equal(f1.pL, 90.5);
+  assert.equal(f4.pL, 55.0);
+  assert.equal(f5.pL, 37.5);
+  assert.equal(f4.SL, 36.0);
+  // matches survivalReadout called directly on the equivalent synthetic set
+  const direct = survivalReadout(
+    Object.entries(histogram).flatMap(([d, c]) =>
+      Array.from({ length: c }, () => ({ deathDepth: Number(d), dead: true, stuck: false, cause: "unknown" })),
+    ),
+    { startDepth: 1 },
+  );
+  assert.deepStrictEqual(r, direct);
+});
+
+test("formatSurvivalReadout: the header line is exact, one line per floor carries dS and PASS/MISS, the verdict line is last", () => {
+  const r = survivalReadout(makeSurvivalResults(), {});
+  const lines = formatSurvivalReadout(r);
+  assert.equal(
+    lines[0],
+    "Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths):",
+  );
+  assert.match(lines[1], /^  L=1  reached=12  deaths=1 \(hazard 0 \/ starvation 0 \/ combat 1\)  p_L=91\.7%  S_L=91\.7%  target p_L=98\.8%  target S_L=98\.8%  dS=-7\.1  PASS$/);
+  assert.equal(lines[lines.length - 1].startsWith("  verdict:"), true);
+  assert.ok(lines.some((l) => /^  reach-20: /.test(l)));
 });

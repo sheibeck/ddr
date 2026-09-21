@@ -33,9 +33,13 @@
 // (tools/lib/band-readout.mjs) — the reach >=16 / band-share / per-band-cause
 // numbers the four-band ledger needs; a report addition only, the bot policy
 // in tools/lib/tuning-bot.mjs is untouched.
+//
+// Phase 54 (USER RULING C): the per-floor survival block — the tuning target
+// is the 25-row p_L / S_L curve in TARGET_SURVIVAL; report-only, bot policy
+// untouched.
 
 import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
-import { bandReadout, formatBandReadout } from "./lib/band-readout.mjs";
+import { bandReadout, formatBandReadout, survivalReadout, formatSurvivalReadout } from "./lib/band-readout.mjs";
 
 /**
  * autoPlayOnce(seed, opts) — plays one full run to completion via the
@@ -157,6 +161,11 @@ function printReport(results, opts) {
     console.log(line);
   }
 
+  console.log("");
+  for (const line of formatSurvivalReadout(survivalReadout(results, opts))) {
+    console.log(line);
+  }
+
   console.log(`\nOutcome: ${deadCount} dead, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
   console.log("");
 }
@@ -213,6 +222,7 @@ function main() {
           dead: results.filter((r) => r.dead).length,
           parley: parleySummary(results),
           bands: bandReadout(results, opts),
+          survival: survivalReadout(results, opts),
           ...sharedJson(results, opts),
         },
         null,
