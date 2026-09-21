@@ -29,7 +29,7 @@
 import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor } from "./difficulty.js";
+import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor, remapEncounterResult } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
 import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
@@ -185,8 +185,13 @@ export function offerFind(state, it, events = []) {
 export function encounterDot(state, rng, events = []) {
   const t = rng.d(8);
   const r = rng.d(10);
-  const result = ENCOUNTER_TABLES[t - 1][r - 1];
-  events.push({ type: "encounterRolled", table: t, roll: r, result });
+  // Phase 54 (BAND-02, USER RULING D): DOT_MIX/FIGHT_SHARE — the SAME two
+  // draws, remapped AFTER both rolls (zero new draws). `rolled` is only
+  // added to the event when the remap actually changed the cell (identity
+  // — DOT_MIX all-1.0 — never adds it).
+  const rolled = ENCOUNTER_TABLES[t - 1][r - 1];
+  const result = remapEncounterResult(t, r, rolled);
+  events.push({ type: "encounterRolled", table: t, roll: r, result, ...(result !== rolled ? { rolled } : {}) });
 
   if (ENC_ALIAS[result]) {
     startCombat(state, false, ENC_ALIAS[result], rng, events);

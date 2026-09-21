@@ -31,7 +31,7 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
-import { difficultyCurve, scaleHazard, campHealFor, heroRegenFor, heroSpFor, setDialsForTuning } from "../../engine/difficulty.js";
+import { difficultyCurve, scaleHazard, campHealFor, heroRegenFor, heroSpFor, setDialsForTuning, wanderWakeFacesFor } from "../../engine/difficulty.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -859,6 +859,63 @@ test("newDay: a fed night heals round(0.17 * maxWP) + d10 - 5 (min 1) — the d1
   const expectedHeal = campHealFor(55, 5);
   assert.equal(expectedHeal, Math.max(1, Math.round(0.17 * 55) + 5 - 5));
   assert.equal(state.c.wp, Math.min(55, 10 + expectedHeal));
+});
+
+// Phase 54 (BAND-02, USER RULING D): WANDER_RATE — the d20 face count (out
+// of newDay's SAME eight per-hour draws) that wakes a sleeping party.
+test("wanderWakeFacesFor: 1 -> face 1; 2 -> faces 1-2; 0 -> never; Bard = +1 capped at 20; the eight d20 draws are unchanged", () => {
+  assert.equal(wanderWakeFacesFor("Wizard"), 1, "identity: only a bare 1 wakes a non-Bard");
+  assert.equal(wanderWakeFacesFor("Bard"), 2, "identity: a Bard's canon +1 stacks on top of the dial");
+
+  const restore2 = setDialsForTuning({ WANDER_RATE: 2 });
+  try {
+    assert.equal(wanderWakeFacesFor("Wizard"), 2);
+    assert.equal(wanderWakeFacesFor("Bard"), 3);
+  } finally {
+    restore2();
+  }
+
+  const restore0 = setDialsForTuning({ WANDER_RATE: 0 });
+  try {
+    assert.equal(wanderWakeFacesFor("Wizard"), 0, "0 means a wandering monster never wakes the party");
+  } finally {
+    restore0();
+  }
+
+  const restoreCap = setDialsForTuning({ WANDER_RATE: 20 });
+  try {
+    assert.equal(wanderWakeFacesFor("Bard"), 20, "a Bard's +1 is capped at 20, a d20's own ceiling");
+  } finally {
+    restoreCap();
+  }
+
+  // The eight d20 draws happen regardless of WANDER_RATE's value — count
+  // them directly against a real newDay call.
+  function countingRng(inner) {
+    let draws = 0;
+    return {
+      d(n) {
+        draws++;
+        return inner.d(n);
+      },
+      pick: (a) => inner.pick(a),
+      shuffle: (a) => inner.shuffle(a),
+      get draws() {
+        return draws;
+      },
+    };
+  }
+  const state = fixedState();
+  open(state.floor.g, 5, 5);
+  const restoreWide = setDialsForTuning({ WANDER_RATE: 5 });
+  try {
+    // heal d10=5, then eight wander checks all above wakeOn(5) -> never wakes
+    const rng = countingRng(fakeRng([5, 20, 20, 20, 20, 20, 20, 20, 20]));
+    newDay(state, false, rng, []);
+    assert.equal(rng.draws, 9, "the heal d10 plus exactly eight wander-check draws");
+  } finally {
+    restoreWide();
+  }
 });
 
 // --- newDay: audit-batch1 (2026-09-09, A3) resting cure roll --------------

@@ -27,7 +27,7 @@
 // comment for why.
 
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
-import { difficultyCurve, scaleHazard, heroSpFor, heroRegenFor, campHealFor } from "./difficulty.js";
+import { difficultyCurve, scaleHazard, heroSpFor, heroRegenFor, campHealFor, wanderWakeFacesFor } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost, inStone } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
@@ -776,7 +776,11 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   // draws wandering monsters twice as often. Same eight per-hour d20 draws
   // in the same order; only the hit widens from ===1 to <=2 for a Bard.
   // Every other sub wakes only on a bare 1, byte-identical to before.
-  const wakeOn = c.sub === "Bard" ? 2 : 1;
+  // Phase 54 (BAND-02, USER RULING D): WANDER_RATE — the SAME eight draws,
+  // just a wider (or narrower) face count that wakes the party; identity
+  // (1) reproduces the canon "===1" rule exactly, and the Bard's own +1 is
+  // additive on top of the dial (capped at 20), never doubled by it.
+  const wakeOn = wanderWakeFacesFor(c.sub);
   let woke = 0;
   for (let h = 0; h < 8; h++) if (rng.d(20) <= wakeOn) woke++;
   // 260919-00d (user ruling 2026-09-19): nothing wanders through solid

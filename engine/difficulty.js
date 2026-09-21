@@ -38,6 +38,7 @@
 
 import { FLEE_THIEF_BONUS } from "../content/flee.js";
 import { CLASSES } from "../content/classes.js";
+import { ENCOUNTER_TABLES } from "../content/encounters.js";
 
 /**
  * deepFreeze(obj) — Object.freeze is shallow; DIALS carries nested
@@ -607,6 +608,161 @@ export function startingGoldFor() {
  */
 export function startingPotionsFor(canon) {
   return Math.max(0, canon + live.STARTING_POTION_BONUS);
+}
+
+// --- 54-06 (BAND-02, USER RULING D): the late dials with the SAME draw
+// counts as today — DOT_MIX/FIGHT_SHARE (the encounter-table d8xd10 remap,
+// post-roll, no third draw) and WANDER_RATE (the wake-check face count, the
+// eight d20 draws unchanged).
+
+/**
+ * DOT_MIX_FAMILIES — every one of ENCOUNTER_TABLES' 80 cells belongs to
+ * EXACTLY one family (pinned by test): `fight` (the six monster-type
+ * strings ENC_ALIAS resolves — 43 of 80, FIGHT_SHARE = DOT_MIX.fight),
+ * `harm` (the -HP/status rows), `loot` (the treasure rows), `help` (food/
+ * store/joiner/+HP/+XP). "Teleport" is listed for completeness even though
+ * content/encounters.js's header documents its removal from every live cell
+ * (0 occurrences today — a future content change could reintroduce it
+ * without this table needing an update).
+ */
+export const DOT_MIX_FAMILIES = Object.freeze({
+  fight: Object.freeze(["Lair Beast", "Magical", "Beasts", "Humans", "Walking Dead", "Demons"]),
+  harm: Object.freeze(["-10 HP", "-15 HP", "-All armour", "Ailment", "Insanity", "Phobia", "Darkness", "Teleport"]),
+  loot: Object.freeze(["Weapon", "Magic Weapon", "Magic Armor", "Misc Magic", "Grimoire", "wilmst cache", "Faerie"]),
+  help: Object.freeze(["Food", "Store", "Joiner", "+10 HP", "+25 HP", "+10 XP", "+25 XP"]),
+});
+
+/** familyOf(cell) — which DOT_MIX_FAMILIES bucket a raw ENCOUNTER_TABLES
+ * cell string belongs to, or `null` for an unrecognized cell (defensive —
+ * every real cell is covered, pinned by test). Not exported — internal. */
+function familyOf(cell) {
+  for (const name of Object.keys(DOT_MIX_FAMILIES)) {
+    if (DOT_MIX_FAMILIES[name].includes(cell)) return name;
+  }
+  return null;
+}
+
+/**
+ * conversionTableFor(mix) — USER RULING D / 54-06: the ONE encounter-mix
+ * remap, memoised on `mix`'s own object identity (so repeated calls against
+ * the SAME live.DOT_MIX object are free, and the table is byte-identical
+ * across calls — `conversionTableFor` called twice on the same `mix` MUST
+ * return equal Maps). At every family ratio === 1 (or undefined) the
+ * returned Map is EMPTY — structural identity, zero conversions.
+ *
+ * For a family `f` with `mix[f] < 1` ("shrink f"): `k = round((1 - mix[f])
+ * * n_f)` of family `f`'s own cells, taken in ROW-MAJOR order (row 0's
+ * columns left to right, then row 1, ...), are each converted to the NEXT
+ * cell to the right in the SAME ROW (wrapping) that is NOT of family `f` —
+ * the family's own footprint shrinks toward its row-neighbours.
+ *
+ * For a family `f` with `mix[f] > 1` ("grow f"): `k = round((mix[f] - 1) *
+ * n_f)` cells are converted TO family `f`, sourced row by row (row-major):
+ * within each row, the DOMINANT non-`f` family present (most cells, ties
+ * broken by DOT_MIX_FAMILIES's own key order) donates its cells (left to
+ * right first); each donated cell becomes the nearest `f`-family cell to
+ * its right in that row (wrapping). A row with no `f` cell to copy from (or
+ * no non-`f` cell to donate) is skipped — the walk continues into the next
+ * row until `k` conversions land or every row has been tried.
+ */
+const conversionCache = new WeakMap();
+
+export function conversionTableFor(mix) {
+  const cached = conversionCache.get(mix);
+  if (cached) return cached;
+  const table = new Map();
+  for (const family of Object.keys(DOT_MIX_FAMILIES)) {
+    const ratio = mix[family];
+    if (ratio === undefined || ratio === 1) continue;
+    const members = DOT_MIX_FAMILIES[family];
+
+    if (ratio < 1) {
+      const cellsOfFamily = [];
+      ENCOUNTER_TABLES.forEach((row, t) => {
+        row.forEach((cell, r) => {
+          if (members.includes(cell)) cellsOfFamily.push({ t, r });
+        });
+      });
+      const k = Math.round((1 - ratio) * cellsOfFamily.length);
+      let converted = 0;
+      for (const { t, r } of cellsOfFamily) {
+        if (converted >= k) break;
+        const row = ENCOUNTER_TABLES[t];
+        let rr = (r + 1) % row.length;
+        let steps = 0;
+        while (members.includes(row[rr]) && steps < row.length) {
+          rr = (rr + 1) % row.length;
+          steps++;
+        }
+        if (members.includes(row[rr])) continue; // defensive: an all-family row has no valid target
+        table.set(`${t},${r}`, row[rr]);
+        converted++;
+      }
+    } else {
+      let cellsOfFamily = 0;
+      ENCOUNTER_TABLES.forEach((row) => row.forEach((cell) => { if (members.includes(cell)) cellsOfFamily++; }));
+      const k = Math.round((ratio - 1) * cellsOfFamily);
+      let converted = 0;
+      for (let t = 0; t < ENCOUNTER_TABLES.length && converted < k; t++) {
+        const row = ENCOUNTER_TABLES[t];
+        const familyPositions = [];
+        row.forEach((cell, r) => {
+          if (members.includes(cell)) familyPositions.push(r);
+        });
+        if (!familyPositions.length) continue; // nothing in this row to copy toward
+        const counts = {};
+        row.forEach((cell) => {
+          if (members.includes(cell)) return;
+          const fam = familyOf(cell);
+          if (fam) counts[fam] = (counts[fam] || 0) + 1;
+        });
+        const dominant = Object.keys(DOT_MIX_FAMILIES)
+          .filter((f) => f !== family && counts[f])
+          .reduce((best, f) => (best === null || counts[f] > counts[best] ? f : best), null);
+        if (!dominant) continue;
+        const dominantMembers = DOT_MIX_FAMILIES[dominant];
+        for (let r = 0; r < row.length && converted < k; r++) {
+          if (!dominantMembers.includes(row[r])) continue;
+          let rr = (r + 1) % row.length;
+          let steps = 0;
+          while (!familyPositions.includes(rr) && steps < row.length) {
+            rr = (rr + 1) % row.length;
+            steps++;
+          }
+          if (!familyPositions.includes(rr)) continue;
+          table.set(`${t},${r}`, row[rr]);
+          converted++;
+        }
+      }
+    }
+  }
+  conversionCache.set(mix, table);
+  return table;
+}
+
+/**
+ * remapEncounterResult(t, r, result) — engine/encounters.js#encounterDot's
+ * ONE remap hook, called AFTER both draws (the d8 table index `t` [1-based]
+ * and the d10 cell index `r` [1-based]) with the cell's own already-resolved
+ * `result` string. Zero new draws — a pure lookup against
+ * `conversionTableFor(live.DOT_MIX)`, keyed by the SAME zero-based
+ * `(t-1, r-1)` coordinates the table itself uses.
+ */
+export function remapEncounterResult(t, r, result) {
+  return conversionTableFor(live.DOT_MIX).get(`${t - 1},${r - 1}`) ?? result;
+}
+
+/**
+ * wanderWakeFacesFor(sub) — WANDER_RATE, the d20 face count (out of the
+ * SAME eight per-hour draws newDay already makes) that wakes a sleeping
+ * party to a wandering-monster fight. A Bard's canon +1 face is additive on
+ * TOP of the dial, capped at 20 (a d20's own ceiling) — the multiplier form
+ * this dial could have taken would double a Bard's bonus too, which canon
+ * never intended.
+ */
+export function wanderWakeFacesFor(sub) {
+  const base = live.WANDER_RATE;
+  return sub === "Bard" ? Math.min(20, base + 1) : base;
 }
 
 /**
