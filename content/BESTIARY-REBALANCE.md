@@ -554,7 +554,7 @@ otherwise the pre-existing Phase 18 finding — "canon natural armor (D-05);
 melee yardstick only, spells bypass (D-06); revisit Phase 21" still applies
 to his `sp.ar: 15` and is unrelated to this phase's damage-cliff fix.)
 
-#### Still flagged after the fixes (rule=dice) — pending ruling
+#### Still flagged after the fixes (rule=dice) — ruled
 
 The AFTER damage-curve audit (`tools/damage-curve-audit.mjs --rule=dice`,
 appended to `tools/damage-curve-audit-output.txt`) still flags 65 row×band
@@ -562,106 +562,124 @@ cells (down from the BEFORE run's 116) after the crit-rule fix and Herman's
 `sp.strikesAs`. Every row below is reproduced verbatim from that audit's own
 `## Flagged (rule=dice)` table:
 
-band | tier | type | name | dice | maxSingleHit | MU bar | % | category | wouldBeTrim
----|---|---|---|---|---|---|---|---|---
-Filter | 3 | Beasts | Rast | 1d8+4 | 31 | 39.5 | 78% | row-dice | 1d8+0
-Filter | 3 | Beasts | Sterling | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0
-Filter | 4 | Beasts | Drake | 2d10+4 | 61 | 46.0 | 133% | row-dice | 1d6+0
-Filter | 3 | Humans | Frank | 1d8+6 | 35 | 39.5 | 89% | row-dice | 1d8+0
-Filter | 3 | Humans | Primp | 1d8+2 | 27 | 39.5 | 68% | row-dice | 1d8+0
-Filter | 4 | Humans | Craig | 1d12+0 | 37 | 46.0 | 80% | row-dice | 1d6+0
-Filter | 4 | Humans | Herman | d6 (default) | 34 | 46.0 | 74% | level-base | -
-Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 21 | 35.0 | 60% | row-dice | 1d6+3
-Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 23 | 35.0 | 66% | row-dice | 1d8+0
-Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0
-Filter | 3 | Magical | Werebeast | 1d10+0 | 27 | 39.5 | 68% | row-dice | 1d8+0
-Wall | 3 | Beasts | Rast | 1d8+4 | 33 | 39.5 | 84% | row-dice | 1d6+0
-Wall | 3 | Beasts | Sterling | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0
-Wall | 3 | Beasts | Wolf | 1d6+2 | 25 | 39.5 | 63% | row-dice | 1d6+1
-Wall | 4 | Beasts | Drake | 2d10+4 | 64 | 46.0 | 139% | level-base | -
-Wall | 4 | Beasts | Stink Bug | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Wall | 4 | Demons | Ghost | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 4 | Demons | Spectre | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Wall | 3 | Humans | Frank | 1d8+6 | 37 | 39.5 | 94% | row-dice | 1d6+0
-Wall | 3 | Humans | Primp | 1d8+2 | 29 | 39.5 | 73% | row-dice | 1d6+0
-Wall | 4 | Humans | Craig | 1d12+0 | 40 | 46.0 | 87% | level-base | -
-Wall | 4 | Humans | Herman | d6 (default) | 37 | 46.0 | 80% | level-base | -
-Wall | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 24 | 39.5 | 61% | row-dice | 1d8+0
-Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0
-Wall | 4 | Lair Beasts | Drarl | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Wall | 3 | Magical | Werebeast | 1d10+0 | 29 | 39.5 | 73% | row-dice | 1d6+0
-Wall | 4 | Magical | Drudge | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Wall | 4 | Walking Dead | Bones | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 4 | Walking Dead | Floater | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 4 | Walking Dead | Undead | d6 (default) | 28 | 46.0 | 61% | level-base | -
-Wall | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Breakaway | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3
-Breakaway | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
-Breakaway | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0
-Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Breakaway | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Breakaway | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3
-Breakaway | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0
-Breakaway | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | -
-Breakaway | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
-Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Breakaway | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Endgame | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3
-Endgame | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
-Endgame | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0
-Endgame | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Endgame | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
-Endgame | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3
-Endgame | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0
-Endgame | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | -
-Endgame | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
-Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Endgame | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
-Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+band | tier | type | name | dice | maxSingleHit | MU bar | % | category | wouldBeTrim | Disposition
+---|---|---|---|---|---|---|---|---|---|---
+Filter | 3 | Beasts | Rast | 1d8+4 | 31 | 39.5 | 78% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 3 | Beasts | Sterling | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 4 | Beasts | Drake | 2d10+4 | 61 | 46.0 | 133% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 3 | Humans | Frank | 1d8+6 | 35 | 39.5 | 89% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 3 | Humans | Primp | 1d8+2 | 27 | 39.5 | 68% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 4 | Humans | Craig | 1d12+0 | 37 | 46.0 | 80% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 4 | Humans | Herman | d6 (default) | 34 | 46.0 | 74% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 21 | 35.0 | 60% | row-dice | 1d6+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 23 | 35.0 | 66% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Filter | 3 | Magical | Werebeast | 1d10+0 | 27 | 39.5 | 68% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 3 | Beasts | Rast | 1d8+4 | 33 | 39.5 | 84% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 3 | Beasts | Sterling | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 3 | Beasts | Wolf | 1d6+2 | 25 | 39.5 | 63% | row-dice | 1d6+1 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Beasts | Drake | 2d10+4 | 64 | 46.0 | 139% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Beasts | Stink Bug | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Wall | 4 | Demons | Ghost | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Demons | Spectre | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Wall | 3 | Humans | Frank | 1d8+6 | 37 | 39.5 | 94% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 3 | Humans | Primp | 1d8+2 | 29 | 39.5 | 73% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Humans | Craig | 1d12+0 | 40 | 46.0 | 87% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Humans | Herman | d6 (default) | 37 | 46.0 | 80% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 24 | 39.5 | 61% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Lair Beasts | Drarl | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Wall | 3 | Magical | Werebeast | 1d10+0 | 29 | 39.5 | 73% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Magical | Drudge | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Wall | 4 | Walking Dead | Bones | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Walking Dead | Floater | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 4 | Walking Dead | Undead | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Wall | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
+Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
 
 `FLAGGED: 65 rows across 209 row×band cells (deep-tier 21, level-base 14,
 row-dice 30, bolt 0)` — `NOTED: 0 rows`.
 
-**Disposition per row is decided at the Plan 02 checkpoint and recorded by
-Plan 03 — nothing here is silently skipped (D-07).** The user's ruling
-(52-CONTEXT.md, recorded at plan approval, 2026-09-20): Phase 52 fixes
-exactly the two cliffs (the general crit rule and Herman's `sp.strikesAs`);
-NO dice trims land in this phase. Every still-flagged row above gets an
-explicit per-row ruling instead:
+**Every row above now carries its own `Disposition` cell (D-07) — nothing
+below is silently skipped.** The user's ruling (52-CONTEXT.md, recorded at
+plan approval, and re-confirmed in Plan 03's own execution instructions,
+2026-09-20): Phase 52 fixes exactly the two cliffs (the general crit rule
+and Herman's `sp.strikesAs`); **NO dice trims land in this phase.** Every
+still-flagged row above gets an explicit per-row ruling instead of a trim:
 
 - **`deep-tier` (21 cells — every tier-5 row above, including Herman T5):**
-  ruled a **deliberate deep-tier threat (Endgame band)** — D-07 already
-  allows this disposition for tier 5 without further review.
+  the exact `Disposition` cell text on each of those 21 rows (quoted once,
+  verbatim, above the table columns) — D-07 already allows this disposition
+  for tier 5 without further review. Herman T5's own post-fix crit is 37
+  (down from 100) — his tier-5 Endgame-band ruling is about the curve's
+  height at tier 5 in general, not a residual cliff of his own; his cliff
+  was fixed above.
 - **`level-base` (14 cells — Herman T4 and every other tier's DEFAULT-d6
   row: Stink Bug, Ghost, Spectre, Craig, Drarl T4, Drudge T4, Bones, Floater,
-  Undead, Drake at the Wall band):** the tier's own `lvl^2 + 12` crit
-  maximum trips the flag on its own — the row's OWN dice are not the cause.
-  Ruled **curve height — a Phase 54 dial (four-band retune), not a Phase 52
-  cliff** (REQUIREMENTS TUNE-08: "decide per creature whether it stays,
-  moves tier, or is retuned — the DMG-02 rows feed this").
+  Undead, Drake at the Wall band):** disposition **"curve height — a Phase
+  54 dial (four-band retune), not a Phase 52 cliff"** — the tier's own
+  `lvl^2 + 12` crit maximum (the tier's default d6 crit) trips the bar on
+  its own; the row's OWN dice are not the cause. Herman T4's post-fix crit
+  is also 37 (down from 82, the tier-5 default by rulebook design, since he
+  `strikesAs` a level five) — his own cliff is fixed above; this level-base
+  disposition is about the tier's default curve height, handed to Phase 54's
+  TUNE-08 (per-creature decision), not a Phase 52 cliff.
 - **`row-dice` (30 cells — Rast, Sterling, Drake T4, Frank, Primp, Craig,
-  Pogo, Trachea, Blumble, Werebeast, Wolf):** the row's OWN `sp.dmg` notation
-  is what trips the flag; the `wouldBeTrim` column above shows the largest
-  same-family notation that would clear the bar. Ruled **curve height — a
-  Phase 54 dial (four-band retune), not a Phase 52 cliff**, per the same
-  user ruling — Phase 54's TUNE-08 owns the per-creature stays/moves/retune
-  decision with this table as its input; no bestiary numbers change in
+  Pogo, Trachea, Blumble, Werebeast, Wolf):** disposition **"curve height —
+  a Phase 54 dial (four-band retune), not a Phase 52 cliff"** — the row's
+  OWN `sp.dmg` notation is what trips the flag; the `wouldBeTrim` column
+  above shows the largest same-family notation that would clear the bar,
+  handed to Phase 54's TUNE-08 (per-creature decision) with that
+  `wouldBeTrim` notation as its input; no bestiary numbers change in
   Plan 03.
 - **`bolt` (0 cells):** no row trips this category under either rule; no
   ruling needed.
 
 No row above is silently skipped — every one carries an explicit
-disposition, satisfying D-07's letter (deep-tier/tier-5 rows) or its spirit
-(level-base/row-dice rows, explicitly handed to Phase 54 rather than trimmed
-mid-milestone).
+`Disposition` cell, satisfying D-07's letter (deep-tier/tier-5 rows) or its
+spirit (level-base/row-dice rows, explicitly handed to Phase 54 rather than
+trimmed mid-milestone).
+
+**Handoff to Phase 54 (TUNE-08):** the 44 `level-base`/`row-dice` cells
+above (Stink Bug, Ghost, Spectre, Craig, Drarl, Drudge, Bones, Floater,
+Undead, Drake, Rast, Sterling, Frank, Primp, Pogo, Trachea, Blumble,
+Werebeast, Wolf, Herman T4) are handed to Phase 54's per-creature
+stays/moves/retune decision, with this table's `wouldBeTrim` column as the
+starting input for each row's dice-notation option.
+
+Pointer: `docs/DIFFICULTY-RETUNE.md`, `## v1.7 tuning pass (Phases 51–54)`
+→ `### v1.7 · Phase 52 — cadence & damage curve` (the ledger H3 quoting this
+table's counts and the cadence readout).
