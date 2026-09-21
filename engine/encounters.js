@@ -452,12 +452,13 @@ export function meetFaerie(state, rng, events = []) {
 
 /**
  * meetJoiner(state, rng, events) — an NPC ally rolled via rollCharacter joins
- * for `SPELL_LEVEL_TABLE[d10]` levels of fight. Ports mazeworld.html
- * meetJoiner() (lines 2210-2217). NOTE (fidelity): the prototype rolls TWO
- * separate `D(20)` draws (`wp: 20*lvl+D(20), maxWP: 20*lvl+D(20)`) then
- * immediately overwrites `maxWP` with `wp`, discarding the second roll's
- * computed value — but the roll itself is still consumed from the stream.
- * Preserved verbatim so the same seed draws the same subsequent rolls.
+ * for `min(SPELL_LEVEL_TABLE[d10], state.floor.depth)` levels of fight. Ports
+ * mazeworld.html meetJoiner() (lines 2210-2217). NOTE (fidelity): the
+ * prototype rolls TWO separate `D(20)` draws (`wp: 20*lvl+D(20), maxWP:
+ * 20*lvl+D(20)`) then immediately overwrites `maxWP` with `wp`, discarding
+ * the second roll's computed value — but the roll itself is still consumed
+ * from the stream. Preserved verbatim so the same seed draws the same
+ * subsequent rolls.
  *
  * DELIBERATE RULES CHANGE (Phase 36, 2026-09-17, CUT-01): the Phase 24
  * Cutthroat refusal is REVERSED — a Joiner now travels with a Cutthroat
@@ -470,6 +471,21 @@ export function meetFaerie(state, rng, events = []) {
  * and the joke. Zero rng change: the four draws are untouched; the refusal
  * remains a pure read.
  *
+ * DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20): the Level Table
+ * roll is clamped to the floor it is met on — early floors stop handing the
+ * player a free deep-tier ally. The d10 is still drawn FIRST (zero draw-shape
+ * change; the cap is a free `Math.min`), so the draw count and cursor stay
+ * byte-identical to today. Every downstream read (grantLevelAbilities, both
+ * `20 * lvl + d20` wp rolls, c.joiner, pendingJoiner, joinerMet/joinerRefused)
+ * takes this ONE `lvl` binding — the pre-cap (rolled) value is remembered
+ * nowhere. Greenfield ruling (2026-09-17): no dual path, no run option, the
+ * bot plays the new rule; measured a zero-moved parity set (no replay site
+ * ever meets a Joiner) because the encounter-roll table itself is unchanged —
+ * declared in test/parity/FIXTURE-INVENTORY.md's Phase 53 section. The
+ * `--party` tuning-bot harness (tools/lib/tuning-bot.mjs#forceParty) now
+ * recruits a depth-1 (or --start-depth) ally by design — a deliberate
+ * distribution shift, not a bug (docs/DIFFICULTY-RETUNE.md, Plan 02).
+ *
  * After the joiner is rolled EXACTLY as above (all four draws unchanged,
  * `c.joiner` set identically either way), a pure read decides whether the
  * joiner will travel with this hero. On a refusal `state.pendingJoiner` is
@@ -479,7 +495,13 @@ export function meetFaerie(state, rng, events = []) {
  */
 export function meetJoiner(state, rng, events = []) {
   const c = state.c;
-  const lvl = SPELL_LEVEL_TABLE[rng.d(10) - 1];
+  // DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20): the Level Table
+  // roll is clamped to the floor it is met on. The d10 is still drawn first
+  // (draw count/cursor byte-identical); every downstream read (abilities, wp,
+  // c.joiner, pendingJoiner, joinerMet/joinerRefused) takes this ONE binding —
+  // the pre-cap value is remembered nowhere. No explicit [1,5] clamp needed:
+  // state.floor.depth >= 1 and the table is 1-5, so min() already bounds it.
+  const lvl = Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth);
   const joinerChar = rollCharacter(rng);
   const wp = 20 * lvl + rng.d(20);
   // eslint-disable-next-line no-unused-vars -- consumed for RNG-order fidelity only

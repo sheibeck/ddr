@@ -2086,3 +2086,144 @@ unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
 the crit rule and `sp.strikesAs` are pure damage-arithmetic, no new state
 shape).
 
+## Phase 53: Joiner level capped by floor depth (JOIN-02) — measured zero: no replay site meets a Joiner
+
+`engine/encounters.js#meetJoiner`'s Level Table roll is now clamped to the
+floor it is met on: `const lvl = Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1],
+state.floor.depth);`. The d10 is still drawn FIRST (draw count and cursor
+byte-identical whether or not the cap actually bites); every downstream read
+(`grantLevelAbilities`, both `20 * lvl + rng.d(20)` wp rolls, `c.joiner`,
+`state.pendingJoiner`, the `joinerMet`/`joinerRefused` payloads) takes this
+ONE `lvl` binding — the pre-cap (rolled) value is remembered nowhere. The
+encounter-roll table itself (`ENCOUNTER_TABLES`) and `encounterDot`'s
+`case "Joiner": meetJoiner(state, rng, events);` dispatch are byte-identical
+— this phase changes ONLY what happens once `meetJoiner` is already reached,
+never whether it is reached. Since `test/parity/FIXTURE-INVENTORY.md`'s own
+standing note already records "no fixture ever meets a Joiner" (the Wilmsry
+Magic User refusal check above), the predicted moved set was zero — this
+section is the MEASUREMENT proving that prediction, not an assumption.
+
+### The predictor — Joiner exposure per site
+
+Measured by a scratch replay (`newRun(seed)` → `applyStartCombat`/an
+internal-call clone-rehydrate-persist shape (`openStore`/`springTrap`/
+`openChest`/`encounterDot`/`descend`)/`applyAction` with the FULL action
+object per action — the same dispatch shape `test/parity/harness/
+fixtureRoster.js` and `full-suite.test.js` already use, never a standalone
+committed tool) over all 31 replay sites, recording every `encounterRolled`
+result seen, the count of `joinerMet` events, and whether
+`state.pendingJoiner` was ever truthy:
+
+| Fixture#site | Seed | actions | encounterRolled results seen | joinerMet | pendingJoiner ever set |
+|---|---|---|---|---|---|
+| chargen#1 | 1 | 0 | n/a (no actions) | 0 | false |
+| chargen#2 | 2 | 0 | n/a (no actions) | 0 | false |
+| chargen#3 | 3 | 0 | n/a (no actions) | 0 | false |
+| chargen#4 | 4 | 0 | n/a (no actions) | 0 | false |
+| chargen#6 | 6 | 0 | n/a (no actions) | 0 | false |
+| chargen#7 | 7 | 0 | n/a (no actions) | 0 | false |
+| chargen#8 | 8 | 0 | n/a (no actions) | 0 | false |
+| chargen#13 | 13 | 0 | n/a (no actions) | 0 | false |
+| chargen#15 | 15 | 0 | n/a (no actions) | 0 | false |
+| chargen#19 | 19 | 0 | n/a (no actions) | 0 | false |
+| chargen#24 | 24 | 0 | n/a (no actions) | 0 | false |
+| chargen#29 | 29 | 0 | n/a (no actions) | 0 | false |
+| chargen#32 | 32 | 0 | n/a (no actions) | 0 | false |
+| chargen#35 | 35 | 0 | n/a (no actions) | 0 | false |
+| movement#256 | 256 | 101 | none | 0 | false |
+| combat#win | 3 | 2 | none | 0 | false |
+| combat#lose | 14 | 11 | none | 0 | false |
+| combat#lose-apprentice | 127 | 15 | none | 0 | false |
+| combat#lose-plain | 1119 | 8 | none | 0 | false |
+| combat#flee | 17 | 2 | none | 0 | false |
+| combat#parley | 303 | 2 | none | 0 | false |
+| magic#cast-damage | 8 | 2 | none | 0 | false |
+| magic#heal | 7 | 1 | none | 0 | false |
+| magic#potion | 1 | 1 | none | 0 | false |
+| magic#scroll | 7 | 1 | none | 0 | false |
+| economy#3 | 3 | 10 | none | 0 | false |
+| encounters#trap | 1 | 1 | none | 0 | false |
+| encounters#chest | 2 | 1 | none | 0 | false |
+| encounters#tablefour | 3 | 1 | +25 HP | 0 | false |
+| encounters#faerie | 38 | 1 | Faerie | 0 | false |
+| encounters#affliction | 160 | 1 | Ailment | 0 | false |
+
+**TOTAL SITES: 31 (expected 31). TOTAL joinerMet ACROSS ALL SITES: 0
+(expected 0). ANY pendingJoiner EVER SET: false (expected false).** Not one
+of the 31 sites' fixed action scripts ever rolls the "Joiner" row off the
+encounter table (the three `encounterDot` sites that DO produce a
+non-combat, non-store result land on Table Four's `+25 HP` row, a Faerie,
+and an Ailment respectively — none of them Joiner), so `meetJoiner` is never
+reached by any fixture, and this phase's cap can never move a byte anywhere
+in the frozen parity suite. This same replay (as
+`replaySiteEvents`/`JOIN02_INTERNAL_FNS` in `test/parity/
+divergence-records.test.js`) is the JOIN-02 guard's positive proof below —
+not just a one-off measurement, but a standing test.
+
+### The live scan (tools/initiative-fixture-scan.mjs, re-run on the edited engine)
+
+`tools/initiative-fixture-scan.mjs | diff - tools/initiative-fixture-scan-
+output.txt` (re-run on the Task-1-edited engine) is **EMPTY** — byte-
+identical to the Phase 52 AFTER committed copy. Part A's `MOVED SET (3)` /
+`INITIATIVE EXPOSURE: 3 of 31 replay sites` lines are Phase 51's own
+INVARIANT set (not this phase's — a Joiner cap is not a round-advance
+event, and the scan carries no Joiner-exposure predictor of its own); Part
+B's three Record-values blocks (`#lose`/`#lose-apprentice`/`#lose-plain`)
+are byte-identical to the committed Phase 52 AFTER. The full parity suite
+(`node --test test/parity/*.test.js`) reports **42/42 pass, fail 0** (one
+more than Phase 52's 41, the new `JOIN-02` guard test below) with
+`git diff --stat -- test/parity/fixtures/` empty — zero fixture edits.
+
+### Moved set — declared records
+
+**MOVED SET (0): none.** No fixture JSON was edited; no `+53` `divergence`
+record exists anywhere in any of the six fixture files (grep-confirmed:
+`grep -rc '"phase":.*53' test/parity/fixtures/*.json` is 0 everywhere).
+`test/parity/divergence-records.test.js`'s new `JOIN-02` test pins BOTH
+facts as a standing guard: part (a) asserts the declared set (holders whose
+`record.phase` includes `"53"`) equals the literal `EXPECTED = []`; part (b)
+replays all 31 sites directly and asserts zero `joinerMet` events, zero
+`encounterRolled` "Joiner" results, and `state.pendingJoiner` never truthy,
+anywhere. If a future engine change ever moves a fixture via this rule, the
+guard's part (a) fails first (a non-empty declared set no longer equals
+`[]`) — the measured zero is a checked claim, not an assumption baked into
+silence.
+
+### Draw-count pins
+
+`meetJoiner`'s draw shape is unchanged: 1 `d10` + `rollCharacter`'s own
+draws + 2 `d20` (the second discarded) — `Math.min` costs nothing.
+`test/unit/joiner-level-cap.test.js`'s `SC1: the capped meet draws exactly
+as many rng calls as the uncapped meet and leaves the delegate cursor at
+the same getState; the draw after meetJoiner equals the hand-replayed
+control's next draw` pins capped == uncapped draws AND cursor, using a
+`countingRng` wrapper (copied from `test/unit/foe-turn-draw-count.test.js`)
+around a `scriptedFirstD10` rng that intercepts only the very first `d(10)`
+call. `git diff <PRE_EDIT-sha> -- test/unit/foe-turn-draw-count.test.js
+test/unit/combat.test.js | grep -c '^-[^-]'` = 0 — zero pinned draw lines
+removed anywhere. Every one of the eight pre-existing Joiner test files
+(`joiner-acquisition`, `cutthroat-joiner`, `dismiss-joiner`, `encounters`,
+`identity-contract`, `identity-world`, `ability-pool`, `tuning-bot`) stayed
+green with ZERO re-pins needed — every existing assertion compares
+`pendingJoiner.lvl` to `c.joiner.lvl` (a relative read), checks a shape, or
+hand-replays the draw order without ever asserting a literal rolled level
+(the default `fixedState()` floor depth is 1, so a would-be level 2-5 roll
+silently becomes 1 in those tests — a relative-comparison design that
+absorbed the cap without a single edit).
+
+### Byte-identical elsewhere (Phase 53)
+
+`test/parity/prototype-master.js.txt` hash is unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `test/parity/harness/
+comparables.js` is untouched (no new serialized field — `pendingJoiner` was
+already carved out of every comparable identically to `state.party`, and
+its shape gains no new key this phase); `tools/lib/tuning-bot.mjs#forceParty`
+is untouched (the `--party` harness now recruits a depth-1, or
+`--start-depth`, ally by design — a deliberate distribution shift declared
+in `docs/DIFFICULTY-RETUNE.md`'s Phase 53 H3, Plan 02 — never a code
+change to `forceParty` itself); `src/browser/`, `mazeworld.html` and
+`engine/saveState.js` are untouched (the capped `lvl` rides the existing
+`j.lvl ?? j.level ?? 1` / `m.lvl ?? m.level ?? 1` reads already in the rail
+card and the Hero tab's Company panel — no shell edit needed, source-pinned
+by `test/unit/joiner-level-cap.test.js`'s own SC3 test).
+

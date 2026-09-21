@@ -14,6 +14,16 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
+// Phase 53 (JOIN-02): the exposure-replay imports for the guard below —
+// engine-only (no prototype sandbox needed; this proves no replay site
+// EVER meets a Joiner, not byte-parity).
+import { newRun, applyAction } from "../../engine/engine.js";
+import { applyStartCombat } from "./harness/comparables.js";
+import { makeRng } from "../../engine/rng.js";
+import { openStore } from "../../engine/economy.js";
+import { descend } from "../../engine/movement.js";
+import { springTrap, openChest, encounterDot } from "../../engine/encounters.js";
+
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, "fixtures");
 const readFixture = (name) => JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, name), "utf8"));
@@ -191,4 +201,129 @@ test("DMG-02: the holders declaring Phase 52 are exactly the measured moved set"
 
   assert.ok(declared.size > 0, "expected at least one holder to declare Phase 52");
   assert.deepStrictEqual([...declared].sort(), [...EXPECTED].sort());
+});
+
+// Phase 53 (JOIN-02) — an internal-call action-type table, mirroring
+// comparables.js's own INTERNAL_FNS (never imported directly — comparables.js
+// does not export it — so this is a small, deliberate re-declaration for the
+// replay below).
+const JOIN02_INTERNAL_FNS = { openStore, springTrap, openChest, encounterDot, descend };
+
+function join02ApplyInternal(state, fn) {
+  const next = structuredClone(state);
+  const rng = makeRng(next.rngState);
+  const events = [];
+  fn(next, rng, events);
+  next.rngState = rng.getState();
+  return { state: next, events };
+}
+
+/**
+ * replaySiteEvents(seed, actions, { bumpGold }) — Phase 53 (JOIN-02): a
+ * compact, engine-only replay (no prototype sandbox — this proves exposure,
+ * not byte-parity) mirroring tools/initiative-fixture-scan.mjs's own
+ * dispatch shape: `startCombat` -> applyStartCombat, an internal-call type
+ * (openStore/springTrap/openChest/encounterDot/descend) -> the clone/rng-
+ * rehydrate/persist shape comparables.js's own runEconomyAction uses,
+ * everything else -> applyAction with the FULL action object (movement's
+ * `dir` must survive — fixtureRoster.js's own replayEngineActions strips
+ * down to `{ type }` and would silently lose it). Returns every event seen
+ * and whether `state.pendingJoiner` was ever truthy across the whole replay.
+ */
+function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
+  let state = newRun(seed);
+  if (bumpGold) state.c.gold = 5000; // full-suite.test.js's own economy gold bump
+  const allEvents = [];
+  let pendingJoinerEver = !!state.pendingJoiner;
+  for (const action of actions) {
+    let result;
+    if (action.type === "startCombat") {
+      result = applyStartCombat(state, action.wandering, action.forced);
+    } else if (action.type in JOIN02_INTERNAL_FNS) {
+      result = join02ApplyInternal(state, JOIN02_INTERNAL_FNS[action.type]);
+    } else {
+      result = applyAction(state, action);
+    }
+    state = result.state;
+    allEvents.push(...(result.events || []));
+    if (state.pendingJoiner) pendingJoinerEver = true;
+  }
+  return { state, events: allEvents, pendingJoinerEver };
+}
+
+test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set — zero, and no replay site ever meets a Joiner", () => {
+  // Part (a): the declared set, DMG-02-shaped, but legitimately EMPTY — the
+  // Level Table cap adds no rng draw and no replay site's encounter-roll
+  // table lands on "Joiner" (see the exposure replay in part (b) below and
+  // test/parity/FIXTURE-INVENTORY.md's Phase 53 section for the full
+  // accounting: the scan Part B diff is empty, the parity suite is green
+  // with zero fixture edits, and this same exposure replay found 0
+  // `joinerMet` events across all 31 sites at this commit).
+  const EXPECTED = [];
+
+  const declared = new Set(
+    RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("53")).map(
+      ({ holderId }) => holderId,
+    ),
+  );
+
+  // NOT the INIT-01/DMG-02 `declared.size > 0` assertion above — this set is
+  // LEGITIMATELY empty; a measured zero is still a claim that needs proof,
+  // never a default assumed by omission.
+  assert.deepStrictEqual([...declared].sort(), EXPECTED);
+
+  // Part (b): the positive proof — replay every one of the 31 replay sites
+  // and assert no site ever emits a joinerMet event, ever rolls "Joiner" off
+  // the encounter table, or ever sets state.pendingJoiner.
+  let totalSites = 0;
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    const state = newRun(seed);
+    assert.ok(!state.pendingJoiner, `chargen seed ${seed}: pendingJoiner must be falsy (no actions ever run)`);
+  }
+
+  const { events: movementEvents, pendingJoinerEver: movementPending } = replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions);
+  totalSites++;
+  assert.equal(movementEvents.filter((e) => e.type === "joinerMet").length, 0, "movement: 0 joinerMet events");
+  assert.ok(!movementEvents.some((e) => e.type === "encounterRolled" && e.result === "Joiner"), "movement: no encounterRolled Joiner result");
+  assert.ok(!movementPending, "movement: pendingJoiner never set");
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    const { events, pendingJoinerEver } = replaySiteEvents(scenario.seed, scenario.actions);
+    assert.equal(events.filter((e) => e.type === "joinerMet").length, 0, `combat#${scenario.name}: 0 joinerMet events`);
+    assert.ok(!events.some((e) => e.type === "encounterRolled" && e.result === "Joiner"), `combat#${scenario.name}: no encounterRolled Joiner result`);
+    assert.ok(!pendingJoinerEver, `combat#${scenario.name}: pendingJoiner never set`);
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    const { events, pendingJoinerEver } = replaySiteEvents(scenario.seed, scenario.actions);
+    assert.equal(events.filter((e) => e.type === "joinerMet").length, 0, `magic#${scenario.name}: 0 joinerMet events`);
+    assert.ok(!events.some((e) => e.type === "encounterRolled" && e.result === "Joiner"), `magic#${scenario.name}: no encounterRolled Joiner result`);
+    assert.ok(!pendingJoinerEver, `magic#${scenario.name}: pendingJoiner never set`);
+  }
+
+  {
+    totalSites++;
+    const { events, pendingJoinerEver } = replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true });
+    assert.equal(events.filter((e) => e.type === "joinerMet").length, 0, "economy: 0 joinerMet events");
+    assert.ok(!events.some((e) => e.type === "encounterRolled" && e.result === "Joiner"), "economy: no encounterRolled Joiner result");
+    assert.ok(!pendingJoinerEver, "economy: pendingJoiner never set");
+  }
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    const { events, pendingJoinerEver } = replaySiteEvents(scenario.seed, scenario.actions);
+    assert.equal(events.filter((e) => e.type === "joinerMet").length, 0, `encounters#${scenario.name}: 0 joinerMet events`);
+    assert.ok(!events.some((e) => e.type === "encounterRolled" && e.result === "Joiner"), `encounters#${scenario.name}: no encounterRolled Joiner result`);
+    assert.ok(!pendingJoinerEver, `encounters#${scenario.name}: pendingJoiner never set`);
+  }
+
+  // The scan's own convention: 14 chargen seeds + 1 movement script + 6
+  // combat scenarios + 4 magic scenarios + 1 economy script + 5 encounters
+  // scenarios = 31 replay sites — this guard provably covers every site the
+  // scan reports.
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
 });
