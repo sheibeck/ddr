@@ -86,3 +86,9 @@
 - Hero-side buffs or bestiary dice trims to chase the median — excluded by BAND-02.
 
 </deferred>
+
+## USER RULINGS at plan approval (2026-09-21) — supersede the matching Area 1 / Area 2 lines above
+
+- **Filter dials are movable.** The planner showed that with floors 1–4 byte-identical, only 33 % of solo runs reach floor 5, so the median is pinned at 4 by construction. Ruling: the ladder MAY move the EXISTING Phase 27 floor 2–4 dials — `FOE_GRACE_AT_2` (0.5 → as low as Phase 27's noted 0.35 ceiling) and `HAZARD_SCALE_AT_START` (0.5 → lower) — as rungs. Floor 1 stays exact identity (`FOE_GRACE_AT_1 = 1.0`, `HAZARD_FROM_DEPTH >= 2`, floor-1 dots/dark canon — parity); the ramps still reach exactly 1.0 at their existing canon-from depths; no NEW floor 1–4 dials. Reach ≥ 5 becomes a per-rung target, not an invariant; the floors-1-untouched check is `difficultyCurve(1)` byte-identity + the depth-20 slice + the floor-1 fixture scan.
+- **The ≥ 100 % one-shot rule applies to the Drake.** Under the dice rule the four roster creatures read 62–69 % of the Endgame bar (the 108–116 % figures above were the whole-sum rule); the Drake (Beasts tier 4, 2d10+4) reads 120–139 % in every band. Ruling: apply the in-place retune to the Drake (2d10+4 → 2d8+2, `drakeBreath` untouched, declared end-to-end); Herman / Drarl / Vampire / Djinni record "stays".
+- Two commits per rung (`feat` constants+pins, then `docs` readouts) accepted — every readout provably taken on the tree carrying the dial.
