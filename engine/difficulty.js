@@ -43,6 +43,20 @@
 // (COMBAT_SCALE_FROM_DEPTH, FOE_*_MAX, ABILITY_THREAT_*) are NOT moved by
 // this plan. Values recorded in docs/DIFFICULTY-RETUNE.md's "## v1.2 retune
 // (Phase 27)" section (Iteration 0).
+//
+// Phase 54 (BAND-01/BAND-02, 2026-09-21) — the four-band curve: the user's
+// stated shape (Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20,
+// average run ends floor 5-7) reshapes floors 5-15 with a new
+// `bandFoePowerFor`/`bandAbilityThreatFor` piecewise curve plus a Wall
+// hazard band, while floors 1-4 keep Phase 27's ramps above (untouched by
+// this module edit) and floor 16+ stays identity BY CONSTRUCTION (the same
+// `>=` guard technique `graceFor`/`hazardScale` already use) so the
+// `--start-depth 20` slice remains the deep-lethality yardstick. See the
+// "Phase 54 (BAND-02): the four-band curve on floors 5-15" block below.
+// This plan (54-01) lands the scaffold at IDENTITY values ONLY — the curve
+// is byte-identical to Phase 53's at every depth; Plan 02's rungs move only
+// the numbers. Recorded in docs/DIFFICULTY-RETUNE.md's
+// "### v1.7 · Phase 54 — four-band retune & roster decision" section.
 
 /** Every BREATHER_EVERY-th floor after floor 1 is a lighter "breather" floor. */
 export const BREATHER_EVERY = 5;
@@ -242,6 +256,63 @@ export const HAZARD_FLAT_THROUGH_DEPTH = 3;
  * exactly 1.0 (the literal — see the `>=` guard in difficultyCurve below). */
 export const HAZARD_CANON_FROM_DEPTH = 5;
 
+// --- Phase 54 (BAND-02): the four-band curve on floors 5-15 ---------------
+// DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21): the user's
+// four-band shape (2026-09-20 todo) — Filter 1-4 / Wall 5-8 / Breakaway
+// 9-15 / Endgame 16-20, average run ends floor 5-7 — with floors 1-4
+// keeping Phase 27's existing ramps above (graceFor/hazardScale are NOT
+// touched by this block), floors 5-15 allowed sub-identity in combat via a
+// new piecewise foePower/abilityThreat curve, and 16+ identity BY
+// CONSTRUCTION (the same `>=` guard technique graceFor/hazardScale already
+// use for their own bands) so the `--start-depth 20` slice is the
+// deep-lethality yardstick every rung is diffed against. This plan (54-01)
+// lands every constant below at an IDENTITY value — difficultyCurve is
+// byte-identical to Phase 53's (commit 78572c5) at every depth 1..50; Plan
+// 02's ladder rungs move ONLY these numbers, each citing the bot readout
+// that motivated the move. `COMBAT_SCALE_FROM_DEPTH` stays 21 (Phase 27's
+// "may only ever move up" — 21+ is untouched by this phase).
+
+/** WALL_FROM_DEPTH — the first depth of the Wall band (5-8); MUST equal
+ * FOE_GRACE_CANON_FROM_DEPTH — the grace band hands straight to the Wall,
+ * no gap and no overlap. */
+export const WALL_FROM_DEPTH = 5;
+/** WALL_TO_DEPTH — the last depth of the Wall band (5-8). */
+export const WALL_TO_DEPTH = 8;
+/** WALL_FOE_POWER_AT_START — foePower at WALL_FROM_DEPTH (scaffold:
+ * identity, 1.0). The Wall steps UP from the floor-4 grace value and may
+ * land below 1.0 on a rung — never below `graceFor(WALL_FROM_DEPTH - 1)`. */
+export const WALL_FOE_POWER_AT_START = 1.0;
+/** WALL_FOE_POWER_AT_END — foePower at WALL_TO_DEPTH (scaffold: identity). */
+export const WALL_FOE_POWER_AT_END = 1.0;
+/** BREAKAWAY_FROM_DEPTH — the first depth of the Breakaway band (9-15). */
+export const BREAKAWAY_FROM_DEPTH = 9;
+/** BREAKAWAY_TO_DEPTH — the last depth of the Breakaway band (9-15). */
+export const BREAKAWAY_TO_DEPTH = 15;
+/** BREAKAWAY_FOE_POWER_AT_START — foePower at BREAKAWAY_FROM_DEPTH (scaffold: identity). */
+export const BREAKAWAY_FOE_POWER_AT_START = 1.0;
+/** BREAKAWAY_FOE_POWER_AT_END — foePower at BREAKAWAY_TO_DEPTH (scaffold: identity). */
+export const BREAKAWAY_FOE_POWER_AT_END = 1.0;
+/** ENDGAME_CANON_FROM_DEPTH — the first depth whose foePower/abilityThreat/
+ * hazardScale return to the literal 1 (the `>=` guard technique — a
+ * structural identity, not a rounding accident). MUST stay <= 16 and
+ * < COMBAT_SCALE_FROM_DEPTH (21); the `--start-depth 20` slice is
+ * byte-identical to Phase 53's by construction, never re-pinned this
+ * phase. */
+export const ENDGAME_CANON_FROM_DEPTH = 16;
+/** WALL_HAZARD_SCALE — the trap/wall-fall damage multiplier on
+ * WALL_FROM_DEPTH..WALL_TO_DEPTH (scaffold: identity, 1.0 — the literal
+ * `1` for scaleHazard's `=== 1` fast path); a rung-2+ dial. */
+export const WALL_HAZARD_SCALE = 1.0;
+/** WALL_ABILITY_THREAT_AT_START — abilityThreat at WALL_FROM_DEPTH
+ * (scaffold: identity; the caster-cadence band, a rung-2+ dial). */
+export const WALL_ABILITY_THREAT_AT_START = 1.0;
+/** WALL_ABILITY_THREAT_AT_END — abilityThreat at WALL_TO_DEPTH (scaffold: identity). */
+export const WALL_ABILITY_THREAT_AT_END = 1.0;
+/** BREAKAWAY_ABILITY_THREAT_AT_START — abilityThreat at BREAKAWAY_FROM_DEPTH (scaffold: identity). */
+export const BREAKAWAY_ABILITY_THREAT_AT_START = 1.0;
+/** BREAKAWAY_ABILITY_THREAT_AT_END — abilityThreat at BREAKAWAY_TO_DEPTH (scaffold: identity). */
+export const BREAKAWAY_ABILITY_THREAT_AT_END = 1.0;
+
 /**
  * safeDepth(depth) — clamps an arbitrary input to a positive integer BEFORE
  * any arithmetic runs, so a corrupted/non-integer/non-positive save-derived
@@ -326,6 +397,56 @@ function graceFor(d) {
 }
 
 /**
+ * bandLerp(a, b, t) — Phase 54 (BAND-02): the endpoint-exact linear
+ * interpolation the band curve uses. Identity by construction whenever
+ * `a === b` (returns `a` for ANY `t`, never drifting via floating-point
+ * arithmetic — the same discipline COMBAT_SCALE_FROM_DEPTH's `over` guard
+ * and graceFor's `>=` guard use). Exact at t = 0 and t = 1 (the landed
+ * band-endpoint constants are hit exactly, not merely approximately). Not
+ * exported — internal helper only.
+ */
+function bandLerp(a, b, t) {
+  return a === b ? a : (1 - t) * a + t * b;
+}
+
+/**
+ * bandFoePowerFor(d) — Phase 54 (BAND-02): the foePower multiplier for the
+ * Wall (5-8) and Breakaway (9-15) bands. Callers must only invoke this for
+ * `d >= WALL_FROM_DEPTH` (difficultyCurve's own ternary below enforces
+ * this); the `>= ENDGAME_CANON_FROM_DEPTH` guard returns the literal `1`
+ * first so 16+ is identity BY CONSTRUCTION, never by float rounding. Not
+ * exported — internal helper only, consumed by difficultyCurve()'s
+ * `foePower` field below.
+ */
+function bandFoePowerFor(d) {
+  if (d >= ENDGAME_CANON_FROM_DEPTH) return 1;
+  if (d <= WALL_TO_DEPTH) {
+    const t = (d - WALL_FROM_DEPTH) / (WALL_TO_DEPTH - WALL_FROM_DEPTH);
+    return bandLerp(WALL_FOE_POWER_AT_START, WALL_FOE_POWER_AT_END, t);
+  }
+  const t = (d - BREAKAWAY_FROM_DEPTH) / (BREAKAWAY_TO_DEPTH - BREAKAWAY_FROM_DEPTH);
+  return bandLerp(BREAKAWAY_FOE_POWER_AT_START, BREAKAWAY_FOE_POWER_AT_END, t);
+}
+
+/**
+ * bandAbilityThreatFor(d) — Phase 54 (BAND-02): the abilityThreat cadence
+ * scalar for depths < COMBAT_SCALE_FROM_DEPTH. Identity (the literal `1`)
+ * below WALL_FROM_DEPTH (floors 1-4 — Phase 27's ramps own that band, not
+ * this function) and at/above ENDGAME_CANON_FROM_DEPTH (16+ — identity BY
+ * CONSTRUCTION). Not exported — internal helper only, consumed by
+ * difficultyCurve()'s `abilityThreat` field below.
+ */
+function bandAbilityThreatFor(d) {
+  if (d < WALL_FROM_DEPTH || d >= ENDGAME_CANON_FROM_DEPTH) return 1;
+  if (d <= WALL_TO_DEPTH) {
+    const t = (d - WALL_FROM_DEPTH) / (WALL_TO_DEPTH - WALL_FROM_DEPTH);
+    return bandLerp(WALL_ABILITY_THREAT_AT_START, WALL_ABILITY_THREAT_AT_END, t);
+  }
+  const t = (d - BREAKAWAY_FROM_DEPTH) / (BREAKAWAY_TO_DEPTH - BREAKAWAY_FROM_DEPTH);
+  return bandLerp(BREAKAWAY_ABILITY_THREAT_AT_START, BREAKAWAY_ABILITY_THREAT_AT_END, t);
+}
+
+/**
  * difficultyCurve(depth) — the single source of truth downstream floor
  * generation (Plan 02's genFloor rewiring) will consume. Pure function of
  * `depth` only: no RNG parameter, no RNG consumed, no side effects, no
@@ -352,18 +473,26 @@ function graceFor(d) {
  *     changes; 0 through depth < COMBAT_SCALE_FROM_DEPTH
  *   - foeLvlBias: reserved (D-01) — always FOE_LVL_BIAS (0) unless a future
  *     retune needs it
- *   - foePower: below COMBAT_SCALE_FROM_DEPTH, Phase 27's `graceFor(d)` (foe
- *     grace at floors 2-4, exactly 1.0 at floor 1 and from
- *     FOE_GRACE_CANON_FROM_DEPTH on); from COMBAT_SCALE_FROM_DEPTH on, the
- *     Phase 21 soft-capped multiplier (D-02) applied to a foe's starting
- *     wp/maxWP and its flat melee damage bonus
+ *   - foePower: below WALL_FROM_DEPTH, Phase 27's `graceFor(d)` (foe grace at
+ *     floors 2-4, exactly 1.0 at floor 1); from WALL_FROM_DEPTH through
+ *     COMBAT_SCALE_FROM_DEPTH - 1, Phase 54's `bandFoePowerFor(d)` (the Wall
+ *     5-8 / Breakaway 9-15 bands, identity from ENDGAME_CANON_FROM_DEPTH by
+ *     construction); from COMBAT_SCALE_FROM_DEPTH on, the Phase 21
+ *     soft-capped multiplier (D-02) applied to a foe's starting wp/maxWP and
+ *     its flat melee damage bonus
  *   - hazardScale: Phase 27 (TUNE-06) — the trap/wall-fall damage multiplier
  *     consumed post-draw by engine/movement.js and engine/encounters.js;
- *     exactly 1.0 below HAZARD_FROM_DEPTH and from HAZARD_CANON_FROM_DEPTH
- *     on, HAZARD_SCALE_AT_START flat through HAZARD_FLAT_THROUGH_DEPTH, then
- *     eased linearly back to 1.0
- *   - abilityThreat: soft-capped cadence scalar (Phase 21, D-03) for caster
- *     kits (every/uses) — identity (1.0) through depth < COMBAT_SCALE_FROM_DEPTH
+ *     exactly 1.0 below HAZARD_FROM_DEPTH, HAZARD_SCALE_AT_START flat
+ *     through HAZARD_FLAT_THROUGH_DEPTH then eased linearly to 1.0 by
+ *     HAZARD_CANON_FROM_DEPTH; Phase 54 (BAND-02) adds the Wall hazard band
+ *     — WALL_HAZARD_SCALE on WALL_FROM_DEPTH..WALL_TO_DEPTH, literal 1
+ *     elsewhere (never by arithmetic, including every depth >=
+ *     ENDGAME_CANON_FROM_DEPTH)
+ *   - abilityThreat: below COMBAT_SCALE_FROM_DEPTH, Phase 54's
+ *     `bandAbilityThreatFor(d)` (identity on floors 1-4 and from
+ *     ENDGAME_CANON_FROM_DEPTH on, the Wall/Breakaway band shape on 5-15);
+ *     from COMBAT_SCALE_FROM_DEPTH on, the Phase 21 soft-capped cadence
+ *     scalar (D-03) for caster kits (every/uses)
  *   - waterPools: Phase 41 (TERR-01) — the multi-square water pool count for
  *     this floor (see the water-pool-knobs block above); consumes NO rng,
  *     zeroed to WATER_POOL_MIN (never 0) on a breather floor
@@ -397,10 +526,15 @@ export function difficultyCurve(depth) {
   // Phase 27 (TUNE-06): hazardScale — literal 1 outside
   // [HAZARD_FROM_DEPTH, HAZARD_CANON_FROM_DEPTH), flat at
   // HAZARD_SCALE_AT_START through HAZARD_FLAT_THROUGH_DEPTH, then linear
-  // back to exactly 1.0.
+  // back to exactly 1.0. Phase 54 (BAND-02): the Wall hazard band —
+  // WALL_HAZARD_SCALE on WALL_FROM_DEPTH..WALL_TO_DEPTH; every depth past
+  // WALL_TO_DEPTH (including every depth >= ENDGAME_CANON_FROM_DEPTH) is the
+  // literal 1 by this final branch, never by arithmetic.
   const hazardScale =
     d < HAZARD_FROM_DEPTH || d >= HAZARD_CANON_FROM_DEPTH
-      ? 1
+      ? d >= HAZARD_CANON_FROM_DEPTH && d <= WALL_TO_DEPTH
+        ? WALL_HAZARD_SCALE
+        : 1
       : d <= HAZARD_FLAT_THROUGH_DEPTH
         ? HAZARD_SCALE_AT_START
         : HAZARD_SCALE_AT_START + (1 - HAZARD_SCALE_AT_START) * (d - HAZARD_FLAT_THROUGH_DEPTH) / (HAZARD_CANON_FROM_DEPTH - HAZARD_FLAT_THROUGH_DEPTH);
@@ -422,9 +556,17 @@ export function difficultyCurve(depth) {
     foeCap,
     foeBonus: foeCap - FOE_CAP_BASE,
     foeLvlBias: FOE_LVL_BIAS,
-    foePower: d < COMBAT_SCALE_FROM_DEPTH ? graceFor(d) : softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K),
+    foePower:
+      d >= COMBAT_SCALE_FROM_DEPTH
+        ? softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K)
+        : d >= WALL_FROM_DEPTH
+          ? bandFoePowerFor(d)
+          : graceFor(d),
     hazardScale,
-    abilityThreat: softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K),
+    abilityThreat:
+      d >= COMBAT_SCALE_FROM_DEPTH
+        ? softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K)
+        : bandAbilityThreatFor(d),
     waterPools,
   };
 }

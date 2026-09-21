@@ -23,6 +23,8 @@ import { makeRng } from "../../engine/rng.js";
 import { openStore } from "../../engine/economy.js";
 import { descend } from "../../engine/movement.js";
 import { springTrap, openChest, encounterDot } from "../../engine/encounters.js";
+// Phase 54 (BAND-02): the guard below.
+import { difficultyCurve, WALL_FROM_DEPTH } from "../../engine/difficulty.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, "fixtures");
@@ -234,7 +236,16 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
   let state = newRun(seed);
   if (bumpGold) state.c.gold = 5000; // full-suite.test.js's own economy gold bump
   const allEvents = [];
+  // Phase 54 (BAND-02): eventsAtDepth2Plus collects every event emitted by
+  // an action whose RESULTING state.floor.depth is >= 2 — the floor-2
+  // exposure check (part d) below. maxDepthEver tracks the deepest
+  // state.floor.depth ever reached (initial newRun depth included) — the
+  // WALL_FROM_DEPTH exposure check (part b). Neither addition changes the
+  // JOIN-02 test's own assertions, which destructure only `events` /
+  // `pendingJoinerEver`.
+  const eventsAtDepth2Plus = [];
   let pendingJoinerEver = !!state.pendingJoiner;
+  let maxDepthEver = state.floor.depth;
   for (const action of actions) {
     let result;
     if (action.type === "startCombat") {
@@ -245,10 +256,13 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
       result = applyAction(state, action);
     }
     state = result.state;
-    allEvents.push(...(result.events || []));
+    const events = result.events || [];
+    allEvents.push(...events);
+    if (state.floor.depth >= 2) eventsAtDepth2Plus.push(...events);
+    if (state.floor.depth > maxDepthEver) maxDepthEver = state.floor.depth;
     if (state.pendingJoiner) pendingJoinerEver = true;
   }
-  return { state, events: allEvents, pendingJoinerEver };
+  return { state, events: allEvents, pendingJoinerEver, maxDepthEver, eventsAtDepth2Plus };
 }
 
 test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set — zero, and no replay site ever meets a Joiner", () => {
@@ -326,4 +340,97 @@ test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set
   // scenarios = 31 replay sites — this guard provably covers every site the
   // scan reports.
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+});
+
+// PHASE_53_FLOOR1_CURVE — the depth-1 curve object, pasted verbatim from the
+// Phase 53 engine (commit 78572c5) node -e capture (the same literal
+// test/difficulty/difficulty.test.js's PHASE_53_FLOOR1_PIN pins).
+const PHASE_53_FLOOR1_CURVE = {
+  depth: 1,
+  breather: false,
+  dots: 10,
+  darkBlobs: 0,
+  darkRadius: 4,
+  foeCap: 3,
+  foeBonus: 0,
+  foeLvlBias: 0,
+  foePower: 1,
+  hazardScale: 1,
+  abilityThreat: 1,
+  waterPools: 1,
+};
+
+test("BAND-02: the holders declaring Phase 54 are exactly the measured moved set — zero; no replay site ever reaches WALL_FROM_DEPTH (floor 5) and difficultyCurve(1..4) is byte-identical to the Phase 53 curve", () => {
+  // Part (a): the declared set, DMG-02/JOIN-02-shaped, but legitimately
+  // EMPTY — a 5-15 band dial cannot reach a replay site that never
+  // descends past floor 2 (see part b below and
+  // test/parity/FIXTURE-INVENTORY.md's Phase 54 section for the full
+  // accounting).
+  const EXPECTED = [];
+
+  const declared = new Set(
+    RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("54")).map(
+      ({ holderId }) => holderId,
+    ),
+  );
+
+  assert.deepStrictEqual([...declared].sort(), EXPECTED);
+
+  // Part (b): the positive proof — replay every one of the 31 replay sites
+  // and assert no site's maxDepthEver ever reaches WALL_FROM_DEPTH (floor
+  // 5) — a 5-15 band dial cannot move a site that never gets there.
+  let totalSites = 0;
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    const state = newRun(seed);
+    assert.ok(state.floor.depth < WALL_FROM_DEPTH, `chargen seed ${seed}: maxDepthEver must be < WALL_FROM_DEPTH`);
+  }
+
+  const movementReplay = replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions);
+  totalSites++;
+  assert.ok(movementReplay.maxDepthEver < WALL_FROM_DEPTH, `movement: maxDepthEver (${movementReplay.maxDepthEver}) must be < WALL_FROM_DEPTH`);
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    const { maxDepthEver } = replaySiteEvents(scenario.seed, scenario.actions);
+    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `combat#${scenario.name}: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    const { maxDepthEver } = replaySiteEvents(scenario.seed, scenario.actions);
+    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `magic#${scenario.name}: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+  }
+
+  {
+    totalSites++;
+    const { maxDepthEver } = replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true });
+    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `economy: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+  }
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    const { maxDepthEver } = replaySiteEvents(scenario.seed, scenario.actions);
+    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `encounters#${scenario.name}: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+  }
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+
+  // Part (c): floor 1 ONLY — floors 2-4 are Filter-rung dials under USER
+  // RULING A and are measured, not pinned, here.
+  assert.deepStrictEqual(difficultyCurve(1), PHASE_53_FLOOR1_CURVE);
+
+  // Part (d): the floor-2 exposure of the one site that descends (movement
+  // seed 256) — a 5-15 band dial cannot reach a replay site that never
+  // descends past floor 2; a Filter rung (FOE_GRACE_AT_2 /
+  // HAZARD_SCALE_AT_START) can only reach floor 2 via a fight or a hazard,
+  // and the one floor-2 site has neither; Plan 02 re-runs
+  // tools/initiative-fixture-scan.mjs Part B + the parity suite on EVERY
+  // rung and declares MOVED SET (0) in FIXTURE-INVENTORY.md's Phase 54
+  // section; this guard keeps the zero a checked claim.
+  const depth2Events = movementReplay.eventsAtDepth2Plus.map((e) => e.type);
+  for (const forbidden of ["combatStarted", "struckByFoe", "trapSprung", "fellClimbing", "fellInGorge"]) {
+    assert.ok(!depth2Events.includes(forbidden), `movement (floor 2+): unexpected "${forbidden}" event — a Filter rung could reach this site`);
+  }
 });

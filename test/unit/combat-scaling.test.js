@@ -36,6 +36,20 @@ import {
   HAZARD_SCALE_AT_START,
   HAZARD_FLAT_THROUGH_DEPTH,
   HAZARD_CANON_FROM_DEPTH,
+  WALL_FROM_DEPTH,
+  WALL_TO_DEPTH,
+  WALL_FOE_POWER_AT_START,
+  WALL_FOE_POWER_AT_END,
+  BREAKAWAY_FROM_DEPTH,
+  BREAKAWAY_TO_DEPTH,
+  BREAKAWAY_FOE_POWER_AT_START,
+  BREAKAWAY_FOE_POWER_AT_END,
+  ENDGAME_CANON_FROM_DEPTH,
+  WALL_HAZARD_SCALE,
+  WALL_ABILITY_THREAT_AT_START,
+  WALL_ABILITY_THREAT_AT_END,
+  BREAKAWAY_ABILITY_THREAT_AT_START,
+  BREAKAWAY_ABILITY_THREAT_AT_END,
   foeCountFor,
   foeWpFor,
   foeDmgBonusFor,
@@ -201,6 +215,73 @@ test("Phase 27 retune pins match engine/difficulty.js — recorded in docs/DIFFI
   assert.equal(HAZARD_CANON_FROM_DEPTH, PHASE_27_PINS.HAZARD_CANON_FROM_DEPTH);
 });
 
+// PHASE_54_PINS — the ONE place the Phase 54 band constants are pinned
+// (2026-09-21, BAND-02). All 14 at scaffold (identity) values in THIS plan
+// (54-01) — Plan 02's rungs edit ONLY these numbers per rung; values
+// recorded in docs/DIFFICULTY-RETUNE.md's Phase 54 H3.
+const PHASE_54_PINS = {
+  WALL_FROM_DEPTH: 5,
+  WALL_TO_DEPTH: 8,
+  WALL_FOE_POWER_AT_START: 1,
+  WALL_FOE_POWER_AT_END: 1,
+  BREAKAWAY_FROM_DEPTH: 9,
+  BREAKAWAY_TO_DEPTH: 15,
+  BREAKAWAY_FOE_POWER_AT_START: 1,
+  BREAKAWAY_FOE_POWER_AT_END: 1,
+  ENDGAME_CANON_FROM_DEPTH: 16,
+  WALL_HAZARD_SCALE: 1,
+  WALL_ABILITY_THREAT_AT_START: 1,
+  WALL_ABILITY_THREAT_AT_END: 1,
+  BREAKAWAY_ABILITY_THREAT_AT_START: 1,
+  BREAKAWAY_ABILITY_THREAT_AT_END: 1,
+};
+
+/** bandFormula(d, atStart, atEnd, from, to) — mirrors engine/difficulty.js's
+ * bandLerp: identity by construction when atStart === atEnd (returns atStart
+ * for any t), else the endpoint-exact linear interpolation. */
+function bandFormula(d, atStart, atEnd, from, to) {
+  if (atStart === atEnd) return atStart;
+  const t = (d - from) / (to - from);
+  return (1 - t) * atStart + t * atEnd;
+}
+
+/** expectedBandFoePower(d) — mirrors engine/difficulty.js's bandFoePowerFor
+ * over PHASE_54_PINS; only valid for WALL_FROM_DEPTH <= d < COMBAT_SCALE_FROM_DEPTH. */
+function expectedBandFoePower(d) {
+  if (d >= PHASE_54_PINS.ENDGAME_CANON_FROM_DEPTH) return 1;
+  if (d <= PHASE_54_PINS.WALL_TO_DEPTH) {
+    return bandFormula(d, PHASE_54_PINS.WALL_FOE_POWER_AT_START, PHASE_54_PINS.WALL_FOE_POWER_AT_END, PHASE_54_PINS.WALL_FROM_DEPTH, PHASE_54_PINS.WALL_TO_DEPTH);
+  }
+  return bandFormula(d, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_START, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_END, PHASE_54_PINS.BREAKAWAY_FROM_DEPTH, PHASE_54_PINS.BREAKAWAY_TO_DEPTH);
+}
+
+/** expectedBandAbilityThreat(d) — mirrors engine/difficulty.js's
+ * bandAbilityThreatFor over PHASE_54_PINS; valid for any d < COMBAT_SCALE_FROM_DEPTH. */
+function expectedBandAbilityThreat(d) {
+  if (d < PHASE_54_PINS.WALL_FROM_DEPTH || d >= PHASE_54_PINS.ENDGAME_CANON_FROM_DEPTH) return 1;
+  if (d <= PHASE_54_PINS.WALL_TO_DEPTH) {
+    return bandFormula(d, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_START, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_END, PHASE_54_PINS.WALL_FROM_DEPTH, PHASE_54_PINS.WALL_TO_DEPTH);
+  }
+  return bandFormula(d, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_START, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_END, PHASE_54_PINS.BREAKAWAY_FROM_DEPTH, PHASE_54_PINS.BREAKAWAY_TO_DEPTH);
+}
+
+test("Phase 54 band pins match engine/difficulty.js — recorded in docs/DIFFICULTY-RETUNE.md's Phase 54 H3", () => {
+  assert.equal(WALL_FROM_DEPTH, PHASE_54_PINS.WALL_FROM_DEPTH);
+  assert.equal(WALL_TO_DEPTH, PHASE_54_PINS.WALL_TO_DEPTH);
+  assert.equal(WALL_FOE_POWER_AT_START, PHASE_54_PINS.WALL_FOE_POWER_AT_START);
+  assert.equal(WALL_FOE_POWER_AT_END, PHASE_54_PINS.WALL_FOE_POWER_AT_END);
+  assert.equal(BREAKAWAY_FROM_DEPTH, PHASE_54_PINS.BREAKAWAY_FROM_DEPTH);
+  assert.equal(BREAKAWAY_TO_DEPTH, PHASE_54_PINS.BREAKAWAY_TO_DEPTH);
+  assert.equal(BREAKAWAY_FOE_POWER_AT_START, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_START);
+  assert.equal(BREAKAWAY_FOE_POWER_AT_END, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_END);
+  assert.equal(ENDGAME_CANON_FROM_DEPTH, PHASE_54_PINS.ENDGAME_CANON_FROM_DEPTH);
+  assert.equal(WALL_HAZARD_SCALE, PHASE_54_PINS.WALL_HAZARD_SCALE);
+  assert.equal(WALL_ABILITY_THREAT_AT_START, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_START);
+  assert.equal(WALL_ABILITY_THREAT_AT_END, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_END);
+  assert.equal(BREAKAWAY_ABILITY_THREAT_AT_START, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_START);
+  assert.equal(BREAKAWAY_ABILITY_THREAT_AT_END, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_END);
+});
+
 test("floor 1 is exactly canon (D-19 / Phase 27): foePower, hazardScale, dots/blobs/radius, foeCap, abilityThreat", () => {
   const dc = difficultyCurve(1);
   // FOE_GRACE_AT_1 is pinned to 1 in Phase 27 — if a future escalation ever
@@ -240,8 +321,22 @@ test("grace band: depths 2..FOE_GRACE_CANON_FROM_DEPTH-1 carry the interpolated 
   }
 });
 
-test("identity band: depths FOE_GRACE_CANON_FROM_DEPTH..COMBAT_SCALE_FROM_DEPTH-1 carry foePower/abilityThreat/hazardScale exactly at identity, foeCap at FOE_CAP_BASE", () => {
-  for (let d = FOE_GRACE_CANON_FROM_DEPTH; d < COMBAT_SCALE_FROM_DEPTH; d++) {
+test("band 5..15 (Phase 54, BAND-02): foePower and abilityThreat equal the endpoint-exact band formula from PHASE_54_PINS; hazardScale === WALL_HAZARD_SCALE on 5..8 and exactly 1 on 9..15; foeCap FOE_CAP_BASE", () => {
+  for (let d = WALL_FROM_DEPTH; d <= BREAKAWAY_TO_DEPTH; d++) {
+    const dc = difficultyCurve(d);
+    assert.ok(Math.abs(dc.foePower - expectedBandFoePower(d)) < 1e-12, `depth ${d}: foePower ${dc.foePower} !~= ${expectedBandFoePower(d)}`);
+    assert.ok(Math.abs(dc.abilityThreat - expectedBandAbilityThreat(d)) < 1e-12, `depth ${d}: abilityThreat ${dc.abilityThreat} !~= ${expectedBandAbilityThreat(d)}`);
+    if (d <= WALL_TO_DEPTH) {
+      assert.equal(dc.hazardScale, WALL_HAZARD_SCALE, `depth ${d}: hazardScale must be WALL_HAZARD_SCALE`);
+    } else {
+      assert.ok(Object.is(dc.hazardScale, 1), `depth ${d}: hazardScale must be exactly 1 (Breakaway)`);
+    }
+    assert.equal(dc.foeCap, FOE_CAP_BASE, `depth ${d}: foeCap must be FOE_CAP_BASE`);
+  }
+});
+
+test("Endgame identity band (Phase 54, BAND-01): depths ENDGAME_CANON_FROM_DEPTH..COMBAT_SCALE_FROM_DEPTH-1 carry foePower/abilityThreat/hazardScale exactly at identity (Object.is 1), foeCap at FOE_CAP_BASE", () => {
+  for (let d = ENDGAME_CANON_FROM_DEPTH; d < COMBAT_SCALE_FROM_DEPTH; d++) {
     const dc = difficultyCurve(d);
     assert.ok(Object.is(dc.foePower, 1), `depth ${d}: foePower must be exactly 1`);
     assert.ok(Object.is(dc.abilityThreat, 1), `depth ${d}: abilityThreat must be exactly 1`);
@@ -251,12 +346,17 @@ test("identity band: depths FOE_GRACE_CANON_FROM_DEPTH..COMBAT_SCALE_FROM_DEPTH-
 });
 
 test("cap boundaries: every combat field stays within [BASE, MAX] at depths 6, 10, 20, 30, 50, 100, 1000; foeBonus === foeCap - FOE_CAP_BASE; foeLvlBias === FOE_LVL_BIAS", () => {
+  // Phase 54 (BAND-02): depths 6 and 10 now sit in the Wall/Breakaway band,
+  // whose foePower/abilityThreat may dip below the Phase 21/27 BASE — the
+  // lower bound widens to the band constants' own floor.
+  const foePowerFloor = Math.min(FOE_POWER_BASE, WALL_FOE_POWER_AT_START, WALL_FOE_POWER_AT_END, BREAKAWAY_FOE_POWER_AT_START, BREAKAWAY_FOE_POWER_AT_END);
+  const abilityThreatFloor = Math.min(ABILITY_THREAT_BASE, WALL_ABILITY_THREAT_AT_START, WALL_ABILITY_THREAT_AT_END, BREAKAWAY_ABILITY_THREAT_AT_START, BREAKAWAY_ABILITY_THREAT_AT_END);
   for (const depth of [6, 10, 20, 30, 50, 100, 1000]) {
     const dc = difficultyCurve(depth);
     assert.ok(dc.foeCap >= FOE_CAP_BASE && dc.foeCap <= FOE_CAP_MAX, `depth ${depth}: foeCap out of bounds`);
-    assert.ok(dc.foePower >= FOE_POWER_BASE && dc.foePower <= FOE_POWER_MAX, `depth ${depth}: foePower out of bounds`);
+    assert.ok(dc.foePower >= foePowerFloor && dc.foePower <= FOE_POWER_MAX, `depth ${depth}: foePower out of bounds`);
     assert.ok(
-      dc.abilityThreat >= ABILITY_THREAT_BASE && dc.abilityThreat <= ABILITY_THREAT_MAX,
+      dc.abilityThreat >= abilityThreatFloor && dc.abilityThreat <= ABILITY_THREAT_MAX,
       `depth ${depth}: abilityThreat out of bounds`,
     );
     assert.equal(dc.foeBonus, dc.foeCap - FOE_CAP_BASE, `depth ${depth}: foeBonus mismatch`);
@@ -264,14 +364,20 @@ test("cap boundaries: every combat field stays within [BASE, MAX] at depths 6, 1
   }
 });
 
-test("monotone: foeCap and abilityThreat are non-decreasing across depths 1..200 including breather floors (no dip)", () => {
+test("monotone: foeCap is non-decreasing across depths 1..200 including breather floors (no dip); abilityThreat exactly 1 on floors 1-4 and non-decreasing from WALL_FROM_DEPTH on (Phase 54)", () => {
   let prevCap = -Infinity;
-  let prevThreat = -Infinity;
   for (let depth = 1; depth <= 200; depth++) {
     const dc = difficultyCurve(depth);
     assert.ok(dc.foeCap >= prevCap, `depth ${depth}: foeCap regressed (${dc.foeCap} < ${prevCap})`);
-    assert.ok(dc.abilityThreat >= prevThreat, `depth ${depth}: abilityThreat regressed (${dc.abilityThreat} < ${prevThreat})`);
     prevCap = dc.foeCap;
+  }
+  for (let depth = 1; depth < WALL_FROM_DEPTH; depth++) {
+    assert.ok(Object.is(difficultyCurve(depth).abilityThreat, 1), `depth ${depth}: abilityThreat must be exactly 1 (floors 1-4)`);
+  }
+  let prevThreat = -Infinity;
+  for (let depth = WALL_FROM_DEPTH; depth <= 200; depth++) {
+    const dc = difficultyCurve(depth);
+    assert.ok(dc.abilityThreat >= prevThreat, `depth ${depth}: abilityThreat regressed (${dc.abilityThreat} < ${prevThreat})`);
     prevThreat = dc.abilityThreat;
   }
 });
@@ -389,8 +495,8 @@ test("startCombat at depth 2 / level 2 copies a NEGATIVE dmgBonus key on a lvl-2
 
 // --- Task 2 tests -----------------------------------------------------------
 
-test("D-19 wiring identity: at depth 1..5 every foe built by startCombat has wp === maxWP === the roster row's wp and NO dmgBonus key", () => {
-  for (const depth of [1, 5]) {
+test("D-19 wiring identity: at depths 1, 16 and 20 every foe built by startCombat has wp === maxWP === the roster row's wp and NO dmgBonus key", () => {
+  for (const depth of [1, ENDGAME_CANON_FROM_DEPTH, 20]) {
     const state = fixedState({ c: { level: 5 }, floor: { depth } });
     const rng = fakeRng([3, 3, 2, 2, 10, 5]);
     startCombat(state, false, "Beasts", rng, []);
@@ -398,6 +504,23 @@ test("D-19 wiring identity: at depth 1..5 every foe built by startCombat has wp 
     for (const f of state.combat.foes) {
       assert.equal(f.wp, BESTIARY.Beasts[f.lvl - 1][0].wp);
       assert.equal(f.maxWP, f.wp);
+      assert.equal("dmgBonus" in f, false);
+    }
+  }
+});
+
+test("band wiring (Phase 54, BAND-02): at depth 5 every foe built by startCombat has wp === foeWpFor(row.wp, difficultyCurve(5)) and carries a dmgBonus key iff foeDmgBonusFor(lvl, difficultyCurve(5)) !== 0", () => {
+  const curve5 = difficultyCurve(5);
+  const state = fixedState({ c: { level: 5 }, floor: { depth: 5 } });
+  const rng = fakeRng([3, 3, 2, 2, 10, 5]);
+  startCombat(state, false, "Beasts", rng, []);
+  assert.equal(state.combat.foes.length, 2);
+  for (const f of state.combat.foes) {
+    assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve5));
+    const expectedBonus = foeDmgBonusFor(f.lvl, curve5);
+    if (expectedBonus !== 0) {
+      assert.equal(f.dmgBonus, expectedBonus);
+    } else {
       assert.equal("dmgBonus" in f, false);
     }
   }
@@ -473,10 +596,10 @@ test("dmgBonus is post-draw arithmetic on the hero swing", () => {
   assert.equal(rng2.draws, 2);
 });
 
-test("D-18: tickAbilityCooldowns(state, f) lazily inits from the cadence and counts down; identity at depth 5", () => {
+test("D-18: tickAbilityCooldowns(state, f) lazily inits from the cadence and counts down; identity at depth 20 (Phase 54: floor 5 is a band floor now)", () => {
   assert.equal(tickAbilityCooldowns.length, 2);
 
-  const state = fixedState({ floor: { depth: 5 }, combat: { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
+  const state = fixedState({ floor: { depth: 20 }, combat: { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
   const f = fixedFoe({ abilities: ["drudgeFireball"] });
   tickAbilityCooldowns(state, f);
   assert.equal(f.cd.drudgeFireball, 1);
@@ -501,17 +624,26 @@ test("the D-15 / FID-02 contract is untouched by Phase 21 wiring", () => {
 // --- Task 1 (21-04) tests ----------------------------------------------------
 
 // Phase 27 (2026-09-15, TUNE-06): parametrised on COMBAT_SCALE_FROM_DEPTH —
-// foeCap/foeBonus/foeLvlBias/abilityThreat stay at identity through
-// COMBAT_SCALE_FROM_DEPTH-1 (foePower/hazardScale have their OWN bands,
-// covered by the grace-band/identity-band tests above, since foePower now
-// dips below 1 at depths 2..FOE_GRACE_CANON_FROM_DEPTH-1).
+// foeCap/foeBonus/foeLvlBias stay at identity through COMBAT_SCALE_FROM_DEPTH-1
+// (foePower/hazardScale have their OWN bands, covered by the grace-band/
+// band-5..15/Endgame-identity tests above). Phase 54 (BAND-02): abilityThreat
+// is no longer identity for the ENTIRE depth < COMBAT_SCALE_FROM_DEPTH range —
+// it now dips in the Wall/Breakaway band (5..15) per expectedBandAbilityThreat;
+// identity (Object.is 1) holds only for floors 1-4 and 16+.
 test("depth-6 first divergence (D-19), parametrised on COMBAT_SCALE_FROM_DEPTH: combat-dial identity ends exactly one depth before it", () => {
   for (let d = 1; d < COMBAT_SCALE_FROM_DEPTH; d++) {
     const dc = difficultyCurve(d);
     assert.equal(dc.foeCap, FOE_CAP_BASE, `depth ${d}: foeCap`);
     assert.equal(dc.foeBonus, 0, `depth ${d}: foeBonus`);
     assert.equal(dc.foeLvlBias, FOE_LVL_BIAS, `depth ${d}: foeLvlBias`);
-    assert.ok(Object.is(dc.abilityThreat, 1), `depth ${d}: abilityThreat must be exactly 1`);
+    if (d < WALL_FROM_DEPTH || d >= ENDGAME_CANON_FROM_DEPTH) {
+      assert.ok(Object.is(dc.abilityThreat, 1), `depth ${d}: abilityThreat must be exactly 1`);
+    } else {
+      assert.ok(
+        Math.abs(dc.abilityThreat - expectedBandAbilityThreat(d)) < 1e-12,
+        `depth ${d}: abilityThreat ${dc.abilityThreat} !~= ${expectedBandAbilityThreat(d)}`,
+      );
+    }
   }
   const dcLast = difficultyCurve(COMBAT_SCALE_FROM_DEPTH - 1);
   assert.equal(dcLast.foeCap, FOE_CAP_BASE);
