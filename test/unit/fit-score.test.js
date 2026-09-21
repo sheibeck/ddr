@@ -35,7 +35,7 @@ function onTargetSurvival() {
 
 // --- SEARCH_PLAN / HELD_DIALS ------------------------------------------
 
-test("SEARCH_PLAN has exactly the core 10 coordinates in the user's order with pinned steps/bounds", () => {
+test("SEARCH_PLAN has the core 10 coordinates PLUS Ruling F's 11th (CLASS_MITIGATION Magic User spellPower), in order, with pinned steps/bounds", () => {
   const expected = [
     ["FOE_LEVEL.perDepth", 0.03, 0.12, 0.3],
     ["FOE_LEVEL.base", 0.15, 0.3, 1.0],
@@ -47,8 +47,9 @@ test("SEARCH_PLAN has exactly the core 10 coordinates in the user's order with p
     ["HERO_REGEN_PER_FLOOR", 0.1, 0, 0.5],
     ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
     ["ENCOUNTER_DOTS.base", 1, 5, 10],
+    ["CLASS_MITIGATION.Magic User.spellPower", 0.15, 1.0, 2.0],
   ];
-  assert.equal(SEARCH_PLAN.length, 10);
+  assert.equal(SEARCH_PLAN.length, 11);
   SEARCH_PLAN.forEach((coord, i) => {
     const [path, step, lo, hi] = expected[i];
     assert.equal(coord.path.join("."), path, `coordinate ${i}`);
@@ -58,7 +59,7 @@ test("SEARCH_PLAN has exactly the core 10 coordinates in the user's order with p
   });
 });
 
-test("HELD_DIALS names every DIALS key not in SEARCH_PLAN (no MAZE_SIZE — cut)", () => {
+test("HELD_DIALS names every DIALS key not in SEARCH_PLAN (no MAZE_SIZE — cut; no standalone CLASS_MITIGATION row post-Ruling-F)", () => {
   const searchKeys = new Set(SEARCH_PLAN.map((c) => c.path[0]));
   const heldKeys = new Set(HELD_DIALS.map((c) => c.path[0]));
   for (const key of Object.keys(DIALS)) {
@@ -197,6 +198,42 @@ test("applyStep clamps, steps ENCOUNTER_DOTS.base by 1, halves the step at stepS
   assert.equal(JSON.stringify(dials), before);
   const movedDials = applyStep({ ...DIALS, ENCOUNTER_DOTS: { base: 7, perDepth: 0.3 } }, coord, 1);
   assert.equal(movedDials.LOOT_SCALE, DIALS.LOOT_SCALE, "every other dial is carried through untouched");
+});
+
+test("applyStep on the 3-level CLASS_MITIGATION.Magic User.spellPower coordinate (Ruling F Adjustment 1) touches only that leaf", () => {
+  const coord = SEARCH_PLAN.find((c) => c.path.join(".") === "CLASS_MITIGATION.Magic User.spellPower");
+  assert.ok(coord, "the 11th coordinate must exist");
+  const dials = JSON.parse(JSON.stringify(DIALS));
+
+  const up = applyStep(dials, coord, 1);
+  assert.equal(up.CLASS_MITIGATION["Magic User"].spellPower, 1.15);
+  // Sibling rows (Fighter, Thief) and the sibling Magic User shape survive untouched.
+  assert.deepStrictEqual(up.CLASS_MITIGATION.Fighter, DIALS.CLASS_MITIGATION.Fighter);
+  assert.deepStrictEqual(up.CLASS_MITIGATION.Thief, DIALS.CLASS_MITIGATION.Thief);
+  assert.equal(dials.CLASS_MITIGATION["Magic User"].spellPower, 1, "the input is never mutated");
+
+  // dir=-1 at the identity lo bound (1.0) clamps to the same value -> null.
+  const atLoBound = applyStep(dials, coord, -1);
+  assert.equal(atLoBound, null, "spellPower's lo bound is the identity value 1.0");
+
+  // The clamp at hi (2.0) also returns null once reached.
+  dials.CLASS_MITIGATION["Magic User"].spellPower = coord.hi;
+  const atHiBound = applyStep(dials, coord, 1);
+  assert.equal(atHiBound, null);
+});
+
+test("setDialsForTuning correctly applies a full-candidate CLASS_MITIGATION override produced by applyStep's 3-level path (the search's own worker contract)", async () => {
+  const { setDialsForTuning, spellPowerFor } = await import("../../engine/difficulty.js");
+  const coord = SEARCH_PLAN.find((c) => c.path.join(".") === "CLASS_MITIGATION.Magic User.spellPower");
+  const candidate = applyStep(JSON.parse(JSON.stringify(DIALS)), coord, 1);
+  const restore = setDialsForTuning(candidate);
+  try {
+    assert.equal(spellPowerFor({ cls: "Magic User" }), 1.15, "the fitted spellPower value is live");
+    assert.equal(spellPowerFor({ cls: "Fighter" }), 1, "a non-MU class is unaffected");
+  } finally {
+    restore();
+  }
+  assert.equal(spellPowerFor({ cls: "Magic User" }), 1, "restore() puts live back to identity");
 });
 
 // --- evalRow / formatEvalLine ---------------------------------------------

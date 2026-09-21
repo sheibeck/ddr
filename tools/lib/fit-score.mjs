@@ -174,11 +174,19 @@ export function classConstraints(classIdentity) {
 }
 
 /**
- * SEARCH_PLAN — the CORE 10 coordinates ONLY (USER CUT, 2026-09-21, plan
- * approval), in the user's own order. `applyStep` refuses any key outside
- * this list. Every `{ path, step, lo, hi }` is transcribed verbatim from
- * 54-06-PLAN.md's dial table's `Search bounds (step)` / `Search order`
- * columns.
+ * SEARCH_PLAN — the CORE 10 coordinates (USER CUT, 2026-09-21, plan
+ * approval) PLUS the 11th coordinate USER RULING F's "Adjustment 1" added
+ * (2026-09-21, mid-54-07): after 27 evaluations of the original core-10
+ * search, 22 of 25 rejections were the class-fairness guardrail on the
+ * Magic User, and the one dial that could prop the Magic User pool back up
+ * — `CLASS_MITIGATION["Magic User"].spellPower` — sat outside the core 10
+ * (a manual-notch-only knob per 54-06/54-07's plan approval). Ruling F
+ * promotes it to a searched coordinate, appended LAST so the first 10
+ * probes of any resumed walk replay byte-identically against the existing
+ * `fit/fit-log.jsonl`. `applyStep` refuses any key outside this list.
+ * Coordinates 1-10 are transcribed verbatim from 54-06-PLAN.md's dial
+ * table's `Search bounds (step)` / `Search order` columns; coordinate 11 is
+ * transcribed verbatim from 54-CONTEXT.md's `## USER RULING F`.
  */
 export const SEARCH_PLAN = [
   { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
@@ -191,6 +199,7 @@ export const SEARCH_PLAN = [
   { path: ["HERO_REGEN_PER_FLOOR"], step: 0.1, lo: 0, hi: 0.5 },
   { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
   { path: ["ENCOUNTER_DOTS", "base"], step: 1, lo: 5, hi: 10 },
+  { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], step: 0.15, lo: 1.0, hi: 2.0 },
 ];
 
 /**
@@ -198,7 +207,14 @@ export const SEARCH_PLAN = [
  * held --start value, and the release note the miss table reads (recorded,
  * never taken this plan). The maze-grid-size dial is deliberately absent —
  * cut from Phase 54 entirely (no dial, no grid change; see 54-06-PLAN.md's
- * "USER CUT" paragraph).
+ * "USER CUT" paragraph). `CLASS_MITIGATION` itself is NOT held — Ruling F's
+ * Adjustment 1 promoted its `["Magic User", "spellPower"]` leaf into
+ * SEARCH_PLAN (coordinate 11), so the top-level `CLASS_MITIGATION` key now
+ * satisfies the "every DIALS key is in SEARCH_PLAN or HELD_DIALS" invariant
+ * via SEARCH_PLAN's own `path[0]`. `Fighter`/`Thief`'s rows (and every
+ * other `Magic User` row, there being none) remain the manual-notch-only
+ * knob (at most two notches per phase, per 54-06/54-07's plan approval) —
+ * not a coordinate-search dial, not individually held.
  */
 export const HELD_DIALS = [
   { path: ["TIER_SPREAD"], start: 1, releaseIf: "available, canon" },
@@ -232,7 +248,6 @@ export const HELD_DIALS = [
   { path: ["PARLEY_NEED_MOD"], start: 0, releaseIf: "available, canon" },
   { path: ["STARTING_GOLD"], start: 50, releaseIf: "available, canon" },
   { path: ["STARTING_POTION_BONUS"], start: 0, releaseIf: "available, canon" },
-  { path: ["CLASS_MITIGATION"], start: "identity rows", releaseIf: "manual knob only (max two notches per phase)" },
 ];
 
 /**

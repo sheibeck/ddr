@@ -8,12 +8,14 @@
 // copy list never references tools/ or tools/lib/), NOT a node:test file (it
 // makes no assertions, so `node --test` never picks it up).
 //
-// Phase 54 (BAND-02, 2026-09-21, USER RULING D / plan-approval cuts): the
-// in-process, worker-threaded, deterministic, logged evaluator and bounded
-// coordinate search over tools/lib/fit-score.mjs's SEARCH_PLAN (the CORE 10
-// coordinates ONLY — every other dial is HELD at its `--start` value, never
-// probed). Each evaluation plays the fair bot's SOLO 200-seed run (the SAME
-// seed list tune-difficulty.mjs uses, `i*7919+1`) in-process across worker
+// Phase 54 (BAND-02, 2026-09-21, USER RULING D / plan-approval cuts; USER
+// RULING F "Adjustment 1", mid-54-07): the in-process, worker-threaded,
+// deterministic, logged evaluator and bounded coordinate search over
+// tools/lib/fit-score.mjs's SEARCH_PLAN (the core 10 PLUS Ruling F's 11th
+// coordinate, CLASS_MITIGATION["Magic User"].spellPower — every OTHER dial
+// is HELD at its `--start` value, never probed). Each evaluation plays the
+// fair bot's SOLO 200-seed run (the SAME seed list tune-difficulty.mjs
+// uses, `i*7919+1`) in-process across worker
 // threads: each worker imports the engine fresh (via tools/lib/tuning-bot.mjs),
 // calls setDialsForTuning(candidate) ONCE, then plays its own seed slice
 // through playRun — no engine state ever crosses a thread boundary, only
@@ -214,7 +216,7 @@ function usage() {
   return [
     "Usage: node tools/fit-difficulty.mjs [options]",
     "  --dials=<json|path>  a single evaluation against this partial DIALS override",
-    "  --search              bounded coordinate descent over the core 10",
+    "  --search              bounded coordinate descent over the core 10 + Ruling F's 11th",
     "  --start=<path>        the search's starting dial set (default: {})",
     "  --budget=N            max evaluations for --search (default 80)",
     "  --seeds=N             seeds per evaluation (default 200)",
