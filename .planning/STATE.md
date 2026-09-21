@@ -5,7 +5,7 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 54
 current_phase_name: Four-Band Retune & Roster Decision
 status: planning
-stopped_at: Phase 54 HALTED after rung 5 (1cb56c6) by USER RULING D — re-planning as the GLOBAL DIFFICULTY MODEL (remove floor-range knots; ~10 dungeon-wide dials incl. foe level from depth, whole-hit scale, round-damage ceiling, hero HP/regen, hazards, food; one-and-done climbs/leaps; fair bot first; fit script; every fixture declared+regenerated); NEXT STEP = fresh Opus planner writes 54-04.. plans (54-01..03 superseded), execute, VERIFICATION, debug APK for Phase 55
+stopped_at: Phase 54 GLOBAL MODEL PLANNED (54-04..07, user-approved with three cuts: core-10 search, no MAZE_SIZE, tail measured not fitted); NEXT STEP = dispatch executor 54-04 (fair bot + BEFORE), then 54-05, 54-06, 54-07 sequentially on master; 54-02/03 are SUPERSEDED (no SUMMARY, do not execute); then orchestrator VERIFICATION, debug APK, Phase 55 device round
 last_updated: "2026-09-21T03:44:04.663Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 53 complete, transitioned to Phase 54
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–52 complete; 
 
 Phase: 54 — Four-Band Retune & Roster Decision
 Plan: Not started
-Status: Planned — 3 plans / 3 sequential waves, ready to execute
+Status: Global model planned (54-04..07) — ready to execute
 Last activity: 2026-09-20 — Phase 53 complete, transitioned to Phase 54
 
 ## Ground Truth (durable facts every session needs)
@@ -141,7 +141,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-20 (autonomous v1.7 run; paused for /compact)
-Stopped at: Phase 54 HALTED after rung 5 (1cb56c6) by USER RULING D — re-planning as the GLOBAL DIFFICULTY MODEL (remove floor-range knots; ~10 dungeon-wide dials incl. foe level from depth, whole-hit scale, round-damage ceiling, hero HP/regen, hazards, food; one-and-done climbs/leaps; fair bot first; fit script; every fixture declared+regenerated); NEXT STEP = fresh Opus planner writes 54-04.. plans (54-01..03 superseded), execute, VERIFICATION, debug APK for Phase 55
+Stopped at: Phase 54 GLOBAL MODEL PLANNED (54-04..07, user-approved with three cuts: core-10 search, no MAZE_SIZE, tail measured not fitted); NEXT STEP = dispatch executor 54-04 (fair bot + BEFORE), then 54-05, 54-06, 54-07 sequentially on master; 54-02/03 are SUPERSEDED (no SUMMARY, do not execute); then orchestrator VERIFICATION, debug APK, Phase 55 device round
 Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true → goes straight to plan). Standing rulings this run: research skipped for all six phases; verification agents off (orchestrator authors VERIFICATION.md from SUMMARYs, device checks deferred to Phase 55's batch); Phase 52 ruling: 65 curve-height cells hand to Phase 54; worktrees auto-degraded → executors run sequentially on master; docs commits via plain `git commit` with the two trailer lines; Pixel 7 is on wireless adb (adb-28051FDH200H0R, 10.0.0.175); `npm run boot:check` environment-blocked (not a gate)
 
 ## Operator Next Steps
