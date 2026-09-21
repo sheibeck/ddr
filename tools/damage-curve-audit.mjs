@@ -370,7 +370,11 @@ function main() {
 
   out.push("## Herman");
   out.push("");
-  out.push("Herman is content/bestiary.js's Humans tier-4 AND tier-5 row (the SC4 anchor — the user's pasted 'Herman hits for 80 on floor 5' log). Both rows share the same stat block (`sp.dmg: {n:0, sides:0, bonus:25}`, no strikesAs field yet in this BEFORE run — Plan 02 adds `sp.strikesAs: 5`).");
+  out.push(
+    args.rule === "whole"
+      ? "Herman is content/bestiary.js's Humans tier-4 AND tier-5 row (the SC4 anchor — the user's pasted 'Herman hits for 80 on floor 5' log). Both rows share the same stat block (`sp.dmg: {n:0, sides:0, bonus:25}`, no strikesAs field yet in this BEFORE run — Plan 02 adds `sp.strikesAs: 5`)."
+      : "Herman is content/bestiary.js's Humans tier-4 AND tier-5 row (the SC4 anchor — the user's pasted 'Herman hits for 80 on floor 5' log). Both rows now carry `sp.strikesAs: 5` (Phase 52, DMG-02) instead of the old flat-25 notation — the level-base term reads 25 (5^2), the damage die is the default d6 (see engine/combat.js#foeLevelBase).",
+  );
   out.push("");
   out.push("band | tier | hitMax | critMax");
   out.push("---|---|---|---");

@@ -1945,3 +1945,144 @@ are never compared by the fixture harness — no carve-out needed).
 `test/parity/prototype-master.js.txt` hash is unchanged
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`).
 
+## Phase 52: crit doubles the dice + Herman strikes as a level five (DMG-02) — measured moved set, declared per site
+
+The old rule doubled the WHOLE `lvl^2 + dmgBonus + dice` sum on a foe crit
+(natural 1, or a roll of 2 vs a Soldier) at all three foe-damage sites
+(`foeTurn`'s hero branch, `foeTurn`'s member branch, `pursuitStrike`) — a
+tier-5 default-d6 foe's crit read 52-62, and Herman's flat-25 notation
+doubled to 82/100 against a level-5 hero's ~30 max HP (the user's "Herman
+hits for 80 on floor 5" report). The new rule doubles the DICE only:
+`lvl^2 + dmgBonus + 2*dice` — the same tier-5 crit now reads 27-37, and
+Herman (now `sp.strikesAs: 5` instead of the flat 25) reads at most 37 at
+either tier. Zero draw-shape change per swing: the same single to-hit die and
+the same single damage die are drawn in the same position; only whether the
+drawn dice value is added once or twice into the final sum changes. Herman's
+new d6 IS a genuinely new draw compared to his old flat notation, but only in
+a Herman fight — no fixture or draw pin anywhere contains a Herman (grep-
+confirmed against every `*.test.js` file and every fixture JSON).
+
+### The predictor — crit exposure per site
+
+Measured by a scratch replay (`newRun(seed)` -> `applyStartCombat`/
+`applyAction` per action, the same dispatch `test/parity/harness/
+fixtureRoster.js` and `full-suite.test.js` already use — never a standalone
+committed tool) over every combat/magic fixture site, counting
+`struckByFoe`/`memberStruck` events carrying `critical`/`soldierCrit`, and
+separately the roll-less "opaque" hit events (`armorSoaked`/`wardAbsorbed`/
+`wardReflected`, where a foe's roll landed but the blow never reached a
+`dmg` field this phase touches):
+
+| Fixture#site | Seed | critHits | opaqueHits | Herman seen |
+|---|---|---|---|---|
+| `action-script.combat.json#win` | 3 | 0 | 0 | no |
+| `action-script.combat.json#lose` | 14 | **1** | 0 | no |
+| `action-script.combat.json#lose-apprentice` | 127 | 0 | **1** | no |
+| `action-script.combat.json#lose-plain` | 1119 | 0 | 0 | no |
+| `action-script.combat.json#flee` | 17 | 0 | 0 | no |
+| `action-script.combat.json#parley` | 303 | 0 | 0 | no |
+| `action-script.magic.json#cast-damage` | 8 | 0 | 0 | no |
+| `action-script.magic.json#heal` | 7 | 0 | 0 | no |
+| `action-script.magic.json#potion` | 1 | 0 | 0 | no |
+| `action-script.magic.json#scroll` | 7 | 0 | 0 | no |
+
+Every chargen/movement/economy/encounters site never enters combat (no
+`startCombat` action anywhere in those scripts), so none of them can carry a
+foe-damage event at all — they are outside this predictor's domain entirely,
+not merely measured-and-found-clean. `lose-apprentice`'s one opaque hit is
+`armorSoaked` amount 2 (a non-crit Bat/Rat blow through armour — a crit would
+read 4 under the new rule, still soaked to 0 either way since the whole blow
+lands on the armour); it carries no `dmg` field this phase's formula touches,
+so it is correctly counted as opaque, not as a crit exposure. Exactly one
+site (`lose`) shows a crit hit — matching the MOVED SET below one-for-one.
+
+### The live scan (tools/initiative-fixture-scan.mjs, re-run on the edited engine)
+
+`tools/initiative-fixture-scan.mjs` predicts INITIATIVE moves (a live-fight
+round advance), not crit moves — a foe crit is not a round-advance event, so
+this scan's own `MOVED SET`/`INITIATIVE EXPOSURE` lines are Part A's
+INVARIANT (byte-identical before and after this phase's engine edit, exactly
+as Phase 51 left them) and carry no crit-exposure predictor of their own. It
+is re-run anyway (Step 4 of this plan) as the cross-check for Part B: which
+sites' `fields.after (engine @end)` values move. The diff of the
+re-generated `tools/initiative-fixture-scan-output.txt` against the
+pre-Task-1 committed copy shows exactly:
+
+- the table row for `#lose`: `divergence.phase` `24+31` -> `24+31+51+52`
+- the table row for `#lose-apprentice`: `divergence.phase` `31` -> `31+51`
+- the table row for `#lose-plain`: `divergence.phase` `none` -> `51`
+- the Record values section for `#lose`: `fields.after (engine @end)` `{"wp":50,...}` -> `{"wp":51,...}`, `divergence.phase` `24+31` -> `24+31+51+52`
+- the Record values section for `#lose-apprentice`/`#lose-plain`: `divergence.phase` `31` -> `31+51` and `none` -> `51` respectively (no field values changed for these two)
+
+**A note on the `divergence.phase` column drift for `lose-apprentice`/
+`lose-plain`:** these two rows' `divergence.phase` reads `31`/`none` in the
+pre-Task-1 committed scan output even though both fixtures already carried a
+declared `+51` record on disk at that commit — the committed 51-02 scan
+output was generated in the same commit as, but chronologically before, that
+commit's own fixture declarations (an ordering artifact of Phase 51's Task
+1+2 single-commit gate, already flagged as an analogous "the column isn't a
+true invariant" finding in 51-02-SUMMARY.md's Deviations). This phase's
+regeneration naturally absorbs that stale drift (the tool reads the LIVE
+fixture's `divergence.phase` every run) alongside declaring its own `+52` —
+neither row's `firstDivergentAction`/`maxRound`/round-advance columns moved,
+only the phase-label text. Only `#lose`'s `fields.after` wp value (50 -> 51)
+and its own `divergence.phase` are Phase-52-caused moves; `MOVED SET (3)` and
+`INITIATIVE EXPOSURE: 3 of 31 replay sites` are unchanged from Phase 51.
+
+### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fromAction | fields before (prototype) | fields after (engine) | dead before → after | rationale pointer |
+|---|---|---|---|---|---|---|---|---|
+| `action-script.combat.json` | `#lose` (14) | Fighter Soldier Fridgian | `divergence` (action-path, phase `24+31+51` → `24+31+51+52`) | 0 (unchanged) | `{wp:0,sp:5,kills:1,rations:7}` | `{wp:50,sp:45,kills:2,rations:8}` → `{wp:51,sp:45,kills:2,rations:8}` | true → false (unchanged — already diverged in Phase 31) | scenario's own `divergence.rationale`, Phase 52 paragraph appended |
+
+Only one site moves this phase — the crit-exposure predictor above found
+exactly one combat/magic site with a foe crit hit anywhere in its fixed
+action script (`lose`'s Shriek, natural 1 at action 3). The shared Phase 52
+rationale text (appended to `lose`'s own `divergence.rationale`): *"Phase 52
+(DMG-02, 2026-09-20): a foe critical now doubles the damage dice, not the
+whole `lvl^2 + dmgBonus + dice` sum. This scenario's Shriek rolls a natural 1
+at action 3: whole-sum crit `2 * (1 + 1) = 4` minus the Fridgian hide's 2 = 2;
+dice-doubled crit `1 + 2*1 = 3` minus the hide's 2 = 1 — the hero ends one hp
+higher (wp 50 → 51). Zero draw change (the same to-hit die and the same
+single damage die, in the same position). Measured by
+`tools/initiative-fixture-scan.mjs` Part B on the edited engine — never
+hand-typed."* `test/parity/divergence-records.test.js`'s new DMG-02 test is
+the standing guard proving the holders declaring phase `52` are exactly this
+1-site measured set — if a future engine change moves a different site, that
+test fails first.
+
+### Draw-count pins
+
+Every per-`foeTurn` pin in `test/unit/foe-turn-draw-count.test.js` (Sections
+1/3/4/5/6) and the `OPENER_DRAWS` table are byte-identical (`git diff
+<pre-Task-1-sha> -- test/unit/foe-turn-draw-count.test.js` removes zero pinned
+lines) — the crit rule changes which value a drawn die contributes, never
+whether or how many dice are drawn. Six of the seven `FULL_FIGHTS` rows in
+that same file are unchanged; none of the crit hits in those seeds' fights
+change a fight's own length. One row elsewhere DID move:
+`test/determinism/foe-abilities.test.js`'s `walking-dead-t5` (seed 1, a
+Vampire pair) full-fight pin — its Vampire's own crit (roll 1, a d4 dice)
+used to double the WHOLE sum and kill the hero on the fight's first attack;
+under the new dice-only rule the same crit lands for less, so the hero
+survives two more of its own strikes before the fight ends the same way
+(still a loss). Old → new: `23 draws / 1 attacks / died` → `48 draws /
+3 attacks / died` — re-measured live via that file's own `runFullFight`
+helper, never hand-computed; this file's own header rule explicitly allows
+exactly this kind of escalated, rationale-bearing move (a smaller crit number
+legitimately changing a fight's length is not a regression). That file's
+per-visit draw pins (`PER_VISIT_PINS`, which measure a caster's own decisions
+against an unkillable hero and never touch fight length) are confirmed
+byte-identical, including `walking-dead-t5`'s own row.
+
+### Byte-identical elsewhere (Phase 52)
+
+The remaining nine combat/magic sites (`win`, `lose-apprentice`, `lose-plain`,
+`flee`, `parley`, and all four magic scenarios) carry zero crit hits in their
+fixed action scripts (the predictor table above) and are therefore untouched
+by this phase's engine edit; every chargen/movement/economy/encounters site
+never enters combat at all. `test/parity/prototype-master.js.txt` hash is
+unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
+`test/parity/harness/comparables.js` is untouched (no new serialized field —
+the crit rule and `sp.strikesAs` are pure damage-arithmetic, no new state
+shape).
+
