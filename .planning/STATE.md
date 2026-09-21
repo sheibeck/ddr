@@ -5,7 +5,7 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 54
 current_phase_name: Four-Band Retune & Roster Decision
 status: planning
-stopped_at: Phase 53 COMPLETE (53-VERIFICATION passed, phase.complete run); NEXT STEP = Phase 54 smart discuss → plan → execute (inherits Phase 53 AFTER 78572c5 as BEFORE; the 65 curve-height cells ruled hand-to-54 in Phase 52; todo 2026-09-20-average-run-ends-floor-5-7 resolves_phase 54)
+stopped_at: Phase 54 smart discuss DONE (54-CONTEXT.md committed; user override: FULL readout every rung, cap 4); NEXT STEP = plan Phase 54 (`gsd-plan-phase 54 --skip-research`, Opus planner), execute sequentially, orchestrator VERIFICATION, then build the debug APK for Phase 55
 last_updated: "2026-09-21T03:44:04.663Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 53 complete, transitioned to Phase 54
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–52 complete; 
 
 Phase: 54 — Four-Band Retune & Roster Decision
 Plan: Not started
-Status: Ready to discuss (no 54-CONTEXT.md yet)
+Status: Discussed — 54-CONTEXT.md committed, ready to plan
 Last activity: 2026-09-20 — Phase 53 complete, transitioned to Phase 54
 
 ## Ground Truth (durable facts every session needs)
@@ -141,8 +141,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-20 (autonomous v1.7 run; paused for /compact)
-Stopped at: Phase 53 COMPLETE (53-VERIFICATION passed, phase.complete run); NEXT STEP = Phase 54 smart discuss → plan → execute (inherits Phase 53 AFTER 78572c5 as BEFORE; the 65 curve-height cells ruled hand-to-54 in Phase 52; todo 2026-09-20-average-run-ends-floor-5-7 resolves_phase 54)
-Resume file: None — resume with `/gsd-autonomous` (Phase 54 has no CONTEXT → smart discuss first). Standing rulings this run: research skipped for all six phases; verification agents off (orchestrator authors VERIFICATION.md from SUMMARYs, device checks deferred to Phase 55's batch); Phase 52 ruling: 65 curve-height cells hand to Phase 54; worktrees auto-degraded → executors run sequentially on master; docs commits via plain `git commit` with the two trailer lines; Pixel 7 is on wireless adb (adb-28051FDH200H0R, 10.0.0.175); `npm run boot:check` environment-blocked (not a gate)
+Stopped at: Phase 54 smart discuss DONE (54-CONTEXT.md committed; user override: FULL readout every rung, cap 4); NEXT STEP = plan Phase 54 (`gsd-plan-phase 54 --skip-research`, Opus planner), execute sequentially, orchestrator VERIFICATION, then build the debug APK for Phase 55
+Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true → goes straight to plan). Standing rulings this run: research skipped for all six phases; verification agents off (orchestrator authors VERIFICATION.md from SUMMARYs, device checks deferred to Phase 55's batch); Phase 52 ruling: 65 curve-height cells hand to Phase 54; worktrees auto-degraded → executors run sequentially on master; docs commits via plain `git commit` with the two trailer lines; Pixel 7 is on wireless adb (adb-28051FDH200H0R, 10.0.0.175); `npm run boot:check` environment-blocked (not a gate)
 
 ## Operator Next Steps
 

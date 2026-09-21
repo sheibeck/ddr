@@ -1,0 +1,88 @@
+# Phase 54: Four-Band Retune & Roster Decision - Context
+
+**Gathered:** 2026-09-21
+**Status:** Ready for planning
+**Mode:** Smart discuss (autonomous run) — 3 areas / 9 questions; Areas 1 and 3 recommended answers accepted, Area 2 Q1 overridden by the user ("Full readout every rung")
+
+<domain>
+## Phase Boundary
+
+`engine/difficulty.js#difficultyCurve` is reshaped toward the four recorded bands (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20) so the bot's average run ends floor 5–7, every dial move gated on a full bot readout; the tier-3/5 roster question (Herman, Drarl, Vampire, Djinni) is closed with a recorded per-creature decision; the 65 curve-height cells Phase 52 handed here are re-measured on the AFTER curve and re-dispositioned. Requirements BAND-01, BAND-02, BAND-03, TUNE-08. Resolves todo `2026-09-20-average-run-ends-floor-5-7-four-band-difficulty-shape.md`.
+
+**Baseline (BEFORE = Phase 53 AFTER at `78572c5`, reused — already in `docs/DIFFICULTY-RETUNE.md` `### v1.7 · Phase 53 — Joiner level cap`):** solo death depth min/p50/p90/max **1/4/6/9**, reach ≥5 33.0 % / ≥10 0.0 % / ≥20 0.0 %; `--party` p50/p90 5/6, stuck 59/200; class smoke pooled mean 3.96 (715 runs). Death causes ≈ 60 % combat (Dante, Werebeast, Poltergeist, Philly, Rinkle, Drarl lead), ≈ 25 % hazards (fell off a wall 7 %, trap 6.5 %, leap 4 %), ≈ 10 % starvation / exhaustion. Caster-encounter rate 2.8 % on floors 1–5, 44.9 % on 6–10.
+
+</domain>
+
+<decisions>
+## Implementation Decisions
+
+### Area 1 — Curve shape (all recommended answers accepted)
+- **Floors 1–4 keep Phase 27's existing ramps** (`FOE_GRACE_AT_2 = 0.5` → 1.0 at `FOE_GRACE_CANON_FROM_DEPTH = 5`; `HAZARD_SCALE_AT_START = 0.5` flat through 3, canon at 5). "Identity-ish through floor 4" is read as **no NEW floor 1–4 dials**, not "delete the cushion". Floor 1 stays exact identity: `FOE_GRACE_AT_1 = 1.0` and `HAZARD_FROM_DEPTH >= 2` are untouchable (every fixture-exposed fight is on floor 1).
+- **Floors 5–15 may go sub-identity in combat** — today they are exact canon (`COMBAT_SCALE_FROM_DEPTH = 21`). Rung 1 of the ladder is a band-shaped piecewise `foePower` (and, if needed, `abilityThreat`) curve on 5–15: a step at 5 (the Wall — foePower steps UP from the floor-4 grace value but may land below 1.0), an eased slope through 9–15, and **exactly `1.0` from floor 16 onward** so the `--start-depth 20` slice is byte-identical (BAND-01's deep-lethality yardstick). Keep the structural-identity technique (`>=` guard returning the literal `1`, as `graceFor` and `hazardScale` do) so 16–20 is identity by construction, not by float rounding. `COMBAT_SCALE_FROM_DEPTH` stays 21 (21+ ramp untouched — Phase 27's "may only ever move up").
+- **Non-combat dials are rung 2**, taken only if rung 1 alone does not reach the bands: encounter-dot density (`ENCOUNTER_DOT_*`, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — floors 1–2 canon), darkness (`DARK_*`), hazards on 5–8 (a second hazard band is allowed since falls/traps/leaps are ≈ 25 % of deaths), water. Breather floors (`BREATHER_EVERY = 5`) stay.
+- **No flat-damage nerf to chase the median** (BAND-02, ROADMAP SC5): no bestiary dice trims, no `foeDmgBonusFor` shape change, no hero-side buffs. The curve's `foePower` already scales wp and the `lvl²` melee term together — that is the allowed lever.
+- **The bands are bot numbers.** The tuning bot's policy is frozen for the whole phase (no Joiner acceptance, potion/camp/flee thresholds unchanged — a moved instrument is unreadable). Targets as numbers: solo median death depth **5–7**, p90 **≈ 10–13**, reach-16 a few percent, reach-20 well under 1 %; the class matrix (`tune-classes`) is the second yardstick (pooled mean should move into the same band; no class cell may collapse below its Phase 53 value by more than the pooled shift). Misses are recorded per BAND-03 with the untaken rung and the reason.
+
+### Area 2 — Iteration protocol (Q1 USER OVERRIDE: full readout every rung; Q2, Q3 recommended answers accepted)
+- **Every rung gets the FULL readout** — `node tools/tune-difficulty.mjs --seeds=200` (solo, ~1.5 min), `node tools/tune-difficulty.mjs --seeds=200 --party` (~21 min; ~60/200 stuck at the 20,000-action cap is normal, own bucket), and `node tools/tune-classes.mjs --seeds 5 --workers 4 --out docs/class-pass/v17-p54-rungN-smoke.json` (~1.5 min), plus `node tools/tune-difficulty.mjs --seeds=50 --start-depth=20` (the deep-lethality slice — must be byte-identical to BEFORE on every rung, since 16+ is identity). Budget ≈ 25 min of bot time per rung; **ladder cap 4 rungs**, then stop and record the misses. The executor runs the `--party` run in the background (Bash `run_in_background`, output to a file in the phase dir, poll the file — the tool's own 10-min timeout is shorter than the run) and sequences solo → smoke → start-depth-20 while it runs. Each rung's four transcripts are committed under the ledger (see below); the rung's dial values are cited against the readout that motivated them (BAND-02 "every dial change cited against a bot readout that moved toward the bands").
+- **A rung that would touch floor 1 is escalated, not taken** (`FOE_GRACE_AT_1`, `HAZARD_FROM_DEPTH`, floor-1 dots/dark): the executor stops, records the rung as untaken with the reason "floor-1 parity", and the orchestrator surfaces it. Expected parity outcome: **MOVED SET (0)** — measured with `tools/initiative-fixture-scan.mjs` Part B and the full parity suite on the AFTER curve, declared in a `FIXTURE-INVENTORY.md` Phase 54 section with a `BAND-02` MOVED SET guard in `divergence-records.test.js` (Phase 53's JOIN-02 guard is the pattern). If a fixture unexpectedly moves, declare + regenerate per the engine gate; `test/parity/prototype-master.js.txt` (hash `a1f4d0dc29782218d8e5aab65bc5989c33f917f0`) and `comparables.js` are never edited.
+- **The 65 curve-height cells (Phase 52 hand-off):** no per-row dice trims. After the curve lands, re-run `node tools/damage-curve-audit.mjs` (both `--rule=whole|dice` as the tool takes them), commit the output, record the new flagged-cell count in the ledger, and refresh each remaining row's Disposition in `content/BESTIARY-REBALANCE.md` (a Phase 54 addendum). A row is retuned **only** if it is still a **≥ 100 % one-shot** (crit ≥ the band's max HP bar) at its own tier's band after the curve — and then by a `strikesAs` / dice-shape change in the Herman style, declared per row. Note the audit's HP bars may need the band's new foePower folded in (the tool reads the curve — verify it does).
+
+### Area 3 — Roster decision, TUNE-08 (all recommended answers accepted)
+- **Per creature, from the AFTER audit + a forced-20 bot slice** (`--seeds=50 --start-depth=20`, the same slice as above, with the per-foe death-cause breakdown): Herman, Drarl, Vampire, Djinni each get one of `stays — deliberate deep-tier threat` (the default), or `retuned in place` (only if still a ≥ 100 % one-shot at its own tier's band after the curve; `strikesAs` / dice shape, never a tier move — tier moves re-roll the encounter tables). Herman is already retuned (Phase 52, `strikesAs: 5`, crit 37) and is expected to record as "stays". Today's Endgame-bar readings to re-measure: Drarl tier-5 crit 62 (116 %), Vampire tier-5 crit 58 × `atk: 2` (108 %), Djinni tier-5 crit 58 (108 %).
+- **The forced-20 untaken rungs are the deliberate Endgame shape**: floors gained p50 0 / mean 0.84 and reach ≥ 20 0.1 % are recorded as intended (victory rare and celebrated); no further 21+ easing (`FOE_POWER_MAX`, `ABILITY_THREAT_MAX`, `FOE_CAP_MAX` untouched); the depth-20 slice is the yardstick that proves 16–20 did not move.
+- **Any roster change is measured with the fixture scan and declared** per the engine gate — expected zero (no fixture meets these four).
+
+### Ledger & records
+- `docs/DIFFICULTY-RETUNE.md`: a new H3 `### v1.7 · Phase 54 — four-band retune & roster decision` under the existing `## v1.7 tuning pass (Phases 51–54) — per-phase bot readouts` H2 (which must stay immediately before `## v1.2 retune (Phase 27) — TUNE-05..07`; pinned by `test/unit/difficulty-retune-ledger.test.js`). Inside it: (1) **the four bands verbatim** from the todo's quoted user text plus the numeric targets (BAND-01); (2) a **change table with one row per constant, before → after** (BAND-03); (3) one `#### Rung N` per iteration with the four transcripts and the reading; (4) the **miss table** (each target not met → untaken rung + reason); (5) the **roster table** (four rows, decision + evidence); (6) the depth-20 slice identity proof.
+- `content/BESTIARY-REBALANCE.md`: Phase 54 addendum — audit cell count before/after the curve, refreshed dispositions, any in-place retune with before/after.
+- `engine/difficulty.js`: every changed or added constant carries a `DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21)` JSDoc in the Phase 27 style (the readout that motivated it, the rung, the identity guarantees kept); `test/difficulty/difficulty.test.js` PARITY GUARD and identity pins are re-pinned to measured values, never loosened; new pins: floor 1 exact identity, `foePower === 1` literal for every depth ≥ 16, `--start-depth 20` curve object byte-identical to Phase 53's.
+- Class-pass smoke files: `docs/class-pass/v17-p54-rung{1..4}-smoke.json` and `docs/class-pass/v17-p54-after-smoke.json` (the final rung's copy); `test/unit/class-pass-ledger.test.js` heading pin respected.
+
+### Claude's Discretion
+- The exact piecewise shape and constant names for the 5–15 band curve (e.g. `WALL_FROM_DEPTH = 5`, `WALL_FOE_POWER`, `BREAKAWAY_TO_DEPTH = 15`, `ENDGAME_CANON_FROM_DEPTH = 16`) — planner decides, in the Phase 27 naming style; a single `bandFoePowerFor(d)` helper next to `graceFor(d)` is fine.
+- Rung ordering after rung 1 (which non-combat dial second) — driven by the death-cause breakdown of the previous rung (hazard deaths → hazard band; starvation → not a difficulty.js dial, record as a miss reason if it dominates).
+- Whether `abilityThreat` gets the same band shape as `foePower` or stays identity through 20 — measure first (caster-encounter rate jumps to 45 % on floors 6–10).
+
+</decisions>
+
+<code_context>
+## Existing Code Insights
+
+### Reusable Assets
+- `engine/difficulty.js` (500 lines): `difficultyCurve(depth)` returns `{ depth, breather, dots, darkBlobs, darkRadius, foeCap, foeBonus, foeLvlBias, foePower, hazardScale, abilityThreat, waterPools }`; `graceFor(d)` (floors 2–4 sub-identity, literal 1 from `FOE_GRACE_CANON_FROM_DEPTH`), `softCapFloat`, `isBreather`; application helpers `foeCountFor`, `foeWpFor`, `foeDmgBonusFor`, `scaleHazard`, `abilityCadenceFor`. Consumers: `engine/combat.js:234`, `engine/encounters.js:89`, `engine/foeAbilities.js:57/80/161`, `engine/maze.js:119/306`, `engine/movement.js:295`. Draw-free by design.
+- Constants today: `COMBAT_SCALE_FROM_DEPTH 21`, `FOE_CAP_BASE 3 / MAX 4 / SOFT_K 20`, `FOE_POWER_BASE 1.0 / MAX 1.15 / SOFT_K 35`, `ABILITY_THREAT_BASE 1.0 / MAX 1.3 / SOFT_K 30`, `FOE_GRACE_AT_1 1.0`, `FOE_GRACE_AT_2 0.5`, `FOE_GRACE_CANON_FROM_DEPTH 5`, `HAZARD_FROM_DEPTH 2`, `HAZARD_SCALE_AT_START 0.5`, `HAZARD_FLAT_THROUGH_DEPTH 3`, `HAZARD_CANON_FROM_DEPTH 5`, `ENCOUNTER_DOT_BASE 9 / CAP 13 / SOFT_K 12`, `DENSITY_CANON_THROUGH_DEPTH 2`, `DARK_BLOB_CAP 3`, `DARK_HOLD_THROUGH_DEPTH 3`, `BREATHER_EVERY 5`, `WATER_POOL_*`.
+- Bot tools: `tools/tune-difficulty.mjs` (`--seeds`, `--party`, `--start-depth=N`; prints death-depth distribution, reach table, death-cause breakdown, caster-encounter rate by band, parley/foe-ability readouts), `tools/tune-classes.mjs` (`--seeds --workers --out`), `tools/class-pass-diff.mjs`. Bot policy: `tools/lib/tuning-bot.mjs` (frozen this phase).
+- Audit tools: `tools/damage-curve-audit.mjs` (+ committed output; `FLAGGED: 65 rows across 209 row×band cells` today), `tools/cadence-audit.mjs`, `tools/initiative-fixture-scan.mjs` (Part B generic first-divergent-action — Phase 53 reused it for a measured zero).
+- Tests: `test/difficulty/difficulty.test.js` (PARITY GUARD + identity pins), `test/unit/difficulty-retune-ledger.test.js`, `test/unit/class-pass-ledger.test.js`, `test/parity/divergence-records.test.js` (INIT-01 / DMG-02 / JOIN-02 MOVED SET guards).
+- Ledgers: `docs/DIFFICULTY-RETUNE.md` (Phase 27 iteration-log style with rungs and "what to turn next"; v1.7 H2 with Phase 51/52/53 H3s), `content/BESTIARY-REBALANCE.md` (Phase 27 and Phase 52 addenda), `test/parity/FIXTURE-INVENTORY.md` (Phase 51/52/53 sections).
+
+### Established Patterns
+- Phase 27's ladder discipline: one rung per readout, constants moved by notches, each notch's JSDoc cites the readout; identity outside the band is structural (`>=` guard, literal `1`); "may only ever move up" on `COMBAT_SCALE_FROM_DEPTH`.
+- Engine gate + greenfield ruling (measure → declare → regenerate only movers; no dual paths; bot plays the new rules).
+- Report tools exit 0 with committed output; invariants pinned in unit tests; SUMMARY ends with `## Human verification (deferred to end of run)`.
+
+### Integration Points
+- `engine/difficulty.js` (constants + curve), `test/difficulty/difficulty.test.js` (re-pins + new pins), `test/parity/FIXTURE-INVENTORY.md` + `divergence-records.test.js` (Phase 54 section + BAND-02 guard), `docs/DIFFICULTY-RETUNE.md` (Phase 54 H3), `content/BESTIARY-REBALANCE.md` (Phase 54 addendum), `docs/class-pass/v17-p54-*.json`, `tools/damage-curve-audit-output.txt` (re-committed). Possibly `content/bestiary.js` (only for an in-place roster retune). No shell/UI changes.
+
+</code_context>
+
+<specifics>
+## Specific Ideas
+
+- BAND-01 verbatim text (from the todo, quote exactly in the ledger): "For a 20-floor dungeon designed to be highly challenging, the average run should end around floor 5 to 7 — a sharp early curve where failure is common, so breaking deeper feels earned. … Four bands: Floors 1–4, The Filter — high variance; a few bad drops or early mistakes mean a quick death; cleared consistently only after mastering the basics. Floors 5–8, The Wall — where the average run dies; difficulty spikes; surviving needs skill or an item synergy. Floors 9–15, The Breakaway Zone — a strong run; still brutal, but the build gives a fighting chance. Floors 16–20, The Endgame — the true test; victory rare and celebrated."
+- The Wall's "spike" is relative to the Filter's graced floors: foePower at 5 steps up from the floor-4 grace value; it does not have to reach 1.0 at 5 — the slope through 5–8 and 9–15 is the dial, 16 is where the literal 1.0 returns.
+- Expected first-rung direction: p50 4 → 5–7 needs floors 5–8 more survivable than canon for the bot (canon identity at 5 is currently the cliff the median dies on: reach ≥5 is 33 %, reach ≥10 is 0 %).
+- Time budget: 4 rungs × ~25 min bot time ≈ 1.7 h plus the BEFORE (reused) — the executor should start each rung's `--party` run first and work the fast readouts while it runs.
+
+</specifics>
+
+<deferred>
+## Deferred Ideas
+
+- Teaching the bot to accept in-run Joiners or use potions/camps better — a harness change; not this phase (the instrument is frozen).
+- Starvation / exhaustion tuning (food economy) — not a `difficulty.js` dial; if starvation dominates a rung's misses, record it as the reason and leave for a later pass.
+- Tier moves for any roster creature — explicitly excluded (re-rolls encounter tables).
+- Hero-side buffs or bestiary dice trims to chase the median — excluded by BAND-02.
+
+</deferred>
