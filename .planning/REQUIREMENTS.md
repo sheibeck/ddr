@@ -30,7 +30,7 @@
 ### Damage curve (DMG)
 
 - [x] **DMG-01**: A bot readout of max single-hit damage by depth for every bestiary foe exists (`tools/` script, committed output in `docs/DIFFICULTY-RETUNE.md`), flagging any hit ≥ 60 % of a level-appropriate character's max HP at that foe's depth band
-- [ ] **DMG-02**: Every flagged cliff is fixed so the curve is smooth — flat-damage foes (Herman's `dmg.bonus: 25` "strikes as a level five") get a die or a capped multiplier so a floor-5 crit cannot one-shot a full-HP level-5 character; each change has a before/after row in `content/BESTIARY-REBALANCE.md`
+- [x] **DMG-02**: Every flagged cliff is fixed so the curve is smooth — flat-damage foes (Herman's `dmg.bonus: 25` "strikes as a level five") get a die or a capped multiplier so a floor-5 crit cannot one-shot a full-HP level-5 character; each change has a before/after row in `content/BESTIARY-REBALANCE.md`
 
 ### Joiners (JOIN)
 
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAD-02 | Phase 52 | Complete |
 | CAD-03 | Phase 52 | Complete |
 | DMG-01 | Phase 52 | Complete |
-| DMG-02 | Phase 52 | Pending |
+| DMG-02 | Phase 52 | Complete |
 | JOIN-02 | Phase 53 | Pending |
 | JOIN-03 | Phase 53 | Pending |
 | BAND-01 | Phase 54 | Pending |

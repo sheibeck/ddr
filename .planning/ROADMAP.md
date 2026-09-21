@@ -211,7 +211,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 52-02-PLAN.md — One executor, one green commit: a foe crit doubles the dice, not the `lvl² + dmgBonus + dice` sum (`foeLevelBase` + hero/member/pursuit sites) + Herman `sp.strikesAs: 5` + crit re-pins + DMG-02 pins + the measured moved parity set declared/regenerated (predicted: `combat.json#lose` only) + Phase 52 guard + yardstick AFTER block; then FIXTURE-INVENTORY/BESTIARY-REBALANCE Phase 52 records, the AFTER damage-curve section, and a decision checkpoint on the rows still flagged (trim now vs hand to Phase 54 TUNE-08)
+- [x] 52-02-PLAN.md — One executor, one green commit: a foe crit doubles the dice, not the `lvl² + dmgBonus + dice` sum (`foeLevelBase` + hero/member/pursuit sites) + Herman `sp.strikesAs: 5` + crit re-pins + DMG-02 pins + the measured moved parity set declared/regenerated (predicted: `combat.json#lose` only) + Phase 52 guard + yardstick AFTER block; then FIXTURE-INVENTORY/BESTIARY-REBALANCE Phase 52 records, the AFTER damage-curve section, and a decision checkpoint on the rows still flagged (trim now vs hand to Phase 54 TUNE-08)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -328,7 +328,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 52. Foe Cadence & Damage Curve | v1.7 | 1/3 | In Progress|  |
+| 52. Foe Cadence & Damage Curve | v1.7 | 2/3 | In Progress|  |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |

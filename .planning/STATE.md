@@ -5,15 +5,15 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 52
 current_phase_name: Foe Cadence & Damage Curve
 status: executing
-stopped_at: Completed 52-01-PLAN.md
-last_updated: "2026-09-21T00:59:46.365Z"
+stopped_at: Completed 52-02-PLAN.md
+last_updated: "2026-09-21T01:30:04.307Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 52 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–51 complete; 
 ## Current Position
 
 Phase: 52 (Foe Cadence & Damage Curve) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-20 — Phase 52 execution started
 
@@ -140,8 +140,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-21T00:59:46.329Z
-Stopped at: Completed 52-01-PLAN.md
+Last session: 2026-09-21T01:30:04.274Z
+Stopped at: Completed 52-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -274,6 +274,7 @@ Resume file: None
 | Phase 51 P02 | ~3h | 3 tasks | 24 files |
 | Phase 51 P03 | ~40min | 2 tasks | 3 files |
 | Phase 52 P01 | ~55min | 3 tasks | 6 files |
+| Phase 52 P02 | ~2h | 3 tasks | 14 files |
 
 ## Decisions
 
@@ -528,6 +529,8 @@ Resume file: None
 - [Phase ?]: 51-03: initiativeVerdictText shared between eventNarration.js and narrationLines.js (eventNarration.js already imports slotWord from narrationLines.js, so this adds no new cross-module dependency) — Oracle and fight-log verdicts can never drift apart
 - [Phase ?]: 51-03: verdict copy locked — samurai 'Samurai honour — they go first.'; slow 'Too slow off the mark — they go first.'; foreseen 'Foresight — you go first.'; acuteHearing 'Acute Hearing — you go first.'; senses 'You go first. Nothing gets the jump on you.'; knight 'A Knight's welcome — it comes straight at you.'; courtMage 'Court Mage — you talk first, they swing first.'; no-why 'You go first.'/'They go first.'
 - [Phase ?]: 52-01: band hero levels for the damage-curve audit come from the Phase 51 AFTER smoke's median meanLevel per band (Filter=2, Wall=3, Breakaway/Endgame=5 default); a row's effective level in a band is max(tier,bandLevel) capped at 5
+- [Phase ?]: 52-02: crit doubles the dice at all three foe-damage sites via shared foeLevelBase(f); Herman gets sp.strikesAs: 5 replacing the flat-25 notation; only action-script.combat.json#lose moved (wp 50->51), declared +52 with a standing guard
+- [Phase ?]: 52-02: checkpoint pre-answered hand-to-54 — no dice trims this plan; every still-flagged AFTER-audit row gets an explicit per-row ruling (deep-tier vs curve-height dial) in content/BESTIARY-REBALANCE.md
 
 ### Blockers
 
