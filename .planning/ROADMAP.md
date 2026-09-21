@@ -282,7 +282,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5)*
 
-- [ ] 54-06-PLAN.md — The rest of the model at identity: `LOOT_SCALE` (four coin sites), `STORE_TIER`'s store consumer, `CLASS_MITIGATION` (three rows — Fighter ABSORB / Thief AVOID / Magic User CHOOSE — seven hooks, the manual knob), `FOE_ACCURACY`, `DOT_MIX` / `FIGHT_SHARE` post-roll remap, `WANDER_RATE`, the exposed-at-canon dials (`TIER_SPREAD`, `FLEE_NEED_MOD`, `PARLEY_NEED_MOD`, `STARTING_GOLD`, `STARTING_POTION_BONUS`) — same draw counts, parity measured; the fit tool `tools/fit-difficulty.mjs` + `tools/lib/fit-score.mjs` (in-process worker-threaded evaluation, Ruling C S_L score on floors 1–12, class-pool fairness + identity constraints, JSONL log, resumable bounded coordinate search over `SEARCH_PLAN` = the CORE 10 coordinates only — every other dial held at its start value) + `fit/start.json` (BAND-02)
+- [x] 54-06-PLAN.md — The rest of the model at identity: `LOOT_SCALE` (four coin sites), `STORE_TIER`'s store consumer, `CLASS_MITIGATION` (three rows — Fighter ABSORB / Thief AVOID / Magic User CHOOSE — seven hooks, the manual knob), `FOE_ACCURACY`, `DOT_MIX` / `FIGHT_SHARE` post-roll remap, `WANDER_RATE`, the exposed-at-canon dials (`TIER_SPREAD`, `FLEE_NEED_MOD`, `PARLEY_NEED_MOD`, `STARTING_GOLD`, `STARTING_POTION_BONUS`) — same draw counts, parity measured; the fit tool `tools/fit-difficulty.mjs` + `tools/lib/fit-score.mjs` (in-process worker-threaded evaluation, Ruling C S_L score on floors 1–12, class-pool fairness + identity constraints, JSONL log, resumable bounded coordinate search over `SEARCH_PLAN` = the CORE 10 coordinates only — every other dial held at its start value) + `fit/start.json` (BAND-02)
 
 **Wave 7** *(blocked on Wave 6)*
 
@@ -370,7 +370,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 52. Foe Cadence & Damage Curve | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 53. Joiner Level Cap | v1.7 | 2/2 | Complete    | 2026-09-20 |
-| 54. Four-Band Retune & Roster Decision | v1.7 | 5/7 | In Progress|  |
+| 54. Four-Band Retune & Roster Decision | v1.7 | 6/7 | In Progress|  |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
