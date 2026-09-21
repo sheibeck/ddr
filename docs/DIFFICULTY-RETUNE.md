@@ -1993,6 +1993,777 @@ This is read in the tuning-proxy register only: no constant changes here:
 Phase 52's foe-attack-cadence work and Phase 54's four-band retune are
 measured on top of this baseline, not against the original BEFORE numbers.
 
+### v1.7 · Phase 52 — cadence & damage curve
+
+**Rule change:** (a) cadence is UNCHANGED and now pinned: a plain foe makes
+exactly one ordinary attack per foe turn, an `sp.atk: 2` foe exactly two,
+and a frenzied foe doubles its own swing count (`swings = (frenzied?2:1) *
+(sp.atk||1)`, `engine/combat.js:2373`, unchanged since before this phase);
+an ability turn already replaced every swing before this phase (the ability
+gate `continue`s after `resolveFoeAbility`) — pinned by
+`test/unit/foe-cadence.test.js` (CAD-01/CAD-02/CAD-03) rather than changed.
+(b) A foe critical hit now doubles the DAMAGE DICE only, not the whole
+`lvl^2 + dmgBonus + dice` sum (`crit -> lvl^2 + dmgBonus + 2*dice`), at all
+three foe-damage sites (the hero branch and member branch of
+`engine/combat.js#foeTurn`, and `pursuitStrike`) via a shared
+`foeLevelBase(f)` helper. (c) Herman (both Humans tiers 4 and 5) carries
+`sp.strikesAs: 5` in place of the old flat `dmg: {n:0,sides:0,bonus:25}`
+notation — his rulebook note "strikes as a level five" is now exactly what
+the code does. (d) The checkpoint ruling on every row the AFTER
+damage-curve audit still flags after (b)/(c): NO dice trims land in this
+phase — every still-flagged row gets an explicit per-row ruling instead
+(tier-5 rows: "left as a deliberate deep-tier threat (Endgame band)"; tier
+2-4 rows: "curve height — a Phase 54 dial (four-band retune), not a Phase
+52 cliff"), recorded in `content/BESTIARY-REBALANCE.md`'s Phase 52
+addendum (its `#### Still flagged after the fixes (rule=dice) — ruled`
+table, with a `Disposition` cell on every one of its 65 rows).
+
+**Parameters (identical BEFORE/AFTER):**
+- `node tools/tune-difficulty.mjs --seeds=200` (solo)
+- `node tools/tune-difficulty.mjs --seeds=200 --party`
+- `node tools/tune-classes.mjs --seeds 5 --workers 4 --out docs/class-pass/v17-p51-after-smoke.json` (BEFORE, reused by reference) / `v17-p52-after-smoke.json` (AFTER)
+
+#### BEFORE — by reference: Phase 51 AFTER, commit 608a0e58046177c1dd1f225a40c3f63d402f31e1 (initiative once per fight)
+
+BEFORE is not re-run — per the measurement gate (D-11), Phase 51's own
+AFTER readout (commit `608a0e5`, quoted verbatim under
+`### v1.7 · Phase 51 — initiative once`, `#### AFTER — commit
+608a0e5804...`, above) is reused as this phase's BEFORE: solo death-depth
+min/p50/p90/max 1/4/6/9, solo action-count p50 425, party death-depth
+min/p50/p90/max 1/5/7/9, party action-count p50 648, class-smoke pooled
+mean depth (715 runs) 3.80 (mean of 143 cell means 3.803). Same bot flags,
+same seeds, same `docs/class-pass/v17-p51-after-smoke.json` file this
+phase's own damage-curve audit already used as its band-level yardstick
+(52-CONTEXT.md).
+
+#### AFTER — commit 049ab5011212a8c6a4bea0f7ee4757dd1923c1b7 (crit doubles the dice; Herman strikes as a level five)
+
+`node tools/tune-difficulty.mjs --seeds=200` (solo):
+
+```
+
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=4  p90=6  max=9
+
+Action-count distribution:
+  min=36  p50=432  p90=645  max=983
+
+Death-cause breakdown:
+  fell off a wall      14 (7.0%)
+  cut down by a Dante  13 (6.5%)
+  cut down by a Werebeast 13 (6.5%)
+  undone by a trap     13 (6.5%)
+  cut down by a Poltergeist 12 (6.0%)
+  starved in the dark  11 (5.5%)
+  spent by the dungeon itself 9 (4.5%)
+  cut down by a Philly 8 (4.0%)
+  came up short on a leap 8 (4.0%)
+  cut down by a Rinkle 8 (4.0%)
+  cut down by a Drarl  8 (4.0%)
+  cut down by a Blumble 7 (3.5%)
+  cut down by a Frank  6 (3.0%)
+  cut down by a Drake  4 (2.0%)
+  cut down by a Shadow 4 (2.0%)
+  cut down by a Trachea 4 (2.0%)
+  cut down by a Gremlin 4 (2.0%)
+  cut down by a Skeleton 4 (2.0%)
+  cut down by a Cave Bear 3 (1.5%)
+  cut down by a Primp  3 (1.5%)
+  cut down by a Dog Face 3 (1.5%)
+  cut down by a Craig  3 (1.5%)
+  cut down by a Zombie 3 (1.5%)
+  cut down by a Herman 3 (1.5%)
+  cut down by a Hair   3 (1.5%)
+  cut down by a China Wolf 3 (1.5%)
+  cut down by a Krupke 2 (1.0%)
+  cut down by a Flube  2 (1.0%)
+  cut down by a Djinni 2 (1.0%)
+  cut down by a Google 2 (1.0%)
+  cut down by a Ghost  2 (1.0%)
+  cut down by a Drekk  2 (1.0%)
+  cut down by a Undead 2 (1.0%)
+  cut down by a Stalka Beast 1 (0.5%)
+  cut down by a Rast   1 (0.5%)
+  cut down by a Viper  1 (0.5%)
+  cut down by a Zit    1 (0.5%)
+  cut down by a Hobgoblin 1 (0.5%)
+  cut down by a Spectre 1 (0.5%)
+  cut down by a Pogo   1 (0.5%)
+  cut down by a Stink Bug 1 (0.5%)
+  cut down by a M&M    1 (0.5%)
+  cut down by a Drudge 1 (0.5%)
+  cut down by a Drat   1 (0.5%)
+  cut down by a Ghoul  1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=296  successes=186 (62.8%)  failures=110  refused=0  exhausted=0
+  runs with >=1 attempt: 65 of 200
+  SP from parley: 2586 of 126539 total SP (2.0%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 33.0%  >=10: 0.0%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=33  p50=106  p90=145  max=187
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 55/1965 (2.8%)
+  6-10: 35/78 (44.9%)
+  11-20: 0/0 (0.0%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=138  foeBolted=44  foeDrained=2  foeDebuffed=19  foeHealed=0  foeSummoned=0
+  heroResisted=61  heroResistFailed=16
+  ability damage: 256 of 15573 total damage taken (1.6%)
+
+Stuck: 0 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=200  startDepth=1
+
+Outcome: 200 dead, 0 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+`node tools/tune-difficulty.mjs --seeds=200 --party`:
+
+```
+
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=5  p90=7  max=12
+
+Action-count distribution:
+  min=21  p50=703  p90=20000  max=20000
+
+Death-cause breakdown:
+  starved in the dark  16 (8.0%)
+  cut down by a Werebeast 9 (4.5%)
+  fell off a wall      9 (4.5%)
+  undone by a trap     8 (4.0%)
+  came up short on a leap 6 (3.0%)
+  cut down by a Drarl  6 (3.0%)
+  cut down by a Drake  5 (2.5%)
+  cut down by a Blumble 4 (2.0%)
+  cut down by a Primp  4 (2.0%)
+  spent by the dungeon itself 4 (2.0%)
+  cut down by a Dante  4 (2.0%)
+  cut down by a Ghost  4 (2.0%)
+  cut down by a Spectre 3 (1.5%)
+  cut down by a Ghoul  3 (1.5%)
+  cut down by a Gremlin 3 (1.5%)
+  cut down by a Craig  3 (1.5%)
+  cut down by a Herman 3 (1.5%)
+  cut down by a Drudge 3 (1.5%)
+  cut down by a Google 3 (1.5%)
+  cut down by a Drekk  2 (1.0%)
+  cut down by a Frank  2 (1.0%)
+  cut down by a Dread Lock 2 (1.0%)
+  cut down by a Vampire 2 (1.0%)
+  cut down by a Poltergeist 2 (1.0%)
+  cut down by a Trachea 2 (1.0%)
+  cut down by a Shadow 2 (1.0%)
+  cut down by a Zit    2 (1.0%)
+  cut down by a Djinni 2 (1.0%)
+  cut down by a Undead 2 (1.0%)
+  cut down by a Rinkle 1 (0.5%)
+  cut down by a Wolf   1 (0.5%)
+  cut down by a Philly 1 (0.5%)
+  cut down by a Sterling 1 (0.5%)
+  cut down by a Hobgoblin 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=361  successes=231 (64.0%)  failures=130  refused=0  exhausted=0
+  runs with >=1 attempt: 74 of 200
+  SP from parley: 4123 of 137954 total SP (3.0%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 62.4%  >=10: 0.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=21  p50=104  p90=133  max=166
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 50/2111 (2.4%)
+  6-10: 52/193 (26.9%)
+  11-20: 1/4 (25.0%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=141  foeBolted=78  foeDrained=3  foeDebuffed=13  foeHealed=0  foeSummoned=0
+  heroResisted=37  heroResistFailed=12
+  ability damage: 231 of 8210 total damage taken (2.8%)
+
+Party (--party, D-12/D-20):
+  member forced at run start in 192/200 runs; member alive at run end: 153 (76.5%)
+
+Stuck: 75 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=on  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=200  startDepth=1
+
+Outcome: 125 dead, 75 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+`node tools/tune-classes.mjs --seeds 5 --workers 4 --out docs/class-pass/v17-p52-after-smoke.json` (stdout — the ranked matrix; stderr's elapsed line `elapsed: 106.8s  workers=4  runs=715` is not quoted, per this ledger's own convention):
+
+```
+tune-classes: 143 cells x 5 seeds (715 runs) — start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+#  class  sub  race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+1  Thief  Con Artist  Wilmsry  5  0  6.80  7.0  10.0  80.0  20.0  2.80  3.60  731.20  came up short on a leap(3),cut down by a Drarl(1),starved in the dark(1)
+2  Thief  Ninja  Wilmsry  5  0  6.20  6.0  8.0  100.0  0.0  15.80  3.60  635.60  cut down by a Blumble(1),cut down by a Djinni(1),cut down by a Drake(1)
+3  Thief  Acrobat  Wilmsry  5  0  6.00  6.0  8.0  100.0  0.0  7.40  3.20  617.60  cut down by a Werebeast(2),cut down by a Rinkle(1),cut down by a Wolf(1)
+4  Fighter  Knight  Wilmsry  5  0  5.80  6.0  7.0  80.0  0.0  4.00  3.20  617.20  cut down by a Blumble(3),cut down by a Djinni(1),cut down by a Werebeast(1)
+5  Thief  Cloaker  Wilmsry  5  0  5.60  6.0  9.0  60.0  0.0  10.20  3.40  630.60  cut down by a Craig(1),cut down by a Drake(1),cut down by a Poltergeist(1)
+6  Magic User  Warlock  Dwarven  5  0  5.60  4.0  9.0  40.0  0.0  17.00  3.80  693.80  cut down by a Cave Bear(1),cut down by a Djinni(1),cut down by a Rinkle(1)
+7  Thief  Ninja  Human  5  0  5.40  5.0  8.0  80.0  0.0  12.80  3.60  562.80  cut down by a Drarl(1),cut down by a Drudge(1),cut down by a Primp(1)
+8  Thief  Cutthroat  Wilmsry  5  0  5.40  5.0  9.0  60.0  0.0  8.60  3.40  580.40  cut down by a Shadow(1),cut down by a Undead(1),cut down by a Vampire(1)
+9  Thief  Ninja  Troll  5  0  5.20  6.0  6.0  60.0  0.0  16.20  3.60  573.40  cut down by a Blumble(1),cut down by a Craig(1),cut down by a Drudge(1)
+10  Fighter  Bard  Wilmsry  5  0  5.20  5.0  7.0  80.0  0.0  11.20  3.20  585.40  cut down by a Frank(1),cut down by a Poltergeist(1),cut down by a Primp(1)
+11  Thief  Ninja  Dwarven  5  0  5.20  5.0  7.0  60.0  0.0  10.80  3.40  490.00  cut down by a Primp(2),cut down by a Drake(1),cut down by a Ghost(1)
+12  Magic User  Warlock  Wilmsry  5  0  5.20  4.0  9.0  40.0  0.0  10.60  3.00  719.60  cut down by a Drudge(1),cut down by a Philly(1),cut down by a Poltergeist(1)
+13  Fighter  Woodsman  Wilmsry  5  0  5.00  5.0  6.0  80.0  0.0  6.60  3.00  568.20  cut down by a Blumble(1),cut down by a Werebeast(1),cut down by a Zit(1)
+14  Thief  Con Artist  Dwarven  5  0  5.00  5.0  7.0  60.0  0.0  1.80  3.00  549.00  cut down by a Werebeast(2),cut down by a Dante(1),fell off a wall(1)
+15  Magic User  Court Mage  Fridgian  5  0  5.00  5.0  8.0  60.0  0.0  17.40  3.60  482.00  cut down by a Bones(1),cut down by a Djinni(1),cut down by a Flube(1)
+16  Thief  Pilfer  Wilmsry  5  0  5.00  5.0  7.0  60.0  0.0  8.20  3.20  545.00  cut down by a Ghoul(2),cut down by a Poltergeist(1),cut down by a Stink Bug(1)
+17  Magic User  Warlock  Troll  5  0  4.80  6.0  7.0  60.0  0.0  13.20  3.40  555.20  starved in the dark(2),cut down by a Drake(1),cut down by a Herman(1)
+18  Fighter  Knight  Fridgian  5  0  4.80  5.0  5.0  80.0  0.0  6.80  3.00  511.80  cut down by a Frank(3),cut down by a Cave Bear(1),cut down by a Rinkle(1)
+19  Magic User  Warlock  Fridgian  5  0  4.80  5.0  5.0  80.0  0.0  12.00  3.40  561.20  cut down by a Werebeast(2),cut down by a Drarl(1),cut down by a Spectre(1)
+20  Magic User  Wizard  Fridgian  5  0  4.80  5.0  6.0  80.0  0.0  7.00  3.00  535.20  cut down by a Drake(2),cut down by a Gremlin(1),cut down by a Zombie(1)
+21  Thief  Cat Burglar  Wilmsry  5  0  4.80  5.0  7.0  60.0  0.0  5.80  2.80  505.20  cut down by a Rinkle(2),undone by a trap(2),cut down by a Drudge(1)
+22  Thief  Con Artist  Human  5  0  4.80  5.0  7.0  60.0  0.0  2.20  3.00  551.40  fell off a wall(2),came up short on a leap(1),cut down by a Ghoul(1)
+23  Fighter  Knight  Human  5  0  4.80  5.0  6.0  60.0  0.0  9.00  4.00  519.20  cut down by a Werebeast(2),cut down by a Bones(1),cut down by a Drarl(1)
+24  Thief  Ninja  Fridgian  5  0  4.80  5.0  6.0  60.0  0.0  13.20  3.40  527.60  cut down by a Rinkle(2),cut down by a Drake(1),cut down by a Frank(1)
+25  Fighter  Woodsman  Troll  5  0  4.80  5.0  7.0  60.0  0.0  6.60  3.00  437.00  cut down by a Werebeast(2),starved in the dark(2),cut down by a Blumble(1)
+26  Thief  Acrobat  Dwarven  5  0  4.80  4.0  7.0  40.0  0.0  15.00  3.20  492.20  cut down by a Google(1),cut down by a Stink Bug(1),cut down by a Trachea(1)
+27  Fighter  Bard  Fridgian  5  0  4.80  4.0  6.0  40.0  0.0  7.20  3.40  464.80  cut down by a Drarl(1),cut down by a Rinkle(1),cut down by a Spectre(1)
+28  Magic User  Illusionist  Troll  5  0  4.80  4.0  9.0  40.0  0.0  10.20  2.80  512.80  cut down by a Cave Bear(1),cut down by a Drat(1),cut down by a Dread Lock(1)
+29  Fighter  Soldier  Human  5  0  4.80  4.0  7.0  40.0  0.0  11.20  3.80  591.20  cut down by a Frank(1),cut down by a Hair(1),fell off a wall(1)
+30  Fighter  Barbarian  Troll  5  0  4.60  5.0  5.0  80.0  0.0  11.80  2.80  475.80  cut down by a Blumble(1),cut down by a Frank(1),cut down by a Poltergeist(1)
+31  Fighter  Guard  Troll  5  0  4.60  5.0  5.0  60.0  0.0  9.60  3.40  534.00  starved in the dark(2),cut down by a Craig(1),cut down by a Ghost(1)
+32  Thief  Cloaker  Troll  5  0  4.60  4.0  6.0  40.0  0.0  12.40  3.20  484.20  starved in the dark(3),cut down by a Blumble(1),fell off a wall(1)
+33  Magic User  Sorcerer  Fridgian  5  0  4.60  4.0  6.0  40.0  0.0  15.60  3.20  483.00  cut down by a Werebeast(2),cut down by a Frank(1),cut down by a Undead(1)
+34  Magic User  Sorcerer  Human  5  0  4.60  4.0  6.0  40.0  0.0  14.40  3.40  585.00  cut down by a Rast(1),cut down by a Spectre(1),cut down by a Trachea(1)
+35  Fighter  Woodsman  Fridgian  5  0  4.60  4.0  7.0  40.0  0.0  7.00  3.00  442.60  cut down by a Rinkle(2),cut down by a Frank(1),cut down by a Poltergeist(1)
+36  Magic User  Sorcerer  Dwarven  5  0  4.40  6.0  7.0  60.0  0.0  14.00  3.20  527.80  cut down by a China Wolf(1),cut down by a Dread Lock(1),cut down by a Frank(1)
+37  Thief  Cloaker  Human  5  0  4.40  5.0  5.0  60.0  0.0  11.00  3.00  487.60  starved in the dark(2),came up short on a leap(1),cut down by a Poltergeist(1)
+38  Thief  Con Artist  Troll  5  0  4.40  5.0  5.0  60.0  0.0  3.20  2.60  488.80  starved in the dark(3),cut down by a Poltergeist(1),cut down by a Rast(1)
+39  Magic User  Warlock  Human  5  0  4.40  5.0  6.0  60.0  0.0  14.60  3.20  507.40  cut down by a Philly(1),cut down by a Rinkle(1),cut down by a Spectre(1)
+40  Thief  Acrobat  Fridgian  5  0  4.40  4.0  5.0  40.0  0.0  12.40  3.20  459.20  cut down by a Craig(1),cut down by a Frank(1),cut down by a Poltergeist(1)
+41  Fighter  Barbarian  Fridgian  5  0  4.40  4.0  7.0  40.0  0.0  12.60  2.60  528.20  came up short on a leap(2),cut down by a Cave Bear(1),cut down by a Drarl(1)
+42  Thief  Cat Burglar  Troll  5  0  4.40  4.0  6.0  40.0  0.0  14.00  3.40  502.00  cut down by a Bones(1),cut down by a Drake(1),cut down by a Rinkle(1)
+43  Magic User  Court Mage  Dwarven  5  0  4.40  4.0  8.0  40.0  0.0  11.20  2.60  441.60  cut down by a Dante(1),cut down by a Hobgoblin(1),cut down by a Shriek(1)
+44  Fighter  Guard  Wilmsry  5  0  4.40  4.0  7.0  40.0  0.0  7.00  2.20  486.00  cut down by a Bat/Rat(1),cut down by a Dante(1),cut down by a Werebeast(1)
+45  Fighter  Master of Arms  Troll  5  0  4.40  4.0  6.0  40.0  0.0  8.80  3.00  454.40  cut down by a Poltergeist(2),cut down by a Herman(1),fell off a wall(1)
+46  Fighter  Soldier  Troll  5  0  4.40  4.0  5.0  40.0  0.0  9.00  3.00  404.80  cut down by a Bones(1),cut down by a Frank(1),cut down by a Poltergeist(1)
+47  Magic User  Wizard  Troll  5  0  4.40  4.0  7.0  40.0  0.0  11.20  3.20  511.20  cut down by a Herman(1),cut down by a Primp(1),cut down by a Rinkle(1)
+48  Fighter  Barbarian  Human  5  0  4.20  4.0  5.0  40.0  0.0  18.20  2.80  499.40  cut down by a Blumble(1),cut down by a Dante(1),cut down by a Frank(1)
+49  Fighter  Bard  Human  5  0  4.20  4.0  6.0  40.0  0.0  10.80  3.00  466.00  cut down by a Werebeast(2),cut down by a Philly(1),cut down by a Poltergeist(1)
+50  Fighter  Samurai  Wilmsry  5  0  4.20  4.0  5.0  40.0  0.0  10.60  2.60  460.40  cut down by a China Wolf(2),cut down by a Werebeast(2),cut down by a Rinkle(1)
+51  Fighter  Soldier  Wilmsry  5  0  4.20  4.0  6.0  40.0  0.0  4.80  2.60  427.20  cut down by a Poltergeist(1),cut down by a Rinkle(1),cut down by a Werebeast(1)
+52  Magic User  Sorcerer  Troll  5  0  4.20  4.0  6.0  40.0  0.0  13.00  3.00  460.60  cut down by a Blumble(1),cut down by a Floater(1),cut down by a Poltergeist(1)
+53  Magic User  Wizard  Wilmsry  5  0  4.20  4.0  7.0  40.0  0.0  4.40  2.60  522.80  cut down by a Drarl(1),cut down by a Gremlin(1),cut down by a Primp(1)
+54  Thief  Acrobat  Human  5  0  4.20  4.0  6.0  20.0  0.0  14.60  3.20  433.20  cut down by a Werebeast(2),cut down by a Herman(1),cut down by a Sterling(1)
+55  Thief  Cloaker  Elven  5  0  4.20  4.0  5.0  20.0  0.0  9.40  2.80  468.20  cut down by a Poltergeist(1),cut down by a Primp(1),cut down by a Rinkle(1)
+56  Magic User  Cleric  Troll  5  0  4.00  5.0  5.0  60.0  0.0  8.60  2.60  450.00  fell off a wall(2),cut down by a Gremlin(1),cut down by a Poltergeist(1)
+57  Magic User  Court Mage  Human  5  0  4.00  5.0  6.0  60.0  0.0  10.40  2.80  401.80  fell off a wall(3),cut down by a Craig(1),cut down by a Drarl(1)
+58  Magic User  Illusionist  Wilmsry  5  0  4.00  5.0  5.0  60.0  0.0  6.60  2.40  455.80  cut down by a Google(1),cut down by a M&M(1),cut down by a Primp(1)
+59  Magic User  Wizard  Human  5  0  4.00  5.0  6.0  60.0  0.0  9.00  2.60  431.00  cut down by a Blumble(1),cut down by a Gremlin(1),cut down by a Sterling(1)
+60  Magic User  Cleric  Wilmsry  5  0  4.00  4.0  7.0  40.0  0.0  5.40  2.40  397.80  fell off a wall(2),came up short on a leap(1),cut down by a Dante(1)
+61  Fighter  Master of Arms  Fridgian  5  0  4.00  4.0  5.0  40.0  0.0  11.40  3.20  435.80  cut down by a China Wolf(1),cut down by a Craig(1),cut down by a Drake(1)
+62  Thief  Pilfer  Human  5  0  4.00  4.0  5.0  40.0  0.0  8.00  2.40  402.40  cut down by a Blumble(1),cut down by a Primp(1),cut down by a Rinkle(1)
+63  Fighter  Samurai  Dwarven  5  0  4.00  4.0  5.0  40.0  0.0  12.20  3.40  404.60  cut down by a Craig(1),cut down by a Floater(1),cut down by a Sterling(1)
+64  Magic User  Apprentice  Wilmsry  5  0  4.00  4.0  5.0  20.0  0.0  6.00  2.60  418.40  cut down by a China Wolf(1),cut down by a Rinkle(1),cut down by a Shadow(1)
+65  Fighter  Knight  Troll  5  0  4.00  4.0  5.0  20.0  0.0  2.80  2.20  375.40  cut down by a Google(2),fell off a wall(2),cut down by a Frank(1)
+66  Fighter  Master of Arms  Human  5  0  4.00  4.0  5.0  20.0  0.0  12.80  3.40  428.80  cut down by a Craig(1),cut down by a Drake(1),cut down by a Drat(1)
+67  Fighter  Master of Arms  Wilmsry  5  0  4.00  4.0  5.0  20.0  0.0  12.00  3.20  444.60  cut down by a Sterling(2),cut down by a Frank(1),cut down by a Primp(1)
+68  Fighter  Soldier  Fridgian  5  0  4.00  4.0  5.0  20.0  0.0  13.60  3.20  460.80  cut down by a Werebeast(2),cut down by a Frank(1),cut down by a Rast(1)
+69  Fighter  Soldier  Dwarven  5  0  4.00  4.0  4.0  0.0  0.0  10.80  3.00  474.60  cut down by a Blumble(1),cut down by a Cave Bear(1),cut down by a Frank(1)
+70  Magic User  Summoner  Fridgian  5  0  4.00  4.0  4.0  0.0  0.0  10.00  2.60  456.80  cut down by a Blumble(1),cut down by a Poltergeist(1),cut down by a Werebeast(1)
+71  Thief  Cutthroat  Human  5  0  4.00  3.0  7.0  20.0  0.0  11.60  2.80  459.80  cut down by a Dante(1),cut down by a Drake(1),cut down by a Shadow(1)
+72  Fighter  Guard  Fridgian  5  0  4.00  3.0  7.0  20.0  0.0  11.40  3.00  475.20  cut down by a Drarl(1),cut down by a Drat(1),cut down by a Krupke(1)
+73  Thief  Cutthroat  Troll  5  0  3.80  4.0  5.0  40.0  0.0  12.20  2.60  429.20  cut down by a Rinkle(2),came up short on a leap(1),cut down by a Ghost(1)
+74  Fighter  Knight  Elven  5  0  3.80  4.0  5.0  40.0  0.0  3.80  2.40  414.20  came up short on a leap(1),cut down by a Flube(1),cut down by a Poltergeist(1)
+75  Thief  Pickpocket  Wilmsry  5  0  3.80  4.0  5.0  40.0  0.0  5.60  2.40  428.40  fell off a wall(2),cut down by a Frank(1),cut down by a Werebeast(1)
+76  Magic User  Apprentice  Human  5  0  3.80  4.0  6.0  20.0  0.0  10.60  2.80  473.20  cut down by a Blumble(1),cut down by a Krupke(1),cut down by a Rinkle(1)
+77  Fighter  Barbarian  Wilmsry  5  0  3.80  4.0  6.0  20.0  0.0  7.40  2.20  476.00  cut down by a Dante(1),cut down by a Philly(1),cut down by a Primp(1)
+78  Fighter  Bard  Troll  5  0  3.80  4.0  5.0  20.0  0.0  7.60  2.40  439.00  cut down by a Cave Bear(1),cut down by a Flube(1),cut down by a Philly(1)
+79  Magic User  Court Mage  Troll  5  0  3.80  4.0  6.0  20.0  0.0  12.00  2.80  407.80  cut down by a Floater(1),cut down by a Werebeast(1),cut down by a Wolf(1)
+80  Thief  Pilfer  Fridgian  5  0  3.80  4.0  5.0  20.0  0.0  10.40  2.40  422.60  cut down by a Frank(1),cut down by a Google(1),cut down by a Gremlin(1)
+81  Thief  Pilfer  Troll  5  0  3.80  4.0  5.0  20.0  0.0  10.40  2.40  437.80  starved in the dark(2),cut down by a Cave Bear(1),cut down by a Poltergeist(1)
+82  Fighter  Samurai  Troll  5  0  3.80  4.0  5.0  20.0  0.0  12.20  2.60  399.80  starved in the dark(2),cut down by a Blumble(1),cut down by a Rinkle(1)
+83  Magic User  Sorcerer  Wilmsry  5  0  3.80  4.0  5.0  20.0  0.0  6.40  2.20  440.80  cut down by a China Wolf(1),cut down by a Google(1),cut down by a Gremlin(1)
+84  Magic User  Summoner  Human  5  0  3.80  4.0  7.0  20.0  0.0  11.40  3.00  515.20  cut down by a China Wolf(1),cut down by a Floater(1),cut down by a Gremlin(1)
+85  Magic User  Apprentice  Elven  5  0  3.80  3.0  7.0  40.0  0.0  9.60  3.20  456.40  cut down by a Blumble(1),cut down by a Djinni(1),cut down by a Hobgoblin(1)
+86  Magic User  Cleric  Human  5  0  3.80  3.0  8.0  40.0  0.0  7.40  2.60  364.00  cut down by a Google(1),cut down by a Herman(1),cut down by a Vampire(1)
+87  Fighter  Barbarian  Elven  5  0  3.80  3.0  8.0  20.0  0.0  10.20  2.20  411.40  cut down by a Cave Bear(2),cut down by a Drarl(1),cut down by a Skeleton(1)
+88  Thief  Cloaker  Fridgian  5  0  3.80  3.0  6.0  20.0  0.0  8.60  2.60  394.60  cut down by a Dante(1),cut down by a Djinni(1),cut down by a Poltergeist(1)
+89  Thief  Ninja  Elven  5  0  3.80  3.0  7.0  20.0  0.0  12.40  2.60  367.80  cut down by a Cave Bear(1),cut down by a China Wolf(1),cut down by a Drake(1)
+90  Thief  Cat Burglar  Human  5  0  3.60  4.0  5.0  40.0  0.0  10.40  2.40  394.00  fell off a wall(2),cut down by a Drarl(1),cut down by a Werebeast(1)
+91  Magic User  Court Mage  Wilmsry  5  0  3.60  4.0  5.0  40.0  0.0  7.00  2.20  333.80  cut down by a Dante(1),cut down by a Frank(1),cut down by a Ned(1)
+92  Thief  Pickpocket  Fridgian  5  0  3.60  4.0  5.0  40.0  0.0  6.40  2.40  316.40  cut down by a Rinkle(2),cut down by a Blumble(1),spent by the dungeon itself(1)
+93  Magic User  Apprentice  Troll  5  0  3.60  4.0  6.0  20.0  0.0  10.40  3.00  433.60  cut down by a Drarl(1),cut down by a Gremlin(1),cut down by a Werebeast(1)
+94  Magic User  Cleric  Fridgian  5  0  3.60  4.0  5.0  20.0  0.0  9.40  2.20  374.20  cut down by a China Wolf(1),cut down by a Primp(1),cut down by a Shadow(1)
+95  Thief  Cutthroat  Fridgian  5  0  3.60  4.0  5.0  20.0  0.0  9.40  2.80  411.20  cut down by a Flube(1),cut down by a Ned(1),cut down by a Sterling(1)
+96  Magic User  Illusionist  Fridgian  5  0  3.60  4.0  5.0  20.0  0.0  12.20  2.60  409.80  cut down by a Ghoul(1),cut down by a Philly(1),cut down by a Shriek(1)
+97  Fighter  Master of Arms  Dwarven  5  0  3.60  4.0  5.0  20.0  0.0  12.40  3.20  423.80  cut down by a Werebeast(2),cut down by a Dante(1),cut down by a Poltergeist(1)
+98  Fighter  Guard  Dwarven  5  0  3.60  4.0  4.0  0.0  0.0  11.00  2.60  391.60  cut down by a Dante(1),cut down by a Google(1),cut down by a Primp(1)
+99  Magic User  Wizard  Elven  5  0  3.60  4.0  4.0  0.0  0.0  11.20  2.40  497.40  cut down by a Frank(1),cut down by a Rast(1),cut down by a Rinkle(1)
+100  Fighter  Woodsman  Human  5  0  3.60  4.0  4.0  0.0  0.0  9.40  3.00  391.40  cut down by a Frank(1),cut down by a Ghost(1),cut down by a Poltergeist(1)
+101  Thief  Acrobat  Troll  5  0  3.60  3.0  6.0  20.0  0.0  13.20  2.80  407.80  starved in the dark(3),cut down by a Drarl(1),undone by a trap(1)
+102  Fighter  Woodsman  Elven  5  0  3.60  3.0  6.0  20.0  0.0  5.00  2.60  349.00  cut down by a Goblin(1),cut down by a Poltergeist(1),cut down by a Stink Bug(1)
+103  Thief  Acrobat  Elven  5  0  3.40  4.0  5.0  20.0  0.0  12.20  2.80  365.40  cut down by a Werebeast(3),cut down by a Rinkle(1),fell off a wall(1)
+104  Thief  Cloaker  Dwarven  5  0  3.40  4.0  5.0  20.0  0.0  6.80  1.80  383.60  cut down by a Google(1),cut down by a Gremlin(1),cut down by a Poltergeist(1)
+105  Magic User  Illusionist  Human  5  0  3.40  4.0  5.0  20.0  0.0  10.80  2.60  393.80  cut down by a Blumble(1),cut down by a Djinni(1),cut down by a Philly(1)
+106  Thief  Pickpocket  Dwarven  5  0  3.40  4.0  5.0  20.0  0.0  6.80  2.40  379.60  cut down by a Shadow(1),cut down by a Werebeast(1),spent by the dungeon itself(1)
+107  Thief  Pilfer  Elven  5  0  3.40  4.0  5.0  20.0  0.0  8.40  2.40  410.60  cut down by a Blumble(1),cut down by a Drarl(1),cut down by a Trachea(1)
+108  Fighter  Barbarian  Dwarven  5  0  3.40  3.0  5.0  20.0  0.0  9.40  2.20  339.80  cut down by a Dante(1),cut down by a Drat(1),cut down by a Werebeast(1)
+109  Fighter  Bard  Elven  5  0  3.40  3.0  6.0  20.0  0.0  9.60  2.80  342.80  cut down by a Poltergeist(2),came up short on a leap(1),cut down by a Google(1)
+110  Fighter  Master of Arms  Elven  5  0  3.40  3.0  6.0  20.0  0.0  9.40  3.00  363.00  cut down by a Cave Bear(1),cut down by a Poltergeist(1),cut down by a Vampire(1)
+111  Thief  Pickpocket  Human  5  0  3.40  3.0  6.0  20.0  0.0  9.40  2.40  390.40  undone by a trap(2),cut down by a Floater(1),cut down by a Google(1)
+112  Magic User  Summoner  Troll  5  0  3.40  3.0  6.0  20.0  0.0  8.80  2.40  429.60  cut down by a Dante(1),cut down by a Google(1),cut down by a Gremlin(1)
+113  Fighter  Knight  Dwarven  5  0  3.40  3.0  4.0  0.0  0.0  6.20  2.40  421.80  fell off a wall(2),cut down by a Dante(1),cut down by a Poltergeist(1)
+114  Thief  Pickpocket  Elven  5  0  3.40  3.0  4.0  0.0  0.0  9.80  2.60  394.00  cut down by a Google(2),cut down by a Werebeast(2),starved in the dark(1)
+115  Magic User  Summoner  Elven  5  0  3.20  4.0  5.0  20.0  0.0  7.80  2.00  371.80  cut down by a Gremlin(1),cut down by a Rinkle(1),cut down by a Skeleton(1)
+116  Thief  Con Artist  Fridgian  5  0  3.20  3.0  6.0  20.0  0.0  2.80  2.20  359.20  spent by the dungeon itself(3),cut down by a Gremlin(1),undone by a trap(1)
+117  Thief  Pilfer  Dwarven  5  0  3.20  3.0  5.0  20.0  0.0  7.20  2.00  334.60  cut down by a Gremlin(1),cut down by a Hair(1),cut down by a Pogo(1)
+118  Fighter  Samurai  Human  5  0  3.20  3.0  4.0  0.0  0.0  13.40  2.80  356.00  cut down by a Drarl(1),cut down by a Frank(1),cut down by a Poltergeist(1)
+119  Magic User  Court Mage  Elven  5  0  3.00  4.0  5.0  20.0  0.0  7.40  2.00  256.40  cut down by a Werebeast(2),came up short on a leap(1),cut down by a Drekk(1)
+120  Thief  Cat Burglar  Dwarven  5  0  3.00  4.0  4.0  0.0  0.0  8.40  2.20  306.20  undone by a trap(2),cut down by a Rinkle(1),cut down by a Sterling(1)
+121  Magic User  Cleric  Dwarven  5  0  3.00  3.0  5.0  40.0  0.0  8.60  2.20  281.00  cut down by a China Wolf(1),cut down by a Drarl(1),cut down by a Google(1)
+122  Magic User  Illusionist  Dwarven  5  0  3.00  3.0  6.0  20.0  0.0  6.20  1.80  346.20  cut down by a China Wolf(1),cut down by a Philly(1),cut down by a Rinkle(1)
+123  Magic User  Apprentice  Fridgian  5  0  3.00  3.0  4.0  0.0  0.0  7.40  2.40  360.00  cut down by a Poltergeist(2),cut down by a Google(1),cut down by a Werebeast(1)
+124  Fighter  Bard  Dwarven  5  0  3.00  3.0  4.0  0.0  0.0  8.60  2.20  326.60  cut down by a Poltergeist(3),cut down by a Rast(1),cut down by a Skeleton(1)
+125  Thief  Cutthroat  Dwarven  5  0  3.00  3.0  4.0  0.0  0.0  8.40  2.40  376.80  came up short on a leap(2),cut down by a Shadow(1),cut down by a Skeleton(1)
+126  Fighter  Guard  Human  5  0  3.00  3.0  4.0  0.0  0.0  8.40  2.00  370.00  cut down by a Poltergeist(2),fell off a wall(2),cut down by a Werebeast(1)
+127  Magic User  Warlock  Elven  5  0  3.00  3.0  4.0  0.0  0.0  9.40  2.40  382.80  cut down by a Poltergeist(2),cut down by a Trachea(1),cut down by a Wolf(1)
+128  Thief  Cat Burglar  Fridgian  5  0  2.80  4.0  4.0  0.0  0.0  7.80  2.00  284.20  undone by a trap(2),cut down by a Frank(1),cut down by a Gremlin(1)
+129  Thief  Cat Burglar  Elven  5  0  2.80  3.0  5.0  20.0  0.0  7.40  2.20  249.80  undone by a trap(3),cut down by a Cave Bear(1),cut down by a Craig(1)
+130  Thief  Con Artist  Elven  5  0  2.80  3.0  5.0  20.0  0.0  1.00  2.00  380.60  starved in the dark(4),cut down by a Rinkle(1)
+131  Thief  Pickpocket  Troll  5  0  2.80  3.0  4.0  0.0  0.0  8.60  2.20  306.20  cut down by a Frank(1),cut down by a Rast(1),cut down by a Shriek(1)
+132  Fighter  Soldier  Elven  5  0  2.80  3.0  4.0  0.0  0.0  8.00  2.20  303.00  cut down by a Cave Bear(1),cut down by a China Wolf(1),cut down by a Rinkle(1)
+133  Magic User  Wizard  Dwarven  5  0  2.80  2.0  6.0  20.0  0.0  4.80  1.80  308.40  cut down by a Gremlin(2),cut down by a Blumble(1),cut down by a Philly(1)
+134  Thief  Cutthroat  Elven  5  0  2.60  3.0  3.0  0.0  0.0  9.40  2.20  338.60  cut down by a Poltergeist(2),cut down by a Dante(1),cut down by a Frank(1)
+135  Fighter  Guard  Elven  5  0  2.60  3.0  4.0  0.0  0.0  6.80  1.80  256.00  fell off a wall(2),cut down by a Blumble(1),cut down by a Poltergeist(1)
+136  Magic User  Illusionist  Elven  5  0  2.60  3.0  4.0  0.0  0.0  6.80  1.80  299.40  cut down by a Gremlin(2),cut down by a Shriek(1),cut down by a Werebeast(1)
+137  Fighter  Samurai  Elven  5  0  2.60  3.0  3.0  0.0  0.0  6.40  2.00  257.40  cut down by a Cave Bear(1),cut down by a Google(1),cut down by a Poltergeist(1)
+138  Magic User  Cleric  Elven  5  0  2.60  2.0  5.0  20.0  0.0  6.20  1.80  250.40  starved in the dark(3),cut down by a Gremlin(1),fell off a wall(1)
+139  Magic User  Summoner  Wilmsry  5  0  2.60  2.0  5.0  20.0  0.0  3.00  1.40  292.00  cut down by a Gremlin(2),cut down by a M&M(1),cut down by a Philly(1)
+140  Fighter  Woodsman  Dwarven  5  0  2.60  2.0  5.0  20.0  0.0  6.20  1.80  281.00  cut down by a Blumble(1),cut down by a Pogo(1),cut down by a Skeleton(1)
+141  Magic User  Sorcerer  Elven  5  0  2.40  3.0  3.0  0.0  0.0  6.60  1.80  278.60  came up short on a leap(1),cut down by a China Wolf(1),cut down by a Gremlin(1)
+142  Magic User  Apprentice  Dwarven  5  0  2.40  2.0  5.0  20.0  0.0  4.60  2.00  235.00  cut down by a Hobgoblin(2),cut down by a Cave Bear(1),cut down by a Craig(1)
+143  Magic User  Summoner  Dwarven  5  0  2.40  2.0  4.0  0.0  0.0  7.40  1.60  283.60  cut down by a Ned(2),cut down by a Dante(1),cut down by a Google(1)
+
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  240  0  4.11  4.0  6.0  36.3  0.4  9.18  2.75  446.81  starved in the dark(29),cut down by a Werebeast(23),undone by a trap(20)
+Fighter  235  0  3.98  4.0  6.0  30.6  0.0  9.17  2.78  431.64  cut down by a Werebeast(30),cut down by a Poltergeist(26),cut down by a Frank(16)
+Magic User  240  0  3.79  4.0  6.0  32.1  0.0  9.48  2.59  428.88  cut down by a Werebeast(21),fell off a wall(19),cut down by a Gremlin(17)
+
+BY SUBCLASS:
+sub  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Ninja  30  0  5.10  5.0  7.0  63.3  0.0  13.53  3.37  526.20  cut down by a Drake(4),cut down by a Primp(3),cut down by a Blumble(2)
+Warlock  30  0  4.63  4.0  9.0  46.7  0.0  12.80  3.20  570.00  cut down by a Poltergeist(3),cut down by a Werebeast(3),cut down by a Philly(2)
+Con Artist  30  0  4.50  5.0  7.0  50.0  3.3  2.30  2.73  510.03  starved in the dark(8),came up short on a leap(4),spent by the dungeon itself(4)
+Knight  30  0  4.43  4.0  6.0  46.7  0.0  5.43  2.87  476.60  cut down by a Frank(4),fell off a wall(4),cut down by a Blumble(3)
+Acrobat  30  0  4.40  4.0  6.0  40.0  0.0  12.47  3.07  462.57  cut down by a Werebeast(8),starved in the dark(3),undone by a trap(3)
+Cloaker  30  0  4.33  4.0  6.0  36.7  0.0  9.73  2.80  474.80  starved in the dark(7),cut down by a Poltergeist(5),fell off a wall(3)
+Bard  30  0  4.07  4.0  6.0  33.3  0.0  9.17  2.83  437.43  cut down by a Poltergeist(7),cut down by a Werebeast(4),cut down by a Philly(2)
+Barbarian  30  0  4.03  4.0  6.0  36.7  0.0  11.60  2.47  455.10  cut down by a Cave Bear(3),cut down by a Dante(3),cut down by a Werebeast(3)
+Woodsman  30  0  4.03  4.0  6.0  36.7  0.0  6.80  2.73  411.53  cut down by a Werebeast(4),cut down by a Blumble(3),cut down by a Poltergeist(3)
+Soldier  30  0  4.03  4.0  5.0  23.3  0.0  9.57  2.97  443.60  cut down by a Frank(4),cut down by a Werebeast(4),cut down by a Rinkle(3)
+Sorcerer  30  0  4.00  4.0  6.0  33.3  0.0  11.67  2.80  462.63  cut down by a China Wolf(3),cut down by a Werebeast(3),cut down by a Frank(2)
+Court Mage  30  0  3.97  4.0  6.0  40.0  0.0  10.90  2.67  387.23  fell off a wall(5),cut down by a Werebeast(3),cut down by a Dante(2)
+Wizard  30  0  3.97  4.0  6.0  40.0  0.0  7.93  2.60  467.67  cut down by a Gremlin(5),starved in the dark(3),cut down by a Blumble(2)
+Master of Arms  30  0  3.90  4.0  5.0  26.7  0.0  11.13  3.17  425.07  cut down by a Werebeast(5),cut down by a Poltergeist(4),cut down by a Craig(2)
+Pilfer  30  0  3.87  4.0  5.0  30.0  0.0  8.77  2.47  425.50  cut down by a Poltergeist(3),starved in the dark(3),cut down by a Blumble(2)
+Cutthroat  30  0  3.73  4.0  5.0  23.3  0.0  9.93  2.70  432.67  fell off a wall(4),came up short on a leap(3),cut down by a Shadow(3)
+Guard  30  0  3.70  4.0  6.0  20.0  0.0  9.03  2.50  418.80  cut down by a Poltergeist(4),fell off a wall(4),cut down by a Werebeast(3)
+Cat Burglar  30  0  3.57  4.0  6.0  26.7  0.0  8.97  2.50  373.57  undone by a trap(10),cut down by a Rinkle(4),cut down by a Werebeast(3)
+Illusionist  30  0  3.57  3.0  6.0  26.7  0.0  8.80  2.33  402.97  cut down by a Philly(3),cut down by a Gremlin(2),cut down by a Shriek(2)
+Samurai  25  0  3.56  4.0  5.0  20.0  0.0  10.96  2.68  375.64  cut down by a Werebeast(4),cut down by a China Wolf(2),cut down by a Poltergeist(2)
+Cleric  30  0  3.50  3.0  6.0  36.7  0.0  7.60  2.30  352.90  fell off a wall(7),starved in the dark(4),cut down by a China Wolf(2)
+Apprentice  30  0  3.43  3.0  6.0  20.0  0.0  8.10  2.67  396.10  cut down by a Werebeast(4),cut down by a Hobgoblin(3),cut down by a Blumble(2)
+Pickpocket  30  0  3.40  3.0  5.0  20.0  0.0  7.77  2.40  369.17  cut down by a Werebeast(4),starved in the dark(4),undone by a trap(4)
+Summoner  30  0  3.23  4.0  5.0  13.3  0.0  8.07  2.17  391.50  cut down by a Gremlin(5),cut down by a Werebeast(4),cut down by a Dante(2)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Wilmsry  120  0  4.65  5.0  7.0  51.7  0.8  7.39  2.78  513.33  cut down by a Werebeast(14),fell off a wall(9),cut down by a Rinkle(8)
+Troll  120  0  4.17  4.0  6.0  38.3  0.0  10.25  2.85  454.60  starved in the dark(26),fell off a wall(9),cut down by a Poltergeist(8)
+Fridgian  115  0  4.09  4.0  6.0  34.8  0.0  10.09  2.84  441.58  cut down by a Werebeast(14),cut down by a Frank(10),undone by a trap(9)
+Human  120  0  4.06  4.0  6.0  35.8  0.0  10.91  2.94  457.29  fell off a wall(15),cut down by a Werebeast(13),cut down by a Poltergeist(7)
+Dwarven  120  0  3.61  4.0  6.0  23.3  0.0  8.99  2.51  395.55  cut down by a Werebeast(12),fell off a wall(9),cut down by a Poltergeist(8)
+Elven  120  0  3.19  3.0  5.0  14.2  0.0  8.09  2.33  352.71  cut down by a Werebeast(14),cut down by a Poltergeist(12),starved in the dark(11)
+
+POOLED (all cells, run-weighted over completed runs):
+n  stuck  mean  p50  p90  >=5%  >=10%  >=20%  kills  lvl  actions  top causes
+715  0  3.96  4.0  6.0  33.0  0.1  0.0  9.28  2.71  435.80  cut down by a Werebeast(74),fell off a wall(50),starved in the dark(50)
+
+* Fighter Samurai Fridgian omitted: canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)
+Stuck: 0 of 715 runs hit maxActions=5000 (own bucket; excluded from depth stats)
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=5  workers=4  startDepth=1
+```
+
+#### Reading (BEFORE → AFTER)
+
+| Metric | BEFORE (608a0e5, Phase 51 AFTER) | AFTER (049ab50, crit doubles the dice) |
+|---|---|---|
+| Solo death-depth min/p50/p90/max | 1 / 4 / 6 / 9 | 1 / 4 / 6 / 9 |
+| Solo action-count p50 | 425 | 432 |
+| Party death-depth min/p50/p90/max | 1 / 5 / 7 / 9 | 1 / 5 / 7 / 12 |
+| Party action-count p50 | 648 | 703 |
+| Solo top 3 death causes | fell off a wall 14 (7.0%); starved in the dark 14 (7.0%); undone by a trap 13 (6.5%) | fell off a wall 14 (7.0%); cut down by a Dante 13 (6.5%); cut down by a Werebeast 13 (6.5%) |
+| Party top 3 death causes | starved in the dark 15 (7.5%); fell off a wall 14 (7.0%); cut down by a Werebeast 9 (4.5%) | starved in the dark 16 (8.0%); cut down by a Werebeast 9 (4.5%); fell off a wall 9 (4.5%) |
+| Party stuck (hit maxActions) | 68 of 200 | 75 of 200 |
+| Class smoke overall mean depth (pooled, 715 runs) | 3.80 | 3.96 |
+| Class smoke overall mean depth (mean of 143 cell means) | 3.803 | 3.959 |
+| 3 largest movers UP (cell mean depth) | — | Thief Cloaker Elven 2.6→4.2 (+1.60); Magic User Warlock Dwarven 4.2→5.6 (+1.40); Magic User Court Mage Dwarven 3.2→4.4 (+1.20) |
+| 3 largest movers DOWN (cell mean depth) | — | Magic User Summoner Fridgian 4.8→4.0 (−0.80); Fighter Master of Arms Wilmsry 4.8→4.0 (−0.80); Fighter Soldier Wilmsry 5.0→4.2 (−0.80) |
+
+Every readout is flat to a small upward drift: solo min/p50/p90/max death
+depth is unchanged (1/4/6/9 both sides — a foe crit was never a dominant
+term in most fights the bot survives to see), solo action-count p50 ticks
+up by 7 (432 vs 425, within seed-to-seed noise at n=200), and party
+death-depth p90/max rises a little (7→7 unchanged, max 9→12 — a few more
+runs now survive a foe crit that used to be an instant near-kill), with
+party stuck runs rising from 68 to 75 of 200 (surviving longer means more
+runs hit the 20000-action cap before dying, an expected consequence of a
+smaller crit ceiling, not a new failure mode). The class-smoke pooled mean
+depth rises from 3.80 to 3.96 (+0.16) — a small, expected improvement from
+removing the Herman/level-base crit cliffs, read in the tuning-proxy
+register only: no constants changed here beyond the crit-rule and Herman
+fixes themselves. Phase 54's four-band retune is measured on top of this
+baseline, not against the original Phase 51 (or Phase 50) BEFORE numbers.
+
+#### Cadence readout (CAD-03 / SC3)
+
+Attacks per player action for Bat/Rat and China Wolf at depth 5 are <= the
+foe's own `sp.atk` (2), <= 2x if frenzied (no wandering encounter ever
+starts frenzied — see `test/unit/foe-cadence.test.js`'s CAD-01 pins for
+that shape); the cadence audit is byte-identical before and after this
+phase's crit-rule and Herman edits (`node tools/cadence-audit.mjs | diff -
+tools/cadence-audit-output.txt` empty — the crit rule changes damage, not
+attack counts):
+
+```
+# cadence-audit — Phase 52 (CAD-03): attacks per player action, depth 5, single foe
+
+Hero setup: each seed's own `newRun(seed)` character (real chargen — class/sub/race vary by seed, hit points as rolled, never raised); `state.floor.depth` set to 5 directly (never `newRun`'s `startDepth` option). Hero level is left at 1 (fresh-character default) for the Bat/Rat sample, and set to `state.c.level = 2` for the China Wolf sample (a tier-2 row needs hero level >= 2). N = 40 seeds (`i * 7919 + 1`, i = 0..39). Every fight is single-foe (`wandering=true` forces n=1). A seed whose roster pick is not the target creature is a roster miss (counted, not sampled). Per fight: `fight()` (the opener) then `playerStrike()` in a loop (cap 60), each call's own events array counted separately as one segment (`foeMissed` + `struckByFoe` + `armorSoaked` + `memberStruck`).
+
+## Bat/Rat
+
+| seed | hero | actions | max attacks/action | mean attacks/action | outcome |
+|---|---|---|---|---|---|
+| 15839 | Fridgian Fighter/Barbarian | 3 | 2 | 1.33 | won |
+| 23758 | Human Fighter/Master of Arms | 6 | 2 | 1.67 | won |
+| 39596 | Troll Thief/Ninja | 2 | 0 | 0.00 | won |
+| 47515 | Wilmsry Fighter/Woodsman | 7 | 2 | 1.43 | won |
+| 71272 | Fridgian Magic User/Wizard | 61 | 2 | 0.03 | capped |
+| 102948 | Wilmsry Fighter/Soldier | 5 | 2 | 1.20 | won |
+| 134624 | Human Thief/Pilfer | 3 | 2 | 0.67 | won |
+| 253409 | Elven Thief/Pickpocket | 3 | 2 | 0.67 | won |
+| 285085 | Fridgian Thief/Pilfer | 5 | 2 | 1.60 | won |
+| 308842 | Human Thief/Cloaker | 3 | 2 | 0.67 | won |
+
+Bat/Rat: sampled 10 of 40 seeds (roster misses 30) — max attacks per player action 2, mean 0.47
+INVARIANT attacks per player action <= 2 (sp.atk 2, unfrenzied): HOLDS
+
+## China Wolf
+
+| seed | hero | actions | max attacks/action | mean attacks/action | outcome |
+|---|---|---|---|---|---|
+| 39596 | Troll Thief/Ninja | 2 | 0 | 0.00 | won |
+| 71272 | Fridgian Magic User/Wizard | 61 | 2 | 0.03 | capped |
+| 102948 | Wilmsry Fighter/Soldier | 4 | 2 | 1.00 | won |
+| 253409 | Elven Thief/Pickpocket | 5 | 2 | 1.40 | died |
+| 285085 | Fridgian Thief/Pilfer | 2 | 2 | 1.00 | won |
+| 308842 | Human Thief/Cloaker | 6 | 2 | 1.33 | won |
+
+China Wolf: sampled 6 of 40 seeds (roster misses 34) — max attacks per player action 2, mean 0.29
+INVARIANT attacks per player action <= 2 (sp.atk 2, unfrenzied): HOLDS
+
+Reading: over 40 seeds each, Bat/Rat's overall max attacks per player action is 2 and China Wolf's is 2 — both at or under their own `sp.atk` of 2, as expected on the post-INIT engine. A frenzied foe (spell-only; no wandering encounter ever starts frenzied) would legitimately double these counts — see test/unit/foe-cadence.test.js's CAD-01 pins for that shape.
+```
+
+#### Damage-curve audit (DMG-01 / SC4)
+
+BEFORE (`--rule=whole`, today's pre-Phase-52 rule — a foe crit doubles the
+WHOLE `lvl^2 + dmgBonus + dice` sum) — the full `## Flagged (rule=whole)`
+table and counts line, quoted verbatim from `tools/damage-curve-audit-output.txt`:
+
+```
+## Flagged (rule=whole)
+
+band | tier | type | name | dice | maxSingleHit | MU bar | % | category | wouldBeTrim
+---|---|---|---|---|---|---|---|---|---
+Filter | 2 | Beasts | Cave Bear | 1d8+0 | 22 | 35.0 | 63% | row-dice | 1d6+0
+Filter | 3 | Beasts | Drat | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 3 | Beasts | Flube | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 3 | Beasts | Rast | 1d8+4 | 38 | 39.5 | 96% | level-base | -
+Filter | 3 | Beasts | Sterling | 1d12+0 | 38 | 39.5 | 96% | level-base | -
+Filter | 3 | Beasts | Wolf | 1d6+2 | 30 | 39.5 | 76% | level-base | -
+Filter | 4 | Beasts | Drake | 2d10+4 | 74 | 46.0 | 161% | level-base | -
+Filter | 4 | Beasts | Stink Bug | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 3 | Demons | Rinkle | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 4 | Demons | Djinni | 1d4+0 | 34 | 46.0 | 74% | level-base | -
+Filter | 4 | Demons | Ghost | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 4 | Demons | Spectre | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 2 | Humans | Krupke | 1d6+2 | 22 | 35.0 | 63% | row-dice | 1d6+1
+Filter | 3 | Humans | Frank | 1d8+6 | 42 | 39.5 | 106% | level-base | -
+Filter | 3 | Humans | Primp | 1d8+2 | 34 | 39.5 | 86% | level-base | -
+Filter | 4 | Humans | Craig | 1d12+0 | 50 | 46.0 | 109% | level-base | -
+Filter | 4 | Humans | Herman | flat+25 | 76 | 46.0 | 165% | level-base | -
+Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 22 | 35.0 | 63% | row-dice | 1d6+3
+Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 26 | 35.0 | 74% | row-dice | 1d6+0
+Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 38 | 39.5 | 96% | level-base | -
+Filter | 4 | Lair Beasts | Drarl | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 3 | Magical | Werebeast | 1d10+0 | 34 | 39.5 | 86% | level-base | -
+Filter | 4 | Magical | Drudge | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 2 | Walking Dead | Google | 1d8+0 | 22 | 35.0 | 63% | row-dice | 1d6+0
+Filter | 3 | Walking Dead | Ghoul | 1d6+0 | 26 | 39.5 | 66% | level-base | -
+Filter | 3 | Walking Dead | Zombie | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 4 | Walking Dead | Bones | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 4 | Walking Dead | Floater | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 4 | Walking Dead | Undead | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Wall | 2 | Beasts | Cave Bear | 1d8+0 | 24 | 39.5 | 61% | row-dice | 1d6+0
+Wall | 3 | Beasts | Drat | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 3 | Beasts | Flube | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 3 | Beasts | Rast | 1d8+4 | 42 | 39.5 | 106% | level-base | -
+Wall | 3 | Beasts | Sterling | 1d12+0 | 42 | 39.5 | 106% | level-base | -
+Wall | 3 | Beasts | Wolf | 1d6+2 | 34 | 39.5 | 86% | level-base | -
+Wall | 4 | Beasts | Drake | 2d10+4 | 80 | 46.0 | 174% | level-base | -
+Wall | 4 | Beasts | Stink Bug | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Beasts | Dread Lock | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Wall | 3 | Demons | Rinkle | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 4 | Demons | Djinni | 1d4+0 | 40 | 46.0 | 87% | level-base | -
+Wall | 4 | Demons | Ghost | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 4 | Demons | Spectre | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Demons | Djinni | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Wall | 2 | Humans | Krupke | 1d6+2 | 24 | 39.5 | 61% | row-dice | 1d6+1
+Wall | 3 | Humans | Frank | 1d8+6 | 46 | 39.5 | 116% | level-base | -
+Wall | 3 | Humans | Primp | 1d8+2 | 38 | 39.5 | 96% | level-base | -
+Wall | 4 | Humans | Craig | 1d12+0 | 56 | 46.0 | 122% | level-base | -
+Wall | 4 | Humans | Herman | flat+25 | 82 | 46.0 | 178% | level-base | -
+Wall | 5 | Humans | Herman | flat+25 | 100 | 53.5 | 187% | deep-tier | -
+Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 28 | 39.5 | 71% | row-dice | 1d6+0
+Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 42 | 39.5 | 106% | level-base | -
+Wall | 4 | Lair Beasts | Drarl | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Lair Beasts | Drarl | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Wall | 3 | Magical | Werebeast | 1d10+0 | 38 | 39.5 | 96% | level-base | -
+Wall | 4 | Magical | Drudge | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Magical | Drudge | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Wall | 2 | Walking Dead | Google | 1d8+0 | 24 | 39.5 | 61% | row-dice | 1d6+0
+Wall | 3 | Walking Dead | Ghoul | 1d6+0 | 30 | 39.5 | 76% | level-base | -
+Wall | 3 | Walking Dead | Zombie | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 4 | Walking Dead | Bones | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 4 | Walking Dead | Floater | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 4 | Walking Dead | Undead | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Walking Dead | Vampire | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Breakaway | 3 | Beasts | Rast | 1d8+4 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Breakaway | 3 | Beasts | Sterling | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Breakaway | 3 | Beasts | Wolf | 1d6+2 | 34 | 53.5 | 64% | row-dice | 1d6+1
+Breakaway | 4 | Beasts | Drake | 2d10+4 | 80 | 53.5 | 150% | level-base | -
+Breakaway | 4 | Beasts | Stink Bug | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Breakaway | 4 | Demons | Djinni | 1d4+0 | 40 | 53.5 | 75% | level-base | -
+Breakaway | 4 | Demons | Ghost | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 4 | Demons | Spectre | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Demons | Djinni | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Breakaway | 3 | Humans | Frank | 1d8+6 | 46 | 53.5 | 86% | row-dice | 1d6+0
+Breakaway | 3 | Humans | Primp | 1d8+2 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Breakaway | 4 | Humans | Craig | 1d12+0 | 56 | 53.5 | 105% | level-base | -
+Breakaway | 4 | Humans | Herman | flat+25 | 82 | 53.5 | 153% | level-base | -
+Breakaway | 5 | Humans | Herman | flat+25 | 100 | 53.5 | 187% | deep-tier | -
+Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Breakaway | 4 | Lair Beasts | Drarl | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Breakaway | 3 | Magical | Werebeast | 1d10+0 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Breakaway | 4 | Magical | Drudge | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Magical | Drudge | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Breakaway | 4 | Walking Dead | Bones | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 4 | Walking Dead | Floater | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 4 | Walking Dead | Undead | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Endgame | 3 | Beasts | Rast | 1d8+4 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Endgame | 3 | Beasts | Sterling | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Endgame | 3 | Beasts | Wolf | 1d6+2 | 34 | 53.5 | 64% | row-dice | 1d6+1
+Endgame | 4 | Beasts | Drake | 2d10+4 | 80 | 53.5 | 150% | level-base | -
+Endgame | 4 | Beasts | Stink Bug | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Beasts | Dread Lock | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Endgame | 4 | Demons | Djinni | 1d4+0 | 40 | 53.5 | 75% | level-base | -
+Endgame | 4 | Demons | Ghost | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 4 | Demons | Spectre | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Demons | Djinni | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Endgame | 3 | Humans | Frank | 1d8+6 | 46 | 53.5 | 86% | row-dice | 1d6+0
+Endgame | 3 | Humans | Primp | 1d8+2 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Endgame | 4 | Humans | Craig | 1d12+0 | 56 | 53.5 | 105% | level-base | -
+Endgame | 4 | Humans | Herman | flat+25 | 82 | 53.5 | 153% | level-base | -
+Endgame | 5 | Humans | Herman | flat+25 | 100 | 53.5 | 187% | deep-tier | -
+Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Endgame | 4 | Lair Beasts | Drarl | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Endgame | 3 | Magical | Werebeast | 1d10+0 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Endgame | 4 | Magical | Drudge | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Magical | Drudge | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Endgame | 4 | Walking Dead | Bones | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 4 | Walking Dead | Floater | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 4 | Walking Dead | Undead | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+
+FLAGGED: 116 rows across 209 row×band cells (deep-tier 21, level-base 72, row-dice 23, bolt 0)
+NOTED: 0 rows
+
+## Herman
+
+Herman is content/bestiary.js's Humans tier-4 AND tier-5 row (the SC4 anchor — the user's pasted 'Herman hits for 80 on floor 5' log). Both rows share the same stat block (`sp.dmg: {n:0, sides:0, bonus:25}`, no strikesAs field yet in this BEFORE run — Plan 02 adds `sp.strikesAs: 5`).
+
+band | tier | hitMax | critMax
+---|---|---|---
+Filter | 4 | 38 | 76
+Wall | 4 | 41 | 82
+Wall | 5 | 50 | 100
+Breakaway | 4 | 41 | 82
+Breakaway | 5 | 50 | 100
+Endgame | 4 | 41 | 82
+Endgame | 5 | 50 | 100
+```
+
+AFTER (`--rule=dice`, the Phase 52 rule — a foe crit doubles the DICE only)
+— the final `## Flagged (rule=dice)` table and counts line, quoted
+verbatim:
+
+```
+## Flagged (rule=dice)
+
+band | tier | type | name | dice | maxSingleHit | MU bar | % | category | wouldBeTrim
+---|---|---|---|---|---|---|---|---|---
+Filter | 3 | Beasts | Rast | 1d8+4 | 31 | 39.5 | 78% | row-dice | 1d8+0
+Filter | 3 | Beasts | Sterling | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0
+Filter | 4 | Beasts | Drake | 2d10+4 | 61 | 46.0 | 133% | row-dice | 1d6+0
+Filter | 3 | Humans | Frank | 1d8+6 | 35 | 39.5 | 89% | row-dice | 1d8+0
+Filter | 3 | Humans | Primp | 1d8+2 | 27 | 39.5 | 68% | row-dice | 1d8+0
+Filter | 4 | Humans | Craig | 1d12+0 | 37 | 46.0 | 80% | row-dice | 1d6+0
+Filter | 4 | Humans | Herman | d6 (default) | 34 | 46.0 | 74% | level-base | -
+Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 21 | 35.0 | 60% | row-dice | 1d6+3
+Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 23 | 35.0 | 66% | row-dice | 1d8+0
+Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0
+Filter | 3 | Magical | Werebeast | 1d10+0 | 27 | 39.5 | 68% | row-dice | 1d8+0
+Wall | 3 | Beasts | Rast | 1d8+4 | 33 | 39.5 | 84% | row-dice | 1d6+0
+Wall | 3 | Beasts | Sterling | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0
+Wall | 3 | Beasts | Wolf | 1d6+2 | 25 | 39.5 | 63% | row-dice | 1d6+1
+Wall | 4 | Beasts | Drake | 2d10+4 | 64 | 46.0 | 139% | level-base | -
+Wall | 4 | Beasts | Stink Bug | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Wall | 4 | Demons | Ghost | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 4 | Demons | Spectre | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Wall | 3 | Humans | Frank | 1d8+6 | 37 | 39.5 | 94% | row-dice | 1d6+0
+Wall | 3 | Humans | Primp | 1d8+2 | 29 | 39.5 | 73% | row-dice | 1d6+0
+Wall | 4 | Humans | Craig | 1d12+0 | 40 | 46.0 | 87% | level-base | -
+Wall | 4 | Humans | Herman | d6 (default) | 37 | 46.0 | 80% | level-base | -
+Wall | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 24 | 39.5 | 61% | row-dice | 1d8+0
+Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0
+Wall | 4 | Lair Beasts | Drarl | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Wall | 3 | Magical | Werebeast | 1d10+0 | 29 | 39.5 | 73% | row-dice | 1d6+0
+Wall | 4 | Magical | Drudge | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Wall | 4 | Walking Dead | Bones | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 4 | Walking Dead | Floater | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 4 | Walking Dead | Undead | d6 (default) | 28 | 46.0 | 61% | level-base | -
+Wall | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Breakaway | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3
+Breakaway | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
+Breakaway | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0
+Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Breakaway | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Breakaway | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3
+Breakaway | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0
+Breakaway | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | -
+Breakaway | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
+Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Breakaway | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Endgame | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3
+Endgame | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
+Endgame | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0
+Endgame | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Endgame | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+Endgame | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3
+Endgame | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0
+Endgame | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | -
+Endgame | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0
+Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Endgame | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | -
+Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | -
+
+FLAGGED: 65 rows across 209 row×band cells (deep-tier 21, level-base 14, row-dice 30, bolt 0)
+NOTED: 0 rows
+
+## Herman
+
+Herman is content/bestiary.js's Humans tier-4 AND tier-5 row (the SC4 anchor — the user's pasted 'Herman hits for 80 on floor 5' log). Both rows now carry `sp.strikesAs: 5` (Phase 52, DMG-02) instead of the old flat-25 notation — the level-base term reads 25 (5^2), the damage die is the default d6 (see engine/combat.js#foeLevelBase).
+
+band | tier | hitMax | critMax
+---|---|---|---
+Filter | 4 | 28 | 34
+Wall | 4 | 31 | 37
+Wall | 5 | 31 | 37
+Breakaway | 4 | 31 | 37
+Breakaway | 5 | 31 | 37
+Endgame | 4 | 31 | 37
+Endgame | 5 | 31 | 37
+```
+
+**Herman, the SC4 anchor** (the user's pasted "Herman hits for 80 on floor
+5" log): BEFORE, Herman's tier-4 `critMax` was 82 and tier-5 was 100
+(`flat+25` notation, doubled whole-sum on crit). AFTER, both tiers' crit
+max is 37 (`sp.strikesAs: 5` + the dice-only crit rule) — down from 82/100
+to 37/37 across every band.
+
+**Yardstick** (unchanged since Plan 01, restated for context): band hero
+levels are the median `meanLevel` from `docs/class-pass/v17-p51-after-smoke.json`
+(commit 608a0e5) — Filter (depth 1-4) hero level 2, Wall (depth 5-8) hero
+level 3, Breakaway (depth 9-15)/Endgame (depth 16-20) hero level 5 (no
+smoke cell yet reaches those depths, defaults to the level cap). A row is
+flagged when its max single hit is >= 60% of the Magic User HP bar
+(`25 + d10` base plus mean gains) at that band's hero level.
+
+FLAGGED went from **116 rows across 209 row×band cells** (BEFORE:
+deep-tier 21, level-base 72, row-dice 23, bolt 0) to **65 rows across 209
+row×band cells** (AFTER: deep-tier 21, level-base 14, row-dice 30, bolt 0)
+— the crit-rule and Herman fixes together cleared 51 flagged cells (all
+from the `level-base` category, which the crit-rule change shrinks
+directly). Every one of the 65 still-flagged cells carries an explicit
+per-row `Disposition` in `content/BESTIARY-REBALANCE.md`'s Phase 52
+addendum (tier-5 rows: "left as a deliberate deep-tier threat (Endgame
+band)"; tier 2-4 `level-base`/`row-dice` rows: "curve height — a Phase 54
+dial (four-band retune), not a Phase 52 cliff") — no row is silently
+skipped (D-07), and the 44 `level-base`/`row-dice` rows are handed to
+Phase 54's TUNE-08 (per-creature stays/moves/retune decision) with their
+`wouldBeTrim` notations as input. Pointer:
+`content/BESTIARY-REBALANCE.md`, `### Phase 52 addendum (DMG-02,
+2026-09-20)`.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
