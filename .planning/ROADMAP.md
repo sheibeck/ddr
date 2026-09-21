@@ -231,7 +231,16 @@ Plans:
   4. Only the fixtures that meet a Joiner on a floor shallower than its rolled level move; each is declared with before/after in `FIXTURE-INVENTORY.md` and regenerated; every other fixture and the master hash are untouched.
   5. A `tune-classes` smoke before/after records the early-Joiner power shift in `docs/DIFFICULTY-RETUNE.md`.
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 53-01-PLAN.md — One executor, one green commit: `meetJoiner` clamps the Level Table roll to the floor (`Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth)`, draw sequence untouched) + the Joiner-test triage/re-pins + `test/unit/joiner-level-cap.test.js` (SC1 cap/draw-count, SC2 abilities/wp == native level-2 twin, SC3 narration/payload/rail-card snapshot) + the MEASURED moved parity set (scan Part B re-run, parity suite, Joiner-exposure replay — predicted zero) declared in a FIXTURE-INVENTORY.md Phase 53 section + the JOIN-02 MOVED SET guard
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 53-02-PLAN.md — AFTER bot readout on the 53-01 commit under Phase 52's exact flags (solo, `--party`, `v17-p53-after-smoke.json`) + the `### v1.7 · Phase 53 — Joiner level cap` ledger H3 (BEFORE by reference to 049ab50, AFTER, Reading, the `--party` shift declared by design with a forced-ally level histogram, class-smoke identity as the solo-play-untouched evidence) + gates
 
 ### Phase 54: Four-Band Retune & Roster Decision
 
