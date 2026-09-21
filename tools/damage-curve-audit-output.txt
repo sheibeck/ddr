@@ -1,0 +1,377 @@
+# damage-curve-audit — rule=whole
+
+Rule: today's rule — a foe crit doubles the WHOLE lvl^2 + dmgBonus + dice sum.
+Band levels: median meanLevel from docs/class-pass/v17-p51-after-smoke.json (commit 608a0e5).
+
+Filter (depth 1-4): hero level 2 (118 smoke cells) — MU bar 35.0, Fighter bar 59.0
+Wall (depth 5-8): hero level 3 (25 smoke cells) — MU bar 39.5, Fighter bar 62.5
+Breakaway (depth 9-15): hero level 5 (0 smoke cells) — MU bar 53.5, Fighter bar 69.5
+Endgame (depth 16-20): hero level 5 (0 smoke cells) — MU bar 53.5, Fighter bar 69.5
+
+## Filter (depth 1-4, hero level 2)
+
+| tier | type | name | dice | atk | levelBase | dmgBonus | hitMax | critMax | boltMax | maxSingleHit | worstTurn | MU bar | FT bar | % of MU bar | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Beasts | Bat/Rat | flat+1 | 2 | 1 | 0 | 2 | 4 | 0 | 4 | 8 | 35.0 | 59.0 | 11% | - |
+| 1 | Beasts | Shriek | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 1 | Beasts | Viper | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 2 | Beasts | Cave Bear | 1d8+0 | 1 | 4 | -1 | 11 | 22 | 0 | 22 | 22 | 35.0 | 59.0 | 63% | FLAG |
+| 2 | Beasts | Zit | d6 (default) | 1 | 4 | -1 | 9 | 18 | 0 | 18 | 18 | 35.0 | 59.0 | 51% | - |
+| 3 | Beasts | Drat | d6 (default) | 1 | 9 | -2 | 13 | 26 | 0 | 26 | 26 | 39.5 | 62.5 | 66% | FLAG |
+| 3 | Beasts | Flube | d6 (default) | 1 | 9 | -2 | 13 | 26 | 0 | 26 | 26 | 39.5 | 62.5 | 66% | FLAG |
+| 3 | Beasts | Rast | 1d8+4 | 1 | 9 | -2 | 19 | 38 | 0 | 38 | 38 | 39.5 | 62.5 | 96% | FLAG |
+| 3 | Beasts | Sterling | 1d12+0 | 1 | 9 | -2 | 19 | 38 | 0 | 38 | 38 | 39.5 | 62.5 | 96% | FLAG |
+| 3 | Beasts | Wolf | 1d6+2 | 1 | 9 | -2 | 15 | 30 | 0 | 30 | 30 | 39.5 | 62.5 | 76% | FLAG |
+| 4 | Beasts | Drake | 2d10+4 | 1 | 16 | -3 | 37 | 74 | 24 | 74 | 74 | 46.0 | 66.0 | 161% | FLAG |
+| 4 | Beasts | Stink Bug | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 1 | Demons | Gremlin | 1d6+3 | 1 | 1 | 0 | 10 | 20 | 0 | 20 | 20 | 35.0 | 59.0 | 57% | - |
+| 2 | Demons | Poltergeist | d6 (default) | 2 | 4 | -1 | 9 | 18 | 0 | 18 | 36 | 35.0 | 59.0 | 51% | - |
+| 3 | Demons | Rinkle | d6 (default) | 1 | 9 | -2 | 13 | 26 | 0 | 26 | 26 | 39.5 | 62.5 | 66% | FLAG |
+| 4 | Demons | Djinni | 1d4+0 | 1 | 16 | -3 | 17 | 34 | 24 | 34 | 34 | 46.0 | 66.0 | 74% | FLAG |
+| 4 | Demons | Ghost | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 4 | Demons | Spectre | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 1 | Humans | Ned | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 2 | Humans | China Wolf | 1d6+0 | 2 | 4 | -1 | 9 | 18 | 0 | 18 | 36 | 35.0 | 59.0 | 51% | - |
+| 2 | Humans | Krupke | 1d6+2 | 1 | 4 | -1 | 11 | 22 | 6 | 22 | 22 | 35.0 | 59.0 | 63% | FLAG |
+| 2 | Humans | Dante | d6 (default) | 3 | 4 | -1 | 9 | 18 | 0 | 18 | 54 | 35.0 | 59.0 | 51% | - |
+| 3 | Humans | Frank | 1d8+6 | 1 | 9 | -2 | 21 | 42 | 0 | 42 | 42 | 39.5 | 62.5 | 106% | FLAG |
+| 3 | Humans | Primp | 1d8+2 | 1 | 9 | -2 | 17 | 34 | 0 | 34 | 34 | 39.5 | 62.5 | 86% | FLAG |
+| 4 | Humans | Craig | 1d12+0 | 1 | 16 | -3 | 25 | 50 | 0 | 50 | 50 | 46.0 | 66.0 | 109% | FLAG |
+| 4 | Humans | Herman | flat+25 | 1 | 16 | -3 | 38 | 76 | 0 | 76 | 76 | 46.0 | 66.0 | 165% | FLAG |
+| 1 | Lair Beasts | Dog Face | 1d6+0 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 1 | Lair Beasts | Goblin | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 1 | Lair Beasts | Hobgoblin | 1d6+1 | 1 | 1 | 0 | 8 | 16 | 0 | 16 | 16 | 35.0 | 59.0 | 46% | - |
+| 1 | Lair Beasts | M&M | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 1 | Lair Beasts | Pogo | 1d6+4 | 1 | 1 | 0 | 11 | 22 | 0 | 22 | 22 | 35.0 | 59.0 | 63% | FLAG |
+| 2 | Lair Beasts | Hair | 1d6+0 | 1 | 4 | -1 | 9 | 18 | 0 | 18 | 18 | 35.0 | 59.0 | 51% | - |
+| 2 | Lair Beasts | Trachea | 1d10+0 | 1 | 4 | -1 | 13 | 26 | 0 | 26 | 26 | 35.0 | 59.0 | 74% | FLAG |
+| 3 | Lair Beasts | Blumble | 1d12+0 | 1 | 9 | -2 | 19 | 38 | 0 | 38 | 38 | 39.5 | 62.5 | 96% | FLAG |
+| 4 | Lair Beasts | Drarl | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 1 | Magical | Drekk | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 2 | Magical | Shadow | d6 (default) | 1 | 4 | -1 | 9 | 18 | 0 | 18 | 18 | 35.0 | 59.0 | 51% | - |
+| 3 | Magical | Werebeast | 1d10+0 | 2 | 9 | -2 | 17 | 34 | 0 | 34 | 68 | 39.5 | 62.5 | 86% | FLAG |
+| 4 | Magical | Drudge | d6 (default) | 1 | 16 | -3 | 19 | 38 | 24 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 1 | Walking Dead | Philly | 1d4+2 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 35.0 | 59.0 | 40% | - |
+| 2 | Walking Dead | Google | 1d8+0 | 1 | 4 | -1 | 11 | 22 | 0 | 22 | 22 | 35.0 | 59.0 | 63% | FLAG |
+| 2 | Walking Dead | Skeleton | d6 (default) | 1 | 4 | -1 | 9 | 18 | 0 | 18 | 18 | 35.0 | 59.0 | 51% | - |
+| 3 | Walking Dead | Ghoul | 1d6+0 | 1 | 9 | -2 | 13 | 26 | 0 | 26 | 26 | 39.5 | 62.5 | 66% | FLAG |
+| 3 | Walking Dead | Zombie | d6 (default) | 1 | 9 | -2 | 13 | 26 | 0 | 26 | 26 | 39.5 | 62.5 | 66% | FLAG |
+| 4 | Walking Dead | Bones | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 4 | Walking Dead | Floater | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+| 4 | Walking Dead | Undead | d6 (default) | 1 | 16 | -3 | 19 | 38 | 0 | 38 | 38 | 46.0 | 66.0 | 83% | FLAG |
+
+## Wall (depth 5-8, hero level 3)
+
+| tier | type | name | dice | atk | levelBase | dmgBonus | hitMax | critMax | boltMax | maxSingleHit | worstTurn | MU bar | FT bar | % of MU bar | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Beasts | Bat/Rat | flat+1 | 2 | 1 | 0 | 2 | 4 | 0 | 4 | 8 | 39.5 | 62.5 | 10% | - |
+| 1 | Beasts | Shriek | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 1 | Beasts | Viper | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 2 | Beasts | Cave Bear | 1d8+0 | 1 | 4 | 0 | 12 | 24 | 0 | 24 | 24 | 39.5 | 62.5 | 61% | FLAG |
+| 2 | Beasts | Zit | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 39.5 | 62.5 | 51% | - |
+| 3 | Beasts | Drat | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 39.5 | 62.5 | 76% | FLAG |
+| 3 | Beasts | Flube | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 39.5 | 62.5 | 76% | FLAG |
+| 3 | Beasts | Rast | 1d8+4 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 39.5 | 62.5 | 106% | FLAG |
+| 3 | Beasts | Sterling | 1d12+0 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 39.5 | 62.5 | 106% | FLAG |
+| 3 | Beasts | Wolf | 1d6+2 | 1 | 9 | 0 | 17 | 34 | 0 | 34 | 34 | 39.5 | 62.5 | 86% | FLAG |
+| 4 | Beasts | Drake | 2d10+4 | 1 | 16 | 0 | 40 | 80 | 24 | 80 | 80 | 46.0 | 66.0 | 174% | FLAG |
+| 4 | Beasts | Stink Bug | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 5 | Beasts | Dread Lock | d6 (default) | 1 | 25 | 0 | 31 | 62 | 0 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 5 | Beasts | Stalka Beast | 1d4+0 | 2 | 25 | 0 | 29 | 58 | 24 | 58 | 116 | 53.5 | 69.5 | 108% | FLAG |
+| 1 | Demons | Gremlin | 1d6+3 | 1 | 1 | 0 | 10 | 20 | 0 | 20 | 20 | 39.5 | 62.5 | 51% | - |
+| 2 | Demons | Poltergeist | d6 (default) | 2 | 4 | 0 | 10 | 20 | 0 | 20 | 40 | 39.5 | 62.5 | 51% | - |
+| 3 | Demons | Rinkle | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 39.5 | 62.5 | 76% | FLAG |
+| 4 | Demons | Djinni | 1d4+0 | 1 | 16 | 0 | 20 | 40 | 24 | 40 | 40 | 46.0 | 66.0 | 87% | FLAG |
+| 4 | Demons | Ghost | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 4 | Demons | Spectre | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 5 | Demons | Djinni | 1d4+0 | 1 | 25 | 0 | 29 | 58 | 24 | 58 | 58 | 53.5 | 69.5 | 108% | FLAG |
+| 1 | Humans | Ned | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 2 | Humans | China Wolf | 1d6+0 | 2 | 4 | 0 | 10 | 20 | 0 | 20 | 40 | 39.5 | 62.5 | 51% | - |
+| 2 | Humans | Krupke | 1d6+2 | 1 | 4 | 0 | 12 | 24 | 6 | 24 | 24 | 39.5 | 62.5 | 61% | FLAG |
+| 2 | Humans | Dante | d6 (default) | 3 | 4 | 0 | 10 | 20 | 0 | 20 | 60 | 39.5 | 62.5 | 51% | - |
+| 3 | Humans | Frank | 1d8+6 | 1 | 9 | 0 | 23 | 46 | 0 | 46 | 46 | 39.5 | 62.5 | 116% | FLAG |
+| 3 | Humans | Primp | 1d8+2 | 1 | 9 | 0 | 19 | 38 | 0 | 38 | 38 | 39.5 | 62.5 | 96% | FLAG |
+| 4 | Humans | Craig | 1d12+0 | 1 | 16 | 0 | 28 | 56 | 0 | 56 | 56 | 46.0 | 66.0 | 122% | FLAG |
+| 4 | Humans | Herman | flat+25 | 1 | 16 | 0 | 41 | 82 | 0 | 82 | 82 | 46.0 | 66.0 | 178% | FLAG |
+| 5 | Humans | Herman | flat+25 | 1 | 25 | 0 | 50 | 100 | 0 | 100 | 100 | 53.5 | 69.5 | 187% | FLAG |
+| 1 | Lair Beasts | Dog Face | 1d6+0 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 1 | Lair Beasts | Goblin | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 1 | Lair Beasts | Hobgoblin | 1d6+1 | 1 | 1 | 0 | 8 | 16 | 0 | 16 | 16 | 39.5 | 62.5 | 41% | - |
+| 1 | Lair Beasts | M&M | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 1 | Lair Beasts | Pogo | 1d6+4 | 1 | 1 | 0 | 11 | 22 | 0 | 22 | 22 | 39.5 | 62.5 | 56% | - |
+| 2 | Lair Beasts | Hair | 1d6+0 | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 39.5 | 62.5 | 51% | - |
+| 2 | Lair Beasts | Trachea | 1d10+0 | 1 | 4 | 0 | 14 | 28 | 0 | 28 | 28 | 39.5 | 62.5 | 71% | FLAG |
+| 3 | Lair Beasts | Blumble | 1d12+0 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 39.5 | 62.5 | 106% | FLAG |
+| 4 | Lair Beasts | Drarl | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 5 | Lair Beasts | Drarl | d6 (default) | 1 | 25 | 0 | 31 | 62 | 0 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 1 | Magical | Drekk | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 2 | Magical | Shadow | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 39.5 | 62.5 | 51% | - |
+| 3 | Magical | Werebeast | 1d10+0 | 2 | 9 | 0 | 19 | 38 | 0 | 38 | 76 | 39.5 | 62.5 | 96% | FLAG |
+| 4 | Magical | Drudge | d6 (default) | 1 | 16 | 0 | 22 | 44 | 24 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 5 | Magical | Drudge | d6 (default) | 1 | 25 | 0 | 31 | 62 | 24 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 1 | Walking Dead | Philly | 1d4+2 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 39.5 | 62.5 | 35% | - |
+| 2 | Walking Dead | Google | 1d8+0 | 1 | 4 | 0 | 12 | 24 | 0 | 24 | 24 | 39.5 | 62.5 | 61% | FLAG |
+| 2 | Walking Dead | Skeleton | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 39.5 | 62.5 | 51% | - |
+| 3 | Walking Dead | Ghoul | 1d6+0 | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 39.5 | 62.5 | 76% | FLAG |
+| 3 | Walking Dead | Zombie | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 39.5 | 62.5 | 76% | FLAG |
+| 4 | Walking Dead | Bones | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 4 | Walking Dead | Floater | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 4 | Walking Dead | Undead | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 46.0 | 66.0 | 96% | FLAG |
+| 5 | Walking Dead | Vampire | 1d4+0 | 2 | 25 | 0 | 29 | 58 | 24 | 58 | 116 | 53.5 | 69.5 | 108% | FLAG |
+
+## Breakaway (depth 9-15, hero level 5)
+
+| tier | type | name | dice | atk | levelBase | dmgBonus | hitMax | critMax | boltMax | maxSingleHit | worstTurn | MU bar | FT bar | % of MU bar | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Beasts | Bat/Rat | flat+1 | 2 | 1 | 0 | 2 | 4 | 0 | 4 | 8 | 53.5 | 69.5 | 7% | - |
+| 1 | Beasts | Shriek | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Beasts | Viper | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Beasts | Cave Bear | 1d8+0 | 1 | 4 | 0 | 12 | 24 | 0 | 24 | 24 | 53.5 | 69.5 | 45% | - |
+| 2 | Beasts | Zit | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 3 | Beasts | Drat | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 3 | Beasts | Flube | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 3 | Beasts | Rast | 1d8+4 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 53.5 | 69.5 | 79% | FLAG |
+| 3 | Beasts | Sterling | 1d12+0 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 53.5 | 69.5 | 79% | FLAG |
+| 3 | Beasts | Wolf | 1d6+2 | 1 | 9 | 0 | 17 | 34 | 0 | 34 | 34 | 53.5 | 69.5 | 64% | FLAG |
+| 4 | Beasts | Drake | 2d10+4 | 1 | 16 | 0 | 40 | 80 | 24 | 80 | 80 | 53.5 | 69.5 | 150% | FLAG |
+| 4 | Beasts | Stink Bug | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Beasts | Dread Lock | d6 (default) | 1 | 25 | 0 | 31 | 62 | 0 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 5 | Beasts | Stalka Beast | 1d4+0 | 2 | 25 | 0 | 29 | 58 | 24 | 58 | 116 | 53.5 | 69.5 | 108% | FLAG |
+| 1 | Demons | Gremlin | 1d6+3 | 1 | 1 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 2 | Demons | Poltergeist | d6 (default) | 2 | 4 | 0 | 10 | 20 | 0 | 20 | 40 | 53.5 | 69.5 | 37% | - |
+| 3 | Demons | Rinkle | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 4 | Demons | Djinni | 1d4+0 | 1 | 16 | 0 | 20 | 40 | 24 | 40 | 40 | 53.5 | 69.5 | 75% | FLAG |
+| 4 | Demons | Ghost | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 4 | Demons | Spectre | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Demons | Djinni | 1d4+0 | 1 | 25 | 0 | 29 | 58 | 24 | 58 | 58 | 53.5 | 69.5 | 108% | FLAG |
+| 1 | Humans | Ned | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Humans | China Wolf | 1d6+0 | 2 | 4 | 0 | 10 | 20 | 0 | 20 | 40 | 53.5 | 69.5 | 37% | - |
+| 2 | Humans | Krupke | 1d6+2 | 1 | 4 | 0 | 12 | 24 | 6 | 24 | 24 | 53.5 | 69.5 | 45% | - |
+| 2 | Humans | Dante | d6 (default) | 3 | 4 | 0 | 10 | 20 | 0 | 20 | 60 | 53.5 | 69.5 | 37% | - |
+| 3 | Humans | Frank | 1d8+6 | 1 | 9 | 0 | 23 | 46 | 0 | 46 | 46 | 53.5 | 69.5 | 86% | FLAG |
+| 3 | Humans | Primp | 1d8+2 | 1 | 9 | 0 | 19 | 38 | 0 | 38 | 38 | 53.5 | 69.5 | 71% | FLAG |
+| 4 | Humans | Craig | 1d12+0 | 1 | 16 | 0 | 28 | 56 | 0 | 56 | 56 | 53.5 | 69.5 | 105% | FLAG |
+| 4 | Humans | Herman | flat+25 | 1 | 16 | 0 | 41 | 82 | 0 | 82 | 82 | 53.5 | 69.5 | 153% | FLAG |
+| 5 | Humans | Herman | flat+25 | 1 | 25 | 0 | 50 | 100 | 0 | 100 | 100 | 53.5 | 69.5 | 187% | FLAG |
+| 1 | Lair Beasts | Dog Face | 1d6+0 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Lair Beasts | Goblin | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Lair Beasts | Hobgoblin | 1d6+1 | 1 | 1 | 0 | 8 | 16 | 0 | 16 | 16 | 53.5 | 69.5 | 30% | - |
+| 1 | Lair Beasts | M&M | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Lair Beasts | Pogo | 1d6+4 | 1 | 1 | 0 | 11 | 22 | 0 | 22 | 22 | 53.5 | 69.5 | 41% | - |
+| 2 | Lair Beasts | Hair | 1d6+0 | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 2 | Lair Beasts | Trachea | 1d10+0 | 1 | 4 | 0 | 14 | 28 | 0 | 28 | 28 | 53.5 | 69.5 | 52% | - |
+| 3 | Lair Beasts | Blumble | 1d12+0 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 53.5 | 69.5 | 79% | FLAG |
+| 4 | Lair Beasts | Drarl | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Lair Beasts | Drarl | d6 (default) | 1 | 25 | 0 | 31 | 62 | 0 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 1 | Magical | Drekk | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Magical | Shadow | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 3 | Magical | Werebeast | 1d10+0 | 2 | 9 | 0 | 19 | 38 | 0 | 38 | 76 | 53.5 | 69.5 | 71% | FLAG |
+| 4 | Magical | Drudge | d6 (default) | 1 | 16 | 0 | 22 | 44 | 24 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Magical | Drudge | d6 (default) | 1 | 25 | 0 | 31 | 62 | 24 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 1 | Walking Dead | Philly | 1d4+2 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Walking Dead | Google | 1d8+0 | 1 | 4 | 0 | 12 | 24 | 0 | 24 | 24 | 53.5 | 69.5 | 45% | - |
+| 2 | Walking Dead | Skeleton | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 3 | Walking Dead | Ghoul | 1d6+0 | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 3 | Walking Dead | Zombie | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 4 | Walking Dead | Bones | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 4 | Walking Dead | Floater | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 4 | Walking Dead | Undead | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Walking Dead | Vampire | 1d4+0 | 2 | 25 | 0 | 29 | 58 | 24 | 58 | 116 | 53.5 | 69.5 | 108% | FLAG |
+
+## Endgame (depth 16-20, hero level 5)
+
+| tier | type | name | dice | atk | levelBase | dmgBonus | hitMax | critMax | boltMax | maxSingleHit | worstTurn | MU bar | FT bar | % of MU bar | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Beasts | Bat/Rat | flat+1 | 2 | 1 | 0 | 2 | 4 | 0 | 4 | 8 | 53.5 | 69.5 | 7% | - |
+| 1 | Beasts | Shriek | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Beasts | Viper | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Beasts | Cave Bear | 1d8+0 | 1 | 4 | 0 | 12 | 24 | 0 | 24 | 24 | 53.5 | 69.5 | 45% | - |
+| 2 | Beasts | Zit | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 3 | Beasts | Drat | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 3 | Beasts | Flube | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 3 | Beasts | Rast | 1d8+4 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 53.5 | 69.5 | 79% | FLAG |
+| 3 | Beasts | Sterling | 1d12+0 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 53.5 | 69.5 | 79% | FLAG |
+| 3 | Beasts | Wolf | 1d6+2 | 1 | 9 | 0 | 17 | 34 | 0 | 34 | 34 | 53.5 | 69.5 | 64% | FLAG |
+| 4 | Beasts | Drake | 2d10+4 | 1 | 16 | 0 | 40 | 80 | 24 | 80 | 80 | 53.5 | 69.5 | 150% | FLAG |
+| 4 | Beasts | Stink Bug | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Beasts | Dread Lock | d6 (default) | 1 | 25 | 0 | 31 | 62 | 0 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 5 | Beasts | Stalka Beast | 1d4+0 | 2 | 25 | 0 | 29 | 58 | 24 | 58 | 116 | 53.5 | 69.5 | 108% | FLAG |
+| 1 | Demons | Gremlin | 1d6+3 | 1 | 1 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 2 | Demons | Poltergeist | d6 (default) | 2 | 4 | 0 | 10 | 20 | 0 | 20 | 40 | 53.5 | 69.5 | 37% | - |
+| 3 | Demons | Rinkle | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 4 | Demons | Djinni | 1d4+0 | 1 | 16 | 0 | 20 | 40 | 24 | 40 | 40 | 53.5 | 69.5 | 75% | FLAG |
+| 4 | Demons | Ghost | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 4 | Demons | Spectre | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Demons | Djinni | 1d4+0 | 1 | 25 | 0 | 29 | 58 | 24 | 58 | 58 | 53.5 | 69.5 | 108% | FLAG |
+| 1 | Humans | Ned | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Humans | China Wolf | 1d6+0 | 2 | 4 | 0 | 10 | 20 | 0 | 20 | 40 | 53.5 | 69.5 | 37% | - |
+| 2 | Humans | Krupke | 1d6+2 | 1 | 4 | 0 | 12 | 24 | 6 | 24 | 24 | 53.5 | 69.5 | 45% | - |
+| 2 | Humans | Dante | d6 (default) | 3 | 4 | 0 | 10 | 20 | 0 | 20 | 60 | 53.5 | 69.5 | 37% | - |
+| 3 | Humans | Frank | 1d8+6 | 1 | 9 | 0 | 23 | 46 | 0 | 46 | 46 | 53.5 | 69.5 | 86% | FLAG |
+| 3 | Humans | Primp | 1d8+2 | 1 | 9 | 0 | 19 | 38 | 0 | 38 | 38 | 53.5 | 69.5 | 71% | FLAG |
+| 4 | Humans | Craig | 1d12+0 | 1 | 16 | 0 | 28 | 56 | 0 | 56 | 56 | 53.5 | 69.5 | 105% | FLAG |
+| 4 | Humans | Herman | flat+25 | 1 | 16 | 0 | 41 | 82 | 0 | 82 | 82 | 53.5 | 69.5 | 153% | FLAG |
+| 5 | Humans | Herman | flat+25 | 1 | 25 | 0 | 50 | 100 | 0 | 100 | 100 | 53.5 | 69.5 | 187% | FLAG |
+| 1 | Lair Beasts | Dog Face | 1d6+0 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Lair Beasts | Goblin | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Lair Beasts | Hobgoblin | 1d6+1 | 1 | 1 | 0 | 8 | 16 | 0 | 16 | 16 | 53.5 | 69.5 | 30% | - |
+| 1 | Lair Beasts | M&M | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 1 | Lair Beasts | Pogo | 1d6+4 | 1 | 1 | 0 | 11 | 22 | 0 | 22 | 22 | 53.5 | 69.5 | 41% | - |
+| 2 | Lair Beasts | Hair | 1d6+0 | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 2 | Lair Beasts | Trachea | 1d10+0 | 1 | 4 | 0 | 14 | 28 | 0 | 28 | 28 | 53.5 | 69.5 | 52% | - |
+| 3 | Lair Beasts | Blumble | 1d12+0 | 1 | 9 | 0 | 21 | 42 | 0 | 42 | 42 | 53.5 | 69.5 | 79% | FLAG |
+| 4 | Lair Beasts | Drarl | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Lair Beasts | Drarl | d6 (default) | 1 | 25 | 0 | 31 | 62 | 0 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 1 | Magical | Drekk | d6 (default) | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Magical | Shadow | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 3 | Magical | Werebeast | 1d10+0 | 2 | 9 | 0 | 19 | 38 | 0 | 38 | 76 | 53.5 | 69.5 | 71% | FLAG |
+| 4 | Magical | Drudge | d6 (default) | 1 | 16 | 0 | 22 | 44 | 24 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Magical | Drudge | d6 (default) | 1 | 25 | 0 | 31 | 62 | 24 | 62 | 62 | 53.5 | 69.5 | 116% | FLAG |
+| 1 | Walking Dead | Philly | 1d4+2 | 1 | 1 | 0 | 7 | 14 | 0 | 14 | 14 | 53.5 | 69.5 | 26% | - |
+| 2 | Walking Dead | Google | 1d8+0 | 1 | 4 | 0 | 12 | 24 | 0 | 24 | 24 | 53.5 | 69.5 | 45% | - |
+| 2 | Walking Dead | Skeleton | d6 (default) | 1 | 4 | 0 | 10 | 20 | 0 | 20 | 20 | 53.5 | 69.5 | 37% | - |
+| 3 | Walking Dead | Ghoul | 1d6+0 | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 3 | Walking Dead | Zombie | d6 (default) | 1 | 9 | 0 | 15 | 30 | 0 | 30 | 30 | 53.5 | 69.5 | 56% | - |
+| 4 | Walking Dead | Bones | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 4 | Walking Dead | Floater | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 4 | Walking Dead | Undead | d6 (default) | 1 | 16 | 0 | 22 | 44 | 0 | 44 | 44 | 53.5 | 69.5 | 82% | FLAG |
+| 5 | Walking Dead | Vampire | 1d4+0 | 2 | 25 | 0 | 29 | 58 | 24 | 58 | 116 | 53.5 | 69.5 | 108% | FLAG |
+
+## Flagged (rule=whole)
+
+band | tier | type | name | dice | maxSingleHit | MU bar | % | category | wouldBeTrim
+---|---|---|---|---|---|---|---|---|---
+Filter | 2 | Beasts | Cave Bear | 1d8+0 | 22 | 35.0 | 63% | row-dice | 1d6+0
+Filter | 3 | Beasts | Drat | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 3 | Beasts | Flube | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 3 | Beasts | Rast | 1d8+4 | 38 | 39.5 | 96% | level-base | -
+Filter | 3 | Beasts | Sterling | 1d12+0 | 38 | 39.5 | 96% | level-base | -
+Filter | 3 | Beasts | Wolf | 1d6+2 | 30 | 39.5 | 76% | level-base | -
+Filter | 4 | Beasts | Drake | 2d10+4 | 74 | 46.0 | 161% | level-base | -
+Filter | 4 | Beasts | Stink Bug | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 3 | Demons | Rinkle | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 4 | Demons | Djinni | 1d4+0 | 34 | 46.0 | 74% | level-base | -
+Filter | 4 | Demons | Ghost | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 4 | Demons | Spectre | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 2 | Humans | Krupke | 1d6+2 | 22 | 35.0 | 63% | row-dice | 1d6+1
+Filter | 3 | Humans | Frank | 1d8+6 | 42 | 39.5 | 106% | level-base | -
+Filter | 3 | Humans | Primp | 1d8+2 | 34 | 39.5 | 86% | level-base | -
+Filter | 4 | Humans | Craig | 1d12+0 | 50 | 46.0 | 109% | level-base | -
+Filter | 4 | Humans | Herman | flat+25 | 76 | 46.0 | 165% | level-base | -
+Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 22 | 35.0 | 63% | row-dice | 1d6+3
+Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 26 | 35.0 | 74% | row-dice | 1d6+0
+Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 38 | 39.5 | 96% | level-base | -
+Filter | 4 | Lair Beasts | Drarl | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 3 | Magical | Werebeast | 1d10+0 | 34 | 39.5 | 86% | level-base | -
+Filter | 4 | Magical | Drudge | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 2 | Walking Dead | Google | 1d8+0 | 22 | 35.0 | 63% | row-dice | 1d6+0
+Filter | 3 | Walking Dead | Ghoul | 1d6+0 | 26 | 39.5 | 66% | level-base | -
+Filter | 3 | Walking Dead | Zombie | d6 (default) | 26 | 39.5 | 66% | level-base | -
+Filter | 4 | Walking Dead | Bones | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 4 | Walking Dead | Floater | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Filter | 4 | Walking Dead | Undead | d6 (default) | 38 | 46.0 | 83% | level-base | -
+Wall | 2 | Beasts | Cave Bear | 1d8+0 | 24 | 39.5 | 61% | row-dice | 1d6+0
+Wall | 3 | Beasts | Drat | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 3 | Beasts | Flube | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 3 | Beasts | Rast | 1d8+4 | 42 | 39.5 | 106% | level-base | -
+Wall | 3 | Beasts | Sterling | 1d12+0 | 42 | 39.5 | 106% | level-base | -
+Wall | 3 | Beasts | Wolf | 1d6+2 | 34 | 39.5 | 86% | level-base | -
+Wall | 4 | Beasts | Drake | 2d10+4 | 80 | 46.0 | 174% | level-base | -
+Wall | 4 | Beasts | Stink Bug | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Beasts | Dread Lock | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Wall | 3 | Demons | Rinkle | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 4 | Demons | Djinni | 1d4+0 | 40 | 46.0 | 87% | level-base | -
+Wall | 4 | Demons | Ghost | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 4 | Demons | Spectre | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Demons | Djinni | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Wall | 2 | Humans | Krupke | 1d6+2 | 24 | 39.5 | 61% | row-dice | 1d6+1
+Wall | 3 | Humans | Frank | 1d8+6 | 46 | 39.5 | 116% | level-base | -
+Wall | 3 | Humans | Primp | 1d8+2 | 38 | 39.5 | 96% | level-base | -
+Wall | 4 | Humans | Craig | 1d12+0 | 56 | 46.0 | 122% | level-base | -
+Wall | 4 | Humans | Herman | flat+25 | 82 | 46.0 | 178% | level-base | -
+Wall | 5 | Humans | Herman | flat+25 | 100 | 53.5 | 187% | deep-tier | -
+Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 28 | 39.5 | 71% | row-dice | 1d6+0
+Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 42 | 39.5 | 106% | level-base | -
+Wall | 4 | Lair Beasts | Drarl | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Lair Beasts | Drarl | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Wall | 3 | Magical | Werebeast | 1d10+0 | 38 | 39.5 | 96% | level-base | -
+Wall | 4 | Magical | Drudge | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Magical | Drudge | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Wall | 2 | Walking Dead | Google | 1d8+0 | 24 | 39.5 | 61% | row-dice | 1d6+0
+Wall | 3 | Walking Dead | Ghoul | 1d6+0 | 30 | 39.5 | 76% | level-base | -
+Wall | 3 | Walking Dead | Zombie | d6 (default) | 30 | 39.5 | 76% | level-base | -
+Wall | 4 | Walking Dead | Bones | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 4 | Walking Dead | Floater | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 4 | Walking Dead | Undead | d6 (default) | 44 | 46.0 | 96% | level-base | -
+Wall | 5 | Walking Dead | Vampire | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Breakaway | 3 | Beasts | Rast | 1d8+4 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Breakaway | 3 | Beasts | Sterling | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Breakaway | 3 | Beasts | Wolf | 1d6+2 | 34 | 53.5 | 64% | row-dice | 1d6+1
+Breakaway | 4 | Beasts | Drake | 2d10+4 | 80 | 53.5 | 150% | level-base | -
+Breakaway | 4 | Beasts | Stink Bug | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Breakaway | 4 | Demons | Djinni | 1d4+0 | 40 | 53.5 | 75% | level-base | -
+Breakaway | 4 | Demons | Ghost | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 4 | Demons | Spectre | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Demons | Djinni | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Breakaway | 3 | Humans | Frank | 1d8+6 | 46 | 53.5 | 86% | row-dice | 1d6+0
+Breakaway | 3 | Humans | Primp | 1d8+2 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Breakaway | 4 | Humans | Craig | 1d12+0 | 56 | 53.5 | 105% | level-base | -
+Breakaway | 4 | Humans | Herman | flat+25 | 82 | 53.5 | 153% | level-base | -
+Breakaway | 5 | Humans | Herman | flat+25 | 100 | 53.5 | 187% | deep-tier | -
+Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Breakaway | 4 | Lair Beasts | Drarl | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Breakaway | 3 | Magical | Werebeast | 1d10+0 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Breakaway | 4 | Magical | Drudge | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Magical | Drudge | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Breakaway | 4 | Walking Dead | Bones | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 4 | Walking Dead | Floater | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 4 | Walking Dead | Undead | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Endgame | 3 | Beasts | Rast | 1d8+4 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Endgame | 3 | Beasts | Sterling | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Endgame | 3 | Beasts | Wolf | 1d6+2 | 34 | 53.5 | 64% | row-dice | 1d6+1
+Endgame | 4 | Beasts | Drake | 2d10+4 | 80 | 53.5 | 150% | level-base | -
+Endgame | 4 | Beasts | Stink Bug | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Beasts | Dread Lock | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Endgame | 4 | Demons | Djinni | 1d4+0 | 40 | 53.5 | 75% | level-base | -
+Endgame | 4 | Demons | Ghost | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 4 | Demons | Spectre | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Demons | Djinni | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+Endgame | 3 | Humans | Frank | 1d8+6 | 46 | 53.5 | 86% | row-dice | 1d6+0
+Endgame | 3 | Humans | Primp | 1d8+2 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Endgame | 4 | Humans | Craig | 1d12+0 | 56 | 53.5 | 105% | level-base | -
+Endgame | 4 | Humans | Herman | flat+25 | 82 | 53.5 | 153% | level-base | -
+Endgame | 5 | Humans | Herman | flat+25 | 100 | 53.5 | 187% | deep-tier | -
+Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 42 | 53.5 | 79% | row-dice | 1d6+0
+Endgame | 4 | Lair Beasts | Drarl | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Endgame | 3 | Magical | Werebeast | 1d10+0 | 38 | 53.5 | 71% | row-dice | 1d6+0
+Endgame | 4 | Magical | Drudge | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Magical | Drudge | d6 (default) | 62 | 53.5 | 116% | deep-tier | -
+Endgame | 4 | Walking Dead | Bones | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 4 | Walking Dead | Floater | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 4 | Walking Dead | Undead | d6 (default) | 44 | 53.5 | 82% | level-base | -
+Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 58 | 53.5 | 108% | deep-tier | -
+
+FLAGGED: 116 rows across 209 row×band cells (deep-tier 21, level-base 72, row-dice 23, bolt 0)
+NOTED: 0 rows
+
+## Herman
+
+Herman is content/bestiary.js's Humans tier-4 AND tier-5 row (the SC4 anchor — the user's pasted 'Herman hits for 80 on floor 5' log). Both rows share the same stat block (`sp.dmg: {n:0, sides:0, bonus:25}`, no strikesAs field yet in this BEFORE run — Plan 02 adds `sp.strikesAs: 5`).
+
+band | tier | hitMax | critMax
+---|---|---|---
+Filter | 4 | 38 | 76
+Wall | 4 | 41 | 82
+Wall | 5 | 50 | 100
+Breakaway | 4 | 41 | 82
+Breakaway | 5 | 50 | 100
+Endgame | 4 | 41 | 82
+Endgame | 5 | 50 | 100
+
