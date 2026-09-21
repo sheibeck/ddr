@@ -34,8 +34,8 @@
 
 ### Joiners (JOIN)
 
-- [ ] **JOIN-02**: A Joiner's level never exceeds the floor it is met on — `meetJoiner` applies `lvl = min(rolled, state.floor.depth)` after the canon d10 Level Table roll, keeping the draw count and cursor unchanged (one d10, then the two d20 wp rolls); `grantLevelAbilities` and the `20 * lvl + d20` wp formula receive the capped level; `joinerMet`/`joinerRefused` payloads carry the capped `lvl` so narration and the rail card need no shape change
-- [ ] **JOIN-03**: Only the fixtures that meet a Joiner on a floor shallower than its rolled level move — each declared with before/after and regenerated, `FIXTURE-INVENTORY.md` regenerated; a `tune-classes` smoke before/after records the early-Joiner power shift
+- [x] **JOIN-02**: A Joiner's level never exceeds the floor it is met on — `meetJoiner` applies `lvl = min(rolled, state.floor.depth)` after the canon d10 Level Table roll, keeping the draw count and cursor unchanged (one d10, then the two d20 wp rolls); `grantLevelAbilities` and the `20 * lvl + d20` wp formula receive the capped level; `joinerMet`/`joinerRefused` payloads carry the capped `lvl` so narration and the rail card need no shape change
+- [x] **JOIN-03**: Only the fixtures that meet a Joiner on a floor shallower than its rolled level move — each declared with before/after and regenerated, `FIXTURE-INVENTORY.md` regenerated; a `tune-classes` smoke before/after records the early-Joiner power shift
 
 ### Four-band curve (BAND)
 
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAD-03 | Phase 52 | Complete |
 | DMG-01 | Phase 52 | Complete |
 | DMG-02 | Phase 52 | Complete |
-| JOIN-02 | Phase 53 | Pending |
-| JOIN-03 | Phase 53 | Pending |
+| JOIN-02 | Phase 53 | Complete |
+| JOIN-03 | Phase 53 | Complete |
 | BAND-01 | Phase 54 | Pending |
 | BAND-02 | Phase 54 | Pending |
 | BAND-03 | Phase 54 | Pending |

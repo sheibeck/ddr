@@ -27,7 +27,7 @@
 - [x] **Phase 50: Character Roller Fix** - The character the roller's reels reveal is exactly the character that lands on the Hero tab — no second roll, no stale pending state, no label drift; shell-only, engine/fixtures untouched (completed 2026-09-20)
 - [x] **Phase 51: Initiative Once Per Combat** - Initiative rolls once in `startCombat`/`fight`, the per-round re-roll is deleted so a foe never takes two turns back to back, and the result is narrated once per fight in the Oracle and fight log (completed 2026-09-20)
 - [x] **Phase 52: Foe Cadence & Damage Curve** - A foe swings its ordinary attack count once per round (never stacked with a firing ability), the Bat/Rat and China Wolf floor-5 fights are re-measured in band, and every flat-damage cliff (Herman's 25 × multiplier) is smoothed by a bot-audited damage curve (completed 2026-09-20)
-- [ ] **Phase 53: Joiner Level Cap** - A Joiner's level never exceeds the floor it's met on (promoted from backlog 999.2), with the level-shallower fixtures declared/regenerated and the early-Joiner power shift measured
+- [x] **Phase 53: Joiner Level Cap** - A Joiner's level never exceeds the floor it's met on (promoted from backlog 999.2), with the level-shallower fixtures declared/regenerated and the early-Joiner power shift measured (completed 2026-09-20)
 - [ ] **Phase 54: Four-Band Retune & Roster Decision** - `engine/difficulty.js` is reshaped toward the four recorded bands (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7), and the tier-3/5 roster (Herman, Drarl, Vampire, Djinni) gets a recorded per-creature decision
 - [ ] **Phase 55: Human DR Round** - The twice-deferred human verdict (TUNE-07 → TUNE-09) runs once on the Pixel 7 against the post-retune debug APK, and the milestone closes on the recorded result
 
@@ -236,11 +236,11 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 53-01-PLAN.md — One executor, one green commit: `meetJoiner` clamps the Level Table roll to the floor (`Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth)`, draw sequence untouched) + the Joiner-test triage/re-pins + `test/unit/joiner-level-cap.test.js` (SC1 cap/draw-count, SC2 abilities/wp == native level-2 twin, SC3 narration/payload/rail-card snapshot) + the MEASURED moved parity set (scan Part B re-run, parity suite, Joiner-exposure replay — predicted zero) declared in a FIXTURE-INVENTORY.md Phase 53 section + the JOIN-02 MOVED SET guard
+- [x] 53-01-PLAN.md — One executor, one green commit: `meetJoiner` clamps the Level Table roll to the floor (`Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth)`, draw sequence untouched) + the Joiner-test triage/re-pins + `test/unit/joiner-level-cap.test.js` (SC1 cap/draw-count, SC2 abilities/wp == native level-2 twin, SC3 narration/payload/rail-card snapshot) + the MEASURED moved parity set (scan Part B re-run, parity suite, Joiner-exposure replay — predicted zero) declared in a FIXTURE-INVENTORY.md Phase 53 section + the JOIN-02 MOVED SET guard
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 53-02-PLAN.md — AFTER bot readout on the 53-01 commit under Phase 52's exact flags (solo, `--party`, `v17-p53-after-smoke.json`) + the `### v1.7 · Phase 53 — Joiner level cap` ledger H3 (BEFORE by reference to 049ab50, AFTER, Reading, the `--party` shift declared by design with a forced-ally level histogram, class-smoke identity as the solo-play-untouched evidence) + gates
+- [x] 53-02-PLAN.md — AFTER bot readout on the 53-01 commit under Phase 52's exact flags (solo, `--party`, `v17-p53-after-smoke.json`) + the `### v1.7 · Phase 53 — Joiner level cap` ledger H3 (BEFORE by reference to 049ab50, AFTER, Reading, the `--party` shift declared by design with a forced-ally level histogram, class-smoke identity as the solo-play-untouched evidence) + gates
 
 ### Phase 54: Four-Band Retune & Roster Decision
 
@@ -338,7 +338,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 52. Foe Cadence & Damage Curve | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
+| 53. Joiner Level Cap | v1.7 | 2/2 | Complete    | 2026-09-20 |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
