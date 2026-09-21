@@ -251,6 +251,7 @@ Plans:
 
   1. `docs/DIFFICULTY-RETUNE.md` records the four bands verbatim (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20) as numeric targets: median death depth 5–7, p90 ≈10–13, reach-16 a few percent, reach-20 well under 1%.
      *Note (2026-09-21, USER RULING C — 54-CONTEXT.md `## USER RULING C`): BAND-01's numeric targets are superseded mid-phase by the user's per-floor survival curve (p_L / S_L per floor 1–25; pass bands ±8 pts S_L on 1–10, ±3 pts on 11–19, reach-20 3–5 %); the ledger keeps this table as history marked SUPERSEDED and records the curve verbatim as the live target. REQUIREMENTS/ROADMAP wording is updated by the orchestrator.*
+
   2. `difficultyCurve` is reshaped — identity-ish through floor 4, a step at 5–8, an eased slope through 9–15, steepened 16–20, breather floors kept, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — with every dial change cited against a bot readout that moved toward the bands.
   3. The AFTER bot readout (`tune-difficulty --seeds=200` solo + `--party`, plus the class matrix) lands inside the BAND-01 numbers, or each miss is recorded with its untaken rung and reason; the ledger's change table has one row per constant with before/after.
   4. The tier-3/5 roster decision (Herman, Drarl, Vampire, Djinni) is recorded per creature — stays, moves tier, or is retuned — with the forced-20 untaken rungs (floors gained p50 0 / mean 0.84, reach ≥ 20 0.1%) named as a deliberate shape, not residue; any parity divergence is declared.
@@ -273,7 +274,7 @@ Plans:
 
 **Wave 4** *(USER RULING D — the GLOBAL DIFFICULTY MODEL; sequential on master, one plan per wave)*
 
-- [ ] 54-04-PLAN.md — Fair bot (potion 0.6 / flee 0.4 / caster 0.6 / camp 0.5 kept; accept a Joiner when the party is empty; MU defensive + offensive modes; Thief opener/flees counted; per-floor snapshots + identity tallies) + the readout blocks (three-class death split combat / dot / starvation-exhaustion; per-floor Pace; Class identity — class pools only; recorded cell spread in tune-classes) + the fresh BEFORE on the untouched engine (solo / party / class smoke / depth-20) + the ledger opener (why floor bands failed; the dial table with hook / identity / start / bounds / order / direction; the governing principle; class pools; roster note) (BAND-01)
+- [x] 54-04-PLAN.md — Fair bot (potion 0.6 / flee 0.4 / caster 0.6 / camp 0.5 kept; accept a Joiner when the party is empty; MU defensive + offensive modes; Thief opener/flees counted; per-floor snapshots + identity tallies) + the readout blocks (three-class death split combat / dot / starvation-exhaustion; per-floor Pace; Class identity — class pools only; recorded cell spread in tune-classes) + the fresh BEFORE on the untouched engine (solo / party / class smoke / depth-20) + the ledger opener (why floor bands failed; the dial table with hook / identity / start / bounds / order / direction; the governing principle; class pools; roster note) (BAND-01)
 
 **Wave 5** *(blocked on Wave 4)*
 
@@ -369,7 +370,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 52. Foe Cadence & Damage Curve | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 53. Joiner Level Cap | v1.7 | 2/2 | Complete    | 2026-09-20 |
-| 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
+| 54. Four-Band Retune & Roster Decision | v1.7 | 4/7 | In Progress|  |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
