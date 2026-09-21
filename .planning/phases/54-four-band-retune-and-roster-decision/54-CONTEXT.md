@@ -131,3 +131,50 @@ Consequences (orchestrator's reading, to be honoured by the re-planned ladder):
 - **The readout is now the per-floor survival table**: `p_L` = 1 − deaths_at_L / runs_reaching_L, `S_L` cumulative, from the death-depth histogram (`tools/lib/band-readout.mjs` gains a `per-floor survival` block printing p_L / S_L next to the target and the delta). Stop rule: every floor 1–10 within ±8 points of the target `S_L` and floors 11–20 within ±3 points of `S_L` (or the executor records the miss with the untaken rung); reach-20 in 3–5 %.
 - **Ladder discipline is relaxed**: notches are whatever the fit needs (the executor may compute a per-band foePower / hazard value from the previous rung's p_L ratio rather than stepping 0.05); ladder cap 6 rungs; full readout every rung still (user override stands); the bot policy stays frozen, but `--max-actions` may be raised (it is a run cap, not policy) if deep runs start hitting it.
 - Rungs 1–2 stand (`b0facb6`, `850f176`, raw readouts `27e209c`); the ledger's rung-2 section and the target table are rewritten by the re-planned Plan 02.
+
+## USER RULING D (2026-09-21, after rung 5) — STOP the floor-range ladder; Phase 54 becomes the GLOBAL DIFFICULTY MODEL
+
+The user's words: "Remove one-off hacks and bandaids that try to get bands by floor ranges, and establish dials that work on the dungeon as a whole." and "we've reached a point where [staying true to the source] won't get us the difficulty curve we want … holistically as a game design we probably need to deviate from core." **Yes to all three** orchestrator questions: (a) foe level is derived from DEPTH, not the hero's level; (b) hero-side tuning (HP, regen) is in scope; (c) the bot is made a fair player first (fresh BEFORE).
+
+### The system, as measured (why floor bands could never work)
+- Foe level = `min(heroLevel, depth)` (−1 on a d4 = 1): difficulty is a function of the HERO's level; depth stops mattering once the hero out-levels it (~floor 3). Kill SP ≈ lvl², thresholds 201/501/901/1501 → the bot is level 3 by floor 4, 4–5 by the Wall, which is exactly when tier-3/4/5 rosters (Drarl, Herman, Drake) appear in the death list.
+- Foe damage per hit = `lvl² + dmgBonus + dice`; every `difficulty.js` knot scaled only the `lvl²` term (and foe HP). Dice (Werebeast 2×d10, Dante ×3, Gremlin +3, Drake 2d10+4) were untouched → the ladder saturated (floor 4: 55 → 63 → 71 % then flat; floors 1–3 byte-identical across rungs 3–4).
+- Foe count steps 2 → 3 when the hero reaches level 3 (~floor 4) — a second level-keyed cliff.
+- No regeneration; encounter dots 10 → 13 with depth; hazards (falls d6+d6 per 10 ft, traps) ≈ 25 % of deaths (half of floor 1's 19 deaths); starvation/exhaustion ≈ 10–15 % and rising as foes soften.
+
+### Remove (every value keyed to a floor range)
+`WALL_*`, `BREAKAWAY_*`, `ENDGAME_*` knots and `knotFoePowerFor/knotHazardFor/knotAbilityThreatFor`; `FOE_GRACE_AT_1..4` and `graceFor`; `HAZARD_SCALE_AT_*`, `HAZARD_FROM_DEPTH`, `WALL_HAZARD_SCALE`; `COMBAT_SCALE_FROM_DEPTH` and the 21+ soft-cap ramp (`FOE_POWER_MAX/SOFT_K`, `ABILITY_THREAT_MAX/SOFT_K`, `FOE_CAP_MAX/SOFT_K`); `DENSITY_CANON_THROUGH_DEPTH`; `DARK_HOLD_THROUGH_DEPTH`. Keep breather floors (`BREATHER_EVERY`, rhythm not difficulty), water pools, dark radius, and all measurement machinery.
+
+### Add — global dials, each ONE number or `{ base, perDepth }` (a smooth slope over depth, never a range)
+| Dial | Engine hook | Purpose |
+|---|---|---|
+| `FOE_LEVEL` `{ base, perDepth }` → `foeLevel = clamp(round(base + perDepth × depth), 1, 5)` (−1 on d4 = 1 kept) | `engine/combat.js` `maxLvl` (replaces `min(c.level, depth)`) | depth becomes the difficulty axis; out-leveling the dungeon is how a strong run breaks away |
+| `FOE_HIT_SCALE` `{ base, perDepth }` applied to the WHOLE hit (`lvl² + dice`, crit included) after the roll | `engine/combat.js` hero / member / pursuit damage sites (one helper) | the dominant term gets a dial |
+| `FOE_HP_SCALE` `{ base, perDepth }` | `foeWpFor` | fight length / attrition |
+| `FOE_COUNT_SKEW` (one number: shifts P(1/2/3 foes); cap 3, no level-keyed cap) | `engine/combat.js` `n` (canon d4 ternary replaced by a weighted pick with the same draw count) | removes the level-3 body cliff |
+| `ROUND_DAMAGE_CEILING` (fraction of a level-appropriate hero's MEAN max HP a single foe may deal per round, incl. multi-attack) | damage helper, post-scale clamp | cliffs (Werebeast, Dante, Drake, Herman) become curve height, not one-shots — replaces per-monster triage; Ruling B's Drake trim is superseded by this rule |
+| `HERO_HP_SCALE` (base HP and per-level gain multiplier) and `HERO_REGEN_PER_FLOOR` (fraction of max HP restored on arriving at a new floor) | `engine/character.js` rollCharacter / checkLevel; `engine/movement.js` or the floor-arrival path | the other side of every fight; cheapest lever for floors 1–3 |
+| `ENCOUNTER_DOTS` `{ base, perDepth }` (replaces `ENCOUNTER_DOT_BASE/CAP/SOFT_K`) | `difficultyCurve.dots` | attrition and time |
+| `HAZARD_SCALE` `{ base, perDepth }` (falls, traps, leaps — floor 1 included) | `scaleHazard` | ≈ 25 % of deaths |
+| `FOOD_CLOCK` (starting rations and/or drain rate multiplier) | economy/derived ration path | starvation ≈ 10–15 % |
+| `ABILITY_THREAT` `{ base, perDepth }` (keep, as a global) | `abilityCadenceFor` | caster kits |
+
+`difficultyCurve(depth)` returns the evaluated globals for that depth (still draw-free, still the single lookup every consumer reads).
+
+### Bug fix folded in (user, 2026-09-21): walls and crevices are ONE AND DONE
+Today a failed climb/leap hurts you and leaves you on the near side to retry (each retry rolls and can hurt again). New rule, user-chosen: **one roll per feature — success crosses clean; failure takes the fall damage and you STILL end up on the far side** (the feature is cleared either way: `there.feat = null` and the move completes on both branches; death on the fall still ends the run in place). `engine/movement.js` climb/gorge block (the `if (!ok) { … return events; }` early return goes away) and the tool branch unchanged. Narration: `fellClimbing` / `fellInGorge` keep their copy but now precede `climbedOver` / `leaptOver`-equivalent movement — planner decides whether to add a "…and dragged yourself over" line (in voice, BANNED-scanned). Declared divergence; fixtures with a failed climb/leap move and are regenerated.
+
+### Bot fairness first (fresh BEFORE)
+`tools/lib/tuning-bot.mjs` policy: potion threshold 0.5 → 0.6, flee 0.3 → 0.4 (caster 0.5 → 0.6), accept a Joiner when the party is empty (D-20 superseded), camp when rations allow and HP < 0.5. One commit, then a fresh BEFORE readout (solo / party / class smoke / depth-20 slice with the per-floor survival block) on the untouched engine — every later number compares to THAT.
+
+### Fitting, not laddering
+A committed calibration script (`tools/fit-difficulty.mjs`) evaluates a candidate dial set with the solo 200-seed run (~90 s) and reports the per-floor S_L error vs the Ruling C curve; coordinate search over the ~10 dials (bounded, deterministic order, ≤ ~40 evaluations ≈ 1 h) from a planner-chosen starting point; the best set is committed with its fit log; THEN one full readout (solo / party / class smoke / depth-20) and the ledger. Pass bands as Ruling C (±8 pts S_L on 1–10, ±3 on 11–20, reach-20 3–5 %); misses recorded per floor with the reason.
+
+### Parity under this ruling
+Every fixture will move (floor 1 changes). Measure with the scan and the parity suite, declare ONE `global-difficulty` divergence record (kind `action-path`, fromAction per fixture, measured before/after) plus the one-and-done climb record, regenerate all movers; the prototype master (`a1f4d0dc…`) stays the historic reference and is never edited; comparables untouched. The engine gate becomes "everything that moves is declared", not "nothing moves".
+
+### Rungs 1–5 and the knot table
+Stand in history (commits `b0facb6` … `1cb56c6`, readouts in `readouts/`); the ledger's Phase 54 H3 keeps them as the record of why floor bands failed (one paragraph), and the global model's sections follow. Plan 03's roster/audit work is re-scoped: the round-damage ceiling replaces per-creature retunes; Herman/Drarl/Vampire/Djinni/Drake are recorded under the ceiling with before/after numbers.
+
+### Roster depth question (user, 2026-09-21) — answered, recorded
+54 creatures, 6 types × 5 tiers (12/11/12/12/7). Under foe-level-from-depth each tier covers ~4 floors with the d4 = 1 overlap; the global HP/hit slopes scale the same creature with depth, so no new content is needed to ship the curve. Tier 5 (7 creatures) is thin for the Endgame/infinite crawl — recorded as a **v1.8 content candidate** ("Endgame roster: +5–8 tier-5 creatures, ≥ 1 per type"), not Phase 54 work.
