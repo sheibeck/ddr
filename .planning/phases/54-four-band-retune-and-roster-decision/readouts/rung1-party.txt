@@ -1,0 +1,96 @@
+
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=5  p90=7  max=12
+
+Action-count distribution:
+  min=21  p50=586  p90=20000  max=20000
+
+Death-cause breakdown:
+  fell off a wall      16 (8.0%)
+  starved in the dark  15 (7.5%)
+  cut down by a Werebeast 14 (7.0%)
+  undone by a trap     11 (5.5%)
+  cut down by a Drarl  10 (5.0%)
+  cut down by a Dante  7 (3.5%)
+  came up short on a leap 4 (2.0%)
+  cut down by a Drake  4 (2.0%)
+  cut down by a Blumble 4 (2.0%)
+  cut down by a Primp  3 (1.5%)
+  cut down by a Frank  3 (1.5%)
+  cut down by a Zombie 3 (1.5%)
+  spent by the dungeon itself 3 (1.5%)
+  cut down by a Trachea 3 (1.5%)
+  cut down by a Google 3 (1.5%)
+  cut down by a Rast   2 (1.0%)
+  cut down by a Drekk  2 (1.0%)
+  cut down by a Craig  2 (1.0%)
+  cut down by a Herman 2 (1.0%)
+  cut down by a Gremlin 2 (1.0%)
+  cut down by a Undead 2 (1.0%)
+  cut down by a Wolf   2 (1.0%)
+  cut down by a Djinni 2 (1.0%)
+  cut down by a Skeleton 2 (1.0%)
+  cut down by a Poltergeist 2 (1.0%)
+  cut down by a Shadow 2 (1.0%)
+  cut down by a Zit    2 (1.0%)
+  cut down by a Sterling 2 (1.0%)
+  cut down by a Stalka Beast 1 (0.5%)
+  cut down by a Rinkle 1 (0.5%)
+  cut down by a Ghoul  1 (0.5%)
+  cut down by a Ghost  1 (0.5%)
+  cut down by a Bones  1 (0.5%)
+  cut down by a Spectre 1 (0.5%)
+  cut down by a Philly 1 (0.5%)
+  cut down by a Floater 1 (0.5%)
+  cut down by a Dread Lock 1 (0.5%)
+  cut down by a Bat/Rat 1 (0.5%)
+  cut down by a Viper  1 (0.5%)
+  cut down by a Stink Bug 1 (0.5%)
+  cut down by a Hobgoblin 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=343  successes=217 (63.3%)  failures=126  refused=0  exhausted=0
+  runs with >=1 attempt: 70 of 200
+  SP from parley: 3167 of 130559 total SP (2.4%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 55.6%  >=10: 1.4%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=21  p50=106  p90=138  max=229
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 49/2059 (2.4%)
+  6-10: 41/147 (27.9%)
+  11-20: 1/4 (25.0%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=179  foeBolted=62  foeDrained=1  foeDebuffed=13  foeHealed=3  foeSummoned=2
+  heroResisted=87  heroResistFailed=33
+  ability damage: 212 of 9836 total damage taken (2.2%)
+
+Party (--party, D-12/D-20):
+  member forced at run start in 192/200 runs; member alive at run end: 124 (62.0%)
+
+Stuck: 58 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=on  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 1:8  2:12  3:14  4:29  5:43  6:18  7:12  8:4  10:1  12:1
+  mean death depth=4.58  floors gained p50=4 mean=3.58  encounters survived mean=11.39
+  reach: >=5 55.6%  >=8 4.2%  >=9 1.4%  >=10 1.4%  >=13 0.0%  >=16 0.0%  >=20 0.0%
+  band share of deaths: Filter 1-4 44.4% | Wall 5-8 54.2% | Breakaway 9-15 1.4% | Endgame 16-20 0.0% | beyond 20 0.0%
+  top causes — Filter: starved in the dark 11, fell off a wall 8, undone by a trap 7, cut down by a Dante 6, cut down by a Google 3
+  top causes — Wall: cut down by a Werebeast 11, cut down by a Drarl 9, fell off a wall 8, cut down by a Blumble 4, cut down by a Drake 4
+  top causes — Breakaway: cut down by a Drarl 1, cut down by a Herman 1
+  top causes — Endgame: (none)
+
+Outcome: 142 dead, 58 stuck (hit maxActions=20000; excluded from depth stats)
+
