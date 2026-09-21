@@ -219,14 +219,17 @@ test("Phase 27 retune pins match engine/difficulty.js — recorded in docs/DIFFI
 // (2026-09-21, BAND-02). All 14 at scaffold (identity) values in THIS plan
 // (54-01) — Plan 02's rungs edit ONLY these numbers per rung; values
 // recorded in docs/DIFFICULTY-RETUNE.md's Phase 54 H3.
+// Phase 54 ladder rung 1 (2026-09-21, BAND-02): Wall 1.0 -> 0.85/0.95,
+// Breakaway 1.0 -> 0.95/1.0 — re-pinned per docs/DIFFICULTY-RETUNE.md's
+// `#### Rung 1` section.
 const PHASE_54_PINS = {
   WALL_FROM_DEPTH: 5,
   WALL_TO_DEPTH: 8,
-  WALL_FOE_POWER_AT_START: 1,
-  WALL_FOE_POWER_AT_END: 1,
+  WALL_FOE_POWER_AT_START: 0.85,
+  WALL_FOE_POWER_AT_END: 0.95,
   BREAKAWAY_FROM_DEPTH: 9,
   BREAKAWAY_TO_DEPTH: 15,
-  BREAKAWAY_FOE_POWER_AT_START: 1,
+  BREAKAWAY_FOE_POWER_AT_START: 0.95,
   BREAKAWAY_FOE_POWER_AT_END: 1,
   ENDGAME_CANON_FROM_DEPTH: 16,
   WALL_HAZARD_SCALE: 1,

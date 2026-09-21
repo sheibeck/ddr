@@ -325,19 +325,21 @@ test("Phase 54 (BAND-01) Endgame identity — the --start-depth 20 yardstick: di
   }
 });
 
-// BAND_PINS — the 5..15 band curve, scaffold values (all exactly identity).
-// Plan 02 re-pins this block per rung, citing the rung.
+// BAND_PINS — the 5..15 band curve. Rung 1 (commit pending, 2026-09-21):
+// Wall foePower 0.85 -> 0.95 (5-8), Breakaway 0.95 -> 1.0 (9-15) — measured
+// live via node -e against engine/difficulty.js, never hand-computed;
+// hazardScale/abilityThreat unchanged this rung (identity).
 const BAND_PINS = {
-  5: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  6: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  7: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  8: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  9: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  10: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  11: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  12: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  13: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-  14: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
+  5: { foePower: 0.85, abilityThreat: 1, hazardScale: 1 },
+  6: { foePower: 0.8833333333333334, abilityThreat: 1, hazardScale: 1 },
+  7: { foePower: 0.9166666666666667, abilityThreat: 1, hazardScale: 1 },
+  8: { foePower: 0.95, abilityThreat: 1, hazardScale: 1 },
+  9: { foePower: 0.95, abilityThreat: 1, hazardScale: 1 },
+  10: { foePower: 0.9583333333333333, abilityThreat: 1, hazardScale: 1 },
+  11: { foePower: 0.9666666666666668, abilityThreat: 1, hazardScale: 1 },
+  12: { foePower: 0.975, abilityThreat: 1, hazardScale: 1 },
+  13: { foePower: 0.9833333333333334, abilityThreat: 1, hazardScale: 1 },
+  14: { foePower: 0.9916666666666667, abilityThreat: 1, hazardScale: 1 },
   15: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
 };
 

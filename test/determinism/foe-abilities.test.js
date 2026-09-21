@@ -263,7 +263,14 @@ const FULL_FIGHT_PINS = {
   // fight ends the same way (still a loss). A FULL_FIGHTS-shaped row is
   // explicitly allowed to move when the smaller crit number changes a
   // fight's length (this plan's own Step 3 rule) — not a regression.
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 48, attacks: 3, outcome: "died" },
+  // Phase 54 rung 1 (BAND-02, 2026-09-21): depth-5 foePower 1.0 -> 0.85 —
+  // demons-t5 / walking-dead-t5 / beasts-t5 re-measured live via this file's
+  // own runFullFight (never hand-computed); only walking-dead-t5 moved (48
+  // -> 47 draws, attacks unchanged at 3, outcome flips "died" -> "won" — the
+  // softer Vampire wp/crit at 0.85 foePower is now survivable across the
+  // same three attacks). humans-t2 (depth 3) and magical-t4 (depth 4) are
+  // outside the Wall band and untouched.
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 47, attacks: 3, outcome: "won" },
   // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
   // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
   // and rats" (Beasts), so this Beasts-forced encounter now triggers

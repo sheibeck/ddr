@@ -278,19 +278,32 @@ export const HAZARD_CANON_FROM_DEPTH = 5;
 export const WALL_FROM_DEPTH = 5;
 /** WALL_TO_DEPTH — the last depth of the Wall band (5-8). */
 export const WALL_TO_DEPTH = 8;
-/** WALL_FOE_POWER_AT_START — foePower at WALL_FROM_DEPTH (scaffold:
- * identity, 1.0). The Wall steps UP from the floor-4 grace value and may
- * land below 1.0 on a rung — never below `graceFor(WALL_FROM_DEPTH - 1)`. */
-export const WALL_FOE_POWER_AT_START = 1.0;
-/** WALL_FOE_POWER_AT_END — foePower at WALL_TO_DEPTH (scaffold: identity). */
-export const WALL_FOE_POWER_AT_END = 1.0;
+/** WALL_FOE_POWER_AT_START — foePower at WALL_FROM_DEPTH. The Wall steps UP
+ * from the floor-4 grace value and may land below 1.0 on a rung — never
+ * below `graceFor(WALL_FROM_DEPTH - 1)`.
+ * Phase 54 ladder rung 1 (2026-09-21, BAND-02): 1.0 -> 0.85 — the
+ * prescribed starting notch (54-CONTEXT Area 1 / constraint 11); motivated
+ * by the BEFORE readout (78572c5): solo death-depth 1/4/6/9, reach >=5
+ * 33.0 % / >=10 0.0 %, canon identity at 5 is the cliff the surviving third
+ * dies on; readout recorded under docs/DIFFICULTY-RETUNE.md `#### Rung 1`.
+ * Curve 4..16 (foePower): 0.8333 (4, grace) / 0.85 (5) / 0.8833 (6) / 0.9167
+ * (7) / 0.95 (8) / 0.95 (9) / 1 (16, literal). */
+export const WALL_FOE_POWER_AT_START = 0.85;
+/** WALL_FOE_POWER_AT_END — foePower at WALL_TO_DEPTH.
+ * Phase 54 ladder rung 1 (2026-09-21, BAND-02): 1.0 -> 0.95 — see
+ * WALL_FOE_POWER_AT_START's JSDoc for the readout that motivated this rung. */
+export const WALL_FOE_POWER_AT_END = 0.95;
 /** BREAKAWAY_FROM_DEPTH — the first depth of the Breakaway band (9-15). */
 export const BREAKAWAY_FROM_DEPTH = 9;
 /** BREAKAWAY_TO_DEPTH — the last depth of the Breakaway band (9-15). */
 export const BREAKAWAY_TO_DEPTH = 15;
-/** BREAKAWAY_FOE_POWER_AT_START — foePower at BREAKAWAY_FROM_DEPTH (scaffold: identity). */
-export const BREAKAWAY_FOE_POWER_AT_START = 1.0;
-/** BREAKAWAY_FOE_POWER_AT_END — foePower at BREAKAWAY_TO_DEPTH (scaffold: identity). */
+/** BREAKAWAY_FOE_POWER_AT_START — foePower at BREAKAWAY_FROM_DEPTH.
+ * Phase 54 ladder rung 1 (2026-09-21, BAND-02): 1.0 -> 0.95 — see
+ * WALL_FOE_POWER_AT_START's JSDoc for the readout that motivated this rung. */
+export const BREAKAWAY_FOE_POWER_AT_START = 0.95;
+/** BREAKAWAY_FOE_POWER_AT_END — foePower at BREAKAWAY_TO_DEPTH (the
+ * Breakaway eases back to identity by 15; 16 is the literal by the guard;
+ * unchanged this rung). */
 export const BREAKAWAY_FOE_POWER_AT_END = 1.0;
 /** ENDGAME_CANON_FROM_DEPTH — the first depth whose foePower/abilityThreat/
  * hazardScale return to the literal 1 (the `>=` guard technique — a
