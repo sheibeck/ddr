@@ -165,20 +165,25 @@ test("CMB-01: decideAction returns {type:'fight'} whenever state.combat.pending 
   assert.deepStrictEqual(decideAction(joinedState, fixedPolicyRng, ctx), { type: "attack" });
 });
 
-test("D-06: caster threshold raises flee/parley to 0.5 vs any kit-bearing live foe (0.3 otherwise)", () => {
+test("D-06: caster threshold raises flee/parley to 0.6 vs any kit-bearing live foe (0.4 otherwise) (USER RULING D)", () => {
   const ctx = makeBotContext();
 
   const casterFoe = { name: "x", alive: true, abilities: ["drudgeFreeze"], wp: 5, maxWP: 5 };
   const fleeState = mkState({ combat: { type: "Walking Dead", foes: [casterFoe], round: 1 }, c: { wp: 16, maxWP: 40 } });
   assert.deepStrictEqual(decideAction(fleeState, fixedPolicyRng, ctx), { type: "flee" }); // Walking Dead: canParley false
 
+  // USER RULING D (54-CONTEXT.md, 2026-09-21): wp:20/maxWP:40 = 0.5, clearly
+  // above the new fleeThreshold (0.4) — the plain (non-caster) threshold's
+  // "above" side.
   const plainFoe = { name: "x", alive: true, wp: 5, maxWP: 5 };
-  const attackState = mkState({ combat: { type: "Walking Dead", foes: [plainFoe], round: 1 }, c: { wp: 16, maxWP: 40 } });
+  const attackState = mkState({ combat: { type: "Walking Dead", foes: [plainFoe], round: 1 }, c: { wp: 20, maxWP: 40 } });
   assert.deepStrictEqual(decideAction(attackState, fixedPolicyRng, ctx), { type: "attack" });
 
+  // USER RULING D: wp:30/maxWP:40 = 0.75, clearly above the new
+  // casterFleeThreshold (0.6) — the caster threshold's "above" side.
   const aboveCasterThresholdState = mkState({
     combat: { type: "Walking Dead", foes: [casterFoe], round: 1 },
-    c: { wp: 24, maxWP: 40 },
+    c: { wp: 30, maxWP: 40 },
   });
   assert.deepStrictEqual(decideAction(aboveCasterThresholdState, fixedPolicyRng, ctx), { type: "attack" });
 
@@ -209,7 +214,7 @@ test("D-06: caster threshold raises flee/parley to 0.5 vs any kit-bearing live f
   assert.deepStrictEqual(decideAction(wilmsryState, fixedPolicyRng, ctx), { type: "flee" });
 });
 
-test("D-05: potion in combat drinks below potionThreshold when carried; flee still wins below fleeThreshold", () => {
+test("D-05: potion in combat drinks below potionThreshold (0.6) when carried; flee still wins below fleeThreshold (0.4) (USER RULING D)", () => {
   const ctx = makeBotContext();
   const foe = { name: "x", alive: true, wp: 5, maxWP: 5 };
   const combat = { type: "Beasts", foes: [foe], round: 1 };
@@ -345,11 +350,16 @@ test("hazard routing: a seen climb/gorge/trap cell is routed around when a detou
   assert.strictEqual(nearestUnseenDir({ floor: unseenHazardGrid }), "E");
 });
 
-test("pending prompts: decline every Joiner, take/leave a find based on findFull, always leave a store", () => {
+test("USER RULING D: a pending Joiner is accepted when the party is empty and declined when full; take/leave a find based on findFull, always leave a store", () => {
   const ctx = makeBotContext();
 
-  const joinerState = mkState({ pendingJoiner: { name: "J" } });
-  assert.deepStrictEqual(decideAction(joinerState, fixedPolicyRng, ctx), { type: "resolveJoiner", accept: false });
+  // D-20 superseded (54-CONTEXT.md, 2026-09-21): an empty party accepts.
+  const emptyPartyJoinerState = mkState({ pendingJoiner: { name: "J" }, party: [] });
+  assert.deepStrictEqual(decideAction(emptyPartyJoinerState, fixedPolicyRng, ctx), { type: "resolveJoiner", accept: true });
+
+  // A party that already holds a member declines.
+  const fullPartyJoinerState = mkState({ pendingJoiner: { name: "J" }, party: [{ name: "M" }] });
+  assert.deepStrictEqual(decideAction(fullPartyJoinerState, fixedPolicyRng, ctx), { type: "resolveJoiner", accept: false });
 
   const findState = mkState({ pendingFind: { n: "x" } });
   assert.deepStrictEqual(decideAction(findState, fixedPolicyRng, ctx), { type: "takeFind" });
@@ -415,13 +425,48 @@ test("HARN-02: Death gate — costs 25 wp, only cast when the post-cost wp stays
   const ctx = makeBotContext();
   const c = mu({ sub: "Sorcerer", level: 5, grimoire: ["Death"] });
 
-  const fullWp = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 40, maxWP: 40 } });
+  // USER RULING D (54-CONTEXT.md, 2026-09-21): fleeThreshold is now 0.4, so
+  // the gate needs maxWP=100 headroom (wp-25 > 0.4*maxWP requires wp > 65 at
+  // maxWP=100 — unreachable at maxWP=40 under the new threshold).
+  const fullWp = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 100, maxWP: 100 } });
   assert.deepStrictEqual(decideAction(fullWp, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Death") });
 
-  // 30 - 25 = 5, not > fleeThreshold(0.3) * maxWP(40) = 12 -> the engine
-  // would refuse at wp<=26 anyway; chooseSpell must not even try.
-  const tooWeak = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 30, maxWP: 40 } });
+  // 64 - 25 = 39, not > fleeThreshold(0.4) * maxWP(100) = 40 -> the engine
+  // would refuse anyway; chooseSpell must not even try.
+  const tooWeak = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 64, maxWP: 100 } });
   assert.deepStrictEqual(decideAction(tooWeak, fixedPolicyRng, ctx), { type: "attack" });
+});
+
+test("USER RULING D: chooseSpell defensive mode — below the potion threshold Heal outranks Fireball; at 2 live foes with no one-shot, a disable outranks damage; above threshold with 1 foe the damage pick is unchanged", () => {
+  const ctx = makeBotContext();
+  const base = { sub: "Sorcerer", level: 5 }; // Sorcerer's healing gate is 4 — level 5 clears it
+
+  // (1) below the potion threshold (0.6): defensive mode re-ranks Heal (460 +
+  // expected 5.5 = 465.5) above Fireball's unchanged damage score (300 + 15
+  // = 315).
+  const belowPotion = mkState({
+    combat: fight("Beasts", 1),
+    c: mu({ ...base, grimoire: ["Heal", "Fireball"], wp: 20, maxWP: 40, potions: 0 }),
+  });
+  assert.deepStrictEqual(decideAction(belowPotion, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Heal") });
+
+  // (2) full wp, 2 live foes, no KILL-tier spell in the grimoire: defensive
+  // mode (via the outnumbered-no-kill branch) re-ranks Stun (450) above
+  // Fireball's unchanged damage score (315).
+  const outnumberedNoKill = mkState({
+    combat: fight("Beasts", 2),
+    c: mu({ ...base, grimoire: ["Stun", "Fireball"], wp: 40, maxWP: 40, potions: 0 }),
+  });
+  assert.deepStrictEqual(decideAction(outnumberedNoKill, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Stun") });
+
+  // (3) full wp, 1 live foe: offensive mode — Heal is not even castable
+  // (its own gate requires wp/maxWP < potionThreshold), so Fireball is
+  // picked exactly as the pre-existing DAMAGE-tier table always has.
+  const aboveThreshold = mkState({
+    combat: fight("Beasts", 1),
+    c: mu({ ...base, grimoire: ["Heal", "Fireball"], wp: 40, maxWP: 40, potions: 0 }),
+  });
+  assert.deepStrictEqual(decideAction(aboveThreshold, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Fireball") });
 });
 
 test("HARN-02: DAMAGE-tier ordering — Mangle > Fireball(s) > Acid/Lightning > Ice, Lightning scales with live-foe count", () => {
@@ -539,10 +584,13 @@ test("HARN-02: Heal fires below potionThreshold once potions run out; Major Heal
   const ctx = makeBotContext();
   const c = mu({ sub: "Cleric", level: 3, grimoire: ["Heal", "Major Heal"] });
 
-  const noPotionsLowWp = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 15, maxWP: 40, potions: 0 } });
+  // USER RULING D (54-CONTEXT.md, 2026-09-21): wp:20/maxWP:40 = 0.5 sits
+  // between the new fleeThreshold (0.4, so flee never triggers) and the new
+  // potionThreshold (0.6, so the heal/potion branches below still fire).
+  const noPotionsLowWp = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 20, maxWP: 40, potions: 0 } });
   assert.deepStrictEqual(decideAction(noPotionsLowWp, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Major Heal") });
 
-  const withPotion = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 15, maxWP: 40, potions: 1 } });
+  const withPotion = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 20, maxWP: 40, potions: 1 } });
   assert.deepStrictEqual(decideAction(withPotion, fixedPolicyRng, ctx), { type: "drinkPotion" });
 
   const aboveHalf = mkState({ combat: fight("Beasts", 1), c: { ...c, wp: 30, maxWP: 40, potions: 0 } });
@@ -807,6 +855,34 @@ test("HARN-04: botLine emits the grep-stable Bot: line, appending seeds/workers/
 
   const withSeedsAndWorkers = botLine({ ...BOT_DEFAULTS, seeds: 40, workers: 4 });
   assert.ok(withSeedsAndWorkers.includes("  seeds=40  workers=4  startDepth=1"));
+});
+
+test("USER RULING D: playRun records cls/sub/race, one floorSnapshot per floor reached, and identity tallies (fights/rounds/dmgTaken/foeSwings/foeMisses/castsDefensive/castsOffensive/potionsUsed/backstabs/flees) — a seeded 200-action Thief run counts >= 1 backstab", () => {
+  const result = playRun(1, { ...BOT_DEFAULTS, maxActions: 300, force: { cls: "Thief" } });
+
+  assert.strictEqual(result.cls, "Thief");
+  assert.strictEqual(typeof result.sub, "string");
+  assert.strictEqual(typeof result.race, "string");
+
+  assert.ok(Array.isArray(result.floorSnapshots));
+  assert.ok(result.floorSnapshots.length >= 1);
+  for (const snap of result.floorSnapshots) {
+    assert.strictEqual(typeof snap.depth, "number");
+    assert.strictEqual(typeof snap.level, "number");
+    assert.strictEqual(typeof snap.gold, "number");
+    assert.strictEqual(typeof snap.ar, "number");
+    assert.strictEqual(typeof snap.weaponCost, "number");
+    assert.strictEqual(typeof snap.maxWP, "number");
+    assert.strictEqual(typeof snap.potions, "number");
+    assert.strictEqual(typeof snap.afraidTriggers, "number");
+    assert.strictEqual(typeof snap.diedAfraid, "boolean");
+  }
+
+  const id = result.identity;
+  for (const k of ["fights", "rounds", "dmgTaken", "foeSwings", "foeMisses", "castsDefensive", "castsOffensive", "potionsUsed", "backstabs", "flees"]) {
+    assert.strictEqual(typeof id[k], "number", `identity.${k} should be a number`);
+  }
+  assert.ok(id.backstabs >= 1, "a Thief run should count at least one backstab opener");
 });
 
 test("purity: decideAction never mutates its state argument; module source draws no Math.random/Date.now", () => {

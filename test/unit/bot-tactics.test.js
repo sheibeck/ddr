@@ -416,7 +416,7 @@ test("chooseCombatItem: heals below the flee line, preferring Xtra Healing (full
   const ctx = makeBotContext();
   const combat = fight("Beasts", 1, 2);
 
-  const healOnly = mkState({ combat, c: fighter({ wp: 4, maxWP: 40, items: [potion("heal")] }) }); // 0.1 < 0.3
+  const healOnly = mkState({ combat, c: fighter({ wp: 4, maxWP: 40, items: [potion("heal")] }) }); // 0.1 < 0.4 (fleeThreshold, USER RULING D)
   assert.deepStrictEqual(chooseCombatItem(healOnly, ctx), { action: { type: "useItem", i: 0 }, reason: "heal" });
 
   const bothPotions = mkState({ combat, c: fighter({ wp: 4, maxWP: 40, items: [potion("heal"), potion("full")] }) });
@@ -546,7 +546,7 @@ test("chooseCombatItem: a bagged dome/heal staff fires below potionThreshold; do
   const domeStaff = { kind: "staff", n: "Rowan Staff", use: "dome", charges: 2 };
   const healStaff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
   const combat = fight("Beasts", 1, 2);
-  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 10, maxWP: 40, potions: 0, worn: {}, timers: {}, ...over }); // 0.25 < potionThreshold 0.5
+  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 10, maxWP: 40, potions: 0, worn: {}, timers: {}, ...over }); // 0.25 < potionThreshold 0.6 (USER RULING D)
 
   const domeReady = mkState({ combat, c: muC({ items: [domeStaff], ward: null }) });
   assert.deepStrictEqual(chooseCombatItem(domeReady, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
@@ -751,8 +751,10 @@ test("decideAction: takes the pending loot pile before even a pending Joiner; le
   ctx.findFull = true;
   assert.deepStrictEqual(decideAction(withLoot, fixedPolicyRng, ctx), { type: "leaveAllLoot" });
 
+  // USER RULING D (54-CONTEXT.md, 2026-09-21): an empty party still accepts
+  // the pending Joiner once the loot pile is empty (D-20 superseded).
   const emptyLoot = mkState({ pendingLoot: [], pendingJoiner: { name: "J" } });
-  assert.deepStrictEqual(decideAction(emptyLoot, fixedPolicyRng, ctx), { type: "resolveJoiner", accept: false });
+  assert.deepStrictEqual(decideAction(emptyLoot, fixedPolicyRng, ctx), { type: "resolveJoiner", accept: true });
 });
 
 test("observe: lootTaken/lootLeft clear findFull the same way findTaken/findLeft do; bagFull sets it", () => {

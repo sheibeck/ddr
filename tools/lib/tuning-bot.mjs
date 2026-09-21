@@ -36,7 +36,7 @@ import { canRead } from "../../engine/magic.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
-import { SPELLS, RACES, ABILITY_BY_ID } from "../../content/index.js";
+import { SPELLS, RACES, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
 
 // The four cardinal directions the movement domain understands. Defined
 // locally so this module only ever talks to the engine through its public
@@ -71,10 +71,10 @@ export function bandLabel(depth) {
 // deciding CONTEXT.md decision so the ledger's "Bot:" line and this table
 // never drift apart.
 export const BOT_DEFAULTS = Object.freeze({
-  fleeThreshold: 0.3, // D-06: flee/parley threshold vs a plain (non-caster) group
-  casterFleeThreshold: 0.5, // D-06: flee/parley threshold vs any kit-bearing live foe
-  potionThreshold: 0.5, // D-05 + Claude's Discretion: drink below this wp/maxWP ratio
-  campThreshold: 0.5, // D-05 + Claude's Discretion: camp below this wp/maxWP ratio, rations permitting
+  fleeThreshold: 0.4, // USER RULING D (54-CONTEXT.md, 2026-09-21): flee/parley threshold vs a plain (non-caster) group (was D-06's 0.3)
+  casterFleeThreshold: 0.6, // USER RULING D (54-CONTEXT.md, 2026-09-21): flee/parley threshold vs any kit-bearing live foe (was D-06's 0.5)
+  potionThreshold: 0.6, // USER RULING D (54-CONTEXT.md, 2026-09-21): drink below this wp/maxWP ratio (was D-05's 0.5)
+  campThreshold: 0.5, // USER RULING D (54-CONTEXT.md, 2026-09-21): camp below this wp/maxWP ratio, rations permitting — UNCHANGED from D-05 + Claude's Discretion
   exploreBudget: 50, // D-05 + Claude's Discretion: actions explored per floor before heading to the exit
   maxActions: 20000, // Pitfall 4: hard safety stop, prevents a runaway loop from hanging the harness
   party: false, // D-12/D-20: --party forces one member at run start via forceParty
@@ -367,6 +367,18 @@ function lowestCastableUtilitySpellIdx(state) {
  * thresholds/constants are Claude's discretion, NOT a verified balance
  * target; only "every branch fires under a synthetic state" is asserted.
  *
+ * MODE (USER RULING D, 54-CONTEXT.md, 2026-09-21): before scoring, this
+ * function computes `mode` = "defensive" when `c.maxWP > 0 && c.wp / c.maxWP
+ * < ctx.opts.potionThreshold`, OR when `liveFoes(state).length >= 2` and no
+ * KILL-tier (400+) spell is currently castable (`hasCastableKillTier`) —
+ * else "offensive". `ctx.lastSpellMode` is set to this value every call so
+ * `playRun`'s identity tallies can count defensive vs offensive casts. In
+ * `defensive` mode the HEAL/DISABLE/WARD tiers below are re-ranked ABOVE the
+ * DAMAGE tier (HEAL 460, DISABLE 420-450, WARD 410 — all three still gated on
+ * their own existing conditions, only their SCORE changes); the DAMAGE and
+ * KILL tiers are byte-identical in both modes. In `offensive` mode every
+ * tier is exactly as documented below (today's table, unchanged).
+ *
  *   KILL    (400+): Freeze's own `onHit` data flag (Phase 40 SPELL-01, never
  *           the spell's name, per research Pitfall 2) 410 (frozenSolid on
  *           hit); `kind==="death"` 405 only when the post-cost wp stays
@@ -407,19 +419,24 @@ function lowestCastableUtilitySpellIdx(state) {
  *               usual `300 + expected` — a likely one-shot kill outranks
  *               every other DAMAGE-tier pick (but never a KILL-tier spell,
  *               scored 400+).
- *   DISABLE (200+, only when liveFoes(state).length >= 2): `kind==="stun"`
- *           230, `kind==="weaken"` 220 (skipped when `C.weakened`),
- *           `kind==="shrink"` 215, `kind==="status"` (Doze) 210,
- *           `kind==="stupid"` 205.
- *   HEAL    (100 + expected heal, only when `c.wp / c.maxWP <
+ *   DISABLE (200+ offensive / 420-450 defensive, only when
+ *           liveFoes(state).length >= 2): `kind==="stun"` 230/450,
+ *           `kind==="weaken"` 220/440 (skipped when `C.weakened`),
+ *           `kind==="shrink"` 215/435, `kind==="status"` (Doze) 210/430,
+ *           `kind==="stupid"` 205/425.
+ *   HEAL    (100 defensive: 460 + expected heal, only when `c.wp / c.maxWP <
  *           ctx.opts.potionThreshold` — potions are drunk earlier in
  *           decideAction, so this fires once potions run out): `kind==="heal"`
  *           (Major Heal 3d10 outranks Heal d10).
- *   WARD-OPENER (50, only when `C.round === 1` and `!c.ward`): `kind==="ward"`
- *           (Shield, Bubble) — sits below every other tier, including KILL,
- *           so an Illusionist who can also learn Freeze still opens with the
- *           kill spell if one is castable (Mirror Self's own opener rule in
- *           decideAction handles the "must go first" illusion case instead).
+ *   WARD-OPENER (50 offensive / 410 defensive): `kind==="ward"` (Shield,
+ *           Bubble) — offensive mode keeps the existing `C.round === 1 &&
+ *           !c.ward` gate (sits below every other tier, including KILL, so an
+ *           Illusionist who can also learn Freeze still opens with the kill
+ *           spell if one is castable — Mirror Self's own opener rule in
+ *           decideAction handles the "must go first" illusion case instead);
+ *           defensive mode lifts the round-1 restriction — only `!c.ward` is
+ *           required, since a ward popped mid-fight while going badly is
+ *           still worth it.
  *
  * Never auto-cast (no branch below ever scores them): quake (self-damage),
  * vapor/insane (random outcome table), blind, petrify, might, regen, reveal,
@@ -427,6 +444,27 @@ function lowestCastableUtilitySpellIdx(state) {
  * not this table). On equal scores, prefer the higher `sp.lvl`, then the
  * lower SPELLS index (first found is kept).
  */
+/**
+ * hasCastableKillTier(state, ctx) — USER RULING D: is any of chooseSpell's
+ * own KILL-tier (400+) branches currently castable? A read-only pre-pass
+ * over the exact same four KILL conditions the main scoring loop below
+ * checks (never re-derived, never a spell name) — feeds chooseSpell's own
+ * defensive/offensive MODE decision (a caster with a one-shot kill in hand
+ * stays offensive even against 2+ foes). Pure, no rng.
+ */
+function hasCastableKillTier(state, ctx) {
+  const c = state.c;
+  const C = state.combat;
+  const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold;
+  for (const sp of SPELLS) {
+    if (!canCast(state, sp)) continue;
+    if (sp.onHit === "freeze") return true;
+    if (sp.kind === "death" && C && c.wp - 25 > fleeAt * c.maxWP) return true;
+    if (sp.kind === "turn" && C && C.type === "Walking Dead") return true;
+    if (sp.kind === "gate" && C && (C.type === "Demons" || C.type === "Walking Dead")) return true;
+  }
+  return false;
+}
 export function chooseSpell(state, ctx) {
   const c = state.c;
   const C = state.combat;
@@ -436,6 +474,15 @@ export function chooseSpell(state, ctx) {
   const target = C ? C.foes[C.target] : null;
   const nFoes = liveFoes(state).length;
   const burstBest = bestBurstExpected(state); // Phase 42 (BAL-01 second half)
+  // USER RULING D: defensive/offensive MODE, computed once per call — a
+  // DEFENSIVE cast (heal/ward/disable) outranks a DAMAGE cast when the fight
+  // is going badly (below the potion threshold, or 2+ live foes with no
+  // castable one-shot); OFFENSIVE otherwise. ctx.lastSpellMode is set for
+  // playRun's identity tallies (castsDefensive/castsOffensive).
+  const belowPotion = c.maxWP > 0 && c.wp / c.maxWP < ctx.opts.potionThreshold;
+  const outnumberedNoKill = nFoes >= 2 && !hasCastableKillTier(state, ctx);
+  const mode = belowPotion || outnumberedNoKill ? "defensive" : "offensive";
+  ctx.lastSpellMode = mode;
   let best = null;
   for (let i = 0; i < SPELLS.length; i++) {
     const sp = SPELLS[i];
@@ -487,15 +534,26 @@ export function chooseSpell(state, ctx) {
     } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {
       if (!C || nFoes < 2) continue;
       if (sp.kind === "weaken" && C.weakened) continue;
-      score = { stun: 230, weaken: 220, shrink: 215, status: 210, stupid: 205 }[sp.kind];
+      // USER RULING D: defensive mode re-ranks DISABLE above DAMAGE.
+      score = mode === "defensive"
+        ? { stun: 450, weaken: 440, shrink: 435, status: 430, stupid: 425 }[sp.kind]
+        : { stun: 230, weaken: 220, shrink: 215, status: 210, stupid: 205 }[sp.kind];
       tier = "disable";
     } else if (sp.kind === "heal") {
       if (!(c.maxWP > 0 && c.wp / c.maxWP < ctx.opts.potionThreshold)) continue;
-      score = 100 + expectedDamage(sp);
+      // USER RULING D: defensive mode re-ranks HEAL above DAMAGE (this
+      // branch's own gate already implies belowPotion === true, so `mode`
+      // is "defensive" whenever this branch is reachable — written as an
+      // explicit ternary anyway so the score is never silently coupled to
+      // an assumption about the gate above).
+      score = (mode === "defensive" ? 460 : 100) + expectedDamage(sp);
       tier = "heal";
     } else if (sp.kind === "ward") {
-      if (!C || C.round !== 1 || c.ward) continue;
-      score = 50;
+      // USER RULING D: defensive mode lifts the round-1 restriction (only
+      // `!c.ward` gates it) and re-ranks WARD above DAMAGE at 410.
+      if (!C || c.ward) continue;
+      if (mode !== "defensive" && C.round !== 1) continue;
+      score = mode === "defensive" ? 410 : 50;
       tier = "ward-opener";
     } else {
       continue; // never auto-cast (see JSDoc list above)
@@ -1031,7 +1089,11 @@ export function decideAction(state, policyRng, ctx) {
   if (Array.isArray(state.pendingLoot) && state.pendingLoot.length) {
     return ctx.findFull ? { type: "leaveAllLoot" } : { type: "takeAllLoot" };
   }
-  if (state.pendingJoiner) return { type: "resolveJoiner", accept: false }; // D-20
+  // USER RULING D (54-CONTEXT.md, 2026-09-21): D-20 superseded — a pending
+  // Joiner is accepted when the party is empty, declined when it already
+  // holds a member (a moved instrument is unreadable otherwise: the bot's
+  // fair-play policy accepts exactly one companion, never stacks a party).
+  if (state.pendingJoiner) return { type: "resolveJoiner", accept: (state.party?.length ?? 0) === 0 };
   if (state.pendingFind) return ctx.findFull ? { type: "leaveFind" } : { type: "takeFind" };
   // Phase 39 (GEAR-05): a pending hazard the bot is already carrying the
   // matching tool for is answered in one dispatch (spend it) rather than
@@ -1300,6 +1362,110 @@ export function forceParty(state) {
 }
 
 /**
+ * makeIdentityTallies() — USER RULING D (54-CONTEXT.md, 2026-09-21): a fresh
+ * per-run CLASS IDENTITY accumulator, consumed by band-readout.mjs's
+ * classIdentityReadout (pooled by class pool ONLY — never race/sub). All
+ * fields are additive counts/sums over the whole run; see tallyIdentity for
+ * what feeds each one.
+ */
+export function makeIdentityTallies() {
+  return {
+    fights: 0,
+    rounds: 0,
+    dmgTaken: 0,
+    foeSwings: 0,
+    foeMisses: 0,
+    castsDefensive: 0,
+    castsOffensive: 0,
+    potionsUsed: 0,
+    backstabs: 0,
+    flees: 0,
+  };
+}
+
+// USER RULING D: the five dispatch types that count as one "hero turn" for
+// the identity readout's roundsPerFight — the pending {type:"fight"} press
+// itself is not a turn.
+const IDENTITY_ROUND_ACTIONS = new Set(["attack", "castSpell", "useAbility", "flee", "parley"]);
+
+/**
+ * tallyIdentity(identity, ctx, action, dispatched, inCombat, events, before,
+ * after) — USER RULING D: increments the identity accumulator (in place)
+ * from one playRun step.
+ *   `rounds`   — one hero-turn dispatch (IDENTITY_ROUND_ACTIONS) while
+ *                `state.combat` was live BEFORE the dispatch.
+ *   `fights`   — one per `encounterStarted` event (mirrors tallies.encounters,
+ *                its own copy so band-readout never has to cross-reference).
+ *   `dmgTaken`/`foeSwings` — every HERO-targeted `struckByFoe` (always the
+ *                hero) or `foeBolted` with no `.member` field (a foe-ability
+ *                bolt at the hero, not a party member — same discriminator
+ *                tallyEvents' own foeBolted branch uses).
+ *   `foeMisses`/`foeSwings` — a HERO-targeted `foeMissed` (no `.member`
+ *                field — combat.js's member-branch always sets one).
+ *   `castsDefensive`/`castsOffensive` — a successful cast
+ *                (`after.c.spellsUsed === before.c.spellsUsed + 1`, the same
+ *                success check tallyUsage uses) keyed on `ctx.lastSpellMode`
+ *                at that instant — chooseSpell sets it fresh every call, so
+ *                a step-h cast is always tagged with the mode that picked it.
+ *   `potionsUsed` — a successful `potionDrunk` event (the drinkPotion action)
+ *                OR an `itemUsed` event whose item is a heal/full potion
+ *                (chooseCombatItem's "heal" reason, a worn/bag potion spent
+ *                via useItem).
+ *   `backstabs`/`flees` — the engine's own `backstab`/`fled` events. The bot
+ *                does nothing special to earn either — this only observes
+ *                what the engine already rolled (a Thief's opener crit, a
+ *                successful flee roll).
+ * Pure bookkeeping beyond the `identity` mutation itself.
+ */
+export function tallyIdentity(identity, ctx, action, dispatched, inCombat, events, before, after) {
+  if (inCombat && IDENTITY_ROUND_ACTIONS.has(dispatched.type)) identity.rounds++;
+  for (const e of events) {
+    if (e.type === "encounterStarted") identity.fights++;
+    else if (e.type === "struckByFoe") {
+      identity.dmgTaken += e.dmg || 0;
+      identity.foeSwings++;
+    } else if (e.type === "foeBolted" && e.member === undefined) {
+      identity.dmgTaken += e.dmg || 0;
+      identity.foeSwings++;
+    } else if (e.type === "foeMissed" && e.member === undefined) {
+      identity.foeMisses++;
+      identity.foeSwings++;
+    } else if (e.type === "backstab") identity.backstabs++;
+    else if (e.type === "fled") identity.flees++;
+    else if (e.type === "potionDrunk") identity.potionsUsed++;
+    else if (e.type === "itemUsed" && e.item && e.item.kind === "potion" && (e.item.eff2 === "heal" || e.item.eff2 === "full")) {
+      identity.potionsUsed++;
+    }
+  }
+  if (action.type === "castSpell" && after.c.spellsUsed === before.c.spellsUsed + 1) {
+    if (ctx.lastSpellMode === "defensive") identity.castsDefensive++;
+    else if (ctx.lastSpellMode === "offensive") identity.castsOffensive++;
+  }
+}
+
+/**
+ * snapshotFloor(s, afraidTriggers, diedAfraid) — USER RULING D: one row of
+ * playRun's own `floorSnapshots` — the pace instrument band-readout.mjs's
+ * paceReadout aggregates per floor. `ar`/`weaponCost` are read straight off
+ * the sheet (`c.ar`, `WEAPONS[c.weapon].cost` — the weapon-TIER proxy, not
+ * its raw dice), never re-derived.
+ */
+function snapshotFloor(s, afraidTriggers, diedAfraid) {
+  const c = s.c;
+  return {
+    depth: s.floor.depth,
+    level: c.level,
+    gold: c.gold,
+    ar: c.ar || 0,
+    weaponCost: WEAPONS[c.weapon]?.cost ?? 0,
+    maxWP: c.maxWP,
+    potions: c.potions,
+    afraidTriggers,
+    diedAfraid,
+  };
+}
+
+/**
  * playRun(seed, opts, onStep) — the shared auto-play loop both tools use.
  * `policyRng = makeRng(seed ^ 0x9e3779b9)` is a SEPARATE stream from the
  * engine's own rngState, so the policy's own dice-rolling never perturbs the
@@ -1330,6 +1496,21 @@ export function forceParty(state) {
  *     step (computed from the PRE-action state each step, since `die()`
  *     nulls `state.combat` before this loop can inspect it after the fact).
  *
+ * USER RULING D (54-CONTEXT.md, 2026-09-21): the run record gains four more
+ * fields, harness-only (never written back onto `state`):
+ *   `cls`/`sub`/`race` — `state.c.cls`/`.sub`/`.race` at the FINAL state, so
+ *     band-readout's classIdentityReadout can pool by class without
+ *     re-reading the state object.
+ *   `floorSnapshots` — one `snapshotFloor` row per floor the run reached,
+ *     pushed the instant `state.floor.depth` changes (captured off the
+ *     PRE-change `before` state, so a floor's row reflects the level/gold/
+ *     gear the hero LEFT that floor with), plus a final row for the death/
+ *     stuck floor when the loop ends.
+ *   `identity` — the `makeIdentityTallies`/`tallyIdentity` accumulator
+ *     (fights/rounds/dmgTaken/foeSwings/foeMisses/castsDefensive/
+ *     castsOffensive/potionsUsed/backstabs/flees), consumed by
+ *     classIdentityReadout.
+ *
  * Phase 42 (BAL-01 second half): a SECOND harness-only write-path bypass
  * (after `forceParty`) — when `decideAction` picks a once-a-fight
  * foe-targeted ability (`{ type: "useAbility", key, target }`), this loop
@@ -1349,12 +1530,17 @@ export function playRun(seed, opts, onStep) {
   const memberAtStart = opts.party ? state.party.length : 0;
   const ctx = makeBotContext(opts);
   const tallies = makeTallies();
+  const identity = makeIdentityTallies(); // USER RULING D
+  const floorSnapshots = []; // USER RULING D
+  let afraidTriggersThisFloor = 0;
+  let wasAfraidBeforeStep = false;
   let actions = 0;
   let diedInCombat = false;
   while (!state.dead && actions < ctx.opts.maxActions) {
     const action = decideAction(state, policyRng, ctx);
     const inCombat = !!state.combat;
     const before = state; // Phase 42 (BAL-02): pre-action state — applyAction returns a NEW object, so this reference stays valid after the reassignment below
+    wasAfraidBeforeStep = !!(before.combat && before.combat.afraid > 0);
     let dispatched = action;
     if (action.type === "useAbility" && Number.isInteger(action.target) && state.combat) {
       state.combat.target = action.target;
@@ -1365,12 +1551,23 @@ export function playRun(seed, opts, onStep) {
     if (state.dead && inCombat) diedInCombat = true;
     tallyEvents(tallies, events, state);
     tallyUsage(tallies, action, events, before, state); // Phase 42 (BAL-02)
+    tallyIdentity(identity, ctx, action, dispatched, inCombat, events, before, state); // USER RULING D
+    for (const e of events) if (e.type === "phobiaAfraid") afraidTriggersThisFloor++;
     observe(ctx, events, state); // Phase 42 (BAL-01 second half): stateAfter for floorMapped
     if (onStep) onStep(events, state);
     actions++;
+    // USER RULING D: one floorSnapshot row per floor LEFT, captured off the
+    // PRE-change `before` state — its level/gold/gear is what the hero left
+    // that floor with.
+    if (state.floor.depth !== before.floor.depth) {
+      floorSnapshots.push(snapshotFloor(before, afraidTriggersThisFloor, false));
+      afraidTriggersThisFloor = 0;
+    }
   }
   const stuck = !state.dead && actions >= ctx.opts.maxActions;
   const outcome = state.dead ? "dead" : stuck ? "stuck" : "unknown";
+  // USER RULING D: a final floorSnapshot row for the death/stuck floor.
+  floorSnapshots.push(snapshotFloor(state, afraidTriggersThisFloor, state.dead && wasAfraidBeforeStep));
   return {
     seed,
     state,
@@ -1387,6 +1584,12 @@ export function playRun(seed, opts, onStep) {
     actionsPerFloor: actions / Math.max(1, state.floor.depth),
     memberAtStart,
     memberAtEnd: state.party.length,
+    // USER RULING D (54-CONTEXT.md, 2026-09-21): class identity + pace inputs.
+    cls: state.c.cls,
+    sub: state.c.sub,
+    race: state.c.race,
+    floorSnapshots,
+    identity,
   };
 }
 
