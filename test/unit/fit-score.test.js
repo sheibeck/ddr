@@ -35,8 +35,9 @@ function onTargetSurvival() {
 
 // --- SEARCH_PLAN / HELD_DIALS ------------------------------------------
 
-test("SEARCH_PLAN has the core 10 coordinates PLUS Ruling F's 11th (CLASS_MITIGATION Magic User spellPower), in order, with pinned steps/bounds", () => {
+test("SEARCH_PLAN has Ruling F Adjustment 1b's coordinate (CLASS_MITIGATION Magic User spellPower) FIRST, then the core 10, in order, with pinned steps/bounds", () => {
   const expected = [
+    ["CLASS_MITIGATION.Magic User.spellPower", 0.15, 1.0, 2.0],
     ["FOE_LEVEL.perDepth", 0.03, 0.12, 0.3],
     ["FOE_LEVEL.base", 0.15, 0.3, 1.0],
     ["HERO_SP_SCALE", 0.05, 0.15, 0.6],
@@ -47,7 +48,6 @@ test("SEARCH_PLAN has the core 10 coordinates PLUS Ruling F's 11th (CLASS_MITIGA
     ["HERO_REGEN_PER_FLOOR", 0.1, 0, 0.5],
     ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
     ["ENCOUNTER_DOTS.base", 1, 5, 10],
-    ["CLASS_MITIGATION.Magic User.spellPower", 0.15, 1.0, 2.0],
   ];
   assert.equal(SEARCH_PLAN.length, 11);
   SEARCH_PLAN.forEach((coord, i) => {
@@ -202,7 +202,7 @@ test("applyStep clamps, steps ENCOUNTER_DOTS.base by 1, halves the step at stepS
 
 test("applyStep on the 3-level CLASS_MITIGATION.Magic User.spellPower coordinate (Ruling F Adjustment 1) touches only that leaf", () => {
   const coord = SEARCH_PLAN.find((c) => c.path.join(".") === "CLASS_MITIGATION.Magic User.spellPower");
-  assert.ok(coord, "the 11th coordinate must exist");
+  assert.ok(coord, "the spellPower coordinate must exist");
   const dials = JSON.parse(JSON.stringify(DIALS));
 
   const up = applyStep(dials, coord, 1);

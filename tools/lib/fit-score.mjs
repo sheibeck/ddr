@@ -181,14 +181,23 @@ export function classConstraints(classIdentity) {
  * Magic User, and the one dial that could prop the Magic User pool back up
  * — `CLASS_MITIGATION["Magic User"].spellPower` — sat outside the core 10
  * (a manual-notch-only knob per 54-06/54-07's plan approval). Ruling F
- * promotes it to a searched coordinate, appended LAST so the first 10
- * probes of any resumed walk replay byte-identically against the existing
- * `fit/fit-log.jsonl`. `applyStep` refuses any key outside this list.
- * Coordinates 1-10 are transcribed verbatim from 54-06-PLAN.md's dial
- * table's `Search bounds (step)` / `Search order` columns; coordinate 11 is
- * transcribed verbatim from 54-CONTEXT.md's `## USER RULING F`.
+ * promotes it to a searched coordinate. USER RULING F "Adjustment 1b"
+ * (2026-09-21, resumed 54-07 dispatch): the coordinate was originally
+ * appended LAST (so a resumed walk's first 10 probes would replay
+ * byte-identically against the pre-Adjustment-1 log); the block-1 search
+ * runs from a FRESH log (`fit/fit-log-block1.jsonl`, seeded from
+ * `fit/start-block1.json`, not a resume of the old log), so that
+ * replay-compatibility reason no longer applies, and the coordinate most
+ * likely to unblock the class-fairness guardrail (22 of 25 rejections)
+ * is moved to be probed FIRST — pass 1's first two evaluations — instead
+ * of twentieth. Coordinates transcribed verbatim from 54-06-PLAN.md's dial
+ * table's `Search bounds (step)` / `Search order` columns (the original
+ * core-10, now positions 2-11) and 54-CONTEXT.md's `## USER RULING F`
+ * (spellPower, now position 1). `applyStep` refuses any key outside this
+ * list.
  */
 export const SEARCH_PLAN = [
+  { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], step: 0.15, lo: 1.0, hi: 2.0 },
   { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
   { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
   { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
@@ -199,7 +208,6 @@ export const SEARCH_PLAN = [
   { path: ["HERO_REGEN_PER_FLOOR"], step: 0.1, lo: 0, hi: 0.5 },
   { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
   { path: ["ENCOUNTER_DOTS", "base"], step: 1, lo: 5, hi: 10 },
-  { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], step: 0.15, lo: 1.0, hi: 2.0 },
 ];
 
 /**
