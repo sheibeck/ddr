@@ -5,7 +5,7 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 54
 current_phase_name: Four-Band Retune & Roster Decision
 status: planning
-stopped_at: Phase 54 PLANNED (54-01/02/03 committed; user rulings A: Filter dials movable, B: Drake retune); NEXT STEP = execute Phase 54 sequentially (wave 1 → 2 → 3, full readout every rung), orchestrator VERIFICATION, then build the debug APK for Phase 55
+stopped_at: Phase 54 RE-PLANNED mid-ladder (USER RULING C: per-floor survival curve, S_20 3–5 %; rungs 1–2 stand at 850f176; 54-02 rewritten: survival readout Task 0 → ledger + rung 3a knot table → fitted rungs 3..6 → parity/miss table); NEXT STEP = re-dispatch the 54-02 executor from Task 0, then 54-03, VERIFICATION, debug APK for Phase 55
 last_updated: "2026-09-21T03:44:04.663Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 53 complete, transitioned to Phase 54
@@ -141,7 +141,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-20 (autonomous v1.7 run; paused for /compact)
-Stopped at: Phase 54 PLANNED (54-01/02/03 committed; user rulings A: Filter dials movable, B: Drake retune); NEXT STEP = execute Phase 54 sequentially (wave 1 → 2 → 3, full readout every rung), orchestrator VERIFICATION, then build the debug APK for Phase 55
+Stopped at: Phase 54 RE-PLANNED mid-ladder (USER RULING C: per-floor survival curve, S_20 3–5 %; rungs 1–2 stand at 850f176; 54-02 rewritten: survival readout Task 0 → ledger + rung 3a knot table → fitted rungs 3..6 → parity/miss table); NEXT STEP = re-dispatch the 54-02 executor from Task 0, then 54-03, VERIFICATION, debug APK for Phase 55
 Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true → goes straight to plan). Standing rulings this run: research skipped for all six phases; verification agents off (orchestrator authors VERIFICATION.md from SUMMARYs, device checks deferred to Phase 55's batch); Phase 52 ruling: 65 curve-height cells hand to Phase 54; worktrees auto-degraded → executors run sequentially on master; docs commits via plain `git commit` with the two trailer lines; Pixel 7 is on wireless adb (adb-28051FDH200H0R, 10.0.0.175); `npm run boot:check` environment-blocked (not a gate)
 
 ## Operator Next Steps

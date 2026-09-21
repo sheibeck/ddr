@@ -92,3 +92,42 @@
 - **Filter dials are movable.** The planner showed that with floors 1–4 byte-identical, only 33 % of solo runs reach floor 5, so the median is pinned at 4 by construction. Ruling: the ladder MAY move the EXISTING Phase 27 floor 2–4 dials — `FOE_GRACE_AT_2` (0.5 → as low as Phase 27's noted 0.35 ceiling) and `HAZARD_SCALE_AT_START` (0.5 → lower) — as rungs. Floor 1 stays exact identity (`FOE_GRACE_AT_1 = 1.0`, `HAZARD_FROM_DEPTH >= 2`, floor-1 dots/dark canon — parity); the ramps still reach exactly 1.0 at their existing canon-from depths; no NEW floor 1–4 dials. Reach ≥ 5 becomes a per-rung target, not an invariant; the floors-1-untouched check is `difficultyCurve(1)` byte-identity + the depth-20 slice + the floor-1 fixture scan.
 - **The ≥ 100 % one-shot rule applies to the Drake.** Under the dice rule the four roster creatures read 62–69 % of the Endgame bar (the 108–116 % figures above were the whole-sum rule); the Drake (Beasts tier 4, 2d10+4) reads 120–139 % in every band. Ruling: apply the in-place retune to the Drake (2d10+4 → 2d8+2, `drakeBreath` untouched, declared end-to-end); Herman / Drarl / Vampire / Djinni record "stays".
 - Two commits per rung (`feat` constants+pins, then `docs` readouts) accepted — every readout provably taken on the tree carrying the dial.
+
+## USER RULING C (2026-09-21, mid-ladder after rung 2) — the target is a per-floor survival CURVE, not bands as numbers
+
+The rung 1/2 readouts showed the bot's per-floor survival is ~90/89/81 % on floors 1–3, then **55 % / 37 % / 37 % / 20 %** on 4–7 — "that curve is not a curve, that's a wall." The user replaced BAND-01's numeric targets (median 5–7, p90 10–13, reach-20 well under 1 %) with this table — **verbatim, the tuning target for the rest of Phase 54** (individual survival `p_L` = chance of surviving floor L given you reached it; cumulative `S_L` = chance a run reaches the end of floor L):
+
+| Floor | p_L | S_L | Note |
+|---|---|---|---|
+| 1 | 98.8 % | 98.8 % | High early survival |
+| 2 | 96.3 % | 95.1 % | |
+| 3 | 93.1 % | 88.6 % | Degradation accelerates |
+| 4 | 89.9 % | 79.7 % | |
+| 5 | 86.9 % | 69.2 % | |
+| 6 | 84.3 % | 58.4 % | The 50/50 flip occurs here |
+| 7 | 82.2 % | 48.0 % | |
+| 8 | 80.6 % | 38.7 % | Maximum bottleneck pressure |
+| 9 | 79.5 % | 30.8 % | Lowest individual survival |
+| 10 | 78.9 % | 24.3 % | Less than 1 in 4 remain |
+| 11 | 78.7 % | 19.1 % | Curve stabilizes |
+| 12 | 78.8 % | 15.1 % | |
+| 13 | 79.1 % | 11.9 % | |
+| 14 | 79.6 % | 9.5 % | Single-digit survival begins |
+| 15 | 80.2 % | 7.6 % | |
+| 16 | 81.0 % | 6.2 % | |
+| 17 | 81.8 % | 5.0 % | |
+| 18 | 82.7 % | 4.2 % | |
+| 19 | 83.6 % | 3.5 % | |
+| 20 | 84.5 % | 5.0 % / 3.0 % | 🦄 The Unicorn Milestone (the user's note was not included; treat 3–5 % as the pass band) |
+| 21 | 85.4 % | 2.5 % | The infinite crawl begins |
+| 22 | 86.4 % | 2.2 % | |
+| 23 | 87.2 % | 1.9 % | Less than 2 % survival |
+| 24 | 88.1 % | 1.7 % | |
+| 25 | 88.9 % | 1.5 % | |
+
+Consequences (orchestrator's reading, to be honoured by the re-planned ladder):
+- **Rules fidelity is relaxed for survival rates** — the user's words: "It's ok if we diverge from the actual rules we have enclosed in the pdf for survival rates." Dials may leave canon at any depth ≥ 2 by any amount the readout justifies; the engine gate still applies (measure → declare → regenerate movers; master never edited). Floor 1 stays parity-exact unless the ladder proves floor 1 itself is off-curve (today 90 % vs 98.8 % target) — then a floor-1 rung is an ESCALATION to the user with the fixture exposure named, not taken silently.
+- **The shape has three parts:** floors 1–4 need to go UP to 99/96/93/90 % (today 90/89/81/55 %); floors 5–10 need ~87 → 79 % (today 37 % at 5–6, 20 % at 7, ~0 % reach at 9+); floors 11–25 need ~79 → 89 % (a *rising* p_L — the Endgame is *not* steeper; the depth-20 slice yardstick is superseded: `--start-depth 20` should read p_L ≈ 84.5 %, not "unchanged"). `ENDGAME_CANON_FROM_DEPTH` / the literal-1 guard from 16 and `COMBAT_SCALE_FROM_DEPTH = 21` are no longer sacred — they may move if the readout says so, with the Phase 27 "may only move up" note superseded by this ruling.
+- **The readout is now the per-floor survival table**: `p_L` = 1 − deaths_at_L / runs_reaching_L, `S_L` cumulative, from the death-depth histogram (`tools/lib/band-readout.mjs` gains a `per-floor survival` block printing p_L / S_L next to the target and the delta). Stop rule: every floor 1–10 within ±8 points of the target `S_L` and floors 11–20 within ±3 points of `S_L` (or the executor records the miss with the untaken rung); reach-20 in 3–5 %.
+- **Ladder discipline is relaxed**: notches are whatever the fit needs (the executor may compute a per-band foePower / hazard value from the previous rung's p_L ratio rather than stepping 0.05); ladder cap 6 rungs; full readout every rung still (user override stands); the bot policy stays frozen, but `--max-actions` may be raised (it is a run cap, not policy) if deep runs start hitting it.
+- Rungs 1–2 stand (`b0facb6`, `850f176`, raw readouts `27e209c`); the ledger's rung-2 section and the target table are rewritten by the re-planned Plan 02.

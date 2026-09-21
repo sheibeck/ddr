@@ -39,7 +39,7 @@
 
 ### Four-band curve (BAND)
 
-- [ ] **BAND-01**: The four bands are recorded as the measurable tuning target in `docs/DIFFICULTY-RETUNE.md` with the user's text verbatim — Filter 1–4 (high variance), Wall 5–8 (where the average run dies), Breakaway 9–15, Endgame 16–20 — as numbers: median death depth 5–7, p90 ≈ 10–13, reach-16 a few percent, reach-20 well under 1 % (the unicorn), depth-20 slice (`--start-depth 20`) unchanged as the deep-lethality yardstick
+- [ ] **BAND-01**: The four bands are recorded as the measurable tuning target in `docs/DIFFICULTY-RETUNE.md` with the user's text verbatim — Filter 1–4 (high variance), Wall 5–8 (where the average run dies), Breakaway 9–15, Endgame 16–20 — **as a per-floor survival curve (USER RULING C, 2026-09-21, supersedes the earlier numbers):** individual floor survival p_L 98.8 % at floor 1 falling to a 78.7 % trough at floor 11 and rising to 84.5 % at floor 20; cumulative S_L 69 % at 5, 58 % at 6 (the 50/50 flip), 39 % at 8, 24 % at 10, 7.6 % at 15, 3–5 % at 20 (the unicorn); the `--start-depth 20` slice reads p_L ≈ 84.5 %, not "unchanged"
 - [ ] **BAND-02**: `engine/difficulty.js`'s `difficultyCurve` is reshaped to that target — identity-ish through floor 4 (variance from drops and dice, not dials), a step at 5–8, slope eases through 9–15, steepens 16–20, breather floors kept, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — with every dial change gated on the bot readout moving toward the bands and no flat damage nerfs to chase the median
 - [ ] **BAND-03**: The AFTER readout (solo + `--party`, 200 seeds, plus the class matrix) lands inside BAND-01's numbers or each miss is recorded with the untaken rung and a reason; the ledger's change table has a row per constant with before/after
 
