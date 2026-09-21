@@ -4,16 +4,16 @@ milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 54
 current_phase_name: Four-Band Retune & Roster Decision
-status: planning
-stopped_at: Phase 54 GLOBAL MODEL PLANNED (54-04..07, user-approved with three cuts: core-10 search, no MAZE_SIZE, tail measured not fitted); NEXT STEP = dispatch executor 54-04 (fair bot + BEFORE), then 54-05, 54-06, 54-07 sequentially on master; 54-02/03 are SUPERSEDED (no SUMMARY, do not execute); then orchestrator VERIFICATION, debug APK, Phase 55 device round
-last_updated: "2026-09-21T03:44:04.663Z"
-last_activity: 2026-09-20
-last_activity_desc: Phase 53 complete, transitioned to Phase 54
+status: executing
+stopped_at: "Phase 54 GLOBAL MODEL PLANNED (54-04..07, user-approved with three cuts: core-10 search, no MAZE_SIZE, tail measured not fitted); NEXT STEP = dispatch executor 54-04 (fair bot + BEFORE), then 54-05, 54-06, 54-07 sequentially on master; 54-02/03 are SUPERSEDED (no SUMMARY, do not execute); then orchestrator VERIFICATION, debug APK, Phase 55 device round"
+last_updated: "2026-09-21T16:24:44.639Z"
+last_activity: 2026-09-21
+last_activity_desc: Phase 54 execution started
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 18
+  completed_plans: 14
   percent: 67
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–52 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 52 — Foe Cadence & Damage Curve
+**Current focus:** Phase 54 — Four-Band Retune & Roster Decision
 
 ## Current Position
 
-Phase: 54 — Four-Band Retune & Roster Decision
-Plan: Not started
-Status: Global model planned (54-04..07) — ready to execute
-Last activity: 2026-09-20 — Phase 53 complete, transitioned to Phase 54
+Phase: 54 (Four-Band Retune & Roster Decision) — EXECUTING
+Plan: 1 of 7
+Status: Executing Phase 54
+Last activity: 2026-09-21 — Phase 54 execution started
 
 ## Ground Truth (durable facts every session needs)
 
