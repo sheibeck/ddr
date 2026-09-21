@@ -202,7 +202,20 @@ Plans:
   4. A committed script reports max single-hit damage by depth for every bestiary foe and flags any hit ≥ 60% of a level-appropriate character's max HP; every flagged row (Herman's floor-5 crit among them) is fixed and re-measured clean.
   5. Every damage-curve fix carries a before/after row in `content/BESTIARY-REBALANCE.md`; any moved parity fixtures are measured, declared and regenerated per the engine gate.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 52-01-PLAN.md — Zero engine bytes: CAD-01/02/03 pins (`test/unit/foe-cadence.test.js` — swing counts, the Stalka ability-replaces-swings resolver, attacks-per-player-action invariant) + per-kit notes in `content/foe-abilities.js` + `tools/cadence-audit.mjs` (Bat/Rat + China Wolf at depth 5, output committed) + `tools/damage-curve-audit.mjs` with the BEFORE section (`--rule=whole`)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 52-02-PLAN.md — One executor, one green commit: a foe crit doubles the dice, not the `lvl² + dmgBonus + dice` sum (`foeLevelBase` + hero/member/pursuit sites) + Herman `sp.strikesAs: 5` + crit re-pins + DMG-02 pins + the measured moved parity set declared/regenerated (predicted: `combat.json#lose` only) + Phase 52 guard + yardstick AFTER block; then FIXTURE-INVENTORY/BESTIARY-REBALANCE Phase 52 records, the AFTER damage-curve section, and a decision checkpoint on the rows still flagged (trim now vs hand to Phase 54 TUNE-08)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 52-03-PLAN.md — Apply the checkpoint ruling (fix rows or explicit per-row rulings, never silent) + AFTER bot readout under Phase 51's flags (`v17-p52-after-smoke.json`) + the `### v1.7 · Phase 52 — cadence & damage curve` ledger H3 (BEFORE by reference to 608a0e5, AFTER, Reading table, cadence quote, flagged rows) + gates
 
 ### Phase 53: Joiner Level Cap
 
@@ -315,7 +328,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 52. Foe Cadence & Damage Curve | v1.7 | 0/? | Not started | - |
+| 52. Foe Cadence & Damage Curve | v1.7 | 0/3 | Planned | - |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |
