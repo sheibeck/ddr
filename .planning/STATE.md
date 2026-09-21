@@ -4,9 +4,9 @@ milestone: v1.7
 milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 52
 current_phase_name: Foe Cadence & Damage Curve
-status: planning
+status: executing
 stopped_at: Completed 51-03-PLAN.md
-last_updated: "2026-09-20T23:19:15.496Z"
+last_updated: "2026-09-21T00:43:16.914Z"
 last_activity: 2026-09-20
 last_activity_desc: Phase 51 complete, transitioned to Phase 52
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–51 complete; 
 
 Phase: 52 — Foe Cadence & Damage Curve
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-20 — Phase 51 complete, transitioned to Phase 52
 
 ## Ground Truth (durable facts every session needs)
@@ -141,8 +141,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-20 (autonomous v1.7 run)
-Stopped at: Phase 51 complete (VERIFICATION passed, 5 device checks deferred to Phase 55), ready to discuss/plan Phase 52
-Resume file: None — `/gsd-autonomous` resumes at Phase 52 smart discuss
+Stopped at: Phase 52 planned (ddd5a72; user ruling: still-flagged rows hand to Phase 54) — executing next
+Resume file: None — `/gsd-autonomous` resumes at Phase 52 execute
 
 ## Operator Next Steps
 
