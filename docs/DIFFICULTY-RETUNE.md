@@ -4878,6 +4878,188 @@ Floors 1-3 PASS again on the party readout (dS -2.8/-3.7/-1.0); floor 4 nearly p
 
 **What to turn next:** rung 4's verdict is non-empty — the ladder continues to rung 5, computed from THIS rung's own solo per-floor table and this rung's slice p_20 (64.0%). The secondary-group check ("a band's foePower AND hazard knot both <= 0.5, still missing by > 8 points after two consecutive fits") becomes assessable at rung 5 for the Filter/Wall bands (both fitted at rungs 3 and 4 now).
 
+#### Why floor bands failed (rungs 1–5) — USER RULING D (2026-09-21)
+
+The user's ruling, after rung 5, stopped the floor-range ladder entirely: "Remove one-off hacks and bandaids that try to get bands by floor ranges, and establish dials that work on the dungeon as a whole" and "we've reached a point where [staying true to the source] won't get us the difficulty curve we want ... holistically as a game design we probably need to deviate from core." The system, as measured across rungs 1-4 (54-CONTEXT.md's `### The system, as measured`), explains why: foe level was `min(heroLevel, depth)` (-1 on a d4 = 1), so difficulty was a function of the HERO's own level, not depth — the bot reaches level 3 by floor 4 and 4-5 by the Wall on kill-SP alone (SP ~ lvl^2, thresholds 201/501/901/1501), which is exactly when the tier-3/4/5 roster (Drarl, Herman, Drake) starts appearing in the death list, and depth stopped mattering once the hero out-leveled it (~floor 3); every floor-band knot (the Filter/Wall/Breakaway/Endgame constants above) scaled only the `lvl^2` term and foe HP — the DICE (Werebeast 2xd10, Dante x3, Gremlin +3, Drake 2d10+4) were never touched, so the ladder saturated by rung 4 (floor 4: 55% -> 63% -> 71% then flat; floors 1-3 byte-identical across rungs 3-4); foe count stepped 2 -> 3 at hero level 3, a second level-keyed cliff; and with no regeneration, encounter dots climbing 10 -> 13 with depth, hazards (falls, traps) at ~25% of deaths and starvation/exhaustion at ~10-15% and rising as foes softened, four consecutive fits (rungs 2-4) never closed the gap on floors 5+. Rung 5's constants were committed at `1cb56c6` (F2/F3/F4 0.32/0.44/0.31; Wall 0.25/0.27; Breakaway 0.27/0.29; Endgame 0.41/0.37; `ENCOUNTER_DOT_CAP` 13->12) and its readouts were never run — `readouts/rung5-solo.txt` / `rung5-party.txt` are empty by design, kept as history; the knot table itself is removed in 54-05.
+
+#### Global model (USER RULING D) — the dial table
+
+The governing principle (user, 2026-09-21, orchestrator's reading, ratified at plan approval): **FOE-side power keys to DEPTH; HERO-side power keys to the hero's LEVEL, paced by HERO_SP_SCALE; the ECONOMY keys to depth through foe tier (LOOT_SCALE); the fit sets the gap between the ramps.** All three USER RULING D questions were answered yes: (a) foe level is derived from DEPTH, not the hero's level; (b) hero-side tuning (HP, regen) is in scope; (c) the bot is made a fair player first (this plan's Task 1/3).
+
+| Dial | Engine hook | Identity value | Starting value | Search bounds (step) | Search order | Direction (↑ =) |
+|---|---|---|---|---|---|---|
+| `FOE_LEVEL { base, perDepth }` | `foeLevelFor(depth)` -> combat.js `maxLvl` (replaces `min(c.level, depth)`; d4 bleed kept) | none — starting map | `{ base: 0.6, perDepth: 0.2 }` (tiers 1/1/1/1 · 2x5 · 3x5 · 4x5 · 5 from 20) | perDepth [0.12, 0.30] (0.03); base [0.3, 1.0] (0.15) | 1 (perDepth), 2 (base) | harder |
+| `HERO_SP_SCALE` | `heroSpFor` at kill / parley / descend bonus / ±XP dots | 1 | 0.28 (est.: level 2 by ~5, 3 by ~9, 4 by ~12, 5 by ~16 from the measured kill rate ≈ 2.5 fights/floor × 1.5 foes × 17.5 SP × tier + the 40 + 30·d descend bonus; the fit moves it) | [0.15, 0.6] (0.05) | 3 | easier |
+| `FOE_HIT_SCALE { base, perDepth }` | `foeHitFor` on the WHOLE hit at hero / member / pursuit | `{ 1, 0 }` | `{ base: 0.6, perDepth: 0.02 }` (0.62 at 1 -> 1.0 at 20 -> 1.2 at 30) | base [0.4, 1.0] (0.08); perDepth [0, 0.05] (0.01) | 4 (base), 5 (perDepth) | harder |
+| `FOE_HP_SCALE { base, perDepth }` | `foeWpFor` | `{ 1, 0 }` | `{ base: 0.8, perDepth: 0.015 }` (0.815 -> 1.1 at 20) | base [0.5, 1.2] (0.1); perDepth held at 0.015 (available) | 6 (base) | harder |
+| `HERO_HP_SCALE` | `heroMaxWpFor` at chargen + every level-up gain | 1 | 1.25 | [1.0, 1.8] (0.15) | 7 | easier |
+| `HERO_REGEN_PER_FLOOR` | `heroRegenFor` in `descend` (hero only, once per arrival) | 0 | 0.25 | [0, 0.5] (0.1) | 8 | easier |
+| `HAZARD_SCALE { base, perDepth }` | `scaleHazard` (traps, falls, leaps — floor 1 included) | `{ 1, 0 }` | `{ base: 0.5, perDepth: 0.02 }` | base [0.3, 1.0] (0.1); perDepth held at 0.02 (available) | 9 (base) | harder |
+| `ENCOUNTER_DOTS { base, perDepth }` | `difficultyCurve.dots` (breather = base) | `{ 9, 1 }` (= canon 9 + d) | `{ base: 7, perDepth: 0.3 }` (7 -> 13 at 20) | base [5, 10] (1); perDepth held at 0.3 (available) | 10 (base) | harder |
+| `LOOT_SCALE` | `lootFor` at kill purse / chest / wilmst cache / faerie | 1 | 0.8 ("already too much money") | held (available); [0.4, 1.5] if released | — | easier |
+| `CAMP_HEAL_FRACTION` | `campHealFor` in `newDay` (fed night; same d10 as variance; doublers stay) | none — 0.17 mean-matched | 0.2 | held (available); [0.15, 0.5] if released | — | easier |
+| `ROUND_DAMAGE_CEILING` | `roundDamageCapFor(c.level)` — per foe per visit, all swings, post-scale, pre-pipeline | 0 (off) | 0.5 (of `heroMeanMaxWpFor(level)`: 21 at L1, 30 at L5 with HERO_HP_SCALE 1) | held (available); [0.3, 1.0] if released | — | harder |
+| `FOE_COUNT_SKEW` | `FOE_COUNT_TABLE[skew]` on the second d4 (canon draw shape) | 0 (P 1/2/3 = .500/.375/.125) | 1 (.625/.250/.125) | held (available); 0..4 if released | — | easier |
+| `FOOD_CLOCK` | `startingRationsFor` (chargen rations × clock; small-bag cap 10) | 1 | 1.5 (Fighter 9 / Thief 8 / MU 6) | held (available); [1.0, 1.6] if released | — | easier |
+| `ABILITY_THREAT { base, perDepth }` | `abilityCadenceFor` | `{ 1, 0 }` | `{ base: 1.0, perDepth: 0 }` | held (available); base [0.6, 1.2] if released | — | harder |
+| `STORE_TIER { base, perDepth }` | `difficultyCurve.storeTier` -> `economy.js storeTier(depth)` (clamp 0..3) | `{ 0, 0.3 }` (= today's ladder) | `{ base: 0, perDepth: 0.3 }` | held (available); perDepth [0.15, 0.6] if released | — | easier |
+| `FIGHT_SHARE` (= `DOT_MIX.fight`) | `remapEncounterResult` after the d8×d10 (same two draws) | 1.0 (= canon mix, 43/80 fights) | 1.0 | held (available); [0.6, 1.2] if released | — | harder |
+| `WANDER_RATE` | `wanderWakeFacesFor(sub)` — d20 faces per hour slept that wake you | 1 | 1 | held (available); {0, 1, 2} if released | — | harder |
+| `FOE_ACCURACY` | `foeAccuracyFor()` added to `foeToHitVs` need (+ breakdown) | 0 | 0 | held (available); −3..+3 if released | — | harder |
+| `DARK_BLOBS { base, perDepth }` + `DARK_BLOB_CAP` | `difficultyCurve.darkBlobs` | `{ −0.4, 0.7 }` + 3 (map `012233333333`) | same | held (available); perDepth [0.3, 1.0] if released | — | harder |
+| `DARK_RADIUS { base, perDepth }` + `DARK_RADIUS_CAP` | `difficultyCurve.darkRadius` | `{ 3, 1 }` + 7 (= today) | same | held (available) | — | harder |
+| `DOT_HP_FRACTION { small, mid, large }` | `dotHpFor` at the ±10 / −15 / +25 HP dots | none — `{ 0.24, 0.36, 0.6 }` mean-matched at L1 | same | held (available) | — | harder (the −HP rows) |
+| `TIER_SPREAD` | `tierSpreadFor()` — d4 faces that bleed one tier down | 1 | 1 | available, canon | — | easier (more bleed) |
+| `DOT_MIX.harm / loot / help` | `remapEncounterResult` | 1.0 each | 1.0 | available, canon | — | harm ↑ harder; loot/help ↑ easier |
+| `FLEE_NEED_MOD` / `PARLEY_NEED_MOD` | added to the flee need (`fleeBreakdown`) / the parley need | 0 / 0 | 0 / 0 | available, canon | — | harder |
+| `STARTING_GOLD` / `STARTING_POTION_BONUS` | `rollCharacter` | 50 / 0 | 50 / 0 | available, canon | — | easier |
+| `CLASS_MITIGATION` | `Fighter { hpMul 1, armorMul 1, killSpeed 1 (≤ 1 allowed) }`, `Thief { evasion 0, fleeBonus = FLEE_THIEF_BONUS, trapAvoid 0, killSpeed 1 (≥ 1 allowed) }`, `"Magic User" { spellPower 1 }` | identity rows | identity rows | manual knob only (max two notches per phase; first candidate Thief `evasion: -1` — the base Thief has no innate evasion today, only Acrobat / pool abilities) | — | per row |
+| `MAZE_SIZE` | — (CUT from Phase 54: no dial, no engine/shell/bot grid change; `GW`/`GH` stay 21) | — | — | available, not implemented (v1.8 candidate) | — | harder |
+
+**The class-pool ruling:** race / class / sub-class combinations are NOT meant to be equal — the random draw is part of the design; the fairness and identity constraints apply ONLY to the three class pools (Fighter/Thief/Magic User); the per-cell spread (`tools/lib/class-matrix.mjs`'s `rollups.byClass[].spread`, `tools/lib/band-readout.mjs`'s `classSpreadReadout`) is a recorded readout, never a target; never a race- or sub-class-keyed constant.
+
+**The roster note:** 54 creatures, 6 types × 5 tiers (12/11/12/12/7); under the starting `FOE_LEVEL` map (`0.6 + 0.2·depth`: tier 1 on floors 1-4, tier 2 on 5-9, tier 3 on 10-14, tier 4 on 15-19, tier 5 from 20) tier 5 (7 creatures) appears from floor 20 only — recorded as a v1.8 content candidate ("Endgame roster: +5-8 tier-5 creatures, ≥ 1 per type") if the fit ends up pulling tier 5 shallower than ~17.
+
+**The target:** `#### Target — the per-floor survival curve (USER RULING C, 2026-09-21)` (above, this same H3) stands as the fit's objective — the 25-row p_L/S_L curve is unchanged by USER RULING D.
+
+**Cuts at plan approval (2026-09-21):** (1) the automated fit searches the CORE 10 coordinates only (`FOE_LEVEL.perDepth/base`, `HERO_SP_SCALE`, `FOE_HIT_SCALE.base/perDepth`, `FOE_HP_SCALE.base`, `HERO_HP_SCALE`, `HERO_REGEN_PER_FLOOR`, `HAZARD_SCALE.base`, `ENCOUNTER_DOTS.base`, named in order above) — every other dial is implemented and HELD at its start value ("held (available)"); the miss table names which held dial would be released next; (2) `MAZE_SIZE` is cut from this phase (21x21 stays; v1.8 candidate); (3) the fit objective and pass/fail cover floors 1-12 at 200 seeds (±8 on 1-10, ±3 on 11-12, `SURVIVAL_PASS.deepFloors = [11, 12]`); floors 13-20 and reach-20 are measured at AFTER with a 1,000-seed solo run and a `--start-depth=10` slice, recorded with dS only (the TAIL, `SURVIVAL_PASS.tailFloors = [13, 20]`).
+
+#### BEFORE (global model) — commit 8e43ad651ba5e390f3918c4f16abf91b044b517a (fair bot; untouched engine at `1cb56c6`'s knot values)
+
+**Parameters:** `node tools/tune-difficulty.mjs --seeds=200` (solo), `node tools/tune-difficulty.mjs --seeds=200 --party` (backgrounded), `node tools/tune-difficulty.mjs --seeds=50 --start-depth=20` (slice), `node tools/tune-classes.mjs --seeds 5 --workers 4 --out docs/class-pass/v17-p54-global-before-smoke.json` (smoke). No `--max-actions` override needed — solo's 30/200 stuck and party's 61/200 stuck stayed within the normal ~15-30% bucket, own bucket, excluded from depth stats. `git diff --stat 5550002 -- engine/ content/` empty at run time on every transcript.
+
+**Bot line (identical on every transcript):** `Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=200  startDepth=1`
+
+**Solo (`readouts/global-before-solo.txt`) — Death-depth distribution:** `min=1  p50=4  p90=8  max=12`. **Death-cause breakdown (top 12):**
+
+```
+  starved in the dark  32 (16.0%)
+  fell off a wall      13 (6.5%)
+  undone by a trap     12 (6.0%)
+  spent by the dungeon itself 10 (5.0%)
+  cut down by a Herman 9 (4.5%)
+  cut down by a Frank  7 (3.5%)
+  cut down by a Werebeast 6 (3.0%)
+  cut down by a Drarl  6 (3.0%)
+  cut down by a Rinkle 5 (2.5%)
+  cut down by a Dante  5 (2.5%)
+  cut down by a Poltergeist 5 (2.5%)
+  cut down by a Djinni 5 (2.5%)
+```
+
+**Solo — Per-floor survival:**
+
+```
+  L=1  reached=200  deaths=15 (combat 7 / dot 8 / starvation-exhaustion 0 / other 0)  p_L=92.5%  S_L=92.5%  target p_L=98.8%  target S_L=98.8%  dS=-6.3  PASS
+  L=2  reached=182  deaths=21 (combat 10 / dot 5 / starvation-exhaustion 6 / other 0)  p_L=88.5%  S_L=81.8%  target p_L=96.3%  target S_L=95.1%  dS=-13.3  MISS
+  L=3  reached=160  deaths=16 (combat 9 / dot 3 / starvation-exhaustion 4 / other 0)  p_L=90.0%  S_L=73.6%  target p_L=93.1%  target S_L=88.6%  dS=-15.0  MISS
+  L=4  reached=141  deaths=34 (combat 25 / dot 6 / starvation-exhaustion 3 / other 0)  p_L=75.9%  S_L=55.9%  target p_L=89.9%  target S_L=79.7%  dS=-23.8  MISS
+  L=5  reached=99  deaths=24 (combat 11 / dot 6 / starvation-exhaustion 7 / other 0)  p_L=75.8%  S_L=42.3%  target p_L=86.9%  target S_L=69.2%  dS=-26.9  MISS
+  L=6  reached=69  deaths=24 (combat 15 / dot 5 / starvation-exhaustion 4 / other 0)  p_L=65.2%  S_L=27.6%  target p_L=84.3%  target S_L=58.4%  dS=-30.8  MISS
+  L=7  reached=43  deaths=14 (combat 9 / dot 2 / starvation-exhaustion 3 / other 0)  p_L=67.4%  S_L=18.6%  target p_L=82.2%  target S_L=48.0%  dS=-29.4  MISS
+  L=8  reached=26  deaths=9 (combat 7 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=65.4%  S_L=12.2%  target p_L=80.6%  target S_L=38.7%  dS=-26.5  MISS
+  L=9  reached=15  deaths=5 (combat 3 / dot 0 / starvation-exhaustion 2 / other 0)  p_L=66.7%  S_L=8.1%  target p_L=79.5%  target S_L=30.8%  dS=-22.7  MISS
+  L=10  reached=9  deaths=4 (combat 3 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=55.6%  S_L=4.5%  target p_L=78.9%  target S_L=24.3%  dS=-19.8  MISS
+  L=11  reached=4  deaths=2 (combat 1 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=50.0%  S_L=2.3%  target p_L=78.7%  target S_L=19.1%  dS=-16.8  MISS
+  L=12  reached=2  deaths=2 (combat 1 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=0.0%  S_L=0.0%  target p_L=78.8%  target S_L=15.1%  dS=-15.1  MISS
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 2 (dS -13.3), 3 (dS -15.0), 4 (dS -23.8), 5 (dS -26.9), 6 (dS -30.8), 7 (dS -29.4), 8 (dS -26.5), 9 (dS -22.7), 10 (dS -19.8), 11 (dS -16.8), 12 (dS -15.1)
+```
+
+No natural solo run reached floor 13+ this cycle (max death depth 12) — the TAIL (13-20) is measured by the party transcript and the depth-20 slice below, not by solo.
+
+**Solo — Pace (whole block):**
+
+```
+  L=1  n=200  level=1.05  gold=128.74  ar=5.76  weapon=177.75  maxWP=45.72  potions=1.24  afraid=71  diedAfraid=0
+  L=2  n=182  level=1.36  gold=273.99  ar=5.24  weapon=183.52  maxWP=48.80  potions=0.86  afraid=81  diedAfraid=1
+  L=3  n=160  level=2.14  gold=531.46  ar=5.00  weapon=189.69  maxWP=54.50  potions=0.69  afraid=76  diedAfraid=0
+  L=4  n=141  level=2.70  gold=821.44  ar=4.73  weapon=203.19  maxWP=57.52  potions=0.48  afraid=63  diedAfraid=1
+  L=5  n=99  level=3.30  gold=1052.26  ar=5.05  weapon=222.98  maxWP=61.87  potions=0.37  afraid=34  diedAfraid=2
+  L=6  n=69  level=3.78  gold=1462.55  ar=5.12  weapon=221.74  maxWP=67.58  potions=0.33  afraid=26  diedAfraid=1
+  L=7  n=43  level=4.35  gold=1814.70  ar=4.56  weapon=250.58  maxWP=73.98  potions=0.21  afraid=20  diedAfraid=0
+  L=8  n=26  level=4.69  gold=2375.54  ar=4.08  weapon=237.50  maxWP=77.00  potions=0.15  afraid=12  diedAfraid=0
+  L=9  n=15  level=5.00  gold=2691.67  ar=4.33  weapon=188.33  maxWP=80.27  potions=0.07  afraid=11  diedAfraid=2
+  L=10  n=9  level=5.00  gold=2767.00  ar=3.00  weapon=172.22  maxWP=84.89  potions=0.00  afraid=3  diedAfraid=1
+  L=11  n=4  level=5.00  gold=3598.50  ar=4.50  weapon=187.50  maxWP=96.00  potions=0.00  afraid=1  diedAfraid=0
+  L=12  n=2  level=5.00  gold=3979.00  ar=3.00  weapon=162.50  maxWP=87.00  potions=0.00  afraid=2  diedAfraid=0
+```
+
+**Solo — Class identity (whole block):**
+
+```
+  Fighter  n=69  p50=5  reach5=55.6%  reach10=3.7%  reach20=0.0%  dmgTaken/fight=4.86  rounds/fight=2.51  foeMiss=69.5%  casts(def/off)=0/0  potions/run=1.10  backstabs/run=0.00  flees/run=0.99
+  Thief  n=72  p50=4  reach5=49.2%  reach10=6.3%  reach20=0.0%  dmgTaken/fight=5.21  rounds/fight=2.90  foeMiss=73.2%  casts(def/off)=0/0  potions/run=1.96  backstabs/run=6.19  flees/run=2.46
+  Magic User  n=59  p50=4  reach5=43.4%  reach10=3.8%  reach20=0.0%  dmgTaken/fight=5.85  rounds/fight=2.51  foeMiss=68.3%  casts(def/off)=167/897  potions/run=2.98  backstabs/run=0.00  flees/run=0.68
+```
+
+**Solo — Stuck / Bot lines:** `Stuck: 30 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)`; `Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=200  startDepth=1`.
+
+**Party (`readouts/global-before-party.txt`) — survival + class identity + Stuck:**
+
+```
+  (L=1 floor-1 parity: 200 runs reach it, 96.5% survive it — the same "every run reaches floor 1" shape the solo block above shows)
+  L=4  reached=137  deaths=20 (combat 13 / dot 3 / starvation-exhaustion 4 / other 0)  p_L=85.4%  S_L=69.4%  target p_L=89.9%  target S_L=79.7%  dS=-10.3  MISS
+  L=8  reached=28  deaths=9 (combat 7 / dot 2 / starvation-exhaustion 0 / other 0)  p_L=67.9%  S_L=17.3%  target p_L=80.6%  target S_L=38.7%  dS=-21.4  MISS
+  L=12  reached=7  deaths=2 (combat 1 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=71.4%  S_L=5.4%  target p_L=78.8%  target S_L=15.1%  dS=-9.7  MISS
+  L=13..20 tail (party reached at most n=1 by L=15-20 — a single long-lived run; 13-20 print tail, never PASS/MISS)
+  reach-20: 0.5% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 4 (dS -10.3), 5 (dS -18.2), 6 (dS -25.2), 7 (dS -22.5), 8 (dS -21.4), 9 (dS -16.4), 10 (dS -15.6), 11 (dS -11.5), 12 (dS -9.7)
+
+Class identity (class pools only):
+  Fighter  n=69  p50=5  reach5=63.0%  reach10=11.1%  reach20=1.9%  dmgTaken/fight=3.77  rounds/fight=2.40  foeMiss=66.6%  potions/run=1.06  backstabs/run=0.00  flees/run=1.28
+  Thief  n=72  p50=5.5  reach5=78.6%  reach10=7.1%  reach20=0.0%  dmgTaken/fight=2.90  rounds/fight=2.23  foeMiss=70.8%  potions/run=2.13  backstabs/run=6.40  flees/run=1.54
+  Magic User  n=59  p50=4  reach5=39.5%  reach10=11.6%  reach20=0.0%  dmgTaken/fight=3.30  rounds/fight=1.82  foeMiss=61.1%  casts(def/off)=80/854  potions/run=2.97  backstabs/run=0.00  flees/run=0.69
+
+Stuck: 61 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+Outcome: 139 dead, 61 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Depth-20 slice (`readouts/global-before-start-depth-20.txt`) — survival block:**
+
+```
+  L=20  reached=50  deaths=16 (combat 15 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=68.0%  S_L=68.0%  target p_L=84.5%  target S_L=3.0%  dS=+65.0  tail
+  reach-20: 100.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+```
+
+(No floors 1-12 exist on this slice — a `--start-depth=20` run never visits them; the verdict prints its own vacuous-true "all floors 1-12 inside the pass band" since `missing` is empty over an empty domain.) Death-cause breakdown leads with `cut down by a Herman 9 (18.0%)`, `starved in the dark 5 (10.0%)`, `cut down by a Stalka Beast 5 (10.0%)`, `cut down by a Vampire 5 (10.0%)`, `cut down by a Drarl 4 (8.0%)`, `cut down by a Drake 3 (6.0%)` — the tier-4/5 roster the roster note above discusses.
+
+**Smoke (`docs/class-pass/v17-p54-global-before-smoke.json`, `readouts/global-before-smoke.txt`) — pooled line + Class spread:**
+
+```
+POOLED (all cells, run-weighted over completed runs):
+n  stuck  mean  p50  p90  >=5%  >=10%  >=20%  kills  lvl  actions  top causes
+715  86  4.79  4.0  8.0  49.6  4.1  0.0  11.10  3.03  537.98  starved in the dark(106),fell off a wall(50),undone by a trap(46)
+
+Class spread (recorded, not a target):
+  Fighter  p50Depth min=2.0 (Barbarian/Elven) max=9.0 (Woodsman/Wilmsry)  reach5 min=0.0 (Woodsman/Elven) max=100.0 (Knight/Human)
+  Thief  p50Depth min=2.0 (Pilfer/Elven) max=9.0 (Cat Burglar/Wilmsry)  reach5 min=0.0 (Pilfer/Elven) max=100.0 (Cutthroat/Wilmsry)
+  Magic User  p50Depth min=1.0 (Cleric/Dwarven) max=8.0 (Warlock/Troll)  reach5 min=0.0 (Sorcerer/Dwarven) max=80.0 (Warlock/Wilmsry)
+```
+
+`meta.commit` = `8e43ad6` (Task 2's commit); `cells.length` = 143.
+
+**Floors 1-12 (solo) — compact table:**
+
+| Floor | p_L | S_L | target S_L | dS | combat/dot/starve | level | gold | maxWP | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 92.5% | 92.5% | 98.8% | -6.3 | 7/8/0 | 1.05 | 128.74 | 45.72 | PASS |
+| 2 | 88.5% | 81.8% | 95.1% | -13.3 | 10/5/6 | 1.36 | 273.99 | 48.80 | MISS |
+| 3 | 90.0% | 73.6% | 88.6% | -15.0 | 9/3/4 | 2.14 | 531.46 | 54.50 | MISS |
+| 4 | 75.9% | 55.9% | 79.7% | -23.8 | 25/6/3 | 2.70 | 821.44 | 57.52 | MISS |
+| 5 | 75.8% | 42.3% | 69.2% | -26.9 | 11/6/7 | 3.30 | 1052.26 | 61.87 | MISS |
+| 6 | 65.2% | 27.6% | 58.4% | -30.8 | 15/5/4 | 3.78 | 1462.55 | 67.58 | MISS |
+| 7 | 67.4% | 18.6% | 48.0% | -29.4 | 9/2/3 | 4.35 | 1814.70 | 73.98 | MISS |
+| 8 | 65.4% | 12.2% | 38.7% | -26.5 | 7/1/1 | 4.69 | 2375.54 | 77.00 | MISS |
+| 9 | 66.7% | 8.1% | 30.8% | -22.7 | 3/0/2 | 5.00 | 2691.67 | 80.27 | MISS |
+| 10 | 55.6% | 4.5% | 24.3% | -19.8 | 3/1/0 | 5.00 | 2767.00 | 84.89 | MISS |
+| 11 | 50.0% | 2.3% | 19.1% | -16.8 | 1/0/1 | 5.00 | 3598.50 | 96.00 | MISS |
+| 12 | 0.0% | 0.0% | 15.1% | -15.1 | 1/0/1 | 5.00 | 3979.00 | 87.00 | MISS |
+| 13-20 | — | — | — | — | (no solo runs reached — party/slice tail only) | — | — | — | tail |
+
+**Reading:** The fair bot's solo p50 stays 4 (unchanged from rung 4's own p50), but reach >=5 recovers to 49.4% (vs rung 4's 48.3%) and reach >=10 nearly doubles (4.7% vs rung 4's ~2%) — the higher flee/potion thresholds keep more runs alive through the mid-floors even though the underlying floor-band knots (frozen at rung 5's `1cb56c6` values) are untouched; the death-class share shifts too — dot deaths (traps/falls/the maze's own -HP dot) now read cleanly separated from starvation (16.0% starvation vs ~17.5% dot vs ~66.5% combat), a genuinely new instrument rather than a moved number, since the old hazard/starvation split filed "spent by the dungeon itself" under starvation. The pace table shows the hero racing far ahead of USER RULING C's intended curve: the bot is already level 2.70 by floor 4 (target ~2 by floor 4, roughly on pace) but hits the level cap (5) by floor 9 (target says level 5 only by ~18) — HERO_SP_SCALE (identity 1, the dial table's #3 search coordinate) is the lever 54-06/54-07 release to slow this down. The class-pool p50 spread is narrow at BEFORE (Fighter 5, Thief 4, Magic User 4 solo; Fighter 5, Thief 5.5, Magic User 4 party) — no class pool is starkly ahead or behind, consistent with the class-pool ruling that the fit's fairness constraint is a pool-level check, not a per-cell target.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

@@ -1,0 +1,97 @@
+
+tune-difficulty: 50 seeded auto-play run(s), start depth 20
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=20  p50=22  p90=25  max=26
+
+Action-count distribution:
+  min=15  p50=312  p90=874  max=20000
+
+Death-cause breakdown:
+  cut down by a Herman 9 (18.0%)
+  starved in the dark  5 (10.0%)
+  cut down by a Stalka Beast 5 (10.0%)
+  cut down by a Vampire 5 (10.0%)
+  cut down by a Drarl  4 (8.0%)
+  cut down by a Drake  3 (6.0%)
+  cut down by a Djinni 2 (4.0%)
+  undone by a trap     2 (4.0%)
+  spent by the dungeon itself 2 (4.0%)
+  fell off a wall      2 (4.0%)
+  cut down by a Dread Lock 2 (4.0%)
+  cut down by a Drudge 1 (2.0%)
+  cut down by a Ghost  1 (2.0%)
+  cut down by a Skeleton 1 (2.0%)
+  eaten by their own summoning 1 (2.0%)
+  came up short on a leap 1 (2.0%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=86  successes=61 (70.9%)  failures=25  refused=0  exhausted=0
+  runs with >=1 attempt: 15 of 50
+  SP from parley: 2174 of 172865 total SP (1.3%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 100.0%  >=10: 100.0%  >=20: 100.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=1  p50=12  p90=29  max=35
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 0/0 (0.0%)
+  6-10: 0/0 (0.0%)
+  11-20: 74/135 (54.8%)
+  21-30: 151/279 (54.1%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=372  foeBolted=132  foeDrained=21  foeDebuffed=5  foeHealed=7  foeSummoned=6
+  heroResisted=199  heroResistFailed=53
+  ability damage: 1008 of 4838 total damage taken (20.8%)
+
+Stuck: 4 of 50 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=50  startDepth=20
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 20:16  21:7  22:9  23:6  24:2  25:3  26:3
+  mean death depth=21.83  floors gained p50=2 mean=1.83  encounters survived mean=6.78
+  reach: >=5 100.0%  >=8 100.0%  >=9 100.0%  >=10 100.0%  >=13 100.0%  >=16 100.0%  >=20 100.0%
+  band share of deaths: Filter 1-4 0.0% | Wall 5-8 0.0% | Breakaway 9-15 0.0% | Endgame 16-20 34.8% | beyond 20 65.2%
+  top causes — Filter: (none)
+  top causes — Wall: (none)
+  top causes — Breakaway: (none)
+  top causes — Endgame: cut down by a Vampire 4, cut down by a Herman 3, cut down by a Drake 2, cut down by a Stalka Beast 2, cut down by a Djinni 1
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=20  reached=50  deaths=16 (combat 15 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=68.0%  S_L=68.0%  target p_L=84.5%  target S_L=3.0%  dS=+65.0  tail
+  L=21  reached=34  deaths=7 (combat 4 / dot 1 / starvation-exhaustion 1 / other 1)  p_L=79.4%  S_L=54.0%  target p_L=85.4%  target S_L=2.5%  dS=+51.5  info
+  L=22  reached=27  deaths=9 (combat 7 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=66.7%  S_L=36.0%  target p_L=86.4%  target S_L=2.2%  dS=+33.8  info
+  L=23  reached=17  deaths=6 (combat 4 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=64.7%  S_L=23.3%  target p_L=87.2%  target S_L=1.9%  dS=+21.4  info
+  L=24  reached=11  deaths=2 (combat 0 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=81.8%  S_L=19.1%  target p_L=88.1%  target S_L=1.7%  dS=+17.4  info
+  L=25  reached=9  deaths=3 (combat 2 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=66.7%  S_L=12.7%  target p_L=88.9%  target S_L=1.5%  dS=+11.2  info
+  L=26  reached=6  deaths=3 (combat 1 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=50.0%  S_L=6.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=27  reached=3  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=6.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=28  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=6.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  reach-20: 100.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+Pace (per floor reached — mean hero level / gold / AR / weapon cost / maxWP / potions; afraid triggers, died afraid):
+  L=20  n=50  level=5.00  gold=7107.20  ar=5.90  weapon=208.50  maxWP=63.50  potions=1.04  afraid=22  diedAfraid=0
+  L=21  n=34  level=5.00  gold=8330.24  ar=6.00  weapon=200.74  maxWP=65.59  potions=0.56  afraid=17  diedAfraid=0
+  L=22  n=27  level=5.00  gold=8881.41  ar=6.63  weapon=242.59  maxWP=67.07  potions=0.37  afraid=13  diedAfraid=1
+  L=23  n=17  level=5.00  gold=10228.29  ar=6.71  weapon=322.06  maxWP=74.76  potions=0.06  afraid=6  diedAfraid=1
+  L=24  n=11  level=5.00  gold=13308.91  ar=7.18  weapon=229.55  maxWP=81.09  potions=0.00  afraid=9  diedAfraid=0
+  L=25  n=9  level=5.00  gold=15322.89  ar=6.78  weapon=263.89  maxWP=79.11  potions=0.00  afraid=7  diedAfraid=0
+  L=26  n=6  level=5.00  gold=16432.83  ar=8.00  weapon=270.83  maxWP=61.50  potions=0.00  afraid=1  diedAfraid=0
+  L=27  n=3  level=5.00  gold=15809.33  ar=6.00  weapon=283.33  maxWP=65.00  potions=0.00  afraid=2  diedAfraid=0
+  L=28  n=1  level=5.00  gold=26312.00  ar=0.00  weapon=25.00  maxWP=60.00  potions=0.00  afraid=0  diedAfraid=0
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=17  p50=20.5  reach5=100.0%  reach10=100.0%  reach20=100.0%  dmgTaken/fight=15.23  rounds/fight=2.74  foeMiss=39.8%  casts(def/off)=0/0  potions/run=1.00  backstabs/run=0.00  flees/run=0.82
+  Thief  n=21  p50=22  reach5=100.0%  reach10=100.0%  reach20=100.0%  dmgTaken/fight=10.84  rounds/fight=2.33  foeMiss=47.0%  casts(def/off)=0/0  potions/run=2.00  backstabs/run=5.24  flees/run=3.38
+  Magic User  n=12  p50=21  reach5=100.0%  reach10=100.0%  reach20=100.0%  dmgTaken/fight=9.42  rounds/fight=1.47  foeMiss=23.9%  casts(def/off)=23/121  potions/run=2.08  backstabs/run=0.00  flees/run=0.75
+
+Outcome: 46 dead, 4 stuck (hit maxActions=20000; excluded from depth stats)
+
