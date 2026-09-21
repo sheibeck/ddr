@@ -42,23 +42,41 @@
 // shape, it would go silent forever once spent — give it a genuine unbounded
 // fallback, matching every other never_melee kit above (WR-03, 19-REVIEW.md).
 export const FOE_ABILITIES = [
+  // Phase 52 (CAD-02): an ability turn replaces every swing — the gate in
+  // engine/combat.js#foeTurn `continue`s after resolveFoeAbility, so this
+  // kit's sp.atk swings never stack on a cast (2026-09-20).
   { id: "krupkeWeaken", kind: "debuff", lvl: 1, effect: "weakened", every: 3, txt: "Krupke mutters something unkind about your arms, and they agree with him." },
   { id: "krupkeFreeze", kind: "bolt", lvl: 1, dmg: { n: 1, sides: 6, bonus: 0 }, txt: "Krupke flicks a chill at you from behind his shield. Economical." },
+  // Phase 52 (CAD-02): an ability turn replaces every swing — the gate in
+  // engine/combat.js#foeTurn `continue`s after resolveFoeAbility, so this
+  // kit's sp.atk swings never stack on a cast (2026-09-20).
   { id: "drudgeLightning", kind: "bolt", lvl: 4, dmg: { n: 1, sides: 10, bonus: 6 }, every: 3, txt: "The Drudge raises a hand and the air goes sharp and blue." },
   { id: "drudgeFireball", kind: "bolt", lvl: 3, dmg: { n: 2, sides: 10, bonus: 4 }, every: 2, txt: "The Drudge makes a small, bored gesture. The corridor catches fire." },
   { id: "drudgeWeaken", kind: "debuff", lvl: 1, effect: "weakened", every: 4, txt: "The Drudge whispers, and your grip goes soft mid-swing." },
   { id: "drudgeFreeze", kind: "bolt", lvl: 1, dmg: { n: 1, sides: 6, bonus: 0 }, txt: "The Drudge sends frost your way, aimed with real spite." },
+  // Phase 52 (CAD-02): an ability turn replaces every swing — the gate in
+  // engine/combat.js#foeTurn `continue`s after resolveFoeAbility, so this
+  // kit's sp.atk swings never stack on a cast (2026-09-20).
   { id: "djinniFireball", kind: "bolt", lvl: 3, dmg: { n: 2, sides: 10, bonus: 4 }, uses: 4, every: 2, txt: "The Djinni sighs theatrically and lobs a fireball. It's not personal." },
   { id: "djinniDaze", kind: "debuff", lvl: 2, effect: "dazed", uses: 4, every: 3, txt: "The Djinni snaps its fingers, and the room tilts a little." },
   { id: "djinniLightning", kind: "bolt", lvl: 4, dmg: { n: 1, sides: 10, bonus: 6 }, uses: 4, txt: "The Djinni conjures lightning with a bored little flourish." },
   { id: "djinniFreeze", kind: "bolt", lvl: 1, dmg: { n: 1, sides: 6, bonus: 0 }, uses: 4, txt: "The Djinni flicks a bit of frost at you. It is running out of ideas." },
+  // Phase 52 (CAD-02): an ability turn replaces every swing — the gate in
+  // engine/combat.js#foeTurn `continue`s after resolveFoeAbility, so this
+  // kit's sp.atk swings never stack on a cast (2026-09-20).
   { id: "vampireSummon", kind: "summon", lvl: 5, effect: { type: "Walking Dead", tier: 2 }, every: 6, txt: "The Vampire gestures, unbothered, and the dead oblige." },
   { id: "vampireFireball", kind: "bolt", lvl: 3, dmg: { n: 2, sides: 10, bonus: 4 }, every: 3, txt: "Fire, from something that has never once been warm." },
   { id: "vampireLightning", kind: "bolt", lvl: 4, dmg: { n: 1, sides: 10, bonus: 6 }, every: 2, txt: "The candles gutter. The Vampire's lightning follows." },
   { id: "vampireDrain", kind: "drain", lvl: 5, dmg: { n: 2, sides: 6, bonus: 0 }, txt: "Cold fingers close on you, and something is taken." },
+  // Phase 52 (CAD-02): an ability turn replaces every swing — the gate in
+  // engine/combat.js#foeTurn `continue`s after resolveFoeAbility, so this
+  // kit's sp.atk swings never stack on a cast (2026-09-20).
   { id: "stalkaHeal", kind: "heal", lvl: 5, dmg: { n: 1, sides: 10, bonus: 0 }, every: 3, txt: "The Stalka Beast's wounds knit shut, unimpressed by your effort." },
   { id: "stalkaLightning", kind: "bolt", lvl: 4, dmg: { n: 1, sides: 10, bonus: 6 }, every: 2, txt: "A crack of ozone from somewhere behind the Stalka Beast's eyes." },
   { id: "stalkaFireball", kind: "bolt", lvl: 3, dmg: { n: 2, sides: 10, bonus: 4 }, every: 3, txt: "The Stalka Beast exhales, and the corridor briefly has weather." },
   { id: "stalkaFreeze", kind: "bolt", lvl: 1, dmg: { n: 1, sides: 6, bonus: 0 }, txt: "The Stalka Beast flicks a lazy frost at you, almost politely." },
+  // Phase 52 (CAD-02): an ability turn replaces every swing — the gate in
+  // engine/combat.js#foeTurn `continue`s after resolveFoeAbility, so this
+  // kit's sp.atk swings never stack on a cast (2026-09-20).
   { id: "drakeBreath", kind: "bolt", lvl: 4, dmg: { n: 2, sides: 10, bonus: 4 }, every: 4, txt: "The Drake inhales, and you remember that you are flammable." },
 ];
