@@ -161,6 +161,8 @@ function fixedFoe(overrides = {}) {
 // PHASE_27_PINS — the ONE place the Phase 27 dials are pinned (2026-09-15,
 // TUNE-06). 27-03 edits ONLY these numbers per iteration; values recorded in
 // docs/DIFFICULTY-RETUNE.md's v1.2 change table.
+// Phase 54 ladder rung 2 (2026-09-21, BAND-02, USER RULING A): FOE_GRACE_AT_2
+// 0.5 -> 0.4 — re-pinned per docs/DIFFICULTY-RETUNE.md's `#### Rung 2`.
 const PHASE_27_PINS = {
   COMBAT_SCALE_FROM_DEPTH: 21,
   FOE_CAP_BASE: 3,
@@ -174,7 +176,7 @@ const PHASE_27_PINS = {
   ABILITY_THREAT_SOFT_K: 30,
   FOE_LVL_BIAS: 0,
   FOE_GRACE_AT_1: 1,
-  FOE_GRACE_AT_2: 0.5,
+  FOE_GRACE_AT_2: 0.4,
   FOE_GRACE_CANON_FROM_DEPTH: 5,
   HAZARD_FROM_DEPTH: 2,
   HAZARD_SCALE_AT_START: 0.5,
@@ -479,15 +481,19 @@ test("startCombat at depth 2 / level 2 copies a NEGATIVE dmgBonus key on a lvl-2
   assert.equal(f2.dmgBonus, expectedBonus2);
   assert.equal(f2.wp, foeWpFor(BESTIARY.Beasts[1][0].wp, curve2));
 
-  // Level-1 hero, depth 2: maxLvl = clamp(min(1,2),1,5) = 1 -> lvl 1 ->
-  // foeDmgBonusFor(1, curve2) rounds to 0 (never carries the key).
+  // Level-1 hero, depth 2: maxLvl = clamp(min(1,2),1,5) = 1 -> lvl 1.
+  // Phase 54 ladder rung 2 (2026-09-21, BAND-02): at FOE_GRACE_AT_2 0.4 (was
+  // 0.5), foeDmgBonusFor(1, curve2) now rounds to -1 (Math.round((0.4-1)*1*1)
+  // = -1), not 0 — a lvl-1 foe DOES now carry a (negative) dmgBonus key.
+  // Re-measured live via foeDmgBonusFor itself, never hand-computed.
   const state1 = fixedState({ c: { level: 1 }, floor: { depth: 2 } });
   const rng1 = fakeRng([2, 2, 10, 5]);
   startCombat(state1, false, "Beasts", rng1, []);
   const f1 = state1.combat.foes[0];
   assert.equal(f1.lvl, 1);
-  assert.equal(foeDmgBonusFor(1, curve2), 0, "sanity: a lvl-1 foe's grace bonus rounds to 0");
-  assert.equal("dmgBonus" in f1, false);
+  const expectedBonus1 = foeDmgBonusFor(1, curve2);
+  assert.equal(expectedBonus1, -1, "Phase 54 rung 2: a lvl-1 foe's grace bonus now rounds to -1 (was 0 at FOE_GRACE_AT_2 0.5)");
+  assert.equal(f1.dmgBonus, expectedBonus1);
 
   // Depth 1: FOE_GRACE_AT_1 is exactly 1 — no foe ever carries the key.
   const stateD1 = fixedState({ c: { level: 5 }, floor: { depth: 1 } });

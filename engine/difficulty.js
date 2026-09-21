@@ -233,8 +233,20 @@ export const FOE_GRACE_AT_1 = 1.0;
  * median was still 3 (< the target band's 4) after iteration 1; this notch
  * is parity-clean (every fixture fights on floor 1 only; FOE_GRACE_AT_1
  * stays exactly 1.0). A third notch (-> 0.35) is the ladder cap's ceiling
- * for this rung — see docs/DIFFICULTY-RETUNE.md's iteration log. */
-export const FOE_GRACE_AT_2 = 0.5;
+ * for this rung — see docs/DIFFICULTY-RETUNE.md's iteration log.
+ *
+ * DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21) — ladder rung 2
+ * (USER RULING A, a Filter rung): 0.5 -> 0.4 — rung 1's own readout
+ * (docs/DIFFICULTY-RETUNE.md's `#### Rung 1`) left the solo median pinned
+ * at 4 (reach >=5 exactly 33.0%, unmoved) because a 5-15-only dial cannot
+ * reach back into floors 1-4 (the structural bound); this is the first
+ * Filter-rung notch, one step above the 0.35 ceiling floor-1 parity holds
+ * (FOE_GRACE_AT_1 stays exactly 1.0; every fixture-exposed fight is still
+ * floor 1 only). Floors 2-4 foePower becomes 0.4 / 0.6 / 0.8 (graceFor);
+ * the Wall's own floor (WALL_FOE_POWER_AT_START 0.85) still clears
+ * graceFor(4) = 0.8, so the Wall-steps-UP invariant holds unchanged this
+ * rung. Readout recorded under docs/DIFFICULTY-RETUNE.md `#### Rung 2`. */
+export const FOE_GRACE_AT_2 = 0.4;
 /** FOE_GRACE_CANON_FROM_DEPTH — the first depth whose foePower returns to
  * exactly 1.0 (the literal, not merely a float that rounds to it — see
  * graceFor()'s `>=` guard below, the same structural-identity technique

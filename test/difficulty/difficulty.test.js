@@ -239,11 +239,14 @@ test("Phase 54 (BAND-01) floor-1 parity: difficultyCurve(1) deepStrictEqual to t
   assert.deepStrictEqual(difficultyCurve(1), PHASE_53_FLOOR1_PIN);
 });
 
-// FILTER_PINS — depths 2..4, pasted verbatim from the Phase 53 engine
-// capture. USER RULING A (2026-09-21): a Plan 02 Filter rung
-// (FOE_GRACE_AT_2 / HAZARD_SCALE_AT_START) re-pins this block, citing the
-// rung; DARK_HOLD_THROUGH_DEPTH / ENCOUNTER_DOT_CAP / DARK_BLOB_CAP never
-// move, so dots/darkBlobs/darkRadius here are never re-pinned.
+// FILTER_PINS — depths 2..4. Phase 54 ladder rung 2 (2026-09-21, BAND-02,
+// USER RULING A — a Filter rung): FOE_GRACE_AT_2 0.5 -> 0.4 re-pins
+// foePower here (0.5/0.667/0.833 -> 0.4/0.6/0.8), measured live via node -e
+// against engine/difficulty.js, never hand-computed; hazardScale unchanged
+// this rung (HAZARD_SCALE_AT_START not moved — Filter hazards were ~13.4%
+// of Filter deaths at rung 1, below the 20% threshold). DARK_HOLD_THROUGH_
+// DEPTH / ENCOUNTER_DOT_CAP / DARK_BLOB_CAP never move, so dots/darkBlobs/
+// darkRadius here are never re-pinned.
 const FILTER_PINS = {
   2: {
     depth: 2,
@@ -254,7 +257,7 @@ const FILTER_PINS = {
     foeCap: 3,
     foeBonus: 0,
     foeLvlBias: 0,
-    foePower: 0.5,
+    foePower: 0.4,
     hazardScale: 0.5,
     abilityThreat: 1,
     waterPools: 1,
@@ -268,7 +271,7 @@ const FILTER_PINS = {
     foeCap: 3,
     foeBonus: 0,
     foeLvlBias: 0,
-    foePower: 0.6666666666666666,
+    foePower: 0.6,
     hazardScale: 0.5,
     abilityThreat: 1,
     waterPools: 1,
@@ -282,7 +285,7 @@ const FILTER_PINS = {
     foeCap: 3,
     foeBonus: 0,
     foeLvlBias: 0,
-    foePower: 0.8333333333333333,
+    foePower: 0.8,
     hazardScale: 0.75,
     abilityThreat: 1,
     waterPools: 1,
