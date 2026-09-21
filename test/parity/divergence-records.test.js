@@ -169,3 +169,26 @@ test("INIT-01: the holders declaring Phase 51 are exactly the initiative scan's 
   assert.ok(declared.size > 0, "expected at least one holder to declare Phase 51");
   assert.deepStrictEqual([...declared].sort(), [...moved].sort());
 });
+
+test("DMG-02: the holders declaring Phase 52 are exactly the measured moved set", () => {
+  // Unlike Phase 51's INIT-01 guard above, tools/initiative-fixture-scan.mjs
+  // carries no crit-exposure predictor line — a foe crit is not an
+  // initiative-round-advance event, so it cannot be read off the scan's own
+  // Part A invariant. The measured set below comes from the Phase 52 plan's
+  // own crit-exposure predictor (a scratch replay of every combat/magic site
+  // counting struckByFoe/memberStruck events with critical/soldierCrit),
+  // cross-checked against tools/initiative-fixture-scan.mjs's Part B diff at
+  // this commit (only #lose's fields.after moved) and the full parity suite
+  // (all green) — see test/parity/FIXTURE-INVENTORY.md's Phase 52 section for
+  // the full accounting.
+  const EXPECTED = ["action-script.combat.json#lose"];
+
+  const declared = new Set(
+    RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("52")).map(
+      ({ holderId }) => holderId,
+    ),
+  );
+
+  assert.ok(declared.size > 0, "expected at least one holder to declare Phase 52");
+  assert.deepStrictEqual([...declared].sort(), [...EXPECTED].sort());
+});

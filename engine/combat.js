@@ -28,8 +28,9 @@
 // caster/breaks/every, etc.) are flavor-only in the frozen prototype — grep
 // confirms none of them are ever read anywhere in mazeworld.html's live
 // logic (only `sp.note` feeds the UI). Only `sp.atk`, `sp.dmg`, `sp.toHit`,
-// `sp.fast`, `sp.magicOnly`, `sp.noArmor`, and `sp.twice` (via `lives`) have
-// any mechanical effect, and this module implements exactly those, matching
+// `sp.fast`, `sp.magicOnly`, `sp.noArmor`, `sp.twice` (via `lives`), and —
+// since Phase 52 (DMG-02) — `sp.strikesAs` have any mechanical effect, and
+// this module implements exactly those, matching
 // the prototype's ACTUAL behavior rather than the aspirational flavor text
 // (fidelity rule: port what the prototype DOES, not what its comments imply).
 // Since Phase 18 (CANON-01/03/05), `sp.ar` and `sp.halfDmg` (plus the
@@ -895,6 +896,24 @@ export function killFoe(state, f, rng, events = []) {
 }
 
 /**
+ * foeLevelBase(f) — the `lvl^2` term of a foe's melee damage formula, shared
+ * by `pursuitStrike`, the member branch and the hero branch of `foeTurn`.
+ *
+ * DELIBERATE RULES CHANGE (Phase 52, DMG-02, 2026-09-20): a level-base term
+ * is what "strikes as a level five" (Herman's rulebook note) literally means
+ * — when a foe carries `sp.strikesAs`, its level-base term reads
+ * `strikesAs^2` instead of its own `lvl^2` (Herman is a tier-4/5 body that
+ * hits like a level-5 one). `foeDmgBonusFor` stays keyed to the foe's REAL
+ * `lvl`, never `strikesAs` — a Herman's deep-floor power-curve bonus scales
+ * with the floor he's actually met on (his own tier), not his strike level;
+ * only the flat level-base term is substituted. Pure read, 0 draws.
+ */
+export function foeLevelBase(f) {
+  if (f.sp && f.sp.strikesAs) return f.sp.strikesAs * f.sp.strikesAs;
+  return f.lvl * f.lvl;
+}
+
+/**
  * pursuitStrike(state, rng, events) — CANON-02/D-08/D-19: a live `sp.pursues`
  * foe (the Spectre) gets ONE hero-targeted melee strike as the hero leaves,
  * mirroring foeTurn's own hero swing exactly (foeDie/foeToHitVs, blind/
@@ -944,12 +963,20 @@ function pursuitStrike(state, rng, events) {
     return { died: false };
   }
   // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
-  let dmg = pursuer.lvl * pursuer.lvl + (pursuer.dmgBonus || 0) + (pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6));
+  // DELIBERATE RULES CHANGE (Phase 52, DMG-02, 2026-09-20): the crit doubles
+  // the DAMAGE DICE only, not the whole lvl^2 + dmgBonus + dice sum (the old
+  // rule produced a cliff: a tier-5 d6 crit read 52-62, and a flat-25 Herman
+  // read 82/100 against a level-5 hero's ~30 max HP). The dice are drawn into
+  // a local BEFORE the crit decision is applied to the sum — the SAME single
+  // draw, in the SAME position, so the draw count/shape is unchanged; only
+  // whether it is added once or twice into the final sum changes.
+  const crit = roll === 1 || (roll <= 2 && c.sub === "Soldier");
+  const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6);
+  let dmg = foeLevelBase(pursuer) + (pursuer.dmgBonus || 0) + (crit ? 2 * dice : dice);
   if (C.weakened) dmg = Math.ceil(dmg / 2);
   // Phase 40 (SPELL-01, Shrink) — a shrunk pursuer's parting strike is
   // halved too, same rule as its ordinary melee swing.
   if (pursuer.shrunk) dmg = Math.ceil(dmg / 2);
-  if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
   return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need, needMods });
 }
 
@@ -2457,7 +2484,14 @@ export function foeTurn(state, rng, events = []) {
           continue;
         }
         // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
-        let mDmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
+        // DELIBERATE RULES CHANGE (Phase 52, DMG-02, 2026-09-20): the crit
+        // doubles the DAMAGE DICE only, not the whole lvl^2 + dmgBonus + dice
+        // sum — see foeLevelBase's JSDoc above and the hero-branch twin below
+        // for the full rationale. Same single draw, same position — 0 draw-
+        // shape change.
+        const mCrit = mRoll === 1;
+        const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
+        let mDmg = foeLevelBase(f) + (f.dmgBonus || 0) + (mCrit ? 2 * mDice : mDice);
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
         // too (a shrunk-AND-weakened foe is quartered, ceil applied twice —
@@ -2469,7 +2503,6 @@ export function foeTurn(state, rng, events = []) {
         // draws; false on every fixture (only useAbility's "hamstring" case
         // ever sets it).
         if (f.hamstrung) mDmg = Math.ceil(mDmg / 2);
-        if (mRoll === 1) mDmg *= 2;
         // Phase 38 (ABIL-05, Brace) — a single-charge buffer on the member's
         // OWN transient combat entry, mirroring applyFoeDamageToPlayer's
         // `state.combat.braced` pattern exactly. Pure (no rng); false on
@@ -2538,7 +2571,19 @@ export function foeTurn(state, rng, events = []) {
         continue;
       }
       // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
-      let dmg = f.lvl * f.lvl + (f.dmgBonus || 0) + (f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6));
+      // DELIBERATE RULES CHANGE (Phase 52, DMG-02, 2026-09-20): the crit
+      // doubles the DAMAGE DICE only, not the whole lvl^2 + dmgBonus + dice
+      // sum — the old rule produced a cliff (a tier-5 d6 crit read 52-62; a
+      // flat-25 Herman read 82/100 against a level-5 hero's ~30 max HP). The
+      // crit decision is made BEFORE the damage line so the SAME single dice
+      // draw (in the SAME position, right after the to-hit roll) is reused
+      // whether it is added once or twice — 0 draw-shape change. The
+      // weakened/shrunk/hamstrung halvings and the applyFoeDamageToPlayer
+      // pipeline (Hardiness/hide/halfNext/ward/soak) keep their existing
+      // order, untouched.
+      const crit = roll === 1 || (roll <= 2 && c.sub === "Soldier");
+      const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
+      let dmg = foeLevelBase(f) + (f.dmgBonus || 0) + (crit ? 2 * dice : dice);
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
       // too, hero side (see the member-branch twin above for the
@@ -2549,7 +2594,6 @@ export function foeTurn(state, rng, events = []) {
       // half damage for the rest of the fight, hero side. Pure read, 0
       // draws; false on every fixture.
       if (f.hamstrung) dmg = Math.ceil(dmg / 2);
-      if (roll === 1 || (roll <= 2 && c.sub === "Soldier")) dmg *= 2;
 
       const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need, needMods });
       if (hit.died) return events;

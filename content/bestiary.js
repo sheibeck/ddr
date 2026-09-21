@@ -3,10 +3,14 @@
 // Pure-data port of mazeworld.html's BESTIARY / ENC_TYPES / ENC_ALIAS tables
 // (~line 749-829). Creature `sp.dmg` closures (`()=>D(8)`, `()=>1`,
 // `()=>2*D(10)+4`) are converted to dice-notation ({n,sides,bonus}) per
-// Pattern 1. Flat values (`()=>1`, `()=>25`) become a zero-dice notation
-// (n:0, sides:0, bonus:flat) so the engine can call rollDice() uniformly.
-// Array order within each floor bucket is preserved exactly — the maze's
-// encounter resolution indexes into these arrays by roll.
+// Pattern 1. Flat values (`()=>1`) become a zero-dice notation (n:0, sides:0,
+// bonus:flat) so the engine can call rollDice() uniformly — the Bat/Rat's
+// flat 1 is the only remaining zero-dice flat in the table. Herman's old
+// flat 25 (`()=>25`) is, since Phase 52 (DMG-02), `sp.strikesAs` set to a
+// level of five instead (his damage die stays the default d6; see
+// engine/combat.js#foeLevelBase and content/BESTIARY-REBALANCE.md's Phase 52
+// addendum). Array order within each floor bucket is preserved exactly — the
+// maze's encounter resolution indexes into these arrays by roll.
 //
 // Phase 18 (BEST-01/BEST-02) deliberately moved nine entries' numbers away
 // from the prototype's values (Drake, Stalka Beast, Djinni x2, Krupke,
@@ -106,9 +110,11 @@ export const BESTIARY = {
     ],
     [
       { n: "Craig", sz: "H", i: 6, wp: 24, sp: { dmg: { n: 1, sides: 12, bonus: 0 }, ar: 15, note: "two-handed sword, chitin plate, home ground" } },
-      { n: "Herman", sz: "H", i: 9, wp: 36, sp: { invis: true, ar: 15, dmg: { n: 0, sides: 0, bonus: 25 }, note: "turns invisible; strikes as a level five" } },
+      // DELIBERATE RULES CHANGE (Phase 52, DMG-02, 2026-09-20): flat 25 -> sp.strikesAs 5 (+ the default d6); see content/BESTIARY-REBALANCE.md Phase 52 addendum
+      { n: "Herman", sz: "H", i: 9, wp: 36, sp: { invis: true, ar: 15, strikesAs: 5, note: "turns invisible; strikes as a level five" } },
     ],
-    [{ n: "Herman", sz: "H", i: 9, wp: 36, sp: { invis: true, ar: 15, dmg: { n: 0, sides: 0, bonus: 25 }, note: "turns invisible; strikes as a level five" } }],
+    // DELIBERATE RULES CHANGE (Phase 52, DMG-02, 2026-09-20): flat 25 -> sp.strikesAs 5 (+ the default d6); see content/BESTIARY-REBALANCE.md Phase 52 addendum
+    [{ n: "Herman", sz: "H", i: 9, wp: 36, sp: { invis: true, ar: 15, strikesAs: 5, note: "turns invisible; strikes as a level five" } }],
   ],
   "Lair Beasts": [
     [

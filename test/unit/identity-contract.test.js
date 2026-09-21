@@ -571,7 +571,7 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "a foe's roll of 2 crits a Soldier, doubling the blow",
+      name: "a foe's roll of 2 crits a Soldier, doubling the dice",
       run() {
         const soldier = hero("Soldier");
         soldier.c.ar = 0;
@@ -589,7 +589,13 @@ const CONTRACT = [
 
         const soldierHit = findEvent(soldierEvents, "struckByFoe");
         const controlHit = findEvent(controlEvents, "struckByFoe");
-        assert.equal(soldierHit.dmg, controlHit.dmg * 2, "a roll of 2 doubles only for a Soldier");
+        // Phase 52 (DMG-02, 2026-09-20): a crit doubles the DICE only, not the
+        // whole sum -- soldier = lvl^2(1) + 2*d6(3) = 7; control = 1 + 3 = 4
+        // (soldierHit.dmg is no longer exactly double controlHit.dmg; it is
+        // controlHit.dmg plus one more copy of the dice roll).
+        assert.equal(soldierHit.dmg, 7, "a roll of 2 doubles the dice only for a Soldier");
+        assert.equal(controlHit.dmg, 4, "a Knight's roll of 2 is a plain, non-crit hit");
+        assert.equal(soldierHit.dmg, controlHit.dmg + 3, "the doubled die adds one more copy of the dice roll (3)");
       },
     },
   },

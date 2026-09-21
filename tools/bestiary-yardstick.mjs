@@ -159,11 +159,16 @@ function computeRow(type, L, entry, mechanics) {
   const ttk = E > 0 ? (entry.wp / E) * (sp.twice ? 2 : 1) : Infinity;
 
   // Foe side (engine/combat.js#foeTurn's actual formula, mirrored exactly):
-  // dmg = lvl*lvl + (sp.dmg ? rollDice(sp.dmg) : d6-fallback).
+  // dmg = levelBase + (sp.dmg ? rollDice(sp.dmg) : d6-fallback).
+  // Phase 52 (DMG-02): levelBase reads sp.strikesAs^2 when present (Herman
+  // "strikes as a level five") else the row's own tier L^2 — mirrors
+  // engine/combat.js#foeLevelBase exactly, so this tool needs no other
+  // change for Herman's fix.
   const atk = sp.atk || 1;
+  const levelBase = sp.strikesAs ? sp.strikesAs * sp.strikesAs : L * L;
   const avgDice = sp.dmg ? (sp.dmg.n * (sp.dmg.sides + 1)) / 2 + (sp.dmg.bonus || 0) : 3.5;
   const foeDie = FOE_DIE[L - 1];
-  const foeDPR = (atk * (L * L + avgDice) * (FOE_NEED + 1)) / foeDie;
+  const foeDPR = (atk * (levelBase + avgDice) * (FOE_NEED + 1)) / foeDie;
   const rtd = HERO_HP[L - 1] / foeDPR;
 
   const flags = SP_FLAGS.filter((f) => sp[f]);
@@ -175,6 +180,7 @@ function computeRow(type, L, entry, mechanics) {
     wp: entry.wp,
     atk,
     dmg: sp.dmg ? sp.dmg : null,
+    strikesAs: sp.strikesAs || null,
     toHit: sp.toHit !== undefined ? sp.toHit : null,
     ar: sp.ar ? sp.ar : null,
     flags,
@@ -207,7 +213,12 @@ function fmt(n) {
   return n.toFixed(2);
 }
 
-function fmtDmg(dmg) {
+function fmtDmg(dmg, strikesAs) {
+  // Phase 52 (DMG-02): a strikesAs row keeps the default d6 damage die but
+  // its level-base term reads the strike level, not its own tier — render
+  // this distinctly from a plain d6-fallback row so the table doesn't imply
+  // Herman rolls no dice at all.
+  if (strikesAs) return `d6 (as L${strikesAs})`;
   if (!dmg) return "d6*"; // engine's own fallback (engine/combat.js#foeTurn)
   return `${dmg.n}d${dmg.sides}+${dmg.bonus || 0}`;
 }
@@ -245,7 +256,7 @@ export function toMarkdown(result) {
         r.name,
         fmt(r.wp),
         String(r.atk),
-        fmtDmg(r.dmg),
+        fmtDmg(r.dmg, r.strikesAs),
         r.toHit !== null ? fmt(r.toHit) : "",
         r.ar !== null ? fmt(r.ar) : "",
         r.flags.join(","),

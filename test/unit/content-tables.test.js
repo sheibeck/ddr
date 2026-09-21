@@ -455,3 +455,15 @@ test("FOE-06 Phase 19: the strongest bolt in every multi-bolt kit is bounded (ev
     assert.ok(bounded, `${row.n}'s strongest bolt ${strongest.id} must be bounded (every >= 2 or uses)`);
   }
 });
+
+test("BESTIARY Phase 52 / DMG-02: both Herman rows carry sp.strikesAs 5 and no sp.dmg; no other row carries strikesAs", () => {
+  const rows = Object.values(BESTIARY).flat(2);
+  const hermans = rows.filter((r) => r.n === "Herman");
+  assert.equal(hermans.length, 2, "expected exactly two Herman rows (tier 4 and tier 5)");
+  for (const h of hermans) {
+    assert.equal(h.sp.strikesAs, 5, `${h.n}: sp.strikesAs must be 5`);
+    assert.equal(Object.hasOwn(h.sp, "dmg"), false, `${h.n}: sp.dmg must be absent (the default d6 fallback applies)`);
+  }
+  const strikesAsRows = rows.filter((r) => r.sp && Object.hasOwn(r.sp, "strikesAs"));
+  assert.equal(strikesAsRows.length, 2, "sp.strikesAs must appear on exactly the two Herman rows");
+});

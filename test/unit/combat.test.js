@@ -653,12 +653,14 @@ test("foeTurn: a landed critical hit damages the player, and wp<=0 triggers die(
   const state = fixedState({ c: { wp: 1, maxWP: 55 } });
   const foe = fixedFoe({ name: "Ogre", wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
-  // foeDie=20-sided; roll=1 (hit + natural-1 critical, doubled) vs need=5;
-  // dmg base = lvl^2(1) + d6(6) = 7, doubled to 14 -> lethal against 1 wp.
+  // foeDie=20-sided; roll=1 (hit + natural-1 critical) vs need=5; dmg =
+  // lvl^2(1) + 2*d6(6) = 13 -- lethal against 1 wp. Phase 52 (DMG-02,
+  // 2026-09-20): a crit doubles the DICE only (was 14 under the old
+  // whole-sum-doubling rule: 2*(1+6)).
   const rng = fakeRng([1, 6]);
   const events = foeTurn(state, rng, []);
   assert.equal(state.dead, true);
-  assert.ok(events.some((e) => e.type === "struckByFoe" && e.dmg === 14 && e.critical === true));
+  assert.ok(events.some((e) => e.type === "struckByFoe" && e.dmg === 13 && e.critical === true));
   assert.ok(events.some((e) => e.type === "died" && e.cause === "combat"));
 });
 

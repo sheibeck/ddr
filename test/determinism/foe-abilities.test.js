@@ -255,7 +255,15 @@ const FULL_FIGHT_PINS = {
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 4, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 41, attacks: 3, outcome: "won" },
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 23, attacks: 1, outcome: "died" },
+  // Phase 52 (DMG-02, 2026-09-20): re-measured live — 23/1 -> 48/3, outcome
+  // unchanged ("died"). This seed-1 Vampire's own crit (roll 1, a d4 dice)
+  // used to double the WHOLE lvl^2+dmgBonus+dice sum, killing the hero on
+  // attack 1; under the new dice-only-doubling rule the same crit lands for
+  // less, so the hero survives two more of the hero's own strikes before the
+  // fight ends the same way (still a loss). A FULL_FIGHTS-shaped row is
+  // explicitly allowed to move when the smaller crit number changes a
+  // fight's length (this plan's own Step 3 rule) — not a regression.
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 48, attacks: 3, outcome: "died" },
   // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
   // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
   // and rats" (Beasts), so this Beasts-forced encounter now triggers
