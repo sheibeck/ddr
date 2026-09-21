@@ -5,15 +5,15 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 52
 current_phase_name: Foe Cadence & Damage Curve
 status: executing
-stopped_at: Completed 51-03-PLAN.md
-last_updated: "2026-09-21T00:43:16.914Z"
+stopped_at: Completed 52-01-PLAN.md
+last_updated: "2026-09-21T00:59:46.365Z"
 last_activity: 2026-09-20
-last_activity_desc: Phase 51 complete, transitioned to Phase 52
+last_activity_desc: Phase 52 execution started
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 9
+  completed_plans: 7
   percent: 33
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–51 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 51 — Initiative Once Per Combat
+**Current focus:** Phase 52 — Foe Cadence & Damage Curve
 
 ## Current Position
 
-Phase: 52 — Foe Cadence & Damage Curve
-Plan: Not started
+Phase: 52 (Foe Cadence & Damage Curve) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-20 — Phase 51 complete, transitioned to Phase 52
+Last activity: 2026-09-20 — Phase 52 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -140,9 +140,9 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20 (autonomous v1.7 run)
-Stopped at: Phase 52 planned (ddd5a72; user ruling: still-flagged rows hand to Phase 54) — executing next
-Resume file: None — `/gsd-autonomous` resumes at Phase 52 execute
+Last session: 2026-09-21T00:59:46.329Z
+Stopped at: Completed 52-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -273,6 +273,7 @@ Resume file: None — `/gsd-autonomous` resumes at Phase 52 execute
 | Phase 51 P01 | ~35min | 3 tasks | 4 files |
 | Phase 51 P02 | ~3h | 3 tasks | 24 files |
 | Phase 51 P03 | ~40min | 2 tasks | 3 files |
+| Phase 52 P01 | ~55min | 3 tasks | 6 files |
 
 ## Decisions
 
@@ -526,6 +527,7 @@ Resume file: None — `/gsd-autonomous` resumes at Phase 52 execute
 - [Phase ?]: 51-02: initiative once per fight — resolveInitiative/rollInitiative split; MOVED SET (lose/lose-apprentice/lose-plain) declared+regenerated, two flip died->won (measured, not assumed); Part A predictor byte-identical, Part B legitimately changes for the moved rows only
 - [Phase ?]: 51-03: initiativeVerdictText shared between eventNarration.js and narrationLines.js (eventNarration.js already imports slotWord from narrationLines.js, so this adds no new cross-module dependency) — Oracle and fight-log verdicts can never drift apart
 - [Phase ?]: 51-03: verdict copy locked — samurai 'Samurai honour — they go first.'; slow 'Too slow off the mark — they go first.'; foreseen 'Foresight — you go first.'; acuteHearing 'Acute Hearing — you go first.'; senses 'You go first. Nothing gets the jump on you.'; knight 'A Knight's welcome — it comes straight at you.'; courtMage 'Court Mage — you talk first, they swing first.'; no-why 'You go first.'/'They go first.'
+- [Phase ?]: 52-01: band hero levels for the damage-curve audit come from the Phase 51 AFTER smoke's median meanLevel per band (Filter=2, Wall=3, Breakaway/Endgame=5 default); a row's effective level in a band is max(tier,bandLevel) capped at 5
 
 ### Blockers
 

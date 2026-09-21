@@ -207,7 +207,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 52-01-PLAN.md — Zero engine bytes: CAD-01/02/03 pins (`test/unit/foe-cadence.test.js` — swing counts, the Stalka ability-replaces-swings resolver, attacks-per-player-action invariant) + per-kit notes in `content/foe-abilities.js` + `tools/cadence-audit.mjs` (Bat/Rat + China Wolf at depth 5, output committed) + `tools/damage-curve-audit.mjs` with the BEFORE section (`--rule=whole`)
+- [x] 52-01-PLAN.md — Zero engine bytes: CAD-01/02/03 pins (`test/unit/foe-cadence.test.js` — swing counts, the Stalka ability-replaces-swings resolver, attacks-per-player-action invariant) + per-kit notes in `content/foe-abilities.js` + `tools/cadence-audit.mjs` (Bat/Rat + China Wolf at depth 5, output committed) + `tools/damage-curve-audit.mjs` with the BEFORE section (`--rule=whole`)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -328,7 +328,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 |-------|-----------|----------------|--------|-----------|
 | 50. Character Roller Fix | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
-| 52. Foe Cadence & Damage Curve | v1.7 | 0/3 | Planned | - |
+| 52. Foe Cadence & Damage Curve | v1.7 | 1/3 | In Progress|  |
 | 53. Joiner Level Cap | v1.7 | 0/? | Not started | - |
 | 54. Four-Band Retune & Roster Decision | v1.7 | 0/? | Not started | - |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |

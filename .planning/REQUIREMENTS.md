@@ -23,13 +23,13 @@
 
 ### Foe attack cadence (CAD)
 
-- [ ] **CAD-01**: A foe makes exactly one ordinary attack per round unless its bestiary `sp.atk` says otherwise (`atk: 2` keeps two swings); frenzy still doubles the count; the swing count is pinned by test for a plain foe, an `atk: 2` foe and a frenzied foe
-- [ ] **CAD-02**: A foe ability that fires (bolt, drain, debuff, heal, summon, frost…) REPLACES that turn's ordinary swings — never stacks on them — decided per kit in `content/foe-abilities.js` with a resolver test on the Stalka Beast (two hits + frost in one turn is impossible after this)
-- [ ] **CAD-03**: The Bat/Rat and China Wolf floor-5 fights the user reported are re-measured by the bot after INIT + CAD: attacks-per-player-action is ≤ the foe's `sp.atk` (≤ 2× if frenzied), recorded in `docs/DIFFICULTY-RETUNE.md`
+- [x] **CAD-01**: A foe makes exactly one ordinary attack per round unless its bestiary `sp.atk` says otherwise (`atk: 2` keeps two swings); frenzy still doubles the count; the swing count is pinned by test for a plain foe, an `atk: 2` foe and a frenzied foe
+- [x] **CAD-02**: A foe ability that fires (bolt, drain, debuff, heal, summon, frost…) REPLACES that turn's ordinary swings — never stacks on them — decided per kit in `content/foe-abilities.js` with a resolver test on the Stalka Beast (two hits + frost in one turn is impossible after this)
+- [x] **CAD-03**: The Bat/Rat and China Wolf floor-5 fights the user reported are re-measured by the bot after INIT + CAD: attacks-per-player-action is ≤ the foe's `sp.atk` (≤ 2× if frenzied), recorded in `docs/DIFFICULTY-RETUNE.md`
 
 ### Damage curve (DMG)
 
-- [ ] **DMG-01**: A bot readout of max single-hit damage by depth for every bestiary foe exists (`tools/` script, committed output in `docs/DIFFICULTY-RETUNE.md`), flagging any hit ≥ 60 % of a level-appropriate character's max HP at that foe's depth band
+- [x] **DMG-01**: A bot readout of max single-hit damage by depth for every bestiary foe exists (`tools/` script, committed output in `docs/DIFFICULTY-RETUNE.md`), flagging any hit ≥ 60 % of a level-appropriate character's max HP at that foe's depth band
 - [ ] **DMG-02**: Every flagged cliff is fixed so the curve is smooth — flat-damage foes (Herman's `dmg.bonus: 25` "strikes as a level five") get a die or a capped multiplier so a floor-5 crit cannot one-shot a full-HP level-5 character; each change has a before/after row in `content/BESTIARY-REBALANCE.md`
 
 ### Joiners (JOIN)
@@ -81,10 +81,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ROLL-01 | Phase 50 | Complete |
 | INIT-01 | Phase 51 | Complete |
 | INIT-02 | Phase 51 | Complete |
-| CAD-01 | Phase 52 | Pending |
-| CAD-02 | Phase 52 | Pending |
-| CAD-03 | Phase 52 | Pending |
-| DMG-01 | Phase 52 | Pending |
+| CAD-01 | Phase 52 | Complete |
+| CAD-02 | Phase 52 | Complete |
+| CAD-03 | Phase 52 | Complete |
+| DMG-01 | Phase 52 | Complete |
 | DMG-02 | Phase 52 | Pending |
 | JOIN-02 | Phase 53 | Pending |
 | JOIN-03 | Phase 53 | Pending |
