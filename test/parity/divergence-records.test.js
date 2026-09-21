@@ -361,11 +361,12 @@ const PHASE_53_FLOOR1_CURVE = {
 };
 
 test("BAND-02: the holders declaring Phase 54 are exactly the measured moved set — zero; no replay site ever reaches WALL_FROM_DEPTH (floor 5) and difficultyCurve(1..4) is byte-identical to the Phase 53 curve", () => {
-  // Part (a): the declared set, DMG-02/JOIN-02-shaped, but legitimately
-  // EMPTY — a 5-15 band dial cannot reach a replay site that never
-  // descends past floor 2 (see part b below and
-  // test/parity/FIXTURE-INVENTORY.md's Phase 54 section for the full
-  // accounting).
+  // Part (a): EXPECTED is the MEASURED list — updated whenever a rung's
+  // scan diff or the parity suite reports a mover (USER RULING C: floors
+  // >= 2 may move fixtures now; the engine gate still applies — measure,
+  // declare, regenerate). Legitimately EMPTY through this rung — see part
+  // (b)/(e) below and test/parity/FIXTURE-INVENTORY.md's Phase 54 section
+  // for the full accounting.
   const EXPECTED = [];
 
   const declared = new Set(
@@ -433,4 +434,15 @@ test("BAND-02: the holders declaring Phase 54 are exactly the measured moved set
   for (const forbidden of ["combatStarted", "struckByFoe", "trapSprung", "fellClimbing", "fellInGorge"]) {
     assert.ok(!depth2Events.includes(forbidden), `movement (floor 2+): unexpected "${forbidden}" event — a Filter rung could reach this site`);
   }
+
+  // Part (e): the floor-2 genFloor inputs (dots/darkBlobs/darkRadius) stay
+  // canon by construction (DENSITY_CANON_THROUGH_DEPTH / DARK_HOLD_THROUGH_
+  // DEPTH are NOT part of the secondary group and are never moved by this
+  // ladder). A secondary-group rung that moves floor-2 density/dark WOULD
+  // move the movement fixture above — declare and regenerate per the engine
+  // gate, then update EXPECTED and this assertion together.
+  const curve2 = difficultyCurve(2);
+  assert.equal(curve2.dots, 11, "floor-2 dots must stay canon (9+depth)");
+  assert.equal(curve2.darkBlobs, 1, "floor-2 darkBlobs must stay canon");
+  assert.equal(curve2.darkRadius, 5, "floor-2 darkRadius must stay canon (3+depth)");
 });

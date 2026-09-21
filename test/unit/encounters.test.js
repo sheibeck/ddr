@@ -30,6 +30,7 @@ import {
   fallDark,
 } from "../../engine/encounters.js";
 import { GW, GH } from "../../engine/maze.js";
+import { HAZARD_SCALE_AT_START, WALL_HAZARD_SCALE, scaleHazard } from "../../engine/difficulty.js";
 import { makeRng } from "../../engine/rng.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -132,21 +133,25 @@ test("springTrap: a Spike trap's `times` multiplier is applied after the roll", 
   assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 15));
 });
 
-// Phase 27 (2026-09-15, TUNE-06): hazardScale — post-draw arithmetic, same
-// canon roll as the Spike trap test above, but at floors where hazardScale
-// leaves identity. Zero extra rng draws either way.
-test("springTrap: at depth 2, hazardScale (0.5) halves the canon Spike damage — Math.max(1, Math.round(15 * 0.5)) = 8", () => {
+// Phase 27 (2026-09-15, TUNE-06) / Phase 54 (USER RULING C): hazardScale —
+// post-draw arithmetic, same canon roll as the Spike trap test above, but
+// at floors where hazardScale leaves identity via the per-floor knot table.
+// Zero extra rng draws either way. The expected damage is computed from the
+// LIVE knot constant (scaleHazard), not a hand-typed number.
+test("springTrap: at depth 2, hazardScale (HAZARD_SCALE_AT_START knot) scales the canon Spike damage", () => {
   const state = fixedState({ floor: { depth: 2 } });
   const events = springTrap(state, fakeRng([20, 8, 3]), []);
-  assert.equal(state.c.wp, 32, "8 damage (canon 15, hazardScale 0.5)");
-  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 8));
+  const expectedDmg = scaleHazard(15, { hazardScale: HAZARD_SCALE_AT_START });
+  assert.equal(state.c.wp, 40 - expectedDmg, `${expectedDmg} damage (canon 15, HAZARD_SCALE_AT_START ${HAZARD_SCALE_AT_START})`);
+  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === expectedDmg));
 });
 
-test("springTrap: at depth 5, hazardScale is exactly 1 (canon) — the Spike damage is unchanged", () => {
+test("springTrap: at depth 5, hazardScale equals WALL_HAZARD_SCALE (1.0 today) — the Spike damage is unchanged", () => {
   const state = fixedState({ floor: { depth: 5 } });
   const events = springTrap(state, fakeRng([20, 8, 3]), []);
-  assert.equal(state.c.wp, 25, "15 damage (canon, hazardScale 1 at depth 5)");
-  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 15));
+  const expectedDmg = scaleHazard(15, { hazardScale: WALL_HAZARD_SCALE });
+  assert.equal(state.c.wp, 40 - expectedDmg, `${expectedDmg} damage (canon 15, WALL_HAZARD_SCALE ${WALL_HAZARD_SCALE})`);
+  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === expectedDmg));
 });
 
 // --- openChest ----------------------------------------------------------

@@ -84,8 +84,9 @@ export function springTrap(state, rng, events = []) {
     events.push({ type: "trapDoubled", reason: "catBurglar" });
   }
   if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
-  // Phase 27 (TUNE-06): hazardScale — post-draw arithmetic, 0 new draws,
-  // identity outside floors HAZARD_FROM_DEPTH..HAZARD_CANON_FROM_DEPTH-1
+  // Phase 27 (TUNE-06)/Phase 54 (USER RULING C): hazardScale — post-draw
+  // arithmetic, 0 new draws; a per-floor knot table (engine/difficulty.js's
+  // knotHazardFor), literal 1 below HAZARD_FROM_DEPTH (floor 1, never moves)
   dmg = scaleHazard(dmg, difficultyCurve(state.floor.depth));
   c.wp -= dmg;
   events.push({ type: "trapSprung", roll: r, name: tr.n, dmg });

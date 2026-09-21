@@ -31,6 +31,7 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
+import { HAZARD_SCALE_AT_START, WALL_HAZARD_SCALE, scaleHazard } from "../../engine/difficulty.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -276,34 +277,41 @@ test("move: a failed gorge leap deals 2d6 fall damage and leaves the gap open", 
   assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 7));
 });
 
-// Phase 27 (2026-09-15, TUNE-06): hazardScale — post-draw arithmetic, same
-// canon rolls as the two failed-fall tests above, but at floors where
-// hazardScale leaves identity. Zero extra rng draws either way.
-test("move: at depth 2, hazardScale (0.5) halves the canon climb-fall damage — Math.max(1, Math.round(4 * 0.5)) = 2", () => {
+// Phase 27 (2026-09-15, TUNE-06) / Phase 54 (USER RULING C): hazardScale —
+// post-draw arithmetic, same canon rolls as the two failed-fall tests
+// above, but at floors where hazardScale leaves identity via the per-floor
+// knot table. Zero extra rng draws either way. The expected damage is
+// computed from the LIVE knot constant (scaleHazard), not a hand-typed
+// number — a later Filter hazard fit re-pins only the constant's value,
+// never this test's arithmetic.
+test("move: at depth 2, hazardScale (HAZARD_SCALE_AT_START knot) scales the canon climb-fall damage", () => {
   const state = fixedState({ floor: { depth: 2 } });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const rng = fakeRng([1, 9, 15, 4]);
   const events = move(state, "N", rng, []);
-  assert.equal(state.c.wp, 53, "2 wp of fall damage (canon 4, hazardScale 0.5)");
-  assert.ok(events.some((e) => e.type === "fellClimbing" && e.hurt === 2));
+  const expectedHurt = scaleHazard(4, { hazardScale: HAZARD_SCALE_AT_START });
+  assert.equal(state.c.wp, 55 - expectedHurt, `${expectedHurt} wp of fall damage (canon 4, HAZARD_SCALE_AT_START ${HAZARD_SCALE_AT_START})`);
+  assert.ok(events.some((e) => e.type === "fellClimbing" && e.hurt === expectedHurt));
 });
 
-test("move: at depth 2, hazardScale (0.5) halves the canon gorge-fall damage — Math.max(1, Math.round(7 * 0.5)) = 4", () => {
+test("move: at depth 2, hazardScale (HAZARD_SCALE_AT_START knot) scales the canon gorge-fall damage", () => {
   const state = fixedState({ floor: { depth: 2 } });
   open(state.floor.g, 5, 4, { feat: "gorge" });
   const rng = fakeRng([1, 11, 3, 4]);
   const events = move(state, "N", rng, []);
-  assert.equal(state.c.wp, 51, "4 wp of fall damage (canon 7, hazardScale 0.5)");
-  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 4));
+  const expectedHurt = scaleHazard(7, { hazardScale: HAZARD_SCALE_AT_START });
+  assert.equal(state.c.wp, 55 - expectedHurt, `${expectedHurt} wp of fall damage (canon 7, HAZARD_SCALE_AT_START ${HAZARD_SCALE_AT_START})`);
+  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === expectedHurt));
 });
 
-test("move: at depth 5, hazardScale is exactly 1 (canon) — the gorge-fall damage is unchanged", () => {
+test("move: at depth 5, hazardScale equals WALL_HAZARD_SCALE (1.0 today) — the gorge-fall damage is unchanged", () => {
   const state = fixedState({ floor: { depth: 5 } });
   open(state.floor.g, 5, 4, { feat: "gorge" });
   const rng = fakeRng([1, 11, 3, 4]);
   const events = move(state, "N", rng, []);
-  assert.equal(state.c.wp, 48, "7 wp of fall damage (canon, hazardScale 1 at depth 5)");
-  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 7));
+  const expectedHurt = scaleHazard(7, { hazardScale: WALL_HAZARD_SCALE });
+  assert.equal(state.c.wp, 55 - expectedHurt, `${expectedHurt} wp of fall damage (canon 7, WALL_HAZARD_SCALE ${WALL_HAZARD_SCALE})`);
+  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === expectedHurt));
 });
 
 test("move: a successful gorge leap clears the feature", () => {

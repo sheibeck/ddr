@@ -31,11 +31,12 @@ import {
   FOE_LVL_BIAS,
   FOE_GRACE_AT_1,
   FOE_GRACE_AT_2,
-  FOE_GRACE_CANON_FROM_DEPTH,
+  FOE_GRACE_AT_3,
+  FOE_GRACE_AT_4,
   HAZARD_FROM_DEPTH,
   HAZARD_SCALE_AT_START,
-  HAZARD_FLAT_THROUGH_DEPTH,
-  HAZARD_CANON_FROM_DEPTH,
+  HAZARD_SCALE_AT_3,
+  HAZARD_SCALE_AT_4,
   WALL_FROM_DEPTH,
   WALL_TO_DEPTH,
   WALL_FOE_POWER_AT_START,
@@ -44,12 +45,19 @@ import {
   BREAKAWAY_TO_DEPTH,
   BREAKAWAY_FOE_POWER_AT_START,
   BREAKAWAY_FOE_POWER_AT_END,
-  ENDGAME_CANON_FROM_DEPTH,
+  ENDGAME_FROM_DEPTH,
+  ENDGAME_TO_DEPTH,
+  ENDGAME_FOE_POWER_AT_START,
+  ENDGAME_FOE_POWER_AT_END,
   WALL_HAZARD_SCALE,
+  BREAKAWAY_HAZARD_SCALE,
+  ENDGAME_HAZARD_SCALE,
   WALL_ABILITY_THREAT_AT_START,
   WALL_ABILITY_THREAT_AT_END,
   BREAKAWAY_ABILITY_THREAT_AT_START,
   BREAKAWAY_ABILITY_THREAT_AT_END,
+  ENDGAME_ABILITY_THREAT_AT_START,
+  ENDGAME_ABILITY_THREAT_AT_END,
   foeCountFor,
   foeWpFor,
   foeDmgBonusFor,
@@ -158,11 +166,11 @@ function fixedFoe(overrides = {}) {
 
 // --- Task 1 tests -----------------------------------------------------------
 
-// PHASE_27_PINS — the ONE place the Phase 27 dials are pinned (2026-09-15,
-// TUNE-06). 27-03 edits ONLY these numbers per iteration; values recorded in
-// docs/DIFFICULTY-RETUNE.md's v1.2 change table.
-// Phase 54 ladder rung 2 (2026-09-21, BAND-02, USER RULING A): FOE_GRACE_AT_2
-// 0.5 -> 0.4 — re-pinned per docs/DIFFICULTY-RETUNE.md's `#### Rung 2`.
+// PHASE_27_PINS — the ONE place the surviving Phase 21/27 dials are pinned
+// (2026-09-15, TUNE-06). Phase 54 (USER RULING C, rung 3a): the retired
+// FOE_GRACE_CANON_FROM_DEPTH/HAZARD_FLAT_THROUGH_DEPTH/HAZARD_CANON_FROM_DEPTH
+// are dropped (replaced by the knot table, see PHASE_54_PINS below); values
+// recorded in docs/DIFFICULTY-RETUNE.md's v1.2/v1.7 change tables.
 const PHASE_27_PINS = {
   COMBAT_SCALE_FROM_DEPTH: 21,
   FOE_CAP_BASE: 3,
@@ -177,11 +185,8 @@ const PHASE_27_PINS = {
   FOE_LVL_BIAS: 0,
   FOE_GRACE_AT_1: 1,
   FOE_GRACE_AT_2: 0.4,
-  FOE_GRACE_CANON_FROM_DEPTH: 5,
   HAZARD_FROM_DEPTH: 2,
   HAZARD_SCALE_AT_START: 0.5,
-  HAZARD_FLAT_THROUGH_DEPTH: 3,
-  HAZARD_CANON_FROM_DEPTH: 5,
 };
 
 // NON_COMBAT_PINS — depths 1-5's dots/darkBlobs/darkRadius after Phase 27's
@@ -196,7 +201,7 @@ const NON_COMBAT_PINS = {
   5: { dots: 11, darkBlobs: 3, darkRadius: 7 },
 };
 
-test("Phase 27 retune pins match engine/difficulty.js — recorded in docs/DIFFICULTY-RETUNE.md", () => {
+test("Phase 27/21 retune pins match engine/difficulty.js — recorded in docs/DIFFICULTY-RETUNE.md", () => {
   assert.equal(COMBAT_SCALE_FROM_DEPTH, PHASE_27_PINS.COMBAT_SCALE_FROM_DEPTH);
   assert.equal(FOE_CAP_BASE, PHASE_27_PINS.FOE_CAP_BASE);
   assert.equal(FOE_CAP_MAX, PHASE_27_PINS.FOE_CAP_MAX);
@@ -210,20 +215,15 @@ test("Phase 27 retune pins match engine/difficulty.js — recorded in docs/DIFFI
   assert.equal(FOE_LVL_BIAS, PHASE_27_PINS.FOE_LVL_BIAS);
   assert.equal(FOE_GRACE_AT_1, PHASE_27_PINS.FOE_GRACE_AT_1);
   assert.equal(FOE_GRACE_AT_2, PHASE_27_PINS.FOE_GRACE_AT_2);
-  assert.equal(FOE_GRACE_CANON_FROM_DEPTH, PHASE_27_PINS.FOE_GRACE_CANON_FROM_DEPTH);
   assert.equal(HAZARD_FROM_DEPTH, PHASE_27_PINS.HAZARD_FROM_DEPTH);
   assert.equal(HAZARD_SCALE_AT_START, PHASE_27_PINS.HAZARD_SCALE_AT_START);
-  assert.equal(HAZARD_FLAT_THROUGH_DEPTH, PHASE_27_PINS.HAZARD_FLAT_THROUGH_DEPTH);
-  assert.equal(HAZARD_CANON_FROM_DEPTH, PHASE_27_PINS.HAZARD_CANON_FROM_DEPTH);
 });
 
-// PHASE_54_PINS — the ONE place the Phase 54 band constants are pinned
-// (2026-09-21, BAND-02). All 14 at scaffold (identity) values in THIS plan
-// (54-01) — Plan 02's rungs edit ONLY these numbers per rung; values
-// recorded in docs/DIFFICULTY-RETUNE.md's Phase 54 H3.
-// Phase 54 ladder rung 1 (2026-09-21, BAND-02): Wall 1.0 -> 0.85/0.95,
-// Breakaway 1.0 -> 0.95/1.0 — re-pinned per docs/DIFFICULTY-RETUNE.md's
-// `#### Rung 1` section.
+// PHASE_54_PINS — the ONE place the full Phase 54 KNOT set is pinned
+// (2026-09-21, USER RULING C, rung 3a). Every knot constant at its landed
+// (rung-2-identical) value; re-pinned per rung from `node -e`, never
+// hand-typed, never loosened; values recorded in docs/DIFFICULTY-RETUNE.md's
+// Phase 54 H3.
 const PHASE_54_PINS = {
   WALL_FROM_DEPTH: 5,
   WALL_TO_DEPTH: 8,
@@ -233,12 +233,25 @@ const PHASE_54_PINS = {
   BREAKAWAY_TO_DEPTH: 15,
   BREAKAWAY_FOE_POWER_AT_START: 0.95,
   BREAKAWAY_FOE_POWER_AT_END: 1,
-  ENDGAME_CANON_FROM_DEPTH: 16,
+  ENDGAME_FROM_DEPTH: 16,
+  ENDGAME_TO_DEPTH: 20,
+  ENDGAME_FOE_POWER_AT_START: 1,
+  ENDGAME_FOE_POWER_AT_END: 1,
+  FOE_GRACE_AT_2: 0.4,
+  FOE_GRACE_AT_3: 0.6,
+  FOE_GRACE_AT_4: 0.8,
+  HAZARD_SCALE_AT_START: 0.5,
+  HAZARD_SCALE_AT_3: 0.5,
+  HAZARD_SCALE_AT_4: 0.75,
   WALL_HAZARD_SCALE: 1,
+  BREAKAWAY_HAZARD_SCALE: 1,
+  ENDGAME_HAZARD_SCALE: 1,
   WALL_ABILITY_THREAT_AT_START: 1,
   WALL_ABILITY_THREAT_AT_END: 1,
   BREAKAWAY_ABILITY_THREAT_AT_START: 1,
   BREAKAWAY_ABILITY_THREAT_AT_END: 1,
+  ENDGAME_ABILITY_THREAT_AT_START: 1,
+  ENDGAME_ABILITY_THREAT_AT_END: 1,
 };
 
 /** bandFormula(d, atStart, atEnd, from, to) — mirrors engine/difficulty.js's
@@ -250,27 +263,59 @@ function bandFormula(d, atStart, atEnd, from, to) {
   return (1 - t) * atStart + t * atEnd;
 }
 
-/** expectedBandFoePower(d) — mirrors engine/difficulty.js's bandFoePowerFor
- * over PHASE_54_PINS; only valid for WALL_FROM_DEPTH <= d < COMBAT_SCALE_FROM_DEPTH. */
-function expectedBandFoePower(d) {
-  if (d >= PHASE_54_PINS.ENDGAME_CANON_FROM_DEPTH) return 1;
-  if (d <= PHASE_54_PINS.WALL_TO_DEPTH) {
-    return bandFormula(d, PHASE_54_PINS.WALL_FOE_POWER_AT_START, PHASE_54_PINS.WALL_FOE_POWER_AT_END, PHASE_54_PINS.WALL_FROM_DEPTH, PHASE_54_PINS.WALL_TO_DEPTH);
+/** knotFoePower(d, pins) — mirrors engine/difficulty.js's knotFoePowerFor
+ * over PHASE_54_PINS + the Phase 21/27 dials; floor 1 always FOE_GRACE_AT_1;
+ * 21+ the Phase 21 soft-cap ramp RELATIVE to the floor-20 knot value. */
+function knotFoePower(d, pins) {
+  if (d === 1) return FOE_GRACE_AT_1;
+  if (d > pins.ENDGAME_TO_DEPTH) {
+    const over = Math.max(0, d - (COMBAT_SCALE_FROM_DEPTH - 1));
+    return pins.ENDGAME_FOE_POWER_AT_END * (FOE_POWER_BASE + (FOE_POWER_MAX - FOE_POWER_BASE) * (1 - Math.exp(-over / FOE_POWER_SOFT_K)));
   }
-  return bandFormula(d, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_START, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_END, PHASE_54_PINS.BREAKAWAY_FROM_DEPTH, PHASE_54_PINS.BREAKAWAY_TO_DEPTH);
+  const knots = [
+    [2, pins.FOE_GRACE_AT_2],
+    [3, pins.FOE_GRACE_AT_3],
+    [4, pins.FOE_GRACE_AT_4],
+    [pins.WALL_FROM_DEPTH, pins.WALL_FOE_POWER_AT_START],
+    [pins.WALL_TO_DEPTH, pins.WALL_FOE_POWER_AT_END],
+    [pins.BREAKAWAY_FROM_DEPTH, pins.BREAKAWAY_FOE_POWER_AT_START],
+    [pins.BREAKAWAY_TO_DEPTH, pins.BREAKAWAY_FOE_POWER_AT_END],
+    [pins.ENDGAME_FROM_DEPTH, pins.ENDGAME_FOE_POWER_AT_START],
+    [pins.ENDGAME_TO_DEPTH, pins.ENDGAME_FOE_POWER_AT_END],
+  ];
+  for (let i = 0; i < knots.length - 1; i++) {
+    const [dA, vA] = knots[i];
+    const [dB, vB] = knots[i + 1];
+    if (d >= dA && d <= dB) return bandFormula(d, vA, vB, dA, dB);
+  }
+  return knots[knots.length - 1][1];
 }
 
-/** expectedBandAbilityThreat(d) — mirrors engine/difficulty.js's
- * bandAbilityThreatFor over PHASE_54_PINS; valid for any d < COMBAT_SCALE_FROM_DEPTH. */
-function expectedBandAbilityThreat(d) {
-  if (d < PHASE_54_PINS.WALL_FROM_DEPTH || d >= PHASE_54_PINS.ENDGAME_CANON_FROM_DEPTH) return 1;
-  if (d <= PHASE_54_PINS.WALL_TO_DEPTH) {
-    return bandFormula(d, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_START, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_END, PHASE_54_PINS.WALL_FROM_DEPTH, PHASE_54_PINS.WALL_TO_DEPTH);
-  }
-  return bandFormula(d, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_START, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_END, PHASE_54_PINS.BREAKAWAY_FROM_DEPTH, PHASE_54_PINS.BREAKAWAY_TO_DEPTH);
+/** knotHazard(d, pins) — mirrors engine/difficulty.js's knotHazardFor. */
+function knotHazard(d, pins) {
+  if (d < HAZARD_FROM_DEPTH) return 1;
+  if (d === 2) return pins.HAZARD_SCALE_AT_START;
+  if (d === 3) return pins.HAZARD_SCALE_AT_3;
+  if (d === 4) return pins.HAZARD_SCALE_AT_4;
+  if (d <= pins.WALL_TO_DEPTH) return pins.WALL_HAZARD_SCALE;
+  if (d <= pins.BREAKAWAY_TO_DEPTH) return pins.BREAKAWAY_HAZARD_SCALE;
+  return pins.ENDGAME_HAZARD_SCALE;
 }
 
-test("Phase 54 band pins match engine/difficulty.js — recorded in docs/DIFFICULTY-RETUNE.md's Phase 54 H3", () => {
+/** knotAbilityThreat(d, pins) — mirrors engine/difficulty.js's
+ * knotAbilityThreatFor; 21+ RELATIVE to the floor-20 knot value. */
+function knotAbilityThreat(d, pins) {
+  if (d <= 4) return 1;
+  if (d > pins.ENDGAME_TO_DEPTH) {
+    const over = Math.max(0, d - (COMBAT_SCALE_FROM_DEPTH - 1));
+    return pins.ENDGAME_ABILITY_THREAT_AT_END * (ABILITY_THREAT_BASE + (ABILITY_THREAT_MAX - ABILITY_THREAT_BASE) * (1 - Math.exp(-over / ABILITY_THREAT_SOFT_K)));
+  }
+  if (d <= pins.WALL_TO_DEPTH) return bandFormula(d, pins.WALL_ABILITY_THREAT_AT_START, pins.WALL_ABILITY_THREAT_AT_END, pins.WALL_FROM_DEPTH, pins.WALL_TO_DEPTH);
+  if (d <= pins.BREAKAWAY_TO_DEPTH) return bandFormula(d, pins.BREAKAWAY_ABILITY_THREAT_AT_START, pins.BREAKAWAY_ABILITY_THREAT_AT_END, pins.BREAKAWAY_FROM_DEPTH, pins.BREAKAWAY_TO_DEPTH);
+  return bandFormula(d, pins.ENDGAME_ABILITY_THREAT_AT_START, pins.ENDGAME_ABILITY_THREAT_AT_END, pins.ENDGAME_FROM_DEPTH, pins.ENDGAME_TO_DEPTH);
+}
+
+test("Phase 54 (USER RULING C) knot pins match engine/difficulty.js — recorded in docs/DIFFICULTY-RETUNE.md's Phase 54 H3", () => {
   assert.equal(WALL_FROM_DEPTH, PHASE_54_PINS.WALL_FROM_DEPTH);
   assert.equal(WALL_TO_DEPTH, PHASE_54_PINS.WALL_TO_DEPTH);
   assert.equal(WALL_FOE_POWER_AT_START, PHASE_54_PINS.WALL_FOE_POWER_AT_START);
@@ -279,12 +324,40 @@ test("Phase 54 band pins match engine/difficulty.js — recorded in docs/DIFFICU
   assert.equal(BREAKAWAY_TO_DEPTH, PHASE_54_PINS.BREAKAWAY_TO_DEPTH);
   assert.equal(BREAKAWAY_FOE_POWER_AT_START, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_START);
   assert.equal(BREAKAWAY_FOE_POWER_AT_END, PHASE_54_PINS.BREAKAWAY_FOE_POWER_AT_END);
-  assert.equal(ENDGAME_CANON_FROM_DEPTH, PHASE_54_PINS.ENDGAME_CANON_FROM_DEPTH);
+  assert.equal(ENDGAME_FROM_DEPTH, PHASE_54_PINS.ENDGAME_FROM_DEPTH);
+  assert.equal(ENDGAME_TO_DEPTH, PHASE_54_PINS.ENDGAME_TO_DEPTH);
+  assert.equal(ENDGAME_FOE_POWER_AT_START, PHASE_54_PINS.ENDGAME_FOE_POWER_AT_START);
+  assert.equal(ENDGAME_FOE_POWER_AT_END, PHASE_54_PINS.ENDGAME_FOE_POWER_AT_END);
+  assert.equal(FOE_GRACE_AT_2, PHASE_54_PINS.FOE_GRACE_AT_2);
+  assert.equal(FOE_GRACE_AT_3, PHASE_54_PINS.FOE_GRACE_AT_3);
+  assert.equal(FOE_GRACE_AT_4, PHASE_54_PINS.FOE_GRACE_AT_4);
+  assert.equal(HAZARD_SCALE_AT_START, PHASE_54_PINS.HAZARD_SCALE_AT_START);
+  assert.equal(HAZARD_SCALE_AT_3, PHASE_54_PINS.HAZARD_SCALE_AT_3);
+  assert.equal(HAZARD_SCALE_AT_4, PHASE_54_PINS.HAZARD_SCALE_AT_4);
   assert.equal(WALL_HAZARD_SCALE, PHASE_54_PINS.WALL_HAZARD_SCALE);
+  assert.equal(BREAKAWAY_HAZARD_SCALE, PHASE_54_PINS.BREAKAWAY_HAZARD_SCALE);
+  assert.equal(ENDGAME_HAZARD_SCALE, PHASE_54_PINS.ENDGAME_HAZARD_SCALE);
   assert.equal(WALL_ABILITY_THREAT_AT_START, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_START);
   assert.equal(WALL_ABILITY_THREAT_AT_END, PHASE_54_PINS.WALL_ABILITY_THREAT_AT_END);
   assert.equal(BREAKAWAY_ABILITY_THREAT_AT_START, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_START);
   assert.equal(BREAKAWAY_ABILITY_THREAT_AT_END, PHASE_54_PINS.BREAKAWAY_ABILITY_THREAT_AT_END);
+  assert.equal(ENDGAME_ABILITY_THREAT_AT_START, PHASE_54_PINS.ENDGAME_ABILITY_THREAT_AT_START);
+  assert.equal(ENDGAME_ABILITY_THREAT_AT_END, PHASE_54_PINS.ENDGAME_ABILITY_THREAT_AT_END);
+});
+
+test("knot curve 2..20 (Phase 54, USER RULING C): foePower / hazardScale / abilityThreat equal the knot formula from PHASE_54_PINS at every depth; 21+ equals ENDGAME_*_AT_END x the Phase 21 ramp", () => {
+  for (let d = 2; d <= 20; d++) {
+    const dc = difficultyCurve(d);
+    assert.ok(Math.abs(dc.foePower - knotFoePower(d, PHASE_54_PINS)) < 1e-9, `depth ${d}: foePower`);
+    assert.ok(Math.abs(dc.hazardScale - knotHazard(d, PHASE_54_PINS)) < 1e-9, `depth ${d}: hazardScale`);
+    assert.ok(Math.abs(dc.abilityThreat - knotAbilityThreat(d, PHASE_54_PINS)) < 1e-9, `depth ${d}: abilityThreat`);
+  }
+  for (const d of [21, 30, 50, 200]) {
+    const dc = difficultyCurve(d);
+    assert.ok(Math.abs(dc.foePower - knotFoePower(d, PHASE_54_PINS)) < 1e-9, `depth ${d}: foePower (21+ ramp)`);
+    assert.ok(Math.abs(dc.abilityThreat - knotAbilityThreat(d, PHASE_54_PINS)) < 1e-9, `depth ${d}: abilityThreat (21+ ramp)`);
+    assert.equal(dc.hazardScale, PHASE_54_PINS.ENDGAME_HAZARD_SCALE, `depth ${d}: hazardScale must stay at the Endgame knot (no separate deep ramp)`);
+  }
 });
 
 test("floor 1 is exactly canon (D-19 / Phase 27): foePower, hazardScale, dots/blobs/radius, foeCap, abilityThreat", () => {
@@ -303,102 +376,49 @@ test("floor 1 is exactly canon (D-19 / Phase 27): foePower, hazardScale, dots/bl
   assert.equal(dc.darkRadius, NON_COMBAT_PINS[1].darkRadius);
 });
 
-test("grace band: depths 2..FOE_GRACE_CANON_FROM_DEPTH-1 carry the interpolated foePower and hazardScale formulas, never below FOE_GRACE_AT_2", () => {
-  for (let d = 2; d < FOE_GRACE_CANON_FROM_DEPTH; d++) {
-    const dc = difficultyCurve(d);
-    const expectedPower = FOE_GRACE_AT_2 + (1 - FOE_GRACE_AT_2) * (d - 2) / (FOE_GRACE_CANON_FROM_DEPTH - 2);
-    assert.ok(Math.abs(dc.foePower - expectedPower) < 1e-12, `depth ${d}: foePower ${dc.foePower} !~= ${expectedPower}`);
-    assert.ok(dc.foePower >= FOE_GRACE_AT_2, `depth ${d}: foePower ${dc.foePower} below FOE_GRACE_AT_2`);
+// Retired under USER RULING C (2026-09-21): "grace band …", "band 5..15
+// (Phase 54, BAND-02) …", "Endgame identity band (Phase 54, BAND-01) …" —
+// replaced by "knot curve 2..20 (Phase 54, USER RULING C)" above, which
+// covers the SAME depths against the SAME live constants via the mirrored
+// knot-formula helpers (knotFoePower/knotHazard/knotAbilityThreat), so no
+// coverage is lost; foeCap identity for these depths is covered by
+// "depth-6 first divergence" below.
 
-    const expectedHazard =
-      d < HAZARD_FROM_DEPTH || d >= HAZARD_CANON_FROM_DEPTH
-        ? 1
-        : d <= HAZARD_FLAT_THROUGH_DEPTH
-          ? HAZARD_SCALE_AT_START
-          : HAZARD_SCALE_AT_START + (1 - HAZARD_SCALE_AT_START) * (d - HAZARD_FLAT_THROUGH_DEPTH) / (HAZARD_CANON_FROM_DEPTH - HAZARD_FLAT_THROUGH_DEPTH);
-    assert.ok(Math.abs(dc.hazardScale - expectedHazard) < 1e-12, `depth ${d}: hazardScale ${dc.hazardScale} !~= ${expectedHazard}`);
-
-    if (NON_COMBAT_PINS[d]) {
-      assert.equal(dc.dots, NON_COMBAT_PINS[d].dots, `depth ${d}: dots`);
-      assert.equal(dc.darkBlobs, NON_COMBAT_PINS[d].darkBlobs, `depth ${d}: darkBlobs`);
-      assert.equal(dc.darkRadius, NON_COMBAT_PINS[d].darkRadius, `depth ${d}: darkRadius`);
-    }
-  }
-});
-
-test("band 5..15 (Phase 54, BAND-02): foePower and abilityThreat equal the endpoint-exact band formula from PHASE_54_PINS; hazardScale === WALL_HAZARD_SCALE on 5..8 and exactly 1 on 9..15; foeCap FOE_CAP_BASE", () => {
-  for (let d = WALL_FROM_DEPTH; d <= BREAKAWAY_TO_DEPTH; d++) {
-    const dc = difficultyCurve(d);
-    assert.ok(Math.abs(dc.foePower - expectedBandFoePower(d)) < 1e-12, `depth ${d}: foePower ${dc.foePower} !~= ${expectedBandFoePower(d)}`);
-    assert.ok(Math.abs(dc.abilityThreat - expectedBandAbilityThreat(d)) < 1e-12, `depth ${d}: abilityThreat ${dc.abilityThreat} !~= ${expectedBandAbilityThreat(d)}`);
-    if (d <= WALL_TO_DEPTH) {
-      assert.equal(dc.hazardScale, WALL_HAZARD_SCALE, `depth ${d}: hazardScale must be WALL_HAZARD_SCALE`);
-    } else {
-      assert.ok(Object.is(dc.hazardScale, 1), `depth ${d}: hazardScale must be exactly 1 (Breakaway)`);
-    }
-    assert.equal(dc.foeCap, FOE_CAP_BASE, `depth ${d}: foeCap must be FOE_CAP_BASE`);
-  }
-});
-
-test("Endgame identity band (Phase 54, BAND-01): depths ENDGAME_CANON_FROM_DEPTH..COMBAT_SCALE_FROM_DEPTH-1 carry foePower/abilityThreat/hazardScale exactly at identity (Object.is 1), foeCap at FOE_CAP_BASE", () => {
-  for (let d = ENDGAME_CANON_FROM_DEPTH; d < COMBAT_SCALE_FROM_DEPTH; d++) {
-    const dc = difficultyCurve(d);
-    assert.ok(Object.is(dc.foePower, 1), `depth ${d}: foePower must be exactly 1`);
-    assert.ok(Object.is(dc.abilityThreat, 1), `depth ${d}: abilityThreat must be exactly 1`);
-    assert.equal(dc.foeCap, FOE_CAP_BASE, `depth ${d}: foeCap must be FOE_CAP_BASE`);
-    assert.ok(Object.is(dc.hazardScale, 1), `depth ${d}: hazardScale must be exactly 1`);
-  }
-});
-
-test("cap boundaries: every combat field stays within [BASE, MAX] at depths 6, 10, 20, 30, 50, 100, 1000; foeBonus === foeCap - FOE_CAP_BASE; foeLvlBias === FOE_LVL_BIAS", () => {
-  // Phase 54 (BAND-02): depths 6 and 10 now sit in the Wall/Breakaway band,
-  // whose foePower/abilityThreat may dip below the Phase 21/27 BASE — the
-  // lower bound widens to the band constants' own floor.
-  const foePowerFloor = Math.min(FOE_POWER_BASE, WALL_FOE_POWER_AT_START, WALL_FOE_POWER_AT_END, BREAKAWAY_FOE_POWER_AT_START, BREAKAWAY_FOE_POWER_AT_END);
-  const abilityThreatFloor = Math.min(ABILITY_THREAT_BASE, WALL_ABILITY_THREAT_AT_START, WALL_ABILITY_THREAT_AT_END, BREAKAWAY_ABILITY_THREAT_AT_START, BREAKAWAY_ABILITY_THREAT_AT_END);
+test("cap boundaries: every combat field stays within its USER RULING C clamp at depths 6, 10, 20, 30, 50, 100, 1000; foeBonus === foeCap - FOE_CAP_BASE; foeLvlBias === FOE_LVL_BIAS", () => {
+  // USER RULING C: foePower knots clamp to [0.25, 1.5]; the 21+ ramp
+  // multiplies ENDGAME_FOE_POWER_AT_END (<= 1.5) by up to FOE_POWER_MAX, so
+  // the widest possible ceiling is 1.5 x FOE_POWER_MAX. abilityThreat knots
+  // clamp to [0.5, 1.0]; the 21+ ramp similarly widens to ABILITY_THREAT_MAX.
   for (const depth of [6, 10, 20, 30, 50, 100, 1000]) {
     const dc = difficultyCurve(depth);
     assert.ok(dc.foeCap >= FOE_CAP_BASE && dc.foeCap <= FOE_CAP_MAX, `depth ${depth}: foeCap out of bounds`);
-    assert.ok(dc.foePower >= foePowerFloor && dc.foePower <= FOE_POWER_MAX, `depth ${depth}: foePower out of bounds`);
-    assert.ok(
-      dc.abilityThreat >= abilityThreatFloor && dc.abilityThreat <= ABILITY_THREAT_MAX,
-      `depth ${depth}: abilityThreat out of bounds`,
-    );
+    assert.ok(dc.foePower >= 0.25 && dc.foePower <= 1.5 * FOE_POWER_MAX, `depth ${depth}: foePower out of bounds`);
+    assert.ok(dc.abilityThreat >= 0.5 && dc.abilityThreat <= ABILITY_THREAT_MAX, `depth ${depth}: abilityThreat out of bounds`);
     assert.equal(dc.foeBonus, dc.foeCap - FOE_CAP_BASE, `depth ${depth}: foeBonus mismatch`);
     assert.equal(dc.foeLvlBias, FOE_LVL_BIAS, `depth ${depth}: foeLvlBias mismatch`);
   }
 });
 
-test("monotone: foeCap is non-decreasing across depths 1..200 including breather floors (no dip); abilityThreat exactly 1 on floors 1-4 and non-decreasing from WALL_FROM_DEPTH on (Phase 54)", () => {
+test("monotone: foeCap is non-decreasing across depths 1..200 including breather floors (no dip)", () => {
   let prevCap = -Infinity;
   for (let depth = 1; depth <= 200; depth++) {
     const dc = difficultyCurve(depth);
     assert.ok(dc.foeCap >= prevCap, `depth ${depth}: foeCap regressed (${dc.foeCap} < ${prevCap})`);
     prevCap = dc.foeCap;
   }
-  for (let depth = 1; depth < WALL_FROM_DEPTH; depth++) {
-    assert.ok(Object.is(difficultyCurve(depth).abilityThreat, 1), `depth ${depth}: abilityThreat must be exactly 1 (floors 1-4)`);
-  }
-  let prevThreat = -Infinity;
-  for (let depth = WALL_FROM_DEPTH; depth <= 200; depth++) {
-    const dc = difficultyCurve(depth);
-    assert.ok(dc.abilityThreat >= prevThreat, `depth ${depth}: abilityThreat regressed (${dc.abilityThreat} < ${prevThreat})`);
-    prevThreat = dc.abilityThreat;
-  }
 });
 
-// Phase 27 (2026-09-15, TUNE-06): foePower is monotone non-decreasing only
-// from depth 2 on — floor 1 is the canon anchor the grace band deliberately
-// dips UNDER by design (FOE_GRACE_AT_2 < FOE_GRACE_AT_1), so a depth-1-vs-2
-// comparison is expected to regress; that is the grace, not a bug.
-test("monotone from depth 2: foePower is non-decreasing across depths 2..200 (floor 1 is the canon anchor the grace dips under, by design); foeWpFor never rounds below 1", () => {
-  let prevPower = -Infinity;
-  for (let depth = 2; depth <= 200; depth++) {
+// Retired under USER RULING C (2026-09-21): "monotone from depth 2: foePower
+// is non-decreasing …" — the target p_L is U-shaped (a per-floor fit may
+// legitimately dip THEN rise across the knot table), so monotonicity is no
+// longer a structural invariant. Replaced by a bounds + floor-1-identity
+// check that still catches any unclamped drift.
+test("foePower is within [0.25, 1.5 x FOE_POWER_MAX] on depths 1..200 and exactly 1 at floor 1 (the one never-moved invariant); foeWpFor never rounds below 1", () => {
+  assert.ok(Object.is(difficultyCurve(1).foePower, 1), "floor 1 must be exactly 1 (never a knot)");
+  for (let depth = 1; depth <= 200; depth++) {
     const dc = difficultyCurve(depth);
-    assert.ok(dc.foePower >= prevPower, `depth ${depth}: foePower regressed (${dc.foePower} < ${prevPower})`);
-    prevPower = dc.foePower;
+    assert.ok(dc.foePower >= 0.25 && dc.foePower <= 1.5 * FOE_POWER_MAX, `depth ${depth}: foePower out of the knot clamp bounds`);
   }
-  assert.ok(difficultyCurve(1).foePower > difficultyCurve(2).foePower, "floor 1 (canon) must sit ABOVE the floor-2 grace dip");
   for (let baseWp = 1; baseWp <= 20; baseWp++) {
     assert.ok(foeWpFor(baseWp, { foePower: FOE_GRACE_AT_2 }) >= 1, `foeWpFor(${baseWp}, grace) rounded below 1`);
   }
@@ -504,33 +524,33 @@ test("startCombat at depth 2 / level 2 copies a NEGATIVE dmgBonus key on a lvl-2
 
 // --- Task 2 tests -----------------------------------------------------------
 
-test("D-19 wiring identity: at depths 1, 16 and 20 every foe built by startCombat has wp === maxWP === the roster row's wp and NO dmgBonus key", () => {
-  for (const depth of [1, ENDGAME_CANON_FROM_DEPTH, 20]) {
+test("D-19 wiring identity: at depth 1 (the ONE never-moved invariant) every foe built by startCombat has wp === maxWP === the roster row's wp and NO dmgBonus key", () => {
+  const state = fixedState({ c: { level: 5 }, floor: { depth: 1 } });
+  const rng = fakeRng([3, 3, 2, 2, 10, 5]);
+  startCombat(state, false, "Beasts", rng, []);
+  assert.equal(state.combat.foes.length, 2);
+  for (const f of state.combat.foes) {
+    assert.equal(f.wp, BESTIARY.Beasts[f.lvl - 1][0].wp);
+    assert.equal(f.maxWP, f.wp);
+    assert.equal("dmgBonus" in f, false);
+  }
+});
+
+test("band wiring (Phase 54, USER RULING C): at depths 5, 16 and 20 every foe built by startCombat has wp === foeWpFor(row.wp, difficultyCurve(d)) and carries a dmgBonus key iff foeDmgBonusFor(lvl, difficultyCurve(d)) !== 0", () => {
+  for (const depth of [5, 16, 20]) {
+    const curve = difficultyCurve(depth);
     const state = fixedState({ c: { level: 5 }, floor: { depth } });
     const rng = fakeRng([3, 3, 2, 2, 10, 5]);
     startCombat(state, false, "Beasts", rng, []);
     assert.equal(state.combat.foes.length, 2);
     for (const f of state.combat.foes) {
-      assert.equal(f.wp, BESTIARY.Beasts[f.lvl - 1][0].wp);
-      assert.equal(f.maxWP, f.wp);
-      assert.equal("dmgBonus" in f, false);
-    }
-  }
-});
-
-test("band wiring (Phase 54, BAND-02): at depth 5 every foe built by startCombat has wp === foeWpFor(row.wp, difficultyCurve(5)) and carries a dmgBonus key iff foeDmgBonusFor(lvl, difficultyCurve(5)) !== 0", () => {
-  const curve5 = difficultyCurve(5);
-  const state = fixedState({ c: { level: 5 }, floor: { depth: 5 } });
-  const rng = fakeRng([3, 3, 2, 2, 10, 5]);
-  startCombat(state, false, "Beasts", rng, []);
-  assert.equal(state.combat.foes.length, 2);
-  for (const f of state.combat.foes) {
-    assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve5));
-    const expectedBonus = foeDmgBonusFor(f.lvl, curve5);
-    if (expectedBonus !== 0) {
-      assert.equal(f.dmgBonus, expectedBonus);
-    } else {
-      assert.equal("dmgBonus" in f, false);
+      assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve));
+      const expectedBonus = foeDmgBonusFor(f.lvl, curve);
+      if (expectedBonus !== 0) {
+        assert.equal(f.dmgBonus, expectedBonus);
+      } else {
+        assert.equal("dmgBonus" in f, false);
+      }
     }
   }
 });
@@ -605,10 +625,10 @@ test("dmgBonus is post-draw arithmetic on the hero swing", () => {
   assert.equal(rng2.draws, 2);
 });
 
-test("D-18: tickAbilityCooldowns(state, f) lazily inits from the cadence and counts down; identity at depth 20 (Phase 54: floor 5 is a band floor now)", () => {
+test("D-18: tickAbilityCooldowns(state, f) lazily inits from the cadence and counts down; identity at depth 1 (Phase 54, USER RULING C: 16-20 is now dialable, so floor 1 is the only identity anchor)", () => {
   assert.equal(tickAbilityCooldowns.length, 2);
 
-  const state = fixedState({ floor: { depth: 20 }, combat: { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
+  const state = fixedState({ floor: { depth: 1 }, combat: { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
   const f = fixedFoe({ abilities: ["drudgeFireball"] });
   tickAbilityCooldowns(state, f);
   assert.equal(f.cd.drudgeFireball, 1);
@@ -632,36 +652,31 @@ test("the D-15 / FID-02 contract is untouched by Phase 21 wiring", () => {
 
 // --- Task 1 (21-04) tests ----------------------------------------------------
 
-// Phase 27 (2026-09-15, TUNE-06): parametrised on COMBAT_SCALE_FROM_DEPTH —
+// Phase 54 (USER RULING C): parametrised on COMBAT_SCALE_FROM_DEPTH —
 // foeCap/foeBonus/foeLvlBias stay at identity through COMBAT_SCALE_FROM_DEPTH-1
-// (foePower/hazardScale have their OWN bands, covered by the grace-band/
-// band-5..15/Endgame-identity tests above). Phase 54 (BAND-02): abilityThreat
-// is no longer identity for the ENTIRE depth < COMBAT_SCALE_FROM_DEPTH range —
-// it now dips in the Wall/Breakaway band (5..15) per expectedBandAbilityThreat;
-// identity (Object.is 1) holds only for floors 1-4 and 16+.
-test("depth-6 first divergence (D-19), parametrised on COMBAT_SCALE_FROM_DEPTH: combat-dial identity ends exactly one depth before it", () => {
+// (foePower/hazardScale have their own knots, covered by "knot curve 2..20"
+// above); abilityThreat is checked against the SAME knotAbilityThreat mirror
+// at every depth (it already reduces to the literal 1 on floors 1-4 via that
+// formula, so one check covers both the identity floors and the knot bands).
+test("depth-6 first divergence (D-19), parametrised on COMBAT_SCALE_FROM_DEPTH: foeCap/foeBonus/foeLvlBias identity ends exactly one depth before it; abilityThreat === the knot formula throughout", () => {
   for (let d = 1; d < COMBAT_SCALE_FROM_DEPTH; d++) {
     const dc = difficultyCurve(d);
     assert.equal(dc.foeCap, FOE_CAP_BASE, `depth ${d}: foeCap`);
     assert.equal(dc.foeBonus, 0, `depth ${d}: foeBonus`);
     assert.equal(dc.foeLvlBias, FOE_LVL_BIAS, `depth ${d}: foeLvlBias`);
-    if (d < WALL_FROM_DEPTH || d >= ENDGAME_CANON_FROM_DEPTH) {
-      assert.ok(Object.is(dc.abilityThreat, 1), `depth ${d}: abilityThreat must be exactly 1`);
-    } else {
-      assert.ok(
-        Math.abs(dc.abilityThreat - expectedBandAbilityThreat(d)) < 1e-12,
-        `depth ${d}: abilityThreat ${dc.abilityThreat} !~= ${expectedBandAbilityThreat(d)}`,
-      );
-    }
+    assert.ok(
+      Math.abs(dc.abilityThreat - knotAbilityThreat(d, PHASE_54_PINS)) < 1e-9,
+      `depth ${d}: abilityThreat ${dc.abilityThreat} !~= ${knotAbilityThreat(d, PHASE_54_PINS)}`,
+    );
   }
   const dcLast = difficultyCurve(COMBAT_SCALE_FROM_DEPTH - 1);
   assert.equal(dcLast.foeCap, FOE_CAP_BASE);
 
   const dcFirst = difficultyCurve(COMBAT_SCALE_FROM_DEPTH);
-  assert.ok(dcFirst.abilityThreat > 1, `depth ${COMBAT_SCALE_FROM_DEPTH}: abilityThreat must have left identity`);
+  assert.ok(dcFirst.abilityThreat > 1, `depth ${COMBAT_SCALE_FROM_DEPTH}: abilityThreat must have left identity (ENDGAME_ABILITY_THREAT_AT_END still 1 this rung)`);
 });
 
-test("the caps are reached: foeCap === FOE_CAP_MAX at some depth <= 100; foePower and abilityThreat are within 0.05 of their MAX at depth 200", () => {
+test("the caps are reached: foeCap === FOE_CAP_MAX at some depth <= 100; foePower and abilityThreat at depth 200 are within 0.05 of ENDGAME_*_AT_END x their MAX (USER RULING C: the 21+ ramp is RELATIVE to the floor-20 knot value)", () => {
   let reached = false;
   for (let d = 1; d <= 100; d++) {
     if (difficultyCurve(d).foeCap === FOE_CAP_MAX) {
@@ -672,18 +687,14 @@ test("the caps are reached: foeCap === FOE_CAP_MAX at some depth <= 100; foePowe
   assert.ok(reached, "foeCap never reaches FOE_CAP_MAX by depth 100");
 
   const dc200 = difficultyCurve(200);
-  if (FOE_POWER_MAX > FOE_POWER_BASE) {
-    assert.ok(
-      Math.abs(dc200.foePower - FOE_POWER_MAX) <= 0.05,
-      `foePower at depth 200 (${dc200.foePower}) not within 0.05 of MAX (${FOE_POWER_MAX})`,
-    );
-  }
-  if (ABILITY_THREAT_MAX > ABILITY_THREAT_BASE) {
-    assert.ok(
-      Math.abs(dc200.abilityThreat - ABILITY_THREAT_MAX) <= 0.05,
-      `abilityThreat at depth 200 (${dc200.abilityThreat}) not within 0.05 of MAX (${ABILITY_THREAT_MAX})`,
-    );
-  }
+  assert.ok(
+    Math.abs(dc200.foePower - ENDGAME_FOE_POWER_AT_END * FOE_POWER_MAX) <= 0.05,
+    `foePower at depth 200 (${dc200.foePower}) not within 0.05 of ENDGAME_FOE_POWER_AT_END x MAX (${ENDGAME_FOE_POWER_AT_END * FOE_POWER_MAX})`,
+  );
+  assert.ok(
+    Math.abs(dc200.abilityThreat - ENDGAME_ABILITY_THREAT_AT_END * ABILITY_THREAT_MAX) <= 0.05,
+    `abilityThreat at depth 200 (${dc200.abilityThreat}) not within 0.05 of ENDGAME_ABILITY_THREAT_AT_END x MAX (${ENDGAME_ABILITY_THREAT_AT_END * ABILITY_THREAT_MAX})`,
+  );
 });
 
 test("startCombat at depth 30 builds more than 3 foes when the canon roll is 3 and foeBonus >= 1", () => {

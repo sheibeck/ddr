@@ -290,8 +290,10 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         }
       }
       if (!ok) {
-        // Phase 27 (TUNE-06): hazardScale — post-draw arithmetic, 0 new
-        // draws, identity outside floors HAZARD_FROM_DEPTH..HAZARD_CANON_FROM_DEPTH-1
+        // Phase 27 (TUNE-06)/Phase 54 (USER RULING C): hazardScale —
+        // post-draw arithmetic, 0 new draws; a per-floor knot table
+        // (engine/difficulty.js's knotHazardFor), literal 1 below
+        // HAZARD_FROM_DEPTH (floor 1, never moves)
         hurt = scaleHazard(hurt, difficultyCurve(state.floor.depth));
         state.c.wp -= hurt;
         events.push({ type: climbing ? "fellClimbing" : "fellInGorge", hurt });

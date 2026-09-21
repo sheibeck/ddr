@@ -30,6 +30,8 @@ import {
   DARK_RADIUS_CAP,
   DARK_HOLD_THROUGH_DEPTH,
   HAZARD_SCALE_AT_START,
+  HAZARD_SCALE_AT_3,
+  HAZARD_SCALE_AT_4,
   WALL_FROM_DEPTH,
   WALL_TO_DEPTH,
   WALL_FOE_POWER_AT_START,
@@ -38,16 +40,24 @@ import {
   BREAKAWAY_TO_DEPTH,
   BREAKAWAY_FOE_POWER_AT_START,
   BREAKAWAY_FOE_POWER_AT_END,
-  ENDGAME_CANON_FROM_DEPTH,
+  ENDGAME_FROM_DEPTH,
+  ENDGAME_TO_DEPTH,
+  ENDGAME_FOE_POWER_AT_START,
+  ENDGAME_FOE_POWER_AT_END,
   WALL_HAZARD_SCALE,
+  BREAKAWAY_HAZARD_SCALE,
+  ENDGAME_HAZARD_SCALE,
   WALL_ABILITY_THREAT_AT_START,
   WALL_ABILITY_THREAT_AT_END,
   BREAKAWAY_ABILITY_THREAT_AT_START,
   BREAKAWAY_ABILITY_THREAT_AT_END,
+  ENDGAME_ABILITY_THREAT_AT_START,
+  ENDGAME_ABILITY_THREAT_AT_END,
   COMBAT_SCALE_FROM_DEPTH,
-  FOE_GRACE_CANON_FROM_DEPTH,
   FOE_GRACE_AT_1,
   FOE_GRACE_AT_2,
+  FOE_GRACE_AT_3,
+  FOE_GRACE_AT_4,
   HAZARD_FROM_DEPTH,
 } from "../../engine/difficulty.js";
 import fs from "node:fs";
@@ -118,14 +128,12 @@ test("Phase 27 deliberate easing (TUNE-06): depths 3-5 are pinned to the retune 
   }
 });
 
-test("hazardScale is exactly 1 at depths 1, 5, 6, 20 and never below HAZARD_SCALE_AT_START", () => {
-  for (const depth of [1, 5, 6, 20]) {
-    assert.equal(Object.is(difficultyCurve(depth).hazardScale, 1), true, `depth ${depth}: hazardScale must be exactly 1`);
-  }
+test("hazardScale is exactly 1 at depth 1 (floor-1 parity) and equals the knot table elsewhere; never below 0.25", () => {
+  assert.equal(Object.is(difficultyCurve(1).hazardScale, 1), true, "depth 1: hazardScale must be exactly 1");
   for (let depth = 1; depth <= 200; depth++) {
     assert.ok(
-      difficultyCurve(depth).hazardScale >= HAZARD_SCALE_AT_START,
-      `depth ${depth}: hazardScale ${difficultyCurve(depth).hazardScale} below HAZARD_SCALE_AT_START`,
+      difficultyCurve(depth).hazardScale >= 0.25,
+      `depth ${depth}: hazardScale ${difficultyCurve(depth).hazardScale} below the knot clamp floor 0.25`,
     );
   }
 });
@@ -190,30 +198,39 @@ test("difficultyCurve consumes no rng (pure function of depth only — signature
 
 // --- Phase 54 (BAND-01/BAND-02): four-band curve pins ----------------------
 
-test("Phase 54 (BAND-02) structural pins: WALL_FROM_DEPTH === FOE_GRACE_CANON_FROM_DEPTH, WALL_TO_DEPTH + 1 === BREAKAWAY_FROM_DEPTH, BREAKAWAY_TO_DEPTH + 1 === ENDGAME_CANON_FROM_DEPTH, ENDGAME_CANON_FROM_DEPTH <= 16 and < COMBAT_SCALE_FROM_DEPTH (21), FOE_GRACE_AT_1 === 1, HAZARD_FROM_DEPTH >= 2, FOE_GRACE_CANON_FROM_DEPTH === 5 and HAZARD_CANON_FROM_DEPTH === 5 (the Filter ramps still end at 1.0 at their canon-from depths), FOE_GRACE_AT_2 >= 0.35 and HAZARD_SCALE_AT_START >= 0.3 (the Filter rung ceilings, USER RULING A), every band multiplier in (0, 1]", () => {
-  assert.equal(WALL_FROM_DEPTH, FOE_GRACE_CANON_FROM_DEPTH);
-  assert.equal(WALL_TO_DEPTH + 1, BREAKAWAY_FROM_DEPTH);
-  assert.equal(BREAKAWAY_TO_DEPTH + 1, ENDGAME_CANON_FROM_DEPTH);
-  assert.ok(ENDGAME_CANON_FROM_DEPTH <= 16);
-  assert.ok(ENDGAME_CANON_FROM_DEPTH < COMBAT_SCALE_FROM_DEPTH);
-  assert.equal(COMBAT_SCALE_FROM_DEPTH, 21);
+test("Phase 54 (USER RULING C) knot pins: knot depths strictly increasing 2 < 3 < 4 < 5 < 8 < 9 < 15 < 16 < 20 < COMBAT_SCALE_FROM_DEPTH, FOE_GRACE_AT_1 === 1, HAZARD_FROM_DEPTH >= 2, every foePower knot in [0.25, 1.5], every hazard knot in [0.25, 1.0], every ability knot in [0.5, 1.0]", () => {
+  const knotDepths = [2, 3, 4, WALL_FROM_DEPTH, WALL_TO_DEPTH, BREAKAWAY_FROM_DEPTH, BREAKAWAY_TO_DEPTH, ENDGAME_FROM_DEPTH, ENDGAME_TO_DEPTH];
+  for (let i = 0; i < knotDepths.length - 1; i++) {
+    assert.ok(knotDepths[i] < knotDepths[i + 1], `knot depths must strictly increase at index ${i}`);
+  }
+  assert.ok(knotDepths[knotDepths.length - 1] < COMBAT_SCALE_FROM_DEPTH);
   assert.equal(FOE_GRACE_AT_1, 1);
   assert.ok(HAZARD_FROM_DEPTH >= 2);
-  assert.equal(FOE_GRACE_CANON_FROM_DEPTH, 5);
-  assert.ok(FOE_GRACE_AT_2 >= 0.35);
-  assert.ok(HAZARD_SCALE_AT_START >= 0.3);
   for (const m of [
+    FOE_GRACE_AT_2,
+    FOE_GRACE_AT_3,
+    FOE_GRACE_AT_4,
     WALL_FOE_POWER_AT_START,
     WALL_FOE_POWER_AT_END,
     BREAKAWAY_FOE_POWER_AT_START,
     BREAKAWAY_FOE_POWER_AT_END,
-    WALL_HAZARD_SCALE,
+    ENDGAME_FOE_POWER_AT_START,
+    ENDGAME_FOE_POWER_AT_END,
+  ]) {
+    assert.ok(m >= 0.25 && m <= 1.5, `foePower knot ${m} must be in [0.25, 1.5]`);
+  }
+  for (const m of [HAZARD_SCALE_AT_START, HAZARD_SCALE_AT_3, HAZARD_SCALE_AT_4, WALL_HAZARD_SCALE, BREAKAWAY_HAZARD_SCALE, ENDGAME_HAZARD_SCALE]) {
+    assert.ok(m >= 0.25 && m <= 1.0, `hazard knot ${m} must be in [0.25, 1.0]`);
+  }
+  for (const m of [
     WALL_ABILITY_THREAT_AT_START,
     WALL_ABILITY_THREAT_AT_END,
     BREAKAWAY_ABILITY_THREAT_AT_START,
     BREAKAWAY_ABILITY_THREAT_AT_END,
+    ENDGAME_ABILITY_THREAT_AT_START,
+    ENDGAME_ABILITY_THREAT_AT_END,
   ]) {
-    assert.ok(m > 0 && m <= 1, `band multiplier ${m} must be in (0, 1]`);
+    assert.ok(m >= 0.5 && m <= 1.0, `ability knot ${m} must be in [0.5, 1.0]`);
   }
 });
 
@@ -239,69 +256,28 @@ test("Phase 54 (BAND-01) floor-1 parity: difficultyCurve(1) deepStrictEqual to t
   assert.deepStrictEqual(difficultyCurve(1), PHASE_53_FLOOR1_PIN);
 });
 
-// FILTER_PINS — depths 2..4. Phase 54 ladder rung 2 (2026-09-21, BAND-02,
-// USER RULING A — a Filter rung): FOE_GRACE_AT_2 0.5 -> 0.4 re-pins
-// foePower here (0.5/0.667/0.833 -> 0.4/0.6/0.8), measured live via node -e
-// against engine/difficulty.js, never hand-computed; hazardScale unchanged
-// this rung (HAZARD_SCALE_AT_START not moved — Filter hazards were ~13.4%
-// of Filter deaths at rung 1, below the 20% threshold). DARK_HOLD_THROUGH_
-// DEPTH / ENCOUNTER_DOT_CAP / DARK_BLOB_CAP never move, so dots/darkBlobs/
-// darkRadius here are never re-pinned.
-const FILTER_PINS = {
-  2: {
-    depth: 2,
-    breather: false,
-    dots: 11,
-    darkBlobs: 1,
-    darkRadius: 5,
-    foeCap: 3,
-    foeBonus: 0,
-    foeLvlBias: 0,
-    foePower: 0.4,
-    hazardScale: 0.5,
-    abilityThreat: 1,
-    waterPools: 1,
-  },
-  3: {
-    depth: 3,
-    breather: false,
-    dots: 11,
-    darkBlobs: 1,
-    darkRadius: 6,
-    foeCap: 3,
-    foeBonus: 0,
-    foeLvlBias: 0,
-    foePower: 0.6,
-    hazardScale: 0.5,
-    abilityThreat: 1,
-    waterPools: 1,
-  },
-  4: {
-    depth: 4,
-    breather: false,
-    dots: 11,
-    darkBlobs: 2,
-    darkRadius: 7,
-    foeCap: 3,
-    foeBonus: 0,
-    foeLvlBias: 0,
-    foePower: 0.8,
-    hazardScale: 0.75,
-    abilityThreat: 1,
-    waterPools: 1,
-  },
-};
-
-test("Phase 54 (BAND-02) Filter cushion 2..4: difficultyCurve(2..4) pinned to the landed Filter-rung values (re-pinned per Filter rung, never loosened; Phase 53 values at the scaffold)", () => {
-  for (const [depth, expected] of Object.entries(FILTER_PINS)) {
-    assert.deepStrictEqual(difficultyCurve(Number(depth)), expected, `depth ${depth}`);
-  }
-});
-
-// PHASE_53_ENDGAME_PINS — depths 16..25, 35, 50, pasted verbatim from the
-// Phase 53 engine capture. Never re-pinned this phase — the --start-depth
-// 20 yardstick is identity BY CONSTRUCTION.
-const PHASE_53_ENDGAME_PINS = {
+// CURVE_PINS — Phase 54 (USER RULING C, rung 3a): depths 2..25, 35, 50,
+// MERGED from the retired FILTER_PINS (2-4) / BAND_PINS (5-15) /
+// PHASE_53_ENDGAME_PINS (16-25/35/50) into ONE re-pinnable literal — every
+// value here is landed at the rung-2 curve (byte-identity proof, see the
+// ladder's commit history), measured live via `node -e` against
+// engine/difficulty.js, NEVER hand-computed. Re-pinned per rung from then
+// on, never loosened.
+const CURVE_PINS = {
+  2: { depth: 2, breather: false, dots: 11, darkBlobs: 1, darkRadius: 5, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.4, hazardScale: 0.5, abilityThreat: 1, waterPools: 1 },
+  3: { depth: 3, breather: false, dots: 11, darkBlobs: 1, darkRadius: 6, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.6, hazardScale: 0.5, abilityThreat: 1, waterPools: 1 },
+  4: { depth: 4, breather: false, dots: 11, darkBlobs: 2, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.8, hazardScale: 0.75, abilityThreat: 1, waterPools: 1 },
+  5: { depth: 5, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.85, hazardScale: 1, abilityThreat: 1, waterPools: 2 },
+  6: { depth: 6, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.8833333333333334, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
+  7: { depth: 7, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.9166666666666667, hazardScale: 1, abilityThreat: 1, waterPools: 2 },
+  8: { depth: 8, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.95, hazardScale: 1, abilityThreat: 1, waterPools: 2 },
+  9: { depth: 9, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.95, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  10: { depth: 10, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.9583333333333333, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  11: { depth: 11, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.9666666666666668, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
+  12: { depth: 12, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.975, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  13: { depth: 13, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.9833333333333334, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  14: { depth: 14, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.9916666666666667, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 1, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
   16: { depth: 16, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 1, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
   17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 1, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
   18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 1, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
@@ -316,54 +292,18 @@ const PHASE_53_ENDGAME_PINS = {
   50: { depth: 50, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 4, foeBonus: 1, foeLvlBias: 0, foePower: 1.0863440731484575, hazardScale: 1, abilityThreat: 1.1896361676485674, waterPools: 3 },
 };
 
-test("Phase 54 (BAND-01) Endgame identity — the --start-depth 20 yardstick: difficultyCurve(16..20).foePower/abilityThreat/hazardScale are the literal 1 (Object.is) and difficultyCurve(16..25, 35, 50) deepStrictEqual to the Phase 53 curve — never re-pinned this phase", () => {
-  for (let d = 16; d <= 20; d++) {
-    const dc = difficultyCurve(d);
-    assert.equal(Object.is(dc.foePower, 1), true, `depth ${d}: foePower must be the literal 1`);
-    assert.equal(Object.is(dc.abilityThreat, 1), true, `depth ${d}: abilityThreat must be the literal 1`);
-    assert.equal(Object.is(dc.hazardScale, 1), true, `depth ${d}: hazardScale must be the literal 1`);
-  }
-  for (const [depth, expected] of Object.entries(PHASE_53_ENDGAME_PINS)) {
+test("Phase 54 (USER RULING C) curve pins 2..25/35/50: difficultyCurve deepStrictEqual to the landed rung values — re-pinned per rung from node -e, never hand-typed, never loosened", () => {
+  for (const [depth, expected] of Object.entries(CURVE_PINS)) {
     assert.deepStrictEqual(difficultyCurve(Number(depth)), expected, `depth ${depth}`);
   }
 });
 
-// BAND_PINS — the 5..15 band curve. Rung 1 (commit pending, 2026-09-21):
-// Wall foePower 0.85 -> 0.95 (5-8), Breakaway 0.95 -> 1.0 (9-15) — measured
-// live via node -e against engine/difficulty.js, never hand-computed;
-// hazardScale/abilityThreat unchanged this rung (identity).
-const BAND_PINS = {
-  5: { foePower: 0.85, abilityThreat: 1, hazardScale: 1 },
-  6: { foePower: 0.8833333333333334, abilityThreat: 1, hazardScale: 1 },
-  7: { foePower: 0.9166666666666667, abilityThreat: 1, hazardScale: 1 },
-  8: { foePower: 0.95, abilityThreat: 1, hazardScale: 1 },
-  9: { foePower: 0.95, abilityThreat: 1, hazardScale: 1 },
-  10: { foePower: 0.9583333333333333, abilityThreat: 1, hazardScale: 1 },
-  11: { foePower: 0.9666666666666668, abilityThreat: 1, hazardScale: 1 },
-  12: { foePower: 0.975, abilityThreat: 1, hazardScale: 1 },
-  13: { foePower: 0.9833333333333334, abilityThreat: 1, hazardScale: 1 },
-  14: { foePower: 0.9916666666666667, abilityThreat: 1, hazardScale: 1 },
-  15: { foePower: 1, abilityThreat: 1, hazardScale: 1 },
-};
-
-test("Phase 54 (BAND-02) band curve 5..15: foePower / abilityThreat / hazardScale pinned to the landed rung values (re-pinned per rung, never loosened)", () => {
-  for (const [depth, expected] of Object.entries(BAND_PINS)) {
-    const dc = difficultyCurve(Number(depth));
-    assert.equal(dc.foePower, expected.foePower, `depth ${depth}: foePower`);
-    assert.equal(dc.abilityThreat, expected.abilityThreat, `depth ${depth}: abilityThreat`);
-    assert.equal(dc.hazardScale, expected.hazardScale, `depth ${depth}: hazardScale`);
-  }
-});
-
-test("Phase 54 (BAND-02) the Wall steps UP from the floor-4 grace and foePower never steps DOWN across 5..20 (the 15 -> 16 hand-off included)", () => {
-  assert.ok(difficultyCurve(5).foePower >= difficultyCurve(4).foePower);
-  for (let d = 5; d <= 19; d++) {
-    assert.ok(
-      difficultyCurve(d + 1).foePower >= difficultyCurve(d).foePower,
-      `foePower stepped down from depth ${d} to ${d + 1}`,
-    );
-  }
-});
+// Retired under USER RULING C (2026-09-21): "Phase 54 (BAND-01) Endgame
+// identity — the --start-depth 20 yardstick" and "Phase 54 (BAND-02) the
+// Wall steps UP … never steps DOWN across 5..20" — 16+ is now dialable
+// (ENDGAME_FOE_POWER_AT_START/END) and the target p_L is U-shaped (foePower
+// may legitimately dip then rise); CURVE_PINS above still catches any
+// unintended drift on every sampled depth.
 
 test("Phase 54 (BAND-02) difficultyCurve stays draw-free: arity 1 and engine/difficulty.js's code (comments stripped) never names an rng", () => {
   const src = fs.readFileSync(path.join(__dirname, "../../engine/difficulty.js"), "utf8");

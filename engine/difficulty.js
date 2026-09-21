@@ -57,6 +57,32 @@
 // is byte-identical to Phase 53's at every depth; Plan 02's rungs move only
 // the numbers. Recorded in docs/DIFFICULTY-RETUNE.md's
 // "### v1.7 · Phase 54 — four-band retune & roster decision" section.
+//
+// DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21) — USER RULING C:
+// mid-ladder, the user replaced the four bands' NUMERIC targets with a
+// per-floor survival CURVE (docs/DIFFICULTY-RETUNE.md's `#### Target — the
+// per-floor survival curve`) and ruled "rules fidelity is relaxed for
+// survival rates" — dials may leave canon at ANY depth >= 2 by whatever
+// amount a bot readout justifies (floor 1 stays parity-exact by rule, not
+// by a structural ceiling). The band-piecewise curve above is replaced by a
+// per-floor KNOT table: every existing constant name is kept and becomes a
+// knot depth (FOE_GRACE_AT_2/3/4, WALL_/BREAKAWAY_/ENDGAME_FOE_POWER_AT_
+// START/END, matching hazard and ability-threat knots), interpolated by
+// `bandLerp` between adjacent knots, fitted rung-by-rung by a deterministic
+// formula from the previous rung's per-floor survival readout (see the
+// ladder's fit rule, quoted in the ledger). `ENDGAME_CANON_FROM_DEPTH`'s
+// "identity by construction, never re-pinned" guarantee and
+// `COMBAT_SCALE_FROM_DEPTH`'s "may only ever move up" note (both above) are
+// SUPERSEDED by this ruling — 16+ is now a dialable knot pair
+// (`ENDGAME_FOE_POWER_AT_START/END`), renamed `ENDGAME_CANON_FROM_DEPTH` ->
+// `ENDGAME_FROM_DEPTH` with a new `ENDGAME_TO_DEPTH`. Floor 1
+// (`FOE_GRACE_AT_1`, the hazard literal, floor-1 dots/dark) remains the
+// ONE never-moved invariant this phase. `graceFor`/`bandFoePowerFor`/
+// `bandAbilityThreatFor` are replaced by `knotFoePowerFor`/`knotHazardFor`/
+// `knotAbilityThreatFor` below. History (the retired
+// `FOE_GRACE_CANON_FROM_DEPTH`/`HAZARD_FLAT_THROUGH_DEPTH`/
+// `HAZARD_CANON_FROM_DEPTH` constants and every superseded band value) is
+// kept in docs/DIFFICULTY-RETUNE.md's change table, not in this file.
 
 /** Every BREATHER_EVERY-th floor after floor 1 is a lighter "breather" floor. */
 export const BREATHER_EVERY = 5;
@@ -247,26 +273,34 @@ export const FOE_GRACE_AT_1 = 1.0;
  * graceFor(4) = 0.8, so the Wall-steps-UP invariant holds unchanged this
  * rung. Readout recorded under docs/DIFFICULTY-RETUNE.md `#### Rung 2`. */
 export const FOE_GRACE_AT_2 = 0.4;
-/** FOE_GRACE_CANON_FROM_DEPTH — the first depth whose foePower returns to
- * exactly 1.0 (the literal, not merely a float that rounds to it — see
- * graceFor()'s `>=` guard below, the same structural-identity technique
- * COMBAT_SCALE_FROM_DEPTH uses). */
-export const FOE_GRACE_CANON_FROM_DEPTH = 5;
+/** FOE_GRACE_AT_3 — NEW knot (Phase 54, USER RULING C, rung 3a): floor 3's
+ * foePower knot. Landed at rung-2's own interpolated value (0.6 — the
+ * value `graceFor(3)` already computed from FOE_GRACE_AT_2/
+ * FOE_GRACE_CANON_FROM_DEPTH) so the knot restructure is byte-identical;
+ * fitted per rung thereafter, cited in docs/DIFFICULTY-RETUNE.md's
+ * `#### Rung N`. */
+export const FOE_GRACE_AT_3 = 0.6;
+/** FOE_GRACE_AT_4 — NEW knot (Phase 54, USER RULING C, rung 3a): floor 4's
+ * foePower knot. Landed at rung-2's own interpolated value (0.8), fitted
+ * per rung thereafter. */
+export const FOE_GRACE_AT_4 = 0.8;
 
 /** HAZARD_FROM_DEPTH — Phase 27 (TUNE-06): the first depth whose hazardScale
  * may leave identity (1.0). MUST stay >= 2 (floor 1 canon — a from-floor-1
  * ramp is a 27-03 escalation with a declared parity divergence record). */
 export const HAZARD_FROM_DEPTH = 2;
 /** HAZARD_SCALE_AT_START — Phase 27 (TUNE-06): the hazardScale value at
- * HAZARD_FROM_DEPTH, held flat through HAZARD_FLAT_THROUGH_DEPTH, then
- * eased linearly to exactly 1.0 by HAZARD_CANON_FROM_DEPTH. */
+ * HAZARD_FROM_DEPTH (floor 2's hazard knot). */
 export const HAZARD_SCALE_AT_START = 0.5;
-/** HAZARD_FLAT_THROUGH_DEPTH — the last depth still at HAZARD_SCALE_AT_START
- * before the linear ease back to canon begins. */
-export const HAZARD_FLAT_THROUGH_DEPTH = 3;
-/** HAZARD_CANON_FROM_DEPTH — the first depth whose hazardScale returns to
- * exactly 1.0 (the literal — see the `>=` guard in difficultyCurve below). */
-export const HAZARD_CANON_FROM_DEPTH = 5;
+/** HAZARD_SCALE_AT_3 — NEW knot (Phase 54, USER RULING C, rung 3a): floor
+ * 3's hazard knot. Landed at rung-2's own flat-through value (0.5),
+ * fitted per rung thereafter (moves with the band's foePower fit whenever
+ * hazard deaths are >= 15% of that band's deaths). */
+export const HAZARD_SCALE_AT_3 = 0.5;
+/** HAZARD_SCALE_AT_4 — NEW knot (Phase 54, USER RULING C, rung 3a): floor
+ * 4's hazard knot. Landed at rung-2's own interpolated value (0.75),
+ * fitted per rung thereafter. */
+export const HAZARD_SCALE_AT_4 = 0.75;
 
 // --- Phase 54 (BAND-02): the four-band curve on floors 5-15 ---------------
 // DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21): the user's
@@ -281,12 +315,14 @@ export const HAZARD_CANON_FROM_DEPTH = 5;
 // lands every constant below at an IDENTITY value — difficultyCurve is
 // byte-identical to Phase 53's (commit 78572c5) at every depth 1..50; Plan
 // 02's ladder rungs move ONLY these numbers, each citing the bot readout
-// that motivated the move. `COMBAT_SCALE_FROM_DEPTH` stays 21 (Phase 27's
-// "may only ever move up" — 21+ is untouched by this phase).
+// that motivated the move. `COMBAT_SCALE_FROM_DEPTH` stays 21 this rung
+// (SUPERSEDED note: Phase 27's "may only ever move up" no longer applies —
+// USER RULING C permits moving it if a future rung's readout justifies it).
 
-/** WALL_FROM_DEPTH — the first depth of the Wall band (5-8); MUST equal
- * FOE_GRACE_CANON_FROM_DEPTH — the grace band hands straight to the Wall,
- * no gap and no overlap. */
+/** WALL_FROM_DEPTH — the first depth of the Wall band (5-8); MUST equal the
+ * floor-4 knot's depth + 1 — the grace band hands straight to the Wall, no
+ * gap and no overlap (the retired FOE_GRACE_CANON_FROM_DEPTH used to pin
+ * this; now a structural knot-depth invariant instead). */
 export const WALL_FROM_DEPTH = 5;
 /** WALL_TO_DEPTH — the last depth of the Wall band (5-8). */
 export const WALL_TO_DEPTH = 8;
@@ -317,17 +353,44 @@ export const BREAKAWAY_FOE_POWER_AT_START = 0.95;
  * Breakaway eases back to identity by 15; 16 is the literal by the guard;
  * unchanged this rung). */
 export const BREAKAWAY_FOE_POWER_AT_END = 1.0;
-/** ENDGAME_CANON_FROM_DEPTH — the first depth whose foePower/abilityThreat/
- * hazardScale return to the literal 1 (the `>=` guard technique — a
- * structural identity, not a rounding accident). MUST stay <= 16 and
- * < COMBAT_SCALE_FROM_DEPTH (21); the `--start-depth 20` slice is
- * byte-identical to Phase 53's by construction, never re-pinned this
- * phase. */
-export const ENDGAME_CANON_FROM_DEPTH = 16;
+/** ENDGAME_FROM_DEPTH — Phase 54 (USER RULING C, rung 3a): RENAMED from
+ * `ENDGAME_CANON_FROM_DEPTH` (Phase 53's "identity by construction, never
+ * re-pinned" guarantee on 16+ is SUPERSEDED by USER RULING C — floors 16-20
+ * are now a dialable knot pair, `ENDGAME_FOE_POWER_AT_START/END` below).
+ * The first depth of the Endgame band (16). */
+export const ENDGAME_FROM_DEPTH = 16;
+/** ENDGAME_TO_DEPTH — NEW (Phase 54, USER RULING C, rung 3a): the last
+ * depth of the Endgame band (20) — MUST equal COMBAT_SCALE_FROM_DEPTH - 1
+ * so the 21+ ramp (below) is continuous with this knot pair's END value at
+ * the boundary (softCapFloat's over-0 exactness). */
+export const ENDGAME_TO_DEPTH = 20;
+/** ENDGAME_FOE_POWER_AT_START — NEW knot (Phase 54, USER RULING C, rung
+ * 3a): foePower at ENDGAME_FROM_DEPTH (16). Landed at the Phase 53 identity
+ * value (1.0 — the byte-identity proof for the knot restructure), fitted
+ * per rung thereafter from the `--start-depth=20` slice's p_20 (fewer than
+ * 10 natural runs reach floor 16 until the ladder softens floors 5-15). */
+export const ENDGAME_FOE_POWER_AT_START = 1.0;
+/** ENDGAME_FOE_POWER_AT_END — NEW knot (Phase 54, USER RULING C, rung 3a):
+ * foePower at ENDGAME_TO_DEPTH (20) — this value also scales the
+ * COMBAT_SCALE_FROM_DEPTH+ ramp (see knotFoePowerFor below): the Phase 21
+ * soft-cap curve is RELATIVE to this floor-20 value now, not an absolute
+ * 1.0. Landed at 1.0 (identity — the byte-identity proof), fitted per rung
+ * thereafter. */
+export const ENDGAME_FOE_POWER_AT_END = 1.0;
 /** WALL_HAZARD_SCALE — the trap/wall-fall damage multiplier on
  * WALL_FROM_DEPTH..WALL_TO_DEPTH (scaffold: identity, 1.0 — the literal
  * `1` for scaleHazard's `=== 1` fast path); a rung-2+ dial. */
 export const WALL_HAZARD_SCALE = 1.0;
+/** BREAKAWAY_HAZARD_SCALE — NEW knot (Phase 54, USER RULING C, rung 3a):
+ * the hazard multiplier flat across BREAKAWAY_FROM_DEPTH..BREAKAWAY_TO_DEPTH
+ * (9-15). Landed at the Phase 53 identity value (1.0 — the byte-identity
+ * proof), fitted per rung thereafter. */
+export const BREAKAWAY_HAZARD_SCALE = 1.0;
+/** ENDGAME_HAZARD_SCALE — NEW knot (Phase 54, USER RULING C, rung 3a): the
+ * hazard multiplier flat across every depth >= ENDGAME_FROM_DEPTH (16),
+ * including 21+ (hazard has no separate deep ramp). Landed at the Phase 53
+ * identity value (1.0), fitted per rung thereafter. */
+export const ENDGAME_HAZARD_SCALE = 1.0;
 /** WALL_ABILITY_THREAT_AT_START — abilityThreat at WALL_FROM_DEPTH
  * (scaffold: identity; the caster-cadence band, a rung-2+ dial). */
 export const WALL_ABILITY_THREAT_AT_START = 1.0;
@@ -337,6 +400,16 @@ export const WALL_ABILITY_THREAT_AT_END = 1.0;
 export const BREAKAWAY_ABILITY_THREAT_AT_START = 1.0;
 /** BREAKAWAY_ABILITY_THREAT_AT_END — abilityThreat at BREAKAWAY_TO_DEPTH (scaffold: identity). */
 export const BREAKAWAY_ABILITY_THREAT_AT_END = 1.0;
+/** ENDGAME_ABILITY_THREAT_AT_START — NEW knot (Phase 54, USER RULING C,
+ * rung 3a): abilityThreat at ENDGAME_FROM_DEPTH (16). Landed at the Phase
+ * 53 identity value (1.0), fitted per rung when kit-bearing foes are >= 25%
+ * of the Endgame band's deaths. */
+export const ENDGAME_ABILITY_THREAT_AT_START = 1.0;
+/** ENDGAME_ABILITY_THREAT_AT_END — NEW knot (Phase 54, USER RULING C, rung
+ * 3a): abilityThreat at ENDGAME_TO_DEPTH (20) — also scales the
+ * COMBAT_SCALE_FROM_DEPTH+ ability ramp, RELATIVE to this floor-20 value.
+ * Landed at 1.0 (identity), fitted per rung thereafter. */
+export const ENDGAME_ABILITY_THREAT_AT_END = 1.0;
 
 /**
  * safeDepth(depth) — clamps an arbitrary input to a positive integer BEFORE
@@ -406,69 +479,108 @@ export function isBreather(depth) {
 }
 
 /**
- * graceFor(d) — Phase 27 (TUNE-06): the foe-grace multiplier for depths
- * below COMBAT_SCALE_FROM_DEPTH. Floor 1 is always exactly FOE_GRACE_AT_1
- * (canon, 1.0). Depths FOE_GRACE_CANON_FROM_DEPTH and beyond are always
- * exactly 1.0 via the `>=` guard (a literal, not a float that merely rounds
- * to it — the same structural-identity technique COMBAT_SCALE_FROM_DEPTH
- * uses for the deep combat dials). Depths 2..FOE_GRACE_CANON_FROM_DEPTH-1
- * interpolate linearly from FOE_GRACE_AT_2 to 1.0. Not exported — internal
- * helper only, consumed by difficultyCurve()'s `foePower` field below.
- */
-function graceFor(d) {
-  if (d === 1) return FOE_GRACE_AT_1;
-  if (d >= FOE_GRACE_CANON_FROM_DEPTH) return 1;
-  return FOE_GRACE_AT_2 + (1 - FOE_GRACE_AT_2) * (d - 2) / (FOE_GRACE_CANON_FROM_DEPTH - 2);
-}
-
-/**
  * bandLerp(a, b, t) — Phase 54 (BAND-02): the endpoint-exact linear
- * interpolation the band curve uses. Identity by construction whenever
- * `a === b` (returns `a` for ANY `t`, never drifting via floating-point
- * arithmetic — the same discipline COMBAT_SCALE_FROM_DEPTH's `over` guard
- * and graceFor's `>=` guard use). Exact at t = 0 and t = 1 (the landed
- * band-endpoint constants are hit exactly, not merely approximately). Not
- * exported — internal helper only.
+ * interpolation the knot table uses between adjacent knots. Identity by
+ * construction whenever `a === b` (returns `a` for ANY `t`, never drifting
+ * via floating-point arithmetic — the same discipline COMBAT_SCALE_FROM_DEPTH's
+ * `over` guard uses). Exact at t = 0 and t = 1 (a knot depth returns its own
+ * constant exactly, never a float that merely rounds to it). Not exported —
+ * internal helper only.
  */
 function bandLerp(a, b, t) {
   return a === b ? a : (1 - t) * a + t * b;
 }
 
 /**
- * bandFoePowerFor(d) — Phase 54 (BAND-02): the foePower multiplier for the
- * Wall (5-8) and Breakaway (9-15) bands. Callers must only invoke this for
- * `d >= WALL_FROM_DEPTH` (difficultyCurve's own ternary below enforces
- * this); the `>= ENDGAME_CANON_FROM_DEPTH` guard returns the literal `1`
- * first so 16+ is identity BY CONSTRUCTION, never by float rounding. Not
- * exported — internal helper only, consumed by difficultyCurve()'s
+ * knotFoePowerFor(d) — Phase 54 (USER RULING C): the per-floor foePower
+ * knot table, replacing Phase 27's `graceFor` and Phase 54 (BAND-02)'s
+ * `bandFoePowerFor`. Floor 1 is always exactly FOE_GRACE_AT_1 (the ONE
+ * never-moved invariant this phase — never a knot). Depths 2..
+ * ENDGAME_TO_DEPTH (20) interpolate via bandLerp between the nearest
+ * bracketing knot pair (a knot depth returns its own constant exactly).
+ * From COMBAT_SCALE_FROM_DEPTH (21) on, the Phase 21 soft-cap ramp applies
+ * RELATIVE to the floor-20 value (ENDGAME_FOE_POWER_AT_END) — continuous at
+ * the boundary because `over` is exactly 0 at d === ENDGAME_TO_DEPTH ===
+ * COMBAT_SCALE_FROM_DEPTH - 1 (softCapFloat's over-0 exactness guarantee).
+ * Not exported — internal helper only, consumed by difficultyCurve()'s
  * `foePower` field below.
  */
-function bandFoePowerFor(d) {
-  if (d >= ENDGAME_CANON_FROM_DEPTH) return 1;
-  if (d <= WALL_TO_DEPTH) {
-    const t = (d - WALL_FROM_DEPTH) / (WALL_TO_DEPTH - WALL_FROM_DEPTH);
-    return bandLerp(WALL_FOE_POWER_AT_START, WALL_FOE_POWER_AT_END, t);
+function knotFoePowerFor(d) {
+  if (d === 1) return FOE_GRACE_AT_1;
+  if (d > ENDGAME_TO_DEPTH) {
+    const over = Math.max(0, d - (COMBAT_SCALE_FROM_DEPTH - 1));
+    return ENDGAME_FOE_POWER_AT_END * softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K);
   }
-  const t = (d - BREAKAWAY_FROM_DEPTH) / (BREAKAWAY_TO_DEPTH - BREAKAWAY_FROM_DEPTH);
-  return bandLerp(BREAKAWAY_FOE_POWER_AT_START, BREAKAWAY_FOE_POWER_AT_END, t);
+  const knots = [
+    [2, FOE_GRACE_AT_2],
+    [3, FOE_GRACE_AT_3],
+    [4, FOE_GRACE_AT_4],
+    [WALL_FROM_DEPTH, WALL_FOE_POWER_AT_START],
+    [WALL_TO_DEPTH, WALL_FOE_POWER_AT_END],
+    [BREAKAWAY_FROM_DEPTH, BREAKAWAY_FOE_POWER_AT_START],
+    [BREAKAWAY_TO_DEPTH, BREAKAWAY_FOE_POWER_AT_END],
+    [ENDGAME_FROM_DEPTH, ENDGAME_FOE_POWER_AT_START],
+    [ENDGAME_TO_DEPTH, ENDGAME_FOE_POWER_AT_END],
+  ];
+  for (let i = 0; i < knots.length - 1; i++) {
+    const [dA, vA] = knots[i];
+    const [dB, vB] = knots[i + 1];
+    if (d >= dA && d <= dB) {
+      const t = (d - dA) / (dB - dA);
+      return bandLerp(vA, vB, t);
+    }
+  }
+  return knots[knots.length - 1][1]; // unreachable given the d <= ENDGAME_TO_DEPTH guard above
 }
 
 /**
- * bandAbilityThreatFor(d) — Phase 54 (BAND-02): the abilityThreat cadence
- * scalar for depths < COMBAT_SCALE_FROM_DEPTH. Identity (the literal `1`)
- * below WALL_FROM_DEPTH (floors 1-4 — Phase 27's ramps own that band, not
- * this function) and at/above ENDGAME_CANON_FROM_DEPTH (16+ — identity BY
- * CONSTRUCTION). Not exported — internal helper only, consumed by
- * difficultyCurve()'s `abilityThreat` field below.
+ * knotHazardFor(d) — Phase 54 (USER RULING C): the per-floor hazardScale
+ * knot table. Literal 1 below HAZARD_FROM_DEPTH (floor 1, never moves);
+ * floors 2/3/4 are their own knots (HAZARD_SCALE_AT_START/AT_3/AT_4); the
+ * Wall/Breakaway/Endgame bands are each flat at their own knot
+ * (WALL_HAZARD_SCALE / BREAKAWAY_HAZARD_SCALE / ENDGAME_HAZARD_SCALE) — the
+ * Endgame knot covers every depth >= ENDGAME_FROM_DEPTH, including 21+
+ * (hazard has no separate deep ramp, unlike foePower/abilityThreat). Not
+ * exported — internal helper only, consumed by difficultyCurve()'s
+ * `hazardScale` field below.
  */
-function bandAbilityThreatFor(d) {
-  if (d < WALL_FROM_DEPTH || d >= ENDGAME_CANON_FROM_DEPTH) return 1;
+function knotHazardFor(d) {
+  if (d < HAZARD_FROM_DEPTH) return 1;
+  if (d === 2) return HAZARD_SCALE_AT_START;
+  if (d === 3) return HAZARD_SCALE_AT_3;
+  if (d === 4) return HAZARD_SCALE_AT_4;
+  if (d <= WALL_TO_DEPTH) return WALL_HAZARD_SCALE;
+  if (d <= BREAKAWAY_TO_DEPTH) return BREAKAWAY_HAZARD_SCALE;
+  return ENDGAME_HAZARD_SCALE;
+}
+
+/**
+ * knotAbilityThreatFor(d) — Phase 54 (USER RULING C): the abilityThreat
+ * cadence-scalar knot table, replacing Phase 54 (BAND-02)'s
+ * `bandAbilityThreatFor`. Literal 1 on floors 1-4 (Phase 27's grace band
+ * owns foePower there, not caster cadence); the Wall/Breakaway/Endgame
+ * bands each lerp between their own AT_START/AT_END knot pair. From
+ * COMBAT_SCALE_FROM_DEPTH on, the Phase 21 soft-cap ramp applies RELATIVE
+ * to the floor-20 value (ENDGAME_ABILITY_THREAT_AT_END), same continuity
+ * argument as knotFoePowerFor. Not exported — internal helper only,
+ * consumed by difficultyCurve()'s `abilityThreat` field below.
+ */
+function knotAbilityThreatFor(d) {
+  if (d <= 4) return 1;
+  if (d > ENDGAME_TO_DEPTH) {
+    const over = Math.max(0, d - (COMBAT_SCALE_FROM_DEPTH - 1));
+    return ENDGAME_ABILITY_THREAT_AT_END * softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K);
+  }
   if (d <= WALL_TO_DEPTH) {
     const t = (d - WALL_FROM_DEPTH) / (WALL_TO_DEPTH - WALL_FROM_DEPTH);
     return bandLerp(WALL_ABILITY_THREAT_AT_START, WALL_ABILITY_THREAT_AT_END, t);
   }
-  const t = (d - BREAKAWAY_FROM_DEPTH) / (BREAKAWAY_TO_DEPTH - BREAKAWAY_FROM_DEPTH);
-  return bandLerp(BREAKAWAY_ABILITY_THREAT_AT_START, BREAKAWAY_ABILITY_THREAT_AT_END, t);
+  if (d <= BREAKAWAY_TO_DEPTH) {
+    const t = (d - BREAKAWAY_FROM_DEPTH) / (BREAKAWAY_TO_DEPTH - BREAKAWAY_FROM_DEPTH);
+    return bandLerp(BREAKAWAY_ABILITY_THREAT_AT_START, BREAKAWAY_ABILITY_THREAT_AT_END, t);
+  }
+  const t = (d - ENDGAME_FROM_DEPTH) / (ENDGAME_TO_DEPTH - ENDGAME_FROM_DEPTH);
+  return bandLerp(ENDGAME_ABILITY_THREAT_AT_START, ENDGAME_ABILITY_THREAT_AT_END, t);
 }
 
 /**
@@ -498,26 +610,19 @@ function bandAbilityThreatFor(d) {
  *     changes; 0 through depth < COMBAT_SCALE_FROM_DEPTH
  *   - foeLvlBias: reserved (D-01) — always FOE_LVL_BIAS (0) unless a future
  *     retune needs it
- *   - foePower: below WALL_FROM_DEPTH, Phase 27's `graceFor(d)` (foe grace at
- *     floors 2-4, exactly 1.0 at floor 1); from WALL_FROM_DEPTH through
- *     COMBAT_SCALE_FROM_DEPTH - 1, Phase 54's `bandFoePowerFor(d)` (the Wall
- *     5-8 / Breakaway 9-15 bands, identity from ENDGAME_CANON_FROM_DEPTH by
- *     construction); from COMBAT_SCALE_FROM_DEPTH on, the Phase 21
- *     soft-capped multiplier (D-02) applied to a foe's starting wp/maxWP and
- *     its flat melee damage bonus
- *   - hazardScale: Phase 27 (TUNE-06) — the trap/wall-fall damage multiplier
- *     consumed post-draw by engine/movement.js and engine/encounters.js;
- *     exactly 1.0 below HAZARD_FROM_DEPTH, HAZARD_SCALE_AT_START flat
- *     through HAZARD_FLAT_THROUGH_DEPTH then eased linearly to 1.0 by
- *     HAZARD_CANON_FROM_DEPTH; Phase 54 (BAND-02) adds the Wall hazard band
- *     — WALL_HAZARD_SCALE on WALL_FROM_DEPTH..WALL_TO_DEPTH, literal 1
- *     elsewhere (never by arithmetic, including every depth >=
- *     ENDGAME_CANON_FROM_DEPTH)
- *   - abilityThreat: below COMBAT_SCALE_FROM_DEPTH, Phase 54's
- *     `bandAbilityThreatFor(d)` (identity on floors 1-4 and from
- *     ENDGAME_CANON_FROM_DEPTH on, the Wall/Breakaway band shape on 5-15);
- *     from COMBAT_SCALE_FROM_DEPTH on, the Phase 21 soft-capped cadence
- *     scalar (D-03) for caster kits (every/uses)
+ *   - foePower: Phase 54 (USER RULING C) `knotFoePowerFor(d)` — the
+ *     per-floor knot table (floor 1 always exactly FOE_GRACE_AT_1; floors
+ *     2..20 interpolated between adjacent knots; 21+ the Phase 21 soft-cap
+ *     ramp, RELATIVE to the floor-20 knot value)
+ *   - hazardScale: Phase 54 (USER RULING C) `knotHazardFor(d)` — the
+ *     per-floor hazard knot table (literal 1 below HAZARD_FROM_DEPTH; floors
+ *     2/3/4 their own knots; the Wall/Breakaway/Endgame bands each flat at
+ *     their own knot, the Endgame knot covering every depth >=
+ *     ENDGAME_FROM_DEPTH including 21+ — hazard has no separate deep ramp)
+ *   - abilityThreat: Phase 54 (USER RULING C) `knotAbilityThreatFor(d)` —
+ *     literal 1 on floors 1-4; the Wall/Breakaway/Endgame bands each lerp
+ *     between their own knot pair; 21+ the Phase 21 soft-cap cadence ramp
+ *     (D-03), RELATIVE to the floor-20 knot value
  *   - waterPools: Phase 41 (TERR-01) — the multi-square water pool count for
  *     this floor (see the water-pool-knobs block above); consumes NO rng,
  *     zeroed to WATER_POOL_MIN (never 0) on a breather floor
@@ -548,21 +653,9 @@ export function difficultyCurve(depth) {
       ? Math.min(Math.max(0, d - 1), 1)
       : Math.min(d - DARK_HOLD_THROUGH_DEPTH + 1, DARK_BLOB_CAP);
 
-  // Phase 27 (TUNE-06): hazardScale — literal 1 outside
-  // [HAZARD_FROM_DEPTH, HAZARD_CANON_FROM_DEPTH), flat at
-  // HAZARD_SCALE_AT_START through HAZARD_FLAT_THROUGH_DEPTH, then linear
-  // back to exactly 1.0. Phase 54 (BAND-02): the Wall hazard band —
-  // WALL_HAZARD_SCALE on WALL_FROM_DEPTH..WALL_TO_DEPTH; every depth past
-  // WALL_TO_DEPTH (including every depth >= ENDGAME_CANON_FROM_DEPTH) is the
-  // literal 1 by this final branch, never by arithmetic.
-  const hazardScale =
-    d < HAZARD_FROM_DEPTH || d >= HAZARD_CANON_FROM_DEPTH
-      ? d >= HAZARD_CANON_FROM_DEPTH && d <= WALL_TO_DEPTH
-        ? WALL_HAZARD_SCALE
-        : 1
-      : d <= HAZARD_FLAT_THROUGH_DEPTH
-        ? HAZARD_SCALE_AT_START
-        : HAZARD_SCALE_AT_START + (1 - HAZARD_SCALE_AT_START) * (d - HAZARD_FLAT_THROUGH_DEPTH) / (HAZARD_CANON_FROM_DEPTH - HAZARD_FLAT_THROUGH_DEPTH);
+  // Phase 54 (USER RULING C): hazardScale is the per-floor knot table —
+  // see knotHazardFor's JSDoc above.
+  const hazardScale = knotHazardFor(d);
 
   // Phase 41 (TERR-01): pool count rises by one every WATER_POOL_GROWTH_EVERY
   // depths past floor 1, capped at WATER_POOL_CAP; a breather floor always
@@ -581,17 +674,9 @@ export function difficultyCurve(depth) {
     foeCap,
     foeBonus: foeCap - FOE_CAP_BASE,
     foeLvlBias: FOE_LVL_BIAS,
-    foePower:
-      d >= COMBAT_SCALE_FROM_DEPTH
-        ? softCapFloat(FOE_POWER_BASE, FOE_POWER_MAX, over, FOE_POWER_SOFT_K)
-        : d >= WALL_FROM_DEPTH
-          ? bandFoePowerFor(d)
-          : graceFor(d),
+    foePower: knotFoePowerFor(d),
     hazardScale,
-    abilityThreat:
-      d >= COMBAT_SCALE_FROM_DEPTH
-        ? softCapFloat(ABILITY_THREAT_BASE, ABILITY_THREAT_MAX, over, ABILITY_THREAT_SOFT_K)
-        : bandAbilityThreatFor(d),
+    abilityThreat: knotAbilityThreatFor(d),
     waterPools,
   };
 }
