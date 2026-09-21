@@ -5060,6 +5060,132 @@ Class spread (recorded, not a target):
 
 **Reading:** The fair bot's solo p50 stays 4 (unchanged from rung 4's own p50), but reach >=5 recovers to 49.4% (vs rung 4's 48.3%) and reach >=10 nearly doubles (4.7% vs rung 4's ~2%) — the higher flee/potion thresholds keep more runs alive through the mid-floors even though the underlying floor-band knots (frozen at rung 5's `1cb56c6` values) are untouched; the death-class share shifts too — dot deaths (traps/falls/the maze's own -HP dot) now read cleanly separated from starvation (16.0% starvation vs ~17.5% dot vs ~66.5% combat), a genuinely new instrument rather than a moved number, since the old hazard/starvation split filed "spent by the dungeon itself" under starvation. The pace table shows the hero racing far ahead of USER RULING C's intended curve: the bot is already level 2.70 by floor 4 (target ~2 by floor 4, roughly on pace) but hits the level cap (5) by floor 9 (target says level 5 only by ~18) — HERO_SP_SCALE (identity 1, the dial table's #3 search coordinate) is the lever 54-06/54-07 release to slow this down. The class-pool p50 spread is narrow at BEFORE (Fighter 5, Thief 4, Magic User 4 solo; Fighter 5, Thief 5.5, Magic User 4 party) — no class pool is starkly ahead or behind, consistent with the class-pool ruling that the fit's fairness constraint is a pool-level check, not a per-cell target.
 
+#### Identity commit — commit 3226c20e6f48d0283eb837a3a9e4dcd2b31d0bfd (the global model landed at identity; USER RULING D)
+
+54-05 lands the global-model dial table above (`#### Global model (USER
+RULING D) — the dial table`) in the engine, at every dial's own identity
+value, with the one-and-done climb/leap bug fix folded in. No dial is
+fitted this plan — 54-06/54-07 wire the remaining dials and run the fit;
+this commit is the byte-identity proof plus the measured, declared,
+regenerated identity-commit movers.
+
+**Removed (every floor-range constant/helper):**
+
+| Name | Was | Replaced by |
+|---|---|---|
+| `COMBAT_SCALE_FROM_DEPTH` | 21 — the deep-ramp band boundary | no boundary — `FOE_HIT_SCALE`/`FOE_HP_SCALE`/`ABILITY_THREAT` are smooth `{ base, perDepth }` slopes at every depth |
+| `FOE_CAP_BASE` / `FOE_CAP_MAX` / `FOE_CAP_SOFT_K` | 3 / 4 / 20 — the soft-capped foe-count ceiling | `FOE_COUNT_TABLE` (a fixed 5×4 table indexed by `FOE_COUNT_SKEW`) |
+| `FOE_POWER_BASE` / `FOE_POWER_MAX` / `FOE_POWER_SOFT_K` | 1.0 / 1.15 / 35 — the deep-ramp wp/hit multiplier | `FOE_HIT_SCALE` / `FOE_HP_SCALE` `{ base, perDepth }` |
+| `ABILITY_THREAT_BASE` / `_MAX` / `_SOFT_K` | 1.0 / 1.3 / 30 | `ABILITY_THREAT { base, perDepth }` |
+| `FOE_LVL_BIAS` | 0 (reserved) | gone — `FOE_LEVEL` is the sole depth->tier map |
+| `FOE_GRACE_AT_1..4` + `graceFor` | 1.0 / 0.32 / 0.44 / 0.31 — the floor 2-4 grace ramp | gone — `FOE_HIT_SCALE`/`FOE_HP_SCALE` are identity at every floor 1-4 (no grace needed once foe level itself keys to depth) |
+| `HAZARD_FROM_DEPTH` | 2 — the first depth hazardScale could leave identity | gone — `HAZARD_SCALE` covers floor 1 too |
+| `HAZARD_SCALE_AT_START` / `_AT_3` / `_AT_4` | 0.46 / 0.44 / 0.49 | `HAZARD_SCALE { base, perDepth }` |
+| `WALL_FROM_DEPTH` / `_TO_DEPTH` / `_FOE_POWER_AT_START` / `_AT_END` / `_HAZARD_SCALE` / `_ABILITY_THREAT_AT_START` / `_AT_END` | the Wall band (5-8) knot pair set | gone — no band; the smooth slopes cover this range |
+| `BREAKAWAY_*` (same shape, 9-15) | the Breakaway band knot pair set | gone |
+| `ENDGAME_FROM_DEPTH` / `_TO_DEPTH` / `_FOE_POWER_AT_START` / `_AT_END` / `_HAZARD_SCALE` / `_ABILITY_THREAT_AT_START` / `ENDGAME_ABILITY_THREAT_AT_END` | the Endgame band knot pair set (16-20) | gone |
+| `ENCOUNTER_DOT_BASE` / `_CAP` / `_SOFT_K` | 9 / 12 / 12 — the soft-capped dot count | `ENCOUNTER_DOTS { base, perDepth }` (uncapped, `9 + depth`) |
+| `DENSITY_CANON_THROUGH_DEPTH` | 2 — the floor 1-2 canon-by-construction guard | gone — `ENCOUNTER_DOTS` is canon (`9+d`) at EVERY depth by formula, no guard needed |
+| `DARK_HOLD_THROUGH_DEPTH` | 3 — the floor 2-3 dark-blob hold | gone — `DARK_BLOBS { base: -0.4, perDepth: 0.7 }` reproduces the same floors 1/2/4/5+ by formula (floor 3 moves 1->2, not fixture-exposed) |
+| `DARK_RADIUS_BASE` | 3 (a bare literal) | folded into `DARK_RADIUS.base` |
+| `softCap` / `softCapFloat` | the asymptotic soft-cap curve helpers | gone — every dial is a plain linear `{ base, perDepth }` slope, no asymptote |
+| `bandLerp` | the endpoint-exact knot interpolator | gone — no knots to interpolate between |
+| `knotFoePowerFor` / `knotHazardFor` / `knotAbilityThreatFor` | the per-floor knot-table lookups (USER RULING C ladder) | `difficultyCurve`'s own inline `scaleField` evaluation of each `{ base, perDepth }` dial |
+| `foeDmgBonusFor` | the flat lvl²-only bonus term | `foeHitFor` (scales the WHOLE hit: `foeLevelBase + dice`, crit included) |
+| combat.js `Math.min(c.level, state.floor.depth)` | the hero-level-keyed foe tier | `curve.foeLevel` (via `foeLevelFor(depth)`) |
+| combat.js `c.level <= 2 ? 2 : 3` | the level-keyed foe-count cap | `foeCountFor` / `FOE_COUNT_TABLE` (cap 3 everywhere, identity) |
+| combat.js `dmgBonus` key + `(f.dmgBonus \|\| 0)` (3 sites) | the flat per-foe damage bonus | `foeHitFor(raw, curve)` applied to the whole hit at each of the 3 sites |
+
+**Landed (identity column):**
+
+| Dial | Value | Identity? | Note |
+|---|---|---|---|
+| `FOE_LEVEL` | `{ base: 0.6, perDepth: 0.2 }` | no identity — the starting map | map(1..25) = `1111222223333344444555555`; replaces `min(c.level, depth)` |
+| `TIER_SPREAD` | 1 | yes (canon d4-bleed face) | |
+| `FOE_HIT_SCALE` | `{ base: 1, perDepth: 0 }` | yes | |
+| `FOE_HP_SCALE` | `{ base: 1, perDepth: 0 }` | yes | |
+| `FOE_COUNT_SKEW` | 0 | yes (canon draw shape, row 0) | |
+| `ROUND_DAMAGE_CEILING` | 0 | yes (off) | `Infinity` cap at identity |
+| `ABILITY_THREAT` | `{ base: 1, perDepth: 0 }` | yes | |
+| `HERO_HP_SCALE` | 1 | yes | |
+| `HERO_REGEN_PER_FLOOR` | 0 | yes (no regen) | |
+| `HERO_SP_SCALE` | 1 | yes | |
+| `CAMP_HEAL_FRACTION` | 0.17 | no identity — mean-matched | level-1 mean maxWP 41.67: `round(0.17*41.67)+d10-5` has mean 7.6 vs canon `d10+2` mean 7.5 |
+| `DOT_HP_FRACTION` | `{ small: 0.24, mid: 0.36, large: 0.6 }` | no identity — mean-matched | 10/15/25 ÷ 41.67 |
+| `FOOD_CLOCK` | 1 | yes | |
+| `ENCOUNTER_DOTS` | `{ base: 9, perDepth: 1 }` | yes (= canon `9+depth`, uncapped) | |
+| `HAZARD_SCALE` | `{ base: 1, perDepth: 0 }` | yes (floor 1 included) | |
+| `DARK_BLOBS` | `{ base: -0.4, perDepth: 0.7 }` | yes for floors 1/2/4/5+ | floor 3 reads 2, was 1 under the retired hold (not fixture-exposed) |
+| `DARK_BLOB_CAP` | 3 | yes | |
+| `DARK_RADIUS` | `{ base: 3, perDepth: 1 }` | yes (= canon `3+depth`) | |
+| `DARK_RADIUS_CAP` | 7 | yes (= today) | |
+| `STORE_TIER` | `{ base: 0, perDepth: 0.3 }` | yes (reproduces today's BAG_FLOORS ladder) | map 1..12 = `011122223333` |
+| `LOOT_SCALE` | 1 | yes | held (available); 54-06 wires the consumer |
+| `FOE_ACCURACY` | 0 | yes | held (available) |
+| `DOT_MIX` | `{ fight:1, harm:1, loot:1, help:1 }` | yes | held (available) |
+| `WANDER_RATE` | 1 | yes | held (available) |
+| `FLEE_NEED_MOD` / `PARLEY_NEED_MOD` | 0 / 0 | yes | held (available) |
+| `STARTING_GOLD` / `STARTING_POTION_BONUS` | 50 / 0 | yes | held (available) |
+| `CLASS_MITIGATION` | identity rows (seeded from `content/flee.js#FLEE_THIEF_BONUS`) | yes | held (available) |
+
+**What moved at identity, and why:** exactly the five things the objective named — (1) `FOE_LEVEL` has no identity (it IS the depth axis now; foeLevelFor(1)=1 keeps every floor-1 fight, so no fixture moves from this cause alone); (2) the level-keyed foe-count cap is gone (cap 3 everywhere via `FOE_COUNT_TABLE` row 0) — measured moved set: `action-script.combat.json#lose-apprentice` (Bat/Rat, Shriek, Shriek — was Bat/Rat, Shriek) and `action-script.combat.json#flee` (Viper, Shriek, Shriek — was Viper, Shriek), a **level-cap** cause; (3) the table-four HP dots are now fractions of `c.maxWP` — measured moved set: `action-script.encounters.json#tablefour` (`+25 HP` row: `c.maxWP`/`c.wp` 65->64), a **dot-hp** cause; (4) the rested-night camp heal (`CAMP_HEAL_FRACTION`) — measured EXPOSURE zero (the one fixture site with a fed night, `action-script.movement.json#script`, happens to land on the same wp value either formula produces — see the predictor table in `FIXTURE-INVENTORY.md`'s Phase 54 section — a **camp-heal** cause with zero fixture-visible movers this commit); (5) the one-and-done climb/leap rule — measured EXPOSURE zero (no fixture-exposed site ever rolls a failed climb/leap), a **one-and-done** cause with zero fixture-visible movers this commit. A **foe-level** cause (a fight at depth >= 2) is impossible this commit — every fixture-exposed fight is floor 1, where `FOE_LEVEL`'s own map already reads identity.
+
+**Curve table (d = 1..25, identity column, via `node -e`):**
+
+| d | dots | darkBlobs | darkRadius | storeTier | foeLevel | foeHitScale | foeHpScale | hazardScale | abilityThreat |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 10 | 0 | 4 | 0 | 1 | 1 | 1 | 1 | 1 |
+| 2 | 11 | 1 | 5 | 1 | 1 | 1 | 1 | 1 | 1 |
+| 3 | 12 | 2 | 6 | 1 | 1 | 1 | 1 | 1 | 1 |
+| 4 | 13 | 2 | 7 | 1 | 1 | 1 | 1 | 1 | 1 |
+| 5 | 14 | 3 | 7 | 2 | 2 | 1 | 1 | 1 | 1 |
+| 6 | 9 | 0 | 7 | 2 | 2 | 1 | 1 | 1 | 1 |
+| 7 | 16 | 3 | 7 | 2 | 2 | 1 | 1 | 1 | 1 |
+| 8 | 17 | 3 | 7 | 2 | 2 | 1 | 1 | 1 | 1 |
+| 9 | 18 | 3 | 7 | 3 | 2 | 1 | 1 | 1 | 1 |
+| 10 | 19 | 3 | 7 | 3 | 3 | 1 | 1 | 1 | 1 |
+| 11 | 9 | 0 | 7 | 3 | 3 | 1 | 1 | 1 | 1 |
+| 12 | 21 | 3 | 7 | 3 | 3 | 1 | 1 | 1 | 1 |
+| 13 | 22 | 3 | 7 | 3 | 3 | 1 | 1 | 1 | 1 |
+| 14 | 23 | 3 | 7 | 3 | 3 | 1 | 1 | 1 | 1 |
+| 15 | 24 | 3 | 7 | 3 | 4 | 1 | 1 | 1 | 1 |
+| 16 | 9 | 0 | 7 | 3 | 4 | 1 | 1 | 1 | 1 |
+| 17 | 26 | 3 | 7 | 3 | 4 | 1 | 1 | 1 | 1 |
+| 18 | 27 | 3 | 7 | 3 | 4 | 1 | 1 | 1 | 1 |
+| 19 | 28 | 3 | 7 | 3 | 4 | 1 | 1 | 1 | 1 |
+| 20 | 29 | 3 | 7 | 3 | 5 | 1 | 1 | 1 | 1 |
+| 21 | 9 | 0 | 7 | 3 | 5 | 1 | 1 | 1 | 1 |
+| 22 | 31 | 3 | 7 | 3 | 5 | 1 | 1 | 1 | 1 |
+| 23 | 32 | 3 | 7 | 3 | 5 | 1 | 1 | 1 | 1 |
+| 24 | 33 | 3 | 7 | 3 | 5 | 1 | 1 | 1 | 1 |
+| 25 | 34 | 3 | 7 | 3 | 5 | 1 | 1 | 1 | 1 |
+
+**Re-pin ledger:**
+
+| File | Test | Old | New | Source |
+|---|---|---|---|---|
+| `test/difficulty/difficulty.test.js` | entire file rewritten (24 tests) | the five-rung knot-ladder pins | the identity-column DIALS/curve/helper pins above | `node -e` against `engine/difficulty.js` |
+| `test/unit/combat-scaling.test.js` | entire file rewritten (17 tests) | Phase 21/27/54-ladder combat-dial pins | identity wiring (foeLevelFor, FOE_COUNT_TABLE, foeHitFor, roundDamageCapFor) | direct `startCombat`/`foeTurn` replays with `fakeRng` |
+| `test/unit/movement.test.js` | 6 climb/gorge + newDay/descend tests rewritten, 3 new tests added | "leaves the feature in place" / flat `d10+2*level` heal | one-and-done crossing + `campHealFor`/`heroRegenFor`/`heroSpFor` | direct `move`/`newDay` replays |
+| `test/unit/encounters.test.js` | `tableFour`/`springTrap` hazard tests rewritten, 2 new tests added | flat ±10/-15/+25 HP, flat hazard knot | `dotHpFor`/identity `hazardScale` | direct `tableFour`/`springTrap` replays |
+| `test/unit/foe-turn-draw-count.test.js` | `FULL_FIGHTS` seeds 17/127, `OPENER_DRAWS` seeds 17/127 | 2-foe rosters (88/45 draws, 14/8 opener) | 3-foe rosters (88/83 draws, 13/10 opener) | `runFullFight`/opener replays via `countingRng` |
+| `test/determinism/foe-abilities.test.js` | `ENCOUNTERS`/`FULL_FIGHT_PINS`/`PER_VISIT_PINS` (all 5 encounters) | tier-forced via `c.level=floor.depth=tier` at the old knot values | depth re-anchored via `firstDepthOfTier(tier)`; every pin re-measured at full canon strength (no grace) | `firstCasterSeed`/`runFullFight`/`runVisits` replays |
+| `test/parity/divergence-records.test.js` | the BAND-02 guard | `EXPECTED = []` + `WALL_FROM_DEPTH`/floor-2 exposure checks | `EXPECTED` = the 3-holder measured moved set + floor-1 identity pin + the count-roll canon-draw-shape proof (every `FOE_COUNT_SKEW` row) | the guard's own replay + `foeCountFor` unit checks |
+| `test/parity/fixture-inventory.test.js` | `lose-apprentice`/`flee` pinned rosters | 2-foe rosters | 3-foe rosters (a third Shriek each) | `enumerateFixtureRoster` live replay |
+| `test/parity/FIXTURE-INVENTORY.md` | the generated fixture-roster table | 2-foe rosters for `lose-apprentice`/`flee` | 3-foe rosters | `node tools/fixture-inventory.mjs` |
+| `test/unit/maze.test.js` | depths 3-5's dot counts | `11/11/11` (soft-capped) | `12/13/14` (uncapped `9+depth`) | direct `genFloor` replay |
+| `test/unit/floor-gen-rng-pin.test.js` | `FLOOR_GEN_PIN`'s `:3` entries (14 seeds) | the soft-capped draw counts/cursors | the uncapped draw counts/cursors (depth 3 places one more dot; depths 4/5/10/20 are grid-capacity-bounded at the same count either way) | `countingRng(genFloor(...))` replay |
+| `test/unit/foe-abilities.test.js` | `startCombat copies the kit only for caster rows` | `s.c.level=2; s.floor.depth=2` | `s.floor.depth=5` (the first depth whose `foeLevelFor` reads tier 2) | direct `startCombat` replay |
+| `test/unit/foe-cadence.test.js` | the Bat/Rat CAD-03 test | `state.floor.depth=5` | `state.floor.depth=1` (tier 1's own floor under the identity map) | direct `startCombat`/`fight` replay |
+| `test/unit/phobia-triggers.test.js` | two heights-retry tests | "same tile retry is silent" / "step away and back fires again" via `move()` | `noteHeightsAttempt` direct-call debounce test + a two-DIFFERENT-tiles `move()` test (a same-tile retry is now unreachable via `move()` under one-and-done) | direct `noteHeightsAttempt`/`move` calls |
+| `test/unit/tools.test.js` | the declined-fellClimbing pendingHazard test | "pendingHazard survives, a third move rolls again" | "pendingHazard clears, the hero crosses, draggedOver fires" (one and done) | direct `move` replay |
+| `test/unit/tuning-bot.test.js` | the TERR-02 water-routing seed set | seeds 1/2/3 | seeds 1/4/5 (seeds 2/3 now genuinely never resolve at full canon strength pre-fit; re-measured live up to 20,000 actions) | `playRun` replay |
+| `test/unit/bot-tactics.test.js` | the nine-forced-cell no-stall test | Thief/MU/Fighter × seeds 1-3 uniformly | per-force seed trios avoiding two now-unresolvable (seed, force) pairs | `playRun` replay up to 5,000/30,000 actions |
+
+**Draw shape:** the count roll keeps the EXACT canon draw shape at every `FOE_COUNT_SKEW` row — `foeCountFor(rng.d(4), () => rng.d(4))` draws one d4 when the first roll is <= 2, exactly one MORE (two total) when it is > 2, pinned by `divergence-records.test.js`'s guard looping 0..4. The one-and-done climb/leap block's draws per attempt are UNCHANGED — the retry LOOP is gone, not any individual roll (same rolls, same order, same count). `newDay`'s d10 stays the SAME single draw in the SAME position (`campHealFor(maxWP, rng.d(10))`); `difficultyCurve` stays draw-free (arity 1, zero rng).
+
+**Gates:** `npm test` 3427/3427 (fail 0) at this commit; `npm run build:www` exit 0; master hash `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged; `git diff --stat 78a4a15 -- content/ tools/lib/tuning-bot.mjs test/parity/harness/comparables.js test/parity/prototype-master.js.txt` empty.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
