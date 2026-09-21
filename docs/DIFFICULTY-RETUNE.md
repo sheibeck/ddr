@@ -3248,6 +3248,249 @@ the bot to accept in-run Joiners is a harness capability, not this rule —
 a Phase 54 measurement candidate if the four-band retune wants a
 Joiner-sensitive solo/class smoke.
 
+### v1.7 · Phase 54 — four-band retune & roster decision
+
+This H3 opens the four-band retune: `difficultyCurve` is reshaped toward
+the user's four recorded bands (Filter 1-4 / Wall 5-8 / Breakaway 9-15 /
+Endgame 16-20) on floors 5-15; floors 1-4 keep Phase 27's existing ramps;
+16+ stays identity by construction so the `--start-depth 20` slice remains
+the deep-lethality yardstick. Requirements BAND-01, BAND-02, BAND-03,
+TUNE-08. Resolves todo
+`2026-09-20-average-run-ends-floor-5-7-four-band-difficulty-shape.md`. Rung
+sections, the change table, the miss table, the depth-20 identity proof and
+the parity declaration are appended by Plan 02; the damage-curve audit and
+the roster decision by Plan 03.
+
+#### Target — the four bands, verbatim (BAND-01)
+
+The user's stated tuning shape (2026-09-20), quoted verbatim from the todo:
+
+> For a 20-floor dungeon designed to be highly challenging, the **average run should end around floor 5 to 7** — a sharp early curve where failure is common, so breaking deeper feels earned. Roguelike golden ratio: a standard run ends within the first 25–35% of total depth → floors 5, 6, 7. If players average floor 12, reaching 15 is nothing; if they usually die on 6, reaching 14 is an adrenaline run. Early deaths keep runs short — "just one more game".
+>
+> Four bands: **Floors 1–4, The Filter** — high variance; a few bad drops or early mistakes mean a quick death; cleared consistently only after mastering the basics. **Floors 5–8, The Wall** — where the average run dies; difficulty spikes; surviving needs skill or an item synergy. **Floors 9–15, The Breakaway Zone** — a strong run; still brutal, but the build gives a fighting chance. **Floors 16–20, The Endgame** — the true test; victory rare and celebrated.
+
+#### Target as numbers (BAND-01)
+
+| Measure | BEFORE (78572c5, Phase 53 AFTER) | Target | How measured | Edge rule |
+|---|---|---|---|---|
+| Solo median death depth | 4 | **5–7** | `tune-difficulty --seeds=200` p50 | closed, integer (a LIVE target: the Filter rungs of USER RULING A are the lever — see the bound section below) |
+| Solo reach ≥ 5 | 33.0 % | recorded per rung (no BAND-01 number; Phase 27's ≥ 25 % floor stays the sanity floor; it moves ONLY when a Filter rung lands) | the readout's `>=5` | 1 dp |
+| Solo p90 | 6 | **≈ 10–13** (closed 10..13) | p90 | integer |
+| Solo reach ≥ 16 | 0.0 % (derived: reach ≥ 10 is 0.0 % and max is 9) | **a few percent = 2.0–6.0 %** | the Four-band readout `reach: >=16` | 1 dp |
+| Solo reach ≥ 20 | 0.0 % | **well under 1 % = ≤ 0.5 %** (0–1 run of 200) | `>=20` | 1 dp |
+| `--party` median | 5 | 5–7 | `--party` p50 | integer |
+| `--party` p90 | 6 | ≈ 10–13 | advisory (the party instrument shifted by design in Phase 53) | — |
+| class smoke pooled mean depth | 3.96 (715 runs) | moves toward the band (advisory direction; no class cell may collapse below its Phase 53 value by more than the pooled shift — violators listed per rung) | `rollups.pooled.meanDepth` of `v17-p54-rungN-smoke.json` | 2 dp |
+| depth-20 slice | the BEFORE transcript below | **byte-identical on every rung** (hard) | `diff` against `readouts/before-start-depth-20.txt` | empty diff |
+
+The ladder stops when the solo median is 5–7, solo p90, reach ≥ 16 and reach
+≥ 20 are all inside the band, and the party median is 5–7; or at rung 4; or
+when the only remaining move would touch floor 1 or add a NEW floor 1–4
+dial (recorded as untaken, reason "floor-1 parity" / "no new Filter dial").
+Rung 1 is the 5–15 band curve; if the solo median is still ≤ 4 after it,
+rung 2 is a Filter rung (`FOE_GRACE_AT_2` down one notch, 0.5 → 0.4, and/or
+`HAZARD_SCALE_AT_START` down when hazards are ≥ 20 % of floor 2–4 deaths),
+then the ladder alternates by the readout. Misses are recorded per BAND-03
+with the untaken rung and the reason.
+
+#### Structural bound — reach ≥ 5 is fixed by floors 1–4
+
+Under a 5–15-only dial, the bot's runs are byte-identical through floor 4
+(`difficultyCurve` is consulted per current depth), so solo reach ≥ 5 would
+stay exactly 33.0 % (party 55.3 %) and the solo MEDIAN death depth would be
+bounded at 4 by construction. Phase 27's own calibration note (`#### Planner
+calibration (2026-09-15, directional)`) measured the full early-floor
+ladder's ceiling at bot median 4 with reach ≥ 5 ≈ 35 % — the same ceiling
+this plan's objective derives independently.
+
+**USER RULING A (2026-09-21)** — supersedes the matching Area 1 / Area 2
+lines in 54-CONTEXT.md: the ladder MAY move the EXISTING Phase 27 floor 2–4
+dials — `FOE_GRACE_AT_2` (0.5 → as far as 0.35) and `HAZARD_SCALE_AT_START`
+(0.5, may drop) — as rungs. Floor 1 stays exact identity (`FOE_GRACE_AT_1 =
+1.0`, `HAZARD_FROM_DEPTH >= 2`, floor-1 dots/dark canon — parity); the
+grace/hazard ramps still reach exactly 1.0 at their existing canon-from
+depths (`FOE_GRACE_CANON_FROM_DEPTH` / `HAZARD_CANON_FROM_DEPTH` = 5); and
+NO new floor 1–4 dials (no density/dark change on 1–4).
+
+Consequences: the solo median 5–7 is a LIVE target; reach ≥ 5 is a per-rung
+recorded number, not an invariant; the "floors 1–4 did not move" proof
+becomes a FLOOR-1-untouched proof (the depth-20 slice still identity, a
+`difficultyCurve(1)` literal pin, and the fixture scan Part B on the
+floor-1 fixtures diffing empty — measured per rung); floors 2–4 literals
+become re-pinnable per Filter rung and never loosened. This plan (54-01)
+lands NO Filter move — it only pins floor 1 and the Filter values as they
+stand at `78572c5`.
+
+**Parameters (identical on every rung):**
+- `node tools/tune-difficulty.mjs --seeds=200` (solo)
+- `node tools/tune-difficulty.mjs --seeds=200 --party`
+- `node tools/tune-classes.mjs --seeds 5 --workers 4 --out docs/class-pass/v17-p54-rungN-smoke.json` (N = the rung; the final rung's file is copied to `v17-p54-after-smoke.json`)
+- `node tools/tune-difficulty.mjs --seeds=50 --start-depth=20`
+
+`tools/tune-difficulty.mjs` now prints an always-on `Four-band readout`
+block (Task 1, BAND-01) — reach ≥16/≥20, band share of deaths, and per-band
+top death causes over completed runs; `tools/lib/tuning-bot.mjs` (the bot
+policy) is frozen for the whole phase.
+
+#### BEFORE — by reference: Phase 53 AFTER, commit 78572c5115014b581fb2084b7588141122d56101 (Joiner level capped by floor depth) + the --start-depth=20 slice
+
+BEFORE is not re-run for solo/`--party`/class smoke — per the measurement
+gate, Phase 53's own AFTER readout (quoted verbatim under `### v1.7 · Phase
+53 — Joiner level cap`, `#### AFTER — commit
+78572c5115014b581fb2084b7588141122d56101`, above) is reused as this
+phase's BEFORE: solo death-depth min/p50/p90/max 1/4/6/9, reach ≥5 33.0 % /
+≥10 0.0 % / ≥20 0.0 %, solo action-count p50 432; party death-depth
+min/p50/p90/max 1/5/6/12, reach ≥5 55.3 % / ≥10 1.4 %, party stuck 59 of
+200; class smoke pooled mean depth (715 runs) 3.96 (`docs/class-pass/v17-p53-after-smoke.json`).
+Same bot flags, same seeds, same files.
+
+`node tools/tune-difficulty.mjs --seeds=50 --start-depth=20` — run ONCE on
+the untouched engine (commit A, `git diff --stat 78572c5 -- engine/
+content/` empty):
+
+```
+
+tune-difficulty: 50 seeded auto-play run(s), start depth 20
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=20  p50=20  p90=22  max=27
+
+Action-count distribution:
+  min=9  p50=104  p90=331  max=690
+
+Death-cause breakdown:
+  cut down by a Herman 11 (22.0%)
+  cut down by a Stalka Beast 9 (18.0%)
+  cut down by a Drarl  9 (18.0%)
+  cut down by a Vampire 8 (16.0%)
+  cut down by a Dread Lock 4 (8.0%)
+  cut down by a Djinni 4 (8.0%)
+  fell off a wall      2 (4.0%)
+  starved in the dark  1 (2.0%)
+  cut down by a Drake  1 (2.0%)
+  cut down by a Spectre 1 (2.0%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=36  successes=26 (72.2%)  failures=10  refused=0  exhausted=0
+  runs with >=1 attempt: 11 of 50
+  SP from parley: 979 of 110636 total SP (0.9%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 100.0%  >=10: 100.0%  >=20: 100.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=0  p50=5  p90=15  max=26
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 0/0 (0.0%)
+  6-10: 0/0 (0.0%)
+  11-20: 71/109 (65.1%)
+  21-30: 47/85 (55.3%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=229  foeBolted=70  foeDrained=11  foeDebuffed=2  foeHealed=5  foeSummoned=0
+  heroResisted=134  heroResistFailed=37
+  ability damage: 688 of 4750 total damage taken (14.5%)
+
+Stuck: 0 of 50 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=50  startDepth=20
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 20:32  21:7  22:7  23:2  25:1  27:1
+  mean death depth=20.78  floors gained p50=0 mean=0.78  encounters survived mean=2.94
+  reach: >=5 100.0%  >=8 100.0%  >=9 100.0%  >=10 100.0%  >=13 100.0%  >=16 100.0%  >=20 100.0%
+  band share of deaths: Filter 1-4 0.0% | Wall 5-8 0.0% | Breakaway 9-15 0.0% | Endgame 16-20 64.0% | beyond 20 36.0%
+  top causes — Filter: (none)
+  top causes — Wall: (none)
+  top causes — Breakaway: (none)
+  top causes — Endgame: cut down by a Herman 8, cut down by a Stalka Beast 8, cut down by a Djinni 4, cut down by a Drarl 4, cut down by a Vampire 4
+
+Outcome: 50 dead, 0 stuck (hit maxActions=20000; excluded from depth stats)
+
+```
+
+**Curve at 1..25, 35, 50 (Phase 53, commit 78572c5 — byte-identical at the scaffold commit)**
+
+| d | dots | darkBlobs | darkRadius | foePower | hazardScale | foeCap | abilityThreat |
+|---|---|---|---|---|---|---|---|
+| 1 | 10 | 0 | 4 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 2 | 11 | 1 | 5 | 0.5000 | 0.5000 | 3 | 1.0000 (exact) |
+| 3 | 11 | 1 | 6 | 0.6667 | 0.5000 | 3 | 1.0000 (exact) |
+| 4 | 11 | 2 | 7 | 0.8333 | 0.7500 | 3 | 1.0000 (exact) |
+| 5 | 11 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 6 | 9 | 0 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 7 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 8 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 9 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 10 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 11 | 9 | 0 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 12 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 13 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 14 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 15 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 16 | 9 | 0 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 17 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 18 | 12 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 19 | 13 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 20 | 13 | 3 | 7 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 21 | 9 | 0 | 7 | 1.0042 | 1.0000 (exact) | 3 | 1.0098 |
+| 22 | 13 | 3 | 7 | 1.0083 | 1.0000 (exact) | 3 | 1.0193 |
+| 23 | 13 | 3 | 7 | 1.0123 | 1.0000 (exact) | 3 | 1.0285 |
+| 24 | 13 | 3 | 7 | 1.0162 | 1.0000 (exact) | 3 | 1.0374 |
+| 25 | 13 | 3 | 7 | 1.0200 | 1.0000 (exact) | 3 | 1.0461 |
+| 35 | 13 | 3 | 7 | 1.0523 | 1.0000 (exact) | 4 | 1.1180 |
+| 50 | 13 | 3 | 7 | 1.0863 | 1.0000 (exact) | 4 | 1.1896 |
+
+#### Scaffold — commit 258e04dc3572714e2c717ebf9aaf3256c5fba154 (band constants at identity; curve byte-identical)
+
+| Constant | Value (scaffold) | Band | Identity guarantee |
+|---|---|---|---|
+| `WALL_FROM_DEPTH` | 5 | Wall | must equal `FOE_GRACE_CANON_FROM_DEPTH` — the grace band hands straight to the Wall |
+| `WALL_TO_DEPTH` | 8 | Wall | — |
+| `WALL_FOE_POWER_AT_START` | 1.0 | Wall | identity (foePower at WALL_FROM_DEPTH) |
+| `WALL_FOE_POWER_AT_END` | 1.0 | Wall | identity (foePower at WALL_TO_DEPTH) |
+| `BREAKAWAY_FROM_DEPTH` | 9 | Breakaway | — |
+| `BREAKAWAY_TO_DEPTH` | 15 | Breakaway | — |
+| `BREAKAWAY_FOE_POWER_AT_START` | 1.0 | Breakaway | identity |
+| `BREAKAWAY_FOE_POWER_AT_END` | 1.0 | Breakaway | identity |
+| `ENDGAME_CANON_FROM_DEPTH` | 16 | Endgame | the literal `1` by the `>=` guard (structural, not rounding) |
+| `WALL_HAZARD_SCALE` | 1.0 | Wall | identity — the literal `1` for `scaleHazard`'s `=== 1` fast path |
+| `WALL_ABILITY_THREAT_AT_START` | 1.0 | Wall | identity |
+| `WALL_ABILITY_THREAT_AT_END` | 1.0 | Wall | identity |
+| `BREAKAWAY_ABILITY_THREAT_AT_START` | 1.0 | Breakaway | identity |
+| `BREAKAWAY_ABILITY_THREAT_AT_END` | 1.0 | Breakaway | identity |
+
+`bandLerp(a, b, t)` is the endpoint-exact linear interpolation the band
+curve uses: when `a === b` it returns `a` for ANY `t` (identity by
+construction, no float drift — the same discipline
+`COMBAT_SCALE_FROM_DEPTH`'s `over` guard and `graceFor`'s `>=` guard use),
+and is exact at `t = 0`/`t = 1` otherwise.
+
+Byte-identity evidence: a `node -e` capture of `difficultyCurve(d)` for
+d in [1..25, 35, 50] on the untouched engine (commit `78572c5`) diffed
+empty against the same capture on the scaffolded engine (commit
+258e04dc3572714e2c717ebf9aaf3256c5fba154) — see the curve table above, generated from the SAME captured
+JSON both times. Structural pins: `test/difficulty/difficulty.test.js`'s
+`Phase 54 (BAND-02) structural pins…`, `…floor-1 parity…`, `…Filter
+cushion 2..4…`, `…Endgame identity…`, `…band curve 5..15…`, `…the Wall
+steps UP…`, `…stays draw-free…`; `test/unit/combat-scaling.test.js`'s
+`PHASE_54_PINS`, `band 5..15 (Phase 54, BAND-02)…`, `Endgame identity band
+(Phase 54, BAND-01)…`, `band wiring (Phase 54, BAND-02)…`.
+
+Pin discipline: the 5..15 block (`BAND_PINS` in
+`test/difficulty/difficulty.test.js`, `PHASE_54_PINS` in
+`test/unit/combat-scaling.test.js`) is re-pinned by band rungs and the 2..4
+block (`FILTER_PINS`; `PHASE_27_PINS.FOE_GRACE_AT_2` /
+`.HAZARD_SCALE_AT_START` in combat-scaling; the depth-2 hazard pins in
+`test/unit/movement.test.js` and `test/unit/encounters.test.js`; the
+`humans-t2` / `magical-t4` determinism specs) by Filter rungs — never
+loosened, always citing the rung; the floor-1 literal and the 16+ block are
+never re-pinned this phase.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
