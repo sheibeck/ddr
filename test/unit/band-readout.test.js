@@ -1,0 +1,140 @@
+// test/unit/band-readout.test.js
+//
+// Phase 54 (BAND-01) — synthetic-results pins for tools/lib/band-readout.mjs.
+// Never asserts on a real seeded run's numbers (same discipline as
+// test/unit/tuning-bot.test.js) — the fixture below is hand-built.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
+import { bandReadout, formatBandReadout } from "../../tools/lib/band-readout.mjs";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+// Deaths at depths [1, 3, 5, 5, 6, 7, 9, 16, 20, 23] plus two stuck records
+// (excluded). deathDepth 23 is `beyond` (> Endgame's max of 20).
+function makeResults() {
+  return [
+    { deathDepth: 1, stuck: false, floorsGained: 0, encountersSurvived: 0, cause: "combat" },
+    { deathDepth: 3, stuck: false, floorsGained: 2, encountersSurvived: 1, cause: "trap" },
+    { deathDepth: 5, stuck: false, floorsGained: 4, encountersSurvived: 2, cause: "combat" },
+    { deathDepth: 5, stuck: false, floorsGained: 4, encountersSurvived: 2, cause: "combat" },
+    { deathDepth: 6, stuck: false, floorsGained: 5, encountersSurvived: 3, cause: "starvation" },
+    { deathDepth: 7, stuck: false, floorsGained: 6, encountersSurvived: 4, cause: "combat" },
+    { deathDepth: 9, stuck: false, floorsGained: 8, encountersSurvived: 5, cause: "combat" },
+    { deathDepth: 16, stuck: false, floorsGained: 15, encountersSurvived: 6, cause: "combat" },
+    { deathDepth: 20, stuck: false, floorsGained: 19, encountersSurvived: 7, cause: "combat" },
+    { deathDepth: 23, stuck: false, floorsGained: 22, encountersSurvived: 8, cause: "combat" },
+    { deathDepth: 2, stuck: true, floorsGained: 1, encountersSurvived: 0, cause: "unknown" },
+    { deathDepth: 2, stuck: true, floorsGained: 1, encountersSurvived: 0, cause: "unknown" },
+  ];
+}
+
+test("bandReadout: stuck runs are excluded and completed counts the rest", () => {
+  const r = bandReadout(makeResults(), {});
+  assert.equal(r.completed, 10);
+});
+
+test("bandReadout: histogram lists only depths with deaths, ascending, and sums to completed", () => {
+  const r = bandReadout(makeResults(), {});
+  const keys = Object.keys(r.histogram).map(Number);
+  const sortedKeys = [...keys].sort((a, b) => a - b);
+  assert.deepStrictEqual(keys, sortedKeys);
+  const total = Object.values(r.histogram).reduce((s, v) => s + v, 0);
+  assert.equal(total, 10);
+  assert.deepStrictEqual(r.histogram, {
+    "1": 1,
+    "3": 1,
+    "5": 2,
+    "6": 1,
+    "7": 1,
+    "9": 1,
+    "16": 1,
+    "20": 1,
+    "23": 1,
+  });
+});
+
+test("bandReadout: reach uses the reachTable rounding — >=16 is 30.0 and >=20 is 20.0 on the synthetic set", () => {
+  const r = bandReadout(makeResults(), {});
+  assert.equal(r.reach["16"], 30.0);
+  assert.equal(r.reach["20"], 20.0);
+});
+
+test("bandReadout: band share sums to 100.0 across Filter/Wall/Breakaway/Endgame/beyond", () => {
+  const r = bandReadout(makeResults(), {});
+  assert.deepStrictEqual(r.bandShare, { Filter: 20.0, Wall: 40.0, Breakaway: 10.0, Endgame: 20.0, beyond: 10.0 });
+  const sum = Object.values(r.bandShare).reduce((s, v) => s + v, 0);
+  assert.ok(Math.abs(sum - 100.0) < 1e-9);
+});
+
+test("bandReadout: topCausesByBand sorts count desc then cause asc and caps at 5", () => {
+  const r = bandReadout(makeResults(), {});
+  assert.deepStrictEqual(r.topCausesByBand.Filter, [
+    { cause: "combat", count: 1 },
+    { cause: "trap", count: 1 },
+  ]);
+  assert.deepStrictEqual(r.topCausesByBand.Wall, [
+    { cause: "combat", count: 3 },
+    { cause: "starvation", count: 1 },
+  ]);
+  assert.deepStrictEqual(r.topCausesByBand.Breakaway, [{ cause: "combat", count: 1 }]);
+  assert.deepStrictEqual(r.topCausesByBand.Endgame, [{ cause: "combat", count: 2 }]);
+  for (const band of Object.keys(r.topCausesByBand)) {
+    assert.ok(r.topCausesByBand[band].length <= 5);
+  }
+});
+
+test("bandReadout: an all-stuck or empty set yields zeros and empty lists, never NaN", () => {
+  const allStuck = [
+    { deathDepth: 2, stuck: true, floorsGained: 1, encountersSurvived: 0, cause: "unknown" },
+    { deathDepth: 3, stuck: true, floorsGained: 2, encountersSurvived: 0, cause: "unknown" },
+  ];
+  for (const results of [allStuck, []]) {
+    const r = bandReadout(results, {});
+    assert.equal(r.completed, 0);
+    assert.deepStrictEqual(r.histogram, {});
+    assert.equal(r.meanDeathDepth, 0);
+    assert.ok(!Number.isNaN(r.meanDeathDepth));
+    assert.deepStrictEqual(r.floorsGained, { p50: 0, mean: 0 });
+    assert.equal(r.encountersSurvivedMean, 0);
+    for (const floor of [5, 8, 9, 10, 13, 16, 20]) {
+      assert.equal(r.reach[String(floor)], 0);
+      assert.ok(!Number.isNaN(r.reach[String(floor)]));
+    }
+    for (const band of ["Filter", "Wall", "Breakaway", "Endgame", "beyond"]) {
+      assert.equal(r.bandShare[band], 0);
+    }
+    for (const band of ["Filter", "Wall", "Breakaway", "Endgame"]) {
+      assert.deepStrictEqual(r.topCausesByBand[band], []);
+    }
+  }
+});
+
+test("formatBandReadout: the header line is exactly the BAND-01 string and the reach line carries >=16", () => {
+  const r = bandReadout(makeResults(), {});
+  const lines = formatBandReadout(r);
+  assert.equal(
+    lines[0],
+    "Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):",
+  );
+  assert.match(lines[3], />=16 30\.0%/);
+});
+
+test("tune-difficulty.mjs source: prints the band block after printSharedReadout and before Outcome, and never imports anything new from tuning-bot.mjs", () => {
+  const src = fs.readFileSync(path.join(__dirname, "../../tools/tune-difficulty.mjs"), "utf8");
+  const idxShared = src.indexOf("printSharedReadout(results, opts);");
+  const idxBand = src.indexOf("formatBandReadout(");
+  const idxOutcome = src.indexOf("Outcome:");
+  assert.ok(idxShared > -1 && idxBand > -1 && idxOutcome > -1);
+  assert.ok(idxBand > idxShared);
+  assert.ok(idxBand < idxOutcome);
+  assert.ok(
+    src.includes(
+      'import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";',
+    ),
+  );
+});

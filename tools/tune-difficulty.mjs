@@ -28,8 +28,14 @@
 // deep-start character is exactly what the dev path already produces (SP
 // set to the depth's threshold, leveled via checkLevel, capped at 5; a
 // depth-scaled purse).
+//
+// Phase 54 (BAND-01): the always-on Four-band readout block
+// (tools/lib/band-readout.mjs) — the reach >=16 / band-share / per-band-cause
+// numbers the four-band ledger needs; a report addition only, the bot policy
+// in tools/lib/tuning-bot.mjs is untouched.
 
 import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
+import { bandReadout, formatBandReadout } from "./lib/band-readout.mjs";
 
 /**
  * autoPlayOnce(seed, opts) — plays one full run to completion via the
@@ -146,6 +152,11 @@ function printReport(results, opts) {
 
   printSharedReadout(results, opts);
 
+  console.log("");
+  for (const line of formatBandReadout(bandReadout(results, opts))) {
+    console.log(line);
+  }
+
   console.log(`\nOutcome: ${deadCount} dead, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
   console.log("");
 }
@@ -201,6 +212,7 @@ function main() {
           causes: causeBreakdown(completedResults),
           dead: results.filter((r) => r.dead).length,
           parley: parleySummary(results),
+          bands: bandReadout(results, opts),
           ...sharedJson(results, opts),
         },
         null,

@@ -1,0 +1,62 @@
+
+tune-difficulty: 50 seeded auto-play run(s), start depth 20
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=20  p50=20  p90=22  max=27
+
+Action-count distribution:
+  min=9  p50=104  p90=331  max=690
+
+Death-cause breakdown:
+  cut down by a Herman 11 (22.0%)
+  cut down by a Stalka Beast 9 (18.0%)
+  cut down by a Drarl  9 (18.0%)
+  cut down by a Vampire 8 (16.0%)
+  cut down by a Dread Lock 4 (8.0%)
+  cut down by a Djinni 4 (8.0%)
+  fell off a wall      2 (4.0%)
+  starved in the dark  1 (2.0%)
+  cut down by a Drake  1 (2.0%)
+  cut down by a Spectre 1 (2.0%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=36  successes=26 (72.2%)  failures=10  refused=0  exhausted=0
+  runs with >=1 attempt: 11 of 50
+  SP from parley: 979 of 110636 total SP (0.9%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 100.0%  >=10: 100.0%  >=20: 100.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=0  p50=5  p90=15  max=26
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 0/0 (0.0%)
+  6-10: 0/0 (0.0%)
+  11-20: 71/109 (65.1%)
+  21-30: 47/85 (55.3%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=229  foeBolted=70  foeDrained=11  foeDebuffed=2  foeHealed=5  foeSummoned=0
+  heroResisted=134  heroResistFailed=37
+  ability damage: 688 of 4750 total damage taken (14.5%)
+
+Stuck: 0 of 50 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=50  startDepth=20
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 20:32  21:7  22:7  23:2  25:1  27:1
+  mean death depth=20.78  floors gained p50=0 mean=0.78  encounters survived mean=2.94
+  reach: >=5 100.0%  >=8 100.0%  >=9 100.0%  >=10 100.0%  >=13 100.0%  >=16 100.0%  >=20 100.0%
+  band share of deaths: Filter 1-4 0.0% | Wall 5-8 0.0% | Breakaway 9-15 0.0% | Endgame 16-20 64.0% | beyond 20 36.0%
+  top causes — Filter: (none)
+  top causes — Wall: (none)
+  top causes — Breakaway: (none)
+  top causes — Endgame: cut down by a Herman 8, cut down by a Stalka Beast 8, cut down by a Djinni 4, cut down by a Drarl 4, cut down by a Vampire 4
+
+Outcome: 50 dead, 0 stuck (hit maxActions=20000; excluded from depth stats)
+
