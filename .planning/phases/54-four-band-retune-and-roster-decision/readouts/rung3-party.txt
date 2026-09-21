@@ -1,0 +1,113 @@
+
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=5  p90=7  max=15
+
+Action-count distribution:
+  min=21  p50=621  p90=20000  max=20000
+
+Death-cause breakdown:
+  starved in the dark  16 (8.0%)
+  fell off a wall      16 (8.0%)
+  cut down by a Werebeast 14 (7.0%)
+  undone by a trap     12 (6.0%)
+  cut down by a Primp  7 (3.5%)
+  cut down by a Blumble 6 (3.0%)
+  cut down by a Dante  5 (2.5%)
+  cut down by a Poltergeist 5 (2.5%)
+  cut down by a Drarl  5 (2.5%)
+  cut down by a Vampire 4 (2.0%)
+  cut down by a Frank  4 (2.0%)
+  cut down by a Herman 4 (2.0%)
+  spent by the dungeon itself 3 (1.5%)
+  cut down by a Rinkle 3 (1.5%)
+  cut down by a Djinni 3 (1.5%)
+  came up short on a leap 3 (1.5%)
+  cut down by a China Wolf 3 (1.5%)
+  cut down by a Drudge 2 (1.0%)
+  cut down by a Stink Bug 2 (1.0%)
+  cut down by a Trachea 2 (1.0%)
+  cut down by a Ghoul  2 (1.0%)
+  cut down by a Drake  2 (1.0%)
+  cut down by a Cave Bear 2 (1.0%)
+  cut down by a Skeleton 2 (1.0%)
+  cut down by a Undead 2 (1.0%)
+  cut down by a Drekk  1 (0.5%)
+  cut down by a Ghost  1 (0.5%)
+  cut down by a Gremlin 1 (0.5%)
+  cut down by a Craig  1 (0.5%)
+  cut down by a Zit    1 (0.5%)
+  cut down by a Flube  1 (0.5%)
+  cut down by a Shadow 1 (0.5%)
+  cut down by a Philly 1 (0.5%)
+  cut down by a Dread Lock 1 (0.5%)
+  cut down by a Wolf   1 (0.5%)
+  cut down by a Drat   1 (0.5%)
+  cut down by a Google 1 (0.5%)
+  cut down by a Viper  1 (0.5%)
+  cut down by a Hobgoblin 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=382  successes=231 (60.5%)  failures=151  refused=0  exhausted=0
+  runs with >=1 attempt: 71 of 200
+  SP from parley: 3837 of 149813 total SP (2.6%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 58.7%  >=10: 2.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=21  p50=109  p90=131  max=229
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 53/2176 (2.4%)
+  6-10: 83/262 (31.7%)
+  11-20: 5/13 (38.5%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=183  foeBolted=94  foeDrained=5  foeDebuffed=8  foeHealed=5  foeSummoned=0
+  heroResisted=54  heroResistFailed=22
+  ability damage: 488 of 9241 total damage taken (5.3%)
+
+Party (--party, D-12/D-20):
+  member forced at run start in 192/200 runs; member alive at run end: 128 (64.0%)
+
+Stuck: 57 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=on  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 1:8  2:9  3:8  4:34  5:35  6:23  7:13  8:6  9:3  10:3  15:1
+  mean death depth=4.97  floors gained p50=4 mean=3.97  encounters survived mean=12.66
+  reach: >=5 58.7%  >=8 9.1%  >=9 4.9%  >=10 2.8%  >=13 0.7%  >=16 0.0%  >=20 0.0%
+  band share of deaths: Filter 1-4 41.3% | Wall 5-8 53.8% | Breakaway 9-15 4.9% | Endgame 16-20 0.0% | beyond 20 0.0%
+  top causes — Filter: starved in the dark 10, fell off a wall 9, undone by a trap 5, cut down by a Dante 4, cut down by a Poltergeist 4
+  top causes — Wall: cut down by a Werebeast 12, fell off a wall 7, undone by a trap 7, cut down by a Blumble 5, cut down by a Primp 5
+  top causes — Breakaway: cut down by a Drarl 2, cut down by a Vampire 2, cut down by a Djinni 1, cut down by a Stink Bug 1, starved in the dark 1
+  top causes — Endgame: (none)
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths):
+  L=1  reached=200  deaths=8 (hazard 6 / starvation 0 / combat 2)  p_L=96.0%  S_L=96.0%  target p_L=98.8%  target S_L=98.8%  dS=-2.8  PASS
+  L=2  reached=187  deaths=9 (hazard 2 / starvation 4 / combat 3)  p_L=95.2%  S_L=91.4%  target p_L=96.3%  target S_L=95.1%  dS=-3.7  PASS
+  L=3  reached=171  deaths=8 (hazard 3 / starvation 4 / combat 1)  p_L=95.3%  S_L=87.1%  target p_L=93.1%  target S_L=88.6%  dS=-1.5  PASS
+  L=4  reached=155  deaths=34 (hazard 6 / starvation 4 / combat 24)  p_L=78.1%  S_L=68.0%  target p_L=89.9%  target S_L=79.7%  dS=-11.7  MISS
+  L=5  reached=106  deaths=35 (hazard 5 / starvation 2 / combat 28)  p_L=67.0%  S_L=45.5%  target p_L=86.9%  target S_L=69.2%  dS=-23.7  MISS
+  L=6  reached=56  deaths=23 (hazard 5 / starvation 4 / combat 14)  p_L=58.9%  S_L=26.8%  target p_L=84.3%  target S_L=58.4%  dS=-31.6  MISS
+  L=7  reached=28  deaths=13 (hazard 3 / starvation 0 / combat 10)  p_L=53.6%  S_L=14.4%  target p_L=82.2%  target S_L=48.0%  dS=-33.6  MISS
+  L=8  reached=14  deaths=6 (hazard 1 / starvation 0 / combat 5)  p_L=57.1%  S_L=8.2%  target p_L=80.6%  target S_L=38.7%  dS=-30.5  MISS
+  L=9  reached=8  deaths=3 (hazard 0 / starvation 0 / combat 3)  p_L=62.5%  S_L=5.1%  target p_L=79.5%  target S_L=30.8%  dS=-25.7  MISS
+  L=10  reached=4  deaths=3 (hazard 0 / starvation 1 / combat 2)  p_L=25.0%  S_L=1.3%  target p_L=78.9%  target S_L=24.3%  dS=-23.0  MISS
+  L=11  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=78.7%  target S_L=19.1%  dS=-17.8  MISS
+  L=12  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=78.8%  target S_L=15.1%  dS=-13.8  MISS
+  L=13  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=79.1%  target S_L=11.9%  dS=-10.6  MISS
+  L=14  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=79.6%  target S_L=9.5%  dS=-8.2  MISS
+  L=15  reached=1  deaths=1 (hazard 0 / starvation 0 / combat 1)  p_L=0.0%  S_L=0.0%  target p_L=80.2%  target S_L=7.6%  dS=-7.6  MISS
+  reach-20: 0.0% (band 3.0-5.0%) MISS
+  verdict: floors outside the pass band: 4 (dS -11.7), 5 (dS -23.7), 6 (dS -31.6), 7 (dS -33.6), 8 (dS -30.5), 9 (dS -25.7), 10 (dS -23.0), 11 (dS -17.8), 12 (dS -13.8), 13 (dS -10.6), 14 (dS -8.2), 15 (dS -7.6); reach-20 MISS
+
+Outcome: 143 dead, 57 stuck (hit maxActions=20000; excluded from depth stats)
+

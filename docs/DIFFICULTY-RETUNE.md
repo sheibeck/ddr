@@ -4418,6 +4418,251 @@ Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L
 
 **What to turn next:** USER RULING C (2026-09-21) — the ladder is re-planned to the per-floor survival curve; rung 3a (this plan's Task 1) lands the knot table at these exact values (byte-identical, proven by capture diff) so the first fit is attributable; rung 3b (Task 2) is the first FIT, computed from this rung's own per-floor table above plus the slice's p_20 (36.0%) for the Endgame knots.
 
+#### Rung 3 — commit a78bef5 (first FIT: F2/F3/F4 0.37/0.53/0.52; Wall 0.51/0.57; Breakaway 0.57/0.6; Endgame 0.6/0.6; hazard F2/F3/F4 0.46/0.44/0.49, Wall 0.6)
+
+The first deterministic FIT, computed from rung 2's own solo per-floor survival table (retro) plus the `--start-depth=20` slice's p_20, per the fit rule in `#### Target — the per-floor survival curve` above.
+
+**Fit table (from rung 2's readouts):**
+
+| Depth | Constant | cur | p_meas | source | target p_L | Δ | f_K | next |
+|---|---|---|---|---|---|---|---|---|
+| 2 | FOE_GRACE_AT_2 | 0.4 | 89.0% | solo L=2 (reached 181) | 96.3% | 7.3 | 0.927 | 0.37 |
+| 3 | FOE_GRACE_AT_3 | 0.6 | 81.4% | solo L=3 (reached 161) | 93.1% | 11.7 | 0.883 | 0.53 |
+| 4 | FOE_GRACE_AT_4 | 0.8 | 55.0% | solo L=4 (reached 131) | 89.9% | 34.9 | 0.651 | 0.52 |
+| 5 | WALL_FOE_POWER_AT_START | 0.85 | 37.5% | solo L=5 (reached 72) | 86.9% | 49.4 | 0.6 (floor-clamped from 0.506) | 0.51 |
+| 8 | WALL_FOE_POWER_AT_END | 0.95 | n/a (reached 2 < 10) | inherits f from knot 5 | 80.6% | — | 0.6 | 0.57 |
+| 9 | BREAKAWAY_FOE_POWER_AT_START | 0.95 | n/a (reached 1 < 10) | inherits f from knot 5 | 79.5% | — | 0.6 | 0.57 |
+| 15 | BREAKAWAY_FOE_POWER_AT_END | 1.0 | n/a (reached 0 < 10) | inherits f from knot 5 | 80.2% | — | 0.6 | 0.6 |
+| 16 | ENDGAME_FOE_POWER_AT_START | 1.0 | 36.0% | `--start-depth=20` slice p_20 (< 10 natural @16) | 81.0% | 45.0 | 0.6 (floor-clamped from 0.55) | 0.6 |
+| 20 | ENDGAME_FOE_POWER_AT_END | 1.0 | 36.0% | slice p_20 | 84.5% | 48.5 | 0.6 (floor-clamped from 0.515) | 0.6 |
+
+Hazard knots (band hazard share from the REGENERATED party transcript's real per-floor split — the retro solo table lacks per-floor cause data; rungs 4+ use solo's own live split):
+
+| Constant | cur | band hazard share | f_K | next |
+|---|---|---|---|---|
+| HAZARD_SCALE_AT_START (2) | 0.5 | Filter 32.8% (>= 15%) | 0.927 | 0.46 |
+| HAZARD_SCALE_AT_3 (3) | 0.5 | Filter 32.8% | 0.883 | 0.44 |
+| HAZARD_SCALE_AT_4 (4) | 0.75 | Filter 32.8% | 0.651 | 0.49 |
+| WALL_HAZARD_SCALE (5-8) | 1.0 | Wall 21.9% (>= 15%) | 0.6 | 0.6 |
+| BREAKAWAY_HAZARD_SCALE (9-15) | 1.0 | Breakaway 0% (< 15%) | unchanged | 1.0 |
+| ENDGAME_HAZARD_SCALE (16+) | 1.0 | no data | unchanged | 1.0 |
+
+Ability knots: all six (`WALL_ABILITY_THREAT_AT_START/END`, `BREAKAWAY_ABILITY_THREAT_AT_START/END`, `ENDGAME_ABILITY_THREAT_AT_START/END`) unchanged at 1.0 — no per-band kit-bearing-foe DEATH share is recorded by rung 2's transcripts (only caster-ENCOUNTER rate by depth band, a different metric); the >= 25% condition cannot be shown true this rung.
+
+Starvation ("food economy") check: Filter 16.4% (party), Wall 9.6% (party) — both < 50%, no override. Secondary group: not triggered (first fit rung; the rule requires two consecutive fits).
+
+**Constants (Old -> New):**
+
+| Constant | Old | New |
+|---|---|---|
+| `FOE_GRACE_AT_2` | 0.4 | 0.37 |
+| `FOE_GRACE_AT_3` | 0.6 | 0.53 |
+| `FOE_GRACE_AT_4` | 0.8 | 0.52 |
+| `WALL_FOE_POWER_AT_START` | 0.85 | 0.51 |
+| `WALL_FOE_POWER_AT_END` | 0.95 | 0.57 |
+| `BREAKAWAY_FOE_POWER_AT_START` | 0.95 | 0.57 |
+| `BREAKAWAY_FOE_POWER_AT_END` | 1.0 | 0.6 |
+| `ENDGAME_FOE_POWER_AT_START` | 1.0 | 0.6 |
+| `ENDGAME_FOE_POWER_AT_END` | 1.0 | 0.6 |
+| `HAZARD_SCALE_AT_START` | 0.5 | 0.46 |
+| `HAZARD_SCALE_AT_3` | 0.5 | 0.44 |
+| `HAZARD_SCALE_AT_4` | 0.75 | 0.49 |
+| `WALL_HAZARD_SCALE` | 1.0 | 0.6 |
+| `BREAKAWAY_HAZARD_SCALE` | 1.0 | 1.0 (unchanged) |
+| `ENDGAME_HAZARD_SCALE` | 1.0 | 1.0 (unchanged) |
+| all six ability knots | 1.0 | 1.0 (unchanged) |
+
+**Curve at 1..25 (foePower / hazardScale / abilityThreat), measured via `node -e` against the `a78bef5` commit:**
+
+| d | dots | darkBlobs | darkRadius | foePower | hazardScale | foeCap | abilityThreat |
+|---|---|---|---|---|---|---|---|
+| 1 | 10 | 0 | 4 | 1.0000 (exact) | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 2 | 11 | 1 | 5 | 0.3700 | 0.4600 | 3 | 1.0000 (exact) |
+| 3 | 11 | 1 | 6 | 0.5300 | 0.4400 | 3 | 1.0000 (exact) |
+| 4 | 11 | 2 | 7 | 0.5200 | 0.4900 | 3 | 1.0000 (exact) |
+| 5 | 11 | 3 | 7 | 0.5100 | 0.6000 | 3 | 1.0000 (exact) |
+| 6 | 9 | 0 | 7 | 0.5300 | 0.6000 | 3 | 1.0000 (exact) |
+| 7 | 12 | 3 | 7 | 0.5500 | 0.6000 | 3 | 1.0000 (exact) |
+| 8 | 12 | 3 | 7 | 0.5700 | 0.6000 | 3 | 1.0000 (exact) |
+| 9 | 12 | 3 | 7 | 0.5700 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 10 | 12 | 3 | 7 | 0.5750 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 11 | 9 | 0 | 7 | 0.5800 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 12 | 12 | 3 | 7 | 0.5850 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 13 | 12 | 3 | 7 | 0.5900 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 14 | 12 | 3 | 7 | 0.5950 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 15 | 12 | 3 | 7 | 0.6000 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 16 | 9 | 0 | 7 | 0.6000 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 17 | 12 | 3 | 7 | 0.6000 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 18 | 12 | 3 | 7 | 0.6000 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 19 | 13 | 3 | 7 | 0.6000 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 20 | 13 | 3 | 7 | 0.6000 | 1.0000 (exact) | 3 | 1.0000 (exact) |
+| 21 | 9 | 0 | 7 | 0.6025 | 1.0000 (exact) | 3 | 1.0098 |
+| 22 | 13 | 3 | 7 | 0.6050 | 1.0000 (exact) | 3 | 1.0193 |
+| 23 | 13 | 3 | 7 | 0.6074 | 1.0000 (exact) | 3 | 1.0285 |
+| 24 | 13 | 3 | 7 | 0.6097 | 1.0000 (exact) | 3 | 1.0374 |
+| 25 | 13 | 3 | 7 | 0.6120 | 1.0000 (exact) | 3 | 1.0461 |
+
+**`node tools/tune-difficulty.mjs --seeds=200` (solo, committed on `a78bef5`):**
+
+```
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=4  p90=7  max=10
+
+Action-count distribution:
+  min=36  p50=467  p90=756  max=1020
+
+Death-cause breakdown:
+  starved in the dark  20 (10.0%)
+  spent by the dungeon itself 15 (7.5%)
+  cut down by a Werebeast 13 (6.5%)
+  undone by a trap     10 (5.0%)
+  cut down by a Blumble 8 (4.0%)
+  cut down by a Gremlin 8 (4.0%)
+  cut down by a Frank  7 (3.5%)
+  cut down by a Dante  7 (3.5%)
+  cut down by a Drarl  7 (3.5%)
+  (34 more causes, 1-3 each — see the committed transcript for the full list)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=345  successes=219 (63.5%)  failures=126  refused=0  exhausted=0
+  runs with >=1 attempt: 73 of 200
+  SP from parley: 3341 of 154216 total SP (2.2%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 43.0%  >=10: 2.0%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Stuck: 0 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 1:19  2:19  3:26  4:50  5:38  6:22  7:16  8:4  9:2  10:4
+  mean death depth=4.30  floors gained p50=3 mean=3.30  encounters survived mean=10.75
+  reach: >=5 43.0%  >=8 5.0%  >=9 3.0%  >=10 2.0%  >=13 0.0%  >=16 0.0%  >=20 0.0%
+  band share of deaths: Filter 1-4 57.0% | Wall 5-8 40.0% | Breakaway 9-15 3.0% | Endgame 16-20 0.0% | beyond 20 0.0%
+  top causes — Filter: undone by a trap 9, cut down by a Gremlin 8, cut down by a Werebeast 8, cut down by a Dante 7, starved in the dark 7
+  top causes — Wall: starved in the dark 11, spent by the dungeon itself 9, cut down by a Drake 6, cut down by a Drarl 5, cut down by a Werebeast 5
+  top causes — Breakaway: cut down by a Drudge 2, cut down by a Stalka Beast 2, starved in the dark 2
+  top causes — Endgame: (none)
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths):
+  L=1  reached=200  deaths=19 (hazard 8 / starvation 1 / combat 10)  p_L=90.5%  S_L=90.5%  target p_L=98.8%  target S_L=98.8%  dS=-8.3  MISS
+  L=2  reached=181  deaths=19 (hazard 3 / starvation 3 / combat 13)  p_L=89.5%  S_L=81.0%  target p_L=96.3%  target S_L=95.1%  dS=-14.1  MISS
+  L=3  reached=162  deaths=26 (hazard 1 / starvation 3 / combat 22)  p_L=84.0%  S_L=68.0%  target p_L=93.1%  target S_L=88.6%  dS=-20.6  MISS
+  L=4  reached=136  deaths=50 (hazard 4 / starvation 6 / combat 40)  p_L=63.2%  S_L=43.0%  target p_L=89.9%  target S_L=79.7%  dS=-36.7  MISS
+  L=5  reached=86  deaths=38 (hazard 1 / starvation 10 / combat 27)  p_L=55.8%  S_L=24.0%  target p_L=86.9%  target S_L=69.2%  dS=-45.2  MISS
+  L=6  reached=48  deaths=22 (hazard 3 / starvation 5 / combat 14)  p_L=54.2%  S_L=13.0%  target p_L=84.3%  target S_L=58.4%  dS=-45.4  MISS
+  L=7  reached=26  deaths=16 (hazard 0 / starvation 3 / combat 13)  p_L=38.5%  S_L=5.0%  target p_L=82.2%  target S_L=48.0%  dS=-43.0  MISS
+  L=8  reached=10  deaths=4 (hazard 0 / starvation 2 / combat 2)  p_L=60.0%  S_L=3.0%  target p_L=80.6%  target S_L=38.7%  dS=-35.7  MISS
+  L=9  reached=6  deaths=2 (hazard 0 / starvation 1 / combat 1)  p_L=66.7%  S_L=2.0%  target p_L=79.5%  target S_L=30.8%  dS=-28.8  MISS
+  L=10  reached=4  deaths=4 (hazard 0 / starvation 1 / combat 3)  p_L=0.0%  S_L=0.0%  target p_L=78.9%  target S_L=24.3%  dS=-24.3  MISS
+  reach-20: 0.0% (band 3.0-5.0%) MISS
+  verdict: floors outside the pass band: 1 (dS -8.3), 2 (dS -14.1), 3 (dS -20.6), 4 (dS -36.7), 5 (dS -45.2), 6 (dS -45.4), 7 (dS -43.0), 8 (dS -35.7), 9 (dS -28.8), 10 (dS -24.3); reach-20 MISS
+
+Outcome: 200 dead, 0 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**`node tools/tune-difficulty.mjs --seeds=200 --party` (party, committed on `a78bef5`):**
+
+```
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=5  p90=7  max=15
+
+Action-count distribution:
+  min=21  p50=621  p90=20000  max=20000
+
+Death-cause breakdown:
+  starved in the dark  16 (8.0%)
+  fell off a wall      16 (8.0%)
+  cut down by a Werebeast 14 (7.0%)
+  undone by a trap     12 (6.0%)
+  cut down by a Primp  7 (3.5%)
+  (34 more causes, 1-6 each — see the committed transcript for the full list)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=382  successes=231 (60.5%)  failures=151  refused=0  exhausted=0
+  runs with >=1 attempt: 71 of 200
+  SP from parley: 3837 of 149813 total SP (2.6%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 58.7%  >=10: 2.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Party (--party, D-12/D-20):
+  member forced at run start in 192/200 runs; member alive at run end: 128 (64.0%)
+
+Stuck: 57 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=on  flee=0.3/0.5(caster)  potion<0.5  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 1:8  2:9  3:8  4:34  5:35  6:23  7:13  8:6  9:3  10:3  15:1
+  mean death depth=4.97  floors gained p50=4 mean=3.97  encounters survived mean=12.66
+  reach: >=5 58.7%  >=8 9.1%  >=9 4.9%  >=10 2.8%  >=13 0.7%  >=16 0.0%  >=20 0.0%
+  band share of deaths: Filter 1-4 41.3% | Wall 5-8 53.8% | Breakaway 9-15 4.9% | Endgame 16-20 0.0% | beyond 20 0.0%
+  top causes — Filter: starved in the dark 10, fell off a wall 9, undone by a trap 5, cut down by a Dante 4, cut down by a Poltergeist 4
+  top causes — Wall: cut down by a Werebeast 12, fell off a wall 7, undone by a trap 7, cut down by a Blumble 5, cut down by a Primp 5
+  top causes — Breakaway: cut down by a Drarl 2, cut down by a Vampire 2, cut down by a Djinni 1, cut down by a Stink Bug 1, starved in the dark 1
+  top causes — Endgame: (none)
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths):
+  L=1  reached=200  deaths=8 (hazard 6 / starvation 0 / combat 2)  p_L=96.0%  S_L=96.0%  target p_L=98.8%  target S_L=98.8%  dS=-2.8  PASS
+  L=2  reached=187  deaths=9 (hazard 2 / starvation 4 / combat 3)  p_L=95.2%  S_L=91.4%  target p_L=96.3%  target S_L=95.1%  dS=-3.7  PASS
+  L=3  reached=171  deaths=8 (hazard 3 / starvation 4 / combat 1)  p_L=95.3%  S_L=87.1%  target p_L=93.1%  target S_L=88.6%  dS=-1.5  PASS
+  L=4  reached=155  deaths=34 (hazard 6 / starvation 4 / combat 24)  p_L=78.1%  S_L=68.0%  target p_L=89.9%  target S_L=79.7%  dS=-11.7  MISS
+  L=5  reached=106  deaths=35 (hazard 5 / starvation 2 / combat 28)  p_L=67.0%  S_L=45.5%  target p_L=86.9%  target S_L=69.2%  dS=-23.7  MISS
+  L=6  reached=56  deaths=23 (hazard 5 / starvation 4 / combat 14)  p_L=58.9%  S_L=26.8%  target p_L=84.3%  target S_L=58.4%  dS=-31.6  MISS
+  L=7  reached=28  deaths=13 (hazard 3 / starvation 0 / combat 10)  p_L=53.6%  S_L=14.4%  target p_L=82.2%  target S_L=48.0%  dS=-33.6  MISS
+  L=8  reached=14  deaths=6 (hazard 1 / starvation 0 / combat 5)  p_L=57.1%  S_L=8.2%  target p_L=80.6%  target S_L=38.7%  dS=-30.5  MISS
+  L=9  reached=8  deaths=3 (hazard 0 / starvation 0 / combat 3)  p_L=62.5%  S_L=5.1%  target p_L=79.5%  target S_L=30.8%  dS=-25.7  MISS
+  L=10  reached=4  deaths=3 (hazard 0 / starvation 1 / combat 2)  p_L=25.0%  S_L=1.3%  target p_L=78.9%  target S_L=24.3%  dS=-23.0  MISS
+  L=11  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=78.7%  target S_L=19.1%  dS=-17.8  MISS
+  L=12  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=78.8%  target S_L=15.1%  dS=-13.8  MISS
+  L=13  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=79.1%  target S_L=11.9%  dS=-10.6  MISS
+  L=14  reached=1  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=1.3%  target p_L=79.6%  target S_L=9.5%  dS=-8.2  MISS
+  L=15  reached=1  deaths=1 (hazard 0 / starvation 0 / combat 1)  p_L=0.0%  S_L=0.0%  target p_L=80.2%  target S_L=7.6%  dS=-7.6  MISS
+  reach-20: 0.0% (band 3.0-5.0%) MISS
+  verdict: floors outside the pass band: 4 (dS -11.7), 5 (dS -23.7), 6 (dS -31.6), 7 (dS -33.6), 8 (dS -30.5), 9 (dS -25.7), 10 (dS -23.0), 11 (dS -17.8), 12 (dS -13.8), 13 (dS -10.6), 14 (dS -8.2), 15 (dS -7.6); reach-20 MISS
+
+Outcome: 143 dead, 57 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+The party readout's floors 1-3 already PASS (dS -2.8/-3.7/-1.5, all within the ±8 band) — the party harness's own recruited member absorbs enough early damage that the Filter cushion is already close to the target curve; floors 4+ are still MISS at the same magnitude as solo.
+
+
+**`node tools/tune-difficulty.mjs --seeds=50 --start-depth=20` (slice, committed on `a78bef5`):**
+
+```
+tune-difficulty: 50 seeded auto-play run(s), start depth 20
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths):
+  L=20  reached=50  deaths=19 (hazard 0 / starvation 0 / combat 19)  p_L=62.0%  S_L=62.0%  target p_L=84.5%  target S_L=3.0%  dS=+59.0  MISS
+  L=21  reached=31  deaths=8 (hazard 2 / starvation 2 / combat 4)  p_L=74.2%  S_L=46.0%  target p_L=85.4%  target S_L=2.5%  dS=+43.5  info
+  L=22  reached=23  deaths=13 (hazard 2 / starvation 2 / combat 9)  p_L=43.5%  S_L=20.0%  target p_L=86.4%  target S_L=2.2%  dS=+17.8  info
+  L=23  reached=10  deaths=3 (hazard 0 / starvation 2 / combat 1)  p_L=70.0%  S_L=14.0%  target p_L=87.2%  target S_L=1.9%  dS=+12.1  info
+  L=24  reached=7  deaths=4 (hazard 0 / starvation 0 / combat 4)  p_L=42.9%  S_L=6.0%  target p_L=88.1%  target S_L=1.7%  dS=+4.3  info
+  L=25  reached=3  deaths=0 (hazard 0 / starvation 0 / combat 0)  p_L=100.0%  S_L=6.0%  target p_L=88.9%  target S_L=1.5%  dS=+4.5  info
+  verdict: all floors 1-19 inside the pass band; reach-20 MISS
+
+Outcome: 50 dead, 0 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+The slice's p_20 rose from 36.0% (rung 2) to 62.0% this rung — the Endgame knots' first fit (1.0 -> 0.6) is already a large directional gain toward the 84.5% target; this is the p_meas input for rung 4's Endgame-knot fit (still < 10 natural runs reaching floor 16, so the slice is used again).
+
+**`node tools/tune-classes.mjs --seeds 5 --workers 4 --out docs/class-pass/v17-p54-rung3-smoke.json`** (143 cells; committed): POOLED `n=715 stuck=0 mean=4.50 p50=4.0 p90=7.0 >=5%=45.0 >=10%=1.5 kills=10.89 lvl=3.01 actions=500.95`; top causes `starved in the dark(76), cut down by a Werebeast(62), fell off a wall(44)`. `metaParity` vs `v17-p54-rung2-smoke.json`: `true []`. `meta.commit` = `a78bef5`.
+
+**Checks:** floor-1 pin holds (`difficultyCurve(1)` byte-identical); `node tools/initiative-fixture-scan.mjs | diff -` empty (no fixture moved); `npm test` 3403/3403 fail 0; `build:www` exit 0; master hash unchanged.
+
+**What moved:** the first fit pushed every Filter/Wall/Breakaway/Endgame foePower and the Filter/Wall hazard knots down together (the shared band-level `f_K` from the floor-clamp at 0.6 for every Wall/Breakaway/Endgame knot this rung, since rung 2 had almost no data past floor 7). Solo p_4 rose 55.0% -> 63.2%, p_5 37.5% -> 55.8%, reach>=5 36.0% -> 43.0%, reach>=10 0.0% -> 2.0%; the slice's p_20 rose 36.0% -> 62.0%. Every floor is STILL a MISS (the curve needed a much bigger first move than a single fit can supply from thin rung-2 data), but every ΔS moved in the right direction. **Class-cell collapse check** (`b.rollups.pooled.meanDepth - a.rollups.pooled.meanDepth` where a = `v17-p54-rung2-smoke.json`, b = `v17-p54-rung3-smoke.json`): `pooledShift +0.35, collapsed 27` (27 of 143 cells dipped at n=5 seeds against a positive pooled shift) — consistent with seed noise at this sample size rather than a regression (the pooled direction is UP, matching the solo/slice readouts above); no rollback indicated.
+
+**What to turn next:** rung 3's own `verdict:` is non-empty (every floor MISS) — the ladder continues to rung 4, computed from THIS rung's own solo per-floor table (now with real per-floor cause splits, not a retro reconstruction) and this rung's slice p_20 (62.0%, still the Endgame p_meas since floor 16 reached_16 is still 0 natural runs).
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
