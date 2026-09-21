@@ -92,7 +92,14 @@ const ENCOUNTERS = [
   // the first seed whose tier-2 roster contains Krupke moved to 3
   // (re-derived live by test 1 below, never hand-computed).
   { key: "humans-t2", type: "Humans", tier: 2, want: "Krupke", seed: 3 },
-  { key: "magical-t4", type: "Magical", tier: 4, want: "Drudge", seed: 1 },
+  // Phase 54 rung 4 (2026-09-21, USER RULING C): FOE_GRACE_AT_4 dropped to
+  // 0.38 — seed 1's Drudge pair now copy-time wp 3 (< 5), triggering the
+  // canon "a Knight is beneath the notice of small things" rule
+  // (engine/combat.js: `c.sub === "Knight" && f.maxWP < 5` -> foeFled) before
+  // any playerStrike; the first seed whose tier-4 Magical roster still rolls
+  // a live, non-fled Drudge moved to 2 (re-derived live by test 1 below,
+  // never hand-computed).
+  { key: "magical-t4", type: "Magical", tier: 4, want: "Drudge", seed: 2 },
   { key: "demons-t5", type: "Demons", tier: 5, want: "Djinni", seed: 1 },
   { key: "walking-dead-t5", type: "Walking Dead", tier: 5, want: "Vampire", seed: 1 },
   { key: "beasts-t5", type: "Beasts", tier: 5, want: "Stalka Beast", seed: 1 },
@@ -253,11 +260,20 @@ const FULL_FIGHT_PINS = {
   // one-attack fight) and walking-dead-t5 (a one-attack fight) are
   // unaffected, confirmed by re-measuring both.
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
-  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 4, outcome: "won" },
+  // Phase 54 rung 4 (USER RULING C, 2026-09-21): FOE_GRACE_AT_4 0.52 -> 0.38
+  // — seed 1's Drudge pair now copy-time wp 3 (< 5), so BOTH flee via the
+  // canon "a Knight is beneath the notice of small things" rule before any
+  // playerStrike (ENCOUNTERS' own seed moved to 2 — see that array's
+  // comment). Seed 2 rolls a SINGLE Drudge (also wp 3, but this seed's
+  // roster composition differs) — re-measured live via this file's own
+  // runFullFight, never hand-computed.
+  "magical-t4": { foeNames: ["Drudge"], totalDraws: 10, attacks: 1, outcome: "won" },
   // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
   // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 41/3 ->
   // 35/2, outcome unchanged ("won"). The softer Djinni pair dies one attack
   // sooner under the fitted grace.
+  // Phase 54 rung 4: unchanged (35/2, "won") — re-measured live, confirmed
+  // no further move at this rung's depth-5 values.
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 35, attacks: 2, outcome: "won" },
   // Phase 52 (DMG-02, 2026-09-20): re-measured live — 23/1 -> 48/3, outcome
   // unchanged ("died"). This seed-1 Vampire's own crit (roll 1, a d4 dice)
@@ -277,7 +293,10 @@ const FULL_FIGHT_PINS = {
   // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
   // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 47/3
   // -> 46/3, outcome unchanged ("won"); one fewer draw, same attack count.
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 46, attacks: 3, outcome: "won" },
+  // Phase 54 rung 4: depth-5 foePower 0.51 -> 0.35 — re-measured live: 46/3
+  // -> 35/2, outcome unchanged ("won"). The still-softer Vampire pair dies
+  // one attack sooner.
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 35, attacks: 2, outcome: "won" },
   // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
   // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
   // and rats" (Beasts), so this Beasts-forced encounter now triggers
@@ -301,14 +320,19 @@ const FULL_FIGHT_PINS = {
   // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 73/6
   // -> 48/3, outcome unchanged ("won"). The much softer Stalka Beast pair
   // dies in half the attacks.
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 48, attacks: 3, outcome: "won" },
+  // Phase 54 rung 4: depth-5 foePower 0.51 -> 0.35 — re-measured live: 48/3
+  // -> 45/4, outcome unchanged ("won").
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 45, attacks: 4, outcome: "won" },
 };
 
 const PER_VISIT_PINS = {
   // Phase 27 (2026-09-15, TUNE-06): was seed 1's [4,4,4,4,5,4,4,4,4,4,5,5] —
   // re-measured at the new seed 3 (single Krupke, not two).
   "humans-t2": [3, 2, 2, 3, 3, 4, 2, 3, 3, 2, 2, 3],
-  "magical-t4": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4],
+  // Phase 54 rung 4 (USER RULING C, 2026-09-21): magical-t4's spec seed
+  // moved 1 -> 2 (see ENCOUNTERS' own comment) — re-measured live at the
+  // new seed via this file's own runVisits, never hand-computed.
+  "magical-t4": [2, 3, 2, 3, 1, 1, 2, 1, 1, 2, 1, 1],
   "demons-t5": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
   // RE-MEASURED (WR-01, 19-REVIEW-FIX.md): the vampireSummon reinforcement's
   // `lvl` now correctly matches the tier-2 roster it was drawn from (2)
@@ -375,8 +399,15 @@ for (const spec of ENCOUNTERS) {
 
     if (spec.key === "magical-t4") {
       // CANON-02: the Drudge is never_melee — it must never swing.
+      // "foeMissed"/"struckByFoe" are melee-exclusive events (engine/combat.js's
+      // foeTurn melee resolution never emits them from the ability-bolt path);
+      // "armorSoaked" is NOT melee-exclusive (the SAME armor-soak roll applies
+      // to a bolt's damage too, via the shared damage-application function) —
+      // dropped from this check (Phase 54 rung 4, USER RULING C, 2026-09-21:
+      // the new seed-2 encounter's Drudge legitimately gets a bolt soaked by
+      // the hero's armour; that is not a melee swing).
       assert.ok(
-        !a.events.some((e) => e.name === "Drudge" && ["foeMissed", "struckByFoe", "armorSoaked"].includes(e.type)),
+        !a.events.some((e) => e.name === "Drudge" && ["foeMissed", "struckByFoe"].includes(e.type)),
         "the Drudge (never_melee) logged a melee-shaped event",
       );
     }

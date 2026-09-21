@@ -275,8 +275,9 @@ export const FOE_GRACE_AT_1 = 1.0;
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.4 -> 0.37 — fitted
  * from rung 2's solo p_L at floor 2 (89.0% vs target 96.3%, f = 0.927);
- * readout under docs/DIFFICULTY-RETUNE.md `#### Rung 3`. */
-export const FOE_GRACE_AT_2 = 0.37;
+ * readout under docs/DIFFICULTY-RETUNE.md `#### Rung 3`.
+ * Rung 4: 0.37 -> 0.34 — solo p_2 89.5% vs target 96.3%, f = 0.932. */
+export const FOE_GRACE_AT_2 = 0.34;
 /** FOE_GRACE_AT_3 — NEW knot (Phase 54, USER RULING C, rung 3a): floor 3's
  * foePower knot. Landed at rung-2's own interpolated value (0.6 — the
  * value `graceFor(3)` already computed from FOE_GRACE_AT_2/
@@ -285,15 +286,17 @@ export const FOE_GRACE_AT_2 = 0.37;
  * `#### Rung N`.
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.6 -> 0.53 — fitted
- * from rung 2's solo p_L at floor 3 (81.4% vs target 93.1%, f = 0.883). */
-export const FOE_GRACE_AT_3 = 0.53;
+ * from rung 2's solo p_L at floor 3 (81.4% vs target 93.1%, f = 0.883).
+ * Rung 4: 0.53 -> 0.48 — solo p_3 84.0% vs target 93.1%, f = 0.909. */
+export const FOE_GRACE_AT_3 = 0.48;
 /** FOE_GRACE_AT_4 — NEW knot (Phase 54, USER RULING C, rung 3a): floor 4's
  * foePower knot. Landed at rung-2's own interpolated value (0.8), fitted
  * per rung thereafter.
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.8 -> 0.52 — fitted
- * from rung 2's solo p_L at floor 4 (55.0% vs target 89.9%, f = 0.651). */
-export const FOE_GRACE_AT_4 = 0.52;
+ * from rung 2's solo p_L at floor 4 (55.0% vs target 89.9%, f = 0.651).
+ * Rung 4: 0.52 -> 0.38 — solo p_4 63.2% vs target 89.9%, f = 0.733. */
+export const FOE_GRACE_AT_4 = 0.38;
 
 /** HAZARD_FROM_DEPTH — Phase 27 (TUNE-06): the first depth whose hazardScale
  * may leave identity (1.0). MUST stay >= 2 (floor 1 canon — a from-floor-1
@@ -305,7 +308,10 @@ export const HAZARD_FROM_DEPTH = 2;
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.5 -> 0.46 — the
  * Filter band's hazard share (party transcript, real per-floor split) was
  * 32.8% of Filter deaths (>= 15% threshold), so this knot moves with the
- * SAME f_K as FOE_GRACE_AT_2 (0.927). */
+ * SAME f_K as FOE_GRACE_AT_2 (0.927).
+ * Rung 4: unchanged — rung 3's own LIVE solo per-floor split (the first
+ * genuine, non-substituted reading) puts the Filter hazard share at 14.05%
+ * (16 of 114 Filter deaths), below the 15% threshold. */
 export const HAZARD_SCALE_AT_START = 0.46;
 /** HAZARD_SCALE_AT_3 — NEW knot (Phase 54, USER RULING C, rung 3a): floor
  * 3's hazard knot. Landed at rung-2's own flat-through value (0.5),
@@ -314,7 +320,8 @@ export const HAZARD_SCALE_AT_START = 0.46;
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.5 -> 0.44 — Filter
  * hazard share 32.8% (see HAZARD_SCALE_AT_START); f_K = 0.883 (matches
- * FOE_GRACE_AT_3). */
+ * FOE_GRACE_AT_3).
+ * Rung 4: unchanged — see HAZARD_SCALE_AT_START's rung-4 note. */
 export const HAZARD_SCALE_AT_3 = 0.44;
 /** HAZARD_SCALE_AT_4 — NEW knot (Phase 54, USER RULING C, rung 3a): floor
  * 4's hazard knot. Landed at rung-2's own interpolated value (0.75),
@@ -322,7 +329,8 @@ export const HAZARD_SCALE_AT_3 = 0.44;
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.75 -> 0.49 — Filter
  * hazard share 32.8% (see HAZARD_SCALE_AT_START); f_K = 0.651 (matches
- * FOE_GRACE_AT_4). */
+ * FOE_GRACE_AT_4).
+ * Rung 4: unchanged — see HAZARD_SCALE_AT_START's rung-4 note. */
 export const HAZARD_SCALE_AT_4 = 0.49;
 
 // --- Phase 54 (BAND-02): the four-band curve on floors 5-15 ---------------
@@ -363,16 +371,20 @@ export const WALL_TO_DEPTH = 8;
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.85 -> 0.51 — fitted
  * from rung 2's solo p_L at floor 5 (37.5% vs target 86.9%, f = 0.6, floor-
  * clamped from a raw 0.506); readout under docs/DIFFICULTY-RETUNE.md
- * `#### Rung 3`. */
-export const WALL_FOE_POWER_AT_START = 0.51;
+ * `#### Rung 3`.
+ * Rung 4: 0.51 -> 0.35 — solo p_5 55.8% vs target 86.9%, f = 0.689 (not
+ * clamped). */
+export const WALL_FOE_POWER_AT_START = 0.35;
 /** WALL_FOE_POWER_AT_END — foePower at WALL_TO_DEPTH.
  * Phase 54 ladder rung 1 (2026-09-21, BAND-02): 1.0 -> 0.95 — see
  * WALL_FOE_POWER_AT_START's JSDoc for the readout that motivated this rung.
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.95 -> 0.57 — rung
  * 2's solo table had reached_8 = 2 (< 10), so this knot INHERITS f_K = 0.6
- * from the nearest shallower measured knot (WALL_FOE_POWER_AT_START). */
-export const WALL_FOE_POWER_AT_END = 0.57;
+ * from the nearest shallower measured knot (WALL_FOE_POWER_AT_START).
+ * Rung 4: 0.57 -> 0.45 — reached_8 = 10 this rung (exactly the threshold),
+ * now independently measured: solo p_8 60.0% vs target 80.6%, f = 0.794. */
+export const WALL_FOE_POWER_AT_END = 0.45;
 /** BREAKAWAY_FROM_DEPTH — the first depth of the Breakaway band (9-15). */
 export const BREAKAWAY_FROM_DEPTH = 9;
 /** BREAKAWAY_TO_DEPTH — the last depth of the Breakaway band (9-15). */
@@ -383,16 +395,20 @@ export const BREAKAWAY_TO_DEPTH = 15;
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.95 -> 0.57 — rung
  * 2's solo table had reached_9 = 1 (< 10); inherits f_K = 0.6 from
- * WALL_FOE_POWER_AT_START (the nearest shallower measured knot). */
-export const BREAKAWAY_FOE_POWER_AT_START = 0.57;
+ * WALL_FOE_POWER_AT_START (the nearest shallower measured knot).
+ * Rung 4: 0.57 -> 0.45 — reached_9 = 6 (< 10) still; inherits f = 0.794
+ * from WALL_FOE_POWER_AT_END (now the nearest shallower measured knot). */
+export const BREAKAWAY_FOE_POWER_AT_START = 0.45;
 /** BREAKAWAY_FOE_POWER_AT_END — foePower at BREAKAWAY_TO_DEPTH (the
  * Breakaway eases back to identity by 15; 16 is the literal by the guard;
  * unchanged this rung).
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 1.0 -> 0.6 — rung 2's
  * solo table had reached_15 = 0 (< 10); inherits f_K = 0.6 from
- * WALL_FOE_POWER_AT_START. */
-export const BREAKAWAY_FOE_POWER_AT_END = 0.6;
+ * WALL_FOE_POWER_AT_START.
+ * Rung 4: 0.6 -> 0.48 — reached_15 = 0 still; inherits f = 0.794 (chained
+ * via BREAKAWAY_FOE_POWER_AT_START). */
+export const BREAKAWAY_FOE_POWER_AT_END = 0.48;
 /** ENDGAME_FROM_DEPTH — Phase 54 (USER RULING C, rung 3a): RENAMED from
  * `ENDGAME_CANON_FROM_DEPTH` (Phase 53's "identity by construction, never
  * re-pinned" guarantee on 16+ is SUPERSEDED by USER RULING C — floors 16-20
@@ -415,8 +431,10 @@ export const ENDGAME_TO_DEPTH = 20;
  * from the `--start-depth=20` slice's p_20 (36.0% vs target p_16 81.0%,
  * f = 0.6, floor-clamped from a raw 0.55) — the same p_meas used for
  * ENDGAME_FOE_POWER_AT_END below (per the fit rule, both Endgame knots
- * share the slice reading until natural floor-16+ data exists). */
-export const ENDGAME_FOE_POWER_AT_START = 0.6;
+ * share the slice reading until natural floor-16+ data exists).
+ * Rung 4: 0.6 -> 0.49 — still 0 natural runs @16; slice p_20 62.0% vs
+ * target p_16 81.0%, f = 0.81 (not clamped). */
+export const ENDGAME_FOE_POWER_AT_START = 0.49;
 /** ENDGAME_FOE_POWER_AT_END — NEW knot (Phase 54, USER RULING C, rung 3a):
  * foePower at ENDGAME_TO_DEPTH (20) — this value also scales the
  * COMBAT_SCALE_FROM_DEPTH+ ramp (see knotFoePowerFor below): the Phase 21
@@ -426,8 +444,9 @@ export const ENDGAME_FOE_POWER_AT_START = 0.6;
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 1.0 -> 0.6 — the
  * slice's p_20 (36.0% vs target p_20 84.5%, f = 0.6, floor-clamped from a
- * raw 0.515). */
-export const ENDGAME_FOE_POWER_AT_END = 0.6;
+ * raw 0.515).
+ * Rung 4: 0.6 -> 0.47 — slice p_20 62.0% vs target p_20 84.5%, f = 0.775. */
+export const ENDGAME_FOE_POWER_AT_END = 0.47;
 /** WALL_HAZARD_SCALE — the trap/wall-fall damage multiplier on
  * WALL_FROM_DEPTH..WALL_TO_DEPTH (scaffold: identity, 1.0 — the literal
  * `1` for scaleHazard's `=== 1` fast path); a rung-2+ dial.
@@ -435,7 +454,9 @@ export const ENDGAME_FOE_POWER_AT_END = 0.6;
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 1.0 -> 0.6 — the
  * Wall band's hazard share (party transcript, real per-floor split) was
  * 21.9% of Wall deaths (>= 15% threshold); moves with the SAME f_K as
- * WALL_FOE_POWER_AT_START/END this rung (both share f_K = 0.6). */
+ * WALL_FOE_POWER_AT_START/END this rung (both share f_K = 0.6).
+ * Rung 4: unchanged — rung 3's own LIVE solo per-floor split puts the Wall
+ * hazard share at 5.0% (4 of 80 Wall deaths), below the 15% threshold. */
 export const WALL_HAZARD_SCALE = 0.6;
 /** BREAKAWAY_HAZARD_SCALE — NEW knot (Phase 54, USER RULING C, rung 3a):
  * the hazard multiplier flat across BREAKAWAY_FROM_DEPTH..BREAKAWAY_TO_DEPTH
@@ -444,7 +465,8 @@ export const WALL_HAZARD_SCALE = 0.6;
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): unchanged (1.0) —
  * the Breakaway band's hazard share this rung was 0% of its (very few, 3)
- * measured deaths, below the 15% threshold. */
+ * measured deaths, below the 15% threshold.
+ * Rung 4: unchanged — 0% of 6 measured deaths (floors 9-10) were hazard. */
 export const BREAKAWAY_HAZARD_SCALE = 1.0;
 /** ENDGAME_HAZARD_SCALE — NEW knot (Phase 54, USER RULING C, rung 3a): the
  * hazard multiplier flat across every depth >= ENDGAME_FROM_DEPTH (16),
@@ -452,7 +474,8 @@ export const BREAKAWAY_HAZARD_SCALE = 1.0;
  * identity value (1.0), fitted per rung thereafter.
  *
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): unchanged (1.0) — no
- * Endgame-band deaths were recorded this rung (no run reached floor 16). */
+ * Endgame-band deaths were recorded this rung (no run reached floor 16).
+ * Rung 4: unchanged — still no Endgame-band deaths recorded. */
 export const ENDGAME_HAZARD_SCALE = 1.0;
 /** WALL_ABILITY_THREAT_AT_START — abilityThreat at WALL_FROM_DEPTH
  * (scaffold: identity; the caster-cadence band, a rung-2+ dial).
