@@ -457,6 +457,158 @@ export function startingRationsFor(canon) {
   return live.FOOD_CLOCK === 1 ? canon : Math.max(1, Math.round(canon * live.FOOD_CLOCK));
 }
 
+// --- 54-06 (BAND-02, USER RULING D): economy / class / accuracy / exposed
+// dial helpers. Every one below is a pure function of `live` (+ its
+// arguments) with a strict `=== 1` / `=== 0` structural identity fast path —
+// zero rng, zero DOM, zero mutation.
+
+/**
+ * lootFor(coin) — LOOT_SCALE, applied POST-DRAW at the four coin sites (the
+ * kill purse — engine/combat.js#killFoe, the chest and the wilmst cache —
+ * engine/encounters.js#openChest/#tableFour, and the faerie's d10x100 —
+ * engine/encounters.js#meetFaerie). Never applied to the Pickpocket extra,
+ * the cutpurse ability, the grimoire's flat 150, or the dev-start purse
+ * (engine/items.js#gainWilmst itself is untouched). Identity: 1 (canon).
+ * Direction: up = easier (more coin per source).
+ */
+export function lootFor(coin) {
+  return live.LOOT_SCALE === 1 ? coin : Math.round(coin * live.LOOT_SCALE);
+}
+
+/**
+ * foeAccuracyFor() — FOE_ACCURACY, an integer added to the foe's to-hit
+ * need at both foeToHitVs/foeToHitBreakdown call sites (vs "hero" AND
+ * "member" — engine/derived.js). The `Math.max(1, h)` floor in both
+ * functions is respected as-is; this helper only ever contributes the raw
+ * delta. Identity: 0 (canon, no modifier). Direction: up = harder (the foe
+ * is more likely to land a blow).
+ */
+export function foeAccuracyFor() {
+  return live.FOE_ACCURACY;
+}
+
+/**
+ * classEvasionFor(c) — CLASS_MITIGATION.Thief.evasion, added to the foe's
+ * to-hit need ONLY for `vs === "hero"` (the hero's own body, never a party
+ * member) and ONLY for a Thief (engine/derived.js#foeToHitVs/
+ * #foeToHitBreakdown). Identity: 0 (canon). Direction: negative = easier to
+ * dodge (the first candidate manual notch is -1 — "the base Thief has no
+ * innate evasion today").
+ */
+export function classEvasionFor(c) {
+  if (!c || c.cls !== "Thief") return 0;
+  const t = live.CLASS_MITIGATION.Thief;
+  return (t && t.evasion) || 0;
+}
+
+/**
+ * classTrapAvoidFor(c) — CLASS_MITIGATION.Thief.trapAvoid, added to
+ * engine/encounters.js#springTrap's dodge threshold (`nimble`) for a Thief
+ * only. Identity: 0 (canon). Direction: up = easier (a higher dodge
+ * threshold means more d20 faces avoid the trap).
+ */
+export function classTrapAvoidFor(c) {
+  if (!c || c.cls !== "Thief") return 0;
+  const t = live.CLASS_MITIGATION.Thief;
+  return (t && t.trapAvoid) || 0;
+}
+
+/**
+ * classKillSpeedFor(c, { opener }) — CLASS_MITIGATION's per-class combat-
+ * speed multiplier, ONE call site covering BOTH rows (engine/combat.js
+ * #playerStrike, right after the crit doubling): a Thief's killSpeed
+ * applies ONLY to the opening backstab strike (`opener: critBy ===
+ * "backstab"`); a Fighter's killSpeed applies to EVERY melee strike
+ * regardless of `opener`. Every other class returns 1 (untouched). Identity:
+ * 1 for both rows (canon). Direction: per row — a Thief's killSpeed >= 1
+ * (faster opener), a Fighter's <= 1 (slower per-swing, canon combat-speed
+ * design intent per the dial table).
+ */
+export function classKillSpeedFor(c, { opener = false } = {}) {
+  if (!c) return 1;
+  const classMit = live.CLASS_MITIGATION[c.cls];
+  if (!classMit) return 1;
+  if (c.cls === "Thief") return opener ? classMit.killSpeed : 1;
+  if (c.cls === "Fighter") return classMit.killSpeed;
+  return 1;
+}
+
+/**
+ * classArmorMulFor(c) — CLASS_MITIGATION.Fighter.armorMul, read by
+ * engine/derived.js#armorSoak on the `ar` (soak-roll target number) it
+ * returns — Fighter only. Identity: 1 (canon). Direction: up = a Fighter
+ * soaks more often (easier).
+ */
+export function classArmorMulFor(c) {
+  if (!c || c.cls !== "Fighter") return 1;
+  const f = live.CLASS_MITIGATION.Fighter;
+  return (f && f.armorMul) || 1;
+}
+
+/**
+ * spellPowerFor(c) — CLASS_MITIGATION["Magic User"].spellPower, the
+ * multiplier `spellDamageFor` (below) applies. Magic User only — every other
+ * class returns 1. Identity: 1 (canon). Direction: up = harder (an MU's
+ * offensive spells hit harder).
+ */
+export function spellPowerFor(c) {
+  if (!c || c.cls !== "Magic User") return 1;
+  const m = live.CLASS_MITIGATION["Magic User"];
+  return (m && m.spellPower) || 1;
+}
+
+/**
+ * spellDamageFor(n, c) — engine/magic.js's ONE offensive-spell-damage
+ * scaling helper: every rolled offensive amount (the stun spell's affected-
+ * count roll, the quake/volley/thrown bolt damage) flows through this before
+ * (quake/volley/thrown) or in place of (stun) any further post-roll
+ * arithmetic (afraidDamage, etc). Healing and self-inflicted backfire
+ * damage are NEVER scaled (spellPowerFor is an offensive-only lever).
+ * Identity `=== 1` fast path returns `n` unchanged; otherwise rounds and
+ * floors at 0 (never negative).
+ */
+export function spellDamageFor(n, c) {
+  const p = spellPowerFor(c);
+  return p === 1 ? n : Math.max(0, Math.round(n * p));
+}
+
+/**
+ * fleeNeedModFor() — FLEE_NEED_MOD, added to content/flee.js#FLEE_NEED
+ * inside engine/derived.js#fleeBreakdown's returned `need`. Identity: 0
+ * (canon). Direction: up = harder (a higher need means fewer rolls clear
+ * it).
+ */
+export function fleeNeedModFor() {
+  return live.FLEE_NEED_MOD;
+}
+
+/**
+ * parleyNeedModFor() — PARLEY_NEED_MOD, added to engine/combat.js#parley's
+ * `need` (after its own `Math.min(9 + bonus, 17)` ceiling). Identity: 0
+ * (canon). Direction: up = harder.
+ */
+export function parleyNeedModFor() {
+  return live.PARLEY_NEED_MOD;
+}
+
+/**
+ * startingGoldFor() — STARTING_GOLD, engine/character.js#rollCharacter's
+ * chargen `gold` field. Identity: 50 (canon). Direction: up = easier.
+ */
+export function startingGoldFor() {
+  return live.STARTING_GOLD;
+}
+
+/**
+ * startingPotionsFor(canon) — STARTING_POTION_BONUS, added to the class's
+ * canon starting-potion roll (engine/character.js#rollCharacter). Floored at
+ * 0 (a negative bonus can never produce a negative potion count). Identity:
+ * 0 (canon, `+0`). Direction: up = easier.
+ */
+export function startingPotionsFor(canon) {
+  return Math.max(0, canon + live.STARTING_POTION_BONUS);
+}
+
 /**
  * difficultyCurve(depth) — the single source of truth every consumer reads.
  * Pure function of `depth` only: no RNG parameter, no RNG consumed, no side

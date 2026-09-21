@@ -58,7 +58,7 @@ import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
@@ -764,6 +764,14 @@ export function playerStrike(state, rng, events = []) {
       }
     }
     if (crit) dmg *= 2;
+    // Phase 54 (BAND-02, USER RULING D): CLASS_MITIGATION killSpeed — ONE
+    // call site covers both rows: a Thief's killSpeed applies only to the
+    // opening backstab (critBy === "backstab"); a Fighter's applies to
+    // every melee strike regardless of opener (the helper decides which
+    // row, if either, applies to this character). Identity 1 for both rows
+    // is a structural no-op.
+    const killSpeed = classKillSpeedFor(c, { opener: critBy === "backstab" });
+    if (killSpeed !== 1) dmg = Math.max(1, Math.round(dmg * killSpeed));
     if (AS && AS.dmgMul) dmg *= AS.dmgMul;
     if (t.marked) dmg += 2;
     // Phase 19 D-10: weakened is the hero-side mirror of the foe-side
@@ -848,7 +856,9 @@ export function killFoe(state, f, rng, events = []) {
 
   // creatures carry things, and the things are worth wilmst
   const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
-  const coin = Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR);
+  // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
+  // identity (1) is a no-op.
+  const coin = lootFor(Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR));
   if (coin > 0) gainWilmst(state, coin, "off the body", rng, events);
   // DETERMINISM GATE (Phase 29, LOOT-01/05): the gate d20 and every
   // rollTreasureItem draw below are UNCHANGED and still sit first, in the
@@ -1214,7 +1224,9 @@ export function parley(state, rng, events = []) {
     c.level -
     top;
   const roll = rng.d(20);
-  const need = Math.min(9 + bonus, 17); // D-08: an 85% ceiling — no stack is an auto-win
+  // Phase 54 (BAND-02, USER RULING D): PARLEY_NEED_MOD, added AFTER the
+  // 85% ceiling (D-08) — identity 0 is a structural no-op.
+  const need = Math.min(9 + bonus, 17) + parleyNeedModFor(); // D-08: an 85% ceiling — no stack is an auto-win
   events.push({ type: "parleyRolled", roll, need, fluency: flu });
   if (roll <= need) {
     // D-01/D-02: parley's payout is now STRUCTURALLY half of the same

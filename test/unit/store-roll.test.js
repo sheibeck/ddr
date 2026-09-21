@@ -25,10 +25,9 @@ import {
   storeArmorFor,
   enchantForTier,
   replaceStockLines,
-  STORE_TIER_FLOORS,
 } from "../../engine/economy.js";
+import { setDialsForTuning } from "../../engine/difficulty.js";
 import {
-  BAG_FLOORS,
   POTIONS,
   WEAPONS,
   ARMORS,
@@ -78,12 +77,13 @@ const STATIC_EFFECTS = new Set(["eatRation", "giveLockpicks", "repairArmor", "bu
 
 // --- Tier + table pins ------------------------------------------------
 
-test("STORE_TIER_FLOORS is derived from BAG_FLOORS, not restated", () => {
-  assert.deepStrictEqual(STORE_TIER_FLOORS, [BAG_FLOORS.medium, BAG_FLOORS.large, BAG_FLOORS.exlarge]);
-  assert.deepStrictEqual(STORE_TIER_FLOORS, [2, 5, 9]);
-});
-
-test("storeTier(depth) maps to the BAG_FLOORS boundaries: 1->0, 2->1, 4->1, 5->2, 8->2, 9->3, 99->3; non-finite -> 0", () => {
+// Phase 54 (BAND-02, USER RULING D): storeTier(depth) now reads
+// difficultyCurve(depth).storeTier (the STORE_TIER global dial) instead of
+// the retired STORE_TIER_FLOORS/BAG_FLOORS ladder — its identity value
+// reproduces the exact same 1..12 ladder the old ladder produced.
+test("storeTier(depth) reads difficultyCurve(depth).storeTier; identity reproduces 011122223333 for depths 1..12; non-finite -> 0", () => {
+  const seq = Array.from({ length: 12 }, (_, i) => storeTier(i + 1)).join("");
+  assert.equal(seq, "011122223333");
   assert.equal(storeTier(1), 0);
   assert.equal(storeTier(2), 1);
   assert.equal(storeTier(4), 1);
@@ -93,6 +93,16 @@ test("storeTier(depth) maps to the BAG_FLOORS boundaries: 1->0, 2->1, 4->1, 5->2
   assert.equal(storeTier(99), 3);
   assert.equal(storeTier(NaN), 0);
   assert.equal(storeTier(undefined), 0);
+});
+
+test("STORE_TIER under setDialsForTuning gives a different ladder: { base: 0, perDepth: 0.55 } -> 112233333333 for depths 1..12", () => {
+  const restore = setDialsForTuning({ STORE_TIER: { base: 0, perDepth: 0.55 } });
+  try {
+    const seq = Array.from({ length: 12 }, (_, i) => storeTier(i + 1)).join("");
+    assert.equal(seq, "112233333333");
+  } finally {
+    restore();
+  }
 });
 
 test("every per-tier table has exactly one entry per tier (length 4)", () => {

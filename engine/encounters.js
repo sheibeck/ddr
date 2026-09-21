@@ -29,7 +29,7 @@
 import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor } from "./difficulty.js";
+import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
 import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
@@ -65,7 +65,9 @@ import {
  */
 export function springTrap(state, rng, events = []) {
   const c = state.c;
-  const nimble = 5 + (c.sub === "Acrobat" ? 3 : 0);
+  // Phase 54 (BAND-02, USER RULING D): CLASS_MITIGATION.Thief.trapAvoid —
+  // identity 0 is a structural no-op.
+  const nimble = 5 + (c.sub === "Acrobat" ? 3 : 0) + classTrapAvoidFor(c);
   const dodge = rng.d(20);
   if (dodge <= nimble) {
     events.push({ type: "trapAvoided", roll: dodge, need: nimble });
@@ -140,7 +142,9 @@ export function openChest(state, rng, events = []) {
     return events;
   }
   if (!(c.sub === "Pilfer")) events.push({ type: "chestOpened" });
-  gainWilmst(state, Math.round(((rng.d(10) + 6) * 100 * state.floor.depth) / LOOT_DIVISOR), "chest", rng, events);
+  // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
+  // identity (1) is a no-op.
+  gainWilmst(state, lootFor(Math.round(((rng.d(10) + 6) * 100 * state.floor.depth) / LOOT_DIVISOR)), "chest", rng, events);
   if (rng.d(6) >= 3) {
     c.scrolls = (c.scrolls || 0) + 1;
     events.push({ type: "scrollFound" });
@@ -319,7 +323,8 @@ export function tableFour(state, result, rng, events = []) {
       // draw — the seeded stream is byte-identical. The generic "wilmst cache"
       // key (renamed atomically with content/encounters.js) lets the payout vary
       // by depth without a dual-purpose string hard-coding a stale number.
-      gainWilmst(state, WILMST_CACHE_PER_DEPTH * state.floor.depth, "tableFour", rng, events);
+      // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE — identity (1) no-op.
+      gainWilmst(state, lootFor(WILMST_CACHE_PER_DEPTH * state.floor.depth), "tableFour", rng, events);
       break;
     case "-All armour":
       c.armor = "Nothing";
@@ -461,7 +466,8 @@ export function meetFaerie(state, rng, events = []) {
   } else if (gift === "Miscellaneous Magic") {
     findMisc(state, rng, events);
   } else if (gift === "d10 x 100 wilmst") {
-    gainWilmst(state, rng.d(10) * 100, "faerie", rng, events);
+    // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE — identity (1) no-op.
+    gainWilmst(state, lootFor(rng.d(10) * 100), "faerie", rng, events);
   }
   return events;
 }

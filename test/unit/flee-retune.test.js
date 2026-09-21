@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 
 import { flee } from "../../engine/combat.js";
 import { fleeBreakdown } from "../../engine/derived.js";
+import { setDialsForTuning } from "../../engine/difficulty.js";
 import { RACES, CLASSES, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD } from "../../content/index.js";
 import { narrateEvent } from "../../src/browser/eventNarration.js";
 import { linesForAction, LINE_FOR } from "../../src/browser/narrationLines.js";
@@ -116,6 +117,24 @@ test("fleeBreakdown: pure (no mutation of c)", () => {
   const before = structuredClone(c);
   fleeBreakdown(c);
   assert.deepStrictEqual(c, before);
+});
+
+// Phase 54 (BAND-02, USER RULING D): FLEE_NEED_MOD, added to the fixed need
+// itself (never a `mods` entry). Identity 0 fast path; a non-zero override
+// raises the need by exactly that amount, restored after.
+test("fleeBreakdown: FLEE_NEED_MOD identity (0) leaves need at FLEE_NEED; +3 raises the need to 17, never touching mods", () => {
+  const c = fixedFighter({ cls: "Fighter", race: "Human", armor: "Nothing" });
+  const identity = fleeBreakdown(c);
+  assert.equal(identity.need, FLEE_NEED);
+  const restore = setDialsForTuning({ FLEE_NEED_MOD: 3 });
+  try {
+    const raised = fleeBreakdown(c);
+    assert.equal(raised.need, FLEE_NEED + 3);
+    assert.deepStrictEqual(raised.mods, identity.mods, "FLEE_NEED_MOD is never a mods entry");
+    assert.equal(raised.bonus, identity.bonus);
+  } finally {
+    restore();
+  }
 });
 
 test("fleeBreakdown: worked rows match the plan's table exactly", () => {

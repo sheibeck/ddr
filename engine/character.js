@@ -31,7 +31,7 @@ import { rollDice } from "./dice.js";
 import { leveled } from "./events.js";
 import { canLearn, schoolGate, levelFromSP, clampCarry, spellLevelFor, dealsDamage } from "./derived.js";
 import { derivedRng } from "./rng.js";
-import { heroMaxWpFor, startingRationsFor } from "./difficulty.js";
+import { heroMaxWpFor, startingRationsFor, startingGoldFor, startingPotionsFor } from "./difficulty.js";
 import {
   CLASSES,
   RACES,
@@ -542,10 +542,13 @@ export function rollCharacter(rng, exclude = [], force = null) {
     temperament: TEMPERAMENTS[rng.d(12) - 1],
     motive: MOTIVES[rng.d(12) - 1],
     phobia: ph.n, phobiaType: ph.t,
-    potions: cls === "Magic User" ? rng.d(6) : cls === "Thief" ? 2 : 1,
+    // Phase 54 (BAND-02, USER RULING D): STARTING_POTION_BONUS — a no-op at
+    // identity.
+    potions: startingPotionsFor(cls === "Magic User" ? rng.d(6) : cls === "Thief" ? 2 : 1),
     // Phase 54 (BAND-02, USER RULING D): FOOD_CLOCK — a no-op at identity.
     rations: startingRationsFor(cls === "Fighter" ? 6 : cls === "Thief" ? 5 : 4),
-    gold: 50,
+    // Phase 54 (BAND-02, USER RULING D): STARTING_GOLD — a no-op at identity.
+    gold: startingGoldFor(),
     scrolls: cls === "Magic User" ? 1 : 0,
     // Phase 39 (GEAR-02): haste/invis/ether/acute retired — every item
     // effect (potion/cloak/staff) now lives on c.timers instead.

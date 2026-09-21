@@ -16,6 +16,7 @@ import url from "node:url";
 import { castSpell, drinkPotion, readScroll, canRead } from "../../engine/magic.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
+import { setDialsForTuning } from "../../engine/difficulty.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -245,6 +246,29 @@ test("castSpell: Earthquake damages every foe AND the caster when unwarded", () 
   assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 38));
   assert.ok(events.some((e) => e.type === "earthquakeSelfDamage" && e.amount === 19));
   assert.ok(events.some((e) => e.type === "foeKilled"));
+});
+
+// Phase 54 (BAND-02, USER RULING D): CLASS_MITIGATION["Magic User"]
+// .spellPower scales Earthquake's rolled damage (and, through it, the
+// self-damage that is derived FROM the already-scaled amount) via
+// engine/difficulty.js#spellDamageFor. Identity (1) reproduces the existing
+// pin above exactly; restored after.
+test("castSpell: spellPower 1.15 scales Earthquake's rolled damage (38 -> 44) and the self-damage derived from it (19 -> 22)", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30, type: "Humans" });
+  const state = fixedState({
+    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
+    combat: fixedCombat([foe]),
+  });
+  const restore = setDialsForTuning({ CLASS_MITIGATION: { "Magic User": { spellPower: 1.15 } } });
+  try {
+    const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 1, 1, 20]), []);
+    assert.equal(foe.wp, 0, "the foe still dies to the scaled amount");
+    assert.equal(state.c.wp, 50 - 22, "the caster's self-damage is derived from the SCALED amount");
+    assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 44));
+    assert.ok(events.some((e) => e.type === "earthquakeSelfDamage" && e.amount === 22));
+  } finally {
+    restore();
+  }
 });
 
 test("castSpell: Earthquake spares the caster behind a ward (in combat)", () => {

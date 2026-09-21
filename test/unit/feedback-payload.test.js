@@ -18,6 +18,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { foeToHitVs, foeToHitBreakdown, toHit } from "../../engine/derived.js";
+import { DIALS, setDialsForTuning } from "../../engine/difficulty.js";
 import { applyFoeDamageToPlayer, foeTurn, playerStrike, flee } from "../../engine/combat.js";
 import { newDay } from "../../engine/movement.js";
 import { readScroll, drinkPotion } from "../../engine/magic.js";
@@ -197,6 +198,43 @@ test("foeToHitBreakdown: a plain Human Soldier has zero mods; a Guard has exactl
     { name: "Sidestep", delta: -2 },
   ]);
   assert.equal(foeToHitVs(guardSidestep), foeToHitVs(guard) - 2);
+});
+
+// Phase 54 (BAND-02, USER RULING D): the FOE_ACCURACY x CLASS_MITIGATION
+// .Thief.evasion dimension — need still matches foeToHitVs across every
+// combination, and the breakdown's accuracy/evasion entries appear only
+// when non-zero. setDialsForTuning is restored after every combination.
+test("foeToHitBreakdown: need matches foeToHitVs across FOE_ACCURACY x Thief evasion x vs (extends the identity matrix, USER RULING D)", () => {
+  const subs = ["Soldier", "Guard", "Acrobat"];
+  for (const accuracy of [-3, 0, 3]) {
+    for (const evasion of [-1, 0]) {
+      const restore = setDialsForTuning({
+        FOE_ACCURACY: accuracy,
+        CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion } },
+      });
+      try {
+        for (const cls of ["Fighter", "Thief"]) {
+          for (const sub of cls === "Thief" ? ["Pilfer"] : subs) {
+            for (const vs of ["hero", "member"]) {
+              const state = fixedState({ c: { cls, sub } });
+              const expected = foeToHitVs(state, vs);
+              const { need, mods } = foeToHitBreakdown(state, vs);
+              const label = `accuracy${accuracy}/evasion${evasion}/${cls}/${sub}/${vs}`;
+              assert.equal(need, expected, label);
+              if (accuracy) assert.ok(mods.some((m) => m.name === "accuracy" && m.delta === accuracy), label);
+              if (evasion && cls === "Thief" && vs === "hero") {
+                assert.ok(mods.some((m) => m.name === "evasion" && m.delta === evasion), label);
+              } else {
+                assert.ok(!mods.some((m) => m.name === "evasion"), label);
+              }
+            }
+          }
+        }
+      } finally {
+        restore();
+      }
+    }
+  }
 });
 
 test("foeToHitVs/foeToHitBreakdown: Battle Roar (-2) applies to both vs values; Sidestep/Smoke apply only to vs='hero'", () => {

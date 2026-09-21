@@ -9,6 +9,7 @@
 
 import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD } from "../content/index.js";
 import { rollDice } from "./dice.js";
+import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor } from "./difficulty.js";
 // 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
 // conditionsOf's flight chip now read purely through itemEffectActive/
 // liveItemEffects (this module's own timer-only model); item readiness
@@ -740,10 +741,15 @@ export function conditionsOf(state) {
  */
 export function armorSoak(c) {
   const worn = { ar: c.ar || 0, wp: c.armorWP, min: c.armorMin || 0, max: c.armorMax };
-  if (eff(c, "cloakArmor") <= 0) return { ...worn, magic: false };
+  // Phase 54 (BAND-02, USER RULING D): CLASS_MITIGATION.Fighter.armorMul
+  // scales the soak-roll target number (`ar`) only — identity 1 is a
+  // structural no-op for every non-Fighter (and every Fighter at identity).
+  const mul = classArmorMulFor(c);
+  const scaleAr = mul === 1 ? (ar) => ar : (ar) => Math.round(ar * mul);
+  if (eff(c, "cloakArmor") <= 0) return { ...worn, ar: scaleAr(worn.ar), magic: false };
   const plate = ARMORS.find((a) => a.name === "Plate") || { ar: 15, wp: 45 };
   return {
-    ar: Math.max(worn.ar, plate.ar),
+    ar: scaleAr(Math.max(worn.ar, plate.ar)),
     wp: Math.max(worn.wp, plate.wp),
     min: worn.min,
     max: Math.max(worn.max, plate.wp),
@@ -949,7 +955,11 @@ export function fleeBreakdown(c) {
   const bulk = armorBulk(c);
   if (bulk > 0) mods.push({ name: c.armor, delta: -bulk });
   const bonus = mods.reduce((sum, m) => sum + m.delta, 0);
-  return { need: FLEE_NEED, mods, bonus };
+  // Phase 54 (BAND-02, USER RULING D): FLEE_NEED_MOD, added to the fixed
+  // need itself (never a `mods` entry — this is a difficulty dial, not a
+  // character modifier). Identity 0 is a structural no-op.
+  const mod = fleeNeedModFor();
+  return { need: mod === 0 ? FLEE_NEED : FLEE_NEED + mod, mods, bonus };
 }
 
 /**
@@ -1140,6 +1150,11 @@ export function foeToHitVs(state, vs = "hero") {
   if (c.sub === "Acrobat") h = 3;
   if (c.sub === "Guard") h -= 1;
   h += eff(c, "foeToHit");
+  // Phase 54 (BAND-02, USER RULING D): FOE_ACCURACY (both vs "hero" and
+  // "member") + CLASS_MITIGATION.Thief.evasion (vs "hero" only — the hero's
+  // own body). Identity 0 for both is a structural no-op.
+  h += foeAccuracyFor();
+  if (vs === "hero" && c.cls === "Thief") h += classEvasionFor(c);
   if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "sidestep")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "smoke")) h = 1;
@@ -1191,6 +1206,22 @@ export function foeToHitBreakdown(state, vs = "hero") {
     const before = h;
     h += gear;
     if (h !== before) mods.push({ name: "gear", delta: h - before });
+  }
+  // Phase 54 (BAND-02, USER RULING D): the SAME accuracy/evasion terms
+  // foeToHitVs applies above, recorded only when non-zero.
+  const accuracy = foeAccuracyFor();
+  if (accuracy) {
+    const before = h;
+    h += accuracy;
+    if (h !== before) mods.push({ name: "accuracy", delta: h - before });
+  }
+  if (vs === "hero" && c.cls === "Thief") {
+    const evasion = classEvasionFor(c);
+    if (evasion) {
+      const before = h;
+      h += evasion;
+      if (h !== before) mods.push({ name: "evasion", delta: h - before });
+    }
   }
   if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) {
     const before = h;

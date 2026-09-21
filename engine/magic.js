@@ -35,6 +35,7 @@ import { startEffect } from "./effects.js";
 // Phase 18 (D-09/CANON-01/03/04): every damage-to-foe site below routes
 // through the shared seam instead of decrementing foe.wp directly.
 import { damageFoe } from "./foeDamage.js";
+import { spellDamageFor } from "./difficulty.js";
 
 // p.25: a non-thrown spell can be resisted by an intelligent target. These
 // kinds are immune to that resistance check — ports mazeworld.html's inline
@@ -200,7 +201,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       }
     }
   } else if (sp.kind === "stun") {
-    const n = rng.d(6) * Math.max(1, c.level - sp.lvl);
+    // Phase 54 (BAND-02, USER RULING D): spellDamageFor scales an MU's
+    // offensive spell POWER — here, how many foes the stun affects.
+    // Identity 1 (spellPowerFor) is a structural no-op.
+    const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c);
     const affected = liveFoes(state).slice(0, n);
     affected.forEach((f) => {
       f.asleep = Math.max(f.asleep, rng.d(4));
@@ -280,7 +284,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // Phase 31 Afraid: post-roll arithmetic only — the dice are drawn
     // exactly as before (zero rng change); halves every point the hero
     // deals through Earthquake while combat.afraid > 0 (a no-op otherwise).
-    const d = afraidDamage(state, rollDice(rng, sp.dmg) * mult);
+    // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1,
+    // no-op) sits between the roll and afraidDamage.
+    const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) * mult, c));
     liveFoes(state).forEach((f) => {
       // Spell damage (CANON-04, D-11): per-foe multiplier/halfDmg/bypass —
       // the event below reports the single rolled base, not the per-foe
@@ -320,7 +326,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       if (!t.alive) continue;
       // Phase 31 Afraid: halves each Volley bolt the hero deals (post-roll
       // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
-      const d = afraidDamage(state, rollDice(rng, sp.dmg));
+      // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
+      const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg), c));
       // Spell damage (CANON-04, D-11): route through the seam; the volley
       // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
       const hit = damageFoe(state, t, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
@@ -503,7 +510,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         const mult = Math.max(1, c.level - sp.lvl);
         // Phase 31 Afraid: halves the hero's thrown-spell damage (post-roll
         // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
-        const dmg = afraidDamage(state, rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg"));
+        // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
+        const dmg = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg"), c));
         // Spell damage (D-06): bypasses foe armor entirely; eligible for the
         // CANON-04 multiplier table. `mult` in the event stays the level
         // multiplier above (unrelated to the seam's own multiplier); `dmg`

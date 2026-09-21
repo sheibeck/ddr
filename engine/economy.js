@@ -17,13 +17,13 @@
 
 import { giveItem, takeItem, stowItem, canStow, bagCap, hasPicks, rollBlade, rollMailPiece, canEquipArmor, toolItem } from "./items.js";
 import { clampCarry, slotItems, hasTool } from "./derived.js";
+import { difficultyCurve } from "./difficulty.js";
 import {
   WEAPONS,
   ARMORS,
   FOODS,
   POTIONS,
   RACES,
-  BAG_FLOORS,
   STORE_POTION_POOL,
   STORE_WEAPON_BANDS,
   STORE_ARMOR_CAP,
@@ -248,14 +248,18 @@ export const STORE_EFFECTS = {
 // All pure, no rng inside except where explicitly stated (storePotionPool/
 // storeWeaponPool return FRESH arrays; the caller shuffles them).
 
-// STORE_TIER_FLOORS — derived, not restated: the single source of truth for
-// the depth-tier ladder stays content/bags.js#BAG_FLOORS.
-export const STORE_TIER_FLOORS = [BAG_FLOORS.medium, BAG_FLOORS.large, BAG_FLOORS.exlarge];
-
-/** storeTier(depth) — 0 (depth 1), 1 (2-4), 2 (5-8), 3 (9+); non-finite input treated as depth 1 (tier 0). */
+/**
+ * storeTier(depth) — Phase 54 (BAND-02, USER RULING D): reads
+ * difficultyCurve(depth).storeTier (the STORE_TIER global dial, clamped
+ * 0..3), replacing the retired floor-ladder constant this module used to
+ * restate from content/bags.js#BAG_FLOORS — the dial's identity value
+ * (`{ base: 0, perDepth: 0.3 }`) reproduces the exact same 1..12 ladder
+ * ("011122223333") the old ladder produced. Non-finite input treated as
+ * depth 1 (tier 0) — difficultyCurve's own safeDepth guard already does
+ * this.
+ */
 export function storeTier(depth) {
-  const d = Number.isFinite(depth) ? depth : 1;
-  return STORE_TIER_FLOORS.filter((f) => d >= f).length;
+  return difficultyCurve(depth).storeTier;
 }
 
 /** storePotionPool(tier) — a FRESH array of POTIONS entries from the STORE_POTION_POOL allow-list (never raw POTIONS — the trap potion is never in the allow-list). Fresh because rng.shuffle mutates in place. */
