@@ -71,7 +71,10 @@ test("named constants match the research starting-point defaults", () => {
   assert.equal(ENCOUNTER_DOT_BASE, 9);
   // Phase 27 (2026-09-15, TUNE-06): was 24 -> 15 (27-02) -> 13 (27-03
   // iteration 3, against the forced-20 band).
-  assert.equal(ENCOUNTER_DOT_CAP, 13);
+  // Phase 54 rung 5 (USER RULING C, secondary group): 13 -> 12 — the Filter
+  // band's foePower and hazard knots were both <= 0.5 and still missing by
+  // > 8 points after rungs 3+4's two fits.
+  assert.equal(ENCOUNTER_DOT_CAP, 12);
   assert.equal(ENCOUNTER_DOT_SOFT_K, 12);
   assert.equal(DENSITY_CANON_THROUGH_DEPTH, 2);
   // Phase 27 (2026-09-15, TUNE-06): was 6 — fewer dark-zone seed blobs at
@@ -264,32 +267,32 @@ test("Phase 54 (BAND-01) floor-1 parity: difficultyCurve(1) deepStrictEqual to t
 // engine/difficulty.js, NEVER hand-computed. Re-pinned per rung from then
 // on, never loosened.
 const CURVE_PINS = {
-  2: { depth: 2, breather: false, dots: 11, darkBlobs: 1, darkRadius: 5, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.34, hazardScale: 0.46, abilityThreat: 1, waterPools: 1 },
-  3: { depth: 3, breather: false, dots: 11, darkBlobs: 1, darkRadius: 6, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.48, hazardScale: 0.44, abilityThreat: 1, waterPools: 1 },
-  4: { depth: 4, breather: false, dots: 11, darkBlobs: 2, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.38, hazardScale: 0.49, abilityThreat: 1, waterPools: 1 },
-  5: { depth: 5, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.35, hazardScale: 0.6, abilityThreat: 1, waterPools: 2 },
-  6: { depth: 6, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.3833333333333333, hazardScale: 0.6, abilityThreat: 1, waterPools: 1 },
-  7: { depth: 7, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.41666666666666663, hazardScale: 0.6, abilityThreat: 1, waterPools: 2 },
-  8: { depth: 8, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.45, hazardScale: 0.6, abilityThreat: 1, waterPools: 2 },
-  9: { depth: 9, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.45, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  10: { depth: 10, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.45499999999999996, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  11: { depth: 11, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.46, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
-  12: { depth: 12, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.46499999999999997, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  13: { depth: 13, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.47, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  14: { depth: 14, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.475, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.48, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  16: { depth: 16, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.49, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
-  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.485, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.48, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  19: { depth: 19, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.475, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  20: { depth: 20, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.47, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
-  21: { depth: 21, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.47198578231017485, hazardScale: 1, abilityThreat: 1.0098351698553982, waterPools: 1 },
-  22: { depth: 22, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.47391563084186167, hazardScale: 1, abilityThreat: 1.0193479044905147, waterPools: 3 },
-  23: { depth: 23, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.47579112108878907, hazardScale: 1, abilityThreat: 1.0285487745892121, waterPools: 3 },
-  24: { depth: 24, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.47761378416755684, hazardScale: 1, abilityThreat: 1.0374480042871157, waterPools: 3 },
-  25: { depth: 25, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.4793851080676122, hazardScale: 1, abilityThreat: 1.0460554825328159, waterPools: 3 },
-  35: { depth: 35, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 4, foeBonus: 1, foeLvlBias: 0, foePower: 0.49457354644406054, hazardScale: 1, abilityThreat: 1.11804080208621, waterPools: 3 },
-  50: { depth: 50, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, foeCap: 4, foeBonus: 1, foeLvlBias: 0, foePower: 0.510581714379775, hazardScale: 1, abilityThreat: 1.1896361676485674, waterPools: 3 },
+  2: { depth: 2, breather: false, dots: 11, darkBlobs: 1, darkRadius: 5, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.32, hazardScale: 0.46, abilityThreat: 1, waterPools: 1 },
+  3: { depth: 3, breather: false, dots: 11, darkBlobs: 1, darkRadius: 6, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.44, hazardScale: 0.44, abilityThreat: 1, waterPools: 1 },
+  4: { depth: 4, breather: false, dots: 11, darkBlobs: 2, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.31, hazardScale: 0.49, abilityThreat: 1, waterPools: 1 },
+  5: { depth: 5, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.25, hazardScale: 0.6, abilityThreat: 1, waterPools: 2 },
+  6: { depth: 6, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.2566666666666667, hazardScale: 0.6, abilityThreat: 1, waterPools: 1 },
+  7: { depth: 7, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.2633333333333333, hazardScale: 0.6, abilityThreat: 1, waterPools: 2 },
+  8: { depth: 8, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.27, hazardScale: 0.6, abilityThreat: 1, waterPools: 2 },
+  9: { depth: 9, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.27, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  10: { depth: 10, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.2733333333333334, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  11: { depth: 11, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.27666666666666667, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
+  12: { depth: 12, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.28, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  13: { depth: 13, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.2833333333333333, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  14: { depth: 14, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.2866666666666667, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.29, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  16: { depth: 16, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.41, hazardScale: 1, abilityThreat: 1, waterPools: 1 },
+  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.4, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.39, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  19: { depth: 19, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.37999999999999995, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  20: { depth: 20, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.37, hazardScale: 1, abilityThreat: 1, waterPools: 3 },
+  21: { depth: 21, breather: true, dots: 9, darkBlobs: 0, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.3715632754356696, hazardScale: 1, abilityThreat: 1.0098351698553982, waterPools: 1 },
+  22: { depth: 22, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.3730825178967847, hazardScale: 1, abilityThreat: 1.0193479044905147, waterPools: 3 },
+  23: { depth: 23, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.3745589676656425, hazardScale: 1, abilityThreat: 1.0285487745892121, waterPools: 3 },
+  24: { depth: 24, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.3759938300893533, hazardScale: 1, abilityThreat: 1.0374480042871157, waterPools: 3 },
+  25: { depth: 25, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 3, foeBonus: 0, foeLvlBias: 0, foePower: 0.3773882765638649, hazardScale: 1, abilityThreat: 1.0460554825328159, waterPools: 3 },
+  35: { depth: 35, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 4, foeBonus: 1, foeLvlBias: 0, foePower: 0.3893451323070264, hazardScale: 1, abilityThreat: 1.11804080208621, waterPools: 3 },
+  50: { depth: 50, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, foeCap: 4, foeBonus: 1, foeLvlBias: 0, foePower: 0.40194730706492926, hazardScale: 1, abilityThreat: 1.1896361676485674, waterPools: 3 },
 };
 
 test("Phase 54 (USER RULING C) curve pins 2..25/35/50: difficultyCurve deepStrictEqual to the landed rung values — re-pinned per rung from node -e, never hand-typed, never loosened", () => {

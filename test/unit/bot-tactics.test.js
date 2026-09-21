@@ -830,6 +830,14 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x seeds 1-3) never stall;
   // maxActions=1000, and multiple of the nine saw an itemUsed/lootTaken event
   // (e.g. Thief/Pilfer seed 1, Magic User/Sorcerer seed 1 and 3, Fighter/
   // Knight/Troll seed 3) — this assertion only requires at least one.
+  //
+  // Phase 54 rung 5 (USER RULING C, 2026-09-21): the per-floor knot fit
+  // softened foePower substantially at floors 2-15 (down to 0.25-0.5) — a
+  // forced-cell hero now survives noticeably longer against those foes.
+  // Magic User/Sorcerer/Human seed 3 now dies at action 1280 (was < 1000),
+  // so the cap widens to 5000 (re-measured live via this file's own
+  // playRun, never hand-computed); every other combination still dies well
+  // under this margin.
   const forces = [
     { cls: "Thief", sub: "Pilfer", race: "Human" },
     { cls: "Magic User", sub: "Sorcerer", race: "Human" },
@@ -838,7 +846,7 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x seeds 1-3) never stall;
   let sawItem = false;
   for (const force of forces) {
     for (let seed = 1; seed <= 3; seed++) {
-      const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1000, force }, (events) => {
+      const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 5000, force }, (events) => {
         if (events.some((e) => e.type === "itemUsed" || e.type === "lootTaken")) sawItem = true;
       });
       assert.strictEqual(r.stuck, false, `${force.cls}/${force.sub}/${force.race} seed ${seed}: the bot must not stall`);

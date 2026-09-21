@@ -97,7 +97,7 @@ export const ENCOUNTER_DOT_BASE = 9;
  * encounter-triggering dots per floor from depth 3 on gives every depth a
  * better chance to gain a floor within the bot's action budget. Floors 1-2
  * are canon by construction and never reach this cap. */
-export const ENCOUNTER_DOT_CAP = 13;
+export const ENCOUNTER_DOT_CAP = 12; // Rung 5 (USER RULING C, secondary group): 13->12 - Filter band (foePower + hazard knots both <= 0.5, still missing by > 8 points after rungs 3+4's two fits) - fewer encounter dots from floor 3 on (DENSITY_CANON_THROUGH_DEPTH=2 keeps floors 1-2 canon)
 /** ENCOUNTER_DOT_SOFT_K — the soft-cap curve's "bend" depth; see softCap(). */
 export const ENCOUNTER_DOT_SOFT_K = 12;
 /** DENSITY_CANON_THROUGH_DEPTH — Phase 27 (TUNE-06): floors 1..this value
@@ -277,7 +277,7 @@ export const FOE_GRACE_AT_1 = 1.0;
  * from rung 2's solo p_L at floor 2 (89.0% vs target 96.3%, f = 0.927);
  * readout under docs/DIFFICULTY-RETUNE.md `#### Rung 3`.
  * Rung 4: 0.37 -> 0.34 — solo p_2 89.5% vs target 96.3%, f = 0.932. */
-export const FOE_GRACE_AT_2 = 0.34;
+export const FOE_GRACE_AT_2 = 0.32; // Rung 5: 0.34->0.32 (solo p_2 89.5% vs 96.3%, f=0.932)
 /** FOE_GRACE_AT_3 — NEW knot (Phase 54, USER RULING C, rung 3a): floor 3's
  * foePower knot. Landed at rung-2's own interpolated value (0.6 — the
  * value `graceFor(3)` already computed from FOE_GRACE_AT_2/
@@ -288,7 +288,7 @@ export const FOE_GRACE_AT_2 = 0.34;
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.6 -> 0.53 — fitted
  * from rung 2's solo p_L at floor 3 (81.4% vs target 93.1%, f = 0.883).
  * Rung 4: 0.53 -> 0.48 — solo p_3 84.0% vs target 93.1%, f = 0.909. */
-export const FOE_GRACE_AT_3 = 0.48;
+export const FOE_GRACE_AT_3 = 0.44; // Rung 5: 0.48->0.44 (solo p_3 84.0% vs 93.1%, f=0.909)
 /** FOE_GRACE_AT_4 — NEW knot (Phase 54, USER RULING C, rung 3a): floor 4's
  * foePower knot. Landed at rung-2's own interpolated value (0.8), fitted
  * per rung thereafter.
@@ -296,7 +296,7 @@ export const FOE_GRACE_AT_3 = 0.48;
  * Phase 54 ladder rung 3 (2026-09-21, USER RULING C): 0.8 -> 0.52 — fitted
  * from rung 2's solo p_L at floor 4 (55.0% vs target 89.9%, f = 0.651).
  * Rung 4: 0.52 -> 0.38 — solo p_4 63.2% vs target 89.9%, f = 0.733. */
-export const FOE_GRACE_AT_4 = 0.38;
+export const FOE_GRACE_AT_4 = 0.31; // Rung 5: 0.38->0.31 (solo p_4 70.6% vs 89.9%, f=0.807)
 
 /** HAZARD_FROM_DEPTH — Phase 27 (TUNE-06): the first depth whose hazardScale
  * may leave identity (1.0). MUST stay >= 2 (floor 1 canon — a from-floor-1
@@ -374,7 +374,7 @@ export const WALL_TO_DEPTH = 8;
  * `#### Rung 3`.
  * Rung 4: 0.51 -> 0.35 — solo p_5 55.8% vs target 86.9%, f = 0.689 (not
  * clamped). */
-export const WALL_FOE_POWER_AT_START = 0.35;
+export const WALL_FOE_POWER_AT_START = 0.25; // Rung 5: 0.35->0.25 (solo p_5 58.3% vs 86.9%, f=0.714; floor-clamp boundary)
 /** WALL_FOE_POWER_AT_END — foePower at WALL_TO_DEPTH.
  * Phase 54 ladder rung 1 (2026-09-21, BAND-02): 1.0 -> 0.95 — see
  * WALL_FOE_POWER_AT_START's JSDoc for the readout that motivated this rung.
@@ -384,7 +384,7 @@ export const WALL_FOE_POWER_AT_START = 0.35;
  * from the nearest shallower measured knot (WALL_FOE_POWER_AT_START).
  * Rung 4: 0.57 -> 0.45 — reached_8 = 10 this rung (exactly the threshold),
  * now independently measured: solo p_8 60.0% vs target 80.6%, f = 0.794. */
-export const WALL_FOE_POWER_AT_END = 0.45;
+export const WALL_FOE_POWER_AT_END = 0.27; // Rung 5: 0.45->0.27 (solo p_8 36.8% vs 80.6%, f=0.6 floor-clamped from 0.562)
 /** BREAKAWAY_FROM_DEPTH — the first depth of the Breakaway band (9-15). */
 export const BREAKAWAY_FROM_DEPTH = 9;
 /** BREAKAWAY_TO_DEPTH — the last depth of the Breakaway band (9-15). */
@@ -398,7 +398,7 @@ export const BREAKAWAY_TO_DEPTH = 15;
  * WALL_FOE_POWER_AT_START (the nearest shallower measured knot).
  * Rung 4: 0.57 -> 0.45 — reached_9 = 6 (< 10) still; inherits f = 0.794
  * from WALL_FOE_POWER_AT_END (now the nearest shallower measured knot). */
-export const BREAKAWAY_FOE_POWER_AT_START = 0.45;
+export const BREAKAWAY_FOE_POWER_AT_START = 0.27; // Rung 5: 0.45->0.27 (reached_9<10, inherits f=0.6 from knot 8)
 /** BREAKAWAY_FOE_POWER_AT_END — foePower at BREAKAWAY_TO_DEPTH (the
  * Breakaway eases back to identity by 15; 16 is the literal by the guard;
  * unchanged this rung).
@@ -408,7 +408,7 @@ export const BREAKAWAY_FOE_POWER_AT_START = 0.45;
  * WALL_FOE_POWER_AT_START.
  * Rung 4: 0.6 -> 0.48 — reached_15 = 0 still; inherits f = 0.794 (chained
  * via BREAKAWAY_FOE_POWER_AT_START). */
-export const BREAKAWAY_FOE_POWER_AT_END = 0.48;
+export const BREAKAWAY_FOE_POWER_AT_END = 0.29; // Rung 5: 0.48->0.29 (reached_15<10, inherits f=0.6 chained)
 /** ENDGAME_FROM_DEPTH — Phase 54 (USER RULING C, rung 3a): RENAMED from
  * `ENDGAME_CANON_FROM_DEPTH` (Phase 53's "identity by construction, never
  * re-pinned" guarantee on 16+ is SUPERSEDED by USER RULING C — floors 16-20
@@ -434,7 +434,7 @@ export const ENDGAME_TO_DEPTH = 20;
  * share the slice reading until natural floor-16+ data exists).
  * Rung 4: 0.6 -> 0.49 — still 0 natural runs @16; slice p_20 62.0% vs
  * target p_16 81.0%, f = 0.81 (not clamped). */
-export const ENDGAME_FOE_POWER_AT_START = 0.49;
+export const ENDGAME_FOE_POWER_AT_START = 0.41; // Rung 5: 0.49->0.41 (slice p_20 64.0% vs target p_16 81.0%, f=0.83)
 /** ENDGAME_FOE_POWER_AT_END — NEW knot (Phase 54, USER RULING C, rung 3a):
  * foePower at ENDGAME_TO_DEPTH (20) — this value also scales the
  * COMBAT_SCALE_FROM_DEPTH+ ramp (see knotFoePowerFor below): the Phase 21
@@ -446,7 +446,7 @@ export const ENDGAME_FOE_POWER_AT_START = 0.49;
  * slice's p_20 (36.0% vs target p_20 84.5%, f = 0.6, floor-clamped from a
  * raw 0.515).
  * Rung 4: 0.6 -> 0.47 — slice p_20 62.0% vs target p_20 84.5%, f = 0.775. */
-export const ENDGAME_FOE_POWER_AT_END = 0.47;
+export const ENDGAME_FOE_POWER_AT_END = 0.37; // Rung 5: 0.47->0.37 (slice p_20 64.0% vs target p_20 84.5%, f=0.795)
 /** WALL_HAZARD_SCALE — the trap/wall-fall damage multiplier on
  * WALL_FROM_DEPTH..WALL_TO_DEPTH (scaffold: identity, 1.0 — the literal
  * `1` for scaleHazard's `=== 1` fast path); a rung-2+ dial.
