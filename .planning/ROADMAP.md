@@ -278,7 +278,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4)*
 
-- [ ] 54-05-PLAN.md — The global model in the engine AT IDENTITY: every floor-range constant/helper removed (export-key-set pin); the frozen `DIALS` object + harness-only `setDialsForTuning`; foe level from depth (`0.6 + 0.2·d`), whole-hit `FOE_HIT_SCALE` at the three damage sites, `FOE_HP_SCALE`, the foe-count table with the canon draw shape (level cap gone), `ROUND_DAMAGE_CEILING` (off), hero HP / regen / SP / camp-heal / dot-HP / food helpers, `ENCOUNTER_DOTS` / `HAZARD_SCALE` / `ABILITY_THREAT` / `DARK_*` / `STORE_TIER` as globals on the curve (MAZE_SIZE cut — v1.8 candidate); ONE-AND-DONE climbs/leaps + the `draggedOver` / `floorRegen` lines in voice; every pin re-measured; the identity-commit movers measured, declared, regenerated; FIXTURE-INVENTORY Phase 54 section; ledger `#### Identity commit` (BAND-02)
+- [x] 54-05-PLAN.md — The global model in the engine AT IDENTITY: every floor-range constant/helper removed (export-key-set pin); the frozen `DIALS` object + harness-only `setDialsForTuning`; foe level from depth (`0.6 + 0.2·d`), whole-hit `FOE_HIT_SCALE` at the three damage sites, `FOE_HP_SCALE`, the foe-count table with the canon draw shape (level cap gone), `ROUND_DAMAGE_CEILING` (off), hero HP / regen / SP / camp-heal / dot-HP / food helpers, `ENCOUNTER_DOTS` / `HAZARD_SCALE` / `ABILITY_THREAT` / `DARK_*` / `STORE_TIER` as globals on the curve (MAZE_SIZE cut — v1.8 candidate); ONE-AND-DONE climbs/leaps + the `draggedOver` / `floorRegen` lines in voice; every pin re-measured; the identity-commit movers measured, declared, regenerated; FIXTURE-INVENTORY Phase 54 section; ledger `#### Identity commit` (BAND-02)
 
 **Wave 6** *(blocked on Wave 5)*
 
@@ -370,7 +370,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 52. Foe Cadence & Damage Curve | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 53. Joiner Level Cap | v1.7 | 2/2 | Complete    | 2026-09-20 |
-| 54. Four-Band Retune & Roster Decision | v1.7 | 4/7 | In Progress|  |
+| 54. Four-Band Retune & Roster Decision | v1.7 | 5/7 | In Progress|  |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |
