@@ -18,6 +18,16 @@ import {
   survivalVerdict,
   formatSurvivalReadout,
   TARGET_SURVIVAL,
+  SURVIVAL_PASS,
+  DOT_CAUSES,
+  STARVATION_CAUSES,
+  interpolatedMedian,
+  paceReadout,
+  formatPaceReadout,
+  classIdentityReadout,
+  formatClassIdentityReadout,
+  classSpreadReadout,
+  CLASS_POOLS,
 } from "../../tools/lib/band-readout.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -150,26 +160,40 @@ test("tune-difficulty.mjs source: prints the band block after printSharedReadout
   assert.ok(idxFormatSurvival > idxBand);
   assert.ok(idxFormatSurvival < idxOutcome);
   assert.ok(src.includes("survival: survivalReadout(results, opts)"));
+
+  // USER RULING D: the Pace + Class identity blocks print after the survival
+  // block and before Outcome:, and both keys land in --json.
+  const idxFormatPace = src.indexOf("formatPaceReadout(");
+  const idxFormatClassIdentity = src.indexOf("formatClassIdentityReadout(");
+  assert.ok(idxFormatPace > -1 && idxFormatClassIdentity > -1);
+  assert.ok(idxFormatPace > idxFormatSurvival);
+  assert.ok(idxFormatClassIdentity > idxFormatPace);
+  assert.ok(idxFormatClassIdentity < idxOutcome);
+  assert.ok(src.includes("pace: paceReadout(results)"));
+  assert.ok(src.includes("classIdentity: classIdentityReadout(results)"));
 });
 
 // --- USER RULING C (2026-09-21): the per-floor survival block ------------
 
 // 10 dead runs at [1, 3, 5, 5, 6, 7, 9, 16, 20, 23] (trap at 3, starvation
-// at 6) + 2 stuck runs at depth 6 (reached, never deaths). Expected values
-// below were computed by this same survivalReadout implementation and
-// cross-checked by hand for the L=1 and L=6 rows quoted in the plan.
+// at 6, every other death "cut down by a Ghoul") + 2 stuck runs at depth 6
+// (reached, never deaths). USER RULING D (54-CONTEXT.md, 2026-09-21): cause
+// strings are the real content/epitaphs.js CAUSE_TEXT shapes (a bare
+// "combat" literal no longer classifies as combat — COMBAT_CAUSE_PREFIX
+// requires the "cut down by a {foe}" shape). Expected values below are
+// pasted from this same survivalReadout implementation's own output.
 function makeSurvivalResults() {
   return [
-    { deathDepth: 1, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 1, dead: true, stuck: false, cause: "cut down by a Ghoul" },
     { deathDepth: 3, dead: true, stuck: false, cause: "undone by a trap" },
-    { deathDepth: 5, dead: true, stuck: false, cause: "combat" },
-    { deathDepth: 5, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 5, dead: true, stuck: false, cause: "cut down by a Ghoul" },
+    { deathDepth: 5, dead: true, stuck: false, cause: "cut down by a Ghoul" },
     { deathDepth: 6, dead: true, stuck: false, cause: "starved in the dark" },
-    { deathDepth: 7, dead: true, stuck: false, cause: "combat" },
-    { deathDepth: 9, dead: true, stuck: false, cause: "combat" },
-    { deathDepth: 16, dead: true, stuck: false, cause: "combat" },
-    { deathDepth: 20, dead: true, stuck: false, cause: "combat" },
-    { deathDepth: 23, dead: true, stuck: false, cause: "combat" },
+    { deathDepth: 7, dead: true, stuck: false, cause: "cut down by a Ghoul" },
+    { deathDepth: 9, dead: true, stuck: false, cause: "cut down by a Ghoul" },
+    { deathDepth: 16, dead: true, stuck: false, cause: "cut down by a Ghoul" },
+    { deathDepth: 20, dead: true, stuck: false, cause: "cut down by a Ghoul" },
+    { deathDepth: 23, dead: true, stuck: false, cause: "cut down by a Ghoul" },
     { deathDepth: 6, dead: false, stuck: true, cause: "unknown" },
     { deathDepth: 6, dead: false, stuck: true, cause: "unknown" },
   ];
@@ -205,14 +229,32 @@ test("survivalReadout: start depth 20 reports S_L relative to 20 and reach-20 = 
   assert.equal(f20.SL, f20.pL); // the chain starts fresh at the start depth
 });
 
-test("survivalReadout: deaths split hazard / starvation / combat by cause", () => {
+test("survivalReadout: deaths split combat / dot / starvation-exhaustion / other by cause (USER RULING D)", () => {
   const r = survivalReadout(makeSurvivalResults(), {});
   const f3 = r.floors.find((f) => f.floor === 3);
-  assert.equal(f3.hazard, 1);
+  assert.equal(f3.dot, 1); // "undone by a trap"
   const f6 = r.floors.find((f) => f.floor === 6);
-  assert.equal(f6.starvation, 1);
+  assert.equal(f6.starvation, 1); // "starved in the dark"
   const f1 = r.floors.find((f) => f.floor === 1);
-  assert.equal(f1.combat, 1);
+  assert.equal(f1.combat, 1); // "cut down by a Ghoul"
+});
+
+test("USER RULING D: the three-class death split classifies one death per class, incl. 'spent by the dungeon itself' as dot (never starvation)", () => {
+  const results = [
+    { deathDepth: 1, dead: true, stuck: false, cause: "cut down by a Werebeast" }, // combat
+    { deathDepth: 1, dead: true, stuck: false, cause: "undone by a trap" }, // dot
+    { deathDepth: 1, dead: true, stuck: false, cause: "spent by the dungeon itself" }, // dot (NOT starvation)
+    { deathDepth: 1, dead: true, stuck: false, cause: "starved in the dark" }, // starvation
+    { deathDepth: 1, dead: true, stuck: false, cause: "poisoned by an unlabelled bottle" }, // other
+  ];
+  const r = survivalReadout(results, {});
+  const f1 = r.floors.find((f) => f.floor === 1);
+  assert.deepStrictEqual(
+    { combat: f1.combat, dot: f1.dot, starvation: f1.starvation, other: f1.other },
+    { combat: 1, dot: 2, starvation: 1, other: 1 },
+  );
+  assert.deepStrictEqual(DOT_CAUSES, ["undone by a trap", "fell off a wall", "came up short on a leap", "spent by the dungeon itself"]);
+  assert.deepStrictEqual(STARVATION_CAUSES, ["starved in the dark"]);
 });
 
 test("TARGET_SURVIVAL: 25 rows; floor 1 p 98.8 S 98.8; floor 10 p 78.9 S 24.3; floor 20 p 84.5 with reach20Band [3, 5]; floor 25 p 88.9 S 1.5", () => {
@@ -229,32 +271,44 @@ test("TARGET_SURVIVAL: 25 rows; floor 1 p 98.8 S 98.8; floor 10 p 78.9 S 24.3; f
   assert.equal(f25.SL, 1.5);
 });
 
-test("survivalVerdict: floors 1-10 fail beyond 8 points, 11-19 beyond 3, floor 20 by the reach-20 band; empty missing list when all inside", () => {
+test("survivalVerdict: USER RULING D (plan-approval cut #3) — the verdict covers ONLY floors 1-12 (shallow 1-10 beyond 8 points, deep 11-12 beyond 3); floor 13+ is tail (never in missing, never PASS/MISS); reach-20 is reported but never part of the verdict; empty missing list when all of 1-12 are inside", () => {
   const r = survivalReadout(makeSurvivalResults(), {});
   const verdict = survivalVerdict(r);
-  assert.ok(verdict.missing.some((m) => m.floor === 10));
-  assert.ok(verdict.missing.some((m) => m.floor === 16));
+  // Pasted from the implementation's own output on this fixture.
+  assert.deepStrictEqual(verdict, {
+    missing: [
+      { floor: 10, deltaS: 10.7 },
+      { floor: 11, deltaS: 15.9 },
+      { floor: 12, deltaS: 19.9 },
+    ],
+  });
   assert.ok(!verdict.missing.some((m) => m.floor === 1));
-  assert.equal(verdict.reach20.pass, false); // reach20 = 16.7%, outside [3,5]
-  assert.deepStrictEqual(verdict.reach20.band, [3.0, 5.0]);
+  // Floor 16 is tail territory (SURVIVAL_PASS.tailFloors = [13, 20]) — its
+  // own dS is far outside the old 11-19 band, but it is NEVER in `missing`.
+  const f16 = r.floors.find((f) => f.floor === 16);
+  assert.deepStrictEqual({ pass: f16.pass, tail: f16.tail }, { pass: null, tail: true });
+  assert.ok(!verdict.missing.some((m) => m.floor === 16));
+  assert.deepStrictEqual(SURVIVAL_PASS.deepFloors, [11, 12]);
+  assert.deepStrictEqual(SURVIVAL_PASS.tailFloors, [13, 20]);
+  assert.equal("reach20" in verdict, false); // reach-20 is reported (formatSurvivalReadout), never folded into the verdict object
 
-  // An empty missing list when every floor 1-19 tracks the target p_L
+  // An empty missing list when every floor 1-12 tracks the target p_L
   // exactly: build a synthetic million-run set whose per-floor death
   // counts are derived directly from TARGET_SURVIVAL's own p_L values.
   const N = 1_000_000;
   let reached = N;
   const deathsByFloor = {};
   for (const row of TARGET_SURVIVAL) {
-    if (row.floor > 19) break;
+    if (row.floor > SURVIVAL_PASS.deepFloors[1]) break;
     const d = Math.round(reached * (1 - row.pL / 100));
     deathsByFloor[row.floor] = d;
     reached -= d;
   }
-  deathsByFloor[20] = reached; // remaining survivors all "die" at 20 — floor 20 itself isn't in `missing`
+  deathsByFloor[20] = reached; // remaining survivors all "die" at 20 — never checked by the verdict
   const onCurve = [];
   for (const [depthStr, count] of Object.entries(deathsByFloor)) {
     for (let i = 0; i < count; i++) {
-      onCurve.push({ deathDepth: Number(depthStr), dead: true, stuck: false, cause: "combat" });
+      onCurve.push({ deathDepth: Number(depthStr), dead: true, stuck: false, cause: "cut down by a Ghoul" });
     }
   }
   const flat = survivalReadout(onCurve, {});
@@ -283,14 +337,120 @@ test("survivalFromHistogram: matches survivalReadout on a 0-stuck set (the rung-
   assert.deepStrictEqual(r, direct);
 });
 
-test("formatSurvivalReadout: the header line is exact, one line per floor carries dS and PASS/MISS, the verdict line is last", () => {
+test("formatSurvivalReadout: the header line is exact, one line per floor carries dS and PASS/MISS/tail, floor 13+ is tail, the reach-20 line is reported (not part of the verdict), the verdict line is last", () => {
   const r = survivalReadout(makeSurvivalResults(), {});
   const lines = formatSurvivalReadout(r);
   assert.equal(
     lines[0],
-    "Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths):",
+    "Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):",
   );
-  assert.match(lines[1], /^  L=1  reached=12  deaths=1 \(hazard 0 \/ starvation 0 \/ combat 1\)  p_L=91\.7%  S_L=91\.7%  target p_L=98\.8%  target S_L=98\.8%  dS=-7\.1  PASS$/);
-  assert.equal(lines[lines.length - 1].startsWith("  verdict:"), true);
-  assert.ok(lines.some((l) => /^  reach-20: /.test(l)));
+  assert.match(
+    lines[1],
+    /^  L=1  reached=12  deaths=1 \(combat 1 \/ dot 0 \/ starvation-exhaustion 0 \/ other 0\)  p_L=91\.7%  S_L=91\.7%  target p_L=98\.8%  target S_L=98\.8%  dS=-7\.1  PASS$/,
+  );
+  // Floor 16 (tail territory) prints "tail", never PASS/MISS, and is absent
+  // from the verdict line below.
+  const line16 = lines.find((l) => l.startsWith("  L=16 "));
+  assert.ok(line16.trim().endsWith("tail"));
+  const reachLine = lines.find((l) => /^  reach-20: /.test(l));
+  assert.equal(reachLine, "  reach-20: 16.7% (band 3.0-5.0%, reported — tail)");
+  const verdictLine = lines[lines.length - 1];
+  assert.equal(verdictLine.startsWith("  verdict:"), true);
+  assert.ok(!verdictLine.includes("16"));
+  assert.ok(!verdictLine.includes("reach-20"));
+});
+
+// --- USER RULING D (54-CONTEXT.md, 2026-09-21): Pace + Class identity -----
+
+test("interpolatedMedian: the middle value on odd n, the mean of the two middle values on even n; null on empty", () => {
+  assert.equal(interpolatedMedian([]), null);
+  assert.equal(interpolatedMedian([5]), 5);
+  assert.equal(interpolatedMedian([1, 3, 5]), 3);
+  assert.equal(interpolatedMedian([1, 2, 3, 4]), 2.5); // even n -> mean of the two middle values (2, 3)
+  assert.equal(interpolatedMedian([1, 2, 4, 8]), 3); // mean of (2, 4)
+});
+
+function makeSnapshot(depth, over = {}) {
+  return { depth, level: 1, gold: 0, ar: 0, weaponCost: 0, maxWP: 40, potions: 0, afraidTriggers: 0, diedAfraid: false, ...over };
+}
+
+test("paceReadout: aggregates floorSnapshots per floor (n, means to 2dp, summed afraid triggers/diedAfraid); stuck runs are included", () => {
+  const results = [
+    { floorSnapshots: [makeSnapshot(1, { level: 1, gold: 10, ar: 1, weaponCost: 5, maxWP: 40, potions: 1, afraidTriggers: 1 }), makeSnapshot(2, { level: 2, gold: 40 })], stuck: false },
+    { floorSnapshots: [makeSnapshot(1, { level: 1, gold: 20, ar: 2, weaponCost: 10, maxWP: 44, potions: 0 })], stuck: true },
+  ];
+  const r = paceReadout(results);
+  const f1 = r.floors.find((f) => f.floor === 1);
+  assert.deepStrictEqual(f1, {
+    floor: 1,
+    n: 2,
+    meanLevel: 1,
+    meanGold: 15,
+    meanAr: 1.5,
+    meanWeaponCost: 7.5,
+    meanMaxWP: 42,
+    meanPotions: 0.5,
+    afraidTriggers: 1,
+    diedAfraid: 0,
+  });
+  const f2 = r.floors.find((f) => f.floor === 2);
+  assert.equal(f2.n, 1); // the stuck run never reached floor 2 -> still included (it just has no row for floor 2)
+});
+
+test("formatPaceReadout: the header line is exact, one line per floor", () => {
+  const results = [{ floorSnapshots: [makeSnapshot(1, { level: 1, gold: 10, ar: 1, weaponCost: 5, maxWP: 40, potions: 1, afraidTriggers: 3 })], stuck: false }];
+  const lines = formatPaceReadout(paceReadout(results));
+  assert.equal(
+    lines[0],
+    "Pace (per floor reached — mean hero level / gold / AR / weapon cost / maxWP / potions; afraid triggers, died afraid):",
+  );
+  assert.equal(lines[1], "  L=1  n=1  level=1.00  gold=10.00  ar=1.00  weapon=5.00  maxWP=40.00  potions=1.00  afraid=3  diedAfraid=0");
+});
+
+function makeIdentity(over = {}) {
+  return { fights: 0, rounds: 0, dmgTaken: 0, foeSwings: 0, foeMisses: 0, castsDefensive: 0, castsOffensive: 0, potionsUsed: 0, backstabs: 0, flees: 0, ...over };
+}
+
+test("classIdentityReadout: pools by CLASS ONLY (a Fighter Knight and a Fighter Bard land in ONE row, in CLASS_POOLS order), computing dmgTakenPerFight / roundsPerFight / foeMissRate from the identity tallies", () => {
+  assert.deepStrictEqual(CLASS_POOLS, ["Fighter", "Thief", "Magic User"]);
+  const results = [
+    { cls: "Fighter", sub: "Knight", stuck: false, deathDepth: 4, identity: makeIdentity({ fights: 2, dmgTaken: 20, foeSwings: 8, foeMisses: 2 }) },
+    { cls: "Fighter", sub: "Bard", stuck: false, deathDepth: 6, identity: makeIdentity({ fights: 3, dmgTaken: 25, foeSwings: 12, foeMisses: 4 }) },
+    { cls: "Thief", sub: "Pickpocket", stuck: false, deathDepth: 5, identity: makeIdentity({ backstabs: 2, flees: 1 }) },
+  ];
+  const rows = classIdentityReadout(results);
+  assert.deepStrictEqual(rows.map((r) => r.cls), ["Fighter", "Thief", "Magic User"]);
+  const fighter = rows.find((r) => r.cls === "Fighter");
+  // ONE pooled Fighter row — both Knight and Bard runs folded together.
+  assert.equal(fighter.n, 2);
+  assert.equal(fighter.dmgTakenPerFight, 9); // (20+25) / (2+3)
+  assert.equal(fighter.foeMissRate, 30); // (2+4) / (8+12) * 100
+  const magicUser = rows.find((r) => r.cls === "Magic User");
+  assert.equal(magicUser.n, 0);
+  assert.equal(magicUser.p50, null);
+});
+
+test("formatClassIdentityReadout: the header line names 'class pools only' and prints one line per class", () => {
+  const rows = classIdentityReadout([{ cls: "Thief", sub: "Pickpocket", stuck: false, deathDepth: 5, identity: makeIdentity({ backstabs: 2 }) }]);
+  const lines = formatClassIdentityReadout(rows);
+  assert.equal(
+    lines[0],
+    "Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):",
+  );
+  assert.equal(lines.length, 4); // header + Fighter + Thief + Magic User
+  assert.ok(lines[2].startsWith("  Thief  n=1"));
+});
+
+test("classSpreadReadout: per class, the min/max p50Depth/reach5 cell — a recorded spread, never a verdict", () => {
+  const smokeCells = [
+    { cls: "Fighter", sub: "Knight", race: "Human", p50Depth: 6, reach5: 40 },
+    { cls: "Fighter", sub: "Bard", race: "Elven", p50Depth: 4, reach5: 20 },
+    { cls: "Thief", sub: "Pickpocket", race: "Human", p50Depth: 5, reach5: 30 },
+  ];
+  const rows = classSpreadReadout(smokeCells);
+  const fighter = rows.find((r) => r.cls === "Fighter");
+  assert.deepStrictEqual(fighter.p50Min, { value: 4, cell: "Bard/Elven" });
+  assert.deepStrictEqual(fighter.p50Max, { value: 6, cell: "Knight/Human" });
+  const magicUser = rows.find((r) => r.cls === "Magic User");
+  assert.equal(magicUser.p50Min, null);
 });

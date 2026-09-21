@@ -222,6 +222,54 @@ test("pooledSummary: run-weighted over cells — pooled p50Depth is the median o
   walk(allStuckPooled);
 });
 
+// --- (6d) class-identity columns (USER RULING D, 54-CONTEXT.md, 2026-09-21) -----
+
+test("summarizeRows: gains dmgTakenPerFight/roundsPerFight/foeMissRate/castsDefensive/castsOffensive/potionsPerRun, run-weighted over completed rows' identity tallies; null-safe on zero completed/zero fights", () => {
+  const identityRow = (seed, deathDepth, identity) => ({
+    seed, deathDepth, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: deathDepth - 1, encounters: 1, encountersSurvived: 1, identity,
+  });
+  const rows = [
+    identityRow(1, 5, { fights: 2, rounds: 6, dmgTaken: 20, foeSwings: 8, foeMisses: 2, castsDefensive: 1, castsOffensive: 0, potionsUsed: 1 }),
+    identityRow(2, 7, { fights: 3, rounds: 9, dmgTaken: 25, foeSwings: 12, foeMisses: 4, castsDefensive: 0, castsOffensive: 2, potionsUsed: 0 }),
+  ];
+  const result = summarizeRows(rows);
+  assert.equal(result.dmgTakenPerFight, 9); // (20+25) / (2+3)
+  assert.equal(result.roundsPerFight, 3); // (6+9) / (2+3)
+  assert.equal(result.foeMissRate, 0.3); // (2+4) / (8+12)
+  assert.equal(result.castsDefensive, 1);
+  assert.equal(result.castsOffensive, 2);
+  assert.equal(result.potionsPerRun, 0.5); // (1+0) / 2 completed rows
+
+  // a row with no `identity` field at all contributes zero everywhere (never throws)
+  const noIdentity = summarizeRows([{ seed: 3, deathDepth: 4, stuck: false, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 3, encounters: 1, encountersSurvived: 1 }]);
+  assert.equal(noIdentity.dmgTakenPerFight, null); // zero fights -> null, never NaN/0-by-accident
+  assert.equal(noIdentity.castsDefensive, 0);
+  assert.equal(noIdentity.potionsPerRun, 0);
+
+  // all-stuck rows are null-safe for the per-fight/per-run means, 0 for the raw sums
+  const stuckRow = { seed: 4, deathDepth: 3, stuck: true, cause: "maxActionsHit", kills: 0, level: 1, actions: 5000, floorsGained: 2, encounters: 1, encountersSurvived: 1 };
+  const allStuck = summarizeRows([stuckRow]);
+  assert.equal(allStuck.dmgTakenPerFight, null);
+  assert.equal(allStuck.roundsPerFight, null);
+  assert.equal(allStuck.foeMissRate, null);
+  assert.equal(allStuck.castsDefensive, 0);
+  assert.equal(allStuck.castsOffensive, 0);
+  assert.equal(allStuck.potionsPerRun, null);
+});
+
+test("rollups.byClass: each row gains a `spread` — the recorded (never-a-target) min/max p50Depth/reach5 cell for that class pool, named sub/race", () => {
+  const cellA = { cell: { cls: "Fighter", sub: "Knight", race: "Human" }, rows: [{ seed: 1, deathDepth: 8, stuck: false, cause: "trap", kills: 1, level: 3, actions: 100, floorsGained: 7, encounters: 2, encountersSurvived: 2 }] };
+  const cellB = { cell: { cls: "Fighter", sub: "Bard", race: "Elven" }, rows: [{ seed: 2, deathDepth: 4, stuck: false, cause: "trap", kills: 1, level: 2, actions: 60, floorsGained: 3, encounters: 1, encountersSurvived: 1 }] };
+  const cellC = { cell: { cls: "Thief", sub: "Ninja", race: "Human" }, rows: [{ seed: 3, deathDepth: 6, stuck: false, cause: "trap", kills: 1, level: 2, actions: 80, floorsGained: 5, encounters: 1, encountersSurvived: 1 }] };
+  const ru = rollups([cellA, cellB, cellC]);
+  const fighter = ru.byClass.find((r) => r.key === "Fighter");
+  assert.deepStrictEqual(fighter.spread.p50Min, { value: 4, cell: "Bard/Elven" });
+  assert.deepStrictEqual(fighter.spread.p50Max, { value: 8, cell: "Knight/Human" });
+  const thief = ru.byClass.find((r) => r.key === "Thief");
+  assert.deepStrictEqual(thief.spread.p50Min, { value: 6, cell: "Ninja/Human" });
+  assert.deepStrictEqual(thief.spread.p50Max, { value: 6, cell: "Ninja/Human" });
+});
+
 // --- (7) rankCells -------------------------------------------------------
 
 test("rankCells: meanDepth desc, p50 desc, reach5 desc, then sub asc/race asc; null meanDepth ranks last", () => {

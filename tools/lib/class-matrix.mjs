@@ -207,6 +207,11 @@ export function rowFromRun(run) {
     encounters: run.tallies.encounters,
     encountersSurvived: run.encountersSurvived,
     usage: run.tallies.usage,
+    // USER RULING D (54-CONTEXT.md, 2026-09-21): the identity tally
+    // (fights/rounds/dmgTaken/foeSwings/foeMisses/castsDefensive/
+    // castsOffensive/potionsUsed/backstabs/flees), a plain JSON object —
+    // crosses the worker_threads message boundary unchanged.
+    identity: run.identity,
   };
 }
 
@@ -291,6 +296,15 @@ export function summarizeRows(rows) {
       meanEncountersSurvived: null,
       topCauses: [],
       usage: aggregateUsage([]),
+      // USER RULING D: the class-identity columns — sums default to 0 (never
+      // null) when there are zero completed rows; the per-fight/per-run
+      // MEANS stay null (nothing to divide by, same discipline as meanDepth).
+      dmgTakenPerFight: null,
+      roundsPerFight: null,
+      foeMissRate: null,
+      castsDefensive: 0,
+      castsOffensive: 0,
+      potionsPerRun: null,
     };
   }
 
@@ -304,6 +318,20 @@ export function summarizeRows(rows) {
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
     .slice(0, 3)
     .map(([cause, count]) => ({ cause, count }));
+
+  // USER RULING D (54-CONTEXT.md, 2026-09-21): run-weighted class-identity
+  // columns, summed over the SAME completed-rows-only set every other metric
+  // here uses. `identitySum` treats a row with no `identity` field (an older
+  // synthetic row) as carrying zero everywhere, never throwing.
+  const identitySum = (key) => completed.reduce((s, r) => s + ((r.identity && r.identity[key]) || 0), 0);
+  const fights = identitySum("fights");
+  const rounds = identitySum("rounds");
+  const dmgTaken = identitySum("dmgTaken");
+  const foeSwings = identitySum("foeSwings");
+  const foeMisses = identitySum("foeMisses");
+  const castsDefensive = identitySum("castsDefensive");
+  const castsOffensive = identitySum("castsOffensive");
+  const potionsUsed = identitySum("potionsUsed");
 
   return {
     n,
@@ -323,6 +351,12 @@ export function summarizeRows(rows) {
     meanEncountersSurvived: mean(completed.map((r) => r.encountersSurvived)),
     topCauses,
     usage: aggregateUsage(completed),
+    dmgTakenPerFight: fights ? Math.round((dmgTaken / fights) * 100) / 100 : null,
+    roundsPerFight: fights ? Math.round((rounds / fights) * 100) / 100 : null,
+    foeMissRate: foeSwings ? Math.round((foeMisses / foeSwings) * 1000) / 1000 : null,
+    castsDefensive,
+    castsOffensive,
+    potionsPerRun: completed.length ? Math.round((potionsUsed / completed.length) * 100) / 100 : null,
   };
 }
 
@@ -413,6 +447,36 @@ function groupAndSummarize(cellRows, keyFn) {
 }
 
 /**
+ * classSpread(cellRows, cls) — USER RULING D (54-CONTEXT.md, 2026-09-21): a
+ * RECORDED reading of how far the individual sub/race cells of one class
+ * pool spread — never a target (race/sub cells are not meant to be equal).
+ * Re-summarizes each of `cls`'s own cells (their rows, not the pooled
+ * group), then finds the min/max `p50Depth` and `reach5` cell, each named
+ * `"sub/race"`. `null` for a metric when every one of the class's cells has
+ * zero completed runs.
+ */
+function classSpread(cellRows, cls) {
+  let p50Min = null;
+  let p50Max = null;
+  let reach5Min = null;
+  let reach5Max = null;
+  for (const { cell, rows } of cellRows) {
+    if (cell.cls !== cls) continue;
+    const s = summarizeRows(rows);
+    const label = `${cell.sub}/${cell.race}`;
+    if (s.p50Depth !== null) {
+      if (p50Min === null || s.p50Depth < p50Min.value) p50Min = { value: s.p50Depth, cell: label };
+      if (p50Max === null || s.p50Depth > p50Max.value) p50Max = { value: s.p50Depth, cell: label };
+    }
+    if (s.reach5 !== null) {
+      if (reach5Min === null || s.reach5 < reach5Min.value) reach5Min = { value: s.reach5, cell: label };
+      if (reach5Max === null || s.reach5 > reach5Max.value) reach5Max = { value: s.reach5, cell: label };
+    }
+  }
+  return { p50Min, p50Max, reach5Min, reach5Max };
+}
+
+/**
  * rollups(cellRows) — `cellRows` is `[{ cell: {cls,sub,race}, rows }]`.
  * Returns `{ byClass, bySub, byRace, pooled }`: byClass/bySub/byRace are
  * each an array of `{ key, ...summarizeRows(pooled rows) }` grouped by
@@ -420,10 +484,17 @@ function groupAndSummarize(cellRows, keyFn) {
  * final tiebreak); `pooled` is `pooledSummary(cellRows)` — Phase 27's
  * (TUNE-05) single run-weighted summary over every cell's rows, key
  * `"ALL"`, added alongside (not replacing) the three grouped roll-ups.
+ * USER RULING D: each `byClass` row additionally carries `spread` —
+ * `classSpread(cellRows, key)`, the RECORDED (never a target) min/max
+ * p50Depth/reach5 cell for that class pool.
  */
 export function rollups(cellRows) {
+  const byClass = groupAndSummarize(cellRows, (cell) => cell.cls).map((row) => ({
+    ...row,
+    spread: classSpread(cellRows, row.key),
+  }));
   return {
-    byClass: groupAndSummarize(cellRows, (cell) => cell.cls),
+    byClass,
     bySub: groupAndSummarize(cellRows, (cell) => cell.sub),
     byRace: groupAndSummarize(cellRows, (cell) => cell.race),
     pooled: pooledSummary(cellRows),
@@ -472,6 +543,28 @@ function causesStr(topCauses) {
 /** reachStr(v) — ">=X%" column value: "n/a" for null, else one decimal. */
 function reachStr(v) {
   return v === null || v === undefined ? "n/a" : v.toFixed(1);
+}
+
+/** spreadEntryStr(entry) — "n/a" for a null spread entry, else "<value> (<cell>)". */
+function spreadEntryStr(entry) {
+  return entry === null ? "n/a" : `${typeof entry.value === "number" ? entry.value.toFixed(1) : entry.value} (${entry.cell})`;
+}
+
+/**
+ * formatClassSpreadBlock(ru) — USER RULING D: the "Class spread (recorded,
+ * not a target)" text block — one line per class pool naming its min/max
+ * p50Depth and reach5 cell (sub/race). Never a verdict — race/sub cells are
+ * not meant to be equal.
+ */
+function formatClassSpreadBlock(ru) {
+  const lines = ["Class spread (recorded, not a target):"];
+  for (const row of ru.byClass) {
+    const sp = row.spread || {};
+    lines.push(
+      `  ${row.key}  p50Depth min=${spreadEntryStr(sp.p50Min)} max=${spreadEntryStr(sp.p50Max)}  reach5 min=${spreadEntryStr(sp.reach5Min)} max=${spreadEntryStr(sp.reach5Max)}`,
+    );
+  }
+  return lines.join("\n");
 }
 
 /**
@@ -577,6 +670,8 @@ export function formatText(report) {
   lines.push(formatRollupTable("BY RACE", "race", ru.byRace, deep));
   lines.push("");
   lines.push(formatPooledBlock(ru, deep));
+  lines.push("");
+  lines.push(formatClassSpreadBlock(ru));
   lines.push("");
   for (const ex of meta.excluded) {
     lines.push(`* ${ex.cls} ${ex.sub} ${ex.race} omitted: ${ex.reason}`);

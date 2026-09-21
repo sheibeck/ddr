@@ -39,7 +39,16 @@
 // untouched.
 
 import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
-import { bandReadout, formatBandReadout, survivalReadout, formatSurvivalReadout } from "./lib/band-readout.mjs";
+import {
+  bandReadout,
+  formatBandReadout,
+  survivalReadout,
+  formatSurvivalReadout,
+  paceReadout,
+  formatPaceReadout,
+  classIdentityReadout,
+  formatClassIdentityReadout,
+} from "./lib/band-readout.mjs";
 
 /**
  * autoPlayOnce(seed, opts) — plays one full run to completion via the
@@ -166,6 +175,16 @@ function printReport(results, opts) {
     console.log(line);
   }
 
+  console.log("");
+  for (const line of formatPaceReadout(paceReadout(results))) {
+    console.log(line);
+  }
+
+  console.log("");
+  for (const line of formatClassIdentityReadout(classIdentityReadout(results))) {
+    console.log(line);
+  }
+
   console.log(`\nOutcome: ${deadCount} dead, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
   console.log("");
 }
@@ -223,6 +242,8 @@ function main() {
           parley: parleySummary(results),
           bands: bandReadout(results, opts),
           survival: survivalReadout(results, opts),
+          pace: paceReadout(results),
+          classIdentity: classIdentityReadout(results),
           ...sharedJson(results, opts),
         },
         null,
