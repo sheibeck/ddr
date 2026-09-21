@@ -58,7 +58,7 @@ import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeWpFor, foeDmgBonusFor } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
@@ -220,14 +220,15 @@ export function rollInitiative(state, rng) {
  * phobia freeze, ally join, and first-move via rollInitiative. Ports
  * mazeworld.html startCombat() (lines 2257-2315).
  *
- * DELIBERATE RULES CHANGE (Phase 21, TUNE-01, D-01/D-02/D-17): reads the
- * ONE combat-scaling curve for this encounter (`difficultyCurve`, 0 draws)
- * and applies two additive terms: a zero-new-draw foe-count bonus (D-17,
- * `foeCountFor`) added AFTER the canon d4/d4 roll, and a copy-time
- * wp/maxWP power scale + conditional flat melee `dmgBonus` (D-02,
- * `foeWpFor`/`foeDmgBonusFor`) on each foe instance. Both are identity
- * (no-ops) at depth <= 5 (D-19) — see docs/DIFFICULTY-RETUNE.md for the
- * tuned values.
+ * DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21, USER RULING D):
+ * foe level is a function of DEPTH (`curve.foeLevel`, via `foeLevelFor`),
+ * never of the hero's level — out-leveling the dungeon is how a strong run
+ * breaks away. Reads the ONE global curve for this encounter
+ * (`difficultyCurve`, 0 draws) and applies: `foeCountFor` (the canon d4/d4
+ * draw shape, no level-keyed cap), a copy-time wp scale (`foeWpFor`), and
+ * the tier bleed via `tierSpreadFor()`. The old `dmgBonus` key/whole-lvl-base
+ * scaling is retired — `foeHitFor` scales the WHOLE hit at the damage sites
+ * instead (see foeTurn/pursuitStrike below).
  */
 export function startCombat(state, wandering, forced, rng, events = []) {
   const c = state.c;
@@ -238,23 +239,15 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   // both still read it) but nothing sets it true anymore; it is dormant
   // until a future source assigns it.
   let tracked = false;
-  const maxLvl = clamp(Math.min(c.level, state.floor.depth) + curve.foeLvlBias, 1, 5);
-  // a level I delver never faces a mob; the maze scales up as you do
-  const cap = c.level <= 2 ? 2 : 3;
-  // NOTE: this ternary chain can consume ONE or TWO d4 rolls, exactly like
-  // the prototype's `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` — the second D(4) is
-  // only rolled if the first roll was > 2. Preserve the short-circuit shape
-  // verbatim; do not hoist to a single pre-rolled value.
-  //
-  // Phase 21 (D-17): foeCountFor adds the curve's zero-draw `foeBonus`
-  // AFTER the canon roll and clamps at `foeCap`; the d4/d4 short-circuit is
-  // untouched and a wandering encounter still draws nothing here; at depth
-  // <= 5 `foeBonus === 0` and `foeCap === 3`, so `n` is byte-identical to
-  // the prototype.
-  const n = wandering ? 1 : foeCountFor(Math.min(cap, rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3), curve);
+  const maxLvl = curve.foeLevel;
+  // NOTE: this call can consume ONE or TWO d4 rolls, exactly like the
+  // retired `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` ternary — the second D(4) is
+  // only rolled if the first roll was > 2 (foeCountFor's own thunk). A
+  // wandering encounter still draws nothing here.
+  const n = wandering ? 1 : foeCountFor(rng.d(4), () => rng.d(4));
   const foes = [];
   for (let i = 0; i < n; i++) {
-    const lvl = clamp(maxLvl - (rng.d(4) === 1 ? 1 : 0), 1, 5);
+    const lvl = clamp(maxLvl - (rng.d(4) <= tierSpreadFor() ? 1 : 0), 1, 5);
     // LO-02: no `||` fallback needed here — `lvl` is always clamped to
     // [1,5] above, and every BESTIARY category has exactly 5 tiers
     // (confirmed by 01-VERIFICATION.md's creature count audit), so
@@ -262,7 +255,6 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     const roster = BESTIARY[type][lvl - 1];
     const picked = rng.pick(roster);
     const wp = foeWpFor(picked.wp, curve);
-    const dmgBonus = foeDmgBonusFor(lvl, curve);
     foes.push({
       name: picked.n,
       type,
@@ -281,16 +273,6 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       // byte-identical for parity. `f.abilities` (present vs absent) is the
       // structural zero-draw gate foeTurn reads below.
       ...(picked.abilities ? { abilities: picked.abilities.slice() } : {}),
-      // Phase 21 (TUNE-01, D-02): copy-time power scaling; the key is added
-      // ONLY when the curve's foePower differs from 1 (never at depth <= 5),
-      // so every fixture-exposed foe object is byte-identical; `damageFoe`
-      // (engine/foeDamage.js) is still the only place a foe's wp ever
-      // decreases — this only changes the STARTING number. Phase 27
-      // (TUNE-06): a graced floor (foePower < 1, floors 2-4) legitimately
-      // produces a NEGATIVE dmgBonus, so the copy condition is `!== 0` (not
-      // `> 0`) — a grace floor's foes hit softer too; depth 1 still never
-      // carries the key (FOE_GRACE_AT_1 is exactly 1.0).
-      ...(dmgBonus !== 0 ? { dmgBonus } : {}),
     });
   }
   // CMB-01 (Phase 31): the ENCOUNTER step ends here with `pending: true` —
@@ -858,8 +840,11 @@ export function killFoe(state, f, rng, events = []) {
   const liveMembers = state.combat && state.combat.allies ? state.combat.allies.filter((a) => a.wp > 0) : [];
   const shares = 1 + liveMembers.length;
   const heroShare = shares > 1 ? Math.round(gained / shares) : gained;
-  c.sp += heroShare;
-  events.push({ type: "foeKilled", name: f.name, spGained: heroShare });
+  // Phase 54 (BAND-02, USER RULING D): HERO_SP_SCALE paces every SP grant —
+  // identity (1) is a no-op here.
+  const spGained = heroSpFor(heroShare);
+  c.sp += spGained;
+  events.push({ type: "foeKilled", name: f.name, spGained });
 
   // creatures carry things, and the things are worth wilmst
   const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
@@ -903,10 +888,10 @@ export function killFoe(state, f, rng, events = []) {
  * is what "strikes as a level five" (Herman's rulebook note) literally means
  * — when a foe carries `sp.strikesAs`, its level-base term reads
  * `strikesAs^2` instead of its own `lvl^2` (Herman is a tier-4/5 body that
- * hits like a level-5 one). `foeDmgBonusFor` stays keyed to the foe's REAL
- * `lvl`, never `strikesAs` — a Herman's deep-floor power-curve bonus scales
- * with the floor he's actually met on (his own tier), not his strike level;
- * only the flat level-base term is substituted. Pure read, 0 draws.
+ * hits like a level-5 one). Since Phase 54 (BAND-02, USER RULING D), the
+ * curve's whole-hit scale (`foeHitFor`, applied at the three call sites
+ * below) is keyed to DEPTH, not to this term — this stays a pure read of the
+ * foe's own level-base, 0 draws.
  */
 export function foeLevelBase(f) {
   if (f.sp && f.sp.strikesAs) return f.sp.strikesAs * f.sp.strikesAs;
@@ -972,11 +957,16 @@ function pursuitStrike(state, rng, events) {
   // whether it is added once or twice into the final sum changes.
   const crit = roll === 1 || (roll <= 2 && c.sub === "Soldier");
   const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6);
-  let dmg = foeLevelBase(pursuer) + (pursuer.dmgBonus || 0) + (crit ? 2 * dice : dice);
+  const curve = difficultyCurve(state.floor.depth);
+  let dmg = foeHitFor(foeLevelBase(pursuer) + (crit ? 2 * dice : dice), curve);
   if (C.weakened) dmg = Math.ceil(dmg / 2);
   // Phase 40 (SPELL-01, Shrink) — a shrunk pursuer's parting strike is
   // halved too, same rule as its ordinary melee swing.
   if (pursuer.shrunk) dmg = Math.ceil(dmg / 2);
+  // Phase 54 (BAND-02, USER RULING D): ROUND_DAMAGE_CEILING, a FRESH budget
+  // (pursuitStrike is a single strike, never part of foeTurn's per-visit
+  // budget) — Infinity at the identity value (0, off), a structural no-op.
+  dmg = Math.min(dmg, Math.max(0, roundDamageCapFor(c.level)));
   return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need, needMods });
 }
 
@@ -1230,7 +1220,7 @@ export function parley(state, rng, events = []) {
     // D-01/D-02: parley's payout is now STRUCTURALLY half of the same
     // combat-equivalent killFoe pays (killSpFor), not a second formula.
     const combatEquivalent = liveFoes(state).reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0);
-    const sp = Math.round(combatEquivalent * 0.5);
+    const sp = heroSpFor(Math.round(combatEquivalent * 0.5));
     c.sp += sp;
     events.push({ type: "spGained", amount: sp, reason: "parley" });
     if (C.type === "Humans" && rng.d(6) === 6) {
@@ -2269,6 +2259,11 @@ export function foeTurn(state, rng, events = []) {
   const C = state.combat;
   if (!C) return events;
   const c = state.c;
+  // Phase 54 (BAND-02, USER RULING D): the ONE global curve for this round,
+  // read once per foeTurn (0 draws) — foeHitFor's whole-hit scale at every
+  // damage site below reads THIS curve, never a fresh difficultyCurve() call
+  // per swing.
+  const curve = difficultyCurve(state.floor.depth);
   // Phase 19 (D-09/A8): identity guard for the end-of-turn foeEffect tick —
   // captured BEFORE anything this turn could set/refresh it, so a debuff
   // applied THIS turn never ticks down on the same turn it landed.
@@ -2398,6 +2393,11 @@ export function foeTurn(state, rng, events = []) {
       }
     }
     const swings = (f.frenzied ? 2 : 1) * ((f.sp && f.sp.atk) || 1);
+    // Phase 54 (BAND-02, USER RULING D): ROUND_DAMAGE_CEILING's budget — what
+    // this ONE foe may deal across every swing of THIS visit (hero OR member
+    // targets both draw from the same pool), reset per foe. Infinity at the
+    // identity value (0, off) makes every clamp below a structural no-op.
+    let dealtThisVisit = 0;
     for (let s = 0; s < swings; s++) {
       if (!f.alive) break;
 
@@ -2491,7 +2491,7 @@ export function foeTurn(state, rng, events = []) {
         // shape change.
         const mCrit = mRoll === 1;
         const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
-        let mDmg = foeLevelBase(f) + (f.dmgBonus || 0) + (mCrit ? 2 * mDice : mDice);
+        let mDmg = foeHitFor(foeLevelBase(f) + (mCrit ? 2 * mDice : mDice), curve);
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
         // too (a shrunk-AND-weakened foe is quartered, ceil applied twice —
@@ -2514,6 +2514,10 @@ export function foeTurn(state, rng, events = []) {
           member.braced = false;
           events.push({ type: "braceHeld", name: f.name, member: member.name, soaked: before - mDmg });
         }
+        // Phase 54 (BAND-02, USER RULING D): ROUND_DAMAGE_CEILING, applied
+        // after every existing halving, before the member's wp is touched.
+        mDmg = Math.min(mDmg, Math.max(0, roundDamageCapFor(c.level) - dealtThisVisit));
+        dealtThisVisit += mDmg;
         member.wp -= mDmg;
         events.push({
           type: "memberStruck",
@@ -2583,7 +2587,7 @@ export function foeTurn(state, rng, events = []) {
       // order, untouched.
       const crit = roll === 1 || (roll <= 2 && c.sub === "Soldier");
       const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
-      let dmg = foeLevelBase(f) + (f.dmgBonus || 0) + (crit ? 2 * dice : dice);
+      let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve);
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
       // too, hero side (see the member-branch twin above for the
@@ -2594,6 +2598,10 @@ export function foeTurn(state, rng, events = []) {
       // half damage for the rest of the fight, hero side. Pure read, 0
       // draws; false on every fixture.
       if (f.hamstrung) dmg = Math.ceil(dmg / 2);
+      // Phase 54 (BAND-02, USER RULING D): ROUND_DAMAGE_CEILING, applied
+      // after every existing halving, before applyFoeDamageToPlayer.
+      dmg = Math.min(dmg, Math.max(0, roundDamageCapFor(c.level) - dealtThisVisit));
+      dealtThisVisit += dmg;
 
       const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need, needMods });
       if (hit.died) return events;

@@ -74,12 +74,18 @@ test("genFloor: feature counts match the prototype's formula for seed 42, depths
   // 27-03 iteration 3 (ENCOUNTER_DOT_CAP 15 -> 13, against the forced-20
   // band): depths 4 and 5's dot count each drop by one (12 -> 11) —
   // re-measured live, never hand-computed.
+  //
+  // Phase 54 (BAND-02, 2026-09-21, USER RULING D): ENCOUNTER_DOT_CAP is
+  // retired — ENCOUNTER_DOTS is now uncapped, `9 + depth`, at every depth
+  // (matching genFloor's own placement target exactly, no soft-cap
+  // shortfall). Depths 3-5 move to their full canon 9+depth counts
+  // (12/13/14). Re-measured live, never hand-computed.
   const expected = {
     1: { dot: 10, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
     2: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    3: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    4: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
-    5: { dot: 11, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
+    3: { dot: 12, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
+    4: { dot: 13, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
+    5: { dot: 14, tele: 2, chest: 2, trap: 2, climb: 2, gorge: 2, one: 3, exit: 1 },
   };
   for (const depth of [1, 2, 3, 4, 5]) {
     const floor = genFloor(depth, makeRng(42));

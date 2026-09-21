@@ -31,6 +31,7 @@ import { rollDice } from "./dice.js";
 import { leveled } from "./events.js";
 import { canLearn, schoolGate, levelFromSP, clampCarry, spellLevelFor, dealsDamage } from "./derived.js";
 import { derivedRng } from "./rng.js";
+import { heroMaxWpFor, startingRationsFor } from "./difficulty.js";
 import {
   CLASSES,
   RACES,
@@ -510,6 +511,9 @@ export function rollCharacter(rng, exclude = [], force = null) {
   // prototype's `baseWP: () => 40`.
   let maxWP = R.flatWP ? R.flatWP : CLASSES[cls].baseWP.base + rollDice(rng, CLASSES[cls].baseWP.dice);
   if (R.wpMul) maxWP = Math.round(maxWP * R.wpMul);
+  // Phase 54 (BAND-02, USER RULING D): HERO_HP_SCALE (+ the class's own
+  // CLASS_MITIGATION.hpMul, identity 1) — a no-op at identity.
+  maxWP = heroMaxWpFor(maxWP, cls);
 
   const [wpn, prof] = KIT[sub];
   const draft = { cls, sub };
@@ -539,7 +543,8 @@ export function rollCharacter(rng, exclude = [], force = null) {
     motive: MOTIVES[rng.d(12) - 1],
     phobia: ph.n, phobiaType: ph.t,
     potions: cls === "Magic User" ? rng.d(6) : cls === "Thief" ? 2 : 1,
-    rations: cls === "Fighter" ? 6 : cls === "Thief" ? 5 : 4,
+    // Phase 54 (BAND-02, USER RULING D): FOOD_CLOCK — a no-op at identity.
+    rations: startingRationsFor(cls === "Fighter" ? 6 : cls === "Thief" ? 5 : 4),
     gold: 50,
     scrolls: cls === "Magic User" ? 1 : 0,
     // Phase 39 (GEAR-02): haste/invis/ether/acute retired — every item
@@ -611,7 +616,9 @@ export function checkLevel(state, rng, events = []) {
     c.level++;
     const R = RACES[c.race];
     const gain = rollDice(rng, CLASSES[c.cls].gain[c.level - 1]);
-    const add = R.wpMul ? Math.round(gain * R.wpMul) : gain;
+    // Phase 54 (BAND-02, USER RULING D): HERO_HP_SCALE applies to every
+    // level-up gain too, not just the chargen roll — a no-op at identity.
+    const add = heroMaxWpFor(R.wpMul ? Math.round(gain * R.wpMul) : gain, c.cls);
     c.maxWP += add;
     c.wp += add;
     events.push(leveled(c.level, add));

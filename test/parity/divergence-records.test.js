@@ -23,8 +23,8 @@ import { makeRng } from "../../engine/rng.js";
 import { openStore } from "../../engine/economy.js";
 import { descend } from "../../engine/movement.js";
 import { springTrap, openChest, encounterDot } from "../../engine/encounters.js";
-// Phase 54 (BAND-02): the guard below.
-import { difficultyCurve, WALL_FROM_DEPTH } from "../../engine/difficulty.js";
+// Phase 54 (BAND-02, USER RULING D): the guard below — the identity commit.
+import { difficultyCurve, foeCountFor, setDialsForTuning } from "../../engine/difficulty.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, "fixtures");
@@ -342,32 +342,39 @@ test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
 });
 
-// PHASE_53_FLOOR1_CURVE — the depth-1 curve object, pasted verbatim from the
-// Phase 53 engine (commit 78572c5) node -e capture (the same literal
-// test/difficulty/difficulty.test.js's PHASE_53_FLOOR1_PIN pins).
-const PHASE_53_FLOOR1_CURVE = {
+// PHASE_54_IDENTITY_FLOOR1_CURVE — difficultyCurve(1) under the global
+// model, pasted verbatim from a `node -e` capture against the landed
+// engine/difficulty.js (Phase 54, BAND-02, USER RULING D — the identity
+// commit's 12-key shape, no mazeSize/foeCap/foeBonus/foeLvlBias fields).
+const PHASE_54_IDENTITY_FLOOR1_CURVE = {
   depth: 1,
   breather: false,
   dots: 10,
   darkBlobs: 0,
   darkRadius: 4,
-  foeCap: 3,
-  foeBonus: 0,
-  foeLvlBias: 0,
-  foePower: 1,
+  waterPools: 1,
+  storeTier: 0,
+  foeLevel: 1,
+  foeHitScale: 1,
+  foeHpScale: 1,
   hazardScale: 1,
   abilityThreat: 1,
-  waterPools: 1,
 };
 
-test("BAND-02: the holders declaring Phase 54 are exactly the measured moved set — zero; no replay site ever reaches WALL_FROM_DEPTH (floor 5) and difficultyCurve(1..4) is byte-identical to the Phase 53 curve", () => {
-  // Part (a): EXPECTED is the MEASURED list — updated whenever a rung's
-  // scan diff or the parity suite reports a mover (USER RULING C: floors
-  // >= 2 may move fixtures now; the engine gate still applies — measure,
-  // declare, regenerate). Legitimately EMPTY through this rung — see part
-  // (b)/(e) below and test/parity/FIXTURE-INVENTORY.md's Phase 54 section
-  // for the full accounting.
-  const EXPECTED = [];
+test("BAND-02 (USER RULING D): the holders declaring Phase 54 are exactly the measured moved set of the identity commit; difficultyCurve(1) reads the identity column; the count roll keeps the canon draw shape", () => {
+  // Part (a): EXPECTED is the MEASURED moved set — everything that moves at
+  // identity is declared (USER RULING D supersedes the old "measure zero"
+  // BAND-02 guard). Three holders: the retired level-keyed foe-count cap
+  // lets combat.json's lose-apprentice/flee scenarios roll a THIRD Beasts
+  // foe at their own count draw (a level-cap cause); encounters.json's
+  // tablefour scenario's "+25 HP" row is now dotHpFor("large", maxWP) (a
+  // dot-hp cause). See test/parity/FIXTURE-INVENTORY.md's Phase 54 section
+  // for the full predictor/scan/moved-set accounting.
+  const EXPECTED = [
+    "action-script.combat.json#flee",
+    "action-script.combat.json#lose-apprentice",
+    "action-script.encounters.json#tablefour",
+  ].sort();
 
   const declared = new Set(
     RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("54")).map(
@@ -377,72 +384,61 @@ test("BAND-02: the holders declaring Phase 54 are exactly the measured moved set
 
   assert.deepStrictEqual([...declared].sort(), EXPECTED);
 
-  // Part (b): the positive proof — replay every one of the 31 replay sites
-  // and assert no site's maxDepthEver ever reaches WALL_FROM_DEPTH (floor
-  // 5) — a 5-15 band dial cannot move a site that never gets there.
-  let totalSites = 0;
+  // Part (b): difficultyCurve(1) reads the identity column exactly — the
+  // one never-moved invariant (floor-1 parity) survives the identity
+  // commit unchanged.
+  assert.deepStrictEqual(difficultyCurve(1), PHASE_54_IDENTITY_FLOOR1_CURVE);
 
+  // Part (c): the count roll keeps the canon draw shape — a first d4 <= 2
+  // draws exactly one d4; a first d4 > 2 draws exactly two — regardless of
+  // FOE_COUNT_SKEW (every row of the table, restored after).
+  for (let skew = 0; skew <= 4; skew++) {
+    const restore = setDialsForTuning({ FOE_COUNT_SKEW: skew });
+    try {
+      let draws = 0;
+      const countingD4 = () => {
+        draws++;
+        return 2; // <= 2: the short-circuit path, no second draw
+      };
+      assert.equal(foeCountFor(countingD4(), () => { throw new Error("must not draw a second d4 when the first is <= 2"); }), 1);
+      assert.equal(draws, 1, `skew ${skew}: a first roll <= 2 must draw exactly one d4`);
+
+      let draws2 = 0;
+      const firstOver2 = 3;
+      const drawSecond = () => {
+        draws2++;
+        return 4;
+      };
+      foeCountFor(firstOver2, drawSecond);
+      assert.equal(draws2, 1, `skew ${skew}: a first roll > 2 must draw exactly one MORE d4 (two total)`);
+    } finally {
+      restore();
+    }
+  }
+
+  // Part (d): totalSites === 31 — the replay-site walk this guard's
+  // predecessors used, kept as a structural completeness proof (every site
+  // the scan/inventory accounts for is still reachable and replayable).
+  let totalSites = 0;
   for (const seed of CHARGEN_FIXTURE.seeds) {
     totalSites++;
-    const state = newRun(seed);
-    assert.ok(state.floor.depth < WALL_FROM_DEPTH, `chargen seed ${seed}: maxDepthEver must be < WALL_FROM_DEPTH`);
+    newRun(seed);
   }
-
-  const movementReplay = replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions);
   totalSites++;
-  assert.ok(movementReplay.maxDepthEver < WALL_FROM_DEPTH, `movement: maxDepthEver (${movementReplay.maxDepthEver}) must be < WALL_FROM_DEPTH`);
-
+  replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions);
   for (const scenario of COMBAT_FIXTURE.scenarios) {
     totalSites++;
-    const { maxDepthEver } = replaySiteEvents(scenario.seed, scenario.actions);
-    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `combat#${scenario.name}: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+    replaySiteEvents(scenario.seed, scenario.actions);
   }
-
   for (const scenario of MAGIC_FIXTURE.scenarios) {
     totalSites++;
-    const { maxDepthEver } = replaySiteEvents(scenario.seed, scenario.actions);
-    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `magic#${scenario.name}: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+    replaySiteEvents(scenario.seed, scenario.actions);
   }
-
-  {
-    totalSites++;
-    const { maxDepthEver } = replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true });
-    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `economy: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
-  }
-
+  totalSites++;
+  replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true });
   for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
     totalSites++;
-    const { maxDepthEver } = replaySiteEvents(scenario.seed, scenario.actions);
-    assert.ok(maxDepthEver < WALL_FROM_DEPTH, `encounters#${scenario.name}: maxDepthEver (${maxDepthEver}) must be < WALL_FROM_DEPTH`);
+    replaySiteEvents(scenario.seed, scenario.actions);
   }
-
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
-
-  // Part (c): floor 1 ONLY — floors 2-4 are Filter-rung dials under USER
-  // RULING A and are measured, not pinned, here.
-  assert.deepStrictEqual(difficultyCurve(1), PHASE_53_FLOOR1_CURVE);
-
-  // Part (d): the floor-2 exposure of the one site that descends (movement
-  // seed 256) — a 5-15 band dial cannot reach a replay site that never
-  // descends past floor 2; a Filter rung (FOE_GRACE_AT_2 /
-  // HAZARD_SCALE_AT_START) can only reach floor 2 via a fight or a hazard,
-  // and the one floor-2 site has neither; Plan 02 re-runs
-  // tools/initiative-fixture-scan.mjs Part B + the parity suite on EVERY
-  // rung and declares MOVED SET (0) in FIXTURE-INVENTORY.md's Phase 54
-  // section; this guard keeps the zero a checked claim.
-  const depth2Events = movementReplay.eventsAtDepth2Plus.map((e) => e.type);
-  for (const forbidden of ["combatStarted", "struckByFoe", "trapSprung", "fellClimbing", "fellInGorge"]) {
-    assert.ok(!depth2Events.includes(forbidden), `movement (floor 2+): unexpected "${forbidden}" event — a Filter rung could reach this site`);
-  }
-
-  // Part (e): the floor-2 genFloor inputs (dots/darkBlobs/darkRadius) stay
-  // canon by construction (DENSITY_CANON_THROUGH_DEPTH / DARK_HOLD_THROUGH_
-  // DEPTH are NOT part of the secondary group and are never moved by this
-  // ladder). A secondary-group rung that moves floor-2 density/dark WOULD
-  // move the movement fixture above — declare and regenerate per the engine
-  // gate, then update EXPECTED and this assertion together.
-  const curve2 = difficultyCurve(2);
-  assert.equal(curve2.dots, 11, "floor-2 dots must stay canon (9+depth)");
-  assert.equal(curve2.darkBlobs, 1, "floor-2 darkBlobs must stay canon");
-  assert.equal(curve2.darkRadius, 5, "floor-2 darkRadius must stay canon (3+depth)");
 });

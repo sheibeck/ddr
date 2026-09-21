@@ -21,9 +21,9 @@
 | action-script.movement.json | action-script.movement.json#script | 256 | Thief Cat Burglar Human | 101 | never | false | n/a | n/a | none |
 | action-script.combat.json | action-script.combat.json#win | 3 | Thief Pickpocket Human | 2 | never | false | never | 1 | none |
 | action-script.combat.json | action-script.combat.json#lose | 14 | Fighter Soldier Fridgian | 11 | 1 | true | 0 | 4 | 24+31+51+52 |
-| action-script.combat.json | action-script.combat.json#lose-apprentice | 127 | Magic User Apprentice Human | 15 | 1 | true | 0 | 7 | 31+51 |
+| action-script.combat.json | action-script.combat.json#lose-apprentice | 127 | Magic User Apprentice Human | 15 | 1 | true | 0 | 15 | 31+51+54 |
 | action-script.combat.json | action-script.combat.json#lose-plain | 1119 | Thief Cutthroat Human | 8 | 1 | true | 2 | 8 | 51 |
-| action-script.combat.json | action-script.combat.json#flee | 17 | Thief Pilfer Fridgian | 2 | never | false | never | 1 | none |
+| action-script.combat.json | action-script.combat.json#flee | 17 | Thief Pilfer Fridgian | 2 | never | false | 0 | 1 | 54 |
 | action-script.combat.json | action-script.combat.json#parley | 303 | Thief Con Artist Wilmsry | 2 | never | false | 0 | 1 | 27+31 |
 | action-script.magic.json | action-script.magic.json#cast-damage | 8 | Magic User Illusionist Wilmsry | 2 | never | false | 0 | 1 | 23+31 |
 | action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
@@ -54,12 +54,12 @@ divergence.phase: 24+31+51+52
 
 ### action-script.combat.json#lose-apprentice
 fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":4}
-fields.after (engine @end): {"wp":23,"sp":40,"gold":52,"kills":2,"rations":6}
+fields.after (engine @end): {"wp":23,"sp":60,"gold":50,"kills":2,"rations":4}
 state.before (prototype @end): {"dead":true}
 state.after (engine @end): {"dead":false}
 firstDivergentAction: 0
-maxRound: 7
-divergence.phase: 31+51
+maxRound: 15
+divergence.phase: 31+51+54
 
 ### action-script.combat.json#lose-plain
 fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":5}

@@ -27,14 +27,14 @@
 // comment for why.
 
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
-import { difficultyCurve, scaleHazard } from "./difficulty.js";
+import { difficultyCurve, scaleHazard, heroSpFor, heroRegenFor, campHealFor } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost, inStone } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
-import { moved, floorChanged } from "./events.js";
+import { moved, floorChanged, floorRegen } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS, ACTIVATION_OF } from "../content/index.js";
 import { tickSquares } from "./effects.js";
 import { narrateTimerTransitions, toolIndex } from "./items.js";
@@ -289,18 +289,30 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
           // Phase 38 (ABIL-02): the retired climb and leap fall-damage halving — gone for everyone.
         }
       }
+      // DELIBERATE RULES CHANGE (Phase 54, 2026-09-21, user bug-fix ruling):
+      // walls and crevices are ONE AND DONE — one roll per feature; a failed
+      // roll hurts and STILL crosses (the retry-and-hurt-again loop is gone;
+      // the heights-phobia repeat-fall spiral with it). Success crosses
+      // clean; failure takes the (curve-scaled) fall damage, and — if the
+      // hero survives — still ends up on the far side (`there.feat = null`,
+      // then falls through to the SAME clean-step tail below: cost/
+      // position/reveal/cadence). A fatal fall still dies in place (no
+      // move, feat kept). Draw count per attempt is unchanged (same rolls,
+      // same order) — only what happens after a failed roll changed.
       if (!ok) {
-        // Phase 27 (TUNE-06)/Phase 54 (USER RULING C): hazardScale —
-        // post-draw arithmetic, 0 new draws; a per-floor knot table
-        // (engine/difficulty.js's knotHazardFor), literal 1 below
-        // HAZARD_FROM_DEPTH (floor 1, never moves)
+        // Phase 54 (USER RULING D): hazardScale — post-draw arithmetic, 0
+        // new draws; the global HAZARD_SCALE dial, literal 1 at identity.
         hurt = scaleHazard(hurt, difficultyCurve(state.floor.depth));
         state.c.wp -= hurt;
         events.push({ type: climbing ? "fellClimbing" : "fellInGorge", hurt });
-        if (state.c.wp <= 0) die(state, climbing ? "fall" : "gorge", null, rng, events, now);
-        return events;
+        if (state.c.wp <= 0) {
+          die(state, climbing ? "fall" : "gorge", null, rng, events, now);
+          return events;
+        }
+        events.push({ type: "draggedOver", feat: there.feat });
+      } else {
+        events.push({ type: climbing ? "climbedOver" : "leaptOver" });
       }
-      events.push({ type: climbing ? "climbedOver" : "leaptOver" });
       there.feat = null;
     }
   }
@@ -669,7 +681,10 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
       ...(state.party ?? []).map((m) => ({ name: m.name, race: m.race, eats: eatsFor(m) })),
     ];
     events.push({ type: "rationsEaten", eats, left: c.rations, eaters });
-    let heal = rng.d(10) + 2 * c.level;
+    // DELIBERATE RULES CHANGE (Phase 54, USER RULING D): a rested night
+    // heals a fraction of maxWP (CAMP_HEAL_FRACTION) — hero-keyed, no depth
+    // term; the d10 stays as variance so the draw count is unchanged.
+    let heal = campHealFor(c.maxWP, rng.d(10));
     // Phase 25 (FEED-01, additive payload): who doubled the heal, if anyone
     // — a Soldier's label wins for a Wilmsry Soldier (matches `heal *= 2`'s
     // own `||` precedence below, which is untouched). Narration only.
@@ -951,7 +966,9 @@ export function cutthroatMurderCheck(state, rng, events = []) {
  */
 export function descend(state, rng, events = []) {
   const safeFloorDepth = difficultyCurve(state.floor.depth).depth;
-  const bonus = 40 + 30 * safeFloorDepth;
+  // Phase 54 (BAND-02, USER RULING D): HERO_SP_SCALE paces every SP grant —
+  // identity (1) is a no-op here.
+  const bonus = heroSpFor(40 + 30 * safeFloorDepth);
   state.c.sp += bonus;
   events.push({ type: "spGained", amount: bonus, reason: "descend" });
   checkLevel(state, rng, events);
@@ -967,6 +984,18 @@ export function descend(state, rng, events = []) {
   state.pendingHazard = null;
   reveal(state.floor, revealRadius(state));
   events.push(floorChanged(state.floor.depth));
+  // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR — a fraction of
+  // maxWP restored once, on arriving at the new floor (hero only, 0 draws).
+  // Identity (0) never pushes an event; a loaded save resumes on its
+  // current floor with no regen owed (`descend` is the only arrival path
+  // and runs once per floor by construction, so there is no "regen applied"
+  // marker to track).
+  const regen = heroRegenFor(state.c.maxWP);
+  if (regen > 0) {
+    const before = state.c.wp;
+    state.c.wp = Math.min(state.c.maxWP, state.c.wp + regen);
+    if (state.c.wp > before) events.push(floorRegen(state.c.wp - before));
+  }
   // Phase 41 (TERR-04/05): floor-bound phobia regions die with the floor —
   // Death (hp-based) and any still-pending c.fearArmed both survive.
   resetFloorPhobiaRegions(state.c);

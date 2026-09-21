@@ -173,6 +173,11 @@ export const RAIL_FAMILY = Object.freeze({
   leaptOver: { icon: "⧗", title: "CLEARED IT", tone: "good" },
   fellClimbing: { icon: "⧗", title: "FELL", tone: "bad" },
   fellInGorge: { icon: "⧗", title: "FELL", tone: "bad" },
+  // Phase 54 (BAND-02, USER RULING D): one-and-done — a failed climb/leap
+  // that still lands you on the far side (fellClimbing/fellInGorge's card
+  // shape, "bad" tone matched — no "warn" tone exists in this table's
+  // vocabulary, see mazeworld.html's rail tone CSS).
+  draggedOver: { icon: "⧗", title: "OVER, BARELY", tone: "bad" },
   flownOver: { icon: "⧗", title: "OVER IT", tone: "odd" },
   phasedThrough: { icon: "⧗", title: "OVER IT", tone: "odd" },
   // Phase 41 (TERR-02): entering water (once per wade, not per step).
@@ -417,12 +422,17 @@ export function railCardFor(type, events, folded, ctx = {}) {
   const hold = Math.max(...raw.map((l) => railFamilyFor(l.type, l.tone ?? "beat", l.priority).hold));
   const sorted = [...raw].sort((a, b) => b.idx - a.idx);
 
-  // Phase 39 (GEAR-05): toolUsed is the one RAIL_FEATURE_ICON exception —
-  // its icon depends on the raw event's own `.feat` (climb -> wall, gorge
-  // -> crevice), not just its type (see the table's own header comment).
+  // Phase 39 (GEAR-05)/Phase 54 (BAND-02): toolUsed and draggedOver are the
+  // RAIL_FEATURE_ICON exceptions — their icon depends on the raw event's
+  // own `.feat` (climb -> wall, gorge -> crevice), not just its type (see
+  // the table's own header comment).
   const headEvent = evts[head.idx];
   const iconKey =
-    head.type === "toolUsed" ? (headEvent?.feat === "climb" ? "wall" : "crevice") : (RAIL_FEATURE_ICON[head.type] ?? null);
+    head.type === "toolUsed" || head.type === "draggedOver"
+      ? headEvent?.feat === "climb"
+        ? "wall"
+        : "crevice"
+      : (RAIL_FEATURE_ICON[head.type] ?? null);
 
   return {
     tone: fam.tone,

@@ -14,6 +14,8 @@ export const EVENT_TYPES = {
   FLOOR_CHANGED: "floorChanged",
   DIED: "died",
   LEVELED: "leveled",
+  // Phase 54 (BAND-02, USER RULING D): a hero-only, floor-arrival regen tick.
+  FLOOR_REGEN: "floorRegen",
 };
 
 /** moved(to) — the player stepped to grid cell `to` ({x, y}). */
@@ -30,3 +32,8 @@ export const died = (cause) => ({ type: EVENT_TYPES.DIED, cause });
 
 /** leveled(level, wpGain) — the character reached a new skill level. */
 export const leveled = (level, wpGain) => ({ type: EVENT_TYPES.LEVELED, level, wpGain });
+
+/** floorRegen(amount) — HERO_REGEN_PER_FLOOR healed the hero on arrival at
+ * a new floor (Phase 54, BAND-02, USER RULING D). Only pushed when
+ * `amount > 0` — identity (0) never fires. */
+export const floorRegen = (amount) => ({ type: EVENT_TYPES.FLOOR_REGEN, amount });

@@ -272,12 +272,16 @@ const FULL_FIGHTS = [
   // no longer gets a same-cycle second turn, which reshuffles every
   // downstream d20 in the shared rng stream.
   { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 36, attacks: 4, outcome: "won" },
-  // Phase 51 (INIT-01, 2026-09-20): re-measured live — 89/10 -> 88/14. Losing
-  // the per-round re-roll (and the pre-emptive second foeTurn it could
-  // trigger) reshuffles every downstream draw in the shared rng stream, so
-  // both the draw total and the attack count needed to clear the same two
-  // foes move together; the roster is unaffected.
-  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek"], totalDraws: 88, attacks: 14, outcome: "won" },
+  // Phase 54 (BAND-02, 2026-09-21, USER RULING D): re-measured live — the
+  // retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is GONE;
+  // FOE_COUNT_TABLE row 0 (identity) can now roll a THIRD foe where the old
+  // cap forced two. This seed's count roll now yields ["Viper", "Shriek",
+  // "Shriek"] (was ["Viper", "Shriek"]) — draws stay 88 (the extra foe's own
+  // roster draws happen to net out against the shorter fight, 14 -> 12
+  // attacks), outcome unchanged ("won"). A legitimate roster-shape move
+  // under this plan's own engine gate ("everything that moves is
+  // declared"), not a regression.
+  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek", "Shriek"], totalDraws: 88, attacks: 12, outcome: "won" },
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — 52/8 -> 29/5, same
   // rng-stream-reshuffle cause as every other row here.
   { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 29, attacks: 5, outcome: "won" },
@@ -290,7 +294,11 @@ const FULL_FIGHTS = [
   // exactly the outcome INIT-01 is meant to produce (no more "two foe turns
   // back to back"). Not a regression; a measured consequence of the rules
   // change, recorded here per the plan's "measured, never hand-typed" rule.
-  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 45, attacks: 7, outcome: "won" },
+  // Phase 54 (BAND-02, 2026-09-21, USER RULING D): re-measured live — same
+  // cause as seed 17 above (the level-keyed count cap is gone). This seed's
+  // count roll now yields a THIRD "Shriek" — draws 45 -> 83, attacks 7 -> 15,
+  // outcome unchanged ("won").
+  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek", "Shriek"], totalDraws: 83, attacks: 15, outcome: "won" },
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — this fight ALSO flips
   // died (51/7) -> won (38/11), same cause as seed 127 above. This seed is
   // one of the MOVED SET's `lose-plain` parity fixture holders (a fixed,
@@ -608,7 +616,13 @@ for (const row of GATED_DRAWS) {
 // shared rng stream for every multi-round row — re-measured live, totals
 // 12/36/89/52/27/121/51 -> 12/36/88/29/21/45/38 (seeds 127 and 1119 also flip
 // from died to won — see the FULL_FIGHTS array's own per-row comments).
-test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/88/29/21/45/38) are measured-current and no fixture-roster creature carries a kit", () => {
+//
+// Phase 54 (BAND-02, 2026-09-21, USER RULING D): the retired level-keyed
+// foe-count cap re-measured seeds 17/127 with a third foe each — totals
+// 12/36/88/29/21/45/38 -> 12/36/88/29/21/83/38 (seed 17's total is
+// unchanged at 88; only seed 127 moves, 45 -> 83 — see FULL_FIGHTS' own
+// per-row comments).
+test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/88/29/21/83/38) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);
@@ -661,13 +675,17 @@ test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/88/29
 // and draws more. 1119 is the new `lose-plain` seed (no divergence, no
 // phobia — its opener total simply mirrors its own FULL_FIGHTS row's first
 // component).
+// Phase 54 (BAND-02, 2026-09-21, USER RULING D): seeds 17 and 127 re-measured
+// live — the retired level-keyed foe-count cap now lets both rosters roll a
+// third foe (see FULL_FIGHTS' own comments), so the opener draws one more
+// per-foe lvl/pick pass: 10 -> 13 (seed 17), 8 -> 10 (seed 127).
 const OPENER_DRAWS = [
   { seed: 3, forced: "Beasts", draws: 6 },
   { seed: 14, forced: "Beasts", draws: 11 },
-  { seed: 17, forced: "Beasts", draws: 10 },
+  { seed: 17, forced: "Beasts", draws: 13 },
   { seed: 303, forced: "Humans", draws: 13 },
   { seed: 8, forced: "Beasts", draws: 5 },
-  { seed: 127, forced: "Beasts", draws: 8 },
+  { seed: 127, forced: "Beasts", draws: 10 },
   { seed: 1119, forced: "Beasts", draws: 8 },
 ];
 

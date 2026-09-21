@@ -154,6 +154,11 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
     // declared chargenDivergence.
     const shift = chargenShiftOf(scenario);
     const cmp = shift ? (s) => stripChargenShift(comparable(s), shift) : comparable;
+    // Phase 54 (BAND-02, USER RULING D): a scenario MAY also carry a
+    // "action-path" divergence record — the SAME mechanism
+    // combat-parity.test.js's scenario loop already uses. `null` for every
+    // scenario except a declared mover.
+    const pathDiv = actionPathDivergenceOf(scenario);
 
     const ctx = loadPrototypeSandbox({ seed: scenario.seed });
     let engineState = newRun(scenario.seed);
@@ -177,13 +182,21 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
       engineState = state;
       allEventTypes.push(...events.map((e) => e.type));
 
-      const divergence = diffState(cmp(ctx.S), cmp(engineState));
-      assert.equal(
-        divergence,
-        null,
-        `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
-      );
+      if (!skipsByteDiffAt(pathDiv, i)) {
+        const divergence = diffState(cmp(ctx.S), cmp(engineState));
+        assert.equal(
+          divergence,
+          null,
+          `scenario ${scenario.name}, action ${i} (${JSON.stringify(action)}): state diverges at ${divergence}`,
+        );
+      }
     });
+
+    if (pathDiv) {
+      const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+      assert.equal(ends.before, null, `scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
+      assert.equal(ends.after, null, `scenario ${scenario.name}: engine end-state != declared after at ${ends.after}`);
+    }
 
     if (scenario.name === "trap") assert.ok(allEventTypes.includes("trapSprung"));
     else if (scenario.name === "chest") assert.ok(allEventTypes.includes("chestOpened"));

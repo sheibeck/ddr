@@ -18,6 +18,7 @@ import { move, teleport, descend } from "../../engine/movement.js";
 import { makeRng } from "../../engine/rng.js";
 import { fight, foeTurn, endCombat, playerStrike } from "../../engine/combat.js";
 import { AFRAID_ROUNDS } from "../../engine/derived.js";
+import { noteHeightsAttempt } from "../../engine/phobias.js";
 
 /** fakeRng(seq) — verbatim copy of test/unit/movement.test.js's helper:
  * `.d()` pops the next value off `seq` regardless of requested side count;
@@ -170,24 +171,41 @@ test("heights: a climb attempt fires phobiaTriggered BEFORE heightsFear and befo
   assert.equal(e[iTrigger].trigger, "heights");
 });
 
-test("heights: a retry of the SAME tile after a fall is silent", () => {
+// DELIBERATE RULES CHANGE (Phase 54, 2026-09-21, USER RULING D, one-and-done):
+// a failed climb/leap no longer leaves the hero on the near side to retry —
+// the feature is consumed and the hero crosses either way (see
+// engine/movement.js's climb/gorge block). A genuine retry of the SAME tile
+// via move() is therefore now UNREACHABLE (the tile's feat is gone after
+// exactly one roll, pass or fail) — the debounce this test used to prove
+// through move() is tested directly against noteHeightsAttempt itself below,
+// which still owns the underlying "same key is silent" contract (defensive,
+// and reachable via the hazardChoice pending/declined pause, which can call
+// it once for a tile before any roll has run).
+test("heights: noteHeightsAttempt is silent on a second call with the SAME tile key (the debounce contract, unreachable via move() post-one-and-done)", () => {
   const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
-  open(state.floor.g, 5, 4, { feat: "climb" });
-  move(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, stays at (5,5), key stored
-  const e = move(state, "N", fakeRng([1, 5, 5]), []); // succeeds this time
-  assert.ok(!e.some((ev) => ev.type === "phobiaTriggered"), "the same tile does not re-fire");
+  const e1 = [];
+  noteHeightsAttempt(state, 5, 4, e1);
+  assert.ok(e1.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "the first attempt at a fresh tile fires");
+  const e2 = [];
+  noteHeightsAttempt(state, 5, 4, e2);
+  assert.ok(!e2.some((ev) => ev.type === "phobiaTriggered"), "a second call with the SAME key is silent");
 });
 
-test("heights: stepping more than one square away from the attempted tile and back fires again", () => {
+// One-and-done means a climb tile is consumed after exactly one roll — a
+// "step away and back" scenario against the SAME tile can no longer happen
+// through move() either (the feature is gone). This test's real-world
+// equivalent is two DIFFERENT climb tiles: the phobia must fire again at a
+// fresh tile even though the first tile already armed the fear this run.
+test("heights: a SECOND, different climb tile fires phobiaTriggered again (a fresh tile is never debounced by an earlier one)", () => {
   const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
-  open(state.floor.g, 5, 5); // the start tile itself, so the return trip stays legal
+  open(state.floor.g, 5, 5);
   open(state.floor.g, 5, 4, { feat: "climb" });
-  open(state.floor.g, 4, 5);
-  move(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, key = "5,4"
-  move(state, "W", fakeRng([]), []); // (5,5)->(4,5): Manhattan dist to (5,4) is 2 -> clears the key
-  move(state, "E", fakeRng([]), []); // back to (5,5)
-  const e = move(state, "N", fakeRng([1, 5, 5]), []); // re-attempt: fires again
-  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"));
+  open(state.floor.g, 6, 5, { feat: "climb" });
+  const e1 = move(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, crosses to (5,4) (one and done)
+  assert.ok(e1.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "the first tile fires");
+  move(state, "S", fakeRng([]), []); // back to (5,5)
+  const e2 = move(state, "E", fakeRng([1, 5, 5]), []); // a DIFFERENT climb tile (6,5): succeeds
+  assert.ok(e2.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "a fresh, different tile fires again");
 });
 
 test("heights: the hazardChoice pause (a carried rope) does NOT fire noteHeightsAttempt — the second (declined) move does", () => {

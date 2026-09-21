@@ -29,7 +29,7 @@
 import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { difficultyCurve, scaleHazard } from "./difficulty.js";
+import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
 import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
@@ -84,9 +84,8 @@ export function springTrap(state, rng, events = []) {
     events.push({ type: "trapDoubled", reason: "catBurglar" });
   }
   if (skill(c, "Hardiness")) dmg = Math.max(1, dmg - 3);
-  // Phase 27 (TUNE-06)/Phase 54 (USER RULING C): hazardScale — post-draw
-  // arithmetic, 0 new draws; a per-floor knot table (engine/difficulty.js's
-  // knotHazardFor), literal 1 below HAZARD_FROM_DEPTH (floor 1, never moves)
+  // Phase 54 (USER RULING D): hazardScale — post-draw arithmetic, 0 new
+  // draws; the global HAZARD_SCALE dial (floor 1 included — identity 1).
   dmg = scaleHazard(dmg, difficultyCurve(state.floor.depth));
   c.wp -= dmg;
   events.push({ type: "trapSprung", roll: r, name: tr.n, dmg });
@@ -267,33 +266,49 @@ export function tableFour(state, result, rng, events = []) {
   // as a line, not a stat token. E10: rows already narrated by another event
   // (the "wilmst cache" row → goldGained) do NOT also push a redundant beat.
   switch (result) {
-    case "+10 HP":
-      c.wp = Math.min(c.maxWP, c.wp + 10);
-      events.push({ type: "tableFour", result: "The maze, for once, gives something back. 10 hp." });
+    // DELIBERATE RULES CHANGE (Phase 54, USER RULING D): the flat HP dots
+    // are fractions of the hero's maxWP (DOT_HP_FRACTION) so a dot is the
+    // same relative risk on every floor; the XP dots ride HERO_SP_SCALE
+    // like kills.
+    case "+10 HP": {
+      const n = dotHpFor("small", c.maxWP);
+      c.wp = Math.min(c.maxWP, c.wp + n);
+      events.push({ type: "tableFour", result: `The maze, for once, gives something back. ${n} hp.` });
       break;
-    case "-10 HP":
-      c.wp -= 10;
-      events.push({ type: "tableFour", result: "Something unseen takes its cut — 10 hp, gone." });
+    }
+    case "-10 HP": {
+      const n = dotHpFor("small", c.maxWP);
+      c.wp -= n;
+      events.push({ type: "tableFour", result: `Something unseen takes its cut — ${n} hp, gone.` });
       break;
-    case "+10 XP":
-      c.sp += 10;
-      events.push({ type: "tableFour", result: "You are, marginally, wiser for the ordeal. 10 experience." });
+    }
+    case "+10 XP": {
+      const n = heroSpFor(10);
+      c.sp += n;
+      events.push({ type: "tableFour", result: `You are, marginally, wiser for the ordeal. ${n} experience.` });
       checkLevel(state, rng, events);
       break;
-    case "+25 HP":
-      c.maxWP += 25;
-      c.wp += 25;
-      events.push({ type: "tableFour", result: "A rare kindness — you come away tougher. +25 to your health, for keeps." });
+    }
+    case "+25 HP": {
+      const n = dotHpFor("large", c.maxWP);
+      c.maxWP += n;
+      c.wp += n;
+      events.push({ type: "tableFour", result: `A rare kindness — you come away tougher. +${n} to your health, for keeps.` });
       break;
-    case "+25 XP":
-      c.sp += 25;
-      events.push({ type: "tableFour", result: "A hard lesson, and you actually learned it. 25 experience." });
+    }
+    case "+25 XP": {
+      const n = heroSpFor(25);
+      c.sp += n;
+      events.push({ type: "tableFour", result: `A hard lesson, and you actually learned it. ${n} experience.` });
       checkLevel(state, rng, events);
       break;
-    case "-15 HP":
-      c.wp -= 15;
-      events.push({ type: "tableFour", result: "The maze extracts a toll you did not agree to. 15 hp." });
+    }
+    case "-15 HP": {
+      const n = dotHpFor("mid", c.maxWP);
+      c.wp -= n;
+      events.push({ type: "tableFour", result: `The maze extracts a toll you did not agree to. ${n} hp.` });
       break;
+    }
     case "wilmst cache":
       // E10: gainWilmst already pushes a goldGained beat that narrates the
       // actual amount — pushing a second `tableFour` beat here was the redundant

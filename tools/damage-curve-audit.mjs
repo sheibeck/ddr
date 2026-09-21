@@ -85,7 +85,14 @@ import path from "node:path";
 import url from "node:url";
 
 import { BESTIARY, FOE_ABILITIES, CLASSES } from "../content/index.js";
-import { difficultyCurve, foeDmgBonusFor } from "../engine/difficulty.js";
+
+// Phase 54 (BAND-02, USER RULING D): `foeDmgBonusFor` (a flat bonus added to
+// the lvl^2 term) is RETIRED — the global model scales the WHOLE hit via
+// `FOE_HIT_SCALE`/`foeHitFor` instead, with per-visit lethality bounded by
+// `ROUND_DAMAGE_CEILING` (superseding this audit's old per-monster trim
+// logic). This tool's `dmgBonusForBand` is a stub (always 0, matching the
+// FOE_HIT_SCALE identity) until 54-06/54-07 rewires it against the new
+// model — see docs/DIFFICULTY-RETUNE.md's Identity commit section.
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -194,18 +201,14 @@ function boltMaxOf(row) {
   return best;
 }
 
-/** dmgBonusForBand(T, band) — the MAX foeDmgBonusFor(T, curve(d)) over every
- * floor d in the band with d >= T (exhaustive over floors; grace floors 2-4
- * can legitimately return a negative bonus). */
+/** dmgBonusForBand(T, band) — STUBBED at 0 (Phase 54, USER RULING D): the
+ * flat-bonus model this measured is retired; see the module header. Still
+ * returns `null` when the band cannot reach this tier at all, preserving
+ * every existing caller's null-check. */
 function dmgBonusForBand(T, band) {
   const lo = Math.max(band.min, T);
   if (lo > band.max) return null; // band cannot reach this tier at all
-  let best = -Infinity;
-  for (let d = lo; d <= band.max; d++) {
-    const b = foeDmgBonusFor(T, difficultyCurve(d));
-    if (b > best) best = b;
-  }
-  return best;
+  return 0;
 }
 
 function critMaxOf(rule, levelBase, dmgBonus, diceMax) {

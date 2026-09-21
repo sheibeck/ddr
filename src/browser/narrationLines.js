@@ -980,6 +980,14 @@ export const LINE_FOR = {
   }),
   climbedOver: () => ({ text: "Over, and no worse for it.", tone: "hit", priority: PRIORITY.other }),
   leaptOver: () => ({ text: "Cleared it. No drama.", tone: "hit", priority: PRIORITY.other }),
+  // Phase 54 (BAND-02, USER RULING D): one-and-done — a failed climb/leap
+  // that still lands you on the far side. Chosen by `e.feat` ("climb" vs
+  // "gorge").
+  draggedOver: (e) => ({
+    text: e?.feat === "gorge" ? "Across, technically. The crevice kept your dignity as a toll." : "Over, eventually. The wall took its cut on the way.",
+    tone: "hurt",
+    priority: PRIORITY.other,
+  }),
   flownOver: () => ({ text: "You simply fly over it.", tone: "hit", priority: PRIORITY.other }),
   phasedThrough: () => ({ text: "You step through it like a rumour of a wall.", tone: "hit", priority: PRIORITY.other }),
   // Phase 41 (TERR-02): entering a water cell (once per wade, not per step).
@@ -1023,6 +1031,13 @@ export const LINE_FOR = {
     text: `Camp +${e?.amount ?? 0} hp${e?.doubled ? ` · ${e.doubled}, doubled` : ""}`,
     tone: "hit",
     priority: PRIORITY.feature,
+  }),
+  // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
+  // identity (0) never pushes this event.
+  floorRegen: (e) => ({
+    text: `A new floor, and the dungeon lets you keep +${e?.amount ?? 0} hp of it. Do not mistake this for kindness.`,
+    tone: "hit",
+    priority: PRIORITY.other,
   }),
   // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
   // the game — the "cloakHealed" event type no longer exists anywhere.

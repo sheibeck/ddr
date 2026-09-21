@@ -15,7 +15,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { genFloor } from "../../engine/maze.js";
 import { makeRng } from "../../engine/rng.js";
-import { isBreather, ENCOUNTER_DOT_CAP } from "../../engine/difficulty.js";
+import { isBreather, difficultyCurve } from "../../engine/difficulty.js";
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => 1000 + i);
 const DEEP_DEPTHS = [6, 10, 20, 50, 100];
@@ -65,15 +65,22 @@ test("fairness: dark-tile coverage never exceeds the fairness fraction on deep f
   }
 });
 
-test("fairness: placed 'dot' count never exceeds ENCOUNTER_DOT_CAP on deep floors", () => {
+// Phase 54 (BAND-02, USER RULING D): ENCOUNTER_DOT_CAP is retired — the
+// global ENCOUNTER_DOTS dial is uncapped at identity (= canon 9+depth,
+// matching genFloor's own placement target exactly). The fairness invariant
+// this test protects is now "the placed count never exceeds the SAME curve
+// genFloor itself was told to place" — a structural equality, not a magic
+// number.
+test("fairness: placed 'dot' count never exceeds the curve's own target on deep floors", () => {
   for (const seed of SEEDS) {
     for (const depth of DEEP_DEPTHS) {
       const floor = genFloor(depth, makeRng(seed));
       const counts = countFeats(floor.g);
       const dots = counts.dot || 0;
+      const target = difficultyCurve(depth).dots;
       assert.ok(
-        dots <= ENCOUNTER_DOT_CAP,
-        `seed ${seed} depth ${depth}: dot count ${dots} exceeds ENCOUNTER_DOT_CAP ${ENCOUNTER_DOT_CAP}`,
+        dots <= target,
+        `seed ${seed} depth ${depth}: dot count ${dots} exceeds the curve's own target ${target}`,
       );
     }
   }

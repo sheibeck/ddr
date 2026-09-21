@@ -52,7 +52,7 @@ const ENGINE_DIR = path.join(REPO_ROOT, "engine");
 // (never a literal `type: "..."` string at the actual push site) that must
 // still be unioned into the canonical set. "moved" is deliberately NOT
 // listed here — see the module header's exclusion note.
-const KNOWN_INDIRECT_TYPES = ["died", "leveled", "spGained", "floorChanged", "teleported"];
+const KNOWN_INDIRECT_TYPES = ["died", "leveled", "spGained", "floorChanged", "teleported", "floorRegen"];
 
 /**
  * stripComments(source) — strips /* *\/ block comments and // line comments,

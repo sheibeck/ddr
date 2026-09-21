@@ -258,12 +258,16 @@ function seedFor(i) {
   return i * 7919 + 1;
 }
 
-test("CAD-03 (SC3): Bat/Rat floor-5 fights never exceed 2 attacks per player action", () => {
+// Phase 54 (BAND-02, USER RULING D): foe level keys to DEPTH now, never the
+// hero's level — floor 5 now maps to tier 2 (foeLevelFor(5) === 2), so a
+// tier-1 Beasts creature (Bat/Rat) is no longer reachable there. Floor 1 is
+// tier 1's own floor under the identity map ("1111222223333...").
+test("CAD-03 (SC3): Bat/Rat floor-1 fights never exceed 2 attacks per player action", () => {
   let sampled = 0;
   for (let i = 0; i < CAD03_SEEDS; i++) {
     const seed = seedFor(i);
     const state = newRun(seed);
-    state.floor.depth = 5;
+    state.floor.depth = 1;
     const rng = makeRng(state.rngState);
     const encEvents = [];
     startCombat(state, true, "Beasts", rng, encEvents);

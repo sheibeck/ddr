@@ -34,9 +34,9 @@ intent artifact).
 | action-script.movement.json | (script) | 256 | none | — | — |
 | action-script.combat.json | win | 3 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
+| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose-plain | 1119 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
+| action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 8); Ned (Humans lvl 1, wp 8) |
 | action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.magic.json | heal | 7 | none | — | — |
@@ -2226,4 +2226,175 @@ change to `forceParty` itself); `src/browser/`, `mazeworld.html` and
 `j.lvl ?? j.level ?? 1` / `m.lvl ?? m.level ?? 1` reads already in the rail
 card and the Hero tab's Company panel — no shell edit needed, source-pinned
 by `test/unit/joiner-level-cap.test.js`'s own SC3 test).
+
+## Phase 54: the global difficulty model (USER RULING D, BAND-02) — measured set, declared per site
+
+### The rule
+
+The five-rung floor-range knot ladder (commits `b0facb6`..`1cb56c6`) is
+retired outright. USER RULING D — "remove one-off hacks and bandaids that
+try to get bands by floor ranges, and establish dials that work on the
+dungeon as a whole" — replaces it with a single frozen `DIALS` object
+(`engine/difficulty.js`): every dial is ONE number or `{ base, perDepth }`
+(a smooth slope over depth, never a floor-range knot), evaluated by
+`difficultyCurve(depth)` and applied through pure helpers at every
+consumer. Removed outright: `COMBAT_SCALE_FROM_DEPTH`, `FOE_CAP_*`,
+`FOE_POWER_*`, `ABILITY_THREAT_BASE/MAX/SOFT_K`, `FOE_LVL_BIAS`,
+`FOE_GRACE_AT_*`, `HAZARD_FROM_DEPTH`, `HAZARD_SCALE_AT_*`,
+`WALL_*`/`BREAKAWAY_*`/`ENDGAME_*`, `ENCOUNTER_DOT_BASE/CAP/SOFT_K`,
+`DENSITY_CANON_THROUGH_DEPTH`, `DARK_HOLD_THROUGH_DEPTH`,
+`DARK_RADIUS_BASE`, and the helpers `softCap`/`softCapFloat`/`bandLerp`/
+`knotFoePowerFor`/`knotHazardFor`/`knotAbilityThreatFor`/`foeDmgBonusFor`
+(the full remove list, with what replaced each, lives in
+`docs/DIFFICULTY-RETUNE.md`'s `#### Identity commit` section).
+
+This plan lands every dial AT IDENTITY where an identity exists
+(`difficultyCurve(1)` reads canon exactly; a floor-1 fixture with no
+failed climb/leap, no table-four HP dot, no fed night and no
+level-cap-limited count roll is byte-identical). What moves at identity is
+exactly and only five things: (1) `FOE_LEVEL` (no identity exists —
+foe level now keys to DEPTH, never the hero's level, replacing
+`min(c.level, depth)`; landed at `{ base: 0.6, perDepth: 0.2 }`, whose
+map(1) = 1 keeps every floor-1 fight); (2) the level-keyed foe-count cap
+(`c.level <= 2 ? 2 : 3`, removed — cap 3 everywhere via `FOE_COUNT_TABLE`
+row 0, identity); (3) the table-four HP dots (fractions of `c.maxWP`,
+mean-matched at level 1); (4) the rested-night camp heal (`CAMP_HEAL_
+FRACTION × maxWP` + the same d10 draw, mean-matched at level 1); (5) the
+one-and-done climb/leap rule (a bug fix, not a dial — folded in this same
+commit). Every fixture-exposed site this plan's measurement actually
+found moving falls under cause (2) or (3) — no fixture-exposed site ever
+triggers (4) or (5) (see the predictor below); cause (1) never moves a
+fixture on its own (floor 1 is `FOE_LEVEL`'s own identity map(1) = 1).
+
+### The predictor — identity-commit exposure per site
+
+Measured by the same 31-site scratch replay every prior phase section in
+this document uses (`newRun(seed)` → `applyStartCombat`/an internal-call
+clone-rehydrate-persist shape/`applyAction`, never a standalone committed
+tool), checking each site for: a count-roll `encounterStarted` whose
+`foes.length` exceeds the canon 2-foe cap (level-cap roll), a `tableFour`
+event (table-four HP dot), a `rationsEaten` event (fed night — camp heal
+runs unconditionally alongside it), a `fellClimbing`/`fellInGorge` event
+(failed climb/leap), and whether any fight in the site's script happens
+at `state.floor.depth >= 2` (foe-level-from-depth exposure — every
+fixture-exposed fight is floor 1, so this column is a sanity check, not a
+mover source):
+
+| Fixture#site | Seed | level-cap roll? | table-four HP dot? | fed night? | failed climb/leap? | fight at depth >= 2? |
+|---|---|---|---|---|---|---|
+| chargen#1..chargen#35 (14 seeds) | 1,2,3,4,6,7,8,13,15,19,24,29,32,35 | n/a (no actions) | n/a | n/a | n/a | n/a |
+| movement#256 | 256 | no | no | yes | no | no |
+| combat#win | 3 | no | no | no | no | no |
+| combat#lose | 14 | no | no | no | no | no |
+| combat#lose-apprentice | 127 | **YES** | no | no | no | no |
+| combat#lose-plain | 1119 | no | no | no | no | no |
+| combat#flee | 17 | **YES** | no | no | no | no |
+| combat#parley | 303 | no | no | no | no | no |
+| magic#cast-damage | 8 | no | no | no | no | no |
+| magic#heal | 7 | no | no | no | no | no |
+| magic#potion | 1 | no | no | no | no | no |
+| magic#scroll | 7 | no | no | no | no | no |
+| economy#3 | 3 | no | no | no | no | no |
+| encounters#trap | 1 | no | no | no | no | no |
+| encounters#chest | 2 | no | no | no | no | no |
+| encounters#tablefour | 3 | no | **YES** (+25 HP) | no | no | no |
+| encounters#faerie | 38 | no | no | no | no | no |
+| encounters#affliction | 160 | no | no | no | no | no |
+
+`movement#256`'s "fed night: yes" does NOT move the movement fixture — its
+character's wp happens to already be at (or the campHealFor/canon
+formulas happen to coincide for) the exact roll this script draws, so the
+byte-diff stays clean (confirmed by `movement-parity.test.js` staying
+green with zero declared divergence for this phase). Three sites predict
+(and are measured, below, to actually) move: `combat#lose-apprentice` and
+`combat#flee` (level-cap cause) and `encounters#tablefour` (dot-hp cause).
+
+### The live scan (identity commit)
+
+`node tools/initiative-fixture-scan.mjs | diff - tools/initiative-fixture-
+scan-output.txt` (re-run on the Task-1-edited engine) shows exactly:
+
+- the table row for `#lose-apprentice`: `divergence.phase` `31+51` →
+  `31+51+54`; `maxRound` `7` → `15`
+- the table row for `#flee`: `divergence.phase` `none` → `54`;
+  `firstDivergentAction` `never` → `0`
+- the Record values section for `#lose-apprentice`: `fields.after (engine
+  @end)` `{"wp":23,"sp":40,"gold":52,"kills":2,"rations":6}` →
+  `{"wp":23,"sp":60,"gold":50,"kills":2,"rations":4}`; `maxRound` `7` →
+  `15`; `divergence.phase` `31+51` → `31+51+54`
+
+Part A's `MOVED SET (3)` / `INITIATIVE EXPOSURE: 3 of 31 replay sites`
+lines are unchanged (Phase 51's own invariant — a foe-count/dot-hp move is
+not a round-advance event, so this scan carries no predictor of its own
+for this phase's causes; it is re-run anyway as the Part B cross-check).
+The full parity suite (`node --test test/parity/*.test.js`) reports
+**43/43 pass, fail 0** after the two combat-fixture records + the one
+encounters-fixture record land (the encounters loop in both
+`economy-parity.test.js` and `full-suite.test.js` gained the same
+`actionPathDivergenceOf`/`skipsByteDiffAt`/`declaredEndDiffs` support
+`combat-parity.test.js`'s scenario loop already had — a test-infrastructure
+addition, not an engine change, needed because no encounters scenario had
+ever declared an action-path record before this phase).
+
+### Moved set — declared records (identity commit)
+
+**MOVED SET (3): `action-script.combat.json#lose-apprentice`,
+`action-script.combat.json#flee`, `action-script.encounters.json#tablefour`.**
+
+| Holder | Cause | fromAction | fields before (prototype) | fields after (engine) |
+|---|---|---|---|---|
+| `action-script.combat.json#lose-apprentice` | level-cap | 0 (unchanged — already diverged since Phase 31) | `{wp:0,sp:0,gold:50,kills:0,rations:4}` | `{wp:23,sp:60,gold:50,kills:2,rations:4}` (was `{wp:23,sp:40,gold:52,kills:2,rations:6}`) |
+| `action-script.combat.json#flee` | level-cap | 0 (new — combat.foes.length 2 vs 3 at startCombat) | `{wp:40,sp:0,gold:50,kills:0,rations:5}` | `{wp:40,sp:0,gold:50,kills:0,rations:5}` (identical — flee never touches foe hp/kills/loot) |
+| `action-script.encounters.json#tablefour` | dot-hp | 0 (new — c.maxWP 65 vs 64 at encounterDot) | `{wp:65,maxWP:65}` | `{wp:64,maxWP:64}` |
+
+`test/parity/divergence-records.test.js`'s new `BAND-02 (USER RULING D)`
+test is the standing guard proving the holders declaring `phase` `54` are
+exactly this 3-site measured set — if a future engine change moves a
+different site, that test fails first. The same guard also pins
+`difficultyCurve(1)` to the identity column (byte-identical to the Phase
+53 curve minus the retired `foeCap`/`foeBonus`/`foeLvlBias` fields, plus
+the new `foeHitScale`/`foeHpScale`/`storeTier` fields, all at 1/1/0) and
+proves the count roll's canon draw shape holds at every `FOE_COUNT_SKEW`
+row (0..4).
+
+### Draw-count pins
+
+The count roll keeps the EXACT canon draw shape: `foeCountFor(rng.d(4), ()
+=> rng.d(4))` draws exactly one d4 when the first roll is <= 2, exactly
+two when it is > 2 — verified for every `FOE_COUNT_SKEW` row (0..4) by
+`divergence-records.test.js`'s own guard, not just the identity row.
+`combat#lose-apprentice`/`combat#flee`'s extra Shriek costs exactly one
+MORE `rng.d(4)` (the per-foe tier-bleed roll) than before — no roster-pick
+draw is added (`rng.pick` stays undrawn in the fixture harness's default
+picker). The one-and-done climb block's draws per attempt are UNCHANGED
+(the retry loop is gone, not any roll — same rolls, same order, see
+`test/unit/one-and-done-lines.test.js`). `newDay`'s d10 stays the SAME
+single draw in the SAME position (`campHealFor(maxWP, rng.d(10))`).
+`difficultyCurve` stays draw-free (arity 1, zero rng — pinned by
+`test/difficulty/difficulty.test.js`).
+
+### Byte-identical elsewhere (identity commit)
+
+The remaining 28 of 31 replay sites (all 14 chargen seeds, movement,
+`combat#win`/`lose`/`lose-plain`/`parley`, all four magic scenarios,
+economy, and `encounters#trap`/`chest`/`faerie`/`affliction`) carry none
+of the five identity-commit exposure causes in their fixed action scripts
+(the predictor table above) and are therefore untouched by this plan's
+engine edit — the chargen seed set (Phase 45's own `divergences` map) is
+completely unaffected (no chargen-time field this plan touches).
+`test/parity/prototype-master.js.txt` hash is unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`);
+`test/parity/harness/comparables.js` is untouched (no new serialized
+field — `HERO_HP_SCALE`/`HERO_REGEN_PER_FLOOR`/`FOOD_CLOCK` touch only
+`c.maxWP`/`c.wp`/`c.rations` at chargen/level-up/floor-arrival, all
+pre-existing fields); `content/`, `tools/lib/tuning-bot.mjs` and
+`test/parity/harness/comparables.js` are untouched end to end (`git diff
+--stat <PRE_MODEL> -- content/ tools/lib/tuning-bot.mjs test/parity/
+harness/comparables.js test/parity/prototype-master.js.txt` empty at
+every commit).
+
+54-06/54-07 append their own `### Fitted dials — measured set` section
+after the fit lands; every record's `after` value here is re-measured
+there against the fitted (non-identity) dial values — this section
+records the IDENTITY commit only.
 

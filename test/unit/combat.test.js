@@ -35,7 +35,10 @@ import {
   applyFoeDamageToPlayer,
 } from "../../engine/combat.js";
 import { weaponDamage } from "../../engine/derived.js";
-import { FOE_CAP_MAX } from "../../engine/difficulty.js";
+// Phase 54 (BAND-02, USER RULING D): FOE_CAP_MAX is retired — foe count is
+// now FOE_COUNT_TABLE-bounded (identity FOE_COUNT_SKEW row 0 tops out at 3,
+// the same canon ceiling the retired constant used to enforce structurally).
+const FOE_COUNT_MAX = 3;
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -1168,13 +1171,10 @@ test("allyTurn: a summoned ally strikes for the player and eventually departs", 
 // --- high-depth regression (03-02, RUN-02/RUN-03) --------------------------
 //
 // endless descent (Plan 02) means state.floor.depth can grow arbitrarily
-// large with no cap. Phase 21 (TUNE-01/TUNE-03) is a DELIBERATE RULES CHANGE
-// to the foe-count ceiling: startCombat's canon tier clamp (foe.lvl <= 5) is
-// still untouched, but the count clamp now soft-caps toward FOE_CAP_MAX
-// (docs/DIFFICULTY-RETUNE.md) instead of the old flat 3 — bigger fights deep
-// is the retune's whole point (D-02). This sweep proves both clamps still
-// hold BOUNDED (never unbounded) at absurd depth, against the current
-// FOE_CAP_MAX rather than a stale pre-Phase-21 literal.
+// large with no cap. Phase 54 (BAND-02, USER RULING D) replaces the retired
+// floor-range foe-count ceiling with FOE_COUNT_TABLE (identity row 0 tops
+// out at 3, same as canon) — this sweep proves both the tier clamp
+// (foe.lvl <= 5) and the count clamp stay BOUNDED at absurd depth.
 
 test("startCombat: foe tier and count clamps stay bounded at arbitrarily large floor.depth", () => {
   // Read the roster off the "encounterStarted" event rather than
@@ -1194,8 +1194,8 @@ test("startCombat: foe tier and count clamps stay bounded at arbitrarily large f
       assert.ok(foe.lvl >= 1, `depth ${depth}: foe level ${foe.lvl} must stay >= 1`);
     }
     assert.ok(
-      started.foes.length <= FOE_CAP_MAX,
-      `depth ${depth}: foe count ${started.foes.length} must stay <= FOE_CAP_MAX (${FOE_CAP_MAX})`,
+      started.foes.length <= FOE_COUNT_MAX,
+      `depth ${depth}: foe count ${started.foes.length} must stay <= FOE_COUNT_MAX (${FOE_COUNT_MAX})`,
     );
   }
 });

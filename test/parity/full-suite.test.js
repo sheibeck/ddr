@@ -358,6 +358,10 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // a declared chargenDivergence.
       const shift = chargenShiftOf(scenario);
       const cmp = shift ? (s) => stripChargenShift(economyComparable(s), shift) : economyComparable;
+      // Phase 54 (BAND-02, USER RULING D): a scenario MAY also carry an
+      // "action-path" divergence record — mirrors economy-parity.test.js's
+      // own encounters loop (the two replay sites must agree).
+      const pathDiv = actionPathDivergenceOf(scenario);
       const ctx = loadPrototypeSandbox({ seed: scenario.seed });
       let engineState = newRun(scenario.seed);
       if (shift) {
@@ -369,9 +373,16 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       scenario.actions.forEach((action, i) => {
         const { state } = runEconomyAction(ctx, engineState, action);
         engineState = state;
-        const d = diffState(cmp(ctx.S), cmp(engineState));
-        assert.equal(d, null, `encounters scenario ${scenario.name}, action ${i}: diverged at ${d}`);
+        if (!skipsByteDiffAt(pathDiv, i)) {
+          const d = diffState(cmp(ctx.S), cmp(engineState));
+          assert.equal(d, null, `encounters scenario ${scenario.name}, action ${i}: diverged at ${d}`);
+        }
       });
+      if (pathDiv) {
+        const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+        assert.equal(ends.before, null, `encounters scenario ${scenario.name}: prototype end-state != declared before at ${ends.before}`);
+        assert.equal(ends.after, null, `encounters scenario ${scenario.name}: engine end-state != declared after at ${ends.after}`);
+      }
     }
   });
 

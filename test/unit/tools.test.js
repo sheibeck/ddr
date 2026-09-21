@@ -440,20 +440,24 @@ test("move: a second move(E) at the pending tile declines — no new hazardChoic
   assert.ok(events.some((e) => e.type === "climbedOver" || e.type === "fellClimbing"));
 });
 
-test("move: after a declined fellClimbing, pendingHazard is still present with declined:true; a third move(E) rolls again with no new hazardChoice", () => {
+// DELIBERATE RULES CHANGE (Phase 54, 2026-09-21, USER RULING D, one-and-done):
+// a failed climb/leap no longer leaves the hero (or the pending-hazard
+// record) parked for a retry — the feature is consumed and the hero crosses
+// either way, and the genuine-step tail (which clears pendingHazard on every
+// resolved decision) always runs, whether the roll passed or failed. The old
+// "wall is still there to retry" / "a third move(E) rolls again" premise is
+// gone: there is no third roll, because there is no wall left.
+test("move: after a declined fellClimbing, the hero still crosses (one and done) — feat cleared, pendingHazard cleared, draggedOver fires", () => {
   const state = fixedState({ c: { items: [toolItem("ladder")] } });
   open(state.floor.g, 6, 5, { feat: "climb" });
   move(state, "E", fakeRng([]), []); // the pending card
   // feet=20; first rung fails (9>7); fall check d20=15 (>2, hurt rolls); d6=4.
   const failEvents = move(state, "E", fakeRng([1, 9, 15, 4]), []);
   assert.ok(failEvents.some((e) => e.type === "fellClimbing"));
-  assert.deepStrictEqual(state.pendingHazard, { feat: "climb", dir: "E", tool: "ladder", declined: true });
-  assert.equal(state.floor.g[5][6].feat, "climb", "the wall is still there to retry");
-
-  // a third move(E): rolls again (declined stays true, no new prompt).
-  const thirdEvents = move(state, "E", fakeRng([1, 5, 5]), []);
-  assert.equal(thirdEvents.some((e) => e.type === "hazardChoice"), false);
-  assert.ok(thirdEvents.some((e) => e.type === "climbedOver"));
+  assert.ok(failEvents.some((e) => e.type === "draggedOver" && e.feat === "climb"), "a survived failure still crosses");
+  assert.equal(state.pendingHazard, null, "the genuine step tail resolves the decision — one and done, no retry to track");
+  assert.equal(state.floor.g[5][6].feat, null, "one and done: the feature is consumed even on a failed roll");
+  assert.equal(state.floor.px, 6, "one and done: the hero crossed despite the failed roll");
 });
 
 test("move: moving to a free tile instead clears pendingHazard to null", () => {

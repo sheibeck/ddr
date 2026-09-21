@@ -39,7 +39,20 @@ import assert from "node:assert/strict";
 import { makeRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/engine.js";
 import { startCombat, fight, playerStrike, foeTurn } from "../../engine/combat.js";
+import { foeLevelFor } from "../../engine/difficulty.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
+
+/** firstDepthOfTier(tier) — Phase 54 (BAND-02, USER RULING D): foe level is
+ * now a function of DEPTH (foeLevelFor), never the hero's level — the first
+ * depth whose foeLevelFor(d) === tier, scanned live (never hand-computed;
+ * the map is re-derived here so a future FOE_LEVEL dial move re-anchors
+ * this suite automatically instead of silently desyncing). */
+function firstDepthOfTier(tier) {
+  for (let d = 1; d <= 60; d++) {
+    if (foeLevelFor(d) === tier) return d;
+  }
+  throw new Error(`firstDepthOfTier: no depth in 1..60 maps to tier ${tier}`);
+}
 
 // --- countingRng: verbatim copy of test/unit/foe-turn-draw-count.test.js's
 // helper — a test file cannot import another test file without running its
@@ -85,21 +98,14 @@ function countingRng(inner) {
 // roster contains a foe named `want` with a non-empty `abilities` array; test
 // 1 below re-derives this from scratch every run.
 
+// Phase 54 (BAND-02, 2026-09-21, USER RULING D): depth re-anchored via
+// firstDepthOfTier (foeLevelFor) — foe level keys to DEPTH now, never the
+// hero's level, and every dial lands at IDENTITY this plan (no grace/knot
+// easing at any depth). Every seed below was re-derived live by test 1
+// (firstCasterSeed), never hand-computed.
 const ENCOUNTERS = [
-  // Phase 27 (2026-09-15, TUNE-06): was seed 1 — Dante was appended to
-  // Humans tier 2, so the tier-2 rng.pick roster grew from [China Wolf,
-  // Krupke] to [China Wolf, Krupke, Dante]; seed 1 now rolls Dante x2, and
-  // the first seed whose tier-2 roster contains Krupke moved to 3
-  // (re-derived live by test 1 below, never hand-computed).
   { key: "humans-t2", type: "Humans", tier: 2, want: "Krupke", seed: 3 },
-  // Phase 54 rung 4 (2026-09-21, USER RULING C): FOE_GRACE_AT_4 dropped to
-  // 0.38 — seed 1's Drudge pair now copy-time wp 3 (< 5), triggering the
-  // canon "a Knight is beneath the notice of small things" rule
-  // (engine/combat.js: `c.sub === "Knight" && f.maxWP < 5` -> foeFled) before
-  // any playerStrike; the first seed whose tier-4 Magical roster still rolls
-  // a live, non-fled Drudge moved to 2 (re-derived live by test 1 below,
-  // never hand-computed).
-  { key: "magical-t4", type: "Magical", tier: 4, want: "Drudge", seed: 2 },
+  { key: "magical-t4", type: "Magical", tier: 4, want: "Drudge", seed: 1 },
   { key: "demons-t5", type: "Demons", tier: 5, want: "Djinni", seed: 1 },
   { key: "walking-dead-t5", type: "Walking Dead", tier: 5, want: "Vampire", seed: 1 },
   { key: "beasts-t5", type: "Beasts", tier: 5, want: "Stalka Beast", seed: 1 },
@@ -115,8 +121,11 @@ const VISITS = 12;
  * rng that drove it so callers can keep drawing from the same cursor. */
 function setupEncounter(spec, seed) {
   const state = newRun(seed);
+  // Phase 54 (BAND-02, USER RULING D): depth re-anchored to the tier's first
+  // floor (foeLevelFor); hero level no longer drives the roster at all, but
+  // is still set for parity with any level-keyed narration/skill checks.
   state.c.level = spec.tier;
-  state.floor.depth = spec.tier;
+  state.floor.depth = firstDepthOfTier(spec.tier);
   const start = state.rngState;
   const rng = countingRng(makeRng(start));
   const events = [];
@@ -224,127 +233,27 @@ function runVisits(spec, visits) {
 // re-measured live against the patched engine via this file's own
 // runFullFight helper, never hand-computed — same "pins are measured, not
 // adjusted" rule as test/unit/foe-turn-draw-count.test.js.
+// Phase 54 (BAND-02, 2026-09-21, USER RULING D): every number below is
+// re-measured live against the identity-commit engine (depth re-anchored
+// via firstDepthOfTier; every dial at its identity value — foeHitScale/
+// foeHpScale/hazardScale all 1, no grace/knot easing anywhere). History (the
+// five-rung knot ladder's own pin moves) lives in docs/DIFFICULTY-RETUNE.md,
+// not here. walking-dead-t5 now resolves "died" — WITHOUT the retired
+// grace-band easing, a tier-5 Vampire pair at full canon strength is once
+// again lethal to this seed's hero; this is the correct, measured identity
+// behavior (54-06/54-07's fit is what re-softens the curve).
 const FULL_FIGHT_PINS = {
-  // Phase 27 (2026-09-15, TUNE-06): was seed 1, foeNames ["Krupke",
-  // "Krupke"], totalDraws 59, attacks 4 — Dante appended to Humans tier 2
-  // shifted the first-Krupke seed to 3, whose tier-2 roll is a single
-  // Krupke (re-measured live via runFullFight, never hand-computed).
-  //
-  // Phase 27 Task 3 (foe grace, floors 2-4): re-measured a SECOND time after
-  // landing FOE_GRACE_AT_2 (0.75) — this Krupke's copy-time wp drops 17 ->
-  // 13 and it now carries a negative dmgBonus (-1), but neither totalDraws
-  // nor attacks/outcome changes (the fight still resolves in one hit either
-  // way) — confirmed live, not assumed. magical-t4 (depth 4, foePower
-  // 0.9167) was re-measured the same way with the same result.
-  //
-  // 27-03 iteration 2 (FOE_GRACE_AT_2 0.75 -> 0.5): re-measured a THIRD
-  // time (humans-t2 depth-2 foePower now 0.5, magical-t4 depth-4 foePower
-  // now 0.8333) — both fights still resolve at the same totalDraws/attacks/
-  // outcome, confirmed live via this file's own runFullFight/runVisits
-  // helpers (the deeper wp cut still rounds to a fight that resolves the
-  // same way).
-  // Phase 39 (GEAR-01, 2026-09-18): seed 1's Fridgian Knight wields an Awl
-  // Pike (KIT-issued) — re-diced 2026-09-18 from d8+2 (n:1) to 2d6+2 (n:2,
-  // need:-1, crit:1), a genuinely stronger, more reliable heavy weapon. All
-  // four seed-1 fights (magical-t4/demons-t5/walking-dead-t5/beasts-t5) were
-  // re-measured live via this file's own runFullFight — humans-t2 (seed 3,
-  // a Dagger-wielding Pickpocket) is untouched. beasts-t5 flips from "died"
-  // to "won" (see its own comment below); walking-dead-t5's totalDraws/
-  // attacks shrink (the heavier hits resolve the same "died" outcome one
-  // attack sooner) but its outcome is unchanged — an intentional,
-  // escalated, rationale-bearing divergence per this file's own header
-  // rule, not a regression.
-  // Phase 51 (INIT-01, 2026-09-20): initiative once per fight reshuffles the
-  // shared rng stream for every multi-round fight — re-measured live via
-  // this file's own runFullFight, never hand-computed. humans-t2 (a
-  // one-attack fight) and walking-dead-t5 (a one-attack fight) are
-  // unaffected, confirmed by re-measuring both.
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
-  // Phase 54 rung 4 (USER RULING C, 2026-09-21): FOE_GRACE_AT_4 0.52 -> 0.38
-  // — seed 1's Drudge pair now copy-time wp 3 (< 5), so BOTH flee via the
-  // canon "a Knight is beneath the notice of small things" rule before any
-  // playerStrike (ENCOUNTERS' own seed moved to 2 — see that array's
-  // comment). Seed 2 rolls a SINGLE Drudge (also wp 3, but this seed's
-  // roster composition differs) — re-measured live via this file's own
-  // runFullFight, never hand-computed.
-  "magical-t4": { foeNames: ["Drudge"], totalDraws: 10, attacks: 1, outcome: "won" },
-  // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
-  // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 41/3 ->
-  // 35/2, outcome unchanged ("won"). The softer Djinni pair dies one attack
-  // sooner under the fitted grace.
-  // Phase 54 rung 4: unchanged (35/2, "won") — re-measured live, confirmed
-  // no further move at this rung's depth-5 values.
-  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 35, attacks: 2, outcome: "won" },
-  // Phase 52 (DMG-02, 2026-09-20): re-measured live — 23/1 -> 48/3, outcome
-  // unchanged ("died"). This seed-1 Vampire's own crit (roll 1, a d4 dice)
-  // used to double the WHOLE lvl^2+dmgBonus+dice sum, killing the hero on
-  // attack 1; under the new dice-only-doubling rule the same crit lands for
-  // less, so the hero survives two more of the hero's own strikes before the
-  // fight ends the same way (still a loss). A FULL_FIGHTS-shaped row is
-  // explicitly allowed to move when the smaller crit number changes a
-  // fight's length (this plan's own Step 3 rule) — not a regression.
-  // Phase 54 rung 1 (BAND-02, 2026-09-21): depth-5 foePower 1.0 -> 0.85 —
-  // demons-t5 / walking-dead-t5 / beasts-t5 re-measured live via this file's
-  // own runFullFight (never hand-computed); only walking-dead-t5 moved (48
-  // -> 47 draws, attacks unchanged at 3, outcome flips "died" -> "won" — the
-  // softer Vampire wp/crit at 0.85 foePower is now survivable across the
-  // same three attacks). humans-t2 (depth 3) and magical-t4 (depth 4) are
-  // outside the Wall band and untouched.
-  // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
-  // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 47/3
-  // -> 46/3, outcome unchanged ("won"); one fewer draw, same attack count.
-  // Phase 54 rung 4: depth-5 foePower 0.51 -> 0.35 — re-measured live: 46/3
-  // -> 35/2, outcome unchanged ("won"). The still-softer Vampire pair dies
-  // one attack sooner.
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 35, attacks: 2, outcome: "won" },
-  // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
-  // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
-  // and rats" (Beasts), so this Beasts-forced encounter now triggers
-  // combat.afraid = 2 at Fight! instead of the old freeze/shake-off. Every
-  // `playerStrike` is now a real (if weakened) swing from action 1, so the
-  // fight resolves one attack sooner; the hero still dies. Re-measured live
-  // via this file's own runFullFight, never hand-computed. The per-visit
-  // pins below (PER_VISIT_PINS) are UNCHANGED — runVisits never calls
-  // playerStrike, so the Afraid penalty (which only touches the player's
-  // own strikes) has no effect on foeTurn's own draws.
-  //
-  // Phase 39 (GEAR-01, 2026-09-18): the Awl Pike re-dice (see the header
-  // comment above this table) flips this fight's outcome from "died" to
-  // "won" too — the Afraid penalty still halves the hero's damage, but even
-  // halved, the heavier 2d6+2 base now outpaces the Stalka Beast's own
-  // damage. Re-measured live, not assumed.
-  // Phase 51 (INIT-01, 2026-09-20): re-measured live — 67/4 -> 73/6. The foe
-  // no longer gets a same-cycle second turn, reshuffling every downstream
-  // draw in the shared rng stream; still resolves "won", one attack later.
-  // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
-  // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 73/6
-  // -> 48/3, outcome unchanged ("won"). The much softer Stalka Beast pair
-  // dies in half the attacks.
-  // Phase 54 rung 4: depth-5 foePower 0.51 -> 0.35 — re-measured live: 48/3
-  // -> 45/4, outcome unchanged ("won").
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 45, attacks: 4, outcome: "won" },
+  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 4, outcome: "won" },
+  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 41, attacks: 3, outcome: "won" },
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 48, attacks: 3, outcome: "died" },
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 73, attacks: 6, outcome: "won" },
 };
 
 const PER_VISIT_PINS = {
-  // Phase 27 (2026-09-15, TUNE-06): was seed 1's [4,4,4,4,5,4,4,4,4,4,5,5] —
-  // re-measured at the new seed 3 (single Krupke, not two).
   "humans-t2": [3, 2, 2, 3, 3, 4, 2, 3, 3, 2, 2, 3],
-  // Phase 54 rung 4 (USER RULING C, 2026-09-21): magical-t4's spec seed
-  // moved 1 -> 2 (see ENCOUNTERS' own comment) — re-measured live at the
-  // new seed via this file's own runVisits, never hand-computed.
-  "magical-t4": [2, 3, 2, 3, 1, 1, 2, 1, 1, 2, 1, 1],
+  "magical-t4": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4],
   "demons-t5": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
-  // RE-MEASURED (WR-01, 19-REVIEW-FIX.md): the vampireSummon reinforcement's
-  // `lvl` now correctly matches the tier-2 roster it was drawn from (2)
-  // instead of the summoner's own lvl (5, via `Math.max(1, f.lvl - 1)` = 4).
-  // This is a LEGITIMATE downstream draw-count change, not a regression: the
-  // reinforcement's to-hit die (`foeDie`, STRIKE_DICE[lvl-1]) is now a d12
-  // instead of a d8, so the SAME underlying rng float at each of its own
-  // to-hit rolls (from visit 7 onward, once the Skeleton/Google reinforcements
-  // start swinging) now lands on a different side of the hit/miss threshold,
-  // cascading into a different damage-roll draw or not. Draws 1-6 (before any
-  // reinforcement has taken its own swing) are unchanged. Old pin (pre-fix):
-  // [4, 6, 4, 6, 7, 5, 11, 10, 10, 9, 9, 8].
   "walking-dead-t5": [4, 6, 4, 6, 7, 5, 10, 10, 8, 8, 7, 10],
   "beasts-t5": [4, 6, 4, 6, 5, 4, 6, 8, 6, 4, 7, 5],
 };

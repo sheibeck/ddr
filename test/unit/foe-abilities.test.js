@@ -534,8 +534,12 @@ test("startCombat copies the kit only for caster rows (real bestiary)", () => {
   let chinaWolf = null;
   for (let seed = 1; seed <= 200 && (!krupke || !chinaWolf); seed++) {
     const s = newRun(1);
+    // Phase 54 (BAND-02, USER RULING D): foe level keys to DEPTH now, never
+    // the hero's level — depth 5 is the first floor whose foeLevelFor(d)
+    // reads tier 2 (the identity map "1111222223333..."), so this is where
+    // the tier-2 Humans roster (Krupke/China Wolf) becomes reachable.
     s.c.level = 2;
-    s.floor.depth = 2;
+    s.floor.depth = 5;
     startCombat(s, false, "Humans", makeRng(seed), []);
     if (!s.combat) continue;
     for (const f of s.combat.foes) {

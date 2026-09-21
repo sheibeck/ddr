@@ -122,6 +122,12 @@ export const EVENT_NARRATION = {
       : `<span class="miss">You are through. That door is furniture now — there is no coming back.</span>`,
   climbedOver: () => `<span class="hit">Over, and no worse for it.</span>`,
   leaptOver: () => `<span class="hit">Cleared it. No drama.</span>`,
+  // Phase 54 (BAND-02, USER RULING D): one-and-done — a failed climb/leap
+  // that still lands you on the far side.
+  draggedOver: (e) =>
+    e.feat === "gorge"
+      ? `<span class="hurt">Across, technically. The crevice kept your dignity as a toll.</span>`
+      : `<span class="hurt">Over, eventually. The wall took its cut on the way.</span>`,
   // audit-batch1 (2026-09-09, A2): Bracelet of Flight / Cloak of Flying skip
   // the climb/leap roll entirely — see engine/movement.js's climb/gorge
   // block. Wording deliberately terse for now; Batch 2 owns the full A1/A2
@@ -212,6 +218,9 @@ export const EVENT_NARRATION = {
   spellChargeRecovered: (e) =>
     `<span class="beat">Twenty quiet squares, and a spell charge is ready again</span> — ${e.charges ?? "?"} of ${e.max ?? "?"} in reserve. The dungeon keeps no such courtesy for you.`,
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
+  // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
+  // identity (0) never pushes this event.
+  floorRegen: (e) => `<span class="hit">A new floor, and the dungeon lets you keep +${e.amount ?? 0} hp of it.</span> Do not mistake this for kindness.`,
   rested: (e) =>
     `Rest restores <span class="hit">+${e.amount ?? 0} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
   // 260918-w4n (use-activated-only): the Cloak of Healing is removed from

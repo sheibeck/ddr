@@ -28,6 +28,16 @@
     },
     {
       "name": "tablefour", "seed": 3, "actions": [{ "type": "encounterDot" }],
+      "divergence": {
+        "phase": "54",
+        "requirements": ["BAND-02"],
+        "kind": "action-path",
+        "fromAction": 0,
+        "fields": ["wp", "maxWP"],
+        "before": { "wp": 65, "maxWP": 65 },
+        "after": { "wp": 64, "maxWP": 64 },
+        "rationale": "USER RULING D — global-difficulty (identity commit): dot-hp cause. This seed's encounterDot roll lands on Table Four's '+25 HP' row; the flat +25 is now dotHpFor(\"large\", c.maxWP) — a fraction of the hero's OWN maxWP (DOT_HP_FRACTION.large 0.6) so the dot is the same relative risk on every floor, at every hero HP scale. This chargen seed's pre-dot maxWP (40) yields round(0.6*40)=24, one less than the flat 25 the frozen prototype still grants, so both wp and maxWP land one lower (65 -> 64). Measured live via a direct encounterDot replay against both sides, never hand-typed."
+      },
       "chargenDivergence": {
         "phase": "38+45", "requirements": ["ABIL-02", "HEDGE-03"], "fields": ["skills", "items", "worn"],
         "before": {

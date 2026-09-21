@@ -57,6 +57,12 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
     // declared action-path divergence (the removed Fridgian corpse-whiff
     // draw + hide -2 mean the engine no longer dies at seed 14) — this row
     // (a plain Human, seed 127) restores byte-identical death-path coverage.
+    //
+    // Phase 54 (BAND-02, 2026-09-21, USER RULING D): the retired
+    // level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone —
+    // FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Shriek at this
+    // seed's count draw (declared, see the scenario's own `divergence`
+    // record).
     {
       fixture: "action-script.combat.json",
       scenario: "lose-apprentice",
@@ -64,6 +70,7 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       forced: "Beasts",
       foes: [
         { name: "Bat/Rat", type: "Beasts", lvl: 1, wp: 1 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
         { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
       ],
     },
@@ -82,6 +89,10 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       forced: "Beasts",
       foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 3 }],
     },
+    // Phase 54 (BAND-02, 2026-09-21, USER RULING D): the retired
+    // level-keyed foe-count cap is gone — this seed's count draw now rolls
+    // a THIRD Shriek too (declared, see the scenario's own `divergence`
+    // record).
     {
       fixture: "action-script.combat.json",
       scenario: "flee",
@@ -89,6 +100,7 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       forced: "Beasts",
       foes: [
         { name: "Viper", type: "Beasts", lvl: 1, wp: 3 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
         { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
       ],
     },

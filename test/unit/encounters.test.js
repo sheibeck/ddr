@@ -30,7 +30,7 @@ import {
   fallDark,
 } from "../../engine/encounters.js";
 import { GW, GH } from "../../engine/maze.js";
-import { HAZARD_SCALE_AT_START, WALL_HAZARD_SCALE, scaleHazard } from "../../engine/difficulty.js";
+import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, setDialsForTuning } from "../../engine/difficulty.js";
 import { makeRng } from "../../engine/rng.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -133,25 +133,32 @@ test("springTrap: a Spike trap's `times` multiplier is applied after the roll", 
   assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 15));
 });
 
-// Phase 27 (2026-09-15, TUNE-06) / Phase 54 (USER RULING C): hazardScale —
-// post-draw arithmetic, same canon roll as the Spike trap test above, but
-// at floors where hazardScale leaves identity via the per-floor knot table.
-// Zero extra rng draws either way. The expected damage is computed from the
-// LIVE knot constant (scaleHazard), not a hand-typed number.
-test("springTrap: at depth 2, hazardScale (HAZARD_SCALE_AT_START knot) scales the canon Spike damage", () => {
-  const state = fixedState({ floor: { depth: 2 } });
-  const events = springTrap(state, fakeRng([20, 8, 3]), []);
-  const expectedDmg = scaleHazard(15, { hazardScale: HAZARD_SCALE_AT_START });
-  assert.equal(state.c.wp, 40 - expectedDmg, `${expectedDmg} damage (canon 15, HAZARD_SCALE_AT_START ${HAZARD_SCALE_AT_START})`);
-  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === expectedDmg));
+// USER RULING D: HAZARD_SCALE is now a single global dial, identity
+// (`{ base: 1, perDepth: 0 }`) at every depth — floor 1 is no longer a
+// special case. Depth 1 and depth 5 (identity 1) leave the canon Spike
+// damage unchanged; a synthetic override proves scaleHazard is still wired
+// through the live curve.
+test("springTrap: hazardScale is identity (1) at every depth by default — the canon Spike damage is unchanged at depths 1, 2 and 5", () => {
+  for (const depth of [1, 2, 5]) {
+    const state = fixedState({ floor: { depth } });
+    const events = springTrap(state, fakeRng([20, 8, 3]), []);
+    assert.equal(state.c.wp, 40 - 15, `depth ${depth}: identity hazardScale leaves the canon 15 damage unchanged`);
+    assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === 15));
+  }
 });
 
-test("springTrap: at depth 5, hazardScale equals WALL_HAZARD_SCALE (1.0 today) — the Spike damage is unchanged", () => {
-  const state = fixedState({ floor: { depth: 5 } });
-  const events = springTrap(state, fakeRng([20, 8, 3]), []);
-  const expectedDmg = scaleHazard(15, { hazardScale: WALL_HAZARD_SCALE });
-  assert.equal(state.c.wp, 40 - expectedDmg, `${expectedDmg} damage (canon 15, WALL_HAZARD_SCALE ${WALL_HAZARD_SCALE})`);
-  assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === expectedDmg));
+test("springTrap: a synthetic HAZARD_SCALE override scales the Spike damage through the live curve (restored after)", () => {
+  const restore = setDialsForTuning({ HAZARD_SCALE: { base: 0.5, perDepth: 0 } });
+  try {
+    const state = fixedState({ floor: { depth: 5 } });
+    const events = springTrap(state, fakeRng([20, 8, 3]), []);
+    const expectedDmg = scaleHazard(15, difficultyCurve(5));
+    assert.equal(expectedDmg, 8, "round(15 * 0.5) = 8 (measured via scaleHazard itself)");
+    assert.equal(state.c.wp, 40 - expectedDmg);
+    assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === expectedDmg));
+  } finally {
+    restore();
+  }
 });
 
 // --- openChest ----------------------------------------------------------
@@ -245,10 +252,13 @@ test("encounterDot: a plain Table Four row (e.g. '+10 HP') applies directly, no 
   const state = fixedState({ c: { wp: 40, maxWP: 55 } });
   // d8=4, d10=1 -> ENCOUNTER_TABLES[3][0] === "+10 HP" (04.2 E3: was "+10 WP").
   const events = encounterDot(state, fakeRng([4, 1]), []);
-  assert.equal(state.c.wp, 50);
+  // Phase 54 (BAND-02, USER RULING D): the flat "+10 HP" dot is now
+  // dotHpFor("small", maxWP) — a fraction of the hero's own maxWP.
+  const expectedHeal = dotHpFor("small", 55);
+  assert.equal(state.c.wp, 40 + expectedHeal);
   assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 HP"));
   // The tableFour beat now carries a prose sentence, not the raw cell string.
-  assert.ok(events.some((e) => e.type === "tableFour" && /10 hp/.test(e.result)));
+  assert.ok(events.some((e) => e.type === "tableFour" && new RegExp(`${expectedHeal} hp`).test(e.result)));
 });
 
 test("encounterDot: 'Store' opens the shop with plain-data stock", () => {
@@ -276,6 +286,44 @@ test("tableFour: a lethal '-15 HP' row kills via die('maze')", () => {
   const events = tableFour(state, "-15 HP", fakeRng([]), []);
   assert.equal(state.dead, true);
   assert.ok(events.some((e) => e.type === "died" && e.cause === "maze"));
+});
+
+// DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21, USER RULING D):
+// every flat Table-4 ±HP dot is now DOT_HP_FRACTION of the hero's OWN
+// maxWP, and the XP dots ride HERO_SP_SCALE like a kill. maxWP 40 pins:
+// small = round(0.24*40) = 10, mid = round(0.36*40) = 14, large =
+// round(0.6*40) = 24 — measured via dotHpFor itself, never hand-typed.
+test("tableFour ±HP dots are fractions of maxWP (maxWP 40 -> +10/-10/-15 -> 10/10/14; +25 -> +24 maxWP)", () => {
+  assert.equal(dotHpFor("small", 40), 10);
+  assert.equal(dotHpFor("mid", 40), 14);
+  assert.equal(dotHpFor("large", 40), 24);
+
+  const plus10 = fixedState({ c: { wp: 20, maxWP: 40 } });
+  tableFour(plus10, "+10 HP", fakeRng([]), []);
+  assert.equal(plus10.c.wp, 30, "20 + dotHpFor(small,40)=10");
+
+  const minus10 = fixedState({ c: { wp: 20, maxWP: 40 } });
+  tableFour(minus10, "-10 HP", fakeRng([]), []);
+  assert.equal(minus10.c.wp, 10, "20 - dotHpFor(small,40)=10");
+
+  const minus15 = fixedState({ c: { wp: 30, maxWP: 40 } });
+  tableFour(minus15, "-15 HP", fakeRng([]), []);
+  assert.equal(minus15.c.wp, 16, "30 - dotHpFor(mid,40)=14");
+
+  const plus25 = fixedState({ c: { wp: 30, maxWP: 40 } });
+  tableFour(plus25, "+25 HP", fakeRng([]), []);
+  assert.equal(plus25.c.maxWP, 64, "40 + dotHpFor(large,40)=24");
+  assert.equal(plus25.c.wp, 54, "30 + dotHpFor(large,40)=24");
+});
+
+test("tableFour: +10 XP / +25 XP ride heroSpFor (identity: no-op)", () => {
+  const state10 = fixedState({ c: { sp: 0 } });
+  tableFour(state10, "+10 XP", fakeRng([]), []);
+  assert.equal(state10.c.sp, heroSpFor(10));
+
+  const state25 = fixedState({ c: { sp: 0 } });
+  tableFour(state25, "+25 XP", fakeRng([]), []);
+  assert.equal(state25.c.sp, heroSpFor(25));
 });
 
 test("tableFour: the 'wilmst cache' row pays a depth-scaled amount via goldGained, NO redundant beat, NO new rng (E10/ECON-09)", () => {

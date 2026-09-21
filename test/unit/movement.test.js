@@ -31,7 +31,7 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
-import { HAZARD_SCALE_AT_START, WALL_HAZARD_SCALE, scaleHazard } from "../../engine/difficulty.js";
+import { difficultyCurve, scaleHazard, campHealFor, heroRegenFor, heroSpFor, setDialsForTuning } from "../../engine/difficulty.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -241,7 +241,12 @@ test("move: a successful climb clears the feature and does not hurt the characte
   assert.ok(events.some((e) => e.type === "climbedOver"));
 });
 
-test("move: a failed climb hurts the character and leaves the feature in place", () => {
+// DELIBERATE RULES CHANGE (Phase 54, 2026-09-21, user bug-fix ruling):
+// ONE AND DONE — a failed climb/leap still hurts, but the feature is
+// consumed and the hero STILL ends up on the far side (a `draggedOver`
+// event follows the fall). The old "leaves you on the near side, retry"
+// loop is gone.
+test("move: a failed climb hurts the character AND still crosses (one and done) — feat cleared, position advances, draggedOver fires", () => {
   const state = fixedState();
   open(state.floor.g, 5, 4, { feat: "climb" });
   // feet = 10*(1+d(2)=1) = 20; first rung r = d(10)=9 > rope.success(7) -> fail;
@@ -249,9 +254,13 @@ test("move: a failed climb hurts the character and leaves the feature in place",
   const rng = fakeRng([1, 9, 15, 4]);
   const events = move(state, "N", rng, []);
   assert.equal(state.c.wp, 51, "took 4 wp of fall damage");
-  assert.equal(state.floor.g[4][5].feat, "climb", "an unsuccessful climb does not consume the feature");
-  assert.equal(state.floor.py, 5, "you never left the starting cell on a failed climb");
+  assert.equal(state.floor.g[4][5].feat, null, "one and done: the feature is consumed even on a failed roll");
+  assert.equal(state.floor.py, 4, "one and done: a failed-but-survived climb still crosses");
   assert.ok(events.some((e) => e.type === "fellClimbing" && e.hurt === 4));
+  const dragged = events.find((e) => e.type === "draggedOver");
+  assert.ok(dragged, "a survived failure pushes draggedOver");
+  assert.equal(dragged.feat, "climb");
+  assert.ok(events.some((e) => e.type === "moved"), "the clean-step tail still runs (cost/position/reveal/cadence)");
 });
 
 test("move: a fatal climb fall kills the character via die('fall')", () => {
@@ -265,7 +274,7 @@ test("move: a fatal climb fall kills the character via die('fall')", () => {
   assert.equal(state.deathNote, "fell off a wall");
 });
 
-test("move: a failed gorge leap deals 2d6 fall damage and leaves the gap open", () => {
+test("move: a failed gorge leap deals 2d6 fall damage AND still crosses (one and done) — feat cleared, position advances, draggedOver fires", () => {
   const state = fixedState();
   open(state.floor.g, 5, 4, { feat: "gorge" });
   // LEAP_TABLE[d(4)-1=0] -> {ft:"3-4 feet", F:10, T:10, M:9}; Fighter needs <=10;
@@ -273,45 +282,37 @@ test("move: a failed gorge leap deals 2d6 fall damage and leaves the gap open", 
   const rng = fakeRng([1, 11, 3, 4]);
   const events = move(state, "N", rng, []);
   assert.equal(state.c.wp, 48, "took 7 wp (3+4) of fall damage");
-  assert.equal(state.floor.g[4][5].feat, "gorge");
+  assert.equal(state.floor.g[4][5].feat, null, "one and done: the feature is consumed even on a failed roll");
+  assert.equal(state.floor.py, 4, "one and done: a failed-but-survived leap still crosses");
   assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === 7));
+  const dragged = events.find((e) => e.type === "draggedOver");
+  assert.ok(dragged, "a survived failure pushes draggedOver");
+  assert.equal(dragged.feat, "gorge");
 });
 
-// Phase 27 (2026-09-15, TUNE-06) / Phase 54 (USER RULING C): hazardScale —
-// post-draw arithmetic, same canon rolls as the two failed-fall tests
-// above, but at floors where hazardScale leaves identity via the per-floor
-// knot table. Zero extra rng draws either way. The expected damage is
-// computed from the LIVE knot constant (scaleHazard), not a hand-typed
-// number — a later Filter hazard fit re-pins only the constant's value,
-// never this test's arithmetic.
-test("move: at depth 2, hazardScale (HAZARD_SCALE_AT_START knot) scales the canon climb-fall damage", () => {
-  const state = fixedState({ floor: { depth: 2 } });
-  open(state.floor.g, 5, 4, { feat: "climb" });
-  const rng = fakeRng([1, 9, 15, 4]);
-  const events = move(state, "N", rng, []);
-  const expectedHurt = scaleHazard(4, { hazardScale: HAZARD_SCALE_AT_START });
-  assert.equal(state.c.wp, 55 - expectedHurt, `${expectedHurt} wp of fall damage (canon 4, HAZARD_SCALE_AT_START ${HAZARD_SCALE_AT_START})`);
-  assert.ok(events.some((e) => e.type === "fellClimbing" && e.hurt === expectedHurt));
-});
+// USER RULING D: HAZARD_SCALE is now a single global dial, identity
+// (`{ base: 1, perDepth: 0 }`) at every depth — floor 1 is no longer a
+// special case. The synthetic-override test below proves scaleHazard is
+// STILL wired through the live curve (not hardcoded), independent of what
+// value the dial eventually takes.
+test("move: hazardScale is identity (1) at every depth by default; a synthetic HAZARD_SCALE override still scales the fall damage through the live curve", () => {
+  for (const depth of [1, 2, 5, 20]) {
+    assert.equal(Object.is(difficultyCurve(depth).hazardScale, 1), true, `depth ${depth}: hazardScale must be exactly 1 at identity`);
+  }
 
-test("move: at depth 2, hazardScale (HAZARD_SCALE_AT_START knot) scales the canon gorge-fall damage", () => {
-  const state = fixedState({ floor: { depth: 2 } });
-  open(state.floor.g, 5, 4, { feat: "gorge" });
-  const rng = fakeRng([1, 11, 3, 4]);
-  const events = move(state, "N", rng, []);
-  const expectedHurt = scaleHazard(7, { hazardScale: HAZARD_SCALE_AT_START });
-  assert.equal(state.c.wp, 55 - expectedHurt, `${expectedHurt} wp of fall damage (canon 7, HAZARD_SCALE_AT_START ${HAZARD_SCALE_AT_START})`);
-  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === expectedHurt));
-});
-
-test("move: at depth 5, hazardScale equals WALL_HAZARD_SCALE (1.0 today) — the gorge-fall damage is unchanged", () => {
-  const state = fixedState({ floor: { depth: 5 } });
-  open(state.floor.g, 5, 4, { feat: "gorge" });
-  const rng = fakeRng([1, 11, 3, 4]);
-  const events = move(state, "N", rng, []);
-  const expectedHurt = scaleHazard(7, { hazardScale: WALL_HAZARD_SCALE });
-  assert.equal(state.c.wp, 55 - expectedHurt, `${expectedHurt} wp of fall damage (canon 7, WALL_HAZARD_SCALE ${WALL_HAZARD_SCALE})`);
-  assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === expectedHurt));
+  const restore = setDialsForTuning({ HAZARD_SCALE: { base: 0.5, perDepth: 0 } });
+  try {
+    const state = fixedState({ floor: { depth: 5 } });
+    open(state.floor.g, 5, 4, { feat: "gorge" });
+    const rng = fakeRng([1, 11, 3, 4]);
+    const events = move(state, "N", rng, []);
+    const expectedHurt = scaleHazard(7, difficultyCurve(5));
+    assert.equal(expectedHurt, 4, "round(7 * 0.5) = 4 (measured via scaleHazard itself)");
+    assert.equal(state.c.wp, 55 - expectedHurt);
+    assert.ok(events.some((e) => e.type === "fellInGorge" && e.hurt === expectedHurt));
+  } finally {
+    restore();
+  }
 });
 
 test("move: a successful gorge leap clears the feature", () => {
@@ -745,6 +746,41 @@ test("WR-01: descend() guards the SP-bonus formula against a tampered negative/n
   }
 });
 
+test("descend: the SP bonus is heroSpFor(40 + 30*depth) — identity (HERO_SP_SCALE 1) is a no-op", () => {
+  const state = fixedState();
+  open(state.floor.g, 5, 4, { feat: "exit" });
+  const rng = makeRng(777);
+  const before = state.c.sp;
+  move(state, "N", rng, []);
+  assert.equal(state.c.sp - before, heroSpFor(40 + 30 * 1));
+});
+
+// DELIBERATE RULES CHANGE (Phase 54, USER RULING D): HERO_REGEN_PER_FLOOR —
+// a fraction of maxWP restored once, on arriving at a new floor. Identity
+// (0) never pushes a floorRegen event; a synthetic override proves the
+// wiring (0 new draws either way).
+test("descend: no floorRegen event at HERO_REGEN_PER_FLOOR 0 (identity); under a 0.25 override the hero gains round(0.25 * maxWP) capped at maxWP and the event carries the amount", () => {
+  const restore = setDialsForTuning({ HERO_REGEN_PER_FLOOR: 0.25 });
+  try {
+    const state = fixedState({ c: { wp: 10, maxWP: 55 } });
+    open(state.floor.g, 5, 4, { feat: "exit" });
+    const events = move(state, "N", makeRng(777), []);
+    const regen = events.find((e) => e.type === "floorRegen");
+    assert.ok(regen, "a positive HERO_REGEN_PER_FLOOR must push floorRegen on arrival");
+    const expectedRegen = Math.min(55, 10 + Math.round(0.25 * 55)) - 10;
+    assert.equal(regen.amount, expectedRegen);
+    assert.equal(state.c.wp, 10 + expectedRegen);
+  } finally {
+    restore();
+  }
+
+  // identity check (0): re-run with a fresh state, no override active.
+  const stateOff = fixedState({ c: { wp: 10, maxWP: 55 } });
+  open(stateOff.floor.g, 5, 4, { feat: "exit" });
+  const eventsOff = move(stateOff, "N", makeRng(777), []);
+  assert.ok(!eventsOff.some((e) => e.type === "floorRegen"), "identity (0) never pushes floorRegen");
+});
+
 test("move: dot/trap/chest feature tiles are consumed and dispatch to the real encounter/trap/chest handlers (01-10)", () => {
   // dot: d8=4 -> ENCOUNTER_TABLES[3] ("+10 HP".."-All armour"), d10=1 -> "+10 HP"
   // (a plain tableFour row; no further rolls, so a 2-entry fakeRng suffices).
@@ -756,7 +792,10 @@ test("move: dot/trap/chest feature tiles are consumed and dispatch to the real e
     const events = move(state, "N", fakeRng([4, 1]), []);
     assert.equal(state.floor.g[4][5].feat, null, "dot is consumed");
     assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 HP"));
-    assert.ok(events.some((e) => e.type === "tableFour" && /10 hp/.test(e.result)));
+    // Phase 54 (BAND-02, USER RULING D): the flat "+10 HP" dot is now
+    // dotHpFor("small", maxWP) — a fraction of the hero's own maxWP, not a
+    // flat 10 — so the narrated number moves with maxWP.
+    assert.ok(events.some((e) => e.type === "tableFour" && /hp/.test(e.result)));
     assert.equal(state.c.wp, 55, "the +10 HP row healed toward the cap (already at max)");
   }
   // trap: nimble = 5 (no Agility/Leaping skill, not an Acrobat); a dodge roll
@@ -805,6 +844,21 @@ test("newDay: a fed character heals, and a wandering-monster hit starts a forced
   assert.ok(state.combat, "a wandering-monster hit starts combat (01-08)");
   assert.equal(state.combat.foes.length, 1, "a wandering encounter is always a single foe");
   assert.equal(state.combat.foes[0].name, "Bat/Rat");
+});
+
+// DELIBERATE RULES CHANGE (Phase 54, USER RULING D): a rested night heals
+// CAMP_HEAL_FRACTION * maxWP (round) + the SAME d10 draw - 5 (min 1), never
+// a flat `2 * level` term. The d10's draw count/position is unchanged.
+test("newDay: a fed night heals round(0.17 * maxWP) + d10 - 5 (min 1) — the d10 is the same draw", () => {
+  // sub: "Wizard" (not Soldier/a heal2x race) so the doubler stays off and
+  // this test isolates campHealFor's own arithmetic.
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", wp: 10, maxWP: 55 } });
+  open(state.floor.g, 5, 5);
+  const rng = fakeRng([5, 2, 2, 2, 2, 2, 2, 2, 2]); // heal d10=5, then 8 non-1 monster checks
+  newDay(state, false, rng, []);
+  const expectedHeal = campHealFor(55, 5);
+  assert.equal(expectedHeal, Math.max(1, Math.round(0.17 * 55) + 5 - 5));
+  assert.equal(state.c.wp, Math.min(55, 10 + expectedHeal));
 });
 
 // --- newDay: audit-batch1 (2026-09-09, A3) resting cure roll --------------
