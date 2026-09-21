@@ -184,9 +184,9 @@ const PHASE_27_PINS = {
   ABILITY_THREAT_SOFT_K: 30,
   FOE_LVL_BIAS: 0,
   FOE_GRACE_AT_1: 1,
-  FOE_GRACE_AT_2: 0.4,
+  FOE_GRACE_AT_2: 0.37,
   HAZARD_FROM_DEPTH: 2,
-  HAZARD_SCALE_AT_START: 0.5,
+  HAZARD_SCALE_AT_START: 0.46,
 };
 
 // NON_COMBAT_PINS — depths 1-5's dots/darkBlobs/darkRadius after Phase 27's
@@ -227,23 +227,23 @@ test("Phase 27/21 retune pins match engine/difficulty.js — recorded in docs/DI
 const PHASE_54_PINS = {
   WALL_FROM_DEPTH: 5,
   WALL_TO_DEPTH: 8,
-  WALL_FOE_POWER_AT_START: 0.85,
-  WALL_FOE_POWER_AT_END: 0.95,
+  WALL_FOE_POWER_AT_START: 0.51,
+  WALL_FOE_POWER_AT_END: 0.57,
   BREAKAWAY_FROM_DEPTH: 9,
   BREAKAWAY_TO_DEPTH: 15,
-  BREAKAWAY_FOE_POWER_AT_START: 0.95,
-  BREAKAWAY_FOE_POWER_AT_END: 1,
+  BREAKAWAY_FOE_POWER_AT_START: 0.57,
+  BREAKAWAY_FOE_POWER_AT_END: 0.6,
   ENDGAME_FROM_DEPTH: 16,
   ENDGAME_TO_DEPTH: 20,
-  ENDGAME_FOE_POWER_AT_START: 1,
-  ENDGAME_FOE_POWER_AT_END: 1,
-  FOE_GRACE_AT_2: 0.4,
-  FOE_GRACE_AT_3: 0.6,
-  FOE_GRACE_AT_4: 0.8,
-  HAZARD_SCALE_AT_START: 0.5,
-  HAZARD_SCALE_AT_3: 0.5,
-  HAZARD_SCALE_AT_4: 0.75,
-  WALL_HAZARD_SCALE: 1,
+  ENDGAME_FOE_POWER_AT_START: 0.6,
+  ENDGAME_FOE_POWER_AT_END: 0.6,
+  FOE_GRACE_AT_2: 0.37,
+  FOE_GRACE_AT_3: 0.53,
+  FOE_GRACE_AT_4: 0.52,
+  HAZARD_SCALE_AT_START: 0.46,
+  HAZARD_SCALE_AT_3: 0.44,
+  HAZARD_SCALE_AT_4: 0.49,
+  WALL_HAZARD_SCALE: 0.6,
   BREAKAWAY_HAZARD_SCALE: 1,
   ENDGAME_HAZARD_SCALE: 1,
   WALL_ABILITY_THREAT_AT_START: 1,
@@ -586,7 +586,12 @@ test("draw-shape equality (D-17/D-19): startCombat+fight draws 8 at depth 1 and 
   const curve30 = difficultyCurve(30);
   for (const f of state30.combat.foes) {
     assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve30));
-    assert.equal("dmgBonus" in f, foeDmgBonusFor(f.lvl, curve30) > 0);
+    // USER RULING C: depth 30's foePower can now legitimately sit BELOW 1
+    // (the 21+ ramp is relative to the floor-20 knot, which may itself be
+    // eased below identity) — the copy gate is "!== 0", not "> 0" (a graced
+    // deep foe carries a NEGATIVE dmgBonus, same discipline as the shallow
+    // grace band).
+    assert.equal("dmgBonus" in f, foeDmgBonusFor(f.lvl, curve30) !== 0);
   }
 });
 
@@ -715,8 +720,10 @@ test("startCombat at depth 30 builds more than 3 foes when the canon roll is 3 a
   }
   for (const f of state.combat.foes) {
     assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve30));
+    // USER RULING C: depth 30's foePower can now legitimately sit below 1
+    // (see the draw-shape-equality test above) — the copy gate is "!== 0".
     const expectedBonus = foeDmgBonusFor(f.lvl, curve30);
-    if (expectedBonus > 0) {
+    if (expectedBonus !== 0) {
       assert.equal(f.dmgBonus, expectedBonus);
     } else {
       assert.equal("dmgBonus" in f, false);

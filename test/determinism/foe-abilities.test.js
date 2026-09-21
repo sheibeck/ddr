@@ -254,7 +254,11 @@ const FULL_FIGHT_PINS = {
   // unaffected, confirmed by re-measuring both.
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 4, outcome: "won" },
-  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 41, attacks: 3, outcome: "won" },
+  // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
+  // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 41/3 ->
+  // 35/2, outcome unchanged ("won"). The softer Djinni pair dies one attack
+  // sooner under the fitted grace.
+  "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 35, attacks: 2, outcome: "won" },
   // Phase 52 (DMG-02, 2026-09-20): re-measured live — 23/1 -> 48/3, outcome
   // unchanged ("died"). This seed-1 Vampire's own crit (roll 1, a d4 dice)
   // used to double the WHOLE lvl^2+dmgBonus+dice sum, killing the hero on
@@ -270,7 +274,10 @@ const FULL_FIGHT_PINS = {
   // softer Vampire wp/crit at 0.85 foePower is now survivable across the
   // same three attacks). humans-t2 (depth 3) and magical-t4 (depth 4) are
   // outside the Wall band and untouched.
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 47, attacks: 3, outcome: "won" },
+  // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
+  // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 47/3
+  // -> 46/3, outcome unchanged ("won"); one fewer draw, same attack count.
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 46, attacks: 3, outcome: "won" },
   // Phase 31 (2026-09-16, CMB-01, user ruling "phobia is a penalty, not a
   // lost action"): was 64/4/died — this seed's Fridgian Knight fears "Bats
   // and rats" (Beasts), so this Beasts-forced encounter now triggers
@@ -290,7 +297,11 @@ const FULL_FIGHT_PINS = {
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — 67/4 -> 73/6. The foe
   // no longer gets a same-cycle second turn, reshuffling every downstream
   // draw in the shared rng stream; still resolves "won", one attack later.
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 73, attacks: 6, outcome: "won" },
+  // Phase 54 rung 3 (USER RULING C, 2026-09-21): depth-5 foePower 0.85 ->
+  // 0.51, hazardScale 1.0 -> 0.6 (the first FIT) — re-measured live: 73/6
+  // -> 48/3, outcome unchanged ("won"). The much softer Stalka Beast pair
+  // dies in half the attacks.
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 48, attacks: 3, outcome: "won" },
 };
 
 const PER_VISIT_PINS = {
