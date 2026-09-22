@@ -11,7 +11,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { GW, GH } from "../../engine/maze.js";
-import { mapViewRadius, inViewWindow, DARK_VIEW_RADIUS } from "../../engine/derived.js";
+import { mapViewRadius, inViewWindow, DARK_VIEW_RADIUS, inDark, revealRadius } from "../../engine/derived.js";
 
 /** A minimal, fully-walled 21x21 grid (matches engine/maze.js's GW/GH) with
  * a hole punched wherever a test needs an open cell — mirrors
@@ -171,4 +171,70 @@ test("leaving the dark: moving to a lit tile (darkFor 0) returns Infinity again 
   assert.equal(state.floor.g[6][6].dark, undefined);
   assert.equal(mapViewRadius(state), Infinity);
   assert.equal(inViewWindow(state, 3, 3), true, "the whole explored room is visible again");
+});
+
+// ─── Phase 57 characterisation: the counter already drives the render window ──
+//
+// 57-CONTEXT.md's correction 3 / 57-04-PLAN.md's discovery block: LAYOUT-06
+// was planned on the premise that "draw() dims only tile.dark cells and
+// nothing reads the counter". That premise is FALSE at HEAD — this block
+// PINS the already-correct existing behaviour (a running c.darkFor counter
+// drives mapViewRadius/inViewWindow exactly like a natural dark tile does,
+// and the three waivers open the SAME filter back to Infinity while
+// c.darkFor keeps ticking) so a future reader does not "fix" a filter that
+// was never broken. The real, residual gap (surfaced by LAYOUT-06's actual
+// work) is that nothing on the map or the DARK chip EXPLAINED any of this —
+// see darkness-vignette.test.js for the vignette + waiver-naming coverage.
+
+test("Phase 57 characterisation: darkFor alone (no .dark tile, no waiver) drives inDark/revealRadius/mapViewRadius/inViewWindow exactly like a natural dark tile", () => {
+  const state = fixedState({ c: { darkFor: 30 } });
+  assert.equal(state.floor.g[5][5].dark, undefined, "the tile itself is NOT dark — only the counter is running");
+  assert.equal(inDark(state), true);
+  assert.equal(revealRadius(state), 1);
+  assert.equal(mapViewRadius(state), DARK_VIEW_RADIUS);
+  // The far corner of the fixedState 5x5 room (already `seen`) — outside
+  // the 3x3 window, mirroring the existing inViewWindow test's own "outside" set.
+  assert.equal(state.floor.g[3][3].seen, true, "still seen — the filter hides at render time only");
+  assert.equal(inViewWindow(state, 3, 3), false, "outside the 3x3 window, even though seen");
+});
+
+test("Phase 57 characterisation: the mirror case — darkFor 0 on a .dark tile — yields the SAME four answers (the symmetry the user's report appeared to contradict)", () => {
+  const state = fixedState();
+  state.floor.g[5][5].dark = true;
+  assert.equal(state.c.darkFor, 0, "the counter is NOT running — only the tile's own .dark flag is set");
+  assert.equal(inDark(state), true);
+  assert.equal(revealRadius(state), 1);
+  assert.equal(mapViewRadius(state), DARK_VIEW_RADIUS);
+  assert.equal(state.floor.g[3][3].seen, true, "still seen — the filter hides at render time only");
+  assert.equal(inViewWindow(state, 3, 3), false);
+});
+
+test("Phase 57 characterisation: darkFor running WITH a lit torch — the waiver divergence that is the confirmed explanation of the 2026-09-21 device report", () => {
+  const state = fixedState({ c: { darkFor: 30, timers: { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } } } });
+  assert.equal(inDark(state), true, "the counter is still running — the player is still 'in the dark'");
+  assert.equal(revealRadius(state), 1, "revealRadius waives ONLY on Night Vision — a torch does not touch it");
+  assert.equal(mapViewRadius(state), Infinity, "mapViewRadius waives on a lit torch too — the map shows everything");
+  assert.equal(inViewWindow(state, 3, 3), true, "the whole explored room renders, even though inDark is true and revealRadius is 1");
+});
+
+test("Phase 57 characterisation: darkFor running WITH a live Amulet of Light — the same divergence", () => {
+  const state = fixedState({
+    c: {
+      darkFor: 30,
+      items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }],
+      timers: { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+    },
+  });
+  assert.equal(inDark(state), true);
+  assert.equal(revealRadius(state), 2, "the Amulet's own sight:1 effect DOES widen revealRadius (eff(c,\"sight\") is added unconditionally)");
+  assert.equal(mapViewRadius(state), Infinity);
+  assert.equal(inViewWindow(state, 3, 3), true);
+});
+
+test("Phase 57 characterisation: darkFor running WITH Night Vision — the one waiver revealRadius ALSO respects", () => {
+  const state = fixedState({ c: { darkFor: 30, skills: { "Night Vision": 1 } } });
+  assert.equal(inDark(state), true);
+  assert.equal(revealRadius(state), 2, "Night Vision is the ONE waiver revealRadius itself respects");
+  assert.equal(mapViewRadius(state), Infinity);
+  assert.equal(inViewWindow(state, 3, 3), true);
 });

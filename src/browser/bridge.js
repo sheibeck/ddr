@@ -90,6 +90,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: keepPartyInView / map pointer handlers — screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis)"]),
     purpose: "Bridges the pure pointer-to-cell and camera-keep-in-view math so map taps and the stationary camera use one shared calculation.",
   }),
+  __mzDarkness: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paintVignette — the counter-driven map vignette; paintConditions — the DARK chip's waiver clause)"]),
+    purpose: "Bridges the engine's own inDark/revealRadius/mapViewRadius reads plus the pure darknessView.js vignette/waiver helpers, so the shell reads the darkness rule instead of reimplementing it.",
+  }),
   __mzDescend: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: the stair-down overlay's primary action)"]),

@@ -4508,6 +4508,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // quick 260918-vvt — a SEPARATE import line (same module) so the pinned
   // line above stays byte-identical; bridged below as __mzTakesBagSlot.
   import { takesBagSlot } from "./engine/derived.js";
+  // Phase 57 (LAYOUT-06) — a SEPARATE import line (same module, same
+  // precedent as the two above) so the pinned `conditionsOf, hasTool,
+  // mapViewRadius, inViewWindow` import line stays byte-identical for
+  // test/unit/shell-gear-39.test.js, shell-loot-screen.test.js and
+  // shell-worn-slots.test.js. Bridged below (with mapViewRadius, already
+  // imported above) as window.__mzDarkness.
+  import { inDark, revealRadius } from "./engine/derived.js";
+  import { vignetteFor, waiverFor } from "./src/browser/darknessView.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -4559,6 +4567,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // never goes blank if this module somehow failed to load). Read-only, no
   // rng, no mutation — same bridge pattern as __mzConditionsOf.
   window.__mzMapView = { mapViewRadius, inViewWindow };
+
+  // Phase 57 (LAYOUT-06) — bridges the engine's OWN inDark/revealRadius/
+  // mapViewRadius reads plus the pure darknessView.js vignette/waiver
+  // helpers, so paintVignette() and the DARK chip's waiver clause never
+  // recompute the darkness rule themselves. Read-only engine reads, no rng,
+  // no mutation, fail-open at the call site (a missing bridge leaves the
+  // vignette at its off state rather than staying stuck dim — see
+  // paintVignette's own guard).
+  window.__mzDarkness = { inDark, revealRadius, mapViewRadius, vignetteFor, waiverFor };
 
   // Phase 32 (CMBUI-04/05): the classic renderEncounter()/keydown/
   // window.move guards (32-03) read the arm-delay and dismiss-settle
