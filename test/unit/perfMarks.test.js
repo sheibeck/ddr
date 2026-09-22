@@ -178,14 +178,22 @@ test("PERF-01 (shell pin): exactly one import of perfMarks/formatReadout/PERF_LO
   assert.equal(hits.length, 1);
 });
 
-test("PERF-01 (shell pin): every performance.now( line is dev-gated (perf ? or if (perf)); exactly 7 such lines, stripped and raw; no comment spells the clock call", () => {
+test("PERF-01 (shell pin): every PERF-01 dev-instrumentation performance.now( line is dev-gated (perf ? or if (perf)); exactly 7 such lines; the one Phase 58 camera-glide clock read is the sole, explicit exception; no comment spells the clock call", () => {
   const strippedLines = CODE.split("\n").filter((l) => l.includes("performance.now("));
-  assert.equal(strippedLines.length, 7);
-  for (const line of strippedLines) {
+  // Phase 58 (MOTION-01): `now: () => performance.now(),` feeds
+  // window.__mzCameraGlide's tween clock — a normal, always-live runtime
+  // read (the glide must keep ticking whether or not PERF-01's dev perf
+  // logging is on), never gated behind the `perf` dev flag like the seven
+  // PERF-01 instrumentation reads below.
+  const CAMERA_GLIDE_NOW_LINE = "now: () => performance.now(),";
+  const devGatedLines = strippedLines.filter((l) => !l.trim().includes(CAMERA_GLIDE_NOW_LINE));
+  assert.equal(devGatedLines.length, 7);
+  for (const line of devGatedLines) {
     assert.ok(line.includes("perf ? ") || line.includes("if (perf)"), `not dev-gated: ${line}`);
   }
+  assert.equal(strippedLines.length, 8, "expected exactly 7 dev-gated PERF-01 lines plus the one Phase 58 camera-glide clock read");
   const rawLines = HTML.split("\n").filter((l) => l.includes("performance.now"));
-  assert.equal(rawLines.length, 7);
+  assert.equal(rawLines.length, 8);
 });
 
 test("PERF-01 (shell pin): the const perf = line gates on .dev ? perfMarks : null", () => {

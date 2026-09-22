@@ -2025,6 +2025,16 @@ function anchorCamOnParty(offsetPx) {
   const p = partyCentre();
   cam = { x: p.x - offsetPx.x / CELL, y: p.y - offsetPx.y / CELL };
 }
+// applyCam(p): the glide's per-frame writer (Phase 58, MOTION-01) — the ONE
+// place window.__mzCameraGlide writes `cam` on every frame of an in-flight
+// tween. Sets `cam` to a fresh point (never the caller's own object) and
+// calls positionCanvas(), which in turn keeps positionPartyPulse(rect) in
+// lockstep — the ring moves with the canvas from the SAME camera, every
+// frame.
+function applyCam(p) {
+  cam = { x: p.x, y: p.y };
+  positionCanvas();
+}
 // DR13: pinch-to-zoom map scale. `zoom` multiplies the text-scale-derived base
 // cell size in fit(); clamped so the maze never zooms uselessly tiny or huge.
 // Phase 33 (UIF-03) + device feedback 2026-09-16: the default sits ZOOMED
@@ -2083,17 +2093,6 @@ function positionCanvas() {
   const Y = Math.round(ty * dpr) / dpr;
   cv.style.transform = `translate3d(${X}px, ${Y}px, 0)`;
   positionPartyPulse(rect);
-}
-
-// applyCam(p): the glide's per-frame writer (Phase 58, MOTION-01) — the ONE
-// place window.__mzCameraGlide writes `cam` on every frame of an in-flight
-// tween. Sets `cam` to a fresh point (never the caller's own object) and
-// calls positionCanvas(), which in turn keeps positionPartyPulse(rect) in
-// lockstep — the ring moves with the canvas from the SAME camera, every
-// frame.
-function applyCam(p) {
-  cam = { x: p.x, y: p.y };
-  positionCanvas();
 }
 
 // Phase 35 (MAP-07): the pulsing party ring (#mw-party-pulse) is a DOM

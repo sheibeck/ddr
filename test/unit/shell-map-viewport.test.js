@@ -431,8 +431,13 @@ test("(m) positionCanvas: the forward transform reads cam.x/cam.y, not a px pan 
 test("(m) keepPartyInView(): guards on a 0x0 rect, drives both axes through window.__mzControls.keepInViewAxis, never touches S/dispatches, and always ends with positionCanvas()", () => {
   const region = keepPartyInViewRegion();
   assert.match(region, /rect\.width > 0 && rect\.height > 0/);
-  assert.match(region, /C\.keepInViewAxis\(cam\.x, p\.x, rect\.width \/ CELL\)/);
-  assert.match(region, /C\.keepInViewAxis\(cam\.y, p\.y, rect\.height \/ CELL\)/);
+  // Phase 58 (MOTION-01, D-01/D-04): re-pinned from `cam.x`/`cam.y` to
+  // `base.x`/`base.y` — the target is computed from the glide's own
+  // in-flight target when one exists, and `cam` (the displayed camera)
+  // otherwise, then eased to via `.to(cam, target, applyCam)`.
+  assert.match(region, /C\.keepInViewAxis\(base\.x, p\.x, rect\.width \/ CELL\)/);
+  assert.match(region, /C\.keepInViewAxis\(base\.y, p\.y, rect\.height \/ CELL\)/);
+  assert.match(region, /\.to\(cam, target, applyCam\)/);
   assert.doesNotMatch(region, /S\.floor\.p[xy] =/);
   assert.doesNotMatch(region, /dispatch\(/);
   assert.match(region.trimEnd(), /positionCanvas\(\);\s*\}$/);

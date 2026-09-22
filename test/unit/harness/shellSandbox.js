@@ -55,6 +55,8 @@ import {
 import { renderStoreScreen } from "../../../src/browser/storeScreen.js";
 import { identityLine, identityParts, counterSlots } from "../../../src/browser/hudBands.js";
 import { hudMenuNext } from "../../../src/browser/hudMenu.js";
+import { REDUCED_MOTION_QUERY, prefersReducedMotion } from "../../../src/browser/motion.js";
+import { createCameraGlide } from "../../../src/browser/cameraGlide.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -128,18 +130,45 @@ function wireBridges(context) {
   // reducer, wired from the real module so test/unit/hud-menu-layout.test.js's
   // BEHAVIOUR cases exercise the real close policy, never a stub.
   w.__mzHudMenu = { next: hudMenuNext };
+  // Phase 58 (MOTION-01) — the REAL camera glide, driven by this sandbox's
+  // own scheduler (the fake clock's requestAnimationFrame/performance.now
+  // when loadShellSandbox was given one, else the sandbox's inert default
+  // no-ops) and the live reduced-motion predicate reading this sandbox's
+  // own matchMedia stub (defaulted to reduced — see loadShellSandbox's own
+  // doc comment for why). Never a stub instance — map-pan.test.js and
+  // reduced-motion.test.js both depend on exercising the real tween.
+  w.__mzCameraGlide = createCameraGlide({
+    now: () => w.performance.now(),
+    raf: (fn) => w.requestAnimationFrame(fn),
+    cancelRaf: (id) => w.cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(w),
+  });
 }
 
 /**
- * loadShellSandbox({ doc }) — runs mazeworld.html's classic <script> in a
- * fresh vm context built around the recording document `doc`
- * (createRecordingDocument() from recordingDom.js), wires the real
- * window.__mz* bridges, wires the BEFORE-only Grimoire seam, and stubs the
- * two heavy classic globals (draw/renderRail) so a paint() call never
- * touches the maze canvas or the RAIL — neither is part of the Gear/Hero/
- * Store surfaces this plan locks.
+ * loadShellSandbox({ doc, reducedMotion = true, clock = null }) — runs
+ * mazeworld.html's classic <script> in a fresh vm context built around the
+ * recording document `doc` (createRecordingDocument() from recordingDom.js),
+ * wires the real window.__mz* bridges, wires the BEFORE-only Grimoire seam,
+ * and stubs the two heavy classic globals (draw/renderRail) so a paint()
+ * call never touches the maze canvas or the RAIL — neither is part of the
+ * Gear/Hero/Store surfaces this harness's original callers lock.
+ *
+ * Phase 58 (MOTION-01/05): `reducedMotion` (default true) drives the
+ * `matchMedia("(prefers-reduced-motion: reduce)")` stub's `matches` answer —
+ * REDUCED BY DEFAULT. Once shell effects are timed, a never-firing timer
+ * (this sandbox's own pre-Phase-58 default, see the setTimeout comment
+ * below) under "motion on" would strand every animated close/type/beat/pan
+ * forever and fail every pre-existing sandbox test for a harness reason,
+ * not a real one — defaulting to reduced keeps every pre-existing test on
+ * the MOTION-05 end-state path, which is exactly the pre-Phase-58 shell
+ * behaviour. An animated-path test opts in explicitly with
+ * `reducedMotion: false` plus a `clock` (test/unit/harness/fakeClock.js) —
+ * without a `clock`, every scheduler default stays exactly what it always
+ * was (an inert never-firing setTimeout/rAF, performance.now() => 0, no
+ * `Date` override).
  */
-export function loadShellSandbox({ doc }) {
+export function loadShellSandbox({ doc, reducedMotion = true, clock = null }) {
   const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
   const { classic } = extractScriptRegions(raw);
 
@@ -152,32 +181,45 @@ export function loadShellSandbox({ doc }) {
     // confirm/arm-delay timer the Gear tab schedules (DROP_CONFIRM_MS,
     // SWAP_CONFIRM_MS, armEncounterButtons' ARM_DELAY_MS sweep) stays armed
     // for the lifetime of a single snapshot, which is exactly the state the
-    // gear-confirms fixture needs to capture.
-    setTimeout: (() => {
-      let id = 1;
-      return () => id++;
-    })(),
-    clearTimeout() {},
+    // gear-confirms fixture needs to capture. Phase 58: a given `clock`
+    // (test/unit/harness/fakeClock.js) replaces this default outright — its
+    // own setTimeout DOES fire, driven only by `clock.advance(ms)`.
+    setTimeout: clock
+      ? clock.setTimeout
+      : (() => {
+          let id = 1;
+          return () => id++;
+        })(),
+    clearTimeout: clock ? clock.clearTimeout : () => {},
     addEventListener() {},
     removeEventListener() {},
-    requestAnimationFrame() {},
-    cancelAnimationFrame() {},
+    requestAnimationFrame: clock ? clock.requestAnimationFrame : () => {},
+    cancelAnimationFrame: clock ? clock.cancelAnimationFrame : () => {},
     getComputedStyle() {
       return { getPropertyValue: () => "" };
     },
-    matchMedia: () => ({ matches: false, addEventListener() {} }),
+    // Phase 58 (MOTION-05, D-17): the ONE reduced-motion stub every
+    // prefersReducedMotion(window) read in this sandbox consults — reduced
+    // by default (see this function's own doc comment above).
+    matchMedia: (q) => ({
+      matches: reducedMotion && q === REDUCED_MOTION_QUERY,
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }),
     localStorage: {
       getItem: (k) => (fakeStorage.has(k) ? fakeStorage.get(k) : null),
       setItem: (k, v) => fakeStorage.set(k, String(v)),
       removeItem: (k) => fakeStorage.delete(k),
     },
     navigator: { userAgent: "node", vibrate() {} },
-    performance: { now: () => 0 },
+    performance: { now: clock ? clock.now : () => 0 },
     innerWidth: 400,
     innerHeight: 800,
     devicePixelRatio: 1,
     location: { search: "" },
   };
+  if (clock) sandbox.Date = clock.Date;
   sandbox.window = sandbox;
 
   const context = vm.createContext(sandbox);

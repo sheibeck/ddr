@@ -51,6 +51,7 @@ import { bagUsage, renderGearTab, renderCarriedList } from "../../src/browser/ge
 import { rationsViewModel, eatsLineFor, renderHeroTab } from "../../src/browser/heroTab.js";
 import { renderStoreScreen } from "../../src/browser/storeScreen.js";
 import { identityLine, counterSlots } from "../../src/browser/hudBands.js";
+import { REDUCED_MOTION_QUERY } from "../../src/browser/motion.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import {
   railCardFor,
@@ -162,7 +163,10 @@ function loadRailDismissSandbox({ doc }) {
     getComputedStyle() {
       return { getPropertyValue: () => "" };
     },
-    matchMedia: () => ({ matches: false, addEventListener() {} }),
+    // Phase 58 (MOTION-05): reduced-by-default, the same behaviour as
+    // test/unit/harness/shellSandbox.js#loadShellSandbox's own matchMedia
+    // stub (see that function's doc comment for why).
+    matchMedia: (q) => ({ matches: q === REDUCED_MOTION_QUERY, media: q, addEventListener() {}, removeEventListener() {} }),
     localStorage: {
       getItem: (k) => (fakeStorage.has(k) ? fakeStorage.get(k) : null),
       setItem: (k, v) => fakeStorage.set(k, String(v)),

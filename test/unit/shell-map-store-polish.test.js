@@ -195,6 +195,23 @@ test("mzCenterMap call-site count is 4 (boot, 2 new-run paths, stepWith's floorC
   assert.equal(keepInViewMatches.length, 7);
 });
 
+// Phase 58 (MOTION-01, D-02/D-03): anchorCamOnParty — used by every snap
+// (centerMap) and every pinch frame — cancels an in-flight glide as its
+// FIRST statement, so a leftover glide frame can never overwrite a snap.
+test("MOTION-01: anchorCamOnParty(offsetPx) cancels the camera glide as its first statement", () => {
+  const marker = "function anchorCamOnParty(offsetPx) {";
+  const start = CODE.indexOf(marker);
+  assert.ok(start !== -1, "function anchorCamOnParty(offsetPx) { not found");
+  const bodyStart = start + marker.length;
+  const end = CODE.indexOf("\nfunction ", bodyStart);
+  assert.ok(end !== -1 && end > bodyStart, "next top-level function not found after anchorCamOnParty");
+  const body = CODE.slice(bodyStart, end).trim();
+  assert.ok(
+    body.startsWith("window.__mzCameraGlide?.cancel?.();"),
+    `expected anchorCamOnParty's first statement to cancel the glide, got: ${body.slice(0, 80)}`,
+  );
+});
+
 // ─── 7. STORE-01: the gated header line ───────────────────────────────────
 
 // Phase 47 (SHELL-03), Plan 05: STORE_ROLL_COPY moved verbatim (with its

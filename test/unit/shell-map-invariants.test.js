@@ -214,9 +214,16 @@ test("MAP-08: condition chips are wired through guardTap", () => {
 
 test("MAP-08: the four map chips' listeners exist exactly once each", () => {
   assert.equal(countOf(CODE, "document.getElementById(\"mw-chip-marks\").addEventListener(\"click\", openMarksLegend)"), 1);
-  assert.equal(countOf(CODE, "document.getElementById(\"mw-chip-centre\").addEventListener(\"click\", centerMap)"), 1);
+  // Phase 58 (MOTION-01, D-01): the CENTRE row of the ☰ menu now glides
+  // (glideCenterMap) instead of snapping (centerMap) — re-pinned from
+  // `centerMap` to `glideCenterMap` here.
+  assert.equal(countOf(CODE, "document.getElementById(\"mw-chip-centre\").addEventListener(\"click\", glideCenterMap)"), 1);
   assert.equal(countOf(CODE, "document.getElementById(\"btn-camp\").onclick = openCampSheet"), 1);
   assert.equal(countOf(CODE, "document.getElementById(\"mw-gear-btn\")?.addEventListener(\"click\", openSettingsSheet)"), 1);
+});
+
+test("MAP-08/MOTION-01: window.mzCenterMap = centerMap; is still exactly once — the bridge stays the SNAP (D-03)", () => {
+  assert.equal(countOf(CODE, "window.mzCenterMap = centerMap;"), 1);
 });
 
 // ─── (e) settle/arm discipline ──────────────────────────────────────────────
