@@ -9,23 +9,34 @@
 // makes no assertions, so `node --test` never picks it up).
 //
 // Phase 54 (BAND-02, 2026-09-21, USER RULING D / plan-approval cuts; USER
-// RULING F "Adjustment 1"/"Adjustment 1b", mid-54-07): the in-process,
+// RULING G "Adjustment 3", mid-54-07 cycle 3): the in-process,
 // worker-threaded, deterministic, logged evaluator and bounded coordinate
-// search over tools/lib/fit-score.mjs's SEARCH_PLAN (Ruling F's coordinate,
-// CLASS_MITIGATION["Magic User"].spellPower, probed FIRST, then the core 10
-// — every OTHER dial is HELD at its `--start` value, never probed). Each
-// evaluation plays the
-// fair bot's SOLO 200-seed run (the SAME seed list tune-difficulty.mjs
-// uses, `i*7919+1`) in-process across worker
-// threads: each worker imports the engine fresh (via tools/lib/tuning-bot.mjs),
+// search over tools/lib/fit-score.mjs's SEARCH_PLAN (the core 10; every
+// OTHER dial, including CLASS_MITIGATION["Magic User"].spellPower — USER
+// RULING G dropped it back out of the search after cycle 2 proved it a
+// structural no-op — is HELD at its `--start` value, never probed). Each
+// evaluation plays the fair bot's SOLO 200-seed run (the SAME seed list
+// tune-difficulty.mjs uses, `i*7919+1`) in-process across worker threads:
+// each worker imports the engine fresh (via tools/lib/tuning-bot.mjs),
 // calls setDialsForTuning(candidate) ONCE, then plays its own seed slice
 // through playRun — no engine state ever crosses a thread boundary, only
 // plain-object rows.
+//
+// The replay/resume/coordinate-walk machinery (readLog/appendLog/
+// makeResumableEvaluate/walkCoordinate/runSearch) lives in the PURE,
+// engine-free tools/lib/fit-resume.mjs — see that module's header for the
+// Infinity/null replay bug USER RULING G "Adjustment 3(c)" fixes there.
 //
 // Run:
 //   node tools/fit-difficulty.mjs --dials=fit/start.json --seeds=200 --workers=4
 //   node tools/fit-difficulty.mjs --dials='{}' --seeds=20            (identity)
 //   node tools/fit-difficulty.mjs --search --start=fit/start.json --budget=80 --out=fit/best.json
+//
+// A backgrounded `--search` run's stdout should always be redirected with
+// `>>` (append), never `>` (truncate) — USER RULING G "Adjustment 3(d)": a
+// multi-block cycle re-runs this same command with a growing `--budget`
+// against the SAME `--log`, and a truncating redirect would silently
+// discard every earlier block's console transcript on each re-run.
 //
 // Flags:
 //   --dials=<json|path>   a single evaluation against this partial DIALS
@@ -38,7 +49,9 @@
 //   --seeds=N              seeds per evaluation (default 200)
 //   --workers=N            worker_threads count (default 4)
 //   --log=<path.jsonl>     append every evaluation as one JSON line here
-//                          (an existing log RESUMES a --search run)
+//                          (an existing log RESUMES a --search run; ALWAYS
+//                          redirect this script's own stdout with >>, never
+//                          >, when re-running against a growing --budget)
 //   --out=<path>           write the best (or the single evaluation's) dial
 //                          set as JSON here
 //   --max-actions=N        per-run action cap (default BOT_DEFAULTS.maxActions)
@@ -51,6 +64,7 @@ import { playRun, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
 import { survivalReadout, classIdentityReadout, paceReadout } from "./lib/band-readout.mjs";
 import { setDialsForTuning } from "../engine/difficulty.js";
 import { SEARCH_PLAN, scoreSurvival, classConstraints, applyStep, evalRow, formatEvalLine } from "./lib/fit-score.mjs";
+import { readLog, appendLog, makeResumableEvaluate, runSearch } from "./lib/fit-resume.mjs";
 
 // --- worker thread branch ---------------------------------------------------
 //
@@ -139,78 +153,6 @@ async function evaluateCandidate(dials, seeds, opts, workerCount) {
   return { survival, scored, classIdentity, constraints, pace, elapsedMs };
 }
 
-// --- coordinate-descent search (bounded, deterministic, resumable) ---------
-
-/**
- * walkCoordinate(current, currentScore, coord, stepScale, evaluate) — probes
- * `+1` first (skipped if applyStep returns null, i.e. already at the
- * bound); if the score strictly improves, accepts and keeps stepping the
- * SAME direction (up to 2 more times, 3 total) while it keeps improving;
- * otherwise probes `-1` the same way. Returns `{ current, score, stop,
- * passed }` — `stop: true` means the budget ran out (evaluate returned
- * `null`) or a PASS+ok candidate was found (`passed: true`).
- */
-async function walkCoordinate(current, currentScore, coord, stepScale, evaluate) {
-  for (const dir of [1, -1]) {
-    let base = current;
-    let baseScore = currentScore;
-    let steps = 0;
-    let improvedAny = false;
-    while (steps < 3) {
-      const probe = applyStep(base, coord, dir, stepScale);
-      if (probe === null) break;
-      const row = await evaluate(probe);
-      if (row === null) return { current: base, score: baseScore, stop: true, passed: false };
-      steps++;
-      if (row.score < baseScore) {
-        base = probe;
-        baseScore = row.score;
-        improvedAny = true;
-        if (row.verdict === "PASS" && row.constraints.ok) {
-          return { current: base, score: baseScore, stop: true, passed: true };
-        }
-      } else {
-        break;
-      }
-    }
-    if (improvedAny) return { current: base, score: baseScore, stop: false, passed: false };
-  }
-  return { current, score: currentScore, stop: false, passed: false };
-}
-
-/**
- * runSearch({ startDials, budget, evaluate }) — PASS 1 over SEARCH_PLAN's 10
- * coordinates (in order, full step), then PASS 2 (the same 10, stepScale
- * 0.5). Every held dial is carried through untouched from `startDials`
- * (walkCoordinate/applyStep only ever touch the ONE coordinate's own path).
- * Stops early on budget exhaustion or a PASS+ok candidate.
- */
-async function runSearch({ startDials, evaluate }) {
-  const startRow = await evaluate(startDials);
-  if (startRow === null) return { best: null, stopped: "budget" };
-  let best = startRow;
-  let current = startDials;
-  let currentScore = startRow.score;
-  if (startRow.verdict === "PASS" && startRow.constraints.ok) return { best: startRow, stopped: "pass" };
-
-  const trackBest = async (dials) => {
-    const row = await evaluate(dials);
-    if (row && row.score < best.score) best = row;
-    return row;
-  };
-
-  for (const pass of [1, 2]) {
-    const stepScale = pass === 1 ? 1 : 0.5;
-    for (const coord of SEARCH_PLAN) {
-      const result = await walkCoordinate(current, currentScore, coord, stepScale, trackBest);
-      current = result.current;
-      currentScore = result.score;
-      if (result.stop) return { best, stopped: result.passed ? "pass" : "budget" };
-    }
-  }
-  return { best, stopped: "plan-exhausted" };
-}
-
 // --- CLI ---------------------------------------------------------------------
 
 function usage() {
@@ -290,26 +232,6 @@ function parseArgs(argv) {
   return opts;
 }
 
-/** appendLog(logPath, row) — appends ONE JSON line (JSONL, append-only). No-op when `logPath` is null. */
-function appendLog(logPath, obj) {
-  if (!logPath) return;
-  const dir = path.dirname(logPath);
-  if (dir && dir !== ".") fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(logPath, `${JSON.stringify(obj)}\n`);
-}
-
-/** readLog(logPath) — every already-logged evaluation row, keyed by `n` (a Map), or an empty Map if the file does not exist. */
-function readLog(logPath) {
-  const byN = new Map();
-  if (!logPath || !fs.existsSync(logPath)) return byN;
-  const lines = fs.readFileSync(logPath, "utf8").split("\n").filter(Boolean);
-  for (const line of lines) {
-    const obj = JSON.parse(line);
-    if (typeof obj.n === "number") byN.set(obj.n, obj);
-  }
-  return byN;
-}
-
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const botOpts = { ...BOT_DEFAULTS, maxActions: opts.maxActions };
@@ -339,25 +261,27 @@ async function main() {
     appendLog(opts.log, { resumed: true, fromN: Math.max(...loggedByN.keys()) });
   }
 
-  let n = 0;
   const startedAt = Date.now();
-  const evaluate = async (dials) => {
-    n++;
-    if (n > opts.budget) return null;
-    const logged = loggedByN.get(n);
-    if (logged && JSON.stringify(logged.dials) === JSON.stringify(dials)) {
-      // Deterministic replay: the SAME walk produces the SAME nth candidate
-      // — reuse the logged row verbatim, spending zero bot time.
-      return logged;
-    }
-    const result = await evaluateCandidate(dials, seeds, botOpts, opts.workers);
-    const row = evalRow(n, dials, { ...result, walkPass: 1 });
-    console.log(formatEvalLine(row));
-    appendLog(opts.log, row);
+  const evaluate = makeResumableEvaluate({
+    loggedByN,
+    budget: opts.budget,
+    onRow: (row) => {
+      console.log(formatEvalLine(row));
+      appendLog(opts.log, row);
+    },
+    realEvaluate: async (candN, dials) => {
+      const result = await evaluateCandidate(dials, seeds, botOpts, opts.workers);
+      return evalRow(candN, dials, { ...result, walkPass: 1 });
+    },
+  });
+  let n = 0;
+  const countingEvaluate = async (dials) => {
+    const row = await evaluate(dials);
+    if (row) n = row.n;
     return row;
   };
 
-  const { best, stopped } = await runSearch({ startDials, evaluate });
+  const { best, stopped } = await runSearch({ startDials, evaluate: countingEvaluate, searchPlan: SEARCH_PLAN, applyStep });
 
   if (best) {
     console.log(`BEST #${best.n} score=${best.score === Infinity ? "+Infinity" : best.score.toFixed(4)} dials=${JSON.stringify(best.dials)}`);

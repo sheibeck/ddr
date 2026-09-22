@@ -106,6 +106,12 @@ function medianOf(values) {
 /** CLASS_POOL_MIN_N — a class pool below this run count is unconstrained (too few runs for a meaningful comparison). */
 export const CLASS_POOL_MIN_N = 20;
 
+/** CLASS_P50_TOLERANCE — USER RULING G "Adjustment 2" (2026-09-21, cycle 3): loosened from 1.0 to 2.0 floors. */
+export const CLASS_P50_TOLERANCE = 2.0;
+
+/** CLASS_REACH5_TOLERANCE — USER RULING G "Adjustment 2" (2026-09-21, cycle 3): loosened from 12 to 20 points. */
+export const CLASS_REACH5_TOLERANCE = 20;
+
 /**
  * classConstraints(classIdentity) — the class-pool fairness + identity
  * constraint gate. `classIdentity` is tools/lib/band-readout.mjs
@@ -123,10 +129,16 @@ export const CLASS_POOL_MIN_N = 20;
  * CLASS_POOL_MIN_N runs (that pool's row gets a `"<cls> n<20 —
  * unconstrained"` reason, `ok` stays true unless another eligible rule
  * fails):
- *   1. |p50 - pooledP50| <= 1.0 floor
- *   2. |reach5 - pooledReach5| <= 12 points
+ *   1. |p50 - pooledP50| <= 2.0 floors
+ *   2. |reach5 - pooledReach5| <= 20 points
  *   3. Fighter.dmgTakenPerFight >= Thief.dmgTakenPerFight
  *   4. Thief.roundsPerFight <= Fighter.roundsPerFight
+ *
+ * USER RULING G "Adjustment 2" (2026-09-21, mid-54-07, cycle 3): rules 1-2
+ * loosened from 1.0 floor / 12 points — the user ruled class pools are not
+ * meant to be equal; a 1-floor tolerance on an INTEGER median vetoed ~60%
+ * of cycle-2's candidates (a 1-floor median swing is common noise at 200
+ * seeds/class, not a real fairness violation).
  *
  * Returns `{ ok, reasons, pooledP50, pooledReach5, rows }`.
  */
@@ -147,13 +159,13 @@ export function classConstraints(classIdentity) {
 
   for (const cls of eligibleClasses) {
     const row = rows[cls];
-    if (pooledP50 !== null && row.p50 !== null && Math.abs(row.p50 - pooledP50) > 1.0) {
+    if (pooledP50 !== null && row.p50 !== null && Math.abs(row.p50 - pooledP50) > CLASS_P50_TOLERANCE) {
       ok = false;
-      reasons.push(`${cls} p50 ${row.p50} vs pooled ${pooledP50} (|delta| > 1.0)`);
+      reasons.push(`${cls} p50 ${row.p50} vs pooled ${pooledP50} (|delta| > ${CLASS_P50_TOLERANCE})`);
     }
-    if (pooledReach5 !== null && row.reach5 !== null && Math.abs(row.reach5 - pooledReach5) > 12) {
+    if (pooledReach5 !== null && row.reach5 !== null && Math.abs(row.reach5 - pooledReach5) > CLASS_REACH5_TOLERANCE) {
       ok = false;
-      reasons.push(`${cls} reach5 ${row.reach5} vs pooled ${pooledReach5} (|delta| > 12)`);
+      reasons.push(`${cls} reach5 ${row.reach5} vs pooled ${pooledReach5} (|delta| > ${CLASS_REACH5_TOLERANCE})`);
     }
   }
 
@@ -175,29 +187,24 @@ export function classConstraints(classIdentity) {
 
 /**
  * SEARCH_PLAN — the CORE 10 coordinates (USER CUT, 2026-09-21, plan
- * approval) PLUS the 11th coordinate USER RULING F's "Adjustment 1" added
- * (2026-09-21, mid-54-07): after 27 evaluations of the original core-10
- * search, 22 of 25 rejections were the class-fairness guardrail on the
- * Magic User, and the one dial that could prop the Magic User pool back up
- * — `CLASS_MITIGATION["Magic User"].spellPower` — sat outside the core 10
- * (a manual-notch-only knob per 54-06/54-07's plan approval). Ruling F
- * promotes it to a searched coordinate. USER RULING F "Adjustment 1b"
- * (2026-09-21, resumed 54-07 dispatch): the coordinate was originally
- * appended LAST (so a resumed walk's first 10 probes would replay
- * byte-identically against the pre-Adjustment-1 log); the block-1 search
- * runs from a FRESH log (`fit/fit-log-block1.jsonl`, seeded from
- * `fit/start-block1.json`, not a resume of the old log), so that
- * replay-compatibility reason no longer applies, and the coordinate most
- * likely to unblock the class-fairness guardrail (22 of 25 rejections)
- * is moved to be probed FIRST — pass 1's first two evaluations — instead
- * of twentieth. Coordinates transcribed verbatim from 54-06-PLAN.md's dial
- * table's `Search bounds (step)` / `Search order` columns (the original
- * core-10, now positions 2-11) and 54-CONTEXT.md's `## USER RULING F`
- * (spellPower, now position 1). `applyStep` refuses any key outside this
- * list.
+ * approval). Coordinates transcribed verbatim from 54-06-PLAN.md's dial
+ * table's `Search bounds (step)` / `Search order` columns. `applyStep`
+ * refuses any key outside this list.
+ *
+ * History: USER RULING F "Adjustment 1"/"Adjustment 1b" (2026-09-21, mid-
+ * 54-07, cycle 2) temporarily promoted `CLASS_MITIGATION["Magic User"].
+ * spellPower` into this list as an 11th (then 1st) coordinate, after 27
+ * cycle-1 evaluations showed 22 of 25 rejections were the class-fairness
+ * guardrail on the Magic User. USER RULING G "Adjustment 2" (2026-09-21,
+ * cycle 3) DROPS it again: across cycle 2's 200-seed evaluations the
+ * coordinate proved a structural no-op — the per-floor survival metric
+ * never registered a change from moving spellPower alone (it scales
+ * offensive spell DAMAGE, which this objective's S_L curve does not read
+ * directly) — while the real fairness fix (loosening the tolerance itself,
+ * see classConstraints above) was the one that actually mattered. The
+ * coordinate returns to HELD_DIALS below at its identity value (1).
  */
 export const SEARCH_PLAN = [
-  { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], step: 0.15, lo: 1.0, hi: 2.0 },
   { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
   { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
   { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
@@ -215,16 +222,18 @@ export const SEARCH_PLAN = [
  * held --start value, and the release note the miss table reads (recorded,
  * never taken this plan). The maze-grid-size dial is deliberately absent —
  * cut from Phase 54 entirely (no dial, no grid change; see 54-06-PLAN.md's
- * "USER CUT" paragraph). `CLASS_MITIGATION` itself is NOT held — Ruling F's
- * Adjustment 1 promoted its `["Magic User", "spellPower"]` leaf into
- * SEARCH_PLAN (coordinate 11), so the top-level `CLASS_MITIGATION` key now
- * satisfies the "every DIALS key is in SEARCH_PLAN or HELD_DIALS" invariant
- * via SEARCH_PLAN's own `path[0]`. `Fighter`/`Thief`'s rows (and every
- * other `Magic User` row, there being none) remain the manual-notch-only
- * knob (at most two notches per phase, per 54-06/54-07's plan approval) —
- * not a coordinate-search dial, not individually held.
+ * "USER CUT" paragraph). `DOT_HP_FRACTION` is likewise absent — USER RULING
+ * G (2026-09-21, cycle 3) retired it from DIALS entirely (engine/
+ * difficulty.js's `DOT_HP_BASE` is a flat canon table, not a dial). USER
+ * RULING G "Adjustment 2" returns `CLASS_MITIGATION["Magic User"].
+ * spellPower` to this list (SEARCH_PLAN's own JSDoc above records why it
+ * was dropped again) — held at its identity value (1); `Fighter`/`Thief`'s
+ * rows remain the manual-notch-only knob (at most two notches per phase,
+ * per 54-06/54-07's plan approval) — not a coordinate-search dial, not
+ * individually held.
  */
 export const HELD_DIALS = [
+  { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], start: 1.0, releaseIf: "held (available); [1.0, 2.0] if released — USER RULING G: proved a structural no-op at step 0.15 across 200 seeds in cycle 2" },
   { path: ["TIER_SPREAD"], start: 1, releaseIf: "available, canon" },
   { path: ["FOE_HP_SCALE", "perDepth"], start: 0.015, releaseIf: "held (available)" },
   { path: ["FOE_COUNT_SKEW"], start: 1, releaseIf: "held (available); 0..4 if released" },
@@ -232,9 +241,6 @@ export const HELD_DIALS = [
   { path: ["ABILITY_THREAT", "base"], start: 1.0, releaseIf: "held (available); base [0.6, 1.2] if released" },
   { path: ["ABILITY_THREAT", "perDepth"], start: 0, releaseIf: "held (available)" },
   { path: ["CAMP_HEAL_FRACTION"], start: 0.2, releaseIf: "held (available); [0.15, 0.5] if released" },
-  { path: ["DOT_HP_FRACTION", "small"], start: 0.24, releaseIf: "held (available)" },
-  { path: ["DOT_HP_FRACTION", "mid"], start: 0.36, releaseIf: "held (available)" },
-  { path: ["DOT_HP_FRACTION", "large"], start: 0.6, releaseIf: "held (available)" },
   { path: ["FOOD_CLOCK"], start: 1.5, releaseIf: "held (available); [1.0, 1.6] if released" },
   { path: ["HAZARD_SCALE", "perDepth"], start: 0.02, releaseIf: "held (available)" },
   { path: ["DARK_BLOBS", "base"], start: -0.4, releaseIf: "held (available)" },

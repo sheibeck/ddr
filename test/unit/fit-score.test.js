@@ -35,9 +35,8 @@ function onTargetSurvival() {
 
 // --- SEARCH_PLAN / HELD_DIALS ------------------------------------------
 
-test("SEARCH_PLAN has Ruling F Adjustment 1b's coordinate (CLASS_MITIGATION Magic User spellPower) FIRST, then the core 10, in order, with pinned steps/bounds", () => {
+test("SEARCH_PLAN is exactly the core 10, in order, with pinned steps/bounds (USER RULING G, cycle 3: the Ruling F spellPower coordinate is dropped again — proved a structural no-op in cycle 2)", () => {
   const expected = [
-    ["CLASS_MITIGATION.Magic User.spellPower", 0.15, 1.0, 2.0],
     ["FOE_LEVEL.perDepth", 0.03, 0.12, 0.3],
     ["FOE_LEVEL.base", 0.15, 0.3, 1.0],
     ["HERO_SP_SCALE", 0.05, 0.15, 0.6],
@@ -49,7 +48,7 @@ test("SEARCH_PLAN has Ruling F Adjustment 1b's coordinate (CLASS_MITIGATION Magi
     ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
     ["ENCOUNTER_DOTS.base", 1, 5, 10],
   ];
-  assert.equal(SEARCH_PLAN.length, 11);
+  assert.equal(SEARCH_PLAN.length, 10);
   SEARCH_PLAN.forEach((coord, i) => {
     const [path, step, lo, hi] = expected[i];
     assert.equal(coord.path.join("."), path, `coordinate ${i}`);
@@ -57,9 +56,10 @@ test("SEARCH_PLAN has Ruling F Adjustment 1b's coordinate (CLASS_MITIGATION Magi
     assert.equal(coord.lo, lo, `${path} lo`);
     assert.equal(coord.hi, hi, `${path} hi`);
   });
+  assert.equal(SEARCH_PLAN.some((c) => c.path[0] === "CLASS_MITIGATION"), false, "spellPower is HELD in cycle 3, not searched");
 });
 
-test("HELD_DIALS names every DIALS key not in SEARCH_PLAN (no MAZE_SIZE — cut; no standalone CLASS_MITIGATION row post-Ruling-F)", () => {
+test("HELD_DIALS names every DIALS key not in SEARCH_PLAN (no MAZE_SIZE — cut; no DOT_HP_FRACTION — retired, USER RULING G; CLASS_MITIGATION held at spellPower's identity value)", () => {
   const searchKeys = new Set(SEARCH_PLAN.map((c) => c.path[0]));
   const heldKeys = new Set(HELD_DIALS.map((c) => c.path[0]));
   for (const key of Object.keys(DIALS)) {
@@ -141,15 +141,43 @@ function classRow(cls, overrides = {}) {
   };
 }
 
-test("classConstraints: rejects a Fighter p50 1.5 below pooled", () => {
+test("classConstraints (USER RULING G, cycle 3): a Fighter p50 1.5 below pooled is now WITHIN the loosened 2.0-floor tolerance and does NOT reject", () => {
   const classIdentity = [
     classRow("Fighter", { p50: 4.5, reach5: 50 }),
     classRow("Thief", { p50: 6, reach5: 50 }),
     classRow("Magic User", { p50: 6, reach5: 50 }),
   ];
   const result = classConstraints(classIdentity);
+  assert.equal(result.ok, true, result.reasons.join(" | "));
+});
+
+test("classConstraints: rejects a Fighter p50 3 below pooled (beyond the loosened 2.0-floor tolerance)", () => {
+  const classIdentity = [
+    classRow("Fighter", { p50: 3, reach5: 50 }),
+    classRow("Thief", { p50: 6, reach5: 50 }),
+    classRow("Magic User", { p50: 6, reach5: 50 }),
+  ];
+  const result = classConstraints(classIdentity);
   assert.equal(result.ok, false);
   assert.ok(result.reasons.some((r) => r.startsWith("Fighter p50")), result.reasons.join(" | "));
+});
+
+test("classConstraints: reach5 tolerance is 20 points (a 15-point delta passes, a 25-point delta rejects)", () => {
+  const passing = [
+    classRow("Fighter", { p50: 5, reach5: 35 }),
+    classRow("Thief", { p50: 5, reach5: 50 }),
+    classRow("Magic User", { p50: 5, reach5: 50 }),
+  ];
+  assert.equal(classConstraints(passing).ok, true, classConstraints(passing).reasons.join(" | "));
+
+  const rejecting = [
+    classRow("Fighter", { p50: 5, reach5: 25 }),
+    classRow("Thief", { p50: 5, reach5: 50 }),
+    classRow("Magic User", { p50: 5, reach5: 50 }),
+  ];
+  const result = classConstraints(rejecting);
+  assert.equal(result.ok, false);
+  assert.ok(result.reasons.some((r) => r.startsWith("Fighter reach5")), result.reasons.join(" | "));
 });
 
 test("classConstraints: rejects Thief roundsPerFight > Fighter's", () => {
@@ -200,9 +228,11 @@ test("applyStep clamps, steps ENCOUNTER_DOTS.base by 1, halves the step at stepS
   assert.equal(movedDials.LOOT_SCALE, DIALS.LOOT_SCALE, "every other dial is carried through untouched");
 });
 
-test("applyStep on the 3-level CLASS_MITIGATION.Magic User.spellPower coordinate (Ruling F Adjustment 1) touches only that leaf", () => {
-  const coord = SEARCH_PLAN.find((c) => c.path.join(".") === "CLASS_MITIGATION.Magic User.spellPower");
-  assert.ok(coord, "the spellPower coordinate must exist");
+test("applyStep on a 3-level path (CLASS_MITIGATION.Magic User.spellPower's own shape, held not searched in cycle 3 — USER RULING G) touches only that leaf", () => {
+  // spellPower is HELD in cycle 3 (not in SEARCH_PLAN); this coord is built
+  // inline, with the same step/bounds Ruling F's cycle-2 search used, purely
+  // to exercise applyStep's generic 3-level-path handling.
+  const coord = { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], step: 0.15, lo: 1.0, hi: 2.0 };
   const dials = JSON.parse(JSON.stringify(DIALS));
 
   const up = applyStep(dials, coord, 1);
@@ -224,7 +254,7 @@ test("applyStep on the 3-level CLASS_MITIGATION.Magic User.spellPower coordinate
 
 test("setDialsForTuning correctly applies a full-candidate CLASS_MITIGATION override produced by applyStep's 3-level path (the search's own worker contract)", async () => {
   const { setDialsForTuning, spellPowerFor } = await import("../../engine/difficulty.js");
-  const coord = SEARCH_PLAN.find((c) => c.path.join(".") === "CLASS_MITIGATION.Magic User.spellPower");
+  const coord = { path: ["CLASS_MITIGATION", "Magic User", "spellPower"], step: 0.15, lo: 1.0, hi: 2.0 };
   const candidate = applyStep(JSON.parse(JSON.stringify(DIALS)), coord, 1);
   const restore = setDialsForTuning(candidate);
   try {
@@ -270,7 +300,7 @@ test("evalRow: a constraint-rejected candidate scores +Infinity, verdict MISS, a
   const survival = onTargetSurvival();
   const scored = scoreSurvival(survival);
   const classIdentity = [
-    classRow("Fighter", { p50: 4.5 }),
+    classRow("Fighter", { p50: 3 }),
     classRow("Thief", { p50: 6 }),
     classRow("Magic User", { p50: 6 }),
   ];
