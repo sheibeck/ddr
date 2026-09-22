@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-22T12:20:37.545Z"
 last_activity: 2026-09-22
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.8 — defining requirements (sound effects + audio on/off, animated party marker, smoother transitions, the 999.4 map/HUD layout band, dungeon set dressing)
+**Current focus:** v1.8 — roadmap created (Phases 56–60: Sound Effects & Audio Settings, Map & HUD Layout Band, Motion & Pacing, Party Animation & Dungeon Set Dressing, Performance & Footprint Close); next is phase planning starting at Phase 56
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 56 (not yet planned)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-22 — Milestone v1.8 started
+Status: ROADMAP created — 5 phases (56–60), 26/26 requirements mapped; awaiting phase planning
+Last activity: 2026-09-22 — ROADMAP.md created for v1.8 (Phases 56–60: Sound Effects & Audio Settings, Map & HUD Layout Band, Motion & Pacing, Party Animation & Dungeon Set Dressing, Performance & Footprint Close)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -177,7 +177,8 @@ Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true �
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Review the v1.8 ROADMAP.md draft (Phases 56–60) and approve, or provide revision feedback
+- Once approved: `/gsd-plan-phase 56` (Sound Effects & Audio Settings)
 
 ## Performance Metrics
 

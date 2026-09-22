@@ -86,4 +86,29 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by the roadmapper) | | |
+| AUD-01 | Phase 56 | Pending |
+| AUD-02 | Phase 56 | Pending |
+| AUD-03 | Phase 56 | Pending |
+| AUD-04 | Phase 56 | Pending |
+| AUD-05 | Phase 56 | Pending |
+| AUD-06 | Phase 56 | Pending |
+| LAYOUT-01 | Phase 57 | Pending |
+| LAYOUT-02 | Phase 57 | Pending |
+| LAYOUT-03 | Phase 57 | Pending |
+| LAYOUT-04 | Phase 57 | Pending |
+| LAYOUT-05 | Phase 57 | Pending |
+| LAYOUT-06 | Phase 57 | Pending |
+| MOTION-01 | Phase 58 | Pending |
+| MOTION-02 | Phase 58 | Pending |
+| MOTION-03 | Phase 58 | Pending |
+| MOTION-04 | Phase 58 | Pending |
+| MOTION-05 | Phase 58 | Pending |
+| ANIM-01 | Phase 59 | Pending |
+| ANIM-02 | Phase 59 | Pending |
+| ANIM-03 | Phase 59 | Pending |
+| DRESS-01 | Phase 59 | Pending |
+| DRESS-02 | Phase 59 | Pending |
+| DRESS-03 | Phase 59 | Pending |
+| DRESS-04 | Phase 59 | Pending |
+| DRESS-05 | Phase 59 | Pending |
+| PERF-03 | Phase 60 | Pending |
