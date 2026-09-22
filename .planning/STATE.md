@@ -5,16 +5,16 @@ milestone_name: Sound, Motion & Set Dressing
 current_phase: 57
 current_phase_name: map-hud-layout-band
 current_plan: 4
-status: executing
-stopped_at: "Completed 57-03-PLAN.md (rail tap-to-dismiss + doubled holds, LAYOUT-02/03). RESUME: /gsd-autonomous — dispatch 57-04 (darkness legibility, LAYOUT-06), the last plan in the phase."
-last_updated: "2026-09-22T18:05:10.154Z"
+status: verifying
+stopped_at: "Completed 57-04-PLAN.md (darkness legibility — vignette, waiver naming, named cancel, LAYOUT-06). Phase 57 plans 1-4 all complete; orchestrator is adding plan 57-05 (HUD compaction + hamburger-menu mock) before closing the phase. RESUME: /gsd-execute-phase for 57-05, or await orchestrator."
+last_updated: "2026-09-22T18:49:36.779Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 57 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 8
-  completed_plans: 7
+  total_plans: 9
+  completed_plans: 8
   percent: 20
 total_plans_in_phase: 4
 ---
@@ -33,9 +33,9 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 Phase: 57 (map-hud-layout-band) — EXECUTING
 Current Plan: 4
 Total Plans in Phase: 4
-Progress: [█████████░] 88%
+Progress: [█████████░] 89%
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-22 — Phase 57 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T18:03:18.620Z
-Stopped at: Completed 57-03-PLAN.md (rail tap-to-dismiss + doubled holds, LAYOUT-02/03). RESUME: /gsd-autonomous — dispatch 57-04 (darkness legibility, LAYOUT-06), the last plan in the phase.
+Last session: 2026-09-22T18:49:36.748Z
+Stopped at: Completed 57-04-PLAN.md (darkness legibility — vignette, waiver naming, named cancel, LAYOUT-06). Phase 57 plans 1-4 all complete; orchestrator is adding plan 57-05 (HUD compaction + hamburger-menu mock) before closing the phase. RESUME: /gsd-execute-phase for 57-05, or await orchestrator.
 Resume file: None
 
 ## Operator Next Steps
@@ -324,6 +324,7 @@ Resume file: None
 | Phase 57 P01 | ~55min | 3 tasks | 10 files |
 | Phase 57 P02 | 25min | 3 tasks | 3 files |
 | Phase 57 P03 | ~45min | 3 tasks | 8 files |
+| Phase 57 P04 | ~40min | 3 tasks | 13 files |
 
 ## Decisions
 
@@ -595,6 +596,8 @@ Resume file: None
 - [Phase ?]: Guarded #mw-rail body-tap dismiss NOT wired through guardTap (aria-disabled sweep is a descendant selector; encRenderedAt is stale for a no-button card) — uses isArmed(railShownAt, now) against a rail-specific stamp instead (57-CONTEXT correction 2).
 - [Phase ?]: holdForCard(null) returns HOLD_MIN via an explicit early-return special case, not the base/lineCount fallback chain — required to satisfy the plan's own bounds acceptance check.
 - [Phase ?]: Section B of rail-dismiss.test.js needed a sibling loader (loadRailDismissSandbox), not a caller of shellSandbox.js#loadShellSandbox, because renderRail's stub can't be undone after the fact — S/railShownAt/lastRailKeyShown/railTimer are per-execution vm let bindings, not context-global properties.
+- [Phase ?]: LAYOUT-06 corrected: the Phase 41 render-window filter already read c.darkFor correctly; the real 2026-09-21 device bug was waiver visibility (a torch/Amulet/Night Vision waiver holds the dark back silently while the DARK chip keeps counting down) — 57-04 built the vignette AND named the waiver.
+- [Phase ?]: vignetteFor() is fed mapViewRadius(S), never revealRadius(S) — the two diverge under a waiver, and the vignette must explain what the map is rendering, not the 1994 reveal-radius rule. Unifying the two mechanisms is deferred to backlog 999.8.
 
 ### Blockers
 
