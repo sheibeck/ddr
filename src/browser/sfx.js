@@ -152,3 +152,117 @@ export const STEP_SUPPRESSING_EVENTS = new Set([
   "phasedThrough",
   "teleported",
 ]);
+
+// DISPATCH_CLIP_CAP — the per-dispatch voice cap (CONTEXT: "Every mapped
+// event in a dispatch fires its clip, in event order ... capped at 3 voices
+// per dispatch"). Deliberately NOT the haptics "one strongest beat" model:
+// a round where you strike, kill and level up should sound like three
+// things happening.
+export const DISPATCH_CLIP_CAP = 3;
+
+/**
+ * groupsForDispatch(actionType, events, ctx) — PURE. Resolves an ordered,
+ * de-duplicated, capped list of group ids (or raw enemy-* clip ids for the
+ * combat cry) for one dispatch. Never throws on malformed input.
+ *
+ * Order of operations:
+ *  1. Guard: a non-array `events` is treated as empty.
+ *  2. Synthesized step clip, emitted FIRST: when actionType is "move" AND
+ *     ctx.stepped is true AND no event type in the list is in
+ *     STEP_SUPPRESSING_EVENTS, push "water" if any event is "waded",
+ *     otherwise push "walk". Exactly one step clip, never both.
+ *  3. Walk `events` in array order: a "combatJoined" resolves the cry via
+ *     FAMILY_CRY[ctx.combatType] (pushing nothing when combatType is
+ *     absent/unknown — the one silent, engine-impossible branch); any other
+ *     type is looked up in EVENT_CLIP_GROUP and pushed when found.
+ *  4. De-duplicate by pushed identity, keeping the FIRST occurrence.
+ *  5. Truncate to DISPATCH_CLIP_CAP entries.
+ *  6. An empty/all-unmapped/garbage `events` argument returns [] and
+ *     touches no state.
+ */
+export function groupsForDispatch(actionType, events, ctx) {
+  const list = Array.isArray(events) ? events : [];
+  const out = [];
+
+  const hasSuppressor = list.some(
+    (e) => e && typeof e === "object" && STEP_SUPPRESSING_EVENTS.has(e.type)
+  );
+  if (actionType === "move" && ctx?.stepped && !hasSuppressor) {
+    const waded = list.some((e) => e && typeof e === "object" && e.type === "waded");
+    out.push(waded ? "water" : "walk");
+  }
+
+  for (const e of list) {
+    if (!e || typeof e !== "object" || !e.type) continue;
+    if (e.type === "combatJoined") {
+      const cry = FAMILY_CRY[ctx?.combatType];
+      if (cry) out.push(cry);
+      continue;
+    }
+    const group = EVENT_CLIP_GROUP[e.type];
+    if (group) out.push(group);
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const entry of out) {
+    if (seen.has(entry)) continue;
+    seen.add(entry);
+    deduped.push(entry);
+  }
+
+  return deduped.slice(0, DISPATCH_CLIP_CAP);
+}
+
+/**
+ * createVariation() — factory for a counter-driven round-robin shuffle-bag.
+ * Returns { next(groupId) }, closing over a plain Map of per-group
+ * counters. This modulo round-robin IS the shuffle-bag: for a size-2 group
+ * it strictly alternates, for a size-3 group it cycles 0,1,2 and never
+ * repeats back-to-back. A counter, not a draw, is what keeps this phase
+ * incapable of perturbing engine determinism.
+ *
+ * next(groupId):
+ *  - unknown group id -> null, no throw, map untouched.
+ *  - group of size 1 -> that one clip, no throw, map untouched (no
+ *    no-repeat guarantee is attempted or needed).
+ *  - otherwise -> reads the counter (default 0), returns
+ *    group[counter % group.length], stores counter + 1.
+ */
+export function createVariation() {
+  const counters = new Map();
+  return {
+    next(groupId) {
+      const group = CLIP_GROUPS[groupId];
+      if (!group) return null;
+      if (group.length === 1) return group[0];
+      const counter = counters.get(groupId) ?? 0;
+      const clip = group[counter % group.length];
+      counters.set(groupId, counter + 1);
+      return clip;
+    },
+  };
+}
+
+// Module-level default variation instance, used by clipsForDispatch() when
+// no variation is passed in, so shell callers never have to thread state
+// themselves. Tests construct and pass their own instance so no global
+// state leaks between test cases.
+const defaultVariation = createVariation();
+
+/**
+ * clipsForDispatch(actionType, events, ctx, variation) — resolves a
+ * dispatch straight through to an ordered array of concrete clip ids.
+ * Group entries are resolved via variation.next(); raw clip ids (the
+ * enemy-* cries) pass through unchanged. Any null result (unknown group)
+ * is dropped. An empty group list returns [] having advanced no counter.
+ */
+export function clipsForDispatch(actionType, events, ctx, variation = defaultVariation) {
+  const groups = groupsForDispatch(actionType, events, ctx);
+  const clips = [];
+  for (const entry of groups) {
+    const resolved = CLIP_GROUPS[entry] ? variation.next(entry) : entry;
+    if (resolved) clips.push(resolved);
+  }
+  return clips;
+}
