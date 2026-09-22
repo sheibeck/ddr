@@ -161,9 +161,57 @@ export const STEP_SUPPRESSING_EVENTS = new Set([
 export const DISPATCH_CLIP_CAP = 3;
 
 /**
+ * groupEntriesForDispatch(actionType, events, ctx) — PURE, internal. Phase
+ * 58 (D-12): the entry projection groupsForDispatch(...) below is now
+ * itself a thin projection of this function, which pairs each pushed
+ * group/clip id with the source EVENT INDEX that produced it (idx -1 for
+ * the synthesized step clip, which has no source event). Follows the exact
+ * same order of operations groupsForDispatch documents. De-duplicates on
+ * `entry`, keeping the FIRST occurrence (and that occurrence's idx), then
+ * truncates to DISPATCH_CLIP_CAP. This is what lets a combat beat
+ * (src/browser/combatBeat.js#cueLines) know which fight-log line a clip
+ * belongs to.
+ */
+function groupEntriesForDispatch(actionType, events, ctx) {
+  const list = Array.isArray(events) ? events : [];
+  const out = [];
+
+  const hasSuppressor = list.some(
+    (e) => e && typeof e === "object" && STEP_SUPPRESSING_EVENTS.has(e.type)
+  );
+  if (actionType === "move" && ctx?.stepped && !hasSuppressor) {
+    const waded = list.some((e) => e && typeof e === "object" && e.type === "waded");
+    out.push({ entry: waded ? "water" : "walk", idx: -1 });
+  }
+
+  list.forEach((e, idx) => {
+    if (!e || typeof e !== "object" || !e.type) return;
+    if (e.type === "combatJoined") {
+      const cry = FAMILY_CRY[ctx?.combatType];
+      if (cry) out.push({ entry: cry, idx });
+      return;
+    }
+    const group = EVENT_CLIP_GROUP[e.type];
+    if (group) out.push({ entry: group, idx });
+  });
+
+  const deduped = [];
+  const seen = new Set();
+  for (const item of out) {
+    if (seen.has(item.entry)) continue;
+    seen.add(item.entry);
+    deduped.push(item);
+  }
+
+  return deduped.slice(0, DISPATCH_CLIP_CAP);
+}
+
+/**
  * groupsForDispatch(actionType, events, ctx) — PURE. Resolves an ordered,
  * de-duplicated, capped list of group ids (or raw enemy-* clip ids for the
- * combat cry) for one dispatch. Never throws on malformed input.
+ * combat cry) for one dispatch. Never throws on malformed input. Phase 58
+ * (D-12): this is now the ENTRY PROJECTION of groupEntriesForDispatch — the
+ * two can never drift because one is derived from the other.
  *
  * Order of operations:
  *  1. Guard: a non-array `events` is treated as empty.
@@ -181,37 +229,7 @@ export const DISPATCH_CLIP_CAP = 3;
  *     touches no state.
  */
 export function groupsForDispatch(actionType, events, ctx) {
-  const list = Array.isArray(events) ? events : [];
-  const out = [];
-
-  const hasSuppressor = list.some(
-    (e) => e && typeof e === "object" && STEP_SUPPRESSING_EVENTS.has(e.type)
-  );
-  if (actionType === "move" && ctx?.stepped && !hasSuppressor) {
-    const waded = list.some((e) => e && typeof e === "object" && e.type === "waded");
-    out.push(waded ? "water" : "walk");
-  }
-
-  for (const e of list) {
-    if (!e || typeof e !== "object" || !e.type) continue;
-    if (e.type === "combatJoined") {
-      const cry = FAMILY_CRY[ctx?.combatType];
-      if (cry) out.push(cry);
-      continue;
-    }
-    const group = EVENT_CLIP_GROUP[e.type];
-    if (group) out.push(group);
-  }
-
-  const deduped = [];
-  const seen = new Set();
-  for (const entry of out) {
-    if (seen.has(entry)) continue;
-    seen.add(entry);
-    deduped.push(entry);
-  }
-
-  return deduped.slice(0, DISPATCH_CLIP_CAP);
+  return groupEntriesForDispatch(actionType, events, ctx).map((g) => g.entry);
 }
 
 /**
@@ -251,20 +269,36 @@ export function createVariation() {
 const defaultVariation = createVariation();
 
 /**
+ * cuesForDispatch(actionType, events, ctx, variation) — PURE, exported.
+ * Phase 58 (D-12). Resolves a dispatch straight through to an ordered
+ * array of `{ clip, idx }` cues: `idx` is the source event's own array
+ * index (-1 for the synthesized step clip), so a combat beat can own each
+ * clip with the fight-log line that folded its source event
+ * (src/browser/combatBeat.js#cueLines). Group entries are resolved via
+ * variation.next(); raw clip ids (the enemy-* cries) pass through
+ * unchanged. Any null result (unknown group) is dropped. An empty group
+ * list returns [] having advanced no counter.
+ */
+export function cuesForDispatch(actionType, events, ctx, variation = defaultVariation) {
+  const entries = groupEntriesForDispatch(actionType, events, ctx);
+  const cues = [];
+  for (const { entry, idx } of entries) {
+    const resolved = CLIP_GROUPS[entry] ? variation.next(entry) : entry;
+    if (resolved) cues.push({ clip: resolved, idx });
+  }
+  return cues;
+}
+
+/**
  * clipsForDispatch(actionType, events, ctx, variation) — resolves a
  * dispatch straight through to an ordered array of concrete clip ids.
- * Group entries are resolved via variation.next(); raw clip ids (the
- * enemy-* cries) pass through unchanged. Any null result (unknown group)
- * is dropped. An empty group list returns [] having advanced no counter.
+ * Phase 58 (D-12): this is now the CLIP PROJECTION of cuesForDispatch —
+ * the two can never drift because one is derived from the other, so "the
+ * per-dispatch clip set is unchanged, only its timing moves" holds by
+ * construction.
  */
 export function clipsForDispatch(actionType, events, ctx, variation = defaultVariation) {
-  const groups = groupsForDispatch(actionType, events, ctx);
-  const clips = [];
-  for (const entry of groups) {
-    const resolved = CLIP_GROUPS[entry] ? variation.next(entry) : entry;
-    if (resolved) clips.push(resolved);
-  }
-  return clips;
+  return cuesForDispatch(actionType, events, ctx, variation).map((c) => c.clip);
 }
 
 // ============================================================================
@@ -497,6 +531,25 @@ export function playForDispatch(actionType, events, ctx) {
     playClips(clipsForDispatch(actionType, events, ctx));
   } catch {
     // cosmetic polish — never throw into the dispatch path.
+  }
+  return undefined;
+}
+
+/**
+ * playClipIds(clipIds) — exported. Phase 58 (D-12): plays a list of
+ * already-resolved clip ids through the same internal playClips() path
+ * (device + Sound-Off guard) that every other clip uses — this is how a
+ * combat beat (src/browser/combatBeat.js) plays each exchange's clips
+ * together with its own fight-log line, without opening a second audio
+ * path. A non-array `clipIds` is treated as empty; non-string entries are
+ * dropped. Never throws; always returns undefined.
+ */
+export function playClipIds(clipIds) {
+  try {
+    const list = Array.isArray(clipIds) ? clipIds.filter((id) => typeof id === "string") : [];
+    playClips(list);
+  } catch {
+    // cosmetic polish — never throw.
   }
   return undefined;
 }
