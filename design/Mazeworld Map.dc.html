@@ -12,10 +12,18 @@ body{margin:0;background:#0a0806;display:flex;justify-content:center;align-items
 a{color:#e8c97a}a:hover{color:#f6e0a2}
 *{-webkit-tap-highlight-color:transparent}
 ::-webkit-scrollbar{width:0;height:0}
+@keyframes mwrise{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 </style></helmet>
 <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ dark }}" hint-size="402px,874px">
 <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:50px;background:#14110c;overflow:hidden">
 
+<sc-if value="{{ showHud }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;align-items:baseline;gap:8px;padding:9px 14px 10px;background:#241d12;overflow:hidden">
+<span style="font-size:13px;font-weight:700;line-height:1.4;color:#e8c97a;flex:none;white-space:nowrap">{{ ch.name }}</span>
+<span style="flex:1;min-width:0;font-size:13px;font-weight:700;line-height:1.4;color:#a89c82;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ch.line }} {{ ch.level }}</span>
+<span style="{{ hud.hpStyle }}">{{ hud.hp }}</span>
+</div>
+<div style="flex:none;height:4px;background:#2c2519;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)"><div style="{{ hud.hpBar }}"></div></div>
 <div style="position:relative;display:flex;align-items:center;gap:10px;padding:8px 14px 9px;border-bottom:3px solid #3a3226;background:#1b170f;flex:none">
 <div style="flex:1;min-width:0;overflow:hidden;display:flex;gap:8px;align-items:baseline">
 <span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">FLOOR</span><span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:16px;margin-left:-6px;color:#e8c97a">{{ hud.floor }}</span>
@@ -23,11 +31,18 @@ a{color:#e8c97a}a:hover{color:#f6e0a2}
 <span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">SQUARES</span><span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:16px;margin-left:-6px;color:#e6ddc6">{{ hud.squares }}</span>
 <span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">RATIONS</span><span style="{{ hud.rationStyle }}">{{ hud.rations }}</span>
 </div>
-<div style="flex:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-<span style="{{ hud.wpStyle }}">{{ hud.wp }}</span>
-<div style="width:64px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09"><div style="{{ hud.wpBar }}"></div></div>
+<div style="flex:none;position:relative">
+<div onClick="{{ toggleMenu }}" style="{{ menuBtnStyle }}">&#9776;</div>
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;right:0;top:calc(100% + 7px);z-index:40;min-width:168px;background:#1b170f;border:2px solid #6b5c3c;box-shadow:0 6px 0 rgba(8,7,5,.6);animation:mwrise .16s ease">
+<sc-for list="{{ menuItems }}" as="m" hint-placeholder-count="4">
+<div onClick="{{ m.onClick }}" style="{{ m.style }}"><span style="{{ m.gs }}">{{ m.g }}</span><span style="display:flex;align-items:center;height:14px">{{ m.label }}</span></div>
+</sc-for>
+</div>
+</sc-if>
 </div>
 </div>
+</sc-if>
 
 <sc-if value="{{ hasConds }}" hint-placeholder-val="{{ true }}">
 <div style="flex:none;display:flex;gap:5px;overflow:hidden;padding:6px 14px 7px;border-bottom:3px solid #3a3226;background:#181409">
@@ -37,8 +52,26 @@ a{color:#e8c97a}a:hover{color:#f6e0a2}
 </div>
 </sc-if>
 
+<div style="{{ mapHolder }}">
+<dc-import name="Mazeworld Map Panel" command="{{ cmd }}" cell-size="{{ cellSize }}" fog-of-war="{{ fogOfWar }}" hero-wp="{{ heroWp }}" hero-max-wp="{{ heroMaxWp }}" on-stats="{{ onStats }}" on-encounter="{{ onEncounter }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+</div>
+
+<sc-if value="{{ isDead }}" hint-placeholder-val="{{ false }}">
 <div style="flex:1;position:relative;min-height:0">
-<dc-import name="Mazeworld Map Panel" cell-size="{{ cellSize }}" fog-of-war="{{ fogOfWar }}" hero-wp="{{ heroWp }}" hero-max-wp="{{ heroMaxWp }}" on-stats="{{ onStats }}" on-encounter="{{ onEncounter }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+<dc-import name="Mazeworld Boards Panel" board="deep" scope="all" handle="@lanternjaw" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+</div>
+</sc-if>
+
+<!-- Hero / Gear / Oracle tab bodies omitted from this repo copy: they are
+     unchanged from the tab screens already shipped (src/browser/heroTab.js,
+     gearTab.js, the Oracle log). Full mock: claude.ai/design project
+     fed8909e-860d-496e-9d31-04dd31f14a3c, file "Mazeworld Map.dc.html"
+     (imported 2026-09-22 for Phase 57 plan 05 — HUD compaction + menu). -->
+
+<div style="flex:none;display:flex;border-top:3px solid #3a3226;background:#1b170f;padding-bottom:20px">
+<sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+<div onClick="{{ n.onClick }}" style="{{ n.style }}">{{ n.label }}</div>
+</sc-for>
 </div>
 
 <sc-if value="{{ inFight }}" hint-placeholder-val="{{ false }}">
@@ -48,36 +81,70 @@ a{color:#e8c97a}a:hover{color:#f6e0a2}
 </div>
 </x-import>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:900},&quot;cellSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:34,&quot;min&quot;:24,&quot;max&quot;:48,&quot;step&quot;:2,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Maze&quot;},&quot;fogOfWar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Maze&quot;},&quot;partyMode&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Combat&quot;},&quot;diceMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;on tap&quot;,&quot;always&quot;,&quot;never&quot;],&quot;default&quot;:&quot;on tap&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Combat&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:900},&quot;cellSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:34,&quot;min&quot;:24,&quot;max&quot;:48,&quot;step&quot;:2,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Maze&quot;},&quot;fogOfWar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Maze&quot;}}">
+// HUD + menu logic only (the Hero/Gear/Oracle/Dead view-model is omitted —
+// see the comment in the markup above).
 class Component extends DCLogic {
-  state = { floor: 1, day: 1, squares: 0, wp: 40, maxWp: 40, rations: 7, fight: null, conds: [], explain: null };
+  state = { tab: 'map', floor: 1, day: 1, squares: 0, wp: 27, maxWp: 40, rations: 7, conds: [], explain: null };
+
   renderVals() {
     const self = this, s = this.state, p = this.props;
-    const pct = Math.round((s.wp / s.maxWp) * 100);
+    const wp = s.wp == null ? s.hp : s.wp;
+    const pct = Math.round((wp / s.maxWp) * 100);
+    const tabs = [['map', 'MAP'], ['hero', 'HERO'], ['gear', 'GEAR'], ['oracle', 'ORACLE'], ['dead', 'DEAD']];
     return {
       dark: true,
+      showHud: s.tab === 'map' || s.tab === 'hero' || s.tab === 'gear' || s.tab === 'oracle',
+      isMap: s.tab === 'map', isDead: s.tab === 'dead',
+      mapHolder: { flex: s.tab === 'map' ? 1 : 'none', position: 'relative', minHeight: 0,
+        display: s.tab === 'map' ? 'block' : 'none' },
+      nav: tabs.map(function (t) {
+        const on = s.tab === t[0];
+        return { key: t[0], label: t[1],
+          onClick: function () { self.setState({ tab: t[0] }); },
+          style: { flex: 1, textAlign: 'center', padding: '15px 0 13px', fontFamily: "'Press Start 2P'", fontSize: 7.5,
+            cursor: 'pointer', color: on ? '#e8c97a' : '#8f856f', background: on ? '#241d12' : 'transparent',
+            boxShadow: on ? 'inset 0 3px 0 #e8c97a' : 'none' } };
+      }),
+      ch: { name: 'HILDA FERROW', line: 'Dwarven Pickpocket', level: 'I' },
       cellSize: p.cellSize || 34, fogOfWar: p.fogOfWar !== false,
-      heroWp: s.wp, heroMaxWp: s.maxWp,
-      partyMode: p.partyMode !== false, diceMode: p.diceMode || 'on tap',
-      hud: { floor: s.floor, day: s.day, squares: s.squares, wp: s.wp + '/' + s.maxWp + ' WP', rations: s.rations,
+      heroWp: wp, heroMaxWp: s.maxWp,
+      hud: { floor: s.floor, day: s.day, squares: s.squares, hp: wp + ' / ' + s.maxWp + ' HP', rations: s.rations,
         rationStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 16, marginLeft: -6, color: s.rations <= 2 ? '#e05a48' : '#e6ddc6' },
-        wpStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', color: pct <= 25 ? '#e05a48' : '#e6ddc6' },
-        wpBar: { width: pct + '%', height: '100%', background: pct > 50 ? '#7f9d4e' : pct > 22 ? '#e8c97a' : '#e05a48' } },
-      hasConds: s.conds.length > 0,
+        hpStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', color: pct <= 25 ? '#e05a48' : '#e6ddc6' },
+        hpBar: { width: pct + '%', height: '100%', background: pct > 50 ? '#7f9d4e' : pct > 22 ? '#e8c97a' : '#e05a48' } },
+      hasConds: s.tab === 'map' && s.conds.length > 0,
       conds: s.conds.map(function (c, i) {
         const TONE = { bad: ['#a63a2c', '#e07260'], warn: ['#6b5c3c', '#e8c97a'], odd: ['#5b4a86', '#b9a4ef'], good: ['#5e7a3c', '#a8cc72'] };
         const t = TONE[c.tone] || TONE.warn;
         return { key: c.id + i, label: c.label, left: c.left == null ? '' : c.left,
           onClick: function () { if (s.explain) s.explain(c.id); },
           style: { display: 'flex', alignItems: 'baseline', gap: 4, flex: 'none', border: '1px solid ' + t[0], background: '#1b170f',
-            padding: '3px 5px', fontFamily: "'Press Start 2P'", fontSize: 5.5, lineHeight: 1.5, color: t[1], cursor: 'pointer', whiteSpace: 'nowrap' },
-          leftStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 10, color: '#8f856f',
+            padding: '3px 5px', fontFamily: "'Press Start 2P'", fontSize: 7, lineHeight: 1.5, color: t[1], cursor: 'pointer', whiteSpace: 'nowrap' },
+          leftStyle: { fontFamily: "'Courier Prime', monospace", fontWeight: 700, fontSize: 12, color: '#a89c82',
             display: c.left == null ? 'none' : 'inline' } };
       }),
+      cmd: s.cmd,
+      menuOpen: !!s.menuOpen,
+      menuBtnStyle: { fontFamily: "'Press Start 2P'", fontSize: 9, lineHeight: 1, padding: '8px 9px',
+        background: s.menuOpen ? '#e8c97a' : '#241d12', color: s.menuOpen ? '#14110c' : '#e8c97a',
+        border: '2px solid #6b5c3c', cursor: 'pointer', boxShadow: '0 3px 0 #0d0b08' },
+      toggleMenu: function () { self.setState({ menuOpen: !s.menuOpen }); },
+      menuItems: [
+        ['MARKS', 'legend', '◈', '#e8c97a', 13],
+        ['CENTRE MAP', 'recenter', '⊕', '#8fb08a', 14],
+        ['MAKE CAMP', 'camp', '☾', '#b9a4ef', 16],
+        ['SETTINGS', 'account', '⚙', '#9a8f76', 15],
+      ].map(function (m, i) {
+        return { key: m[1], label: m[0], g: m[2],
+          gs: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 14,
+            flex: 'none', fontSize: m[4], lineHeight: 1, color: m[3] },
+          onClick: function () { self.setState({ menuOpen: false, cmd: m[1] + ':' + Date.now() }); },
+          style: { display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'Press Start 2P'", fontSize: 7.5,
+            lineHeight: 1.6, padding: '13px 14px', color: '#e6ddc6', cursor: 'pointer', background: '#1b170f',
+            borderTop: i ? '2px solid #241f16' : 'none' } };
+      }),
       onStats: function (st) { self.setState({ floor: st.floor, day: st.day, squares: st.squares, rations: st.rations, wp: st.wp, maxWp: st.maxWp, conds: st.conditions || [], explain: st.explain || null }); },
-      onEncounter: function (e) { self.setState({ fight: e }); },
-      inFight: !!s.fight, foes: s.fight ? s.fight.foes : 3,
-      onResolve: function (res) { self.setState({ fight: null, wp: res.outcome === 'dead' ? 0 : res.heroWp }); },
     };
   }
 }
