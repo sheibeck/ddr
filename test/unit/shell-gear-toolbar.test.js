@@ -76,12 +76,12 @@ function storeRegion() {
 }
 
 function chipsMarkup() {
-  // Phase 35 (MAP-02/06): the chip row now ends at the viewport's closing
-  // </div> — sliced through <section class="mw-overlay" (the next markup
-  // landmark), which also covers the party-pulse ring; the control bar
-  // (the former .mazefoot/D-pad markup) is retired outright by Plan 04 —
-  // test/unit/shell-map-viewport.test.js owns its zero-occurrence pin now.
-  return sliceBetween(HTML, '<div class="mw-map-chips"', '<section class="mw-overlay"');
+  // Phase 57 (LAYOUT-04) re-pin: the chip band is now a sibling ABOVE
+  // .mazebox, outside .mw-maze-viewport entirely — it no longer ends at the
+  // viewport's closing </div>/the encounter overlay section; the next
+  // markup landmark after the chip band closes is .mazebox's own opening
+  // tag.
+  return sliceBetween(HTML, '<div class="mw-map-chips"', '<div class="mazebox">');
 }
 
 // ─── UIF-01: the GEAR action row + inline two-tap Drop confirm ───────────
@@ -191,11 +191,13 @@ test("UIF-05: no trace of the former handed-layout option remains in the shell",
   assert.doesNotMatch(RAW_HTML, /#app\[data-/);
 });
 
-test("UIF-05/Phase 35 (MAP-06): the chip row spans the viewport width and pins the camp chip to the far right via the gap span", () => {
+test("UIF-05/Phase 57 (LAYOUT-04): the chip band is a static layout band (no position, no z-index) and pins the camp chip to the far right via the gap span", () => {
   const chipsRuleMatch = HTML.match(/^\.mw-map-chips\{[^}]*\}/m);
   assert.ok(chipsRuleMatch, ".mw-map-chips rule found");
-  assert.match(chipsRuleMatch[0], /left:10px/);
-  assert.match(chipsRuleMatch[0], /right:10px/);
+  assert.doesNotMatch(chipsRuleMatch[0], /position:/, "Phase 57 (LAYOUT-04): the chip band is no longer an absolute overlay");
+  assert.doesNotMatch(chipsRuleMatch[0], /z-index/, "Phase 57 (LAYOUT-04): the chip band no longer needs a stacking context");
+  assert.match(chipsRuleMatch[0], /flex:none/);
+  assert.match(chipsRuleMatch[0], /background:#181409/);
   assert.match(HTML, /^\.mw-map-chips-gap\{flex:1\}$/m);
   assert.doesNotMatch(HTML, /#btn-camp:hover/);
   assert.doesNotMatch(HTML, /#btn-camp:active/);

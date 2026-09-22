@@ -53,6 +53,7 @@ import {
   renderHeroTab,
 } from "../../../src/browser/heroTab.js";
 import { renderStoreScreen } from "../../../src/browser/storeScreen.js";
+import { identityLine, counterSlots } from "../../../src/browser/hudBands.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -117,6 +118,11 @@ function wireBridges(context) {
   w.__mzDropShelfItems = dropShelfItems;
   w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   w.__mzCarriedList = renderCarriedList;
+  // Phase 57 (LAYOUT-05): paint() reads band 1's identity line and band 2's
+  // fixed-width counter slots through this bridge — wired so the BEHAVIOUR
+  // tests in test/unit/hud-bands-layout.test.js can prove paint() routes
+  // through it rather than formatting inline.
+  w.__mzHudBands = { identityLine, counterSlots };
 }
 
 /**

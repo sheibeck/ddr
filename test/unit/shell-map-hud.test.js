@@ -90,65 +90,99 @@ function styleBlock() {
 
 // ─── (a) HUD markup ─────────────────────────────────────────────────────
 
-test("(a) HUD markup: FLOOR/DAY/SQUARES/RATIONS in order with their kept ids, the WP block ids, DEV chip still inside .mw-hud-top, the gear gone from the HUD, zero character-line ids", () => {
+test("(a) HUD markup: band 1 (identity line, WP block, DEV chip) and band 2 (Depth/Day/Squares/Rations) with their kept ids, the gear gone from the HUD, zero DEAD character-line ids (Phase 57 LAYOUT-05)", () => {
   const hudStart = HTML.indexOf('<header class="mw-hud" id="mw-hud">');
   const hudEnd = HTML.indexOf("</header>", hudStart);
   assert.ok(hudStart !== -1 && hudEnd !== -1 && hudEnd > hudStart, "the HUD header region must be found");
   const region = HTML.slice(hudStart, hudEnd);
 
-  const floorIdx = region.indexOf('mw-hud-item mw-hud-floor">Floor<b id="m-floor">');
-  const dayIdx = region.indexOf('Day<b id="m-day">');
-  const sqIdx = region.indexOf('Squares<b id="m-steps">');
-  const ratIdx = region.indexOf('Rations<b id="m-rations">');
-  assert.ok(floorIdx !== -1 && dayIdx !== -1 && sqIdx !== -1 && ratIdx !== -1, "all four stat items found");
-  assert.ok(floorIdx < dayIdx && dayIdx < sqIdx && sqIdx < ratIdx, "FLOOR, DAY, SQUARES, RATIONS in that order");
-  assert.doesNotMatch(region, />Moves</, "the old Moves label text is gone");
-
+  // Band 1 (.mw-hud-identity): the identity line, then the WP block, then
+  // the DEV chip, in that order.
+  const identityStart = region.indexOf('<div class="mw-hud-identity">');
+  const nameIdx = region.indexOf('id="mw-hud-name"');
+  const wpIdx = region.indexOf('id="mw-hud-wp"');
+  const devIdx = region.indexOf('id="mw-dev-chip"');
+  assert.ok(identityStart !== -1 && nameIdx !== -1 && wpIdx !== -1 && devIdx !== -1, "band 1's four anchors all found");
+  assert.ok(identityStart < nameIdx && nameIdx < wpIdx && wpIdx < devIdx, "identity wrapper, name, WP block, DEV chip in that order");
   assert.equal((region.match(/id="mw-hud-wp"/g) || []).length, 1);
   assert.equal((region.match(/id="mw-hud-wpfill"/g) || []).length, 1);
   assert.match(region, /class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0\/0 HP<\/span>/);
 
-  const devIdx = region.indexOf('id="mw-dev-chip"');
-  const topStart = region.indexOf('<div class="mw-hud-top">');
-  // .mw-hud-top is the header's ONE child now (the character line/condition
-  // strip/party rail all moved out) — so the DEV chip appearing after it
-  // opens proves it stayed inside it.
-  assert.ok(topStart !== -1 && topStart < devIdx, "the DEV chip after .mw-hud-top opens");
+  // Band 2 (.mw-hud-counters): Depth, Day, Squares, Rations, in order, with
+  // their kept ids (D-09) — the FLOOR label is renamed Depth (2026-09-21
+  // ruling wording), the id stays m-floor.
+  const countersStart = region.indexOf('<div class="mw-hud-counters">');
+  assert.ok(countersStart !== -1 && countersStart > identityStart, "band 2 follows band 1");
+  const countersRegion = region.slice(countersStart);
+  const depthIdx = countersRegion.indexOf('mw-hud-item mw-hud-floor">Depth<b id="m-floor">');
+  const dayIdx = countersRegion.indexOf('Day<b id="m-day">');
+  const sqIdx = countersRegion.indexOf('Squares<b id="m-steps">');
+  const ratIdx = countersRegion.indexOf('Rations<b id="m-rations">');
+  assert.ok(depthIdx !== -1 && dayIdx !== -1 && sqIdx !== -1 && ratIdx !== -1, "all four counter items found");
+  assert.ok(depthIdx < dayIdx && dayIdx < sqIdx && sqIdx < ratIdx, "Depth, Day, Squares, Rations in that order");
+  assert.doesNotMatch(region, />Moves</, "the old Moves label text is gone");
+  assert.doesNotMatch(region, />Floor</, "the FLOOR label text is gone (renamed Depth)");
+
+  assert.doesNotMatch(region, /mw-hud-top/, ".mw-hud-top is retired (Phase 57 supersedes Phase 35 ruling 5)");
+  assert.doesNotMatch(region, /mw-hud-row/, ".mw-hud-row is retired (Phase 57 supersedes Phase 35 ruling 5)");
   assert.equal((region.match(/id="mw-gear-btn"/g) || []).length, 0, "the settings gear left the HUD (2026-09-16 UAT)");
 
-  const retired = ["hud-name", "hud-cls", "mm-hp\"", "mm-hpmax", "mm-hpfill", "mw-hud-char"].join("|");
+  // Phase 35's retired character-line ids stay retired, EXCEPT hud-name —
+  // Phase 57 (2026-09-21 ruling) deliberately restores it as band 1's
+  // identity line (see the raw-file test below).
+  const retired = ["hud-cls", "mm-hp\"", "mm-hpmax", "mm-hpfill", "mw-hud-char"].join("|");
   assert.doesNotMatch(region, new RegExp(retired));
 });
 
-test("(a) raw file: zero occurrences of every retired character-line/chip-track identifier, code or comment", () => {
-  const forbidden = ["hud-name", "hud-cls", "mm-hp", "mw-hud-char", "mw-cond-track"];
+test('(a) raw file: zero occurrences of every retired character-line/chip-track identifier except "hud-name", which Phase 57 (2026-09-21 ruling) restores as the band-1 identity element', () => {
+  const forbidden = ["hud-cls", "mm-hp", "mw-hud-char", "mw-cond-track"];
   for (const literal of forbidden) {
     const hits = HTML.match(new RegExp(literal, "g")) || [];
     assert.equal(hits.length, 0, `expected zero occurrences of "${literal}" anywhere in mazeworld.html, found ${hits.length}`);
   }
+  // The restored identity element exists exactly once, as both the class
+  // and the id — proven positively rather than merely "not absent".
+  assert.equal((HTML.match(/class="mw-hud-name" id="mw-hud-name"/g) || []).length, 1);
 });
 
-// ─── (b) layout: the condition strip sits between </header> and <main>; the retired party strip is gone ──
+// ─── (b) layout: band 1 precedes band 2; the condition strip sits between </header> and <main>; the chip band moved outside the viewport ──
 
-test('(b) layout: mw-cond-strip sits directly after </header> and before <main>; the retired party strip is gone from the map column (2026-09-17 UAT)', () => {
+test('(b) layout: band 1 precedes band 2; mw-cond-strip sits directly after </header> and before <main>; #mw-map-chips now sits inside #screen-maze before <div class="mazebox"> (Phase 57 LAYOUT-04/05)', () => {
+  const identityIdx = HTML.indexOf('<div class="mw-hud-identity">');
+  const countersIdx = HTML.indexOf('<div class="mw-hud-counters">');
   const h = HTML.indexOf("</header>");
   const c = HTML.indexOf('class="mw-cond-strip" id="mm-conditions"');
   const m = HTML.indexOf('<main class="mw-screens"');
-  assert.ok(h !== -1 && c !== -1 && m !== -1, "all three anchors found");
+  const screenMazeIdx = HTML.indexOf('<section class="mw-screen" id="screen-maze"');
+  const chipsIdx = HTML.indexOf('<div class="mw-map-chips" id="mw-map-chips">');
+  const mazeboxIdx = HTML.indexOf('<div class="mazebox">');
+  const viewportIdx = HTML.indexOf('<div class="mw-maze-viewport" id="mw-maze-viewport">');
+  assert.ok(
+    identityIdx !== -1 && countersIdx !== -1 && h !== -1 && c !== -1 && m !== -1 && screenMazeIdx !== -1 && chipsIdx !== -1 && mazeboxIdx !== -1 && viewportIdx !== -1,
+    "all anchors found",
+  );
+  assert.ok(identityIdx < countersIdx, "band 1 precedes band 2");
   assert.ok(h < c && c < m, "</header> < mw-cond-strip < <main>");
+  assert.ok(screenMazeIdx < chipsIdx && chipsIdx < mazeboxIdx && mazeboxIdx < viewportIdx, "#mw-map-chips sits inside #screen-maze, before .mazebox, before .mw-maze-viewport");
   assert.equal((HTML.match(new RegExp('id="' + 'mw-party-' + 'rail"', "g")) || []).length, 0);
 });
 
 // ─── (c) HUD CSS ────────────────────────────────────────────────────────
 
-test("(c) HUD CSS: .mw-hud/.mw-hud-top/.mw-hud-row/.mw-hud-item/.mw-hud-wp* values match the mock", () => {
-  assert.match(HTML, /^\.mw-hud\{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc\(8px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\) 14px 9px;display:flex;flex-direction:column\}$/m);
+test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-counters/.mw-hud-item/.mw-hud-item b/.mw-hud-wp/.mw-hud-wptrack values match the four-band layout (Phase 57 LAYOUT-05)", () => {
+  assert.match(HTML, /^\.mw-hud\{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc\(8px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\) 14px 9px;display:flex;flex-direction:column;gap:6px\}$/m);
   assert.doesNotMatch(HTML, /\.mw-hud\{[^}]*position:sticky/);
-  assert.match(HTML, /^\.mw-hud-top\{display:flex;align-items:center;gap:10px\}$/m);
-  assert.match(HTML, /^\.mw-hud-row\{display:flex;gap:8px;align-items:baseline;flex:1;min-width:0;overflow:hidden;flex-wrap:nowrap\}$/m);
+  assert.doesNotMatch(HTML, /^\.mw-hud-top\{/m, ".mw-hud-top no longer appears as a rule opener");
+  assert.doesNotMatch(HTML, /^\.mw-hud-row\{/m, ".mw-hud-row no longer appears as a rule opener");
+  assert.match(HTML, /^\.mw-hud-identity\{display:flex;align-items:center;gap:10px\}$/m);
+  assert.match(HTML, /^\.mw-hud-name\{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var\(--disp\);font-size:var\(--mw-font-hud-label\);color:#e6ddc6\}$/m);
+  assert.match(HTML, /^\.mw-hud-counters\{display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap\}$/m);
   assert.equal((HTML.match(/^\.mw-hud-floor b\{color:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-rations\.warn b\{color:#e05a48\}$/gm) || []).length, 1);
-  assert.match(HTML, /^\.mw-hud-wptrack\{width:64px;height:5px;/m);
+  assert.match(HTML, /\.mw-hud-item b\{[^}]*display:inline-block;text-align:right;min-width:5ch;[^}]*\}/);
+  assert.match(HTML, /^\.mw-hud-wp\{flex:0 1 100px;min-width:70px;display:flex;flex-direction:column;gap:4px;align-items:flex-end\}$/m);
+  assert.match(HTML, /^\.mw-hud-wptrack\{width:100%;min-width:56px;height:5px;/m);
+  assert.doesNotMatch(HTML, /\.mw-hud-wptrack\{width:64px/, "the fixed 64px track width is gone (Phase 57 LAYOUT-05)");
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.mid\{background:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.low\{background:#e05a48\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wp-text\.low\{color:#e05a48\}$/gm) || []).length, 1);
@@ -265,25 +299,33 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
 
 // ─── (g) paint() WP writes, no character-line writes ──────────────────────
 
-test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds, and no character-line writes survive", () => {
+test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds; the band-2 counters route through __mzHudBands.counterSlots(S), band-1's identity line through __mzHudBands.identityLine(c)", () => {
   const region = paintRegion();
   assert.match(region, /wpText\.textContent = `\$\{Math\.max\(0, c\.wp\)\}\/\$\{c\.maxWP\} HP`;/);
   assert.match(region, /wpText\.classList\.toggle\("low", pct <= 25\)/);
   assert.match(region, /wpFill\.classList\.toggle\("mid", pct <= 50 && pct > 22\)/);
   assert.match(region, /wpFill\.classList\.toggle\("low", pct <= 22\)/);
-  for (const gone of ["hud-name", "hud-cls", "mm-hp"]) {
+  // Phase 57 (LAYOUT-05): the four counter writes are no longer inline
+  // document.getElementById("m-floor").textContent = ... literals — they
+  // route through ONE loop over __mzHudBands.counterSlots(S).
+  assert.match(region, /window\.__mzHudBands\.counterSlots\(S\)/);
+  assert.match(region, /window\.__mzHudBands\.identityLine\(c\)/);
+  assert.doesNotMatch(region, /document\.getElementById\("m-floor"\)\.textContent = S\.floor\.depth;/, "the old inline m-floor write is gone");
+  // "hud-name" is deliberately present now (the #mw-hud-name write) —
+  // Phase 35's OTHER retired character-line ids stay retired.
+  for (const gone of ["hud-cls", "mm-hp"]) {
     assert.doesNotMatch(region, new RegExp(gone));
   }
 });
 
 // ─── (h) viewport chrome ────────────────────────────────────────────────
 
-test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear), the pulse element, zero retired chip-row/flash literals, .mw-map-chip.camp/.gear colours", () => {
+test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear) sliced from band 4 above .mazebox (Phase 57 LAYOUT-04), zero retired chip-row/flash literals, .mw-map-chip.camp/.gear colours, the new static-band .mw-map-chips rule", () => {
   const chipsStart = HTML.indexOf('<div class="mw-map-chips" id="mw-map-chips">');
-  // Phase 35 Plan 04 (MAP-02) re-pin: the control bar (formerly the end
-  // marker here) is retired outright — the next markup landmark after the
-  // party-pulse ring is the encounter overlay section.
-  const chipsEnd = HTML.indexOf('<section class="mw-overlay"');
+  // Phase 57 (LAYOUT-04) re-pin: the chip band is now a sibling ABOVE
+  // .mazebox, outside .mw-maze-viewport entirely — .mazebox's own opening
+  // tag is the next markup landmark after the chip band closes.
+  const chipsEnd = HTML.indexOf('<div class="mazebox">');
   assert.ok(chipsStart !== -1 && chipsEnd !== -1 && chipsEnd > chipsStart);
   const region = HTML.slice(chipsStart, chipsEnd);
   const marksIdx = region.indexOf('id="mw-chip-marks"');
@@ -295,7 +337,11 @@ test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear), 
   assert.ok(marksIdx < centreIdx && centreIdx < gapIdx && gapIdx < campIdx && campIdx < gearIdx, "MARKS, CENTRE, the gap, MAKE CAMP, then the settings gear");
   assert.match(region, /class="mw-map-chip camp" id="btn-camp"/);
   assert.match(region, /class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings"/);
-  assert.match(region, /id="mw-party-pulse" aria-hidden="true"/);
+  // Phase 57 (LAYOUT-04): the party-pulse ring stayed INSIDE the viewport
+  // when the chips left it — it is no longer in this region, but it still
+  // exists exactly once in the file (inside .mw-maze-viewport now).
+  assert.doesNotMatch(region, /mw-party-pulse/, "the party-pulse ring is no longer inside the chip band");
+  assert.equal((HTML.match(/id="mw-party-pulse" aria-hidden="true"/g) || []).length, 1, "the party-pulse ring still exists exactly once");
 
   for (const literal of ["mw-viewport-chips", "mw-flash", "flashMessage", "MAZE_CANVAS_COLORS"]) {
     assert.equal((HTML.match(new RegExp(escapeRegExp(literal), "g")) || []).length, 0, `expected zero occurrences of "${literal}"`);
@@ -304,6 +350,16 @@ test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear), 
   assert.match(HTML, /^\.mw-map-chip\.camp\{background:#241d12;border-color:#6b5c3c\}$/m);
   assert.match(HTML, /^\.mw-map-chip\.gear\{[^}]*font-size:22px[^}]*\}$/m);
   assert.equal((HTML.match(/@keyframes mwglow/g) || []).length, 1);
+
+  // Phase 57 (LAYOUT-04): .mw-map-chips is now a static layout band — no
+  // position, no z-index — reading like the condition strip above it.
+  const chipsRuleMatch = HTML.match(/^\.mw-map-chips\{[^}]*\}$/m);
+  assert.ok(chipsRuleMatch, ".mw-map-chips rule found");
+  assert.doesNotMatch(chipsRuleMatch[0], /position:/);
+  assert.doesNotMatch(chipsRuleMatch[0], /z-index/);
+  assert.match(chipsRuleMatch[0], /flex:none/);
+  assert.match(chipsRuleMatch[0], /background:#181409/);
+  assert.match(chipsRuleMatch[0], /border-bottom:3px solid #3a3226/);
 });
 
 // ─── (h) PERF 2026-09-17: composited party pulse ───────────────────────────
