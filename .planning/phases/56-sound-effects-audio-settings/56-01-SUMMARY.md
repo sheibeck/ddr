@@ -124,3 +124,12 @@ None - no external service configuration required.
 ---
 *Phase: 56-sound-effects-audio-settings*
 *Completed: 2026-09-22*
+
+## Self-Check: PASSED
+
+- FOUND: tools/build-www.mjs
+- FOUND: test/unit/sfx-assets.test.js
+- FOUND: .planning/phases/56-sound-effects-audio-settings/56-01-SUMMARY.md
+- FOUND: commit 1426711
+- FOUND: commit 6eb8343
+- FOUND: commit c0c2078

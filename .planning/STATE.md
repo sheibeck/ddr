@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
-status: planning
-last_updated: "2026-09-22T12:20:37.545Z"
+current_phase: 56
+current_phase_name: sound-effects-audio-settings
+status: in_progress
+stopped_at: Completed 56-01-PLAN.md
+last_updated: "2026-09-22T13:36:52.682Z"
 last_activity: 2026-09-22
+last_activity_desc: "Phase 56 Plan 01 executed: copySfx() build wiring + sfx-assets.test.js (AUD-06 build-side half)"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 4
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -24,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 
 ## Current Position
 
-Phase: Phase 56 (not yet planned)
-Plan: —
-Status: ROADMAP created — 5 phases (56–60), 26/26 requirements mapped; awaiting phase planning
-Last activity: 2026-09-22 — ROADMAP.md created for v1.8 (Phases 56–60: Sound Effects & Audio Settings, Map & HUD Layout Band, Motion & Pacing, Party Animation & Dungeon Set Dressing, Performance & Footprint Close)
+Phase: Phase 56 (Sound Effects & Audio Settings) — planned, 4 plans
+Plan: 56-01 complete (copySfx() build wiring + asset manifest test); 56-02/56-03/56-04 not yet started
+Status: 56-01 executed and committed — AUD-06's build-side half (whole-directory sfx/ copy, fail-loud on missing source, 30-clip manifest pinned); engine/content untouched, npm test 3484/3484, parity master hash unchanged
+Last activity: 2026-09-22 — Phase 56 Plan 01 executed (tools/build-www.mjs copySfx(), test/unit/sfx-assets.test.js)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -171,9 +175,9 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-20 (autonomous v1.7 run; paused for /compact)
-Stopped at: v1.7 closing - see stopped_at above for the exact remaining steps. Context compacted 2026-09-22 mid-close at the user's request. The fitted curve is on the Pixel 7 (APK from 9bae7b6). The user deferred the curve verdict ('much better, revisit after more plays') and wants to move on to other milestones - so after the close: /gsd-new-milestone, with the 16 pending todos (15 from the 2026-09-21 device session) as candidate quick tasks
-Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true → goes straight to plan). Standing rulings this run: research skipped for all six phases; verification agents off (orchestrator authors VERIFICATION.md from SUMMARYs, device checks deferred to Phase 55's batch); Phase 52 ruling: 65 curve-height cells hand to Phase 54; worktrees auto-degraded → executors run sequentially on master; docs commits via plain `git commit` with the two trailer lines; Pixel 7 is on wireless adb (adb-28051FDH200H0R, 10.0.0.175); `npm run boot:check` environment-blocked (not a gate)
+Last session: 2026-09-22T13:36:52.652Z
+Stopped at: Completed 56-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
@@ -308,6 +312,7 @@ Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true �
 | Phase 52 P01 | ~55min | 3 tasks | 6 files |
 | Phase 52 P02 | ~2h | 3 tasks | 14 files |
 | Phase 52 P03 | ~90min | 3 tasks | 3 files |
+| Phase 56 P01 | 25min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -566,6 +571,7 @@ Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true �
 - [Phase ?]: 52-02: checkpoint pre-answered hand-to-54 — no dice trims this plan; every still-flagged AFTER-audit row gets an explicit per-row ruling (deep-tier vs curve-height dial) in content/BESTIARY-REBALANCE.md
 - [Phase ?]: 52-03: Applied the user's hand-to-54 ruling verbatim as per-row Disposition text on all 65 still-flagged damage-curve cells (21 tier-5 -> deliberate deep-tier threat; 44 tier 2-4 -> curve height, a Phase 54 dial) — no bestiary trims this plan
 - [Phase ?]: 52-03: AFTER bot readout ran on the ruling-only commit 049ab50 (no engine/bestiary changes in this plan); meta-parity confirmed true against Phase 51's AFTER smoke modulo commit
+- [Phase ?]: copySfx() call ordering fixed exactly as planned: after copySplash(), before vendorCapacitorPackages()
 
 ### Blockers
 

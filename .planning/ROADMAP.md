@@ -20,6 +20,7 @@
 Full requirements: `.planning/REQUIREMENTS.md`.
 
 **Milestone gates (apply to every phase below):**
+
 - **Presentation gate:** presentation-only — `engine/` and `content/` untouched at every phase close, zero new engine rng draws, zero parity fixtures move (master hash `a1f4d0dc…` and `test/parity/harness/comparables.js` unchanged throughout); any new randomness (set-dressing placement, clip variation) comes from a SHELL-side derived stream (`makeRng(hash(seed, purpose, depth))` in `src/browser/`), never the engine's main stream; `npm test` fail 0 and `npm run build:www` green at every commit.
 - **Offline gate:** no network call, no new third-party SDK, no monetization/analytics dependency; every clip and image ships inside the app bundle and works in airplane mode on first launch.
 - **Modularity gate:** every new surface lands as a `src/browser/` module on the v1.6 modular shell (`render*(host, state, deps)` + one `window.__mz*` bridge-registry entry), never new bodies inside `mazeworld.html`'s `paint()`/`draw()`; `tools/shell-sweep.mjs` and the `src/browser/bridge.js` set-equality test stay green.
@@ -34,70 +35,86 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [ ] **Phase 60: Performance & Footprint Close** - Cold start, step time and AAB size are measured on the Pixel 7 against the v1.7 baseline with the full v1.8 asset set installed, closing the milestone on one debug APK
 
 ### Phase 56: Sound Effects & Audio Settings
+
 **Goal**: Every mapped action and fight opener makes a distinct, correctly-timed sound, repeats vary instead of looping one sample, and the player has one working On/Off switch over all of it.
 **Depends on**: None — an independent seam (`src/browser/sfx.js` + the www asset copy); runs first because nothing blocks it
 **Requirements**: AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06
 **Success Criteria** (what must be TRUE):
+
   1. A player hears a distinct, correct sound for every mapped action — walking on stone, walking through water, striking, missing, being hit, killing a foe, casting, resisting, healing, drinking, opening a chest, taking gold, springing a trap, leaping, taking the stairs, levelling up, dying, and tapping the UI
   2. A fight's opening beat plays the matching monster-family cry — all six BESTIARY families resolve onto four used cries (Beasts→beast, Demons→demon, Humans→human, Lair Beasts→human, Magical→demon, Walking Dead→undead) — a total map with two deliberate shares, per the 2026-09-22 user ruling (the creature-specific `enemy-batrat.mp3` was deleted in the same ruling; there is no per-creature override layer)
   3. Repeated actions rotate through their available clips instead of replaying one sample every time (three walk clips, three water clips, two hit clips, two miss clips, three hurt clips)
   4. On a Pixel 7, a clip fires with no audible lag on the action that caused it, and simultaneous events overlap instead of cutting each other off
   5. Setting Sound to Off in the Settings sheet stops every clip and opens no audio device, the choice survives closing and reopening the app, and on first launch in airplane mode with Sound on, every clip plays with nothing fetched over the network
+
 **Plans**: 4 plans
 
 Plans:
-- [ ] 56-01-PLAN.md — copySfx() build step: the 30 clips ship inside the bundle, a build missing sfx/ fails loud (AUD-06)
+
+- [x] 56-01-PLAN.md — copySfx() build step: the 30 clips ship inside the bundle, a build missing sfx/ fails loud (AUD-06)
 - [ ] 56-02-PLAN.md — src/browser/sfx.js pure core: event→clip table, family cry map, per-dispatch order/de-dupe/cap, counter-driven variation (AUD-01, AUD-02, AUD-03)
 - [ ] 56-03-PLAN.md — Web Audio player: decode-once-at-unlock, overlapping voices capped at 8, fail-open degradation, bridge registration (AUD-04)
 - [ ] 56-04-PLAN.md — shell wiring + Settings "Sound" gate + phase gate (AUD-05)
 
 ### Phase 57: Map & HUD Layout Band
+
 **Goal**: The map screen's chrome stops fighting the map — the rail overlays instead of reflowing the viewport, chip taps never double as a move, and the HUD reads as legible stacked bands with darkness visible on the map itself.
 **Depends on**: None — structural groundwork; unrelated to the audio seam, so the two could be worked in either order
 **Requirements**: LAYOUT-01, LAYOUT-02, LAYOUT-03, LAYOUT-04, LAYOUT-05, LAYOUT-06
 **Success Criteria** (what must be TRUE):
+
   1. The rail slides up over the map as an overlay; the map viewport neither resizes nor reflows when the rail appears or leaves
   2. A tap on the body dismisses a rail card that asks for no decision; a card that asks for a decision can only be cleared by making it
   3. A rail card stays on screen roughly twice as long as before — long enough to finish reading it
   4. Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
   5. The HUD reads as stacked bands (name/class + HP, then counters, then conditions, then chips) with nothing overlapping at any text size or square count, and a player caught in Table-7 darkness can see it on the map along with how much longer it lasts
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 58: Motion & Pacing
+
 **Goal**: Screens move instead of snapping — the map pans, panels open, combat rounds breathe, and text types itself on — with a reduced-motion path that drops nothing.
 **Depends on**: Phase 57 (the eased map pan reads the viewport the rail-overlay change stabilizes; a still-reflowing viewport cannot be animated smoothly)
 **Requirements**: MOTION-01, MOTION-02, MOTION-03, MOTION-04, MOTION-05
 **Success Criteria** (what must be TRUE):
+
   1. The map pans smoothly to follow the party instead of jumping between positions
   2. Menus, panels and tabs open and close with visible motion rather than appearing instantly
   3. A combat round plays out with a readable beat between exchanges, so a player can take in each one before the next lands
   4. Rail and encounter text types itself on quickly rather than appearing as a finished block, while the TalkBack announcer still receives the complete text at once
   5. With reduced motion requested at the OS level, every one of the above effects resolves immediately to its end state with nothing lost
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 59: Party Animation & Dungeon Set Dressing
+
 **Goal**: The party marker reads as alive instead of a static token, and the floors carry ambient props instead of empty corridors — both landing in the shared canvas `draw()`/icon pipeline as pure presentation, never touching a rule.
 **Depends on**: Phase 57 (both draw against the same stabilized viewport/coordinate surface the layout band establishes)
 **Requirements**: ANIM-01, ANIM-02, ANIM-03, DRESS-01, DRESS-02, DRESS-03, DRESS-04, DRESS-05
 **Success Criteria** (what must be TRUE):
+
   1. The party marker plays an idle cycle while standing still and its step cycle while moving between squares, settling back to idle on arrival, with the dark ring around it dialled back so the marker itself reads as the highlight
   2. Floors carry scattered ambient props drawn from the `set_dungeon_*` set, dimmed on walkable squares so they are never mistaken for an encounter icon and rendered at full strength on walls
   3. A prop never sits on a square holding a feature, the stairs, or the party
   4. The same seed and depth always dress a floor identically, and dressing never changes how a run plays
   5. A player can turn set dressing off in Settings, independent of the audio toggle
+
 **Plans**: TBD
 
 ### Phase 60: Performance & Footprint Close
+
 **Goal**: The milestone's total device footprint — 30 clips and 54 images on top of the existing icon set — is measured on the Pixel 7 against the v1.7 baseline, and the milestone closes on one debug APK per the deferred-UAT protocol.
 **Depends on**: Phase 56, Phase 57, Phase 58, Phase 59 (needs every clip and image landed to measure the real footprint)
 **Requirements**: PERF-03
 **Success Criteria** (what must be TRUE):
+
   1. Cold start time on the Pixel 7 with every v1.8 asset bundled is measured and recorded against the v1.7 `docs/PERF-BASELINE.md` baseline
   2. Step time (median/p95) on the Pixel 7 is measured and recorded against the same baseline
   3. The release AAB size change from the v1.7 baseline is measured and recorded
   4. Any measurement that regresses past the baseline carries a recorded disposition — a fix (lazy-load/sprite the dressing images) or an explained, accepted miss — never a silent regression
+
 **Plans**: TBD
 
 <details>
