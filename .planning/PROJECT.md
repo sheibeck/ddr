@@ -81,6 +81,22 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
+## Current Milestone: v1.8 Sound, Motion & Set Dressing (started 2026-09-22)
+
+**Goal:** The dungeon stops being silent and static — every action has a sound, the party walks instead of teleporting, screens move instead of snapping, and the floors have things on them.
+
+**Target features:**
+- **Sound effects** — the 31 clips in `sfx/` (`walk1-3`, `walk-water1-3`, `hit1-2`, `miss1-2`, `hurt1-3`, `foe-die`, `enemy-{batrat,beast,demon,human,undead}`, `spell`, `resist`, `heal`, `drink`, `chest`, `gold`, `trap`, `jump`, `stairs`, `levelup`, `death`, `ui-tap`) wired to engine events through a new `src/browser/sfx.js` — Web Audio (`AudioContext` + `decodeAudioData`), unlocked by the first tap, played beside `hapticForEvents(events)` in the dispatch path. Needs a `copySfx()` in `tools/build-www.mjs` (`sfx/` is not copied today; `copyIcons`/`copyFonts`/`copySplash` are the pattern).
+- **Audio On/Off in Settings** (user, 2026-09-22) — the `sound` row already exists in the settings sheet and persists (`SETTINGS_DEFAULTS.sound`), but nothing reads it. It must actually gate playback: Off means zero clips and no AudioContext created or resumed.
+- **Animated party marker** — `icons/optimized/party_idle_1..4` and `party_step_1..4` (already present, already copied into `www/`) replace the static `party.png`: an idle cycle at rest, a step cycle while moving. The stark black ring around the marker is dialled back — the marker carries its own highlight now.
+- **Smoother transitions** — eased map pan (`cameraPan()` / `keepInViewAxis` in `src/browser/controls.js` have no easing), rail slide-up **over** the map, menu opens, slowed inter-exchange combat pacing so each exchange can be read, and fast typed-out text on the rail / encounter lines. A reduced-motion path on every effect.
+- **Map & HUD layout band (backlog 999.4, pulled in whole — user, 2026-09-22)** — the rail overlays instead of reflowing the viewport (with a body-tap dismiss for no-decision cards and a roughly doubled `RAIL_HOLD`); the MARKS / CENTRE / MAKE CAMP / gear strip becomes a reserved band outside `.mw-maze-viewport` so a chip tap can never also move the party; the HUD stacks into four bands instead of one clipping row; the Table-7 Darkness counter becomes visible on the map.
+- **Dungeon set dressing** — the 54 `icons/optimized/set_dungeon_*.png` placed as ambiance: full alpha on wall cells, dimmed (≈0.3–0.4) on path cells so they are never confused with encounter icons; never on a cell carrying a `feat`, the stairs, or the party. Not interactable, no rules effect. Density tunable, with a settings toggle.
+
+**Key context:** **presentation-only** — `engine/` and `content/` are untouched, zero new engine rng draws, zero parity fixtures move. Set-dressing placement is deterministic per floor from a SHELL-side derived stream (`makeRng(hash(seed, "dressing", depth))` in `src/browser/`), never a draw off the engine's main stream. The offline constraint holds: clips bundle into `www/`, no plugin, no network, no new SDK. Watch AAB size and first-paint cost — 31 MP3s plus 54 PNGs on top of the existing icon set (lazy or sprite the dressing images if the first paint moves). Accessibility: the TalkBack announcer (`#mw-rail-live`) still receives the full text at once despite the typing effect, and every motion effect respects the reduced-motion path. All four feature clusters land in `src/browser/` modules on the v1.6 modular shell, not in the old `paint()` bodies. No research pass — backlog 999.1 / 999.3 / 999.4 carry file-level context and the fix design.
+
+**Out of this milestone:** backlog 999.5 (combat screen & Oracle readability), 999.6 (engine rules fixes from the device rounds) and 999.7 (content, tooling, the open climb ruling); the three un-run Pixel 7 UAT batches (`docs/UAT-v1.7.md` 25 + four-run DR bar, `docs/UAT-v1.6.md` 26, `docs/UAT-v1.5.md` 140); the recorded reach-20 fit miss; UX-06 tutorial and STR production launch; SEED-001 leaderboards (trigger fired on the settings cog, deferred again — a large online feature against a fully-offline constraint).
+
 ## Last Milestone: v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (code-complete 2026-09-22; archived 2026-09-22; device UAT batch deferred by the user)
 
 **Goal:** Make floors 1–7 die for legible reasons — initiative fixed for the whole fight, honest foe attack cadence, a smooth single-hit damage curve, depth-capped Joiners — then reshape `engine/difficulty.js` toward the four-band curve (average run ends floor 5–7; depth 20 stays the unicorn), close the TUNE-06 tier-3/5 roster decision, and end on the twice-deferred TUNE-07 human DR round.
@@ -326,4 +342,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 — v1.7 Phases 50–54 complete (fit PASS); Phase 55 Human DR Round next*
+*Last updated: 2026-09-22 — v1.7 closed (archived + tagged); v1.8 Sound, Motion & Set Dressing started; 17 device todos indexed as backlog 999.4–999.7; SEED-001 leaderboards deferred again by the user*

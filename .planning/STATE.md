@@ -1,37 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
-current_phase: 999.1
-current_phase_name: BACKLOG
+milestone: v1.8
+milestone_name: Sound, Motion & Set Dressing
 status: planning
-stopped_at: v1.7 CLOSING - phases 50-55 all complete, audit written (.planning/v1.7-MILESTONE-AUDIT.md, tech_debt, 15/15 reqs, zero blockers), Deferred Items recorded in STATE, roadmap archive created (.planning/milestones/v1.7-ROADMAP.md with its header). REMAINING in /gsd-complete-milestone v1.7: (1) archive REQUIREMENTS.md -> milestones/v1.7-REQUIREMENTS.md then git rm the original; (2) collapse ROADMAP.md to the v1.7 one-liner + keep the Backlog section; (3) MILESTONES.md entry (copy the v1.6 entry's shape: override closeout, 6 phases / 18 plans / 131 commits / 2026-09-20-22, tests 3200 -> 3479 green, key accomplishments per phase 50-55); (4) PROJECT.md already evolved at 9bae7b6 - just re-check the Next Milestone Goals section; (5) commit 'chore: archive v1.7 milestone' + tag v1.7 (git.create_tag true) and push master + tag (user authorized 2026-09-17, separate commands); (6) then /gsd-cleanup, then /gsd-new-milestone. Phase 55 override reason: zero-plan device round, VERIFICATION passed on the user's recorded deferral, projection cannot mark it implementation_complete
-last_updated: "2026-09-22T11:59:02.818Z"
+last_updated: "2026-09-22T12:20:37.545Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 55 complete, transitioned to Phase 999.1
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 18
-  completed_plans: 18
-  percent: 83
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20 — v1.7 Phases 50–52 complete; v1.5 + v1.6 Pixel 7 UAT batches pending)
+See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 54 — Four-Band Retune & Roster Decision
+**Current focus:** v1.8 — defining requirements (sound effects + audio on/off, animated party marker, smoother transitions, the 999.4 map/HUD layout band, dungeon set dressing)
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (BACKLOG)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-22 — Phase 55 complete, transitioned to Phase 999.1
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-22 — Milestone v1.8 started
 
 ## Ground Truth (durable facts every session needs)
 
