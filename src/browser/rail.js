@@ -279,6 +279,15 @@ export const RAIL_FAMILY = Object.freeze({
   // Darkness result held off entirely by the same lit effect.
   torchLit: { icon: "◇", title: "LIT", tone: "good" },
   darknessResisted: { icon: "◇", title: "LIT", tone: "good" },
+  // Phase 57 (LAYOUT-06), USER RULING 2026-09-22 — "the cancel must not be
+  // silent": darknessFell/darknessDispelled each get their own named row so
+  // neither falls through to the generic block/tone fallback card any more.
+  // darknessFell's title matches the torch-offer card's own fallback heading
+  // (mazeworld.html's `rail.pending.kind === "dark"` branch, "IN THE DARK")
+  // so the fresh-fall card and the later pending-torch-offer card read as
+  // the same event, not two different ones.
+  darknessFell: { icon: "◇", title: "IN THE DARK", tone: "bad" },
+  darknessDispelled: { icon: "◇", title: "DARK DISPELLED", tone: "good" },
 
   floorChanged: { icon: "▼", title: "FLOOR {n}", tone: "odd", hold: RAIL_HOLD.floor },
   leveled: { icon: "★", title: "SKILL LEVEL {n}", tone: "good", hold: RAIL_HOLD.level },

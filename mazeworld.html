@@ -335,6 +335,17 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:0;touch-action:none;-webkit-user-select:none;user-select:none}
 .mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
+/* Phase 57 (LAYOUT-06) — the counter-driven darkness vignette. paintVignette()
+   writes data-dark to one of the three VIGNETTE_LEVELS (off/near/close); the
+   "off" level has no override rule and simply keeps the base box-shadow
+   above. Both overrides tighten the SAME inset-shadow property toward the
+   party — smaller blur, larger spread, higher alpha the closer the level —
+   using near-black values from the Phase 35 map palette's own fog/
+   wallDark tones (#0b0a08/#16120c) so the effect reads as darkness, not a
+   colour wash. No transition/animation declared — Phase 58 (MOTION-01..05)
+   owns motion tuning, not this phase.*/
+.mw-vignette[data-dark="near"]{box-shadow:inset 0 0 55px 34px rgba(6,5,4,.94)}
+.mw-vignette[data-dark="close"]{box-shadow:inset 0 0 34px 54px rgba(4,3,2,.97)}
 /* Phase 35 (MAP-06/08): MARKS/CENTRE, MAKE CAMP + the settings gear, per
    design/Mazeworld Map Panel.dc.html's chrome block — replaces the Phase 33
    chip-row chrome entirely.
@@ -1468,7 +1479,7 @@ html,body{height:100%}
              bottom control bar — the map is the dominant element. -->
         <div class="mw-maze-viewport" id="mw-maze-viewport">
           <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
-          <div class="mw-vignette" aria-hidden="true"></div>
+          <div id="mw-vignette" class="mw-vignette" aria-hidden="true"></div>
           <!-- Phase 35 (MAP-07): the pulsing party ring — a DOM element kept
                centered over the party's canvas cell by positionPartyPulse()
                (called from positionCanvas()), never a canvas rAF loop. -->
@@ -2274,7 +2285,13 @@ const CONDITION_EXPLAIN = {
   ether: "Walls are a suggestion for the count shown. When it reaches zero, be standing in a corridor. The rock will not be.",
   might: "Extra damage until the day ends. Hit things.",
   flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
-  darkness: "You see your own square and not much else. Walk carefully, or walk into something.",
+  // Phase 57 (LAYOUT-06): rewritten to state the actual rule — ground you
+  // have not walked shows only the one square around you (Phase 41's
+  // render window, driven by this same counter), and strikes are harder
+  // to land while it runs. When a waiver (Night Vision / a live Amulet of
+  // Light / a lit torch) is open, paintConditions prepends a named clause
+  // ahead of this sentence at tap time — see WAIVER_LABEL below.
+  darkness: "Ground you have not walked yet shows only the one square around you while this counts down, and every strike is harder to land. A torch or an amulet of light burns it away early.",
   afraid: "A penalty on every roll until it passes. Nobody is proud of this.",
   ward: "A pool of hit points that is not yours, soaking blows until it runs dry.",
   foeEffect: "Something they did to you. It wears off in a few rounds, which is more than most things do.",
@@ -2301,6 +2318,17 @@ const CONDITION_EXPLAIN = {
   brace: "No critical lands on you. Ordinary hits still count.",
   plate: "Weightless plate over whatever you wear. It still will not make you graceful.",
   default: "A condition. The maze does not explain itself further.",
+};
+
+// Phase 57 (LAYOUT-06), USER RULING 2026-09-22 (waiver visibility) — display
+// copy for src/browser/darknessView.js#waiverFor's three stable keys. Named
+// in the darkness chip's countdown detail AND leads its tap card, so a
+// darkness counter running beside unrestricted vision is always explained
+// (the 2026-09-21 device report this phase closes).
+const WAIVER_LABEL = {
+  nightVision: "your night vision",
+  amuletLight: "your Amulet of Light",
+  litTorch: "your torch",
 };
 
 /**
@@ -2387,6 +2415,22 @@ function paintConditions(c) {
       const unit = CONDITION_COPY[cn.key]?.unit || "";
       detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
     }
+    // Phase 57 (LAYOUT-06), USER RULING 2026-09-22 (waiver visibility): while
+    // c.darkFor is running AND a waiver is holding the dark back, name it —
+    // the countdown itself is untouched, only appended to. window.__mzDarkness
+    // is the ONE read of the engine's own three waiver checks (skill/eff/
+    // itemEffectActive); this never recomputes the rule locally. Fail-open:
+    // a missing bridge simply names no waiver, same as "none is open".
+    let darkWaiver = null;
+    if (cn.key === "darkness") {
+      const dk = window.__mzDarkness;
+      darkWaiver = dk?.waiverFor?.({
+        nightVision: !!dk.skill?.(S.c, "Night Vision"),
+        amuletLight: !!(dk.eff?.(S.c, "light") > 0),
+        litTorch: !!window.__mzEther?.itemEffectActive(S.c, "lit"),
+      });
+      if (darkWaiver) detail += ` · ${WAIVER_LABEL[darkWaiver] || "something"} is holding it off the map`;
+    }
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mw-cond";
@@ -2406,7 +2450,13 @@ function paintConditions(c) {
       btn.appendChild(d);
     }
     host.appendChild(btn);
-    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), explainCondition(cn, label), "info", 8400, "·"));
+    // Phase 57 (LAYOUT-06), USER RULING 2026-09-22: the darkness chip's tap
+    // card leads with the named waiver when one is open, then the plain
+    // rule; every other chip's card is explainCondition(cn, label) unchanged.
+    const explainText = darkWaiver
+      ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is keeping it off the map. ${CONDITION_EXPLAIN.darkness}`
+      : explainCondition(cn, label);
+    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), explainText, "info", 8400, "·"));
   }
   // Key-gated: only re-arm when the chip SET actually changed, not on every
   // repaint after a step — armEncounterButtons() is cheap but pointless
@@ -2416,6 +2466,38 @@ function paintConditions(c) {
     armEncounterButtons();
   }
   host.hidden = false;
+}
+
+// Phase 57 (LAYOUT-06) — the counter-driven map vignette. The darkness rule
+// (inDark/mapViewRadius) lives in engine/derived.js and is only READ here,
+// through window.__mzDarkness; this is legibility on top of the Phase 41
+// (TERR-03) render-window filter, never a replacement for it — draw()'s own
+// visible()/inViewWindow filter is untouched, and no cell is ever re-fogged.
+// Called from paint() directly after paintConditions(c) (never on its own
+// timer/elsewhere) so the DARK chip and the vignette are always painted from
+// the SAME live state on the SAME frame — including the Amulet of Light
+// cancel, which needs no special-case here: there is no stored flag, every
+// paint recomputes from S fresh, so the vignette clears the instant
+// darknessDispelled zeroes c.darkFor, on the very next paint() call.
+function paintVignette(c) {
+  const el = document.getElementById("mw-vignette");
+  if (!el) return;
+  const dk = window.__mzDarkness;
+  if (!dk) {
+    // Fail-open (T-57-14): a missing bridge must never leave the map stuck
+    // dim — "off" (VIGNETTE_LEVELS[0], darknessView.js) is the base,
+    // undimmed rule; the classic script has no import surface to reach the
+    // constant itself, so the literal is repeated here, exactly as every
+    // other classic-side fail-open branch in this file already does.
+    el.dataset.dark = "off";
+    return;
+  }
+  // USER RULING 2026-09-22: fed mapViewRadius(S), NEVER revealRadius(S) — the
+  // two disagree under a waiver (a lit torch leaves revealRadius at 1 while
+  // mapViewRadius is Infinity), and this vignette explains what the map is
+  // RENDERING, which mapViewRadius governs.
+  const result = dk.vignetteFor(dk.inDark(S), dk.mapViewRadius(S));
+  el.dataset.dark = result.level;
 }
 
 // Phase 47 (SHELL-01), Plan 03 — the deps object every tab module receives
@@ -2533,6 +2615,11 @@ function paint() {
   // the engine stays presentation-free. Colorblind-safe via the ▲/▼ marker +
   // text label baked into .mw-cond-good/.mw-cond-bad.
   paintConditions(c);
+  // Phase 57 (LAYOUT-06): paintVignette() is called directly after
+  // paintConditions(c) — this adjacency is the whole of the chip/vignette
+  // same-frame guarantee (T-57-13); both read window.__mzDarkness fresh,
+  // never a stored flag, so they can never disagree.
+  paintVignette(c);
 
   // Phase 47 (SHELL-02), Plan 04 — the HERO tab (sheet, dossier, Company
   // panel, Grimoire, abilities, RATIONS) renders from src/browser/heroTab.js
@@ -4513,8 +4600,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // mapViewRadius, inViewWindow` import line stays byte-identical for
   // test/unit/shell-gear-39.test.js, shell-loot-screen.test.js and
   // shell-worn-slots.test.js. Bridged below (with mapViewRadius, already
-  // imported above) as window.__mzDarkness.
-  import { inDark, revealRadius } from "./engine/derived.js";
+  // imported above) as window.__mzDarkness. skill/eff join the same bridge
+  // object (not a new bridge NAME) so paintConditions can compute the three
+  // waiver booleans (Night Vision / a live Amulet of Light / a lit torch)
+  // the SAME way mapViewRadius itself does, rather than reimplementing them.
+  import { inDark, revealRadius, skill, eff } from "./engine/derived.js";
   import { vignetteFor, waiverFor } from "./src/browser/darknessView.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
@@ -4575,7 +4665,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // no mutation, fail-open at the call site (a missing bridge leaves the
   // vignette at its off state rather than staying stuck dim — see
   // paintVignette's own guard).
-  window.__mzDarkness = { inDark, revealRadius, mapViewRadius, vignetteFor, waiverFor };
+  window.__mzDarkness = { inDark, revealRadius, mapViewRadius, vignetteFor, waiverFor, skill, eff };
 
   // Phase 32 (CMBUI-04/05): the classic renderEncounter()/keydown/
   // window.move guards (32-03) read the arm-delay and dismiss-settle

@@ -9,10 +9,21 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import { VIGNETTE_LEVELS, vignetteFor, waiverFor } from "../../src/browser/darknessView.js";
 import { GW, GH } from "../../engine/maze.js";
-import { inDark, revealRadius, mapViewRadius } from "../../engine/derived.js";
+import { inDark, revealRadius, mapViewRadius, skill, eff } from "../../engine/derived.js";
+import { stripHtml } from "../../tools/ident-sweep.mjs";
+import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
 
 // ─── VIGNETTE_LEVELS ───────────────────────────────────────────────────────
 
@@ -150,4 +161,182 @@ test("end-to-end: a running counter WITH a lit torch composes to the off level t
   const result = vignetteFor(inDark(state), mapViewRadius(state));
   assert.equal(result.on, true, "the counter is still running");
   assert.equal(result.level, "off", "but the map is rendering everything, so the vignette must not lie by dimming it");
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHELL SECTION (Task 2) — through test/unit/harness/shellSandbox.js's
+// loadShellSandbox, proving paintVignette()/paintConditions' waiver clause
+// wire the pure module correctly, on the REAL classic paint().
+// ═══════════════════════════════════════════════════════════════════════════
+
+function darknessBridge() {
+  return { inDark, revealRadius, mapViewRadius, vignetteFor, waiverFor, skill, eff };
+}
+
+/**
+ * paintDarkness(state, { withBridge }) — a sibling of hud-bands-layout.test
+ * .js's own paintFresh(state) helper, with the __mzDarkness bridge wired (or
+ * deliberately withheld, for the fail-open case) BEFORE paint() runs.
+ */
+function paintDarkness(state, { withBridge = true } = {}) {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  if (withBridge) sandbox.context.window.__mzDarkness = darknessBridge();
+  sandbox.setState(state);
+  sandbox.paint();
+  return doc;
+}
+
+function darknessChip(doc) {
+  const host = doc.document.getElementById("mm-conditions");
+  return host.children.find((el) => el.dataset && el.dataset.key === "darkness") || null;
+}
+
+function chipDetailText(chip) {
+  if (!chip) return null;
+  const detailEl = chip.children.find((el) => el.className === "mw-cond-detail");
+  return detailEl ? detailEl.textContent : null;
+}
+
+function baseThiefWithDarkness(darkFor, extra = {}) {
+  const states = fixedStates();
+  const state = structuredClone(states.thief);
+  state.c.darkFor = darkFor;
+  // The fixture Thief rolls a Wilmsry (innate Night Vision) — stripped by
+  // default so the "no waiver" tests are actually waiver-free; the Night
+  // Vision-specific test below re-adds it via `extra.skills`.
+  if (state.c.skills) delete state.c.skills["Night Vision"];
+  Object.assign(state.c, extra);
+  return state;
+}
+
+test("(shell) a running counter with no waivers: #mw-vignette is at the close level", () => {
+  const doc = paintDarkness(baseThiefWithDarkness(30));
+  const vignette = doc.document.getElementById("mw-vignette");
+  assert.equal(vignette.dataset.dark, "close");
+});
+
+test("(shell) the counter zeroed on a lit tile: #mw-vignette is at the off level", () => {
+  const doc = paintDarkness(baseThiefWithDarkness(0));
+  const vignette = doc.document.getElementById("mw-vignette");
+  assert.equal(vignette.dataset.dark, "off");
+});
+
+test("(shell) a missing __mzDarkness bridge: #mw-vignette is at the off level and paint() throws nothing (fail-open, T-57-14)", () => {
+  assert.doesNotThrow(() => {
+    const doc = paintDarkness(baseThiefWithDarkness(30), { withBridge: false });
+    const vignette = doc.document.getElementById("mw-vignette");
+    assert.equal(vignette.dataset.dark, "off");
+  });
+});
+
+test("(shell) waiver visibility — a lit torch: #mw-vignette stays OFF and the darkness chip's detail names the torch", () => {
+  const state = baseThiefWithDarkness(30, { timers: { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } } });
+  const doc = paintDarkness(state);
+  const vignette = doc.document.getElementById("mw-vignette");
+  assert.equal(vignette.dataset.dark, "off", "the map is rendering everything under the torch waiver");
+  const detail = chipDetailText(darknessChip(doc));
+  assert.match(detail, /torch/i, `expected the darkness chip's detail to name the torch, got: ${detail}`);
+});
+
+test("(shell) waiver visibility — a live Amulet of Light: #mw-vignette stays OFF and the chip names the amulet", () => {
+  const state = baseThiefWithDarkness(30, {
+    items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }],
+    timers: { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+  });
+  const doc = paintDarkness(state);
+  const vignette = doc.document.getElementById("mw-vignette");
+  assert.equal(vignette.dataset.dark, "off");
+  const detail = chipDetailText(darknessChip(doc));
+  assert.match(detail, /amulet/i, `expected the darkness chip's detail to name the amulet, got: ${detail}`);
+});
+
+test("(shell) waiver visibility — Night Vision: #mw-vignette stays OFF and the chip names night vision", () => {
+  const state = baseThiefWithDarkness(30, { skills: { "Night Vision": 1 } });
+  const doc = paintDarkness(state);
+  const vignette = doc.document.getElementById("mw-vignette");
+  assert.equal(vignette.dataset.dark, "off");
+  const detail = chipDetailText(darknessChip(doc));
+  assert.match(detail, /night vision/i, `expected the darkness chip's detail to name night vision, got: ${detail}`);
+});
+
+test("(shell) no waiver: the darkness chip names none, and the vignette is at the close level", () => {
+  const doc = paintDarkness(baseThiefWithDarkness(30));
+  const vignette = doc.document.getElementById("mw-vignette");
+  assert.equal(vignette.dataset.dark, "close");
+  const detail = chipDetailText(darknessChip(doc));
+  assert.doesNotMatch(detail, /torch|amulet|night vision/i, `expected no waiver named, got: ${detail}`);
+});
+
+test("(shell) chip-agreement: the darkness chip and the vignette appear together and clear together on the same paint", () => {
+  const state = baseThiefWithDarkness(30);
+  const doc1 = paintDarkness(state);
+  const condStrip1 = doc1.document.getElementById("mm-conditions");
+  assert.equal(condStrip1.hidden, false, "the conditions host must not be hidden while a chip is active");
+  const chip1 = darknessChip(doc1);
+  assert.ok(chip1, "the darkness chip must be present");
+  assert.ok(chipDetailText(chip1), "the darkness chip must carry a remaining detail");
+  const vignette1 = doc1.document.getElementById("mw-vignette");
+  assert.notEqual(vignette1.dataset.dark, "off", "the vignette must be in a non-off level while the chip is up");
+
+  state.c.darkFor = 0;
+  const doc2 = paintDarkness(state);
+  const chip2 = darknessChip(doc2);
+  assert.equal(chip2, null, "the darkness chip must be gone once the counter clears");
+  const vignette2 = doc2.document.getElementById("mw-vignette");
+  assert.equal(vignette2.dataset.dark, "off", "the vignette must clear on the SAME paint the chip clears");
+});
+
+// ─── Source anchors: single source of truth, comment-stripped ─────────────
+
+test("(shell) source anchor: comment-stripped mazeworld.html contains exactly ONE darkFor occurrence (the pre-existing torch-offer guard) and ZERO local definitions of inDark/revealRadius", () => {
+  const stripped = stripHtml(RAW_HTML);
+  const darkForCount = (stripped.match(/\bdarkFor\b/g) || []).length;
+  assert.equal(darkForCount, 1, `expected exactly one darkFor occurrence in comment-stripped mazeworld.html, found ${darkForCount}`);
+  const localDefPattern = /\b(function\s+(inDark|revealRadius)\s*\(|const\s+(inDark|revealRadius)\s*=)/g;
+  const localDefs = stripped.match(localDefPattern) || [];
+  assert.deepStrictEqual(localDefs, [], `mazeworld.html must not locally define inDark/revealRadius — found: ${JSON.stringify(localDefs)}`);
+});
+
+test("(shell) paintVignette's body references mapViewRadius and does NOT reference revealRadius", () => {
+  const stripped = stripHtml(RAW_HTML);
+  const start = stripped.indexOf("function paintVignette(c) {");
+  assert.ok(start !== -1, "function paintVignette(c) { not found in stripped source");
+  const end = stripped.indexOf("\n}", start);
+  assert.ok(end !== -1 && end > start, "no closing brace found after paintVignette");
+  const body = stripped.slice(start, end);
+  assert.match(body, /mapViewRadius/, "paintVignette must reference mapViewRadius");
+  assert.doesNotMatch(body, /revealRadius/, "paintVignette must NOT reference revealRadius (USER RULING 2026-09-22)");
+});
+
+test("(shell) no motion added: neither .mw-vignette attribute rule contains a transition or animation declaration", () => {
+  const nearRule = RAW_HTML.match(/\.mw-vignette\[data-dark="near"\]\{[^}]*\}/);
+  const closeRule = RAW_HTML.match(/\.mw-vignette\[data-dark="close"\]\{[^}]*\}/);
+  assert.ok(nearRule && closeRule, "both .mw-vignette[data-dark] rules must be present");
+  assert.doesNotMatch(nearRule[0], /transition|animation/i);
+  assert.doesNotMatch(closeRule[0], /transition|animation/i);
+});
+
+// ─── WAIVER_LABEL / dynamic explain copy: banned-wordlist self-check ──────
+
+test("(shell) WAIVER_LABEL entries and the darkness-lead sentence template are clear of BANNED terms", () => {
+  const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
+  const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + escapeRegExp(term) + "\\b", "i") }));
+  const findBannedTerms = (text) => {
+    const hits = [];
+    for (const { term, re } of MATCHERS) {
+      const m = text.match(re);
+      if (m && !ALLOW.has(m[0].toLowerCase())) hits.push({ term, match: m[0] });
+    }
+    return hits;
+  };
+  const region = RAW_HTML.slice(RAW_HTML.indexOf("const WAIVER_LABEL = {"), RAW_HTML.indexOf("};", RAW_HTML.indexOf("const WAIVER_LABEL = {")));
+  assert.ok(region.length > 0, "WAIVER_LABEL region not found");
+  const leaves = [...region.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)].map((m) => m[1]);
+  assert.ok(leaves.length >= 3, "expected the three waiver labels");
+  for (const leaf of leaves) {
+    assert.deepStrictEqual(findBannedTerms(leaf), [], `Banned copy in WAIVER_LABEL: "${leaf}"`);
+  }
+  assert.deepStrictEqual(findBannedTerms("The dark is on you, but your torch is keeping it off the map."), []);
 });

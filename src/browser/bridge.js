@@ -93,7 +93,7 @@ export const BRIDGE = Object.freeze({
   __mzDarkness: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: paintVignette — the counter-driven map vignette; paintConditions — the DARK chip's waiver clause)"]),
-    purpose: "Bridges the engine's own inDark/revealRadius/mapViewRadius reads plus the pure darknessView.js vignette/waiver helpers, so the shell reads the darkness rule instead of reimplementing it.",
+    purpose: "Bridges the engine's own inDark/revealRadius/mapViewRadius/skill/eff reads plus the pure darknessView.js vignette/waiver helpers, so the shell reads the darkness rule and its three waiver checks instead of reimplementing them.",
   }),
   __mzDescend: Object.freeze({
     owner: "mazeworld.html (module)",

@@ -255,6 +255,14 @@ test("(e) CONDITION_TONE keys are a subset of CONDITION_COPY keys plus afflictio
     const offenders = findBannedTerms(leaf);
     assert.deepStrictEqual(offenders, [], `Banned copy in CONDITION_EXPLAIN: ${JSON.stringify(offenders)} (text: "${leaf}")`);
   }
+
+  // Phase 57 (LAYOUT-06): the darkness tap card must state what the counter
+  // actually does — the radius-1 rule on unwalked ground, and the to-hit
+  // penalty in fights — not just "walk carefully".
+  const darknessEntry = explainMatches.find((m) => m[1] === "darkness")?.[2];
+  assert.ok(darknessEntry, "CONDITION_EXPLAIN.darkness not found");
+  assert.match(darknessEntry, /\bone square\b/i, "CONDITION_EXPLAIN.darkness must name the radius-1 rule");
+  assert.match(darknessEntry, /strike/i, "CONDITION_EXPLAIN.darkness must name the to-hit penalty");
 });
 
 test("(e) voice scan: every MAP_COPY string leaf is non-empty and clear of BANNED", () => {

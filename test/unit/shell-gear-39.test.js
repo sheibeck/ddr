@@ -171,7 +171,13 @@ test("CONDITION_TONE/CONDITION_EXPLAIN carry the three new item-driven chip keys
 
   // Phase 57 (LAYOUT-03): the condition-chip explain card's hold literal
   // was doubled from 4200 to 8400, same ruling as every other RAIL_HOLD key.
-  assert.match(CODE, /window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainCondition\(cn, label\), "info", 8400, "·"\)/);
+  // Phase 57 (LAYOUT-06): the guardTap call site now reads a local
+  // `explainText` (the darkness chip's waiver-led text when a waiver is
+  // open, else explainCondition(cn, label) unchanged) instead of calling
+  // explainCondition(cn, label) inline — re-pinned to the new call site;
+  // explainCondition(cn, label) itself is still asserted present two lines
+  // above this pin, and is still exactly what non-darkness chips reach.
+  assert.match(CODE, /window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·"\)/);
 });
 
 // ─── 6. Hero tab: engine-routed to-hit/strike-die ─────────────────────────
