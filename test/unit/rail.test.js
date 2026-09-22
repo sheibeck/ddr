@@ -37,14 +37,77 @@ import {
   WORN_RECONCILE_HOLD,
   wornReconcileCard,
   abilityPoolCard,
+  HOLD_PER_LINE,
+  HOLD_MIN,
+  HOLD_MAX,
+  holdForCard,
+  RAIL_DISMISS_KINDS,
+  railDismissKind,
 } from "../../src/browser/rail.js";
 
 // ─── Test 1: RAIL_TONES / RAIL_HOLD sanity ─────────────────────────────────
 
-test("RAIL_TONES lists the five tones; RAIL_HOLD's named holds are all within [2200, 6000]", () => {
+test("RAIL_TONES lists the five tones; RAIL_HOLD's named holds are all within [HOLD_MIN, HOLD_MAX]", () => {
   assert.deepEqual([...RAIL_TONES], ["info", "good", "bad", "odd", "dull"]);
   for (const [name, ms] of Object.entries(RAIL_HOLD)) {
-    assert.ok(ms >= 2200 && ms <= 6000, `RAIL_HOLD.${name} out of range: ${ms}`);
+    assert.ok(ms >= HOLD_MIN && ms <= HOLD_MAX, `RAIL_HOLD.${name} out of range: ${ms}`);
+  }
+});
+
+// ─── Test 1.1: Phase 57 (LAYOUT-03) — the exact doubled RAIL_HOLD table ────
+
+test("RAIL_HOLD and WORN_RECONCILE_HOLD: every named hold is pinned to its exact doubled 2026-09-22 value", () => {
+  assert.deepEqual(RAIL_HOLD, {
+    default: 8400,
+    dull: 4800,
+    dullShort: 4400,
+    mark: 6800,
+    day: 6000,
+    floor: 10000,
+    camp: 10400,
+    level: 12000,
+  });
+  assert.equal(WORN_RECONCILE_HOLD, 12000);
+});
+
+// ─── Test 1.2: holdForCard — line-scaled, bounded hold (LAYOUT-03) ────────
+
+test("holdForCard: a one-line card returns its base clamped at or above HOLD_MIN", () => {
+  assert.equal(holdForCard({ hold: RAIL_HOLD.dullShort, lines: [{ text: "x", roll: null }] }), RAIL_HOLD.dullShort);
+  assert.ok(holdForCard({ hold: RAIL_HOLD.dullShort, lines: [{ text: "x", roll: null }] }) >= HOLD_MIN);
+});
+
+test("holdForCard: a four-line card returns base plus three HOLD_PER_LINE increments", () => {
+  const fourLines = [1, 2, 3, 4].map((n) => ({ text: String(n), roll: null }));
+  assert.equal(holdForCard({ hold: RAIL_HOLD.default, lines: fourLines }), RAIL_HOLD.default + HOLD_PER_LINE * 3);
+});
+
+test("holdForCard: a card with forty lines returns exactly HOLD_MAX (the named cap)", () => {
+  assert.equal(holdForCard({ hold: RAIL_HOLD.default, lines: new Array(40) }), HOLD_MAX);
+});
+
+test("holdForCard: a null card returns HOLD_MIN; a card whose base is below HOLD_MIN is raised to it; a missing/empty lines array counts as one line, never zero", () => {
+  assert.equal(holdForCard(null), HOLD_MIN);
+  assert.equal(holdForCard(undefined), HOLD_MIN);
+  assert.equal(holdForCard({ hold: 100, lines: [{ text: "x", roll: null }] }), HOLD_MIN);
+  assert.equal(holdForCard({ hold: RAIL_HOLD.dullShort }), RAIL_HOLD.dullShort, "a missing lines array counts as one line");
+  assert.equal(holdForCard({ hold: RAIL_HOLD.dullShort, lines: [] }), RAIL_HOLD.dullShort, "an empty lines array counts as one line, not zero");
+  assert.equal(holdForCard({ lines: [{ text: "x", roll: null }] }), RAIL_HOLD.default, "a missing/non-finite hold falls back to RAIL_HOLD.default");
+});
+
+// ─── Test 1.3: railDismissKind — the total two-kind classifier (LAYOUT-02) ─
+
+test("railDismissKind: totality sweep over locked x buttonCount — every result is a RAIL_DISMISS_KINDS member, exactly two kinds exist, and the locked/dismissible split matches the spec", () => {
+  assert.equal(RAIL_DISMISS_KINDS.length, 2, "a third dismiss state must never be introduced");
+  const LOCKED = RAIL_DISMISS_KINDS[1];
+  const DISMISSIBLE = RAIL_DISMISS_KINDS[0];
+  for (const locked of [true, false, undefined, null]) {
+    for (const buttonCount of [0, 1, 2, undefined, NaN, -1]) {
+      const kind = railDismissKind(locked, buttonCount);
+      assert.ok(RAIL_DISMISS_KINDS.includes(kind), `railDismissKind(${locked}, ${buttonCount}) = ${kind} not a member of RAIL_DISMISS_KINDS`);
+      const expectLocked = !!locked || (Number.isFinite(Number(buttonCount)) && Number(buttonCount) > 0);
+      assert.equal(kind, expectLocked ? LOCKED : DISMISSIBLE, `railDismissKind(${locked}, ${buttonCount})`);
+    }
   }
 });
 
@@ -104,7 +167,7 @@ test("railFamilyFor: the block/tone fallback for an unlisted type", () => {
 
 // ─── Test 4: full LINE_FOR coverage ───────────────────────────────────────
 
-test("coverage: every LINE_FOR key resolves to a family with a non-empty title, a tone in RAIL_TONES and a hold in [2200, 6000]", () => {
+test("coverage: every LINE_FOR key resolves to a family with a non-empty title, a tone in RAIL_TONES and a hold in [HOLD_MIN, HOLD_MAX]", () => {
   for (const [type, builder] of Object.entries(LINE_FOR)) {
     let tone = "beat";
     let priority = PRIORITY.other;
@@ -121,7 +184,7 @@ test("coverage: every LINE_FOR key resolves to a family with a non-empty title, 
     const fam = railFamilyFor(type, tone, priority);
     assert.ok(fam.title && fam.title.length > 0, `${type}: title must be non-empty`);
     assert.ok(RAIL_TONES.includes(fam.tone), `${type}: tone ${fam.tone} not in RAIL_TONES`);
-    assert.ok(fam.hold >= 2200 && fam.hold <= 6000, `${type}: hold ${fam.hold} out of range`);
+    assert.ok(fam.hold >= HOLD_MIN && fam.hold <= HOLD_MAX, `${type}: hold ${fam.hold} out of range`);
   }
 });
 
@@ -166,7 +229,7 @@ test("railCardFor: a trap + level-up move dispatch folds to one card, trap wins 
   assert.equal(card.iconKey, "trap");
   assert.equal(card.title, "A TRAP");
   assert.equal(card.tone, "bad");
-  assert.equal(card.hold, RAIL_HOLD.level, "hold is the max family hold across the lines (6000)");
+  assert.equal(card.hold, RAIL_HOLD.level, "hold is the max family hold across the lines (RAIL_HOLD.level, doubled to 12000 by Phase 57)");
   assert.equal(card.lines.length, 2);
   assert.match(card.lines[0].text, /skill level/i, "leveled has the higher idx — shows first (newest-first)");
   assert.match(card.lines[1].text, /pit/i);

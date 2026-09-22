@@ -169,6 +169,18 @@ export const ALLOWED = Object.freeze(
       reason: "B — explains why the fold is uncapped",
     },
     {
+      term: "toast",
+      file: "src/browser/rail.js",
+      match: "the 2026-09-15 toast",
+      reason: "B — RAIL_HOLD's doc comment states the 2026-09-15 toast ruling (\"about 2x, tap to dismiss\") the Phase 57 (LAYOUT-03) doubling applies to the rail",
+    },
+    {
+      term: "toast",
+      file: "src/browser/rail.js",
+      match: "the pre-doubling toast numbers wholesale when it replaced toasts",
+      reason: "B — explains why the rail's pre-Phase-57 hold values were never doubled: it inherited the toast host's numbers verbatim when it replaced toasts in Phase 35, before the toast ruling existed",
+    },
+    {
       term: "round-card",
       file: "src/browser/fightLog.js",
       match: "replaced the Phase 32 Round Card",

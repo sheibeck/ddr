@@ -46,16 +46,26 @@ export const RAIL_TONES = Object.freeze(["info", "good", "bad", "odd", "dull"]);
  * RAIL_HOLD — named hold durations (ms) a rail card without an action row
  * auto-clears after. `default` covers most families; the rest are the
  * named exceptions the family table (below) opts into.
+ *
+ * Phase 57 (LAYOUT-02/03): every named hold here (and `WORN_RECONCILE_HOLD`
+ * below) is exactly DOUBLED from its pre-phase value — the 2026-09-15 toast
+ * ruling ("about 2x, tap to dismiss") applied to the rail, which inherited
+ * the pre-doubling toast numbers wholesale when it replaced toasts in Phase
+ * 35 and never got the ruling itself. Tap-to-dismiss (LAYOUT-02, the
+ * shell's guarded `#mw-rail` body-tap handler) is what makes the longer
+ * hold cheap: a card that would otherwise sit for 8+ seconds is one tap
+ * away from clearing early. See `holdForCard` below for the per-line
+ * scaling on top of these bases, and `HOLD_MIN`/`HOLD_MAX` for its bounds.
  */
 export const RAIL_HOLD = Object.freeze({
-  default: 4200,
-  dull: 2400,
-  dullShort: 2200,
-  mark: 3400,
-  day: 3000,
-  floor: 5000,
-  camp: 5200,
-  level: 6000,
+  default: 8400,
+  dull: 4800,
+  dullShort: 4400,
+  mark: 6800,
+  day: 6000,
+  floor: 10000,
+  camp: 10400,
+  level: 12000,
 });
 
 /**
@@ -63,9 +73,86 @@ export const RAIL_HOLD = Object.freeze({
  * one-shot worn-reconciliation card `wornReconcileCard` builds below. A
  * standalone export (not folded into RAIL_HOLD) since this card is built
  * directly by the shell's resume path (Plan 04), never through
- * `railCardFor`'s fold pipeline.
+ * `railCardFor`'s fold pipeline. Phase 57 (LAYOUT-03): doubled from 6000 to
+ * 12000, same "about 2x" ruling as every `RAIL_HOLD` key above.
  */
-export const WORN_RECONCILE_HOLD = 6000;
+export const WORN_RECONCILE_HOLD = 12000;
+
+/**
+ * HOLD_PER_LINE — Phase 57 (LAYOUT-03), Claude's-discretion value under
+ * CONTEXT decision D-03: milliseconds added to a card's hold for every line
+ * beyond its first. The user's complaint was "all the text" — a four-line
+ * card must hold noticeably longer than a one-line card carrying the same
+ * family hold. A line carrying a roll (`{text, roll}`) still counts as ONE
+ * line here; the roll renders under its own line rather than as a separate
+ * rail row, so it never doubles this increment.
+ */
+export const HOLD_PER_LINE = 900;
+
+/**
+ * HOLD_MIN — Claude's-discretion floor under D-03: no card, however short
+ * its family hold, may auto-clear faster than this. Deliberately set to
+ * exactly the doubled `dullShort` (4400) — comfortably above the pre-phase
+ * floor of 2200, so tap-to-dismiss (LAYOUT-02) is a strict ADDITION to
+ * today's read time, never a way to make a card feel shorter than it does
+ * today.
+ */
+export const HOLD_MIN = 4400;
+
+/**
+ * HOLD_MAX — Claude's-discretion cap under D-03: the named answer to "a
+ * pathologically long card must not hold indefinitely". Beyond roughly
+ * thirteen lines (`HOLD_MIN` + 13 * `HOLD_PER_LINE` already exceeds this),
+ * the hold stops growing — the player dismisses by tapping instead.
+ */
+export const HOLD_MAX = 16000;
+
+/**
+ * holdForCard(card) — Phase 57 (LAYOUT-03): the line-scaled, bounded hold
+ * for a rail card, in milliseconds. Base is the card's own `hold` (falling
+ * back to `RAIL_HOLD.default` when absent or non-finite), plus
+ * `HOLD_PER_LINE` for every line beyond the first (line count read from
+ * `card.lines.length`; a missing/empty `lines` array counts as ONE line,
+ * never zero — a card with no lines is still a card, not a faster one), the
+ * whole clamped into `[HOLD_MIN, HOLD_MAX]`. Never throws on a missing or
+ * malformed `card` — a null/undefined card yields `HOLD_MIN` (the base
+ * falls back to `RAIL_HOLD.default`, well inside the clamp, but a null
+ * `card` has no `lines` to read either, so this is documented as its own
+ * floor case rather than relying on the fallback chain to land there by
+ * coincidence). Pure: no DOM/window/timer access.
+ */
+export function holdForCard(card) {
+  if (!card) return HOLD_MIN;
+  const base = Number.isFinite(card.hold) ? card.hold : RAIL_HOLD.default;
+  const lineCount = Array.isArray(card.lines) && card.lines.length > 0 ? card.lines.length : 1;
+  const scaled = base + HOLD_PER_LINE * (lineCount - 1);
+  return Math.min(HOLD_MAX, Math.max(HOLD_MIN, scaled));
+}
+
+/**
+ * RAIL_DISMISS_KINDS — the ONLY two outcomes a rail body tap can classify
+ * to (Phase 57, LAYOUT-02). A frozen two-element array so a third state can
+ * never be introduced without a test seeing the length change.
+ */
+export const RAIL_DISMISS_KINDS = Object.freeze(["dismissible", "locked"]);
+
+/**
+ * railDismissKind(locked, buttonCount) — Phase 57 (LAYOUT-02): the total
+ * classifier the shell's guarded `#mw-rail` body-tap handler consults.
+ * Locked (the card stays; only its own buttons can clear it — the Phase 35
+ * ruling 3 rule, restated here as the rail's one rule for a body tap) when
+ * `locked` is truthy OR `buttonCount` coerces to a finite number greater
+ * than zero; `dismissible` otherwise. Every other input — undefined, NaN, a
+ * negative count, a missing second argument — resolves to `dismissible`,
+ * never throws, and never returns a third value: a decision card's action
+ * row is the ONLY way out of it, and a body tap must never become a second
+ * exit. Pure: no DOM/window access.
+ */
+export function railDismissKind(locked, buttonCount) {
+  const count = Number(buttonCount);
+  if (locked || (Number.isFinite(count) && count > 0)) return RAIL_DISMISS_KINDS[1];
+  return RAIL_DISMISS_KINDS[0];
+}
 
 /**
  * RAIL_COPY — every player-facing string this module owns, in one object
