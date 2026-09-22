@@ -588,7 +588,11 @@ test("createDressingBridge: drawLayer no-ops (0 drawn, zero context calls) while
   const state = { seed: 5, floor: { depth: 2, g: grid, px: 1, py: 1 } };
 
   {
-    const art = { enabled: () => false, images: () => null };
+    // Disabled, but with a fully-loaded image map — isolates the enabled()
+    // guard itself (a populated images() alone must NOT be enough to draw).
+    const images = {};
+    for (const name of DRESSING_ICON_NAMES) images[name] = { complete: true, naturalWidth: 144 };
+    const art = { enabled: () => false, images: () => images };
     const ctx = createRecordingContext();
     const bridge = createDressingBridge({ art, drawIcon: drawFeatureIcon });
     const drawn = bridge.drawLayer(ctx, state, 32, () => true);
