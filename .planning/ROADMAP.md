@@ -35,7 +35,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 
 ### Phase 56: Sound Effects & Audio Settings
 **Goal**: Every mapped action and fight opener makes a distinct, correctly-timed sound, repeats vary instead of looping one sample, and the player has one working On/Off switch over all of it.
-**Depends on**: Nothing (first phase; independent of the visual work in Phases 57–59)
+**Depends on**: None — an independent seam (`src/browser/sfx.js` + the www asset copy); runs first because nothing blocks it
 **Requirements**: AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06
 **Success Criteria** (what must be TRUE):
   1. A player hears a distinct, correct sound for every mapped action — walking on stone, walking through water, striking, missing, being hit, killing a foe, casting, resisting, healing, drinking, opening a chest, taking gold, springing a trap, leaping, taking the stairs, levelling up, dying, and tapping the UI
@@ -47,7 +47,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 
 ### Phase 57: Map & HUD Layout Band
 **Goal**: The map screen's chrome stops fighting the map — the rail overlays instead of reflowing the viewport, chip taps never double as a move, and the HUD reads as legible stacked bands with darkness visible on the map itself.
-**Depends on**: Nothing (structural groundwork; can run in parallel with Phase 56)
+**Depends on**: None — structural groundwork; unrelated to the audio seam, so the two could be worked in either order
 **Requirements**: LAYOUT-01, LAYOUT-02, LAYOUT-03, LAYOUT-04, LAYOUT-05, LAYOUT-06
 **Success Criteria** (what must be TRUE):
   1. The rail slides up over the map as an overlay; the map viewport neither resizes nor reflows when the rail appears or leaves
@@ -254,7 +254,9 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 ## Backlog
 
-### Phase 999.1: Transitions & Sounds (BACKLOG)
+### Phase 999.1: Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
+
+> **Promoted 2026-09-22 into milestone v1.8.** Sound → AUD-01..06 (Phase 56); transitions, combat pacing and typed text → MOTION-01..05 (Phase 58); the party-marker ring → ANIM-03 (Phase 59). The rail-overlay prerequisite it names is LAYOUT-01 (Phase 57). Kept here for its planning context until v1.8 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-19 for future planning — user's words] Map the sound clips in `sfx/` (31 MP3s the user added: `walk1-3`, `walk-water1-3`, `hit1-2`, `miss1-2`, `hurt1-3`, `foe-die`, `enemy-{batrat,beast,demon,human,undead}`, `spell`, `resist`, `heal`, `drink`, `chest`, `gold`, `trap`, `jump`, `stairs`, `levelup`, `death`, `ui-tap`) to game actions and engine events; and make the shell's transitions smooth — map panning, rail show/hide, opening menu items — "not jarring and immediate". Slow the fight responses down so there are transitions between exchanges and the player can process each one. Animate on-screen text as if quickly typed out (fast, not slow). Dial back the black circle around the party marker — the party is already highlighted, the ring is too stark.
 **Requirements:** TBD
@@ -266,7 +268,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.3: Dungeon set dressing (BACKLOG)
+### Phase 999.3: Dungeon set dressing (PROMOTED → Phase 59)
+
+> **Promoted 2026-09-22 into milestone v1.8 as DRESS-01..05, Phase 59 (Party Animation & Dungeon Set Dressing).** Kept here for its planning context until v1.8 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-19 for future planning — user's words] Add set dressing to the dungeon using the new optimized `icons/optimized/set_dungeon_*.png` icons (54 of them: ash pile, banners, barrels/crates/sacks, bones/skulls/skeleton, blood, book/scrolls, boulder/rocks/rubble, braziers/torches/candles/sconce, cobwebs, mushrooms/moss/fern/roots/vines, grate/hatch/pit, puddles/slime, rat, shackles, …). Use them for random dungeon set items — on walls, or on paths provided they are DIMMED so they are never confused with the real encounter icons. Set dressing only: not interactable, no rules effect, pure ambiance.
 **Requirements:** TBD
@@ -278,7 +282,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.4: Map & HUD layout band (BACKLOG)
+### Phase 999.4: Map & HUD layout band (PROMOTED → Phase 57)
+
+> **Promoted 2026-09-22 into milestone v1.8 as LAYOUT-01..06, Phase 57 (Map & HUD Layout Band).** Kept here with its todo index until Phase 57 closes; the four todos below carry `resolves_phase: 57`. Not a runnable backlog item — do not queue it.
 
 **Goal:** [Captured from the 2026-09-19/21 Pixel 7 device rounds] The map screen's chrome stops fighting the map: the rail slides up OVER the map instead of reflowing it, the MARKS / CENTRE / MAKE CAMP / gear strip becomes a reserved band outside the viewport (so a chip tap can never also move the party), the HUD stacks into four bands instead of one clipping row, and the Table-7 Darkness counter becomes visible on the map.
 **Requirements:** TBD
