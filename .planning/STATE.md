@@ -4,17 +4,17 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 58
 current_phase_name: motion-pacing
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Completed 57-05-PLAN.md
-last_updated: "2026-09-22T20:07:49.227Z"
+stopped_at: Completed 58-03-PLAN.md
+last_updated: "2026-09-22T20:41:12.076Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 58 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 21
-  completed_plans: 11
+  completed_plans: 12
   percent: 40
 total_plans_in_phase: 4
 ---
@@ -31,11 +31,11 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 58 (motion-pacing) — EXECUTING
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 7
-Progress: [██████░░░░] 56%
-Plan: 1 of 7
-Status: Executing Phase 58
+Progress: [██████░░░░] 57%
+Plan: 2 of 7
+Status: Ready to execute
 Last activity: 2026-09-22 — Phase 58 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T19:26:43.928Z
-Stopped at: Completed 57-05-PLAN.md
+Last session: 2026-09-22T20:41:12.043Z
+Stopped at: Completed 58-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -326,6 +326,7 @@ Resume file: None
 | Phase 57 P03 | ~45min | 3 tasks | 8 files |
 | Phase 57 P04 | ~40min | 3 tasks | 13 files |
 | Phase 57 P05 | ~3h | 3 tasks | 15 files |
+| Phase 58 P03 | 35min | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -602,6 +603,9 @@ Resume file: None
 - [Phase ?]: USER MOCK RULING 2026-09-22: chip band retired outright into a hamburger (☰) menu on HUD band 2; HP bar moves to a strip under band 1; CENTRE MAP is the one adopted wording change
 - [Phase ?]: Counter slots reconciled (discovery D): only Squares keeps the 5-digit D-08 slot; Depth/Day/Rations narrow to 3/3/2 digits so band 2 fits a 411px Pixel 7 with the ☰ button
 - [Phase ?]: Android back button closes the ☰ menu (device equivalent of Escape), approved by the orchestrator as standard behaviour
+- [Phase ?]: Phase 58-03: applyCam(p) placed next to anchorCamOnParty (not between positionCanvas/positionPartyPulse) to keep shell-map-viewport.test.js's positionCanvas region a clean single-function slice.
+- [Phase ?]: Phase 58-03: window.__mzControls wired per-test in map-pan.test.js/reduced-motion.test.js (mirroring rail-dismiss.test.js's own pattern) rather than expanding shellSandbox.js#wireBridges' documented scope.
+- [Phase ?]: Phase 58-03: pointerdown-cancel test takes the source-anchor route (not a sandbox event-fire) since recordingDom.js's addEventListener is a no-op and out of this plan's files_modified.
 
 ### Blockers
 
