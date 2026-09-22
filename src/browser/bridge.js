@@ -204,6 +204,14 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: draw — the render-window radius/visibility predicate)"]),
     purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window; missing bridge falls back to showing everything.",
   }),
+  __mzMotion: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: showPanel/hidePanel — the fail-open wrappers every D-05 hidden-based close/open routes through)",
+      "mazeworld.html (classic: showTab — the reduced() check that decides whether an outgoing screen leaves with a pinned translateY or hides instantly)",
+    ]),
+    purpose: "Bridges src/browser/motion.js's one shared, timer-driven panel close helper (Phase 58, MOTION-02) and its reduced-motion predicate so the classic script animates every hidden-based close (the MARKS/Settings/camp sheets, the encounter overlay, a tab's outgoing screen) without a second copy of the close-then-hide timing.",
+  }),
   __mzNightlyEats: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: paint — camp button's food-need readout)"]),

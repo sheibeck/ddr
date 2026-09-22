@@ -1946,9 +1946,38 @@ let mwActiveTab = "maze";
     oracle: document.getElementById("screen-oracle"),
     dead: document.getElementById("screen-dead"),
   };
+  // Phase 58 (MOTION-02, D-06): the scroll container the leaving screen's
+  // inline translateY offset is measured against — see the cross-fade
+  // comment in showTab below.
+  const screensEl = document.getElementById("mw-screens");
   function showTab(name) {
     if (!screens[name]) return;
-    for (const key of Object.keys(screens)) screens[key].hidden = key !== name;
+    // Phase 58 (MOTION-02, D-05/D-06/D-07/D-08): a tab switch cross-fades
+    // — never a horizontal slide, so the map never looks like it is
+    // scrolling. The incoming screen opens through showPanel (which also
+    // cancels a pending leave when the player taps straight back to a
+    // still-closing screen). Every OTHER currently-shown, not-already-
+    // closing screen leaves: under real motion, it is pinned in place
+    // with an inline translateY offset by .mw-screens' own scrollTop
+    // (the leaving layer is absolutely positioned against #mw-stage, so
+    // it is never itself scrolled — see the .mw-screens > .mw-screen
+    // [data-motion="closing"] CSS rule) and fades out through hidePanel;
+    // under reduced motion (or with no bridge yet — tab-init's first
+    // showTab("maze") runs before the module script exists), it just
+    // hides instantly. A screen that is already hidden, or already
+    // mid-leave, is left alone.
+    for (const key of Object.keys(screens)) {
+      const el = screens[key];
+      if (key === name) { showPanel(el); continue; }
+      if (el.hidden || window.__mzMotion?.isClosing?.(el)) continue;
+      if (window.__mzMotion && !window.__mzMotion.reduced()) {
+        const scrollTop = screensEl ? screensEl.scrollTop : 0;
+        el.style.transform = `translateY(-${scrollTop}px)`;
+        hidePanel(el, () => { el.style.transform = ""; });
+      } else {
+        hidePanel(el);
+      }
+    }
     // Phase 57 (LAYOUT-05), Plan 05 (discovery B): the HUD and the
     // condition strip hide on Dead (the mock's showHud/hasConds gate) —
     // ONE predicate feeds both data-offtab writes so they can never
@@ -3022,6 +3051,29 @@ function hasActiveEncounter() {
   return !!(S && (S.dead || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length))) || !!window.__mzStair;
 }
 
+// Phase 58 (MOTION-02, D-08) — fail-open wrappers over window.__mzMotion,
+// the module script's shared animated-close helper. Every hidden-based
+// D-05 close (the MARKS/Settings/camp sheets, the encounter overlay,
+// showTab's outgoing screen) routes through these two instead of a raw
+// `hidden` write, so the close animates through the one shared timer-
+// driven helper. A missing bridge — including tab-init's very first
+// showTab("maze") call, which runs before the trailing module script ever
+// assigns window.__mzMotion — falls back to the pre-Phase-58 instant
+// toggle, exactly like every other window.__mz* consumer in this file.
+function showPanel(el) {
+  if (!el) return;
+  if (window.__mzMotion) window.__mzMotion.open(el);
+  else el.hidden = false;
+}
+function hidePanel(el, onHidden) {
+  if (!el) return;
+  if (window.__mzMotion) window.__mzMotion.close(el, onHidden);
+  else {
+    el.hidden = true;
+    if (typeof onHidden === "function") onHidden();
+  }
+}
+
 // railLocked() (orchestrator decision 2, ruling 3): a pending rail decision
 // (joiner/find) or a pending obstacle (a failed climb/leap, stashed on
 // window.__mzRail.pending by stepNow below) locks EVERY movement entry path
@@ -3678,7 +3730,7 @@ function renderEncounter() {
   }
   encWasActive = active;
   if (!active) {
-    if (panel) panel.hidden = true;
+    if (panel) hidePanel(panel);
     // 2026-09-17 UAT PERF/addendum: the panel no longer covers the map —
     // resume/reveal the party ring so it composites again, and re-render the
     // rail so the idle "NOTHING IS HAPPENING" card can return now that the
@@ -3689,7 +3741,7 @@ function renderEncounter() {
     syncFightLogLive(null);
     return;
   }
-  if (panel) panel.hidden = false;
+  if (panel) showPanel(panel);
   // 2026-09-17 UAT PERF/addendum: the panel just covered the map — pause and
   // hide the party ring underneath it (Chromium tile-memory starvation: an
   // animated element under an opaque overlay can fail to paint until a
@@ -4074,6 +4126,13 @@ function renderRail() {
     peek = zoom > 1 ? copy.peekPinch : copy.peekStep;
   }
 
+  // Phase 58 (MOTION-02, D-06): read BEFORE the hidden/data-shown write
+  // below — whether the rail was already up when THIS render started, so
+  // the isNew block further down can tell "a card replacing a card while
+  // the rail is up" (re-trigger the rise) from "hidden going to shown"
+  // (the CSS slide plays instead — the two must never fight over
+  // `transform`).
+  const wasShown = railEl.dataset.shown === "1";
   // 2026-09-17 UAT (user ruling): the rail is the ONE feedback surface on
   // every tab and shows ONLY when it has something to report — a real
   // event/decision/refusal card. Idle hides it everywhere (no NOTHING IS
@@ -4085,6 +4144,27 @@ function renderRail() {
   // from this one predicate, in one place, so they can never drift.
   railEl.hidden = !!(S.combat || S.dead) || idle;
   railEl.dataset.shown = railEl.hidden ? "0" : "1";
+
+  // Phase 58 (MOTION-02, D-06): the rail must slide out showing the card
+  // that is LEAVING, not the idle copy — an idle render (the card just
+  // cleared) does the SAME bookkeeping the idle branch of the isNew block
+  // below always did (key/hold-timer/announcer), then returns WITHOUT
+  // repainting the tone, idle flag, icon, title, peek, lines, drop shelf
+  // or action row, so the departing card's content stays on screen intact
+  // for its 120ms slide. A rail hidden only because combat/death own the
+  // screen while a card is still live is NOT idle here, so it keeps the
+  // full repaint path below — a card pushed mid-fight still gets its
+  // announcement and hold timer exactly as before.
+  if (idle) {
+    const isNewIdle = key !== lastRailKeyShown;
+    if (isNewIdle) {
+      lastRailKeyShown = key;
+      clearTimeout(railTimer);
+      railTimer = null;
+      syncRailLive("");
+    }
+    return;
+  }
 
   railEl.dataset.tone = tone;
   railEl.dataset.idle = idle ? "1" : "0";
@@ -4123,9 +4203,16 @@ function renderRail() {
     // the gesture that produced this render can never also dismiss it.
     railShownAt = Date.now();
     if (buttons.length) armEncounterButtons();
-    railEl.classList.remove("mw-rail-new");
-    void railEl.offsetWidth;
-    railEl.classList.add("mw-rail-new");
+    // Phase 58 (MOTION-02, D-06): the rise re-trigger only when a card
+    // replaces a card while the rail is ALREADY up — the rail's own CSS
+    // slide (the hidden -> [data-shown="1"] transition) plays instead
+    // when it is a hidden-to-shown change, so the two transforms never
+    // fight each other.
+    if (wasShown) {
+      railEl.classList.remove("mw-rail-new");
+      void railEl.offsetWidth;
+      railEl.classList.add("mw-rail-new");
+    }
     syncRailLive(idle ? "" : title + ". " + lines.map((l) => l.text).join(" "));
     clearTimeout(railTimer);
     railTimer = null;
@@ -4307,12 +4394,15 @@ function renderMarksLegend() {
 }
 function openMarksLegend() {
   renderMarksLegend();
-  document.getElementById("mw-legend-sheet").hidden = false;
+  showPanel(document.getElementById("mw-legend-sheet"));
 }
 function closeMarksLegend() {
-  document.getElementById("mw-legend-sheet").hidden = true;
+  hidePanel(document.getElementById("mw-legend-sheet"));
   // Phase 32 (CMBUI-05, design §6.3 rule 2)/Phase 35 (MAP-08): stamp the
   // settle window on close — the same rule every §6.3 dismissal follows.
+  // Phase 58 (MOTION-02): stamped at CALL time (not when the animated
+  // close finishes), so DISMISS_SETTLE_MS (250ms) — longer than
+  // CLOSE_MS + CLOSE_SLACK_MS (154ms) — still covers the whole close.
   lastDismissAt = Date.now();
 }
 document.getElementById("mw-chip-marks").addEventListener("click", openMarksLegend);
@@ -4332,7 +4422,7 @@ function openCampSheet() {
   document.getElementById("mw-camp-copy").textContent = MAP_COPY.camp.copy;
   document.getElementById("mw-camp-sleep").textContent = MAP_COPY.camp.sleep;
   document.getElementById("mw-camp-walk").textContent = MAP_COPY.camp.walk;
-  sheet.hidden = false;
+  showPanel(sheet);
   armEncounterButtons();
   guardTap(document.getElementById("mw-camp-sleep"), () => {
     closeCampSheet();
@@ -4342,7 +4432,9 @@ function openCampSheet() {
 }
 function closeCampSheet() {
   const sheet = document.getElementById("mw-camp-sheet");
-  if (sheet) sheet.hidden = true;
+  if (sheet) hidePanel(sheet);
+  // Phase 58 (MOTION-02): stamped at CALL time — see closeMarksLegend's
+  // own comment above for why this still covers the whole animated close.
   lastDismissAt = Date.now();
 }
 document.getElementById("mw-camp-scrim").addEventListener("click", closeCampSheet);
@@ -4796,7 +4888,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzControls) so the classic keepPartyInView/glideCenterMap/
   // anchorCamOnParty/pointerdown can ease `cam` without a second copy of
   // the math.
-  import { prefersReducedMotion, onReducedMotionChange } from "./src/browser/motion.js";
+  import { prefersReducedMotion, onReducedMotionChange, createPanelMotion } from "./src/browser/motion.js";
   import { createCameraGlide } from "./src/browser/cameraGlide.js";
   // Phase 35 (MAP-02) — the tap-to-step direction resolver + hold-inspect
   // cards (Plan 01); bridged beside window.__mzControls below for the
@@ -5111,11 +5203,15 @@ window.__mzClassicBoot = async function classicBoot() {
   function openSettingsSheet() {
     renderSettingsSheet();
     const sheet = document.getElementById("mw-settings-sheet");
-    if (sheet) sheet.hidden = false;
+    // Phase 58 (MOTION-02, D-08): the module script has direct access to
+    // panelMotion (declared below), so it opens/closes through it
+    // directly rather than the classic script's showPanel/hidePanel
+    // fail-open wrappers.
+    if (sheet) panelMotion.open(sheet);
   }
   function closeSettingsSheet() {
     const sheet = document.getElementById("mw-settings-sheet");
-    if (sheet) sheet.hidden = true;
+    if (sheet) panelMotion.close(sheet);
     // Phase 33 (UIF-02, site 3), retargeted quick task 260918-vm3: the
     // Settings sheet is reachable from any tab and outside the tab/overlay
     // systems, so it needs its own keep-in-view (never recentre); both
@@ -5236,7 +5332,28 @@ window.__mzClassicBoot = async function classicBoot() {
   // covers all four effects.
   function settleAllMotion() {
     window.__mzCameraGlide?.finish?.();
+    panelMotion.finishAll();
   }
+  // Phase 58 (MOTION-02, D-08) — the ONE shared, timer-driven panel close
+  // helper every hidden-based D-05 close (the MARKS/Settings/camp sheets,
+  // the encounter overlay, showTab's outgoing screen) routes through.
+  // `hidden` stays the accessibility truth; it is set here on a timer
+  // AFTER the close transition has painted its last frame, never on a
+  // transition-end/animation-end listener (CSCR-08) — see motion.js's own
+  // header comment for why. Bridged as window.__mzMotion so the classic
+  // script's showPanel()/hidePanel() wrappers (and showTab's reduced()
+  // check) reach it without a second copy.
+  const panelMotion = createPanelMotion({
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
+    clearTimeout: (id) => clearTimeout(id),
+    reduced: () => prefersReducedMotion(window),
+  });
+  window.__mzMotion = {
+    reduced: () => prefersReducedMotion(window),
+    open: (el) => panelMotion.open(el),
+    close: (el, onHidden) => panelMotion.close(el, onHidden),
+    isClosing: (el) => panelMotion.isClosing(el),
+  };
   onReducedMotionChange(window, (reduced) => { if (reduced) settleAllMotion(); });
   // Phase 35 (MAP-02) — tapStep()/inspectAt() (classic script) read the
   // dominant-axis step resolver and hold-inspect cards through this bridge.
