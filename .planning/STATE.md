@@ -4,18 +4,18 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 58
 current_phase_name: motion-pacing
-current_plan: 6
+current_plan: 7
 status: executing
-stopped_at: Completed 58-06-PLAN.md
-last_updated: "2026-09-22T22:28:51.079Z"
+stopped_at: Completed 58-07-PLAN.md
+last_updated: "2026-09-22T23:00:03.891Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 58 execution started
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 21
-  completed_plans: 15
-  percent: 40
+  completed_plans: 16
+  percent: 60
 total_plans_in_phase: 4
 ---
 
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 58 (motion-pacing) — EXECUTING
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 7
-Progress: [███████░░░] 71%
-Plan: 6 of 7
+Progress: [████████░░] 76%
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-22 — Phase 58 execution started
 
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T22:28:51.012Z
-Stopped at: Completed 58-06-PLAN.md
+Last session: 2026-09-22T23:00:03.859Z
+Stopped at: Completed 58-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -330,6 +330,7 @@ Resume file: None
 | Phase 58 P04 | 75min | 3 tasks | 11 files |
 | Phase 58 P05 | 25min | 3 tasks | 9 files |
 | Phase 58 P06 | 120min | 3 tasks | 19 files |
+| Phase 58 P07 | 30min | 3 tasks | 7 files |
 
 ## Decisions
 
@@ -615,6 +616,8 @@ Resume file: None
 - [Phase ?]: Phase 58 Plan 05: the rail's holdCard is captured once at isNew-block time and closed over by startHold, not re-read from rail.card inside the deferred setTimeout callback
 - [Phase ?]: 58-06: window.__mzBeat (active/hurry/view) reveals a combat round one exchange at a time over the classic renderer; recordingDom.js gained an additive-only innerHTML->querySelector fallback to unblock testing the real combat body
 - [Phase ?]: 58-06: fixed 9 out-of-scope test files broken by the new !bv-gate/renderFoeCards-signature ripple from Task 2, per the plan's own re-pin authorization
+- [Phase ?]: Deferred a combat round's clips via dispatchWithNarration(action, opts={}) pushing onto a caller-owned opts.cues array, keeping the return contract unchanged for its other 8 callers
+- [Phase ?]: Pinned the paint()/draw() modularity proof's SHA-256 against PRE58 (Phase 57 close, ab3fca9) rather than BASE_58, since BASE_58 postdates Phase 57's own legitimate HUD edits to those functions
 
 ### Blockers
 
