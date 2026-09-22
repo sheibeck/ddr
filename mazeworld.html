@@ -3804,8 +3804,13 @@ function renderRail() {
   // every tab and shows ONLY when it has something to report — a real
   // event/decision/refusal card. Idle hides it everywhere (no NOTHING IS
   // HAPPENING card; this also keeps THEY ARE DOWN's loot list at full
-  // height). Combat/death still own their screens.
+  // height). Combat/death still own their screens. Phase 57 (LAYOUT-01):
+  // `hidden` is kept for assistive technology and for the existing
+  // showTab/renderEncounter predicates, while `data-shown` is what the
+  // stylesheet reads to slide the overlay in and out — both are written
+  // from this one predicate, in one place, so they can never drift.
   railEl.hidden = !!(S.combat || S.dead) || idle;
+  railEl.dataset.shown = railEl.hidden ? "0" : "1";
 
   railEl.dataset.tone = tone;
   railEl.dataset.idle = idle ? "1" : "0";
