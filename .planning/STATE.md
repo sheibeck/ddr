@@ -5,7 +5,7 @@ milestone_name: Tuning Pass — Initiative, Cadence & the Four-Band Curve
 current_phase: 999.1
 current_phase_name: BACKLOG
 status: planning
-stopped_at: v1.7 COMPLETE (2026-09-22) - Phases 50-55 done; the Phase 55 device round ran on the post-54 APK (HEAD 9bae7b6) and closed on the user's recorded DEFERRAL of the curve verdict ('much better... revisit later after more plays'); NEXT STEP = milestone lifecycle (audit -> complete -> cleanup), then /gsd-new-milestone. The v1.7/v1.6/v1.5 UAT checklists stay open (docs/UAT-v1.7.md, -v1.6, -v1.5); 14 device-session todos from 2026-09-21 are queued as quick tasks
+stopped_at: v1.7 CLOSING - phases 50-55 all complete, audit written (.planning/v1.7-MILESTONE-AUDIT.md, tech_debt, 15/15 reqs, zero blockers), Deferred Items recorded in STATE, roadmap archive created (.planning/milestones/v1.7-ROADMAP.md with its header). REMAINING in /gsd-complete-milestone v1.7: (1) archive REQUIREMENTS.md -> milestones/v1.7-REQUIREMENTS.md then git rm the original; (2) collapse ROADMAP.md to the v1.7 one-liner + keep the Backlog section; (3) MILESTONES.md entry (copy the v1.6 entry's shape: override closeout, 6 phases / 18 plans / 131 commits / 2026-09-20-22, tests 3200 -> 3479 green, key accomplishments per phase 50-55); (4) PROJECT.md already evolved at 9bae7b6 - just re-check the Next Milestone Goals section; (5) commit 'chore: archive v1.7 milestone' + tag v1.7 (git.create_tag true) and push master + tag (user authorized 2026-09-17, separate commands); (6) then /gsd-cleanup, then /gsd-new-milestone. Phase 55 override reason: zero-plan device round, VERIFICATION passed on the user's recorded deferral, projection cannot mark it implementation_complete
 last_updated: "2026-09-22T11:59:02.818Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 55 complete, transitioned to Phase 999.1
@@ -117,6 +117,18 @@ Last activity: 2026-09-22 — Phase 55 complete, transitioned to Phase 999.1
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-09-22 (v1.7 override closeout — Phase 55 is a zero-plan device round whose VERIFICATION.md reads `passed` but which the manager projection cannot mark `implementation_complete` without plans; the user directed "move on to other milestones"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v1.7.md (four-run DR bar + 25 items), docs/UAT-v1.6.md (26), docs/UAT-v1.5.md (140) | pending on the post-54 APK (HEAD 9bae7b6, installed 2026-09-22); the user deferred the curve verdict |
+| todo | 15 device-session findings from 2026-09-21 + the 2026-09-19 rail-overlay todo (.planning/todos/pending/) | queued as quick tasks for the next milestone; difficulty-feel ones superseded by the fitted build |
+| quick_task | rules-text-audit-pass (20260909) | v1.0-era stub, re-acknowledged (shipped as Phase 04.2) |
+| quick_task | 260908-kkq-rename-product-to-delve-die-repeat-and-s | v1.0-era stub, re-acknowledged (landed in f81942f) |
+| fit_miss | reach-20 1.5% vs the 3-5% band (Phase 54 Miss table) | one FOE_LEVEL.perDepth notch is the lever if a later round wants it |
+| seed | SEED-001 leaderboards & share | dormant (post-launch) |
+| tooling | npm run boot:check environment-blocked on this machine | migrate to CDP or re-run in a clean session; not a code regression |
+
 Items acknowledged and deferred at milestone close on 2026-09-20 (v1.6 verified closeout — all six phases `passed`, 19/19 requirements; user chose "complete, accept debt as tracked"):
 
 | Category | Item | Status |
@@ -156,7 +168,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-20 (autonomous v1.7 run; paused for /compact)
-Stopped at: v1.7 complete — Phase 55 closed on the user's explicit TUNE-09 deferral (ccb21e0 records it verbatim). Next: milestone audit/complete/cleanup, then a new milestone. Fitted curve is on the Pixel 7 (APK from 9bae7b6, installed 02:56). Standing rulings: checkpointed fit protocol (USER RULINGS E/F/G); verification agents off (orchestrator VERIFICATION); research skipped; worktrees auto-degraded -> executors sequential on master
+Stopped at: v1.7 closing - see stopped_at above for the exact remaining steps. Context compacted 2026-09-22 mid-close at the user's request. The fitted curve is on the Pixel 7 (APK from 9bae7b6). The user deferred the curve verdict ('much better, revisit after more plays') and wants to move on to other milestones - so after the close: /gsd-new-milestone, with the 16 pending todos (15 from the 2026-09-21 device session) as candidate quick tasks
 Resume file: None — resume with `/gsd-autonomous` (Phase 54 has_context=true → goes straight to plan). Standing rulings this run: research skipped for all six phases; verification agents off (orchestrator authors VERIFICATION.md from SUMMARYs, device checks deferred to Phase 55's batch); Phase 52 ruling: 65 curve-height cells hand to Phase 54; worktrees auto-degraded → executors run sequentially on master; docs commits via plain `git commit` with the two trailer lines; Pixel 7 is on wireless adb (adb-28051FDH200H0R, 10.0.0.175); `npm run boot:check` environment-blocked (not a gate)
 
 ## Operator Next Steps
