@@ -337,7 +337,11 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    hold-to-inspect gesture (no context menu/text-selection handle on a long
    press). */
 .mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:0;touch-action:none;-webkit-user-select:none;user-select:none}
-.mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
+/* Phase 58 (MOTION-01): the canvas is placed by a translate3d transform
+   (positionCanvas(), below) so a glide frame is a compositor move, not a
+   layout — left/top stay at their resting 0,0 and the transform carries
+   the offset. */
+.mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0;will-change:transform}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
 /* Phase 57 (LAYOUT-06) — the counter-driven darkness vignette. paintVignette()
    writes data-dark to one of the three VIGNETTE_LEVELS (off/near/close); the
@@ -2014,6 +2018,10 @@ function cameraPan() {
 // and by pinch-zoom (offset = the party's on-screen point at pinch start,
 // so the zoom origin stays on the party).
 function anchorCamOnParty(offsetPx) {
+  // Phase 58 (MOTION-01, D-02/D-03): every snap (centerMap) and every
+  // pinch frame cancels an in-flight glide FIRST, so a leftover glide
+  // frame can never land after and overwrite a snap.
+  window.__mzCameraGlide?.cancel?.();
   const p = partyCentre();
   cam = { x: p.x - offsetPx.x / CELL, y: p.y - offsetPx.y / CELL };
 }
@@ -2059,6 +2067,10 @@ function fit() {
 // so the player's cell sits at the viewport center plus the pan offset —
 // the exact forward transform src/browser/controls.js's screenToCell
 // inverts for tap hit-testing (tx/ty formula documented there).
+// Phase 58 (MOTION-01): the canvas moves by a translate3d transform instead
+// of left/top — a glide frame is then a composite, not a layout. X/Y are
+// rounded to whole DEVICE pixels (never CSS pixels) so the resting map,
+// once a glide/nudge/drag settles, never sits on a subpixel and blurs.
 function positionCanvas() {
   if (!S) return;
   const vp = document.getElementById("mw-maze-viewport");
@@ -2066,9 +2078,22 @@ function positionCanvas() {
   const rect = vp.getBoundingClientRect();
   const tx = rect.width / 2 - cam.x * CELL - CANVAS_PAD;
   const ty = rect.height / 2 - cam.y * CELL - CANVAS_PAD;
-  cv.style.left = tx + "px";
-  cv.style.top = ty + "px";
+  const dpr = window.devicePixelRatio || 1;
+  const X = Math.round(tx * dpr) / dpr;
+  const Y = Math.round(ty * dpr) / dpr;
+  cv.style.transform = `translate3d(${X}px, ${Y}px, 0)`;
   positionPartyPulse(rect);
+}
+
+// applyCam(p): the glide's per-frame writer (Phase 58, MOTION-01) — the ONE
+// place window.__mzCameraGlide writes `cam` on every frame of an in-flight
+// tween. Sets `cam` to a fresh point (never the caller's own object) and
+// calls positionCanvas(), which in turn keeps positionPartyPulse(rect) in
+// lockstep — the ring moves with the canvas from the SAME camera, every
+// frame.
+function applyCam(p) {
+  cam = { x: p.x, y: p.y };
+  positionCanvas();
 }
 
 // Phase 35 (MAP-07): the pulsing party ring (#mw-party-pulse) is a DOM
@@ -4278,7 +4303,20 @@ function centerMap() {
   anchorCamOnParty({ x: 0, y: 0 });
   positionCanvas();
 }
-document.getElementById("mw-chip-centre").addEventListener("click", centerMap);
+// Phase 58 (MOTION-01, D-01/D-03): the CENTRE row of the ☰ menu glides to
+// the party instead of snapping. centerMap() itself, and window.mzCenterMap
+// below, stay the SNAP — stairs, teleport, a new run and boot have no
+// meaningful path to pan along, so they keep calling centerMap()/
+// window.mzCenterMap directly, unchanged.
+function glideCenterMap() {
+  if (!S) return;
+  if (window.__mzCameraGlide) {
+    window.__mzCameraGlide.to(cam, partyCentre(), applyCam);
+  } else {
+    centerMap();
+  }
+}
+document.getElementById("mw-chip-centre").addEventListener("click", glideCenterMap);
 // Device-review Pass B1 item 4: bridged onto window (same pattern as
 // window.move/window.newGame/window.__mzState) so the trailing module
 // script can auto-recenter the viewport on the party without duplicating
@@ -4287,6 +4325,8 @@ document.getElementById("mw-chip-centre").addEventListener("click", centerMap);
 // in this SAME non-module <script>, so centerMap() (a plain function
 // declaration) is already an implicit `window.centerMap` global too, but
 // naming the bridge explicitly keeps the pattern consistent and greppable.
+// This bridge stays the SNAP (D-03) — the stair overlay, teleport, a new
+// run and boot's first paint all call window.mzCenterMap?.() unchanged.
 window.mzCenterMap = centerMap;
 
 // Phase 57 (LAYOUT-04/05), Plan 05 — the ☰ HUD menu. Three top-level
@@ -4336,6 +4376,17 @@ document.getElementById("mw-hud-menu").onclick = () => hudMenuEvent("select");
 // menu's, formerly the CENTRE chip), a floorChanged/teleported event, a new
 // run (including the dev start-at-depth run) and the boot first paint — call
 // window.mzCenterMap instead; nothing else calls it.
+// Phase 58 (MOTION-01, D-01/D-04): this decides WHEN exactly as before —
+// only the edge rule above triggers it, and the stationary-camera ruling is
+// unchanged. What changes is HOW: the nudge now glides `cam` to its target
+// over window.__mzCameraGlide's ~200ms ease-out instead of snapping. The
+// target is computed from the glide's own in-flight TARGET when one exists
+// (never from a camera that is only halfway through a glide) — if it were
+// computed from a mid-glide `cam`, a second nudge mid-flight would return
+// that halfway point and freeze the camera short of where it was already
+// heading. A second nudge mid-flight therefore always re-aims from the
+// currently displayed destination, so rapid tap-to-move never stutters or
+// queues.
 function keepPartyInView() {
   if (!S) return;
   const vp = document.getElementById("mw-maze-viewport");
@@ -4347,10 +4398,18 @@ function keepPartyInView() {
   const C = window.__mzControls;
   if (rect.width > 0 && rect.height > 0 && C && C.keepInViewAxis) {
     const p = partyCentre();
-    cam = {
-      x: C.keepInViewAxis(cam.x, p.x, rect.width / CELL),
-      y: C.keepInViewAxis(cam.y, p.y, rect.height / CELL),
+    const G = window.__mzCameraGlide;
+    const base = (G && G.target && G.target()) || cam;
+    const target = {
+      x: C.keepInViewAxis(base.x, p.x, rect.width / CELL),
+      y: C.keepInViewAxis(base.y, p.y, rect.height / CELL),
     };
+    if (target.x !== base.x || target.y !== base.y) {
+      if (G) G.to(cam, target, applyCam);
+      else cam = target; // fail-open: no bridge, pre-phase snap
+    }
+    // target equals base on both axes: no nudge is owed — leave `cam` (and
+    // any glide already in flight) exactly as it is.
   }
   // ALWAYS finish with positionCanvas() — the previous positionCanvas may
   // have run against a 0x0 rect while the map tab was hidden.
@@ -4444,6 +4503,9 @@ function inspectAt(clientX, clientY) {
   };
   const startPan = (id, x, y) => { pointerStart = { x, y, camStart: { x: cam.x, y: cam.y }, id }; };
   vp.addEventListener("pointerdown", e => {
+    // Phase 58 (MOTION-01, D-02): the finger wins — a touch freezes any
+    // in-flight glide exactly where it is, before anything else runs.
+    window.__mzCameraGlide?.cancel?.();
     if (!S || hasActiveEncounter()) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { vp.setPointerCapture(e.pointerId); } catch (err) { /* off-element capture is non-fatal */ }
