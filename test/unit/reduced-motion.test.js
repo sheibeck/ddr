@@ -19,18 +19,21 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
+import crypto from "node:crypto";
 
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
 import { createFakeClock } from "./harness/fakeClock.js";
 import { newRun } from "../../engine/state.js";
 import { keepInViewAxis } from "../../src/browser/controls.js";
-import { REDUCED_MOTION_QUERY } from "../../src/browser/motion.js";
+import { REDUCED_MOTION_QUERY, createPanelMotion } from "../../src/browser/motion.js";
+import { createCameraGlide } from "../../src/browser/cameraGlide.js";
+import { createTypewriter } from "../../src/browser/typewriter.js";
 import { railPush, emptyRail, RAIL_HOLD } from "../../src/browser/rail.js";
-import { stripHtml } from "../../tools/ident-sweep.mjs";
+import { stripHtml, stripJs } from "../../tools/ident-sweep.mjs";
 import { applyAction } from "../../engine/engine.js";
 import { fightLogLinesFor, appendFightLog } from "../../src/browser/fightLog.js";
-import { planBeat } from "../../src/browser/combatBeat.js";
+import { planBeat, createBeat, createBeatRunner } from "../../src/browser/combatBeat.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -46,9 +49,9 @@ function expectedTransformStr(camPoint, dpr = 1) {
   return `translate3d(${X}px, ${Y}px, 0)`;
 }
 
-function buildScenario({ reducedMotion, clock = null } = {}) {
+function buildScenario({ reducedMotion, clock = null, stubRail = true } = {}) {
   const doc = createRecordingDocument();
-  const sandbox = loadShellSandbox({ doc, reducedMotion, clock });
+  const sandbox = loadShellSandbox({ doc, reducedMotion, clock, stubRail });
   sandbox.context.window.__mzControls = { keepInViewAxis };
   const vp = doc.document.getElementById("mw-maze-viewport");
   vp.getBoundingClientRect = () => ({ ...RECT });
@@ -402,4 +405,310 @@ test("reduced-motion/beat: source anchor — settleAllMotion()'s body contains b
   const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
   const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
   assert.match(settleBody, /beatRunner\.hurry\(\);/);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── audit (MOTION-05, Plan 58-07) — the phase-wide ledger closing all
+// four effects into ONE predicate, ONE settle point, a mid-session flip of
+// all four together, a same-tick smoke test spanning every effect at once,
+// and the modularity proof that paint()/draw() carry no Phase 58 code.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── (1) one predicate ─────────────────────────────────────────────────
+
+test("reduced-motion/audit: one predicate — \"prefers-reduced-motion\" appears in JS only as src/browser/motion.js's REDUCED_MOTION_QUERY; the blanket CSS rule occurs exactly once", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+
+  const BLANKET = "@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}";
+  const blanketCount = stripped.split(BLANKET).length - 1;
+  assert.equal(blanketCount, 1, "the blanket CSS rule must occur exactly once");
+  const withoutBlanket = stripped.split(BLANKET).join("");
+  assert.equal(
+    withoutBlanket.includes("prefers-reduced-motion"),
+    false,
+    "\"prefers-reduced-motion\" must never appear anywhere else in mazeworld.html — never inside a <script> region"
+  );
+
+  const browserDir = path.join(REPO_ROOT, "src", "browser");
+  const jsFiles = fs.readdirSync(browserDir).filter((f) => f.endsWith(".js"));
+  assert.ok(jsFiles.includes("motion.js"), "sanity: motion.js must exist in src/browser/");
+  for (const f of jsFiles) {
+    const fileRaw = fs.readFileSync(path.join(browserDir, f), "utf8");
+    const fileStripped = stripJs(fileRaw);
+    if (f === "motion.js") {
+      assert.match(
+        fileStripped,
+        /REDUCED_MOTION_QUERY = "\(prefers-reduced-motion: reduce\)";/,
+        "motion.js must define REDUCED_MOTION_QUERY as this exact string"
+      );
+    } else {
+      assert.equal(
+        fileStripped.includes("prefers-reduced-motion"),
+        false,
+        `${f} must never mention "prefers-reduced-motion" directly — only motion.js's REDUCED_MOTION_QUERY may`
+      );
+    }
+  }
+});
+
+// ─── (2) four controllers, one predicate ──────────────────────────────
+
+test("reduced-motion/audit: four controllers, one predicate — every constructor call site builds with reduced: () => prefersReducedMotion(window); prefersReducedMotion is imported exactly once, from ./src/browser/motion.js", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+
+  function extractCallArgs(source, marker) {
+    const idx = source.indexOf(marker);
+    if (idx === -1) return null;
+    const parenStart = idx + marker.length - 1;
+    let depth = 0;
+    for (let i = parenStart; i < source.length; i++) {
+      if (source[i] === "(") depth++;
+      else if (source[i] === ")") {
+        depth--;
+        if (depth === 0) return source.slice(parenStart, i + 1);
+      }
+    }
+    return null;
+  }
+
+  for (const marker of ["createCameraGlide(", "createTypewriter(", "createBeat(", "createPanelMotion("]) {
+    const args = extractCallArgs(stripped, marker);
+    assert.ok(args, `${marker} call not found`);
+    assert.match(
+      args,
+      /reduced:\s*\(\)\s*=>\s*prefersReducedMotion\(window\)/,
+      `${marker} must construct with reduced: () => prefersReducedMotion(window)`
+    );
+  }
+
+  const importMatches =
+    stripped.match(/import \{ prefersReducedMotion, onReducedMotionChange, createPanelMotion \} from "\.\/src\/browser\/motion\.js";/g) || [];
+  assert.equal(importMatches.length, 1, "prefersReducedMotion must be imported exactly once, from ./src/browser/motion.js");
+});
+
+// ─── (3) settle-all ────────────────────────────────────────────────────
+
+test("reduced-motion/audit: settle-all — settleAllMotion() drains all four effects (camera glide finish, panelMotion.finishAll(), typewriter.completeAll(), beatRunner.hurry()); onReducedMotionChange(window, is wired exactly once and its callback calls settleAllMotion() only when the new value is true", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+
+  const settleIdx = stripped.indexOf("function settleAllMotion(");
+  assert.ok(settleIdx !== -1, "function settleAllMotion( not found");
+  const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
+  const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
+
+  assert.match(settleBody, /window\.__mzCameraGlide\?\.finish\?\.\(\);/, "settleAllMotion must finish the camera glide");
+  assert.match(settleBody, /panelMotion\.finishAll\(\);/, "settleAllMotion must drain every pending panel close");
+  assert.match(settleBody, /typewriter\.completeAll\(\);/, "settleAllMotion must complete every in-flight typing run");
+  assert.match(settleBody, /beatRunner\.hurry\(\);/, "settleAllMotion must hurry a live beat");
+
+  const subscribeMatches = stripped.match(/onReducedMotionChange\(window,/g) || [];
+  assert.equal(subscribeMatches.length, 1, "onReducedMotionChange(window, must be wired exactly once");
+  assert.match(
+    stripped,
+    /onReducedMotionChange\(window, \(reduced\) => \{ if \(reduced\) settleAllMotion\(\); \}\);/,
+    "the subscription's callback must call settleAllMotion() only when the new value is true"
+  );
+});
+
+// ─── (4) mid-session flip, all four together ──────────────────────────
+
+test("reduced-motion/audit: mid-session flip — all four REAL controllers, sharing one switchable reduced flag on one fake clock, land together the instant the same four settle calls settleAllMotion's body makes are run", () => {
+  const clock = createFakeClock();
+  let reducedFlag = false;
+  const reduced = () => reducedFlag;
+
+  // 1. camera glide — a real ease-out tween, in flight (reduced=false).
+  const glide = createCameraGlide({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced,
+  });
+  let camApplied = null;
+  glide.to({ x: 0, y: 0 }, { x: 10, y: 20 }, (p) => { camApplied = p; });
+  assert.equal(glide.active(), true, "scenario setup: the glide must still be in flight");
+
+  // 2. panel close — a real timer-driven close, pending (reduced=false).
+  const panelMotion = createPanelMotion({
+    setTimeout: clock.setTimeout,
+    clearTimeout: clock.clearTimeout,
+    reduced,
+  });
+  const el = { hidden: false, dataset: {} };
+  let onHiddenCalls = 0;
+  panelMotion.close(el, () => { onHiddenCalls++; });
+  assert.equal(el.hidden, false, "scenario setup: the panel must still be open");
+
+  // 3. typing — a real in-flight typewriter run (reduced=false).
+  const typewriter = createTypewriter({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced,
+    doc: { createElement: () => ({ textContent: "", appendChild() {} }) },
+  });
+  let onDoneCalls = 0;
+  const target = { textContent: "", appendChild() {} };
+  const text = "A longer line, typed at 12ms a character, so it is still in flight when we flip.";
+  typewriter.type("audit", { targets: [target], texts: [text], onDone: () => { onDoneCalls++; } });
+  assert.equal(onDoneCalls, 0, "scenario setup: typing must still be in flight");
+
+  // 4. beat — a real multi-line round, one line landed (reduced=false).
+  const { before, after, events } = midFightRoundB();
+  const lines = fightLogLinesFor("attack", events, {});
+  const afterLog = appendFightLog(null, lines, before.combat.round);
+  const plan = planBeat({ actionType: "attack", events, before, after, beforeLog: null, afterLog, ctx: {} });
+  const beat = createBeat({ setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout, reduced });
+  const renders = [];
+  let settleCalls = 0;
+  const runner = createBeatRunner({
+    beat,
+    durationFor: () => 0,
+    onRender: (v) => renders.push(v),
+    onSettle: () => { settleCalls++; },
+    playClips: () => {},
+  });
+  runner.start(plan);
+  assert.equal(renders.length, 1, "scenario setup: only line 0 has landed so far");
+  assert.equal(settleCalls, 0);
+
+  // Flip the OS preference mid-session, then run the SAME four calls
+  // settleAllMotion's own body makes.
+  reducedFlag = true;
+  glide.finish();
+  panelMotion.finishAll();
+  typewriter.completeAll();
+  runner.hurry();
+
+  assert.deepEqual(camApplied, { x: 10, y: 20 }, "the glide must have applied its exact target");
+  assert.equal(glide.active(), false);
+
+  assert.equal(el.hidden, true, "the element must be hidden");
+  assert.equal(onHiddenCalls, 1, "onHidden must fire exactly once");
+
+  assert.equal(target.textContent, text, "the text must be full");
+  assert.equal(onDoneCalls, 1, "onDone must fire exactly once");
+
+  assert.equal(renders.length, 2, "the hurry must render exactly once more — the round's last line");
+  assert.equal(settleCalls, 1, "the beat must settle exactly once");
+  assert.equal(runner.active(), false);
+  const lastRender = renders[renders.length - 1];
+  assert.equal(lastRender.line, plan.count - 1, "the hurried render must be the round's last line");
+  assert.equal(lastRender.hurried, true);
+
+  // Advancing the clock afterwards changes nothing.
+  clock.advance(100000);
+  assert.deepEqual(camApplied, { x: 10, y: 20 });
+  assert.equal(el.hidden, true);
+  assert.equal(onHiddenCalls, 1);
+  assert.equal(target.textContent, text);
+  assert.equal(onDoneCalls, 1);
+  assert.equal(renders.length, 2);
+  assert.equal(settleCalls, 1);
+});
+
+// ─── (5) nothing lost under reduced (smoke) ───────────────────────────
+
+test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, a sheet close, a tab switch, a new rail card and a beat start all land in the same tick, in one default (reduced) sandbox", () => {
+  const scn = buildScenario({ reducedMotion: true, stubRail: false });
+  const w = scn.context.window;
+
+  // 1. a pan nudge
+  const { before: camBefore, target: camTarget } = triggerLeftEdgeNudge(scn);
+  scn.context.keepPartyInView();
+  assert.equal(scn.cv.style.transform, expectedTransformStr(camTarget, 1), "the pan nudge must land synchronously");
+  assert.equal(w.__mzCameraGlide.active(), false);
+
+  // 2. a sheet close
+  const legend = scn.sandbox.doc.document.getElementById("mw-legend-sheet");
+  scn.context.openMarksLegend();
+  scn.context.closeMarksLegend();
+  assert.equal(legend.hidden, true, "the sheet close must land synchronously");
+
+  // 3. a tab switch
+  const maze = scn.sandbox.doc.document.getElementById("screen-maze");
+  const hero = scn.sandbox.doc.document.getElementById("screen-hero");
+  w.__mzShowTab("hero");
+  assert.equal(hero.hidden, false);
+  assert.equal(maze.hidden, true, "the outgoing screen must hide synchronously");
+
+  // 4. a new rail card
+  const cardText = "The lock gives way with a click that sounds far too pleased with itself.";
+  w.__mzRail = railPush(emptyRail(), {
+    icon: "✕", iconKey: null, title: "A TRAP", lines: [{ text: cardText, roll: null }], tone: "bad", hold: RAIL_HOLD.default,
+  });
+  scn.context.renderRail();
+  const lineEl = scn.sandbox.doc.document.getElementById("mw-rail-lines").querySelectorAll(".mw-rail-line")[0];
+  assert.equal(lineEl.textContent, cardText, "the card's text must be full in the same render");
+  assert.equal(lineEl.children.length, 0, "reduced motion must never build typed/rest span children");
+
+  // 5. a beat start
+  const beforeLog = w.__mzFightLog;
+  const { before: cBefore, after: cAfter, events: cEvents } = midFightRoundB();
+  w.__mzState.set(cAfter);
+  const cLines = fightLogLinesFor("attack", cEvents, {});
+  w.__mzFightLog = appendFightLog(beforeLog, cLines, cBefore.combat.round);
+  const plan = planBeat({ actionType: "attack", events: cEvents, before: cBefore, after: cAfter, beforeLog, afterLog: w.__mzFightLog, ctx: {} });
+  const started = scn.sandbox.beatRunner.start(plan);
+  assert.ok(started, "beatRunner.start(plan) must return true for a real resolved round");
+  assert.equal(w.__mzBeat.active(), false, "the whole beat must land synchronously");
+  const rows = Array.from(scn.sandbox.doc.document.getElementById("enc-body").querySelectorAll(".cb-log-entry"));
+  assert.equal(rows.length, plan.count, "every line must be visible at once");
+  for (const row of rows) {
+    assert.equal(row.getAttribute("aria-hidden"), null, "no row may be left mid-typed");
+  }
+});
+
+// ─── (6) modularity — paint()/draw() carry no Phase 58 code ──────────
+
+// PRE58 = the Phase 57 closing commit, the one just before Phase 58's
+// first code landed — computed once (2026-09-22) via:
+//   git rev-parse "$(git log --diff-filter=A --format=%H -- src/browser/motion.js | tail -1)^"
+// -> ab3fca94a351b2f1515bd837bbd57bb27ae0b896 ("docs(phase-57): complete
+// phase execution — 5/5 plans, verification passed, docs amended for the
+// 2026-09-22 HUD mock"). BASE_58 (a01b38e) is NOT used here: it postdates
+// 57-05's own HUD work, which legitimately changed paint()/draw(), so
+// comparing against BASE_58 would hide a real Phase 58 regression inside
+// noise BASE_58 already carries. These two hex digests are the SHA-256 of
+// PRE58's own comment-stripped, CRLF-normalised paint()/draw() bodies,
+// computed by a one-off node script reading `git show
+// ab3fca9:mazeworld.html` through tools/ident-sweep.mjs#stripHtml — pinned
+// here as literals so `npm test` stays independent of git history while
+// still proving no Phase 58 statement grew either body.
+const PRE58_PAINT_SHA256 = "b90c5e4f80290d1cd3bc4c7f53a2ad8441a3c356d9703d73c9a2ab2f1f9e6f2f";
+const PRE58_DRAW_SHA256 = "ce9b08c5e35efad8e4a5096a08dae44cb225273c5b5cca5ac5703af5e9e4033a";
+
+test("reduced-motion/audit: modularity — the comment-stripped bodies of paint() and draw() are byte-identical to PRE58's (ab3fca9), pinned by SHA-256, unchanged by any Phase 58 plan", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
+  const stripped = stripHtml(raw);
+
+  function extractFunctionBody(source, signatureRe) {
+    const m = signatureRe.exec(source);
+    if (!m) return null;
+    const braceStart = source.indexOf("{", m.index);
+    if (braceStart === -1) return null;
+    let depth = 0;
+    for (let i = braceStart; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      else if (source[i] === "}") {
+        depth--;
+        if (depth === 0) return source.slice(braceStart, i + 1);
+      }
+    }
+    return null;
+  }
+
+  const paintBody = extractFunctionBody(stripped, /function paint\(\)\s*\{/);
+  const drawBody = extractFunctionBody(stripped, /function draw\(\)\s*\{/);
+  assert.ok(paintBody, "function paint() { not found");
+  assert.ok(drawBody, "function draw() { not found");
+
+  const paintHash = crypto.createHash("sha256").update(paintBody, "utf8").digest("hex");
+  const drawHash = crypto.createHash("sha256").update(drawBody, "utf8").digest("hex");
+
+  assert.equal(paintHash, PRE58_PAINT_SHA256, "paint()'s comment-stripped body must be byte-identical to PRE58's — no Phase 58 plan may grow it");
+  assert.equal(drawHash, PRE58_DRAW_SHA256, "draw()'s comment-stripped body must be byte-identical to PRE58's — no Phase 58 plan may grow it");
 });
