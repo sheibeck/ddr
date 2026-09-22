@@ -4298,6 +4298,10 @@ window.__mzClassicBoot = async function classicBoot() {
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
   import { maybeHaptic } from "./src/browser/haptics.js";
+  // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
+  // this module script calls it directly (dispatchWithNarration and
+  // hapticForEvents both live here too, so no window.__mz* bridge is needed).
+  import { unlockSfx, applySfxSettings, playForDispatch, playUiTap } from "./src/browser/sfx.js";
   // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
@@ -4541,6 +4545,14 @@ window.__mzClassicBoot = async function classicBoot() {
     // has been the only movement surface since v1.4/v1.5, and the viewport
     // gesture handler below reads nothing settings-gated for it.
     window.__mzSettings = settings;
+    // Phase 56 (AUD-05) — the ONE gate that makes the Settings "Sound" row
+    // real: the row and its persistence already existed and nothing read
+    // them until now. A flip to Off stops every in-flight voice and closes
+    // the device immediately; a flip to On opens nothing until the next
+    // user gesture drives the unlock handler below. Reached from both boot
+    // (below) and every write in the #mw-settings-rows handler, since that
+    // handler already routes through applySettings — no second hook needed.
+    applySfxSettings(settings);
     const appEl = document.getElementById("app");
     if (!appEl) return;
     appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
@@ -4636,6 +4648,26 @@ window.__mzClassicBoot = async function classicBoot() {
       window.mzKeepPartyInView?.();
     }
   });
+
+  // Phase 56 (AUD-01..05) — the first-gesture unlock + delegated UI tap.
+  // One capture-phase pointerdown listener on document, bound to the first
+  // tap ANYWHERE in the session (deliberately not to one specific button —
+  // a player who taps something else first would otherwise get a silent
+  // session): the unlock call below self-guards on the Sound setting and
+  // on already being open, so calling it unconditionally on every tap is
+  // safe and the app is simply silent-but-errorless before the first
+  // gesture and while Sound is Off. The map is a <canvas>, never a
+  // `button`, so a map tap never matches the second check below — a move
+  // plays that move's own walk clip via the dispatch seam instead, so a
+  // single step never produces two sounds.
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      unlockSfx();
+      if (e.target?.closest?.("button, [role=\"button\"]")) playUiTap();
+    },
+    { capture: true },
+  );
 
   try {
     applySettings(await readSettings());
@@ -4871,6 +4903,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzFightLog / window.__mzFightEnd / window.__mzCombatMenu /
   // window.__mzRail are presentation-only and never stored on state
   // (serializeRun spreads S, so an S field would be saved).
+  // Phase 56 (AUD-01..05): one fire-and-forget audio call sits below,
+  // reading the SAME before/result already in scope — the seam contract
+  // above (returns the dispatch result unchanged, byte-identical render
+  // tails) is unchanged by its addition.
   function dispatchWithNarration(action) {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
@@ -4878,6 +4914,23 @@ window.__mzClassicBoot = async function classicBoot() {
     const ctx = NARRATIVE_ACTIONS.has(action.type) ? { narrate: narrateEvent } : {};
     const wasCombat = !!(before && before.combat);
     const inCombat = !!(result.state && result.state.combat);
+    // Phase 56 (AUD-01..05) — the dispatch-path audio seam. `audioCtx` is a
+    // deliberately separate local from the narration `ctx` above (never
+    // shadowed/reused): `stepped` compares pre/post party map position so a
+    // refused/blocked move never sounds like a footstep, and `combatType`
+    // falls back to the pre-dispatch combat so the family cry resolves
+    // whether the fight is being joined this dispatch or was already under
+    // way. Fire-and-forget: the audio call below never throws and returns
+    // undefined, so it cannot alter this function's return value.
+    const audioCtx = {
+      stepped: !!(
+        before?.floor &&
+        result.state?.floor &&
+        (before.floor.px !== result.state.floor.px || before.floor.py !== result.state.floor.py)
+      ),
+      combatType: result.state?.combat?.type ?? before?.combat?.type,
+    };
+    playForDispatch(action.type, result.events, audioCtx);
     window.__mzCombatMenu = null;
     let lines = [];
     if (wasCombat || inCombat) {
