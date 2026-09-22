@@ -245,10 +245,16 @@ test("(f) renderRail: decision precedence (joiner < find < climb < card < idle),
     assert.doesNotMatch(region, bad);
   }
   assert.equal((region.match(/setTimeout\(/g) || []).length, 1);
-  // Phase 57 (LAYOUT-03): the auto-clear timer's delay now comes from the
-  // bridged holdForCard(rail.card) (line-scaled, bounded), not the raw
-  // rail.card.hold || 4200 literal fallback this test used to pin.
-  assert.match(region, /vm\.holdForCard \? vm\.holdForCard\(rail\.card\) : 8400/);
+  // Phase 57 (LAYOUT-03): the auto-clear timer's delay comes from the
+  // bridged holdForCard(...) (line-scaled, bounded), not a raw literal
+  // fallback. Phase 58 (MOTION-04, D-15): the timer itself now lives inside
+  // the `startHold` closure, called from the typewriter's own `onDone` (the
+  // hold is reading time, not typing time) rather than scheduled directly
+  // in the isNew block — `holdCard` (captured once, `!idle && !buttons.length
+  // && rail.card`) replaces the old direct `rail.card` argument so the
+  // closure captures a stable reference across the async gap between the
+  // card's own render and its typing block finishing.
+  assert.match(region, /vm\.holdForCard \? vm\.holdForCard\(holdCard\) : 8400/);
   assert.match(railButtonsRegion(), /guardTap\(document\.getElementById\(b\.id\), b\.onTap\)/);
 });
 

@@ -51,7 +51,9 @@ import { bagUsage, renderGearTab, renderCarriedList } from "../../src/browser/ge
 import { rationsViewModel, eatsLineFor, renderHeroTab } from "../../src/browser/heroTab.js";
 import { renderStoreScreen } from "../../src/browser/storeScreen.js";
 import { identityLine, counterSlots } from "../../src/browser/hudBands.js";
-import { REDUCED_MOTION_QUERY } from "../../src/browser/motion.js";
+import { REDUCED_MOTION_QUERY, prefersReducedMotion } from "../../src/browser/motion.js";
+import { createTypewriter, typeDurationMs } from "../../src/browser/typewriter.js";
+import { stripHtml } from "../../tools/ident-sweep.mjs";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import {
   railCardFor,
@@ -218,6 +220,27 @@ function loadRailDismissSandbox({ doc }) {
     dismissKind: railDismissKind,
   };
   w.__mzRail = emptyRail();
+  // Phase 58 (MOTION-04) — the REAL typewriter, reduced by default (this
+  // sandbox's matchMedia stub above always answers reduced), so the
+  // dismiss handler's new typing-complete branch runs against a real,
+  // synchronous typewriter (type() resolves the full text in the same
+  // call under reduced motion — never a run left mid-flight to interfere
+  // with Section B's own dismiss-branch assertions).
+  const typewriter = createTypewriter({
+    now: () => w.performance.now(),
+    raf: (fn) => w.requestAnimationFrame(fn),
+    cancelRaf: (id) => w.cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(w),
+    doc: w.document,
+  });
+  w.__mzTypewriter = {
+    type: typewriter.type,
+    adopt: typewriter.adopt,
+    complete: typewriter.complete,
+    cancel: typewriter.cancel,
+    active: typewriter.active,
+    durationFor: (text) => typeDurationMs(String(text ?? "").length),
+  };
 
   return {
     context,
@@ -358,4 +381,27 @@ test("Section B (5): on a screen where the rail has never shown, a body tap on t
   assert.doesNotThrow(() => sandbox.railEl().onclick(bodyTapEvent()));
   assert.equal(sandbox.context.window.__mzRail.card, null, "the resting view-model carries no card");
   assert.equal(sandbox.context.window.__mzRail.pending, null, "the resting view-model carries no pending decision");
+});
+
+// Phase 58 (MOTION-04, D-13): a source-anchor test — the typing-complete
+// branch must sit strictly after the arm-window check and strictly before
+// the locked-card pulse, so a tap on typing text can never also dismiss or
+// pulse a card. The BEHAVIOUR itself (a tap mid-typing completes typing,
+// leaves the card showing, schedules the hold, and the NEXT armed tap
+// dismisses) is proven in typed-text.test.js (4), which drives the real
+// renderRail()/typewriter through this same handler.
+test("Section B: ordered anchor — the typing-complete branch sits after the arm-window check and before the locked-card check", () => {
+  const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
+  const stripped = stripHtml(raw);
+  const start = stripped.indexOf('document.getElementById("mw-rail").onclick = (e) => {');
+  assert.ok(start !== -1, "the #mw-rail body-tap handler was not found");
+  const end = stripped.indexOf("};", start);
+  assert.ok(end !== -1 && end > start, "the handler's closing `};` was not found");
+  const region = stripped.slice(start, end);
+  const armIdx = region.indexOf("isArmed(railShownAt");
+  const typeCompleteIdx = region.indexOf('.complete("rail")');
+  const lockedIdx = region.indexOf("railPulse()");
+  assert.ok(armIdx !== -1 && typeCompleteIdx !== -1 && lockedIdx !== -1, "all three anchors (arm-window check, typing-complete, locked pulse) must be present");
+  assert.ok(armIdx < typeCompleteIdx, "the typing-complete branch must sit after the arm-window check");
+  assert.ok(typeCompleteIdx < lockedIdx, "the typing-complete branch must sit before the locked-card pulse");
 });

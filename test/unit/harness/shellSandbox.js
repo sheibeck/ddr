@@ -57,6 +57,18 @@ import { identityLine, identityParts, counterSlots } from "../../../src/browser/
 import { hudMenuNext } from "../../../src/browser/hudMenu.js";
 import { REDUCED_MOTION_QUERY, prefersReducedMotion, createPanelMotion } from "../../../src/browser/motion.js";
 import { createCameraGlide } from "../../../src/browser/cameraGlide.js";
+import { createTypewriter, typeDurationMs } from "../../../src/browser/typewriter.js";
+import {
+  railCardFor,
+  railPush,
+  railClear,
+  railLineCard,
+  railAnnouncement,
+  RAIL_COPY,
+  holdForCard,
+  railDismissKind,
+  emptyRail,
+} from "../../../src/browser/rail.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -161,16 +173,39 @@ function wireBridges(context) {
     close: (el, onHidden) => panelMotion.close(el, onHidden),
     isClosing: (el) => panelMotion.isClosing(el),
   };
+  // Phase 58 (MOTION-04) — the REAL keyed typewriter (12ms/char, 700ms cap
+  // per block), driven by this sandbox's own scheduler (the fake clock's
+  // requestAnimationFrame/performance.now when loadShellSandbox was given
+  // one, else the sandbox's inert never-firing default) and the live
+  // reduced-motion predicate. Never a stub instance — typed-text.test.js
+  // and reduced-motion.test.js's "typing" section both depend on
+  // exercising the real typewriter through renderRail/renderMajorOverlay.
+  const typewriter = createTypewriter({
+    now: () => w.performance.now(),
+    raf: (fn) => w.requestAnimationFrame(fn),
+    cancelRaf: (id) => w.cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(w),
+    doc: w.document,
+  });
+  w.__mzTypewriter = {
+    type: typewriter.type,
+    adopt: typewriter.adopt,
+    complete: typewriter.complete,
+    cancel: typewriter.cancel,
+    active: typewriter.active,
+    durationFor: (text) => typeDurationMs(String(text ?? "").length),
+  };
 }
 
 /**
- * loadShellSandbox({ doc, reducedMotion = true, clock = null }) — runs
- * mazeworld.html's classic <script> in a fresh vm context built around the
- * recording document `doc` (createRecordingDocument() from recordingDom.js),
- * wires the real window.__mz* bridges, wires the BEFORE-only Grimoire seam,
- * and stubs the two heavy classic globals (draw/renderRail) so a paint()
- * call never touches the maze canvas or the RAIL — neither is part of the
- * Gear/Hero/Store surfaces this harness's original callers lock.
+ * loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true }) —
+ * runs mazeworld.html's classic <script> in a fresh vm context built around
+ * the recording document `doc` (createRecordingDocument() from
+ * recordingDom.js), wires the real window.__mz* bridges, wires the
+ * BEFORE-only Grimoire seam, and stubs the two heavy classic globals
+ * (draw/renderRail) so a paint() call never touches the maze canvas or the
+ * RAIL — neither is part of the Gear/Hero/Store surfaces this harness's
+ * original callers lock.
  *
  * Phase 58 (MOTION-01/05): `reducedMotion` (default true) drives the
  * `matchMedia("(prefers-reduced-motion: reduce)")` stub's `matches` answer —
@@ -185,8 +220,16 @@ function wireBridges(context) {
  * without a `clock`, every scheduler default stays exactly what it always
  * was (an inert never-firing setTimeout/rAF, performance.now() => 0, no
  * `Date` override).
+ *
+ * Phase 58 (MOTION-04): `stubRail` (default true, unchanged pre-Phase-58
+ * behaviour) skips the renderRail() stub and instead wires the REAL
+ * window.__mzRailVM/__mzRail from src/browser/rail.js's own exports,
+ * mirroring rail-dismiss.test.js#loadRailDismissSandbox's own wiring — so
+ * typed-text.test.js can exercise renderRail()'s real card-building/typing/
+ * hold/dismiss machinery through this one shared harness, rather than a
+ * second sibling loader.
  */
-export function loadShellSandbox({ doc, reducedMotion = true, clock = null }) {
+export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true }) {
   const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
   const { classic } = extractScriptRegions(raw);
 
@@ -253,8 +296,25 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null }) {
   // enough, no defineProperty getter trick needed). paintConditions stays
   // live — it only renders the HUD condition strip, harmless and cheap.
   context.draw = () => {};
-  context.renderRail = () => {};
-  context.window.renderRail = context.renderRail;
+  if (stubRail) {
+    context.renderRail = () => {};
+    context.window.renderRail = context.renderRail;
+  } else {
+    // Phase 58 (MOTION-04): the REAL renderRail() runs — wire the rail
+    // bridges it reads (deliberately absent from wireBridges above, since
+    // the stubbed renderRail() never reaches for them).
+    context.window.__mzRailVM = {
+      card: railCardFor,
+      push: railPush,
+      clear: railClear,
+      lineCard: railLineCard,
+      announcement: railAnnouncement,
+      copy: RAIL_COPY,
+      holdForCard,
+      dismissKind: railDismissKind,
+    };
+    context.window.__mzRail = emptyRail();
+  }
 
   return {
     context,

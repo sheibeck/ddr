@@ -26,6 +26,7 @@ import { createFakeClock } from "./harness/fakeClock.js";
 import { newRun } from "../../engine/state.js";
 import { keepInViewAxis } from "../../src/browser/controls.js";
 import { REDUCED_MOTION_QUERY } from "../../src/browser/motion.js";
+import { railPush, emptyRail, RAIL_HOLD } from "../../src/browser/rail.js";
 import { stripHtml } from "../../tools/ident-sweep.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -220,4 +221,61 @@ test("reduced-motion/panels: source anchor — settleAllMotion()'s body drains t
   const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
   const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
   assert.match(settleBody, /panelMotion\.finishAll\(\);/);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── typing (MOTION-04, Plan 58-05) ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+test("reduced-motion/typing: with the default (reduced) sandbox, a new rail card's lines hold their plain full text in the same render, #mw-rail-lines never gets aria-hidden, and the hold timer is scheduled synchronously in that same render (the sandbox's timer count rises by one)", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: true, stubRail: false });
+  sandbox.setState(newRun(1));
+
+  // Count setTimeout calls at the sandbox's own scheduler — under reduced
+  // motion, __mzTypewriter.type()'s onDone (startHold) runs SYNCHRONOUSLY
+  // inside type() itself (never deferred to a raf loop), so the card's one
+  // hold timer is the only setTimeout call this render makes.
+  let timeoutCalls = 0;
+  const realSetTimeout = sandbox.context.setTimeout;
+  sandbox.context.setTimeout = (...args) => {
+    timeoutCalls++;
+    return realSetTimeout(...args);
+  };
+
+  const text = "The lock gives way with a click that sounds far too pleased with itself.";
+  sandbox.context.window.__mzRail = railPush(emptyRail(), { icon: "✕", iconKey: null, title: "A TRAP", lines: [{ text, roll: null }], tone: "bad", hold: RAIL_HOLD.default });
+  sandbox.context.renderRail();
+
+  assert.equal(timeoutCalls, 1, "the hold's own setTimeout must be scheduled synchronously in this same render");
+
+  const lineEl = doc.document.getElementById("mw-rail-lines").querySelectorAll(".mw-rail-line")[0];
+  assert.equal(lineEl.textContent, text, "reduced motion must write the plain full text in the same render");
+  assert.equal(lineEl.children.length, 0, "reduced motion must never build typed/rest span children");
+  assert.equal(doc.document.getElementById("mw-rail-lines").getAttribute("aria-hidden"), null, "reduced motion must never touch aria-hidden on the typing host");
+});
+
+test("reduced-motion/typing: with the default (reduced) sandbox, the encounter overlay's line is plain full text with no aria-hidden, and #mw-major-desc still carries the same complete text", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: true });
+  sandbox.setState(newRun(1));
+
+  sandbox.context.window.__mzStair = { dir: "n" };
+  sandbox.context.renderEncounter();
+
+  const lineEl = doc.document.getElementById("enc-body").querySelectorAll(".mw-major-line")[0];
+  assert.ok(lineEl, "the overlay's line element must exist");
+  assert.equal(lineEl.getAttribute("aria-hidden"), null, "reduced motion must never touch aria-hidden on the overlay's line");
+  const desc = doc.document.getElementById("mw-major-desc");
+  assert.equal(desc.textContent, lineEl.textContent, "the description and the (already-full) line must carry the same complete text");
+});
+
+test("reduced-motion/typing: source anchor — settleAllMotion()'s body drains the typewriter via typewriter.completeAll()", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+  const settleIdx = stripped.indexOf("function settleAllMotion(");
+  assert.ok(settleIdx !== -1, "function settleAllMotion( not found");
+  const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
+  const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
+  assert.match(settleBody, /typewriter\.completeAll\(\);/);
 });
