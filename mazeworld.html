@@ -335,10 +335,16 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-maze-viewport{position:relative;width:100%;flex:1;min-height:220px;overflow:hidden;background:#080705;border:0;touch-action:none;-webkit-user-select:none;user-select:none}
 .mw-maze-viewport canvas{position:absolute;left:0;top:0;max-width:none;margin:0}
 .mw-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px 26px rgba(8,7,5,.92)}
-/* Phase 35 (MAP-06/08): MARKS/CENTRE top-left, MAKE CAMP top-right, per
+/* Phase 35 (MAP-06/08): MARKS/CENTRE, MAKE CAMP + the settings gear, per
    design/Mazeworld Map Panel.dc.html's chrome block — replaces the Phase 33
-   chip-row chrome entirely. */
-.mw-map-chips{position:absolute;left:10px;right:10px;top:10px;display:flex;gap:6px;align-items:flex-start;z-index:3}
+   chip-row chrome entirely.
+   Phase 57 (LAYOUT-04, 2026-09-21 user ruling): this strip is no longer an
+   absolute overlay INSIDE .mw-maze-viewport — a chip tap there could also
+   land on the canvas's tap-to-move, and the viewport's keepInViewAxis rect
+   counted cells hidden under it. It is now a static band-4 header, a
+   sibling of .mazebox inside #screen-maze, reading like the condition
+   strip above it (no position, no z-index — a real layout band). */
+.mw-map-chips{flex:none;display:flex;gap:6px;align-items:center;padding:6px 14px;background:#181409;border-bottom:3px solid #3a3226}
 .mw-map-chips-gap{flex:1}
 .mw-map-chip{font-family:var(--disp);font-size:7px;letter-spacing:0;padding:9px 10px;min-height:48px;min-width:48px;background:#1b170f;border:2px solid #4a4032;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;border-radius:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mw-map-chip.camp{background:#241d12;border-color:#6b5c3c}
@@ -863,16 +869,22 @@ html,body{height:100%}
    as before. */
 #app.mw-app{display:flex;flex-direction:column;height:100vh;background:var(--paper)}
 
-.mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc(8px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;display:flex;flex-direction:column}
-/* Phase 35 (MAP-01, ruling 5): one HUD row — FLOOR/DAY/SQUARES/RATIONS on the
-   left, the x/y WP bar + DEV chip on the right (the settings gear is a
-   viewport chip, 2026-09-16 UAT). The DR13 character line (name/subclass/
-   level/hp) is retired outright — the Hero tab keeps the full sheet; the
-   condition-chip strip moves OUT of the header into its own strip directly
-   beneath it (see .mw-cond-strip; the party roster moved to the Hero tab's
-   Company panel, 2026-09-17 UAT), no longer a HUD child. */
-.mw-hud-top{display:flex;align-items:center;gap:10px}
-.mw-hud-row{display:flex;gap:8px;align-items:baseline;flex:1;min-width:0;overflow:hidden;flex-wrap:nowrap}
+.mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc(8px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;display:flex;flex-direction:column;gap:6px}
+/* Phase 57 (LAYOUT-05, 2026-09-21 user ruling): the HUD reads as four
+   stacked bands — this SUPERSEDES Phase 35 (MAP-01) ruling 5's single HUD
+   row (FLOOR/DAY/SQUARES/RATIONS + the x/y WP bar on one line, the DR13
+   character line retired outright). The four bands, top to bottom:
+     1. Identity + vitals — the restored name/race/class(sub)/level line
+        (#mw-hud-name, .mw-hud-identity) plus the x/y HP block + DEV chip.
+     2. Counters — Depth/Day/Squares/Rations, on .mw-hud-counters.
+     3. Condition chips — .mw-cond-strip, directly below this header,
+        unchanged: still hidden when nothing is active.
+     4. Map chip strip — .mw-map-chips, now OUTSIDE .mw-maze-viewport
+        entirely (see that class's own CSS comment) so a chip tap can never
+        also move the party and the keep-in-view rect is honest. */
+.mw-hud-identity{display:flex;align-items:center;gap:10px}
+.mw-hud-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--disp);font-size:var(--mw-font-hud-label);color:#e6ddc6}
+.mw-hud-counters{display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
 .mw-hud-item{
   font-family:var(--disp);font-size:var(--mw-font-hud-label);letter-spacing:0;
   text-transform:uppercase;color:#9a8f76;
@@ -881,17 +893,21 @@ html,body{height:100%}
 .mw-hud-item b{
   font-family:var(--mono);font-size:var(--mw-font-hud-num);font-weight:700;
   color:#e6ddc6;font-variant-numeric:tabular-nums;
+  display:inline-block;text-align:right;min-width:5ch;
 }
 .mw-hud-floor b{color:#e8c97a}
 .mw-hud-rations.warn b{color:#e05a48}
-/* Phase 35 (MAP-01): the x/y WP readout + a 64x5 threshold bar, replacing the
-   retired hp readout — paint() writes the text and the bar's width/threshold
-   classes from the mock's own >50 green / >22 gold / else red bar
-   thresholds (text turns red at <=25). */
-.mw-hud-wp{flex:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-left:auto}
+/* Phase 35 (MAP-01) / Phase 57 (LAYOUT-05): the x/y HP readout + threshold
+   bar, in band 1 alongside the identity line — paint() writes the text and
+   the bar's width/threshold classes from the mock's own >50 green / >22
+   gold / else red bar thresholds (text turns red at <=25). Phase 57 bounds
+   the block (flex + min-width) instead of flex:none so it can never
+   collide with a long identity line, and the track is now the box's full
+   width (with a floor) instead of a fixed 64px. */
+.mw-hud-wp{flex:0 1 100px;min-width:70px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
 .mw-hud-wp-text{font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-num);white-space:nowrap;color:#e6ddc6}
 .mw-hud-wp-text.low{color:#e05a48}
-.mw-hud-wptrack{width:64px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09}
+.mw-hud-wptrack{width:100%;min-width:56px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09}
 .mw-hud-wpfill{height:100%;background:#7f9d4e;transition:width .25s ease}
 .mw-hud-wpfill.mid{background:#e8c97a}
 .mw-hud-wpfill.low{background:#e05a48}
@@ -1362,24 +1378,28 @@ html,body{height:100%}
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
   <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
+  <!-- Phase 57 (LAYOUT-05): band 1 (identity + vitals) then band 2
+       (counters) — see the .mw-hud CSS comment for the full four-band
+       ruling. -->
   <header class="mw-hud" id="mw-hud">
-    <div class="mw-hud-top">
-      <div class="mw-hud-row">
-        <div class="mw-hud-item mw-hud-floor">Floor<b id="m-floor">1</b></div>
-        <div class="mw-hud-item">Day<b id="m-day">1</b></div>
-        <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
-        <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
-             just the label+number now (see .mw-hud-rations CSS comment). -->
-        <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
-      </div>
-      <!-- Phase 35 (MAP-01, ruling 5): the x/y WP readout over a threshold
-           bar, replacing the retired name/class/hp character line below —
-           paint() writes the text and the bar's width/threshold classes. -->
+    <div class="mw-hud-identity">
+      <span class="mw-hud-name" id="mw-hud-name"></span>
+      <!-- Phase 35 (MAP-01, ruling 5) / Phase 57 (LAYOUT-05): the x/y HP
+           readout over a threshold bar — paint() writes the text and the
+           bar's width/threshold classes. -->
       <div class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0/0 HP</span><div class="mw-hud-wptrack"><div class="mw-hud-wpfill" id="mw-hud-wpfill" style="width:100%"></div></div></div>
       <!-- Phase 21 (TUNE-04, D-13): a dev start-at-depth run is visibly
            marked — toggled from state.dev in paint(), never reachable from
            normal play. -->
       <span class="mw-dev-chip" id="mw-dev-chip" hidden>DEV</span>
+    </div>
+    <div class="mw-hud-counters">
+      <div class="mw-hud-item mw-hud-floor">Depth<b id="m-floor">1</b></div>
+      <div class="mw-hud-item">Day<b id="m-day">1</b></div>
+      <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
+      <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
+           just the label+number now (see .mw-hud-rations CSS comment). -->
+      <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
     </div>
   </header>
   <!-- Phase 35 (MAP-01, ruling 5): the condition-chip strip — moved OUT of
@@ -1396,6 +1416,22 @@ html,body{height:100%}
          "maze" preserved — device-review revision #3 only renames the
          USER-VISIBLE label, not the code ids/keys). -->
     <section class="mw-screen" id="screen-maze" data-screen="maze">
+      <!-- Phase 57 (LAYOUT-04, band 4): the map chip strip is now a static
+           header band, a sibling ABOVE .mazebox — no longer inside
+           .mw-maze-viewport (see .mw-map-chips' own CSS comment for why).
+           #btn-camp keeps its id so paint()'s short-state block stays
+           unchanged; MARKS/CENTRE/gap/MAKE CAMP/gear keep their order. -->
+      <div class="mw-map-chips" id="mw-map-chips">
+        <button type="button" class="mw-map-chip" id="mw-chip-marks">MARKS</button>
+        <button type="button" class="mw-map-chip" id="mw-chip-centre">CENTRE</button>
+        <span class="mw-map-chips-gap" aria-hidden="true"></span>
+        <button type="button" class="mw-map-chip camp" id="btn-camp">MAKE CAMP</button>
+        <!-- 2026-09-16 UAT (user ruling): the settings gear is a chip
+             right of MAKE CAMP; same id, same module listener
+             (openSettingsSheet) as before — the Settings sheet itself
+             is unchanged. -->
+        <button type="button" class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
+      </div>
       <!-- DR13: the "MAP" heading row is gone — its vitals (level, HP, status)
            moved up into the persistent HUD character line, and the map viewport
            now claims that reclaimed vertical space. -->
@@ -1408,21 +1444,6 @@ html,body{height:100%}
         <div class="mw-maze-viewport" id="mw-maze-viewport">
           <canvas id="maze" width="640" height="640" aria-label="Dungeon map"></canvas>
           <div class="mw-vignette" aria-hidden="true"></div>
-          <!-- Phase 35 (MAP-06/08): MARKS/CENTRE top-left, MAKE CAMP + the
-               settings gear top-right, per design/Mazeworld Map Panel.dc.html
-               — replaces the Phase 33 chip row. #btn-camp keeps its id so
-               paint()'s short-state block stays unchanged. -->
-          <div class="mw-map-chips" id="mw-map-chips">
-            <button type="button" class="mw-map-chip" id="mw-chip-marks">MARKS</button>
-            <button type="button" class="mw-map-chip" id="mw-chip-centre">CENTRE</button>
-            <span class="mw-map-chips-gap" aria-hidden="true"></span>
-            <button type="button" class="mw-map-chip camp" id="btn-camp">MAKE CAMP</button>
-            <!-- 2026-09-16 UAT (user ruling): the settings gear is a chip
-                 right of MAKE CAMP; same id, same module listener
-                 (openSettingsSheet) as before — the Settings sheet itself
-                 is unchanged. -->
-            <button type="button" class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
-          </div>
           <!-- Phase 35 (MAP-07): the pulsing party ring — a DOM element kept
                centered over the party's canvas cell by positionPartyPulse()
                (called from positionCanvas()), never a canvas rAF loop. -->
@@ -2405,15 +2426,22 @@ function tabDeps() {
 let mwPaintSkipHiddenTabs = false;
 function paint() {
   const c = S.c;
-  document.getElementById("m-floor").textContent = S.floor.depth;
+  // Phase 57 (LAYOUT-05): band 2's four counters (Depth/Day/Squares/
+  // Rations) route through the __mzHudBands bridge's counterSlots(S) — ONE
+  // loop assigning textContent by id, so Squares past 99,999 clamps to the
+  // 5-digit overflow form instead of widening the row. Fail-open: a
+  // missing bridge leaves the existing text in place rather than throwing.
+  if (window.__mzHudBands) {
+    for (const slot of window.__mzHudBands.counterSlots(S)) {
+      const el = document.getElementById(slot.id);
+      if (el) el.textContent = slot.text;
+    }
+  }
   // Phase 21 (TUNE-04, D-13): a presentation-only read of the serialized
   // state.dev flag — toggles the HUD's DEV chip so a start-at-depth run is
   // always visibly marked.
   const devChip = document.getElementById("mw-dev-chip");
   if (devChip) devChip.hidden = !S.dev;
-  document.getElementById("m-day").textContent = S.day;
-  document.getElementById("m-steps").textContent = S.steps;
-  document.getElementById("m-rations").textContent = c.rations;
   // 04-UI-SPEC.md Color contract: rations read "low" (red bar+text, still
   // paired with the numeric label — colorblind-safe, never color-only) at
   // <=2 remaining, not only at exactly zero.
@@ -2421,6 +2449,16 @@ function paint() {
   // "warn" text-color toggle remains, still colorblind-safe via the
   // co-rendered "RATIONS n" label (never color-only).
   document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations <= 2);
+  // Phase 57 (LAYOUT-05): band 1's identity line (Name — Race Class (Sub)
+  // · Lvl N), also through the bridge — the title attribute carries the
+  // same string so a truncated (ellipsised) line is still readable on a
+  // long-press. Fail-open: a missing bridge leaves the existing text.
+  const hudName = document.getElementById("mw-hud-name");
+  if (hudName && window.__mzHudBands) {
+    const identity = window.__mzHudBands.identityLine(c);
+    hudName.textContent = identity;
+    hudName.title = identity;
+  }
   // Phase 47 (SHELL-01), Plan 03: the m-gold HUD write moved into
   // gearTab.js#renderGearTab (window.__mzTabs.gear(...) below owns it now).
   // Phase 25.1 (DFB-06, Claude's discretion): the button is NOT disabled —
@@ -4329,6 +4367,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // roller's reveal reuses it rather than re-deriving name/quirk copy, so
   // the roll screen and the sheet always agree.
   import { armorDisplay, bagArmorText, lootCompare } from "./src/browser/viewModels.js";
+  // Phase 57 (LAYOUT-05): the pure band-1 identity line + band-2
+  // fixed-width counter slot formatters, bridged as __mzHudBands below so
+  // paint() renders both through the ONE shared source.
+  import { identityLine, counterSlots } from "./src/browser/hudBands.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
   import { usableBy, dropShelfItems } from "./src/browser/viewModels.js";
@@ -4434,6 +4476,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzClassicBoot() further down, so paint() can rely on it
   // unconditionally.
   window.__mzArmorDisplay = { armorDisplay, bagArmorText };
+
+  // Phase 57 (LAYOUT-05): bridge the PURE band-1 identity line and band-2
+  // fixed-width counter-slot formatters so paint() writes both HUD bands
+  // from ONE engine-agnostic source — read-only, no rng, safe every paint.
+  window.__mzHudBands = { identityLine, counterSlots };
 
   // Phase 29 (LOOT-03/04): bridge the PURE compare-to-equipped verdict and
   // the ONE bag-capacity readout so the loot screen, the gear panel, the

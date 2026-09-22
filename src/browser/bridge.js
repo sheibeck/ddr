@@ -144,6 +144,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating)"]),
     purpose: "Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool.",
   }),
+  __mzHudBands: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — the HUD identity line and the fixed-width counter slots)"]),
+    purpose: "Bridges the pure src/browser/hudBands.js identityLine/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line and band 2's fixed-width counters from ONE engine-agnostic source.",
+  }),
   __mzIconMap: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: draw — the preloaded map icon atlas)"]),

@@ -291,12 +291,11 @@ export const ALLOWED = Object.freeze(
       match: "reported \"toast says wear, panel shows no damage\"",
       reason: "B — a direct quote of the historical DR bug-report title (the UI element it names was a toast at the time the bug was filed); the fix it describes is what this test pins",
     },
-    {
-      term: "dpad",
-      file: "test/unit/shell-gear-toolbar.test.js",
-      match: "retired outright",
-      reason: "B — states the .mazefoot/D-pad markup is retired",
-    },
+    // Phase 57 (LAYOUT-04), Plan 01: shell-gear-toolbar.test.js's chipsMarkup()
+    // comment (formerly the only "dpad" mention in this file, excused below)
+    // was rewritten for the chip band's new position — it no longer mentions
+    // D-pad/dpad at all, so the ALLOWED entry that used to excuse it is
+    // removed rather than left to rot.
 
     // --- Plan 04, Task 2: retired-bridge archaeology + inputGuards + terrain title + parity comparables ---
     {

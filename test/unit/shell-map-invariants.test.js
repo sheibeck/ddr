@@ -124,8 +124,14 @@ test("SC-1: RAW carries zero Move north/west/south/east aria labels", () => {
 
 // ─── (c) other retirements ──────────────────────────────────────────────────
 
+// Phase 57 (LAYOUT-05, 2026-09-21 user ruling): "hudName" ("hud-name") is
+// REMOVED from this zero-occurrence sweep — the 2026-09-21 ruling reverses
+// Phase 35 ruling 5 and restores the identity line as band 1's
+// `.mw-hud-name`/`#mw-hud-name` (see 57-01-PLAN.md, test/unit/hud-bands-
+// layout.test.js and shell-map-hud.test.js's re-pinned tests). The other
+// eight literals in this sweep are still genuinely dead and stay pinned.
 test("retirements: RAW carries zero of the flash/character-line/chip-track/palette-table literals", () => {
-  for (const key of ["flashEl", "flashFn", "hudName", "hudCls", "mmHp", "hudChar", "condTrack", "viewportChips", "canvasColors"]) {
+  for (const key of ["flashEl", "flashFn", "hudCls", "mmHp", "hudChar", "condTrack", "viewportChips", "canvasColors"]) {
     assert.equal(countOf(RAW, RETIRED[key]), 0, `expected zero "${RETIRED[key]}" in mazeworld.html`);
   }
 });
