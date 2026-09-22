@@ -46,7 +46,7 @@
 ### Tuning close (TUNE)
 
 - [x] **TUNE-08**: The tier-3/5 roster decision is made and recorded — the two open band rows from v1.2 (forced-20 floors gained p50 0 / mean 0.84; reach ≥ 20 0.1 %) are canon tier-3/5 combat (Herman, Drarl, Vampire, Djinni); decide per creature whether it stays, moves tier, or is retuned (the DMG-02 rows feed this), declare any parity divergence, and record the untaken rungs so the Endgame band is a deliberate shape
-- [x] **TUNE-09**: A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run, the checklist in `docs/DIFFICULTY-RETUNE.md`) is run once at milestone close against a debug APK built after the last wave, together with any pending UAT batch; the verdict is recorded verbatim and the milestone closes only on "tuned" or a user-recorded deferral
+- [x] **TUNE-09**: A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run, the checklist in `docs/DIFFICULTY-RETUNE.md`) is run once at milestone close against a debug APK built after the last wave, together with any pending UAT batch; the verdict is recorded verbatim and the milestone closes only on "tuned" or a user-recorded deferral — **met by the user's explicit recorded deferral (2026-09-22, `docs/UAT-v1.7.md` § Verdict), not by a completed checklist:** the APK was built and installed and the batch presented; the four-run checklist and the 25 phase items stay un-run and open.
 
 ## Future Requirements
 
@@ -92,7 +92,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BAND-02 | Phase 54 | Complete |
 | BAND-03 | Phase 54 | Complete |
 | TUNE-08 | Phase 54 | Complete |
-| TUNE-09 | Phase 55 | Complete |
+| TUNE-09 | Phase 55 | Complete (via recorded deferral — checklist open) |
 
 **Coverage:**
 
