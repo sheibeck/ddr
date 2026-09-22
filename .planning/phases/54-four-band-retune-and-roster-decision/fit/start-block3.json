@@ -1,0 +1,82 @@
+{
+  "FOE_LEVEL": {
+    "base": 0.9,
+    "perDepth": 0.26
+  },
+  "TIER_SPREAD": 1,
+  "FOE_HIT_SCALE": {
+    "base": 0.6,
+    "perDepth": 0.02
+  },
+  "FOE_HP_SCALE": {
+    "base": 0.8,
+    "perDepth": 0.015
+  },
+  "FOE_COUNT_SKEW": 1,
+  "ROUND_DAMAGE_CEILING": 0.5,
+  "ABILITY_THREAT": {
+    "base": 1,
+    "perDepth": 0
+  },
+  "HERO_HP_SCALE": 1.25,
+  "HERO_REGEN_PER_FLOOR": 0.25,
+  "HERO_SP_SCALE": 0.28,
+  "CAMP_HEAL_FRACTION": 0.2,
+  "DOT_HP_FRACTION": {
+    "small": 0.24,
+    "mid": 0.36,
+    "large": 0.6
+  },
+  "FOOD_CLOCK": 1.5,
+  "ENCOUNTER_DOTS": {
+    "base": 7,
+    "perDepth": 0.3
+  },
+  "HAZARD_SCALE": {
+    "base": 0.6,
+    "perDepth": 0.02
+  },
+  "DARK_BLOBS": {
+    "base": -0.4,
+    "perDepth": 0.7
+  },
+  "DARK_BLOB_CAP": 3,
+  "DARK_RADIUS": {
+    "base": 3,
+    "perDepth": 1
+  },
+  "DARK_RADIUS_CAP": 7,
+  "STORE_TIER": {
+    "base": 0,
+    "perDepth": 0.3
+  },
+  "LOOT_SCALE": 0.8,
+  "FOE_ACCURACY": 0,
+  "DOT_MIX": {
+    "fight": 1,
+    "harm": 1,
+    "loot": 1,
+    "help": 1
+  },
+  "WANDER_RATE": 1,
+  "FLEE_NEED_MOD": 0,
+  "PARLEY_NEED_MOD": 0,
+  "STARTING_GOLD": 50,
+  "STARTING_POTION_BONUS": 0,
+  "CLASS_MITIGATION": {
+    "Fighter": {
+      "hpMul": 1,
+      "armorMul": 1,
+      "killSpeed": 1
+    },
+    "Thief": {
+      "evasion": 0,
+      "fleeBonus": 5,
+      "trapAvoid": 0,
+      "killSpeed": 1
+    },
+    "Magic User": {
+      "spellPower": 1
+    }
+  }
+}

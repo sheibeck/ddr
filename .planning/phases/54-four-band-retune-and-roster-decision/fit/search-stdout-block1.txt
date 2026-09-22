@@ -1,0 +1,10 @@
+#5 score=10.8270 verdict=MISS pass=1 S5=77.4 S8=45.7 S10=22.4 S12=17.0 tail S15=3.1 S20=0.8 reach20=0.5 classes F/T/M p50=8/9/7 ok=true
+#6 score=10.8270 verdict=MISS pass=1 S5=77.4 S8=45.7 S10=22.4 S12=17.0 tail S15=3.1 S20=0.8 reach20=0.5 classes F/T/M p50=8/9/7 ok=true
+#7 score=46.2740 verdict=MISS pass=1 S5=83.6 S8=56.2 S10=35.0 S12=21.1 tail S15=10.5 S20=5.4 reach20=3.5 classes F/T/M p50=9/9/8 ok=true
+#8 score=+Infinity verdict=MISS pass=1 S5=84.6 S8=51.2 S10=26.2 S12=17.3 tail S15=8.1 S20=3.8 reach20=2.0 classes F/T/M p50=8/9/7 ok=false reason=Fighter dmgTakenPerFight 9.97 < Thief's 21.32
+#9 score=+Infinity verdict=MISS pass=1 S5=79.0 S8=43.5 S10=24.6 S12=15.8 tail S15=10.4 S20=3.5 reach20=2.5 classes F/T/M p50=8/8/7 ok=false reason=Magic User reach5 79.1 vs pooled 91.7 (|delta| > 12)
+#10 score=+Infinity verdict=MISS pass=1 S5=81.1 S8=43.7 S10=22.9 S12=16.8 tail S15=4.9 S20=1.9 reach20=1.0 classes F/T/M p50=8/9/7 ok=false reason=Fighter dmgTakenPerFight 10.52 < Thief's 11.92
+#11 score=+Infinity verdict=MISS pass=1 S5=84.7 S8=52.5 S10=29.5 S12=18.8 tail S15=11.0 S20=3.7 reach20=3.0 classes F/T/M p50=8.5/10/7 ok=false reason=Thief p50 10 vs pooled 8.5 (|delta| > 1.0); Magic User p50 7 vs pooled 8.5 (|delta| > 1.0); Magic User reach5 81.1 vs pooled 94.5 (|delta| > 12)
+#12 score=+Infinity verdict=MISS pass=1 S5=83.1 S8=44.7 S10=25.0 S12=14.9 tail S15=5.3 S20=2.8 reach20=1.5 classes F/T/M p50=8/8/7 ok=false reason=Fighter dmgTakenPerFight 10 < Thief's 71.21; Thief roundsPerFight 5.88 > Fighter's 3.67
+#13 score=+Infinity verdict=MISS pass=1 S5=83.2 S8=51.1 S10=31.5 S12=17.7 tail S15=9.5 S20=3.2 reach20=4.5 classes F/T/M p50=9/10/7 ok=false reason=Magic User p50 7 vs pooled 9 (|delta| > 1.0); Fighter dmgTakenPerFight 9.63 < Thief's 63.79; Thief roundsPerFight 6.41 > Fighter's 3.82
+#14 score=+Infinity verdict=MISS pass=1 S5=83.1 S8=46.8 S10=22.2 S12=14.6 tail S15=5.4 S20=2.7 reach20=2.0 classes F/T/M p50=7.5/9/7 ok=false reason=Thief p50 9 vs pooled 7.5 (|delta| > 1.0)
