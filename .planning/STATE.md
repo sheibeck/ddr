@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
-current_phase: 57
-current_phase_name: map-hud-layout-band
-current_plan: 4
-status: verifying
+current_phase: 58
+current_phase_name: Motion & Pacing
+current_plan: Not started
+status: planning
 stopped_at: Completed 57-05-PLAN.md
-last_updated: "2026-09-22T19:26:44.063Z"
+last_updated: "2026-09-22T19:32:44.015Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 57 execution started
+last_activity_desc: Phase 57 complete, transitioned to Phase 58
 progress:
   total_phases: 5
   completed_phases: 2
@@ -30,13 +30,13 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 
 ## Current Position
 
-Phase: 57 (map-hud-layout-band) — EXECUTING
-Current Plan: 4
+Phase: 58 — Motion & Pacing
+Current Plan: Not started
 Total Plans in Phase: 4
 Progress: [██████░░░░] 56%
 Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-09-22 — Phase 57 execution started
+Status: Ready to plan
+Last activity: 2026-09-22 — Phase 57 complete, transitioned to Phase 58
 
 ## Ground Truth (durable facts every session needs)
 

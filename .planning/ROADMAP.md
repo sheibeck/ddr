@@ -29,7 +29,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 **Working method:** autonomous GSD phases under the **deferred-UAT protocol** — no mid-run device pauses; each phase's VERIFICATION.md carries a `human_verification` list (orchestrator-authored — verification agents are off for usage limits); ONE batched Pixel 7 checklist runs at milestone close against a single debug APK built after the last wave (Phase 60).
 
 - [ ] **Phase 56: Sound Effects & Audio Settings** - Every mapped action and fight opener makes a distinct, correctly-timed sound through a new `src/browser/sfx.js`, repeats vary instead of looping one sample, and Sound Off in Settings truly silences everything
-- [ ] **Phase 57: Map & HUD Layout Band** - The rail overlays the map instead of reflowing it, chip taps never double as a move, and the HUD reads as legible stacked bands with Table-7 darkness visible on the map
+- [x] **Phase 57: Map & HUD Layout Band** - The rail overlays the map instead of reflowing it, chip taps never double as a move, and the HUD reads as legible stacked bands with Table-7 darkness visible on the map (completed 2026-09-22)
 - [ ] **Phase 58: Motion & Pacing** - The map pans smoothly, panels/menus animate open and closed, combat rounds get a readable beat, and rail/encounter text types itself on — all with a reduced-motion path
 - [ ] **Phase 59: Party Animation & Dungeon Set Dressing** - The party marker gets idle/step animation cycles and a dialled-back ring, and floors carry deterministic, non-interactive ambient props from the `set_dungeon_*` set
 - [ ] **Phase 60: Performance & Footprint Close** - Cold start, step time and AAB size are measured on the Pixel 7 against the v1.7 baseline with the full v1.8 asset set installed, closing the milestone on one debug APK
@@ -66,18 +66,19 @@ Plans:
   1. The rail slides up over the map as an overlay; the map viewport neither resizes nor reflows when the rail appears or leaves
   2. A tap on the body dismisses a rail card that asks for no decision; a card that asks for a decision can only be cleared by making it
   3. A rail card stays on screen roughly twice as long as before — long enough to finish reading it
-  4. Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
-  5. The HUD reads as stacked bands (name/class + HP, then counters, then conditions, then chips) with nothing overlapping at any text size or square count, and a player caught in Table-7 darkness can see it on the map along with how much longer it lasts
+  4. Tapping MARKS, CENTRE MAP, MAKE CAMP or SETTINGS never also moves the party, and the party is never left sitting under the map chrome *(amended 2026-09-22: the chip strip folded into a ☰ menu per the user's HUD mock — plan 57-05)*
+  5. The HUD reads as stacked bands (name/class + HP with a thin HP strip beneath, then counters with the ☰ menu, then conditions) with nothing overlapping at any square count (a ~34px Rations clip at text size L accepted by the user), and a player caught in Table-7 darkness can see it on the map along with how much longer it lasts
 
-**Plans**: 4 plans
+**Plans**: 5 plans
 **UI hint**: yes
 
-Plans (strictly sequential — every plan edits `mazeworld.html`, and worktrees are degraded for this run, so no two can share a wave):
+Plans (strictly sequential — every plan edits `mazeworld.html`; worktrees were degraded for 57-01..04 and re-enabled 2026-09-22 with `worktree.baseRef: head`):
 
 - [x] 57-01-PLAN.md — HUD four bands + the chip strip leaves the viewport; `src/browser/hudBands.js` (LAYOUT-04, LAYOUT-05)
 - [x] 57-02-PLAN.md — the rail becomes an out-of-flow overlay inside a new `#mw-stage`; the viewport stops moving (LAYOUT-01)
 - [x] 57-03-PLAN.md — guarded tap-to-dismiss + doubled, line-scaled, bounded rail holds (LAYOUT-02, LAYOUT-03)
 - [x] 57-04-PLAN.md — counter-driven darkness vignette via a new `__mzDarkness` bridge, plus the phase gate and todo closure (LAYOUT-06)
+- [x] 57-05-PLAN.md — HUD compaction + ☰ menu from the user's 2026-09-22 mock: two bands + HP strip, the chip band retired into a menu (MARKS / CENTRE MAP / MAKE CAMP / SETTINGS); `src/browser/hudMenu.js` (LAYOUT-04, LAYOUT-05)
 
 ### Phase 58: Motion & Pacing
 

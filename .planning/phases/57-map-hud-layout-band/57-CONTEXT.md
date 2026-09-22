@@ -126,3 +126,13 @@ Three statements above were written from the 2026-09-19/21 todos and are wrong a
 - **Haptics on the new tap surfaces** — already on the Future Requirements list.
 
 </deferred>
+
+## Amendment — USER MOCK RULING 2026-09-22 (plan 57-05)
+
+After 57-01 shipped the four-band HUD, the user supplied an updated mock (`design/Mazeworld Map.dc.html`, imported from claude.ai/design project fed8909e…): *"re-arrange the header rails to save space … we have too many buttons and we don't need more rails on the top. This consolidates the buttons into a hamburger menu."* It supersedes the "Chip strip & HUD bands" decisions above where they conflict:
+
+- **The chip band is retired.** MARKS / CENTRE MAP / MAKE CAMP / SETTINGS live in a ☰ dropdown flush right on the counters band (band 2); an outside tap is consumed by a scrim and never steps the party. The menu uses the mock's glyphs — the only place the mock's icons are used (user icon rule); everything else keeps the shipped icons and wording.
+- **Band 1** is name + dim `Race Class (Sub) · Lvl N` + `x/y HP` text; the HP bar is a thin full-width strip beneath band 1.
+- **Counter slots sized to real limits** (Squares 5, Depth 3, Day 3, Rations 2) so band 2 fits a 411px Pixel 7 at text size M; a ~34px Rations clip at text size L is accepted (was ~68px).
+- **Wording:** the app's own wording is kept (Depth, `27/40 HP`, `· Lvl N`) except the centre row, which reads **CENTRE MAP**.
+- **Condition chips** stay on every tab but Dead, at the current size (the mock's Map-only gate and larger chip text were not adopted). **The HUD is hidden on the Dead tab** (per the mock).

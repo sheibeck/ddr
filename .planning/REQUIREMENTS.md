@@ -44,8 +44,8 @@
 - [x] **LAYOUT-01**: The rail slides up over the map; the map neither resizes nor reflows when the rail appears or leaves
 - [x] **LAYOUT-02**: A tap on the body dismisses a rail card that asks for no decision; a card that asks for a decision can only be cleared by making it
 - [x] **LAYOUT-03**: A rail card stays readable long enough to finish reading it — roughly double today's hold
-- [x] **LAYOUT-04**: Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
-- [x] **LAYOUT-05**: The HUD reads as stacked bands — name/class with HP, then counters, then conditions, then chips — with nothing overlapping at any text size or square count
+- [x] **LAYOUT-04**: Tapping MARKS, CENTRE MAP, MAKE CAMP or SETTINGS never also moves the party, and the party is never left sitting under the map chrome *(amended 2026-09-22: per the user's HUD mock the chip strip folded into a ☰ menu on the counters band — Phase 57 plan 05)*
+- [x] **LAYOUT-05**: The HUD reads as stacked bands — name/class with HP (the HP bar a thin strip beneath), then counters with the ☰ menu, then conditions — with nothing overlapping at any square count *(amended 2026-09-22 per the user's HUD mock, which retired the separate chip band; the user accepted a ~34px Rations clip at the largest text size L, down from ~68px before)*
 - [x] **LAYOUT-06**: A player caught in Table-7 darkness can see it on the map and see how much longer it lasts
 
 ### Dungeon set dressing (DRESS)
