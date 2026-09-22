@@ -2,6 +2,7 @@
 created: 2026-09-21T23:00:00.000Z
 title: HUD reflow — name/class + HP row, then counters, then conditions, then chips
 area: ui
+resolves_phase: 57
 files:
   - mazeworld.html:1365-1385 (.mw-hud markup — Floor / Day / Squares / Rations row with the x/y HP bar floated to the right of the SAME row)
   - mazeworld.html:866-893 (.mw-hud / .mw-hud-top flex row; .mw-hud-row overflow:hidden nowrap; .mw-hud-wp margin-left:auto)

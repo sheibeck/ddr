@@ -2,6 +2,7 @@
 created: 2026-09-19T14:08:23.213Z
 title: Rail overlays the map without reflow, tap-to-dismiss, longer hold
 area: ui
+resolves_phase: 57
 files:
   - mazeworld.html:276 (#screen-maze flex column) / :317-334 (.mazebox, .mw-maze-viewport flex:1)
   - mazeworld.html:686-705 (.mw-rail CSS — flex:none; min-height:132px; [hidden] display:none)

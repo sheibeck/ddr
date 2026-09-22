@@ -2,6 +2,7 @@
 created: 2026-09-21T23:25:00.000Z
 title: Table-7 Darkness counter is invisible on the map (no dimming, cumulative fog)
 area: ui
+resolves_phase: 57
 files:
   - engine/encounters.js:685-712 (fallDark — paints a 4-square radius dark + sets c.darkFor = 30 steps; a lit torch resists)
   - engine/derived.js:794-798 (inDark — tile.dark OR c.darkFor > 0) and 824 (revealRadius — 1 in the dark without Night Vision, +sight)

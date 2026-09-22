@@ -2,6 +2,7 @@
 created: 2026-09-21T20:05:00.000Z
 title: Map chip strip is a reserved band above the map, not an overlay
 area: ui
+resolves_phase: 57
 files:
   - mazeworld.html:338-342 (.mw-map-chips absolute overlay, z-index 3 over the viewport)
   - mazeworld.html:1415-1420 (MARKS / CENTRE / gap / MAKE CAMP / settings gear chips inside the viewport)
