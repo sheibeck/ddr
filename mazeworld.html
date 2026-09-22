@@ -750,6 +750,11 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-rail-line{font-weight:700;font-size:14.5px;line-height:1.4;color:#c9bda0;margin-top:6px}
 .mw-rail[data-idle="1"] .mw-rail-line{color:#8f856f}
 .mw-rail-roll{font-weight:700;font-size:13.5px;color:var(--rail-ink);margin-top:5px}
+/* Phase 58 (MOTION-04, D-13): the untyped remainder of a typing block — kept
+   in layout (not display:none) so a rail card or the encounter overlay's
+   line never grows while it types; only ever applied by src/browser/
+   typewriter.js's own rest-span half of buildSpans(). */
+.mw-type-rest{visibility:hidden}
 .mw-rail-peek{flex:none;font-family:var(--disp);font-size:6px;color:#5f5849;padding-top:4px}
 .mw-rail-actions{display:flex;gap:8px;margin-top:11px}
 .mw-rail-actions:empty{display:none}
@@ -4171,6 +4176,11 @@ function renderRail() {
       railTimer = null;
       syncRailLive("");
     }
+    // Phase 58 (MOTION-04, D-13): the card just cleared — cancel any
+    // in-flight typing block so the departing lines this render retained
+    // (the D-06 skip-repaint path) are written out in full for the slide,
+    // and no hold is ever scheduled for a card that is gone.
+    window.__mzTypewriter?.cancel?.("rail");
     return;
   }
 
@@ -4179,18 +4189,28 @@ function renderRail() {
   const iconEl = document.getElementById("mw-rail-icon"); iconEl.textContent = iconKey ? "" : icon; if (iconKey) { const img = document.createElement("img"); img.src = featureIconSrc(iconKey); img.alt = ""; img.setAttribute("aria-hidden", "true"); iconEl.appendChild(img); }
   document.getElementById("mw-rail-title").textContent = title;
   document.getElementById("mw-rail-peek").textContent = peek;
+  // Phase 58 (MOTION-04, D-13): read before the lines loop below — a
+  // same-card re-render (isNew false) hands its in-flight typing block to
+  // the fresh elements this render builds (adopt) instead of restarting it.
+  const isNew = key !== lastRailKeyShown;
   const linesEl = document.getElementById("mw-rail-lines");
   linesEl.textContent = "";
+  const typedTargets = [];
+  const typedTexts = [];
   for (const line of lines) {
     const el = document.createElement("div");
     el.className = "mw-rail-line";
     el.textContent = line.text;
     linesEl.appendChild(el);
+    typedTargets.push(el);
+    typedTexts.push(line.text);
     if (line.roll) {
       const rollEl = document.createElement("div");
       rollEl.className = "mw-rail-roll";
       rollEl.textContent = line.roll;
       linesEl.appendChild(rollEl);
+      typedTargets.push(rollEl);
+      typedTexts.push(line.roll);
     }
   }
   if (shelfItems) {
@@ -4204,7 +4224,15 @@ function renderRail() {
   actionsEl.textContent = "";
   railButtons(actionsEl, buttons);
 
-  const isNew = key !== lastRailKeyShown;
+  // Phase 58 (MOTION-04, D-13/D-16): a same-card re-render (paint() calls
+  // renderRail() more than once per tick) hands the in-flight typing block
+  // to these freshly-built elements at its current progress — never
+  // restarts, never starves the announcer (syncRailLive already carries the
+  // complete text, below, and only on a genuinely new card).
+  if (!isNew && window.__mzTypewriter?.active?.("rail")) {
+    window.__mzTypewriter.adopt("rail", typedTargets, linesEl);
+  }
+
   if (isNew) {
     lastRailKeyShown = key;
     // Phase 57 (LAYOUT-02): restart the arm window on every fresh card —
@@ -4224,15 +4252,27 @@ function renderRail() {
     syncRailLive(idle ? "" : title + ". " + lines.map((l) => l.text).join(" "));
     clearTimeout(railTimer);
     railTimer = null;
-    if (!idle && !buttons.length && rail.card) {
-      // Phase 57 (LAYOUT-03): the hold is now line-scaled and bounded —
-      // routed through the bridged holdForCard, not rail.card.hold direct,
-      // so the per-line scaling actually reaches the screen. Falls back to
-      // the doubled default (8400) only if the bridge itself is missing.
+    // Phase 58 (MOTION-04, D-15): the hold is reading time, not typing
+    // time — it starts only once the block finishes (onDone), never at the
+    // moment the card first shows.
+    const holdCard = !idle && !buttons.length && rail.card ? rail.card : null;
+    const startHold = () => {
+      if (!holdCard) return;
+      // Phase 57 (LAYOUT-03): the hold is line-scaled and bounded — routed
+      // through the bridged holdForCard, not rail.card.hold direct, so the
+      // per-line scaling actually reaches the screen. Falls back to the
+      // doubled default (8400) only if the bridge itself is missing.
       railTimer = setTimeout(() => {
         window.__mzRail = vm.clear(window.__mzRail);
         renderRail();
-      }, vm.holdForCard ? vm.holdForCard(rail.card) : 8400);
+      }, vm.holdForCard ? vm.holdForCard(holdCard) : 8400);
+    };
+    if (window.__mzTypewriter && typedTexts.some((t) => t.length)) {
+      window.__mzTypewriter.type("rail", { targets: typedTargets, texts: typedTexts, ariaHost: linesEl, onDone: startHold });
+    } else {
+      // Fail-open: no bridge, or nothing to type — start the hold directly,
+      // exactly today's pre-Phase-58 timing.
+      startHold();
     }
   }
 }
@@ -4299,6 +4339,9 @@ document.getElementById("mw-rail").onclick = (e) => {
   const btnTarget = target && typeof target.closest === "function" ? target.closest(".mw-rail-btn") : null;
   if (btnTarget) return;
   if (!window.__mzInputGuards || !window.__mzInputGuards.isArmed(railShownAt, Date.now())) return;
+  // Phase 58 (MOTION-04, D-13): a tap on typing text completes it instead
+  // of dismissing — the next tap follows the rules below exactly.
+  if (window.__mzTypewriter?.active?.("rail")) { window.__mzTypewriter.complete("rail"); return; }
   const railVM = window.__mzRailVM;
   if (!railVM || typeof railVM.dismissKind !== "function") return;
   const actionsEl = document.getElementById("mw-rail-actions");
@@ -4898,6 +4941,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // the math.
   import { prefersReducedMotion, onReducedMotionChange, createPanelMotion } from "./src/browser/motion.js";
   import { createCameraGlide } from "./src/browser/cameraGlide.js";
+  // Phase 58 (MOTION-04/05) — the typed-text effect (D-13/D-14): rail cards,
+  // the encounter overlay's line, and (Plan 58-06) fight-log rows type
+  // themselves on at 12ms/char, capped at 700ms/block. Bridged below as
+  // window.__mzTypewriter (keys "rail"/"major"/"fightlog") so the classic
+  // renderers type without a second copy of the schedule.
+  import { createTypewriter, typeDurationMs } from "./src/browser/typewriter.js";
   // Phase 35 (MAP-02) — the tap-to-step direction resolver + hold-inspect
   // cards (Plan 01); bridged beside window.__mzControls below for the
   // classic script's tapStep()/inspectAt() to consume.
@@ -5333,6 +5382,26 @@ window.__mzClassicBoot = async function classicBoot() {
     cancelRaf: (id) => cancelAnimationFrame(id),
     reduced: () => prefersReducedMotion(window),
   });
+  // Phase 58 (MOTION-04) — the ONE typed-text effect (D-13/D-14): rail
+  // cards, the encounter overlay's line, and (Plan 58-06) fight-log rows
+  // all type through this single instance, keyed "rail"/"major"/"fightlog".
+  // A caller's own announcer/description node always carries the complete
+  // text — this module never hides that node (D-16).
+  const typewriter = createTypewriter({
+    now: () => performance.now(),
+    raf: (fn) => requestAnimationFrame(fn),
+    cancelRaf: (id) => cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(window),
+    doc: document,
+  });
+  window.__mzTypewriter = {
+    type: typewriter.type,
+    adopt: typewriter.adopt,
+    complete: typewriter.complete,
+    cancel: typewriter.cancel,
+    active: typewriter.active,
+    durationFor: (text) => typeDurationMs(String(text ?? "").length),
+  };
   // Phase 58 (MOTION-05) — the ONE mid-session settle point: every
   // in-flight Phase 58 effect lands its end state here the instant reduced
   // motion turns on mid-session. Plans 58-04..58-06 each add their own
@@ -5341,6 +5410,7 @@ window.__mzClassicBoot = async function classicBoot() {
   function settleAllMotion() {
     window.__mzCameraGlide?.finish?.();
     panelMotion.finishAll();
+    typewriter.completeAll();
   }
   // Phase 58 (MOTION-02, D-08) — the ONE shared, timer-driven panel close
   // helper every hidden-based D-05 close (the MARKS/Settings/camp sheets,

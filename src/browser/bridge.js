@@ -327,6 +327,15 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: the dark rail card's USE TORCH button)"]),
     purpose: "Bridges the engine's tool-slot resolver so the dark card's USE TORCH tap dispatches the correct, freshly-resolved bag index.",
   }),
+  __mzTypewriter: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderRail — types a fresh card's lines/rolls, adopts an in-flight block on a same-card re-render, starts the hold from the block's own onDone)",
+      "mazeworld.html (classic: the #mw-rail body-tap handler — a tap on typing text completes it instead of dismissing)",
+      "mazeworld.html (classic: renderMajorOverlay — types the encounter/stair overlay's line once per content, adopts it on a same-content re-render)",
+    ]),
+    purpose: "Bridges src/browser/typewriter.js's one shared, keyed typewriter (Phase 58, MOTION-04: rail cards, the encounter overlay's line, and — Plan 58-06 — fight-log rows type on at 12ms/char, capped at 700ms/block) so the classic renderers type without a second copy of the schedule; a caller's own announcer/description node always carries the complete text at once, regardless of typing (D-16).",
+  }),
   __mzUsableBy: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find usable-by suffix; the store reaches it directly now, via src/browser/storeScreen.js's own viewModels.js import)"]),
