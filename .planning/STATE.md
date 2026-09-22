@@ -4,17 +4,19 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 56
 current_phase_name: sound-effects-audio-settings
+current_plan: 3
 status: in_progress
 stopped_at: Completed 56-02-PLAN.md
-last_updated: "2026-09-22T13:48:39.460Z"
+last_updated: "2026-09-22T13:50:52.004Z"
 last_activity: 2026-09-22
-last_activity_desc: "Phase 56 Plan 02 executed: src/browser/sfx.js pure core (clip tables, family cry map, dispatch resolver, counter-driven variation) + test/unit/sfx-map.test.js"
+last_activity_desc: Phase 56 Plan 02 executed (src/browser/sfx.js pure core, test/unit/sfx-map.test.js)
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
   completed_plans: 2
-  percent: 50
+  percent: 0
+total_plans_in_phase: 4
 ---
 
 # Project State
@@ -29,7 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: Phase 56 (Sound Effects & Audio Settings) — planned, 4 plans
-Plan: 56-01/56-02 complete (copySfx() build wiring + asset manifest test; sfx.js pure core + mapping tests); 56-03/56-04 not yet started
+Current Plan: 3
+Total Plans in Phase: 4
+Progress: [█████░░░░░] 50%
+Plan: 4 of 4
 Status: 56-02 executed and committed — AUD-01/02/03's pure core (30-clip vocabulary, 18 groups, 26 mapped events, total 6-family FAMILY_CRY map, groupsForDispatch/createVariation/clipsForDispatch); engine/content untouched, npm test 3502/3502, parity master hash unchanged
 Last activity: 2026-09-22 — Phase 56 Plan 02 executed (src/browser/sfx.js pure core, test/unit/sfx-map.test.js)
 
