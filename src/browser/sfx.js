@@ -266,3 +266,310 @@ export function clipsForDispatch(actionType, events, ctx, variation = defaultVar
   }
   return clips;
 }
+
+// ============================================================================
+// 56-03: the Web Audio backend. Everything below is the bounded player that
+// turns clip ids (from clipsForDispatch() above) into overlapping sound.
+// Nothing above this line is touched by this half of the module.
+// ============================================================================
+
+// Backend interface — the ENTIRE surface the player needs, five methods,
+// so a fake for `node --test` is trivial (no `window`, no `AudioContext`):
+//
+//   open()                 -> Promise<handle|null>   construct/resume the
+//                             audio device; null means audio is unavailable.
+//   load(handle, clipId)   -> Promise<buffer|null>    fetch + decode one
+//                             clip; null on any failure (missing file, bad
+//                             bytes, decode error).
+//   start(handle, buffer)  -> voice|null              start one voice off an
+//                             already-decoded buffer, immediately.
+//   stop(voice)             -> void                    stop one in-flight
+//                             voice.
+//   close(handle)            -> void                    tear the device down.
+//
+// Every DEFAULT_BACKEND method individually swallows its own failure and
+// returns null/void instead of propagating a throw — sound is cosmetic
+// polish and must never break a dispatch, matching haptics.js's posture.
+const DEFAULT_BACKEND = {
+  async open() {
+    try {
+      if (typeof window === "undefined") return null;
+      let ctx = null;
+      if (typeof window.AudioContext === "function") {
+        ctx = new window.AudioContext();
+      } else if (typeof window.webkitAudioContext === "function") {
+        ctx = new window.webkitAudioContext();
+      }
+      if (!ctx) return null;
+      if (typeof ctx.resume === "function") await ctx.resume();
+      const masterGain = ctx.createGain();
+      masterGain.connect(ctx.destination);
+      return { ctx, masterGain };
+    } catch {
+      return null;
+    }
+  },
+
+  async load(handle, clipId) {
+    try {
+      if (!handle?.ctx) return null;
+      // Same-origin RELATIVE path only — the clip lives in the bundled
+      // www/sfx/ copy (copySfx(), 56-01); no absolute URL, no host, no
+      // scheme, ever, per the offline gate.
+      const response = await fetch(`./sfx/${clipId}.mp3`);
+      if (!response?.ok) return null;
+      const bytes = await response.arrayBuffer();
+      const buffer = await handle.ctx.decodeAudioData(bytes);
+      return buffer || null;
+    } catch {
+      return null;
+    }
+  },
+
+  start(handle, buffer) {
+    try {
+      if (!handle?.ctx || !buffer) return null;
+      const source = handle.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(handle.masterGain || handle.ctx.destination);
+      // No lead-in, no lookahead, no delay constant — starts at the
+      // context's current time. Combat/rail pacing is Phase 58's concern,
+      // not this backend's.
+      source.start(handle.ctx.currentTime);
+      return source;
+    } catch {
+      return null;
+    }
+  },
+
+  stop(voice) {
+    try {
+      voice?.stop?.(0);
+    } catch {
+      // an already-ended/spent voice throwing on stop() must never
+      // propagate — the FIFO eviction path depends on this being silent.
+    }
+  },
+
+  close(handle) {
+    try {
+      handle?.ctx?.close?.();
+    } catch {
+      // an already-closed/broken context must never throw on teardown.
+    }
+  },
+};
+
+/**
+ * resolveBackend() — read at CALL TIME (never cached) so a test can swap
+ * the backend per test via `globalThis.__mzSfxBackendOverride`. Shipped
+ * code only ever READS this global; it is never assigned here. Mirrors
+ * haptics.js's `__mzHapticsImportOverride` / nativeChrome.js's
+ * `__mzAppImportOverride` injection shape.
+ */
+function resolveBackend() {
+  return globalThis.__mzSfxBackendOverride?.() ?? DEFAULT_BACKEND;
+}
+
+// VOICE_CAP — CONTEXT's polyphony cap (56-CONTEXT.md "Full polyphony capped
+// at 8 concurrent voices"): full overlap is what AUD-04 asks for, but an
+// unbounded voice count is a mid-range-phone hazard, so the 9th simultaneous
+// voice stops the oldest rather than being refused or throwing.
+export const VOICE_CAP = 8;
+
+// Module state for the backend half only:
+//  - currentSettings: the settings mirror. null (before applySfxSettings()
+//    ever runs) is treated as sound-ON-UNKNOWN — unlockSfx() will proceed —
+//    but no device is opened until a gesture actually calls unlockSfx().
+//  - deviceHandle: null until a successful unlock; cleared again when Sound
+//    flips off mid-session.
+//  - bufferCache: clipId -> decoded buffer, filled in as each of the 30
+//    parallel loads lands (or left absent for a clip that never resolves or
+//    resolves null).
+//  - unlockInFlight: guards a second unlockSfx() call while backend.open()
+//    is still pending.
+//  - liveVoices: FIFO of currently-playing voices, oldest first.
+let currentSettings = null;
+let deviceHandle = null;
+const bufferCache = new Map();
+let unlockInFlight = false;
+const liveVoices = [];
+
+function soundIsOff() {
+  return !!(currentSettings && currentSettings.sound === false);
+}
+
+/**
+ * unlockSfx() — exported, async, idempotent, never throws. This is the ONE
+ * construction site for the audio device: it bails immediately when Sound
+ * is off (the guard that makes "no audio device is opened while Sound is
+ * Off" literally true), when a handle already exists, or when an unlock is
+ * already in flight. On a successful open() it kicks backend.load() for
+ * ALL 30 CLIP_IDS in parallel and does NOT await them — decode is off the
+ * critical path, so a clip fired before its own decode lands is dropped by
+ * playClips() below, never queued.
+ */
+export async function unlockSfx() {
+  try {
+    if (soundIsOff()) return;
+    if (deviceHandle) return;
+    if (unlockInFlight) return;
+    unlockInFlight = true;
+
+    const backend = resolveBackend();
+    let handle = null;
+    try {
+      handle = await backend.open();
+    } finally {
+      unlockInFlight = false;
+    }
+    if (!handle) return; // audio unavailable — resting state, a later gesture can retry
+    deviceHandle = handle;
+
+    for (const clipId of CLIP_IDS) {
+      try {
+        Promise.resolve(backend.load(deviceHandle, clipId))
+          .then((buffer) => {
+            if (buffer) bufferCache.set(clipId, buffer);
+          })
+          .catch(() => {
+            // missing file / bad bytes / decode failure — that one clip
+            // degrades to silence, every other clip still decodes.
+          });
+      } catch {
+        // a synchronously-throwing load() must not stop the other 29
+        // decodes from being attempted.
+      }
+    }
+  } catch {
+    unlockInFlight = false;
+  }
+}
+
+/**
+ * playClips(clipIds) — internal. Starts a voice per id, IN THE ORDER
+ * RECEIVED, off already-decoded buffers only:
+ *  - no device, Sound off, or an empty/non-array list -> returns having
+ *    touched no state.
+ *  - a clip whose buffer isn't in the cache yet (still decoding, missing,
+ *    or failed to decode) is DROPPED and the rest continue — a late sound
+ *    is worse than no sound, so it is never queued or retried.
+ *  - a successfully started voice is pushed onto the FIFO; while the FIFO
+ *    exceeds VOICE_CAP the OLDEST voice is shifted off and stopped — the
+ *    9th simultaneous voice stops the oldest, never refuses the new one.
+ */
+function playClips(clipIds) {
+  if (!deviceHandle) return;
+  if (soundIsOff()) return;
+  if (!Array.isArray(clipIds) || clipIds.length === 0) return;
+
+  const backend = resolveBackend();
+  for (const clipId of clipIds) {
+    try {
+      const buffer = bufferCache.get(clipId);
+      if (!buffer) continue;
+      const voice = backend.start(deviceHandle, buffer);
+      if (!voice) continue;
+      liveVoices.push(voice);
+      while (liveVoices.length > VOICE_CAP) {
+        const oldest = liveVoices.shift();
+        try {
+          backend.stop(oldest);
+        } catch {
+          // stopping the evicted voice must never throw upstream.
+        }
+      }
+    } catch {
+      // one clip's backend failure must never cancel the rest of the
+      // dispatch's clips.
+    }
+  }
+}
+
+/**
+ * playForDispatch(actionType, events, ctx) — exported. The dispatch-path
+ * seam: resolves clipsForDispatch()'s ordered clip list and plays it.
+ * Always returns undefined, and is wrapped so nothing it does can throw
+ * into dispatchWithNarration's render tail.
+ */
+export function playForDispatch(actionType, events, ctx) {
+  try {
+    playClips(clipsForDispatch(actionType, events, ctx));
+  } catch {
+    // cosmetic polish — never throw into the dispatch path.
+  }
+  return undefined;
+}
+
+/**
+ * playUiTap() — exported. Plays the uiTap group through the same variation
+ * (defaultVariation, shared with clipsForDispatch above) and playClips()
+ * path used by every other clip. Never throws.
+ */
+export function playUiTap() {
+  try {
+    const clip = defaultVariation.next("uiTap");
+    if (clip) playClips([clip]);
+  } catch {
+    // cosmetic polish — never throw.
+  }
+  return undefined;
+}
+
+/**
+ * stopAllSfx() — exported. Stops every live voice and empties the FIFO.
+ * Never throws.
+ */
+export function stopAllSfx() {
+  try {
+    const backend = resolveBackend();
+    while (liveVoices.length > 0) {
+      const voice = liveVoices.shift();
+      try {
+        backend.stop(voice);
+      } catch {
+        // an already-spent voice must never throw upstream.
+      }
+    }
+  } catch {
+    // never throw.
+  }
+}
+
+/**
+ * applySfxSettings(settings) — exported. Stores the settings mirror.
+ *
+ * On a transition to Sound OFF: stops every in-flight voice IMMEDIATELY
+ * (the pinned toggle-boundary answer — nothing is allowed to finish out),
+ * closes the device, and clears the handle + buffer cache, so no audio
+ * device stays open while Sound reads Off.
+ *
+ * On a transition to Sound ON: does NOT open anything here. The next
+ * unlockSfx() call — driven by the next user gesture — performs the open
+ * and re-decode. This is what keeps "flip Sound on before any gesture"
+ * silent-but-errorless instead of attempting a gesture-less open.
+ */
+export function applySfxSettings(settings) {
+  try {
+    const wasOff = soundIsOff();
+    currentSettings = settings || null;
+    const isOff = soundIsOff();
+
+    if (!wasOff && isOff) {
+      stopAllSfx();
+      if (deviceHandle) {
+        const backend = resolveBackend();
+        try {
+          backend.close(deviceHandle);
+        } catch {
+          // an already-broken device must never throw on teardown.
+        }
+      }
+      deviceHandle = null;
+      bufferCache.clear();
+    }
+  } catch {
+    // never throw.
+  }
+  return undefined;
+}
