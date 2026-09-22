@@ -39,14 +39,14 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 **Requirements**: AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06
 **Success Criteria** (what must be TRUE):
   1. A player hears a distinct, correct sound for every mapped action — walking on stone, walking through water, striking, missing, being hit, killing a foe, casting, resisting, healing, drinking, opening a chest, taking gold, springing a trap, leaping, taking the stairs, levelling up, dying, and tapping the UI
-  2. A fight's opening beat plays the matching monster-family cry — all six BESTIARY families resolve onto four used cries (Beasts→beast, Demons→demon, Humans→human, Lair Beasts→human, Magical→demon, Walking Dead→undead), with `enemy-batrat` deliberately unused per the 2026-09-22 user ruling
+  2. A fight's opening beat plays the matching monster-family cry — all six BESTIARY families resolve onto four used cries (Beasts→beast, Demons→demon, Humans→human, Lair Beasts→human, Magical→demon, Walking Dead→undead) — a total map with two deliberate shares, per the 2026-09-22 user ruling (the creature-specific `enemy-batrat.mp3` was deleted in the same ruling; there is no per-creature override layer)
   3. Repeated actions rotate through their available clips instead of replaying one sample every time (three walk clips, three water clips, two hit clips, two miss clips, three hurt clips)
   4. On a Pixel 7, a clip fires with no audible lag on the action that caused it, and simultaneous events overlap instead of cutting each other off
   5. Setting Sound to Off in the Settings sheet stops every clip and opens no audio device, the choice survives closing and reopening the app, and on first launch in airplane mode with Sound on, every clip plays with nothing fetched over the network
 **Plans**: 4 plans
 
 Plans:
-- [ ] 56-01-PLAN.md — copySfx() build step: the 31 clips ship inside the bundle, a build missing sfx/ fails loud (AUD-06)
+- [ ] 56-01-PLAN.md — copySfx() build step: the 30 clips ship inside the bundle, a build missing sfx/ fails loud (AUD-06)
 - [ ] 56-02-PLAN.md — src/browser/sfx.js pure core: event→clip table, family cry map, per-dispatch order/de-dupe/cap, counter-driven variation (AUD-01, AUD-02, AUD-03)
 - [ ] 56-03-PLAN.md — Web Audio player: decode-once-at-unlock, overlapping voices capped at 8, fail-open degradation, bridge registration (AUD-04)
 - [ ] 56-04-PLAN.md — shell wiring + Settings "Sound" gate + phase gate (AUD-05)
@@ -90,7 +90,7 @@ Plans:
 **Plans**: TBD
 
 ### Phase 60: Performance & Footprint Close
-**Goal**: The milestone's total device footprint — 31 clips and 54 images on top of the existing icon set — is measured on the Pixel 7 against the v1.7 baseline, and the milestone closes on one debug APK per the deferred-UAT protocol.
+**Goal**: The milestone's total device footprint — 30 clips and 54 images on top of the existing icon set — is measured on the Pixel 7 against the v1.7 baseline, and the milestone closes on one debug APK per the deferred-UAT protocol.
 **Depends on**: Phase 56, Phase 57, Phase 58, Phase 59 (needs every clip and image landed to measure the real footprint)
 **Requirements**: PERF-03
 **Success Criteria** (what must be TRUE):
@@ -264,7 +264,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 > **Promoted 2026-09-22 into milestone v1.8.** Sound → AUD-01..06 (Phase 56); transitions, combat pacing and typed text → MOTION-01..05 (Phase 58); the party-marker ring → ANIM-03 (Phase 59). The rail-overlay prerequisite it names is LAYOUT-01 (Phase 57). Kept here for its planning context until v1.8 closes — not a runnable backlog item, do not queue it.
 
-**Goal:** [Captured 2026-09-19 for future planning — user's words] Map the sound clips in `sfx/` (31 MP3s the user added: `walk1-3`, `walk-water1-3`, `hit1-2`, `miss1-2`, `hurt1-3`, `foe-die`, `enemy-{batrat,beast,demon,human,undead}`, `spell`, `resist`, `heal`, `drink`, `chest`, `gold`, `trap`, `jump`, `stairs`, `levelup`, `death`, `ui-tap`) to game actions and engine events; and make the shell's transitions smooth — map panning, rail show/hide, opening menu items — "not jarring and immediate". Slow the fight responses down so there are transitions between exchanges and the player can process each one. Animate on-screen text as if quickly typed out (fast, not slow). Dial back the black circle around the party marker — the party is already highlighted, the ring is too stark.
+**Goal:** [Captured 2026-09-19 for future planning — user's words] Map the sound clips in `sfx/` (30 MP3s the user added — 31 originally, less `enemy-batrat` which the user deleted 2026-09-22: `walk1-3`, `walk-water1-3`, `hit1-2`, `miss1-2`, `hurt1-3`, `foe-die`, `enemy-{beast,demon,human,undead}`, `spell`, `resist`, `heal`, `drink`, `chest`, `gold`, `trap`, `jump`, `stairs`, `levelup`, `death`, `ui-tap`) to game actions and engine events; and make the shell's transitions smooth — map panning, rail show/hide, opening menu items — "not jarring and immediate". Slow the fight responses down so there are transitions between exchanges and the player can process each one. Animate on-screen text as if quickly typed out (fast, not slow). Dial back the black circle around the party marker — the party is already highlighted, the ring is too stark.
 **Requirements:** TBD
 **Plans:** 0 plans
 

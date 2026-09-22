@@ -7,13 +7,13 @@
 <domain>
 ## Phase Boundary
 
-This phase delivers **the audio layer and nothing else**: a new `src/browser/sfx.js` that maps engine events to the 31 clips already sitting in `sfx/`, plays them through Web Audio in the dispatch path, varies repeats, and obeys the Settings "Sound" toggle — plus the `copySfx()` build step that gets the clips into `www/`.
+This phase delivers **the audio layer and nothing else**: a new `src/browser/sfx.js` that maps engine events to the 30 clips sitting in `sfx/`, plays them through Web Audio in the dispatch path, varies repeats, and obeys the Settings "Sound" toggle — plus the `copySfx()` build step that gets the clips into `www/`.
 
 In scope: AUD-01..06. The event→clip table, the playback engine, clip variation, the settings gate, the www asset copy, and the unit tests over all of it.
 
 Out of scope and belonging to later phases: every visual change. No canvas work, no animation, no layout, no transition easing, no combat pacing. In particular, MOTION-03's "readable beat between exchanges" is Phase 58's — this phase plays a fight's sounds at whatever cadence the fight currently resolves at, and does not slow anything down to make room for them. If audio timing looks like it wants the Phase 58 pacing to exist first, note it as a dependency rather than building pacing here.
 
-Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any new audio assets beyond the 31 delivered clips, and any engine or content change whatsoever — this phase must leave `engine/` and `content/` byte-identical.
+Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any new audio assets beyond the 30 delivered clips, and any engine or content change whatsoever — this phase must leave `engine/` and `content/` byte-identical.
 
 </domain>
 
@@ -23,7 +23,7 @@ Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any 
 ### Audio engine & playback
 
 - **Web Audio, not `HTMLAudioElement`** — an `AudioContext` with `decodeAudioData`, one decoded `AudioBuffer` held per clip, and a fresh `AudioBufferSourceNode` created per play. This is what gives real overlap and zero per-play I/O, which is what AUD-04 is actually asking for.
-- **All 31 clips decode once at unlock**, in parallel, off the critical path. Never a fetch or a decode mid-play — a clip that has to be fetched when the action happens cannot satisfy "no audible lag".
+- **All 30 clips decode once at unlock**, in parallel, off the critical path. Never a fetch or a decode mid-play — a clip that has to be fetched when the action happens cannot satisfy "no audible lag".
 - **Unlock on the first tap anywhere.** Android's WebView will not let an `AudioContext` start without a user gesture, so the context is created/resumed on the first tap of the session and the app is simply silent before it. Do not tie the unlock to one specific button (e.g. DESCEND) — a player who taps something else first would get a silent session.
 - **Full polyphony capped at 8 concurrent voices**, oldest dropped when the cap is hit. Simultaneous events must overlap rather than cut each other off (AUD-04), but an unbounded voice count is a mid-range-phone hazard.
 
@@ -51,7 +51,7 @@ Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any 
   | Magical | `enemy-demon` — nearest fit; nothing matches Drekk / Shadow / Werebeast / Drudge cleanly |
   | Walking Dead | `enemy-undead` |
 
-- **`enemy-batrat.mp3` is deliberately UNUSED (user ruling, 2026-09-22).** It is a creature-specific cry — "Bat/Rat" is a single tier-1 entry inside Beasts (`content/bestiary.js:42`), not a family — and the user ruled out any per-creature override layer in front of the family map. Bat/Rat sounds like the rest of Beasts. Consequences: the map is total over all six families with two deliberate shares; **30 of the 31 clips are mapped and one is recorded-unused**, so any completeness assertion must be written as 30 + 1, never as a check over all 31; `copySfx()` still copies `sfx/` whole, so the file still ships; and the unused clip is noted in the event-map module's comments with the ruling date so a later reader does not "fix" it by wiring Bat/Rat back up.
+- **`enemy-batrat.mp3` was DELETED (user ruling, 2026-09-22).** It was a creature-specific cry — "Bat/Rat" is a single tier-1 entry inside Beasts (`content/bestiary.js:42`), not a family — and the user ruled out any per-creature override layer in front of the family map, then removed the file outright (`git rm`, recoverable from history at `961923b` if ever wanted). Bat/Rat sounds like the rest of Beasts. Consequences: `sfx/` holds **30 clips and all 30 are mapped**, so the map/asset check is a clean set-equality in both directions — an unreachable shipped clip and a mapped-but-missing clip both fail it. `copySfx()` stays a plain whole-directory copy with no per-file exception. A comment above `FAMILY_CRY` records the ruling so a later reader does not add a per-creature layer back.
 
 ### Claude's Discretion
 
@@ -86,7 +86,7 @@ Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any 
 - `mazeworld.html:4830` `hapticForEvents(events)` — the sibling to sit beside conceptually, but *not* the call site to copy (it is invoked at only two of the seam's callers).
 - `mazeworld.html:1309-1314` — the existing Settings "Sound" row markup.
 - `tools/build-www.mjs` main sequence (`copySourceDirs(); copyFonts(); copyIcons(); copySplash();`) — where `copySfx()` is added.
-- `sfx/` — 31 MP3s, verified present: `walk1-3`, `walk-water1-3`, `hit1-2`, `miss1-2`, `hurt1-3`, `foe-die`, `enemy-{batrat,beast,demon,human,undead}`, `spell`, `resist`, `heal`, `drink`, `chest`, `gold`, `trap`, `jump`, `stairs`, `levelup`, `death`, `ui-tap`.
+- `sfx/` — 30 MP3s, verified present: `walk1-3`, `walk-water1-3`, `hit1-2`, `miss1-2`, `hurt1-3`, `foe-die`, `enemy-{beast,demon,human,undead}`, `spell`, `resist`, `heal`, `drink`, `chest`, `gold`, `trap`, `jump`, `stairs`, `levelup`, `death`, `ui-tap`.
 
 </code_context>
 
@@ -103,7 +103,7 @@ Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any 
 
 - **Combat pacing to make room for the sounds** — MOTION-03, Phase 58. If the fight resolves too fast for its own audio to read, that is evidence for Phase 58's beat, not a reason to add timing here.
 - **Haptics polish** — already on the Future Requirements list; this phase does not touch `hapticForEvents`, only sits beside it.
-- **Music / ambient loops** — out of scope per REQUIREMENTS.md; the delivered set is 31 one-shots.
+- **Music / ambient loops** — out of scope per REQUIREMENTS.md; the delivered set is 30 one-shots.
 - **Per-clip volume mixing as a user-facing control** — the Settings row is On/Off only. A volume slider would be a new control and is not in AUD-05.
 
 </deferred>

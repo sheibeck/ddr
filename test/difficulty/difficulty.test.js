@@ -137,7 +137,17 @@ function withIdentity(overrides, fn) {
 }
 
 test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3): DIALS deepStrictEqual the merge of the identity column and fit/best.json (the shipped values are the evaluated ones, no rounding, no hand-tidying)", () => {
-  const bestPath = path.join(__dirname, "..", "..", ".planning", "phases", "54-four-band-retune-and-roster-decision", "fit", "best.json");
+  // The fit artifact lives in Phase 54's directory, which /gsd-complete-milestone
+  // MOVES into .planning/milestones/v1.7-phases/ when the milestone is archived.
+  // Try the live location first, then the archive, so archiving a milestone never
+  // turns this pin red (it did, once — v1.8's archive of v1.7 broke this test).
+  const fitRel = ["54-four-band-retune-and-roster-decision", "fit", "best.json"];
+  const planning = path.join(__dirname, "..", "..", ".planning");
+  const bestPath = [
+    path.join(planning, "phases", ...fitRel),
+    path.join(planning, "milestones", "v1.7-phases", ...fitRel),
+  ].find((p) => fs.existsSync(p));
+  assert.ok(bestPath, "fit/best.json not found in .planning/phases/ or .planning/milestones/v1.7-phases/");
   const best = JSON.parse(fs.readFileSync(bestPath, "utf8"));
   const merged = { ...IDENTITY_COLUMN, ...best };
   assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json merge must cover the exact same key set");

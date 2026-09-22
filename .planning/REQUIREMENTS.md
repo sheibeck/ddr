@@ -76,7 +76,7 @@
 ## Out of Scope
 
 - **SEED-001 Leaderboards & Share** — the seed's trigger fired (this milestone touches the settings cog) and the user deferred it again on 2026-09-22. A leaderboard is an online, account-bearing feature against a v1 constraint of fully offline, no accounts, no backend. The seed stays dormant.
-- **Music / ambient loops** — the asset set the user supplied is 31 one-shot effect clips; a soundtrack is a different production problem and a different bundle budget.
+- **Music / ambient loops** — the asset set the user supplied is 30 one-shot effect clips; a soundtrack is a different production problem and a different bundle budget.
 - **New art beyond the supplied sets** — this milestone uses `sfx/*.mp3`, `party_idle_*` / `party_step_*` and `set_dungeon_*` as delivered; commissioning or generating more is not in scope.
 - **Interactive or rule-bearing set dressing** — props are ambiance only. A searchable barrel is a rules feature, which would break the presentation gate.
 - **Any engine or balance change** — the fitted v1.7 curve is left exactly as it is; feel complaints from this milestone's device round become todos, not edits.
