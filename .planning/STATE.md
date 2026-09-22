@@ -4,17 +4,17 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 57
 current_phase_name: map-hud-layout-band
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: "Completed 57-02-PLAN.md (rail overlay, LAYOUT-01). RESUME: /gsd-autonomous — dispatch 57-03 (rail dismiss + doubled holds, LAYOUT-02/03), then 57-04 (darkness legibility, LAYOUT-06). Same run conventions from the 57-01/57-02 break still apply (worktrees degraded, sequential executor, phase base 4d43edf, anchored greps, re-pin never delete, deferred-UAT to Phase 60, verifier agents off, gsd-tools state verbs only)."
-last_updated: "2026-09-22T17:29:11.032Z"
+stopped_at: "Completed 57-03-PLAN.md (rail tap-to-dismiss + doubled holds, LAYOUT-02/03). RESUME: /gsd-autonomous — dispatch 57-04 (darkness legibility, LAYOUT-06), the last plan in the phase."
+last_updated: "2026-09-22T18:05:10.154Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 57 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 20
 total_plans_in_phase: 4
 ---
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 57 (map-hud-layout-band) — EXECUTING
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 4
-Progress: [████████░░] 75%
-Plan: 3 of 4
+Progress: [█████████░] 88%
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-22 — Phase 57 execution started
 
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T17:29:11.002Z
-Stopped at: Completed 57-02-PLAN.md (rail overlay, LAYOUT-01). RESUME: /gsd-autonomous — dispatch 57-03 (rail dismiss + doubled holds, LAYOUT-02/03), then 57-04 (darkness legibility, LAYOUT-06). Same run conventions from the 57-01/57-02 break still apply (worktrees degraded, sequential executor, phase base 4d43edf, anchored greps, re-pin never delete, deferred-UAT to Phase 60, verifier agents off, gsd-tools state verbs only).
+Last session: 2026-09-22T18:03:18.620Z
+Stopped at: Completed 57-03-PLAN.md (rail tap-to-dismiss + doubled holds, LAYOUT-02/03). RESUME: /gsd-autonomous — dispatch 57-04 (darkness legibility, LAYOUT-06), the last plan in the phase.
 Resume file: None
 
 ## Operator Next Steps
@@ -323,6 +323,7 @@ Resume file: None
 | Phase 56 P04 | 30min | 2 tasks | 3 files |
 | Phase 57 P01 | ~55min | 3 tasks | 10 files |
 | Phase 57 P02 | 25min | 3 tasks | 3 files |
+| Phase 57 P03 | ~45min | 3 tasks | 8 files |
 
 ## Decisions
 
@@ -591,6 +592,9 @@ Resume file: None
 - [Phase ?]: 57-02: #mw-stage wraps .mw-screens + #mw-rail (not .mazebox) — keeps the rail a sibling of the screens so the every-tab feedback ruling stands
 - [Phase ?]: 57-02: rail visibility model is transform+visibility with [hidden] restoring block display first, never display:none — Phase 58 animates the slide this phase makes possible
 - [Phase ?]: 57-02: renderRail() writes data-shown from the same predicate as hidden (railEl.hidden ? "0" : "1"), one write site, so the two can never drift
+- [Phase ?]: Guarded #mw-rail body-tap dismiss NOT wired through guardTap (aria-disabled sweep is a descendant selector; encRenderedAt is stale for a no-button card) — uses isArmed(railShownAt, now) against a rail-specific stamp instead (57-CONTEXT correction 2).
+- [Phase ?]: holdForCard(null) returns HOLD_MIN via an explicit early-return special case, not the base/lineCount fallback chain — required to satisfy the plan's own bounds acceptance check.
+- [Phase ?]: Section B of rail-dismiss.test.js needed a sibling loader (loadRailDismissSandbox), not a caller of shellSandbox.js#loadShellSandbox, because renderRail's stub can't be undone after the fact — S/railShownAt/lastRailKeyShown/railTimer are per-execution vm let bindings, not context-global properties.
 
 ### Blockers
 
