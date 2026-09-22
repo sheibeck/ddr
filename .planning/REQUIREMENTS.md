@@ -21,7 +21,7 @@
 - [x] **AUD-01**: A player hears a distinct sound for each mapped action — walking on stone, walking through water, striking, missing, being hit, killing a foe, casting, resisting, healing, drinking, opening a chest, taking gold, springing a trap, leaping, taking the stairs, levelling up, dying, and tapping the UI
 - [x] **AUD-02**: A player hears the matching monster-family cry when a fight begins — bat/rat, beast, demon, human, undead
 - [x] **AUD-03**: A repeated action varies rather than replaying one sample — the three walk clips, three water clips, two hit clips, two miss clips and three hurt clips rotate
-- [ ] **AUD-04**: Sound stays in time with play on a Pixel 7 — a clip fires on the action that caused it with no audible lag, and simultaneous events overlap instead of cutting each other off
+- [x] **AUD-04**: Sound stays in time with play on a Pixel 7 — a clip fires on the action that caused it with no audible lag, and simultaneous events overlap instead of cutting each other off
 - [ ] **AUD-05**: A player can turn all audio off from the Settings sheet; with Sound set to Off nothing plays, no audio device is opened, and the choice survives closing and reopening the app
 - [x] **AUD-06**: Audio works on first launch after install with the phone in airplane mode — every clip ships inside the app, nothing is fetched
 
@@ -89,7 +89,7 @@
 | AUD-01 | Phase 56 | Complete |
 | AUD-02 | Phase 56 | Complete |
 | AUD-03 | Phase 56 | Complete |
-| AUD-04 | Phase 56 | Pending |
+| AUD-04 | Phase 56 | Complete |
 | AUD-05 | Phase 56 | Pending |
 | AUD-06 | Phase 56 | Complete |
 | LAYOUT-01 | Phase 57 | Pending |
