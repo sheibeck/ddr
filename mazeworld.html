@@ -3117,6 +3117,11 @@ let encWasActive = false;
 // last render (a submenu open/close re-render of the same log must not
 // re-scroll the middle band).
 let lastLogSeqShown = 0;
+// Phase 58 (MOTION-04, D-13/D-14): types renderMajorOverlay's line once per
+// content — reset in renderEncounter's inactive branch and at the start of
+// the combat-body render, so the next time the same card appears it types
+// again rather than being treated as a same-content re-render.
+let lastMajorTypedKey = "";
 
 function encArmed() {
   return window.__mzInputGuards ? window.__mzInputGuards.isArmed(encRenderedAt, Date.now()) : true;
@@ -3332,9 +3337,31 @@ function renderMajorOverlay(host, spec) {
     actions.appendChild(secondary);
   }
   el.appendChild(actions);
+  // Phase 58 (MOTION-04, D-16): the dialog's complete text for assistive
+  // tech, independent of typing — aria-describedby always resolves to the
+  // full line, even while `line` itself is still mid-type.
+  const desc = document.createElement("p");
+  desc.id = "mw-major-desc";
+  desc.hidden = true;
+  desc.textContent = spec.line;
+  el.appendChild(desc);
+  el.setAttribute("aria-describedby", "mw-major-desc");
   host.appendChild(el);
   guardTap(document.getElementById("mw-major-primary"), () => spec.primary.onTap());
   if (spec.secondary) guardTap(document.getElementById("mw-major-secondary"), () => spec.secondary.onTap());
+  // Phase 58 (MOTION-04, D-13/D-14): the line types once per content
+  // (title+line as the key) — a same-content re-render (renderEncounter()
+  // often runs more than once per tick) continues the in-flight block
+  // instead of restarting it; a tap on the line completes it, never a
+  // dismiss.
+  const majorKey = spec.title + "\u0001" + spec.line;
+  if (majorKey !== lastMajorTypedKey) {
+    lastMajorTypedKey = majorKey;
+    window.__mzTypewriter?.type?.("major", { targets: [line], texts: [spec.line], ariaHost: line });
+  } else if (window.__mzTypewriter?.active?.("major")) {
+    window.__mzTypewriter.adopt("major", [line], line);
+  }
+  line.onclick = () => { window.__mzTypewriter?.complete?.("major"); };
 }
 
 function renderCombatHeader(host, vm) {
@@ -3752,6 +3779,9 @@ function renderEncounter() {
     document.getElementById("mw-party-pulse")?.classList.remove("covered");
     if (window.__mzState) window.renderRail?.();
     syncFightLogLive(null);
+    // Phase 58 (MOTION-04): the overlay just went away — the next time a
+    // major overlay shows, even with identical content, it types again.
+    lastMajorTypedKey = "";
     return;
   }
   if (panel) showPanel(panel);
@@ -3931,6 +3961,10 @@ function renderEncounter() {
     renderMajorOverlay(body, { ...spec, primary: { label: spec.primary.label, onTap: () => window.mzFight?.() }, secondary: null });
     return;
   }
+  // Phase 58 (MOTION-04): the pending-combat overlay has cleared into the
+  // combat body — the next major overlay to show (a later pending combat)
+  // types again rather than being treated as a same-content re-render.
+  lastMajorTypedKey = "";
 
   renderCombatHeader(body, window.__mzCombatVM.header(S));
 
