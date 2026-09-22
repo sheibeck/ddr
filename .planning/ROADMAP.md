@@ -39,11 +39,17 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 **Requirements**: AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06
 **Success Criteria** (what must be TRUE):
   1. A player hears a distinct, correct sound for every mapped action — walking on stone, walking through water, striking, missing, being hit, killing a foe, casting, resisting, healing, drinking, opening a chest, taking gold, springing a trap, leaping, taking the stairs, levelling up, dying, and tapping the UI
-  2. A fight's opening beat plays the matching monster-family cry — bat/rat, beast, demon, human, undead
+  2. A fight's opening beat plays the matching monster-family cry — all six BESTIARY families resolve onto four used cries (Beasts→beast, Demons→demon, Humans→human, Lair Beasts→human, Magical→demon, Walking Dead→undead), with `enemy-batrat` deliberately unused per the 2026-09-22 user ruling
   3. Repeated actions rotate through their available clips instead of replaying one sample every time (three walk clips, three water clips, two hit clips, two miss clips, three hurt clips)
   4. On a Pixel 7, a clip fires with no audible lag on the action that caused it, and simultaneous events overlap instead of cutting each other off
   5. Setting Sound to Off in the Settings sheet stops every clip and opens no audio device, the choice survives closing and reopening the app, and on first launch in airplane mode with Sound on, every clip plays with nothing fetched over the network
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 56-01-PLAN.md — copySfx() build step: the 31 clips ship inside the bundle, a build missing sfx/ fails loud (AUD-06)
+- [ ] 56-02-PLAN.md — src/browser/sfx.js pure core: event→clip table, family cry map, per-dispatch order/de-dupe/cap, counter-driven variation (AUD-01, AUD-02, AUD-03)
+- [ ] 56-03-PLAN.md — Web Audio player: decode-once-at-unlock, overlapping voices capped at 8, fail-open degradation, bridge registration (AUD-04)
+- [ ] 56-04-PLAN.md — shell wiring + Settings "Sound" gate + phase gate (AUD-05)
 
 ### Phase 57: Map & HUD Layout Band
 **Goal**: The map screen's chrome stops fighting the map — the rail overlays instead of reflowing the viewport, chip taps never double as a move, and the HUD reads as legible stacked bands with darkness visible on the map itself.
