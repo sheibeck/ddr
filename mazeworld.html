@@ -4962,7 +4962,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
   // this module script calls it directly (dispatchWithNarration and
   // hapticForEvents both live here too, so no window.__mz* bridge is needed).
-  import { unlockSfx, applySfxSettings, playForDispatch, playUiTap } from "./src/browser/sfx.js";
+  import { unlockSfx, applySfxSettings, playForDispatch, playUiTap, playClipIds } from "./src/browser/sfx.js";
   // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
@@ -4981,6 +4981,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzTypewriter (keys "rail"/"major"/"fightlog") so the classic
   // renderers type without a second copy of the schedule.
   import { createTypewriter, typeDurationMs } from "./src/browser/typewriter.js";
+  // Phase 58 (MOTION-03/05) — the combat-beat core (D-09..D-11, D-17):
+  // engineCombatAction hands each already-resolved combat round's plan to
+  // ONE createBeatRunner instance below, bridged as window.__mzBeat so the
+  // classic renderEncounter/renderFightLog/renderActionArea reveal it one
+  // exchange at a time instead of a second copy of the reveal schedule.
+  import { planBeat, createBeat, createBeatRunner } from "./src/browser/combatBeat.js";
   // Phase 35 (MAP-02) — the tap-to-step direction resolver + hold-inspect
   // cards (Plan 01); bridged beside window.__mzControls below for the
   // classic script's tapStep()/inspectAt() to consume.
@@ -5436,6 +5442,36 @@ window.__mzClassicBoot = async function classicBoot() {
     active: typewriter.active,
     durationFor: (text) => typeDurationMs(String(text ?? "").length),
   };
+  // Phase 58 (MOTION-03/05) — the ONE combat-beat runner (D-09..D-11, D-17):
+  // engineCombatAction hands each already-resolved round to
+  // beatRunner.start(plan) below; the runner reveals the round's fight-log
+  // lines one at a time (the classic renderEncounter/renderFightLog/
+  // renderActionArea read its view() at render time — see window.__mzBeat
+  // just below), types each revealed line on through the SAME shared
+  // typewriter instance above (keyed "fightlog"), and plays that line's
+  // cues through sfx.js's playClipIds (cues stay empty until Plan 58-07:
+  // sound still fires at dispatch time in THIS plan). Reduced motion
+  // resolves the whole beat synchronously with nothing typed — createBeat's
+  // own `reduced()` check, read live on every scheduled tick.
+  const beatRunner = createBeatRunner({
+    beat: createBeat({
+      setTimeout: (f, ms) => setTimeout(f, ms),
+      clearTimeout: (id) => clearTimeout(id),
+      reduced: () => prefersReducedMotion(window),
+    }),
+    durationFor: (text) => typeDurationMs(String(text ?? "").length),
+    onRender: () => window.renderEncounter(),
+    onSettle: () => { window.paint(); window.renderEncounter(); },
+    playClips: (clips) => playClipIds(clips),
+  });
+  // window.__mzBeat — the combat beat (MOTION-03) reveals an already-
+  // resolved round one exchange at a time; view() is presentation-only and
+  // is NEVER state (never assigned to S, never serialized/saved).
+  window.__mzBeat = {
+    active: () => beatRunner.active(),
+    hurry: () => beatRunner.hurry(),
+    view: () => beatRunner.view(),
+  };
   // Phase 58 (MOTION-05) — the ONE mid-session settle point: every
   // in-flight Phase 58 effect lands its end state here the instant reduced
   // motion turns on mid-session. Plans 58-04..58-06 each add their own
@@ -5445,6 +5481,7 @@ window.__mzClassicBoot = async function classicBoot() {
     window.__mzCameraGlide?.finish?.();
     panelMotion.finishAll();
     typewriter.completeAll();
+    beatRunner.hurry();
   }
   // Phase 58 (MOTION-02, D-08) — the ONE shared, timer-driven panel close
   // helper every hidden-based D-05 close (the MARKS/Settings/camp sheets,
@@ -6248,6 +6285,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // narrate, then re-render — mirroring window.mzBuyItem/mzLeaveStore above.
   function engineCombatAction(type, extra) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
+    // Phase 58 (MOTION-03, D-09..D-11, D-17): before/beforeLog are captured
+    // BEFORE the dispatch below — planBeat() (near the end of this
+    // function) reads them alongside the dispatch's own events/after-state
+    // to build the round's reveal plan. The engine has already resolved
+    // the whole round exactly as before this phase; only WHEN the shell
+    // SHOWS each exchange changes below, and only when motion is not
+    // reduced.
+    const before = window.__mzState.get();
+    const beforeLog = window.__mzFightLog;
     const { state, events, html } = dispatchWithNarration({ type, ...extra });
     window.__mzState.set(state);
     // Phase 36 (TGT-01/02) — settle the aim on the next living foe after
@@ -6278,6 +6324,23 @@ window.__mzClassicBoot = async function classicBoot() {
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: hit / crit / level-up buzz on the combat path
     for (const line of html) window.logLine(line);
+    // Phase 58 (MOTION-03, D-09..D-11, D-17): hand the already-resolved
+    // round to the beat runner so the shell reveals it one exchange at a
+    // time; under reduced motion (or when there is nothing to reveal —
+    // planBeat's own null-return contract), fall straight through to
+    // today's instant paint/render tail below.
+    if (!prefersReducedMotion(window)) {
+      const plan = planBeat({
+        actionType: type,
+        events,
+        before,
+        after: state,
+        beforeLog,
+        afterLog: window.__mzFightLog,
+        ctx: NARRATIVE_ACTIONS.has(type) ? { narrate: narrateEvent } : {},
+      });
+      if (plan && beatRunner.start(plan)) return;
+    }
     window.paint();
     window.renderEncounter();
   }

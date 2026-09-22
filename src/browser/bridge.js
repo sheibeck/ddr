@@ -52,6 +52,16 @@ export const BRIDGE = Object.freeze({
     ]),
     purpose: "Bridges the pure bag-capacity readout (used/slots, full) so the Gear tab and every loot/find/store surface agree with the engine's real cap.",
   }),
+  __mzBeat: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderEncounter/renderFightLog/renderActionArea — view())",
+      "mazeworld.html (classic: hasActiveEncounter/encArmed — active())",
+      "mazeworld.html (classic: beatHurryTap/showTab — hurry())",
+      "mazeworld.html (module: settleAllMotion — hurry())",
+    ]),
+    purpose: "Bridges the pure src/browser/combatBeat.js runner (Phase 58, MOTION-03: D-09..D-11, D-17) so the classic renderer reveals an already-resolved combat round one exchange at a time, without a second copy of the reveal schedule.",
+  }),
   __mzCameraGlide: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
