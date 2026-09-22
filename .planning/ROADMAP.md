@@ -28,7 +28,7 @@
 - [x] **Phase 51: Initiative Once Per Combat** - Initiative rolls once in `startCombat`/`fight`, the per-round re-roll is deleted so a foe never takes two turns back to back, and the result is narrated once per fight in the Oracle and fight log (completed 2026-09-20)
 - [x] **Phase 52: Foe Cadence & Damage Curve** - A foe swings its ordinary attack count once per round (never stacked with a firing ability), the Bat/Rat and China Wolf floor-5 fights are re-measured in band, and every flat-damage cliff (Herman's 25 × multiplier) is smoothed by a bot-audited damage curve (completed 2026-09-20)
 - [x] **Phase 53: Joiner Level Cap** - A Joiner's level never exceeds the floor it's met on (promoted from backlog 999.2), with the level-shallower fixtures declared/regenerated and the early-Joiner power shift measured (completed 2026-09-20)
-- [ ] **Phase 54: Four-Band Retune & Roster Decision** - `engine/difficulty.js` is reshaped toward the four recorded bands (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7), and the tier-3/5 roster (Herman, Drarl, Vampire, Djinni) gets a recorded per-creature decision
+- [x] **Phase 54: Four-Band Retune & Roster Decision** - `engine/difficulty.js` is reshaped toward the four recorded bands (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7), and the tier-3/5 roster (Herman, Drarl, Vampire, Djinni) gets a recorded per-creature decision (completed 2026-09-22)
 - [ ] **Phase 55: Human DR Round** - The twice-deferred human verdict (TUNE-07 → TUNE-09) runs once on the Pixel 7 against the post-retune debug APK, and the milestone closes on the recorded result
 
 <details>
@@ -286,7 +286,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6)*
 
-- [ ] 54-07-PLAN.md — The FIT (budget 80, 4 workers, 200 seeds, from `fit/start.json`; the CORE 10 coordinates in two passes, every other dial held; objective = floors 1–12; the manual-notch rule ≤ 2) → `DIALS` shipped at the evaluated values with the log as evidence; every pin re-measured; the fitted parity set declared + regenerated; the full AFTER (solo / party / class smoke → `v17-p54-global-after-smoke.json` / depth-20 as p_L) + the measured TAIL (1,000-seed solo for floors 13–20 and reach-20 vs 3–5 %; a `--start-depth=10` slice — readouts, not fitted); the damage-curve audit re-keyed to the global model (both rules); Herman / Drarl / Vampire / Djinni / Drake recorded under the ceiling (no retune, no tier move; Ruling B's Drake trim superseded); BESTIARY-REBALANCE Phase 54 addendum; the ledger close-out (Fit, AFTER per-floor table + pace + class pools + recorded spread, Change table, Miss table, Roster, Depth-20 p_L, Parity measured set) (BAND-01, BAND-02, BAND-03, TUNE-08)
+- [x] 54-07-PLAN.md — The FIT (budget 80, 4 workers, 200 seeds, from `fit/start.json`; the CORE 10 coordinates in two passes, every other dial held; objective = floors 1–12; the manual-notch rule ≤ 2) → `DIALS` shipped at the evaluated values with the log as evidence; every pin re-measured; the fitted parity set declared + regenerated; the full AFTER (solo / party / class smoke → `v17-p54-global-after-smoke.json` / depth-20 as p_L) + the measured TAIL (1,000-seed solo for floors 13–20 and reach-20 vs 3–5 %; a `--start-depth=10` slice — readouts, not fitted); the damage-curve audit re-keyed to the global model (both rules); Herman / Drarl / Vampire / Djinni / Drake recorded under the ceiling (no retune, no tier move; Ruling B's Drake trim superseded); BESTIARY-REBALANCE Phase 54 addendum; the ledger close-out (Fit, AFTER per-floor table + pace + class pools + recorded spread, Change table, Miss table, Roster, Depth-20 p_L, Parity measured set) (BAND-01, BAND-02, BAND-03, TUNE-08)
 
 ### Phase 55: Human DR Round
 
@@ -370,7 +370,7 @@ Full phase-by-phase goals, requirements, and success criteria for v1.0 live in t
 | 51. Initiative Once Per Combat | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 52. Foe Cadence & Damage Curve | v1.7 | 3/3 | Complete    | 2026-09-20 |
 | 53. Joiner Level Cap | v1.7 | 2/2 | Complete    | 2026-09-20 |
-| 54. Four-Band Retune & Roster Decision | v1.7 | 6/7 | In Progress|  |
+| 54. Four-Band Retune & Roster Decision | v1.7 | 7/7 | Complete    | 2026-09-22 |
 | 55. Human DR Round | v1.7 | 0/? | Not started | - |
 | 44. Retire the Classic Engine from the Shell | v1.6 | 4/4 | Complete    | 2026-09-19 |
 | 45. Collapse the Phase 37 Hedges | v1.6 | 3/3 | Complete    | 2026-09-19 |

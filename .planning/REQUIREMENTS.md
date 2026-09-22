@@ -39,13 +39,13 @@
 
 ### Four-band curve (BAND)
 
-- [ ] **BAND-01**: The four bands are recorded as the measurable tuning target in `docs/DIFFICULTY-RETUNE.md` with the user's text verbatim — Filter 1–4 (high variance), Wall 5–8 (where the average run dies), Breakaway 9–15, Endgame 16–20 — **as a per-floor survival curve (USER RULING C, 2026-09-21, supersedes the earlier numbers):** individual floor survival p_L 98.8 % at floor 1 falling to a 78.7 % trough at floor 11 and rising to 84.5 % at floor 20; cumulative S_L 69 % at 5, 58 % at 6 (the 50/50 flip), 39 % at 8, 24 % at 10, 7.6 % at 15, 3–5 % at 20 (the unicorn); the `--start-depth 20` slice reads p_L ≈ 84.5 %, not "unchanged"
-- [ ] **BAND-02**: `engine/difficulty.js`'s `difficultyCurve` is reshaped to that target — identity-ish through floor 4 (variance from drops and dice, not dials), a step at 5–8, slope eases through 9–15, steepens 16–20, breather floors kept, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — with every dial change gated on the bot readout moving toward the bands and no flat damage nerfs to chase the median
-- [ ] **BAND-03**: The AFTER readout (solo + `--party`, 200 seeds, plus the class matrix) lands inside BAND-01's numbers or each miss is recorded with the untaken rung and a reason; the ledger's change table has a row per constant with before/after
+- [x] **BAND-01**: The four bands are recorded as the measurable tuning target in `docs/DIFFICULTY-RETUNE.md` with the user's text verbatim — Filter 1–4 (high variance), Wall 5–8 (where the average run dies), Breakaway 9–15, Endgame 16–20 — **as a per-floor survival curve (USER RULING C, 2026-09-21, supersedes the earlier numbers):** individual floor survival p_L 98.8 % at floor 1 falling to a 78.7 % trough at floor 11 and rising to 84.5 % at floor 20; cumulative S_L 69 % at 5, 58 % at 6 (the 50/50 flip), 39 % at 8, 24 % at 10, 7.6 % at 15, 3–5 % at 20 (the unicorn); the `--start-depth 20` slice reads p_L ≈ 84.5 %, not "unchanged"
+- [x] **BAND-02**: `engine/difficulty.js`'s `difficultyCurve` is reshaped to that target — identity-ish through floor 4 (variance from drops and dice, not dials), a step at 5–8, slope eases through 9–15, steepens 16–20, breather floors kept, `DENSITY_CANON_THROUGH_DEPTH = 2` respected — with every dial change gated on the bot readout moving toward the bands and no flat damage nerfs to chase the median
+- [x] **BAND-03**: The AFTER readout (solo + `--party`, 200 seeds, plus the class matrix) lands inside BAND-01's numbers or each miss is recorded with the untaken rung and a reason; the ledger's change table has a row per constant with before/after
 
 ### Tuning close (TUNE)
 
-- [ ] **TUNE-08**: The tier-3/5 roster decision is made and recorded — the two open band rows from v1.2 (forced-20 floors gained p50 0 / mean 0.84; reach ≥ 20 0.1 %) are canon tier-3/5 combat (Herman, Drarl, Vampire, Djinni); decide per creature whether it stays, moves tier, or is retuned (the DMG-02 rows feed this), declare any parity divergence, and record the untaken rungs so the Endgame band is a deliberate shape
+- [x] **TUNE-08**: The tier-3/5 roster decision is made and recorded — the two open band rows from v1.2 (forced-20 floors gained p50 0 / mean 0.84; reach ≥ 20 0.1 %) are canon tier-3/5 combat (Herman, Drarl, Vampire, Djinni); decide per creature whether it stays, moves tier, or is retuned (the DMG-02 rows feed this), declare any parity divergence, and record the untaken rungs so the Endgame band is a deliberate shape
 - [ ] **TUNE-09**: A human DR round on the Pixel 7 (start-at-depth 20/35/50 plus a natural run, the checklist in `docs/DIFFICULTY-RETUNE.md`) is run once at milestone close against a debug APK built after the last wave, together with any pending UAT batch; the verdict is recorded verbatim and the milestone closes only on "tuned" or a user-recorded deferral
 
 ## Future Requirements
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DMG-02 | Phase 52 | Complete |
 | JOIN-02 | Phase 53 | Complete |
 | JOIN-03 | Phase 53 | Complete |
-| BAND-01 | Phase 54 | Pending |
-| BAND-02 | Phase 54 | Pending |
-| BAND-03 | Phase 54 | Pending |
-| TUNE-08 | Phase 54 | Pending |
+| BAND-01 | Phase 54 | Complete |
+| BAND-02 | Phase 54 | Complete |
+| BAND-03 | Phase 54 | Complete |
+| TUNE-08 | Phase 54 | Complete |
 | TUNE-09 | Phase 55 | Pending |
 
 **Coverage:**
