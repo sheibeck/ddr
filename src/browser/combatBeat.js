@@ -284,3 +284,262 @@ export function planBeat(opts = {}) {
   };
 }
 
+// ============================================================================
+// The timed half: a timer-driven beat controller (hurry, reduced motion)
+// and a render/sound runner. Nothing above this line touches a timer.
+// ============================================================================
+
+/**
+ * createBeat({ setTimeout, clearTimeout, reduced }) — D-10/D-11/D-17. A
+ * timer-driven controller over one reveal `offsets`/`endMs` schedule at a
+ * time. `reduced` is `() => boolean`, read live on every scheduled tick so
+ * a mid-beat OS preference flip is honoured on the very next tick.
+ *
+ * Returns `{ start, hurry, cancel, active }`:
+ *  - `start(offsets, endMs, { onLine, onEnd })`: if a run is already
+ *    active, hurries it to its `onEnd` first. Zero offsets calls `onEnd`
+ *    and returns. Under `reduced()` (checked once, at the top of `start`),
+ *    every `onLine(k, { hurried: true })` fires in order, then `onEnd()`,
+ *    all synchronously — no timer is ever scheduled. Otherwise `onLine(0,
+ *    { hurried: false })` fires synchronously and the rest are scheduled:
+ *    each later line at its own offset, then `onEnd` at `endMs` (measured
+ *    from the last line's own offset — fired synchronously, with no timer,
+ *    when that gap is exactly 0). Every scheduled tick re-checks
+ *    `reduced()` first and hurries the rest of the run if it now reads
+ *    true, rather than firing that line normally.
+ *  - `hurry()`: a no-op with no active run. Otherwise clears the pending
+ *    timer, fires every remaining line `onLine(k, { hurried: true })` in
+ *    order (nothing is lost — D-11), deactivates, and calls `onEnd()`
+ *    exactly once.
+ *  - `cancel()`: clears the pending timer and deactivates with no further
+ *    callback.
+ *  - `active()`: true from `start` until `onEnd` fires (by any path), then
+ *    false.
+ *
+ * Every callback is wrapped in a try so a throwing render can never leave
+ * the beat active: control still deactivates and `onEnd` still fires.
+ */
+export function createBeat({ setTimeout: setTimer, clearTimeout: clearTimer, reduced = () => false } = {}) {
+  let run = null; // { offsets, endMs, onLine, onEnd, next, timer }
+
+  function fireOnLine(k, hurried) {
+    try {
+      run.onLine(k, { hurried });
+    } catch {
+      // a throwing onLine must never strand the beat active.
+    }
+  }
+
+  function fireOnEnd() {
+    const r = run;
+    run = null;
+    if (!r) return;
+    try {
+      r.onEnd();
+    } catch {
+      // a throwing onEnd must never propagate into the timer.
+    }
+  }
+
+  function hurryRemaining() {
+    const r = run;
+    for (let k = r.next; k < r.offsets.length; k++) fireOnLine(k, true);
+    fireOnEnd();
+  }
+
+  function hurry() {
+    if (!run) return;
+    if (run.timer !== null) {
+      clearTimer(run.timer);
+      run.timer = null;
+    }
+    hurryRemaining();
+  }
+
+  function scheduleNext() {
+    const r = run;
+    if (!r) return;
+
+    if (r.next >= r.offsets.length) {
+      const lastOffset = r.offsets[r.offsets.length - 1] ?? 0;
+      const delay = Math.max(0, r.endMs - lastOffset);
+      if (delay === 0) {
+        if (reduced()) {
+          hurryRemaining();
+        } else {
+          fireOnEnd();
+        }
+        return;
+      }
+      r.timer = setTimer(() => {
+        if (!run) return;
+        run.timer = null;
+        if (reduced()) {
+          hurryRemaining();
+          return;
+        }
+        fireOnEnd();
+      }, delay);
+      return;
+    }
+
+    const prevOffset = r.next === 0 ? 0 : r.offsets[r.next - 1];
+    const delay = Math.max(0, r.offsets[r.next] - prevOffset);
+    r.timer = setTimer(() => {
+      if (!run) return;
+      run.timer = null;
+      if (reduced()) {
+        hurryRemaining();
+        return;
+      }
+      const k = run.next;
+      run.next += 1;
+      fireOnLine(k, false);
+      if (run) scheduleNext();
+    }, delay);
+  }
+
+  function start(offsets, endMs, callbacks) {
+    if (run) hurry();
+
+    const { onLine, onEnd } = callbacks || {};
+    const offsetList = Array.isArray(offsets) ? offsets : [];
+
+    if (offsetList.length === 0) {
+      try {
+        onEnd();
+      } catch {
+        // never propagate.
+      }
+      return;
+    }
+
+    if (reduced()) {
+      for (let k = 0; k < offsetList.length; k++) {
+        try {
+          onLine(k, { hurried: true });
+        } catch {
+          // never propagate.
+        }
+      }
+      try {
+        onEnd();
+      } catch {
+        // never propagate.
+      }
+      return;
+    }
+
+    run = { offsets: offsetList, endMs, onLine, onEnd, next: 1, timer: null };
+    fireOnLine(0, false);
+    if (!run) return; // a reentrant hurry()/cancel() from inside onLine already ended this run.
+    scheduleNext();
+  }
+
+  function cancel() {
+    if (!run) return;
+    if (run.timer !== null) clearTimer(run.timer);
+    run = null;
+  }
+
+  function active() {
+    return !!run;
+  }
+
+  return { start, hurry, cancel, active };
+}
+
+/**
+ * createBeatRunner({ beat, durationFor, onRender, onSettle, playClips }) —
+ * D-12. Sequences render and sound per line over a `planBeat(...)` plan,
+ * on top of an injected `createBeat` controller.
+ *
+ * `start(plan)`: false for a falsy plan (calls nothing). Otherwise
+ * computes the schedule from `plan.texts`/`durationFor` and starts the
+ * beat; each line's `onLine` (1) plays that line's cues via `playClips`,
+ * (2) builds and stores that line's `view()`, and (3) calls `onRender`
+ * with it — UNLESS the line arrived hurried and is not the round's last
+ * line (a hurried mid-round line still plays its cues and updates the
+ * stored view, but only the final render of a hurry paints). `onEnd`
+ * clears the stored view and calls `onSettle()` once.
+ *
+ * `view()` returns the render contract 58-06 consumes: `{ state, log,
+ * maxId, typeId, hitFoe, hurried, line, count, ending }`. `state` is
+ * `plan.after` (the SAME reference) for a mid-fight round's last line;
+ * every other line — and every line of an ending round, including its
+ * last — is a presentation-only `frameStateFor(plan.before, ...)` frame,
+ * so an ending round's bars never show the combat-less after-state.
+ * `typeId` is `null` on a hurried line (nothing to type), else the line's
+ * fight-log id. `hitFoe` is the index of the foe whose frame entry has
+ * `hit` true on that line, else -1.
+ */
+export function createBeatRunner({ beat, durationFor = () => 0, onRender = () => {}, onSettle = () => {}, playClips = () => {} } = {}) {
+  let currentView = null;
+
+  function viewFor(plan, k, hurried) {
+    const isLastLine = k === plan.count - 1;
+    const state = isLastLine && !plan.ending ? plan.after : frameStateFor(plan.before, plan.frames[k], plan.heroHp[k]);
+    const frame = Array.isArray(plan.frames[k]) ? plan.frames[k] : [];
+    let hitFoe = -1;
+    for (let i = 0; i < frame.length; i++) {
+      if (frame[i] && frame[i].hit) {
+        hitFoe = i;
+        break;
+      }
+    }
+    return {
+      state,
+      log: plan.log,
+      maxId: plan.firstId + k,
+      typeId: hurried ? null : plan.firstId + k,
+      hitFoe,
+      hurried,
+      line: k,
+      count: plan.count,
+      ending: plan.ending,
+    };
+  }
+
+  function start(plan) {
+    if (!plan) return false;
+
+    const offsets = beatOffsets(plan.texts, durationFor);
+    const endMs = beatEndMs(plan.texts, durationFor);
+
+    beat.start(offsets, endMs, {
+      onLine(k, info) {
+        const hurried = !!(info && info.hurried);
+        try {
+          playClips(plan.cueLines[k] || []);
+        } catch {
+          // cosmetic — never throw.
+        }
+        currentView = viewFor(plan, k, hurried);
+        const isLast = k === plan.count - 1;
+        if (!hurried || isLast) {
+          try {
+            onRender(currentView);
+          } catch {
+            // never propagate a throwing render.
+          }
+        }
+      },
+      onEnd() {
+        currentView = null;
+        try {
+          onSettle();
+        } catch {
+          // never propagate.
+        }
+      },
+    });
+    return true;
+  }
+
+  return {
+    start,
+    hurry: () => beat.hurry(),
+    active: () => beat.active(),
+    view: () => currentView,
+  };
+}

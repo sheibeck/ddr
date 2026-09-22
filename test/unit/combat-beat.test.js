@@ -36,6 +36,8 @@ import {
   heroFrames,
   frameStateFor,
   planBeat,
+  createBeat,
+  createBeatRunner,
 } from "../../src/browser/combatBeat.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -416,4 +418,324 @@ test("combatBeat: source scan — imports only ./fightLog.js and ./narrationLine
   assert.doesNotMatch(stripped, /\bwindow\b/, "combatBeat.js must never read window");
   assert.doesNotMatch(stripped, /\bdocument\b/, "combatBeat.js must never read document");
   assert.doesNotMatch(stripped, /Math\.random/, "combatBeat.js must draw no pseudo-random number");
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Task 2 — the timed half: createBeat (hurry, reduced motion) and
+// createBeatRunner (render + sound per line).
+// ═══════════════════════════════════════════════════════════════════════
+
+test("combatBeat: createBeat start lands line 0 synchronously, paces later lines at their offsets, then onEnd at endMs; active() true until onEnd", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const calls = [];
+  beat.start([0, 600, 1200], 1500, {
+    onLine: (k, info) => calls.push(["line", k, info.hurried]),
+    onEnd: () => calls.push(["end"]),
+  });
+  assert.deepEqual(calls, [["line", 0, false]]);
+  assert.equal(beat.active(), true);
+
+  timers.advance(600);
+  assert.deepEqual(calls, [["line", 0, false], ["line", 1, false]]);
+  assert.equal(beat.active(), true);
+
+  timers.advance(600);
+  assert.deepEqual(calls, [["line", 0, false], ["line", 1, false], ["line", 2, false]]);
+  assert.equal(beat.active(), true);
+
+  timers.advance(300);
+  assert.deepEqual(calls, [["line", 0, false], ["line", 1, false], ["line", 2, false], ["end"]]);
+  assert.equal(beat.active(), false);
+});
+
+test("combatBeat: createBeat hurry() flushes every remaining line then onEnd exactly once; a second hurry() is a no-op; no timer fires after", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const calls = [];
+  beat.start([0, 600, 1200], 1500, {
+    onLine: (k, info) => calls.push(["line", k, info.hurried]),
+    onEnd: () => calls.push(["end"]),
+  });
+  timers.advance(600); // line 1 fires normally
+  calls.length = 0;
+
+  beat.hurry();
+  assert.deepEqual(calls, [["line", 2, true], ["end"]]);
+  assert.equal(beat.active(), false);
+
+  calls.length = 0;
+  beat.hurry();
+  assert.deepEqual(calls, [], "a second hurry() must be a no-op");
+
+  timers.advance(10000);
+  assert.deepEqual(calls, [], "no further callback fires once hurried");
+});
+
+test("combatBeat: createBeat reduced() true at start resolves every line then onEnd synchronously, scheduling no timer", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => true });
+  const calls = [];
+  beat.start([0, 600, 1200], 1500, {
+    onLine: (k, info) => calls.push(["line", k, info.hurried]),
+    onEnd: () => calls.push(["end"]),
+  });
+  assert.deepEqual(calls, [["line", 0, true], ["line", 1, true], ["line", 2, true], ["end"]]);
+  assert.equal(beat.active(), false);
+
+  timers.advance(100000);
+  assert.deepEqual(
+    calls,
+    [["line", 0, true], ["line", 1, true], ["line", 2, true], ["end"]],
+    "no timer should have been scheduled"
+  );
+});
+
+test("combatBeat: createBeat reduced() flipping true before the next tick hurries the rest on that tick", () => {
+  const timers = makeFakeTimerQueue();
+  let reducedFlag = false;
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => reducedFlag });
+  const calls = [];
+  beat.start([0, 600, 1200], 1500, {
+    onLine: (k, info) => calls.push(["line", k, info.hurried]),
+    onEnd: () => calls.push(["end"]),
+  });
+  assert.deepEqual(calls, [["line", 0, false]]);
+
+  reducedFlag = true;
+  timers.advance(600);
+  assert.deepEqual(calls, [["line", 0, false], ["line", 1, true], ["line", 2, true], ["end"]]);
+  assert.equal(beat.active(), false);
+});
+
+test("combatBeat: createBeat cancel() stops everything with no further callback", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const calls = [];
+  beat.start([0, 600], 900, {
+    onLine: (k, info) => calls.push(["line", k, info.hurried]),
+    onEnd: () => calls.push(["end"]),
+  });
+  assert.deepEqual(calls, [["line", 0, false]]);
+
+  beat.cancel();
+  assert.equal(beat.active(), false);
+
+  timers.advance(10000);
+  assert.deepEqual(calls, [["line", 0, false]], "no further callback after cancel");
+});
+
+test("combatBeat: createBeat start() while a beat is active hurries the previous run to its onEnd first, then starts the new one", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const calls = [];
+  beat.start([0, 600, 1200], 1500, {
+    onLine: (k, info) => calls.push(["A", "line", k, info.hurried]),
+    onEnd: () => calls.push(["A", "end"]),
+  });
+  calls.length = 0;
+
+  beat.start([0, 600], 900, {
+    onLine: (k, info) => calls.push(["B", "line", k, info.hurried]),
+    onEnd: () => calls.push(["B", "end"]),
+  });
+
+  assert.deepEqual(calls, [
+    ["A", "line", 1, true],
+    ["A", "line", 2, true],
+    ["A", "end"],
+    ["B", "line", 0, false],
+  ]);
+  assert.equal(beat.active(), true);
+});
+
+test("combatBeat: createBeat single-line plan fires onLine(0) synchronously, then onEnd at endMs (or synchronously when endMs is 0)", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const calls = [];
+  beat.start([0], 300, {
+    onLine: (k, info) => calls.push(["line", k, info.hurried]),
+    onEnd: () => calls.push(["end"]),
+  });
+  assert.deepEqual(calls, [["line", 0, false]]);
+  timers.advance(300);
+  assert.deepEqual(calls, [["line", 0, false], ["end"]]);
+
+  const timers2 = makeFakeTimerQueue();
+  const beat2 = createBeat({ setTimeout: timers2.setTimeout, clearTimeout: timers2.clearTimeout, reduced: () => false });
+  const calls2 = [];
+  beat2.start([0], 0, {
+    onLine: (k, info) => calls2.push(["line", k, info.hurried]),
+    onEnd: () => calls2.push(["end"]),
+  });
+  assert.deepEqual(calls2, [["line", 0, false], ["end"]], "endMs 0 must fire onEnd synchronously right after onLine(0)");
+});
+
+// ─── createBeatRunner ────────────────────────────────────────────────────
+
+function makeRunnerPlan(overrides = {}) {
+  const before = fixedState({ combat: fixedCombat([{ name: "Rat", alive: true, wp: 6, maxWP: 6, type: "Beasts" }], { round: 1 }) });
+  const after = fixedState({ combat: fixedCombat([{ name: "Rat", alive: false, wp: 0, maxWP: 6, type: "Beasts" }], { round: 1 }) });
+  const frames = [
+    [{ wp: 4, alive: true, hit: true }],
+    [{ wp: 4, alive: true, hit: false }],
+    [{ wp: 0, alive: false, hit: true }],
+  ];
+  const heroHp = [55, 50, 50];
+  const log = appendFightLog(
+    null,
+    [
+      { text: "line0", tone: "narrative", roll: null },
+      { text: "line1", tone: "narrative", roll: null },
+      { text: "line2", tone: "narrative", roll: null },
+    ],
+    1
+  );
+  return {
+    count: 3,
+    texts: ["line0", "line1", "line2"],
+    log,
+    firstId: log.nextId - 3,
+    before,
+    after,
+    ending: false,
+    frames,
+    heroHp,
+    cueLines: [["hit1"], ["hurt1"], ["foe-die", "levelup"]],
+    ...overrides,
+  };
+}
+
+test("combatBeat: createBeatRunner start renders/plays line 0 synchronously; view() carries the frame state, ids and hurried flag; each tick renders and plays the next line; the mid-fight last line's state is plan.after by reference; onSettle fires once and view() is null after", () => {
+  const plan = makeRunnerPlan();
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const renders = [];
+  const settles = [];
+  const played = [];
+  const runner = createBeatRunner({
+    beat,
+    durationFor: () => 0,
+    onRender: (v) => renders.push(v),
+    onSettle: () => settles.push(true),
+    playClips: (clips) => played.push(clips),
+  });
+
+  const started = runner.start(plan);
+  assert.equal(started, true);
+  assert.deepEqual(played, [["hit1"]]);
+  assert.equal(renders.length, 1);
+
+  const v0 = runner.view();
+  assert.equal(v0.line, 0);
+  assert.equal(v0.count, 3);
+  assert.equal(v0.maxId, plan.firstId);
+  assert.equal(v0.typeId, plan.firstId);
+  assert.equal(v0.hurried, false);
+  assert.deepEqual(v0.state, frameStateFor(plan.before, plan.frames[0], plan.heroHp[0]));
+
+  timers.advance(600);
+  assert.deepEqual(played, [["hit1"], ["hurt1"]]);
+  assert.equal(renders.length, 2);
+  assert.equal(settles.length, 0);
+
+  timers.advance(600);
+  assert.deepEqual(played, [["hit1"], ["hurt1"], ["foe-die", "levelup"]]);
+  assert.equal(renders.length, 3);
+  const lastView = renders[2];
+  assert.equal(lastView.state, plan.after, "the mid-fight round's last line must render the real after-state, same reference");
+  assert.equal(settles.length, 1, "onSettle must fire once, right after the final line lands");
+  assert.equal(runner.view(), null, "the stored view must be cleared once the beat settles");
+});
+
+test("combatBeat: createBeatRunner — for an ending plan, the last line's state is a frame built on before, never plan.after", () => {
+  const plan = makeRunnerPlan({ ending: true });
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const renders = [];
+  const runner = createBeatRunner({
+    beat,
+    durationFor: () => 0,
+    onRender: (v) => renders.push(v),
+    onSettle: () => {},
+    playClips: () => {},
+  });
+  runner.start(plan);
+  timers.advance(600);
+  timers.advance(600);
+
+  const lastView = renders[2];
+  assert.notEqual(lastView.state, plan.after);
+  assert.deepEqual(lastView.state, frameStateFor(plan.before, plan.frames[2], plan.heroHp[2]));
+});
+
+test("combatBeat: createBeatRunner hurry() after line 0 plays every remaining line's cues in order, renders once (the last line, hurried true, typeId null), then settles once", () => {
+  const plan = makeRunnerPlan();
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const renders = [];
+  const settles = [];
+  const played = [];
+  const runner = createBeatRunner({
+    beat,
+    durationFor: () => 0,
+    onRender: (v) => renders.push(v),
+    onSettle: () => settles.push(true),
+    playClips: (clips) => played.push(clips),
+  });
+
+  runner.start(plan);
+  played.length = 0;
+  renders.length = 0;
+
+  runner.hurry();
+  assert.deepEqual(played, [["hurt1"], ["foe-die", "levelup"]], "hurry must play every remaining line's cues, in order");
+  assert.equal(renders.length, 1, "hurry must render exactly once");
+  assert.equal(renders[0].line, 2);
+  assert.equal(renders[0].hurried, true);
+  assert.equal(renders[0].typeId, null);
+  assert.equal(settles.length, 1);
+  assert.equal(runner.active(), false);
+});
+
+test("combatBeat: createBeatRunner view().hitFoe is the index of the foe whose frame has hit true, or -1", () => {
+  const plan = makeRunnerPlan();
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const views = [];
+  const runner = createBeatRunner({
+    beat,
+    durationFor: () => 0,
+    onRender: (v) => views.push(v),
+    onSettle: () => {},
+    playClips: () => {},
+  });
+  runner.start(plan);
+  assert.equal(views[0].hitFoe, 0, "line 0's frame has foe 0 hit true");
+
+  timers.advance(600);
+  assert.equal(views[1].hitFoe, -1, "line 1's frame has no hit foe");
+
+  timers.advance(600);
+  assert.equal(views[2].hitFoe, 0, "line 2's frame has foe 0 hit true again");
+});
+
+test("combatBeat: createBeatRunner start(null) returns false and calls nothing", () => {
+  const timers = makeFakeTimerQueue();
+  const beat = createBeat({ setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, reduced: () => false });
+  const renders = [];
+  const settles = [];
+  const played = [];
+  const runner = createBeatRunner({
+    beat,
+    durationFor: () => 0,
+    onRender: (v) => renders.push(v),
+    onSettle: () => settles.push(true),
+    playClips: (c) => played.push(c),
+  });
+  const result = runner.start(null);
+  assert.equal(result, false);
+  assert.deepEqual(renders, []);
+  assert.deepEqual(settles, []);
+  assert.deepEqual(played, []);
 });
