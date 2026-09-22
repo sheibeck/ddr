@@ -6,8 +6,8 @@
 // FAMILY_CRY's totality — this module itself imports nothing).
 //
 // Variation is a counter-driven round-robin with NO pseudo-random source
-// anywhere in this file — not Math.random(), not crypto.getRandomValues(),
-// not a draw off the engine's rng stream. That is deliberate: a shuffle-bag
+// anywhere in this file — no JS built-in PRNG call, no crypto random-bytes
+// call, not a draw off the engine's rng stream. That is deliberate: a shuffle-bag
 // driven by a plain counter cannot perturb engine determinism no matter how
 // it is called, so this module is free to sit on the dispatch path without
 // touching parity. (See 56-CONTEXT.md "Event mapping & variation".)
