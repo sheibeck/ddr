@@ -22,7 +22,7 @@ Also out of scope: any engine or content change. In particular the darkness work
 
 ### Rail overlay & dismissal (LAYOUT-01/02/03)
 
-- **The rail becomes an overlay, not a flex sibling.** `position:absolute; left:0; right:0; bottom:0` inside `.mazebox`, shown and hidden with `transform: translateY(100%) → translateY(0)` plus `visibility`. **Never `display:none`** — that is what forces the reflow today (`.mw-rail{flex:none;min-height:132px}` at `mazeworld.html:687` + `.mw-rail[hidden]{display:none}` at `:688` inside the `#screen-maze` flex column), and it is also unanimatable, which would block Phase 58. Keep an `[hidden]`/`data-idle` state for accessibility but drive visibility with the transform.
+- **The rail becomes an overlay, not a flex sibling.** `position:absolute; left:0; right:0; bottom:0` in a wrapper around `.mw-screens` + `#mw-rail` (**NOT `.mazebox`** — see the correction note below), shown and hidden with `transform: translateY(100%) → translateY(0)` plus `visibility`. **Never `display:none`** — that is what forces the reflow today (`.mw-rail{flex:none;min-height:132px}` at `mazeworld.html:687` + `.mw-rail[hidden]{display:none}` at `:688` inside the `#screen-maze` flex column), and it is also unanimatable, which would block Phase 58. Keep an `[hidden]`/`data-idle` state for accessibility but drive visibility with the transform.
 - **The viewport must not move.** `.mw-maze-viewport` (`flex:1`, `:335`) keeps its size across every rail show/hide. This extends the Phase 35 / 260918-vm3 **stationary-camera ruling** to the rail: nothing but a drag, the keep-in-view nudge, CENTRE, stairs, teleport or a new run may shift the map. Verify `keepInViewAxis` / `mzKeepPartyInView` no longer fire on rail show/hide, and that `fit()` is not called from `renderRail()`.
 - **No chip/rail collision to solve.** The chip strip moves to a top band (below), so a bottom-anchored rail never overlaps it. Do not build a "lift the chips when the rail shows" mechanism — the layout change removes the problem.
 - **Holds roughly double AND scale by line count.** The current `RAIL_HOLD` table (`src/browser/rail.js:50`) is `default 4200, dull 2400, dullShort 2200, mark 3400, day 3000, floor 5000, camp 5200, level 6000`, plus `WORN_RECONCILE_HOLD 6000`. Double them as a base, then add a per-line increment — the user's complaint was "all the text", so a four-line card must hold longer than a one-line card. This mirrors the 2026-09-15 toast ruling ("about 2×, tap to dismiss") that the rail inherited the old numbers from. Update the `rail.test.js` pins on the numbers.
@@ -63,7 +63,7 @@ Also out of scope: any engine or content change. In particular the darkness work
 ### Reusable Assets
 
 - **`src/browser/rail.js`** — `RAIL_HOLD` (`:50`), `WORN_RECONCILE_HOLD` (`:68`), the `RAIL_FAMILY` table and `railCardFor`. Hold values live here, not in the shell.
-- **`src/browser/inputGuards.js`** — the `guardTap` helper the dismiss handler should use, rather than a raw listener.
+- **`guardTap` lives at `mazeworld.html:2754`, not in `src/browser/inputGuards.js`** (that module holds only the pure predicates). See the correction note — `guardTap` is also the wrong tool for the rail host.
 - **`src/browser/controls.js:135`** — `keepInViewAxis(camAxis, partyAxis, spanCells)`; called from `mazeworld.html:3979-3983` with `rect.width / CELL` and `rect.height / CELL`. Once the chip band leaves the viewport, `rect` becomes honest with no change to this function.
 - **`src/browser/bridge.js`** — the single `window.__mz*` registry with a set-equality test AND a doc-sync test against `docs/SHELL-MODULES.md`. Phase 56 added `__mzSfxBackendOverride` through it; follow that commit's shape exactly (registry row + `tools/bridge-doc.mjs --write` in the same commit).
 - **`engine/derived.js`** — `inDark(state)` (~`:794`) and `revealRadius(state)` (~`:824`) already implement the rule; the shell needs to read them, not reimplement them.
@@ -90,6 +90,26 @@ Also out of scope: any engine or content change. In particular the darkness work
 - The user's words on darkness (2026-09-21): *"It looks like I'm in the dark, but it's not limiting my vision."* — the fix is to make the existing, correct limit visible, not to change the limit.
 
 </specifics>
+
+## Corrections to this CONTEXT (verified at HEAD, 2026-09-22)
+
+Three statements above were written from the 2026-09-19/21 todos and are wrong at HEAD. All three were re-verified directly by the orchestrator; the planner's plans already build against the corrected facts.
+
+1. **The rail is NOT inside `.mazebox`, and must not be moved there.** At HEAD `#mw-rail` (`mazeworld.html:1624`) is a direct child of `#app`, sitting between `</main>` (`:1613`) and `<nav class="mw-tabbar">` (`:1641`) — deliberately, per the 2026-09-17 UAT ruling that makes the rail the one feedback surface on **every** tab. `.mazebox` lives inside `#screen-maze`, which is `hidden` on the other four tabs, so anchoring the rail there would silently revoke that ruling. The locked intent (absolute overlay, transform-driven, never a flex sibling that reflows the viewport) stands; the positioning parent is a new wrapper around `.mw-screens` + `#mw-rail`.
+
+2. **`guardTap` is at `mazeworld.html:2754`, not in `src/browser/inputGuards.js`** — and it is the wrong tool for the rail host anyway: it stamps `aria-disabled` on its target while the arm sweep's selector is a *descendant* selector (`#mw-rail [aria-disabled]`), so the attribute would never clear off the live-region host; and it gates on the shared `encRenderedAt`, which is stale for a no-button card. The dismiss handler uses the same `isArmed` predicate against a rail-specific `railShownAt` stamp instead. Same intent, correct mechanism.
+
+3. **LAYOUT-06's premise was factually wrong — this is the material one.** This CONTEXT says *"`draw()` dims only `tile.dark` cells and nothing reads the counter."* That is false at HEAD. Phase 41 (TERR-03) already ships a render-window filter: `engine/derived.js` `mapViewRadius`/`inViewWindow` collapse the map to a 3×3 window whenever `inDark(state)` is true, and `inDark` is `tileDark || c.darkFor > 0`. `mazeworld.html:1955` applies it in `draw()`. Verified empirically:
+
+   ```
+   darkFor=30, tile NOT dark  | inDark true  | revealRadius 1 | mapViewRadius 1        | inViewWindow(9,12) false
+   darkFor=0,  tile dark      | inDark true  | revealRadius 1 | mapViewRadius 1        | inViewWindow(9,12) false
+   no darkness at all         | inDark false | revealRadius 2 | mapViewRadius Infinity | inViewWindow(9,12) true
+   ```
+
+   **What the user actually hit.** `mapViewRadius` returns `Infinity` — the full explored view — when any of three waivers is live: Night Vision (`skill`), an Amulet of Light (`eff(c,"light") > 0`), or a **lit torch** (`itemEffectActive(c,"lit")`). While a waiver holds, `c.darkFor` keeps ticking and the DARK chip keeps counting down, so the player sees a darkness counter and completely unrestricted vision at the same time — which is exactly the 2026-09-21 report (*"It looks like I'm in the dark, but it's not limiting my vision"*), from a run that was almost certainly carrying a lit torch. The engine is correct; nothing tells the player why.
+
+   **Consequence for the phase:** the vignette is still worth building — it makes the un-waived 3×3 window read as deliberate rather than as a rendering glitch — but on its own it would **never have appeared for the run that produced the complaint**. The waiver has to become visible too. `engine/`/`content/` stay untouched either way; this remains legibility on top of a correct filter, never a fix to `draw()`'s window.
 
 <deferred>
 ## Deferred Ideas
