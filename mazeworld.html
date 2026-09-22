@@ -395,8 +395,16 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
   background:rgba(8,7,5,.94);
   padding:14px 15px;
   overflow-y:auto;
+  animation:mwfade .18s ease-out;
 }
 .mw-overlay[hidden]{display:none}
+/* Phase 58 (MOTION-02, D-05/D-07/D-08): the encounter overlay's close —
+   window.__mzMotion stamps data-motion="closing" for CLOSE_MS + slack
+   before `hidden` lands (renderEncounter's own true->false stamp of
+   lastDismissAt already happens at call time, unchanged); pointer-inert
+   during the fade so a tap can never re-fire a combat button underneath it
+   (T-58-11/T-58-12). */
+.mw-overlay[data-motion="closing"]{animation:mwfadeout .12s ease-in forwards;pointer-events:none}
 .mw-overlay h2{
   font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.22em;
   text-transform:uppercase;margin:0 0 10px;color:var(--ink-soft);
@@ -713,9 +721,21 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    .mw-screens on every toggle. Visibility is transform-plus-visibility,
    never display:none, specifically so Phase 58 (MOTION-01..05) can animate
    the slide — this rule adds no transition, duration or easing of its own. */
-.mw-rail{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:14px 16px 18px;border-top:3px solid var(--rail-edge);background:#1b170f;color:#e6ddc6;font-family:var(--mono);transform:translateY(100%);visibility:hidden;pointer-events:none}
-.mw-rail[hidden]{display:block;transform:translateY(100%);visibility:hidden;pointer-events:none}
-.mw-rail[data-shown="1"]{transform:translateY(0);visibility:visible;pointer-events:auto}
+/* Phase 58 (MOTION-02, D-06/D-07): the global `[hidden]{display:none!important}`
+   reset (this file's first style line) has always outranked 57-02's
+   non-important `display:block` here (an !important declaration beats a
+   non-important one regardless of specificity), so a hidden rail was in
+   fact `display:none` and a transform transition could never run from or
+   to it (see 57-VERIFICATION.md's carried-item override). `display:block
+   !important` below finally beats the global rule (both important, so
+   specificity decides: (0,2,0) beats [hidden]'s (0,1,0)), keeping the rail
+   laid out through its close so the slide plays for real for the first
+   time. The base `.mw-rail` rule carries the CLOSE transition (120ms
+   ease-in); `[data-shown="1"]` carries the OPEN transition (180ms
+   ease-out) — `visibility` flips only at the end of each, never mid-slide. */
+.mw-rail{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:14px 16px 18px;border-top:3px solid var(--rail-edge);background:#1b170f;color:#e6ddc6;font-family:var(--mono);transform:translateY(100%);visibility:hidden;pointer-events:none;transition:transform .12s ease-in,visibility 0s .12s}
+.mw-rail[hidden]{display:block!important;transform:translateY(100%);visibility:hidden;pointer-events:none}
+.mw-rail[data-shown="1"]{transform:translateY(0);visibility:visible;pointer-events:auto;transition:transform .18s ease-out,visibility 0s}
 .mw-rail[data-idle="1"]{background:#161209}
 .mw-rail[data-tone="info"]{--rail-edge:#6b5c3c;--rail-ink:#e8c97a}
 .mw-rail[data-tone="good"]{--rail-edge:#5e7a3c;--rail-ink:#a8cc72}
@@ -965,13 +985,17 @@ html,body{height:100%}
 .mw-hud-menu-face{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;line-height:1;color:#e8c97a;background:#241d12;border:2px solid #6b5c3c;box-shadow:0 3px 0 #0d0b08}
 .mw-hud-menu-btn[aria-expanded="true"] .mw-hud-menu-face{background:#e8c97a;color:#14110c}
 /* Resting state: invisible AND non-interactive — a closed menu can never
-   swallow a map tap underneath it (T-57-16). No transition/animation/
-   @keyframes anywhere in this block: opening/closing is instant this plan;
-   Phase 58 (MOTION-02) adds the mock's rise transition later, onto this
-   SAME data-open/visibility/opacity/transform model — never a display
-   toggle (D-02: neither state may move .mw-maze-viewport). */
-.mw-hud-menu{position:absolute;right:0;top:calc(100% + 7px);min-width:168px;display:flex;flex-direction:column;background:#1b170f;border:2px solid #6b5c3c;box-shadow:0 6px 0 rgba(8,7,5,.6);visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none}
-.mw-hud-menu[data-open="1"]{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+   swallow a map tap underneath it (T-57-16). Phase 58 (MOTION-02, D-06/
+   D-07): the mock's small rise transition, onto this SAME data-open/
+   visibility/opacity/transform model — never a display toggle (D-02:
+   neither state may move .mw-maze-viewport), and no @keyframes (the menu
+   transitions between two already-declared states rather than animating
+   through one). The base rule below carries the CLOSE transition (120ms
+   ease-in, matching every other D-05 surface's close); `[data-open="1"]`
+   carries the OPEN transition (160ms ease-out, the mock's own `.16s`) —
+   `visibility` flips only at the end of each. */
+.mw-hud-menu{position:absolute;right:0;top:calc(100% + 7px);min-width:168px;display:flex;flex-direction:column;background:#1b170f;border:2px solid #6b5c3c;box-shadow:0 6px 0 rgba(8,7,5,.6);visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .12s ease-in,transform .12s ease-in,visibility 0s .12s}
+.mw-hud-menu[data-open="1"]{visibility:visible;opacity:1;transform:none;pointer-events:auto;transition:opacity .16s ease-out,transform .16s ease-out,visibility 0s}
 .mw-hud-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--disp);font-size:7.5px;letter-spacing:0;line-height:1.6;padding:13px 14px;min-height:48px;color:#e6ddc6;background:#1b170f;border:0;border-top:2px solid #241f16;border-radius:0;box-shadow:none}
 .mw-hud-menu-item:first-child{border-top:0}
 .mw-hud-menu-glyph{flex:none;width:18px;height:14px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);line-height:1}
@@ -1045,6 +1069,18 @@ html,body{height:100%}
    no 14px inset (the mock's viewport runs edge to edge); the other four
    tabs (Hero/Gear/Oracle/Dead) keep .mw-screen's 14px padding. */
 #screen-maze{padding:0}
+
+/* Phase 58 (MOTION-02, D-05/D-06/D-07/D-08): tab switches cross-fade —
+   never a horizontal slide, so the map never looks like it is scrolling
+   (D-06). The incoming screen just fades in (mwfade, the sheets' own open
+   duration); showTab's outgoing screen gets data-motion="closing" and
+   fades out as an absolutely-positioned, input-inert layer pinned to
+   exactly what was on screen (an inline translateY offset by .mw-screens'
+   own scrollTop — this leaving layer is NOT itself scrolled, #mw-stage is
+   its containing block). No z-index: the rail (4) and the ☰ menu (6) stay
+   above it untouched. */
+.mw-screens > .mw-screen{animation:mwfade .18s ease-out}
+.mw-screens > .mw-screen[data-motion="closing"]{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;animation:mwfadeout .12s ease-in forwards}
 
 .mw-tabbar{
   flex:none;
@@ -1185,6 +1221,12 @@ html,body{height:100%}
    keyframe (design/Mazeworld Mobile.dc.html's `@keyframes mwrise`), reused
    for the MARKS legend panel below. */
 @keyframes mwrise{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* Phase 58 (MOTION-02, D-06/D-07): the sheet/overlay/tab close keyframes —
+   mwsheetin/mwsheetout for the bottom sheets' slide, mwfadeout for the
+   overlay/tab/sheet-scrim fade-out. mwrise/mwfade above are untouched. */
+@keyframes mwsheetin{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes mwsheetout{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@keyframes mwfadeout{from{opacity:1}to{opacity:0}}
 
 /* ---------- MARKS legend bottom sheet (DR4 group 2) ----------
    Replaces the prototype's inline .legend strip under the map with the
@@ -1198,13 +1240,21 @@ html,body{height:100%}
    openMarksLegend()/closeMarksLegend(). */
 .mw-legend-sheet{position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end}
 .mw-legend-sheet[hidden]{display:none}
-.mw-legend-scrim{position:absolute;inset:0;background:rgba(8,7,5,.8);animation:mwfade .16s ease}
+.mw-legend-scrim{position:absolute;inset:0;background:rgba(8,7,5,.8);animation:mwfade .18s ease-out}
 .mw-legend-panel{
   position:relative;width:100%;max-height:78vh;overflow-y:auto;
   background:#1b170f;border-top:3px solid #6b5c3c;
   padding:18px 18px calc(28px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
-  animation:mwrise .2s ease;
+  animation:mwsheetin .18s ease-out;
 }
+/* Phase 58 (MOTION-02, D-06/D-07/D-08): the closing state — window.__mzMotion
+   stamps data-motion="closing" on the sheet host for CLOSE_MS + slack
+   before `hidden` lands. The scrim fades out but KEEPS its pointer events
+   on purpose (it absorbs taps while closing — T-58-11/T-58-12, idempotent);
+   the panel slides back down and goes pointer-inert so a second tap can
+   never re-fire a button underneath it while it closes. */
+.mw-legend-sheet[data-motion="closing"] .mw-legend-scrim{animation:mwfadeout .12s ease-in forwards}
+.mw-legend-sheet[data-motion="closing"] .mw-legend-panel{animation:mwsheetout .12s ease-in forwards;pointer-events:none}
 .mw-legend-head{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
   font-family:var(--disp);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
